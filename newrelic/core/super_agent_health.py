@@ -14,10 +14,10 @@
 
 import logging
 import os
-import uuid
 import sched
 import threading
 import time
+import uuid
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -40,10 +40,11 @@ HEALTH_CHECK_STATUSES = {
 
 
 def is_valid_file_delivery_location(file_uri):
-    #  Verify whether file directory provided to agent via env var is a valid file URI to determine whether health check should run
+    # Verify whether file directory provided to agent via env var is a valid file URI to determine whether health
+    # check should run
     if not file_uri:
         _logger.warning(
-            "Configured NR Control health delivery location is empty. APM Control health check will not be enabled."
+            "Configured NR Control health delivery location is empty. Health check will not be enabled."
         )
         return False
 
@@ -52,8 +53,8 @@ def is_valid_file_delivery_location(file_uri):
 
         if not parsed_uri.scheme or not parsed_uri.path:
             _logger.warning(
-                "Configured NR Control health delivery location is not a complete file URI. Health check "
-                "will not be enabled. "
+                "Configured NR Control health delivery location is not a complete file URI. Health check will not be"
+                "enabled. "
             )
             return False
 
@@ -82,19 +83,6 @@ def is_valid_file_delivery_location(file_uri):
         return False
 
 
-def health_check_enabled():
-    fleet_id_present = os.environ.get("NEW_RELIC_SUPERAGENT_FLEET_ID", None)
-    if not fleet_id_present:
-        return False
-
-    health_file_location = os.environ.get("NEW_RELIC_SUPERAGENT_HEALTH_DELIVERY_LOCATION", None)
-    valid_file_location = is_valid_file_delivery_location(health_file_location)
-    if not valid_file_location:
-        return False
-
-    return True
-
-
 class SuperAgentHealth:
     _instance_lock = threading.Lock()
     _instance = None
@@ -120,9 +108,21 @@ class SuperAgentHealth:
         self.start_time_unix_nano = None
         self.pid_file_id_map = {}
 
+    @property
+    def health_check_enabled(self):
+        fleet_id_present = os.environ.get("NEW_RELIC_SUPERAGENT_FLEET_ID", None)
+        if not fleet_id_present:
+            return False
+
+        health_file_location = os.environ.get("NEW_RELIC_SUPERAGENT_HEALTH_DELIVERY_LOCATION", None)
+        valid_file_location = is_valid_file_delivery_location(health_file_location)
+        if not valid_file_location:
+            return False
+
+        return True
+
     def set_health_status(self, health_status, response_code=None, info=None):
         last_error, current_status = HEALTH_CHECK_STATUSES[health_status]
-
         # Update status messages to be more descriptive if necessary data is present
         if health_status == "http_error" and response_code and info:
             current_status = (
@@ -132,15 +132,19 @@ class SuperAgentHealth:
         if health_status == "proxy_error" and response_code:
             current_status = f"HTTP Proxy configuration error; response code {response_code}"
 
-        # Do not override status with agent_shutdown unless the agent was previously healthy
-        if health_status == "agent_shutdown" and self.status != "Healthy":
-            pass
 
+        license_key_error = True if self.status == "Invalid license key (HTTP status code 401)" or "License key missing in configuration" else False
+
+        if health_status == "failed_nr_connection" and license_key_error:
+            pass
+        # Do not override status with agent_shutdown unless the agent was previously healthy
+        elif health_status == "agent_shutdown" and self.status != "Healthy":
+            pass
         else:
             self.last_error = last_error
             self.status = current_status
 
-    def update_to_healthy_agent_protocol_status(self, protocol_error=False, collector_error=False):
+    def update_to_healthy_status(self, protocol_error=False, collector_error=False):
         # If our unhealthy status code was not config related, it is possible it could be resolved during an active
         # session. This function allows us to update to a healthy status if so
 
@@ -191,9 +195,7 @@ class SuperAgentHealth:
         file_id = str(uuid.uuid4()).replace("-", "")
 
         # Map the UUID to the process ID to ensure each agent instance has one UUID associated with it
-        if pid in self.pid_file_id_map:
-            pass
-        else:
+        if pid not in self.pid_file_id_map:
             self.pid_file_id_map[pid] = file_id
 
         return self.pid_file_id_map[pid]

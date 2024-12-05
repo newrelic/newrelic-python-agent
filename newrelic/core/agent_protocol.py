@@ -213,6 +213,7 @@ class AgentProtocol():
         self.configuration = settings
         self.super_agent = super_agent_health_instance()
 
+
     def __enter__(self):
         self.client.__enter__()
         return self
@@ -286,7 +287,7 @@ class AgentProtocol():
             raise exception
         if status == 200:
             # Check if we previously had a protocol related error and update to a healthy status
-            self.super_agent.update_to_healthy_agent_protocol_status(protocol_error=True)
+            self.super_agent.update_to_healthy_status(protocol_error=True)
             return self.decode_response(data)
 
     def decode_response(self, response):

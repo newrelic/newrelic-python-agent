@@ -17,6 +17,8 @@ import fnmatch
 import logging
 import os
 import sys
+import threading
+import time
 import traceback
 
 import newrelic.api.application
@@ -46,6 +48,8 @@ from newrelic.core.config import (
     default_host,
     fetch_config_setting,
 )
+from newrelic.core.super_agent_health import super_agent_health_instance, super_agent_healthcheck_loop
+
 
 __all__ = ["initialize", "filter_app_factory"]
 
@@ -100,6 +104,7 @@ _config_object = configparser.RawConfigParser()
 # all the settings have been read.
 
 _cache_object = []
+super_agent_instance = super_agent_health_instance()
 
 
 def _reset_config_parser():
@@ -1047,6 +1052,7 @@ def _load_configuration(
                 raise newrelic.api.exceptions.ConfigurationError("New Relic configuration not found in TOML file.")
             _config_object.read_dict(_toml_config_to_configparser_dict(newrelic_section))
     elif not _config_object.read([config_file]):
+        super_agent_instance.set_health_status("invalid_config")
         raise newrelic.api.exceptions.ConfigurationError(f"Unable to open configuration file {config_file}.")
 
     _settings.config_file = config_file
@@ -4815,6 +4821,18 @@ def _setup_agent_console():
         newrelic.core.agent.Agent.run_on_startup(_startup_agent_console)
 
 
+super_agent_health_thread = threading.Thread(name="NR-Control-Health-Main-Thread", target=super_agent_healthcheck_loop)
+super_agent_health_thread.daemon = True
+
+
+def _setup_super_agent_health():
+    if super_agent_health_thread.is_alive():
+        return
+
+    if super_agent_instance.health_check_enabled:
+        super_agent_health_thread.start()
+
+
 def initialize(
     config_file=None,
     environment=None,
@@ -4822,6 +4840,8 @@ def initialize(
     log_file=None,
     log_level=None,
 ):
+    super_agent_instance.start_time_unix_nano = time.time_ns()
+
     if config_file is None:
         config_file = os.environ.get("NEW_RELIC_CONFIG_FILE", None)
 
@@ -4833,6 +4853,12 @@ def initialize(
 
     _load_configuration(config_file, environment, ignore_errors, log_file, log_level)
 
+    _setup_super_agent_health()
+
+    if _settings.monitor_mode:
+        if not _settings.license_key:
+            super_agent_instance.set_health_status("missing_license")
+
     if _settings.monitor_mode or _settings.developer_mode:
         _settings.enabled = True
         _setup_instrumentation()
@@ -4841,6 +4867,7 @@ def initialize(
         _setup_agent_console()
     else:
         _settings.enabled = False
+        super_agent_instance.set_health_status("agent_disabled")
 
 
 def filter_app_factory(app, global_conf, config_file, environment=None):

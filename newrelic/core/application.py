@@ -49,7 +49,7 @@ from newrelic.network.exceptions import (
     RetryDataForRequest,
 )
 from newrelic.samplers.data_sampler import DataSampler
-from newrelic.core.super_agent_health import super_agent_healthcheck_loop, health_check_enabled, super_agent_health_instance
+from newrelic.core.super_agent_health import super_agent_healthcheck_loop, super_agent_health_instance
 
 _logger = logging.getLogger(__name__)
 
@@ -210,7 +210,7 @@ class Application:
         if self._active_session:
             return
 
-        if health_check_enabled() and not self._super_agent_health_thread.is_alive():
+        if self._super_agent.health_check_enabled and not self._super_agent_health_thread.is_alive():
             self._super_agent_health_thread.start()
 
         self._process_id = os.getpid()
@@ -502,7 +502,7 @@ class Application:
 
         configuration = active_session.configuration
         # Check if the agent previously had an unhealthy status related to the data collector and update
-        self._super_agent.update_to_healthy_agent_protocol_status(collector_error=True)
+        self._super_agent.update_to_healthy_status(collector_error=True)
 
         with self._stats_lock:
             self._stats_engine.reset_stats(configuration, reset_stream=True)
@@ -1701,7 +1701,7 @@ class Application:
 
         """
         self._super_agent.set_health_status("agent_shutdown")
-        if health_check_enabled():
+        if self._super_agent.health_check_enabled:
             self._super_agent.write_to_health_file()
 
         # We need to stop any thread profiler session related to this

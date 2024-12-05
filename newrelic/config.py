@@ -48,7 +48,7 @@ from newrelic.core.config import (
     default_host,
     fetch_config_setting,
 )
-from newrelic.core.super_agent_health import super_agent_health_instance, super_agent_healthcheck_loop, health_check_enabled
+from newrelic.core.super_agent_health import super_agent_health_instance, super_agent_healthcheck_loop
 
 
 __all__ = ["initialize", "filter_app_factory"]
@@ -4838,7 +4838,7 @@ def _setup_super_agent_health():
     if super_agent_health_thread.is_alive():
         return
 
-    if health_check_enabled():
+    if super_agent_instance.health_check_enabled:
         super_agent_health_thread.start()
 
 

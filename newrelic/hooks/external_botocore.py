@@ -1019,23 +1019,34 @@ def wrap_emit_api_params(wrapped, instance, args, kwargs):
         except Exception:
             pass  # Unable to determine ARN from FunctionName.
 
+    # Wrap instance._serializer.serialize_to_request if not already wrapped.
+    if (
+        hasattr(instance, "_serializer")
+        and hasattr(instance._serializer, "serialize_to_request")
+        and not hasattr(instance._serializer, "_nr_wrapped")
+    ):
+
+        @function_wrapper
+        def wrap_serialize_to_request(wrapped, instance, args, kwargs):
+            transaction = current_transaction()
+            if not transaction:
+                return wrapped(*args, **kwargs)
+
+            bound_args = bind_args(wrapped, args, kwargs)
+
+            arn = bound_args.get("parameters", {}).pop("_nr_arn", None)
+
+            request_dict = wrapped(*args, **kwargs)
+
+            if arn:
+                request_dict["_nr_arn"] = arn
+
+            return request_dict
+
+        instance._serializer.serialize_to_request = wrap_serialize_to_request(instance._serializer.serialize_to_request)
+        instance._serializer._nr_wrapped = True
+
     return api_params
-
-
-def wrap_convert_to_request_dict(wrapped, instance, args, kwargs):
-    transaction = current_transaction()
-    if not transaction:
-        return wrapped(*args, **kwargs)
-
-    bound_args = bind_args(wrapped, args, kwargs)
-    arn = bound_args.get("api_params").pop("_nr_arn", None)
-
-    request_dict = wrapped(*args, **kwargs)
-
-    if arn:
-        request_dict["_nr_arn"] = arn
-
-    return request_dict
 
 
 CUSTOM_TRACE_POINTS = {
@@ -1126,5 +1137,4 @@ def instrument_botocore_client(module):
         wrap_function_wrapper(module, "ClientCreator._create_api_method", _nr_clientcreator__create_api_method_)
         wrap_function_wrapper(module, "ClientCreator._create_methods", _nr_clientcreator__create_methods)
     if hasattr(module, "BaseClient"):
-        wrap_function_wrapper(module, "BaseClient._convert_to_request_dict", wrap_convert_to_request_dict)
         wrap_function_wrapper(module, "BaseClient._emit_api_params", wrap_emit_api_params)

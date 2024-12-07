@@ -48,6 +48,7 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set(
         "aws.operation",
         "aws.requestId",
         "cloud.account.id",
+        "cloud.platform",
         "cloud.region",
         "cloud.resource_id",
         "code.filepath",

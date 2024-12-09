@@ -16,12 +16,21 @@ import sys
 
 from newrelic.api.database_trace import register_database_client
 from newrelic.api.function_trace import FunctionTrace
-from newrelic.common.object_wrapper import ObjectProxy, wrap_object, wrap_function_wrapper
 from newrelic.common.object_names import callable_name
-
-from newrelic.hooks.database_dbapi2_async import AsyncConnectionFactory as DBAPI2AsyncConnectionFactory
-from newrelic.hooks.database_dbapi2_async import AsyncConnectionWrapper as DBAPI2AsyncConnectionWrapper
-from newrelic.hooks.database_dbapi2_async import AsyncCursorWrapper as DBAPI2AsyncCursorWrapper
+from newrelic.common.object_wrapper import (
+    ObjectProxy,
+    wrap_function_wrapper,
+    wrap_object,
+)
+from newrelic.hooks.database_dbapi2_async import (
+    AsyncConnectionFactory as DBAPI2AsyncConnectionFactory,
+)
+from newrelic.hooks.database_dbapi2_async import (
+    AsyncConnectionWrapper as DBAPI2AsyncConnectionWrapper,
+)
+from newrelic.hooks.database_dbapi2_async import (
+    AsyncCursorWrapper as DBAPI2AsyncCursorWrapper,
+)
 
 
 class AsyncCursorContextManagerWrapper(ObjectProxy):
@@ -36,9 +45,7 @@ class AsyncCursorContextManagerWrapper(ObjectProxy):
 
     async def __aenter__(self):
         cursor = await self.__wrapped__.__aenter__()
-        return self.__cursor_wrapper__(
-            cursor, self._nr_dbapi2_module, self._nr_connect_params, self._nr_cursor_args
-        )
+        return self.__cursor_wrapper__(cursor, self._nr_dbapi2_module, self._nr_connect_params, self._nr_cursor_args)
 
     async def __aexit__(self, exc, val, tb):
         return await self.__wrapped__.__aexit__(exc, val, tb)
@@ -67,8 +74,7 @@ def wrap_pool__acquire(dbapi2_module):
 
 
 def instance_info(args, kwargs):
-    def _bind_params(host=None, user=None, password=None, db=None,
-            port=None, *args, **kwargs):
+    def _bind_params(host=None, user=None, password=None, db=None, port=None, *args, **kwargs):
         return host, port, db
 
     host, port, db = _bind_params(*args, **kwargs)
@@ -77,15 +83,20 @@ def instance_info(args, kwargs):
 
 
 def instrument_aiomysql(module):
-    register_database_client(module, database_product='MySQL',
-            quoting_style='single+double', explain_query='explain',
-            explain_stmts=('select',), instance_info=instance_info)
+    register_database_client(
+        module,
+        database_product="MySQL",
+        quoting_style="single+double",
+        explain_query="explain",
+        explain_stmts=("select",),
+        instance_info=instance_info,
+    )
 
     # Only instrument the connect method directly, don't instrument
     # Connection. This follows the DBAPI2 spec and what was done for
     # PyMySQL which this library is based on.
 
-    wrap_object(module, 'connect', AsyncConnectionFactory, (module,))
+    wrap_object(module, "connect", AsyncConnectionFactory, (module,))
 
 
 def instrument_aiomysql_pool(module):

@@ -25,7 +25,7 @@ from newrelic.hooks.database_dbapi2_async import AsyncCursorWrapper as DBAPI2Asy
 
 
 class AsyncCursorContextManagerWrapper(ObjectProxy):
-    
+
     __cursor_wrapper__ = DBAPI2AsyncCursorWrapper
 
     def __init__(self, context_manager, dbapi2_module, connect_params, cursor_args):
@@ -39,7 +39,7 @@ class AsyncCursorContextManagerWrapper(ObjectProxy):
         return self.__cursor_wrapper__(
             cursor, self._nr_dbapi2_module, self._nr_connect_params, self._nr_cursor_args
         )
-    
+
     async def __aexit__(self, exc, val, tb):
         return await self.__wrapped__.__aexit__(exc, val, tb)
 
@@ -59,7 +59,7 @@ def wrap_pool__acquire(dbapi2_module):
         rollup = ["Datastore/all", f"Datastore/{dbapi2_module._nr_database_product}/all"]
 
         with FunctionTrace(name=callable_name(wrapped), terminal=True, rollup=rollup, source=wrapped):
-            connection =  await wrapped(*args, **kwargs)
+            connection = await wrapped(*args, **kwargs)
             connection_kwargs = getattr(instance, "_conn_kwargs", {})
             return AsyncConnectionWrapper(connection, dbapi2_module, (((), connection_kwargs)))
 

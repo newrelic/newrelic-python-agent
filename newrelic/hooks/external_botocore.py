@@ -35,6 +35,7 @@ from newrelic.common.object_wrapper import (
     wrap_function_wrapper,
 )
 from newrelic.common.package_version_utils import get_package_version
+from newrelic.common.signature import bind_args
 from newrelic.core.config import global_settings
 
 QUEUE_URL_PATTERN = re.compile(r"https://sqs.([\w\d-]+).amazonaws.com/(\d+)/([^/]+)")
@@ -1003,6 +1004,53 @@ def sqs_message_trace(
     return _nr_sqs_message_trace_wrapper_
 
 
+def wrap_emit_api_params(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return wrapped(*args, **kwargs)
+
+    bound_args = bind_args(wrapped, args, kwargs)
+
+    api_params = wrapped(*args, **kwargs)
+
+    arn = bound_args.get("api_params").get("FunctionName")
+    if arn:
+        try:
+            if arn.startswith("arn:"):
+                api_params["_nr_arn"] = arn
+        except Exception:
+            pass  # Unable to determine ARN from FunctionName.
+
+    # Wrap instance._serializer.serialize_to_request if not already wrapped.
+    if (
+        hasattr(instance, "_serializer")
+        and hasattr(instance._serializer, "serialize_to_request")
+        and not hasattr(instance._serializer, "_nr_wrapped")
+    ):
+
+        @function_wrapper
+        def wrap_serialize_to_request(wrapped, instance, args, kwargs):
+            transaction = current_transaction()
+            if not transaction:
+                return wrapped(*args, **kwargs)
+
+            bound_args = bind_args(wrapped, args, kwargs)
+
+            arn = bound_args.get("parameters", {}).pop("_nr_arn", None)
+
+            request_dict = wrapped(*args, **kwargs)
+
+            if arn:
+                request_dict["_nr_arn"] = arn
+
+            return request_dict
+
+        instance._serializer.serialize_to_request = wrap_serialize_to_request(instance._serializer.serialize_to_request)
+        instance._serializer._nr_wrapped = True
+
+    return api_params
+
+
 CUSTOM_TRACE_POINTS = {
     ("sns", "publish"): message_trace("SNS", "Produce", "Topic", extract(("TopicArn", "TargetArn"), "PhoneNumber")),
     ("dynamodb", "put_item"): dynamodb_datastore_trace("DynamoDB", extract("TableName"), "put_item"),
@@ -1065,6 +1113,11 @@ def _nr_endpoint_make_request_(wrapped, instance, args, kwargs):
     with ExternalTrace(library="botocore", url=url, method=method, source=wrapped) as trace:
         try:
             trace._add_agent_attribute("aws.operation", operation_model.name)
+            bound_args = bind_args(wrapped, args, kwargs)
+            lambda_arn = bound_args.get("request_dict").pop("_nr_arn", None)
+            if lambda_arn:
+                trace._add_agent_attribute("cloud.platform", "aws_lambda")
+                trace._add_agent_attribute("cloud.resource_id", lambda_arn)
         except:
             pass
 
@@ -1082,5 +1135,8 @@ def instrument_botocore_endpoint(module):
 
 
 def instrument_botocore_client(module):
-    wrap_function_wrapper(module, "ClientCreator._create_api_method", _nr_clientcreator__create_api_method_)
-    wrap_function_wrapper(module, "ClientCreator._create_methods", _nr_clientcreator__create_methods)
+    if hasattr(module, "ClientCreator"):
+        wrap_function_wrapper(module, "ClientCreator._create_api_method", _nr_clientcreator__create_api_method_)
+        wrap_function_wrapper(module, "ClientCreator._create_methods", _nr_clientcreator__create_methods)
+    if hasattr(module, "BaseClient"):
+        wrap_function_wrapper(module, "BaseClient._emit_api_params", wrap_emit_api_params)

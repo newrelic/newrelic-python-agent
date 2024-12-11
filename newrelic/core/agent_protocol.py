@@ -47,7 +47,7 @@ from newrelic.network.exceptions import (
     NetworkInterfaceException,
     RetryDataForRequest,
 )
-from newrelic.core.super_agent_health import super_agent_health_instance
+from newrelic.core.super_agent_health import HealthStatus, super_agent_health_instance
 
 _logger = logging.getLogger(__name__)
 
@@ -251,21 +251,21 @@ class AgentProtocol():
                 # initialize function doesn't get overridden with invalid_license as a missing license key is also
                 # treated as a 401 status code
                 if not self._license_key:
-                    self.super_agent.set_health_status("missing_license")
+                    self.super_agent.set_health_status(HealthStatus.MISSING_LICENSE.value)
                 else:
-                    self.super_agent.set_health_status("invalid_license")
+                    self.super_agent.set_health_status(HealthStatus.INVALID_LICENSE.value)
 
             if status == 407:
-                self.super_agent.set_health_status("proxy_error", status)
+                self.super_agent.set_health_status(HealthStatus.PROXY_ERROR.value, status)
 
             if status == 410:
-                self.super_agent.set_health_status("forced_disconnect")
+                self.super_agent.set_health_status(HealthStatus.FORCED_DISCONNECT.value)
 
             level, message = self.LOG_MESSAGES.get(status, self.LOG_MESSAGES["default"])
 
             # If the default error message was used, then we know we have a general HTTP error
             if message.startswith("Received a non 200 or 202"):
-                self.super_agent.set_health_status("http_error", status, method)
+                self.super_agent.set_health_status(HealthStatus.HTTP_ERROR.value, status, method)
 
             _logger.log(
                 level,

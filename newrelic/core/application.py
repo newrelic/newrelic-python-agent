@@ -49,7 +49,7 @@ from newrelic.network.exceptions import (
     RetryDataForRequest,
 )
 from newrelic.samplers.data_sampler import DataSampler
-from newrelic.core.super_agent_health import super_agent_healthcheck_loop, super_agent_health_instance
+from newrelic.core.super_agent_health import HealthStatus, super_agent_healthcheck_loop, super_agent_health_instance
 
 _logger = logging.getLogger(__name__)
 
@@ -369,7 +369,7 @@ class Application:
                         None, self._app_name, self.linked_applications, environment_settings()
                     )
                 except ForceAgentDisconnect:
-                    self._super_agent.set_health_status("failed_nr_connection")
+                    self._super_agent.set_health_status(HealthStatus.FAILED_NR_CONNECTION.value)
                     # Any disconnect exception means we should stop trying to connect
                     _logger.error(
                         "The New Relic service has requested that the agent "
@@ -380,7 +380,7 @@ class Application:
                     )
                     return
                 except NetworkInterfaceException:
-                    self._super_agent.set_health_status("failed_nr_connection")
+                    self._super_agent.set_health_status(HealthStatus.FAILED_NR_CONNECTION.value)
                     active_session = None
                 except Exception:
                     # If an exception occurs after agent has been flagged to be
@@ -390,7 +390,7 @@ class Application:
                     # the application is still running.
 
                     if not self._agent_shutdown and not self._pending_shutdown:
-                        self._super_agent.set_health_status("failed_nr_connection")
+                        self._super_agent.set_health_status(HealthStatus.FAILED_NR_CONNECTION.value)
                         _logger.exception(
                             "Unexpected exception when registering "
                             "agent with the data collector. If this problem "
@@ -1700,7 +1700,7 @@ class Application:
         optionally triggers activation of a new session.
 
         """
-        self._super_agent.set_health_status("agent_shutdown")
+        self._super_agent.set_health_status(HealthStatus.AGENT_SHUTDOWN.value)
         if self._super_agent.health_check_enabled:
             self._super_agent.write_to_health_file()
 

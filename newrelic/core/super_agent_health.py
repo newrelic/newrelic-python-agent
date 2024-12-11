@@ -18,6 +18,7 @@ import sched
 import threading
 import time
 import uuid
+from enum import Enum
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -25,18 +26,34 @@ from urllib.parse import urlparse
 _logger = logging.getLogger(__name__)
 
 
+class HealthStatus(Enum):
+    HEALTHY = 1
+    INVALID_LICENSE = 2
+    MISSING_LICENSE = 3
+    FORCED_DISCONNECT = 4
+    HTTP_ERROR = 5
+    PROXY_ERROR = 6
+    AGENT_DISABLED = 7
+    FAILED_NR_CONNECTION = 8
+    INVALID_CONFIG = 9
+    AGENT_SHUTDOWN = 10
+
+# Set enum integer values as dict keys to reduce performance impact of string copies
 HEALTH_CHECK_STATUSES = {
-    "healthy": ("NR-APM-000", "Healthy"),
-    "invalid_license": ("NR-APM-001", "Invalid license key (HTTP status code 401)"),
-    "missing_license": ("NR-APM-002", "License key missing in configuration"),
-    "forced_disconnect": ("NR-APM-003", "Forced disconnect received from New Relic (HTTP status code 410)"),
-    "http_error": ("NR-APM-004", "HTTP error response code received from New Relic"),
-    "proxy_error": ("NR-APM-007", "HTTP Proxy configuration error"),
-    "agent_disabled": ("NR-APM-008", "Agent is disabled via configuration"),
-    "failed_nr_connection": ("NR-APM-009", "Failed to connect to New Relic data collector"),
-    "invalid_config": ("NR-APM-010", "Agent config file is not able to be parsed"),
-    "agent_shutdown": ("NR-APM-099", "Agent has shutdown"),
+    HealthStatus.HEALTHY.value: ("NR-APM-000", "Healthy"),
+    HealthStatus.INVALID_LICENSE.value: ("NR-APM-001", "Invalid license key (HTTP status code 401)"),
+    HealthStatus.MISSING_LICENSE.value: ("NR-APM-002", "License key missing in configuration"),
+    HealthStatus.FORCED_DISCONNECT.value: ("NR-APM-003", "Forced disconnect received from New Relic (HTTP status code 410)"),
+    HealthStatus.HTTP_ERROR.value: ("NR-APM-004", "HTTP error response code received from New Relic"),
+    HealthStatus.PROXY_ERROR.value: ("NR-APM-007", "HTTP Proxy configuration error"),
+    HealthStatus.AGENT_DISABLED.value: ("NR-APM-008", "Agent is disabled via configuration"),
+    HealthStatus.FAILED_NR_CONNECTION.value: ("NR-APM-009", "Failed to connect to New Relic data collector"),
+    HealthStatus.INVALID_CONFIG.value: ("NR-APM-010", "Agent config file is not able to be parsed"),
+    HealthStatus.AGENT_SHUTDOWN.value: ("NR-APM-099", "Agent has shutdown"),
 }
+
+PROTOCOL_ERROR_CODES = frozenset(["NR-APM-003", "NR-APM-004", "NR-APM-007"])
+COLLECTOR_ERROR_CODES = frozenset(["NR-APM-009"])
 
 
 def is_valid_file_delivery_location(file_uri):
@@ -115,88 +132,82 @@ class SuperAgentHealth:
             return False
 
         health_file_location = os.environ.get("NEW_RELIC_SUPERAGENT_HEALTH_DELIVERY_LOCATION", None)
-        valid_file_location = is_valid_file_delivery_location(health_file_location)
-        if not valid_file_location:
-            return False
 
-        return True
+        return is_valid_file_delivery_location(health_file_location)
+
+    @property
+    def is_healthy(self):
+        return True if self.status == "Healthy" else False
 
     def set_health_status(self, health_status, response_code=None, info=None):
+        license_key_error = True if self.status == "Invalid license key (HTTP status code 401)" or "License key missing in configuration" else False
+
+        if health_status == HealthStatus.FAILED_NR_CONNECTION.value and license_key_error:
+            return
+
+        # Do not override status with agent_shutdown unless the agent was previously healthy
+        elif health_status == HealthStatus.AGENT_SHUTDOWN.value and self.status != "Healthy":
+            return
+
         last_error, current_status = HEALTH_CHECK_STATUSES[health_status]
+
         # Update status messages to be more descriptive if necessary data is present
-        if health_status == "http_error" and response_code and info:
+        if health_status == HealthStatus.HTTP_ERROR.value and response_code and info:
             current_status = (
                 f"HTTP error response code {response_code} received from New Relic while sending data type {info}"
             )
 
-        if health_status == "proxy_error" and response_code:
+        if health_status == HealthStatus.PROXY_ERROR.value and response_code:
             current_status = f"HTTP Proxy configuration error; response code {response_code}"
 
-
-        license_key_error = True if self.status == "Invalid license key (HTTP status code 401)" or "License key missing in configuration" else False
-
-        if health_status == "failed_nr_connection" and license_key_error:
-            pass
-        # Do not override status with agent_shutdown unless the agent was previously healthy
-        elif health_status == "agent_shutdown" and self.status != "Healthy":
-            pass
-        else:
-            self.last_error = last_error
-            self.status = current_status
+        self.last_error = last_error
+        self.status = current_status
 
     def update_to_healthy_status(self, protocol_error=False, collector_error=False):
         # If our unhealthy status code was not config related, it is possible it could be resolved during an active
-        # session. This function allows us to update to a healthy status if so
-
-        if not protocol_error and not collector_error:
-            return
-
-        # For protocol errors, we determine the status is resolved by calling this function when a 200 status code is
-        # received to check if the current status is resolvable
-        if protocol_error:
-            error_codes = frozenset(["NR-APM-003", "NR-APM-004", "NR-APM-007"])
-        # Also check if we had a failure connecting to NR as this could resolve itself if the collector becomes
-        # reachable during an active session
-        if collector_error:
-            error_codes = frozenset(["NR-APM-009"])
-
+        # session. This function allows us to update to a healthy status if so based on the error type
         # Since this function is only called when we are in scenario where the agent functioned as expected, we check to
         # see if the previous status was unhealthy so we know to update it
-        if self.last_error in error_codes:
+        if protocol_error and self.last_error in PROTOCOL_ERROR_CODES or collector_error and self.last_error in COLLECTOR_ERROR_CODES:
             self.last_error = "NR-APM-000"
             self.status = "Healthy"
 
     def write_to_health_file(self):
-        is_healthy = True if self.status == "Healthy" else False
         status_time_unix_nano = time.time_ns()
         health_file_location = os.environ.get("NEW_RELIC_SUPERAGENT_HEALTH_DELIVERY_LOCATION", None)
 
-        health_file_location = str(health_file_location)
+        # Additional safeguard though health delivery location contents were initially checked to determine if health
+        # check should be enabled
+        if not health_file_location:
+            return
+
         file_path = urlparse(health_file_location).path
-        pid = os.getpid()
-        file_id = self.get_file_id(pid)
+        file_id = self.get_file_id()
 
         file_name = f"health-{file_id}.yml"
         full_path = os.path.join(file_path, file_name)
 
         try:
             with open(full_path, "w") as f:
-                f.write(f"healthy: {is_healthy}\n")
+                f.write(f"healthy: {self.is_healthy}\n")
                 f.write(f"status: {self.status}\n")
                 f.write(f"start_time_unix_nano: {self.start_time_unix_nano}\n")
                 f.write(f"status_time_unix_nano: {status_time_unix_nano}\n")
-                if not is_healthy:
+                if not self.is_healthy:
                     f.write(f"last_error: {self.last_error}\n")
         except:
             _logger.warning("Unable to write to agent health file.")
 
-    def get_file_id(self, pid):
+    def get_file_id(self):
+        pid = os.getpid()
+
         # Each file name should have a UUID with hyphens stripped appended to it
         file_id = str(uuid.uuid4()).replace("-", "")
 
         # Map the UUID to the process ID to ensure each agent instance has one UUID associated with it
         if pid not in self.pid_file_id_map:
             self.pid_file_id_map[pid] = file_id
+            return file_id
 
         return self.pid_file_id_map[pid]
 

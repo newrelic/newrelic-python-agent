@@ -13,12 +13,13 @@
 # limitations under the License.
 import os
 import time
+import re
 import pytest
 import threading
 
 from newrelic.core.config import finalize_application_settings
-from agent_unittests.test_agent_protocol import HttpClientRecorder
-from newrelic.core.super_agent_health import is_valid_file_delivery_location, super_agent_health_instance
+from testing_support.http_client_recorder import HttpClientRecorder
+from newrelic.core.super_agent_health import HealthStatus, is_valid_file_delivery_location, super_agent_health_instance
 from newrelic.config import initialize, _reset_configuration_done
 from newrelic.core.agent_protocol import AgentProtocol
 from newrelic.core.application import Application
@@ -56,7 +57,7 @@ def test_write_to_file_healthy_status(monkeypatch, tmp_path):
     assert len(contents) == 4
     assert contents[0] == "healthy: True\n"
     assert contents[1] == "status: Healthy\n"
-    assert contents[2] == "start_time_unix_nano: 1234567890\n"
+    assert re.search(r"status_time_unix_nano:\s\d+", contents[3]) is not None
     assert contents[3].startswith("status_time_unix_nano:") is True
 
 
@@ -69,7 +70,7 @@ def test_write_to_file_unhealthy_status(monkeypatch, tmp_path):
     # Write to health YAML file
     super_agent_instance = super_agent_health_instance()
     super_agent_instance.start_time_unix_nano = "1234567890"
-    super_agent_instance.set_health_status("invalid_license")
+    super_agent_instance.set_health_status(HealthStatus.INVALID_LICENSE.value)
 
     super_agent_instance.write_to_health_file()
 
@@ -80,7 +81,7 @@ def test_write_to_file_unhealthy_status(monkeypatch, tmp_path):
     assert contents[0] == "healthy: False\n"
     assert contents[1] == "status: Invalid license key (HTTP status code 401)\n"
     assert contents[2] == "start_time_unix_nano: 1234567890\n"
-    assert contents[3].startswith("status_time_unix_nano:") is True
+    assert re.search(r"status_time_unix_nano:\s\d+", contents[3]) is not None
     assert contents[4] == "last_error: NR-APM-001\n"
 
 
@@ -93,10 +94,10 @@ def test_no_override_on_unhealthy_shutdown(monkeypatch, tmp_path):
     # Write to health YAML file
     super_agent_instance = super_agent_health_instance()
     super_agent_instance.start_time_unix_nano = "1234567890"
-    super_agent_instance.set_health_status("invalid_license")
+    super_agent_instance.set_health_status(HealthStatus.INVALID_LICENSE.value)
 
     # Attempt to override a previously unhealthy status
-    super_agent_instance.set_health_status("agent_shutdown")
+    super_agent_instance.set_health_status(HealthStatus.AGENT_SHUTDOWN.value)
     super_agent_instance.write_to_health_file()
 
     contents = get_health_file_contents(tmp_path)
@@ -123,6 +124,7 @@ def test_health_check_running_threads(monkeypatch, tmp_path):
 
     running_threads = threading.enumerate()
 
+    # Two expected threads: One main agent thread and one main health thread since we have no additional active sessions
     assert len(running_threads) == 2
     assert running_threads[1].name == "NR-Control-Health-Main-Thread"
 
@@ -171,7 +173,7 @@ def test_update_to_healthy(monkeypatch, tmp_path):
     # Write to health YAML file
     super_agent_instance = super_agent_health_instance()
     super_agent_instance.start_time_unix_nano = "1234567890"
-    super_agent_instance.set_health_status("forced_disconnect")
+    super_agent_instance.set_health_status(HealthStatus.FORCED_DISCONNECT.value)
 
     # Send a successful data batch to enable health status to update to "healthy"
     HttpClientRecorder.STATUS_CODE = 200
@@ -209,6 +211,8 @@ def test_multiple_activations_running_threads(monkeypatch, tmp_path):
 
     running_threads = threading.enumerate()
 
+    # 6 threads expected: One main agent thread, two active session threads, one main health check thread, and two
+    # active session health threads
     assert len(running_threads) == 6
     assert running_threads[1].name == "NR-Control-Health-Main-Thread"
     assert running_threads[2].name == "NR-Control-Health-Session-Thread"

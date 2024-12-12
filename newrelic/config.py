@@ -3171,6 +3171,9 @@ def _process_module_builtin_defaults():
     _process_module_definition("MySQLdb", "newrelic.hooks.database_mysqldb", "instrument_mysqldb")
     _process_module_definition("pymysql", "newrelic.hooks.database_pymysql", "instrument_pymysql")
 
+    _process_module_definition("aiomysql", "newrelic.hooks.database_aiomysql", "instrument_aiomysql")
+    _process_module_definition("aiomysql.pool", "newrelic.hooks.database_aiomysql", "instrument_aiomysql_pool")
+
     _process_module_definition("pyodbc", "newrelic.hooks.database_pyodbc", "instrument_pyodbc")
 
     _process_module_definition("pymssql", "newrelic.hooks.database_pymssql", "instrument_pymssql")

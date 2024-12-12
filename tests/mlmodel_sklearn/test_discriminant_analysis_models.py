@@ -42,8 +42,14 @@ def test_model_methods_wrapped_in_function_trace(discriminant_analysis_model_nam
         "QuadraticDiscriminantAnalysis": [
             ("Function/MLModel/Sklearn/Named/QuadraticDiscriminantAnalysis.fit", 1),
             ("Function/MLModel/Sklearn/Named/QuadraticDiscriminantAnalysis.predict", 1),
-            ("Function/MLModel/Sklearn/Named/QuadraticDiscriminantAnalysis.predict_proba", 1 if SKLEARN_VERSION_GT_1_6_0 else 2),
-            ("Function/MLModel/Sklearn/Named/QuadraticDiscriminantAnalysis.predict_log_proba", 2 if SKLEARN_VERSION_GT_1_6_0 else 1),
+            (
+                "Function/MLModel/Sklearn/Named/QuadraticDiscriminantAnalysis.predict_proba",
+                1 if SKLEARN_VERSION_GT_1_6_0 else 2,
+            ),
+            (
+                "Function/MLModel/Sklearn/Named/QuadraticDiscriminantAnalysis.predict_log_proba",
+                2 if SKLEARN_VERSION_GT_1_6_0 else 1,
+            ),
         ],
     }
 

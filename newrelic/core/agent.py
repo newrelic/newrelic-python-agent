@@ -38,6 +38,7 @@ from newrelic.samplers.memory_usage import memory_usage_data_source
 from newrelic.core.agent_control_health import HealthStatus, agent_control_health_instance
 
 
+
 _logger = logging.getLogger(__name__)
 
 
@@ -219,6 +220,7 @@ class Agent():
         self._scheduler = sched.scheduler(self._harvest_timer, self._harvest_shutdown.wait)
 
         self._process_shutdown = False
+
         self._agent_control = agent_control_health_instance()
 
         self._lock = threading.Lock()

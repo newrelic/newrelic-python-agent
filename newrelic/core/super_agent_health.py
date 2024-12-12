@@ -140,7 +140,7 @@ class SuperAgentHealth:
         return True if self.status == "Healthy" else False
 
     def set_health_status(self, health_status, response_code=None, info=None):
-        license_key_error = True if self.status == "Invalid license key (HTTP status code 401)" or "License key missing in configuration" else False
+        license_key_error = True if self.status == "License key missing in configuration" or self.status == "Invalid license key (HTTP status code 401)" else False
 
         if health_status == HealthStatus.FAILED_NR_CONNECTION.value and license_key_error:
             return
@@ -181,13 +181,12 @@ class SuperAgentHealth:
         if not health_file_location:
             return
 
-        file_path = urlparse(health_file_location).path
-        file_id = self.get_file_id()
-
-        file_name = f"health-{file_id}.yml"
-        full_path = os.path.join(file_path, file_name)
-
         try:
+            file_path = urlparse(health_file_location).path
+            file_id = self.get_file_id()
+            file_name = f"health-{file_id}.yml"
+            full_path = os.path.join(file_path, file_name)
+
             with open(full_path, "w") as f:
                 f.write(f"healthy: {self.is_healthy}\n")
                 f.write(f"status: {self.status}\n")

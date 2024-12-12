@@ -194,7 +194,7 @@ class SuperAgentHealth:
                 f.write(f"status_time_unix_nano: {status_time_unix_nano}\n")
                 if not self.is_healthy:
                     f.write(f"last_error: {self.last_error}\n")
-        except:
+        except Exception:
             _logger.warning("Unable to write to agent health file.")
 
     def get_file_id(self):

@@ -18,7 +18,7 @@ import sched
 import threading
 import time
 import uuid
-from enum import Enum
+from enum import IntEnum
 from pathlib import Path
 from urllib.parse import urlparse
 
@@ -26,34 +26,36 @@ from urllib.parse import urlparse
 _logger = logging.getLogger(__name__)
 
 
-class HealthStatus(Enum):
-    HEALTHY = 1
-    INVALID_LICENSE = 2
-    MISSING_LICENSE = 3
-    FORCED_DISCONNECT = 4
-    HTTP_ERROR = 5
-    PROXY_ERROR = 6
-    AGENT_DISABLED = 7
-    FAILED_NR_CONNECTION = 8
-    INVALID_CONFIG = 9
-    AGENT_SHUTDOWN = 10
+class HealthStatus(IntEnum):
+    HEALTHY = 0
+    INVALID_LICENSE = 1
+    MISSING_LICENSE = 2
+    FORCED_DISCONNECT = 3
+    HTTP_ERROR = 4
+    PROXY_ERROR = 7
+    AGENT_DISABLED = 8
+    FAILED_NR_CONNECTION = 9
+    INVALID_CONFIG = 10
+    AGENT_SHUTDOWN = 99
 
 # Set enum integer values as dict keys to reduce performance impact of string copies
 HEALTH_CHECK_STATUSES = {
-    HealthStatus.HEALTHY.value: ("NR-APM-000", "Healthy"),
-    HealthStatus.INVALID_LICENSE.value: ("NR-APM-001", "Invalid license key (HTTP status code 401)"),
-    HealthStatus.MISSING_LICENSE.value: ("NR-APM-002", "License key missing in configuration"),
-    HealthStatus.FORCED_DISCONNECT.value: ("NR-APM-003", "Forced disconnect received from New Relic (HTTP status code 410)"),
-    HealthStatus.HTTP_ERROR.value: ("NR-APM-004", "HTTP error response code received from New Relic"),
-    HealthStatus.PROXY_ERROR.value: ("NR-APM-007", "HTTP Proxy configuration error"),
-    HealthStatus.AGENT_DISABLED.value: ("NR-APM-008", "Agent is disabled via configuration"),
-    HealthStatus.FAILED_NR_CONNECTION.value: ("NR-APM-009", "Failed to connect to New Relic data collector"),
-    HealthStatus.INVALID_CONFIG.value: ("NR-APM-010", "Agent config file is not able to be parsed"),
-    HealthStatus.AGENT_SHUTDOWN.value: ("NR-APM-099", "Agent has shutdown"),
+    HealthStatus.HEALTHY.value: "Healthy",
+    HealthStatus.INVALID_LICENSE.value: "Invalid license key (HTTP status code 401)",
+    HealthStatus.MISSING_LICENSE.value: "License key missing in configuration",
+    HealthStatus.FORCED_DISCONNECT.value: "Forced disconnect received from New Relic (HTTP status code 410)",
+    HealthStatus.HTTP_ERROR.value: "HTTP error response code {response_code} received from New Relic while sending data type {info}",
+    HealthStatus.PROXY_ERROR.value: "HTTP Proxy configuration error; response code {response_code}",
+    HealthStatus.AGENT_DISABLED.value: "Agent is disabled via configuration",
+    HealthStatus.FAILED_NR_CONNECTION.value: "Failed to connect to New Relic data collector",
+    HealthStatus.INVALID_CONFIG.value: "Agent config file is not able to be parsed",
+    HealthStatus.AGENT_SHUTDOWN.value: "Agent has shutdown",
 }
+UNKNOWN_STATUS_MESSAGE = "Unknown health status code."
+HEALTHY_STATUS_MESSAGE = HEALTH_CHECK_STATUSES[HealthStatus.HEALTHY.value]  # Assign most used status a symbol
 
-PROTOCOL_ERROR_CODES = frozenset(["NR-APM-003", "NR-APM-004", "NR-APM-007"])
-COLLECTOR_ERROR_CODES = frozenset(["NR-APM-009"])
+PROTOCOL_ERROR_CODES = frozenset([HealthStatus.FORCED_DISCONNECT.value, HealthStatus.HTTP_ERROR.value, HealthStatus.PROXY_ERROR.value])
+LICENSE_KEY_ERROR_CODES = frozenset([HealthStatus.INVALID_LICENSE.value, HealthStatus.MISSING_LICENSE.value])
 
 
 def is_valid_file_delivery_location(file_uri):
@@ -120,8 +122,8 @@ class SuperAgentHealth:
 
     def __init__(self):
         # Initialize health check with a healthy status that can be updated as issues are encountered
-        self.last_error = "NR-APM-000"
-        self.status = "Healthy"
+        self.status_code = HealthStatus.HEALTHY.value
+        self.status_message = HEALTHY_STATUS_MESSAGE
         self.start_time_unix_nano = None
         self.pid_file_id_map = {}
 
@@ -137,40 +139,30 @@ class SuperAgentHealth:
 
     @property
     def is_healthy(self):
-        return True if self.status == "Healthy" else False
+        return self.status_code == HealthStatus.HEALTHY.value
 
-    def set_health_status(self, health_status, response_code=None, info=None):
-        license_key_error = True if self.status == "License key missing in configuration" or self.status == "Invalid license key (HTTP status code 401)" else False
+    def set_health_status(self, status_code, response_code=None, info=None):
+        previous_status_code = self.status_code
 
-        if health_status == HealthStatus.FAILED_NR_CONNECTION.value and license_key_error:
+        if status_code == HealthStatus.FAILED_NR_CONNECTION.value and previous_status_code in LICENSE_KEY_ERROR_CODES:
+            # Do not update to failed connection status when license key is the issue
+            return
+        elif status_code == HealthStatus.AGENT_SHUTDOWN.value and not self.is_healthy:
+            # Do not override status with agent_shutdown unless the agent was previously healthy
             return
 
-        # Do not override status with agent_shutdown unless the agent was previously healthy
-        elif health_status == HealthStatus.AGENT_SHUTDOWN.value and self.status != "Healthy":
-            return
-
-        last_error, current_status = HEALTH_CHECK_STATUSES[health_status]
-
-        # Update status messages to be more descriptive if necessary data is present
-        if health_status == HealthStatus.HTTP_ERROR.value and response_code and info:
-            current_status = (
-                f"HTTP error response code {response_code} received from New Relic while sending data type {info}"
-            )
-
-        if health_status == HealthStatus.PROXY_ERROR.value and response_code:
-            current_status = f"HTTP Proxy configuration error; response code {response_code}"
-
-        self.last_error = last_error
-        self.status = current_status
+        status_message = HEALTH_CHECK_STATUSES.get(status_code, UNKNOWN_STATUS_MESSAGE)
+        self.status_message = status_message.format(response_code=response_code, info=info)
+        self.status_code = status_code
 
     def update_to_healthy_status(self, protocol_error=False, collector_error=False):
         # If our unhealthy status code was not config related, it is possible it could be resolved during an active
         # session. This function allows us to update to a healthy status if so based on the error type
         # Since this function is only called when we are in scenario where the agent functioned as expected, we check to
         # see if the previous status was unhealthy so we know to update it
-        if protocol_error and self.last_error in PROTOCOL_ERROR_CODES or collector_error and self.last_error in COLLECTOR_ERROR_CODES:
-            self.last_error = "NR-APM-000"
-            self.status = "Healthy"
+        if protocol_error and self.status_code in PROTOCOL_ERROR_CODES or collector_error and self.status_code == HealthStatus.FAILED_NR_CONNECTION.value:
+            self.status_code = HealthStatus.HEALTHY.value
+            self.status_message = HEALTHY_STATUS_MESSAGE
 
     def write_to_health_file(self):
         status_time_unix_nano = time.time_ns()
@@ -186,14 +178,15 @@ class SuperAgentHealth:
             file_id = self.get_file_id()
             file_name = f"health-{file_id}.yml"
             full_path = os.path.join(file_path, file_name)
+            is_healthy = self.is_healthy
 
             with open(full_path, "w") as f:
-                f.write(f"healthy: {self.is_healthy}\n")
-                f.write(f"status: {self.status}\n")
+                f.write(f"healthy: {is_healthy}\n")
+                f.write(f"status: {self.status_message}\n")
                 f.write(f"start_time_unix_nano: {self.start_time_unix_nano}\n")
                 f.write(f"status_time_unix_nano: {status_time_unix_nano}\n")
-                if not self.is_healthy:
-                    f.write(f"last_error: {self.last_error}\n")
+                if not is_healthy:
+                    f.write(f"last_error: NR-APM-{self.status_code:03d}\n")
         except Exception:
             _logger.warning("Unable to write to agent health file.")
 

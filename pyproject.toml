@@ -58,4 +58,5 @@ line-length = 999999
 aggressive = true
 transform-concats = true
 transform-joins = true
-exclude = ["newrelic/packages/"]
+exclude = ["newrelic/packages/", "setup.py"]
+# setup.py needs to not immediately crash on Python 2 to log error messages, so disable fstrings

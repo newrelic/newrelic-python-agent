@@ -37,11 +37,11 @@ else:
         last_supported_version = last_supported_version_lookup.get(python_version, None)
 
         if last_supported_version:
-            python_version_str = "%s.%s" % (python_version[0], python_version[1])  # noqa: flynt
+            python_version_str = "%s.%s" % (python_version[0], python_version[1])
             error_msg += " The last agent version to support Python %s was v%s." % (
                 python_version_str,
                 last_supported_version,
-            )  # noqa: flynt
+            )
     except Exception:
         pass
 

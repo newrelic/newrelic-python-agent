@@ -57,8 +57,7 @@ def test_write_to_file_healthy_status(monkeypatch, tmp_path):
     assert len(contents) == 4
     assert contents[0] == "healthy: True\n"
     assert contents[1] == "status: Healthy\n"
-    assert re.search(r"status_time_unix_nano:\s\d+", contents[3]) is not None
-    assert contents[3].startswith("status_time_unix_nano:") is True
+    assert int(re.search(r"status_time_unix_nano: (\d+)", contents[3]).group(1)) > 0
 
 
 def test_write_to_file_unhealthy_status(monkeypatch, tmp_path):
@@ -81,7 +80,7 @@ def test_write_to_file_unhealthy_status(monkeypatch, tmp_path):
     assert contents[0] == "healthy: False\n"
     assert contents[1] == "status: Invalid license key (HTTP status code 401)\n"
     assert contents[2] == "start_time_unix_nano: 1234567890\n"
-    assert re.search(r"status_time_unix_nano:\s\d+", contents[3]) is not None
+    assert int(re.search(r"status_time_unix_nano: (\d+)", contents[3]).group(1)) > 0
     assert contents[4] == "last_error: NR-APM-001\n"
 
 

@@ -16,3 +16,10 @@ good-names = "exc,val,tb"
 
 [tool.bandit]
 skips = ["B110", "B101", "B404"]
+
+[tool.flynt]
+line-length = 999999
+aggressive = true
+transform-concats = true
+transform-joins = true
+exclude = ["newrelic/packages/"]

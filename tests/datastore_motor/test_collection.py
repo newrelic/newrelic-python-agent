@@ -82,7 +82,7 @@ async def exercise_motor(db):
     await collection.options()
     collection.watch()
 
-    new_name = MONGODB_COLLECTION + "_renamed"
+    new_name = f"{MONGODB_COLLECTION}_renamed"
     await collection.rename(new_name)
     await db[new_name].drop()
     await collection.drop()

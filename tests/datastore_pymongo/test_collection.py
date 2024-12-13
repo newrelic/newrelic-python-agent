@@ -127,7 +127,7 @@ def _exercise_mongo_v4(db):
     collection.find_one_and_update({"x": 301}, {"$inc": {"x": 300}})
     collection.options()
 
-    new_name = MONGODB_COLLECTION + "_renamed"
+    new_name = f"{MONGODB_COLLECTION}_renamed"
     collection.rename(new_name)
     db[new_name].drop()
     collection.drop()

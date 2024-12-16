@@ -183,7 +183,7 @@ jobs:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
 
-      - name: Create release tags for  Lambda and K8s Init Containers
+      - name: Create release tags for Lambda and K8s Init Containers
         run: |
           pip install PyGitHub
           python .github/scripts/release.py

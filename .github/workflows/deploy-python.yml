@@ -184,11 +184,14 @@ jobs:
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
 
       - name: Create release tags for Lambda and K8s Init Containers
+        uses: dev-hanz-ops/install-gh-cli-action@c78dbed4be2f8d6133a14a9a597ee12fd4ed5c93 #v3
+        with:
+          gh-cli-version: 2.24.3
         run: |
-          pip install PyGitHub
-          python .github/scripts/release.py
+          gh auth login --with-token <<< $GH_RELEASE_TOKEN
+          echo "newrelic/newrelic-lambda-layers - Releasing New Relic Python Agent ${GITHUB_REF}.0 with tag ${GITHUB_REF}.0_python"
+          gh create release "${GITHUB_REF}.0_python" -t "New Relic Python Agent ${GITHUB_REF}.0" --repo=newrelic/newrelic-lambda-layers 
+          echo "newrelic/newrelic-agent-init-container - Releasing New Relic Python Agent ${GITHUB_REF}.0 with tag ${GITHUB_REF}.0_python"
+          gh create release "${GITHUB_REF}.0_python" -t "New Relic Python Agent ${GITHUB_REF}.0" --repo=newrelic/newrelic-agent-init-container 
         env:
           GH_RELEASE_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
-          LAMBDA_RUNTIME: python
-          INITCONTAINER_RUNTIME: python 
-          AGENT_VERSION: ${{ github.ref }} 

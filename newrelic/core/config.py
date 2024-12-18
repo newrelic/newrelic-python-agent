@@ -355,7 +355,6 @@ class SecurityDetectionRXSSSettings(Settings):
 class SecurityDetectionDeserializationSettings(Settings):
     pass
 
-<<<<<<< HEAD
 class SecurityRequestSettings(Settings):
     pass
 
@@ -371,8 +370,6 @@ class SecurityExcludeFromIASTScanHTTPRequestParametersSettings(Settings):
 class SecurityExcludeFromIASTScanIASTDetectionCategorySettings(Settings):
     pass
 
-=======
->>>>>>> develop
 class InfiniteTracingSettings(Settings):
     _trace_observer_host = None
 
@@ -506,7 +503,6 @@ _settings.security.detection = SecurityDetectionSettings()
 _settings.security.detection.deserialization = SecurityDetectionDeserializationSettings()
 _settings.security.detection.rci = SecurityDetectionRCISettings()
 _settings.security.detection.rxss = SecurityDetectionRXSSSettings()
-<<<<<<< HEAD
 _settings.security.exclude_from_iast_scan = SecurityExcludeFromIASTScanSettings()
 _settings.security.exclude_from_iast_scan.http_request_parameters = \
     SecurityExcludeFromIASTScanHTTPRequestParametersSettings()
@@ -514,8 +510,6 @@ _settings.security.exclude_from_iast_scan.iast_detection_category = \
     SecurityExcludeFromIASTScanIASTDetectionCategorySettings()
 _settings.security.request = SecurityRequestSettings()
 _settings.security.scan_schedule = SecurityScanScheduleSettings()
-=======
->>>>>>> develop
 _settings.serverless_mode = ServerlessModeSettings()
 _settings.slow_sql = SlowSqlSettings()
 _settings.span_events = SpanEventSettings()

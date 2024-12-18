@@ -60,8 +60,8 @@ def validate_non_transaction_error_event(required_intrinsics=None, num_errors=1,
 
                 user_params = event[1]
                 for name, value in required_user.items():
-                    assert name in user_params, "name=%r, params=%r" % (name, user_params)
-                    assert user_params[name] == value, "name=%r, value=%r, params=%r" % (name, value, user_params)
+                    assert name in user_params, f"name={name!r}, params={user_params!r}"
+                    assert user_params[name] == value, f"name={name!r}, value={value!r}, params={user_params!r}"
 
                 for param in forgone_user:
                     assert param not in user_params

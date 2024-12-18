@@ -12,17 +12,35 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
-
 import os
 import sys
 
 python_version = sys.version_info[:2]
 
-assert python_version in ((2, 7),) or python_version >= (
-    3,
-    7,
-), "The New Relic Python agent only supports Python 2.7 and 3.7+."
+if python_version >= (3, 7):
+    pass
+else:
+    error_msg = "The New Relic Python agent only supports Python 3.7+. We recommend upgrading to a newer version of Python."
+    
+    try:
+        # Lookup table for the last agent versions to support each Python version.
+        last_supported_version_lookup = {
+            (2, 6): "3.4.0.95",
+            (2, 7): "9.13.0",
+            (3, 3): "3.4.0.95",
+            (3, 4): "4.20.0.120",
+            (3, 5): "5.24.0.153",
+            (3, 6): "7.16.0.178",
+        }
+        last_supported_version = last_supported_version_lookup.get(python_version, None)
+
+        if last_supported_version:
+            python_version_str = "%s.%s" % (python_version[0], python_version[1])
+            error_msg += " The last agent version to support Python %s was v%s." % (python_version_str, last_supported_version)
+    except Exception:
+        pass
+
+    raise RuntimeError(error_msg)
 
 with_setuptools = False
 
@@ -43,6 +61,9 @@ from distutils.errors import (  # noqa
 
 
 def newrelic_agent_guess_next_version(tag_version):
+    if hasattr(tag_version, "tag"):  # For setuptools_scm 7.0+
+        tag_version = tag_version.tag
+
     version, _, _ = str(tag_version).partition("+")
     version_info = list(map(int, version.split(".")))
     if len(version_info) < 3:
@@ -118,13 +139,13 @@ packages = [
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "License :: OSI Approved :: Apache Software License",
-    "Programming Language :: Python :: 2.7",
     "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
     "Topic :: System :: Monitoring",
@@ -138,7 +159,7 @@ kwargs = dict(
         "git_describe_command": "git describe --dirty --tags --long --match *.*.*",
         "write_to": "newrelic/version.txt",
     },
-    setup_requires=["setuptools_scm>=3.2,<7"],
+    setup_requires=["setuptools_scm>=3.2,<9"],
     description="New Relic Python Agent",
     long_description=open(readme_file).read(),
     url="https://docs.newrelic.com/docs/apm/agents/python-agent/",
@@ -151,10 +172,11 @@ kwargs = dict(
     zip_safe=False,
     classifiers=classifiers,
     packages=packages,
-    python_requires=">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*,!=3.6.*",
+    python_requires=">=3.7",
     package_data={
         "newrelic": ["newrelic.ini", "version.txt", "packages/urllib3/LICENSE.txt", "common/cacert.pem"],
     },
+    #install_requires=["newrelic-security @ git+https://github.com/newrelic/csec-python-agent.git@develop#egg=newrelic-security"],
     extras_require={"infinite-tracing": ["grpcio", "protobuf"]},
     install_requires=["newrelic_security @ git+https://github.com/newrelic/csec-python-agent.git@task/NR-333351/scheduled_agent"]
 )

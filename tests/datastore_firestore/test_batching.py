@@ -49,7 +49,7 @@ def test_firestore_write_batch(exercise_write_batch, instance_info):
     _test_rollup_metrics = [
         ("Datastore/all", 1),
         ("Datastore/allOther", 1),
-        ("Datastore/instance/Firestore/%s/%s" % (instance_info["host"], instance_info["port_path_or_id"]), 1),
+        (f"Datastore/instance/Firestore/{instance_info['host']}/{instance_info['port_path_or_id']}", 1),
     ]
 
     @validate_database_duration()
@@ -101,7 +101,7 @@ def test_firestore_bulk_write_batch(exercise_bulk_write_batch, instance_info):
     _test_rollup_metrics = [
         ("Datastore/all", 1),
         ("Datastore/allOther", 1),
-        ("Datastore/instance/Firestore/%s/%s" % (instance_info["host"], instance_info["port_path_or_id"]), 1),
+        (f"Datastore/instance/Firestore/{instance_info['host']}/{instance_info['port_path_or_id']}", 1),
     ]
 
     @validate_database_duration()

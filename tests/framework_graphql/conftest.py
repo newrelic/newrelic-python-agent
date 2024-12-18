@@ -18,7 +18,6 @@ from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     collector_available_fixture,
 )
 
-from newrelic.packages import six
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
@@ -45,7 +44,3 @@ def target_application(request):
         return
 
     return "GraphQL", None, app, True, request.param.split("-")[1], 0
-
-
-if six.PY2:
-    collect_ignore = ["test_application_async.py"]

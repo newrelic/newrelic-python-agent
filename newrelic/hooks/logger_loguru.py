@@ -26,7 +26,6 @@ from newrelic.hooks.logger_logging import add_nr_linking_metadata
 _logger = logging.getLogger(__name__)
 
 IS_PYPY = hasattr(sys, "pypy_version_info")
-LOGURU_VERSION = get_package_version_tuple("loguru")
 LOGURU_FILTERED_RECORD_ATTRS = {"extra", "message", "time", "level", "_nr_original_message", "record"}
 ALLOWED_LOGURU_OPTIONS_LENGTHS = frozenset((8, 9))
 
@@ -34,7 +33,7 @@ ALLOWED_LOGURU_OPTIONS_LENGTHS = frozenset((8, 9))
 def _filter_record_attributes(record):
     attrs = {k: v for k, v in record.items() if k not in LOGURU_FILTERED_RECORD_ATTRS}
     extra_attrs = dict(record.get("extra", {}))
-    attrs.update({"extra.%s" % k: v for k, v in extra_attrs.items()})
+    attrs.update({f"extra.{k}": v for k, v in extra_attrs.items()})
     return attrs
 
 
@@ -56,12 +55,12 @@ def _nr_log_forwarder(message_instance):
         if settings.application_logging.metrics and settings.application_logging.metrics.enabled:
             if transaction:
                 transaction.record_custom_metric("Logging/lines", {"count": 1})
-                transaction.record_custom_metric("Logging/lines/%s" % level_name, {"count": 1})
+                transaction.record_custom_metric(f"Logging/lines/{level_name}", {"count": 1})
             else:
                 application = application_instance(activate=False)
                 if application and application.enabled:
                     application.record_custom_metric("Logging/lines", {"count": 1})
-                    application.record_custom_metric("Logging/lines/%s" % level_name, {"count": 1})
+                    application.record_custom_metric(f"Logging/lines/{level_name}", {"count": 1})
 
         if settings.application_logging.forwarding and settings.application_logging.forwarding.enabled:
             attrs = _filter_record_attributes(record)
@@ -69,7 +68,7 @@ def _nr_log_forwarder(message_instance):
             try:
                 time = record.get("time", None)
                 if time:
-                    time = int(time.timestamp()*1000)
+                    time = int(time.timestamp() * 1000)
                 record_log_event(message, level_name, time, attributes=attrs)
             except Exception:
                 pass
@@ -93,7 +92,7 @@ def wrap_log(wrapped, instance, args, kwargs):
             options[1] += 2
 
     except Exception as e:
-        _logger.debug("Exception in loguru handling: %s" % str(e))
+        _logger.debug(f"Exception in loguru handling: {str(e)}")
         return wrapped(*args, **kwargs)
     else:
         return wrapped(**bound_args)
@@ -116,18 +115,15 @@ def nr_log_patcher(original_patcher=None):
                 record["_nr_original_message"] = message = record["message"]
                 record["message"] = add_nr_linking_metadata(message)
 
-    if LOGURU_VERSION > (0, 6, 0):
-        if original_patcher is not None:
-            patchers = [p for p in original_patcher]  # Consumer iterable into list so we can modify
-            # Wipe out reference so patchers aren't called twice, as the framework will handle calling other patchers.
-            original_patcher = None
-        else:
-            patchers = []
-
-        patchers.append(_nr_log_patcher)
-        return patchers
+    if original_patcher is not None:
+        patchers = [p for p in original_patcher]  # Consumer iterable into list so we can modify
+        # Wipe out reference so patchers aren't called twice, as the framework will handle calling other patchers.
+        original_patcher = None
     else:
-        return _nr_log_patcher
+        patchers = []
+
+    patchers.append(_nr_log_patcher)
+    return patchers
 
 
 def wrap_Logger_init(wrapped, instance, args, kwargs):

@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
-
 from newrelic.admin import command, usage
 from newrelic.common.encoding_utils import obfuscate_license_key
 
@@ -58,4 +56,4 @@ def license_key(args):
 
     _settings = global_settings()
 
-    print("license_key = %r" % obfuscate_license_key(_settings.license_key))
+    print(f"license_key = {obfuscate_license_key(_settings.license_key)!r}")

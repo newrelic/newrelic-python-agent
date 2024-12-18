@@ -12,11 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-try:
-    import http.client as httplib
-except ImportError:
-    import httplib
-
+import http.client as httplib
 
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.transaction import current_transaction
@@ -81,7 +77,7 @@ def validate_synthetics_external_trace_header(
             # reviewed and a better way of achieving what is
             # required found.
 
-            class _Transaction(object):
+            class _Transaction():
                 def __init__(self, wrapped):
                     self.__wrapped__ = wrapped
 
@@ -94,14 +90,14 @@ def validate_synthetics_external_trace_header(
             if synthetics_header:
                 assert (
                     synthetics_header == external_headers["X-NewRelic-Synthetics"]
-                ), "synthetics_header=%r, external_headers=%r" % (synthetics_header, external_headers)
+                ), f"synthetics_header={synthetics_header!r}, external_headers={external_headers!r}"
             else:
                 assert "X-NewRelic-Synthetics" not in external_headers
 
             if synthetics_info_header:
                 assert (
                     synthetics_info_header == external_headers["X-NewRelic-Synthetics-Info"]
-                ), "synthetics_info_header=%r, external_headers=%r" % (synthetics_info_header, external_headers)
+                ), f"synthetics_info_header={synthetics_info_header!r}, external_headers={external_headers!r}"
             else:
                 assert "X-NewRelic-Synthetics-Info" not in external_headers
 

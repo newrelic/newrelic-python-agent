@@ -25,7 +25,7 @@ DST_TRANSACTION_SEGMENTS = 1 << 5
 DST_LOG_EVENT_CONTEXT_DATA = 1 << 6
 
 
-class AttributeFilter(object):
+class AttributeFilter():
     # Apply filtering rules to attributes.
     #
     # Upon initialization, an AttributeFilter object will take all attribute
@@ -65,7 +65,7 @@ class AttributeFilter(object):
         self.cache = {}
 
     def __repr__(self):
-        return "<AttributeFilter: destinations: %s, rules: %s>" % (bin(self.enabled_destinations), self.rules)
+        return f"<AttributeFilter: destinations: {bin(self.enabled_destinations)}, rules: {self.rules}>"
 
     def _set_enabled_destinations(self, settings):
         # Determines and returns bitfield representing attribute destinations enabled.
@@ -159,7 +159,7 @@ class AttributeFilter(object):
         return destinations
 
 
-class AttributeFilterRule(object):
+class AttributeFilterRule():
     def __init__(self, name, destinations, is_include):
         self.name = name.rstrip("*")
         self.destinations = destinations
@@ -207,7 +207,7 @@ class AttributeFilterRule(object):
         return self._as_sortable() >= other._as_sortable()
 
     def __repr__(self):
-        return "(%s, %s, %s, %s)" % (self.name, bin(self.destinations), self.is_wildcard, self.is_include)
+        return f"({self.name}, {bin(self.destinations)}, {self.is_wildcard}, {self.is_include})"
 
     def name_match(self, name):
         if self.is_wildcard:

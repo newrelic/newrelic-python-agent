@@ -15,7 +15,7 @@
 import newrelic.api.function_trace
 import newrelic.common.object_wrapper
 
-class TemplateRenderWrapper(object):
+class TemplateRenderWrapper():
 
     def __init__(self, wrapped):
         self.__wrapped = wrapped

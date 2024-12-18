@@ -39,11 +39,11 @@ def outer_fn_wrapper(outer_fn, instance, args, kwargs):
         callback = getattr(instance, 'top_level', None)
     elif meta.api_name is not None:
         group = 'Python/TastyPie/Api'
-        name = '%s/%s/%s' % (meta.api_name, meta.resource_name, view_name)
+        name = f'{meta.api_name}/{meta.resource_name}/{view_name}'
         callback = getattr(instance, view_name, None)
     else:
         group = 'Python/TastyPie/Resource'
-        name = '%s/%s' % (meta.resource_name, view_name)
+        name = f'{meta.resource_name}/{view_name}'
         callback = getattr(instance, view_name, None)
 
     # Give preference to naming web transaction and trace node after

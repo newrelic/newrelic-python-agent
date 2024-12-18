@@ -45,10 +45,10 @@ def exercise_collections(collection):
 
 def test_firestore_collections(exercise_collections, collection, instance_info):
     _test_scoped_metrics = [
-        ("Datastore/statement/Firestore/%s/stream" % collection.id, 1),
-        ("Datastore/statement/Firestore/%s/get" % collection.id, 1),
-        ("Datastore/statement/Firestore/%s/list_documents" % collection.id, 1),
-        ("Datastore/statement/Firestore/%s/add" % collection.id, 2),
+        (f"Datastore/statement/Firestore/{collection.id}/stream", 1),
+        (f"Datastore/statement/Firestore/{collection.id}/get", 1),
+        (f"Datastore/statement/Firestore/{collection.id}/list_documents", 1),
+        (f"Datastore/statement/Firestore/{collection.id}/add", 2),
     ]
 
     _test_rollup_metrics = [
@@ -58,7 +58,7 @@ def test_firestore_collections(exercise_collections, collection, instance_info):
         ("Datastore/operation/Firestore/list_documents", 1),
         ("Datastore/all", 5),
         ("Datastore/allOther", 5),
-        ("Datastore/instance/Firestore/%s/%s" % (instance_info["host"], instance_info["port_path_or_id"]), 5),
+        (f"Datastore/instance/Firestore/{instance_info['host']}/{instance_info['port_path_or_id']}", 5),
     ]
 
     @validate_database_duration()

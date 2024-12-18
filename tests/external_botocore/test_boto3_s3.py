@@ -27,42 +27,41 @@ from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
 
 MOTO_VERSION = get_package_version_tuple("moto")
+BOTOCORE_VERSION = get_package_version_tuple("botocore")
+
 AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"
 AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"  # nosec
 AWS_REGION_NAME = "us-west-2"
 
-TEST_BUCKET = "python-agent-test-%s" % uuid.uuid4()
-
-BOTOCORE_VERSION = tuple(map(int, botocore.__version__.split(".")))
-
+TEST_BUCKET = f"python-agent-test-{uuid.uuid4()}"
 
 if BOTOCORE_VERSION < (1, 7, 41):
     S3_URL = "s3-us-west-2.amazonaws.com"
-    EXPECTED_BUCKET_URL = "https://%s/%s" % (S3_URL, TEST_BUCKET)
-    EXPECTED_KEY_URL = EXPECTED_BUCKET_URL + "/hello_world"
+    EXPECTED_BUCKET_URL = f"https://{S3_URL}/{TEST_BUCKET}"
+    EXPECTED_KEY_URL = f"{EXPECTED_BUCKET_URL}/hello_world"
 elif BOTOCORE_VERSION < (1, 28):
     S3_URL = "s3.us-west-2.amazonaws.com"
-    EXPECTED_BUCKET_URL = "https://%s/%s" % (S3_URL, TEST_BUCKET)
-    EXPECTED_KEY_URL = EXPECTED_BUCKET_URL + "/hello_world"
+    EXPECTED_BUCKET_URL = f"https://{S3_URL}/{TEST_BUCKET}"
+    EXPECTED_KEY_URL = f"{EXPECTED_BUCKET_URL}/hello_world"
 else:
-    S3_URL = "%s.s3.us-west-2.amazonaws.com" % TEST_BUCKET
-    EXPECTED_BUCKET_URL = "https://%s/" % S3_URL
-    EXPECTED_KEY_URL = EXPECTED_BUCKET_URL + "hello_world"
+    S3_URL = f"{TEST_BUCKET}.s3.us-west-2.amazonaws.com"
+    EXPECTED_BUCKET_URL = f"https://{S3_URL}/"
+    EXPECTED_KEY_URL = f"{EXPECTED_BUCKET_URL}hello_world"
 
 
 _s3_scoped_metrics = [
-    ("External/%s/botocore/GET" % S3_URL, 2),
-    ("External/%s/botocore/PUT" % S3_URL, 2),
-    ("External/%s/botocore/DELETE" % S3_URL, 2),
+    (f"External/{S3_URL}/botocore/GET", 2),
+    (f"External/{S3_URL}/botocore/PUT", 2),
+    (f"External/{S3_URL}/botocore/DELETE", 2),
 ]
 
 _s3_rollup_metrics = [
     ("External/all", 6),
     ("External/allOther", 6),
-    ("External/%s/all" % S3_URL, 6),
-    ("External/%s/botocore/GET" % S3_URL, 2),
-    ("External/%s/botocore/PUT" % S3_URL, 2),
-    ("External/%s/botocore/DELETE" % S3_URL, 2),
+    (f"External/{S3_URL}/all", 6),
+    (f"External/{S3_URL}/botocore/GET", 2),
+    (f"External/{S3_URL}/botocore/PUT", 2),
+    (f"External/{S3_URL}/botocore/DELETE", 2),
 ]
 
 

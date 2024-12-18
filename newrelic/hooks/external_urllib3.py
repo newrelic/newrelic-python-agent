@@ -19,7 +19,7 @@ from newrelic.hooks.external_httplib2 import _nr_wrapper_httplib2_endheaders_wra
 
 def _nr_wrapper_make_request_(wrapped, instance, args, kwargs):
     def _bind_params(conn, method, url, *args, **kwargs):
-        return method, "%s://%s:%s" % (instance.scheme, conn.host, conn.port)
+        return method, f"{instance.scheme}://{conn.host}:{conn.port}"
 
     method, url_for_apm_ui = _bind_params(*args, **kwargs)
 

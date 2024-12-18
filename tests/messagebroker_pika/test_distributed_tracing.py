@@ -26,7 +26,6 @@ from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.encoding_utils import DistributedTracePayload
-from newrelic.packages import six
 
 DB_SETTINGS = rabbitmq_settings()[0]
 
@@ -73,16 +72,9 @@ _test_distributed_tracing_basic_consume_rollup_metrics = [
     ("TransportDuration/App/33/12345/AMQP/allOther", 1),
 ]
 
-if six.PY3:
-    _consume_txn_name = (
-        "test_distributed_tracing:" "test_basic_consume_distributed_tracing_headers." "<locals>.on_receive"
-    )
-else:
-    _consume_txn_name = "test_distributed_tracing:on_receive"
-
 
 @validate_transaction_metrics(
-    _consume_txn_name,
+    "test_distributed_tracing:test_basic_consume_distributed_tracing_headers.<locals>.on_receive",
     rollup_metrics=_test_distributed_tracing_basic_consume_rollup_metrics,
     background_task=True,
     group="Message/RabbitMQ/Exchange/Default",
@@ -115,7 +107,7 @@ def test_basic_consume_distributed_tracing_headers():
 
     with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
         channel = connection.channel()
-        queue_name = "TESTDT-%s" % os.getpid()
+        queue_name = f"TESTDT-{os.getpid()}"
         channel.queue_declare(queue_name, durable=False)
 
         properties = pika.BasicProperties()
@@ -164,7 +156,7 @@ def do_basic_get(channel, QUEUE):
 def test_basic_get_no_distributed_tracing_headers():
     with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
         channel = connection.channel()
-        queue_name = "TESTDT-%s" % os.getpid()
+        queue_name = f"TESTDT-{os.getpid()}"
         channel.queue_declare(queue_name, durable=False)
 
         properties = pika.BasicProperties()
@@ -181,7 +173,7 @@ def test_basic_get_no_distributed_tracing_headers():
 def test_distributed_tracing_sends_produce_id():
     with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
         channel = connection.channel()
-        queue_name = "TESTDT-%s" % os.getpid()
+        queue_name = f"TESTDT-{os.getpid()}"
         channel.queue_declare(queue_name, durable=False)
 
         properties = pika.BasicProperties()

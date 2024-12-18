@@ -704,7 +704,7 @@ def simple_get(openai_version, extract_shortened_prompt):
         else:  # If no matches found
             self.send_response(500)
             self.end_headers()
-            self.wfile.write(("Unknown Prompt:\n%s" % prompt).encode("utf-8"))
+            self.wfile.write(f"Unknown Prompt:\n{prompt}".encode("utf-8"))
             return
 
         # Send response code
@@ -772,6 +772,6 @@ def openai_version():
 if __name__ == "__main__":
     _MockExternalOpenAIServer = MockExternalOpenAIServer()
     with MockExternalOpenAIServer() as server:
-        print("MockExternalOpenAIServer serving on port %s" % str(server.port))
+        print(f"MockExternalOpenAIServer serving on port {str(server.port)}")
         while True:
             pass  # Serve forever

@@ -188,7 +188,7 @@ def traverse_deepest_unique_path(fields, fragments):
         if is_named_fragment(field):
             name = get_node_value(field.type_condition, "name")
             if name:
-                deepest_path.append("%s<%s>" % (deepest_path.pop(), name))
+                deepest_path.append(f"{deepest_path.pop()}<{name}>")
 
         elif is_fragment(field):
             if len(list(fragments.values())) != 1:

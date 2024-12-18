@@ -47,7 +47,7 @@ class LoopNode(_LoopNode, GenericNodeMixin):
 
         """
 
-        name = 'EventLoop/Wait/%s' % self.name
+        name = f'EventLoop/Wait/{self.name}'
 
         yield TimeMetric(name=name, scope='', duration=self.duration,
                 exclusive=self.duration)
@@ -62,15 +62,15 @@ class LoopNode(_LoopNode, GenericNodeMixin):
                 exclusive=None)
 
         if root.type == 'WebTransaction':
-            yield TimeMetric(name=name + 'Web', scope='',
+            yield TimeMetric(name=f"{name}Web", scope='',
                     duration=self.duration, exclusive=None)
         else:
-            yield TimeMetric(name=name + 'Other', scope='',
+            yield TimeMetric(name=f"{name}Other", scope='',
                     duration=self.duration, exclusive=None)
 
     def trace_node(self, stats, root, connections):
 
-        name = 'EventLoop/Wait/%s' % self.name
+        name = f'EventLoop/Wait/{self.name}'
 
         name = root.string_table.cache(name)
 
@@ -94,6 +94,6 @@ class LoopNode(_LoopNode, GenericNodeMixin):
         attrs = super(LoopNode, self).span_event(*args, **kwargs)
         i_attrs = attrs[0]
 
-        i_attrs['name'] = 'EventLoop/Wait/%s' % self.name
+        i_attrs['name'] = f'EventLoop/Wait/{self.name}'
 
         return attrs

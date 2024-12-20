@@ -556,6 +556,7 @@ def _process_configuration(section):
     _process_setting(section, "k8s_operator.enabled", "getboolean", None)
     _process_setting(section, "azure_operator.enabled", "getboolean", None)
     _process_setting(section, "package_reporting.enabled", "getboolean", None)
+    _process_setting(section, "otel_dimensional_metrics.enabled", "getboolean", None)
 
 
 # Loading of configuration from specified file and for specified
@@ -4580,6 +4581,12 @@ def _process_module_builtin_defaults():
         "opentelemetry.sdk.metrics",
         "newrelic.hooks.hybridagent_opentelemetry",
         "instrument_meter",
+    )
+
+    _process_module_definition(
+        "opentelemetry.sdk.trace",
+        "newrelic.hooks.hybridagent_opentelemetry",
+        "instrument_get_tracer",
     )
 
 

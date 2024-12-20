@@ -35,68 +35,20 @@ from newrelic.api.transaction import (
 from newrelic.common.encoding_utils import NrTraceState  # , W3CTraceParent
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
-# ADD DIMENSIONAL METRICS AS WELL AS REGULAR TIMESLICE METRICS
-# Temporary, until we decide if timeslice or dimensional metric:
-# otel_dimensional_metrics.enabled
-TIMESLICE_FLAG = False  # This needs to be a separate flag/setting
-
 
 # ----------------------------------------------
 # Custom OTel Metrics
 # ----------------------------------------------
-class HistogramDict(dict):
-    def __init__(self, value):
-        self.value = value
-        self.total = 0
-        self.count = 0
-        self.min = value
-        self.max = value
-        self.sum_of_squares = 0
-
-        self.record_value()
-
-    def __call__(self, value):
-        self.value = value
-        self.record_value()
-
-    def set_total(self):
-        self.total += self.value
-
-    def set_count(self):
-        self.count += 1
-
-    def set_min(self):
-        self.min = min(self.min, self.value)
-
-    def set_max(self):
-        self.max = max(self.max, self.value)
-
-    def set_sum_of_squares(self):
-        self.sum_of_squares += self.value**2
-
-    def record_value(self):
-        self.set_total()
-        self.set_count()
-        self.set_min()
-        self.set_max()
-        self.set_sum_of_squares()
-
-        self["total"] = self.total
-        self["count"] = self.count
-        self["min"] = self.min
-        self["max"] = self.max
-        self["sum_of_squares"] = self.sum_of_squares
-
-        return self
-
-
 def wrap_meter(wrapped, instance, args, kwargs):
     def bind_meter(name, version=None, schema_url=None, *args, **kwargs):
         return name, version, schema_url  # attributes
 
     name, version, schema_url = bind_meter(*args, **kwargs)
+    settings = current_transaction().settings
 
-    custom_metric_function = record_custom_metric if not TIMESLICE_FLAG else record_dimensional_metric
+    custom_metric_function = (
+        record_custom_metric if not settings.otel_dimensional_metrics.enabled else record_dimensional_metric
+    )
 
     if schema_url:
         custom_metric_function(f"OtelMeter/{name}/SchemaURL/{schema_url}", 1)
@@ -115,7 +67,12 @@ def wrap_add(wrapped, instance, args, kwargs):
     amount = bind_add(*args, **kwargs)
     meter_name = instance.instrumentation_scope.name
     counter_name = instance.name
-    custom_metric_function = record_custom_metric if not TIMESLICE_FLAG else record_dimensional_metric
+
+    settings = current_transaction().settings
+
+    custom_metric_function = (
+        record_custom_metric if not settings.otel_dimensional_metrics.enabled else record_dimensional_metric
+    )
 
     custom_metric_function(f"OtelMeter/{meter_name}/{counter_name}", {"count": amount})
 
@@ -134,16 +91,13 @@ def wrap_record(wrapped, instance, args, kwargs):
     meter_name = instance.instrumentation_scope.name
     histogram_name = instance.name
 
-    meter_name = instance.instrumentation_scope.name
-    histogram_name = instance.name
-    histogram_reference = f"OtelMeter/{meter_name}/{histogram_name}"
+    settings = current_transaction().settings
 
-    if transaction._histogram and histogram_reference in transaction._histogram:
-        # We are adding to the existing histogram
-        transaction._histogram[histogram_reference](amount)
-    else:
-        # Creating a new histogram instance
-        transaction._histogram[histogram_reference] = HistogramDict(amount)
+    custom_metric_function = (
+        record_custom_metric if not settings.otel_dimensional_metrics.enabled else record_dimensional_metric
+    )
+
+    custom_metric_function(f"OtelMeter/{meter_name}/{histogram_name}", amount)
 
     return wrapped(*args, **kwargs)
 
@@ -155,7 +109,11 @@ def _instrument_observable_methods(module, method_name):
 
         method_name, callbacks, unit = bind_func(*args, **kwargs)
         meter_name = instance._instrumentation_scope.name
-        custom_metric_function = record_custom_metric if not TIMESLICE_FLAG else record_dimensional_metric
+        settings = current_transaction().settings
+
+        custom_metric_function = (
+            record_custom_metric if not settings.otel_dimensional_metrics.enabled else record_dimensional_metric
+        )
 
         for callback in callbacks:
             for observation in callback():

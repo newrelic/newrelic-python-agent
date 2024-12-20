@@ -17,7 +17,8 @@ from contextlib import contextmanager
 
 # from opentelemetry.trace.status import Status, StatusCode
 from opentelemetry import trace as otel_api_trace
-from opentelemetry.sdk import trace as otel_sdk_trace
+
+# from opentelemetry.sdk import trace as otel_sdk_trace
 from opentelemetry.trace import Context, SpanKind
 from opentelemetry.trace.propagation import _SPAN_KEY
 from opentelemetry.trace.span import SpanContext, TraceFlags, TraceState
@@ -26,9 +27,18 @@ from newrelic.api.application import application_instance, register_application
 from newrelic.api.background_task import BackgroundTask
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import current_trace
-from newrelic.api.transaction import current_transaction, record_custom_metric
+from newrelic.api.transaction import (
+    current_transaction,
+    record_custom_metric,
+    record_dimensional_metric,
+)
 from newrelic.common.encoding_utils import NrTraceState  # , W3CTraceParent
 from newrelic.common.object_wrapper import wrap_function_wrapper
+
+# ADD DIMENSIONAL METRICS AS WELL AS REGULAR TIMESLICE METRICS
+# Temporary, until we decide if timeslice or dimensional metric:
+# otel_dimensional_metrics.enabled
+TIMESLICE_FLAG = False  # This needs to be a separate flag/setting
 
 
 # ----------------------------------------------
@@ -86,12 +96,14 @@ def wrap_meter(wrapped, instance, args, kwargs):
 
     name, version, schema_url = bind_meter(*args, **kwargs)
 
+    custom_metric_function = record_custom_metric if not TIMESLICE_FLAG else record_dimensional_metric
+
     if schema_url:
-        record_custom_metric(f"OtelMeter/{name}/SchemaURL/{schema_url}", 1)
+        custom_metric_function(f"OtelMeter/{name}/SchemaURL/{schema_url}", 1)
     if version:
-        record_custom_metric(f"OtelMeter/{name}/{version}", 1)
+        custom_metric_function(f"OtelMeter/{name}/{version}", 1)
     else:
-        record_custom_metric(f"OtelMeter/{name}", 1)
+        custom_metric_function(f"OtelMeter/{name}", 1)
 
     return wrapped(*args, **kwargs)
 
@@ -103,8 +115,9 @@ def wrap_add(wrapped, instance, args, kwargs):
     amount = bind_add(*args, **kwargs)
     meter_name = instance.instrumentation_scope.name
     counter_name = instance.name
+    custom_metric_function = record_custom_metric if not TIMESLICE_FLAG else record_dimensional_metric
 
-    record_custom_metric(f"OtelMeter/{meter_name}/{counter_name}", {"count": amount})
+    custom_metric_function(f"OtelMeter/{meter_name}/{counter_name}", {"count": amount})
 
     return wrapped(*args, **kwargs)
 
@@ -142,6 +155,7 @@ def _instrument_observable_methods(module, method_name):
 
         method_name, callbacks, unit = bind_func(*args, **kwargs)
         meter_name = instance._instrumentation_scope.name
+        custom_metric_function = record_custom_metric if not TIMESLICE_FLAG else record_dimensional_metric
 
         for callback in callbacks:
             for observation in callback():
@@ -151,9 +165,9 @@ def _instrument_observable_methods(module, method_name):
                     else f"OtelMeter/{meter_name}/{method_name}/{unit}"
                 )
                 if method_name.endswith("gauge"):
-                    record_custom_metric(metric_value, observation.value)
+                    custom_metric_function(metric_value, observation.value)
                 else:
-                    record_custom_metric(metric_value, {"count": observation.value})
+                    custom_metric_function(metric_value, {"count": observation.value})
 
         return wrapped(*args, **kwargs)
 
@@ -190,7 +204,7 @@ def instrument_meter(module):
 # Custom OTel Spans
 # ----------------------------------------------
 
-# TracerProvider: we can think of this as the agent instance.  Only one can exist
+# TracerProvider: we can think of this as the agent instance.  Only one can exist (in both NR and Otel)
 # SpanProcessor: we can think of this as an application.  In NR, we can have multiple applications
 #   though right now, we can only do SpanProcessor and SynchronousMultiSpanProcessor
 # Tracer: we can think of this as the transaction.
@@ -221,7 +235,8 @@ def instrument_meter(module):
 # Otel SDK classes.
 
 
-class Span(otel_sdk_trace.Span):
+# class Span(otel_sdk_trace.Span):
+class Span(otel_api_trace.Span):
     def __init__(
         self,
         name,
@@ -233,13 +248,12 @@ class Span(otel_sdk_trace.Span):
         self._name = name
         self.nr_trace = nr_trace if nr_trace else current_trace()
         self.nr_application = nr_application if nr_application else application_instance(activate=False)
-        self._context = self.get_span_context()  # attempt to fix the inheritance issue
         self.otel_context = Context({_SPAN_KEY: self})  # This will be the Otel span context
         self._record_exception = (
             record_exception or self.nr_trace.settings.error_collector.record_exception
         )  # both must be set to false in order to not record
         self._status = 0  # UNSET (Otel statuses are not a 1:1 mapping)
-        self._attributes = self._set_attributes_in_nr(attributes)
+        self._attributes = attributes if attributes else {}
 
     def __enter__(self):
         return self
@@ -267,7 +281,6 @@ class Span(otel_sdk_trace.Span):
         # Convert from dict to list of key/value tuples
         otel_tracestate_headers = [(key, value) for key, value in nr_tracestate_headers.items()]
 
-        # breakpoint()
         return SpanContext(
             trace_id=int(self.nr_trace.transaction.guid, 16),
             span_id=int(self.nr_trace.guid, 16),
@@ -275,6 +288,13 @@ class Span(otel_sdk_trace.Span):
             trace_flags=self._is_sampled(),
             trace_state=TraceState(otel_tracestate_headers),
         )
+
+    def set_attribute(self, key, value):
+        self._attributes[key] = value
+
+    def set_attributes(self, attributes):
+        for key, value in attributes.items():
+            self.set_attribute(key, value)
 
     def _set_attributes_in_nr(self, otel_attributes):
         if not otel_attributes:
@@ -327,6 +347,10 @@ class Span(otel_sdk_trace.Span):
 
     def is_recording(self):
         return self._is_sampled() and not self.nr_trace.end_time
+
+    def set_status(self, status):
+        # Not implemented yet
+        pass
 
     # # DO WE EVEN NEED THIS?
     # def _otel_to_nr_status(self, status):
@@ -392,8 +416,10 @@ class Span(otel_sdk_trace.Span):
 
 # A wrapper around a NR Transaction object to match the Otel SDK Tracer object--
 # This will take tracers passed in Otel format and allow conversion to NR format
-class Tracer(otel_sdk_trace.Tracer):
-    def __init__(self, *args, nr_application=None, **kwargs):
+# class Tracer(otel_sdk_trace.Tracer):
+class Tracer(otel_api_trace.Tracer):
+    def __init__(self, *args, name=None, nr_application=None, **kwargs):
+        self.appname = name
         self._settings = None
         self.nr_application = (
             nr_application or application_instance(activate=False) or register_application("OtelTracer")
@@ -406,22 +432,17 @@ class Tracer(otel_sdk_trace.Tracer):
             if not self._settings:
                 self.nr_application.activate()
                 self._settings = self.nr_application.settings
+            # self.nr_application._name = self.appname    # Reactivate once we have agent activation/TraceProvider
         else:
             # Unable to register application.  We should log this.
             pass
 
-    def _convert_span_context_to_trace(self, span_context):
-        # Convert Otel SpanContext to NR SpanContext
-        # This will be used to create a new trace in NR
-        guid = span_context.trace_id
-        trace_id = span_context.span_id
-        sampled = span_context.trace_flags == TraceFlags.SAMPLED
-
-    # Elastic's logic:
-    # if traceparent and transaction, invalid
-    # if traceparent, begin transaction, trace (with traceparent as parent trace), and span
-    # if not transaction, begin transaction, trace, and span
-    # else, begin trace and span
+    # def _convert_span_context_to_trace(self, span_context):
+    #     # Convert Otel SpanContext to NR SpanContext
+    #     # This will be used to create a new trace in NR
+    #     guid = span_context.trace_id
+    #     trace_id = span_context.span_id
+    #     sampled = span_context.trace_flags == TraceFlags.SAMPLED
 
     def start_span(self, name, context=None, kind=SpanKind.INTERNAL, attributes=None, record_exception=True):
         parent_span_context = otel_api_trace.get_current_span(context).get_span_context()
@@ -523,8 +544,15 @@ class Tracer(otel_sdk_trace.Tracer):
             yield current_span
 
 
-# In OTel, this is within a TracerProvider.  TracerProviders allow the option to have
-# multiple Tracers.  In NR, we only have one TracerProvider (Agent instance), so these
-# will be functions, rather than methods within a class.
-def get_tracer(tracer_name, nr_application=None):
-    return Tracer(tracer_name, nr_application=nr_application)
+def wrap_get_tracer(wrapped, instance, args, kwargs):
+    def bind_get_tracer(instrumenting_module_name, *args, **kwargs):
+        return instrumenting_module_name
+
+    module_name = bind_get_tracer(*args, **kwargs)
+
+    return Tracer(module_name)
+
+
+def instrument_get_tracer(module):
+    if hasattr(module, "TracerProvider"):
+        wrap_function_wrapper(module, "TracerProvider.get_tracer", wrap_get_tracer)

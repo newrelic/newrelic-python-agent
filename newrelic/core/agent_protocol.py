@@ -213,7 +213,6 @@ class AgentProtocol():
         self.configuration = settings
         self.agent_control = agent_control_health_instance()
 
-
     def __enter__(self):
         self.client.__enter__()
         return self

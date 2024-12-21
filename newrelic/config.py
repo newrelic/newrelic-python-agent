@@ -106,6 +106,7 @@ _config_object = configparser.RawConfigParser()
 _cache_object = []
 agent_control_health = agent_control_health_instance()
 
+
 def _reset_config_parser():
     global _config_object
     global _cache_object

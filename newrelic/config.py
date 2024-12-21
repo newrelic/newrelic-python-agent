@@ -48,7 +48,7 @@ from newrelic.core.config import (
     default_host,
     fetch_config_setting,
 )
-from newrelic.core.super_agent_health import HealthStatus, super_agent_health_instance, super_agent_healthcheck_loop
+from newrelic.core.agent_control_health import HealthStatus, agent_control_health_instance, agent_control_healthcheck_loop
 
 
 __all__ = ["initialize", "filter_app_factory"]
@@ -104,7 +104,7 @@ _config_object = configparser.RawConfigParser()
 # all the settings have been read.
 
 _cache_object = []
-super_agent_health = super_agent_health_instance()
+agent_control_health = agent_control_health_instance()
 
 
 def _reset_config_parser():
@@ -1055,7 +1055,7 @@ def _load_configuration(
         elif not _config_object.read([config_file]):
             raise newrelic.api.exceptions.ConfigurationError(f"Unable to open configuration file {config_file}.")
     except Exception:
-        super_agent_health.set_health_status(HealthStatus.INVALID_CONFIG.value)
+        agent_control_health.set_health_status(HealthStatus.INVALID_CONFIG.value)
         raise
 
     _settings.config_file = config_file
@@ -4833,16 +4833,16 @@ def _setup_agent_console():
         newrelic.core.agent.Agent.run_on_startup(_startup_agent_console)
 
 
-super_agent_health_thread = threading.Thread(name="NR-Control-Health-Main-Thread", target=super_agent_healthcheck_loop)
-super_agent_health_thread.daemon = True
+agent_control_health_thread = threading.Thread(name="Agent-Control-Health-Main-Thread", target=agent_control_healthcheck_loop)
+agent_control_health_thread.daemon = True
 
 
-def _setup_super_agent_health():
-    if super_agent_health_thread.is_alive():
+def _setup_agent_control_health():
+    if agent_control_health_thread.is_alive():
         return
 
-    if super_agent_health.health_check_enabled:
-        super_agent_health_thread.start()
+    if agent_control_health.health_check_enabled:
+        agent_control_health_thread.start()
 
 
 def initialize(
@@ -4852,7 +4852,7 @@ def initialize(
     log_file=None,
     log_level=None,
 ):
-    super_agent_health.start_time_unix_nano = time.time_ns()
+    agent_control_health.start_time_unix_nano = time.time_ns()
 
     if config_file is None:
         config_file = os.environ.get("NEW_RELIC_CONFIG_FILE", None)
@@ -4865,11 +4865,11 @@ def initialize(
 
     _load_configuration(config_file, environment, ignore_errors, log_file, log_level)
 
-    _setup_super_agent_health()
+    _setup_agent_control_health()
 
     if _settings.monitor_mode:
         if not _settings.license_key:
-            super_agent_health.set_health_status(HealthStatus.MISSING_LICENSE.value)
+            agent_control_health.set_health_status(HealthStatus.MISSING_LICENSE.value)
 
     if _settings.monitor_mode or _settings.developer_mode:
         _settings.enabled = True
@@ -4879,7 +4879,7 @@ def initialize(
         _setup_agent_console()
     else:
         _settings.enabled = False
-        super_agent_health.set_health_status(HealthStatus.AGENT_DISABLED.value)
+        agent_control_health.set_health_status(HealthStatus.AGENT_DISABLED.value)
 
 
 def filter_app_factory(app, global_conf, config_file, environment=None):

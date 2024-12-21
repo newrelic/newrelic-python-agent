@@ -111,11 +111,11 @@ def test_ml_streaming_disabled_supportability_metrics():
 )
 @validate_internal_metrics(
     [
-        ("Supportability/SuperAgent/Health/enabled", 1),
+        ("Supportability/AgentControl/Health/enabled", 1),
     ]
 )
-def test_super_agent_health_supportability_metric(monkeypatch):
-    monkeypatch.setenv("NEW_RELIC_SUPERAGENT_FLEET_ID", "foobar")
+def test_agent_control_health_supportability_metric(monkeypatch):
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_FLEET_ID", "foobar")
 
     app = Application("Python Agent Test (agent_unittests-connect)")
     app.connect_to_data_collector(None)

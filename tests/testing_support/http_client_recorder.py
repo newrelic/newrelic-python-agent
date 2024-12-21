@@ -5,6 +5,7 @@ from newrelic.common.encoding_utils import json_encode
 
 Request = namedtuple("Request", ("method", "path", "params", "headers", "payload"))
 
+
 class HttpClientRecorder(DeveloperModeClient):
     SENT = []
     STATUS_CODE = None
@@ -21,7 +22,7 @@ class HttpClientRecorder(DeveloperModeClient):
         request = Request(method=method, path=path, params=params, headers=headers, payload=payload)
         self.SENT.append(request)
         if self.STATUS_CODE:
-            # Define behavior for a 200 status code for use in test_super_agent_health.py
+            # Define behavior for a 200 status code for use in test_agent_control_health.py
             if self.STATUS_CODE == 200:
                 payload = {"return_value": "Hello World!"}
                 response_data = json_encode(payload).encode("utf-8")

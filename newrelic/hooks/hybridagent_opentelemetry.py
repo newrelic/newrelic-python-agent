@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import sys
+import uuid
 from contextlib import contextmanager
 
 # from opentelemetry.trace.status import Status, StatusCode
@@ -34,6 +35,7 @@ from newrelic.api.transaction import (
 )
 from newrelic.common.encoding_utils import NrTraceState  # , W3CTraceParent
 from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.core.trace_cache import trace_cache
 
 
 # ----------------------------------------------
@@ -159,6 +161,64 @@ def instrument_meter(module):
 
 
 # ----------------------------------------------
+# Custom OTel Context Propagation
+# ----------------------------------------------
+
+
+class ContextApi:
+    def create_key(self, keyname):
+        return keyname + "-" + str(uuid.uuid4())
+
+    def get_value(self, key, context=None):
+        return context.get(key) if context else self.get_current().get(key)
+
+    def set_value(self, key, value="value", context=None):
+        if context is None:
+            context = self.get_current()
+        new_values = context.copy()
+        new_values[key] = value
+        return Context(new_values)
+
+    def get_current(self):
+        span = current_trace()  # TODO: check this; this or get current modified otel span?
+        if not span:
+            return Context()
+
+        # Convert NR trace into Otel Span
+        # TODO: See if otel_wrapper is attribute we removed before from Span __init__
+        otel_span = getattr(span, "otel_wrapper", Span(span.name, span))
+        context = otel_span.otel_context
+
+        return context
+
+    def attach(self, context):
+        # Original function returns a token.
+        span = context.get(_SPAN_KEY)
+        if not span:
+            return None
+        span.otel_content = context
+        nr_trace = span.nr_trace
+
+        # If not already the current trace, push it to the cache
+        cache = trace_cache()
+        if nr_trace.thread_id != cache.current_thread_id():
+            nr_trace.thread_id = cache.current_thread_id()
+            cache.save_trace(nr_trace)
+
+        return None
+
+    def detach(self, token=None):
+        # Original function takes a token
+        # We will ignore this value
+        nr_trace = current_trace()
+        if nr_trace:
+            cache = trace_cache()
+            cache.pop_trace(nr_trace)
+        else:
+            pass  # Log this
+
+
+# ----------------------------------------------
 # Custom OTel Spans
 # ----------------------------------------------
 
@@ -185,15 +245,7 @@ def instrument_meter(module):
 #    a. NR to Otel instrumentation propagation
 #    b. Otel to NR instrumentation propagation
 
-# A wrapper around a NR Time Trace object to match the Otel SDK Span object--
-# This will take spans passed in Otel format and allow conversion to NR format
 
-# Eventually we need to monkey patch these so that they operate "out of the box"
-# instead of having to explicitly import these specific classes in lieu of the
-# Otel SDK classes.
-
-
-# class Span(otel_sdk_trace.Span):
 class Span(otel_api_trace.Span):
     def __init__(
         self,
@@ -207,6 +259,7 @@ class Span(otel_api_trace.Span):
         self.nr_trace = nr_trace if nr_trace else current_trace()
         self.nr_application = nr_application if nr_application else application_instance(activate=False)
         self.otel_context = Context({_SPAN_KEY: self})  # This will be the Otel span context
+        nr_trace.otel_wrapper = self
         self._record_exception = (
             record_exception or self.nr_trace.settings.error_collector.record_exception
         )  # both must be set to false in order to not record
@@ -372,9 +425,6 @@ class Span(otel_api_trace.Span):
         self.nr_trace.notice_error(exception, attributes=attributes)
 
 
-# A wrapper around a NR Transaction object to match the Otel SDK Tracer object--
-# This will take tracers passed in Otel format and allow conversion to NR format
-# class Tracer(otel_sdk_trace.Tracer):
 class Tracer(otel_api_trace.Tracer):
     def __init__(self, *args, name=None, nr_application=None, **kwargs):
         self.appname = name
@@ -403,6 +453,10 @@ class Tracer(otel_api_trace.Tracer):
     #     sampled = span_context.trace_flags == TraceFlags.SAMPLED
 
     def start_span(self, name, context=None, kind=SpanKind.INTERNAL, attributes=None, record_exception=True):
+        breakpoint()
+        # TODO: Not working the way we think it is.  Look more into this
+        # temp = otel_api_trace.get_current_span(context)  # Is this where we need to make sure current span is correct?
+        # parent_span_context = temp.get_span_context()   # Is this going to our custom NR function?
         parent_span_context = otel_api_trace.get_current_span(context).get_span_context()
         nr_parent_trace = current_trace() or (self.nr_transaction and self.nr_transaction.root_span)
 
@@ -478,6 +532,8 @@ class Tracer(otel_api_trace.Tracer):
 
     @contextmanager
     def _use_span(self, span, end_on_exit=False, record_exception=True):
+        context_api = ContextApi()
+        context_api.attach(context_api.set_value(_SPAN_KEY, span))
         try:
             yield span
         except Exception as exc:
@@ -485,10 +541,10 @@ class Tracer(otel_api_trace.Tracer):
                 span.record_exception(exc)
             raise
         finally:
-            span.end()
-            # IGNORE end_on_exit FOR NOW
-            # if end_on_exit:
-            #     span.end()
+            if end_on_exit:
+                span.end()
+            else:
+                context_api.detach()
 
     @contextmanager
     def start_as_current_span(

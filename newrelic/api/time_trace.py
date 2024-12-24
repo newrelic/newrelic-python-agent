@@ -33,7 +33,7 @@ from newrelic.core.trace_cache import trace_cache
 _logger = logging.getLogger(__name__)
 
 
-class TimeTrace():
+class TimeTrace:
     def __init__(self, parent=None, source=None):
         self.parent = parent
         self.root = None
@@ -57,6 +57,7 @@ class TimeTrace():
         self.user_attributes = {}
 
         self._source = source
+        self.otel_wrapper = None
 
     @property
     def transaction(self):

@@ -21,6 +21,7 @@
 
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
+from testing_support.validators.validate_span_events import validate_span_events
 
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import function_trace
@@ -32,17 +33,25 @@ from newrelic.api.transaction import add_custom_attribute
 # )
 
 
-# from newrelic.hooks.hybridagent_opentelemetry import Tracer, TracerProvider
-
-# from testing_support.validators.validate_span_events import validate_span_events
-
 provider = TracerProvider()
 # processor = BatchSpanProcessor(ConsoleSpanExporter())
 # provider.add_span_processor(processor)
 trace.set_tracer_provider(provider)
 
 
-# @background_task()
+@validate_span_events(
+    count=1,
+    exact_intrinsics={
+        "name": "Otel/foo",
+        "transaction.name": "OtherTransaction/Otel/foo",
+        "sampled": True,
+    },
+    expected_intrinsics={
+        "priority": None,
+        "traceId": None,
+        "guid": None,
+    },
+)
 def test_trace_basic():
     tracer = trace.get_tracer("TracerProviderTestBasic")
 
@@ -50,24 +59,47 @@ def test_trace_basic():
         pass
 
 
-# def test_trace_basic():
-#     tracer = Tracer("BasicTracer")
-
-#     with tracer.start_as_current_span("foo"):
-#         pass
-
-
-# @validate_span_events(
-#     count=1,
-#     exact_users={"name": "opentelemetry.sdk.trace:Tracer.start_span/foo",
-#                  "otel_trace_id": None,
-#                  "otel_span_id": None,
-#                  },
-# )
-# @background_task()
+@validate_span_events(
+    count=1,
+    exact_intrinsics={
+        "name": "Otel/baz",
+        "transaction.name": "OtherTransaction/Otel/foo",
+        "sampled": True,
+    },
+    expected_intrinsics={
+        "priority": None,
+        "traceId": None,
+        "guid": None,
+    },
+)
+@validate_span_events(
+    count=1,
+    exact_intrinsics={
+        "name": "Otel/bar",
+        "transaction.name": "OtherTransaction/Otel/foo",
+        "sampled": True,
+    },
+    expected_intrinsics={
+        "priority": None,
+        "traceId": None,
+        "guid": None,
+    },
+)
+@validate_span_events(
+    count=1,
+    exact_intrinsics={
+        "name": "Otel/foo",
+        "transaction.name": "OtherTransaction/Otel/foo",
+        "sampled": True,
+    },
+    expected_intrinsics={
+        "priority": None,
+        "traceId": None,
+        "guid": None,
+    },
+)
 def test_trace_nested():
     tracer = trace.get_tracer("TracerProviderTestNested")
-    # tracer = Tracer()
 
     with tracer.start_as_current_span("foo"):
         with tracer.start_as_current_span("bar"):
@@ -75,9 +107,35 @@ def test_trace_nested():
                 pass
 
 
+@validate_span_events(
+    count=1,
+    exact_intrinsics={
+        "name": "Otel/foo",
+        "transaction.name": "OtherTransaction/Otel/foo",
+        "sampled": True,
+    },
+    expected_intrinsics={
+        "priority": None,
+        "traceId": None,
+        "guid": None,
+    },
+    exact_users={"NR function trace": "Branched from OTel"},
+)
+@validate_span_events(
+    count=1,
+    exact_intrinsics={
+        "name": "Function/test_traces:test_trace_with_otel_to_newrelic.<locals>.newrelic_function_trace",
+        "transaction.name": "OtherTransaction/Otel/foo",
+        "sampled": True,
+    },
+    expected_intrinsics={
+        "priority": None,
+        "traceId": None,
+        "guid": None,
+    },
+)
 def test_trace_with_otel_to_newrelic():
     tracer = trace.get_tracer("TracerProviderTestOtelToNewRelic")
-    # tracer = Tracer()
 
     @function_trace()
     def newrelic_function_trace():
@@ -88,9 +146,35 @@ def test_trace_with_otel_to_newrelic():
         newrelic_function_trace()
 
 
+@validate_span_events(
+    count=1,
+    exact_intrinsics={
+        "name": "Otel/foo",
+        "transaction.name": "OtherTransaction/Otel/foo",
+        "sampled": True,
+    },
+    expected_intrinsics={
+        "priority": None,
+        "traceId": None,
+        "guid": None,
+    },
+    exact_users={"OTel span": "Branched from NR"},
+)
+@validate_span_events(
+    count=1,
+    exact_intrinsics={
+        "name": "test_traces:test_trace_with_newrelic_to_otel.<locals>.newrelic_background_task",
+        "transaction.name": "OtherTransaction/Otel/foo",
+        "sampled": True,
+    },
+    expected_intrinsics={
+        "priority": None,
+        "traceId": None,
+        "guid": None,
+    },
+)
 def test_trace_with_newrelic_to_otel():
     def otel_span():
-        # tracer = Tracer()
         tracer = trace.get_tracer("TracerProviderTestNewRelicToOtel")
         with tracer.start_as_current_span("foo"):
             add_custom_attribute("OTel span", "Branched from NR")

@@ -105,6 +105,7 @@ VECTORSTORE_CLASSES = {
     "langchain_community.vectorstores.starrocks": "StarRocks",
     "langchain_community.vectorstores.supabase": "SupabaseVectorStore",
     "langchain_community.vectorstores.surrealdb": "SurrealDBStore",
+    "langchain_community.vectorstores.tablestore": "TablestoreVectorStore",
     "langchain_community.vectorstores.tair": "Tair",
     "langchain_community.vectorstores.tencentvectordb": "TencentVectorDB",
     "langchain_community.vectorstores.tidb_vector": "TiDBVectorStore",

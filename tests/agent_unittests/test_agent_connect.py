@@ -114,8 +114,11 @@ def test_ml_streaming_disabled_supportability_metrics():
         ("Supportability/AgentControl/Health/enabled", 1),
     ]
 )
-def test_agent_control_health_supportability_metric(monkeypatch):
-    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_FLEET_ID", "foobar")
+def test_agent_control_health_supportability_metric(monkeypatch, tmp_path):
+    # Setup expected env vars to run agent control health check
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_FLEET_ID", "1234")
+    file_path = tmp_path.as_uri()
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", file_path)
 
     app = Application("Python Agent Test (agent_unittests-connect)")
     app.connect_to_data_collector(None)

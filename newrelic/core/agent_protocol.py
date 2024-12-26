@@ -47,7 +47,7 @@ from newrelic.network.exceptions import (
     NetworkInterfaceException,
     RetryDataForRequest,
 )
-from newrelic.core.super_agent_health import HealthStatus, super_agent_health_instance
+from newrelic.core.agent_control_health import HealthStatus, agent_control_health_instance
 
 _logger = logging.getLogger(__name__)
 
@@ -211,8 +211,7 @@ class AgentProtocol():
 
         # Do not access configuration anywhere inside the class
         self.configuration = settings
-        self.super_agent = super_agent_health_instance()
-
+        self.agent_control = agent_control_health_instance()
 
     def __enter__(self):
         self.client.__enter__()
@@ -251,21 +250,21 @@ class AgentProtocol():
                 # initialize function doesn't get overridden with invalid_license as a missing license key is also
                 # treated as a 401 status code
                 if not self._license_key:
-                    self.super_agent.set_health_status(HealthStatus.MISSING_LICENSE.value)
+                    self.agent_control.set_health_status(HealthStatus.MISSING_LICENSE.value)
                 else:
-                    self.super_agent.set_health_status(HealthStatus.INVALID_LICENSE.value)
+                    self.agent_control.set_health_status(HealthStatus.INVALID_LICENSE.value)
 
             if status == 407:
-                self.super_agent.set_health_status(HealthStatus.PROXY_ERROR.value, status)
+                self.agent_control.set_health_status(HealthStatus.PROXY_ERROR.value, status)
 
             if status == 410:
-                self.super_agent.set_health_status(HealthStatus.FORCED_DISCONNECT.value)
+                self.agent_control.set_health_status(HealthStatus.FORCED_DISCONNECT.value)
 
             level, message = self.LOG_MESSAGES.get(status, self.LOG_MESSAGES["default"])
 
             # If the default error message was used, then we know we have a general HTTP error
             if message.startswith("Received a non 200 or 202"):
-                self.super_agent.set_health_status(HealthStatus.HTTP_ERROR.value, status, method)
+                self.agent_control.set_health_status(HealthStatus.HTTP_ERROR.value, status, method)
 
             _logger.log(
                 level,
@@ -287,7 +286,7 @@ class AgentProtocol():
             raise exception
         if status == 200:
             # Check if we previously had a protocol related error and update to a healthy status
-            self.super_agent.update_to_healthy_status(protocol_error=True)
+            self.agent_control.update_to_healthy_status(protocol_error=True)
             return self.decode_response(data)
 
     def decode_response(self, response):
@@ -617,7 +616,7 @@ class OtlpProtocol(AgentProtocol):
 
         # Do not access configuration anywhere inside the class
         self.configuration = settings
-        self.super_agent = super_agent_health_instance()
+        self.agent_control = agent_control_health_instance()
 
     @classmethod
     def connect(

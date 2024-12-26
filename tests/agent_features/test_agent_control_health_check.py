@@ -19,7 +19,7 @@ import threading
 
 from newrelic.core.config import finalize_application_settings
 from testing_support.http_client_recorder import HttpClientRecorder
-from newrelic.core.super_agent_health import HealthStatus, is_valid_file_delivery_location, super_agent_health_instance
+from newrelic.core.agent_control_health import HealthStatus, is_valid_file_delivery_location, agent_control_health_instance
 from newrelic.config import initialize, _reset_configuration_done
 from newrelic.core.agent_protocol import AgentProtocol
 from newrelic.core.application import Application
@@ -41,15 +41,15 @@ def test_invalid_file_directory_supplied(file_uri):
 
 
 def test_write_to_file_healthy_status(monkeypatch, tmp_path):
-    # Setup expected env vars to run super agent health check
-    monkeypatch.setenv("NEW_RELIC_SUPERAGENT_FLEET_ID", "1234")
+    # Setup expected env vars to run agent control health check
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_FLEET_ID", "1234")
     file_path = tmp_path.as_uri()
-    monkeypatch.setenv("NEW_RELIC_SUPERAGENT_HEALTH_DELIVERY_LOCATION", file_path)
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", file_path)
 
     # Write to health YAML file
-    super_agent_instance = super_agent_health_instance()
-    super_agent_instance.start_time_unix_nano = "1234567890"
-    super_agent_instance.write_to_health_file()
+    agent_control_instance = agent_control_health_instance()
+    agent_control_instance.start_time_unix_nano = "1234567890"
+    agent_control_instance.write_to_health_file()
 
     contents = get_health_file_contents(tmp_path)
 
@@ -61,17 +61,17 @@ def test_write_to_file_healthy_status(monkeypatch, tmp_path):
 
 
 def test_write_to_file_unhealthy_status(monkeypatch, tmp_path):
-    # Setup expected env vars to run super agent health check
-    monkeypatch.setenv("NEW_RELIC_SUPERAGENT_FLEET_ID", "1234")
+    # Setup expected env vars to run agent control health check
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_FLEET_ID", "1234")
     file_path = tmp_path.as_uri()
-    monkeypatch.setenv("NEW_RELIC_SUPERAGENT_HEALTH_DELIVERY_LOCATION", file_path)
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", file_path)
 
     # Write to health YAML file
-    super_agent_instance = super_agent_health_instance()
-    super_agent_instance.start_time_unix_nano = "1234567890"
-    super_agent_instance.set_health_status(HealthStatus.INVALID_LICENSE.value)
+    agent_control_instance = agent_control_health_instance()
+    agent_control_instance.start_time_unix_nano = "1234567890"
+    agent_control_instance.set_health_status(HealthStatus.INVALID_LICENSE.value)
 
-    super_agent_instance.write_to_health_file()
+    agent_control_instance.write_to_health_file()
 
     contents = get_health_file_contents(tmp_path)
 
@@ -85,19 +85,19 @@ def test_write_to_file_unhealthy_status(monkeypatch, tmp_path):
 
 
 def test_no_override_on_unhealthy_shutdown(monkeypatch, tmp_path):
-    # Setup expected env vars to run super agent health check
-    monkeypatch.setenv("NEW_RELIC_SUPERAGENT_FLEET_ID", "1234")
+    # Setup expected env vars to run agent control health check
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_FLEET_ID", "1234")
     file_path = tmp_path.as_uri()
-    monkeypatch.setenv("NEW_RELIC_SUPERAGENT_HEALTH_DELIVERY_LOCATION", file_path)
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", file_path)
 
     # Write to health YAML file
-    super_agent_instance = super_agent_health_instance()
-    super_agent_instance.start_time_unix_nano = "1234567890"
-    super_agent_instance.set_health_status(HealthStatus.INVALID_LICENSE.value)
+    agent_control_instance = agent_control_health_instance()
+    agent_control_instance.start_time_unix_nano = "1234567890"
+    agent_control_instance.set_health_status(HealthStatus.INVALID_LICENSE.value)
 
     # Attempt to override a previously unhealthy status
-    super_agent_instance.set_health_status(HealthStatus.AGENT_SHUTDOWN.value)
-    super_agent_instance.write_to_health_file()
+    agent_control_instance.set_health_status(HealthStatus.AGENT_SHUTDOWN.value)
+    agent_control_instance.write_to_health_file()
 
     contents = get_health_file_contents(tmp_path)
 
@@ -110,12 +110,12 @@ def test_no_override_on_unhealthy_shutdown(monkeypatch, tmp_path):
 
 def test_health_check_running_threads(monkeypatch, tmp_path):
     running_threads = threading.enumerate()
-    # Only the main thread should be running since not super agent env vars are set
+    # Only the main thread should be running since not agent control env vars are set
     assert len(running_threads) == 1
 
-    monkeypatch.setenv("NEW_RELIC_SUPERAGENT_FLEET_ID", "1234")
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_FLEET_ID", "1234")
     file_path = tmp_path.as_uri()
-    monkeypatch.setenv("NEW_RELIC_SUPERAGENT_HEALTH_DELIVERY_LOCATION", file_path)
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", file_path)
 
     # Re-initialize the agent to allow the health check thread to start and assert that it did
     _reset_configuration_done()
@@ -125,14 +125,14 @@ def test_health_check_running_threads(monkeypatch, tmp_path):
 
     # Two expected threads: One main agent thread and one main health thread since we have no additional active sessions
     assert len(running_threads) == 2
-    assert running_threads[1].name == "NR-Control-Health-Main-Thread"
+    assert running_threads[1].name == "Agent-Control-Health-Main-Thread"
 
 
 def test_proxy_error_status(monkeypatch, tmp_path):
-    # Setup expected env vars to run super agent health check
-    monkeypatch.setenv("NEW_RELIC_SUPERAGENT_FLEET_ID", "1234")
+    # Setup expected env vars to run agent control health check
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_FLEET_ID", "1234")
     file_path = tmp_path.as_uri()
-    monkeypatch.setenv("NEW_RELIC_SUPERAGENT_HEALTH_DELIVERY_LOCATION", file_path)
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", file_path)
 
     _reset_configuration_done()
     initialize()
@@ -162,17 +162,17 @@ def test_proxy_error_status(monkeypatch, tmp_path):
 
 
 def test_update_to_healthy(monkeypatch, tmp_path):
-    # Setup expected env vars to run super agent health check
-    monkeypatch.setenv("NEW_RELIC_SUPERAGENT_FLEET_ID", "1234")
+    # Setup expected env vars to run agent control health check
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_FLEET_ID", "1234")
     file_path = tmp_path.as_uri()
-    monkeypatch.setenv("NEW_RELIC_SUPERAGENT_HEALTH_DELIVERY_LOCATION", file_path)
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", file_path)
 
     _reset_configuration_done()
 
     # Write to health YAML file
-    super_agent_instance = super_agent_health_instance()
-    super_agent_instance.start_time_unix_nano = "1234567890"
-    super_agent_instance.set_health_status(HealthStatus.FORCED_DISCONNECT.value)
+    agent_control_instance = agent_control_health_instance()
+    agent_control_instance.start_time_unix_nano = "1234567890"
+    agent_control_instance.set_health_status(HealthStatus.FORCED_DISCONNECT.value)
 
     # Send a successful data batch to enable health status to update to "healthy"
     HttpClientRecorder.STATUS_CODE = 200
@@ -184,7 +184,7 @@ def test_update_to_healthy(monkeypatch, tmp_path):
     protocol = AgentProtocol(settings, client_cls=HttpClientRecorder)
     protocol.send("analytic_event_data")
 
-    super_agent_instance.write_to_health_file()
+    agent_control_instance.write_to_health_file()
 
     contents = get_health_file_contents(tmp_path)
 
@@ -194,10 +194,10 @@ def test_update_to_healthy(monkeypatch, tmp_path):
 
 
 def test_multiple_activations_running_threads(monkeypatch, tmp_path):
-    # Setup expected env vars to run super agent health check
-    monkeypatch.setenv("NEW_RELIC_SUPERAGENT_FLEET_ID", "1234")
+    # Setup expected env vars to run agent control health check
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_FLEET_ID", "1234")
     file_path = tmp_path.as_uri()
-    monkeypatch.setenv("NEW_RELIC_SUPERAGENT_HEALTH_DELIVERY_LOCATION", file_path)
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", file_path)
 
     _reset_configuration_done()
     initialize()
@@ -213,6 +213,6 @@ def test_multiple_activations_running_threads(monkeypatch, tmp_path):
     # 6 threads expected: One main agent thread, two active session threads, one main health check thread, and two
     # active session health threads
     assert len(running_threads) == 6
-    assert running_threads[1].name == "NR-Control-Health-Main-Thread"
-    assert running_threads[2].name == "NR-Control-Health-Session-Thread"
-    assert running_threads[4].name == "NR-Control-Health-Session-Thread"
+    assert running_threads[1].name == "Agent-Control-Health-Main-Thread"
+    assert running_threads[2].name == "Agent-Control-Health-Session-Thread"
+    assert running_threads[4].name == "Agent-Control-Health-Session-Thread"

@@ -49,7 +49,7 @@ from newrelic.network.exceptions import (
     RetryDataForRequest,
 )
 from newrelic.samplers.data_sampler import DataSampler
-from newrelic.core.super_agent_health import HealthStatus, super_agent_healthcheck_loop, super_agent_health_instance
+from newrelic.core.agent_control_health import HealthStatus, agent_control_healthcheck_loop, agent_control_health_instance
 
 _logger = logging.getLogger(__name__)
 
@@ -111,9 +111,9 @@ class Application:
 
         self._remaining_plugins = True
 
-        self._super_agent_health_thread = threading.Thread(name="NR-Control-Health-Session-Thread", target=super_agent_healthcheck_loop)
-        self._super_agent_health_thread.daemon = True
-        self._super_agent = super_agent_health_instance()
+        self._agent_control_health_thread = threading.Thread(name="Agent-Control-Health-Session-Thread", target=agent_control_healthcheck_loop)
+        self._agent_control_health_thread.daemon = True
+        self._agent_control = agent_control_health_instance()
 
 
         # We setup empty rules engines here even though they will be
@@ -210,8 +210,8 @@ class Application:
         if self._active_session:
             return
 
-        if self._super_agent.health_check_enabled and not self._super_agent_health_thread.is_alive():
-            self._super_agent_health_thread.start()
+        if self._agent_control.health_check_enabled and not self._agent_control_health_thread.is_alive():
+            self._agent_control_health_thread.start()
 
         self._process_id = os.getpid()
 
@@ -369,7 +369,7 @@ class Application:
                         None, self._app_name, self.linked_applications, environment_settings()
                     )
                 except ForceAgentDisconnect:
-                    self._super_agent.set_health_status(HealthStatus.FAILED_NR_CONNECTION.value)
+                    self._agent_control.set_health_status(HealthStatus.FAILED_NR_CONNECTION.value)
                     # Any disconnect exception means we should stop trying to connect
                     _logger.error(
                         "The New Relic service has requested that the agent "
@@ -380,7 +380,7 @@ class Application:
                     )
                     return
                 except NetworkInterfaceException:
-                    self._super_agent.set_health_status(HealthStatus.FAILED_NR_CONNECTION.value)
+                    self._agent_control.set_health_status(HealthStatus.FAILED_NR_CONNECTION.value)
                     active_session = None
                 except Exception:
                     # If an exception occurs after agent has been flagged to be
@@ -390,7 +390,7 @@ class Application:
                     # the application is still running.
 
                     if not self._agent_shutdown and not self._pending_shutdown:
-                        self._super_agent.set_health_status(HealthStatus.FAILED_NR_CONNECTION.value)
+                        self._agent_control.set_health_status(HealthStatus.FAILED_NR_CONNECTION.value)
                         _logger.exception(
                             "Unexpected exception when registering "
                             "agent with the data collector. If this problem "
@@ -502,7 +502,7 @@ class Application:
 
         configuration = active_session.configuration
         # Check if the agent previously had an unhealthy status related to the data collector and update
-        self._super_agent.update_to_healthy_status(collector_error=True)
+        self._agent_control.update_to_healthy_status(collector_error=True)
 
         with self._stats_lock:
             self._stats_engine.reset_stats(configuration, reset_stream=True)
@@ -602,10 +602,10 @@ class Application:
                     1,
                 )
 
-            # Super agent health check metric
-            if os.environ.get("NEW_RELIC_SUPERAGENT_FLEET_ID", None):
+            # Agent Control health check metric
+            if self._agent_control.health_check_enabled:
                 internal_metric(
-                    "Supportability/SuperAgent/Health/enabled",
+                    "Supportability/AgentControl/Health/enabled",
                     1,
                 )
 
@@ -1707,9 +1707,9 @@ class Application:
         optionally triggers activation of a new session.
 
         """
-        self._super_agent.set_health_status(HealthStatus.AGENT_SHUTDOWN.value)
-        if self._super_agent.health_check_enabled:
-            self._super_agent.write_to_health_file()
+        self._agent_control.set_health_status(HealthStatus.AGENT_SHUTDOWN.value)
+        if self._agent_control.health_check_enabled:
+            self._agent_control.write_to_health_file()
 
         # We need to stop any thread profiler session related to this
         # application.

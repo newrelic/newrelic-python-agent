@@ -38,6 +38,7 @@ class HealthStatus(IntEnum):
     INVALID_CONFIG = 10
     AGENT_SHUTDOWN = 99
 
+
 # Set enum integer values as dict keys to reduce performance impact of string copies
 HEALTH_CHECK_STATUSES = {
     HealthStatus.HEALTHY.value: "Healthy",
@@ -54,7 +55,9 @@ HEALTH_CHECK_STATUSES = {
 UNKNOWN_STATUS_MESSAGE = "Unknown health status code."
 HEALTHY_STATUS_MESSAGE = HEALTH_CHECK_STATUSES[HealthStatus.HEALTHY.value]  # Assign most used status a symbol
 
-PROTOCOL_ERROR_CODES = frozenset([HealthStatus.FORCED_DISCONNECT.value, HealthStatus.HTTP_ERROR.value, HealthStatus.PROXY_ERROR.value])
+PROTOCOL_ERROR_CODES = frozenset(
+    [HealthStatus.FORCED_DISCONNECT.value, HealthStatus.HTTP_ERROR.value, HealthStatus.PROXY_ERROR.value]
+)
 LICENSE_KEY_ERROR_CODES = frozenset([HealthStatus.INVALID_LICENSE.value, HealthStatus.MISSING_LICENSE.value])
 
 
@@ -62,9 +65,7 @@ def is_valid_file_delivery_location(file_uri):
     # Verify whether file directory provided to agent via env var is a valid file URI to determine whether health
     # check should run
     if not file_uri:
-        _logger.warning(
-            "Configured NR Control health delivery location is empty. Health check will not be enabled."
-        )
+        _logger.warning("Configured Agent Control health delivery location is empty. Health check will not be enabled.")
         return False
 
     try:
@@ -72,14 +73,14 @@ def is_valid_file_delivery_location(file_uri):
 
         if not parsed_uri.scheme or not parsed_uri.path:
             _logger.warning(
-                "Configured NR Control health delivery location is not a complete file URI. Health check will not be"
+                "Configured Agent Control health delivery location is not a complete file URI. Health check will not be"
                 "enabled. "
             )
             return False
 
         if parsed_uri.scheme != "file":
             _logger.warning(
-                "Configured NR Control health delivery location does not have a valid scheme. Health check will not be"
+                "Configured Agent Control health delivery location does not have a valid scheme. Health check will not be"
                 "enabled."
             )
             return False
@@ -89,7 +90,7 @@ def is_valid_file_delivery_location(file_uri):
         # Check if the path exists
         if not path.exists():
             _logger.warning(
-                "Configured NR Control health delivery location does not exist. Health check will not be enabled."
+                "Configured Agent Control health delivery location does not exist. Health check will not be enabled."
             )
             return False
 
@@ -97,28 +98,28 @@ def is_valid_file_delivery_location(file_uri):
 
     except Exception as e:
         _logger.warning(
-            "Configured NR Control health delivery location is not valid. Health check will not be enabled."
+            "Configured Agent Control health delivery location is not valid. Health check will not be enabled."
         )
         return False
 
 
-class SuperAgentHealth:
+class AgentControlHealth:
     _instance_lock = threading.Lock()
     _instance = None
 
-    # Define a way to access/create a single super agent object instance similar to the agent_singleton
+    # Define a way to access/create a single agent control object instance similar to the agent_singleton
     @staticmethod
-    def super_agent_health_singleton():
-        if SuperAgentHealth._instance:
-            return SuperAgentHealth._instance
+    def agent_control_health_singleton():
+        if AgentControlHealth._instance:
+            return AgentControlHealth._instance
 
-        with SuperAgentHealth._instance_lock:
-            if not SuperAgentHealth._instance:
-                instance = SuperAgentHealth()
+        with AgentControlHealth._instance_lock:
+            if not AgentControlHealth._instance:
+                instance = AgentControlHealth()
 
-                SuperAgentHealth._instance = instance
+                AgentControlHealth._instance = instance
 
-        return SuperAgentHealth._instance
+        return AgentControlHealth._instance
 
     def __init__(self):
         # Initialize health check with a healthy status that can be updated as issues are encountered
@@ -129,11 +130,11 @@ class SuperAgentHealth:
 
     @property
     def health_check_enabled(self):
-        fleet_id_present = os.environ.get("NEW_RELIC_SUPERAGENT_FLEET_ID", None)
+        fleet_id_present = os.environ.get("NEW_RELIC_AGENT_CONTROL_FLEET_ID", None)
         if not fleet_id_present:
             return False
 
-        health_file_location = os.environ.get("NEW_RELIC_SUPERAGENT_HEALTH_DELIVERY_LOCATION", None)
+        health_file_location = os.environ.get("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", None)
 
         return is_valid_file_delivery_location(health_file_location)
 
@@ -160,13 +161,18 @@ class SuperAgentHealth:
         # session. This function allows us to update to a healthy status if so based on the error type
         # Since this function is only called when we are in scenario where the agent functioned as expected, we check to
         # see if the previous status was unhealthy so we know to update it
-        if protocol_error and self.status_code in PROTOCOL_ERROR_CODES or collector_error and self.status_code == HealthStatus.FAILED_NR_CONNECTION.value:
+        if (
+            protocol_error
+            and self.status_code in PROTOCOL_ERROR_CODES
+            or collector_error
+            and self.status_code == HealthStatus.FAILED_NR_CONNECTION.value
+        ):
             self.status_code = HealthStatus.HEALTHY.value
             self.status_message = HEALTHY_STATUS_MESSAGE
 
     def write_to_health_file(self):
         status_time_unix_nano = time.time_ns()
-        health_file_location = os.environ.get("NEW_RELIC_SUPERAGENT_HEALTH_DELIVERY_LOCATION", None)
+        health_file_location = os.environ.get("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", None)
 
         # Additional safeguard though health delivery location contents were initially checked to determine if health
         # check should be enabled
@@ -204,21 +210,21 @@ class SuperAgentHealth:
         return self.pid_file_id_map[pid]
 
 
-def super_agent_health_instance():
+def agent_control_health_instance():
     # Helper function directly returns the singleton instance similar to agent_instance()
-    return SuperAgentHealth.super_agent_health_singleton()
+    return AgentControlHealth.agent_control_health_singleton()
 
 
-def super_agent_healthcheck_loop():
-    reporting_frequency = os.environ.get("NEW_RELIC_SUPERAGENT_HEALTH_FREQUENCY", 5)
+def agent_control_healthcheck_loop():
+    reporting_frequency = os.environ.get("NEW_RELIC_AGENT_CONTROL_HEALTH_FREQUENCY", 5)
     scheduler = sched.scheduler(time.time, time.sleep)
 
-    # Target this function when starting super agent health check threads to keep the scheduler running
-    scheduler.enter(reporting_frequency, 1, super_agent_healthcheck, (scheduler, reporting_frequency))
+    # Target this function when starting agent control health check threads to keep the scheduler running
+    scheduler.enter(reporting_frequency, 1, agent_control_healthcheck, (scheduler, reporting_frequency))
     scheduler.run()
 
 
-def super_agent_healthcheck(scheduler, reporting_frequency):
-    scheduler.enter(reporting_frequency, 1, super_agent_healthcheck, (scheduler, reporting_frequency))
+def agent_control_healthcheck(scheduler, reporting_frequency):
+    scheduler.enter(reporting_frequency, 1, agent_control_healthcheck, (scheduler, reporting_frequency))
 
-    super_agent_health_instance().write_to_health_file()
+    agent_control_health_instance().write_to_health_file()

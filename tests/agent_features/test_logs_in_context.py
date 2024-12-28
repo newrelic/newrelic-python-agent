@@ -17,7 +17,7 @@ import logging
 import sys
 
 from io import StringIO as Buffer
-from traceback import format_tb
+from traceback import format_exception
 
 import pytest
 
@@ -237,12 +237,14 @@ def test_newrelic_logger_error_inside_transaction_no_stack_trace(log_buffer):
 
 @background_task()
 def test_newrelic_logger_error_inside_transaction_with_stack_trace(log_buffer_with_stack_trace):
-    expected_stack_trace = ""
     try:
-        raise ExceptionForTest
+        try:
+            raise ExceptionForTest("cause")
+        except ExceptionForTest:
+            raise ExceptionForTest("exception-with-cause")
     except ExceptionForTest:
         _logger.exception("oops")
-        expected_stack_trace = "".join(format_tb(sys.exc_info()[2]))
+        expected_stack_trace = "".join(format_exception(*sys.exc_info()))
 
     log_buffer_with_stack_trace.seek(0)
     message = json.load(log_buffer_with_stack_trace)
@@ -271,7 +273,7 @@ def test_newrelic_logger_error_inside_transaction_with_stack_trace(log_buffer_wi
         "thread.name": "MainThread",
         "process.name": "MainProcess",
         "error.class": "test_logs_in_context:ExceptionForTest",
-        "error.message": "",
+        "error.message": "exception-with-cause",
         "error.expected": False
     }
     expected_extra_txn_keys = (
@@ -331,12 +333,14 @@ def test_newrelic_logger_error_outside_transaction_no_stack_trace(log_buffer):
 
 
 def test_newrelic_logger_error_outside_transaction_with_stack_trace(log_buffer_with_stack_trace):
-    expected_stack_trace = ""
     try:
-        raise ExceptionForTest
+        try:
+            raise ExceptionForTest("cause")
+        except ExceptionForTest:
+            raise ExceptionForTest("exception-with-cause")
     except ExceptionForTest:
         _logger.exception("oops")
-        expected_stack_trace = "".join(format_tb(sys.exc_info()[2]))
+        expected_stack_trace = "".join(format_exception(*sys.exc_info()))
 
     log_buffer_with_stack_trace.seek(0)
     message = json.load(log_buffer_with_stack_trace)
@@ -365,7 +369,7 @@ def test_newrelic_logger_error_outside_transaction_with_stack_trace(log_buffer_w
         "thread.name": "MainThread",
         "process.name": "MainProcess",
         "error.class": "test_logs_in_context:ExceptionForTest",
-        "error.message": "",
+        "error.message": "exception-with-cause",
     }
     expected_extra_txn_keys = (
         "entity.guid",

@@ -77,15 +77,13 @@ def main():
             continue
 
         if not instrumented_class or class_name not in instrumented_class:
-            #         uninstrumented_classes.append(class_name)
-
-            # if uninstrumented_classes:
-            #     for uninstrumented_class in uninstrumented_classes:
             if class_name in vector_store_class_directory:
                 uninstrumented_directory = vector_store_class_directory[class_name]
+
                 # Add in newrelic/config.py if there is not an instrumented directory
                 # Otherwise, config already exists, so no need to duplicate it.
                 add_to_config(uninstrumented_directory, instrumented_class)
+
                 # Add in newrelic/hooks/mlmodel_langchain.py
                 add_to_hooks(class_name, uninstrumented_directory, instrumented_class)
 

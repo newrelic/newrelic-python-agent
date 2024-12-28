@@ -2720,6 +2720,12 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "langchain_community.vectorstores.tablestore",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
         "langchain_core.tools",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_core_tools",

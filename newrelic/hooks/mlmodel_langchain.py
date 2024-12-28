@@ -59,8 +59,7 @@ VECTORSTORE_CLASSES = {
     "langchain_community.vectorstores.documentdb": "DocumentDBVectorSearch",
     "langchain_community.vectorstores.duckdb": "DuckDB",
     "langchain_community.vectorstores.ecloud_vector_search": "EcloudESVectorStore",
-    "langchain_community.vectorstores.elastic_vector_search": "ElasticVectorSearch",
-    # "langchain_community.vectorstores.elastic_vector_search": "ElasticKnnSearch", # Deprecated
+    "langchain_community.vectorstores.elastic_vector_search": ["ElasticVectorSearch", "ElasticKnnSearch"],
     "langchain_community.vectorstores.elasticsearch": "ElasticsearchStore",
     "langchain_community.vectorstores.epsilla": "Epsilla",
     "langchain_community.vectorstores.faiss": "FAISS",
@@ -93,7 +92,7 @@ VECTORSTORE_CLASSES = {
     "langchain_community.vectorstores.pgvector": "PGVector",
     "langchain_community.vectorstores.pinecone": "Pinecone",
     "langchain_community.vectorstores.qdrant": "Qdrant",
-    "langchain_community.vectorstores.redis.base": "Redis",
+    "langchain_community.vectorstores.redis": "Redis",
     "langchain_community.vectorstores.relyt": "Relyt",
     "langchain_community.vectorstores.rocksetdb": "Rockset",
     "langchain_community.vectorstores.scann": "ScaNN",
@@ -126,8 +125,7 @@ VECTORSTORE_CLASSES = {
     "langchain_community.vectorstores.yellowbrick": "Yellowbrick",
     "langchain_community.vectorstores.zep_cloud": "ZepCloudVectorStore",
     "langchain_community.vectorstores.zep": "ZepVectorStore",
-    "langchain_community.vectorstores.docarray.hnsw": "DocArrayHnswSearch",
-    "langchain_community.vectorstores.docarray.in_memory": "DocArrayInMemorySearch",
+    "langchain_community.vectorstores.docarray": ["DocArrayHnswSearch", "DocArrayInMemorySearch"],
 }
 
 

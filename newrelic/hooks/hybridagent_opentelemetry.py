@@ -163,8 +163,6 @@ def instrument_meter(module):
 # ----------------------------------------------
 # Custom OTel Context Propagation
 # ----------------------------------------------
-
-
 class ContextApi:
     def create_key(self, keyname):
         return keyname + "-" + str(uuid.uuid4())
@@ -180,13 +178,12 @@ class ContextApi:
         return Context(new_values)
 
     def get_current(self):
-        span = current_trace()  # TODO: check this; this or get current modified otel span?
+        span = current_trace()
         if not span:
             return Context()
 
         # Convert NR trace into Otel Span
-        # TODO: See if otel_wrapper is attribute we removed before from Span __init__
-        otel_span = getattr(span, "otel_wrapper", Span(span.name, span))
+        otel_span = getattr(span, "otel_wrapper", Span(getattr(span, "name", "Sentinel"), span))
         context = otel_span.otel_context
 
         return context
@@ -228,22 +225,10 @@ class ContextApi:
 # Tracer: we can think of this as the transaction.
 # Span: we can think of this as the trace.
 # Links do not exist in NR.  Links are relationships between spans, but lateral in
-#   hierarchy.  In NR we only have parent-child relationships.
-
-# Our objectives:
-# 1. Create a wrapper around the Otel SDK Span object to match NR Trace object
-#   (same as what has been done).  This scenario covers when there's no NR
-#   instrumentation and all instrumentation is in Otel.
-# 2. Create a wrapper around the NR Trace object to match the Otel SDK Span object.
-#   This scenario covers when there's no Otel instrumentation and all instrumentation
-#   is in NR and we want to pass that data to Otel.
-#   - This may help when we are covering our edge case mentioned below:
-
-# Edge case scenarios to account for:
-# 1. If some instrumentation is in Otel and some is in NR, we need to be able to
-#    keep track of the parent, context, et cetera
-#    a. NR to Otel instrumentation propagation
-#    b. Otel to NR instrumentation propagation
+#   hierarchy.  In NR we only have parent-child relationships.  We might want to
+#   preserve this information with a custom attribute.  We can also add this as a
+#   new attribute in a trace, but it will still not be seen in the UI other than a
+#   trace attribute
 
 
 class Span(otel_api_trace.Span):
@@ -290,12 +275,12 @@ class Span(otel_api_trace.Span):
         nr_tracestate_headers = NrTraceState.decode(NrTraceState(nr_headers).text(), trusted_account_key)
 
         # Convert from dict to list of key/value tuples
-        otel_tracestate_headers = [(key, value) for key, value in nr_tracestate_headers.items()]
+        otel_tracestate_headers = [(key, str(value)) for key, value in nr_tracestate_headers.items()]
 
         return SpanContext(
             trace_id=int(self.nr_trace.transaction.guid, 16),
             span_id=int(self.nr_trace.guid, 16),
-            is_remote=False,  # This might be true when otel->nr or nr->otel instrumentation is implemented
+            is_remote=False,  # TODO: This can be thought of as an orphaned span flag.  Come back to this
             trace_flags=self._is_sampled(),
             trace_state=TraceState(otel_tracestate_headers),
         )
@@ -426,9 +411,9 @@ class Span(otel_api_trace.Span):
 
 
 class Tracer(otel_api_trace.Tracer):
-    def __init__(self, *args, name=None, nr_application=None, **kwargs):
-        self.appname = name
+    def __init__(self, *args, nr_application=None, **kwargs):
         self._settings = None
+        self.context_api = ContextApi()
         self.nr_application = (
             nr_application or application_instance(activate=False) or register_application("OtelTracer")
         )
@@ -440,7 +425,6 @@ class Tracer(otel_api_trace.Tracer):
             if not self._settings:
                 self.nr_application.activate()
                 self._settings = self.nr_application.settings
-            # self.nr_application._name = self.appname    # Reactivate once we have agent activation/TraceProvider
         else:
             # Unable to register application.  We should log this.
             pass
@@ -453,16 +437,23 @@ class Tracer(otel_api_trace.Tracer):
     #     sampled = span_context.trace_flags == TraceFlags.SAMPLED
 
     def start_span(self, name, context=None, kind=SpanKind.INTERNAL, attributes=None, record_exception=True):
-        breakpoint()
-        # TODO: Not working the way we think it is.  Look more into this
-        # temp = otel_api_trace.get_current_span(context)  # Is this where we need to make sure current span is correct?
-        # parent_span_context = temp.get_span_context()   # Is this going to our custom NR function?
-        parent_span_context = otel_api_trace.get_current_span(context).get_span_context()
         nr_parent_trace = current_trace() or (self.nr_transaction and self.nr_transaction.root_span)
 
-        # This filters out any scenarios where otel does not actually exist yet
-        if parent_span_context is None or not parent_span_context.is_valid:
+        # parent_span_context = None if not nr_parent_trace else nr_parent_trace.otel_wrapper.get_span_context()
+
+        # Modified Otel Span to include New Relic Trace
+        if nr_parent_trace and nr_parent_trace.otel_wrapper:
+            parent_span_context = nr_parent_trace.otel_wrapper.get_span_context()
+        # Original New Relic Trace
+        else:
             parent_span_context = None
+
+        # We might still need this logic for when there is otel coming into NR
+        # i.e. there may be a current trace, but no New Relic transaction/trace yet?
+        # parent_span_context = otel_api_trace.get_current_span(context).get_span_context()
+        # This filters out any scenarios where otel does not actually exist yet
+        # if parent_span_context is None or not parent_span_context.is_valid:
+        #     parent_span_context = None
 
         # Use parent_span_context to
         # 1) create headers for DT mode and
@@ -495,29 +486,18 @@ class Tracer(otel_api_trace.Tracer):
                 attributes=attributes,
             )
         elif parent_span_context and self.nr_transaction:
-            # This is a scenario where we are coming in from Otel into the NR space
-            # Several possibilities exist here:
-            # 1. if parent_span_context.trace_id has 0x0000 in front, it is NR transaction.guid.  Else it is Otel trace_id
-            #   a. If it is == to NR transaction.guid, we just need to start a trace/span (transition already in progress)
-            #   b. If it is Otel trace_id or not the same NR transaction.guid, something has gone out of sync.  This might need more investigation
-            # 2. if self.nr_transaction.root_span == nr_parent_trace, we have not started a trace
-            # in the NR space yet.  However, there exists a parent_span_context, so spans have been started in Otel.
-            # In this case, we need to create trace nodes in NR to connect otel to NR.  After that, we can
-            # start a trace/span in NR/otel, respectively.
-            pass
+            nr_trace = FunctionTrace(name=name, group="Otel", parent=nr_parent_trace, params=attributes)
+            nr_trace.__enter__()
+            span = Span(
+                name=name,
+                nr_trace=nr_trace,
+                nr_application=self.nr_application,
+                record_exception=record_exception,
+                attributes=attributes,
+            )
         elif parent_span_context and not self.nr_transaction:
-            # Another scenario where we are coming in from Otel into the NR space
-            # Here we need to go up the parent span context all the way up to the root span
-            # and create trace nodes in NR to connect otel to NR.  After that, we can start
-            # a transaction and override the start time of the transaction to match the start
-            # time of the root span.  Then we can start a trace/span in NR/otel, respectively.
+            # Current the way this is written, we will never hit this block
             pass
-            # parent_trace = None     # COME BACK TO THIS
-            # self.nr_transaction = BackgroundTask(application=self.nr_application, name=name, group="Otel")
-            # nr_trace = FunctionTrace(name=name, group="Otel", parent=parent_trace, record_exception=record_exception, attributes=attributes)
-            # span = Span(name=name, parent=parent_span_context, nr_trace=nr_trace, nr_application=self.nr_application, record_exception=record_exception, attributes=attributes)
-
-        # span.set_attributes(attributes) # Do we really need to retain otel attributes once we are in NR?
 
         # If DT is enabled, get DT headers
         if self._settings.distributed_tracing.enabled:
@@ -532,8 +512,7 @@ class Tracer(otel_api_trace.Tracer):
 
     @contextmanager
     def _use_span(self, span, end_on_exit=False, record_exception=True):
-        context_api = ContextApi()
-        context_api.attach(context_api.set_value(_SPAN_KEY, span))
+        self.context_api.attach(self.context_api.set_value(_SPAN_KEY, span))
         try:
             yield span
         except Exception as exc:
@@ -544,7 +523,7 @@ class Tracer(otel_api_trace.Tracer):
             if end_on_exit:
                 span.end()
             else:
-                context_api.detach()
+                self.context_api.detach()
 
     @contextmanager
     def start_as_current_span(
@@ -559,6 +538,14 @@ class Tracer(otel_api_trace.Tracer):
 
 
 def wrap_get_tracer(wrapped, instance, args, kwargs):
+    # Ignore module_name for now.  We will come back to this.
+    # This module name will be part of the function metric name.
+    # Instrumenting library version can be added to the metric
+    # name as well; it can also be populated with the package
+    # finder function.
+    # schema_url will be a custom transaction attribute
+    # attributes will be custom transaction attributes
+
     def bind_get_tracer(instrumenting_module_name, *args, **kwargs):
         return instrumenting_module_name
 

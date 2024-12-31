@@ -16,6 +16,7 @@
 # SEE IF THE MONKEY PATCHING WORKS IN ADDITION TO SETTING
 # UP THE TRACER PROVIDER (which for NR should not do anything)
 
+# 3. opentelemetry.trace.use_span is not implemented yet.  We will need to implement this (Do we need to?)
 # 4. Add test to use `use_span` instead of `start_as_current_span`
 # 5. Add test to use `use_span` instead of `start_as_current_span` while also employing a @function_trace decorator
 # 6. Add test that uses two transactions (maybe start with otel and continue with NR function within a BG task)
@@ -55,7 +56,7 @@ trace.set_tracer_provider(provider)
     },
 )
 def test_trace_basic():
-    tracer = trace.get_tracer("TracerProviderTestBasic")
+    tracer = trace.get_tracer(__name__)
 
     with tracer.start_as_current_span("foo"):
         pass
@@ -102,12 +103,95 @@ def test_trace_nested():
     """
     This test ensures that context propagation works as expected.
     """
-    tracer = trace.get_tracer("TracerProviderTestNested")
+    tracer = trace.get_tracer(__name__)
 
     with tracer.start_as_current_span("foo"):
         with tracer.start_as_current_span("bar"):
             with tracer.start_as_current_span("baz"):
                 pass
+
+
+@validate_span_events(
+    count=1,
+    exact_intrinsics={
+        "name": "Otel/baz",
+        "sampled": True,
+    },
+    expected_intrinsics={
+        "priority": None,
+        "traceId": None,
+        "guid": None,
+    },
+)
+@validate_span_events(
+    count=1,
+    exact_intrinsics={
+        "name": "Otel/bar",
+        "sampled": True,
+    },
+    expected_intrinsics={
+        "priority": None,
+        "traceId": None,
+        "guid": None,
+    },
+)
+@validate_span_events(
+    count=1,
+    exact_intrinsics={
+        "name": "Otel/foo",
+        "transaction.name": "OtherTransaction/Otel/foo",
+        "sampled": True,
+    },
+    expected_intrinsics={
+        "priority": None,
+        "traceId": None,
+        "guid": None,
+    },
+)
+def test_trace_nested_with_decorators():
+    """
+    This test ensures that context propagation works as expected.
+    """
+    tracer = trace.get_tracer(__name__)
+
+    @tracer.start_as_current_span("foo")
+    @tracer.start_as_current_span("bar")
+    @tracer.start_as_current_span("baz")
+    def _test():
+        pass
+
+    _test()
+
+
+def test_trace_nested_with_use_span():
+    """
+    Another test to ensure proper context propagation by
+    checking the following:
+    1. The validity of the following instrumentation methods:
+        a. `trace.get_current_span()`
+        b. `trace.use_span()`
+    2. That a mix of NR and Otel functions can be used together.
+    3. That proper child/parent relationships are maintained.
+    """
+
+    @function_trace()
+    def new_relic_function_trace(current_span):
+        nr_span = trace.get_current_span()
+        assert current_span is not nr_span
+
+    tracer = trace.get_tracer(__name__)
+
+    foo_span = tracer.start_span("foo")
+    with trace.use_span(foo_span, end_on_exit=True) as span1:
+        assert foo_span == span1
+        with tracer.start_as_current_span("bar") as span2:
+            bar_span = trace.get_current_span()
+            assert bar_span == span2
+            assert bar_span.nr_trace.parent == foo_span.nr_trace
+            baz_span = tracer.start_span("baz")
+            with trace.use_span(baz_span, end_on_exit=True) as span3:
+                assert baz_span == span3
+                new_relic_function_trace(baz_span)
 
 
 @validate_span_events(
@@ -145,12 +229,12 @@ def test_trace_with_otel_to_newrelic():
     This test transitions from Otel to New Relic conventions and
     adds custom attributes to the transaction and trace
     (or trace and span in Otel terms).
-    `add_custom_attribute` adds custom attributes to the transaction.
-    `add_custom_span_attribute` adds custom attributes to the trace.
-    Note that a transaction's custom attributes are added to the root
+    * `add_custom_attribute` adds custom attributes to the transaction.
+    * `add_custom_span_attribute` adds custom attributes to the trace.
+    NOTE: a transaction's custom attributes are added to the root
     span's user attributes.
     """
-    tracer = trace.get_tracer("TracerProviderTestOtelToNewRelic")
+    tracer = trace.get_tracer(__name__)
 
     @function_trace()
     def newrelic_function_trace():
@@ -196,7 +280,7 @@ def test_trace_with_newrelic_to_otel():
 
     @background_task()
     def newrelic_background_task():
-        tracer = trace.get_tracer("TracerProviderTestNewRelicToOtel")
+        tracer = trace.get_tracer(__name__)
         with tracer.start_as_current_span("foo"):
             add_custom_span_attribute("OTel span", "Branched from NR")
 

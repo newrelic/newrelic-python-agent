@@ -178,22 +178,29 @@ class ContextApi:
         return Context(new_values)
 
     def get_current(self):
-        span = current_trace()
-        if not span:
+        trace = current_trace()
+        if not trace:
             return Context()
 
         # Convert NR trace into Otel Span
-        otel_span = getattr(span, "otel_wrapper", Span(getattr(span, "name", "Sentinel"), span))
+        if hasattr(trace, "otel_wrapper") and getattr(
+            trace, "otel_wrapper"
+        ):  # Make sure this actually contains something in it
+            otel_span = trace.otel_wrapper
+        else:
+            otel_span = Span(name=getattr(trace, "name", "Sentinel"), nr_trace=trace)
+        # otel_span = getattr(trace, "otel_wrapper", Span(name=getattr(trace, "name", "Sentiel"), nr_trace=trace))
+        # otel_span = Span(name=getattr(trace, "name", "Sentinel"), nr_trace=trace) if not hasattr(trace, "otel_wrapper") else trace.otel_wrapper
         context = otel_span.otel_context
 
         return context
 
     def attach(self, context):
         # Original function returns a token.
-        span = context.get(_SPAN_KEY)
+        span = context.get(_SPAN_KEY)  # Where does create_key even get used?
         if not span:
             return None
-        span.otel_content = context
+        span.otel_context = context
         nr_trace = span.nr_trace
 
         # If not already the current trace, push it to the cache
@@ -511,7 +518,7 @@ class Tracer(otel_api_trace.Tracer):
         return span
 
     @contextmanager
-    def _use_span(self, span, end_on_exit=False, record_exception=True):
+    def _use_span(self, span, end_on_exit=True, record_exception=True):
         self.context_api.attach(self.context_api.set_value(_SPAN_KEY, span))
         try:
             yield span
@@ -533,7 +540,7 @@ class Tracer(otel_api_trace.Tracer):
             name, context=context, kind=kind, attributes=attributes, record_exception=record_exception
         )
 
-        with self._use_span(span, end_on_exit=True, record_exception=record_exception) as current_span:
+        with self._use_span(span, end_on_exit=end_on_exit, record_exception=record_exception) as current_span:
             yield current_span
 
 
@@ -554,6 +561,25 @@ def wrap_get_tracer(wrapped, instance, args, kwargs):
     return Tracer(module_name)
 
 
-def instrument_get_tracer(module):
+def wrap_use_span(wrapped, instance, args, kwargs):
+    tracer = otel_api_trace.get_tracer(__name__)
+    return tracer._use_span(*args, **kwargs)
+
+
+def wrap_get_current_span(wrapped, instance, args, kwargs):
+    tracer = otel_api_trace.get_tracer(__name__)
+    current_span = tracer.context_api.get_value(_SPAN_KEY)
+    return current_span
+
+
+def instrument_TracerProvider_get_tracer(module):
     if hasattr(module, "TracerProvider"):
         wrap_function_wrapper(module, "TracerProvider.get_tracer", wrap_get_tracer)
+
+
+def instrument_trace_api(module):
+    if hasattr(module, "use_span"):
+        wrap_function_wrapper(module, "use_span", wrap_use_span)
+
+    if hasattr(module, "get_current_span"):
+        wrap_function_wrapper(module, "get_current_span", wrap_get_current_span)

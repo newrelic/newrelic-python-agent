@@ -4586,7 +4586,13 @@ def _process_module_builtin_defaults():
     _process_module_definition(
         "opentelemetry.sdk.trace",
         "newrelic.hooks.hybridagent_opentelemetry",
-        "instrument_get_tracer",
+        "instrument_TracerProvider_get_tracer",
+    )
+
+    _process_module_definition(
+        "opentelemetry.trace",
+        "newrelic.hooks.hybridagent_opentelemetry",
+        "instrument_trace_api",
     )
 
 

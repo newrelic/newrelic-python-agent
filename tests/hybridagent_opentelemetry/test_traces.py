@@ -16,9 +16,6 @@
 # SEE IF THE MONKEY PATCHING WORKS IN ADDITION TO SETTING
 # UP THE TRACER PROVIDER (which for NR should not do anything)
 
-# 3. opentelemetry.trace.use_span is not implemented yet.  We will need to implement this (Do we need to?)
-# 4. Add test to use `use_span` instead of `start_as_current_span`
-# 5. Add test to use `use_span` instead of `start_as_current_span` while also employing a @function_trace decorator
 # 6. Add test that uses two transactions (maybe start with otel and continue with NR function within a BG task)
 # 7. Add test that adds Otel attributes to NR transaction and span
 
@@ -45,8 +42,8 @@ trace.set_tracer_provider(provider)
 @validate_span_events(
     count=1,
     exact_intrinsics={
-        "name": "Otel/foo",
-        "transaction.name": "OtherTransaction/Otel/foo",
+        "name": "Otel/otelspan",
+        "transaction.name": "OtherTransaction/Otel/otelspan",
         "sampled": True,
     },
     expected_intrinsics={
@@ -58,8 +55,32 @@ trace.set_tracer_provider(provider)
 def test_trace_basic():
     tracer = trace.get_tracer(__name__)
 
-    with tracer.start_as_current_span("foo"):
+    with tracer.start_as_current_span("otelspan"):
         pass
+
+
+@validate_span_events(
+    count=1,
+    exact_intrinsics={
+        "name": "Otel/otelspan",
+        "transaction.name": "OtherTransaction/Otel/otelspan",
+        "sampled": True,
+    },
+    expected_intrinsics={
+        "priority": None,
+        "traceId": None,
+        "guid": None,
+    },
+    exact_users={
+        "otel_attribute": "bar",
+        "nr_attribute": "foo",
+    },
+)
+def test_trace_with_attributes():
+    tracer = trace.get_tracer(__name__)
+
+    with tracer.start_as_current_span("otelspan", attributes={"otel_attribute": "bar"}):
+        add_custom_span_attribute("nr_attribute", "foo")
 
 
 @validate_span_events(

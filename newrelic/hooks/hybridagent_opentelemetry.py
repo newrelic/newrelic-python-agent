@@ -183,14 +183,12 @@ class ContextApi:
             return Context()
 
         # Convert NR trace into Otel Span
-        if hasattr(trace, "otel_wrapper") and getattr(
-            trace, "otel_wrapper"
-        ):  # Make sure this actually contains something in it
+        if hasattr(trace, "otel_wrapper") and getattr(trace, "otel_wrapper"):
+            # Make sure trace.otel_wrapper actually has a value and isn't just set to None
             otel_span = trace.otel_wrapper
         else:
+            # Create a new Otel Span
             otel_span = Span(name=getattr(trace, "name", "Sentinel"), nr_trace=trace)
-        # otel_span = getattr(trace, "otel_wrapper", Span(name=getattr(trace, "name", "Sentiel"), nr_trace=trace))
-        # otel_span = Span(name=getattr(trace, "name", "Sentinel"), nr_trace=trace) if not hasattr(trace, "otel_wrapper") else trace.otel_wrapper
         context = otel_span.otel_context
 
         return context
@@ -212,8 +210,7 @@ class ContextApi:
         return None
 
     def detach(self, token=None):
-        # Original function takes a token
-        # We will ignore this value
+        # Original function takes a token.  We will ignore this value.
         nr_trace = current_trace()
         if nr_trace:
             cache = trace_cache()
@@ -306,10 +303,8 @@ class Span(otel_api_trace.Span):
             # Distinguish between Otel and NR?  Or just
             # potentially override existing NR attributes
             # with Otel attributes?  For now, we will
-            # add a key to the Otel attribute to distinguish
-            # between the two
-            otel_key = f"otel_attribute_{key}"  # may remove this all together
-            self.nr_trace.add_custom_attribute(otel_key, value)
+            # override the attributes if there is a duplicate
+            self.nr_trace.add_custom_attribute(key, value)
 
     def add_event(self, name, attributes=None, timestamp=None):
         # We can implement this as a log event
@@ -436,17 +431,8 @@ class Tracer(otel_api_trace.Tracer):
             # Unable to register application.  We should log this.
             pass
 
-    # def _convert_span_context_to_trace(self, span_context):
-    #     # Convert Otel SpanContext to NR SpanContext
-    #     # This will be used to create a new trace in NR
-    #     guid = span_context.trace_id
-    #     trace_id = span_context.span_id
-    #     sampled = span_context.trace_flags == TraceFlags.SAMPLED
-
     def start_span(self, name, context=None, kind=SpanKind.INTERNAL, attributes=None, record_exception=True):
         nr_parent_trace = current_trace() or (self.nr_transaction and self.nr_transaction.root_span)
-
-        # parent_span_context = None if not nr_parent_trace else nr_parent_trace.otel_wrapper.get_span_context()
 
         # Modified Otel Span to include New Relic Trace
         if nr_parent_trace and nr_parent_trace.otel_wrapper:

@@ -12,13 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# COME BACK TO THIS AND TEST WITH THE API AND SDK AND
-# SEE IF THE MONKEY PATCHING WORKS IN ADDITION TO SETTING
-# UP THE TRACER PROVIDER (which for NR should not do anything)
-
-# 6. Add test that uses two transactions (maybe start with otel and continue with NR function within a BG task)
-# 7. Add test that adds Otel attributes to NR transaction and span
-
 from opentelemetry import trace
 from opentelemetry.sdk.trace import TracerProvider
 from testing_support.validators.validate_span_events import validate_span_events
@@ -34,6 +27,7 @@ from newrelic.api.transaction import add_custom_attribute
 # )
 # processor = BatchSpanProcessor(ConsoleSpanExporter())
 # provider.add_span_processor(processor)
+# TODO: Add tests to see if processors and exporters work as expected.
 
 provider = TracerProvider()
 trace.set_tracer_provider(provider)

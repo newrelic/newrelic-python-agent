@@ -32,8 +32,7 @@ REPLICATION_STRATEGY = "{ 'class' : 'SimpleStrategy', 'replication_factor' : 1 }
 
 
 @pytest.fixture(scope="function")
-def exercise(request, cluster):
-
+def exercise(cluster):
     def _exercise(is_async=False):
         with cluster.connect() as session:
             # Run async queries with execute_async() and .result(), and sync queries with execute()
@@ -152,7 +151,7 @@ _test_execute_rollup_metrics = [
 
 
 @validate_transaction_metrics(
-    "test_session:test_execute",
+    "test_cassandra:test_execute",
     scoped_metrics=_test_execute_scoped_metrics,
     rollup_metrics=_test_execute_rollup_metrics,
     background_task=True,
@@ -163,7 +162,7 @@ def test_execute(exercise):
 
 
 @validate_transaction_metrics(
-    "test_session:test_execute_async",
+    "test_cassandra:test_execute_async",
     scoped_metrics=_test_execute_scoped_metrics,
     rollup_metrics=_test_execute_rollup_metrics,
     background_task=True,

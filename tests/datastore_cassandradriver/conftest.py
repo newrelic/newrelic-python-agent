@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
+
 import pytest
 from testing_support.db_settings import cassandra_settings
 from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
@@ -20,6 +22,7 @@ from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
 )
 
 DB_SETTINGS = cassandra_settings()
+PYTHON_VERSION = sys.version_info
 
 
 _default_settings = {
@@ -39,12 +42,31 @@ collector_agent_registration = collector_agent_registration_fixture(
 )
 
 
+@pytest.fixture(scope="function", params=["Libev", "AsyncCore", "Twisted"])
+def connection_class(request):
+    # Configure tests to run against a specific async reactor.
+    reactor_name = request.param
+
+    if reactor_name == "Libev":
+        from cassandra.io.libevreactor import LibevConnection as Connection
+    elif reactor_name == "AsyncCore":
+        if PYTHON_VERSION >= (3, 12):
+            pytest.skip(reason="asyncore was removed from stdlib in Python 3.12.")
+        from cassandra.io.asyncorereactor import AsyncoreConnection as Connection
+    elif reactor_name == "Twisted":
+        from cassandra.io.twistedreactor import TwistedConnection as Connection
+    elif reactor_name == "AsyncIO":
+        # AsyncIO reactor is experimental and currently non-functional. Not testing it yet.
+        from cassandra.io.asyncioreactor import AsyncioConnection as Connection
+
+    return Connection
+
+
 @pytest.fixture(scope="function")
-def cluster():
+def cluster(connection_class):
     from cassandra.cluster import Cluster, ExecutionProfile
     from cassandra.policies import RoundRobinPolicy
 
-    # from cassandra.io.asyncioreactor import AsyncioConnection
     load_balancing_policy = RoundRobinPolicy()
     execution_profiles = {
         "default": ExecutionProfile(load_balancing_policy=load_balancing_policy, request_timeout=60.0)
@@ -52,7 +74,7 @@ def cluster():
     cluster = Cluster(
         [(node["host"], node["port"]) for node in DB_SETTINGS],
         execution_profiles=execution_profiles,
+        connection_class=connection_class,
         protocol_version=4,
     )
-
     yield cluster

@@ -1158,10 +1158,10 @@ jobs:
           - 8081:9042
         # Set health checks to wait until container has started
         options: >-
-          --health-cmd "cqlsh -e describe keyspaces"
-          --health-interval 10s
+          --health-cmd "cqlsh localhost 9042 -e 'describe cluster'"
+          --health-interval 30s
           --health-timeout 5s
-          --health-retries 5
+          --health-retries 10
 
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1

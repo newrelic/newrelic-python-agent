@@ -63,18 +63,26 @@ def connection_class(request):
 
 
 @pytest.fixture(scope="function")
-def cluster(connection_class):
-    from cassandra.cluster import Cluster, ExecutionProfile
+def cluster_options(connection_class):
+    from cassandra.cluster import ExecutionProfile
     from cassandra.policies import RoundRobinPolicy
 
     load_balancing_policy = RoundRobinPolicy()
     execution_profiles = {
         "default": ExecutionProfile(load_balancing_policy=load_balancing_policy, request_timeout=60.0)
     }
-    cluster = Cluster(
-        [(node["host"], node["port"]) for node in DB_SETTINGS],
-        execution_profiles=execution_profiles,
-        connection_class=connection_class,
-        protocol_version=4,
-    )
+    cluster_options = {
+        "contact_points": [(node["host"], node["port"]) for node in DB_SETTINGS],
+        "execution_profiles": execution_profiles,
+        "connection_class": connection_class,
+        "protocol_version": 4,
+    }
+    yield cluster_options
+
+
+@pytest.fixture(scope="function")
+def cluster(cluster_options):
+    from cassandra.cluster import Cluster
+
+    cluster = Cluster(**cluster_options)
     yield cluster

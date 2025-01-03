@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import pytest
+from cassandra.query import SimpleStatement
 from testing_support.db_settings import cassandra_settings
 from testing_support.util import instance_hostname
 from testing_support.validators.validate_transaction_metrics import (
@@ -30,13 +31,10 @@ FULL_TABLE_NAME = f"{KEYSPACE}.{TABLE_NAME}"  # Fully qualified table name with 
 REPLICATION_STRATEGY = "{ 'class' : 'SimpleStrategy', 'replication_factor' : 1 }"
 
 
-@pytest.fixture(scope="function", params=[pytest.param(True, id="Async"), pytest.param(False, id="Sync")])
+@pytest.fixture(scope="function")
 def exercise(request, cluster):
-    def _exercise():
-        from cassandra.query import SimpleStatement
 
-        is_async = request.param
-
+    def _exercise(is_async=False):
         with cluster.connect() as session:
             # Run async queries with execute_async() and .result(), and sync queries with execute()
             if is_async:
@@ -154,12 +152,22 @@ _test_execute_rollup_metrics = [
 
 
 @validate_transaction_metrics(
-    "test_database:test_execute",
+    "test_session:test_execute",
     scoped_metrics=_test_execute_scoped_metrics,
     rollup_metrics=_test_execute_rollup_metrics,
     background_task=True,
 )
 @background_task()
 def test_execute(exercise):
-    # Test Session.execute() and Session.execute_async()
-    exercise()
+    exercise(is_async=False)
+
+
+@validate_transaction_metrics(
+    "test_session:test_execute_async",
+    scoped_metrics=_test_execute_scoped_metrics,
+    rollup_metrics=_test_execute_rollup_metrics,
+    background_task=True,
+)
+@background_task()
+def test_execute_async(exercise):
+    exercise(is_async=True)

@@ -13,14 +13,9 @@
 # limitations under the License.
 
 from newrelic.api.database_trace import DatabaseTrace, register_database_client
-from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.function_trace import wrap_function_trace
 from newrelic.api.time_trace import current_trace
-from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import (
-    ObjectProxy,
-    wrap_function_wrapper,
-    wrap_object,
-)
+from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.signature import bind_args
 
 DBAPI2_MODULE = None
@@ -38,8 +33,12 @@ def wrap_Session_execute_async(wrapped, instance, args, kwargs):
 
     bound_args = bind_args(wrapped, args, kwargs)
 
-    sql = bound_args.get("query", None)
     sql_parameters = bound_args.get("parameters", None)
+
+    sql = bound_args.get("query", None)
+    if not isinstance(sql, str):
+        statement = getattr(sql, "prepared_statement", sql)  # Unbind BoundStatement
+        sql = statement.query_string  # Unpack query from SimpleStatement and PreparedStatement
 
     database_name = getattr(instance, "keyspace", None)
 
@@ -102,12 +101,17 @@ def instrument_cassandra(module):
         quoting_style="single+double",
         explain_query=None,
         explain_stmts=(),
-        instance_info=None,
+        instance_info=None,  # Already handled in wrappers
     )
 
 
 def instrument_cassandra_cluster(module):
     if hasattr(module, "Session"):
+        # Cluster connect instrumentation, normally supplied by DBAPI2ConnectionFactory
+        wrap_function_trace(
+            module, "Cluster.connect", terminal=True, rollup=["Datastore/all", "Datastore/Cassandra/all"]
+        )
+
         # Currently Session.execute() is a wrapper for calling Session.execute_async() and immediately waiting for
         # the result. We can therefore just instrument execute_async() and achieve full sync/async coverage.
         # If this changes in the future we'll need an additional wrapper, but care should be taken not to double wrap.

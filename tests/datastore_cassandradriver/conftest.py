@@ -20,8 +20,6 @@ from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
 )
 
 DB_SETTINGS = cassandra_settings()
-HOST = DB_SETTINGS[0]["host"]
-PORT = DB_SETTINGS[0]["port"]
 
 
 _default_settings = {
@@ -52,7 +50,7 @@ def cluster():
         "default": ExecutionProfile(load_balancing_policy=load_balancing_policy, request_timeout=60.0)
     }
     cluster = Cluster(
-        [(HOST, PORT)],
+        [(node["host"], node["port"]) for node in DB_SETTINGS],
         execution_profiles=execution_profiles,
         protocol_version=4,
     )

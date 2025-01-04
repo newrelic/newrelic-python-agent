@@ -219,6 +219,32 @@ def mongodb_settings():
     return settings
 
 
+def cassandra_settings():
+    """Return a list of dict of settings for connecting to cassandra.
+
+    Will return the correct settings, depending on which of the environments it
+    is running in. It attempts to set variables in the following order, where
+    later environments override earlier ones.
+
+        1. Local
+        2. Github Actions
+    """
+
+    host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "localhost"
+    instances = 1
+    identifier = str(os.getpid())
+    settings = [
+        {
+            "host": host,
+            "port": 8080 + instance_num,
+            "keyspace": f"cassandra_keyspace_{identifier}",
+            "table_name": f"cassandra_table_{identifier}",
+        }
+        for instance_num in range(instances)
+    ]
+    return settings
+
+
 def firestore_settings():
     """Return a list of dict of settings for connecting to firestore.
 
@@ -234,9 +260,7 @@ def firestore_settings():
 
     host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "127.0.0.1"
     instances = 2
-    settings = [
-        {"host": host, "port": 8080 + instance_num} for instance_num in range(instances)
-    ]
+    settings = [{"host": host, "port": 8080 + instance_num} for instance_num in range(instances)]
     return settings
 
 

@@ -34,6 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - python
+      - cassandra
       - elasticsearchserver07
       - elasticsearchserver08
       - firestore
@@ -274,7 +275,7 @@ jobs:
           - 8080:8080
           - 8081:8081
           - 8082:8082
-        # Set health checks to wait until nginx has started
+        # Set health checks to wait until container has started
         options: >-
           --health-cmd "service nginx status || exit 1"
           --health-interval 10s
@@ -338,7 +339,7 @@ jobs:
         ports:
           - 8080:5432
           - 8081:5432
-        # Set health checks to wait until postgres has started
+        # Set health checks to wait until container has started
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -402,7 +403,7 @@ jobs:
         ports:
           - 8080:5432
           - 8081:5432
-        # Set health checks to wait until postgres has started
+        # Set health checks to wait until container has started
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -469,7 +470,7 @@ jobs:
         ports:
           - 8080:1433
           - 8081:1433
-        # Set health checks to wait until mysql has started
+        # Set health checks to wait until container has started
         options: >-
           --health-cmd "/opt/mssql-tools/bin/sqlcmd -U SA -P $MSSQL_SA_PASSWORD -Q 'SELECT 1'"
           --health-interval 10s
@@ -536,7 +537,7 @@ jobs:
         ports:
           - 8080:3306
           - 8081:3306
-        # Set health checks to wait until mysql has started
+        # Set health checks to wait until container has started
         options: >-
           --health-cmd "mysqladmin ping -h localhost"
           --health-interval 10s
@@ -701,7 +702,7 @@ jobs:
         ports:
           - 8080:6379
           - 8081:6379
-        # Set health checks to wait until redis has started
+        # Set health checks to wait until container has started
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s
@@ -765,7 +766,7 @@ jobs:
         ports:
           - 8080:8983
           - 8081:8983
-        # Set health checks to wait until solr has started
+        # Set health checks to wait until container has started
         options: >-
           --health-cmd "curl localhost:8983/solr/collection/admin/ping | grep OK"
           --health-interval 10s
@@ -827,7 +828,7 @@ jobs:
         ports:
           - 8080:11211
           - 8081:11211
-        # Set health checks to wait until memcached has started
+        # Set health checks to wait until container has started
         options: >-
           --health-cmd "timeout 5 bash -c 'cat < /dev/null > /dev/udp/127.0.0.1/11211'"
           --health-interval 10s
@@ -890,7 +891,7 @@ jobs:
           RABBITMQ_PASSWORD: rabbitmq
         ports:
           - 5672:5672
-        # Set health checks to wait until rabbitmq has started
+        # Set health checks to wait until container has started
         options: >-
           --health-cmd "rabbitmq-diagnostics status"
           --health-interval 10s
@@ -1026,7 +1027,7 @@ jobs:
         ports:
           - 8080:27017
           - 8081:27017
-        # Set health checks to wait until mongodb has started
+        # Set health checks to wait until container has started
         options: >-
           --health-cmd "echo 'db.runCommand(\"ping\").ok' | mongo localhost:27017/test --quiet || exit 1"
           --health-interval 10s
@@ -1088,12 +1089,79 @@ jobs:
         ports:
           - 8080:27017
           - 8081:27017
-        # Set health checks to wait until mongodb has started
+        # Set health checks to wait until container has started
         options: >-
           --health-cmd "echo 'db.runCommand(\"ping\").ok' | mongosh localhost:27017/test --quiet || exit 1"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          mkdir -p /github/home/.cache/pip
+          chown -R $(whoami) /github/home/.cache/pip
+
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
+
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          PY_COLORS: 0
+
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # 4.3.1
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          retention-days: 1
+
+  cassandra:
+    env:
+      TOTAL_GROUPS: 1
+
+    strategy:
+      fail-fast: false
+      matrix:
+        group-number: [1]
+
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
+    timeout-minutes: 30
+    services:
+      cassandra:
+        image: cassandra:5.0.2
+        env:
+          CASSANDRA_SEEDS: "cassandra"
+          CASSANDRA_CLUSTER_NAME: TestCluster
+          CASSANDRA_ENDPOINT_SNITCH: SimpleSnitch
+          CASSANDRA_NUM_TOKENS: "128"
+        ports:
+          - 8080:9042
+          - 8081:9042
+        # Set health checks to wait until container has started
+        options: >-
+          --health-cmd "cqlsh localhost 9042 -e 'describe cluster'"
+          --health-interval 30s
+          --health-timeout 5s
+          --health-retries 10
 
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1
@@ -1152,7 +1220,7 @@ jobs:
         ports:
           - 8080:9200
           - 8081:9200
-        # Set health checks to wait until elasticsearch has started
+        # Set health checks to wait until container has started
         options: >-
           --health-cmd "curl --silent --fail localhost:9200/_cluster/health || exit 1"
           --health-interval 10s
@@ -1217,7 +1285,7 @@ jobs:
         ports:
           - 8080:9200
           - 8081:9200
-        # Set health checks to wait until elasticsearch has started
+        # Set health checks to wait until container has started
         options: >-
           --health-cmd "curl --silent --fail localhost:9200/_cluster/health || exit 1"
           --health-interval 10s
@@ -1279,7 +1347,7 @@ jobs:
         image: gcr.io/google.com/cloudsdktool/google-cloud-cli:437.0.1-emulators
         ports:
           - 8080:8080
-        # Set health checks to wait 5 seconds in lieu of an actual healthcheck
+        # Set health checks to wait until container has started
         options: >-
           --health-cmd "echo success"
           --health-interval 10s
@@ -1348,7 +1416,7 @@ jobs:
         ports:
           - 8080:6379
           - 8081:6379
-        # Set health checks to wait until valkey has started
+        # Set health checks to wait until container has started
         options: >-
           --health-cmd "valkey-cli ping"
           --health-interval 10s

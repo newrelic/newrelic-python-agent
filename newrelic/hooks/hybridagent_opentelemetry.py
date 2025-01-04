@@ -18,8 +18,6 @@ from contextlib import contextmanager
 
 # from opentelemetry.trace.status import Status, StatusCode
 from opentelemetry import trace as otel_api_trace
-
-# from opentelemetry.sdk import trace as otel_sdk_trace
 from opentelemetry.trace import Context, SpanKind
 from opentelemetry.trace.propagation import _SPAN_KEY
 from opentelemetry.trace.span import SpanContext, TraceFlags, TraceState
@@ -33,7 +31,7 @@ from newrelic.api.transaction import (
     record_custom_metric,
     record_dimensional_metric,
 )
-from newrelic.common.encoding_utils import NrTraceState  # , W3CTraceParent
+from newrelic.common.encoding_utils import NrTraceState
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.core.trace_cache import trace_cache
 
@@ -45,8 +43,9 @@ def wrap_meter(wrapped, instance, args, kwargs):
     def bind_meter(name, version=None, schema_url=None, *args, **kwargs):
         return name, version, schema_url  # attributes
 
+    transaction = current_transaction()
     name, version, schema_url = bind_meter(*args, **kwargs)
-    settings = current_transaction().settings
+    settings = (transaction and transaction.settings) or application_instance().settings
 
     custom_metric_function = (
         record_custom_metric if not settings.otel_dimensional_metrics.enabled else record_dimensional_metric
@@ -59,18 +58,19 @@ def wrap_meter(wrapped, instance, args, kwargs):
     else:
         custom_metric_function(f"OtelMeter/{name}", 1)
 
-    return wrapped(*args, **kwargs)
+    return wrapped(*args, **kwargs)  # Do we even need to do this?
 
 
 def wrap_add(wrapped, instance, args, kwargs):
     def bind_add(amount, *args, **kwargs):
         return amount  # , attributes, context
 
+    transaction = current_transaction()
     amount = bind_add(*args, **kwargs)
     meter_name = instance.instrumentation_scope.name
     counter_name = instance.name
 
-    settings = current_transaction().settings
+    settings = (transaction and transaction.settings) or application_instance().settings
 
     custom_metric_function = (
         record_custom_metric if not settings.otel_dimensional_metrics.enabled else record_dimensional_metric
@@ -93,7 +93,7 @@ def wrap_record(wrapped, instance, args, kwargs):
     meter_name = instance.instrumentation_scope.name
     histogram_name = instance.name
 
-    settings = current_transaction().settings
+    settings = (transaction and transaction.settings) or application_instance().settings
 
     custom_metric_function = (
         record_custom_metric if not settings.otel_dimensional_metrics.enabled else record_dimensional_metric
@@ -109,9 +109,11 @@ def _instrument_observable_methods(module, method_name):
         def bind_func(name, callbacks, unit=None, *args, **kwargs):
             return name, callbacks, unit
 
+        transaction = current_transaction()
+
         method_name, callbacks, unit = bind_func(*args, **kwargs)
         meter_name = instance._instrumentation_scope.name
-        settings = current_transaction().settings
+        settings = (transaction and transaction.settings) or application_instance().settings
 
         custom_metric_function = (
             record_custom_metric if not settings.otel_dimensional_metrics.enabled else record_dimensional_metric
@@ -262,13 +264,9 @@ class Span(otel_api_trace.Span):
         self.end(exception=(exc_type, exc_val, exc_tb))
 
     def _is_sampled(self):
-        # returns appropriate TraceFlag, depending on
-        # whether the transaction is sampled or not
-        return (
-            TraceFlags.SAMPLED
-            if (self.nr_trace.transaction.sampled and not self.nr_trace.transaction.ignore_transaction)
-            else TraceFlags.DEFAULT
-        )
+        # Uses NR to determine if the trace is sampled
+        sampled = bool(self.nr_trace.transaction.sampled and not self.nr_trace.transaction.ignore_transaction)
+        return sampled
 
     def get_span_context(self):
         nr_headers = self.nr_trace.transaction._create_distributed_trace_data()
@@ -285,7 +283,7 @@ class Span(otel_api_trace.Span):
             trace_id=int(self.nr_trace.transaction.guid, 16),
             span_id=int(self.nr_trace.guid, 16),
             is_remote=False,  # TODO: This can be thought of as an orphaned span flag.  Come back to this
-            trace_flags=self._is_sampled(),
+            trace_flags=TraceFlags(self._is_sampled()),  # self._is_sampled(),
             trace_state=TraceState(otel_tracestate_headers),
         )
 

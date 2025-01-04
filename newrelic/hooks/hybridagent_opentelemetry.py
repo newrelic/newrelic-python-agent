@@ -20,7 +20,7 @@ from contextlib import contextmanager
 from opentelemetry import trace as otel_api_trace
 from opentelemetry.trace import Context, SpanKind
 from opentelemetry.trace.propagation import _SPAN_KEY
-from opentelemetry.trace.span import SpanContext, TraceFlags, TraceState
+from opentelemetry.trace.span import INVALID_SPAN, SpanContext, TraceFlags, TraceState
 
 from newrelic.api.application import application_instance, register_application
 from newrelic.api.background_task import BackgroundTask
@@ -245,6 +245,9 @@ class Span(otel_api_trace.Span):
         nr_application=None,
         record_exception=True,
         attributes=None,
+        kind=SpanKind.INTERNAL,
+        *args,
+        **kwargs,
     ):
         self._name = name
         self.nr_trace = nr_trace if nr_trace else current_trace()
@@ -256,6 +259,7 @@ class Span(otel_api_trace.Span):
         )  # both must be set to false in order to not record
         self._status = 0  # UNSET (Otel statuses are not a 1:1 mapping)
         self._attributes = attributes if attributes else {}
+        self.kind = kind
 
     def __enter__(self):
         return self
@@ -407,7 +411,7 @@ class Span(otel_api_trace.Span):
     #                 self.record_exception(exc)
 
     def record_exception(self, exception, attributes=None, timestamp=None, escaped=False):
-        self.nr_trace.notice_error(exception, attributes=attributes)
+        self.nr_trace.notice_error((type(exception), exception, exception.__traceback__), attributes=attributes)
 
 
 class Tracer(otel_api_trace.Tracer):
@@ -429,8 +433,13 @@ class Tracer(otel_api_trace.Tracer):
             # Unable to register application.  We should log this.
             pass
 
-    def start_span(self, name, context=None, kind=SpanKind.INTERNAL, attributes=None, record_exception=True):
+    def start_span(
+        self, name, context=None, kind=SpanKind.INTERNAL, start_time=None, attributes=None, record_exception=True
+    ):
         nr_parent_trace = current_trace() or (self.nr_transaction and self.nr_transaction.root_span)
+
+        # Check again for the current transaction if it was not set in __init__
+        self.nr_transaction = current_transaction() if not self.nr_transaction else self.nr_transaction
 
         # Modified Otel Span to include New Relic Trace
         if nr_parent_trace and nr_parent_trace.otel_wrapper:
@@ -464,6 +473,7 @@ class Tracer(otel_api_trace.Tracer):
                 nr_application=self.nr_application,
                 record_exception=record_exception,
                 attributes=attributes,
+                kind=kind,
             )
         elif not parent_span_context and self.nr_transaction:
             # we need to start a trace/span
@@ -475,6 +485,7 @@ class Tracer(otel_api_trace.Tracer):
                 nr_application=self.nr_application,
                 record_exception=record_exception,
                 attributes=attributes,
+                kind=kind,
             )
         elif parent_span_context and self.nr_transaction:
             nr_trace = FunctionTrace(name=name, group="Otel", parent=nr_parent_trace, params=attributes)
@@ -485,10 +496,18 @@ class Tracer(otel_api_trace.Tracer):
                 nr_application=self.nr_application,
                 record_exception=record_exception,
                 attributes=attributes,
+                kind=kind,
             )
         elif parent_span_context and not self.nr_transaction:
             # Current the way this is written, we will never hit this block
-            pass
+            breakpoint()  # Keep this here in case it ever does get here.
+            span = Span(
+                name=name,
+                nr_application=self.nr_application,
+                record_exception=record_exception,
+                attributes=attributes,
+                kind=kind,
+            )
 
         # If DT is enabled, get DT headers
         if self._settings.distributed_tracing.enabled:
@@ -553,7 +572,8 @@ def wrap_use_span(wrapped, instance, args, kwargs):
 def wrap_get_current_span(wrapped, instance, args, kwargs):
     tracer = otel_api_trace.get_tracer(__name__)
     current_span = tracer.context_api.get_value(_SPAN_KEY)
-    return current_span
+
+    return current_span if current_span else INVALID_SPAN
 
 
 def instrument_TracerProvider_get_tracer(module):

@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from opentelemetry import trace
+from opentelemetry.metrics import set_meter_provider
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.trace import TracerProvider
 from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     collector_agent_registration_fixture,
     collector_available_fixture,
@@ -30,3 +34,10 @@ collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (Hybrid Agent)",
     default_settings=_default_settings,
 )
+
+
+provider = MeterProvider()
+set_meter_provider(provider)
+
+trace_provider = TracerProvider()
+trace.set_tracer_provider(trace_provider)

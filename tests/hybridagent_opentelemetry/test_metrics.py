@@ -13,17 +13,13 @@
 # limitations under the License.
 
 import pytest
-from opentelemetry.metrics import Observation, get_meter_provider, set_meter_provider
-from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.metrics import Observation, get_meter_provider
 from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
 )
 
 from newrelic.api.background_task import background_task
-
-provider = MeterProvider()
-set_meter_provider(provider)
 
 
 # Counter

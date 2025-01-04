@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from opentelemetry import trace
-from opentelemetry.sdk.trace import TracerProvider
+from testing_support.fixtures import dt_enabled
 from testing_support.validators.validate_span_events import validate_span_events
 
 from newrelic.api.background_task import background_task
@@ -29,10 +29,8 @@ from newrelic.api.transaction import add_custom_attribute
 # provider.add_span_processor(processor)
 # TODO: Add tests to see if processors and exporters work as expected.
 
-provider = TracerProvider()
-trace.set_tracer_provider(provider)
 
-
+@dt_enabled
 @validate_span_events(
     count=1,
     exact_intrinsics={
@@ -53,6 +51,7 @@ def test_trace_basic():
         pass
 
 
+@dt_enabled
 @validate_span_events(
     count=1,
     exact_intrinsics={
@@ -77,6 +76,7 @@ def test_trace_with_attributes():
         add_custom_span_attribute("nr_attribute", "foo")
 
 
+@dt_enabled
 @validate_span_events(
     count=1,
     exact_intrinsics={
@@ -126,6 +126,7 @@ def test_trace_nested():
                 pass
 
 
+@dt_enabled
 @validate_span_events(
     count=1,
     exact_intrinsics={
@@ -209,6 +210,7 @@ def test_trace_nested_with_use_span():
                 new_relic_function_trace(baz_span)
 
 
+@dt_enabled
 @validate_span_events(
     count=1,
     exact_intrinsics={
@@ -261,6 +263,7 @@ def test_trace_with_otel_to_newrelic():
         newrelic_function_trace()
 
 
+@dt_enabled
 @validate_span_events(
     count=1,
     exact_intrinsics={

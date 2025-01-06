@@ -58,6 +58,16 @@ def extract_sqs(*args, **kwargs):
     return queue_value.rsplit("/", 1)[-1]
 
 
+def extract_kinesis(*args, **kwargs):
+    # The stream name can be passed as the StreamName or as part of the StreamARN.
+    stream_value = kwargs.get("StreamName", "Unknown")
+    if stream_value == "Unknown":
+        arn = kwargs.get("StreamARN", None)
+        if arn:
+            stream_value = arn.split("/", 1)[-1]
+    return stream_value
+
+
 def extract_sqs_agent_attrs(*args, **kwargs):
     # Try to capture AWS SQS info as agent attributes. Log any exception to debug.
     agent_attrs = {}
@@ -72,6 +82,19 @@ def extract_sqs_agent_attrs(*args, **kwargs):
                 agent_attrs["messaging.destination.name"] = m.group(3)
     except Exception as e:
         _logger.debug("Failed to capture AWS SQS info.", exc_info=True)
+    return agent_attrs
+
+
+def extract_kinesis_agent_attrs(*args, **kwargs):
+    # Try to capture AWS Kinesis info as agent attributes. Log any exception to debug.
+    agent_attrs = {}
+    try:
+        stream_arn = kwargs.get("StreamARN", None)
+        if stream_arn:
+            agent_attrs["cloud.platform"] = "aws_kinesis_data_streams"
+            agent_attrs["cloud.resource_id"] = stream_arn
+    except Exception as e:
+        _logger.debug("Failed to capture AWS Kinesis info.", exc_info=True)
     return agent_attrs
 
 
@@ -954,7 +977,7 @@ def dynamodb_datastore_trace(
     return _nr_dynamodb_datastore_trace_wrapper_
 
 
-def sqs_message_trace(
+def aws_message_trace(
     operation,
     destination_type,
     destination_name,
@@ -962,9 +985,10 @@ def sqs_message_trace(
     terminal=True,
     async_wrapper=None,
     extract_agent_attrs=None,
+    library=None,
 ):
     @function_wrapper
-    def _nr_sqs_message_trace_wrapper_(wrapped, instance, args, kwargs):
+    def _nr_aws_message_trace_wrapper_(wrapped, instance, args, kwargs):
         wrapper = async_wrapper if async_wrapper is not None else get_async_wrapper(wrapped)
         if not wrapper:
             parent = current_trace()
@@ -973,7 +997,7 @@ def sqs_message_trace(
         else:
             parent = None
 
-        _library = "SQS"
+        _library = library
         _operation = operation
         _destination_type = destination_type
         _destination_name = destination_name(*args, **kwargs)
@@ -999,7 +1023,7 @@ def sqs_message_trace(
         with trace:
             return wrapped(*args, **kwargs)
 
-    return _nr_sqs_message_trace_wrapper_
+    return _nr_aws_message_trace_wrapper_
 
 
 def wrap_emit_api_params(wrapped, instance, args, kwargs):
@@ -1059,14 +1083,23 @@ CUSTOM_TRACE_POINTS = {
     ("dynamodb", "delete_table"): dynamodb_datastore_trace("DynamoDB", extract("TableName"), "delete_table"),
     ("dynamodb", "query"): dynamodb_datastore_trace("DynamoDB", extract("TableName"), "query"),
     ("dynamodb", "scan"): dynamodb_datastore_trace("DynamoDB", extract("TableName"), "scan"),
-    ("sqs", "send_message"): sqs_message_trace(
-        "Produce", "Queue", extract_sqs, extract_agent_attrs=extract_sqs_agent_attrs
+    ("kinesis", "put_record"): aws_message_trace(
+        "Produce", "Stream", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
-    ("sqs", "send_message_batch"): sqs_message_trace(
-        "Produce", "Queue", extract_sqs, extract_agent_attrs=extract_sqs_agent_attrs
+    ("kinesis", "put_records"): aws_message_trace(
+        "Produce", "Stream", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
-    ("sqs", "receive_message"): sqs_message_trace(
-        "Consume", "Queue", extract_sqs, extract_agent_attrs=extract_sqs_agent_attrs
+    ("kinesis", "get_records"): aws_message_trace(
+        "Consume", "Stream", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("sqs", "send_message"): aws_message_trace(
+        "Produce", "Queue", extract_sqs, extract_agent_attrs=extract_sqs_agent_attrs, library="SQS"
+    ),
+    ("sqs", "send_message_batch"): aws_message_trace(
+        "Produce", "Queue", extract_sqs, extract_agent_attrs=extract_sqs_agent_attrs, library="SQS"
+    ),
+    ("sqs", "receive_message"): aws_message_trace(
+        "Consume", "Queue", extract_sqs, extract_agent_attrs=extract_sqs_agent_attrs, library="SQS"
     ),
     ("bedrock-runtime", "invoke_model"): wrap_bedrock_runtime_invoke_model(response_streaming=False),
     ("bedrock-runtime", "invoke_model_with_response_stream"): wrap_bedrock_runtime_invoke_model(

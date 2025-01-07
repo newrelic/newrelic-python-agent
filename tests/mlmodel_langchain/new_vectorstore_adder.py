@@ -1,12 +1,20 @@
+"""
+    This script is used to automatically add new vectorstore classes to the newrelic-python-agent.
+    To run this script, start from the root of the newrelic-python-agent repository and run:
+        `python tests/mlmodel_langchain/new_vectorstore_adder.py`
+    This will generate the necessary code to instrument the new vectorstore classes in the local
+    copy of the newrelic-python-agent repository.
+"""
+
 import os
 
 from langchain_community import vectorstores
 
 from newrelic.hooks.mlmodel_langchain import VECTORSTORE_CLASSES
 
-# To use for automated git PR creation
 dir_path = os.path.dirname(os.path.realpath(__file__))
-REPO_DIRECTORY = os.path.abspath(os.path.join(dir_path, os.pardir))
+test_dir = os.path.abspath(os.path.join(dir_path, os.pardir))
+REPO_PATH = os.path.abspath(os.path.join(test_dir, os.pardir))
 
 
 def add_to_config(directory, instrumented_class=None):
@@ -14,7 +22,7 @@ def add_to_config(directory, instrumented_class=None):
     if instrumented_class:
         return
 
-    with open("/Users/lrafeei/repo/newrelic-python-agent/newrelic/config.py", "r+") as file:
+    with open(f"{REPO_PATH}/newrelic/config.py", "r+") as file:
         text = file.read()
         text = text.replace(
             "VectorStores with similarity_search method",
@@ -31,7 +39,7 @@ def add_to_config(directory, instrumented_class=None):
 
 
 def add_to_hooks(class_name, directory, instrumented_class=None):
-    with open("/Users/lrafeei/repo/newrelic-python-agent/newrelic/hooks/mlmodel_langchain.py", "r+") as file:
+    with open(f"{REPO_PATH}/newrelic/hooks/mlmodel_langchain.py", "r+") as file:
         text = file.read()
 
         # The directory does not exist yet.  Add the new directory and class name to the beginning of the dictionary
@@ -58,6 +66,7 @@ def add_to_hooks(class_name, directory, instrumented_class=None):
 
 
 def main():
+    breakpoint()
     _test_vectorstore_modules_instrumented_ignored_classes = set(
         [
             "VectorStore",  # Base class

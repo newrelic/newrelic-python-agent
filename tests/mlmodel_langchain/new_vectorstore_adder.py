@@ -66,7 +66,6 @@ def add_to_hooks(class_name, directory, instrumented_class=None):
 
 
 def main():
-    breakpoint()
     _test_vectorstore_modules_instrumented_ignored_classes = set(
         [
             "VectorStore",  # Base class

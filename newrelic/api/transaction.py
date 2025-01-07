@@ -145,7 +145,7 @@ class Sentinel(TimeTrace):
         pass
 
 
-class CachedPath():
+class CachedPath:
     def __init__(self, transaction):
         self._name = None
         self.transaction = weakref.ref(transaction)
@@ -161,7 +161,7 @@ class CachedPath():
         return "Unknown"
 
 
-class Transaction():
+class Transaction:
     STATE_PENDING = 0
     STATE_RUNNING = 1
     STATE_STOPPED = 2
@@ -1811,7 +1811,7 @@ class Transaction():
     def add_custom_parameter(self, name, value):  # pragma: no cover
         # Deprecation warning
         warnings.warn(
-            ("The add_custom_parameter API has been deprecated. " "Please use the add_custom_attribute API."),
+            ("The add_custom_parameter API has been deprecated. Please use the add_custom_attribute API."),
             DeprecationWarning,
         )
         return self.add_custom_attribute(name, value)
@@ -1821,7 +1821,7 @@ class Transaction():
     def add_custom_parameters(self, items):  # pragma: no cover
         # Deprecation warning
         warnings.warn(
-            ("The add_custom_parameters API has been deprecated. " "Please use the add_custom_attributes API."),
+            ("The add_custom_parameters API has been deprecated. Please use the add_custom_attributes API."),
             DeprecationWarning,
         )
         return self.add_custom_attributes(items)

@@ -25,7 +25,6 @@ from testing_support.validators.validate_transaction_metrics import (
 )
 
 
-
 def target_application(with_tweens=False, tweens_explicit=False):
     # We need to delay Pyramid application creation because of ordering
     # issues whereby the agent needs to be initialised before Pyramid is
@@ -38,6 +37,7 @@ def target_application(with_tweens=False, tweens_explicit=False):
     from _test_application import target_application as _app
 
     return _app(with_tweens, tweens_explicit)
+
 
 _test_application_index_scoped_metrics = [
     ("Python/WSGI/Application", 1),
@@ -61,7 +61,7 @@ def test_application_index(with_tweens, tweens_explicit):
 
     metrics = list(_test_application_index_scoped_metrics)
     if with_tweens:
-        metrics.append(("Function/_test_application:" "simple_tween_factory.<locals>.simple_tween", 1))
+        metrics.append(("Function/_test_application:simple_tween_factory.<locals>.simple_tween", 1))
 
     @validate_code_level_metrics("_test_application", "home_view")
     @validate_transaction_errors(errors=[])

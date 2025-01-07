@@ -25,7 +25,7 @@ from testing_support.validators.validate_transaction_metrics import (
 from newrelic.api.background_task import background_task
 
 _test_matrix = [
-    ("service_method_type,service_method_method_name,raises_exception," "message_count,cancel"),
+    ("service_method_type,service_method_method_name,raises_exception,message_count,cancel"),
     (
         ("unary_unary", "__call__", False, 1, False),
         ("unary_unary", "__call__", True, 1, False),
@@ -63,7 +63,9 @@ def test_client(
 ):
     port = mock_grpc_server
 
-    service_method_class_name = f"NoTxn{service_method_type.title().replace('_', '')}{'Raises' if raises_exception else ''}"
+    service_method_class_name = (
+        f"NoTxn{service_method_type.title().replace('_', '')}{'Raises' if raises_exception else ''}"
+    )
     streaming_request = service_method_type.split("_")[0] == "stream"
     streaming_response = service_method_type.split("_")[1] == "stream"
 
@@ -171,7 +173,7 @@ def test_future_timeout_error(service_method_type, service_method_method_name, f
 
     @validate_transaction_errors(errors=[])
     @validate_transaction_metrics(
-        "test_clients:test_future_timeout_error.<locals>." "_test_future_timeout_error",
+        "test_clients:test_future_timeout_error.<locals>._test_future_timeout_error",
         scoped_metrics=_test_scoped_metrics,
         rollup_metrics=_test_rollup_metrics,
         background_task=True,
@@ -219,7 +221,7 @@ def test_repeated_result(service_method_type, service_method_method_name, mock_g
 
     @validate_transaction_errors(errors=[])
     @validate_transaction_metrics(
-        "test_clients:" "test_repeated_result.<locals>._test_repeated_result",
+        "test_clients:test_repeated_result.<locals>._test_repeated_result",
         scoped_metrics=_test_scoped_metrics,
         rollup_metrics=_test_rollup_metrics,
         background_task=True,
@@ -269,7 +271,7 @@ def test_future_cancel(service_method_type, service_method_method_name, future_r
 
     @validate_transaction_errors(errors=[])
     @validate_transaction_metrics(
-        "test_clients:test_future_cancel.<locals>." "_test_future_cancel",
+        "test_clients:test_future_cancel.<locals>._test_future_cancel",
         scoped_metrics=_test_scoped_metrics,
         rollup_metrics=_test_rollup_metrics,
         background_task=True,

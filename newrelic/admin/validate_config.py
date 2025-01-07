@@ -211,7 +211,7 @@ def validate_config(args):
 
     if not _application.active:
         _logger.error(
-            "Unable to register application for test, " "connection could not be established within %s seconds.",
+            "Unable to register application for test, connection could not be established within %s seconds.",
             _timeout,
         )
         return

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import inspect
 import uuid
 
 import boto3
@@ -25,6 +26,7 @@ from testing_support.validators.validate_transaction_metrics import (
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
+from newrelic.hooks.external_botocore import CUSTOM_TRACE_POINTS
 
 MOTO_VERSION = get_package_version_tuple("moto")
 BOTOCORE_VERSION = get_package_version_tuple("boto3")
@@ -62,12 +64,20 @@ AWS_REGION = "us-east-1"
 
 _kinesis_scoped_metrics = [
     (f"MessageBroker/Kinesis/Stream/Produce/Named/{TEST_STREAM}", 2),
+    (f"Kinesis/create_stream/{TEST_STREAM}", 1),
+    (f"Kinesis/describe_stream/{TEST_STREAM}", 1),
+    (f"Kinesis/get_shard_iterator/{TEST_STREAM}", 1),
+    (f"Kinesis/delete_stream/{TEST_STREAM}", 1),
     (f"External/{URL}/botocore/POST", 2),
 ]
 
 _kinesis_rollup_metrics = [
     (f"MessageBroker/Kinesis/Stream/Produce/Named/{TEST_STREAM}", 2),
     (f"MessageBroker/Kinesis/Stream/Consume/Named/{TEST_STREAM}", 1),
+    (f"Kinesis/create_stream/{TEST_STREAM}", 1),
+    (f"Kinesis/describe_stream/{TEST_STREAM}", 1),
+    (f"Kinesis/get_shard_iterator/{TEST_STREAM}", 1),
+    (f"Kinesis/delete_stream/{TEST_STREAM}", 1),
     ("External/all", 4),
     ("External/allOther", 4),
     (f"External/{URL}/all", 2),
@@ -83,11 +93,28 @@ _kinesis_rollup_metrics_error = [
 ]
 
 
+@background_task()
+@mock_aws
+def test_instrumented_kinesis_methods():
+    client = boto3.client(
+        "kinesis",
+        aws_access_key_id=AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+        region_name=AWS_REGION,
+    )
+
+    client_methods = inspect.getmembers(client, predicate=inspect.ismethod)
+    methods = {("kinesis", name) for (name, method) in client_methods if not name.startswith("_")}
+
+    uninstrumented_methods = methods - set(CUSTOM_TRACE_POINTS.keys())
+    assert not uninstrumented_methods
+
+
 @dt_enabled
 @validate_span_events(exact_agents={"aws.operation": "CreateStream"}, count=1)
 @validate_span_events(
     **EXPECTED_AGENT_ATTRS,
-    count=3,
+    count=5,
 )
 @validate_span_events(exact_agents={"aws.operation": "DeleteStream"}, count=1)
 @validate_transaction_metrics(

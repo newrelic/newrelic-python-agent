@@ -977,6 +977,49 @@ def dynamodb_datastore_trace(
     return _nr_dynamodb_datastore_trace_wrapper_
 
 
+def aws_function_trace(
+    operation,
+    destination_name,
+    params={},
+    terminal=False,
+    async_wrapper=None,
+    extract_agent_attrs=None,
+    library=None,
+):
+    @function_wrapper
+    def _nr_aws_function_trace_wrapper_(wrapped, instance, args, kwargs):
+        wrapper = async_wrapper if async_wrapper is not None else get_async_wrapper(wrapped)
+        if not wrapper:
+            parent = current_trace()
+            if not parent:
+                return wrapped(*args, **kwargs)
+        else:
+            parent = None
+
+        _destination_name = destination_name(*args, **kwargs)
+
+        trace = FunctionTrace(
+            name=_destination_name,
+            group=f"{library}/{operation}",
+            params=params,
+            terminal=terminal,
+            parent=parent,
+            source=wrapped,
+        )
+
+        # Attach extracted agent attributes.
+        _agent_attrs = extract_agent_attrs(*args, **kwargs)
+        trace.agent_attributes.update(_agent_attrs)
+
+        if wrapper:  # pylint: disable=W0125,W0126
+            return wrapper(wrapped, trace)(*args, **kwargs)
+
+        with trace:
+            return wrapped(*args, **kwargs)
+
+    return _nr_aws_function_trace_wrapper_
+
+
 def aws_message_trace(
     operation,
     destination_type,
@@ -1083,6 +1126,123 @@ CUSTOM_TRACE_POINTS = {
     ("dynamodb", "delete_table"): dynamodb_datastore_trace("DynamoDB", extract("TableName"), "delete_table"),
     ("dynamodb", "query"): dynamodb_datastore_trace("DynamoDB", extract("TableName"), "query"),
     ("dynamodb", "scan"): dynamodb_datastore_trace("DynamoDB", extract("TableName"), "scan"),
+    ("kinesis", "add_tags_to_stream"): aws_function_trace(
+        "add_tags_to_stream", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "can_paginate"): aws_function_trace(
+        "can_paginate", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "close"): aws_function_trace(
+        "close", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "create_stream"): aws_function_trace(
+        "create_stream", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "decrease_stream_retention_period"): aws_function_trace(
+        "decrease_stream_retention_period",
+        extract_kinesis,
+        extract_agent_attrs=extract_kinesis_agent_attrs,
+        library="Kinesis",
+    ),
+    ("kinesis", "delete_resource_policy"): aws_function_trace(
+        "delete_resource_policy", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "delete_stream"): aws_function_trace(
+        "delete_stream", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "deregister_stream_consumer"): aws_function_trace(
+        "deregister_stream_consumer",
+        extract_kinesis,
+        extract_agent_attrs=extract_kinesis_agent_attrs,
+        library="Kinesis",
+    ),
+    ("kinesis", "describe_limits"): aws_function_trace(
+        "describe_limits", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "describe_stream"): aws_function_trace(
+        "describe_stream", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "describe_stream_consumer"): aws_function_trace(
+        "describe_stream_consumer", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "describe_stream_summary"): aws_function_trace(
+        "describe_stream_summary", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "disable_enhanced_monitoring"): aws_function_trace(
+        "disable_enhanced_monitoring",
+        extract_kinesis,
+        extract_agent_attrs=extract_kinesis_agent_attrs,
+        library="Kinesis",
+    ),
+    ("kinesis", "enable_enhanced_monitoring"): aws_function_trace(
+        "enable_enhanced_monitoring",
+        extract_kinesis,
+        extract_agent_attrs=extract_kinesis_agent_attrs,
+        library="Kinesis",
+    ),
+    ("kinesis", "generate_presigned_url"): aws_function_trace(
+        "generate_presigned_url", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "get_paginator"): aws_function_trace(
+        "get_paginator", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "get_resource_policy"): aws_function_trace(
+        "get_resource_policy", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "get_shard_iterator"): aws_function_trace(
+        "get_shard_iterator", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "get_waiter"): aws_function_trace(
+        "get_waiter", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "increase_stream_retention_period"): aws_function_trace(
+        "increase_stream_retention_period",
+        extract_kinesis,
+        extract_agent_attrs=extract_kinesis_agent_attrs,
+        library="Kinesis",
+    ),
+    ("kinesis", "list_shards"): aws_function_trace(
+        "list_shards", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "list_stream_consumers"): aws_function_trace(
+        "list_stream_consumers", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "list_streams"): aws_function_trace(
+        "list_streams", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "list_tags_for_stream"): aws_function_trace(
+        "list_tags_for_stream", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "merge_shards"): aws_function_trace(
+        "merge_shards", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "put_resource_policy"): aws_function_trace(
+        "put_resource_policy", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "register_stream_consumer"): aws_function_trace(
+        "register_stream_consumer", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "remove_tags_from_stream"): aws_function_trace(
+        "remove_tags_from_stream", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "split_shard"): aws_function_trace(
+        "split_shard", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "start_stream_encryption"): aws_function_trace(
+        "start_stream_encryption", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "stop_stream_encryption"): aws_function_trace(
+        "stop_stream_encryption", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "subscribe_to_shard"): aws_function_trace(
+        "subscribe_to_shard", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "update_shard_count"): aws_function_trace(
+        "update_shard_count", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "update_stream_mode"): aws_function_trace(
+        "update_stream_mode", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library=""
+    ),
     ("kinesis", "put_record"): aws_message_trace(
         "Produce", "Stream", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),

@@ -29,6 +29,53 @@ from newrelic.api.transaction import add_custom_attribute
 # provider.add_span_processor(processor)
 # TODO: Add tests to see if processors and exporters work as expected.
 
+# We can use these helper functions to attempt this.
+# We are already validating it from the NR side.  We can
+# validate it from the Otel side as well.
+
+# def create_tracer_provider(**kwargs):
+#     """Helper to create a configured tracer provider.
+
+#     Creates and configures a `TracerProvider` with a
+#     `SimpleSpanProcessor` and a `InMemorySpanExporter`.
+#     All the parameters passed are forwarded to the TracerProvider
+#     constructor.
+
+#     Returns:
+#         A list with the tracer provider in the first element and the
+#         in-memory span exporter in the second.
+#     """
+#     tracer_provider = TracerProvider(**kwargs)
+#     memory_exporter = InMemorySpanExporter()
+#     span_processor = export.SimpleSpanProcessor(memory_exporter)
+#     tracer_provider.add_span_processor(span_processor)
+
+#     return tracer_provider, memory_exporter
+
+# resource = Resource.create({"service.name": "flask-api-no-app"})
+# result = self.create_tracer_provider(resource=resource)
+# tracer_provider, exporter = result
+# self.memory_exporter = exporter
+
+# span_list = self.memory_exporter.get_finished_spans()
+# self.assertEqual(len(span_list), 1)
+
+###############
+
+# def create_meter_provider(**kwargs) -> Tuple[MeterProvider, MetricReader]:
+#     """Helper to create a configured meter provider
+#     Creates a `MeterProvider` and an `InMemoryMetricReader`.
+#     Returns:
+#         A tuple with the meter provider in the first element and the
+#         in-memory metrics exporter in the second
+#     """
+#     memory_reader = InMemoryMetricReader()
+#     metric_readers = kwargs.get("metric_readers", [])
+#     metric_readers.append(memory_reader)
+#     kwargs["metric_readers"] = metric_readers
+#     meter_provider = MeterProvider(**kwargs)
+#     return meter_provider, memory_reader
+
 
 @dt_enabled
 @validate_span_events(

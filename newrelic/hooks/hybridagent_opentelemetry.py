@@ -216,7 +216,7 @@ class ContextApi:
         nr_trace = current_trace()
         if nr_trace:
             cache = trace_cache()
-            cache.pop_trace(nr_trace)
+            cache.pop_current(nr_trace)
         else:
             pass  # Log this
 
@@ -255,7 +255,7 @@ class Span(otel_api_trace.Span):
         self.otel_context = Context({_SPAN_KEY: self})  # This will be the Otel span context
         nr_trace.otel_wrapper = self
         self._record_exception = (
-            record_exception or self.nr_trace.settings.error_collector.record_exception
+            record_exception or self.nr_trace.settings.error_collector.enabled
         )  # both must be set to false in order to not record
         self._status = 0  # UNSET (Otel statuses are not a 1:1 mapping)
         self._attributes = attributes if attributes else {}
@@ -434,7 +434,14 @@ class Tracer(otel_api_trace.Tracer):
             pass
 
     def start_span(
-        self, name, context=None, kind=SpanKind.INTERNAL, start_time=None, attributes=None, record_exception=True
+        self,
+        name,
+        context=None,
+        kind=SpanKind.INTERNAL,
+        start_time=None,
+        attributes=None,
+        record_exception=True,
+        set_status_on_exception=True,
     ):
         nr_parent_trace = current_trace() or (self.nr_transaction and self.nr_transaction.root_span)
 
@@ -500,7 +507,7 @@ class Tracer(otel_api_trace.Tracer):
             )
         elif parent_span_context and not self.nr_transaction:
             # Current the way this is written, we will never hit this block
-            breakpoint()  # Keep this here in case it ever does get here.
+            # breakpoint()  # Keep this here in case it ever does get here.
             span = Span(
                 name=name,
                 nr_application=self.nr_application,
@@ -537,10 +544,22 @@ class Tracer(otel_api_trace.Tracer):
 
     @contextmanager
     def start_as_current_span(
-        self, name, context=None, kind=SpanKind.INTERNAL, attributes=None, end_on_exit=True, record_exception=True
+        self,
+        name,
+        context=None,
+        kind=SpanKind.INTERNAL,
+        attributes=None,
+        end_on_exit=True,
+        record_exception=True,
+        set_status_on_exception=True,
     ):
         span = self.start_span(
-            name, context=context, kind=kind, attributes=attributes, record_exception=record_exception
+            name,
+            context=context,
+            kind=kind,
+            attributes=attributes,
+            record_exception=record_exception,
+            set_status_on_exception=set_status_on_exception,
         )
 
         with self._use_span(span, end_on_exit=end_on_exit, record_exception=record_exception) as current_span:

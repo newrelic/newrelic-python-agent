@@ -1905,7 +1905,7 @@ def capture_request_params(flag=True):
     transaction = current_transaction()
     if transaction and transaction.settings:
         if transaction.settings.high_security:
-            _logger.warn("Cannot modify capture_params in High Security Mode.")
+            _logger.warning("Cannot modify capture_params in High Security Mode.")
         else:
             transaction.capture_params = flag
 

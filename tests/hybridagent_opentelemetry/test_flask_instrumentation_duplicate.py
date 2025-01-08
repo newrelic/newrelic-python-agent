@@ -15,7 +15,7 @@
 """
 This file tests Flask where instrumentation is enabled for both New Relic and
 OpenTelemetry.  There are three primary scenarios to consider:
-1. Overlapping instrumentation points which we will want New Relic to override.
+1. Overlapping instrumentation points which we will want New Relic to supersede.
 2. Instrumentation points that are covered by OpenTelemetry but not New Relic.
 3. Instrumentation points that are covered by New Relic but not OpenTelemetry.
 """
@@ -24,6 +24,9 @@ import pytest
 from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_transaction_errors import (
     validate_transaction_errors,
+)
+from testing_support.validators.validate_transaction_event_attributes import (
+    validate_transaction_event_attributes,
 )
 from testing_support.validators.validate_transaction_metrics import (
     validate_transaction_metrics,
@@ -78,7 +81,34 @@ _test_flask_index_otel_metrics = [
     ],
 )
 def test_flask_index(setting_override, custom_metrics, dimensional_metrics):
-    @override_application_settings({"otel_dimensional_metrics.enabled": setting_override})
+    @override_application_settings(
+        {
+            "otel_dimensional_metrics.enabled": setting_override,
+            "attributes.include": ["request.*"],
+        }
+    )
+    @validate_transaction_event_attributes(
+        required_params={
+            "agent": [
+                "request.headers.host",
+                "request.uri",
+                "response.status",
+                "response.headers.contentType",
+                "response.headers.contentLength",
+            ],
+            "user": [],
+            "intrinsic": ["port"],
+        },
+        exact_attrs={
+            "agent": {
+                "request.uri": "/index",
+                "response.status": "200",
+                "response.headers.contentType": "text/html; charset=utf-8",
+            },
+            "user": {},
+            "intrinsic": {},
+        },
+    )
     @validate_transaction_metrics(
         name="_test_flask:index_page",
         scoped_metrics=_test_flask_index_scoped_metrics,

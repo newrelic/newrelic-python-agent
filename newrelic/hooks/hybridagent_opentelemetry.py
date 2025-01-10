@@ -31,6 +31,8 @@ from newrelic.api.transaction import (
     record_custom_metric,
     record_dimensional_metric,
 )
+from newrelic.api.web_transaction import WebTransaction
+from newrelic.api.wsgi_application import WSGIWebTransaction
 from newrelic.common.encoding_utils import NrTraceState
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.core.trace_cache import trace_cache
@@ -328,6 +330,9 @@ class Span(otel_api_trace.Span):
         # Add attributes as FunctionTrace/Sentinel parameters
         self._set_attributes_in_nr(self._attributes)
 
+        # Set SpanKind attribute
+        self._set_attributes_in_nr({"span.kind": self.kind})
+
         # Store current transaction and trace before exiting
         # the trace in case it is the last trace
         current_transaction = self.nr_trace.transaction
@@ -433,6 +438,23 @@ class Tracer(otel_api_trace.Tracer):
             # Unable to register application.  We should log this.
             pass
 
+    def _kind_identifier(self, transaction):
+        """
+        Kind identifier:
+        - SERVER: Incoming HTTP request or RPC
+        - CLIENT: Outgoing HTTP request
+        - PRODUCER: Producer/creator of a job
+        - CONSUMER: Consumer/processor of a job
+        - INTERNAL: Internal operation
+        """
+        if isinstance(transaction, WSGIWebTransaction):
+            kind = SpanKind.SERVER
+        elif isinstance(transaction, WebTransaction):
+            kind = SpanKind.CLIENT
+        else:
+            kind = SpanKind.INTERNAL
+        return kind
+
     def start_span(
         self,
         name,
@@ -447,6 +469,8 @@ class Tracer(otel_api_trace.Tracer):
 
         # Check again for the current transaction if it was not set in __init__
         self.nr_transaction = current_transaction() if not self.nr_transaction else self.nr_transaction
+
+        kind = self._kind_identifier(self.nr_transaction) if kind == SpanKind.INTERNAL else kind
 
         # Modified Otel Span to include New Relic Trace
         if nr_parent_trace and nr_parent_trace.otel_wrapper:

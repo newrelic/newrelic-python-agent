@@ -21,7 +21,8 @@ OpenTelemetry.  There are three primary scenarios to consider:
 """
 
 import pytest
-from testing_support.fixtures import override_application_settings
+from testing_support.fixtures import dt_enabled, override_application_settings
+from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_errors import (
     validate_transaction_errors,
 )
@@ -87,6 +88,7 @@ def test_flask_index(setting_override, custom_metrics, dimensional_metrics):
             "attributes.include": ["request.*"],
         }
     )
+    @dt_enabled
     @validate_transaction_event_attributes(
         required_params={
             "agent": [
@@ -111,11 +113,19 @@ def test_flask_index(setting_override, custom_metrics, dimensional_metrics):
     )
     @validate_transaction_metrics(
         name="_test_flask:index_page",
-        scoped_metrics=_test_flask_index_scoped_metrics,
-        rollup_metrics=_test_flask_index_scoped_metrics + _test_flask_index_otel_metrics,
+        scoped_metrics=_test_flask_index_scoped_metrics + _test_flask_index_otel_metrics,
         custom_metrics=custom_metrics,
         dimensional_metrics=dimensional_metrics,
-        background_task=False,
+    )
+    @validate_span_events(
+        count=1,
+        expected_users=["http.url", "net.host.name", "http.host", "net.host.port"],
+        exact_users={
+            "http.scheme": "http",
+            "span.kind": "SpanKind.SERVER",
+            "http.method": "GET",
+            "http.server_name": "localhost",
+        },
     )
     def _test():
         application = target_application()
@@ -164,8 +174,7 @@ def test_flask_async(setting_override, custom_metrics, dimensional_metrics):
     @override_application_settings({"otel_dimensional_metrics.enabled": setting_override})
     @validate_transaction_metrics(
         "_test_flask:async_page",
-        scoped_metrics=_test_flask_async_scoped_metrics,
-        rollup_metrics=_test_flask_async_scoped_metrics + _test_flask_async_otel_metrics,
+        scoped_metrics=_test_flask_async_scoped_metrics + _test_flask_async_otel_metrics,
         custom_metrics=custom_metrics,
         dimensional_metrics=dimensional_metrics,
     )
@@ -216,8 +225,7 @@ def test_flask_endpoint(setting_override, custom_metrics, dimensional_metrics):
     @override_application_settings({"otel_dimensional_metrics.enabled": setting_override})
     @validate_transaction_metrics(
         "_test_flask:endpoint_page",
-        scoped_metrics=_test_flask_endpoint_scoped_metrics,
-        rollup_metrics=_test_flask_endpoint_scoped_metrics + _test_flask_endpoint_otel_metrics,
+        scoped_metrics=_test_flask_endpoint_scoped_metrics + _test_flask_endpoint_otel_metrics,
         custom_metrics=custom_metrics,
         dimensional_metrics=dimensional_metrics,
     )
@@ -272,8 +280,7 @@ def test_flask_error(setting_override, custom_metrics, dimensional_metrics):
     @validate_transaction_errors(errors=["builtins:RuntimeError"])
     @validate_transaction_metrics(
         "_test_flask:error_page",
-        scoped_metrics=_test_flask_error_scoped_metrics,
-        rollup_metrics=_test_flask_error_scoped_metrics + _test_flask_error_otel_metrics,
+        scoped_metrics=_test_flask_error_scoped_metrics + _test_flask_error_otel_metrics,
         custom_metrics=custom_metrics,
         dimensional_metrics=dimensional_metrics,
     )
@@ -325,8 +332,7 @@ def test_flask_abort_404(setting_override, custom_metrics, dimensional_metrics):
     @override_application_settings({"otel_dimensional_metrics.enabled": setting_override})
     @validate_transaction_metrics(
         "_test_flask:abort_404_page",
-        scoped_metrics=_test_flask_abort_404_scoped_metrics,
-        rollup_metrics=_test_flask_abort_404_scoped_metrics + _test_flask_abort_404_otel_metrics,
+        scoped_metrics=_test_flask_abort_404_scoped_metrics + _test_flask_abort_404_otel_metrics,
         custom_metrics=custom_metrics,
         dimensional_metrics=dimensional_metrics,
     )
@@ -378,8 +384,7 @@ def test_flask_exception_404(setting_override, custom_metrics, dimensional_metri
     @override_application_settings({"otel_dimensional_metrics.enabled": setting_override})
     @validate_transaction_metrics(
         "_test_flask:exception_404_page",
-        scoped_metrics=_test_flask_exception_404_scoped_metrics,
-        rollup_metrics=_test_flask_exception_404_scoped_metrics + _test_flask_exception_404_otel_metrics,
+        scoped_metrics=_test_flask_exception_404_scoped_metrics + _test_flask_exception_404_otel_metrics,
         custom_metrics=custom_metrics,
         dimensional_metrics=dimensional_metrics,
     )
@@ -430,8 +435,7 @@ def test_flask_not_found(setting_override, custom_metrics, dimensional_metrics):
     @override_application_settings({"otel_dimensional_metrics.enabled": setting_override})
     @validate_transaction_metrics(
         "flask.app:Flask.handle_http_exception",
-        scoped_metrics=_test_flask_not_found_scoped_metrics,
-        rollup_metrics=_test_flask_not_found_scoped_metrics + _test_flask_not_found_otel_metrics,
+        scoped_metrics=_test_flask_not_found_scoped_metrics + _test_flask_not_found_otel_metrics,
         custom_metrics=custom_metrics,
         dimensional_metrics=dimensional_metrics,
     )
@@ -483,8 +487,7 @@ def test_flask_render_template_string(setting_override, custom_metrics, dimensio
     @override_application_settings({"otel_dimensional_metrics.enabled": setting_override})
     @validate_transaction_metrics(
         "_test_flask:template_string",
-        scoped_metrics=_test_flask_render_template_string_scoped_metrics,
-        rollup_metrics=_test_flask_render_template_string_scoped_metrics
+        scoped_metrics=_test_flask_render_template_string_scoped_metrics
         + _test_flask_render_template_string_otel_metrics,
         custom_metrics=custom_metrics,
         dimensional_metrics=dimensional_metrics,
@@ -538,8 +541,7 @@ def test_flask_render_template_not_found(setting_override, custom_metrics, dimen
     @validate_transaction_errors(errors=["jinja2.exceptions:TemplateNotFound"])
     @validate_transaction_metrics(
         "_test_flask:template_not_found",
-        scoped_metrics=_test_flask_render_template_not_found_scoped_metrics,
-        rollup_metrics=_test_flask_render_template_not_found_scoped_metrics
+        scoped_metrics=_test_flask_render_template_not_found_scoped_metrics
         + _test_flask_render_template_not_found_otel_metrics,
         custom_metrics=custom_metrics,
         dimensional_metrics=dimensional_metrics,

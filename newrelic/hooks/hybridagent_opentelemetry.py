@@ -23,6 +23,7 @@ from opentelemetry.trace.propagation import _SPAN_KEY
 from opentelemetry.trace.span import INVALID_SPAN, SpanContext, TraceFlags, TraceState
 
 from newrelic.api.application import application_instance, register_application
+from newrelic.api.asgi_application import ASGIWebTransaction
 from newrelic.api.background_task import BackgroundTask
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import current_trace
@@ -447,7 +448,7 @@ class Tracer(otel_api_trace.Tracer):
         - CONSUMER: Consumer/processor of a job
         - INTERNAL: Internal operation
         """
-        if isinstance(transaction, WSGIWebTransaction):
+        if isinstance(transaction, [WSGIWebTransaction, ASGIWebTransaction]):
             kind = SpanKind.SERVER
         elif isinstance(transaction, WebTransaction):
             kind = SpanKind.CLIENT

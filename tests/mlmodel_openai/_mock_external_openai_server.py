@@ -624,7 +624,7 @@ RESPONSES = {
                     "finish_reason": "stop",
                     "index": 0,
                     "message": {
-                        "content": "212 degrees " "Fahrenheit is " "equal to 100 " "degrees " "Celsius.",
+                        "content": "212 degrees Fahrenheit is equal to 100 degrees Celsius.",
                         "role": "assistant",
                     },
                 }

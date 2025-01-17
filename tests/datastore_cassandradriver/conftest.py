@@ -23,6 +23,7 @@ from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
 
 DB_SETTINGS = cassandra_settings()
 PYTHON_VERSION = sys.version_info
+IS_PYPY = hasattr(sys, "pypy_version_info")
 
 
 _default_settings = {
@@ -48,6 +49,8 @@ def connection_class(request):
     reactor_name = request.param
 
     if reactor_name == "Libev":
+        if IS_PYPY:
+            pytest.skip(reason="Libev not available for PyPy.")
         from cassandra.io.libevreactor import LibevConnection as Connection
     elif reactor_name == "AsyncCore":
         if PYTHON_VERSION >= (3, 12):

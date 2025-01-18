@@ -16,7 +16,7 @@ import json
 import logging
 import re
 import warnings
-from traceback import format_tb
+from traceback import format_exception
 
 from newrelic.api.application import application_instance
 from newrelic.api.time_trace import get_linking_metadata
@@ -87,7 +87,7 @@ class NewRelicContextFormatter(logging.Formatter):
 
         if stack_trace_limit is None or stack_trace_limit > 0:
             if exc_info[2] is not None:
-                stack_trace = "".join(format_tb(exc_info[2], limit=stack_trace_limit)) or None
+                stack_trace = "".join(format_exception(*exc_info, limit=stack_trace_limit)) or None
             else:
                 stack_trace = None
             formatted["error.stack_trace"] = stack_trace

@@ -525,7 +525,7 @@ recorded_events_retrieval_chain_response = [
             "vendor": "langchain",
             "ingest_source": "Python",
             "virtual_llm": True,
-            "content": "{'input': 'math', 'context': [Document(metadata={}, page_content='What is 2 + 4?')]}",
+            "content": "{'input': 'math', 'context': [Document(id='1234', metadata={}, page_content='What is 2 + 4?')]}",
         },
     ],
     [
@@ -557,7 +557,7 @@ recorded_events_retrieval_chain_response = [
             "ingest_source": "Python",
             "is_response": True,
             "virtual_llm": True,
-            "content": "{'input': 'math', 'context': [Document(metadata={}, page_content='What is 2 + 4?')], 'answer': '```html\\n<!DOCTYPE html>\\n<html>\\n<head>\\n  <title>Math Quiz</title>\\n</head>\\n<body>\\n  <h2>Math Quiz Questions</h2>\\n  <ol>\\n    <li>What is the result of 5 + 3?</li>\\n      <ul>\\n        <li>A) 7</li>\\n        <li>B) 8</li>\\n        <li>C) 9</li>\\n        <li>D) 10</li>\\n      </ul>\\n    <li>What is the product of 6 x 7?</li>\\n      <ul>\\n        <li>A) 36</li>\\n        <li>B) 42</li>\\n        <li>C) 48</li>\\n        <li>D) 56</li>\\n      </ul>\\n    <li>What is the square root of 64?</li>\\n      <ul>\\n        <li>A) 6</li>\\n        <li>B) 7</li>\\n        <li>C) 8</li>\\n        <li>D) 9</li>\\n      </ul>\\n    <li>What is the result of 12 / 4?</li>\\n      <ul>\\n        <li>A) 2</li>\\n        <li>B) 3</li>\\n        <li>C) 4</li>\\n        <li>D) 5</li>\\n      </ul>\\n    <li>What is the sum of 15 + 9?</li>\\n      <ul>\\n        <li>A) 22</li>\\n        <li>B) 23</li>\\n        <li>C) 24</li>\\n        <li>D) 25</li>\\n      </ul>\\n  </ol>\\n</body>\\n</html>\\n```'}",
+            "content": "{'input': 'math', 'context': [Document(id='1234', metadata={}, page_content='What is 2 + 4?')], 'answer': '```html\\n<!DOCTYPE html>\\n<html>\\n<head>\\n  <title>Math Quiz</title>\\n</head>\\n<body>\\n  <h2>Math Quiz Questions</h2>\\n  <ol>\\n    <li>What is the result of 5 + 3?</li>\\n      <ul>\\n        <li>A) 7</li>\\n        <li>B) 8</li>\\n        <li>C) 9</li>\\n        <li>D) 10</li>\\n      </ul>\\n    <li>What is the product of 6 x 7?</li>\\n      <ul>\\n        <li>A) 36</li>\\n        <li>B) 42</li>\\n        <li>C) 48</li>\\n        <li>D) 56</li>\\n      </ul>\\n    <li>What is the square root of 64?</li>\\n      <ul>\\n        <li>A) 6</li>\\n        <li>B) 7</li>\\n        <li>C) 8</li>\\n        <li>D) 9</li>\\n      </ul>\\n    <li>What is the result of 12 / 4?</li>\\n      <ul>\\n        <li>A) 2</li>\\n        <li>B) 3</li>\\n        <li>C) 4</li>\\n        <li>D) 5</li>\\n      </ul>\\n    <li>What is the sum of 15 + 9?</li>\\n      <ul>\\n        <li>A) 22</li>\\n        <li>B) 23</li>\\n        <li>C) 24</li>\\n        <li>D) 25</li>\\n      </ul>\\n  </ol>\\n</body>\\n</html>\\n```'}",
         },
     ],
 ]
@@ -1814,7 +1814,7 @@ def test_multiple_async_langchain_chain(
 @background_task()
 def test_retrieval_chains(set_trace_info, retrieval_chain_prompt, embedding_openai_client, chat_openai_client):
     set_trace_info()
-    documents = [langchain_core.documents.Document(page_content="What is 2 + 4?")]
+    documents = [langchain_core.documents.Document(id="1234", page_content="What is 2 + 4?")]
     vectordb = FAISS.from_documents(documents=documents, embedding=embedding_openai_client)
     retriever = vectordb.as_retriever()
     question_answer_chain = create_stuff_documents_chain(

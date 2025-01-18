@@ -252,7 +252,9 @@ def instrument_starlette_middleware_exceptions(module):
 def instrument_starlette_exceptions(module):
     # ExceptionMiddleware was moved to starlette.middleware.exceptions, need to check
     # that it isn't being imported through a deprecation and double wrapped.
-    if not hasattr(module, "__deprecated__"):
+
+    # After v0.45.0, the import proxy for ExceptionMiddleware was removed from starlette.exceptions
+    if not hasattr(module, "__deprecated__") and hasattr(module, "ExceptionMiddleware"):
 
         wrap_function_wrapper(module, "ExceptionMiddleware.__call__", error_middleware_wrapper)
 

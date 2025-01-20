@@ -13,14 +13,14 @@
 # limitations under the License.
 
 import collections
+import copy
+import logging
+import pathlib
+import sys
 import tempfile
-
 import urllib.parse as urlparse
 
 import pytest
-
-import logging
-
 from testing_support.fixtures import override_generic_settings
 
 from newrelic.api.exceptions import ConfigurationError
@@ -35,6 +35,7 @@ from newrelic.config import (
 )
 from newrelic.core.config import (
     Settings,
+    _map_aws_account_id,
     apply_config_setting,
     apply_server_side_settings,
     fetch_config_setting,
@@ -42,6 +43,28 @@ from newrelic.core.config import (
     global_settings,
     global_settings_dump,
 )
+
+SKIP_IF_NOT_PY311 = pytest.mark.skipif(sys.version_info < (3, 11), reason="TOML not in the standard library.")
+
+
+@pytest.fixture(scope="function")
+def collector_available_fixture():
+    # Disable fixture that requires real application to exist for this file
+    pass
+
+
+@pytest.fixture(scope="module", autouse=True)
+def restore_settings_fixture():
+    # Backup settings from before this test file runs
+    original_settings = global_settings()
+    backup = copy.deepcopy(original_settings.__dict__)
+
+    # Run tests
+    yield
+
+    # Restore settings after tests run
+    original_settings.__dict__.clear()
+    original_settings.__dict__.update(backup)
 
 
 def function_to_trace():
@@ -947,6 +970,133 @@ def test_initialize_developer_mode(section, expect_error, logger):
         assert "CONFIGURATION ERROR" in logger.caplog.records
     else:
         assert "CONFIGURATION ERROR" not in logger.caplog.records
+
+
+@pytest.mark.parametrize(
+    "account_id,expected_account_id",
+    (
+        ("012345678901", 12345678901),
+        ("0123456789.1", None),
+        ("01234567890", None),
+        ("01²345678901", None),
+        ("0xb101010101", None),
+        ("fooooooooooo", None),
+    ),
+)
+def test_map_aws_account_id(account_id, expected_account_id, logger):
+    message = f"Improper configuration. cloud.aws.account_id = {account_id} will be ignored because it is not a 12 digit number."
+
+    return_val = _map_aws_account_id(account_id, logger)
+
+    assert return_val == expected_account_id
+    if not expected_account_id:
+        assert message in logger.caplog.records
+
+
+newrelic_toml_contents = b"""
+[tool.newrelic]
+app_name = "test11"
+monitor_mode = true
+
+[tool.newrelic.env.development]
+app_name = "test11 (Development)"
+
+[tool.newrelic.env.production]
+app_name = "test11 (Production)"
+log_level = "error"
+
+[tool.newrelic.env.production.distributed_tracing]
+enabled = false
+
+[tool.newrelic.error_collector]
+enabled = true
+ignore_errors = ["module:name1", "module:name"]
+
+[tool.newrelic.transaction_tracer]
+enabled = true
+
+[tool.newrelic.import-hook.django]
+"instrumentation.scripts.django_admin" = ["stuff", "stuff2"]
+"""
+
+
+@SKIP_IF_NOT_PY311
+def test_toml_parse_development():
+    settings = global_settings()
+    _reset_configuration_done()
+    _reset_config_parser()
+    _reset_instrumentation_done()
+
+    with tempfile.NamedTemporaryFile(suffix=".toml") as f:
+        f.write(newrelic_toml_contents)
+        f.seek(0)
+
+        initialize(config_file=f.name, environment="development")
+        value = fetch_config_setting(settings, "app_name")
+        assert value != "test11"
+        value = fetch_config_setting(settings, "monitor_mode")
+        assert value is True
+        value = fetch_config_setting(settings, "error_collector")
+        assert value.enabled is True
+        assert value.ignore_classes[0] == "module:name1"
+        assert value.ignore_classes[1] == "module:name"
+
+
+@SKIP_IF_NOT_PY311
+def test_toml_parse_production():
+    settings = global_settings()
+    _reset_configuration_done()
+    _reset_config_parser()
+    _reset_instrumentation_done()
+
+    with tempfile.NamedTemporaryFile(suffix=".toml") as f:
+        f.write(newrelic_toml_contents)
+        f.seek(0)
+
+        initialize(config_file=f.name, environment="production")
+        value = fetch_config_setting(settings, "app_name")
+        assert value == "test11 (Production)"
+        value = fetch_config_setting(settings, "distributed_tracing")
+        assert value.enabled is False
+
+
+@pytest.mark.parametrize(
+    "pathtype", [str, lambda s: s.encode("utf-8"), pathlib.Path], ids=["str", "bytes", "pathlib.Path"]
+)
+def test_config_file_path_types_ini(pathtype):
+    settings = global_settings()
+    _reset_configuration_done()
+    _reset_config_parser()
+    _reset_instrumentation_done()
+
+    with tempfile.NamedTemporaryFile(suffix=".ini") as f:
+        f.write(newrelic_ini_contents)
+        f.seek(0)
+
+        config_file = pathtype(f.name)
+        initialize(config_file=config_file)
+        value = fetch_config_setting(settings, "app_name")
+        assert value == "Python Agent Test (agent_features)"
+
+
+@pytest.mark.parametrize(
+    "pathtype", [str, lambda s: s.encode("utf-8"), pathlib.Path], ids=["str", "bytes", "pathlib.Path"]
+)
+@SKIP_IF_NOT_PY311
+def test_config_file_path_types_toml(pathtype):
+    settings = global_settings()
+    _reset_configuration_done()
+    _reset_config_parser()
+    _reset_instrumentation_done()
+
+    with tempfile.NamedTemporaryFile(suffix=".toml") as f:
+        f.write(newrelic_toml_contents)
+        f.seek(0)
+
+        config_file = pathtype(f.name)
+        initialize(config_file=config_file)
+        value = fetch_config_setting(settings, "app_name")
+        assert value == "test11"
 
 
 @pytest.fixture

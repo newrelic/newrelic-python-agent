@@ -35,7 +35,7 @@ try:
     from ssl import get_default_verify_paths
 except ImportError:
 
-    class _DEFAULT_CERT_PATH():
+    class _DEFAULT_CERT_PATH:
         cafile = None
         capath = None
 
@@ -73,7 +73,7 @@ def _urllib3_ssl_recursion_workaround(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
 
-class BaseClient():
+class BaseClient:
     AUDIT_LOG_ID = 0
 
     def __init__(
@@ -122,7 +122,10 @@ class BaseClient():
 
         # Obfuscate license key from headers and URL params
         if headers:
-            headers = {k: obfuscate_license_key(v) if k.lower() in HEADER_AUDIT_LOGGING_DENYLIST else v for k, v in headers.items()}
+            headers = {
+                k: obfuscate_license_key(v) if k.lower() in HEADER_AUDIT_LOGGING_DENYLIST else v
+                for k, v in headers.items()
+            }
 
         if params and "license_key" in params:
             params = params.copy()
@@ -517,7 +520,7 @@ class InsecureHttpClient(HttpClient):
         )
 
 
-class SupportabilityMixin():
+class SupportabilityMixin:
     @staticmethod
     def _supportability_request(params, payload, body, compression_time):
         # *********
@@ -606,6 +609,7 @@ class DeveloperModeClient(SupportabilityMixin, BaseClient):
         "span_event_data": None,
         "custom_event_data": None,
         "log_event_data": None,
+        "update_loaded_modules": ["Jars", [[" ", " ", {}]]],
         "shutdown": [],
     }
 

@@ -73,6 +73,7 @@ def openai_clients(openai_version, MockExternalOpenAIServer):  # noqa: F811
             chat = ChatOpenAI(
                 base_url=f"http://localhost:{server.port}",
                 api_key="NOT-A-REAL-SECRET",
+                temperature=0.7,
             )
             embeddings = OpenAIEmbeddings(
                 openai_api_key="NOT-A-REAL-SECRET", openai_api_base=f"http://localhost:{server.port}"

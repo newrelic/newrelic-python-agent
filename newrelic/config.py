@@ -51,6 +51,11 @@ __all__ = ["initialize", "filter_app_factory"]
 
 _logger = logging.getLogger(__name__)
 
+
+def _map_aws_account_id(s):
+    return newrelic.core.config._map_aws_account_id(s, _logger)
+
+
 # Register our importer which implements post import hooks for
 # triggering of callbacks to monkey patch modules before import
 # returns them to caller.
@@ -164,7 +169,7 @@ def _map_feature_flag(s):
     return set(s.split())
 
 
-def _map_labels(s):
+def _map_as_mapping(s):
     return newrelic.core.config._environ_as_mapping(name="", default=s)
 
 
@@ -208,6 +213,10 @@ def _map_strip_exception_messages_allowlist(s):
 
 def _map_inc_excl_attributes(s):
     return newrelic.core.config._parse_attributes(s)
+
+
+def _map_case_insensitive_excl_labels(s):
+    return [v.lower() for v in newrelic.core.config._parse_attributes(s)]
 
 
 def _map_default_host_value(license_key):
@@ -314,7 +323,7 @@ def _process_setting(section, option, getter, mapper):
 def _process_configuration(section):
     _process_setting(section, "feature_flag", "get", _map_feature_flag)
     _process_setting(section, "app_name", "get", None)
-    _process_setting(section, "labels", "get", _map_labels)
+    _process_setting(section, "labels", "get", _map_as_mapping)
     _process_setting(section, "license_key", "get", _map_default_host_value)
     _process_setting(section, "api_key", "get", None)
     _process_setting(section, "host", "get", None)
@@ -571,6 +580,9 @@ def _process_configuration(section):
     _process_setting(section, "application_logging.enabled", "getboolean", None)
     _process_setting(section, "application_logging.forwarding.max_samples_stored", "getint", None)
     _process_setting(section, "application_logging.forwarding.enabled", "getboolean", None)
+    _process_setting(section, "application_logging.forwarding.custom_attributes", "get", _map_as_mapping)
+    _process_setting(section, "application_logging.forwarding.labels.enabled", "getboolean", None)
+    _process_setting(section, "application_logging.forwarding.labels.exclude", "get", _map_case_insensitive_excl_labels)
     _process_setting(section, "application_logging.forwarding.context_data.enabled", "getboolean", None)
     _process_setting(section, "application_logging.forwarding.context_data.include", "get", _map_inc_excl_attributes)
     _process_setting(section, "application_logging.forwarding.context_data.exclude", "get", _map_inc_excl_attributes)
@@ -582,7 +594,9 @@ def _process_configuration(section):
     _process_setting(section, "ai_monitoring.enabled", "getboolean", None)
     _process_setting(section, "ai_monitoring.record_content.enabled", "getboolean", None)
     _process_setting(section, "ai_monitoring.streaming.enabled", "getboolean", None)
+    _process_setting(section, "cloud.aws.account_id", "get", _map_aws_account_id)
     _process_setting(section, "k8s_operator.enabled", "getboolean", None)
+    _process_setting(section, "azure_operator.enabled", "getboolean", None)
     _process_setting(section, "package_reporting.enabled", "getboolean", None)
 
 
@@ -939,6 +953,29 @@ def apply_local_high_security_mode_setting(settings):
     return settings
 
 
+def _toml_config_to_configparser_dict(d, top=None, _path=None):
+    top = top or {"newrelic": {}}
+    _path = _path or ""
+    for key, value in d.items():
+        if isinstance(value, dict):
+            _toml_config_to_configparser_dict(value, top, f"{_path}.{key}" if _path else key)
+        else:
+            fixed_value = " ".join(value) if isinstance(value, list) else value
+            path_split = _path.split(".")
+            # Handle environments
+            if _path.startswith("env."):
+                env_key = f"newrelic:{path_split[1]}"
+                fixed_key = ".".join((*path_split[2:], key))
+                top[env_key] = {**top.get(env_key, {}), fixed_key: fixed_value}
+            # Handle import-hook:... configuration
+            elif _path.startswith("import-hook."):
+                import_hook_key = f"import-hook:{'.'.join(path_split[1:])}"
+                top[import_hook_key] = {**top.get(import_hook_key, {}), key: fixed_value}
+            else:
+                top["newrelic"][f"{_path}.{key}" if _path else key] = fixed_value
+    return top
+
+
 def _load_configuration(
     config_file=None,
     environment=None,
@@ -968,6 +1005,9 @@ def _load_configuration(
         return
 
     _configuration_done = True
+
+    # Normalize configuration file into a string path
+    config_file = os.fsdecode(config_file) if config_file is not None else config_file
 
     # Update global variables tracking what configuration file and
     # environment was used, plus whether errors are to be ignored.
@@ -1022,8 +1062,20 @@ def _load_configuration(
 
     # Now read in the configuration file. Cache the config file
     # name in internal settings object as indication of succeeding.
-
-    if not _config_object.read([config_file]):
+    if config_file.endswith(".toml"):
+        try:
+            import tomllib
+        except ImportError:
+            raise newrelic.api.exceptions.ConfigurationError(
+                "TOML configuration file can only be used if tomllib is available (Python 3.11+)."
+            )
+        with open(config_file, "rb") as f:
+            content = tomllib.load(f)
+            newrelic_section = content.get("tool", {}).get("newrelic")
+            if not newrelic_section:
+                raise newrelic.api.exceptions.ConfigurationError("New Relic configuration not found in TOML file.")
+            _config_object.read_dict(_toml_config_to_configparser_dict(newrelic_section))
+    elif not _config_object.read([config_file]):
         raise newrelic.api.exceptions.ConfigurationError(f"Unable to open configuration file {config_file}.")
 
     _settings.config_file = config_file
@@ -2697,6 +2749,12 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "langchain_community.vectorstores.tablestore",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_vectorstore_similarity_search",
+    )
+
+    _process_module_definition(
         "langchain_core.tools",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_core_tools",
@@ -3143,6 +3201,9 @@ def _process_module_builtin_defaults():
     _process_module_definition("MySQLdb", "newrelic.hooks.database_mysqldb", "instrument_mysqldb")
     _process_module_definition("pymysql", "newrelic.hooks.database_pymysql", "instrument_pymysql")
 
+    _process_module_definition("aiomysql", "newrelic.hooks.database_aiomysql", "instrument_aiomysql")
+    _process_module_definition("aiomysql.pool", "newrelic.hooks.database_aiomysql", "instrument_aiomysql_pool")
+
     _process_module_definition("pyodbc", "newrelic.hooks.database_pyodbc", "instrument_pyodbc")
 
     _process_module_definition("pymssql", "newrelic.hooks.database_pymssql", "instrument_pymssql")
@@ -3564,34 +3625,51 @@ def _process_module_builtin_defaults():
     _process_module_definition(
         "pymongo.synchronous.pool",
         "newrelic.hooks.datastore_pymongo",
-        "instrument_pymongo_pool",
+        "instrument_pymongo_synchronous_pool",
     )
+    _process_module_definition(
+        "pymongo.asynchronous.pool",
+        "newrelic.hooks.datastore_pymongo",
+        "instrument_pymongo_asynchronous_pool",
+    )
+
     _process_module_definition(
         "pymongo.synchronous.collection",
         "newrelic.hooks.datastore_pymongo",
-        "instrument_pymongo_collection",
+        "instrument_pymongo_synchronous_collection",
     )
+    _process_module_definition(
+        "pymongo.asynchronous.collection",
+        "newrelic.hooks.datastore_pymongo",
+        "instrument_pymongo_asynchronous_collection",
+    )
+
     _process_module_definition(
         "pymongo.synchronous.mongo_client",
         "newrelic.hooks.datastore_pymongo",
-        "instrument_pymongo_mongo_client",
+        "instrument_pymongo_synchronous_mongo_client",
+    )
+    _process_module_definition(
+        "pymongo.asynchronous.mongo_client",
+        "newrelic.hooks.datastore_pymongo",
+        "instrument_pymongo_asynchronous_mongo_client",
     )
 
     # Older pymongo module locations
     _process_module_definition(
         "pymongo.connection",
         "newrelic.hooks.datastore_pymongo",
-        "instrument_pymongo_pool",
+        "instrument_pymongo_synchronous_pool",
     )
     _process_module_definition(
         "pymongo.collection",
         "newrelic.hooks.datastore_pymongo",
-        "instrument_pymongo_collection",
+        "instrument_pymongo_synchronous_collection",
     )
     _process_module_definition(
         "pymongo.mongo_client",
         "newrelic.hooks.datastore_pymongo",
-        "instrument_pymongo_mongo_client",
+        "instrument_pymongo_synchronous_mongo_client",
     )
 
     # Redis v4.2+
@@ -3650,7 +3728,67 @@ def _process_module_builtin_defaults():
         "redis.commands.graph.commands", "newrelic.hooks.datastore_redis", "instrument_redis_commands_graph_commands"
     )
 
-    _process_module_definition("motor", "newrelic.hooks.datastore_motor", "patch_motor")
+    _process_module_definition(
+        "valkey.asyncio.client", "newrelic.hooks.datastore_valkey", "instrument_asyncio_valkey_client"
+    )
+
+    _process_module_definition(
+        "valkey.asyncio.commands", "newrelic.hooks.datastore_valkey", "instrument_asyncio_valkey_client"
+    )
+
+    _process_module_definition(
+        "valkey.asyncio.connection", "newrelic.hooks.datastore_valkey", "instrument_asyncio_valkey_connection"
+    )
+
+    _process_module_definition(
+        "valkey.connection",
+        "newrelic.hooks.datastore_valkey",
+        "instrument_valkey_connection",
+    )
+    _process_module_definition("valkey.client", "newrelic.hooks.datastore_valkey", "instrument_valkey_client")
+
+    _process_module_definition(
+        "valkey.commands.cluster", "newrelic.hooks.datastore_valkey", "instrument_valkey_commands_cluster"
+    )
+
+    _process_module_definition(
+        "valkey.commands.core", "newrelic.hooks.datastore_valkey", "instrument_valkey_commands_core"
+    )
+
+    _process_module_definition(
+        "valkey.commands.sentinel", "newrelic.hooks.datastore_valkey", "instrument_valkey_commands_sentinel"
+    )
+
+    _process_module_definition(
+        "valkey.commands.json.commands", "newrelic.hooks.datastore_valkey", "instrument_valkey_commands_json_commands"
+    )
+
+    _process_module_definition(
+        "valkey.commands.search.commands",
+        "newrelic.hooks.datastore_valkey",
+        "instrument_valkey_commands_search_commands",
+    )
+
+    _process_module_definition(
+        "valkey.commands.timeseries.commands",
+        "newrelic.hooks.datastore_valkey",
+        "instrument_valkey_commands_timeseries_commands",
+    )
+
+    _process_module_definition(
+        "valkey.commands.bf.commands", "newrelic.hooks.datastore_valkey", "instrument_valkey_commands_bf_commands"
+    )
+
+    _process_module_definition(
+        "valkey.commands.graph.commands", "newrelic.hooks.datastore_valkey", "instrument_valkey_commands_graph_commands"
+    )
+
+    _process_module_definition(
+        "motor.motor_asyncio", "newrelic.hooks.datastore_motor", "instrument_motor_motor_asyncio"
+    )
+    _process_module_definition(
+        "motor.motor_tornado", "newrelic.hooks.datastore_motor", "instrument_motor_motor_tornado"
+    )
 
     _process_module_definition(
         "piston.resource",

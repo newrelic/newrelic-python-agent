@@ -41,6 +41,7 @@ class MockExternalHTTPServer(threading.Thread):
     # calls. For an example see:
     # ../framework_tornado_r3/test_async_application.py
     RESPONSE = b'external response'
+    host = "localhost"
 
     def __init__(self, handler=simple_get, port=None, *args, **kwargs):
         super(MockExternalHTTPServer, self).__init__(*args, **kwargs)

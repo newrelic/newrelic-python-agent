@@ -34,7 +34,6 @@ from newrelic.common.object_names import parse_exc_info
 from newrelic.core.attribute import MAX_ATTRIBUTE_LENGTH
 from newrelic.core.attribute_filter import AttributeFilter
 
-
 try:
     import grpc
 
@@ -74,6 +73,21 @@ _logger = logging.getLogger(__name__)
 _logger.addHandler(_NullHandler())
 
 
+def _map_aws_account_id(s, logger):
+    # The AWS account id must be a 12 digit number.
+    # See https://docs.aws.amazon.com/accounts/latest/reference/manage-acct-identifiers.html#awsaccountid.
+    if s and len(s) == 12:
+        if s.isdecimal():
+            account_id = int(s)
+            return account_id
+    # Only log a warning if s is set.
+    if s:
+        logger.warning(
+            "Improper configuration. cloud.aws.account_id = %s will be ignored because it is not a 12 digit number.", s
+        )
+    return None
+
+
 # The Settings objects and the global default settings. We create a
 # distinct type for each sub category of settings that the agent knows
 # about so that an error when accessing a non-existent setting is more
@@ -82,7 +96,7 @@ _logger.addHandler(_NullHandler())
 # sub categories we don't know about.
 
 
-class Settings():
+class Settings:
     nested = False
 
     def __repr__(self):
@@ -124,6 +138,14 @@ class TopLevelSettings(Settings):
         self._otlp_host = value
 
 
+class CloudSettings(Settings):
+    pass
+
+
+class AWSSettings(Settings):
+    pass
+
+
 class AttributesSettings(Settings):
     pass
 
@@ -159,6 +181,10 @@ class AIMonitoringRecordContentSettings(Settings):
 
 
 class K8sOperatorSettings(Settings):
+    pass
+
+
+class AzureOperatorSettings(Settings):
     pass
 
 
@@ -320,6 +346,10 @@ class ApplicationLoggingForwardingSettings(Settings):
     pass
 
 
+class ApplicationLoggingForwardingLabelsSettings(Settings):
+    pass
+
+
 class ApplicationLoggingForwardingContextDataSettings(Settings):
     pass
 
@@ -444,16 +474,20 @@ _settings = TopLevelSettings()
 _settings.agent_limits = AgentLimitsSettings()
 _settings.application_logging = ApplicationLoggingSettings()
 _settings.application_logging.forwarding = ApplicationLoggingForwardingSettings()
+_settings.application_logging.forwarding.labels = ApplicationLoggingForwardingLabelsSettings()
 _settings.application_logging.forwarding.context_data = ApplicationLoggingForwardingContextDataSettings()
 _settings.application_logging.metrics = ApplicationLoggingMetricsSettings()
 _settings.application_logging.local_decorating = ApplicationLoggingLocalDecoratingSettings()
 _settings.application_logging.metrics = ApplicationLoggingMetricsSettings()
+_settings.cloud = CloudSettings()
+_settings.cloud.aws = AWSSettings()
 _settings.machine_learning = MachineLearningSettings()
 _settings.machine_learning.inference_events_value = MachineLearningInferenceEventsValueSettings()
 _settings.ai_monitoring = AIMonitoringSettings()
 _settings.ai_monitoring.streaming = AIMonitoringStreamingSettings()
 _settings.ai_monitoring.record_content = AIMonitoringRecordContentSettings()
 _settings.k8s_operator = K8sOperatorSettings()
+_settings.azure_operator = AzureOperatorSettings()
 _settings.package_reporting = PackageReportingSettings()
 _settings.attributes = AttributesSettings()
 _settings.browser_monitoring = BrowserMonitorSettings()
@@ -959,6 +993,17 @@ _settings.application_logging.enabled = _environ_as_bool("NEW_RELIC_APPLICATION_
 _settings.application_logging.forwarding.enabled = _environ_as_bool(
     "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_ENABLED", default=True
 )
+_settings.application_logging.forwarding.custom_attributes = _environ_as_mapping(
+    "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_CUSTOM_ATTRIBUTES", default=""
+)
+
+_settings.application_logging.forwarding.labels.enabled = _environ_as_bool(
+    "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_LABELS_ENABLED", default=False
+)
+_settings.application_logging.forwarding.labels.exclude = set(
+    v.lower() for v in _environ_as_set("NEW_RELIC_APPLICATION_LOGGING_FORWARDING_LABELS_EXCLUDE", default="")
+)
+
 _settings.application_logging.forwarding.context_data.enabled = _environ_as_bool(
     "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_CONTEXT_DATA_ENABLED", default=False
 )
@@ -974,6 +1019,7 @@ _settings.application_logging.metrics.enabled = _environ_as_bool(
 _settings.application_logging.local_decorating.enabled = _environ_as_bool(
     "NEW_RELIC_APPLICATION_LOGGING_LOCAL_DECORATING_ENABLED", default=False
 )
+_settings.cloud.aws.account_id = _map_aws_account_id(os.environ.get("NEW_RELIC_CLOUD_AWS_ACCOUNT_ID"), _logger)
 _settings.machine_learning.enabled = _environ_as_bool("NEW_RELIC_MACHINE_LEARNING_ENABLED", default=False)
 _settings.machine_learning.inference_events_value.enabled = _environ_as_bool(
     "NEW_RELIC_MACHINE_LEARNING_INFERENCE_EVENT_VALUE_ENABLED", default=False
@@ -985,6 +1031,7 @@ _settings.ai_monitoring.record_content.enabled = _environ_as_bool(
 )
 _settings.ai_monitoring._llm_token_count_callback = None
 _settings.k8s_operator.enabled = _environ_as_bool("NEW_RELIC_K8S_OPERATOR_ENABLED", default=False)
+_settings.azure_operator.enabled = _environ_as_bool("NEW_RELIC_AZURE_OPERATOR_ENABLED", default=False)
 _settings.package_reporting.enabled = _environ_as_bool("NEW_RELIC_PACKAGE_REPORTING_ENABLED", default=True)
 _settings.ml_insights_events.enabled = _environ_as_bool("NEW_RELIC_ML_INSIGHTS_EVENTS_ENABLED", default=False)
 
@@ -1129,11 +1176,7 @@ def global_settings_dump(settings_object=None, serializable=False):
             if not isinstance(key, str):
                 del settings[key]
 
-            if (
-                not isinstance(value, str)
-                and not isinstance(value, float)
-                and not isinstance(value, int)
-            ):
+            if not isinstance(value, (str, float, int)):
                 settings[key] = repr(value)
 
     return settings

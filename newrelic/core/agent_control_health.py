@@ -64,23 +64,19 @@ LICENSE_KEY_ERROR_CODES = frozenset([HealthStatus.INVALID_LICENSE.value, HealthS
 def is_valid_file_delivery_location(file_uri):
     # Verify whether file directory provided to agent via env var is a valid file URI to determine whether health
     # check should run
-    if not file_uri:
-        _logger.warning("Configured Agent Control health delivery location is empty. Health check will not be enabled.")
-        return False
-
     try:
         parsed_uri = urlparse(file_uri)
-
+        breakpoint()
         if not parsed_uri.scheme or not parsed_uri.path:
             _logger.warning(
-                "Configured Agent Control health delivery location is not a complete file URI. Health check will not be"
+                "Configured Agent Control health delivery location is not a complete file URI. Health check will not be "
                 "enabled. "
             )
             return False
 
         if parsed_uri.scheme != "file":
             _logger.warning(
-                "Configured Agent Control health delivery location does not have a valid scheme. Health check will not be"
+                "Configured Agent Control health delivery location does not have a valid scheme. Health check will not be "
                 "enabled."
             )
             return False
@@ -91,13 +87,6 @@ def is_valid_file_delivery_location(file_uri):
         if not path.exists():
             _logger.warning(
                 "Configured Agent Control health delivery location does not exist. Health check will not be enabled."
-            )
-            return False
-
-        # Check if the current process has write access to the delivery location
-        if not os.access(path, os.W_OK):
-            _logger.warning(
-                "The current process does not have write permission to the configured Agent Control health delivery location. Health check will not be enabled."
             )
             return False
 
@@ -145,6 +134,9 @@ class AgentControlHealth:
         health_file_location = os.environ.get(
             "NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", "file:///newrelic/apm/health"
         )
+        # Explicitly check if the variable was set to an empty string so we can assign the default
+        if not health_file_location:
+            health_file_location = "file:///newrelic/apm/health"
 
         return is_valid_file_delivery_location(health_file_location)
 

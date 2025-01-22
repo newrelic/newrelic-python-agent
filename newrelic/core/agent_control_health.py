@@ -94,6 +94,13 @@ def is_valid_file_delivery_location(file_uri):
             )
             return False
 
+        # Check if the current process has write access to the delivery location
+        if not os.access(path, os.W_OK):
+            _logger.warning(
+                "The current process does not have write permission to the configured Agent Control health delivery location. Health check will not be enabled."
+            )
+            return False
+
         return True
 
     except Exception as e:
@@ -130,11 +137,14 @@ class AgentControlHealth:
 
     @property
     def health_check_enabled(self):
-        fleet_id_present = os.environ.get("NEW_RELIC_AGENT_CONTROL_FLEET_ID", None)
-        if not fleet_id_present:
+        # Default to False - this must be explicitly set to True by the sidecar/ operator to enable health check
+        agent_control_enabled = os.environ.get("NEW_RELIC_AGENT_CONTROL_ENABLED", False)
+        if not agent_control_enabled:
             return False
 
-        health_file_location = os.environ.get("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", None)
+        health_file_location = os.environ.get(
+            "NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", "file:///newrelic/apm/health"
+        )
 
         return is_valid_file_delivery_location(health_file_location)
 
@@ -172,7 +182,9 @@ class AgentControlHealth:
 
     def write_to_health_file(self):
         status_time_unix_nano = time.time_ns()
-        health_file_location = os.environ.get("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", None)
+        health_file_location = os.environ.get(
+            "NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", "file:///newrelic/apm/health"
+        )
 
         # Additional safeguard though health delivery location contents were initially checked to determine if health
         # check should be enabled
@@ -216,7 +228,15 @@ def agent_control_health_instance():
 
 
 def agent_control_healthcheck_loop():
-    reporting_frequency = os.environ.get("NEW_RELIC_AGENT_CONTROL_HEALTH_FREQUENCY", 5)
+    try:
+        reporting_frequency = int(os.environ.get("NEW_RELIC_AGENT_CONTROL_HEALTH_FREQUENCY", 5))
+        # If we have an invalid integer value for frequency, default back to 5
+        if reporting_frequency <= 0:
+            reporting_frequency = 5
+    except Exception:
+        # If we run into an exception when int typecasting, default back to 5
+        reporting_frequency = 5
+
     scheduler = sched.scheduler(time.time, time.sleep)
 
     # Target this function when starting agent control health check threads to keep the scheduler running

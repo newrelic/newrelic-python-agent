@@ -66,7 +66,6 @@ def is_valid_file_delivery_location(file_uri):
     # check should run
     try:
         parsed_uri = urlparse(file_uri)
-        breakpoint()
         if not parsed_uri.scheme or not parsed_uri.path:
             _logger.warning(
                 "Configured Agent Control health delivery location is not a complete file URI. Health check will not be "
@@ -131,6 +130,10 @@ class AgentControlHealth:
         if not agent_control_enabled:
             return False
 
+        return is_valid_file_delivery_location(self.health_delivery_location)
+
+    @property
+    def health_delivery_location(self):
         health_file_location = os.environ.get(
             "NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", "file:///newrelic/apm/health"
         )
@@ -138,7 +141,7 @@ class AgentControlHealth:
         if not health_file_location:
             health_file_location = "file:///newrelic/apm/health"
 
-        return is_valid_file_delivery_location(health_file_location)
+        return health_file_location
 
     @property
     def is_healthy(self):
@@ -174,17 +177,9 @@ class AgentControlHealth:
 
     def write_to_health_file(self):
         status_time_unix_nano = time.time_ns()
-        health_file_location = os.environ.get(
-            "NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", "file:///newrelic/apm/health"
-        )
-
-        # Additional safeguard though health delivery location contents were initially checked to determine if health
-        # check should be enabled
-        if not health_file_location:
-            return
 
         try:
-            file_path = urlparse(health_file_location).path
+            file_path = urlparse(self.health_delivery_location).path
             file_id = self.get_file_id()
             file_name = f"health-{file_id}.yml"
             full_path = os.path.join(file_path, file_name)

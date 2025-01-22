@@ -37,7 +37,7 @@ def get_health_file_contents(tmp_path):
 
 @pytest.mark.parametrize("file_uri", ["", "file://", "/test/dir", "foo:/test/dir"])
 def test_invalid_file_directory_supplied(file_uri):
-    assert is_valid_file_delivery_location(file_uri) is False
+    assert not is_valid_file_delivery_location(file_uri)
 
 
 def test_agent_control_not_enabled(monkeypatch, tmp_path):

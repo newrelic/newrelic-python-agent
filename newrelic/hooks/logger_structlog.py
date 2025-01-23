@@ -57,9 +57,10 @@ def new_relic_event_consumer(logger, level, event):
         elif isinstance(event, tuple):
             _event = event[0][0]
             message = original_message = _event.get("event")
-            event_attrs = {
-                k: v for extra, log_attrs in event[1].items() if extra == "extra" for k, v in log_attrs.items()
-            }
+            event_attrs = {k: v for k, v in _event.items() if k != "event"}
+            # event_attrs = {
+            #     k: v for extra, log_attrs in event[1].items() if extra == "extra" for k, v in log_attrs.items()
+            # }
         else:
             # Unclear how to proceed, ignore log. Avoid logging an error message or we may incur an infinite loop.
             return event

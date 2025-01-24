@@ -15,55 +15,33 @@
 import platform
 
 import pytest
-from testing_support.fixtures import reset_core_stats_engine
+from testing_support.fixtures import (
+    override_application_settings,
+    reset_core_stats_engine,
+)
+from testing_support.validators.validate_custom_metrics_outside_transaction import (
+    validate_custom_metrics_outside_transaction,
+)
 from testing_support.validators.validate_log_event_count import validate_log_event_count
 from testing_support.validators.validate_log_event_count_outside_transaction import (
     validate_log_event_count_outside_transaction,
 )
+from testing_support.validators.validate_log_events import validate_log_events
+from testing_support.validators.validate_log_events_outside_transaction import (
+    validate_log_events_outside_transaction,
+)
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 
 from newrelic.api.application import application_settings
-from newrelic.api.background_task import background_task
+from newrelic.api.background_task import background_task, current_transaction
 
 """
     This file tests structlog's ability to render structlog-based
     formatters within logging through structlog's `ProcessorFormatter` as
     a `logging.Formatter` for both logging as well as structlog log entries.
 """
-
-# def test_basic():
-#     import logging
-#     import structlog
-
-#     structlog.configure(
-#         processors=[
-#             # Prepare event dict for `ProcessorFormatter`.
-#             structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
-#         ],
-#         logger_factory=structlog.stdlib.LoggerFactory(),
-#     )
-
-#     formatter = structlog.stdlib.ProcessorFormatter(
-#         processors=[structlog.dev.ConsoleRenderer()],
-#     )
-
-#     handler = logging.StreamHandler()
-#     # Use OUR `ProcessorFormatter` to format all `logging` entries.
-#     handler.setFormatter(formatter)
-#     logging_logger = logging.getLogger()
-#     logging_logger.addHandler(handler)
-#     logging_logger.setLevel(logging.WARNING)
-
-#     structlog_logger = structlog.get_logger()
-
-#     logging_logger.msg("Cat", a=42)
-#     logging_logger.error("Dog")
-#     logging_logger.critical("Elephant")
-
-#     structlog_logger.info("Bird")
-#     structlog_logger.error("Fish", events="water")
-#     structlog_logger.critical("Giraffe")
-
-#     assert len(structlog_caplog.caplog) == 6
 
 
 @pytest.fixture(scope="function")
@@ -89,7 +67,6 @@ def structlog_formatter_within_logging(structlog_caplog):
         processors=[
             structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
         ],
-        # logger_factory=structlog.stdlib.LoggerFactory(),
         logger_factory=lambda *args, **kwargs: structlog_caplog,
     )
 
@@ -105,16 +82,17 @@ def structlog_formatter_within_logging(structlog_caplog):
     logging_logger.caplog = handler
     logging_logger.setLevel(logging.WARNING)
 
-    structlog_logger = structlog.get_logger()
+    structlog_logger = structlog.get_logger(logger_attr=2)
 
     yield logging_logger, structlog_logger
-    # del handler.records[:]
 
 
 @pytest.fixture
-def exercise_both_logs(set_trace_ids, structlog_formatter_within_logging, structlog_caplog):
+def exercise_both_loggers(set_trace_ids, structlog_formatter_within_logging, structlog_caplog):
     def _exercise():
-        set_trace_ids()
+        if current_transaction():
+            set_trace_ids()
+
         logging_logger, structlog_logger = structlog_formatter_within_logging
 
         logging_logger.info("Cat", a=42)
@@ -142,17 +120,32 @@ def exercise_both_logs(set_trace_ids, structlog_formatter_within_logging, struct
 # ---------------------
 
 
+@validate_log_events(
+    [
+        {  # Fixed attributes
+            "message": "context_attrs: arg1",
+            "context.kwarg_attr": 1,
+            "context.logger_attr": 2,
+        }
+    ],
+)
+@validate_log_event_count(1)
+@background_task()
+def test_processor_formatter_context_attributes(structlog_formatter_within_logging):
+    _, structlog_logger = structlog_formatter_within_logging
+    structlog_logger.error("context_attrs: %s", "arg1", kwarg_attr=1)
+
+
+@validate_log_events([{"message": "A", "message.attr": 1}])
+@validate_log_event_count(1)
+@background_task()
+def test_processor_formatter_message_attributes(structlog_formatter_within_logging):
+    _, structlog_logger = structlog_formatter_within_logging
+    structlog_logger.error({"message": "A", "attr": 1})
+
+
 # Test local decorating
 # ---------------------
-
-# @pytest.fixture
-# def exercise_logging_single_line(set_trace_ids, logger, structlog_caplog):
-#     def _exercise():
-#         set_trace_ids()
-#         logger.error("A", key="value")
-#         assert len(structlog_caplog.caplog) == 1
-
-#     return _exercise
 
 
 def get_metadata_string(log_message, is_txn):
@@ -170,22 +163,22 @@ def get_metadata_string(log_message, is_txn):
 
 
 @reset_core_stats_engine()
-def test_local_log_decoration_inside_transaction(exercise_both_logs, structlog_caplog):
+def test_processor_formatter_local_log_decoration_inside_transaction(exercise_both_loggers, structlog_caplog):
     @validate_log_event_count(5)
     @background_task()
     def test():
-        exercise_both_logs()
-        # assert get_metadata_string('A', True) in structlog_caplog.caplog[0]
+        exercise_both_loggers()
+        assert get_metadata_string("Fish", True) in structlog_caplog.caplog[1]["event"]
 
     test()
 
 
 @reset_core_stats_engine()
-def test_local_log_decoration_outside_transaction(exercise_both_logs, structlog_caplog):
+def test_processor_formatter_local_log_decoration_outside_transaction(exercise_both_loggers, structlog_caplog):
     @validate_log_event_count_outside_transaction(5)
     def test():
-        exercise_both_logs()
-        # assert get_metadata_string('A', False) in structlog_caplog.caplog[0]
+        exercise_both_loggers()
+        assert get_metadata_string("Fish", False) in structlog_caplog.caplog[1]["event"]
 
     test()
 
@@ -193,6 +186,88 @@ def test_local_log_decoration_outside_transaction(exercise_both_logs, structlog_
 # Test log forwarding
 # ---------------------
 
+_common_attributes_service_linking = {
+    "timestamp": None,
+    "hostname": None,
+    "entity.name": "Python Agent Test (logger_structlog)",
+    "entity.guid": None,
+}
+
+_common_attributes_trace_linking = {
+    "span.id": "abcdefgh",
+    "trace.id": "abcdefgh12345678",
+    **_common_attributes_service_linking,
+}
+
+
+@reset_core_stats_engine()
+@override_application_settings({"application_logging.local_decorating.enabled": False})
+def test_processor_formatter_logging_inside_transaction(exercise_both_loggers):
+    @validate_log_events(
+        [
+            {"message": "Dog", "level": "ERROR", **_common_attributes_trace_linking},
+            {"message": "Elephant", "level": "CRITICAL", **_common_attributes_trace_linking},
+            {"message": "Bird", "level": "INFO", **_common_attributes_trace_linking},
+            {"message": "Fish", "level": "ERROR", **_common_attributes_trace_linking},
+            {"message": "Giraffe", "level": "CRITICAL", **_common_attributes_trace_linking},
+        ]
+    )
+    @validate_log_event_count(5)
+    @background_task()
+    def test():
+        exercise_both_loggers()
+
+    test()
+
+
+@reset_core_stats_engine()
+@override_application_settings({"application_logging.local_decorating.enabled": False})
+def test_processor_formatter_logging_outside_transaction(exercise_both_loggers):
+    @validate_log_events_outside_transaction(
+        [
+            {"message": "Dog", "level": "ERROR", **_common_attributes_service_linking},
+            {"message": "Elephant", "level": "CRITICAL", **_common_attributes_service_linking},
+            {"message": "Bird", "level": "INFO", **_common_attributes_service_linking},
+            {"message": "Fish", "level": "ERROR", **_common_attributes_service_linking},
+            {"message": "Giraffe", "level": "CRITICAL", **_common_attributes_service_linking},
+        ]
+    )
+    @validate_log_event_count_outside_transaction(5)
+    def test():
+        exercise_both_loggers()
+
+    test()
+
 
 # Test metrics
 # ---------------------
+
+_test_logging_unscoped_metrics = [
+    ("Logging/lines", 5),
+    ("Logging/lines/INFO", 1),
+    ("Logging/lines/ERROR", 2),
+    ("Logging/lines/CRITICAL", 2),
+]
+
+
+@reset_core_stats_engine()
+def test_processor_formatter_metrics_inside_transaction(exercise_both_loggers):
+    @validate_transaction_metrics(
+        "test_processor_formatter:test_processor_formatter_metrics_inside_transaction.<locals>.test",
+        custom_metrics=_test_logging_unscoped_metrics,
+        background_task=True,
+    )
+    @background_task()
+    def test():
+        exercise_both_loggers()
+
+    test()
+
+
+@reset_core_stats_engine()
+def test_processor_formatter_metrics_outside_transaction(exercise_both_loggers):
+    @validate_custom_metrics_outside_transaction(_test_logging_unscoped_metrics)
+    def test():
+        exercise_both_loggers()
+
+    test()

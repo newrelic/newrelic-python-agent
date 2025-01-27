@@ -21,7 +21,7 @@ import threading
 from newrelic.core.config import finalize_application_settings
 from testing_support.http_client_recorder import HttpClientRecorder
 from newrelic.core.agent_control_health import HealthStatus, is_valid_file_delivery_location, agent_control_health_instance
-from newrelic.config import initialize, _reset_configuration_done
+from newrelic.config import initialize, _reset_configuration_done, _reset_instrumentation_done, _reset_config_parser
 from newrelic.core.agent_protocol import AgentProtocol
 from newrelic.core.application import Application
 from newrelic.network.exceptions import DiscardDataForRequest
@@ -136,38 +136,6 @@ def test_health_check_running_threads(monkeypatch, tmp_path):
     assert running_threads[1].name == "Agent-Control-Health-Main-Thread"
 
 
-def test_max_app_name_status(monkeypatch, tmp_path):
-    # Setup expected env vars to run agent control health check
-    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_FLEET_ID", "1234")
-    file_path = tmp_path.as_uri()
-    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", file_path)
-
-    max_app_name_ini = b"""
-    [newrelic]
-    app_name = "test1;test2;test3;test4"
-    monitor_mode = true
-    """
-
-    _reset_configuration_done()
-
-    with tempfile.NamedTemporaryFile(suffix=".ini") as f:
-        f.write(max_app_name_ini)
-        f.seek(0)
-
-        initialize(config_file=f.name)
-
-    # Give time for the scheduler to kick in and write to the health file
-    time.sleep(5)
-
-    contents = get_health_file_contents(tmp_path)
-
-    # Assert on contents of health file
-    assert len(contents) == 5
-    assert contents[0] == "healthy: False\n"
-    assert contents[1] == "status: The maximum number of configured app names (3) exceeded\n"
-    assert contents[4] == "last_error: NR-APM-006\n"
-
-
 def test_proxy_error_status(monkeypatch, tmp_path):
     # Setup expected env vars to run agent control health check
     monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_ENABLED", True)
@@ -256,3 +224,35 @@ def test_multiple_activations_running_threads(monkeypatch, tmp_path):
     assert running_threads[1].name == "Agent-Control-Health-Main-Thread"
     assert running_threads[2].name == "Agent-Control-Health-Session-Thread"
     assert running_threads[4].name == "Agent-Control-Health-Session-Thread"
+
+
+def test_max_app_name_status(monkeypatch, tmp_path):
+    # Setup expected env vars to run agent control health check
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_ENABLED", True)
+    file_path = tmp_path.as_uri()
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", file_path)
+
+    max_app_name_ini = b"""
+    [newrelic]
+    app_name = "test1;test2;test3;test4"
+    monitor_mode = true
+    """
+
+    _reset_configuration_done()
+
+    with tempfile.NamedTemporaryFile(suffix=".ini") as f:
+        f.write(max_app_name_ini)
+        f.seek(0)
+
+        initialize(config_file=f.name)
+
+    # Give time for the scheduler to kick in and write to the health file
+    time.sleep(5)
+
+    contents = get_health_file_contents(tmp_path)
+
+    # Assert on contents of health file
+    assert len(contents) == 5
+    assert contents[0] == "healthy: False\n"
+    assert contents[1] == "status: The maximum number of configured app names (3) exceeded\n"
+    assert contents[4] == "last_error: NR-APM-006\n"

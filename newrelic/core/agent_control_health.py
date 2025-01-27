@@ -21,6 +21,7 @@ import uuid
 from enum import IntEnum
 from pathlib import Path
 from urllib.parse import urlparse
+from newrelic.core.config import _environ_as_bool, _environ_as_int
 
 
 _logger = logging.getLogger(__name__)
@@ -64,23 +65,18 @@ LICENSE_KEY_ERROR_CODES = frozenset([HealthStatus.INVALID_LICENSE.value, HealthS
 def is_valid_file_delivery_location(file_uri):
     # Verify whether file directory provided to agent via env var is a valid file URI to determine whether health
     # check should run
-    if not file_uri:
-        _logger.warning("Configured Agent Control health delivery location is empty. Health check will not be enabled.")
-        return False
-
     try:
         parsed_uri = urlparse(file_uri)
-
         if not parsed_uri.scheme or not parsed_uri.path:
             _logger.warning(
-                "Configured Agent Control health delivery location is not a complete file URI. Health check will not be"
+                "Configured Agent Control health delivery location is not a complete file URI. Health check will not be "
                 "enabled. "
             )
             return False
 
         if parsed_uri.scheme != "file":
             _logger.warning(
-                "Configured Agent Control health delivery location does not have a valid scheme. Health check will not be"
+                "Configured Agent Control health delivery location does not have a valid scheme. Health check will not be "
                 "enabled."
             )
             return False
@@ -130,13 +126,21 @@ class AgentControlHealth:
 
     @property
     def health_check_enabled(self):
-        fleet_id_present = os.environ.get("NEW_RELIC_AGENT_CONTROL_FLEET_ID", None)
-        if not fleet_id_present:
+        # Default to False - this must be explicitly set to True by the sidecar/ operator to enable health check
+        agent_control_enabled = _environ_as_bool("NEW_RELIC_AGENT_CONTROL_ENABLED", False)
+        if not agent_control_enabled:
             return False
 
-        health_file_location = os.environ.get("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", None)
+        return is_valid_file_delivery_location(self.health_delivery_location)
 
-        return is_valid_file_delivery_location(health_file_location)
+    @property
+    def health_delivery_location(self):
+        # Set a default file path if env var is not set or set to an empty string
+        health_file_location = (
+            os.environ.get("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", "") or "file:///newrelic/apm/health"
+        )
+
+        return health_file_location
 
     @property
     def is_healthy(self):
@@ -172,15 +176,9 @@ class AgentControlHealth:
 
     def write_to_health_file(self):
         status_time_unix_nano = time.time_ns()
-        health_file_location = os.environ.get("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", None)
-
-        # Additional safeguard though health delivery location contents were initially checked to determine if health
-        # check should be enabled
-        if not health_file_location:
-            return
 
         try:
-            file_path = urlparse(health_file_location).path
+            file_path = urlparse(self.health_delivery_location).path
             file_id = self.get_file_id()
             file_name = f"health-{file_id}.yml"
             full_path = os.path.join(file_path, file_name)
@@ -216,7 +214,11 @@ def agent_control_health_instance():
 
 
 def agent_control_healthcheck_loop():
-    reporting_frequency = os.environ.get("NEW_RELIC_AGENT_CONTROL_HEALTH_FREQUENCY", 5)
+    reporting_frequency = _environ_as_int("NEW_RELIC_AGENT_CONTROL_HEALTH_FREQUENCY", 5)
+    # If we have an invalid integer value for frequency, default back to 5
+    if reporting_frequency <= 0:
+        reporting_frequency = 5
+
     scheduler = sched.scheduler(time.time, time.sleep)
 
     # Target this function when starting agent control health check threads to keep the scheduler running

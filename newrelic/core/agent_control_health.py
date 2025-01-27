@@ -21,6 +21,7 @@ import uuid
 from enum import IntEnum
 from pathlib import Path
 from urllib.parse import urlparse
+from newrelic.core.config import _environ_as_bool, _environ_as_int
 
 
 _logger = logging.getLogger(__name__)
@@ -126,7 +127,7 @@ class AgentControlHealth:
     @property
     def health_check_enabled(self):
         # Default to False - this must be explicitly set to True by the sidecar/ operator to enable health check
-        agent_control_enabled = os.environ.get("NEW_RELIC_AGENT_CONTROL_ENABLED", False)
+        agent_control_enabled = _environ_as_bool("NEW_RELIC_AGENT_CONTROL_ENABLED", False)
         if not agent_control_enabled:
             return False
 
@@ -134,12 +135,10 @@ class AgentControlHealth:
 
     @property
     def health_delivery_location(self):
-        health_file_location = os.environ.get(
-            "NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", "file:///newrelic/apm/health"
+        # Set a default file path if env var is not set or set to an empty string
+        health_file_location = (
+            os.environ.get("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", "") or "file:///newrelic/apm/health"
         )
-        # Explicitly check if the variable was set to an empty string so we can assign the default
-        if not health_file_location:
-            health_file_location = "file:///newrelic/apm/health"
 
         return health_file_location
 
@@ -215,13 +214,9 @@ def agent_control_health_instance():
 
 
 def agent_control_healthcheck_loop():
-    try:
-        reporting_frequency = int(os.environ.get("NEW_RELIC_AGENT_CONTROL_HEALTH_FREQUENCY", 5))
-        # If we have an invalid integer value for frequency, default back to 5
-        if reporting_frequency <= 0:
-            reporting_frequency = 5
-    except Exception:
-        # If we run into an exception when int typecasting, default back to 5
+    reporting_frequency = _environ_as_int("NEW_RELIC_AGENT_CONTROL_HEALTH_FREQUENCY", 5)
+    # If we have an invalid integer value for frequency, default back to 5
+    if reporting_frequency <= 0:
         reporting_frequency = 5
 
     scheduler = sched.scheduler(time.time, time.sleep)

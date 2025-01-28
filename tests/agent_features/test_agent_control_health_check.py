@@ -15,16 +15,21 @@ import os
 import time
 import re
 import pytest
-import tempfile
 import threading
 
 from newrelic.core.config import finalize_application_settings
 from testing_support.http_client_recorder import HttpClientRecorder
-from newrelic.core.agent_control_health import HealthStatus, is_valid_file_delivery_location, agent_control_health_instance
-from newrelic.config import initialize, _reset_configuration_done, _reset_instrumentation_done, _reset_config_parser
+from newrelic.core.agent_control_health import (
+    HealthStatus,
+    is_valid_file_delivery_location,
+    agent_control_health_instance,
+)
+from newrelic.config import initialize, _reset_configuration_done
 from newrelic.core.agent_protocol import AgentProtocol
 from newrelic.core.application import Application
 from newrelic.network.exceptions import DiscardDataForRequest
+from testing_support.fixtures import initialize_agent
+from newrelic.core.config import global_settings
 
 
 def get_health_file_contents(tmp_path):
@@ -34,6 +39,7 @@ def get_health_file_contents(tmp_path):
     with open(path_to_written_file, "r") as f:
         contents = f.readlines()
         return contents
+
 
 @pytest.mark.parametrize("file_uri", ["", "file://", "/test/dir", "foo:/test/dir"])
 def test_invalid_file_directory_supplied(file_uri):
@@ -169,6 +175,31 @@ def test_proxy_error_status(monkeypatch, tmp_path):
     assert contents[4] == "last_error: NR-APM-007\n"
 
 
+def test_multiple_activations_running_threads(monkeypatch, tmp_path):
+    # Setup expected env vars to run agent control health check
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_ENABLED", True)
+    file_path = tmp_path.as_uri()
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", file_path)
+
+    _reset_configuration_done()
+    initialize()
+
+    application_1 = Application("Test App 1")
+    application_2 = Application("Test App 2")
+
+    application_1.activate_session()
+    application_2.activate_session()
+
+    running_threads = threading.enumerate()
+
+    # 6 threads expected: One main agent thread, two active session threads, one main health check thread, and two
+    # active session health threads
+    assert len(running_threads) == 6
+    assert running_threads[1].name == "Agent-Control-Health-Main-Thread"
+    assert running_threads[2].name == "Agent-Control-Health-Session-Thread"
+    assert running_threads[4].name == "Agent-Control-Health-Session-Thread"
+
+
 def test_update_to_healthy(monkeypatch, tmp_path):
     # Setup expected env vars to run agent control health check
     monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_ENABLED", True)
@@ -201,51 +232,14 @@ def test_update_to_healthy(monkeypatch, tmp_path):
     assert contents[1] == "status: Healthy\n"
 
 
-def test_multiple_activations_running_threads(monkeypatch, tmp_path):
-    # Setup expected env vars to run agent control health check
-    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_ENABLED", True)
-    file_path = tmp_path.as_uri()
-    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", file_path)
-
-    _reset_configuration_done()
-    initialize()
-
-    application_1 = Application("Test App 1")
-    application_2 = Application("Test App 2")
-
-    application_1.activate_session()
-    application_2.activate_session()
-
-    running_threads = threading.enumerate()
-
-    # 6 threads expected: One main agent thread, two active session threads, one main health check thread, and two
-    # active session health threads
-    assert len(running_threads) == 6
-    assert running_threads[1].name == "Agent-Control-Health-Main-Thread"
-    assert running_threads[2].name == "Agent-Control-Health-Session-Thread"
-    assert running_threads[4].name == "Agent-Control-Health-Session-Thread"
-
-
 def test_max_app_name_status(monkeypatch, tmp_path):
     # Setup expected env vars to run agent control health check
     monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_ENABLED", True)
     file_path = tmp_path.as_uri()
     monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", file_path)
 
-    max_app_name_ini = b"""
-    [newrelic]
-    app_name = "test1;test2;test3;test4"
-    monitor_mode = true
-    """
-
     _reset_configuration_done()
-
-    with tempfile.NamedTemporaryFile(suffix=".ini") as f:
-        f.write(max_app_name_ini)
-        f.seek(0)
-
-        initialize(config_file=f.name)
-
+    initialize_agent(app_name="test1;test2;test3;test4")
     # Give time for the scheduler to kick in and write to the health file
     time.sleep(5)
 
@@ -256,3 +250,7 @@ def test_max_app_name_status(monkeypatch, tmp_path):
     assert contents[0] == "healthy: False\n"
     assert contents[1] == "status: The maximum number of configured app names (3) exceeded\n"
     assert contents[4] == "last_error: NR-APM-006\n"
+
+    # Set app name back to original name specific
+    settings = global_settings()
+    settings.app_name = "Python Agent Test (agent_features)"

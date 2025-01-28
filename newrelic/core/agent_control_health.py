@@ -65,6 +65,7 @@ LICENSE_KEY_ERROR_CODES = frozenset([HealthStatus.INVALID_LICENSE.value, HealthS
 
 NR_CONNECTION_ERROR_CODES = frozenset([HealthStatus.FAILED_NR_CONNECTION.value, HealthStatus.FORCED_DISCONNECT.value])
 
+
 def is_valid_file_delivery_location(file_uri):
     # Verify whether file directory provided to agent via env var is a valid file URI to determine whether health
     # check should run

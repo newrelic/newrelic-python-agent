@@ -597,7 +597,7 @@ def _process_app_name_setting():
     # primary application name and link it with the other applications.
     # When activating the application the linked names will be sent
     # along to the core application where the association will be
-    # created if the do not exist.
+    # created if it does not exist.
 
     app_name_list = _settings.app_name.split(";")
     name = app_name_list[0].strip() or "Python Application"
@@ -606,7 +606,7 @@ def _process_app_name_setting():
         agent_control_health.set_health_status(HealthStatus.MAX_APP_NAME.value)
 
     linked = []
-    for altname in _settings.app_name.split(";")[1:]:
+    for altname in app_name_list[1:]:
         altname = altname.strip()
         if altname:
             linked.append(altname)

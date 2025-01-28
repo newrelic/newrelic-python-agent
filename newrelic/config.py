@@ -42,14 +42,17 @@ import newrelic.core.config
 from newrelic.common.log_file import initialize_logging
 from newrelic.common.object_names import callable_name, expand_builtin_exception_name
 from newrelic.core import trace_cache
+from newrelic.core.agent_control_health import (
+    HealthStatus,
+    agent_control_health_instance,
+    agent_control_healthcheck_loop,
+)
 from newrelic.core.config import (
     Settings,
     apply_config_setting,
     default_host,
     fetch_config_setting,
 )
-from newrelic.core.agent_control_health import HealthStatus, agent_control_health_instance, agent_control_healthcheck_loop
-
 
 __all__ = ["initialize", "filter_app_factory"]
 
@@ -4837,7 +4840,9 @@ def _setup_agent_console():
         newrelic.core.agent.Agent.run_on_startup(_startup_agent_console)
 
 
-agent_control_health_thread = threading.Thread(name="Agent-Control-Health-Main-Thread", target=agent_control_healthcheck_loop)
+agent_control_health_thread = threading.Thread(
+    name="Agent-Control-Health-Main-Thread", target=agent_control_healthcheck_loop
+)
 agent_control_health_thread.daemon = True
 
 

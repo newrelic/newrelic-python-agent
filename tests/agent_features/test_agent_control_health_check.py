@@ -12,24 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-import time
 import re
-import pytest
 import threading
+import time
 
-from newrelic.core.config import finalize_application_settings
+import pytest
+from testing_support.fixtures import initialize_agent
 from testing_support.http_client_recorder import HttpClientRecorder
+
+from newrelic.config import _reset_configuration_done, initialize
 from newrelic.core.agent_control_health import (
     HealthStatus,
-    is_valid_file_delivery_location,
     agent_control_health_instance,
+    is_valid_file_delivery_location,
 )
-from newrelic.config import initialize, _reset_configuration_done
 from newrelic.core.agent_protocol import AgentProtocol
 from newrelic.core.application import Application
+from newrelic.core.config import finalize_application_settings, global_settings
 from newrelic.network.exceptions import DiscardDataForRequest
-from testing_support.fixtures import initialize_agent
-from newrelic.core.config import global_settings
 
 
 def get_health_file_contents(tmp_path):

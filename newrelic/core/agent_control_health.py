@@ -21,8 +21,8 @@ import uuid
 from enum import IntEnum
 from pathlib import Path
 from urllib.parse import urlparse
-from newrelic.core.config import _environ_as_bool, _environ_as_int
 
+from newrelic.core.config import _environ_as_bool, _environ_as_int
 
 _logger = logging.getLogger(__name__)
 
@@ -33,6 +33,7 @@ class HealthStatus(IntEnum):
     MISSING_LICENSE = 2
     FORCED_DISCONNECT = 3
     HTTP_ERROR = 4
+    MAX_APP_NAME = 6
     PROXY_ERROR = 7
     AGENT_DISABLED = 8
     FAILED_NR_CONNECTION = 9
@@ -47,6 +48,7 @@ HEALTH_CHECK_STATUSES = {
     HealthStatus.MISSING_LICENSE.value: "License key missing in configuration",
     HealthStatus.FORCED_DISCONNECT.value: "Forced disconnect received from New Relic (HTTP status code 410)",
     HealthStatus.HTTP_ERROR.value: "HTTP error response code {response_code} received from New Relic while sending data type {info}",
+    HealthStatus.MAX_APP_NAME.value: "The maximum number of configured app names (3) exceeded",
     HealthStatus.PROXY_ERROR.value: "HTTP Proxy configuration error; response code {response_code}",
     HealthStatus.AGENT_DISABLED.value: "Agent is disabled via configuration",
     HealthStatus.FAILED_NR_CONNECTION.value: "Failed to connect to New Relic data collector",
@@ -60,6 +62,8 @@ PROTOCOL_ERROR_CODES = frozenset(
     [HealthStatus.FORCED_DISCONNECT.value, HealthStatus.HTTP_ERROR.value, HealthStatus.PROXY_ERROR.value]
 )
 LICENSE_KEY_ERROR_CODES = frozenset([HealthStatus.INVALID_LICENSE.value, HealthStatus.MISSING_LICENSE.value])
+
+NR_CONNECTION_ERROR_CODES = frozenset([HealthStatus.FAILED_NR_CONNECTION.value, HealthStatus.FORCED_DISCONNECT.value])
 
 
 def is_valid_file_delivery_location(file_uri):
@@ -150,7 +154,10 @@ class AgentControlHealth:
         previous_status_code = self.status_code
 
         if status_code == HealthStatus.FAILED_NR_CONNECTION.value and previous_status_code in LICENSE_KEY_ERROR_CODES:
-            # Do not update to failed connection status when license key is the issue
+            # Do not update to failed connection status when license key is the issue so the more descriptive status is not overridden
+            return
+        elif status_code in NR_CONNECTION_ERROR_CODES and previous_status_code == HealthStatus.MAX_APP_NAME:
+            # Do not let NR connection error override the max app name status
             return
         elif status_code == HealthStatus.AGENT_SHUTDOWN.value and not self.is_healthy:
             # Do not override status with agent_shutdown unless the agent was previously healthy

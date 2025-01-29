@@ -83,6 +83,7 @@ vectorstore_recorded_events = [
             "ingest_source": "Python",
             "metadata.source": os.path.join(os.path.dirname(__file__), "hello.pdf"),
             "metadata.page": 0,
+            "metadata.page_label": "1",
         },
     ),
 ]

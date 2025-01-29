@@ -23,8 +23,6 @@ from pathlib import Path
 from urllib.parse import urlparse
 from newrelic.core.config import _environ_as_bool, _environ_as_int
 
-from newrelic.core.config import _environ_as_bool, _environ_as_int
-
 _logger = logging.getLogger(__name__)
 
 

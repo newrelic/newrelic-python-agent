@@ -599,10 +599,14 @@ def _process_app_name_setting():
     # along to the core application where the association will be
     # created if the do not exist.
 
-    name = _settings.app_name.split(";")[0].strip() or "Python Application"
+    app_name_list = _settings.app_name.split(";")
+    name = app_name_list[0].strip() or "Python Application"
+
+    if len(app_name_list) > 3:
+        agent_control_health.set_health_status(HealthStatus.MAX_APP_NAME.value)
 
     linked = []
-    for altname in _settings.app_name.split(";")[1:]:
+    for altname in app_name_list[1:]:
         altname = altname.strip()
         if altname:
             linked.append(altname)

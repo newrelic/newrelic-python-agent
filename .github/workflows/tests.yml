@@ -31,7 +31,7 @@ concurrency:
 jobs:
   # Aggregate job that provides a single check for all tests passing
   tests:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs:
       - python
       - cassandra
@@ -102,7 +102,7 @@ jobs:
   # Combine and upload coverage data
   coverage:
     if: success() || failure() # Does not run on cancelled workflows
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     needs:
       - tests
 
@@ -164,7 +164,7 @@ jobs:
             20,
           ]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     container:
       image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-
@@ -213,7 +213,7 @@ jobs:
       matrix:
         group-number: [1]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     container:
       image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-
@@ -262,7 +262,7 @@ jobs:
       matrix:
         group-number: [1]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     container:
       image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-
@@ -325,7 +325,7 @@ jobs:
       matrix:
         group-number: [1, 2]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     container:
       image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-
@@ -389,7 +389,7 @@ jobs:
       matrix:
         group-number: [1]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     container:
       image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-
@@ -453,7 +453,7 @@ jobs:
       matrix:
         group-number: [1]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     container:
       image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-
@@ -520,7 +520,7 @@ jobs:
       matrix:
         group-number: [1, 2]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     container:
       image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-
@@ -587,7 +587,7 @@ jobs:
       matrix:
         group-number: [1]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     container:
       image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-
@@ -690,7 +690,7 @@ jobs:
       matrix:
         group-number: [1, 2]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     container:
       image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-
@@ -752,7 +752,7 @@ jobs:
       matrix:
         group-number: [1]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     container:
       image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-
@@ -816,7 +816,7 @@ jobs:
       matrix:
         group-number: [1, 2]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     container:
       image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-
@@ -878,7 +878,7 @@ jobs:
       matrix:
         group-number: [1]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     container:
       image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-
@@ -941,7 +941,7 @@ jobs:
       matrix:
         group-number: [1, 2, 3, 4]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     container:
       image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-
@@ -1015,7 +1015,7 @@ jobs:
       matrix:
         group-number: [1]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     container:
       image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-
@@ -1077,7 +1077,7 @@ jobs:
       matrix:
         group-number: [1]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     container:
       image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-
@@ -1139,7 +1139,7 @@ jobs:
       matrix:
         group-number: [1]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     container:
       image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-
@@ -1206,7 +1206,7 @@ jobs:
       matrix:
         group-number: [1]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     container:
       image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-
@@ -1270,7 +1270,7 @@ jobs:
       matrix:
         group-number: [1]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     container:
       image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-
@@ -1335,7 +1335,7 @@ jobs:
       matrix:
         group-number: [1]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     container:
       image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-
@@ -1404,7 +1404,7 @@ jobs:
       matrix:
         group-number: [1]
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     container:
       image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
       options: >-

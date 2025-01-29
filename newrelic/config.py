@@ -2180,13 +2180,10 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_callbacks_manager",
     )
+
+    # VectorStores with similarity_search method
     _process_module_definition(
-        "langchain_community.vectorstores.docarray.hnsw",
-        "newrelic.hooks.mlmodel_langchain",
-        "instrument_langchain_vectorstore_similarity_search",
-    )
-    _process_module_definition(
-        "langchain_community.vectorstores.docarray.in_memory",
+        "langchain_community.vectorstores.docarray",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )
@@ -2196,7 +2193,7 @@ def _process_module_builtin_defaults():
         "instrument_langchain_vectorstore_similarity_search",
     )
     _process_module_definition(
-        "langchain_community.vectorstores.redis.base",
+        "langchain_community.vectorstores.redis",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_vectorstore_similarity_search",
     )

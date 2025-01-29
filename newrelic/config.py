@@ -3182,6 +3182,11 @@ def _process_module_builtin_defaults():
         "instrument_gunicorn_app_base",
     )
 
+    _process_module_definition("cassandra", "newrelic.hooks.datastore_cassandradriver", "instrument_cassandra")
+    _process_module_definition(
+        "cassandra.cluster", "newrelic.hooks.datastore_cassandradriver", "instrument_cassandra_cluster"
+    )
+
     _process_module_definition("cx_Oracle", "newrelic.hooks.database_cx_oracle", "instrument_cx_oracle")
 
     _process_module_definition("ibm_db_dbi", "newrelic.hooks.database_ibm_db_dbi", "instrument_ibm_db_dbi")

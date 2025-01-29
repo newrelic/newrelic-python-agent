@@ -23,6 +23,7 @@ jobs:
   build-linux-py3-legacy:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         wheel:
           - cp37-manylinux
@@ -57,6 +58,7 @@ jobs:
   build-linux-py3:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         wheel:
           - cp38-manylinux

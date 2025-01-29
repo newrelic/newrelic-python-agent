@@ -218,6 +218,7 @@ class Agent():
         self._scheduler = sched.scheduler(self._harvest_timer, self._harvest_shutdown.wait)
 
         self._process_shutdown = False
+        self._agent_control = agent_control_health_instance()
 
         self._agent_control = agent_control_health_instance()
 

@@ -42,6 +42,11 @@ import newrelic.core.config
 from newrelic.common.log_file import initialize_logging
 from newrelic.common.object_names import callable_name, expand_builtin_exception_name
 from newrelic.core import trace_cache
+from newrelic.core.agent_control_health import (
+    HealthStatus,
+    agent_control_health_instance,
+    agent_control_healthcheck_loop,
+)
 from newrelic.core.config import (
     Settings,
     apply_config_setting,
@@ -597,7 +602,7 @@ def _process_app_name_setting():
     # primary application name and link it with the other applications.
     # When activating the application the linked names will be sent
     # along to the core application where the association will be
-    # created if the do not exist.
+    # created if it does not exist.
 
     app_name_list = _settings.app_name.split(";")
     name = app_name_list[0].strip() or "Python Application"

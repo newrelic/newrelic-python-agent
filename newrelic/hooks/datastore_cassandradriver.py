@@ -22,7 +22,7 @@ DBAPI2_MODULE = None
 DEFAULT = object()
 
 
-def wrap_Session_execute_async(wrapped, instance, args, kwargs):
+def wrap_Session_execute(wrapped, instance, args, kwargs):
     # Most of this wrapper is lifted from DBAPI2 wrappers, which can't be used
     # directly since Cassandra doesn't actually conform to DBAPI2.
 
@@ -38,12 +38,9 @@ def wrap_Session_execute_async(wrapped, instance, args, kwargs):
     sql = bound_args.get("query", None)
     if not isinstance(sql, str):
         statement = getattr(sql, "prepared_statement", sql)  # Unbind BoundStatement
-        sql = statement.query_string  # Unpack query from SimpleStatement and PreparedStatement
+        sql = getattr(statement, "query_string", statement)  # Unpack query from SimpleStatement and PreparedStatement
 
     database_name = getattr(instance, "keyspace", None)
-
-    # hosts = instance.cluster.metadata.all_hosts()
-    # breakpoint()
 
     host = None
     port = None
@@ -86,8 +83,6 @@ def wrap_Session_execute_async(wrapped, instance, args, kwargs):
         ):
             return wrapped(*args, **kwargs)
 
-    return wrapped(*args, **kwargs)
-
 
 def instrument_cassandra(module):
     # Cassandra isn't DBAPI2 compliant, but we need the DatabaseTrace to function properly. We can set parameters
@@ -113,7 +108,12 @@ def instrument_cassandra_cluster(module):
         )
 
         # Currently Session.execute() is a wrapper for calling Session.execute_async() and immediately waiting for
-        # the result. We can therefore just instrument execute_async() and achieve full sync/async coverage.
-        # If this changes in the future we'll need an additional wrapper, but care should be taken not to double wrap.
-        wrap_function_wrapper(module, "Session.execute_async", wrap_Session_execute_async)
-        wrap_function_wrapper(module, "Session.execute", wrap_Session_execute_async)  # TODO check this
+        # the result. We therefore need to instrument Session.execute() in order to get timing information for sync
+        # query executions. We also need to instrument Session.execute_async() to at least get metrics for async
+        # queries, but we can't get timing information from that alone. We also need to add an early exit condition
+        # for when instrumentation for Session.execute_async() is called within Session.execute().
+        wrap_function_wrapper(module, "Session.execute", wrap_Session_execute)
+
+        # This wrapper only provides metrics, and not proper timing for async queries as they are distributed across
+        # potentially many threads at once. This is left uninstrumented for the time being.
+        wrap_function_wrapper(module, "Session.execute_async", wrap_Session_execute)

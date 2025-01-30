@@ -4867,6 +4867,8 @@ def _setup_security_module():
         security_agent = get_agent()
         # create a callback to reinitialise the security module
         newrelic.core.agent.Agent.run_on_startup(security_agent.refresh_agent)
+    except ImportError:
+        _logger.warn("Security Agent isn't available")
     except Exception as csec_error:
         _logger.error("Security Agent Startup failed with error %s", csec_error)
 

@@ -227,6 +227,9 @@ def _map_default_host_value(license_key):
 
     return license_key
 
+def _map_comma_separated_values(s):
+    return list(map(str.strip, s.split(",")))
+
 
 # Processing of a single setting from configuration file.
 
@@ -343,6 +346,25 @@ def _process_configuration(section):
     _process_setting(section, "security.detection.rci.enabled", "getboolean", None)
     _process_setting(section, "security.detection.rxss.enabled", "getboolean", None)
     _process_setting(section, "security.detection.deserialization.enabled", "getboolean", None)
+    _process_setting(section, "security.exclude_from_iast_scan.api", "get", _map_comma_separated_values)
+    _process_setting(section, "security.exclude_from_iast_scan.http_request_parameters.header", "get", _map_comma_separated_values)
+    _process_setting(section, "security.exclude_from_iast_scan.http_request_parameters.query", "get", _map_comma_separated_values)
+    _process_setting(section, "security.exclude_from_iast_scan.http_request_parameters.body", "get", _map_comma_separated_values)
+    _process_setting(section, "security.exclude_from_iast_scan.iast_detection_category.insecure_settings", "getboolean", None)
+    _process_setting(section, "security.exclude_from_iast_scan.iast_detection_category.invalid_file_access", "getboolean", None)
+    _process_setting(section, "security.exclude_from_iast_scan.iast_detection_category.sql_injection", "getboolean", None)
+    _process_setting(section, "security.exclude_from_iast_scan.iast_detection_category.nosql_injection", "getboolean", None)
+    _process_setting(section, "security.exclude_from_iast_scan.iast_detection_category.ldap_injection", "getboolean", None)
+    _process_setting(section, "security.exclude_from_iast_scan.iast_detection_category.javascript_injection", "getboolean", None)
+    _process_setting(section, "security.exclude_from_iast_scan.iast_detection_category.command_injection", "getboolean", None)
+    _process_setting(section, "security.exclude_from_iast_scan.iast_detection_category.xpath_injection", "getboolean", None)
+    _process_setting(section, "security.exclude_from_iast_scan.iast_detection_category.ssrf", "getboolean", None)
+    _process_setting(section, "security.exclude_from_iast_scan.iast_detection_category.rxss", "getboolean", None)
+    _process_setting(section, "security.request.body_limit", "get", None)
+    _process_setting(section, "security.scan_schedule.schedule", "get", None)
+    _process_setting(section, "security.scan_schedule.duration", "getint", None)
+    _process_setting(section, "security.scan_schedule.delay", "getint", None)
+    _process_setting(section, "security.scan_schedule.always_sample_traces", "getboolean", None)
     _process_setting(section, "developer_mode", "getboolean", None)
     _process_setting(section, "high_security", "getboolean", None)
     _process_setting(section, "capture_params", "getboolean", None)

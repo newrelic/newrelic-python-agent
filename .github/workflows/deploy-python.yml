@@ -21,8 +21,9 @@ on:
 
 jobs:
   build-linux-py3-legacy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
+      fail-fast: false
       matrix:
         wheel:
           - cp37-manylinux
@@ -55,8 +56,9 @@ jobs:
           retention-days: 1
 
   build-linux-py3:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     strategy:
+      fail-fast: false
       matrix:
         wheel:
           - cp38-manylinux
@@ -99,7 +101,7 @@ jobs:
           retention-days: 1
 
   build-sdist:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1
         with:
@@ -131,7 +133,7 @@ jobs:
           retention-days: 1
 
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     needs:
       - build-linux-py3-legacy

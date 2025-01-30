@@ -635,7 +635,7 @@ app_name = Python Agent Test (agent_features)
 
 
 def test_initialize_raises_if_config_does_not_match_previous():
-    error_message = "Configuration has already been done against " "differing configuration file or environment.*"
+    error_message = "Configuration has already been done against differing configuration file or environment.*"
     with pytest.raises(ConfigurationError, match=error_message):
         with tempfile.NamedTemporaryFile() as f:
             f.write(newrelic_ini_contents)

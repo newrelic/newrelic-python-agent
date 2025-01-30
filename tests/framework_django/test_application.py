@@ -46,17 +46,17 @@ def target_application():
 # MIDDLEWARE defined in the version-specific Django settings.py file.
 
 _test_django_pre_1_10_middleware_scoped_metrics = [
-    (("Function/django.middleware.common:" "CommonMiddleware.process_request"), 1),
-    (("Function/django.contrib.sessions.middleware:" "SessionMiddleware.process_request"), 1),
-    (("Function/django.contrib.auth.middleware:" "AuthenticationMiddleware.process_request"), 1),
-    (("Function/django.contrib.messages.middleware:" "MessageMiddleware.process_request"), 1),
-    (("Function/django.middleware.csrf:" "CsrfViewMiddleware.process_view"), 1),
-    (("Function/django.contrib.messages.middleware:" "MessageMiddleware.process_response"), 1),
-    (("Function/django.middleware.csrf:" "CsrfViewMiddleware.process_response"), 1),
-    (("Function/django.contrib.sessions.middleware:" "SessionMiddleware.process_response"), 1),
-    (("Function/django.middleware.common:" "CommonMiddleware.process_response"), 1),
-    (("Function/django.middleware.gzip:" "GZipMiddleware.process_response"), 1),
-    (("Function/newrelic.hooks.framework_django:" "browser_timing_insertion"), 1),
+    (("Function/django.middleware.common:CommonMiddleware.process_request"), 1),
+    (("Function/django.contrib.sessions.middleware:SessionMiddleware.process_request"), 1),
+    (("Function/django.contrib.auth.middleware:AuthenticationMiddleware.process_request"), 1),
+    (("Function/django.contrib.messages.middleware:MessageMiddleware.process_request"), 1),
+    (("Function/django.middleware.csrf:CsrfViewMiddleware.process_view"), 1),
+    (("Function/django.contrib.messages.middleware:MessageMiddleware.process_response"), 1),
+    (("Function/django.middleware.csrf:CsrfViewMiddleware.process_response"), 1),
+    (("Function/django.contrib.sessions.middleware:SessionMiddleware.process_response"), 1),
+    (("Function/django.middleware.common:CommonMiddleware.process_response"), 1),
+    (("Function/django.middleware.gzip:GZipMiddleware.process_response"), 1),
+    (("Function/newrelic.hooks.framework_django:browser_timing_insertion"), 1),
 ]
 
 _test_django_post_1_10_middleware_scoped_metrics = [
@@ -406,7 +406,7 @@ elif DJANGO_VERSION < (1, 10):
 
 try:
     _test_application_inclusion_tag_scoped_metrics.remove(
-        (("Function/newrelic.hooks.framework_django:" "browser_timing_insertion"), 1)
+        (("Function/newrelic.hooks.framework_django:browser_timing_insertion"), 1)
     )
 except ValueError:
     pass
@@ -453,7 +453,7 @@ elif DJANGO_VERSION < (1, 10):
 
 try:
     _test_inclusion_tag_template_tags_scoped_metrics.remove(
-        (("Function/newrelic.hooks.framework_django:" "browser_timing_insertion"), 1)
+        (("Function/newrelic.hooks.framework_django:browser_timing_insertion"), 1)
     )
 except ValueError:
     pass

@@ -54,6 +54,17 @@ def new_relic_event_consumer(logger, level, event):
         elif isinstance(event, dict):
             message = original_message = event.get("event", "")
             event_attrs = {k: v for k, v in event.items() if k != "event"}
+        elif isinstance(event, tuple):
+            try:
+                # This accounts for the ProcessorFormatter format:
+                # tuple[tuple[EventDict], dict[str, dict[str, Any]]]
+                _event = event[0][0]
+                message = original_message = _event.get("event")
+                event_attrs = {k: v for k, v in _event.items() if k != "event"}
+            except:
+                # In the case that this is a tuple but not in the
+                # ProcessorFormatter format.  Unclear how to proceed.
+                return event
         else:
             # Unclear how to proceed, ignore log. Avoid logging an error message or we may incur an infinite loop.
             return event
@@ -64,6 +75,11 @@ def new_relic_event_consumer(logger, level, event):
                 event = message
             elif isinstance(event, dict) and "event" in event:
                 event["event"] = message
+            else:
+                try:
+                    event[0][0]["event"] = message
+                except:
+                    pass
 
         level_name = normalize_level_name(level)
 

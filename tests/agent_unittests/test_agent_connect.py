@@ -101,3 +101,26 @@ def test_ml_streaming_disabled_supportability_metrics():
     app.connect_to_data_collector(None)
 
     assert app._active_session
+
+
+@override_generic_settings(
+    SETTINGS,
+    {
+        "developer_mode": True,
+    },
+)
+@validate_internal_metrics(
+    [
+        ("Supportability/AgentControl/Health/enabled", 1),
+    ]
+)
+def test_agent_control_health_supportability_metric(monkeypatch, tmp_path):
+    # Setup expected env vars to run agent control health check
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_ENABLED", True)
+    file_path = tmp_path.as_uri()
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", file_path)
+
+    app = Application("Python Agent Test (agent_unittests-connect)")
+    app.connect_to_data_collector(None)
+
+    assert app._active_session

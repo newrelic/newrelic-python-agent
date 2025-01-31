@@ -21,7 +21,7 @@ concurrency:
 jobs:
   build:
     name: Mega-Linter
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       # Git Checkout
       - name: Checkout Code

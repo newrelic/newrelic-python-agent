@@ -1060,7 +1060,7 @@ _settings.ml_insights_events.enabled = _environ_as_bool("NEW_RELIC_ML_INSIGHTS_E
 _settings.security.agent.enabled = _environ_as_bool("NEW_RELIC_SECURITY_AGENT_ENABLED", False)
 _settings.security.enabled = _environ_as_bool("NEW_RELIC_SECURITY_ENABLED", False)
 _settings.security.mode = os.environ.get("NEW_RELIC_SECURITY_MODE", "IAST")
-_settings.security.validator_service_url = os.environ.get("NEW_RELIC_SECURITY_VALIDATOR_SERVICE_URL", None)
+_settings.security.validator_service_url = os.environ.get("NEW_RELIC_SECURITY_VALIDATOR_SERVICE_URL", "wss://csec.nr-data.net")
 _settings.security.detection.rci.enabled = _environ_as_bool("NEW_RELIC_SECURITY_DETECTION_RCI_ENABLED", True)
 _settings.security.detection.rxss.enabled = _environ_as_bool("NEW_RELIC_SECURITY_DETECTION_RXSS_ENABLED", True)
 _settings.security.detection.deserialization.enabled = _environ_as_bool(
@@ -1115,10 +1115,6 @@ _settings.security.exclude_from_iast_scan.iast_detection_category.ssrf = _enviro
 _settings.security.exclude_from_iast_scan.iast_detection_category.rxss = _environ_as_bool(
     "NEW_RELIC_SECURITY_EXCLUDE_FROM_IAST_SCAN_IAST_DETECTION_CATEGORY_RXSS", False
 )
-_settings.security.scan_schedule.schedule = os.environ.get("NEW_RELIC_SECURITY_SCAN_SCHEDULE_SCHEDULE", None)
-_settings.security.scan_schedule.duration = _environ_as_int("NEW_RELIC_SECURITY_SCAN_SCHEDULE_DURATION", -1)
-_settings.security.scan_schedule.delay = _environ_as_int("NEW_RELIC_SECURITY_SCAN_SCHEDULE_DELAY", 0)
-_settings.security.scan_schedule.always_sample_traces = _environ_as_bool("NEW_RELIC_SECURITY_SCAN_SCHEDULE_ALWAYS_SAMPLE_TRACES", False)
 
 
 def global_settings():

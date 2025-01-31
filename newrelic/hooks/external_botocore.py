@@ -86,7 +86,7 @@ def extract_sqs_agent_attrs(instance, *args, **kwargs):
 
 
 def extract_kinesis_agent_attrs(instance, *args, **kwargs):
-    # Try to capture AWS Kinesis info as agent attributes. Log any exception to debug.
+    # Try to capture AWS Kinesis ARN from the StreamARN parameter or by generating the ARN from various discoverable info. Log any exception to debug.
     agent_attrs = {}
     try:
         stream_arn = kwargs.get("StreamARN", None)

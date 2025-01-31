@@ -181,7 +181,7 @@ kwargs = dict(
     package_data={
         "newrelic": ["newrelic.ini", "version.txt", "packages/urllib3/LICENSE.txt", "common/cacert.pem"],
     },
-    extras_require={"infinite-tracing": ["grpcio", "protobuf"]},
+    extras_require={"infinite-tracing": ["grpcio", "protobuf"], "iast": ["newrelic_security"]},
 )
 
 if with_setuptools:

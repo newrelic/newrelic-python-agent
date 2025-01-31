@@ -237,6 +237,9 @@ def _map_default_host_value(license_key):
 
     return license_key
 
+def _map_comma_separated_values(s):
+    return list(map(str.strip, s.split(",")))
+
 
 # Processing of a single setting from configuration file.
 
@@ -346,6 +349,32 @@ def _process_configuration(section):
     _process_setting(section, "ca_bundle_path", "get", None)
     _process_setting(section, "audit_log_file", "get", None)
     _process_setting(section, "monitor_mode", "getboolean", None)
+    _process_setting(section, "security.agent.enabled", "getboolean", None)
+    _process_setting(section, "security.enabled", "getboolean", None)
+    _process_setting(section, "security.mode", "get", None)
+    _process_setting(section, "security.validator_service_url", "get", None)
+    _process_setting(section, "security.detection.rci.enabled", "getboolean", None)
+    _process_setting(section, "security.detection.rxss.enabled", "getboolean", None)
+    _process_setting(section, "security.detection.deserialization.enabled", "getboolean", None)
+    _process_setting(section, "security.exclude_from_iast_scan.api", "get", _map_comma_separated_values)
+    _process_setting(section, "security.exclude_from_iast_scan.http_request_parameters.header", "get", _map_comma_separated_values)
+    _process_setting(section, "security.exclude_from_iast_scan.http_request_parameters.query", "get", _map_comma_separated_values)
+    _process_setting(section, "security.exclude_from_iast_scan.http_request_parameters.body", "get", _map_comma_separated_values)
+    _process_setting(section, "security.exclude_from_iast_scan.iast_detection_category.insecure_settings", "getboolean", None)
+    _process_setting(section, "security.exclude_from_iast_scan.iast_detection_category.invalid_file_access", "getboolean", None)
+    _process_setting(section, "security.exclude_from_iast_scan.iast_detection_category.sql_injection", "getboolean", None)
+    _process_setting(section, "security.exclude_from_iast_scan.iast_detection_category.nosql_injection", "getboolean", None)
+    _process_setting(section, "security.exclude_from_iast_scan.iast_detection_category.ldap_injection", "getboolean", None)
+    _process_setting(section, "security.exclude_from_iast_scan.iast_detection_category.javascript_injection", "getboolean", None)
+    _process_setting(section, "security.exclude_from_iast_scan.iast_detection_category.command_injection", "getboolean", None)
+    _process_setting(section, "security.exclude_from_iast_scan.iast_detection_category.xpath_injection", "getboolean", None)
+    _process_setting(section, "security.exclude_from_iast_scan.iast_detection_category.ssrf", "getboolean", None)
+    _process_setting(section, "security.exclude_from_iast_scan.iast_detection_category.rxss", "getboolean", None)
+    _process_setting(section, "security.request.body_limit", "get", None)
+    _process_setting(section, "security.scan_schedule.schedule", "get", None)
+    _process_setting(section, "security.scan_schedule.duration", "getint", None)
+    _process_setting(section, "security.scan_schedule.delay", "getint", None)
+    _process_setting(section, "security.scan_schedule.always_sample_traces", "getboolean", None)
     _process_setting(section, "developer_mode", "getboolean", None)
     _process_setting(section, "high_security", "getboolean", None)
     _process_setting(section, "capture_params", "getboolean", None)
@@ -4858,6 +4887,26 @@ def _setup_agent_control_health():
         agent_control_health_thread.start()
 
 
+def _setup_security_module():
+    """Initiates security module and adds a
+    callback to agent startup to propagate NR config
+    """
+    try:
+        if not _settings.security.agent.enabled or _settings.high_security:
+            _logger.warning("New Relic Security is disabled by one of the user provided config `security.agent.enabled` or `high_security`.")
+            return
+        from newrelic_security.api.agent import get_agent
+
+        # initialize security agent
+        security_agent = get_agent()
+        # create a callback to reinitialise the security module
+        newrelic.core.agent.Agent.run_on_startup(security_agent.refresh_agent)
+    except ImportError:
+        _logger.warn("Security Agent isn't available")
+    except Exception as csec_error:
+        _logger.error("Security Agent Startup failed with error %s", csec_error)
+
+
 def initialize(
     config_file=None,
     environment=None,
@@ -4877,7 +4926,9 @@ def initialize(
         ignore_errors = newrelic.core.config._environ_as_bool("NEW_RELIC_IGNORE_STARTUP_ERRORS", True)
 
     _load_configuration(config_file, environment, ignore_errors, log_file, log_level)
-
+    
+    _setup_security_module()
+    
     _setup_agent_control_health()
 
     if _settings.monitor_mode:

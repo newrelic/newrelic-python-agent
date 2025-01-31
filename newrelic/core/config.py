@@ -73,6 +73,21 @@ _logger = logging.getLogger(__name__)
 _logger.addHandler(_NullHandler())
 
 
+def _map_aws_account_id(s, logger):
+    # The AWS account id must be a 12 digit number.
+    # See https://docs.aws.amazon.com/accounts/latest/reference/manage-acct-identifiers.html#awsaccountid.
+    if s and len(s) == 12:
+        if s.isdecimal():
+            account_id = int(s)
+            return account_id
+    # Only log a warning if s is set.
+    if s:
+        logger.warning(
+            "Improper configuration. cloud.aws.account_id = %s will be ignored because it is not a 12 digit number.", s
+        )
+    return None
+
+
 # The Settings objects and the global default settings. We create a
 # distinct type for each sub category of settings that the agent knows
 # about so that an error when accessing a non-existent setting is more
@@ -121,6 +136,14 @@ class TopLevelSettings(Settings):
     @otlp_host.setter
     def otlp_host(self, value):
         self._otlp_host = value
+
+
+class CloudSettings(Settings):
+    pass
+
+
+class AWSSettings(Settings):
+    pass
 
 
 class AttributesSettings(Settings):
@@ -323,6 +346,10 @@ class ApplicationLoggingForwardingSettings(Settings):
     pass
 
 
+class ApplicationLoggingForwardingLabelsSettings(Settings):
+    pass
+
+
 class ApplicationLoggingForwardingContextDataSettings(Settings):
     pass
 
@@ -358,6 +385,20 @@ class SecurityDetectionRXSSSettings(Settings):
 class SecurityDetectionDeserializationSettings(Settings):
     pass
 
+class SecurityRequestSettings(Settings):
+    pass
+
+class SecurityScanScheduleSettings(Settings):
+    pass
+
+class SecurityExcludeFromIASTScanSettings(Settings):
+    pass
+
+class SecurityExcludeFromIASTScanHTTPRequestParametersSettings(Settings):
+    pass
+
+class SecurityExcludeFromIASTScanIASTDetectionCategorySettings(Settings):
+    pass
 
 class InfiniteTracingSettings(Settings):
     _trace_observer_host = None
@@ -448,10 +489,13 @@ _settings = TopLevelSettings()
 _settings.agent_limits = AgentLimitsSettings()
 _settings.application_logging = ApplicationLoggingSettings()
 _settings.application_logging.forwarding = ApplicationLoggingForwardingSettings()
+_settings.application_logging.forwarding.labels = ApplicationLoggingForwardingLabelsSettings()
 _settings.application_logging.forwarding.context_data = ApplicationLoggingForwardingContextDataSettings()
 _settings.application_logging.metrics = ApplicationLoggingMetricsSettings()
 _settings.application_logging.local_decorating = ApplicationLoggingLocalDecoratingSettings()
 _settings.application_logging.metrics = ApplicationLoggingMetricsSettings()
+_settings.cloud = CloudSettings()
+_settings.cloud.aws = AWSSettings()
 _settings.machine_learning = MachineLearningSettings()
 _settings.machine_learning.inference_events_value = MachineLearningInferenceEventsValueSettings()
 _settings.ai_monitoring = AIMonitoringSettings()
@@ -493,6 +537,13 @@ _settings.security.detection = SecurityDetectionSettings()
 _settings.security.detection.deserialization = SecurityDetectionDeserializationSettings()
 _settings.security.detection.rci = SecurityDetectionRCISettings()
 _settings.security.detection.rxss = SecurityDetectionRXSSSettings()
+_settings.security.exclude_from_iast_scan = SecurityExcludeFromIASTScanSettings()
+_settings.security.exclude_from_iast_scan.http_request_parameters = \
+    SecurityExcludeFromIASTScanHTTPRequestParametersSettings()
+_settings.security.exclude_from_iast_scan.iast_detection_category = \
+    SecurityExcludeFromIASTScanIASTDetectionCategorySettings()
+_settings.security.request = SecurityRequestSettings()
+_settings.security.scan_schedule = SecurityScanScheduleSettings()
 _settings.serverless_mode = ServerlessModeSettings()
 _settings.slow_sql = SlowSqlSettings()
 _settings.span_events = SpanEventSettings()
@@ -964,6 +1015,17 @@ _settings.application_logging.enabled = _environ_as_bool("NEW_RELIC_APPLICATION_
 _settings.application_logging.forwarding.enabled = _environ_as_bool(
     "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_ENABLED", default=True
 )
+_settings.application_logging.forwarding.custom_attributes = _environ_as_mapping(
+    "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_CUSTOM_ATTRIBUTES", default=""
+)
+
+_settings.application_logging.forwarding.labels.enabled = _environ_as_bool(
+    "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_LABELS_ENABLED", default=False
+)
+_settings.application_logging.forwarding.labels.exclude = set(
+    v.lower() for v in _environ_as_set("NEW_RELIC_APPLICATION_LOGGING_FORWARDING_LABELS_EXCLUDE", default="")
+)
+
 _settings.application_logging.forwarding.context_data.enabled = _environ_as_bool(
     "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_CONTEXT_DATA_ENABLED", default=False
 )
@@ -979,6 +1041,7 @@ _settings.application_logging.metrics.enabled = _environ_as_bool(
 _settings.application_logging.local_decorating.enabled = _environ_as_bool(
     "NEW_RELIC_APPLICATION_LOGGING_LOCAL_DECORATING_ENABLED", default=False
 )
+_settings.cloud.aws.account_id = _map_aws_account_id(os.environ.get("NEW_RELIC_CLOUD_AWS_ACCOUNT_ID"), _logger)
 _settings.machine_learning.enabled = _environ_as_bool("NEW_RELIC_MACHINE_LEARNING_ENABLED", default=False)
 _settings.machine_learning.inference_events_value.enabled = _environ_as_bool(
     "NEW_RELIC_MACHINE_LEARNING_INFERENCE_EVENT_VALUE_ENABLED", default=False
@@ -997,11 +1060,60 @@ _settings.ml_insights_events.enabled = _environ_as_bool("NEW_RELIC_ML_INSIGHTS_E
 _settings.security.agent.enabled = _environ_as_bool("NEW_RELIC_SECURITY_AGENT_ENABLED", False)
 _settings.security.enabled = _environ_as_bool("NEW_RELIC_SECURITY_ENABLED", False)
 _settings.security.mode = os.environ.get("NEW_RELIC_SECURITY_MODE", "IAST")
-_settings.security.validator_service_url = os.environ.get("NEW_RELIC_SECURITY_VALIDATOR_SERVICE_URL", None)
+_settings.security.validator_service_url = os.environ.get("NEW_RELIC_SECURITY_VALIDATOR_SERVICE_URL", "wss://csec.nr-data.net")
 _settings.security.detection.rci.enabled = _environ_as_bool("NEW_RELIC_SECURITY_DETECTION_RCI_ENABLED", True)
 _settings.security.detection.rxss.enabled = _environ_as_bool("NEW_RELIC_SECURITY_DETECTION_RXSS_ENABLED", True)
 _settings.security.detection.deserialization.enabled = _environ_as_bool(
     "NEW_RELIC_SECURITY_DETECTION_DESERIALIZATION_ENABLED", True
+)
+_settings.security.request.body_limit = os.environ.get("NEW_RELIC_SECURITY_REQUEST_BODY_LIMIT", None)
+_settings.security.scan_schedule.schedule = os.environ.get("NEW_RELIC_SECURITY_SCAN_SCHEDULE_SCHEDULE", None)
+_settings.security.scan_schedule.duration = _environ_as_int("NEW_RELIC_SECURITY_SCAN_SCHEDULE_DURATION", -1)
+_settings.security.scan_schedule.delay = _environ_as_int("NEW_RELIC_SECURITY_SCAN_SCHEDULE_DELAY", 0)
+_settings.security.scan_schedule.always_sample_traces = _environ_as_bool(
+    "NEW_RELIC_SECURITY_SCAN_SCHEDULE_ALWAYS_SAMPLE_TRACES", False
+    )
+_settings.security.exclude_from_iast_scan.api = _environ_as_set(
+    "NEW_RELIC_SECURITY_EXCLUDE_FROM_IAST_SCAN_API", default=""
+)
+_settings.security.exclude_from_iast_scan.http_request_parameters.header = _environ_as_set(
+    "NEW_RELIC_SECURITY_EXCLUDE_FROM_IAST_SCAN_HTTP_REQUEST_PARAMETERS_HEADER", default=""
+)
+_settings.security.exclude_from_iast_scan.http_request_parameters.query = _environ_as_set(
+    "NEW_RELIC_SECURITY_EXCLUDE_FROM_IAST_SCAN_HTTP_REQUEST_PARAMETERS_QUERY", default=""
+)
+_settings.security.exclude_from_iast_scan.http_request_parameters.body = _environ_as_set(
+    "NEW_RELIC_SECURITY_EXCLUDE_FROM_IAST_SCAN_HTTP_REQUEST_PARAMETERS_BODY", default=""
+)
+_settings.security.exclude_from_iast_scan.iast_detection_category.insecure_settings = _environ_as_bool(
+    "NEW_RELIC_SECURITY_EXCLUDE_FROM_IAST_SCAN_IAST_DETECTION_CATEGORY_INSECURE_SETTINGS", False
+)
+_settings.security.exclude_from_iast_scan.iast_detection_category.invalid_file_access = _environ_as_bool(
+    "NEW_RELIC_SECURITY_EXCLUDE_FROM_IAST_SCAN_IAST_DETECTION_CATEGORY_INVALID_FILE_ACCESS", False
+)
+_settings.security.exclude_from_iast_scan.iast_detection_category.sql_injection = _environ_as_bool(
+    "NEW_RELIC_SECURITY_EXCLUDE_FROM_IAST_SCAN_IAST_DETECTION_CATEGORY_SQL_INJECTION", False
+)
+_settings.security.exclude_from_iast_scan.iast_detection_category.nosql_injection = _environ_as_bool(
+    "NEW_RELIC_SECURITY_EXCLUDE_FROM_IAST_SCAN_IAST_DETECTION_CATEGORY_NOSQL_INJECTION", False
+)
+_settings.security.exclude_from_iast_scan.iast_detection_category.ldap_injection = _environ_as_bool(
+    "NEW_RELIC_SECURITY_EXCLUDE_FROM_IAST_SCAN_IAST_DETECTION_CATEGORY_LDAP_INJECTION", False
+)
+_settings.security.exclude_from_iast_scan.iast_detection_category.javascript_injection = _environ_as_bool(
+    "NEW_RELIC_SECURITY_EXCLUDE_FROM_IAST_SCAN_IAST_DETECTION_CATEGORY_JAVASCRIPT_INJECTION", False
+)
+_settings.security.exclude_from_iast_scan.iast_detection_category.command_injection = _environ_as_bool(
+    "NEW_RELIC_SECURITY_EXCLUDE_FROM_IAST_SCAN_IAST_DETECTION_CATEGORY_COMMAND_INJECTION", False
+)
+_settings.security.exclude_from_iast_scan.iast_detection_category.xpath_injection = _environ_as_bool(
+    "NEW_RELIC_SECURITY_EXCLUDE_FROM_IAST_SCAN_IAST_DETECTION_CATEGORY_XPATH_INJECTION", False
+)
+_settings.security.exclude_from_iast_scan.iast_detection_category.ssrf = _environ_as_bool(
+    "NEW_RELIC_SECURITY_EXCLUDE_FROM_IAST_SCAN_IAST_DETECTION_CATEGORY_SSRF", False
+)
+_settings.security.exclude_from_iast_scan.iast_detection_category.rxss = _environ_as_bool(
+    "NEW_RELIC_SECURITY_EXCLUDE_FROM_IAST_SCAN_IAST_DETECTION_CATEGORY_RXSS", False
 )
 
 
@@ -1135,7 +1247,7 @@ def global_settings_dump(settings_object=None, serializable=False):
             if not isinstance(key, str):
                 del settings[key]
 
-            if not isinstance(value, str) and not isinstance(value, float) and not isinstance(value, int):
+            if not isinstance(value, (str, float, int)):
                 settings[key] = repr(value)
 
     return settings

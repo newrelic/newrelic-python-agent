@@ -36,6 +36,7 @@ from inspect import signature
 from newrelic.common.object_wrapper import ObjectProxy
 from newrelic.core.agent import agent_instance
 from newrelic.core.config import flatten_settings, global_settings
+from newrelic.core.agent_control_health import HealthStatus, agent_control_health_instance
 from newrelic.core.trace_cache import trace_cache
 
 
@@ -512,6 +513,8 @@ class ClientShell(cmd.Cmd):
         self.__log_object = log
 
         if not self.__config_object.read([config_file]):
+            agent_control_instance = agent_control_health_instance()
+            agent_control_instance.set_health_status(HealthStatus.INVALID_CONFIG.value)
             raise RuntimeError(f"Unable to open configuration file {config_file}.")
 
         listener_socket = self.__config_object.get("newrelic", "console.listener_socket") % {"pid": "*"}

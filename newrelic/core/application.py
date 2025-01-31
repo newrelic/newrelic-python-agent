@@ -31,7 +31,7 @@ from newrelic.core.config import global_settings
 from newrelic.core.custom_event import create_custom_event
 from newrelic.core.data_collector import create_session
 from newrelic.core.database_utils import SQLConnections
-from newrelic.core.environment import environment_settings
+from newrelic.core.environment import environment_settings, plugins
 from newrelic.core.internal_metrics import (
     InternalTrace,
     InternalTraceContext,
@@ -49,12 +49,14 @@ from newrelic.network.exceptions import (
     RetryDataForRequest,
 )
 from newrelic.samplers.data_sampler import DataSampler
+from newrelic.core.agent_control_health import HealthStatus, agent_control_healthcheck_loop, agent_control_health_instance
 
 _logger = logging.getLogger(__name__)
 
+MAX_PACKAGE_CAPTURE_TIME_PER_SLOW_HARVEST = 2.0
 
-class Application():
 
+class Application:
     """Class which maintains recorded data for a single application."""
 
     def __init__(self, app_name, linked_applications=None):
@@ -107,6 +109,13 @@ class Application():
         self._data_samplers_lock = threading.Lock()
         self._data_samplers_started = False
 
+        self._remaining_plugins = True
+
+        self._agent_control_health_thread = threading.Thread(name="Agent-Control-Health-Session-Thread", target=agent_control_healthcheck_loop)
+        self._agent_control_health_thread.daemon = True
+        self._agent_control = agent_control_health_instance()
+
+
         # We setup empty rules engines here even though they will be
         # replaced when application first registered. This is done to
         # avoid a race condition in setting it later. Otherwise we have
@@ -120,6 +129,7 @@ class Application():
         }
 
         self._data_samplers = []
+        self.modules = []
 
         # Thread profiler and state of whether active or not.
 
@@ -128,6 +138,8 @@ class Application():
         # self._send_profile_data = False
 
         self.profile_manager = profile_session_manager()
+
+        self.plugins = plugins()  # initialize the generator
 
         self._uninstrumented = []
 
@@ -189,7 +201,6 @@ class Application():
         to be activated.
 
         """
-
         if self._agent_shutdown:
             return
 
@@ -198,6 +209,9 @@ class Application():
 
         if self._active_session:
             return
+
+        if self._agent_control.health_check_enabled and not self._agent_control_health_thread.is_alive():
+            self._agent_control_health_thread.start()
 
         self._process_id = os.getpid()
 
@@ -219,7 +233,6 @@ class Application():
         # timeout has likely occurred.
 
         deadlock_timeout = 0.1
-
         if timeout >= deadlock_timeout:
             self._detect_deadlock = True
 
@@ -356,6 +369,7 @@ class Application():
                         None, self._app_name, self.linked_applications, environment_settings()
                     )
                 except ForceAgentDisconnect:
+                    self._agent_control.set_health_status(HealthStatus.FAILED_NR_CONNECTION.value)
                     # Any disconnect exception means we should stop trying to connect
                     _logger.error(
                         "The New Relic service has requested that the agent "
@@ -366,6 +380,7 @@ class Application():
                     )
                     return
                 except NetworkInterfaceException:
+                    self._agent_control.set_health_status(HealthStatus.FAILED_NR_CONNECTION.value)
                     active_session = None
                 except Exception:
                     # If an exception occurs after agent has been flagged to be
@@ -375,6 +390,7 @@ class Application():
                     # the application is still running.
 
                     if not self._agent_shutdown and not self._pending_shutdown:
+                        self._agent_control.set_health_status(HealthStatus.FAILED_NR_CONNECTION.value)
                         _logger.exception(
                             "Unexpected exception when registering "
                             "agent with the data collector. If this problem "
@@ -485,6 +501,8 @@ class Application():
         # data from a prior agent run for this application.
 
         configuration = active_session.configuration
+        # Check if the agent previously had an unhealthy status related to the data collector and update
+        self._agent_control.update_to_healthy_status(collector_error=True)
 
         with self._stats_lock:
             self._stats_engine.reset_stats(configuration, reset_stream=True)
@@ -542,7 +560,9 @@ class Application():
             application_logging_local_decorating = (
                 configuration.application_logging.enabled and configuration.application_logging.local_decorating.enabled
             )
-            ai_monitoring_streaming = configuration.ai_monitoring.streaming.enabled
+            application_logging_labels = (
+                application_logging_forwarding and configuration.application_logging.forwarding.labels.enabled
+            )
             internal_metric(
                 f"Supportability/Logging/Forwarding/Python/{'enabled' if application_logging_forwarding else 'disabled'}",
                 1,
@@ -555,6 +575,13 @@ class Application():
                 f"Supportability/Logging/Metrics/Python/{'enabled' if application_logging_metrics else 'disabled'}",
                 1,
             )
+            internal_metric(
+                f"Supportability/Logging/Labels/Python/{'enabled' if application_logging_labels else 'disabled'}",
+                1,
+            )
+
+            # AI monitoring feature toggle metrics
+            ai_monitoring_streaming = configuration.ai_monitoring.streaming.enabled
             if not ai_monitoring_streaming:
                 internal_metric(
                     "Supportability/Python/ML/Streaming/Disabled",
@@ -572,6 +599,13 @@ class Application():
                 )
                 internal_metric(
                     f"Supportability/InfiniteTracing/gRPC/Compression/{'enabled' if infinite_tracing_compression else 'disabled'}",
+                    1,
+                )
+
+            # Agent Control health check metric
+            if self._agent_control.health_check_enabled:
+                internal_metric(
+                    "Supportability/AgentControl/Health/enabled",
                     1,
                 )
 
@@ -650,7 +684,7 @@ class Application():
             self._process_id = 0
 
     def normalize_name(self, name, rule_type):
-        """Applies the agent normalization rules of the the specified
+        """Applies the agent normalization rules of the specified
         rule type to the supplied name.
 
         """
@@ -1238,6 +1272,28 @@ class Application():
                                 data_sampler.name,
                             )
 
+                    # Send environment plugin list
+
+                    stopwatch_start = time.time()
+                    while (
+                        configuration
+                        and configuration.package_reporting.enabled
+                        and self._remaining_plugins
+                        and ((time.time() - stopwatch_start) < MAX_PACKAGE_CAPTURE_TIME_PER_SLOW_HARVEST)
+                    ):
+                        try:
+                            module_info = next(self.plugins)
+                            self.modules.append(module_info)
+                        except StopIteration:
+                            self._remaining_plugins = False
+
+                    # Send the accumulated environment plugin list if not empty
+                    if self.modules:
+                        self._active_session.send_loaded_modules(self.modules)
+
+                        # Reset the modules list every harvest cycle
+                        self.modules = []
+
                     # Add a metric we can use to track how many harvest
                     # periods have occurred.
 
@@ -1651,6 +1707,9 @@ class Application():
         optionally triggers activation of a new session.
 
         """
+        self._agent_control.set_health_status(HealthStatus.AGENT_SHUTDOWN.value)
+        if self._agent_control.health_check_enabled:
+            self._agent_control.write_to_health_file()
 
         # We need to stop any thread profiler session related to this
         # application.
@@ -1670,6 +1729,20 @@ class Application():
         # data samplers or user provided custom metric data sources.
 
         self.stop_data_samplers()
+
+        # Finishes collecting environment plugin information
+        # if this has not been completed during harvest
+        # lifetime of the application
+
+        while self.configuration and self.configuration.package_reporting.enabled and self._remaining_plugins:
+            try:
+                module_info = next(self.plugins)
+                self.modules.append(module_info)
+            except StopIteration:
+                self._remaining_plugins = False
+                if self.modules:
+                    self._active_session.send_loaded_modules(self.modules)
+                    self.modules = []
 
         # Now shutdown the actual agent session.
 

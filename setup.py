@@ -20,8 +20,10 @@ python_version = sys.version_info[:2]
 if python_version >= (3, 7):
     pass
 else:
-    error_msg = "The New Relic Python agent only supports Python 3.7+. We recommend upgrading to a newer version of Python."
-    
+    error_msg = (
+        "The New Relic Python agent only supports Python 3.7+. We recommend upgrading to a newer version of Python."
+    )
+
     try:
         # Lookup table for the last agent versions to support each Python version.
         last_supported_version_lookup = {
@@ -36,7 +38,10 @@ else:
 
         if last_supported_version:
             python_version_str = "%s.%s" % (python_version[0], python_version[1])
-            error_msg += " The last agent version to support Python %s was v%s." % (python_version_str, last_supported_version)
+            error_msg += " The last agent version to support Python %s was v%s." % (
+                python_version_str,
+                last_supported_version,
+            )
     except Exception:
         pass
 
@@ -176,8 +181,7 @@ kwargs = dict(
     package_data={
         "newrelic": ["newrelic.ini", "version.txt", "packages/urllib3/LICENSE.txt", "common/cacert.pem"],
     },
-    #install_requires=["newrelic-security @ git+https://github.com/newrelic/csec-python-agent.git@develop#egg=newrelic-security"],
-    extras_require={"infinite-tracing": ["grpcio", "protobuf"]},
+    extras_require={"infinite-tracing": ["grpcio", "protobuf"], "iast": ["newrelic_security"]},
 )
 
 if with_setuptools:

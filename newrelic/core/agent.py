@@ -35,6 +35,7 @@ from newrelic.core.thread_utilization import thread_utilization_data_source
 from newrelic.samplers.cpu_usage import cpu_usage_data_source
 from newrelic.samplers.gc_data import garbage_collector_data_source
 from newrelic.samplers.memory_usage import memory_usage_data_source
+from newrelic.core.agent_control_health import HealthStatus, agent_control_health_instance
 
 _logger = logging.getLogger(__name__)
 
@@ -217,6 +218,9 @@ class Agent():
         self._scheduler = sched.scheduler(self._harvest_timer, self._harvest_shutdown.wait)
 
         self._process_shutdown = False
+        self._agent_control = agent_control_health_instance()
+
+        self._agent_control = agent_control_health_instance()
 
         self._lock = threading.Lock()
 
@@ -733,6 +737,11 @@ class Agent():
     def shutdown_agent(self, timeout=None):
         if self._harvest_shutdown_is_set():
             return
+
+        self._agent_control.set_health_status(HealthStatus.AGENT_SHUTDOWN.value)
+
+        if self._agent_control.health_check_enabled:
+            self._agent_control.write_to_health_file()
 
         if timeout is None:
             timeout = self._config.shutdown_timeout

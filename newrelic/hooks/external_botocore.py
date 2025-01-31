@@ -22,7 +22,7 @@ from io import BytesIO
 
 from botocore.response import StreamingBody
 
-from newrelic.api.datastore_trace import datastore_trace
+from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.message_trace import MessageTrace, message_trace
@@ -35,6 +35,7 @@ from newrelic.common.object_wrapper import (
     wrap_function_wrapper,
 )
 from newrelic.common.package_version_utils import get_package_version
+from newrelic.common.signature import bind_args
 from newrelic.core.config import global_settings
 
 QUEUE_URL_PATTERN = re.compile(r"https://sqs.([\w\d-]+).amazonaws.com/(\d+)/([^/]+)")
@@ -841,6 +842,118 @@ def handle_chat_completion_event(transaction, bedrock_attrs):
     )
 
 
+def dynamodb_datastore_trace(
+    product,
+    target,
+    operation,
+    host=None,
+    port_path_or_id=None,
+    database_name=None,
+    async_wrapper=None,
+):
+    @function_wrapper
+    def _nr_dynamodb_datastore_trace_wrapper_(wrapped, instance, args, kwargs):
+        wrapper = async_wrapper if async_wrapper is not None else get_async_wrapper(wrapped)
+        if not wrapper:
+            parent = current_trace()
+            if not parent:
+                return wrapped(*args, **kwargs)
+        else:
+            parent = None
+
+        if callable(product):
+            if instance is not None:
+                _product = product(instance, *args, **kwargs)
+            else:
+                _product = product(*args, **kwargs)
+        else:
+            _product = product
+
+        if callable(target):
+            if instance is not None:
+                _target = target(instance, *args, **kwargs)
+            else:
+                _target = target(*args, **kwargs)
+        else:
+            _target = target
+
+        if callable(operation):
+            if instance is not None:
+                _operation = operation(instance, *args, **kwargs)
+            else:
+                _operation = operation(*args, **kwargs)
+        else:
+            _operation = operation
+
+        if callable(host):
+            if instance is not None:
+                _host = host(instance, *args, **kwargs)
+            else:
+                _host = host(*args, **kwargs)
+        else:
+            _host = host
+
+        if callable(port_path_or_id):
+            if instance is not None:
+                _port_path_or_id = port_path_or_id(instance, *args, **kwargs)
+            else:
+                _port_path_or_id = port_path_or_id(*args, **kwargs)
+        else:
+            _port_path_or_id = port_path_or_id
+
+        if callable(database_name):
+            if instance is not None:
+                _database_name = database_name(instance, *args, **kwargs)
+            else:
+                _database_name = database_name(*args, **kwargs)
+        else:
+            _database_name = database_name
+
+        trace = DatastoreTrace(
+            _product, _target, _operation, _host, _port_path_or_id, _database_name, parent=parent, source=wrapped
+        )
+
+        # Try to capture AWS DynamoDB info as agent attributes. Log any exception to debug.
+        agent_attrs = {}
+        try:
+            region = None
+            if hasattr(instance, "_client_config") and hasattr(instance._client_config, "region_name"):
+                region = instance._client_config.region_name
+
+            transaction = current_transaction()
+            settings = transaction.settings if transaction.settings else global_settings()
+            account_id = settings.cloud.aws.account_id if settings and settings.cloud.aws.account_id else None
+
+            # There are 3 different partition options.
+            # See  https://docs.aws.amazon.com/IAM/latest/UserGuide/reference-arns.html for details.
+            partition = None
+            if hasattr(instance, "_endpoint") and hasattr(instance._endpoint, "host"):
+                _db_host = instance._endpoint.host
+                partition = "aws"
+                if "amazonaws.cn" in _db_host:
+                    partition = "aws-cn"
+                elif "amazonaws-us-gov.com" in _db_host:
+                    partition = "aws-us-gov"
+
+            if partition and region and account_id and _target:
+                agent_attrs["cloud.resource_id"] = (
+                    f"arn:{partition}:dynamodb:{region}:{account_id:012d}:table/{_target}"
+                )
+                agent_attrs["db.system"] = "DynamoDB"
+
+        except Exception as e:
+            _logger.debug("Failed to capture AWS DynamoDB info.", exc_info=True)
+        trace.agent_attributes.update(agent_attrs)
+
+        if wrapper:  # pylint: disable=W0125,W0126
+            return wrapper(wrapped, trace)(*args, **kwargs)
+
+        with trace:
+            return wrapped(*args, **kwargs)
+
+    return _nr_dynamodb_datastore_trace_wrapper_
+
+
 def sqs_message_trace(
     operation,
     destination_type,
@@ -889,16 +1002,63 @@ def sqs_message_trace(
     return _nr_sqs_message_trace_wrapper_
 
 
+def wrap_emit_api_params(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return wrapped(*args, **kwargs)
+
+    bound_args = bind_args(wrapped, args, kwargs)
+
+    api_params = wrapped(*args, **kwargs)
+
+    arn = bound_args.get("api_params").get("FunctionName")
+    if arn:
+        try:
+            if arn.startswith("arn:"):
+                api_params["_nr_arn"] = arn
+        except Exception:
+            pass  # Unable to determine ARN from FunctionName.
+
+    # Wrap instance._serializer.serialize_to_request if not already wrapped.
+    if (
+        hasattr(instance, "_serializer")
+        and hasattr(instance._serializer, "serialize_to_request")
+        and not hasattr(instance._serializer, "_nr_wrapped")
+    ):
+
+        @function_wrapper
+        def wrap_serialize_to_request(wrapped, instance, args, kwargs):
+            transaction = current_transaction()
+            if not transaction:
+                return wrapped(*args, **kwargs)
+
+            bound_args = bind_args(wrapped, args, kwargs)
+
+            arn = bound_args.get("parameters", {}).pop("_nr_arn", None)
+
+            request_dict = wrapped(*args, **kwargs)
+
+            if arn:
+                request_dict["_nr_arn"] = arn
+
+            return request_dict
+
+        instance._serializer.serialize_to_request = wrap_serialize_to_request(instance._serializer.serialize_to_request)
+        instance._serializer._nr_wrapped = True
+
+    return api_params
+
+
 CUSTOM_TRACE_POINTS = {
     ("sns", "publish"): message_trace("SNS", "Produce", "Topic", extract(("TopicArn", "TargetArn"), "PhoneNumber")),
-    ("dynamodb", "put_item"): datastore_trace("DynamoDB", extract("TableName"), "put_item"),
-    ("dynamodb", "get_item"): datastore_trace("DynamoDB", extract("TableName"), "get_item"),
-    ("dynamodb", "update_item"): datastore_trace("DynamoDB", extract("TableName"), "update_item"),
-    ("dynamodb", "delete_item"): datastore_trace("DynamoDB", extract("TableName"), "delete_item"),
-    ("dynamodb", "create_table"): datastore_trace("DynamoDB", extract("TableName"), "create_table"),
-    ("dynamodb", "delete_table"): datastore_trace("DynamoDB", extract("TableName"), "delete_table"),
-    ("dynamodb", "query"): datastore_trace("DynamoDB", extract("TableName"), "query"),
-    ("dynamodb", "scan"): datastore_trace("DynamoDB", extract("TableName"), "scan"),
+    ("dynamodb", "put_item"): dynamodb_datastore_trace("DynamoDB", extract("TableName"), "put_item"),
+    ("dynamodb", "get_item"): dynamodb_datastore_trace("DynamoDB", extract("TableName"), "get_item"),
+    ("dynamodb", "update_item"): dynamodb_datastore_trace("DynamoDB", extract("TableName"), "update_item"),
+    ("dynamodb", "delete_item"): dynamodb_datastore_trace("DynamoDB", extract("TableName"), "delete_item"),
+    ("dynamodb", "create_table"): dynamodb_datastore_trace("DynamoDB", extract("TableName"), "create_table"),
+    ("dynamodb", "delete_table"): dynamodb_datastore_trace("DynamoDB", extract("TableName"), "delete_table"),
+    ("dynamodb", "query"): dynamodb_datastore_trace("DynamoDB", extract("TableName"), "query"),
+    ("dynamodb", "scan"): dynamodb_datastore_trace("DynamoDB", extract("TableName"), "scan"),
     ("sqs", "send_message"): sqs_message_trace(
         "Produce", "Queue", extract_sqs, extract_agent_attrs=extract_sqs_agent_attrs
     ),
@@ -951,6 +1111,11 @@ def _nr_endpoint_make_request_(wrapped, instance, args, kwargs):
     with ExternalTrace(library="botocore", url=url, method=method, source=wrapped) as trace:
         try:
             trace._add_agent_attribute("aws.operation", operation_model.name)
+            bound_args = bind_args(wrapped, args, kwargs)
+            lambda_arn = bound_args.get("request_dict").pop("_nr_arn", None)
+            if lambda_arn:
+                trace._add_agent_attribute("cloud.platform", "aws_lambda")
+                trace._add_agent_attribute("cloud.resource_id", lambda_arn)
         except:
             pass
 
@@ -968,5 +1133,8 @@ def instrument_botocore_endpoint(module):
 
 
 def instrument_botocore_client(module):
-    wrap_function_wrapper(module, "ClientCreator._create_api_method", _nr_clientcreator__create_api_method_)
-    wrap_function_wrapper(module, "ClientCreator._create_methods", _nr_clientcreator__create_methods)
+    if hasattr(module, "ClientCreator"):
+        wrap_function_wrapper(module, "ClientCreator._create_api_method", _nr_clientcreator__create_api_method_)
+        wrap_function_wrapper(module, "ClientCreator._create_methods", _nr_clientcreator__create_methods)
+    if hasattr(module, "BaseClient"):
+        wrap_function_wrapper(module, "BaseClient._emit_api_params", wrap_emit_api_params)

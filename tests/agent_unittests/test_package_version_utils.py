@@ -150,3 +150,35 @@ def test_version_caching(monkeypatch):
     del sys.modules["mymodule"]
     version = get_package_version("mymodule")
     assert version not in NULL_VERSIONS, version
+
+
+def test_version_as_class_property(monkeypatch):
+    # There is no file/module here, so we monkeypatch
+    # pytest instead for our purposes
+    class FakeModule:
+        @property
+        def version(self):
+            return "1.2.3"
+
+    monkeypatch.setattr(pytest, "version", FakeModule.version, raising=False)
+
+    version = get_package_version("pytest")
+    assert version not in NULL_VERSIONS and isinstance(version, str), version
+
+
+# This test checks to see if the version is a property of the class
+# but also checks to see if the something like version.version_tuple
+# has been exported as a tuple.
+def test_version_as_class_property_and_version_tuple(monkeypatch):
+    # There is no file/module here, so we monkeypatch
+    # pytest instead for our purposes
+    class FakeModule:
+        @property
+        def version(self):
+            return "1.2.3"
+
+    monkeypatch.setattr(pytest, "version", FakeModule.version, raising=False)
+    monkeypatch.setattr(pytest, "version_tuple", (1, 2, 3), raising=False)
+
+    version = get_package_version("pytest")
+    assert version not in NULL_VERSIONS and isinstance(version, str), version

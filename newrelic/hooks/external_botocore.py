@@ -1238,7 +1238,7 @@ CUSTOM_TRACE_POINTS = {
         "update_shard_count", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
     ("kinesis", "update_stream_mode"): aws_function_trace(
-        "update_stream_mode", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library=""
+        "update_stream_mode", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
     ("kinesis", "put_record"): aws_message_trace(
         "Produce", "Stream", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"

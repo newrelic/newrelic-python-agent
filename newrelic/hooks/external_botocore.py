@@ -68,6 +68,10 @@ def extract_kinesis(*args, **kwargs):
     return stream_value
 
 
+def extract_firehose(*args, **kwargs):
+    return kwargs.get("DeliveryStreamName", "Unknown")
+
+
 def extract_sqs_agent_attrs(instance, *args, **kwargs):
     # Try to capture AWS SQS info as agent attributes. Log any exception to debug.
     agent_attrs = {}
@@ -107,6 +111,26 @@ def extract_kinesis_agent_attrs(instance, *args, **kwargs):
                 agent_attrs["cloud.resource_id"] = f"arn:aws:kinesis:{region}:{account_id}:stream/{stream_name}"
     except Exception as e:
         _logger.debug("Failed to capture AWS Kinesis info.", exc_info=True)
+    return agent_attrs
+
+
+def extract_firehose_agent_attrs(instance, *args, **kwargs):
+    # Try to generate AWS Kinesis Delivery Stream (Firehose) ARN from the DeliveryStreamName parameter and from various
+    # discoverable info. Log any exception to debug.
+    agent_attrs = {}
+    try:
+        stream_name = kwargs.get("DeliveryStreamName", None)
+        transaction = current_transaction()
+        settings = transaction.settings if transaction.settings else global_settings()
+        account_id = settings.cloud.aws.account_id if settings and settings.cloud.aws.account_id else None
+        region = None
+        if hasattr(instance, "_client_config") and hasattr(instance._client_config, "region_name"):
+            region = instance._client_config.region_name
+        if stream_name and account_id and region:
+            agent_attrs["cloud.platform"] = "aws_kinesis_delivery_streams"
+            agent_attrs["cloud.resource_id"] = f"arn:aws:firehose:{region}:{account_id}:stream/{stream_name}"
+    except Exception as e:
+        _logger.debug("Failed to capture AWS Kinesis Delivery Stream (Firehose) info.", exc_info=True)
     return agent_attrs
 
 
@@ -1248,6 +1272,54 @@ CUSTOM_TRACE_POINTS = {
     ),
     ("kinesis", "get_records"): aws_message_trace(
         "Consume", "Stream", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("firehose", "create_delivery_stream"): aws_function_trace(
+        "create_delivery_stream", extract_firehose, extract_agent_attrs=extract_firehose_agent_attrs, library="Firehose"
+    ),
+    ("firehose", "delete_delivery_stream"): aws_function_trace(
+        "delete_delivery_stream", extract_firehose, extract_agent_attrs=extract_firehose_agent_attrs, library="Firehose"
+    ),
+    ("firehose", "describe_delivery_stream"): aws_function_trace(
+        "describe_delivery_stream",
+        extract_firehose,
+        extract_agent_attrs=extract_firehose_agent_attrs,
+        library="Firehose",
+    ),
+    ("firehose", "list_delivery_streams"): aws_function_trace(
+        "list_delivery_streams", extract_firehose, extract_agent_attrs=extract_firehose_agent_attrs, library="Firehose"
+    ),
+    ("firehose", "list_tags_for_delivery_stream"): aws_function_trace(
+        "list_tags_for_delivery_stream",
+        extract_firehose,
+        extract_agent_attrs=extract_firehose_agent_attrs,
+        library="Firehose",
+    ),
+    ("firehose", "start_delivery_stream_encryption"): aws_function_trace(
+        "start_delivery_stream_encryption",
+        extract_firehose,
+        extract_agent_attrs=extract_firehose_agent_attrs,
+        library="Firehose",
+    ),
+    ("firehose", "stop_delivery_stream_encryption"): aws_function_trace(
+        "stop_delivery_stream_encryption",
+        extract_firehose,
+        extract_agent_attrs=extract_firehose_agent_attrs,
+        library="Firehose",
+    ),
+    ("firehose", "tag_delivery_stream"): aws_function_trace(
+        "tag_delivery_stream", extract_firehose, extract_agent_attrs=extract_firehose_agent_attrs, library="Firehose"
+    ),
+    ("firehose", "untag_delivery_stream"): aws_function_trace(
+        "untag_delivery_stream", extract_firehose, extract_agent_attrs=extract_firehose_agent_attrs, library="Firehose"
+    ),
+    ("firehose", "update_destination"): aws_function_trace(
+        "update_destination", extract_firehose, extract_agent_attrs=extract_firehose_agent_attrs, library="Firehose"
+    ),
+    ("firehose", "put_record"): aws_message_trace(
+        "Produce", "Stream", extract_firehose, extract_agent_attrs=extract_firehose_agent_attrs, library="Firehose"
+    ),
+    ("firehose", "put_record_batch"): aws_message_trace(
+        "Produce", "Stream", extract_firehose, extract_agent_attrs=extract_firehose_agent_attrs, library="Firehose"
     ),
     ("sqs", "send_message"): aws_message_trace(
         "Produce", "Queue", extract_sqs, extract_agent_attrs=extract_sqs_agent_attrs, library="SQS"

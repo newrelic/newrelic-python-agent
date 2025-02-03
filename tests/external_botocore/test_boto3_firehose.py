@@ -127,7 +127,6 @@ def test_firehose(firehose_destination):
     resp = client.create_delivery_stream(
         DeliveryStreamName=TEST_STREAM,
         DeliveryStreamType="DirectPut",
-        DirectPutSourceConfiguration={"ThroughputHintInMBs": 123},
         **destination_kwargs,
     )
     assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
@@ -175,7 +174,6 @@ def test_firehose_error(firehose_destination):
     resp = client.create_delivery_stream(
         DeliveryStreamName=TEST_STREAM,
         DeliveryStreamType="DirectPut",
-        DirectPutSourceConfiguration={"ThroughputHintInMBs": 123},
         **destination_kwargs,
     )
     assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200

@@ -86,7 +86,8 @@ def extract_sqs_agent_attrs(instance, *args, **kwargs):
 
 
 def extract_kinesis_agent_attrs(instance, *args, **kwargs):
-    # Try to capture AWS Kinesis ARN from the StreamARN parameter or by generating the ARN from various discoverable info. Log any exception to debug.
+    # Try to capture AWS Kinesis ARN from the StreamARN parameter or by generating the ARN from various discoverable
+    # info. Log any exception to debug.
     agent_attrs = {}
     try:
         stream_arn = kwargs.get("StreamARN", None)
@@ -1140,12 +1141,6 @@ CUSTOM_TRACE_POINTS = {
     ("kinesis", "add_tags_to_stream"): aws_function_trace(
         "add_tags_to_stream", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
-    ("kinesis", "can_paginate"): aws_function_trace(
-        "can_paginate", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
-    ),
-    ("kinesis", "close"): aws_function_trace(
-        "close", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
-    ),
     ("kinesis", "create_stream"): aws_function_trace(
         "create_stream", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
@@ -1191,20 +1186,11 @@ CUSTOM_TRACE_POINTS = {
         extract_agent_attrs=extract_kinesis_agent_attrs,
         library="Kinesis",
     ),
-    ("kinesis", "generate_presigned_url"): aws_function_trace(
-        "generate_presigned_url", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
-    ),
-    ("kinesis", "get_paginator"): aws_function_trace(
-        "get_paginator", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
-    ),
     ("kinesis", "get_resource_policy"): aws_function_trace(
         "get_resource_policy", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
     ("kinesis", "get_shard_iterator"): aws_function_trace(
         "get_shard_iterator", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
-    ),
-    ("kinesis", "get_waiter"): aws_function_trace(
-        "get_waiter", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
     ("kinesis", "increase_stream_retention_period"): aws_function_trace(
         "increase_stream_retention_period",

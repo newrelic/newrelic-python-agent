@@ -34,13 +34,14 @@ BOTOCORE_VERSION = get_package_version_tuple("boto3")
 
 URL = "firehose.us-east-1.amazonaws.com"
 TEST_STREAM = f"python-agent-test-{uuid.uuid4()}"
+TEST_STREAM_ARN = f"arn:aws:firehose:us-east-1:123456789012:deliverystream/{TEST_STREAM}"
 TEST_S3_BUCKET = f"python-agent-test-{uuid.uuid4()}"
 TEST_S3_BUCKET_ARN = f"arn:aws:s3:::{TEST_S3_BUCKET}"
 TEST_S3_ROLE_ARN = f"arn:aws:iam::123456789012:role/test-role"
 EXPECTED_AGENT_ATTRS = {
     "exact_agents": {
         "cloud.platform": "aws_kinesis_delivery_streams",
-        "cloud.resource_id": f"arn:aws:firehose:us-east-1:123456789012:stream/{TEST_STREAM}",
+        "cloud.resource_id": TEST_STREAM_ARN,
     },
 }
 
@@ -137,6 +138,7 @@ def test_firehose(firehose_destination):
         Limit=123,
     )
     assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
+    assert resp["DeliveryStreamDescription"]["DeliveryStreamARN"] == TEST_STREAM_ARN
 
     # Send message
     resp = client.put_record(Record={"Data": b"foo1"}, DeliveryStreamName=TEST_STREAM)

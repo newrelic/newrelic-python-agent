@@ -128,7 +128,7 @@ def extract_firehose_agent_attrs(instance, *args, **kwargs):
             region = instance._client_config.region_name
         if stream_name and account_id and region:
             agent_attrs["cloud.platform"] = "aws_kinesis_delivery_streams"
-            agent_attrs["cloud.resource_id"] = f"arn:aws:firehose:{region}:{account_id}:stream/{stream_name}"
+            agent_attrs["cloud.resource_id"] = f"arn:aws:firehose:{region}:{account_id}:deliverystream/{stream_name}"
     except Exception as e:
         _logger.debug("Failed to capture AWS Kinesis Delivery Stream (Firehose) info.", exc_info=True)
     return agent_attrs

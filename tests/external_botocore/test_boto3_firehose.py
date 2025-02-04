@@ -50,32 +50,34 @@ AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"  # nosec
 AWS_REGION = "us-east-1"
 
 _firehose_scoped_metrics = [
-    (f"MessageBroker/Firehose/Stream/Produce/Named/{TEST_STREAM}", 2),
     (f"Firehose/create_delivery_stream/{TEST_STREAM}", 1),
+    (f"Firehose/put_record/{TEST_STREAM}", 1),
+    (f"Firehose/put_record_batch/{TEST_STREAM}", 1),
     (f"Firehose/describe_delivery_stream/{TEST_STREAM}", 1),
     (f"Firehose/list_delivery_streams", 1),
     (f"Firehose/delete_delivery_stream/{TEST_STREAM}", 1),
-    (f"External/{URL}/botocore/POST", 3),
+    (f"External/{URL}/botocore/POST", 6),
 ]
 
 _firehose_rollup_metrics = [
-    (f"MessageBroker/Firehose/Stream/Produce/Named/{TEST_STREAM}", 2),
     (f"Firehose/create_delivery_stream/{TEST_STREAM}", 1),
+    (f"Firehose/put_record/{TEST_STREAM}", 1),
+    (f"Firehose/put_record_batch/{TEST_STREAM}", 1),
     (f"Firehose/describe_delivery_stream/{TEST_STREAM}", 1),
     (f"Firehose/list_delivery_streams", 1),
     (f"Firehose/delete_delivery_stream/{TEST_STREAM}", 1),
-    ("External/all", 4),  # Includes creating S3 bucket
-    ("External/allOther", 4),
-    (f"External/{URL}/all", 3),
-    (f"External/{URL}/botocore/POST", 3),
+    ("External/all", 7),  # Includes creating S3 bucket
+    ("External/allOther", 7),
+    (f"External/{URL}/all", 6),
+    (f"External/{URL}/botocore/POST", 6),
 ]
 
 _firehose_scoped_metrics_error = [
-    (f"MessageBroker/Firehose/Stream/Produce/Named/{TEST_STREAM}", 1),
+    (f"Firehose/put_record/{TEST_STREAM}", 1),
 ]
 
 _firehose_rollup_metrics_error = [
-    (f"MessageBroker/Firehose/Stream/Produce/Named/{TEST_STREAM}", 1),
+    (f"Firehose/put_record/{TEST_STREAM}", 1),
 ]
 
 

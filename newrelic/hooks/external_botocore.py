@@ -1293,6 +1293,12 @@ CUSTOM_TRACE_POINTS = {
         extract_agent_attrs=extract_firehose_agent_attrs,
         library="Firehose",
     ),
+    ("firehose", "put_record"): aws_function_trace(
+        "put_record", extract_firehose, extract_agent_attrs=extract_firehose_agent_attrs, library="Firehose"
+    ),
+    ("firehose", "put_record_batch"): aws_function_trace(
+        "put_record_batch", extract_firehose, extract_agent_attrs=extract_firehose_agent_attrs, library="Firehose"
+    ),
     ("firehose", "start_delivery_stream_encryption"): aws_function_trace(
         "start_delivery_stream_encryption",
         extract_firehose,
@@ -1313,12 +1319,6 @@ CUSTOM_TRACE_POINTS = {
     ),
     ("firehose", "update_destination"): aws_function_trace(
         "update_destination", extract_firehose, extract_agent_attrs=extract_firehose_agent_attrs, library="Firehose"
-    ),
-    ("firehose", "put_record"): aws_message_trace(
-        "Produce", "Stream", extract_firehose, extract_agent_attrs=extract_firehose_agent_attrs, library="Firehose"
-    ),
-    ("firehose", "put_record_batch"): aws_message_trace(
-        "Produce", "Stream", extract_firehose, extract_agent_attrs=extract_firehose_agent_attrs, library="Firehose"
     ),
     ("sqs", "send_message"): aws_message_trace(
         "Produce", "Queue", extract_sqs, extract_agent_attrs=extract_sqs_agent_attrs, library="SQS"

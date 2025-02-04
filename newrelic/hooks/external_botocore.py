@@ -61,7 +61,7 @@ def extract_sqs(*args, **kwargs):
 def extract_kinesis(*args, **kwargs):
     # The stream name can be passed as the StreamName or as part of the StreamARN.
     stream_value = kwargs.get("StreamName", None)
-    if stream_value is not None:
+    if stream_value is None:
         arn = kwargs.get("StreamARN", None)
         if arn is not None:
             stream_value = arn.split("/", 1)[-1]
@@ -69,7 +69,7 @@ def extract_kinesis(*args, **kwargs):
 
 
 def extract_firehose(*args, **kwargs):
-    return kwargs.get("DeliveryStreamName", "Unknown")
+    return kwargs.get("DeliveryStreamName", None)
 
 
 def extract_sqs_agent_attrs(instance, *args, **kwargs):
@@ -120,15 +120,18 @@ def extract_firehose_agent_attrs(instance, *args, **kwargs):
     agent_attrs = {}
     try:
         stream_name = kwargs.get("DeliveryStreamName", None)
-        transaction = current_transaction()
-        settings = transaction.settings if transaction.settings else global_settings()
-        account_id = settings.cloud.aws.account_id if settings and settings.cloud.aws.account_id else None
-        region = None
-        if hasattr(instance, "_client_config") and hasattr(instance._client_config, "region_name"):
-            region = instance._client_config.region_name
-        if stream_name and account_id and region:
-            agent_attrs["cloud.platform"] = "aws_kinesis_delivery_streams"
-            agent_attrs["cloud.resource_id"] = f"arn:aws:firehose:{region}:{account_id}:deliverystream/{stream_name}"
+        if stream_name:
+            transaction = current_transaction()
+            settings = transaction.settings if transaction.settings else global_settings()
+            account_id = settings.cloud.aws.account_id if settings and settings.cloud.aws.account_id else None
+            region = None
+            if hasattr(instance, "_client_config") and hasattr(instance._client_config, "region_name"):
+                region = instance._client_config.region_name
+            if account_id and region:
+                agent_attrs["cloud.platform"] = "aws_kinesis_delivery_streams"
+                agent_attrs["cloud.resource_id"] = (
+                    f"arn:aws:firehose:{region}:{account_id}:deliverystream/{stream_name}"
+                )
     except Exception as e:
         _logger.debug("Failed to capture AWS Kinesis Delivery Stream (Firehose) info.", exc_info=True)
     return agent_attrs

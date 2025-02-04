@@ -1015,7 +1015,7 @@ def dynamodb_datastore_trace(
 
 def aws_function_trace(
     operation,
-    destination_name,
+    destination_name=None,
     params={},
     terminal=False,
     async_wrapper=None,
@@ -1032,11 +1032,12 @@ def aws_function_trace(
         else:
             parent = None
 
-        _destination_name = destination_name(*args, **kwargs)
+        _destination_name = destination_name(*args, **kwargs) if destination_name is not None else None
+        name = f"{operation}/{_destination_name}" if _destination_name else operation
 
         trace = FunctionTrace(
-            name=_destination_name,
-            group=f"{library}/{operation}",
+            name=name,
+            group=library,
             params=params,
             terminal=terminal,
             parent=parent,
@@ -1044,7 +1045,7 @@ def aws_function_trace(
         )
 
         # Attach extracted agent attributes.
-        _agent_attrs = extract_agent_attrs(instance, *args, **kwargs)
+        _agent_attrs = extract_agent_attrs(instance, *args, **kwargs) if extract_agent_attrs is not None else {}
         trace.agent_attributes.update(_agent_attrs)
 
         if wrapper:  # pylint: disable=W0125,W0126
@@ -1285,9 +1286,7 @@ CUSTOM_TRACE_POINTS = {
         extract_agent_attrs=extract_firehose_agent_attrs,
         library="Firehose",
     ),
-    ("firehose", "list_delivery_streams"): aws_function_trace(
-        "list_delivery_streams", extract_firehose, extract_agent_attrs=extract_firehose_agent_attrs, library="Firehose"
-    ),
+    ("firehose", "list_delivery_streams"): aws_function_trace("list_delivery_streams", library="Firehose"),
     ("firehose", "list_tags_for_delivery_stream"): aws_function_trace(
         "list_tags_for_delivery_stream",
         extract_firehose,

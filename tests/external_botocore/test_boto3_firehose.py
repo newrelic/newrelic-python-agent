@@ -53,6 +53,7 @@ _firehose_scoped_metrics = [
     (f"MessageBroker/Firehose/Stream/Produce/Named/{TEST_STREAM}", 2),
     (f"Firehose/create_delivery_stream/{TEST_STREAM}", 1),
     (f"Firehose/describe_delivery_stream/{TEST_STREAM}", 1),
+    (f"Firehose/list_delivery_streams", 1),
     (f"Firehose/delete_delivery_stream/{TEST_STREAM}", 1),
     (f"External/{URL}/botocore/POST", 3),
 ]
@@ -61,6 +62,7 @@ _firehose_rollup_metrics = [
     (f"MessageBroker/Firehose/Stream/Produce/Named/{TEST_STREAM}", 2),
     (f"Firehose/create_delivery_stream/{TEST_STREAM}", 1),
     (f"Firehose/describe_delivery_stream/{TEST_STREAM}", 1),
+    (f"Firehose/list_delivery_streams", 1),
     (f"Firehose/delete_delivery_stream/{TEST_STREAM}", 1),
     ("External/all", 4),  # Includes creating S3 bucket
     ("External/allOther", 4),
@@ -138,6 +140,10 @@ def test_firehose(firehose_destination):
     )
     assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
     assert resp["DeliveryStreamDescription"]["DeliveryStreamARN"] == TEST_STREAM_ARN
+
+    # Call describe on delivery stream
+    resp = client.list_delivery_streams(Limit=123)
+    assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     # Send message
     resp = client.put_record(Record={"Data": b"foo1"}, DeliveryStreamName=TEST_STREAM)

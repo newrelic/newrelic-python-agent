@@ -60,10 +60,10 @@ def extract_sqs(*args, **kwargs):
 
 def extract_kinesis(*args, **kwargs):
     # The stream name can be passed as the StreamName or as part of the StreamARN.
-    stream_value = kwargs.get("StreamName", "Unknown")
-    if stream_value == "Unknown":
+    stream_value = kwargs.get("StreamName", None)
+    if stream_value is not None:
         arn = kwargs.get("StreamARN", None)
-        if arn:
+        if arn is not None:
             stream_value = arn.split("/", 1)[-1]
     return stream_value
 
@@ -1080,7 +1080,7 @@ def aws_message_trace(
         _library = library
         _operation = operation
         _destination_type = destination_type
-        _destination_name = destination_name(*args, **kwargs)
+        _destination_name = destination_name(*args, **kwargs) or "Unknown"
 
         trace = MessageTrace(
             _library,
@@ -1175,9 +1175,7 @@ CUSTOM_TRACE_POINTS = {
         extract_agent_attrs=extract_kinesis_agent_attrs,
         library="Kinesis",
     ),
-    ("kinesis", "delete_resource_policy"): aws_function_trace(
-        "delete_resource_policy", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
-    ),
+    ("kinesis", "delete_resource_policy"): aws_function_trace("delete_resource_policy", library="Kinesis"),
     ("kinesis", "delete_stream"): aws_function_trace(
         "delete_stream", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
@@ -1187,9 +1185,7 @@ CUSTOM_TRACE_POINTS = {
         extract_agent_attrs=extract_kinesis_agent_attrs,
         library="Kinesis",
     ),
-    ("kinesis", "describe_limits"): aws_function_trace(
-        "describe_limits", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
-    ),
+    ("kinesis", "describe_limits"): aws_function_trace("describe_limits", library="Kinesis"),
     ("kinesis", "describe_stream"): aws_function_trace(
         "describe_stream", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
@@ -1211,9 +1207,7 @@ CUSTOM_TRACE_POINTS = {
         extract_agent_attrs=extract_kinesis_agent_attrs,
         library="Kinesis",
     ),
-    ("kinesis", "get_resource_policy"): aws_function_trace(
-        "get_resource_policy", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
-    ),
+    ("kinesis", "get_resource_policy"): aws_function_trace("get_resource_policy", library="Kinesis"),
     ("kinesis", "get_shard_iterator"): aws_function_trace(
         "get_shard_iterator", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
@@ -1229,18 +1223,14 @@ CUSTOM_TRACE_POINTS = {
     ("kinesis", "list_stream_consumers"): aws_function_trace(
         "list_stream_consumers", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
-    ("kinesis", "list_streams"): aws_function_trace(
-        "list_streams", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
-    ),
+    ("kinesis", "list_streams"): aws_function_trace("list_streams", library="Kinesis"),
     ("kinesis", "list_tags_for_stream"): aws_function_trace(
         "list_tags_for_stream", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
     ("kinesis", "merge_shards"): aws_function_trace(
         "merge_shards", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
-    ("kinesis", "put_resource_policy"): aws_function_trace(
-        "put_resource_policy", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
-    ),
+    ("kinesis", "put_resource_policy"): aws_function_trace("put_resource_policy", library="Kinesis"),
     ("kinesis", "register_stream_consumer"): aws_function_trace(
         "register_stream_consumer", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
@@ -1256,9 +1246,7 @@ CUSTOM_TRACE_POINTS = {
     ("kinesis", "stop_stream_encryption"): aws_function_trace(
         "stop_stream_encryption", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
-    ("kinesis", "subscribe_to_shard"): aws_function_trace(
-        "subscribe_to_shard", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
-    ),
+    ("kinesis", "subscribe_to_shard"): aws_function_trace("subscribe_to_shard", library="Kinesis"),
     ("kinesis", "update_shard_count"): aws_function_trace(
         "update_shard_count", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),

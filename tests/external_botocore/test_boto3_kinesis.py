@@ -49,44 +49,48 @@ _kinesis_scoped_metrics = [
     (f"MessageBroker/Kinesis/Stream/Produce/Named/{TEST_STREAM}", 2),
     (f"MessageBroker/Kinesis/Stream/Consume/Named/{TEST_STREAM}", 1),
     (f"Kinesis/create_stream/{TEST_STREAM}", 1),
+    (f"Kinesis/list_streams", 1),
     (f"Kinesis/describe_stream/{TEST_STREAM}", 1),
     (f"Kinesis/get_shard_iterator/{TEST_STREAM}", 1),
     (f"Kinesis/delete_stream/{TEST_STREAM}", 1),
-    (f"External/{URL}/botocore/POST", 2),
+    (f"External/{URL}/botocore/POST", 3),
 ]
 if BOTOCORE_VERSION < (1, 29, 0):
     _kinesis_scoped_metrics = [
         (f"MessageBroker/Kinesis/Stream/Produce/Named/{TEST_STREAM}", 2),
         (f"Kinesis/create_stream/{TEST_STREAM}", 1),
+        (f"Kinesis/list_streams", 1),
         (f"Kinesis/describe_stream/{TEST_STREAM}", 1),
         (f"Kinesis/get_shard_iterator/{TEST_STREAM}", 1),
         (f"Kinesis/delete_stream/{TEST_STREAM}", 1),
-        (f"External/{URL}/botocore/POST", 4),
+        (f"External/{URL}/botocore/POST", 5),
     ]
 
 _kinesis_rollup_metrics = [
     (f"MessageBroker/Kinesis/Stream/Produce/Named/{TEST_STREAM}", 2),
     (f"MessageBroker/Kinesis/Stream/Consume/Named/{TEST_STREAM}", 1),
     (f"Kinesis/create_stream/{TEST_STREAM}", 1),
+    (f"Kinesis/list_streams", 1),
     (f"Kinesis/describe_stream/{TEST_STREAM}", 1),
     (f"Kinesis/get_shard_iterator/{TEST_STREAM}", 1),
     (f"Kinesis/delete_stream/{TEST_STREAM}", 1),
-    ("External/all", 4),
-    ("External/allOther", 4),
-    (f"External/{URL}/all", 2),
-    (f"External/{URL}/botocore/POST", 2),
+    ("External/all", 5),
+    ("External/allOther", 5),
+    (f"External/{URL}/all", 3),
+    (f"External/{URL}/botocore/POST", 3),
 ]
 if BOTOCORE_VERSION < (1, 29, 0):
     _kinesis_rollup_metrics = [
         (f"MessageBroker/Kinesis/Stream/Produce/Named/{TEST_STREAM}", 2),
         (f"Kinesis/create_stream/{TEST_STREAM}", 1),
+        (f"Kinesis/list_streams", 1),
         (f"Kinesis/describe_stream/{TEST_STREAM}", 1),
         (f"Kinesis/get_shard_iterator/{TEST_STREAM}", 1),
         (f"Kinesis/delete_stream/{TEST_STREAM}", 1),
-        ("External/all", 4),
-        ("External/allOther", 4),
-        (f"External/{URL}/all", 4),
-        (f"External/{URL}/botocore/POST", 4),
+        ("External/all", 5),
+        ("External/allOther", 5),
+        (f"External/{URL}/all", 5),
+        (f"External/{URL}/botocore/POST", 5),
     ]
 
 _kinesis_scoped_metrics_error = [
@@ -144,6 +148,10 @@ def test_kinesis():
     )
     # Create stream
     resp = client.create_stream(StreamName=TEST_STREAM, ShardCount=123, StreamModeDetails={"StreamMode": "on-demand"})
+    assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+    # List streams
+    resp = client.list_streams(Limit=123)
     assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     # Stream ARN is needed for rest of methods.

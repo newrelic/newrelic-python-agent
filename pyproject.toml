@@ -1,3 +1,107 @@
+[tool.ruff]
+output-format = "grouped"
+line-length = 120
+target-version = "py37"
+extend-exclude = [
+    "newrelic/packages/",
+    "setup.py",
+]
+namespace-packages = ["testing_support"]
+
+[tool.ruff.format]
+skip-magic-trailing-comma = true
+
+[tool.ruff.lint]
+isort.split-on-trailing-comma=false
+select = [
+    # Enabled linters and rules
+    "F",  # Pyflakes
+    "E",  # pycodestyle
+    "W",  # pycodestyle
+    "I",  # isort
+    "N",  # pep8-naming
+    "D",  # pydocstyle
+    "UP",  # pyupgrade
+    "YTT",  # flake8-2020
+    "ANN",  # flake8-annotations
+    "ASYNC",  # flake8-async
+    "S",  # flake8-bandit
+    "BLE",  # flake8-blind-except
+    "FBT",  # flake8-boolean-trap
+    "B",  # flake8-bugbear
+    "A",  # flake8-builtins
+    "COM",  # flake8-commas
+    "C4",  # flake8-comprehensions
+    "T10",  # flake8-debugger
+    "EM",  # flake8-errmsg
+    "FA",  # flake8-future-annotations
+    "ISC",  # flake8-implicit-str-concat
+    "ICN",  # flake8-import-conventions
+    "LOG",  # flake8-logging
+    "G",  # flake8-logging-format
+    "INP",  # flake8-no-pep420
+    "PYI",  # flake8-pyi
+    "PT",  # flake8-pytest-style
+    "Q",  # flake8-quotes
+    "RSE",  # flake8-raise
+    "RET",  # flake8-return
+    "SLF",  # flake8-self
+    "SLOT",  # flake8-slots
+    "SIM",  # flake8-simplify
+    "TID",  # flake8-tidy-imports
+    "INT",  # flake8-gettext
+    "ARG",  # flake8-unused-arguments
+    "PTH",  # flake8-use-pathlib
+    "PGH",  # pygrep-hooks
+    "PL",  # Pylint
+    "TRY",  # tryceratops
+    "FLY",  # flynt
+    "PERF",  # Perflint
+    "FURB",  # refurb
+    "RUF",  # Ruff-specific rules
+]
+
+# Disabled Linters
+# "C90",  # mccabe
+# "CPY",  # flake8-copyright
+# "DTZ",  # flake8-datetimez
+# "DJ",  # flake8-django
+# "EXE",  # flake8-executable
+# "PIE",  # flake8-pie
+# "T20",  # flake8-print
+# "TC",  # flake8-type-checking
+# "TD",  # flake8-todos
+# "FIX",  # flake8-fixme
+# "ERA",  # eradicate
+# "PD",  # pandas-vet
+# "NPY",  # NumPy-specific rules
+# "FAST",  # FastAPI
+# "AIR",  # Airflow
+# "DOC",  # pydoclint
+
+ignore = [
+    # Ruff recommended linter rules to disable when using formatter
+    "W191",  # tab-indentation
+    "E111",  # indentation-with-invalid-multiple
+    "E114",  # indentation-with-invalid-multiple-comment
+    "E117",  # over-indented
+    "D206",  # docstring-tab-indentation
+    "D300",  # triple-single-quotes
+    "Q000",  # bad-quotes-inline-string
+    "Q001",  # bad-quotes-multiline-string
+    "Q002",  # bad-quotes-docstring
+    "Q003",  # avoidable-escaped-quote
+    "COM812",  # missing-trailing-comma
+    "COM819",  # prohibited-trailing-comma
+    # Additional disabled rules
+    "D203",  # incorrect-blank-line-before-class
+    "D213",  # multi-line-summary-second-line
+]
+
+[tool.ruff.lint.per-file-ignores]
+"conftest.py" = ["F401"]
+
+# Alternate linters and formatters
 [tool.black]
 line-length = 120
 include = '\.pyi?$'

@@ -32,18 +32,21 @@ from newrelic.hooks.external_botocore import CUSTOM_TRACE_POINTS
 MOTO_VERSION = get_package_version_tuple("moto")
 BOTOCORE_VERSION = get_package_version_tuple("boto3")
 
-URL = "kinesis.us-east-1.amazonaws.com"
+AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"
+AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"  # nosec
+AWS_REGION = "us-east-1"
+AWS_ACCOUNT_ID = 123456789012
+
+KINESIS_URL = "kinesis.us-east-1.amazonaws.com"
+KINESIS_CONTROL_URL = f"{AWS_ACCOUNT_ID}.control-kinesis.{AWS_REGION}.amazonaws.com"
+KINESIS_DATA_URL = f"{AWS_ACCOUNT_ID}.data-kinesis.{AWS_REGION}.amazonaws.com"
 TEST_STREAM = f"python-agent-test-{uuid.uuid4()}"
 EXPECTED_AGENT_ATTRS = {
     "exact_agents": {
         "cloud.platform": "aws_kinesis_data_streams",
-        "cloud.resource_id": f"arn:aws:kinesis:us-east-1:123456789012:stream/{TEST_STREAM}",
+        "cloud.resource_id": f"arn:aws:kinesis:us-east-1:{AWS_ACCOUNT_ID}:stream/{TEST_STREAM}",
     },
 }
-
-AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"
-AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"  # nosec
-AWS_REGION = "us-east-1"
 
 _kinesis_scoped_metrics = [
     (f"MessageBroker/Kinesis/Stream/Produce/Named/{TEST_STREAM}", 2),
@@ -51,9 +54,12 @@ _kinesis_scoped_metrics = [
     (f"Kinesis/create_stream/{TEST_STREAM}", 1),
     (f"Kinesis/list_streams", 1),
     (f"Kinesis/describe_stream/{TEST_STREAM}", 1),
+    (f"Kinesis/put_resource_policy/{TEST_STREAM}", 2),
     (f"Kinesis/get_shard_iterator/{TEST_STREAM}", 1),
     (f"Kinesis/delete_stream/{TEST_STREAM}", 1),
-    (f"External/{URL}/botocore/POST", 3),
+    (f"External/{KINESIS_URL}/botocore/POST", 3),
+    (f"External/{KINESIS_CONTROL_URL}/botocore/POST", 3),
+    (f"External/{KINESIS_DATA_URL}/botocore/POST", 1),
 ]
 if BOTOCORE_VERSION < (1, 29, 0):
     _kinesis_scoped_metrics = [
@@ -63,7 +69,7 @@ if BOTOCORE_VERSION < (1, 29, 0):
         (f"Kinesis/describe_stream/{TEST_STREAM}", 1),
         (f"Kinesis/get_shard_iterator/{TEST_STREAM}", 1),
         (f"Kinesis/delete_stream/{TEST_STREAM}", 1),
-        (f"External/{URL}/botocore/POST", 5),
+        (f"External/{KINESIS_URL}/botocore/POST", 5),
     ]
 
 _kinesis_rollup_metrics = [
@@ -72,12 +78,17 @@ _kinesis_rollup_metrics = [
     (f"Kinesis/create_stream/{TEST_STREAM}", 1),
     (f"Kinesis/list_streams", 1),
     (f"Kinesis/describe_stream/{TEST_STREAM}", 1),
+    (f"Kinesis/put_resource_policy/{TEST_STREAM}", 2),
     (f"Kinesis/get_shard_iterator/{TEST_STREAM}", 1),
     (f"Kinesis/delete_stream/{TEST_STREAM}", 1),
-    ("External/all", 5),
-    ("External/allOther", 5),
-    (f"External/{URL}/all", 3),
-    (f"External/{URL}/botocore/POST", 3),
+    ("External/all", 7),
+    ("External/allOther", 7),
+    (f"External/{KINESIS_URL}/all", 3),
+    (f"External/{KINESIS_URL}/botocore/POST", 3),
+    (f"External/{KINESIS_CONTROL_URL}/all", 3),
+    (f"External/{KINESIS_CONTROL_URL}/botocore/POST", 3),
+    (f"External/{KINESIS_DATA_URL}/all", 1),
+    (f"External/{KINESIS_DATA_URL}/botocore/POST", 1),
 ]
 if BOTOCORE_VERSION < (1, 29, 0):
     _kinesis_rollup_metrics = [
@@ -89,8 +100,8 @@ if BOTOCORE_VERSION < (1, 29, 0):
         (f"Kinesis/delete_stream/{TEST_STREAM}", 1),
         ("External/all", 5),
         ("External/allOther", 5),
-        (f"External/{URL}/all", 5),
-        (f"External/{URL}/botocore/POST", 5),
+        (f"External/{KINESIS_URL}/all", 5),
+        (f"External/{KINESIS_URL}/botocore/POST", 5),
     ]
 
 _kinesis_scoped_metrics_error = [
@@ -114,7 +125,13 @@ def test_instrumented_kinesis_methods():
 
     ignored_methods = set(
         ("kinesis", method)
-        for method in ("generate_presigned_url", "close", "get_waiter", "can_paginate", "get_paginator")
+        for method in (
+            "generate_presigned_url",
+            "close",
+            "get_waiter",
+            "can_paginate",
+            "get_paginator",
+        )
     )
     client_methods = inspect.getmembers(client, predicate=inspect.ismethod)
     methods = {("kinesis", name) for (name, method) in client_methods if not name.startswith("_")}
@@ -128,7 +145,7 @@ def test_instrumented_kinesis_methods():
 @validate_span_events(exact_agents={"aws.operation": "CreateStream"}, count=1)
 @validate_span_events(
     **EXPECTED_AGENT_ATTRS,
-    count=6 if BOTOCORE_VERSION < (1, 29, 0) else 7,
+    count=6 if BOTOCORE_VERSION < (1, 29, 0) else 9,
 )
 @validate_span_events(exact_agents={"aws.operation": "DeleteStream"}, count=1)
 @validate_transaction_metrics(
@@ -147,7 +164,11 @@ def test_kinesis():
         region_name=AWS_REGION,
     )
     # Create stream
-    resp = client.create_stream(StreamName=TEST_STREAM, ShardCount=123, StreamModeDetails={"StreamMode": "on-demand"})
+    resp = client.create_stream(
+        StreamName=TEST_STREAM,
+        ShardCount=123,
+        StreamModeDetails={"StreamMode": "on-demand"},
+    )
     assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     # List streams
@@ -160,10 +181,11 @@ def test_kinesis():
         Limit=123,
     )
     assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
-    ARN = resp["StreamDescription"]["StreamARN"]
+    STREAM_ARN = resp["StreamDescription"]["StreamARN"]
+    CONSUMER_ARN = f"{STREAM_ARN}/consumer/my_consumer:123"  # Mock ConsumerARN
 
     # StreamARN is not supported in older versions of botocore.
-    stream_kwargs = {"StreamName": TEST_STREAM} if BOTOCORE_VERSION < (1, 29, 0) else {"StreamARN": ARN}
+    stream_kwargs = {"StreamName": TEST_STREAM} if BOTOCORE_VERSION < (1, 29, 0) else {"StreamARN": STREAM_ARN}
 
     # Send message
     resp = client.put_record(Data=b"foo1", PartitionKey="bar", **stream_kwargs)
@@ -171,16 +193,42 @@ def test_kinesis():
 
     # Send messages
     resp = client.put_records(
-        Records=[{"Data": b"foo2", "PartitionKey": "bar"}, {"Data": b"foo3", "PartitionKey": "bar"}], **stream_kwargs
+        Records=[
+            {"Data": b"foo2", "PartitionKey": "bar"},
+            {"Data": b"foo3", "PartitionKey": "bar"},
+        ],
+        **stream_kwargs,
     )
     assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
 
+    # Shards
     shard_iter = client.get_shard_iterator(
         ShardId="shardId-000000000000",
         ShardIteratorType="AT_SEQUENCE_NUMBER",
         StartingSequenceNumber="0",
         **stream_kwargs,
     )["ShardIterator"]
+
+    # TODO: Unfortunately we can't test client.subscribe_to_shard() yet as moto has not implemented it.
+    # It's the only method that uses ConsumerARN as a parameter name, so extracting that parameter can't be tested.
+    # ResourceARN, however, can be tested and can be either a StreamARN or ConsumerARN format. We can therefore
+    # at least cover the parsing of ConsumerARNs for the underlying stream by exercising that.
+
+    if BOTOCORE_VERSION >= (1, 29, 0):
+        # This was only made available in Botocore 1.29.0, no way to test ResourceARN before that
+        # Use ResourceARN as StreamARN
+        resp = client.put_resource_policy(
+            ResourceARN=STREAM_ARN,
+            Policy="some policy",
+        )
+        assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
+
+        # Use ResourceARN as ConsumerARN
+        resp = client.put_resource_policy(
+            ResourceARN=CONSUMER_ARN,
+            Policy="some policy",
+        )
+        assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     # Receive message
     if BOTOCORE_VERSION < (1, 29, 0):
@@ -214,7 +262,11 @@ def test_kinesis_error():
         region_name=AWS_REGION,
     )
     # Create stream
-    resp = client.create_stream(StreamName=TEST_STREAM, ShardCount=123, StreamModeDetails={"StreamMode": "on-demand"})
+    resp = client.create_stream(
+        StreamName=TEST_STREAM,
+        ShardCount=123,
+        StreamModeDetails={"StreamMode": "on-demand"},
+    )
     assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     # Stream ARN is needed for rest of methods.

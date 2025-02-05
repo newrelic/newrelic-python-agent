@@ -38,7 +38,7 @@ from newrelic.network.exceptions import (
 
 # Global constants used in tests
 APP_NAME = "test_app"
-IP_ADDRESS = AWS = AZURE = ECS = GCP = PCF = BOOT_ID = DOCKER = KUBERNETES = None
+IP_ADDRESS = AWS = AZURE = ECS = GCP = PCF = BOOT_ID = DOCKER = KUBERNETES = AZUREFUNCTION = None
 BROWSER_MONITORING_DEBUG = "debug"
 BROWSER_MONITORING_LOADER = "loader"
 CAPTURE_PARAMS = "capture_params"
@@ -78,7 +78,7 @@ def clear_sent_values():
 
 @pytest.fixture(autouse=True)
 def override_utilization(monkeypatch):
-    global AWS, AZURE, ECS, GCP, PCF, BOOT_ID, DOCKER, KUBERNETES
+    global AWS, AZURE, ECS, GCP, PCF, BOOT_ID, DOCKER, KUBERNETES, AZUREFUNCTION
     AWS = {"id": "foo", "type": "bar", "zone": "baz"}
     AZURE = {"location": "foo", "name": "bar", "vmId": "baz", "vmSize": "boo"}
     ECS = {"ecsDockerId": "foobar"}
@@ -87,6 +87,10 @@ def override_utilization(monkeypatch):
     BOOT_ID = "cca356a7d72737f645a10c122ebbe906"
     DOCKER = {"id": "foobar"}
     KUBERNETES = {"kubernetes_service_host": "10.96.0.1"}
+    AZUREFUNCTION = {
+        "faas_app_name": "/subscriptions/b999997b-cb91-49e0-b922-c9188372bdba/resourceGroups/my-resource-group/providers/Microsoft.Web/sites/my-azure-function-app",
+        "cloud_region": "Central US",
+    }
 
     @classmethod
     def detect(cls):
@@ -110,6 +114,8 @@ def override_utilization(monkeypatch):
             output = DOCKER
         elif name.startswith("Kubernetes"):
             output = KUBERNETES
+        elif name.startswith("AzureFunction"):
+            output = AZUREFUNCTION
         else:
             assert False, "Unknown utilization class"
 
@@ -255,6 +261,7 @@ def connect_payload_asserts(
     with_azure=True,
     with_docker=True,
     with_kubernetes=True,
+    with_azurefunction=True,
 ):
     payload_data = payload[0]
 
@@ -294,7 +301,7 @@ def connect_payload_asserts(
     assert payload_data["utilization"]["hostname"] == HOST
 
     assert payload_data["utilization"]["logical_processors"] == PROCESSOR_COUNT
-    assert payload_data["utilization"]["metadata_version"] == 5
+    assert payload_data["utilization"]["metadata_version"] == 6
     assert payload_data["utilization"]["total_ram_mib"] == MEMORY
     assert payload_data["utilization"]["boot_id"] == BOOT_ID
 
@@ -339,31 +346,36 @@ def connect_payload_asserts(
 
         if with_kubernetes:
             assert payload_data["utilization"]["vendors"]["kubernetes"] == KUBERNETES
+        if with_azurefunction:
+            assert payload_data["utilization"]["vendors"]["azurefunction"] == AZUREFUNCTION
     else:
         assert "vendors" not in payload_data["utilization"]
 
 
+# TODO: Add setting for with_azurefunction to be True
 @pytest.mark.parametrize(
-    "with_aws,with_ecs,with_pcf,with_gcp,with_azure,with_docker,with_kubernetes,with_ip",
+    "with_aws,with_ecs,with_pcf,with_gcp,with_azure,with_docker,with_kubernetes,with_azurefunction,with_ip",
     [
-        (False, False, False, False, False, False, False, False),
-        (False, False, False, False, False, False, False, True),
-        (True, True, False, False, False, True, False, True),
-        (True, True, False, False, False, True, True, True),
-        (False, False, True, False, False, True, True, True),
-        (False, False, False, True, False, True, True, True),
-        (False, False, False, False, True, True, True, True),
-        (True, True, False, False, False, False, False, True),
-        (False, False, True, False, False, False, False, True),
-        (False, False, False, True, False, False, False, True),
-        (False, False, False, False, True, False, False, True),
-        (True, True, True, True, True, True, True, True),
-        (True, True, True, True, True, True, False, True),
-        (True, True, True, True, True, False, True, True),
+        (False, False, False, False, False, False, False, False, False),
+        (False, False, False, False, False, False, False, False, True),
+        (True, True, False, False, False, True, False, False, True),
+        (True, True, False, False, False, True, True, False, True),
+        (False, False, True, False, False, True, True, False, True),
+        (False, False, False, True, False, True, True, False, True),
+        (False, False, False, False, True, True, True, False, True),
+        (True, True, False, False, False, False, False, False, True),
+        (False, False, True, False, False, False, False, False, True),
+        (False, False, False, True, False, False, False, False, True),
+        (False, False, False, False, True, False, False, False, True),
+        (True, True, True, True, True, True, True, False, True),
+        (True, True, True, True, True, True, False, False, True),
+        (True, True, True, True, True, False, True, False, True),
     ],
 )
-def test_connect(with_aws, with_ecs, with_pcf, with_gcp, with_azure, with_docker, with_kubernetes, with_ip):
-    global AWS, AZURE, GCP, PCF, BOOT_ID, DOCKER, KUBERNETES, IP_ADDRESS
+def test_connect(
+    with_aws, with_ecs, with_pcf, with_gcp, with_azure, with_docker, with_kubernetes, with_azurefunction, with_ip
+):
+    global AWS, AZURE, GCP, PCF, BOOT_ID, DOCKER, KUBERNETES, AZUREFUNCTION, IP_ADDRESS
     if not with_aws:
         AWS = Exception
     if not with_pcf:
@@ -378,6 +390,8 @@ def test_connect(with_aws, with_ecs, with_pcf, with_gcp, with_azure, with_docker
         DOCKER = Exception
     if not with_kubernetes:
         KUBERNETES = Exception
+    if not with_azurefunction:
+        AZUREFUNCTION = Exception
     if not with_ip:
         IP_ADDRESS = None
     settings = finalize_application_settings(
@@ -395,6 +409,7 @@ def test_connect(with_aws, with_ecs, with_pcf, with_gcp, with_azure, with_docker
             "utilization.detect_azure": with_azure,
             "utilization.detect_docker": with_docker,
             "utilization.detect_kubernetes": with_kubernetes,
+            "utilization.detect_azurefunction": with_azurefunction,
             "event_harvest_config": {
                 "harvest_limits": {
                     "analytic_event_data": ANALYTIC_EVENT_DATA,
@@ -428,6 +443,7 @@ def test_connect(with_aws, with_ecs, with_pcf, with_gcp, with_azure, with_docker
         with_ecs=with_ecs,
         with_docker=with_docker,
         with_kubernetes=with_kubernetes,
+        with_azurefunction=with_azurefunction,
     )
 
     # Verify agent_settings call is done with the finalized settings

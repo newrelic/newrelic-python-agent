@@ -21,6 +21,7 @@ from newrelic.common.agent_http import ApplicationModeClient, ServerlessModeClie
 from newrelic.common.encoding_utils import json_decode, json_encode, serverless_payload_encode
 from newrelic.common.utilization import (
     AWSUtilization,
+    AzureFunctionUtilization,
     AzureUtilization,
     DockerUtilization,
     ECSUtilization,
@@ -28,7 +29,10 @@ from newrelic.common.utilization import (
     KubernetesUtilization,
     PCFUtilization,
 )
-from newrelic.core.agent_control_health import HealthStatus, agent_control_health_instance
+from newrelic.core.agent_control_health import (
+    HealthStatus,
+    agent_control_health_instance,
+)
 from newrelic.core.attribute import truncate
 from newrelic.core.config import fetch_config_setting, finalize_application_settings, global_settings_dump
 from newrelic.core.internal_metrics import internal_count_metric
@@ -302,7 +306,7 @@ class AgentProtocol:
 
         utilization_settings = {}
         # metadata_version corresponds to the utilization spec being used.
-        utilization_settings["metadata_version"] = 5
+        utilization_settings["metadata_version"] = 6
         utilization_settings["logical_processors"] = system_info.logical_processor_count()
         utilization_settings["total_ram_mib"] = system_info.total_physical_memory()
         utilization_settings["hostname"] = hostname
@@ -342,6 +346,8 @@ class AgentProtocol:
             vendors.append(GCPUtilization)
         if settings["utilization.detect_azure"]:
             vendors.append(AzureUtilization)
+        if settings["utilization.detect_azurefunction"]:
+            vendors.append(AzureFunctionUtilization)
 
         for vendor in vendors:
             metadata = vendor.detect()

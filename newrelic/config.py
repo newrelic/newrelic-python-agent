@@ -47,7 +47,12 @@ from newrelic.core.agent_control_health import (
     agent_control_health_instance,
     agent_control_healthcheck_loop,
 )
-from newrelic.core.config import Settings, apply_config_setting, default_host, fetch_config_setting
+from newrelic.core.config import (
+    Settings,
+    apply_config_setting,
+    default_host,
+    fetch_config_setting,
+)
 
 __all__ = ["initialize", "filter_app_factory"]
 
@@ -452,6 +457,7 @@ def _process_configuration(section):
     _process_setting(section, "process_host.display_name", "get", None)
     _process_setting(section, "utilization.detect_aws", "getboolean", None)
     _process_setting(section, "utilization.detect_azure", "getboolean", None)
+    _process_setting(section, "utilization.detect_azurefunction", "getboolean", None)
     _process_setting(section, "utilization.detect_docker", "getboolean", None)
     _process_setting(section, "utilization.detect_kubernetes", "getboolean", None)
     _process_setting(section, "utilization.detect_gcp", "getboolean", None)

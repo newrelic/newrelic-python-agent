@@ -157,7 +157,7 @@ class AWSUtilization(CommonUtilization):
     EXPECTED_KEYS = ("availabilityZone", "instanceId", "instanceType")
     METADATA_HOST = "169.254.169.254"
     METADATA_PATH = "/latest/dynamic/instance-identity/document"
-    METADATA_TOKEN_PATH = "/latest/api/token"
+    METADATA_TOKEN_PATH = "/latest/api/token"  # nosec: B105
     HEADERS = {"X-aws-ec2-metadata-token-ttl-seconds": "21600"}
     VENDOR_NAME = "aws"
 
@@ -181,7 +181,7 @@ class AWSUtilization(CommonUtilization):
     def fetch(cls):
         try:
             authToken = cls.fetchAuthToken()
-            if authToken == None:
+            if authToken is None:
                 return
             cls.HEADERS = {"X-aws-ec2-metadata-token": authToken}
             with cls.CLIENT_CLS(cls.METADATA_HOST, timeout=cls.FETCH_TIMEOUT) as client:
@@ -205,6 +205,46 @@ class AzureUtilization(CommonUtilization):
     EXPECTED_KEYS = ("location", "name", "vmId", "vmSize")
     HEADERS = {"Metadata": "true"}
     VENDOR_NAME = "azure"
+
+
+class AzureFunctionUtilization(CommonUtilization):
+    METADATA_HOST = "169.254.169.254"
+    METADATA_PATH = "/metadata/instance/compute"
+    METADATA_QUERY = {"api-version": "2017-03-01"}
+    EXPECTED_KEYS = ("faas_app_name", "cloud_region")
+    HEADERS = {"Metadata": "true"}
+    VENDOR_NAME = "azurefunction"
+
+    SUBSCRIPTION_ID_RE = re.compile(r"^[^\+]")  # Take everything prior to the first plus sign
+    RESOURCE_GROUP_NAME_PATTERN = r"\+([a-zA-Z0-9\-]+)-[a-zA-Z0-9]+(?:-Linux)?"
+
+    @staticmethod
+    def fetch(cls):
+        cloud_region = os.environ.get("REGION_NAME", "")
+
+        website_owner_name = os.environ.get("WEBSITE_OWNER_NAME", "")
+        subscription_id = cls.SUBSCRIPTION_ID_RE.match(website_owner_name)
+        resource_group_name = os.environ.get(
+            "WEBSITE_RESOURCE_GROUP", re.search(cls.RESOURCE_GROUP_NAME_PATTERN, website_owner_name).group(0)
+        )
+        azure_function_app_name = os.environ.get("WEBSITE_SITE_NAME", "")
+        faas_app_name = "/subscriptions/{0}/resourceGroups/{1}/providers/Microsoft.Web/sites/{2}".format(
+            subscription_id, resource_group_name, azure_function_app_name
+        )
+
+        return (faas_app_name, cloud_region)
+
+    @classmethod
+    def get_values(cls, response):
+        if response is None or len(response) != 2:
+            return
+
+        values = {}
+        for k, v in zip(cls.EXPECTED_KEYS, response):
+            if hasattr(v, "decode"):
+                v = v.decode("utf-8")
+            values[k] = v
+        return values
 
 
 class GCPUtilization(CommonUtilization):

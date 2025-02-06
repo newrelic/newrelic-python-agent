@@ -59,13 +59,14 @@ def extract_sqs(*args, **kwargs):
 
 
 def extract_kinesis(*args, **kwargs):
-    # The stream name can be passed as the StreamName or as part of the StreamARN.
-    stream_value = kwargs.get("StreamName", None)
-    if stream_value is None:
-        arn = kwargs.get("StreamARN", None)
-        if arn is not None:
-            stream_value = arn.split("/", 1)[-1]
-    return stream_value
+    # The stream name can be passed as the StreamName or as part of the StreamARN, ResourceARN, or ConsumerARN.
+    stream_name = kwargs.get("StreamName", None)
+    if stream_name is not None:
+        return stream_name
+
+    arn = kwargs.get("StreamARN", None) or kwargs.get("ResourceARN", None) or kwargs.get("ConsumerARN", None)
+    if arn is not None:
+        return arn.split("/")[1]
 
 
 def extract_firehose(*args, **kwargs):
@@ -90,16 +91,18 @@ def extract_sqs_agent_attrs(instance, *args, **kwargs):
 
 
 def extract_kinesis_agent_attrs(instance, *args, **kwargs):
-    # Try to capture AWS Kinesis ARN from the StreamARN parameter or by generating the ARN from various discoverable
-    # info. Log any exception to debug.
+    # Try to capture AWS Kinesis ARN from the StreamARN, ConsumerARN, or ResourceARN parameters, or by generating the
+    # ARN from various discoverable info. Log any exception to debug.
     agent_attrs = {}
     try:
         stream_arn = kwargs.get("StreamARN", None)
-        if stream_arn:
+        if stream_arn is not None:
             agent_attrs["cloud.platform"] = "aws_kinesis_data_streams"
             agent_attrs["cloud.resource_id"] = stream_arn
-        else:
-            stream_name = kwargs.get("StreamName", None)
+            return agent_attrs
+
+        stream_name = kwargs.get("StreamName", None)
+        if stream_name is not None:
             transaction = current_transaction()
             settings = transaction.settings if transaction.settings else global_settings()
             account_id = settings.cloud.aws.account_id if settings and settings.cloud.aws.account_id else None
@@ -109,6 +112,14 @@ def extract_kinesis_agent_attrs(instance, *args, **kwargs):
             if stream_name and account_id and region:
                 agent_attrs["cloud.platform"] = "aws_kinesis_data_streams"
                 agent_attrs["cloud.resource_id"] = f"arn:aws:kinesis:{region}:{account_id}:stream/{stream_name}"
+
+        resource_arn = kwargs.get("ResourceARN", None) or kwargs.get("ConsumerARN", None)
+        if resource_arn is not None:
+            # Extract just the StreamARN out of ConsumerARNs.
+            agent_attrs["cloud.resource_id"] = "/".join(resource_arn.split("/")[0:2])
+            agent_attrs["cloud.platform"] = "aws_kinesis_data_streams"
+            return agent_attrs
+
     except Exception as e:
         _logger.debug("Failed to capture AWS Kinesis info.", exc_info=True)
     return agent_attrs
@@ -1178,7 +1189,9 @@ CUSTOM_TRACE_POINTS = {
         extract_agent_attrs=extract_kinesis_agent_attrs,
         library="Kinesis",
     ),
-    ("kinesis", "delete_resource_policy"): aws_function_trace("delete_resource_policy", library="Kinesis"),
+    ("kinesis", "delete_resource_policy"): aws_function_trace(
+        "delete_resource_policy", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
     ("kinesis", "delete_stream"): aws_function_trace(
         "delete_stream", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
@@ -1210,7 +1223,9 @@ CUSTOM_TRACE_POINTS = {
         extract_agent_attrs=extract_kinesis_agent_attrs,
         library="Kinesis",
     ),
-    ("kinesis", "get_resource_policy"): aws_function_trace("get_resource_policy", library="Kinesis"),
+    ("kinesis", "get_resource_policy"): aws_function_trace(
+        "get_resource_policy", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
     ("kinesis", "get_shard_iterator"): aws_function_trace(
         "get_shard_iterator", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
@@ -1233,7 +1248,9 @@ CUSTOM_TRACE_POINTS = {
     ("kinesis", "merge_shards"): aws_function_trace(
         "merge_shards", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
-    ("kinesis", "put_resource_policy"): aws_function_trace("put_resource_policy", library="Kinesis"),
+    ("kinesis", "put_resource_policy"): aws_function_trace(
+        "put_resource_policy", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
     ("kinesis", "register_stream_consumer"): aws_function_trace(
         "register_stream_consumer", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
@@ -1249,7 +1266,9 @@ CUSTOM_TRACE_POINTS = {
     ("kinesis", "stop_stream_encryption"): aws_function_trace(
         "stop_stream_encryption", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
-    ("kinesis", "subscribe_to_shard"): aws_function_trace("subscribe_to_shard", library="Kinesis"),
+    ("kinesis", "subscribe_to_shard"): aws_function_trace(
+        "subscribe_to_shard", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
     ("kinesis", "update_shard_count"): aws_function_trace(
         "update_shard_count", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),

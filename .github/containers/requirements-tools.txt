@@ -1,6 +1,2 @@
-bandit
-black
-flake8
-flynt
-isort
+ruff
 tox

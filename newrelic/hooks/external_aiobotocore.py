@@ -162,7 +162,6 @@ async def wrap_client__make_api_call(wrapped, instance, args, kwargs):
         ft.__exit__(None, None, None)
         bedrock_attrs["duration"] = ft.duration * 1000
         response["body"] = StreamingBody(AsyncBytesIO(response_body), len(response_body))
-        # response_body = await response["body"].read()
 
         # Run response extractor for non-streaming responses
         try:

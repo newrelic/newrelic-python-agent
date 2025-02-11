@@ -17,6 +17,7 @@ import logging
 import socket
 import threading
 
+import pytest
 import moto.server
 import werkzeug.serving
 from testing_support.fixture.event_loop import (  # noqa: F401, pylint: disable=W0611
@@ -26,6 +27,14 @@ from testing_support.fixtures import (  # noqa: F401, pylint: disable=W0611
     collector_agent_registration_fixture,
     collector_available_fixture,
 )
+
+from newrelic.common.package_version_utils import (
+    get_package_version,
+    get_package_version_tuple,
+)
+from external_botocore._mock_external_bedrock_server import MockExternalBedrockServer, extract_shortened_prompt
+
+BOTOCORE_VERSION = get_package_version("botocore")
 
 PORT = 4443
 AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"
@@ -150,3 +159,37 @@ class MotoService:
             self._server.shutdown()
 
         self._thread.join()
+
+
+# Bedrock Fixtures
+@pytest.fixture(scope="session")
+def bedrock_server(loop):
+    """
+    This fixture will create a mocked backend for testing purposes.
+    """
+    import aiobotocore
+
+    from newrelic.core.config import _environ_as_bool
+
+    if get_package_version_tuple("botocore") < (1, 31, 57):
+        pytest.skip(reason="Bedrock Runtime not available.")
+
+    if _environ_as_bool("NEW_RELIC_TESTING_RECORD_BEDROCK_RESPONSES", False):
+        raise NotImplementedError("To record test responses, use botocore instead.")
+
+    # Use mocked Bedrock backend and prerecorded responses
+    with MockExternalBedrockServer() as server:
+        session = aiobotocore.session.get_session()
+        client = loop.run_until_complete(
+            session.create_client(
+                "bedrock-runtime",
+                "us-east-1",
+                endpoint_url=f"http://localhost:{server.port}",
+                aws_access_key_id="NOT-A-REAL-SECRET",
+                aws_secret_access_key="NOT-A-REAL-SECRET",
+            ).__aenter__()
+        )
+
+        yield client
+
+        loop.run_until_complete(client.__aexit__(None, None, None))

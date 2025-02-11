@@ -252,7 +252,7 @@ def test_web_socket(uri, name, app):
     _test()
 
 
-LOOP_TIME_METRICS = (("EventLoop/Wait/" "WebTransaction/Function/_target_application:BlockingHandler.get", 1),)
+LOOP_TIME_METRICS = (("EventLoop/Wait/WebTransaction/Function/_target_application:BlockingHandler.get", 1),)
 
 
 @pytest.mark.parametrize("yield_before_finish", (True, False))

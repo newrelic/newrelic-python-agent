@@ -1,3 +1,4 @@
+
 # Copyright 2010 New Relic, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -141,9 +142,9 @@ def extract_firehose_agent_attrs(instance, *args, **kwargs):
                 region = instance._client_config.region_name
             if account_id and region:
                 agent_attrs["cloud.platform"] = "aws_kinesis_delivery_streams"
-                agent_attrs["cloud.resource_id"] = (
-                    f"arn:aws:firehose:{region}:{account_id}:deliverystream/{stream_name}"
-                )
+                agent_attrs[
+                    "cloud.resource_id"
+                ] = f"arn:aws:firehose:{region}:{account_id}:deliverystream/{stream_name}"
     except Exception as e:
         _logger.debug("Failed to capture AWS Kinesis Delivery Stream (Firehose) info.", exc_info=True)
     return agent_attrs
@@ -547,7 +548,9 @@ MODEL_EXTRACTORS = [  # Order is important here, avoiding dictionaries
 ]
 
 
-def handle_bedrock_exception(exc, is_embedding, model, span_id, trace_id, request_extractor, request_body, ft, transaction):
+def handle_bedrock_exception(
+    exc, is_embedding, model, span_id, trace_id, request_extractor, request_body, ft, transaction
+):
     try:
         bedrock_attrs = {
             "model": model,
@@ -678,6 +681,8 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
         instance._nr_stream_extractor = stream_extractor
         instance._nr_txn = transaction
         instance._nr_ft = ft
+        instance._nr_response_streaming = response_streaming
+        instance._nr_settings = settings
 
         # Add a bedrock flag to instance so we can determine when make_api_call instrumentation is hit from non-Bedrock paths and bypass it if so
         instance._nr_is_bedrock = True
@@ -686,7 +691,9 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
             # For aioboto3 clients, this will call make_api_call instrumentation in external_aiobotocore
             response = wrapped(*args, **kwargs)
         except Exception as exc:
-            handle_bedrock_exception(exc, is_embedding, model, span_id, trace_id, request_extractor, request_body, ft, transaction)
+            handle_bedrock_exception(
+                exc, is_embedding, model, span_id, trace_id, request_extractor, request_body, ft, transaction
+            )
 
         if not response or response_streaming and not settings.ai_monitoring.streaming.enabled:
             ft.__exit__(None, None, None)
@@ -775,6 +782,42 @@ class GeneratorProxy(ObjectProxy):
 
     def close(self):
         return super(GeneratorProxy, self).close()
+
+
+class AsyncEventStreamWrapper(ObjectProxy):
+    def __aiter__(self):
+        g = AsyncGeneratorProxy(self.__wrapped__.__aiter__())
+        g._nr_ft = getattr(self, "_nr_ft", None)
+        g._nr_bedrock_attrs = getattr(self, "_nr_bedrock_attrs", {})
+        g._nr_model_extractor = getattr(self, "_nr_model_extractor", NULL_EXTRACTOR)
+        return g
+
+
+class AsyncGeneratorProxy(ObjectProxy):
+    def __init__(self, wrapped):
+        super(AsyncGeneratorProxy, self).__init__(wrapped)
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        transaction = current_transaction()
+        if not transaction:
+            return await self.__wrapped__.__anext__()
+        return_val = None
+        try:
+            return_val = await self.__wrapped__.__anext__()
+            record_stream_chunk(self, return_val, transaction)
+        except StopAsyncIteration as e:
+            record_events_on_stop_iteration(self, transaction)
+            raise
+        except Exception as exc:
+            record_error(self, transaction, exc)
+            raise
+        return return_val
+
+    async def aclose(self):
+        return await super(AsyncGeneratorProxy, self).aclose()
 
 
 def record_stream_chunk(self, return_val, transaction):

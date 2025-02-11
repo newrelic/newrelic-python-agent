@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import json
+import inspect
 import logging
 import re
 import sys
@@ -478,7 +479,6 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
     def _wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
         # Wrapped function only takes keyword arguments, no need for binding
         transaction = current_transaction()
-
         if not transaction:
             return wrapped(*args, **kwargs)
 
@@ -531,6 +531,13 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
         span_id = available_metadata.get("span.id")
         trace_id = available_metadata.get("trace.id")
 
+        # Store data on instance to pass context to async instrumentation
+        instance._nr_trace_id = trace_id
+        instance._nr_span_id = span_id
+        instance._nr_request_extractor = request_extractor
+        instance._nr_response_extractor = response_extractor
+        instance._nr_stream_extractor = stream_extractor
+        instance._txn = transaction
         try:
             response = wrapped(*args, **kwargs)
         except Exception as exc:
@@ -585,6 +592,10 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
             # if this becomes available.
             _logger.warning(EMBEDDING_STREAMING_UNSUPPORTED_LOG_MESSAGE)
             ft.__exit__(None, None, None)
+            return response
+
+        # Let the instrumentation of make_api_call in the aioboto3 client handle it if we have an async case
+        if inspect.iscoroutine(response):
             return response
 
         response_headers = response.get("ResponseMetadata", {}).get("HTTPHeaders") or {}
@@ -791,7 +802,6 @@ def handle_chat_completion_event(transaction, bedrock_attrs):
     llm_context_attrs = getattr(transaction, "_llm_context_attrs", None)
     if llm_context_attrs:
         llm_metadata_dict.update(llm_context_attrs)
-
     span_id = bedrock_attrs.get("span_id", None)
     trace_id = bedrock_attrs.get("trace_id", None)
     request_id = bedrock_attrs.get("request_id", None)
@@ -936,9 +946,9 @@ def dynamodb_datastore_trace(
                     partition = "aws-us-gov"
 
             if partition and region and account_id and _target:
-                agent_attrs["cloud.resource_id"] = (
-                    f"arn:{partition}:dynamodb:{region}:{account_id:012d}:table/{_target}"
-                )
+                agent_attrs[
+                    "cloud.resource_id"
+                ] = f"arn:{partition}:dynamodb:{region}:{account_id:012d}:table/{_target}"
                 agent_attrs["db.system"] = "DynamoDB"
 
         except Exception as e:

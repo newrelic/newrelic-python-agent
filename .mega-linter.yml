@@ -13,11 +13,8 @@ FILTER_REGEX_EXCLUDE: "(.*/?packages/.*)" # Ignore packages directories
 ENABLE_LINTERS: # If you use ENABLE_LINTERS variable, all other linters will be disabled by default
   - MARKDOWN_MARKDOWN_LINK_CHECK
   - MARKDOWN_MARKDOWNLINT
-  - PYTHON_BANDIT
-  - PYTHON_BLACK
-  - PYTHON_FLAKE8
-  - PYTHON_ISORT
-  - PYTHON_PYLINT
+  - PYTHON_RUFF
+  - PYTHON_RUFF_FORMAT
   - RST_RST_LINT
   - RST_RSTCHECK
   - RST_RSTFMT
@@ -25,14 +22,5 @@ ENABLE_LINTERS: # If you use ENABLE_LINTERS variable, all other linters will be 
   - YAML_V8R
   - YAML_YAMLLINT
 
-PYTHON_FLAKE8_CONFIG_FILE: setup.cfg
-PYTHON_BLACK_CONFIG_FILE: pyproject.toml
-PYTHON_PYLINT_CONFIG_FILE: pyproject.toml
-PYTHON_ISORT_CONFIG_FILE: pyproject.toml
-PYTHON_BANDIT_CONFIG_FILE: pyproject.toml
-PYTHON_BANDIT_FILTER_REGEX_EXCLUDE: "tests"
-PYTHON_BANDIT_PRE_COMMANDS:
-  - command: "pip install bandit[toml]"
-    cwd: "workspace"
-
-PYTHON_PYLINT_ARGUMENTS: "--fail-under=0 --fail-on=E"
+PYTHON_RUFF_CONFIG_FILE: pyproject.toml
+PYTHON_RUFF_FORMAT_CONFIG_FILE: pyproject.toml

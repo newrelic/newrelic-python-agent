@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import uuid
 
 import boto3
@@ -80,5 +81,6 @@ def test_s3_context_propagation():
     assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     # Upload file
-    client.upload_file(Filename="_test_file.txt", Bucket=TEST_BUCKET, Key="_test_file.txt")
+    test_file = os.path.join(os.path.dirname(__file__), "_test_file.txt")
+    client.upload_file(Filename=test_file, Bucket=TEST_BUCKET, Key="_test_file.txt")
     # No return value to check for this function currently

@@ -16,9 +16,7 @@ import pytest
 from sklearn.decomposition import TruncatedSVD
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
@@ -26,13 +24,7 @@ from newrelic.common.package_version_utils import get_package_version_tuple
 SKLEARN_VERSION = get_package_version_tuple("sklearn")
 
 
-@pytest.mark.parametrize(
-    "pipeline_model_name",
-    [
-        "Pipeline",
-        "FeatureUnion",
-    ],
-)
+@pytest.mark.parametrize("pipeline_model_name", ["Pipeline", "FeatureUnion"])
 def test_model_methods_wrapped_in_function_trace(pipeline_model_name, run_pipeline_model):
     expected_scoped_metrics = {
         "Pipeline": [

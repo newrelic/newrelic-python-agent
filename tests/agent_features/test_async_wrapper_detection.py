@@ -29,9 +29,7 @@ from newrelic.api.message_trace import message_trace
 from newrelic.common.async_wrapper import generator_wrapper
 
 from testing_support.fixtures import capture_transaction_metrics
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 trace_metric_cases = [
     (functools.partial(function_trace, name="simple_gen"), "Function/simple_gen"),
@@ -52,7 +50,10 @@ def test_automatic_generator_trace_wrapper(trace, metric):
 
     @capture_transaction_metrics(metrics, full_metrics)
     @validate_transaction_metrics(
-        "test_automatic_generator_trace_wrapper", background_task=True, scoped_metrics=[(metric, 1)], rollup_metrics=[(metric, 1)]
+        "test_automatic_generator_trace_wrapper",
+        background_task=True,
+        scoped_metrics=[(metric, 1)],
+        rollup_metrics=[(metric, 1)],
     )
     @background_task(name="test_automatic_generator_trace_wrapper")
     def _test():
@@ -79,17 +80,22 @@ def test_manual_generator_trace_wrapper(trace, metric):
 
     @capture_transaction_metrics(metrics, full_metrics)
     @validate_transaction_metrics(
-        "test_automatic_generator_trace_wrapper", background_task=True, scoped_metrics=[(metric, 1)], rollup_metrics=[(metric, 1)]
+        "test_automatic_generator_trace_wrapper",
+        background_task=True,
+        scoped_metrics=[(metric, 1)],
+        rollup_metrics=[(metric, 1)],
     )
     @background_task(name="test_automatic_generator_trace_wrapper")
     def _test():
         @trace(async_wrapper=generator_wrapper)
         def wrapper_func():
             """Function that returns a generator object, obscuring the automatic introspection of async_wrapper()"""
+
             def gen():
                 time.sleep(0.1)
                 yield
                 time.sleep(0.1)
+
             return gen()
 
         for _ in wrapper_func():

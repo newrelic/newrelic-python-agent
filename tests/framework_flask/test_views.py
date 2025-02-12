@@ -16,15 +16,9 @@ from conftest import (  # pylint: disable=E0611
     async_handler_support,
     skip_if_not_async_handler_support,
 )
-from testing_support.validators.validate_code_level_metrics import (
-    validate_code_level_metrics,
-)
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 scoped_metrics = [
     ("Function/flask.app:Flask.wsgi_app", 1),

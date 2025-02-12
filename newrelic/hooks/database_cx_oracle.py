@@ -24,9 +24,7 @@ class SessionPoolProxy(ObjectProxy):
         self._nr_dbapi2_module = dbapi2_module
 
     def acquire(self, *args, **kwargs):
-        return ConnectionFactory(
-                self.__wrapped__.acquire,
-                self._nr_dbapi2_module)(*args, **kwargs)
+        return ConnectionFactory(self.__wrapped__.acquire, self._nr_dbapi2_module)(*args, **kwargs)
 
     def drop(self, connection, *args, **kwargs):
         if isinstance(connection, ObjectProxy):
@@ -42,7 +40,6 @@ class SessionPoolProxy(ObjectProxy):
 
 
 class CreateSessionPoolProxy(ObjectProxy):
-
     def __init__(self, pool_init, dbapi2_module):
         super(CreateSessionPoolProxy, self).__init__(pool_init)
         self._nr_dbapi2_module = dbapi2_module
@@ -53,8 +50,7 @@ class CreateSessionPoolProxy(ObjectProxy):
 
 
 def instrument_cx_oracle(module):
-    register_database_client(module, database_product='Oracle',
-            quoting_style='single+oracle')
+    register_database_client(module, database_product="Oracle", quoting_style="single+oracle")
 
-    wrap_object(module, 'connect', ConnectionFactory, (module,))
-    wrap_object(module, 'SessionPool', CreateSessionPoolProxy, (module,))
+    wrap_object(module, "connect", ConnectionFactory, (module,))
+    wrap_object(module, "SessionPool", CreateSessionPoolProxy, (module,))

@@ -20,7 +20,6 @@ from newrelic.api.time_trace import notice_error
 
 
 def _nr_wrap_handle_exception(wrapped, instance, args, kwargs):
-
     response = wrapped(*args, **kwargs)
 
     notice_error(status_code=response.status_code)
@@ -34,16 +33,16 @@ def outer_fn_wrapper(outer_fn, instance, args, kwargs):
     meta = getattr(instance, "_meta", None)
 
     if meta is None:
-        group = 'Python/TastyPie/Api'
+        group = "Python/TastyPie/Api"
         name = instance.api_name
-        callback = getattr(instance, 'top_level', None)
+        callback = getattr(instance, "top_level", None)
     elif meta.api_name is not None:
-        group = 'Python/TastyPie/Api'
-        name = f'{meta.api_name}/{meta.resource_name}/{view_name}'
+        group = "Python/TastyPie/Api"
+        name = f"{meta.api_name}/{meta.resource_name}/{view_name}"
         callback = getattr(instance, view_name, None)
     else:
-        group = 'Python/TastyPie/Resource'
-        name = f'{meta.resource_name}/{view_name}'
+        group = "Python/TastyPie/Resource"
+        name = f"{meta.resource_name}/{view_name}"
         callback = getattr(instance, view_name, None)
 
     # Give preference to naming web transaction and trace node after
@@ -74,7 +73,7 @@ def outer_fn_wrapper(outer_fn, instance, args, kwargs):
 def instrument_tastypie_resources(module):
     wrap_function_wrapper(module, "Resource.wrap_view", outer_fn_wrapper)
 
-    wrap_function_wrapper(module, 'Resource._handle_500', _nr_wrap_handle_exception)
+    wrap_function_wrapper(module, "Resource._handle_500", _nr_wrap_handle_exception)
 
 
 def instrument_tastypie_api(module):

@@ -17,9 +17,7 @@ from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     collector_agent_registration_fixture,
     collector_available_fixture,
 )
-from testing_support.mock_external_http_server import (
-    MockExternalHTTPHResponseHeadersServer,
-)
+from testing_support.mock_external_http_server import MockExternalHTTPHResponseHeadersServer
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.

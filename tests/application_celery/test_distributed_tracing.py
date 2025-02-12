@@ -14,12 +14,8 @@
 
 from _target_application import add, assert_dt
 from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_transaction_count import (
-    validate_transaction_count,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_count import validate_transaction_count
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
@@ -35,8 +31,7 @@ from newrelic.api.background_task import background_task
     index=-2,
 )
 @validate_transaction_metrics(
-    name="test_distributed_tracing:test_celery_task_distributed_tracing_enabled",
-    background_task=True,
+    name="test_distributed_tracing:test_celery_task_distributed_tracing_enabled", background_task=True
 )
 @validate_transaction_count(2)
 @background_task()
@@ -58,8 +53,7 @@ def test_celery_task_distributed_tracing_enabled():
     index=-2,
 )
 @validate_transaction_metrics(
-    name="test_distributed_tracing:test_celery_task_distributed_tracing_disabled",
-    background_task=True,
+    name="test_distributed_tracing:test_celery_task_distributed_tracing_disabled", background_task=True
 )
 @validate_transaction_count(2)
 @background_task()

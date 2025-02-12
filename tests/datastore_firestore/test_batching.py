@@ -13,15 +13,9 @@
 # limitations under the License.
 
 import pytest
-from testing_support.validators.validate_database_duration import (
-    validate_database_duration,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
-from testing_support.validators.validate_tt_collector_json import (
-    validate_tt_collector_json,
-)
+from testing_support.validators.validate_database_duration import validate_database_duration
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_tt_collector_json import validate_tt_collector_json
 
 from newrelic.api.background_task import background_task
 
@@ -42,9 +36,7 @@ def exercise_write_batch(client, collection):
 
 
 def test_firestore_write_batch(exercise_write_batch, instance_info):
-    _test_scoped_metrics = [
-        ("Datastore/operation/Firestore/commit", 1),
-    ]
+    _test_scoped_metrics = [("Datastore/operation/Firestore/commit", 1)]
 
     _test_rollup_metrics = [
         ("Datastore/all", 1),
@@ -94,9 +86,7 @@ def exercise_bulk_write_batch(client, collection):
 
 
 def test_firestore_bulk_write_batch(exercise_bulk_write_batch, instance_info):
-    _test_scoped_metrics = [
-        ("Datastore/operation/Firestore/commit", 1),
-    ]
+    _test_scoped_metrics = [("Datastore/operation/Firestore/commit", 1)]
 
     _test_rollup_metrics = [
         ("Datastore/all", 1),

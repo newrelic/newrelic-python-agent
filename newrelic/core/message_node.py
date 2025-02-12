@@ -19,18 +19,30 @@ import newrelic.core.trace_node
 from newrelic.core.node_mixin import GenericNodeMixin
 from newrelic.core.metric import TimeMetric
 
-_MessageNode = namedtuple('_MessageNode',
-        ['library', 'operation', 'children', 'start_time',
-        'end_time', 'duration', 'exclusive', 'destination_name',
-        'destination_type', 'params', 'guid',
-        'agent_attributes', 'user_attributes'])
+_MessageNode = namedtuple(
+    "_MessageNode",
+    [
+        "library",
+        "operation",
+        "children",
+        "start_time",
+        "end_time",
+        "duration",
+        "exclusive",
+        "destination_name",
+        "destination_type",
+        "params",
+        "guid",
+        "agent_attributes",
+        "user_attributes",
+    ],
+)
 
 
 class MessageNode(_MessageNode, GenericNodeMixin):
-
     @property
     def name(self):
-        name = f'MessageBroker/{self.library}/{self.destination_type}/{self.operation}/Named/{self.destination_name}'
+        name = f"MessageBroker/{self.library}/{self.destination_type}/{self.operation}/Named/{self.destination_name}"
         return name
 
     def time_metrics(self, stats, root, parent):
@@ -42,13 +54,11 @@ class MessageNode(_MessageNode, GenericNodeMixin):
 
         # Unscoped metric
 
-        yield TimeMetric(name=name, scope='',
-                duration=self.duration, exclusive=self.exclusive)
+        yield TimeMetric(name=name, scope="", duration=self.duration, exclusive=self.exclusive)
 
         # Scoped metric
 
-        yield TimeMetric(name=name, scope=root.path,
-                duration=self.duration, exclusive=self.exclusive)
+        yield TimeMetric(name=name, scope=root.path, duration=self.duration, exclusive=self.exclusive)
 
         # Now for the children, if the trace is not terminal.
 
@@ -66,9 +76,8 @@ class MessageNode(_MessageNode, GenericNodeMixin):
 
         root.trace_node_count += 1
 
-        params = self.get_trace_segment_params(
-                root.settings, params=self.params)
+        params = self.get_trace_segment_params(root.settings, params=self.params)
 
-        return newrelic.core.trace_node.TraceNode(start_time=start_time,
-                end_time=end_time, name=name, params=params, children=children,
-                label=None)
+        return newrelic.core.trace_node.TraceNode(
+            start_time=start_time, end_time=end_time, name=name, params=params, children=children, label=None
+        )

@@ -13,25 +13,15 @@
 # limitations under the License.
 
 import pytest
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
 
-@pytest.mark.parametrize(
-    "cross_decomposition_model_name",
-    [
-        "PLSRegression",
-        "PLSSVD",
-    ],
-)
+@pytest.mark.parametrize("cross_decomposition_model_name", ["PLSRegression", "PLSSVD"])
 def test_model_methods_wrapped_in_function_trace(cross_decomposition_model_name, run_cross_decomposition_model):
     expected_scoped_metrics = {
-        "PLSRegression": [
-            ("Function/MLModel/Sklearn/Named/PLSRegression.fit", 1),
-        ],
+        "PLSRegression": [("Function/MLModel/Sklearn/Named/PLSRegression.fit", 1)],
         "PLSSVD": [
             ("Function/MLModel/Sklearn/Named/PLSSVD.fit", 1),
             ("Function/MLModel/Sklearn/Named/PLSSVD.transform", 1),

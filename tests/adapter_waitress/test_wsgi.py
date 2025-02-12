@@ -18,12 +18,8 @@ from testing_support.fixtures import (
     raise_background_exceptions,
     wait_for_background_threads,
 )
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.common.package_version_utils import get_package_version
 
@@ -33,10 +29,7 @@ WAITRESS_VERSION = get_package_version("waitress")
 @override_application_settings({"transaction_name.naming_scheme": "framework"})
 def test_wsgi_application_index(target_application):
     @validate_transaction_metrics(
-        "_application:sample_application",
-        custom_metrics=[
-            (f"Python/Dispatcher/Waitress/{WAITRESS_VERSION}", 1),
-        ],
+        "_application:sample_application", custom_metrics=[(f"Python/Dispatcher/Waitress/{WAITRESS_VERSION}", 1)]
     )
     @raise_background_exceptions()
     @wait_for_background_threads()
@@ -51,10 +44,7 @@ def test_wsgi_application_index(target_application):
 def test_raise_exception_application(target_application):
     @validate_transaction_errors(["builtins:RuntimeError"])
     @validate_transaction_metrics(
-        "_application:sample_application",
-        custom_metrics=[
-            (f"Python/Dispatcher/Waitress/{WAITRESS_VERSION}", 1),
-        ],
+        "_application:sample_application", custom_metrics=[(f"Python/Dispatcher/Waitress/{WAITRESS_VERSION}", 1)]
     )
     @raise_background_exceptions()
     @wait_for_background_threads()
@@ -69,10 +59,7 @@ def test_raise_exception_application(target_application):
 def test_raise_exception_response(target_application):
     @validate_transaction_errors(["builtins:RuntimeError"])
     @validate_transaction_metrics(
-        "_application:sample_application",
-        custom_metrics=[
-            (f"Python/Dispatcher/Waitress/{WAITRESS_VERSION}", 1),
-        ],
+        "_application:sample_application", custom_metrics=[(f"Python/Dispatcher/Waitress/{WAITRESS_VERSION}", 1)]
     )
     @raise_background_exceptions()
     @wait_for_background_threads()
@@ -87,10 +74,7 @@ def test_raise_exception_response(target_application):
 def test_raise_exception_finalize(target_application):
     @validate_transaction_errors(["builtins:RuntimeError"])
     @validate_transaction_metrics(
-        "_application:sample_application",
-        custom_metrics=[
-            (f"Python/Dispatcher/Waitress/{WAITRESS_VERSION}", 1),
-        ],
+        "_application:sample_application", custom_metrics=[(f"Python/Dispatcher/Waitress/{WAITRESS_VERSION}", 1)]
     )
     @raise_background_exceptions()
     @wait_for_background_threads()

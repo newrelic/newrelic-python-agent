@@ -19,9 +19,7 @@ import pytest
 from conftest import DB_SETTINGS, maybe_await
 from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_database_node import validate_database_node
-from testing_support.validators.validate_transaction_slow_sql_count import (
-    validate_transaction_slow_sql_count,
-)
+from testing_support.validators.validate_transaction_slow_sql_count import validate_transaction_slow_sql_count
 
 from newrelic.api.background_task import background_task
 from newrelic.core.database_utils import SQLConnections
@@ -94,12 +92,7 @@ WITHHOLD = (True, False)
 
 @pytest.mark.parametrize("withhold", WITHHOLD)
 @pytest.mark.parametrize("scrollable", SCROLLABLE)
-@override_application_settings(
-    {
-        "transaction_tracer.explain_threshold": 0.0,
-        "transaction_tracer.record_sql": "raw",
-    }
-)
+@override_application_settings({"transaction_tracer.explain_threshold": 0.0, "transaction_tracer.record_sql": "raw"})
 @validate_database_node(explain_plan_is_not_none)
 @validate_transaction_slow_sql_count(1)
 @background_task(name="test_explain_plan_unnamed_cursors")
@@ -117,19 +110,12 @@ def test_explain_plan_unnamed_cursors(loop, connection, withhold, scrollable):
 
 @pytest.mark.parametrize("withhold", WITHHOLD)
 @pytest.mark.parametrize("scrollable", SCROLLABLE)
-@override_application_settings(
-    {
-        "transaction_tracer.explain_threshold": 0.0,
-        "transaction_tracer.record_sql": "raw",
-    }
-)
+@override_application_settings({"transaction_tracer.explain_threshold": 0.0, "transaction_tracer.record_sql": "raw"})
 @validate_database_node(explain_plan_is_not_none)
 @validate_transaction_slow_sql_count(1)
 @background_task(name="test_explain_plan_named_cursors")
 def test_explain_plan_named_cursors(loop, connection, withhold, scrollable):
-    cursor_kwargs = {
-        "name": "test_explain_plan_named_cursors",
-    }
+    cursor_kwargs = {"name": "test_explain_plan_named_cursors"}
 
     if withhold:
         cursor_kwargs["withhold"] = withhold
@@ -156,12 +142,7 @@ def test_explain_plan_named_cursors(loop, connection, withhold, scrollable):
         (CustomAsyncConnection, CustomAsyncCursor),
     ],
 )
-@override_application_settings(
-    {
-        "transaction_tracer.explain_threshold": 0.0,
-        "transaction_tracer.record_sql": "raw",
-    }
-)
+@override_application_settings({"transaction_tracer.explain_threshold": 0.0, "transaction_tracer.record_sql": "raw"})
 def test_explain_plan_on_custom_classes(loop, connection_cls, cursor_cls):
     @validate_database_node(explain_plan_is_not_none)
     @validate_transaction_slow_sql_count(1)

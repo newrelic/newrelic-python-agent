@@ -15,11 +15,7 @@
 
 import openai
 import pytest
-from testing_support.fixtures import (
-    dt_enabled,
-    override_llm_token_callback_settings,
-    reset_core_stats_engine,
-)
+from testing_support.fixtures import dt_enabled, override_llm_token_callback_settings, reset_core_stats_engine
 from testing_support.ml_testing_utils import (  # noqa: F401
     add_token_count_to_events,
     disabled_ai_monitoring_record_content_settings,
@@ -30,13 +26,9 @@ from testing_support.ml_testing_utils import (  # noqa: F401
 )
 from testing_support.validators.validate_custom_event import validate_custom_event_count
 from testing_support.validators.validate_custom_events import validate_custom_events
-from testing_support.validators.validate_error_trace_attributes import (
-    validate_error_trace_attributes,
-)
+from testing_support.validators.validate_error_trace_attributes import validate_error_trace_attributes
 from testing_support.validators.validate_span_events import validate_span_events
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
@@ -100,17 +92,10 @@ expected_events_on_no_model_error = [
 
 @dt_enabled
 @reset_core_stats_engine()
-@validate_error_trace_attributes(
-    callable_name(TypeError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {},
-    },
-)
+@validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
 @validate_span_events(
     exact_agents={
-        "error.message": "Missing required arguments; Expected either ('messages' and 'model') or ('messages', 'model' and 'stream') arguments to be given",
+        "error.message": "Missing required arguments; Expected either ('messages' and 'model') or ('messages', 'model' and 'stream') arguments to be given"
     }
 )
 @validate_transaction_metrics(
@@ -137,17 +122,10 @@ def test_chat_completion_invalid_request_error_no_model(set_trace_info, sync_ope
 @dt_enabled
 @disabled_ai_monitoring_record_content_settings
 @reset_core_stats_engine()
-@validate_error_trace_attributes(
-    callable_name(TypeError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {},
-    },
-)
+@validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
 @validate_span_events(
     exact_agents={
-        "error.message": "Missing required arguments; Expected either ('messages' and 'model') or ('messages', 'model' and 'stream') arguments to be given",
+        "error.message": "Missing required arguments; Expected either ('messages' and 'model') or ('messages', 'model' and 'stream') arguments to be given"
     }
 )
 @validate_transaction_metrics(
@@ -172,17 +150,10 @@ def test_chat_completion_invalid_request_error_no_model_no_content(set_trace_inf
 
 @dt_enabled
 @reset_core_stats_engine()
-@validate_error_trace_attributes(
-    callable_name(TypeError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {},
-    },
-)
+@validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
 @validate_span_events(
     exact_agents={
-        "error.message": "Missing required arguments; Expected either ('messages' and 'model') or ('messages', 'model' and 'stream') arguments to be given",
+        "error.message": "Missing required arguments; Expected either ('messages' and 'model') or ('messages', 'model' and 'stream') arguments to be given"
     }
 )
 @validate_transaction_metrics(
@@ -213,17 +184,10 @@ def test_chat_completion_invalid_request_error_no_model_async(loop, set_trace_in
 @dt_enabled
 @reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
-@validate_error_trace_attributes(
-    callable_name(TypeError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {},
-    },
-)
+@validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
 @validate_span_events(
     exact_agents={
-        "error.message": "Missing required arguments; Expected either ('messages' and 'model') or ('messages', 'model' and 'stream') arguments to be given",
+        "error.message": "Missing required arguments; Expected either ('messages' and 'model') or ('messages', 'model' and 'stream') arguments to be given"
     }
 )
 @validate_transaction_metrics(
@@ -290,20 +254,9 @@ expected_events_on_invalid_model_error = [
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
     callable_name(openai.NotFoundError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
-            "error.code": "model_not_found",
-            "http.statusCode": 404,
-        },
-    },
+    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.code": "model_not_found", "http.statusCode": 404}},
 )
-@validate_span_events(
-    exact_agents={
-        "error.message": "The model `does-not-exist` does not exist",
-    }
-)
+@validate_span_events(exact_agents={"error.message": "The model `does-not-exist` does not exist"})
 @validate_transaction_metrics(
     "test_chat_completion_stream_error_v1:test_chat_completion_invalid_request_error_invalid_model",
     scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
@@ -333,20 +286,9 @@ def test_chat_completion_invalid_request_error_invalid_model(set_trace_info, syn
 @override_llm_token_callback_settings(llm_token_count_callback)
 @validate_error_trace_attributes(
     callable_name(openai.NotFoundError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
-            "error.code": "model_not_found",
-            "http.statusCode": 404,
-        },
-    },
+    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.code": "model_not_found", "http.statusCode": 404}},
 )
-@validate_span_events(
-    exact_agents={
-        "error.message": "The model `does-not-exist` does not exist",
-    }
-)
+@validate_span_events(exact_agents={"error.message": "The model `does-not-exist` does not exist"})
 @validate_transaction_metrics(
     "test_chat_completion_stream_error_v1:test_chat_completion_invalid_request_error_invalid_model_with_token_count",
     scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
@@ -377,20 +319,9 @@ def test_chat_completion_invalid_request_error_invalid_model_with_token_count(se
 @override_llm_token_callback_settings(llm_token_count_callback)
 @validate_error_trace_attributes(
     callable_name(openai.NotFoundError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
-            "error.code": "model_not_found",
-            "http.statusCode": 404,
-        },
-    },
+    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.code": "model_not_found", "http.statusCode": 404}},
 )
-@validate_span_events(
-    exact_agents={
-        "error.message": "The model `does-not-exist` does not exist",
-    }
-)
+@validate_span_events(exact_agents={"error.message": "The model `does-not-exist` does not exist"})
 @validate_transaction_metrics(
     "test_chat_completion_stream_error_v1:test_chat_completion_invalid_request_error_invalid_model_async_with_token_count",
     scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
@@ -425,20 +356,9 @@ def test_chat_completion_invalid_request_error_invalid_model_async_with_token_co
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
     callable_name(openai.NotFoundError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
-            "error.code": "model_not_found",
-            "http.statusCode": 404,
-        },
-    },
+    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.code": "model_not_found", "http.statusCode": 404}},
 )
-@validate_span_events(
-    exact_agents={
-        "error.message": "The model `does-not-exist` does not exist",
-    }
-)
+@validate_span_events(exact_agents={"error.message": "The model `does-not-exist` does not exist"})
 @validate_transaction_metrics(
     "test_chat_completion_stream_error_v1:test_chat_completion_invalid_request_error_invalid_model_async",
     scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
@@ -505,18 +425,11 @@ expected_events_on_wrong_api_key_error = [
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
     callable_name(openai.AuthenticationError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
-            "http.statusCode": 401,
-            "error.code": "invalid_api_key",
-        },
-    },
+    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"http.statusCode": 401, "error.code": "invalid_api_key"}},
 )
 @validate_span_events(
     exact_agents={
-        "error.message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys.",
+        "error.message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys."
     }
 )
 @validate_transaction_metrics(
@@ -547,18 +460,11 @@ def test_chat_completion_wrong_api_key_error(monkeypatch, set_trace_info, sync_o
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
     callable_name(openai.AuthenticationError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
-            "http.statusCode": 401,
-            "error.code": "invalid_api_key",
-        },
-    },
+    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"http.statusCode": 401, "error.code": "invalid_api_key"}},
 )
 @validate_span_events(
     exact_agents={
-        "error.message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys.",
+        "error.message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys."
     }
 )
 @validate_transaction_metrics(

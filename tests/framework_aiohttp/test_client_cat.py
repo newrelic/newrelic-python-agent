@@ -18,15 +18,9 @@ import aiohttp
 import pytest
 from testing_support.external_fixtures import create_incoming_headers
 from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_cross_process_headers import (
-    validate_cross_process_headers,
-)
-from testing_support.validators.validate_external_node_params import (
-    validate_external_node_params,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_cross_process_headers import validate_cross_process_headers
+from testing_support.validators.validate_external_node_params import validate_external_node_params
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.api.external_trace import ExternalTrace
@@ -113,10 +107,7 @@ def test_outbound_cross_process_headers(event_loop, cat_enabled, distributed_tra
 
 
 _nr_key = ExternalTrace.cat_id_key
-_customer_headers_tests = [
-    {"Test-Header": "Test Data 1"},
-    {_nr_key.title(): "Test Data 2"},
-]
+_customer_headers_tests = [{"Test-Header": "Test Data 1"}, {_nr_key.title(): "Test Data 2"}]
 
 
 @pytest.mark.parametrize("customer_headers", _customer_headers_tests)

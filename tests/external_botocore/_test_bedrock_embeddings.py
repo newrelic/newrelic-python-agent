@@ -36,7 +36,7 @@ embedding_expected_events = {
                 "vendor": "bedrock",
                 "ingest_source": "Python",
             },
-        ),
+        )
     ],
     "amazon.titan-embed-g1-text-02": [
         (
@@ -55,7 +55,7 @@ embedding_expected_events = {
                 "vendor": "bedrock",
                 "ingest_source": "Python",
             },
-        ),
+        )
     ],
     "cohere.embed-english-v3": [
         (
@@ -74,7 +74,7 @@ embedding_expected_events = {
                 "vendor": "bedrock",
                 "ingest_source": "Python",
             },
-        ),
+        )
     ],
 }
 
@@ -97,7 +97,7 @@ embedding_invalid_access_key_error_events = {
                 "ingest_source": "Python",
                 "error": True,
             },
-        ),
+        )
     ],
     "amazon.titan-embed-g1-text-02": [
         (
@@ -117,7 +117,7 @@ embedding_invalid_access_key_error_events = {
                 "ingest_source": "Python",
                 "error": True,
             },
-        ),
+        )
     ],
     "cohere.embed-english-v3": [
         (
@@ -137,7 +137,7 @@ embedding_invalid_access_key_error_events = {
                 "ingest_source": "Python",
                 "error": True,
             },
-        ),
+        )
     ],
 }
 
@@ -176,7 +176,7 @@ embedding_expected_malformed_request_body_events = [
             "ingest_source": "Python",
             "error": True,
         },
-    ),
+    )
 ]
 
 embedding_expected_malformed_response_body_events = [
@@ -196,5 +196,5 @@ embedding_expected_malformed_response_body_events = [
             "vendor": "bedrock",
             "ingest_source": "Python",
         },
-    ),
+    )
 ]

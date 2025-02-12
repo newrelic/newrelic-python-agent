@@ -22,14 +22,14 @@ class ResponseState(Enum):
     DONE = 3
 
 
-class Response():
+class Response:
     def __init__(self, status, headers, body):
         self.status = status
         self.headers = headers
         self.body = b"".join(body)
 
 
-class AsgiTest():
+class AsgiTest:
     def __init__(self, asgi_application):
         self.asgi_application = asgi_application
 
@@ -118,9 +118,9 @@ class AsgiTest():
             else:
                 assert False, "ASGI protocol error: unexpected message"
 
-        assert (
-            self.response_state is ResponseState.DONE
-        ), "ASGI protocol error: state is not DONE, expected additional messages"
+        assert self.response_state is ResponseState.DONE, (
+            "ASGI protocol error: state is not DONE, expected additional messages"
+        )
         final_headers = {k.decode("utf-8"): v.decode("utf-8") for k, v in response_headers}
         assert len(final_headers) == len(response_headers), "Duplicate header names are not supported"
         return Response(response_status, final_headers, body)

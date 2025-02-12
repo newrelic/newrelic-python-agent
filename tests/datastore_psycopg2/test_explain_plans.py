@@ -18,11 +18,8 @@ import psycopg2.extensions
 import pytest
 
 from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_database_node import (
-    validate_database_node,
-)
-from testing_support.validators.validate_transaction_slow_sql_count import (
-    validate_transaction_slow_sql_count)
+from testing_support.validators.validate_database_node import validate_database_node
+from testing_support.validators.validate_transaction_slow_sql_count import validate_transaction_slow_sql_count
 from newrelic.core.database_utils import SQLConnections
 from testing_support.util import instance_hostname
 from utils import DB_SETTINGS
@@ -30,8 +27,8 @@ from utils import DB_SETTINGS
 from newrelic.api.background_task import background_task
 
 
-_host = instance_hostname(DB_SETTINGS['host'])
-_port = DB_SETTINGS['port']
+_host = instance_hostname(DB_SETTINGS["host"])
+_port = DB_SETTINGS["port"]
 
 
 class CustomConnection(psycopg2.extensions.connection):
@@ -54,29 +51,31 @@ class CustomCursor(psycopg2.extensions.cursor):
         return super(CustomCursor, self).execute(*args, **kwargs)
 
 
-def _exercise_db(connection_factory=None, cursor_factory=None,
-        cursor_kwargs=None):
+def _exercise_db(connection_factory=None, cursor_factory=None, cursor_kwargs=None):
     cursor_kwargs = cursor_kwargs or {}
 
-    connect_kwargs = {'cursor_factory': cursor_factory}
+    connect_kwargs = {"cursor_factory": cursor_factory}
 
     if connection_factory:
-        connect_kwargs['connection_factory'] = connection_factory
+        connect_kwargs["connection_factory"] = connection_factory
 
     connection = psycopg2.connect(
-            database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
-            password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
-            port=DB_SETTINGS['port'], **connect_kwargs)
-    if hasattr(connection, 'ready'):
+        database=DB_SETTINGS["name"],
+        user=DB_SETTINGS["user"],
+        password=DB_SETTINGS["password"],
+        host=DB_SETTINGS["host"],
+        port=DB_SETTINGS["port"],
+        **connect_kwargs,
+    )
+    if hasattr(connection, "ready"):
         connection.ready = True
 
     try:
         cursor = connection.cursor(**cursor_kwargs)
-        if hasattr(cursor, 'ready'):
+        if hasattr(cursor, "ready"):
             cursor.ready = True
 
-        cursor.execute("""SELECT setting from pg_settings where name=%s""",
-                ('server_version',))
+        cursor.execute("""SELECT setting from pg_settings where name=%s""", ("server_version",))
     finally:
         connection.close()
 
@@ -102,25 +101,20 @@ SCROLLABLE = (True, False)
 WITHHOLD = (True, False)
 
 
-@override_application_settings({
-    'transaction_tracer.explain_threshold': 0.0,
-    'transaction_tracer.record_sql': 'raw',
-})
+@override_application_settings({"transaction_tracer.explain_threshold": 0.0, "transaction_tracer.record_sql": "raw"})
 @validate_database_node(explain_plan_is_not_none)
 @validate_transaction_slow_sql_count(1)
-@background_task(name='test_explain_plan_named_cursors')
-@pytest.mark.parametrize('withhold', WITHHOLD)
-@pytest.mark.parametrize('scrollable', SCROLLABLE)
+@background_task(name="test_explain_plan_named_cursors")
+@pytest.mark.parametrize("withhold", WITHHOLD)
+@pytest.mark.parametrize("scrollable", SCROLLABLE)
 def test_explain_plan_named_cursors(withhold, scrollable):
-    cursor_kwargs = {
-        'name': 'test_explain_plan_named_cursors',
-    }
+    cursor_kwargs = {"name": "test_explain_plan_named_cursors"}
 
     if withhold:
-        cursor_kwargs['withhold'] = withhold
+        cursor_kwargs["withhold"] = withhold
 
     if scrollable:
-        cursor_kwargs['scrollable'] = scrollable
+        cursor_kwargs["scrollable"] = scrollable
 
     _exercise_db(cursor_kwargs=cursor_kwargs)
 
@@ -128,34 +122,25 @@ def test_explain_plan_named_cursors(withhold, scrollable):
 # The following tests will verify that arguments are preserved for an explain
 # plan by forcing a failure to be generated when explain plans are created and
 # arguments are preserved
-@override_application_settings({
-    'transaction_tracer.explain_threshold': 0.0,
-    'transaction_tracer.record_sql': 'raw',
-})
+@override_application_settings({"transaction_tracer.explain_threshold": 0.0, "transaction_tracer.record_sql": "raw"})
 @validate_database_node(explain_plan_is_none)
 @validate_transaction_slow_sql_count(1)
-@background_task(name='test_explain_plan_on_custom_connect_class')
+@background_task(name="test_explain_plan_on_custom_connect_class")
 def test_explain_plan_on_custom_connect_class():
     _exercise_db(connection_factory=CustomConnection)
 
 
-@override_application_settings({
-    'transaction_tracer.explain_threshold': 0.0,
-    'transaction_tracer.record_sql': 'raw',
-})
+@override_application_settings({"transaction_tracer.explain_threshold": 0.0, "transaction_tracer.record_sql": "raw"})
 @validate_database_node(explain_plan_is_none)
 @validate_transaction_slow_sql_count(1)
-@background_task(name='test_explain_plan_on_custom_connect_class')
+@background_task(name="test_explain_plan_on_custom_connect_class")
 def test_explain_plan_on_custom_cursor_class_1():
     _exercise_db(cursor_factory=CustomCursor)
 
 
-@override_application_settings({
-    'transaction_tracer.explain_threshold': 0.0,
-    'transaction_tracer.record_sql': 'raw',
-})
+@override_application_settings({"transaction_tracer.explain_threshold": 0.0, "transaction_tracer.record_sql": "raw"})
 @validate_database_node(explain_plan_is_none)
 @validate_transaction_slow_sql_count(1)
-@background_task(name='test_explain_plan_on_custom_connect_class')
+@background_task(name="test_explain_plan_on_custom_connect_class")
 def test_explain_plan_on_custom_cursor_class_2():
-    _exercise_db(cursor_kwargs={'cursor_factory': CustomCursor})
+    _exercise_db(cursor_kwargs={"cursor_factory": CustomCursor})

@@ -17,12 +17,8 @@ import json
 import pytest
 from testing_support.fixtures import override_generic_settings
 from testing_support.validators.validate_serverless_data import validate_serverless_data
-from testing_support.validators.validate_serverless_metadata import (
-    validate_serverless_metadata,
-)
-from testing_support.validators.validate_serverless_payload import (
-    validate_serverless_payload,
-)
+from testing_support.validators.validate_serverless_metadata import validate_serverless_metadata
+from testing_support.validators.validate_serverless_payload import validate_serverless_payload
 
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import background_task
@@ -48,12 +44,7 @@ def serverless_application(request):
 
 
 def test_serverless_payload(capsys, serverless_application):
-    @override_generic_settings(
-        serverless_application.settings,
-        {
-            "distributed_tracing.enabled": True,
-        },
-    )
+    @override_generic_settings(serverless_application.settings, {"distributed_tracing.enabled": True})
     @validate_serverless_data(
         expected_methods=("metric_data", "analytic_event_data"),
         forgone_methods=("preconnect", "connect", "get_agent_commands"),
@@ -167,7 +158,7 @@ def test_payload_metadata_arn(serverless_application, arn_set):
 
     settings.aws_lambda_metadata.update({"arn": arn, "function_version": "$LATEST"})
 
-    class Context():
+    class Context:
         invoked_function_arn = arn
 
     @validate_serverless_metadata(exact_metadata={"arn": arn})

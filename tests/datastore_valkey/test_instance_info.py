@@ -95,30 +95,14 @@ _instance_info_from_url_tests = [
 _instance_info_from_url_tests.extend(
     [
         (("valkeys://localhost:6379/2/",), {}, ("localhost", "6379", "2")),
-        (
-            ("valkey://localhost:6379",),
-            {"host": "someotherhost"},
-            ("localhost", "6379", "0"),
-        ),
+        (("valkey://localhost:6379",), {"host": "someotherhost"}, ("localhost", "6379", "0")),
         (("valkey://localhost:6379/2",), {"db": 3}, ("localhost", "6379", "2")),
         (("valkey://localhost:6379/2/?db=111",), {}, ("localhost", "6379", "111")),
         (("valkey://localhost:6379?db=2",), {}, ("localhost", "6379", "2")),
         (("valkey://localhost:6379/2?db=111",), {}, ("localhost", "6379", "111")),
-        (
-            ("unix:///path/to/socket.sock",),
-            {},
-            ("localhost", "/path/to/socket.sock", "0"),
-        ),
-        (
-            ("unix:///path/to/socket.sock?db=2",),
-            {},
-            ("localhost", "/path/to/socket.sock", "2"),
-        ),
-        (
-            ("unix:///path/to/socket.sock",),
-            {"db": 2},
-            ("localhost", "/path/to/socket.sock", "2"),
-        ),
+        (("unix:///path/to/socket.sock",), {}, ("localhost", "/path/to/socket.sock", "0")),
+        (("unix:///path/to/socket.sock?db=2",), {}, ("localhost", "/path/to/socket.sock", "2")),
+        (("unix:///path/to/socket.sock",), {"db": 2}, ("localhost", "/path/to/socket.sock", "2")),
     ]
 )
 

@@ -54,27 +54,14 @@ from newrelic.core.attribute import (
     resolve_logging_context_attributes,
     truncate,
 )
-from newrelic.core.attribute_filter import (
-    DST_ALL,
-    DST_ERROR_COLLECTOR,
-    DST_NONE,
-    DST_TRANSACTION_TRACER,
-)
-from newrelic.core.config import (
-    CUSTOM_EVENT_RESERVOIR_SIZE,
-    LOG_EVENT_RESERVOIR_SIZE,
-    ML_EVENT_RESERVOIR_SIZE,
-)
+from newrelic.core.attribute_filter import DST_ALL, DST_ERROR_COLLECTOR, DST_NONE, DST_TRANSACTION_TRACER
+from newrelic.core.config import CUSTOM_EVENT_RESERVOIR_SIZE, LOG_EVENT_RESERVOIR_SIZE, ML_EVENT_RESERVOIR_SIZE
 from newrelic.core.custom_event import create_custom_event
 from newrelic.core.log_event_node import LogEventNode
 from newrelic.core.stack_trace import exception_stack
 from newrelic.core.stats_engine import CustomMetrics, DimensionalMetrics, SampledDataSet
 from newrelic.core.thread_utilization import utilization_tracker
-from newrelic.core.trace_cache import (
-    TraceCacheActiveTraceError,
-    TraceCacheNoActiveTraceError,
-    trace_cache,
-)
+from newrelic.core.trace_cache import TraceCacheActiveTraceError, TraceCacheNoActiveTraceError, trace_cache
 
 _logger = logging.getLogger(__name__)
 
@@ -83,11 +70,7 @@ DISTRIBUTED_TRACE_TRANSPORT_TYPES = set(("HTTP", "HTTPS", "Kafka", "JMS", "IronM
 DELIMITER_FORMAT_RE = re.compile("[ \t]*,[ \t]*")
 ACCEPTED_DISTRIBUTED_TRACE = 1
 CREATED_DISTRIBUTED_TRACE = 2
-PARENT_TYPE = {
-    "0": "App",
-    "1": "Browser",
-    "2": "Mobile",
-}
+PARENT_TYPE = {"0": "App", "1": "Browser", "2": "Mobile"}
 
 
 class Sentinel(TimeTrace):
@@ -145,7 +128,7 @@ class Sentinel(TimeTrace):
         pass
 
 
-class CachedPath():
+class CachedPath:
     def __init__(self, transaction):
         self._name = None
         self.transaction = weakref.ref(transaction)
@@ -161,7 +144,7 @@ class CachedPath():
         return "Unknown"
 
 
-class Transaction():
+class Transaction:
     STATE_PENDING = 0
     STATE_RUNNING = 1
     STATE_STOPPED = 2
@@ -446,16 +429,17 @@ class Transaction():
             #
             # https://bugs.python.org/issue40312
             if not self._dead:
-                _logger.exception(
-                    "Runtime instrumentation error. Attempt to "
-                    "drop the trace but where none is active. "
-                    "Report this issue to New Relic support."
-                ),
+                (
+                    _logger.exception(
+                        "Runtime instrumentation error. Attempt to "
+                        "drop the trace but where none is active. "
+                        "Report this issue to New Relic support."
+                    ),
+                )
                 return
         except Exception:
             _logger.exception(
-                "Runtime instrumentation error. Exception "
-                "occurred during exit. Report this issue to New Relic support."
+                "Runtime instrumentation error. Exception occurred during exit. Report this issue to New Relic support."
             )
             return
 
@@ -1114,10 +1098,7 @@ class Transaction():
             data = self._create_distributed_trace_data()
             if data is None:
                 return
-            payload = DistributedTracePayload(
-                v=DistributedTracePayload.version,
-                d=data,
-            )
+            payload = DistributedTracePayload(v=DistributedTracePayload.version, d=data)
         except:
             self._record_supportability("Supportability/DistributedTrace/CreatePayload/Exception")
         else:
@@ -1150,10 +1131,7 @@ class Transaction():
 
                 if not self._settings.distributed_tracing.exclude_newrelic_header:
                     # Insert New Relic dt headers for backwards compatibility
-                    payload = DistributedTracePayload(
-                        v=DistributedTracePayload.version,
-                        d=data,
-                    )
+                    payload = DistributedTracePayload(v=DistributedTracePayload.version, d=data)
                     yield ("newrelic", payload.http_safe())
                     self._record_supportability("Supportability/DistributedTrace/CreatePayload/Success")
 
@@ -1230,8 +1208,7 @@ class Transaction():
                 self._record_supportability("Supportability/DistributedTrace/AcceptPayload/Ignored/UntrustedAccount")
                 if settings.debug.log_untrusted_distributed_trace_keys:
                     _logger.debug(
-                        "Received untrusted key in distributed trace payload. received_trust_key=%r",
-                        received_trust_key,
+                        "Received untrusted key in distributed trace payload. received_trust_key=%r", received_trust_key
                     )
                 return False
 
@@ -1605,12 +1582,7 @@ class Transaction():
         # Finally, add in linking attributes after checking that there is a valid message or at least 1 attribute
         collected_attributes.update(get_linking_metadata())
 
-        event = LogEventNode(
-            timestamp=timestamp,
-            level=level,
-            message=message,
-            attributes=collected_attributes,
-        )
+        event = LogEventNode(timestamp=timestamp, level=level, message=message, attributes=collected_attributes)
 
         self._log_events.add(event, priority=priority)
 
@@ -1640,11 +1612,7 @@ class Transaction():
         current_span = trace_cache().current_trace()
         if current_span:
             current_span.notice_error(
-                error=error,
-                attributes=attributes,
-                expected=expected,
-                ignore=ignore,
-                status_code=status_code,
+                error=error, attributes=attributes, expected=expected, ignore=ignore, status_code=status_code
             )
 
     def _create_error_node(
@@ -1811,7 +1779,7 @@ class Transaction():
     def add_custom_parameter(self, name, value):  # pragma: no cover
         # Deprecation warning
         warnings.warn(
-            ("The add_custom_parameter API has been deprecated. " "Please use the add_custom_attribute API."),
+            ("The add_custom_parameter API has been deprecated. Please use the add_custom_attribute API."),
             DeprecationWarning,
         )
         return self.add_custom_attribute(name, value)
@@ -1821,7 +1789,7 @@ class Transaction():
     def add_custom_parameters(self, items):  # pragma: no cover
         # Deprecation warning
         warnings.warn(
-            ("The add_custom_parameters API has been deprecated. " "Please use the add_custom_attributes API."),
+            ("The add_custom_parameters API has been deprecated. Please use the add_custom_attributes API."),
             DeprecationWarning,
         )
         return self.add_custom_attributes(items)

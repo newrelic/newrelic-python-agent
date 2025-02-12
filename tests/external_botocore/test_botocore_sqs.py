@@ -19,9 +19,7 @@ import pytest
 from moto import mock_aws
 from testing_support.fixtures import dt_enabled
 from testing_support.validators.validate_span_events import validate_span_events
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
@@ -60,21 +58,9 @@ EXPECTED_SEND_MESSAGE_BATCH_AGENT_ATTRS = required = {
 if BOTOCORE_VERSION < (1, 29, 0):
     url = "queue.amazonaws.com"
     # The old style url does not contain the necessary AWS info.
-    EXPECTED_SEND_MESSAGE_AGENT_ATTRS = {
-        "exact_agents": {
-            "aws.operation": "SendMessage",
-        },
-    }
-    EXPECTED_RECIEVE_MESSAGE_AGENT_ATTRS = {
-        "exact_agents": {
-            "aws.operation": "ReceiveMessage",
-        },
-    }
-    EXPECTED_SEND_MESSAGE_BATCH_AGENT_ATTRS = {
-        "exact_agents": {
-            "aws.operation": "SendMessageBatch",
-        },
-    }
+    EXPECTED_SEND_MESSAGE_AGENT_ATTRS = {"exact_agents": {"aws.operation": "SendMessage"}}
+    EXPECTED_RECIEVE_MESSAGE_AGENT_ATTRS = {"exact_agents": {"aws.operation": "ReceiveMessage"}}
+    EXPECTED_SEND_MESSAGE_BATCH_AGENT_ATTRS = {"exact_agents": {"aws.operation": "SendMessageBatch"}}
 
 AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"
 AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"  # nosec
@@ -83,10 +69,7 @@ AWS_REGION = "us-east-1"
 TEST_QUEUE = f"python-agent-test-{uuid.uuid4()}"
 
 
-_sqs_scoped_metrics = [
-    (f"MessageBroker/SQS/Queue/Produce/Named/{TEST_QUEUE}", 2),
-    (f"External/{url}/botocore/POST", 3),
-]
+_sqs_scoped_metrics = [(f"MessageBroker/SQS/Queue/Produce/Named/{TEST_QUEUE}", 2), (f"External/{url}/botocore/POST", 3)]
 
 _sqs_rollup_metrics = [
     (f"MessageBroker/SQS/Queue/Produce/Named/{TEST_QUEUE}", 2),
@@ -97,29 +80,16 @@ _sqs_rollup_metrics = [
     (f"External/{url}/botocore/POST", 3),
 ]
 
-_sqs_scoped_metrics_malformed = [
-    ("MessageBroker/SQS/Queue/Produce/Named/Unknown", 1),
-]
+_sqs_scoped_metrics_malformed = [("MessageBroker/SQS/Queue/Produce/Named/Unknown", 1)]
 
-_sqs_rollup_metrics_malformed = [
-    ("MessageBroker/SQS/Queue/Produce/Named/Unknown", 1),
-]
+_sqs_rollup_metrics_malformed = [("MessageBroker/SQS/Queue/Produce/Named/Unknown", 1)]
 
 
 @dt_enabled
 @validate_span_events(exact_agents={"aws.operation": "CreateQueue"}, count=1)
-@validate_span_events(
-    **EXPECTED_SEND_MESSAGE_AGENT_ATTRS,
-    count=1,
-)
-@validate_span_events(
-    **EXPECTED_RECIEVE_MESSAGE_AGENT_ATTRS,
-    count=1,
-)
-@validate_span_events(
-    **EXPECTED_SEND_MESSAGE_BATCH_AGENT_ATTRS,
-    count=1,
-)
+@validate_span_events(**EXPECTED_SEND_MESSAGE_AGENT_ATTRS, count=1)
+@validate_span_events(**EXPECTED_RECIEVE_MESSAGE_AGENT_ATTRS, count=1)
+@validate_span_events(**EXPECTED_SEND_MESSAGE_BATCH_AGENT_ATTRS, count=1)
 @validate_span_events(exact_agents={"aws.operation": "PurgeQueue"}, count=1)
 @validate_span_events(exact_agents={"aws.operation": "DeleteQueue"}, count=1)
 @validate_transaction_metrics(

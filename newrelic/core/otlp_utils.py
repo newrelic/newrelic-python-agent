@@ -33,11 +33,7 @@ otlp_content_setting = _settings.debug.otlp_content_encoding
 if not otlp_content_setting or otlp_content_setting == "protobuf":
     try:
         from newrelic.packages.opentelemetry_proto.common_pb2 import AnyValue, KeyValue
-        from newrelic.packages.opentelemetry_proto.logs_pb2 import (
-            LogsData,
-            ResourceLogs,
-            ScopeLogs,
-        )
+        from newrelic.packages.opentelemetry_proto.logs_pb2 import LogsData, ResourceLogs, ScopeLogs
         from newrelic.packages.opentelemetry_proto.metrics_pb2 import (
             AggregationTemporality,
             Metric,
@@ -117,12 +113,7 @@ def create_key_values_from_iterable(iterable):
 
     # The create_key_value list may return None if the value is an unsupported type
     # so filter None values out before returning.
-    return list(
-        filter(
-            lambda i: i is not None,
-            (create_key_value(key, value) for key, value in iterable),
-        )
-    )
+    return list(filter(lambda i: i is not None, (create_key_value(key, value) for key, value in iterable)))
 
 
 def create_resource(attributes=None, attach_apm_entity=True):
@@ -213,10 +204,7 @@ def encode_metric_data(metric_data, start_time, end_time, resource=None, scope=N
             ResourceMetrics(
                 resource=resource,
                 scope_metrics=[
-                    ScopeMetrics(
-                        scope=scope,
-                        metrics=list(stats_to_otlp_metrics(metric_data, start_time, end_time)),
-                    )
+                    ScopeMetrics(scope=scope, metrics=list(stats_to_otlp_metrics(metric_data, start_time, end_time)))
                 ],
             )
         ]
@@ -232,28 +220,14 @@ def encode_ml_event_data(custom_event_data, agent_run_id):
         event_info, event_attrs = event
         event_type = event_info["type"]
         event_attrs.update(
-            {
-                "real_agent_id": agent_run_id,
-                "event.domain": "newrelic.ml_events",
-                "event.name": event_type,
-            }
+            {"real_agent_id": agent_run_id, "event.domain": "newrelic.ml_events", "event.name": event_type}
         )
         ml_attrs = create_key_values_from_iterable(event_attrs)
         unix_nano_timestamp = event_info["timestamp"] * 1e6
         if event_type == "InferenceEvent":
-            ml_inference_events.append(
-                {
-                    "time_unix_nano": int(unix_nano_timestamp),
-                    "attributes": ml_attrs,
-                }
-            )
+            ml_inference_events.append({"time_unix_nano": int(unix_nano_timestamp), "attributes": ml_attrs})
         else:
-            ml_apm_events.append(
-                {
-                    "time_unix_nano": int(unix_nano_timestamp),
-                    "attributes": ml_attrs,
-                }
-            )
+            ml_apm_events.append({"time_unix_nano": int(unix_nano_timestamp), "attributes": ml_attrs})
 
     resource_logs = []
     if ml_inference_events:

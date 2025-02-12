@@ -32,8 +32,7 @@ def execute_db_calls_with_cursor(cursor):
     cursor.execute(f"create table {TABLE_NAME} (a integer, b real, c text)")
 
     cursor.executemany(
-        f"insert into {TABLE_NAME} values (%s, %s, %s)",
-        [(1, 1.0, "1.0"), (2, 2.2, "2.2"), (3, 3.3, "3.3")],
+        f"insert into {TABLE_NAME} values (%s, %s, %s)", [(1, 1.0, "1.0"), (2, 2.2, "2.2"), (3, 3.3, "3.3")]
     )
 
     cursor.execute(f"""select * from {TABLE_NAME}""")

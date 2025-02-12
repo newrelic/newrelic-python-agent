@@ -14,11 +14,7 @@
 
 from newrelic.api.datastore_trace import DatastoreTrace, wrap_datastore_trace
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import (
-    FunctionWrapper,
-    wrap_function_wrapper,
-    wrap_object,
-)
+from newrelic.common.object_wrapper import FunctionWrapper, wrap_function_wrapper, wrap_object
 
 
 def _instance_info(memcache_host):

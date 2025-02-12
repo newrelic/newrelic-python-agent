@@ -17,9 +17,7 @@ import os
 
 import pytest
 from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_transaction_event_attributes import (
-    validate_transaction_event_attributes,
-)
+from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
 
 from newrelic.api.lambda_handler import lambda_handler
 
@@ -44,7 +42,7 @@ def _load_tests():
     return tests.keys()
 
 
-class Context():
+class Context:
     aws_request_id = "cookies"
     invoked_function_arn = "arn"
     function_name = "cats"
@@ -54,14 +52,7 @@ class Context():
 
 @lambda_handler()
 def handler(event, context):
-    return {
-        "statusCode": "200",
-        "body": "{}",
-        "headers": {
-            "Content-Type": "application/json",
-            "Content-Length": 2,
-        },
-    }
+    return {"statusCode": "200", "body": "{}", "headers": {"Content-Type": "application/json", "Content-Length": 2}}
 
 
 # The lambda_hander has been deprecated for 3+ years

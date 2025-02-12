@@ -21,14 +21,14 @@ settings = newrelic.core.config.global_settings
 _logger = logging.getLogger(__name__)
 
 
-RECORDSQL_OFF = 'off'
-RECORDSQL_RAW = 'raw'
-RECORDSQL_OBFUSCATED = 'obfuscated'
+RECORDSQL_OFF = "off"
+RECORDSQL_RAW = "raw"
+RECORDSQL_OBFUSCATED = "obfuscated"
 
-COMPRESSED_CONTENT_ENCODING_DEFLATE = 'deflate'
-COMPRESSED_CONTENT_ENCODING_GZIP = 'gzip'
+COMPRESSED_CONTENT_ENCODING_DEFLATE = "deflate"
+COMPRESSED_CONTENT_ENCODING_GZIP = "gzip"
 
-STRIP_EXCEPTION_MESSAGE = ("Message removed by New Relic 'strip_exception_messages' setting")
+STRIP_EXCEPTION_MESSAGE = "Message removed by New Relic 'strip_exception_messages' setting"
 
 
 def set_error_group_callback(callback, application=None):
@@ -46,7 +46,9 @@ def set_error_group_callback(callback, application=None):
     _settings = application.settings if application is not None else settings()
 
     if _settings is None:
-        _logger.error("Failed to set error_group_callback in application settings. Report this issue to New Relic support.")
+        _logger.error(
+            "Failed to set error_group_callback in application settings. Report this issue to New Relic support."
+        )
         return
 
     if _settings.error_collector:

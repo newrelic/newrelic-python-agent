@@ -18,18 +18,10 @@ import psycopg2cffi.extras
 from testing_support.db_settings import postgresql_settings
 from testing_support.fixtures import validate_stats_engine_explain_plan_output_is_none
 from testing_support.util import instance_hostname
-from testing_support.validators.validate_database_trace_inputs import (
-    validate_database_trace_inputs,
-)
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
-from testing_support.validators.validate_transaction_slow_sql_count import (
-    validate_transaction_slow_sql_count,
-)
+from testing_support.validators.validate_database_trace_inputs import validate_database_trace_inputs
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_transaction_slow_sql_count import validate_transaction_slow_sql_count
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
@@ -98,7 +90,7 @@ def test_execute_via_cursor():
         psycopg2cffi.extensions.register_type(psycopg2cffi.extensions.UNICODE, connection)
         psycopg2cffi.extensions.register_type(psycopg2cffi.extensions.UNICODE, cursor)
 
-        cursor.execute(f"""drop table if exists {DB_SETTINGS['table_name']}""")
+        cursor.execute(f"""drop table if exists {DB_SETTINGS["table_name"]}""")
 
         cursor.execute(f"create table {DB_SETTINGS['table_name']} (a integer, b real, c text)")
 
@@ -107,17 +99,14 @@ def test_execute_via_cursor():
             [(1, 1.0, "1.0"), (2, 2.2, "2.2"), (3, 3.3, "3.3")],
         )
 
-        cursor.execute(f"""select * from {DB_SETTINGS['table_name']}""")
+        cursor.execute(f"""select * from {DB_SETTINGS["table_name"]}""")
 
         for row in cursor:
             pass
 
-        cursor.execute(
-            f"update {DB_SETTINGS['table_name']} set a=%s, b=%s, c=%s where a=%s",
-            (4, 4.0, "4.0", 1),
-        )
+        cursor.execute(f"update {DB_SETTINGS['table_name']} set a=%s, b=%s, c=%s where a=%s", (4, 4.0, "4.0", 1))
 
-        cursor.execute(f"""delete from {DB_SETTINGS['table_name']} where a=2""")
+        cursor.execute(f"""delete from {DB_SETTINGS["table_name"]} where a=2""")
 
         connection.commit()
 
@@ -217,12 +206,12 @@ def test_async_mode():
         password=DB_SETTINGS["password"],
         host=DB_SETTINGS["host"],
         port=DB_SETTINGS["port"],
-        **kwargs
+        **kwargs,
     )
     wait(async_conn)
     async_cur = async_conn.cursor()
 
-    async_cur.execute(f"""drop table if exists {DB_SETTINGS['table_name']}""")
+    async_cur.execute(f"""drop table if exists {DB_SETTINGS["table_name"]}""")
     wait(async_cur.connection)
 
     async_cur.execute(f"create table {DB_SETTINGS['table_name']} (a integer, b real, c text)")
@@ -231,7 +220,7 @@ def test_async_mode():
     async_cur.execute(f"insert into {DB_SETTINGS['table_name']} values (%s, %s, %s)", (1, 1.0, "1.0"))
     wait(async_cur.connection)
 
-    async_cur.execute(f"""select * from {DB_SETTINGS['table_name']}""")
+    async_cur.execute(f"""select * from {DB_SETTINGS["table_name"]}""")
     wait(async_cur.connection)
 
     for row in async_cur:

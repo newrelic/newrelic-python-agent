@@ -23,10 +23,7 @@ from newrelic.core.config import global_settings
 
 def fetch_app_id(app_name, client, headers):
     status, data = client.send_request(
-        "GET",
-        "/v2/applications.json",
-        params={"filter[name]": app_name},
-        headers=headers,
+        "GET", "/v2/applications.json", params={"filter[name]": app_name}, headers=headers
     )
 
     if not 200 <= status < 300:
@@ -97,9 +94,7 @@ def record_deploy(
         data = {"deployment": deployment}
         payload = encoding_utils.json_encode(data).encode("utf-8")
 
-        status_code, response = client.send_request(
-            "POST", path, headers=headers, payload=payload
-        )
+        status_code, response = client.send_request("POST", path, headers=headers, payload=payload)
 
         if status_code != 201:
             raise RuntimeError(
@@ -119,9 +114,7 @@ def record_deploy_cmd(args):
         usage("record-deploy")
         sys.exit(1)
 
-    def _args(
-        config_file, description, revision="Unknown", changelog=None, user=None, *args
-    ):
+    def _args(config_file, description, revision="Unknown", changelog=None, user=None, *args):
         return config_file, description, revision, changelog, user
 
     config_file, description, revision, changelog, user = _args(*args)

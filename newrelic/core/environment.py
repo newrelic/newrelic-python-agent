@@ -24,11 +24,7 @@ import sys
 
 import newrelic
 from newrelic.common.package_version_utils import get_package_version
-from newrelic.common.system_info import (
-    logical_processor_count,
-    physical_processor_count,
-    total_physical_memory,
-)
+from newrelic.common.system_info import logical_processor_count, physical_processor_count, total_physical_memory
 from newrelic.packages.isort import stdlibs as isort_stdlibs
 
 try:

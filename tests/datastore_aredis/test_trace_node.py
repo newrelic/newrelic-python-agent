@@ -17,9 +17,7 @@ from testing_support.db_settings import redis_settings
 from testing_support.fixture.event_loop import event_loop as loop  # noqa: F401
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
-from testing_support.validators.validate_tt_collector_json import (
-    validate_tt_collector_json,
-)
+from testing_support.validators.validate_tt_collector_json import validate_tt_collector_json
 
 from newrelic.api.background_task import background_task
 
@@ -55,27 +53,13 @@ _enabled_required = {
 _enabled_forgone = {}
 
 _disabled_required = {}
-_disabled_forgone = {
-    "host": "VALUE NOT USED",
-    "port_path_or_id": "VALUE NOT USED",
-    "db.instance": "VALUE NOT USED",
-}
+_disabled_forgone = {"host": "VALUE NOT USED", "port_path_or_id": "VALUE NOT USED", "db.instance": "VALUE NOT USED"}
 
-_instance_only_required = {
-    "host": instance_hostname(DB_SETTINGS["host"]),
-    "port_path_or_id": str(DB_SETTINGS["port"]),
-}
-_instance_only_forgone = {
-    "db.instance": str(DATABASE_NUMBER),
-}
+_instance_only_required = {"host": instance_hostname(DB_SETTINGS["host"]), "port_path_or_id": str(DB_SETTINGS["port"])}
+_instance_only_forgone = {"db.instance": str(DATABASE_NUMBER)}
 
-_database_only_required = {
-    "db.instance": str(DATABASE_NUMBER),
-}
-_database_only_forgone = {
-    "host": "VALUE NOT USED",
-    "port_path_or_id": "VALUE NOT USED",
-}
+_database_only_required = {"db.instance": str(DATABASE_NUMBER)}
+_database_only_forgone = {"host": "VALUE NOT USED", "port_path_or_id": "VALUE NOT USED"}
 
 
 # Query

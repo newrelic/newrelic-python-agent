@@ -16,23 +16,16 @@ from importlib import reload
 
 import pytest
 from testing_support.fixtures import reset_core_stats_engine
-from testing_support.validators.validate_dimensional_metric_payload import (
-    validate_dimensional_metric_payload,
-)
+from testing_support.validators.validate_dimensional_metric_payload import validate_dimensional_metric_payload
 from testing_support.validators.validate_dimensional_metrics_outside_transaction import (
     validate_dimensional_metrics_outside_transaction,
 )
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 import newrelic.core.otlp_utils
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import background_task
-from newrelic.api.transaction import (
-    record_dimensional_metric,
-    record_dimensional_metrics,
-)
+from newrelic.api.transaction import record_dimensional_metric, record_dimensional_metrics
 from newrelic.common.metric_utils import create_metric_identity
 from newrelic.core.config import global_settings
 
@@ -79,9 +72,7 @@ def test_record_dimensional_metric_inside_transaction(tags, expected):
     @validate_transaction_metrics(
         "test_record_dimensional_metric_inside_transaction",
         background_task=True,
-        dimensional_metrics=[
-            ("Metric", expected, 1),
-        ],
+        dimensional_metrics=[("Metric", expected, 1)],
     )
     @background_task(name="test_record_dimensional_metric_inside_transaction")
     def _test():
@@ -132,19 +123,11 @@ def test_dimensional_metrics_different_tags():
     @validate_transaction_metrics(
         "test_dimensional_metrics_different_tags",
         background_task=True,
-        dimensional_metrics=[
-            ("Metric", frozenset({("tag", 1)}), 1),
-            ("Metric", frozenset({("tag", 2)}), 2),
-        ],
+        dimensional_metrics=[("Metric", frozenset({("tag", 1)}), 1), ("Metric", frozenset({("tag", 2)}), 2)],
     )
     @background_task(name="test_dimensional_metrics_different_tags")
     def _test():
-        record_dimensional_metrics(
-            [
-                ("Metric", 1, {"tag": 1}),
-                ("Metric", 1, {"tag": 2}),
-            ]
-        )
+        record_dimensional_metrics([("Metric", 1, {"tag": 1}), ("Metric", 1, {"tag": 2})])
         record_dimensional_metric("Metric", 1, {"tag": 2})
 
     _test()
@@ -203,12 +186,7 @@ def test_dimensional_metrics_payload():
 def test_dimensional_metrics_no_duplicate_encodings():
     @background_task(name="test_dimensional_metric_payload")
     def _test():
-        record_dimensional_metrics(
-            [
-                ("Metric.Summary", 1),
-                ("Metric.Count", {"count": 1}),
-            ]
-        )
+        record_dimensional_metrics([("Metric.Summary", 1), ("Metric.Count", {"count": 1})])
 
     _test()
     app = application_instance()

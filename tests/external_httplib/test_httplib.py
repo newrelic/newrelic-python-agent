@@ -16,33 +16,20 @@ import pytest
 
 import http.client as httplib
 
-from testing_support.external_fixtures import (
-    cache_outgoing_headers,
-    insert_incoming_headers,
-)
+from testing_support.external_fixtures import cache_outgoing_headers, insert_incoming_headers
 from testing_support.fixtures import cat_enabled, override_application_settings
-from testing_support.validators.validate_cross_process_headers import (
-    validate_cross_process_headers,
-)
-from testing_support.validators.validate_external_node_params import (
-    validate_external_node_params,
-)
+from testing_support.validators.validate_cross_process_headers import validate_cross_process_headers
+from testing_support.validators.validate_external_node_params import validate_external_node_params
 from testing_support.validators.validate_span_events import validate_span_events
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
-from testing_support.validators.validate_tt_segment_params import (
-    validate_tt_segment_params,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_tt_segment_params import validate_tt_segment_params
 
 from newrelic.api.background_task import background_task
 from newrelic.common.encoding_utils import DistributedTracePayload
 
 
 def test_httplib_http_request(server):
-    scoped = [
-        (f"External/localhost:{server.port}/http/", 1),
-    ]
+    scoped = [(f"External/localhost:{server.port}/http/", 1)]
 
     rollup = [
         ("External/all", 1),
@@ -66,9 +53,7 @@ def test_httplib_http_request(server):
 
 
 def test_httplib_https_request(server):
-    _test_httplib_https_request_scoped_metrics = [
-        (f"External/localhost:{server.port}/http/", 1),
-    ]
+    _test_httplib_https_request_scoped_metrics = [(f"External/localhost:{server.port}/http/", 1)]
 
     _test_httplib_https_request_rollup_metrics = [
         ("External/all", 1),
@@ -99,10 +84,7 @@ def test_httplib_https_request(server):
 
 
 def test_httplib_http_with_port_request(server):
-
-    scoped = [
-        (f"External/localhost:{server.port}/http/", 1),
-    ]
+    scoped = [(f"External/localhost:{server.port}/http/", 1)]
 
     rollup = [
         ("External/all", 1),
@@ -128,14 +110,7 @@ def test_httplib_http_with_port_request(server):
     _test()
 
 
-@pytest.mark.parametrize(
-    "distributed_tracing,span_events",
-    (
-        (True, True),
-        (True, False),
-        (False, False),
-    ),
-)
+@pytest.mark.parametrize("distributed_tracing,span_events", ((True, True), (True, False), (False, False)))
 def test_httplib_cross_process_request(server, distributed_tracing, span_events):
     @background_task(name="test_httplib:test_httplib_cross_process_request")
     @cache_outgoing_headers
@@ -249,10 +224,7 @@ def test_httplib_multiple_requests_unique_distributed_tracing_id(server):
         response_headers.append(process_response(response.read()))
 
     test_transaction = override_application_settings(
-        {
-            "distributed_tracing.enabled": True,
-            "span_events.enabled": True,
-        }
+        {"distributed_tracing.enabled": True, "span_events.enabled": True}
     )(test_transaction)
     # make multiple requests with the same connection
     test_transaction()
@@ -281,10 +253,7 @@ def test_httplib_nr_headers_added(server):
         headers.append(process_response(response.read()))
 
     test_transaction = override_application_settings(
-        {
-            "distributed_tracing.enabled": True,
-            "span_events.enabled": True,
-        }
+        {"distributed_tracing.enabled": True, "span_events.enabled": True}
     )(test_transaction)
     test_transaction()
     connection.close()
@@ -295,10 +264,7 @@ def test_httplib_nr_headers_added(server):
 def test_span_events(server):
     connection = httplib.HTTPConnection("localhost", server.port)
 
-    _settings = {
-        "distributed_tracing.enabled": True,
-        "span_events.enabled": True,
-    }
+    _settings = {"distributed_tracing.enabled": True, "span_events.enabled": True}
 
     uri = f"http://localhost:{server.port}"
 
@@ -310,10 +276,7 @@ def test_span_events(server):
         "span.kind": "client",
         "component": "http",
     }
-    exact_agents = {
-        "http.url": uri,
-        "http.statusCode": 200,
-    }
+    exact_agents = {"http.url": uri, "http.statusCode": 200}
 
     expected_intrinsics = ("timestamp", "duration", "transactionId")
 

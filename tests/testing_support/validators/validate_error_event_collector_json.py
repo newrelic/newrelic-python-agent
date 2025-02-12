@@ -30,7 +30,6 @@ def validate_error_event_collector_json(num_errors=1):
         except:
             raise
         else:
-
             samples = list(instance.error_events)
             s_info = instance.error_events.sampling_info
             agent_run_id = 666
@@ -56,7 +55,6 @@ def validate_error_event_collector_json(num_errors=1):
 
             assert len(error_events) == num_errors
             for event in error_events:
-
                 # event is an array containing intrinsics, user-attributes,
                 # and agent-attributes
 

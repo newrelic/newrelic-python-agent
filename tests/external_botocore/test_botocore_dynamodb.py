@@ -19,12 +19,8 @@ import pytest
 from moto import mock_aws
 from testing_support.fixtures import dt_enabled, override_application_settings
 from testing_support.validators.validate_span_events import validate_span_events
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
-from testing_support.validators.validate_tt_segment_params import (
-    validate_tt_segment_params,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_tt_segment_params import validate_tt_segment_params
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
@@ -100,14 +96,8 @@ def test_dynamodb(account_id):
                 {"AttributeName": "Id", "AttributeType": "N"},
                 {"AttributeName": "Foo", "AttributeType": "S"},
             ],
-            KeySchema=[
-                {"AttributeName": "Id", "KeyType": "HASH"},
-                {"AttributeName": "Foo", "KeyType": "RANGE"},
-            ],
-            ProvisionedThroughput={
-                "ReadCapacityUnits": 5,
-                "WriteCapacityUnits": 5,
-            },
+            KeySchema=[{"AttributeName": "Id", "KeyType": "HASH"}, {"AttributeName": "Foo", "KeyType": "RANGE"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
         )
         assert resp["TableDescription"]["TableName"] == TEST_TABLE
         # moto response is ACTIVE, AWS response is CREATING
@@ -120,35 +110,20 @@ def test_dynamodb(account_id):
         # Put item
         resp = client.put_item(
             TableName=TEST_TABLE,
-            Item={
-                "Id": {"N": "101"},
-                "Foo": {"S": "hello_world"},
-                "SomeValue": {"S": "some_random_attribute"},
-            },
+            Item={"Id": {"N": "101"}, "Foo": {"S": "hello_world"}, "SomeValue": {"S": "some_random_attribute"}},
         )
         # No checking response, due to inconsistent return values.
         # moto returns resp['Attributes']. AWS returns resp['ResponseMetadata']
 
         # Get item
-        resp = client.get_item(
-            TableName=TEST_TABLE,
-            Key={
-                "Id": {"N": "101"},
-                "Foo": {"S": "hello_world"},
-            },
-        )
+        resp = client.get_item(TableName=TEST_TABLE, Key={"Id": {"N": "101"}, "Foo": {"S": "hello_world"}})
         assert resp["Item"]["SomeValue"]["S"] == "some_random_attribute"
 
         # Update item
         resp = client.update_item(
             TableName=TEST_TABLE,
-            Key={
-                "Id": {"N": "101"},
-                "Foo": {"S": "hello_world"},
-            },
-            AttributeUpdates={
-                "Foo2": {"Value": {"S": "hello_world2"}, "Action": "PUT"},
-            },
+            Key={"Id": {"N": "101"}, "Foo": {"S": "hello_world"}},
+            AttributeUpdates={"Foo2": {"Value": {"S": "hello_world2"}, "Action": "PUT"}},
             ReturnValues="ALL_NEW",
         )
         assert resp["Attributes"]["Foo2"]
@@ -169,13 +144,7 @@ def test_dynamodb(account_id):
         assert len(resp["Items"]) == 1
 
         # Delete item
-        resp = client.delete_item(
-            TableName=TEST_TABLE,
-            Key={
-                "Id": {"N": "101"},
-                "Foo": {"S": "hello_world"},
-            },
-        )
+        resp = client.delete_item(TableName=TEST_TABLE, Key={"Id": {"N": "101"}, "Foo": {"S": "hello_world"}})
         # No checking response, due to inconsistent return values.
         # moto returns resp['Attributes']. AWS returns resp['ResponseMetadata']
 

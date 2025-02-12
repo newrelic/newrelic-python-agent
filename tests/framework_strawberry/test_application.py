@@ -14,9 +14,7 @@
 import pytest
 from framework_graphql.test_application import *
 from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_transaction_count import (
-    validate_transaction_count,
-)
+from testing_support.validators.validate_transaction_count import validate_transaction_count
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version

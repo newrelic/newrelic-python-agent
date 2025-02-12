@@ -56,10 +56,7 @@ def sync_bg_task():
     pass
 
 
-routes = [
-    Route("/async", run_async_bg_task),
-    Route("/sync", run_sync_bg_task),
-]
+routes = [Route("/async", run_async_bg_task), Route("/sync", run_sync_bg_task)]
 
 # Generating target applications
 target_application = {}

@@ -19,11 +19,7 @@ from newrelic.api.time_trace import current_trace, notice_error
 from newrelic.api.transaction import current_transaction
 from newrelic.common.coroutine import is_coroutine_function
 from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import (
-    FunctionWrapper,
-    function_wrapper,
-    wrap_function_wrapper,
-)
+from newrelic.common.object_wrapper import FunctionWrapper, function_wrapper, wrap_function_wrapper
 from newrelic.core.context import ContextOf, context_wrapper
 
 
@@ -43,7 +39,6 @@ def bind_exc(request, exc, *args, **kwargs):
 
 @function_wrapper
 def route_naming_wrapper(wrapped, instance, args, kwargs):
-
     with ContextOf(request=bind_request(*args, **kwargs)):
         transaction = current_transaction()
         if transaction:
@@ -255,7 +250,6 @@ def instrument_starlette_exceptions(module):
 
     # After v0.45.0, the import proxy for ExceptionMiddleware was removed from starlette.exceptions
     if not hasattr(module, "__deprecated__") and hasattr(module, "ExceptionMiddleware"):
-
         wrap_function_wrapper(module, "ExceptionMiddleware.__call__", error_middleware_wrapper)
 
         wrap_function_wrapper(module, "ExceptionMiddleware.http_exception", wrap_exception_handler)

@@ -1,9 +1,9 @@
 """
-    This script is used to automatically add new vectorstore classes to the newrelic-python-agent.
-    To run this script, start from the root of the newrelic-python-agent repository and run:
-        `python tests/mlmodel_langchain/new_vectorstore_adder.py`
-    This will generate the necessary code to instrument the new vectorstore classes in the local
-    copy of the newrelic-python-agent repository.
+This script is used to automatically add new vectorstore classes to the newrelic-python-agent.
+To run this script, start from the root of the newrelic-python-agent repository and run:
+    `python tests/mlmodel_langchain/new_vectorstore_adder.py`
+This will generate the necessary code to instrument the new vectorstore classes in the local
+copy of the newrelic-python-agent repository.
 """
 
 import os
@@ -54,7 +54,8 @@ def add_to_hooks(class_name, directory, instrumented_class=None):
             instrumented_class.append(class_name)
             instrumented_class = str(instrumented_class).replace("'", '"')
             text = text.replace(
-                f'"{directory}": {original_list}', f'"{directory}": {instrumented_class}'  # TODO: NOT WORKING
+                f'"{directory}": {original_list}',
+                f'"{directory}": {instrumented_class}',  # TODO: NOT WORKING
             )
 
         # The directory exists, but it only has one class.  We need to convert this to a list.

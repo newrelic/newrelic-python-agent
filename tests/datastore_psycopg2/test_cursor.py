@@ -16,6 +16,7 @@ import pytest
 import psycopg2
 import psycopg2.extensions
 import psycopg2.extras
+
 try:
     from psycopg2 import sql
 except ImportError:
@@ -31,49 +32,45 @@ from newrelic.api.background_task import background_task
 
 
 # Settings
-_enable_instance_settings = {
-    'datastore_tracer.instance_reporting.enabled': True,
-}
-_disable_instance_settings = {
-    'datastore_tracer.instance_reporting.enabled': False,
-}
+_enable_instance_settings = {"datastore_tracer.instance_reporting.enabled": True}
+_disable_instance_settings = {"datastore_tracer.instance_reporting.enabled": False}
 
 
 # Metrics
 _base_scoped_metrics = (
-        ('Function/psycopg2:connect', 1),
-        (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/select", 1),
-        (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/insert", 1),
-        (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/update", 1),
-        (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/delete", 1),
-        ('Datastore/statement/Postgres/now/call', 1),
-        ('Datastore/statement/Postgres/pg_sleep/call', 1),
-        ('Datastore/operation/Postgres/drop', 1),
-        ('Datastore/operation/Postgres/create', 1),
-        ('Datastore/operation/Postgres/commit', 2),
-        ('Datastore/operation/Postgres/rollback', 1),
+    ("Function/psycopg2:connect", 1),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/select", 1),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/insert", 1),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/update", 1),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/delete", 1),
+    ("Datastore/statement/Postgres/now/call", 1),
+    ("Datastore/statement/Postgres/pg_sleep/call", 1),
+    ("Datastore/operation/Postgres/drop", 1),
+    ("Datastore/operation/Postgres/create", 1),
+    ("Datastore/operation/Postgres/commit", 2),
+    ("Datastore/operation/Postgres/rollback", 1),
 )
 
 _base_rollup_metrics = (
-        ('Datastore/all', 12),
-        ('Datastore/allOther', 12),
-        ('Datastore/Postgres/all', 12),
-        ('Datastore/Postgres/allOther', 12),
-        (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/select", 1),
-        (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/insert", 1),
-        (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/update", 1),
-        (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/delete", 1),
-        ('Datastore/operation/Postgres/select', 1),
-        ('Datastore/operation/Postgres/insert', 1),
-        ('Datastore/operation/Postgres/update', 1),
-        ('Datastore/operation/Postgres/delete', 1),
-        ('Datastore/operation/Postgres/drop', 1),
-        ('Datastore/operation/Postgres/create', 1),
-        ('Datastore/statement/Postgres/now/call', 1),
-        ('Datastore/statement/Postgres/pg_sleep/call', 1),
-        ('Datastore/operation/Postgres/call', 2),
-        ('Datastore/operation/Postgres/commit', 2),
-        ('Datastore/operation/Postgres/rollback', 1),
+    ("Datastore/all", 12),
+    ("Datastore/allOther", 12),
+    ("Datastore/Postgres/all", 12),
+    ("Datastore/Postgres/allOther", 12),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/select", 1),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/insert", 1),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/update", 1),
+    (f"Datastore/statement/Postgres/{DB_SETTINGS['table_name']}/delete", 1),
+    ("Datastore/operation/Postgres/select", 1),
+    ("Datastore/operation/Postgres/insert", 1),
+    ("Datastore/operation/Postgres/update", 1),
+    ("Datastore/operation/Postgres/delete", 1),
+    ("Datastore/operation/Postgres/drop", 1),
+    ("Datastore/operation/Postgres/create", 1),
+    ("Datastore/statement/Postgres/now/call", 1),
+    ("Datastore/statement/Postgres/pg_sleep/call", 1),
+    ("Datastore/operation/Postgres/call", 2),
+    ("Datastore/operation/Postgres/commit", 2),
+    ("Datastore/operation/Postgres/rollback", 1),
 )
 
 _disable_scoped_metrics = list(_base_scoped_metrics)
@@ -82,18 +79,14 @@ _disable_rollup_metrics = list(_base_rollup_metrics)
 _enable_scoped_metrics = list(_base_scoped_metrics)
 _enable_rollup_metrics = list(_base_rollup_metrics)
 
-_host = instance_hostname(DB_SETTINGS['host'])
-_port = DB_SETTINGS['port']
+_host = instance_hostname(DB_SETTINGS["host"])
+_port = DB_SETTINGS["port"]
 
-_instance_metric_name = f'Datastore/instance/Postgres/{_host}/{_port}'
+_instance_metric_name = f"Datastore/instance/Postgres/{_host}/{_port}"
 
-_enable_rollup_metrics.append(
-        (_instance_metric_name, 11)
-)
+_enable_rollup_metrics.append((_instance_metric_name, 11))
 
-_disable_rollup_metrics.append(
-        (_instance_metric_name, None)
-)
+_disable_rollup_metrics.append((_instance_metric_name, None))
 
 
 # Query
@@ -103,46 +96,47 @@ def _execute(connection, cursor, row_type, wrapper):
     psycopg2.extensions.register_type(unicode_type, connection)
     psycopg2.extensions.register_type(unicode_type, cursor)
 
-    sql = f"""drop table if exists {DB_SETTINGS['table_name']}"""
+    sql = f"""drop table if exists {DB_SETTINGS["table_name"]}"""
     cursor.execute(wrapper(sql))
 
-    sql = f"""create table {DB_SETTINGS['table_name']} (a integer, b real, c text)"""
+    sql = f"""create table {DB_SETTINGS["table_name"]} (a integer, b real, c text)"""
     cursor.execute(wrapper(sql))
 
     sql = f"insert into {DB_SETTINGS['table_name']} values (%s, %s, %s)"
-    params = [(1, 1.0, '1.0'), (2, 2.2, '2.2'), (3, 3.3, '3.3')]
+    params = [(1, 1.0, "1.0"), (2, 2.2, "2.2"), (3, 3.3, "3.3")]
     cursor.executemany(wrapper(sql), params)
 
-    sql = f"""select * from {DB_SETTINGS['table_name']}"""
+    sql = f"""select * from {DB_SETTINGS["table_name"]}"""
     cursor.execute(wrapper(sql))
 
     for row in cursor:
         assert isinstance(row, row_type)
 
     sql = f"update {DB_SETTINGS['table_name']} set a=%s, b=%s, c=%s where a=%s"
-    params = (4, 4.0, '4.0', 1)
+    params = (4, 4.0, "4.0", 1)
     cursor.execute(wrapper(sql), params)
 
-    sql = f"""delete from {DB_SETTINGS['table_name']} where a=2"""
+    sql = f"""delete from {DB_SETTINGS["table_name"]} where a=2"""
     cursor.execute(wrapper(sql))
 
     connection.commit()
 
-    cursor.callproc('now')
-    cursor.callproc('pg_sleep', (0.0,))
+    cursor.callproc("now")
+    cursor.callproc("pg_sleep", (0.0,))
 
     connection.rollback()
     connection.commit()
 
 
-def _exercise_db(cursor_factory=None, use_cur_context=False, row_type=tuple,
-        wrapper=str):
-
+def _exercise_db(cursor_factory=None, use_cur_context=False, row_type=tuple, wrapper=str):
     connection = psycopg2.connect(
-            database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
-            password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
-            port=DB_SETTINGS['port'])
-    kwargs = {'cursor_factory': cursor_factory} if cursor_factory else {}
+        database=DB_SETTINGS["name"],
+        user=DB_SETTINGS["user"],
+        password=DB_SETTINGS["password"],
+        host=DB_SETTINGS["host"],
+        port=DB_SETTINGS["port"],
+    )
+    kwargs = {"cursor_factory": cursor_factory} if cursor_factory else {}
 
     try:
         if use_cur_context:
@@ -155,7 +149,7 @@ def _exercise_db(cursor_factory=None, use_cur_context=False, row_type=tuple,
         connection.close()
 
 
-_test_matrix = ['wrapper,use_cur_context', [(str, False)]]
+_test_matrix = ["wrapper,use_cur_context", [(str, False)]]
 
 
 # with statement support for connections/cursors added in 2.5 and up
@@ -177,56 +171,56 @@ _test_matrix[1].append((lambda q: sql.Composed([sql.SQL(q)]), False))
 @pytest.mark.parametrize(*_test_matrix)
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
-        'test_cursor:test_execute_via_cursor_enable_instance',
-        scoped_metrics=_enable_scoped_metrics,
-        rollup_metrics=_enable_rollup_metrics,
-        background_task=True)
+    "test_cursor:test_execute_via_cursor_enable_instance",
+    scoped_metrics=_enable_scoped_metrics,
+    rollup_metrics=_enable_rollup_metrics,
+    background_task=True,
+)
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
 def test_execute_via_cursor_enable_instance(wrapper, use_cur_context):
-    _exercise_db(cursor_factory=None, use_cur_context=use_cur_context,
-            row_type=tuple, wrapper=wrapper)
+    _exercise_db(cursor_factory=None, use_cur_context=use_cur_context, row_type=tuple, wrapper=wrapper)
 
 
 @pytest.mark.parametrize(*_test_matrix)
 @override_application_settings(_disable_instance_settings)
 @validate_transaction_metrics(
-        'test_cursor:test_execute_via_cursor_disable_instance',
-        scoped_metrics=_disable_scoped_metrics,
-        rollup_metrics=_disable_rollup_metrics,
-        background_task=True)
+    "test_cursor:test_execute_via_cursor_disable_instance",
+    scoped_metrics=_disable_scoped_metrics,
+    rollup_metrics=_disable_rollup_metrics,
+    background_task=True,
+)
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
 def test_execute_via_cursor_disable_instance(wrapper, use_cur_context):
-    _exercise_db(cursor_factory=None, use_cur_context=use_cur_context,
-            row_type=tuple, wrapper=wrapper)
+    _exercise_db(cursor_factory=None, use_cur_context=use_cur_context, row_type=tuple, wrapper=wrapper)
 
 
 @pytest.mark.parametrize(*_test_matrix)
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
-        'test_cursor:test_execute_via_cursor_dict_enable_instance',
-        scoped_metrics=_enable_scoped_metrics,
-        rollup_metrics=_enable_rollup_metrics,
-        background_task=True)
+    "test_cursor:test_execute_via_cursor_dict_enable_instance",
+    scoped_metrics=_enable_scoped_metrics,
+    rollup_metrics=_enable_rollup_metrics,
+    background_task=True,
+)
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
 def test_execute_via_cursor_dict_enable_instance(wrapper, use_cur_context):
     dict_factory = psycopg2.extras.RealDictCursor
-    _exercise_db(cursor_factory=dict_factory, use_cur_context=use_cur_context,
-            row_type=dict, wrapper=wrapper)
+    _exercise_db(cursor_factory=dict_factory, use_cur_context=use_cur_context, row_type=dict, wrapper=wrapper)
 
 
 @pytest.mark.parametrize(*_test_matrix)
 @override_application_settings(_disable_instance_settings)
 @validate_transaction_metrics(
-        'test_cursor:test_execute_via_cursor_dict_disable_instance',
-        scoped_metrics=_disable_scoped_metrics,
-        rollup_metrics=_disable_rollup_metrics,
-        background_task=True)
+    "test_cursor:test_execute_via_cursor_dict_disable_instance",
+    scoped_metrics=_disable_scoped_metrics,
+    rollup_metrics=_disable_rollup_metrics,
+    background_task=True,
+)
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
 def test_execute_via_cursor_dict_disable_instance(wrapper, use_cur_context):
     dict_factory = psycopg2.extras.RealDictCursor
-    _exercise_db(cursor_factory=dict_factory, use_cur_context=use_cur_context,
-            row_type=dict, wrapper=wrapper)
+    _exercise_db(cursor_factory=dict_factory, use_cur_context=use_cur_context, row_type=dict, wrapper=wrapper)

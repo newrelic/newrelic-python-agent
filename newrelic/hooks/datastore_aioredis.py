@@ -16,11 +16,7 @@ from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version_tuple
-from newrelic.hooks.datastore_redis import (
-    _redis_client_methods,
-    _redis_multipart_commands,
-    _redis_operation_re,
-)
+from newrelic.hooks.datastore_redis import _redis_client_methods, _redis_multipart_commands, _redis_operation_re
 
 AIOREDIS_VERSION = get_package_version_tuple("aioredis")
 

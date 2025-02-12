@@ -29,7 +29,6 @@ def validate_transaction_trace_attributes(
 
     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     def _validate_transaction_trace_attributes(wrapped, instance, args, kwargs):
-
         result = wrapped(*args, **kwargs)
 
         # Now that transaction has been recorded, generate

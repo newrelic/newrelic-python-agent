@@ -76,19 +76,13 @@ EXPECTED_GC_METRICS = (
 
 
 @pytest.mark.xfail(
-    platform.python_implementation() == "PyPy",
-    reason="Not implemented on PyPy yet",
-    strict=True,
-    raises=AssertionError,
+    platform.python_implementation() == "PyPy", reason="Not implemented on PyPy yet", strict=True, raises=AssertionError
 )
 @pytest.mark.parametrize("top_object_count_limit", (1, 0))
 def test_gc_metrics_collection(gc_data_source, top_object_count_limit):
     @override_generic_settings(
         settings,
-        {
-            "gc_runtime_metrics.enabled": True,
-            "gc_runtime_metrics.top_object_count_limit": top_object_count_limit,
-        },
+        {"gc_runtime_metrics.enabled": True, "gc_runtime_metrics.top_object_count_limit": top_object_count_limit},
     )
     def _test():
         gc.collect()
@@ -111,10 +105,7 @@ def test_gc_metrics_collection(gc_data_source, top_object_count_limit):
     _test()
 
 
-@pytest.mark.skipif(
-    platform.python_implementation() == "PyPy",
-    reason="GC Metrics are always disabled on PyPy",
-)
+@pytest.mark.skipif(platform.python_implementation() == "PyPy", reason="GC Metrics are always disabled on PyPy")
 @pytest.mark.parametrize("enabled", (True, False))
 def test_gc_metrics_config(gc_data_source, enabled):
     @override_generic_settings(settings, {"gc_runtime_metrics.enabled": enabled})

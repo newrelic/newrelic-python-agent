@@ -70,11 +70,7 @@ def test_metric_scorer_training_steps_attributes(metric_scorer_name, run_metric_
 
 @pytest.mark.parametrize(
     "metric_scorer_name,kwargs",
-    [
-        ("f1_score", {"average": None}),
-        ("precision_score", {"average": None}),
-        ("recall_score", {"average": None}),
-    ],
+    [("f1_score", {"average": None}), ("precision_score", {"average": None}), ("recall_score", {"average": None})],
 )
 def test_metric_scorer_iterable_score_attributes(metric_scorer_name, kwargs, run_metric_scorer):
     @validate_attributes(

@@ -45,10 +45,7 @@ def grpc_app_server():
 
 @pytest.fixture(scope="session")
 def mock_grpc_server(grpc_app_server):
-    from sample_application import (
-        SampleApplicationServicer,
-        add_SampleApplicationServicer_to_server,
-    )
+    from sample_application import SampleApplicationServicer, add_SampleApplicationServicer_to_server
 
     server, port = grpc_app_server
     add_SampleApplicationServicer_to_server(SampleApplicationServicer(), server)

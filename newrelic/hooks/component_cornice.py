@@ -12,19 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Instrumentation for the Cornice REST library for Pyramid.
-
-"""
+"""Instrumentation for the Cornice REST library for Pyramid."""
 
 import functools
 
 from newrelic.api.function_trace import FunctionTraceWrapper
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import (function_wrapper,
-        wrap_function_wrapper)
+from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 
 module_cornice_service = None
+
 
 @function_wrapper
 def wrapper_Resource_method(wrapped, instance, args, kwargs):
@@ -39,6 +37,7 @@ def wrapper_Resource_method(wrapped, instance, args, kwargs):
 
     return FunctionTraceWrapper(wrapped, name=name)(*args, **kwargs)
 
+
 def wrapper_Resource(view):
     @function_wrapper
     def _wrapper_Resource(wrapped, instance, args, kwargs):
@@ -46,7 +45,9 @@ def wrapper_Resource(view):
         method = getattr(ob, view)
         setattr(ob, view, wrapper_Resource_method(method))
         return ob
+
     return _wrapper_Resource
+
 
 def wrapper_decorate_view(wrapped, instance, args, kwargs):
     def _bind_params(view, args, method, *other_args, **other_kwargs):
@@ -54,11 +55,11 @@ def wrapper_decorate_view(wrapped, instance, args, kwargs):
 
     _view, _args, _method = _bind_params(*args, **kwargs)
 
-    if 'klass' in _args and not callable(_view):
+    if "klass" in _args and not callable(_view):
         if module_cornice_service.is_string(_view):
-            _klass = _args['klass']
+            _klass = _args["klass"]
             _args = dict(_args)
-            _args['klass'] = wrapper_Resource(_view)(_klass)
+            _args["klass"] = wrapper_Resource(_view)(_klass)
             return wrapped(_view, _args, _method)
 
     # For Cornice 0.17 or older we need to fixup the fact that they do
@@ -73,8 +74,9 @@ def wrapper_decorate_view(wrapped, instance, args, kwargs):
 
     return wrapper
 
+
 def instrument_cornice_service(module):
     global module_cornice_service
     module_cornice_service = module
 
-    wrap_function_wrapper(module, 'decorate_view', wrapper_decorate_view)
+    wrap_function_wrapper(module, "decorate_view", wrapper_decorate_view)

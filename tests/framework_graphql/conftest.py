@@ -29,8 +29,7 @@ _default_settings = {
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
-    app_name="Python Agent Test (framework_graphql)",
-    default_settings=_default_settings,
+    app_name="Python Agent Test (framework_graphql)", default_settings=_default_settings
 )
 
 

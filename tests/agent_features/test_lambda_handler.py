@@ -17,12 +17,8 @@ from copy import deepcopy
 
 import pytest
 from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_transaction_event_attributes import (
-    validate_transaction_event_attributes,
-)
-from testing_support.validators.validate_transaction_trace_attributes import (
-    validate_transaction_trace_attributes,
-)
+from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
+from testing_support.validators.validate_transaction_trace_attributes import validate_transaction_trace_attributes
 
 from newrelic.api import lambda_handler
 
@@ -41,19 +37,10 @@ def force_cold_start_status(request):
 
 @lambda_handler.lambda_handler()
 def handler(event, context):
-    return {
-        "statusCode": "200",
-        "body": "{}",
-        "headers": {
-            "Content-Type": "application/json",
-            "Content-Length": 2,
-        },
-    }
+    return {"statusCode": "200", "body": "{}", "headers": {"Content-Type": "application/json", "Content-Length": 2}}
 
 
-_override_settings = {
-    "attributes.include": ["request.parameters.*", "request.headers.*"],
-}
+_override_settings = {"attributes.include": ["request.parameters.*", "request.headers.*"]}
 _expected_attributes = {
     "agent": [
         "aws.requestId",
@@ -69,10 +56,7 @@ _expected_attributes = {
 }
 
 _exact_attrs = {
-    "agent": {
-        "request.parameters.foo": "bar",
-        "request.headers.host": "myhost",
-    },
+    "agent": {"request.parameters.foo": "bar", "request.headers.host": "myhost"},
     "user": {},
     "intrinsic": {},
 }
@@ -92,7 +76,7 @@ firehose_event = {
 }
 
 
-class Context():
+class Context:
     aws_request_id = "cookies"
     invoked_function_arn = "arn"
     function_name = "cats"
@@ -129,9 +113,7 @@ def test_lambda_transaction_attributes(is_cold, monkeypatch):
             {
                 "httpMethod": "GET",
                 "path": "/",
-                "headers": {
-                    "HOST": "myhost",
-                },
+                "headers": {"HOST": "myhost"},
                 "queryStringParameters": {"foo": "bar"},
                 "multiValueQueryStringParameters": {"foo": ["bar"]},
             },
@@ -160,38 +142,18 @@ def test_lambda_malformed_api_gateway_payload(monkeypatch):
     )
 
 
-_malformed_request_attributes = {
-    "agent": [
-        "aws.requestId",
-        "aws.lambda.arn",
-    ],
-    "user": [],
-    "intrinsic": [],
-}
+_malformed_request_attributes = {"agent": ["aws.requestId", "aws.lambda.arn"], "user": [], "intrinsic": []}
 
 
 @validate_transaction_trace_attributes(_malformed_request_attributes)
 @validate_transaction_event_attributes(_malformed_request_attributes)
 @override_application_settings(_override_settings)
 def test_lambda_malformed_request_headers():
-    handler(
-        {
-            "httpMethod": "GET",
-            "path": "/",
-            "headers": None,
-        },
-        Context,
-    )
+    handler({"httpMethod": "GET", "path": "/", "headers": None}, Context)
 
 
 _malformed_response_attributes = {
-    "agent": [
-        "aws.requestId",
-        "aws.lambda.arn",
-        "request.method",
-        "request.uri",
-        "response.status",
-    ],
+    "agent": ["aws.requestId", "aws.lambda.arn", "request.method", "request.uri", "response.status"],
     "user": [],
     "intrinsic": [],
 }
@@ -205,20 +167,9 @@ _malformed_response_attributes = {
 def test_lambda_malformed_response_headers():
     @lambda_handler.lambda_handler()
     def handler(event, context):
-        return {
-            "statusCode": 200,
-            "body": "{}",
-            "headers": None,
-        }
+        return {"statusCode": 200, "body": "{}", "headers": None}
 
-    handler(
-        {
-            "httpMethod": "GET",
-            "path": "/",
-            "headers": {},
-        },
-        Context,
-    )
+    handler({"httpMethod": "GET", "path": "/", "headers": {}}, Context)
 
 
 _no_status_code_response = {
@@ -243,22 +194,9 @@ _no_status_code_response = {
 def test_lambda_no_status_code_response():
     @lambda_handler.lambda_handler()
     def handler(event, context):
-        return {
-            "body": "{}",
-            "headers": {
-                "Content-Type": "application/json",
-                "Content-Length": 2,
-            },
-        }
+        return {"body": "{}", "headers": {"Content-Type": "application/json", "Content-Length": 2}}
 
-    handler(
-        {
-            "httpMethod": "GET",
-            "path": "/",
-            "headers": {},
-        },
-        Context,
-    )
+    handler({"httpMethod": "GET", "path": "/", "headers": {}}, Context)
 
 
 # The lambda_hander has been deprecated for 3+ years
@@ -268,22 +206,10 @@ def test_lambda_event_source_arn_attribute(event, arn):
     if arn is None:
         _exact = None
         _expected = None
-        _forgone = {
-            "user": [],
-            "intrinsic": [],
-            "agent": ["aws.lambda.eventSource.arn"],
-        }
+        _forgone = {"user": [], "intrinsic": [], "agent": ["aws.lambda.eventSource.arn"]}
     else:
-        _exact = {
-            "user": {},
-            "intrinsic": {},
-            "agent": {"aws.lambda.eventSource.arn": arn},
-        }
-        _expected = {
-            "user": [],
-            "intrinsic": [],
-            "agent": ["aws.lambda.eventSource.arn"],
-        }
+        _exact = {"user": {}, "intrinsic": {}, "agent": {"aws.lambda.eventSource.arn": arn}}
+        _expected = {"user": [], "intrinsic": [], "agent": ["aws.lambda.eventSource.arn"]}
         _forgone = None
 
     @validate_transaction_trace_attributes(required_params=_expected, forgone_params=_forgone)
@@ -298,11 +224,7 @@ def test_lambda_event_source_arn_attribute(event, arn):
 # The lambda_hander has been deprecated for 3+ years
 @pytest.mark.skip(reason="The lambda_handler has been deprecated")
 @pytest.mark.parametrize(
-    "api",
-    (
-        lambda_handler.lambda_handler,
-        functools.partial(lambda_handler.LambdaHandlerWrapper, handler),
-    ),
+    "api", (lambda_handler.lambda_handler, functools.partial(lambda_handler.LambdaHandlerWrapper, handler))
 )
 def test_deprecation_warnings(api):
     with pytest.deprecated_call():

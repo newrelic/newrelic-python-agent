@@ -22,18 +22,10 @@ from testing_support.fixtures import (
     override_generic_settings,
     override_ignore_status_codes,
 )
-from testing_support.validators.validate_code_level_metrics import (
-    validate_code_level_metrics,
-)
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
-from testing_support.validators.validate_transaction_event_attributes import (
-    validate_transaction_event_attributes,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.application import application_instance
 from newrelic.api.external_trace import ExternalTrace
@@ -50,21 +42,17 @@ BASE_METRICS = [
     ("Function/_target_application:index", 1),
     ("Function/_target_application:request_middleware", 1 if sanic_v19_to_v22_12 else 2),
 ]
-FRAMEWORK_METRICS = [
-    (f"Python/Framework/Sanic/{sanic.__version__}", 1),
-]
+FRAMEWORK_METRICS = [(f"Python/Framework/Sanic/{sanic.__version__}", 1)]
 BASE_ATTRS = ["response.status", "response.headers.contentType", "response.headers.contentLength"]
 
 validate_base_transaction_event_attr = validate_transaction_event_attributes(
-    required_params={"agent": BASE_ATTRS, "user": [], "intrinsic": []},
+    required_params={"agent": BASE_ATTRS, "user": [], "intrinsic": []}
 )
 
 
 @validate_code_level_metrics("_target_application", "index")
 @validate_transaction_metrics(
-    "_target_application:index",
-    scoped_metrics=BASE_METRICS,
-    rollup_metrics=BASE_METRICS + FRAMEWORK_METRICS,
+    "_target_application:index", scoped_metrics=BASE_METRICS, rollup_metrics=BASE_METRICS + FRAMEWORK_METRICS
 )
 @validate_base_transaction_event_attr
 def test_simple_request(app):
@@ -79,24 +67,13 @@ def test_websocket(app):
     assert response.status == 200
 
 
-@pytest.mark.parametrize(
-    "method",
-    (
-        "get",
-        "post",
-        "put",
-        "patch",
-        "delete",
-    ),
-)
+@pytest.mark.parametrize("method", ("get", "post", "put", "patch", "delete"))
 def test_method_view(app, method):
     metric_name = f"Function/_target_application:MethodView.{method}"
 
     @validate_code_level_metrics("_target_application.MethodView", method)
     @validate_transaction_metrics(
-        f"_target_application:MethodView.{method}",
-        scoped_metrics=[(metric_name, 1)],
-        rollup_metrics=[(metric_name, 1)],
+        f"_target_application:MethodView.{method}", scoped_metrics=[(metric_name, 1)], rollup_metrics=[(metric_name, 1)]
     )
     @validate_base_transaction_event_attr
     def _test():
@@ -118,11 +95,7 @@ DT_METRICS = [
     rollup_metrics=BASE_METRICS + DT_METRICS + FRAMEWORK_METRICS,
 )
 @validate_base_transaction_event_attr
-@override_application_settings(
-    {
-        "distributed_tracing.enabled": True,
-    }
-)
+@override_application_settings({"distributed_tracing.enabled": True})
 def test_inbound_distributed_trace(app):
     transaction = Transaction(application_instance())
     dt_headers = ExternalTrace.generate_request_headers(transaction)
@@ -136,9 +109,7 @@ def test_recorded_error(app, endpoint, sanic_version):
     if sanic_version >= (21, 0, 0) and endpoint == "write_response_error":
         pytest.skip()
 
-    ERROR_METRICS = [
-        (f"Function/_target_application:{endpoint}", 1),
-    ]
+    ERROR_METRICS = [(f"Function/_target_application:{endpoint}", 1)]
 
     @validate_transaction_errors(errors=["builtins:ValueError"])
     @validate_base_transaction_event_attr
@@ -158,9 +129,7 @@ def test_recorded_error(app, endpoint, sanic_version):
     _test()
 
 
-NOT_FOUND_METRICS = [
-    ("Function/_target_application:not_found", 1),
-]
+NOT_FOUND_METRICS = [("Function/_target_application:not_found", 1)]
 
 
 @validate_transaction_metrics(
@@ -176,15 +145,11 @@ def test_ignored_by_status_error(app):
     assert response.status == 404
 
 
-DOUBLE_ERROR_METRICS = [
-    ("Function/_target_application:zero_division_error", 1),
-]
+DOUBLE_ERROR_METRICS = [("Function/_target_application:zero_division_error", 1)]
 
 
 @validate_transaction_metrics(
-    "_target_application:zero_division_error",
-    scoped_metrics=DOUBLE_ERROR_METRICS,
-    rollup_metrics=DOUBLE_ERROR_METRICS,
+    "_target_application:zero_division_error", scoped_metrics=DOUBLE_ERROR_METRICS, rollup_metrics=DOUBLE_ERROR_METRICS
 )
 @validate_transaction_errors(errors=["builtins:ValueError", "builtins:ZeroDivisionError"])
 def test_error_raised_in_error_handler(app):
@@ -196,20 +161,14 @@ def test_error_raised_in_error_handler(app):
 
 
 STREAMING_ATTRS = ["response.status", "response.headers.contentType"]
-STREAMING_METRICS = [
-    ("Function/_target_application:streaming", 1),
-]
+STREAMING_METRICS = [("Function/_target_application:streaming", 1)]
 
 
 @validate_code_level_metrics("_target_application", "streaming")
 @validate_transaction_metrics(
-    "_target_application:streaming",
-    scoped_metrics=STREAMING_METRICS,
-    rollup_metrics=STREAMING_METRICS,
+    "_target_application:streaming", scoped_metrics=STREAMING_METRICS, rollup_metrics=STREAMING_METRICS
 )
-@validate_transaction_event_attributes(
-    required_params={"agent": STREAMING_ATTRS, "user": [], "intrinsic": []},
-)
+@validate_transaction_event_attributes(required_params={"agent": STREAMING_ATTRS, "user": [], "intrinsic": []})
 def test_streaming_response(app):
     # streaming responses do not have content-length headers
     response = app.fetch("get", "/streaming")
@@ -325,17 +284,10 @@ def sync_failing_middleware(*args, **kwargs):
     ],
 )
 def test_returning_middleware(app, middleware, attach_to, metric_name, transaction_name):
-
-    metrics = [
-        (f"Function/{metric_name}", 1),
-    ]
+    metrics = [(f"Function/{metric_name}", 1)]
 
     @validate_code_level_metrics(*metric_name.split(":"))
-    @validate_transaction_metrics(
-        transaction_name,
-        scoped_metrics=metrics,
-        rollup_metrics=metrics,
-    )
+    @validate_transaction_metrics(transaction_name, scoped_metrics=metrics, rollup_metrics=metrics)
     @validate_base_transaction_event_attr
     def _test():
         response = app.fetch("get", "/")
@@ -359,11 +311,7 @@ def error_middleware(*args, **kwargs):
 def test_errors_in_middleware(app):
     metrics = [("Function/test_application:error_middleware", 1)]
 
-    @validate_transaction_metrics(
-        "test_application:error_middleware",
-        scoped_metrics=metrics,
-        rollup_metrics=metrics,
-    )
+    @validate_transaction_metrics("test_application:error_middleware", scoped_metrics=metrics, rollup_metrics=metrics)
     @validate_base_transaction_event_attr
     @validate_transaction_errors(errors=["builtins:ValueError"])
     def _test():

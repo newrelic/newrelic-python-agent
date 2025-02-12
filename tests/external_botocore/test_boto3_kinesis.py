@@ -21,9 +21,7 @@ import pytest
 from moto import mock_aws
 from testing_support.fixtures import dt_enabled, override_application_settings
 from testing_support.validators.validate_span_events import validate_span_events
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
@@ -45,7 +43,7 @@ EXPECTED_AGENT_ATTRS = {
     "exact_agents": {
         "cloud.platform": "aws_kinesis_data_streams",
         "cloud.resource_id": f"arn:aws:kinesis:us-east-1:{AWS_ACCOUNT_ID}:stream/{TEST_STREAM}",
-    },
+    }
 }
 
 _kinesis_scoped_metrics = [
@@ -104,13 +102,9 @@ if BOTOCORE_VERSION < (1, 29, 0):
         (f"External/{KINESIS_URL}/botocore/POST", 5),
     ]
 
-_kinesis_scoped_metrics_error = [
-    ("MessageBroker/Kinesis/Stream/Produce/Named/Unknown", 1),
-]
+_kinesis_scoped_metrics_error = [("MessageBroker/Kinesis/Stream/Produce/Named/Unknown", 1)]
 
-_kinesis_rollup_metrics_error = [
-    ("MessageBroker/Kinesis/Stream/Produce/Named/Unknown", 1),
-]
+_kinesis_rollup_metrics_error = [("MessageBroker/Kinesis/Stream/Produce/Named/Unknown", 1)]
 
 
 @background_task()
@@ -125,13 +119,7 @@ def test_instrumented_kinesis_methods():
 
     ignored_methods = set(
         ("kinesis", method)
-        for method in (
-            "generate_presigned_url",
-            "close",
-            "get_waiter",
-            "can_paginate",
-            "get_paginator",
-        )
+        for method in ("generate_presigned_url", "close", "get_waiter", "can_paginate", "get_paginator")
     )
     client_methods = inspect.getmembers(client, predicate=inspect.ismethod)
     methods = {("kinesis", name) for (name, method) in client_methods if not name.startswith("_")}
@@ -143,10 +131,7 @@ def test_instrumented_kinesis_methods():
 @override_application_settings({"cloud.aws.account_id": 123456789012})
 @dt_enabled
 @validate_span_events(exact_agents={"aws.operation": "CreateStream"}, count=1)
-@validate_span_events(
-    **EXPECTED_AGENT_ATTRS,
-    count=6 if BOTOCORE_VERSION < (1, 29, 0) else 9,
-)
+@validate_span_events(**EXPECTED_AGENT_ATTRS, count=6 if BOTOCORE_VERSION < (1, 29, 0) else 9)
 @validate_span_events(exact_agents={"aws.operation": "DeleteStream"}, count=1)
 @validate_transaction_metrics(
     "test_boto3_kinesis:test_kinesis",
@@ -164,11 +149,7 @@ def test_kinesis():
         region_name=AWS_REGION,
     )
     # Create stream
-    resp = client.create_stream(
-        StreamName=TEST_STREAM,
-        ShardCount=123,
-        StreamModeDetails={"StreamMode": "on-demand"},
-    )
+    resp = client.create_stream(StreamName=TEST_STREAM, ShardCount=123, StreamModeDetails={"StreamMode": "on-demand"})
     assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     # List streams
@@ -176,10 +157,7 @@ def test_kinesis():
     assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     # Stream ARN is needed for rest of methods.
-    resp = client.describe_stream(
-        StreamName=TEST_STREAM,
-        Limit=123,
-    )
+    resp = client.describe_stream(StreamName=TEST_STREAM, Limit=123)
     assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
     STREAM_ARN = resp["StreamDescription"]["StreamARN"]
     CONSUMER_ARN = f"{STREAM_ARN}/consumer/my_consumer:123"  # Mock ConsumerARN
@@ -193,11 +171,7 @@ def test_kinesis():
 
     # Send messages
     resp = client.put_records(
-        Records=[
-            {"Data": b"foo2", "PartitionKey": "bar"},
-            {"Data": b"foo3", "PartitionKey": "bar"},
-        ],
-        **stream_kwargs,
+        Records=[{"Data": b"foo2", "PartitionKey": "bar"}, {"Data": b"foo3", "PartitionKey": "bar"}], **stream_kwargs
     )
     assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
 
@@ -217,17 +191,11 @@ def test_kinesis():
     if BOTOCORE_VERSION >= (1, 29, 0):
         # This was only made available in Botocore 1.29.0, no way to test ResourceARN before that
         # Use ResourceARN as StreamARN
-        resp = client.put_resource_policy(
-            ResourceARN=STREAM_ARN,
-            Policy="some policy",
-        )
+        resp = client.put_resource_policy(ResourceARN=STREAM_ARN, Policy="some policy")
         assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
 
         # Use ResourceARN as ConsumerARN
-        resp = client.put_resource_policy(
-            ResourceARN=CONSUMER_ARN,
-            Policy="some policy",
-        )
+        resp = client.put_resource_policy(ResourceARN=CONSUMER_ARN, Policy="some policy")
         assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     # Receive message
@@ -238,10 +206,7 @@ def test_kinesis():
     assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     # Delete stream
-    resp = client.delete_stream(
-        EnforceConsumerDeletion=True,
-        **stream_kwargs,
-    )
+    resp = client.delete_stream(EnforceConsumerDeletion=True, **stream_kwargs)
     assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
 
 
@@ -262,18 +227,11 @@ def test_kinesis_error():
         region_name=AWS_REGION,
     )
     # Create stream
-    resp = client.create_stream(
-        StreamName=TEST_STREAM,
-        ShardCount=123,
-        StreamModeDetails={"StreamMode": "on-demand"},
-    )
+    resp = client.create_stream(StreamName=TEST_STREAM, ShardCount=123, StreamModeDetails={"StreamMode": "on-demand"})
     assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     # Stream ARN is needed for rest of methods.
-    resp = client.describe_stream(
-        StreamName=TEST_STREAM,
-        Limit=123,
-    )
+    resp = client.describe_stream(StreamName=TEST_STREAM, Limit=123)
     assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
     ARN = resp["StreamDescription"]["StreamARN"]
 
@@ -288,14 +246,8 @@ def test_kinesis_error():
 
     # Malformed send message, uses arg instead of kwarg
     with pytest.raises(expected_error):
-        resp = client.put_record(
-            Data=b"{foo}",
-            PartitionKey="bar",
-        )
+        resp = client.put_record(Data=b"{foo}", PartitionKey="bar")
 
     # Delete stream
-    resp = client.delete_stream(
-        EnforceConsumerDeletion=True,
-        **stream_kwargs,
-    )
+    resp = client.delete_stream(EnforceConsumerDeletion=True, **stream_kwargs)
     assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200

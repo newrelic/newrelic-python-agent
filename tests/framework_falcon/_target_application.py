@@ -18,16 +18,17 @@ import webtest
 
 try:
     from falcon import HTTPRouteNotFound
-    NOT_FOUND_ERROR_NAME = 'falcon.errors:HTTPRouteNotFound'
+
+    NOT_FOUND_ERROR_NAME = "falcon.errors:HTTPRouteNotFound"
 except ImportError:
-    NOT_FOUND_ERROR_NAME = 'falcon.errors:HTTPNotFound'
+    NOT_FOUND_ERROR_NAME = "falcon.errors:HTTPNotFound"
 
 
 def _bind_response(*args, **kwargs):
     args = list(args)
     args.extend(kwargs.values())
     for arg in args:
-        if hasattr(arg, 'status'):
+        if hasattr(arg, "status"):
             return arg
 
 
@@ -39,14 +40,14 @@ class BadPutRequest(ValueError):
     pass
 
 
-class Index():
+class Index:
     def on_get(self, req, resp):
         """Handles GET requests"""
-        resp.content_type = 'application/json'
+        resp.content_type = "application/json"
         resp.data = b'{"status": "ok"}'
 
 
-class BadResponse():
+class BadResponse:
     def on_get(self, req, resp):
         raise BadGetRequest()
 
@@ -56,10 +57,10 @@ class BadResponse():
 
 try:
     application = falcon.App()
-    name_prefix = 'falcon.app:App'
+    name_prefix = "falcon.app:App"
 except AttributeError:
     application = falcon.API()
-    name_prefix = 'falcon.api:API'
+    name_prefix = "falcon.api:API"
 
 
 def bad_error_handler(*args, **kwargs):
@@ -72,8 +73,8 @@ def bad_error_handler(*args, **kwargs):
     resp.status = 200
 
 
-application.add_route('/', Index())
-application.add_route('/bad_response', BadResponse())
+application.add_route("/", Index())
+application.add_route("/bad_response", BadResponse())
 application.add_error_handler(BadGetRequest, bad_error_handler)
 
 _target_application = webtest.TestApp(application)

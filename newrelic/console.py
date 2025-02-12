@@ -73,7 +73,7 @@ def shell_command(wrapped):
         prototype = f"{wrapper.__name__[3:]} {doc_signature(wrapped)}"
 
         if hasattr(wrapper, "__doc__") and wrapper.__doc__ is not None:
-            wrapper.__doc__ = "\n".join((prototype, wrapper.__doc__.lstrip('\n')))  # noqa: flynt
+            wrapper.__doc__ = "\n".join((prototype, wrapper.__doc__.lstrip("\n")))  # noqa: flynt
 
     return wrapper
 
@@ -101,7 +101,7 @@ def setquit():
     else:
         eof = "Ctrl-D (i.e. EOF)"
 
-    class Quitter():
+    class Quitter:
         def __init__(self, name):
             self.name = name
 
@@ -173,7 +173,6 @@ class EmbeddedConsole(code.InteractiveConsole):
 
 
 class ConsoleShell(cmd.Cmd):
-
     use_rawinput = 0
 
     def __init__(self):
@@ -427,7 +426,7 @@ class ConsoleShell(cmd.Cmd):
         print("\n\n".join(all), file=self.stdout)
 
 
-class ConnectionManager():
+class ConnectionManager:
     def __init__(self, listener_socket):
         self.__listener_socket = listener_socket
         self.__console_initialized = False
@@ -502,7 +501,6 @@ class ConnectionManager():
 
 
 class ClientShell(cmd.Cmd):
-
     prompt = "(newrelic) "
 
     def __init__(self, config_file, stdin=None, stdout=None, log=None):

@@ -454,12 +454,7 @@ def _record_tool_success(
     except Exception:
         _logger.debug(f"Failed to convert tool response into a string.\n{traceback.format_exception(*sys.exc_info())}")
     if settings.ai_monitoring.record_content.enabled:
-        full_tool_event_dict.update(
-            {
-                "input": tool_input,
-                "output": result,
-            }
-        )
+        full_tool_event_dict.update({"input": tool_input, "output": result})
     full_tool_event_dict.update(_get_llm_metadata(transaction))
     transaction.record_custom_event("LlmTool", full_tool_event_dict)
 
@@ -468,11 +463,7 @@ def _record_tool_error(
     instance, transaction, linking_metadata, tags, metadata, tool_id, tool_input, tool_name, tool_description, ft
 ):
     settings = transaction.settings if transaction.settings is not None else global_settings()
-    ft.notice_error(
-        attributes={
-            "tool_id": tool_id,
-        }
-    )
+    ft.notice_error(attributes={"tool_id": tool_id})
     ft.__exit__(*sys.exc_info())
     run_id = getattr(transaction, "_nr_tool_run_ids", {}).pop(tool_id, None)
     # Update tags and metadata previously obtained from run_args with instance values
@@ -571,11 +562,7 @@ async def wrap_chain_async_run(wrapped, instance, args, kwargs):
     try:
         response = await wrapped(input=run_args["input"], config=run_args["config"], **run_args.get("kwargs", {}))
     except Exception as exc:
-        ft.notice_error(
-            attributes={
-                "completion_id": completion_id,
-            }
-        )
+        ft.notice_error(attributes={"completion_id": completion_id})
         ft.__exit__(*sys.exc_info())
         _create_error_chain_run_events(
             transaction, instance, run_args, completion_id, linking_metadata, ft.duration * 1000
@@ -619,11 +606,7 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
     try:
         response = wrapped(input=run_args["input"], config=run_args["config"], **run_args.get("kwargs", {}))
     except Exception as exc:
-        ft.notice_error(
-            attributes={
-                "completion_id": completion_id,
-            }
-        )
+        ft.notice_error(attributes={"completion_id": completion_id})
         ft.__exit__(*sys.exc_info())
         _create_error_chain_run_events(
             transaction, instance, run_args, completion_id, linking_metadata, ft.duration * 1000
@@ -680,14 +663,7 @@ def _create_error_chain_run_events(transaction, instance, run_args, completion_i
     full_chat_completion_summary_dict.update(llm_metadata_dict)
     transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
     create_chat_completion_message_event(
-        transaction,
-        input_message_list,
-        completion_id,
-        span_id,
-        trace_id,
-        run_id,
-        llm_metadata_dict,
-        [],
+        transaction, input_message_list, completion_id, span_id, trace_id, run_id, llm_metadata_dict, []
     )
 
 

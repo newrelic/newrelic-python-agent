@@ -15,7 +15,6 @@
 import json
 import os
 
-import mock
 import pytest
 
 import newrelic.common.utilization as u
@@ -43,7 +42,7 @@ def mock_open(mock_file):
             raise FileNotFoundError
         elif filename == "/proc/self/mountinfo":
             return mock_file
-        raise RuntimeError
+        raise RuntimeError()
 
     return _mock_open
 

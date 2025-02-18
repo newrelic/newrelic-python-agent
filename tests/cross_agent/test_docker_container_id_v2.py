@@ -15,7 +15,6 @@
 import json
 import os
 
-import mock
 import pytest
 
 import newrelic.common.utilization as u

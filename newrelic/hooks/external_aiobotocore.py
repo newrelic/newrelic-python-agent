@@ -11,39 +11,25 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import json
 import logging
-import aiohttp
-import aiofiles
 import traceback
 import sys
 from aiobotocore.response import StreamingBody
-import uuid
 from io import BytesIO
 
-from newrelic.api.transaction import current_transaction
-from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.common.object_wrapper import wrap_function_wrapper
-from newrelic.api.time_trace import current_trace, get_trace_linking_metadata
 from newrelic.hooks.external_botocore import (
-    bedrock_error_attributes,
-    handle_embedding_event,
     handle_bedrock_exception,
     run_bedrock_response_extractor,
     run_bedrock_request_extractor,
-    EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE,
     RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE,
-    RESPONSE_EXTRACTOR_FAILURE_LOG_MESSAGE,
-    handle_chat_completion_event,
-    REQUEST_EXTACTOR_FAILURE_LOG_MESSAGE,
-    MODEL_EXTRACTORS,
-    UNSUPPORTED_MODEL_WARNING_SENT,
 )
 
 _logger = logging.getLogger(__name__)
 
 
+# Class from https://github.com/aio-libs/aiobotocore/blob/master/tests/test_response.py
 class AsyncBytesIO(BytesIO):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

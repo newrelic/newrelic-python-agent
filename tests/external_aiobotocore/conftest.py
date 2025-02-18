@@ -32,7 +32,7 @@ from newrelic.common.package_version_utils import (
     get_package_version,
     get_package_version_tuple,
 )
-from external_botocore._mock_external_bedrock_server import MockExternalBedrockServer, extract_shortened_prompt
+from external_botocore._mock_external_bedrock_server import MockExternalBedrockServer
 
 BOTOCORE_VERSION = get_package_version("botocore")
 

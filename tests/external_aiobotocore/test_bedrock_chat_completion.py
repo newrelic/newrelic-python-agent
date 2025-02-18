@@ -15,7 +15,6 @@ import json
 import os
 from io import BytesIO
 
-import boto3
 import botocore.errorfactory
 import botocore.eventstream
 import botocore.exceptions

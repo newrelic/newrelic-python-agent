@@ -547,6 +547,72 @@ MODEL_EXTRACTORS = [  # Order is important here, avoiding dictionaries
 ]
 
 
+def handle_bedrock_exception(exc, is_embedding, model, span_id, trace_id, request_extractor, request_body, ft, transaction):
+    try:
+        bedrock_attrs = {
+            "model": model,
+            "span_id": span_id,
+            "trace_id": trace_id,
+        }
+        try:
+            request_extractor(request_body, bedrock_attrs)
+        except json.decoder.JSONDecodeError:
+            pass
+        except Exception:
+            _logger.warning(REQUEST_EXTACTOR_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
+
+        error_attributes = bedrock_error_attributes(exc, bedrock_attrs)
+        notice_error_attributes = {
+            "http.statusCode": error_attributes.get("http.statusCode"),
+            "error.message": error_attributes.get("error.message"),
+            "error.code": error_attributes.get("error.code"),
+        }
+
+        if is_embedding:
+            notice_error_attributes.update({"embedding_id": str(uuid.uuid4())})
+        else:
+            notice_error_attributes.update({"completion_id": str(uuid.uuid4())})
+
+        if ft:
+            ft.notice_error(
+                attributes=notice_error_attributes,
+            )
+
+            ft.__exit__(*sys.exc_info())
+            error_attributes["duration"] = ft.duration * 1000
+
+        if is_embedding:
+            handle_embedding_event(transaction, error_attributes)
+        else:
+            handle_chat_completion_event(transaction, error_attributes)
+    except Exception:
+        _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
+
+    raise
+
+
+def run_bedrock_response_extractor(response_extractor, response_body, bedrock_attrs, is_embedding, transaction):
+    # Run response extractor for non-streaming responses
+    try:
+        response_extractor(response_body, bedrock_attrs)
+    except Exception:
+        _logger.warning(RESPONSE_EXTRACTOR_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
+
+    if is_embedding:
+        handle_embedding_event(transaction, bedrock_attrs)
+    else:
+        handle_chat_completion_event(transaction, bedrock_attrs)
+
+
+def run_bedrock_request_extractor(request_extractor, request_body, bedrock_attrs):
+    try:
+        request_extractor(request_body, bedrock_attrs)
+    except json.decoder.JSONDecodeError:
+        pass
+    except Exception:
+        _logger.warning(REQUEST_EXTACTOR_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
+
+
 def wrap_bedrock_runtime_invoke_model(response_streaming=False):
     @function_wrapper
     def _wrap_bedrock_runtime_invoke_model(wrapped, instance, args, kwargs):
@@ -610,53 +676,24 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
         instance._nr_request_extractor = request_extractor
         instance._nr_response_extractor = response_extractor
         instance._nr_stream_extractor = stream_extractor
-        instance._txn = transaction
+        instance._nr_txn = transaction
+        instance._nr_ft = ft
+
+        # Add a bedrock flag to instance so we can determine when make_api_call instrumentation is hit from non-Bedrock paths and bypass it if so
+        instance._is_bedrock = True
+
         try:
+            # For aioboto3 clients, this will call make_api_call instrumentation in external_aiobotocore
             response = wrapped(*args, **kwargs)
         except Exception as exc:
-            try:
-                bedrock_attrs = {
-                    "model": model,
-                    "span_id": span_id,
-                    "trace_id": trace_id,
-                }
-                try:
-                    request_extractor(request_body, bedrock_attrs)
-                except json.decoder.JSONDecodeError:
-                    pass
-                except Exception:
-                    _logger.warning(REQUEST_EXTACTOR_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
-
-                error_attributes = bedrock_error_attributes(exc, bedrock_attrs)
-                notice_error_attributes = {
-                    "http.statusCode": error_attributes.get("http.statusCode"),
-                    "error.message": error_attributes.get("error.message"),
-                    "error.code": error_attributes.get("error.code"),
-                }
-
-                if is_embedding:
-                    notice_error_attributes.update({"embedding_id": str(uuid.uuid4())})
-                else:
-                    notice_error_attributes.update({"completion_id": str(uuid.uuid4())})
-
-                ft.notice_error(
-                    attributes=notice_error_attributes,
-                )
-
-                ft.__exit__(*sys.exc_info())
-                error_attributes["duration"] = ft.duration * 1000
-
-                if operation == "embedding":
-                    handle_embedding_event(transaction, error_attributes)
-                else:
-                    handle_chat_completion_event(transaction, error_attributes)
-            except Exception:
-                _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
-
-            raise
+            handle_bedrock_exception(exc, is_embedding, model, span_id, trace_id, request_extractor, request_body, ft, transaction)
 
         if not response or response_streaming and not settings.ai_monitoring.streaming.enabled:
             ft.__exit__(None, None, None)
+            return response
+
+        # Let the instrumentation of make_api_call in the aioboto3 client handle it if we have an async case
+        if inspect.iscoroutine(response):
             return response
 
         if response_streaming and operation == "embedding":
@@ -667,10 +704,6 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
             ft.__exit__(None, None, None)
             return response
 
-        # Let the instrumentation of make_api_call in the aioboto3 client handle it if we have an async case
-        if inspect.iscoroutine(response):
-            return response
-
         response_headers = response.get("ResponseMetadata", {}).get("HTTPHeaders") or {}
         bedrock_attrs = {
             "request_id": response_headers.get("x-amzn-requestid"),
@@ -679,12 +712,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
             "trace_id": trace_id,
         }
 
-        try:
-            request_extractor(request_body, bedrock_attrs)
-        except json.decoder.JSONDecodeError:
-            pass
-        except Exception:
-            _logger.warning(REQUEST_EXTACTOR_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
+        run_bedrock_request_extractor(request_extractor, request_body, bedrock_attrs)
 
         try:
             if response_streaming:
@@ -702,16 +730,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
             bedrock_attrs["duration"] = ft.duration * 1000
             response["body"] = StreamingBody(BytesIO(response_body), len(response_body))
 
-            # Run response extractor for non-streaming responses
-            try:
-                response_extractor(response_body, bedrock_attrs)
-            except Exception:
-                _logger.warning(RESPONSE_EXTRACTOR_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
-
-            if operation == "embedding":
-                handle_embedding_event(transaction, bedrock_attrs)
-            else:
-                handle_chat_completion_event(transaction, bedrock_attrs)
+            run_bedrock_response_extractor(response_extractor, response_body, bedrock_attrs, is_embedding, transaction)
 
         except Exception:
             _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))

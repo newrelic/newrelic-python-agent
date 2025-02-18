@@ -87,10 +87,12 @@ def exercise_model(loop, bedrock_server, model_id, request_streaming):
                 accept="application/json",
                 contentType="application/json",
             )
-            response_body = json.loads(response.get("body").read())
+            body = await response["body"].read()
+            response_body = json.loads(body)
             assert response_body
 
             return response_body
+
         return loop.run_until_complete(coro())
 
     return _exercise_model
@@ -365,7 +367,32 @@ def test_bedrock_embedding_error_incorrect_access_key_with_token_count(
 
 
 @reset_core_stats_engine()
+@validate_custom_events(embedding_expected_malformed_request_body_events)
+@validate_custom_event_count(count=1)
+@validate_error_trace_attributes(
+    "botocore.errorfactory:ValidationException",
+    exact_attrs={
+        "agent": {},
+        "intrinsic": {},
+        "user": {
+            "http.statusCode": 400,
+            "error.message": "Malformed input request, please reformat your input and try again.",
+            "error.code": "ValidationException",
+        },
+    },
+)
+@validate_transaction_metrics(
+    name="test_bedrock_embedding",
+    scoped_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
+    rollup_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
+    custom_metrics=[
+        (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
+    ],
+    background_task=True,
+)
+@background_task(name="test_bedrock_embedding")
 def test_bedrock_embedding_error_malformed_request_body(
+    loop,
     bedrock_server,
     set_trace_info,
 ):
@@ -377,31 +404,7 @@ def test_bedrock_embedding_error_malformed_request_body(
     bad request. The response can still be parsed, so error information from the response will be recorded as normal.
     """
 
-    @validate_custom_events(embedding_expected_malformed_request_body_events)
-    @validate_custom_event_count(count=1)
-    @validate_error_trace_attributes(
-        "botocore.errorfactory:ValidationException",
-        exact_attrs={
-            "agent": {},
-            "intrinsic": {},
-            "user": {
-                "http.statusCode": 400,
-                "error.message": "Malformed input request, please reformat your input and try again.",
-                "error.code": "ValidationException",
-            },
-        },
-    )
-    @validate_transaction_metrics(
-        name="test_bedrock_embedding",
-        scoped_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
-        rollup_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
-        custom_metrics=[
-            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
-        ],
-        background_task=True,
-    )
-    @background_task(name="test_bedrock_embedding")
-    def _test():
+    async def _test():
         model = "amazon.titan-embed-g1-text-02"
         body = "{ Malformed Request Body".encode("utf-8")
         set_trace_info()
@@ -410,18 +413,31 @@ def test_bedrock_embedding_error_malformed_request_body(
         add_custom_attribute("non_llm_attr", "python-agent")
 
         with pytest.raises(_client_error):
-            bedrock_server.invoke_model(
+            await bedrock_server.invoke_model(
                 body=body,
                 modelId=model,
                 accept="application/json",
                 contentType="application/json",
             )
 
-    _test()
+    loop.run_until_complete(_test())
 
 
 @reset_core_stats_engine()
+@validate_custom_events(embedding_expected_malformed_response_body_events)
+@validate_custom_event_count(count=1)
+@validate_transaction_metrics(
+    name="test_bedrock_embedding",
+    scoped_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
+    rollup_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
+    custom_metrics=[
+        (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
+    ],
+    background_task=True,
+)
+@background_task(name="test_bedrock_embedding")
 def test_bedrock_embedding_error_malformed_response_body(
+    loop,
     bedrock_server,
     set_trace_info,
 ):
@@ -432,19 +448,7 @@ def test_bedrock_embedding_error_malformed_response_body(
     exception when it fails to do so. As a result, recorded events will not contain the streamed response data but will contain the request data.
     """
 
-    @validate_custom_events(embedding_expected_malformed_response_body_events)
-    @validate_custom_event_count(count=1)
-    @validate_transaction_metrics(
-        name="test_bedrock_embedding",
-        scoped_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
-        rollup_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
-        custom_metrics=[
-            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
-        ],
-        background_task=True,
-    )
-    @background_task(name="test_bedrock_embedding")
-    def _test():
+    async def _test():
         model = "amazon.titan-embed-g1-text-02"
         body = (embedding_payload_templates[model] % "Malformed Body").encode("utf-8")
         set_trace_info()
@@ -452,7 +456,7 @@ def test_bedrock_embedding_error_malformed_response_body(
         add_custom_attribute("llm.foo", "bar")
         add_custom_attribute("non_llm_attr", "python-agent")
 
-        response = bedrock_server.invoke_model(
+        response = await bedrock_server.invoke_model(
             body=body,
             modelId=model,
             accept="application/json",
@@ -460,7 +464,7 @@ def test_bedrock_embedding_error_malformed_response_body(
         )
         assert response
 
-    _test()
+    loop.run_until_complete(_test())
 
 
 def test_embedding_models_instrumented():

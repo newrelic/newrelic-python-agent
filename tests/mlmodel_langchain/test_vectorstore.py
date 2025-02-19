@@ -92,7 +92,7 @@ vectorstore_recorded_events = [
 _test_vectorstore_modules_instrumented_ignored_classes = set(
     [
         "VectorStore",  # Base class
-        "ElasticKnnSearch",  # Deprecated, so we will not be instrumenting this.
+        "Zilliz",  # Inherited from Milvus, which we are already instrumenting.
     ]
 )
 

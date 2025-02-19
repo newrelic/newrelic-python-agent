@@ -21,7 +21,7 @@ concurrency:
 jobs:
   build:
     name: Mega-Linter
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       # Git Checkout
       - name: Checkout Code
@@ -43,6 +43,8 @@ jobs:
           DEFAULT_BRANCH: ${{ github.event_name == 'pull_request' && github.base_ref || 'main' }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # ADD YOUR CUSTOM ENV VARIABLES HERE TO OVERRIDE VALUES OF .mega-linter.yml AT THE ROOT OF YOUR REPOSITORY
+          PYTHON_RUFF_ARGUMENTS: '--config=''output-format="github"'''
+          PYTHON_RUFF_FORMAT_ARGUMENTS: '--config=''output-format="github"'''
 
       # Upload Mega-Linter artifacts
       - name: Archive production artifacts

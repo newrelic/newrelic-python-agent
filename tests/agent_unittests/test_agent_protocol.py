@@ -16,7 +16,6 @@ import logging
 import os
 import ssl
 import tempfile
-from collections import namedtuple
 
 import pytest
 
@@ -35,8 +34,7 @@ from newrelic.network.exceptions import (
     NetworkInterfaceException,
     RetryDataForRequest,
 )
-
-Request = namedtuple("Request", ("method", "path", "params", "headers", "payload"))
+from testing_support.http_client_recorder import HttpClientRecorder
 
 
 # Global constants used in tests
@@ -62,36 +60,6 @@ ANALYTIC_EVENT_DATA = 10000
 SPAN_EVENT_DATA = 1000
 CUSTOM_EVENT_DATA = 10000
 ERROR_EVENT_DATA = 100
-
-
-class HttpClientRecorder(DeveloperModeClient):
-    SENT = []
-    STATUS_CODE = None
-    STATE = 0
-
-    def send_request(
-        self,
-        method="POST",
-        path="/agent_listener/invoke_raw_method",
-        params=None,
-        headers=None,
-        payload=None,
-    ):
-        request = Request(method=method, path=path, params=params, headers=headers, payload=payload)
-        self.SENT.append(request)
-        if self.STATUS_CODE:
-            return self.STATUS_CODE, b""
-
-        return super(HttpClientRecorder, self).send_request(method, path, params, headers, payload)
-
-    def __enter__(self):
-        HttpClientRecorder.STATE += 1
-
-    def __exit__(self, exc, value, tb):
-        HttpClientRecorder.STATE -= 1
-
-    def close_connection(self):
-        HttpClientRecorder.STATE -= 1
 
 
 class HttpClientException(DeveloperModeClient):
@@ -332,7 +300,9 @@ def connect_payload_asserts(
     else:
         assert "ip_address" not in payload_data["utilization"]
 
-    utilization_len = utilization_len + any([with_aws, with_ecs, with_pcf, with_gcp, with_azure, with_docker, with_kubernetes])
+    utilization_len = utilization_len + any(
+        [with_aws, with_ecs, with_pcf, with_gcp, with_azure, with_docker, with_kubernetes]
+    )
     assert len(payload_data["utilization"]) == utilization_len
     assert payload_data["utilization"]["hostname"] == HOST
 
@@ -580,7 +550,7 @@ def test_audit_logging():
 )
 def test_ca_bundle_path(monkeypatch, ca_bundle_path):
     # Pretend CA certificates are not available
-    class DefaultVerifyPaths():
+    class DefaultVerifyPaths:
         cafile = None
         capath = None
 

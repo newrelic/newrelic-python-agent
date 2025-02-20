@@ -44,3 +44,10 @@ def client():
     from elasticsearch import Elasticsearch
 
     return Elasticsearch(ES_URL)
+
+
+@pytest.fixture(scope="session")
+def async_client():
+    from elasticsearch import AsyncElasticsearch
+
+    return AsyncElasticsearch(ES_URL)

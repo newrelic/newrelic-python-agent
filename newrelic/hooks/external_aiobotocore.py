@@ -20,9 +20,11 @@ from io import BytesIO
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.hooks.external_botocore import (
+    AsyncEventStreamWrapper,
     handle_bedrock_exception,
     run_bedrock_response_extractor,
     run_bedrock_request_extractor,
+    EMBEDDING_STREAMING_UNSUPPORTED_LOG_MESSAGE,
     RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE,
 )
 
@@ -85,8 +87,14 @@ async def wrap_client__make_api_call(wrapped, instance, args, kwargs):
         request_extractor = instance._nr_request_extractor
     if hasattr(instance, "_nr_response_extractor"):
         response_extractor = instance._nr_response_extractor
+    if hasattr(instance, "_nr_stream_extractor"):
+        stream_extractor = instance._nr_stream_extractor
     if hasattr(instance, "_nr_ft"):
         ft = instance._nr_ft
+    if hasattr(instance, "_nr_response_streaming"):
+        response_streaming = instance._nr_response_streaming
+    if hasattr(instance, "_nr_settings"):
+        settings = instance._nr_settings
 
     model = args[1].get("modelId")
     is_embedding = "embed" in model
@@ -99,7 +107,18 @@ async def wrap_client__make_api_call(wrapped, instance, args, kwargs):
             exc, is_embedding, model, span_id, trace_id, request_extractor, request_body, ft, transaction
         )
 
-    if not response:
+    if not response or response_streaming and not settings.ai_monitoring.streaming.enabled:
+        if ft:
+            ft.__exit__(None, None, None)
+        return response
+
+    if response_streaming and is_embedding:
+        # This combination is not supported at time of writing, but may become
+        # a supported feature in the future. Instrumentation will need to be written
+        # if this becomes available.
+        _logger.warning(EMBEDDING_STREAMING_UNSUPPORTED_LOG_MESSAGE)
+        if ft:
+            ft.__exit__(None, None, None)
         return response
 
     response_headers = response.get("ResponseMetadata", {}).get("HTTPHeaders") or {}
@@ -113,6 +132,15 @@ async def wrap_client__make_api_call(wrapped, instance, args, kwargs):
     run_bedrock_request_extractor(request_extractor, request_body, bedrock_attrs)
 
     try:
+        if response_streaming:
+            # Wrap EventStream object here to intercept __iter__ method instead of instrumenting class.
+            # This class is used in numerous other services in botocore, and would cause conflicts.
+            response["body"] = body = AsyncEventStreamWrapper(response["body"])
+            body._nr_ft = ft or None
+            body._nr_bedrock_attrs = bedrock_attrs or {}
+            body._nr_model_extractor = stream_extractor or None
+            return response
+
         # Read and replace response streaming bodies
         response_body = await response["body"].read()
         if ft:

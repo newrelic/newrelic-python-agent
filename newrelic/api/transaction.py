@@ -429,12 +429,10 @@ class Transaction:
             #
             # https://bugs.python.org/issue40312
             if not self._dead:
-                (
-                    _logger.exception(
-                        "Runtime instrumentation error. Attempt to "
-                        "drop the trace but where none is active. "
-                        "Report this issue to New Relic support."
-                    ),
+                _logger.exception(
+                    "Runtime instrumentation error. Attempt to "
+                    "drop the trace but where none is active. "
+                    "Report this issue to New Relic support."
                 )
                 return
         except Exception:

@@ -81,9 +81,13 @@ vectorstore_recorded_events = [
             "id": None,  # UUID that changes with each run
             "vendor": "langchain",
             "ingest_source": "Python",
-            "metadata.source": os.path.join(os.path.dirname(__file__), "hello.pdf"),
-            "metadata.page": 0,
+            "metadata.creationdate": "2023-02-10T00:49:47+00:00",
+            "metadata.creator": "XeTeX output 2023.02.10:0049",
             "metadata.page_label": "1",
+            "metadata.page": 0,
+            "metadata.producer": "xdvipdfmx (20210318)",
+            "metadata.source": os.path.join(os.path.dirname(__file__), "hello.pdf"),
+            "metadata.total_pages": 1,
         },
     ),
 ]

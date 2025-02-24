@@ -32,6 +32,7 @@ _logger = logging.getLogger(__name__)
 
 
 # Class from https://github.com/aio-libs/aiobotocore/blob/master/tests/test_response.py
+# aiobotocore Apache 2 license: https://github.com/aio-libs/aiobotocore/blob/master/LICENSE
 class AsyncBytesIO(BytesIO):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -73,7 +74,7 @@ async def wrap_endpoint_make_request(wrapped, instance, args, kwargs):
 
 async def wrap_client__make_api_call(wrapped, instance, args, kwargs):
     # This instrumentation only applies to bedrock runtimes so exit if this method was hit through a different path
-    if not hasattr(instance, "_is_bedrock"):
+    if not hasattr(instance, "_nr_is_bedrock"):
         return await wrapped(*args, **kwargs)
 
     transaction = instance._nr_txn
@@ -81,20 +82,16 @@ async def wrap_client__make_api_call(wrapped, instance, args, kwargs):
         return await wrapped(*args, **kwargs)
 
     # Grab all context data from botocore invoke_model instrumentation off the shared instance
-    trace_id = instance._nr_trace_id if hasattr(instance, "_nr_trace_id") else ""
-    span_id = instance._nr_span_id if hasattr(instance, "_nr_span_id") else ""
-    if hasattr(instance, "_nr_request_extractor"):
-        request_extractor = instance._nr_request_extractor
-    if hasattr(instance, "_nr_response_extractor"):
-        response_extractor = instance._nr_response_extractor
-    if hasattr(instance, "_nr_stream_extractor"):
-        stream_extractor = instance._nr_stream_extractor
-    if hasattr(instance, "_nr_ft"):
-        ft = instance._nr_ft
-    if hasattr(instance, "_nr_response_streaming"):
-        response_streaming = instance._nr_response_streaming
-    if hasattr(instance, "_nr_settings"):
-        settings = instance._nr_settings
+    trace_id = getattr(instance, "_nr_trace_id", "")
+    span_id = getattr(instance, "_nr_span_id", "")
+
+    request_extractor = getattr(instance, "_nr_request_extractor", None)
+    response_extractor = getattr(instance, "_nr_stream_extractor", None)
+    stream_extractor = getattr(instance, "_nr_request_extractor", None)
+
+    response_streaming = getattr(instance, "_nr_response_streaming", False)
+    settings = getattr(instance, "_nr_settings", {})
+    ft = getattr(instance, "_nr_ft", None)
 
     model = args[1].get("modelId")
     is_embedding = "embed" in model

@@ -684,7 +684,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
         instance._nr_settings = settings
 
         # Add a bedrock flag to instance so we can determine when make_api_call instrumentation is hit from non-Bedrock paths and bypass it if so
-        instance._is_bedrock = True
+        instance._nr_is_bedrock = True
 
         try:
             # For aioboto3 clients, this will call make_api_call instrumentation in external_aiobotocore

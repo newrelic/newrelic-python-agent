@@ -80,8 +80,8 @@ async def wrap_client__make_api_call(wrapped, instance, args, kwargs):
         return await wrapped(*args, **kwargs)
 
     # Grab all context data from botocore invoke_model instrumentation off the shared instance
-    trace_id = instance._nr_trace_id if hasattr(instance, "_nr_trace_id") else ""
-    span_id = instance._nr_span_id if hasattr(instance, "_nr_span_id") else ""
+    trace_id = getattr(instance, "_nr_trace_id", "")
+    span_id = getattr(instance, "_nr_span_id", "")
 
     request_extractor = getattr(instance, "_nr_request_extractor", None)
     response_extractor = getattr(instance, "_nr_response_extractor", None)

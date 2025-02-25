@@ -22,7 +22,6 @@ import sys
 import threading
 import traceback
 import weakref
-    
 from collections.abc import MutableMapping
 
 try:
@@ -71,7 +70,7 @@ def get_event_loop(task):
     return getattr(task, "_loop", None)
 
 
-class cached_module():
+class cached_module:
     def __init__(self, module_path, name=None):
         self.module_path = module_path
         self.name = name or module_path
@@ -123,9 +122,22 @@ class TraceCache(MutableMapping):
             # all other cases where we can obtain a current greenlet,
             # then it should indicate we are running as a greenlet.
 
-            current = self.greenlet.getcurrent()
-            if current is not None and current.parent:
-                return id(current)
+            # current = self.greenlet.getcurrent()
+            # if current is not None and current.parent:
+            #     return id(current)
+
+            # In this case, the garbage collector could have already
+            # collected the greenlet object, so we need to check if the
+            # weakref is still alive before we can access the parent
+
+            # print(f"cache: {self._cache.data}")
+            # print(f"thread id: {thread.get_ident()}")
+            if self._cache.data:
+                current = self.greenlet.getcurrent()
+                # print(f"greenlet id: {id(current)}")
+                if current is not None and current.parent:
+                    # print(f"greenlet id with parent: {id(current)}")
+                    return id(current)
 
         if self.asyncio:
             task = current_task(self.asyncio)

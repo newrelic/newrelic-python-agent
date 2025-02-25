@@ -122,21 +122,15 @@ class TraceCache(MutableMapping):
             # all other cases where we can obtain a current greenlet,
             # then it should indicate we are running as a greenlet.
 
-            # current = self.greenlet.getcurrent()
-            # if current is not None and current.parent:
-            #     return id(current)
-
             # In this case, the garbage collector could have already
-            # collected the greenlet object, so we need to check if the
-            # weakref is still alive before we can access the parent
-
-            # print(f"cache: {self._cache.data}")
-            # print(f"thread id: {thread.get_ident()}")
+            # collected the final greenlet object, so we need to check if
+            # the weakref is still alive before we can access the parent.
+            # Unfortunately, instead of returning None, this will segfault
+            # if attempting to access a non-existent greenlet object.
+            # https://github.com/python-greenlet/greenlet/blob/master/src/greenlet/TThreadStateCreator.hpp#L57
             if self._cache.data:
                 current = self.greenlet.getcurrent()
-                # print(f"greenlet id: {id(current)}")
                 if current is not None and current.parent:
-                    # print(f"greenlet id with parent: {id(current)}")
                     return id(current)
 
         if self.asyncio:

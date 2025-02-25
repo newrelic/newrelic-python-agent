@@ -77,8 +77,18 @@ async def wrap_client__make_api_call(wrapped, instance, args, kwargs):
     if not hasattr(instance, "_nr_is_bedrock"):
         return await wrapped(*args, **kwargs)
 
-    transaction = instance._nr_txn
+    transaction = getattr(instance, "_nr_txn", None)
     if not transaction:
+        return await wrapped(*args, **kwargs)
+
+    settings = getattr(instance, "_nr_settings", None)
+
+    # Early exit if we can't access the shared settings object from invoke_model instrumentation
+    # This settings object helps us determine if AIM was enabled as well as streaming
+    if not settings:
+        return await wrapped(*args, **kwargs)
+
+    if not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
     # Grab all context data from botocore invoke_model instrumentation off the shared instance
@@ -86,16 +96,20 @@ async def wrap_client__make_api_call(wrapped, instance, args, kwargs):
     span_id = getattr(instance, "_nr_span_id", "")
 
     request_extractor = getattr(instance, "_nr_request_extractor", None)
-    response_extractor = getattr(instance, "_nr_stream_extractor", None)
-    stream_extractor = getattr(instance, "_nr_request_extractor", None)
-
+    response_extractor = getattr(instance, "_nr_response_extractor", None)
+    stream_extractor = getattr(instance, "_nr_stream_extractor", None)
     response_streaming = getattr(instance, "_nr_response_streaming", False)
-    settings = getattr(instance, "_nr_settings", {})
+
     ft = getattr(instance, "_nr_ft", None)
 
-    model = args[1].get("modelId")
-    is_embedding = "embed" in model
-    request_body = args[1].get("body")
+    if len(args) >= 2:
+        model = args[1].get("modelId")
+        request_body = args[1].get("body")
+        is_embedding = "embed" in model
+    else:
+        model = ""
+        request_body = None
+        is_embedding = False
 
     try:
         response = await wrapped(*args, **kwargs)
@@ -140,11 +154,11 @@ async def wrap_client__make_api_call(wrapped, instance, args, kwargs):
 
         # Read and replace response streaming bodies
         response_body = await response["body"].read()
+
         if ft:
             ft.__exit__(None, None, None)
             bedrock_attrs["duration"] = ft.duration * 1000
         response["body"] = StreamingBody(AsyncBytesIO(response_body), len(response_body))
-
         run_bedrock_response_extractor(response_extractor, response_body, bedrock_attrs, is_embedding, transaction)
 
     except Exception:

@@ -166,15 +166,6 @@ _test_bedrock_chat_completion_prompt = "What is 212 degrees Fahrenheit converted
 
 
 @reset_core_stats_engine()
-@disabled_ai_monitoring_settings
-@validate_custom_event_count(count=0)
-@background_task(name="test_bedrock_chat_completion_disabled_ai_monitoring_setting")
-def test_bedrock_chat_completion_disabled_ai_monitoring_settings(set_trace_info, exercise_model):
-    set_trace_info()
-    exercise_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)
-
-
-@reset_core_stats_engine()
 def test_bedrock_chat_completion_in_txn_with_llm_metadata(
     set_trace_info, exercise_model, expected_events, expected_metrics
 ):
@@ -279,6 +270,15 @@ def test_bedrock_chat_completion_no_llm_metadata(set_trace_info, exercise_model,
     _test()
 
 
+@disabled_ai_monitoring_settings
+@reset_core_stats_engine()
+@validate_custom_event_count(count=0)
+@background_task(name="test_bedrock_chat_completion_disabled_ai_monitoring_setting")
+def test_bedrock_chat_completion_disabled_ai_monitoring_settings(set_trace_info, exercise_model):
+    set_trace_info()
+    exercise_model(prompt=_test_bedrock_chat_completion_prompt, temperature=0.7, max_tokens=100)
+
+
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 def test_bedrock_chat_completion_outside_txn(exercise_model):
@@ -327,7 +327,7 @@ _client_error = botocore.exceptions.ClientError
 _client_error_name = callable_name(_client_error)
 
 
-def invalid_model_invoke_model(loop, bedrock_server, response_streaming):
+def invoke_model_invalid_model(loop, bedrock_server, response_streaming):
     async def _coro():
         with pytest.raises(_client_error):
             with WithLlmCustomAttributes({"context": "attr"}):
@@ -387,7 +387,7 @@ def test_bedrock_chat_completion_error_invalid_model(loop, bedrock_server, set_t
         add_custom_attribute("llm.foo", "bar")
         add_custom_attribute("non_llm_attr", "python-agent")
 
-        invalid_model_invoke_model(loop, bedrock_server, response_streaming)
+        invoke_model_invalid_model(loop, bedrock_server, response_streaming)
 
     _test()
 
@@ -544,7 +544,7 @@ def test_bedrock_chat_completion_error_incorrect_access_key_with_token(
     _test()
 
 
-def malformed_request_body_invoke_model(loop, bedrock_server, response_streaming):
+def invoke_model_malformed_request_body(loop, bedrock_server, response_streaming):
     async def _coro():
         with pytest.raises(_client_error):
             if response_streaming:
@@ -614,7 +614,7 @@ def test_bedrock_chat_completion_error_malformed_request_body(
         add_custom_attribute("llm.foo", "bar")
         add_custom_attribute("non_llm_attr", "python-agent")
 
-        malformed_request_body_invoke_model(loop, bedrock_server, response_streaming)
+        invoke_model_malformed_request_body(loop, bedrock_server, response_streaming)
 
     _test()
 

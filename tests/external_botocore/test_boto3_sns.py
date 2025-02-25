@@ -34,7 +34,7 @@ AWS_REGION_NAME = "us-east-1"
 SNS_URL = "sns-us-east-1.amazonaws.com"
 TOPIC = "arn:aws:sns:us-east-1:123456789012:some-topic"
 sns_metrics = [(f"MessageBroker/SNS/Topic/Produce/Named/{TOPIC}", 1)]
-sns_metrics_phone = [("MessageBroker/SNS/Topic" "/Produce/Named/PhoneNumber", 1)]
+sns_metrics_phone = [("MessageBroker/SNS/Topic/Produce/Named/PhoneNumber", 1)]
 
 
 @dt_enabled

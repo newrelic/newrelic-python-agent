@@ -36,7 +36,7 @@ async def middleware_factory(app, handler):
 
 
 middleware_tests = [
-    (middleware_factory, "Function/test_middleware:" "middleware_factory.<locals>.middleware_handler"),
+    (middleware_factory, "Function/test_middleware:middleware_factory.<locals>.middleware_handler"),
 ]
 
 

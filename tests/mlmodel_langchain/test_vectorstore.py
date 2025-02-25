@@ -28,12 +28,8 @@ from testing_support.ml_testing_utils import (  # noqa: F401
 )
 from testing_support.validators.validate_custom_event import validate_custom_event_count
 from testing_support.validators.validate_custom_events import validate_custom_events
-from testing_support.validators.validate_error_trace_attributes import (
-    validate_error_trace_attributes,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_error_trace_attributes import validate_error_trace_attributes
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
@@ -81,9 +77,13 @@ vectorstore_recorded_events = [
             "id": None,  # UUID that changes with each run
             "vendor": "langchain",
             "ingest_source": "Python",
-            "metadata.source": os.path.join(os.path.dirname(__file__), "hello.pdf"),
-            "metadata.page": 0,
+            "metadata.creationdate": "2023-02-10T00:49:47+00:00",
+            "metadata.creator": "XeTeX output 2023.02.10:0049",
             "metadata.page_label": "1",
+            "metadata.page": 0,
+            "metadata.producer": "xdvipdfmx (20210318)",
+            "metadata.source": os.path.join(os.path.dirname(__file__), "hello.pdf"),
+            "metadata.total_pages": 1,
         },
     ),
 ]
@@ -133,9 +133,7 @@ def test_vectorstore_modules_instrumented():
     name="test_vectorstore:test_pdf_pagesplitter_vectorstore_in_txn",
     scoped_metrics=[("Llm/vectorstore/LangChain/similarity_search", 1)],
     rollup_metrics=[("Llm/vectorstore/LangChain/similarity_search", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -165,9 +163,7 @@ def test_pdf_pagesplitter_vectorstore_in_txn(set_trace_info, embedding_openai_cl
     name="test_vectorstore:test_pdf_pagesplitter_vectorstore_in_txn_no_content",
     scoped_metrics=[("Llm/vectorstore/LangChain/similarity_search", 1)],
     rollup_metrics=[("Llm/vectorstore/LangChain/similarity_search", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -225,9 +221,7 @@ def test_pdf_pagesplitter_vectorstore_ai_monitoring_disabled(set_trace_info, emb
     name="test_vectorstore:test_async_pdf_pagesplitter_vectorstore_in_txn",
     scoped_metrics=[("Llm/vectorstore/LangChain/asimilarity_search", 1)],
     rollup_metrics=[("Llm/vectorstore/LangChain/asimilarity_search", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -261,9 +255,7 @@ def test_async_pdf_pagesplitter_vectorstore_in_txn(loop, set_trace_info, embeddi
     name="test_vectorstore:test_async_pdf_pagesplitter_vectorstore_in_txn_no_content",
     scoped_metrics=[("Llm/vectorstore/LangChain/asimilarity_search", 1)],
     rollup_metrics=[("Llm/vectorstore/LangChain/asimilarity_search", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -337,23 +329,20 @@ vectorstore_error_events = [
             "ingest_source": "Python",
             "error": True,
         },
-    ),
+    )
 ]
 
 
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(AssertionError),
-    required_params={"user": ["vector_store_id"], "intrinsic": [], "agent": []},
+    callable_name(AssertionError), required_params={"user": ["vector_store_id"], "intrinsic": [], "agent": []}
 )
 @validate_custom_events(events_with_context_attrs(vectorstore_error_events))
 @validate_transaction_metrics(
     name="test_vectorstore:test_vectorstore_error",
     scoped_metrics=[("Llm/vectorstore/LangChain/similarity_search", 1)],
     rollup_metrics=[("Llm/vectorstore/LangChain/similarity_search", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
     background_task=True,
 )
 @background_task()
@@ -372,17 +361,14 @@ def test_vectorstore_error(set_trace_info, embedding_openai_client, loop):
 @reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
 @validate_error_trace_attributes(
-    callable_name(AssertionError),
-    required_params={"user": ["vector_store_id"], "intrinsic": [], "agent": []},
+    callable_name(AssertionError), required_params={"user": ["vector_store_id"], "intrinsic": [], "agent": []}
 )
 @validate_custom_events(vectorstore_events_sans_content(vectorstore_error_events))
 @validate_transaction_metrics(
     name="test_vectorstore:test_vectorstore_error_no_content",
     scoped_metrics=[("Llm/vectorstore/LangChain/similarity_search", 1)],
     rollup_metrics=[("Llm/vectorstore/LangChain/similarity_search", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
     background_task=True,
 )
 @background_task()
@@ -399,17 +385,14 @@ def test_vectorstore_error_no_content(set_trace_info, embedding_openai_client):
 
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(AssertionError),
-    required_params={"user": ["vector_store_id"], "intrinsic": [], "agent": []},
+    callable_name(AssertionError), required_params={"user": ["vector_store_id"], "intrinsic": [], "agent": []}
 )
 @validate_custom_events(events_with_context_attrs(vectorstore_error_events))
 @validate_transaction_metrics(
     name="test_vectorstore:test_async_vectorstore_error",
     scoped_metrics=[("Llm/vectorstore/LangChain/asimilarity_search", 1)],
     rollup_metrics=[("Llm/vectorstore/LangChain/asimilarity_search", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
     background_task=True,
 )
 @background_task()
@@ -433,17 +416,14 @@ def test_async_vectorstore_error(loop, set_trace_info, embedding_openai_client):
 @reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
 @validate_error_trace_attributes(
-    callable_name(AssertionError),
-    required_params={"user": ["vector_store_id"], "intrinsic": [], "agent": []},
+    callable_name(AssertionError), required_params={"user": ["vector_store_id"], "intrinsic": [], "agent": []}
 )
 @validate_custom_events(vectorstore_events_sans_content(vectorstore_error_events))
 @validate_transaction_metrics(
     name="test_vectorstore:test_async_vectorstore_error_no_content",
     scoped_metrics=[("Llm/vectorstore/LangChain/asimilarity_search", 1)],
     rollup_metrics=[("Llm/vectorstore/LangChain/asimilarity_search", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
     background_task=True,
 )
 @background_task()

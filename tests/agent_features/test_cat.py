@@ -23,11 +23,7 @@ end style test, it does not fit as a unittest.
 
 import pytest
 import webtest
-from testing_support.fixtures import (
-    cat_enabled,
-    make_cross_agent_headers,
-    override_application_settings,
-)
+from testing_support.fixtures import cat_enabled, make_cross_agent_headers, override_application_settings
 
 from newrelic.api.background_task import background_task
 from newrelic.api.external_trace import ExternalTrace
@@ -79,10 +75,7 @@ def test_cat_insertion_disabled_on_304():
     assert "X-NewRelic-App-Data" not in response.headers
 
 
-_override_settings = {
-    "cross_application_tracing.enabled": True,
-    "distributed_tracing.enabled": False,
-}
+_override_settings = {"cross_application_tracing.enabled": True, "distributed_tracing.enabled": False}
 
 
 @cat_enabled

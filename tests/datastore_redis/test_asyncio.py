@@ -18,9 +18,7 @@ import pytest
 from testing_support.db_settings import redis_settings
 from testing_support.fixture.event_loop import event_loop as loop  # noqa: F401
 from testing_support.util import instance_hostname
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
@@ -37,9 +35,7 @@ datastore_all_metric_count = 5 if REDIS_PY_VERSION >= (5, 0) else 3
 _base_scoped_metrics = [("Datastore/operation/Redis/publish", 3)]
 
 if REDIS_PY_VERSION >= (5, 0):
-    _base_scoped_metrics.append(
-        ("Datastore/operation/Redis/client_setinfo", 2),
-    )
+    _base_scoped_metrics.append(("Datastore/operation/Redis/client_setinfo", 2))
 
 _base_rollup_metrics = [
     ("Datastore/all", datastore_all_metric_count),
@@ -53,9 +49,7 @@ _base_rollup_metrics = [
     ),
 ]
 if REDIS_PY_VERSION >= (5, 0):
-    _base_rollup_metrics.append(
-        ("Datastore/operation/Redis/client_setinfo", 2),
-    )
+    _base_rollup_metrics.append(("Datastore/operation/Redis/client_setinfo", 2))
 
 
 # Metrics for connection pool test

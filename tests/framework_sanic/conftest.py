@@ -48,11 +48,7 @@ def create_request_class(app, method, url, headers=None, loop=None):
 
     try:
         _request = Request(
-            method=method.upper(),
-            url_bytes=url.encode("utf-8"),
-            headers=headers,
-            version="1.0",
-            transport=None,
+            method=method.upper(), url_bytes=url.encode("utf-8"), headers=headers, version="1.0", transport=None
         )
     except TypeError:
         _request = Request(
@@ -109,9 +105,7 @@ def create_request_coroutine(app, method, url, headers=None, loop=None):
                 RESPONSES.append(response)
 
         coro = app.handle_request(
-            create_request_class(app, method, url, headers, loop=loop),
-            write_callback,
-            stream_callback,
+            create_request_class(app, method, url, headers, loop=loop), write_callback, stream_callback
         )
 
     return coro
@@ -142,7 +136,7 @@ def request(app, method, url, headers=None):
     return RESPONSES.pop()
 
 
-class TestApplication():
+class TestApplication:
     def __init__(self, app):
         self.app = app
 

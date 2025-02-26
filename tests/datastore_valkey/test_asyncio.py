@@ -18,9 +18,7 @@ import pytest
 from testing_support.db_settings import valkey_settings
 from testing_support.fixture.event_loop import event_loop as loop  # noqa: F401
 from testing_support.util import instance_hostname
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
@@ -33,9 +31,7 @@ datastore_all_metric_count = 5
 _base_scoped_metrics = [("Datastore/operation/Valkey/publish", 3)]
 
 
-_base_scoped_metrics.append(
-    ("Datastore/operation/Valkey/client_setinfo", 2),
-)
+_base_scoped_metrics.append(("Datastore/operation/Valkey/client_setinfo", 2))
 
 _base_rollup_metrics = [
     ("Datastore/all", datastore_all_metric_count),
@@ -48,9 +44,7 @@ _base_rollup_metrics = [
         datastore_all_metric_count,
     ),
 ]
-_base_rollup_metrics.append(
-    ("Datastore/operation/Valkey/client_setinfo", 2),
-)
+_base_rollup_metrics.append(("Datastore/operation/Valkey/client_setinfo", 2))
 
 
 # Metrics for connection pool test
@@ -69,10 +63,7 @@ _base_pool_rollup_metrics = [
     ("Datastore/operation/Valkey/get", 1),
     ("Datastore/operation/Valkey/set", 1),
     ("Datastore/operation/Valkey/client_list", 1),
-    (
-        f"Datastore/instance/Valkey/{instance_hostname(DB_SETTINGS['host'])}/{DB_SETTINGS['port']}",
-        3,
-    ),
+    (f"Datastore/instance/Valkey/{instance_hostname(DB_SETTINGS['host'])}/{DB_SETTINGS['port']}", 3),
 ]
 
 
@@ -83,21 +74,15 @@ _base_pool_rollup_metrics = [
 def client(loop):  # noqa
     import valkey.asyncio
 
-    return loop.run_until_complete(
-        valkey.asyncio.Valkey(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
-    )
+    return loop.run_until_complete(valkey.asyncio.Valkey(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0))
 
 
 @pytest.fixture()
 def client_pool(loop):  # noqa
     import valkey.asyncio
 
-    connection_pool = valkey.asyncio.ConnectionPool(
-        host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0
-    )
-    return loop.run_until_complete(
-        valkey.asyncio.Valkey(connection_pool=connection_pool)
-    )
+    connection_pool = valkey.asyncio.ConnectionPool(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
+    return loop.run_until_complete(valkey.asyncio.Valkey(connection_pool=connection_pool))
 
 
 @validate_transaction_metrics(

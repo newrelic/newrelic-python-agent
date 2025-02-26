@@ -22,7 +22,6 @@ from newrelic.api.background_task import background_task
 
 @background_task()
 def test_as_string_1(connection):
-
     # All of these are similar to those described in the doctests in
     # psycopg/lib/sql.py
 
@@ -109,4 +108,4 @@ def test_as_string_10(connection):
         sql.SQL(", ").join(map(sql.Identifier, names)), sql.SQL(", ").join(map(sql.Placeholder, names))
     )
     result = q2.as_string(connection)
-    assert result == 'insert into table ("foo", "bar", "baz") ' "values (%(foo)s, %(bar)s, %(baz)s)"
+    assert result == 'insert into table ("foo", "bar", "baz") values (%(foo)s, %(bar)s, %(baz)s)'

@@ -15,9 +15,7 @@
 import psycopg2
 import pytest
 from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_slow_sql_collector_json import (
-    validate_slow_sql_collector_json,
-)
+from testing_support.validators.validate_slow_sql_collector_json import validate_slow_sql_collector_json
 from utils import DB_SETTINGS
 
 from newrelic.api.background_task import background_task
@@ -77,16 +75,8 @@ def _exercise_db():
 
 
 @pytest.mark.parametrize("instance_enabled", (True, False))
-@pytest.mark.parametrize(
-    "distributed_tracing_enabled,payload_received",
-    [
-        (True, True),
-        (True, False),
-        (False, False),
-    ],
-)
+@pytest.mark.parametrize("distributed_tracing_enabled,payload_received", [(True, True), (True, False), (False, False)])
 def test_slow_sql_json(instance_enabled, distributed_tracing_enabled, payload_received):
-
     exact_params = None
 
     if instance_enabled:
@@ -123,7 +113,6 @@ def test_slow_sql_json(instance_enabled, distributed_tracing_enabled, payload_re
         _exercise_db()
 
         if payload_received:
-
             payload = {
                 "v": [0, 1],
                 "d": {

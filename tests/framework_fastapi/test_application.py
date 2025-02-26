@@ -20,11 +20,7 @@ from testing_support.validators.validate_code_level_metrics import validate_code
 
 
 @pytest.mark.parametrize(
-    "endpoint,transaction_name",
-    (
-        ("/sync", "_target_application:sync"),
-        ("/async", "_target_application:non_sync"),
-    ),
+    "endpoint,transaction_name", (("/sync", "_target_application:sync"), ("/async", "_target_application:non_sync"))
 )
 def test_application(caplog, app, endpoint, transaction_name):
     caplog.set_level(logging.ERROR)

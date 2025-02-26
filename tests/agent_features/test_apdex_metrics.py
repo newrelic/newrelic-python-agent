@@ -25,12 +25,7 @@ normal_application = webtest.TestApp(simple_app)
 # If the server-side configuration changes, this test will start to fail.
 
 
-@validate_apdex_metrics(
-    name="",
-    group="Uri",
-    apdex_t_min=0.5,
-    apdex_t_max=0.5,
-)
+@validate_apdex_metrics(name="", group="Uri", apdex_t_min=0.5, apdex_t_max=0.5)
 def test_apdex():
     normal_application.get("/")
 

@@ -26,27 +26,20 @@ DB_MULTIPLE_SETTINGS = memcached_settings()
 
 # Settings
 
-_enable_instance_settings = {
-    'datastore_tracer.instance_reporting.enabled': True,
-}
-_disable_instance_settings = {
-    'datastore_tracer.instance_reporting.enabled': False,
-}
+_enable_instance_settings = {"datastore_tracer.instance_reporting.enabled": True}
+_disable_instance_settings = {"datastore_tracer.instance_reporting.enabled": False}
 
 # Metrics
 
-_base_scoped_metrics = (
-    ('Datastore/operation/Memcached/get_multi', 1),
-    ('Datastore/operation/Memcached/set_multi', 1),
-)
+_base_scoped_metrics = (("Datastore/operation/Memcached/get_multi", 1), ("Datastore/operation/Memcached/set_multi", 1))
 
 _base_rollup_metrics = (
-    ('Datastore/all', 2),
-    ('Datastore/allOther', 2),
-    ('Datastore/Memcached/all', 2),
-    ('Datastore/Memcached/allOther', 2),
-    ('Datastore/operation/Memcached/set_multi', 1),
-    ('Datastore/operation/Memcached/get_multi', 1),
+    ("Datastore/all", 2),
+    ("Datastore/allOther", 2),
+    ("Datastore/Memcached/all", 2),
+    ("Datastore/Memcached/allOther", 2),
+    ("Datastore/operation/Memcached/set_multi", 1),
+    ("Datastore/operation/Memcached/get_multi", 1),
 )
 
 _disable_scoped_metrics = list(_base_scoped_metrics)
@@ -59,38 +52,36 @@ if len(DB_MULTIPLE_SETTINGS) > 1:
     memcached_1 = DB_MULTIPLE_SETTINGS[0]
     memcached_2 = DB_MULTIPLE_SETTINGS[1]
 
-    host_1 = instance_hostname(memcached_1['host'])
-    port_1 = memcached_1['port']
+    host_1 = instance_hostname(memcached_1["host"])
+    port_1 = memcached_1["port"]
 
-    host_2 = instance_hostname(memcached_2['host'])
-    port_2 = memcached_2['port']
+    host_2 = instance_hostname(memcached_2["host"])
+    port_2 = memcached_2["port"]
 
-    instance_metric_name_1 = f'Datastore/instance/Memcached/{host_1}/{port_1}'
-    instance_metric_name_2 = f'Datastore/instance/Memcached/{host_2}/{port_2}'
+    instance_metric_name_1 = f"Datastore/instance/Memcached/{host_1}/{port_1}"
+    instance_metric_name_2 = f"Datastore/instance/Memcached/{host_2}/{port_2}"
 
-    _enable_rollup_metrics.extend([
-            (instance_metric_name_1, None),
-            (instance_metric_name_2, None),
-    ])
+    _enable_rollup_metrics.extend([(instance_metric_name_1, None), (instance_metric_name_2, None)])
 
-    _disable_rollup_metrics.extend([
-            (instance_metric_name_1, None),
-            (instance_metric_name_2, None),
-    ])
+    _disable_rollup_metrics.extend([(instance_metric_name_1, None), (instance_metric_name_2, None)])
+
 
 def exercise_memcached(client, multi_dict):
     client.set_multi(multi_dict)
     client.get_multi(multi_dict.keys())
 
-transaction_metric_prefix = 'test_multiple_dbs:test_multiple_datastores'
 
-@pytest.mark.skipif(len(DB_MULTIPLE_SETTINGS) < 2,
-        reason='Test environment not configured with multiple databases.')
+transaction_metric_prefix = "test_multiple_dbs:test_multiple_datastores"
+
+
+@pytest.mark.skipif(len(DB_MULTIPLE_SETTINGS) < 2, reason="Test environment not configured with multiple databases.")
 @override_application_settings(_enable_instance_settings)
-@validate_transaction_metrics(f"{transaction_metric_prefix}_enabled",
-        scoped_metrics=_enable_scoped_metrics,
-        rollup_metrics=_enable_rollup_metrics,
-        background_task=True)
+@validate_transaction_metrics(
+    f"{transaction_metric_prefix}_enabled",
+    scoped_metrics=_enable_scoped_metrics,
+    rollup_metrics=_enable_rollup_metrics,
+    background_task=True,
+)
 @background_task()
 def test_multiple_datastores_enabled(memcached_multi):
     memcached1 = DB_MULTIPLE_SETTINGS[0]
@@ -102,13 +93,15 @@ def test_multiple_datastores_enabled(memcached_multi):
 
     exercise_memcached(client, memcached_multi)
 
-@pytest.mark.skipif(len(DB_MULTIPLE_SETTINGS) < 2,
-        reason='Test environment not configured with multiple databases.')
+
+@pytest.mark.skipif(len(DB_MULTIPLE_SETTINGS) < 2, reason="Test environment not configured with multiple databases.")
 @override_application_settings(_disable_instance_settings)
-@validate_transaction_metrics(f"{transaction_metric_prefix}_disabled",
-        scoped_metrics=_disable_scoped_metrics,
-        rollup_metrics=_disable_rollup_metrics,
-        background_task=True)
+@validate_transaction_metrics(
+    f"{transaction_metric_prefix}_disabled",
+    scoped_metrics=_disable_scoped_metrics,
+    rollup_metrics=_disable_rollup_metrics,
+    background_task=True,
+)
 @background_task()
 def test_multiple_datastores_disabled(memcached_multi):
     memcached1 = DB_MULTIPLE_SETTINGS[0]

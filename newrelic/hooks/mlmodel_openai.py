@@ -366,9 +366,7 @@ def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs,
     message = notice_error_attributes.pop("error.message", None)
     if message:
         exc._nr_message = message
-    ft.notice_error(
-        attributes=notice_error_attributes,
-    )
+    ft.notice_error(attributes=notice_error_attributes)
     # Exit the trace now so that the duration is calculated.
     ft.__exit__(*sys.exc_info())
 
@@ -613,9 +611,7 @@ def _record_completion_error(transaction, linking_metadata, completion_id, kwarg
     if message:
         exc._nr_message = message
 
-    ft.notice_error(
-        attributes=notice_error_attributes,
-    )
+    ft.notice_error(attributes=notice_error_attributes)
     # Stop the span now so we compute the duration before we create the events.
     ft.__exit__(*sys.exc_info())
 

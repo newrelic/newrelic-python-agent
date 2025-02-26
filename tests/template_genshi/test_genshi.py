@@ -13,17 +13,13 @@
 # limitations under the License.
 
 from genshi.template import MarkupTemplate
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
 
 @validate_transaction_metrics(
-    "test_render",
-    background_task=True,
-    scoped_metrics=(("Template/Render/genshi.core:Stream.render", 1),),
+    "test_render", background_task=True, scoped_metrics=(("Template/Render/genshi.core:Stream.render", 1),)
 )
 @background_task(name="test_render")
 def test_render():

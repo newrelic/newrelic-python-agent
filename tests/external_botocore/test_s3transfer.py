@@ -20,9 +20,7 @@ import botocore
 from moto import mock_aws
 from testing_support.fixtures import dt_enabled
 from testing_support.validators.validate_span_events import validate_span_events
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
@@ -55,9 +53,7 @@ else:
 @validate_span_events(exact_agents={"aws.operation": "PutObject"}, count=1)
 @validate_transaction_metrics(
     "test_s3transfer:test_s3_context_propagation",
-    scoped_metrics=[
-        (f"External/{S3_URL}/botocore/PUT", 2),
-    ],
+    scoped_metrics=[(f"External/{S3_URL}/botocore/PUT", 2)],
     rollup_metrics=[
         ("External/all", 2),
         ("External/allOther", 2),

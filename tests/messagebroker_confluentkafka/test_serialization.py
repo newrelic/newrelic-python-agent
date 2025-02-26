@@ -13,12 +13,8 @@
 # limitations under the License.
 
 import pytest
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
@@ -63,11 +59,7 @@ def test_deserialization_metrics(skip_if_not_serializing, topic, get_consumer_re
 
 
 @pytest.mark.parametrize(
-    "key,value,error",
-    (
-        (object(), "A", "KeySerializationError"),
-        ("A", object(), "ValueSerializationError"),
-    ),
+    "key,value,error", ((object(), "A", "KeySerializationError"), ("A", object(), "ValueSerializationError"))
 )
 def test_serialization_errors(skip_if_not_serializing, topic, producer, key, value, error):
     import confluent_kafka.error
@@ -84,11 +76,7 @@ def test_serialization_errors(skip_if_not_serializing, topic, producer, key, val
 
 
 @pytest.mark.parametrize(
-    "key,value,error",
-    (
-        ("%", "{}", "KeyDeserializationError"),
-        ("{}", "%", "ValueDeserializationError"),
-    ),
+    "key,value,error", (("%", "{}", "KeyDeserializationError"), ("{}", "%", "ValueDeserializationError"))
 )
 def test_deserialization_errors(skip_if_not_serializing, monkeypatch, topic, producer, consumer, key, value, error):
     import confluent_kafka.error

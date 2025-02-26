@@ -13,20 +13,11 @@
 # limitations under the License.
 
 import pytest
-from testing_support.external_fixtures import (
-    cache_outgoing_headers,
-    insert_incoming_headers,
-)
+from testing_support.external_fixtures import cache_outgoing_headers, insert_incoming_headers
 from testing_support.fixtures import cat_enabled, override_application_settings
-from testing_support.validators.validate_cross_process_headers import (
-    validate_cross_process_headers,
-)
-from testing_support.validators.validate_external_node_params import (
-    validate_external_node_params,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_cross_process_headers import validate_cross_process_headers
+from testing_support.validators.validate_external_node_params import validate_external_node_params
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
@@ -80,14 +71,7 @@ def test_http_https_request(server, metrics):
     _test()
 
 
-@pytest.mark.parametrize(
-    "distributed_tracing,span_events",
-    (
-        (True, True),
-        (True, False),
-        (False, False),
-    ),
-)
+@pytest.mark.parametrize("distributed_tracing,span_events", ((True, True), (True, False), (False, False)))
 def test_http_cross_process_request(distributed_tracing, span_events, server):
     @background_task(name="test_http:test_http_cross_process_request")
     @cache_outgoing_headers

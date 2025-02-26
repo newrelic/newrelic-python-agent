@@ -38,9 +38,9 @@ def test_worker_optimizations_preserve_instrumentation(celery_worker_available):
 
     celery.app.trace.reset_worker_optimizations()
     assert is_instrumented(), "Instrumentation not initially applied."
-    
+
     celery.app.trace.setup_worker_optimizations(celery_worker_available.app)
     assert is_instrumented(), "setup_worker_optimizations removed instrumentation."
-    
+
     celery.app.trace.reset_worker_optimizations()
     assert is_instrumented(), "reset_worker_optimizations removed instrumentation."

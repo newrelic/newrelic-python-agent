@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This module implements data recording and reporting for an application.
-
-"""
+"""This module implements data recording and reporting for an application."""
 
 import logging
 import os
@@ -32,12 +30,7 @@ from newrelic.core.custom_event import create_custom_event
 from newrelic.core.data_collector import create_session
 from newrelic.core.database_utils import SQLConnections
 from newrelic.core.environment import environment_settings, plugins
-from newrelic.core.internal_metrics import (
-    InternalTrace,
-    InternalTraceContext,
-    internal_count_metric,
-    internal_metric,
-)
+from newrelic.core.internal_metrics import InternalTrace, InternalTraceContext, internal_count_metric, internal_metric
 from newrelic.core.profile_sessions import profile_session_manager
 from newrelic.core.rules_engine import RulesEngine, SegmentCollapseEngine
 from newrelic.core.stats_engine import CustomMetrics, StatsEngine
@@ -49,7 +42,11 @@ from newrelic.network.exceptions import (
     RetryDataForRequest,
 )
 from newrelic.samplers.data_sampler import DataSampler
-from newrelic.core.agent_control_health import HealthStatus, agent_control_healthcheck_loop, agent_control_health_instance
+from newrelic.core.agent_control_health import (
+    HealthStatus,
+    agent_control_healthcheck_loop,
+    agent_control_health_instance,
+)
 
 _logger = logging.getLogger(__name__)
 
@@ -111,10 +108,11 @@ class Application:
 
         self._remaining_plugins = True
 
-        self._agent_control_health_thread = threading.Thread(name="Agent-Control-Health-Session-Thread", target=agent_control_healthcheck_loop)
+        self._agent_control_health_thread = threading.Thread(
+            name="Agent-Control-Health-Session-Thread", target=agent_control_healthcheck_loop
+        )
         self._agent_control_health_thread.daemon = True
         self._agent_control = agent_control_health_instance()
-
 
         # We setup empty rules engines here even though they will be
         # replaced when application first registered. This is done to
@@ -488,9 +486,7 @@ class Application:
                     timeout = 300
 
                 _logger.debug(
-                    "Retrying registration of the application "
-                    "%r with the data collector after a further %d "
-                    "seconds.",
+                    "Retrying registration of the application %r with the data collector after a further %d seconds.",
                     self._app_name,
                     timeout,
                 )
@@ -572,21 +568,16 @@ class Application:
                 1,
             )
             internal_metric(
-                f"Supportability/Logging/Metrics/Python/{'enabled' if application_logging_metrics else 'disabled'}",
-                1,
+                f"Supportability/Logging/Metrics/Python/{'enabled' if application_logging_metrics else 'disabled'}", 1
             )
             internal_metric(
-                f"Supportability/Logging/Labels/Python/{'enabled' if application_logging_labels else 'disabled'}",
-                1,
+                f"Supportability/Logging/Labels/Python/{'enabled' if application_logging_labels else 'disabled'}", 1
             )
 
             # AI monitoring feature toggle metrics
             ai_monitoring_streaming = configuration.ai_monitoring.streaming.enabled
             if not ai_monitoring_streaming:
-                internal_metric(
-                    "Supportability/Python/ML/Streaming/Disabled",
-                    1,
-                )
+                internal_metric("Supportability/Python/ML/Streaming/Disabled", 1)
 
             # Infinite tracing feature toggle metrics
             infinite_tracing = configuration.infinite_tracing.enabled  # Property that checks trace observer host
@@ -604,10 +595,7 @@ class Application:
 
             # Agent Control health check metric
             if self._agent_control.health_check_enabled:
-                internal_metric(
-                    "Supportability/AgentControl/Health/enabled",
-                    1,
-                )
+                internal_metric("Supportability/AgentControl/Health/enabled", 1)
 
         self._stats_engine.merge_custom_metrics(internal_metrics.metrics())
 
@@ -724,8 +712,7 @@ class Application:
         """
 
         _logger.debug(
-            "Register data source %r against application where "
-            "application=%r, name=%r, settings=%r and properties=%r.",
+            "Register data source %r against application where application=%r, name=%r, settings=%r and properties=%r.",
             source,
             self._app_name,
             name,
@@ -841,11 +828,7 @@ class Application:
 
             self._global_events_account += 1
             self._stats_engine.notice_error(
-                error=error,
-                attributes=attributes,
-                expected=expected,
-                ignore=ignore,
-                status_code=status_code,
+                error=error, attributes=attributes, expected=expected, ignore=ignore, status_code=status_code
             )
 
     def record_custom_metric(self, name, value):

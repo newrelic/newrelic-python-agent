@@ -12,17 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Instrumentation module for Flask framework.
-
-"""
+"""Instrumentation module for Flask framework."""
 
 from inspect import isclass
 
-from newrelic.api.function_trace import (
-    FunctionTrace,
-    FunctionTraceWrapper,
-    wrap_function_trace,
-)
+from newrelic.api.function_trace import FunctionTrace, FunctionTraceWrapper, wrap_function_trace
 from newrelic.api.time_trace import notice_error
 from newrelic.api.transaction import current_transaction
 from newrelic.api.wsgi_application import wrap_wsgi_application
@@ -293,20 +287,12 @@ def instrument_flask_app(module):
     # The _register_error_handler() method was only introduced in
     # Flask version 0.7.0.
     if hasattr(module.Flask, "_register_error_handler"):
-        wrap_function_wrapper(
-            module,
-            "Flask._register_error_handler",
-            _nr_wrapper_Flask__register_error_handler_,
-        )
+        wrap_function_wrapper(module, "Flask._register_error_handler", _nr_wrapper_Flask__register_error_handler_)
 
     # The method changed name to register_error_handler() in
     # Flask version 2.0.0.
     elif hasattr(module.Flask, "register_error_handler"):
-        wrap_function_wrapper(
-            module,
-            "Flask.register_error_handler",
-            _nr_wrapper_Flask_register_error_handler_,
-        )
+        wrap_function_wrapper(module, "Flask.register_error_handler", _nr_wrapper_Flask_register_error_handler_)
 
     # Different before/after methods were added in different versions.
     # Check for the presence of everything before patching.
@@ -317,11 +303,7 @@ def instrument_flask_app(module):
             "Flask.try_trigger_before_first_request_functions",
             _nr_wrapper_Flask_try_trigger_before_first_request_functions_,
         )
-        wrap_function_wrapper(
-            module,
-            "Flask.before_first_request",
-            _nr_wrapper_Flask_before_first_request_,
-        )
+        wrap_function_wrapper(module, "Flask.before_first_request", _nr_wrapper_Flask_before_first_request_)
 
     if hasattr(module.Flask, "preprocess_request"):
         wrap_function_trace(module, "Flask.preprocess_request")
@@ -439,36 +421,18 @@ def instrument_flask_blueprints(module):
     if hasattr(module.Blueprint, "before_request"):
         wrap_function_wrapper(module, "Blueprint.before_request", _nr_wrapper_Blueprint_before_request_)
     if hasattr(module.Blueprint, "before_app_request"):
-        wrap_function_wrapper(
-            module,
-            "Blueprint.before_app_request",
-            _nr_wrapper_Blueprint_before_app_request_,
-        )
+        wrap_function_wrapper(module, "Blueprint.before_app_request", _nr_wrapper_Blueprint_before_app_request_)
     if hasattr(module.Blueprint, "before_app_first_request"):
         wrap_function_wrapper(
-            module,
-            "Blueprint.before_app_first_request",
-            _nr_wrapper_Blueprint_before_app_first_request_,
+            module, "Blueprint.before_app_first_request", _nr_wrapper_Blueprint_before_app_first_request_
         )
 
     if hasattr(module.Blueprint, "after_request"):
         wrap_function_wrapper(module, "Blueprint.after_request", _nr_wrapper_Blueprint_after_request_)
     if hasattr(module.Blueprint, "after_app_request"):
-        wrap_function_wrapper(
-            module,
-            "Blueprint.after_app_request",
-            _nr_wrapper_Blueprint_after_app_request_,
-        )
+        wrap_function_wrapper(module, "Blueprint.after_app_request", _nr_wrapper_Blueprint_after_app_request_)
 
     if hasattr(module.Blueprint, "teardown_request"):
-        wrap_function_wrapper(
-            module,
-            "Blueprint.teardown_request",
-            _nr_wrapper_Blueprint_teardown_request_,
-        )
+        wrap_function_wrapper(module, "Blueprint.teardown_request", _nr_wrapper_Blueprint_teardown_request_)
     if hasattr(module.Blueprint, "teardown_app_request"):
-        wrap_function_wrapper(
-            module,
-            "Blueprint.teardown_app_request",
-            _nr_wrapper_Blueprint_teardown_app_request_,
-        )
+        wrap_function_wrapper(module, "Blueprint.teardown_app_request", _nr_wrapper_Blueprint_teardown_app_request_)

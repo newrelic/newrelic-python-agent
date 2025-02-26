@@ -21,9 +21,7 @@ import pytest
 from moto import mock_aws
 from testing_support.fixtures import dt_enabled
 from testing_support.validators.validate_span_events import validate_span_events
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
@@ -40,9 +38,7 @@ EXPECTED_LAMBDA_URL = f"https://{LAMBDA_URL}/2015-03-31/functions"
 LAMBDA_ARN = f"arn:aws:lambda:{AWS_REGION_NAME}:383735328703:function:lambdaFunction"
 
 
-_lambda_scoped_metrics = [
-    (f"External/{LAMBDA_URL}/botocore/POST", 2),
-]
+_lambda_scoped_metrics = [(f"External/{LAMBDA_URL}/botocore/POST", 2)]
 
 _lambda_rollup_metrics = [
     ("External/all", 3),
@@ -112,11 +108,7 @@ def iam_role_arn():
             region_name=AWS_REGION_NAME,
         )
         # Create IAM role
-        role = iam.create_role(
-            RoleName="my-role",
-            AssumeRolePolicyDocument="some policy",
-            Path="/my-path/",
-        )
+        role = iam.create_role(RoleName="my-role", AssumeRolePolicyDocument="some policy", Path="/my-path/")
         return role["Role"]["Arn"]
 
     return create_role

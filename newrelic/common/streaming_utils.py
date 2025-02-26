@@ -25,7 +25,7 @@ except:
 _logger = logging.getLogger(__name__)
 
 
-class StreamBuffer():
+class StreamBuffer:
     def __init__(self, maxlen, batching=False):
         self._queue = collections.deque(maxlen=maxlen)
         self._notify = self.condition()
@@ -80,7 +80,7 @@ class StreamBuffer():
         return StreamBufferIterator(self)
 
 
-class StreamBufferIterator():
+class StreamBufferIterator:
     MAX_BATCH_SIZE = 100
 
     def __init__(self, stream_buffer):

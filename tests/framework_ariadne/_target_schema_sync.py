@@ -15,13 +15,7 @@
 import os
 import webtest
 
-from ariadne import (
-    MutationType,
-    QueryType,
-    UnionType,
-    load_schema_from_path,
-    make_executable_schema,
-)
+from ariadne import MutationType, QueryType, UnionType, load_schema_from_path, make_executable_schema
 from ariadne.wsgi import GraphQL as GraphQLWSGI
 from framework_graphql._target_schema_sync import books, magazines, libraries
 
@@ -42,7 +36,6 @@ type_defs = load_schema_from_path(schema_file)
 storage = []
 
 mutation = MutationType()
-
 
 
 @mutation.field("storage_add")

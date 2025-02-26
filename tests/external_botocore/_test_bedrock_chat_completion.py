@@ -1159,7 +1159,7 @@ chat_completion_invalid_model_error_events = [
             "ingest_source": "Python",
             "error": True,
         },
-    ),
+    )
 ]
 
 chat_completion_invalid_access_key_error_events = {
@@ -1423,7 +1423,7 @@ chat_completion_expected_malformed_request_body_events = [
             "ingest_source": "Python",
             "error": True,
         },
-    ),
+    )
 ]
 
 chat_completion_expected_malformed_response_body_events = [

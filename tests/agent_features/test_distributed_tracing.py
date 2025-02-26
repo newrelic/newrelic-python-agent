@@ -18,15 +18,9 @@ import json
 import pytest
 import webtest
 from testing_support.fixtures import override_application_settings, validate_attributes
-from testing_support.validators.validate_error_event_attributes import (
-    validate_error_event_attributes,
-)
-from testing_support.validators.validate_transaction_event_attributes import (
-    validate_transaction_event_attributes,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_error_event_attributes import validate_error_event_attributes
+from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import BackgroundTask, background_task
@@ -101,10 +95,7 @@ def target_wsgi_application(environ, start_response):
 
 test_application = webtest.TestApp(target_wsgi_application)
 
-_override_settings = {
-    "trusted_account_key": "1",
-    "distributed_tracing.enabled": True,
-}
+_override_settings = {"trusted_account_key": "1", "distributed_tracing.enabled": True}
 
 
 _metrics = [
@@ -202,11 +193,7 @@ def test_distributed_trace_attributes(span_events, accept_payload):
     _test()
 
 
-_forgone_attributes = {
-    "agent": [],
-    "user": [],
-    "intrinsic": (inbound_payload_intrinsics + ["grandparentId"]),
-}
+_forgone_attributes = {"agent": [], "user": [], "intrinsic": (inbound_payload_intrinsics + ["grandparentId"])}
 
 
 @override_application_settings(_override_settings)
@@ -254,9 +241,7 @@ def test_distributed_tracing_metrics(web_transaction, gen_error, has_parent):
 
     # now run the test
     transaction_name = f"test_dt_metrics_{'_'.join(metrics)}"
-    _rollup_metrics = [
-        (f"{x}/{tag}{bt}", 1) for x in metrics for bt in ["", "Web" if web_transaction else "Other"]
-    ]
+    _rollup_metrics = [(f"{x}/{tag}{bt}", 1) for x in metrics for bt in ["", "Web" if web_transaction else "Other"]]
 
     def _make_test_transaction():
         application = application_instance()

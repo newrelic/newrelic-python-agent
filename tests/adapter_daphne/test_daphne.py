@@ -25,25 +25,13 @@ from testing_support.fixtures import (
     wait_for_background_threads,
 )
 from testing_support.http_23_testing import make_request
-from testing_support.sample_asgi_applications import (
-    AppWithCall,
-    AppWithCallRaw,
-    simple_app_v2_raw,
-    simple_app_v3,
-)
+from testing_support.sample_asgi_applications import AppWithCall, AppWithCallRaw, simple_app_v2_raw, simple_app_v3
 from testing_support.util import get_open_port
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.common.object_names import callable_name
-from newrelic.common.package_version_utils import (
-    get_package_version,
-    get_package_version_tuple,
-)
+from newrelic.common.package_version_utils import get_package_version, get_package_version_tuple
 
 DAPHNE_VERSION = get_package_version_tuple("daphne")
 skip_asgi_3_unsupported = pytest.mark.skipif(DAPHNE_VERSION < (3, 0), reason="ASGI3 unsupported")
@@ -52,22 +40,10 @@ skip_asgi_2_unsupported = pytest.mark.skipif(DAPHNE_VERSION >= (3, 0), reason="A
 
 @pytest.fixture(
     params=(
-        pytest.param(
-            simple_app_v2_raw,
-            marks=skip_asgi_2_unsupported,
-        ),
-        pytest.param(
-            simple_app_v3,
-            marks=skip_asgi_3_unsupported,
-        ),
-        pytest.param(
-            AppWithCallRaw(),
-            marks=skip_asgi_3_unsupported,
-        ),
-        pytest.param(
-            AppWithCall(),
-            marks=skip_asgi_3_unsupported,
-        ),
+        pytest.param(simple_app_v2_raw, marks=skip_asgi_2_unsupported),
+        pytest.param(simple_app_v3, marks=skip_asgi_3_unsupported),
+        pytest.param(AppWithCallRaw(), marks=skip_asgi_3_unsupported),
+        pytest.param(AppWithCall(), marks=skip_asgi_3_unsupported),
     ),
     ids=("raw", "wrapped", "class_with_call", "class_with_call_double_wrapped"),
 )
@@ -132,10 +108,7 @@ def test_daphne_200(port, app, http_version):
     assert daphne_version is not None
 
     @validate_transaction_metrics(
-        callable_name(app),
-        custom_metrics=[
-            (f"Python/Dispatcher/Daphne/{daphne_version}", 1),
-        ],
+        callable_name(app), custom_metrics=[(f"Python/Dispatcher/Daphne/{daphne_version}", 1)]
     )
     @raise_background_exceptions()
     @wait_for_background_threads()

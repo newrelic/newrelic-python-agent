@@ -51,6 +51,7 @@ def nr_coro_resolver_wrapper(wrapped, trace, ignore, result):
 
     return _nr_coro_resolver_wrapper()
 
+
 def nr_coro_graphql_impl_wrapper(wrapped, trace, ignore, result):
     @functools.wraps(wrapped)
     async def _nr_coro_graphql_impl_wrapper():
@@ -63,6 +64,5 @@ def nr_coro_graphql_impl_wrapper(wrapped, trace, ignore, result):
         else:
             trace.__exit__(None, None, None)
             return result_
-
 
     return _nr_coro_graphql_impl_wrapper()

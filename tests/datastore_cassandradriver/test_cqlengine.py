@@ -16,19 +16,12 @@ import os
 
 import pytest
 from cassandra.cqlengine import columns, connection
-from cassandra.cqlengine.management import (
-    create_keyspace_simple,
-    drop_keyspace,
-    drop_table,
-    sync_table,
-)
+from cassandra.cqlengine.management import create_keyspace_simple, drop_keyspace, drop_table, sync_table
 from cassandra.cqlengine.models import Model
 from cassandra.cqlengine.query import BatchQuery
 from testing_support.db_settings import cassandra_settings
 from testing_support.util import instance_hostname
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 

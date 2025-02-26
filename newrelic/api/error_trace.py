@@ -19,15 +19,8 @@ from newrelic.api.time_trace import current_trace, notice_error
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 
 
-class ErrorTrace():
-    def __init__(
-        self,
-        ignore_errors=[],
-        ignore=None,
-        expected=None,
-        status_code=None,
-        parent=None,
-    ):
+class ErrorTrace:
+    def __init__(self, ignore_errors=[], ignore=None, expected=None, status_code=None, parent=None):
         if parent is None:
             parent = current_trace()
 
@@ -38,10 +31,7 @@ class ErrorTrace():
 
         if ignore_errors:
             warnings.warn(
-                (
-                    "The ignore_errors argument is deprecated. Please use the "
-                    "new ignore argument instead."
-                ),
+                ("The ignore_errors argument is deprecated. Please use the new ignore argument instead."),
                 DeprecationWarning,
             )
 
@@ -56,16 +46,11 @@ class ErrorTrace():
             return
 
         notice_error(
-            error=(exc, value, tb),
-            ignore=self._ignore,
-            expected=self._expected,
-            status_code=self._status_code,
+            error=(exc, value, tb), ignore=self._ignore, expected=self._expected, status_code=self._status_code
         )
 
 
-def ErrorTraceWrapper(
-    wrapped, ignore_errors=[], ignore=None, expected=None, status_code=None
-):
+def ErrorTraceWrapper(wrapped, ignore_errors=[], ignore=None, expected=None, status_code=None):
     def wrapper(wrapped, instance, args, kwargs):
         parent = current_trace()
 
@@ -80,25 +65,9 @@ def ErrorTraceWrapper(
 
 def error_trace(ignore_errors=[], ignore=None, expected=None, status_code=None):
     return functools.partial(
-        ErrorTraceWrapper,
-        ignore_errors=ignore_errors,
-        ignore=ignore,
-        expected=expected,
-        status_code=status_code,
+        ErrorTraceWrapper, ignore_errors=ignore_errors, ignore=ignore, expected=expected, status_code=status_code
     )
 
 
-def wrap_error_trace(
-    module, object_path, ignore_errors=[], ignore=None, expected=None, status_code=None
-):
-    wrap_object(
-        module,
-        object_path,
-        ErrorTraceWrapper,
-        (
-            ignore_errors,
-            ignore,
-            expected,
-            status_code,
-        ),
-    )
+def wrap_error_trace(module, object_path, ignore_errors=[], ignore=None, expected=None, status_code=None):
+    wrap_object(module, object_path, ErrorTraceWrapper, (ignore_errors, ignore, expected, status_code))

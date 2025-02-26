@@ -14,9 +14,7 @@
 
 import pytest
 from testing_support.fixtures import failing_endpoint, override_generic_settings
-from testing_support.validators.validate_internal_metrics import (
-    validate_internal_metrics,
-)
+from testing_support.validators.validate_internal_metrics import validate_internal_metrics
 
 from newrelic.core.application import Application
 from newrelic.core.config import global_settings
@@ -25,12 +23,7 @@ from newrelic.network.exceptions import ForceAgentDisconnect
 SETTINGS = global_settings()
 
 
-@override_generic_settings(
-    SETTINGS,
-    {
-        "developer_mode": True,
-    },
-)
+@override_generic_settings(SETTINGS, {"developer_mode": True})
 @failing_endpoint("preconnect", raises=ForceAgentDisconnect)
 def test_http_gone_stops_connect():
     app = Application("Python Agent Test (agent_unittests-connect)")
@@ -41,20 +34,10 @@ def test_http_gone_stops_connect():
     assert not app._active_session
 
 
-_logging_settings_matrix = [
-    (True, True),
-    (True, False),
-    (False, True),
-    (False, False),
-]
+_logging_settings_matrix = [(True, True), (True, False), (False, True), (False, False)]
 
 
-@override_generic_settings(
-    SETTINGS,
-    {
-        "developer_mode": True,
-    },
-)
+@override_generic_settings(SETTINGS, {"developer_mode": True})
 @pytest.mark.parametrize("feature_setting,subfeature_setting", _logging_settings_matrix)
 def test_logging_connect_supportability_metrics(feature_setting, subfeature_setting):
     metric_value = "enabled" if feature_setting and subfeature_setting else "disabled"
@@ -84,18 +67,8 @@ def test_logging_connect_supportability_metrics(feature_setting, subfeature_sett
     test()
 
 
-@override_generic_settings(
-    SETTINGS,
-    {
-        "developer_mode": True,
-        "ai_monitoring.streaming.enabled": False,
-    },
-)
-@validate_internal_metrics(
-    [
-        ("Supportability/Python/ML/Streaming/Disabled", 1),
-    ]
-)
+@override_generic_settings(SETTINGS, {"developer_mode": True, "ai_monitoring.streaming.enabled": False})
+@validate_internal_metrics([("Supportability/Python/ML/Streaming/Disabled", 1)])
 def test_ml_streaming_disabled_supportability_metrics():
     app = Application("Python Agent Test (agent_unittests-connect)")
     app.connect_to_data_collector(None)
@@ -103,17 +76,8 @@ def test_ml_streaming_disabled_supportability_metrics():
     assert app._active_session
 
 
-@override_generic_settings(
-    SETTINGS,
-    {
-        "developer_mode": True,
-    },
-)
-@validate_internal_metrics(
-    [
-        ("Supportability/AgentControl/Health/enabled", 1),
-    ]
-)
+@override_generic_settings(SETTINGS, {"developer_mode": True})
+@validate_internal_metrics([("Supportability/AgentControl/Health/enabled", 1)])
 def test_agent_control_health_supportability_metric(monkeypatch, tmp_path):
     # Setup expected env vars to run agent control health check
     monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_ENABLED", True)

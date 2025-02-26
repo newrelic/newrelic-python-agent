@@ -25,12 +25,8 @@ from testing_support.fixtures import (
     validate_error_event_sample_data,
 )
 from testing_support.sample_applications import fully_featured_app
-from testing_support.validators.validate_non_transaction_error_event import (
-    validate_non_transaction_error_event,
-)
-from testing_support.validators.validate_transaction_error_event_count import (
-    validate_transaction_error_event_count,
-)
+from testing_support.validators.validate_non_transaction_error_event import validate_non_transaction_error_event
+from testing_support.validators.validate_transaction_error_event_count import validate_transaction_error_event_count
 
 from newrelic.api.application import application_instance as application
 from newrelic.api.application import application_settings
@@ -119,9 +115,7 @@ _intrinsic_attributes = {
 @cat_enabled
 @validate_error_event_sample_data(required_attrs=_intrinsic_attributes, required_user_attrs=True)
 def test_transaction_error_cross_agent():
-    test_environ = {
-        "err_message": ERR_MESSAGE,
-    }
+    test_environ = {"err_message": ERR_MESSAGE}
     settings = application_settings()
     transaction_data = [7, 1, 77, "/path-hash"]
     headers = make_cross_agent_headers(transaction_data, settings.encoding_key, settings.cross_process_id)
@@ -144,9 +138,7 @@ _intrinsic_attributes = {
 
 @validate_error_event_sample_data(required_attrs=_intrinsic_attributes, required_user_attrs=True)
 def test_transaction_error_with_synthetics():
-    test_environ = {
-        "err_message": ERR_MESSAGE,
-    }
+    test_environ = {"err_message": ERR_MESSAGE}
     settings = application_settings()
     headers = make_synthetics_headers(
         settings.encoding_key,
@@ -172,10 +164,7 @@ _intrinsic_attributes = {
 @validate_error_event_sample_data(required_attrs=_intrinsic_attributes, required_user_attrs=True, num_errors=2)
 @validate_transaction_error_event_count(num_errors=2)
 def test_multiple_errors_in_transaction():
-    test_environ = {
-        "err_message": ERR_MESSAGE,
-        "n_errors": "2",
-    }
+    test_environ = {"err_message": ERR_MESSAGE, "n_errors": "2"}
     response = fully_featured_application.get("/", extra_environ=test_environ)
 
 
@@ -185,9 +174,7 @@ def test_multiple_errors_in_transaction():
 def test_error_collector_disabled():
     """If error_collector is disabled, don't event collect error info. There
     should be an empty result from transaction_node.error_event"""
-    test_environ = {
-        "err_message": ERR_MESSAGE,
-    }
+    test_environ = {"err_message": ERR_MESSAGE}
     response = fully_featured_application.get("/", extra_environ=test_environ)
 
 
@@ -197,9 +184,7 @@ def test_collect_error_events_false():
     """Don't save error events to stats engine. Error info can be collected
     for error traces, so we only validate that event is not on stats engine,
     not that it can't be generated from the transaction node."""
-    test_environ = {
-        "err_message": ERR_MESSAGE,
-    }
+    test_environ = {"err_message": ERR_MESSAGE}
     response = fully_featured_application.get("/", extra_environ=test_environ)
 
 
@@ -209,9 +194,7 @@ def test_collect_error_capture_events_disabled():
     """Don't save error events to stats engine. Error info can be collected
     for error traces, so we only validate that event is not on stats engine,
     not that it can't be generated from the transaction node."""
-    test_environ = {
-        "err_message": ERR_MESSAGE,
-    }
+    test_environ = {"err_message": ERR_MESSAGE}
     response = fully_featured_application.get("/", extra_environ=test_environ)
 
 

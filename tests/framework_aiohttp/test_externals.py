@@ -14,22 +14,9 @@
 
 
 from testing_support.fixtures import validate_tt_parenting
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
-expected_parenting = (
-    "TransactionNode",
-    [
-        (
-            "FunctionNode",
-            [
-                ("ExternalTrace", []),
-                ("ExternalTrace", []),
-            ],
-        ),
-    ],
-)
+expected_parenting = ("TransactionNode", [("FunctionNode", [("ExternalTrace", []), ("ExternalTrace", [])])])
 
 
 @validate_tt_parenting(expected_parenting)

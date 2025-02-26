@@ -20,40 +20,52 @@ from werkzeug.routing import Rule
 
 application = Flask(__name__)
 
-@application.route('/index')
+
+@application.route("/index")
 def index_page():
-    return 'INDEX RESPONSE'
+    return "INDEX RESPONSE"
 
-application.url_map.add(Rule('/endpoint', endpoint='endpoint'))
 
-@application.endpoint('endpoint')
+application.url_map.add(Rule("/endpoint", endpoint="endpoint"))
+
+
+@application.endpoint("endpoint")
 def endpoint_page():
-    return 'ENDPOINT RESPONSE'
+    return "ENDPOINT RESPONSE"
 
-@application.route('/error')
+
+@application.route("/error")
 def error_page():
-    raise RuntimeError('RUNTIME ERROR')
+    raise RuntimeError("RUNTIME ERROR")
 
-@application.route('/abort_404')
+
+@application.route("/abort_404")
 def abort_404_page():
     abort(404)
 
-@application.route('/exception_404')
+
+@application.route("/exception_404")
 def exception_404_page():
     raise NotFound()
 
-@application.route('/template_string')
+
+@application.route("/template_string")
 def template_string():
-    return render_template_string('<body><p>INDEX RESPONSE</p></body>')
+    return render_template_string("<body><p>INDEX RESPONSE</p></body>")
 
-@application.route('/template_not_found')
+
+@application.route("/template_not_found")
 def template_not_found():
-    return render_template('not_found')
+    return render_template("not_found")
 
-@application.route('/html_insertion')
+
+@application.route("/html_insertion")
 def html_insertion():
-    return ('<!DOCTYPE html><html><head>Some header</head>'
-            '<body><h1>My First Heading</h1><p>My first paragraph.</p>'
-            '</body></html>')
+    return (
+        "<!DOCTYPE html><html><head>Some header</head>"
+        "<body><h1>My First Heading</h1><p>My first paragraph.</p>"
+        "</body></html>"
+    )
+
 
 _test_application = webtest.TestApp(application)

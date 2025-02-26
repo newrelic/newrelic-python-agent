@@ -16,16 +16,10 @@ import pika
 import pytest
 from testing_support.db_settings import rabbitmq_settings
 from testing_support.fixtures import dt_enabled, override_application_settings
-from testing_support.validators.validate_messagebroker_headers import (
-    validate_messagebroker_headers,
-)
+from testing_support.validators.validate_messagebroker_headers import validate_messagebroker_headers
 from testing_support.validators.validate_span_events import validate_span_events
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
-from testing_support.validators.validate_tt_collector_json import (
-    validate_tt_collector_json,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_tt_collector_json import validate_tt_collector_json
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import current_transaction
@@ -51,9 +45,7 @@ CORRELATION_ID = "testingpika"
 REPLY_TO = "testing"
 HEADERS = {"MYHEADER": "pikatest"}
 
-_message_broker_tt_included_params = {
-    "routing_key": QUEUE,
-}
+_message_broker_tt_included_params = {"routing_key": QUEUE}
 
 _message_broker_tt_forgone_params = ["queue_name", "correlation_id", "reply_to"]
 
@@ -86,29 +78,17 @@ def test_blocking_connection(producer):
     with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
         channel = connection.channel()
 
-        channel.basic_publish(
-            exchange="",
-            routing_key=QUEUE,
-            body="test",
-        )
+        channel.basic_publish(exchange="", routing_key=QUEUE, body="test")
 
         # publish has been removed and replaced with basic_publish in later
         # versions of pika
         publish = getattr(channel, "publish", channel.basic_publish)
 
-        publish(
-            exchange="",
-            routing_key=QUEUE,
-            body="test",
-        )
+        publish(exchange="", routing_key=QUEUE, body="test")
 
 
 _message_broker_tt_included_test_correlation_id = _message_broker_tt_included_params.copy()
-_message_broker_tt_included_test_correlation_id.update(
-    {
-        "correlation_id": CORRELATION_ID,
-    }
-)
+_message_broker_tt_included_test_correlation_id.update({"correlation_id": CORRELATION_ID})
 
 _message_broker_tt_forgone_test_correlation_id = ["queue_name", "reply_to", "headers"]
 
@@ -150,11 +130,7 @@ def test_blocking_connection_correlation_id(producer):
 
 
 _message_broker_tt_included_test_reply_to = _message_broker_tt_included_params.copy()
-_message_broker_tt_included_test_reply_to.update(
-    {
-        "reply_to": REPLY_TO,
-    }
-)
+_message_broker_tt_included_test_reply_to.update({"reply_to": REPLY_TO})
 
 _message_broker_tt_forgone_test_reply_to = ["queue_name", "correlation_id", "headers"]
 
@@ -177,37 +153,24 @@ def test_blocking_connection_reply_to(producer):
         channel = connection.channel()
 
         channel.basic_publish(
-            exchange="",
-            routing_key=QUEUE,
-            body="test",
-            properties=pika.spec.BasicProperties(reply_to=REPLY_TO),
+            exchange="", routing_key=QUEUE, body="test", properties=pika.spec.BasicProperties(reply_to=REPLY_TO)
         )
 
         # publish has been removed and replaced with basic_publish in later
         # versions of pika
         publish = getattr(channel, "publish", channel.basic_publish)
 
-        publish(
-            exchange="",
-            routing_key=QUEUE,
-            body="test",
-            properties=pika.spec.BasicProperties(reply_to=REPLY_TO),
-        )
+        publish(exchange="", routing_key=QUEUE, body="test", properties=pika.spec.BasicProperties(reply_to=REPLY_TO))
 
 
 _message_broker_tt_included_test_headers = _message_broker_tt_included_params.copy()
-_message_broker_tt_included_test_headers.update(
-    {
-        "headers": HEADERS.copy(),
-    }
-)
+_message_broker_tt_included_test_headers.update({"headers": HEADERS.copy()})
 
 _message_broker_tt_forgone_test_headers = ["queue_name", "correlation_id", "reply_to"]
 
 
 @pytest.mark.parametrize("enable_distributed_tracing", [True, False])
 def test_blocking_connection_headers(enable_distributed_tracing):
-
     override_settings = {
         "distributed_tracing.enabled": enable_distributed_tracing,
         "cross_application_tracer.enabled": not enable_distributed_tracing,
@@ -238,22 +201,14 @@ def test_blocking_connection_headers(enable_distributed_tracing):
             channel = connection.channel()
 
             channel.basic_publish(
-                exchange="",
-                routing_key=QUEUE,
-                body="test",
-                properties=pika.spec.BasicProperties(headers=HEADERS),
+                exchange="", routing_key=QUEUE, body="test", properties=pika.spec.BasicProperties(headers=HEADERS)
             )
 
             # publish has been removed and replaced with basic_publish in later
             # versions of pika
             publish = getattr(channel, "publish", channel.basic_publish)
 
-            publish(
-                exchange="",
-                routing_key=QUEUE,
-                body="test",
-                properties=pika.spec.BasicProperties(headers=HEADERS),
-            )
+            publish(exchange="", routing_key=QUEUE, body="test", properties=pika.spec.BasicProperties(headers=HEADERS))
 
     _test()
 
@@ -276,23 +231,13 @@ def test_blocking_connection_headers_reuse_properties(producer):
         channel = connection.channel()
         properties = pika.spec.BasicProperties(headers=HEADERS)
 
-        channel.basic_publish(
-            exchange="",
-            routing_key=QUEUE,
-            body="test",
-            properties=properties,
-        )
+        channel.basic_publish(exchange="", routing_key=QUEUE, body="test", properties=properties)
 
         # publish has been removed and replaced with basic_publish in later
         # versions of pika
         publish = getattr(channel, "publish", channel.basic_publish)
 
-        publish(
-            exchange="",
-            routing_key=QUEUE,
-            body="test",
-            properties=properties,
-        )
+        publish(exchange="", routing_key=QUEUE, body="test", properties=properties)
 
 
 _test_blocking_connection_two_exchanges_metrics = [
@@ -323,16 +268,8 @@ def test_blocking_connection_two_exchanges():
         channel.exchange_declare(exchange="exchange-1", durable=False, auto_delete=True)
         channel.exchange_declare(exchange="exchange-2", durable=False, auto_delete=True)
 
-        channel.basic_publish(
-            exchange="exchange-1",
-            routing_key=QUEUE,
-            body="test",
-        )
-        channel.basic_publish(
-            exchange="exchange-2",
-            routing_key=QUEUE,
-            body="test",
-        )
+        channel.basic_publish(exchange="exchange-1", routing_key=QUEUE, body="test")
+        channel.basic_publish(exchange="exchange-2", routing_key=QUEUE, body="test")
 
 
 _test_select_connection_metrics = [
@@ -365,11 +302,7 @@ def test_select_connection():
         connection.channel(on_open_callback=on_channel_open)
 
     def on_channel_open(channel):
-        channel.basic_publish(
-            exchange="",
-            routing_key=QUEUE,
-            body="test",
-        )
+        channel.basic_publish(exchange="", routing_key=QUEUE, body="test")
         connection.close()
         connection.ioloop.stop()
 
@@ -418,11 +351,7 @@ def test_tornado_connection():
         connection.channel(on_open_callback=on_channel_open)
 
     def on_channel_open(channel):
-        channel.basic_publish(
-            exchange="",
-            routing_key=QUEUE,
-            body="test",
-        )
+        channel.basic_publish(exchange="", routing_key=QUEUE, body="test")
         connection.close()
         connection.ioloop.stop()
 

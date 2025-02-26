@@ -13,10 +13,7 @@
 # limitations under the License.
 
 
-from newrelic.common.object_wrapper import (
-    function_wrapper,
-    transient_function_wrapper,
-)
+from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
 
 
 def validate_synthetics_event(required_attrs=None, forgone_attrs=None, should_exist=True):

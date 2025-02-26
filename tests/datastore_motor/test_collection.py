@@ -16,16 +16,10 @@ import sqlite3
 
 import pymongo
 from conftest import MONGODB_COLLECTION, MONGODB_HOST, MONGODB_PORT
-from testing_support.validators.validate_database_duration import (
-    validate_database_duration,
-)
+from testing_support.validators.validate_database_duration import validate_database_duration
 from testing_support.validators.validate_span_events import validate_span_events
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.common import system_info
@@ -100,9 +94,7 @@ async def exercise_motor(db):
     exact_intrinsics={"name": f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/insert_one"},
 )
 @validate_transaction_metrics(
-    "test_motor_instance_info",
-    rollup_metrics=[(INSTANCE_METRIC_NAME, 1)],
-    background_task=True,
+    "test_motor_instance_info", rollup_metrics=[(INSTANCE_METRIC_NAME, 1)], background_task=True
 )
 @background_task(name="test_motor_instance_info")
 def test_motor_instance_info(loop, client):
@@ -219,7 +211,6 @@ def test_motor_database_duration(loop, client):
 @validate_database_duration()
 @background_task()
 def test_motor_and_sqlite_database_duration(loop, client):
-
     # Make mongodb queries
     db = client()["test"]
     loop.run_until_complete(exercise_motor(db))

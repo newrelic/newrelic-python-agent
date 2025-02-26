@@ -25,12 +25,7 @@ import newrelic.core.trace_node
 from newrelic.common.encoding_utils import camel_case
 from newrelic.common.streaming_utils import SpanProtoAttrs
 from newrelic.core.attribute import create_agent_attributes, create_attributes
-from newrelic.core.attribute_filter import (
-    DST_ALL,
-    DST_ERROR_COLLECTOR,
-    DST_TRANSACTION_EVENTS,
-    DST_TRANSACTION_TRACER,
-)
+from newrelic.core.attribute_filter import DST_ALL, DST_ERROR_COLLECTOR, DST_TRANSACTION_EVENTS, DST_TRANSACTION_TRACER
 from newrelic.core.metric import ApdexMetric, TimeMetric
 from newrelic.core.string_table import StringTable
 
@@ -108,7 +103,6 @@ _TransactionNode = namedtuple(
 
 
 class TransactionNode(_TransactionNode):
-
     """Class holding data corresponding to the root of the transaction. All
     the nodes of interest recorded for the transaction are held as a tree
     structure within the 'children' attribute.
@@ -232,9 +226,7 @@ class TransactionNode(_TransactionNode):
                     )
 
                 if self.errors:
-                    yield TimeMetric(
-                        name=f"ErrorsByCaller/{dt_tag}{bonus_tag}", scope="", duration=0.0, exclusive=None
-                    )
+                    yield TimeMetric(name=f"ErrorsByCaller/{dt_tag}{bonus_tag}", scope="", duration=0.0, exclusive=None)
 
         # Generate Error metrics
 
@@ -369,11 +361,7 @@ class TransactionNode(_TransactionNode):
                     params["userAttributes"][attr.name] = attr.value
 
             yield newrelic.core.error_collector.TracedError(
-                start_time=error.timestamp,
-                path=self.path,
-                message=error.message,
-                type=error.type,
-                parameters=params,
+                start_time=error.timestamp, path=self.path, message=error.message, type=error.type, parameters=params
             )
 
     def transaction_trace(self, stats, limit, connections):
@@ -646,10 +634,5 @@ class TransactionNode(_TransactionNode):
             )
         )
 
-        for event in self.root.span_events(
-            settings,
-            base_attrs,
-            parent_guid=self.parent_span,
-            attr_class=attr_class,
-        ):
+        for event in self.root.span_events(settings, base_attrs, parent_guid=self.parent_span, attr_class=attr_class):
             yield event

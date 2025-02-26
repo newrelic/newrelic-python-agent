@@ -27,11 +27,7 @@ from _test_code_level_metrics import (
     ExerciseTypeConstructorCallable,
 )
 from _test_code_level_metrics import __file__ as FILE_PATH
-from _test_code_level_metrics import (
-    exercise_function,
-    exercise_lambda,
-    exercise_partial,
-)
+from _test_code_level_metrics import exercise_function, exercise_lambda, exercise_partial
 from testing_support.fixtures import dt_enabled, override_application_settings
 from testing_support.validators.validate_span_events import validate_span_events
 
@@ -83,12 +79,7 @@ _TEST_BASIC_CALLABLES = {
     "lambda": (
         exercise_lambda,
         (),
-        {
-            "code.filepath": FILE_PATH,
-            "code.function": "<lambda>",
-            "code.lineno": 75,
-            "code.namespace": NAMESPACE,
-        },
+        {"code.filepath": FILE_PATH, "code.function": "<lambda>", "code.lineno": 75, "code.namespace": NAMESPACE},
     ),
     "partial": (
         exercise_partial,
@@ -103,43 +94,23 @@ _TEST_BASIC_CALLABLES = {
     "builtin_function": (
         max,
         (1, 2),
-        merge_dicts(
-            {
-                "code.function": "max",
-                "code.namespace": "builtins",
-            },
-            BUILTIN_ATTRS,
-        ),
+        merge_dicts({"code.function": "max", "code.namespace": "builtins"}, BUILTIN_ATTRS),
     ),
     "builtin_module_function": (
         sqlite3.connect,
         (":memory:",),
-        merge_dicts(
-            {
-                "code.function": "connect",
-                "code.namespace": "_sqlite3",
-            },
-            BUILTIN_ATTRS,
-        ),
+        merge_dicts({"code.function": "connect", "code.namespace": "_sqlite3"}, BUILTIN_ATTRS),
     ),
 }
 
 
 @pytest.mark.parametrize(
-    "func,args,agents",
-    [pytest.param(*args, id=id_) for id_, args in _TEST_BASIC_CALLABLES.items()],
+    "func,args,agents", [pytest.param(*args, id=id_) for id_, args in _TEST_BASIC_CALLABLES.items()]
 )
 def test_code_level_metrics_basic_callables(func, args, agents, extract):
-    @override_application_settings(
-        {
-            "code_level_metrics.enabled": True,
-        }
-    )
+    @override_application_settings({"code_level_metrics.enabled": True})
     @dt_enabled
-    @validate_span_events(
-        count=1,
-        exact_agents=agents,
-    )
+    @validate_span_events(count=1, exact_agents=agents)
     @background_task()
     def _test():
         extract(func)
@@ -202,21 +173,11 @@ _TEST_METHODS = {
 }
 
 
-@pytest.mark.parametrize(
-    "func,args,agents",
-    [pytest.param(*args, id=id_) for id_, args in _TEST_METHODS.items()],
-)
+@pytest.mark.parametrize("func,args,agents", [pytest.param(*args, id=id_) for id_, args in _TEST_METHODS.items()])
 def test_code_level_metrics_methods(func, args, agents, extract):
-    @override_application_settings(
-        {
-            "code_level_metrics.enabled": True,
-        }
-    )
+    @override_application_settings({"code_level_metrics.enabled": True})
     @dt_enabled
-    @validate_span_events(
-        count=1,
-        exact_agents=agents,
-    )
+    @validate_span_events(count=1, exact_agents=agents)
     @background_task()
     def _test():
         extract(func)
@@ -258,12 +219,7 @@ _TEST_TYPE_CONSTRUCTOR_METHODS = {
     "lambda_method": (
         ExerciseTypeConstructor.exercise_lambda,
         (),
-        {
-            "code.filepath": FILE_PATH,
-            "code.function": "<lambda>",
-            "code.lineno": 61,
-            "code.namespace": NAMESPACE,
-        },
+        {"code.filepath": FILE_PATH, "code.function": "<lambda>", "code.lineno": 61, "code.namespace": NAMESPACE},
     ),
     "call_method": (
         TYPE_CONSTRUCTOR_CALLABLE_CLASS_INSTANCE,
@@ -279,20 +235,12 @@ _TEST_TYPE_CONSTRUCTOR_METHODS = {
 
 
 @pytest.mark.parametrize(
-    "func,args,agents",
-    [pytest.param(*args, id=id_) for id_, args in _TEST_TYPE_CONSTRUCTOR_METHODS.items()],
+    "func,args,agents", [pytest.param(*args, id=id_) for id_, args in _TEST_TYPE_CONSTRUCTOR_METHODS.items()]
 )
 def test_code_level_metrics_type_constructor_methods(func, args, agents, extract):
-    @override_application_settings(
-        {
-            "code_level_metrics.enabled": True,
-        }
-    )
+    @override_application_settings({"code_level_metrics.enabled": True})
     @dt_enabled
-    @validate_span_events(
-        count=1,
-        exact_agents=agents,
-    )
+    @validate_span_events(count=1, exact_agents=agents)
     @background_task()
     def _test():
         extract(func)
@@ -303,12 +251,7 @@ def test_code_level_metrics_type_constructor_methods(func, args, agents, extract
 _TEST_OBJECTS = {
     "class": (
         ExerciseClass,
-        {
-            "code.filepath": FILE_PATH,
-            "code.function": "ExerciseClass",
-            "code.lineno": 21,
-            "code.namespace": NAMESPACE,
-        },
+        {"code.filepath": FILE_PATH, "code.function": "ExerciseClass", "code.lineno": 21, "code.namespace": NAMESPACE},
     ),
     "callable_class": (
         ExerciseClassCallable,
@@ -321,47 +264,24 @@ _TEST_OBJECTS = {
     ),
     "type_constructor_class": (
         ExerciseTypeConstructor,
-        {
-            "code.filepath": FILE_PATH,
-            "code.function": "ExerciseTypeConstructor",
-            "code.namespace": NAMESPACE,
-        },
+        {"code.filepath": FILE_PATH, "code.function": "ExerciseTypeConstructor", "code.namespace": NAMESPACE},
     ),
     "type_constructor_class_callable_class": (
         ExerciseTypeConstructorCallable,
-        {
-            "code.filepath": FILE_PATH,
-            "code.function": "ExerciseTypeConstructorCallable",
-            "code.namespace": NAMESPACE,
-        },
+        {"code.filepath": FILE_PATH, "code.function": "ExerciseTypeConstructorCallable", "code.namespace": NAMESPACE},
     ),
     "non_callable_object": (
         CLASS_INSTANCE,
-        {
-            "code.filepath": FILE_PATH,
-            "code.function": "ExerciseClass",
-            "code.lineno": 21,
-            "code.namespace": NAMESPACE,
-        },
+        {"code.filepath": FILE_PATH, "code.function": "ExerciseClass", "code.lineno": 21, "code.namespace": NAMESPACE},
     ),
 }
 
 
-@pytest.mark.parametrize(
-    "obj,agents",
-    [pytest.param(*args, id=id_) for id_, args in _TEST_OBJECTS.items()],
-)
+@pytest.mark.parametrize("obj,agents", [pytest.param(*args, id=id_) for id_, args in _TEST_OBJECTS.items()])
 def test_code_level_metrics_objects(obj, agents, extract):
-    @override_application_settings(
-        {
-            "code_level_metrics.enabled": True,
-        }
-    )
+    @override_application_settings({"code_level_metrics.enabled": True})
     @dt_enabled
-    @validate_span_events(
-        count=1,
-        exact_agents=agents,
-    )
+    @validate_span_events(count=1, exact_agents=agents)
     @background_task()
     def _test():
         extract(obj)

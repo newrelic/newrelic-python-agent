@@ -13,9 +13,7 @@
 # limitations under the License.
 
 import pytest
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
@@ -44,24 +42,12 @@ def test_model_methods_wrapped_in_function_trace(covariance_model_name, run_cova
             ("Function/MLModel/Sklearn/Named/EmpiricalCovariance.fit", 1),
             ("Function/MLModel/Sklearn/Named/EmpiricalCovariance.score", 1),
         ],
-        "GraphicalLasso": [
-            ("Function/MLModel/Sklearn/Named/GraphicalLasso.fit", 1),
-        ],
-        "GraphicalLassoCV": [
-            ("Function/MLModel/Sklearn/Named/GraphicalLassoCV.fit", 1),
-        ],
-        "MinCovDet": [
-            ("Function/MLModel/Sklearn/Named/MinCovDet.fit", 1),
-        ],
-        "ShrunkCovariance": [
-            ("Function/MLModel/Sklearn/Named/ShrunkCovariance.fit", 1),
-        ],
-        "LedoitWolf": [
-            ("Function/MLModel/Sklearn/Named/LedoitWolf.fit", 1),
-        ],
-        "OAS": [
-            ("Function/MLModel/Sklearn/Named/OAS.fit", 1),
-        ],
+        "GraphicalLasso": [("Function/MLModel/Sklearn/Named/GraphicalLasso.fit", 1)],
+        "GraphicalLassoCV": [("Function/MLModel/Sklearn/Named/GraphicalLassoCV.fit", 1)],
+        "MinCovDet": [("Function/MLModel/Sklearn/Named/MinCovDet.fit", 1)],
+        "ShrunkCovariance": [("Function/MLModel/Sklearn/Named/ShrunkCovariance.fit", 1)],
+        "LedoitWolf": [("Function/MLModel/Sklearn/Named/LedoitWolf.fit", 1)],
+        "OAS": [("Function/MLModel/Sklearn/Named/OAS.fit", 1)],
     }
 
     @validate_transaction_metrics(

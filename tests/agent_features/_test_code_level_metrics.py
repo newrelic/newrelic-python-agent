@@ -18,7 +18,7 @@ def exercise_function():
     return
 
 
-class ExerciseClass():
+class ExerciseClass:
     def exercise_method(self):
         return
 
@@ -31,7 +31,7 @@ class ExerciseClass():
         return
 
 
-class ExerciseClassCallable():
+class ExerciseClassCallable:
     def __call__(self):
         return
 

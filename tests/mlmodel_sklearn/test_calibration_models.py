@@ -13,9 +13,7 @@
 # limitations under the License.
 
 import pytest
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
@@ -26,7 +24,7 @@ def test_model_methods_wrapped_in_function_trace(calibration_model_name, run_cal
             ("Function/MLModel/Sklearn/Named/CalibratedClassifierCV.fit", 1),
             ("Function/MLModel/Sklearn/Named/CalibratedClassifierCV.predict", 1),
             ("Function/MLModel/Sklearn/Named/CalibratedClassifierCV.predict_proba", 2),
-        ],
+        ]
     }
 
     @validate_transaction_metrics(

@@ -19,20 +19,14 @@ from conftest import AIOREDIS_VERSION, loop  # noqa
 from testing_support.db_settings import redis_settings
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
 DB_SETTINGS = redis_settings()
 
-_enable_instance_settings = {
-    "datastore_tracer.instance_reporting.enabled": True,
-}
-_disable_instance_settings = {
-    "datastore_tracer.instance_reporting.enabled": False,
-}
+_enable_instance_settings = {"datastore_tracer.instance_reporting.enabled": True}
+_disable_instance_settings = {"datastore_tracer.instance_reporting.enabled": False}
 
 _base_scoped_metrics = (
     ("Datastore/operation/Redis/get", 1),
@@ -50,10 +44,7 @@ _base_rollup_metrics = (
     ("Datastore/operation/Redis/client_list", 1),
 )
 
-_concurrent_scoped_metrics = [
-    ("Datastore/operation/Redis/get", 2),
-    ("Datastore/operation/Redis/set", 2),
-]
+_concurrent_scoped_metrics = [("Datastore/operation/Redis/get", 2), ("Datastore/operation/Redis/set", 2)]
 
 _concurrent_rollup_metrics = [
     ("Datastore/all", 4),
@@ -84,25 +75,10 @@ if len(DB_SETTINGS) > 1:
     instance_metric_name_1 = f"Datastore/instance/Redis/{_host_1}/{_port_1}"
     instance_metric_name_2 = f"Datastore/instance/Redis/{_host_2}/{_port_2}"
 
-    _enable_rollup_metrics.extend(
-        [
-            (instance_metric_name_1, 2),
-            (instance_metric_name_2, 1),
-        ]
-    )
+    _enable_rollup_metrics.extend([(instance_metric_name_1, 2), (instance_metric_name_2, 1)])
 
-    _disable_rollup_metrics.extend(
-        [
-            (instance_metric_name_1, None),
-            (instance_metric_name_2, None),
-        ]
-    )
-    _concurrent_rollup_metrics.extend(
-        [
-            (instance_metric_name_1, 2),
-            (instance_metric_name_2, 2),
-        ]
-    )
+    _disable_rollup_metrics.extend([(instance_metric_name_1, None), (instance_metric_name_2, None)])
+    _concurrent_rollup_metrics.extend([(instance_metric_name_1, 2), (instance_metric_name_2, 2)])
 
 
 @pytest.fixture(params=("Redis", "StrictRedis"))

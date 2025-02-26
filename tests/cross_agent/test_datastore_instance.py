@@ -58,7 +58,6 @@ _datastore_tests = [_parametrize_test(t) for t in _load_tests()]
 def test_datastore_instance(
     name, system_hostname, db_hostname, product, port, unix_socket, database_path, expected_instance_metric, monkeypatch
 ):
-
     monkeypatch.setattr("newrelic.common.system_info.gethostname", lambda: system_hostname)
 
     class FakeModule:

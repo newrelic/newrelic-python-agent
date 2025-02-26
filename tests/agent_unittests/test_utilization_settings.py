@@ -72,7 +72,7 @@ INITIAL_ENV = os.environ
 # Tests for loading settings and testing for values precedence
 
 
-class Environ():
+class Environ:
     def __init__(self, env_dict):
         self.env_dict = {}
         for key in env_dict.keys():
@@ -210,22 +210,9 @@ def test_bad_value_in_env_var():
 # Tests for combining with server side settings
 
 _server_side_config_settings_util_conf = [
-    {
-        "foo": 123,
-        "bar": 456,
-        "agent_config": {"utilization.billing_hostname": "server-side-hostname"},
-    },
-    {
-        "foo": 123,
-        "bar": 456,
-        "agent_config": {
-            "baz": 789,
-        },
-    },
-    {
-        "foo": 123,
-        "bar": 456,
-    },
+    {"foo": 123, "bar": 456, "agent_config": {"utilization.billing_hostname": "server-side-hostname"}},
+    {"foo": 123, "bar": 456, "agent_config": {"baz": 789}},
+    {"foo": 123, "bar": 456},
 ]
 
 

@@ -15,20 +15,12 @@
 import pytest
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import Normalizer
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
 
-@pytest.mark.parametrize(
-    "compose_model_name",
-    [
-        "ColumnTransformer",
-        "TransformedTargetRegressor",
-    ],
-)
+@pytest.mark.parametrize("compose_model_name", ["ColumnTransformer", "TransformedTargetRegressor"])
 def test_model_methods_wrapped_in_function_trace(compose_model_name, run_compose_model):
     expected_scoped_metrics = {
         "ColumnTransformer": [

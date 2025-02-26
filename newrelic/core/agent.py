@@ -80,8 +80,7 @@ def check_environment():
             )
 
 
-class Agent():
-
+class Agent:
     """Only one instance of the agent should ever exist and that can be
     obtained using the agent_instance() function.
 
@@ -489,11 +488,7 @@ class Agent():
             return
 
         application.notice_error(
-            error=error,
-            attributes=attributes,
-            expected=expected,
-            ignore=ignore,
-            status_code=status_code,
+            error=error, attributes=attributes, expected=expected, ignore=ignore, status_code=status_code
         )
 
     def record_custom_metric(self, app_name, name, value):

@@ -24,13 +24,11 @@ def validate_application_error_event_count(num_errors):
 
     @function_wrapper
     def _validate_application_error_event_count(wrapped, instace, args, kwargs):
-
         try:
             result = wrapped(*args, **kwargs)
         except:
             raise
         else:
-
             stats = core_application_stats_engine(None)
             assert len(list(stats.error_events)) == num_errors
 

@@ -18,7 +18,7 @@ from testing_support.db_settings import redis_settings
 
 DB_SETTINGS = redis_settings()[0]
 
-strict_redis_client = aredis.StrictRedis(host=DB_SETTINGS['host'], port=DB_SETTINGS['port'], db=0)
+strict_redis_client = aredis.StrictRedis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
 
 
 IGNORED_METHODS = {
@@ -39,6 +39,7 @@ IGNORED_METHODS = {
     "set_response_callback",
     "transaction",
 }
+
 
 def test_uninstrumented_methods():
     methods = {m for m in dir(strict_redis_client) if not m[0] == "_"}

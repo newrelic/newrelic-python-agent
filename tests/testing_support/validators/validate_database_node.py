@@ -12,19 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.common.object_wrapper import (transient_function_wrapper,
-        function_wrapper)
+from newrelic.common.object_wrapper import transient_function_wrapper, function_wrapper
 
 
 def validate_database_node(validator):
-
     # Accepts one argument, a function that itself takes one argument: the
     # node. The validator should raise an exception if the node is not correct.
 
     nodes = []
 
-    @transient_function_wrapper('newrelic.core.database_node',
-            'DatabaseNode.__new__')
+    @transient_function_wrapper("newrelic.core.database_node", "DatabaseNode.__new__")
     def _validate_explain_plan(wrapped, instance, args, kwargs):
         node = wrapped(*args, **kwargs)
         nodes.append(node)

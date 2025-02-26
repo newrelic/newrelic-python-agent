@@ -18,15 +18,7 @@ from collections import namedtuple
 
 from newrelic.common.object_names import object_context
 
-_CodeLevelMetricsNode = namedtuple(
-    "CodeLevelMetricsNode",
-    [
-        "filepath",
-        "function",
-        "lineno",
-        "namespace",
-    ],
-)
+_CodeLevelMetricsNode = namedtuple("CodeLevelMetricsNode", ["filepath", "function", "lineno", "namespace"])
 
 
 class CodeLevelMetricsNode(_CodeLevelMetricsNode):
@@ -101,12 +93,7 @@ def extract_code_from_callable(func):
     else:
         namespace = module_name
 
-    node = CodeLevelMetricsNode(
-        filepath=file_path,
-        function=func_name,
-        lineno=line_number,
-        namespace=namespace,
-    )
+    node = CodeLevelMetricsNode(filepath=file_path, function=func_name, lineno=line_number, namespace=namespace)
 
     try:
         if hasattr(original_func, "__func__"):

@@ -17,8 +17,7 @@ import psycopg2
 
 from newrelic.api.transaction import current_transaction
 from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_span_events import (
-        validate_span_events)
+from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.util import instance_hostname
 from utils import DB_SETTINGS
 
@@ -28,107 +27,102 @@ from newrelic.api.background_task import background_task
 # Settings
 
 _enable_instance_settings = {
-    'datastore_tracer.instance_reporting.enabled': True,
-    'datastore_tracer.database_name_reporting.enabled': True,
-    'distributed_tracing.enabled': True,
-    'span_events.enabled': True,
+    "datastore_tracer.instance_reporting.enabled": True,
+    "datastore_tracer.database_name_reporting.enabled": True,
+    "distributed_tracing.enabled": True,
+    "span_events.enabled": True,
 }
 _disable_instance_settings = {
-    'datastore_tracer.instance_reporting.enabled': False,
-    'datastore_tracer.database_name_reporting.enabled': False,
-    'distributed_tracing.enabled': True,
-    'span_events.enabled': True,
+    "datastore_tracer.instance_reporting.enabled": False,
+    "datastore_tracer.database_name_reporting.enabled": False,
+    "distributed_tracing.enabled": True,
+    "span_events.enabled": True,
 }
 
 
 def _exercise_db():
     connection = psycopg2.connect(
-            database=DB_SETTINGS['name'], user=DB_SETTINGS['user'],
-            password=DB_SETTINGS['password'], host=DB_SETTINGS['host'],
-            port=DB_SETTINGS['port'])
+        database=DB_SETTINGS["name"],
+        user=DB_SETTINGS["user"],
+        password=DB_SETTINGS["password"],
+        host=DB_SETTINGS["host"],
+        port=DB_SETTINGS["port"],
+    )
 
     try:
         cursor = connection.cursor()
-        cursor.execute("""SELECT setting from pg_settings where name=%s""",
-                ('server_version',))
+        cursor.execute("""SELECT setting from pg_settings where name=%s""", ("server_version",))
 
         # No target
-        cursor.execute('SELECT 1')
+        cursor.execute("SELECT 1")
     finally:
         connection.close()
 
 
 # Tests
 
-@pytest.mark.parametrize('db_instance_enabled', (True, False))
-@pytest.mark.parametrize('instance_enabled', (True, False))
+
+@pytest.mark.parametrize("db_instance_enabled", (True, False))
+@pytest.mark.parametrize("instance_enabled", (True, False))
 def test_span_events(instance_enabled, db_instance_enabled):
-    guid = 'dbb533c53b749e0b'
+    guid = "dbb533c53b749e0b"
     priority = 0.5
 
     common_intrinsics = {
-        'type': 'Span',
-        'transactionId': guid,
-        'priority': priority,
-        'sampled': True,
-        'category': 'datastore',
-        'component': 'Postgres',
-        'span.kind': 'client',
+        "type": "Span",
+        "transactionId": guid,
+        "priority": priority,
+        "sampled": True,
+        "category": "datastore",
+        "component": "Postgres",
+        "span.kind": "client",
     }
 
     exact_agents = {}
 
     if instance_enabled:
         settings = _enable_instance_settings.copy()
-        hostname = instance_hostname(DB_SETTINGS['host'])
-        exact_agents.update({
-            'peer.address': f"{hostname}:{DB_SETTINGS['port']}",
-            'peer.hostname': hostname,
-        })
+        hostname = instance_hostname(DB_SETTINGS["host"])
+        exact_agents.update({"peer.address": f"{hostname}:{DB_SETTINGS['port']}", "peer.hostname": hostname})
     else:
         settings = _disable_instance_settings.copy()
-        exact_agents.update({
-            'peer.address': 'Unknown:Unknown',
-            'peer.hostname': 'Unknown',
-        })
+        exact_agents.update({"peer.address": "Unknown:Unknown", "peer.hostname": "Unknown"})
 
     if db_instance_enabled and instance_enabled:
-        exact_agents.update({
-            'db.instance': DB_SETTINGS['name'],
-        })
+        exact_agents.update({"db.instance": DB_SETTINGS["name"]})
         unexpected_agents = ()
     else:
-        settings['attributes.exclude'] = ['db.instance']
-        unexpected_agents = ('db.instance',)
+        settings["attributes.exclude"] = ["db.instance"]
+        unexpected_agents = ("db.instance",)
 
     query_1_intrinsics = common_intrinsics.copy()
-    query_1_intrinsics['name'] = \
-            'Datastore/statement/Postgres/pg_settings/select'
+    query_1_intrinsics["name"] = "Datastore/statement/Postgres/pg_settings/select"
 
     query_1_agents = exact_agents.copy()
-    query_1_agents['db.statement'] = \
-            'SELECT setting from pg_settings where name=%s'
+    query_1_agents["db.statement"] = "SELECT setting from pg_settings where name=%s"
 
     query_2_intrinsics = common_intrinsics.copy()
-    query_2_intrinsics['name'] = 'Datastore/operation/Postgres/select'
+    query_2_intrinsics["name"] = "Datastore/operation/Postgres/select"
 
     query_2_agents = exact_agents.copy()
-    query_2_agents['db.statement'] = 'SELECT ?'
+    query_2_agents["db.statement"] = "SELECT ?"
 
     @validate_span_events(
-            count=1,
-            exact_intrinsics=query_1_intrinsics,
-            unexpected_intrinsics=('db.instance', 'db.statement'),
-            exact_agents=query_1_agents,
-            unexpected_agents=unexpected_agents)
+        count=1,
+        exact_intrinsics=query_1_intrinsics,
+        unexpected_intrinsics=("db.instance", "db.statement"),
+        exact_agents=query_1_agents,
+        unexpected_agents=unexpected_agents,
+    )
     @validate_span_events(
-            count=1,
-            exact_intrinsics=query_2_intrinsics,
-            unexpected_intrinsics=('db.instance', 'db.statement'),
-            exact_agents=query_2_agents,
-            unexpected_agents=unexpected_agents)
+        count=1,
+        exact_intrinsics=query_2_intrinsics,
+        unexpected_intrinsics=("db.instance", "db.statement"),
+        exact_agents=query_2_agents,
+        unexpected_agents=unexpected_agents,
+    )
     @override_application_settings(settings)
-    @background_task(name='span_events')
+    @background_task(name="span_events")
     def _test():
         txn = current_transaction()
         txn.guid = guid

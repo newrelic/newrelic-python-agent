@@ -25,7 +25,6 @@ def validate_error_event_attributes_outside_transaction(
 
     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.notice_error")
     def _validate_error_event_attributes_outside_transaction(wrapped, instance, args, kwargs):
-
         try:
             result = wrapped(*args, **kwargs)
         except:

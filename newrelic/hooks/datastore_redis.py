@@ -14,18 +14,10 @@
 
 import re
 
-from newrelic.api.datastore_trace import (
-    DatastoreTrace,
-    DatastoreTraceWrapper,
-    wrap_datastore_trace,
-)
+from newrelic.api.datastore_trace import DatastoreTrace, DatastoreTraceWrapper, wrap_datastore_trace
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
-from newrelic.common.async_wrapper import (
-    async_generator_wrapper,
-    coroutine_wrapper,
-    generator_wrapper,
-)
+from newrelic.common.async_wrapper import async_generator_wrapper, coroutine_wrapper, generator_wrapper
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
 _redis_client_sync_methods = {
@@ -491,12 +483,7 @@ _redis_client_async_methods = {
     "zunionstore",
 }
 
-_redis_client_gen_methods = {
-    "scan_iter",
-    "hscan_iter",
-    "sscan_iter",
-    "zscan_iter",
-}
+_redis_client_gen_methods = {"scan_iter", "hscan_iter", "sscan_iter", "zscan_iter"}
 
 _redis_client_methods = _redis_client_sync_methods.union(_redis_client_async_methods)
 

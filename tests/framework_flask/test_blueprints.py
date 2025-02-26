@@ -14,15 +14,9 @@
 
 import pytest
 from conftest import is_flask_v2 as nested_blueprint_support
-from testing_support.validators.validate_code_level_metrics import (
-    validate_code_level_metrics,
-)
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 skip_if_not_nested_blueprint_support = pytest.mark.skipif(
     not nested_blueprint_support, reason="Requires nested blueprint support. (Flask >=v2.0.0)"

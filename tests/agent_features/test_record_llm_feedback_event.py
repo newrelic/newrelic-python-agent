@@ -34,7 +34,7 @@ def test_record_llm_feedback_event_all_args_supplied():
                 "message": "message",
                 "foo": "bar",
             },
-        ),
+        )
     ]
 
     @validate_custom_events(llm_feedback_all_args_recorded_events)
@@ -57,13 +57,8 @@ def test_record_llm_feedback_event_required_args_supplied():
     llm_feedback_required_args_recorded_events = [
         (
             {"type": "LlmFeedbackMessage"},
-            {
-                "id": None,
-                "rating": "Good",
-                "trace_id": "123456789abcdefgh",
-                "ingest_source": "Python",
-            },
-        ),
+            {"id": None, "rating": "Good", "trace_id": "123456789abcdefgh", "ingest_source": "Python"},
+        )
     ]
 
     @validate_custom_events(llm_feedback_required_args_recorded_events)
@@ -78,9 +73,5 @@ def test_record_llm_feedback_event_required_args_supplied():
 @validate_custom_event_count(count=0)
 def test_record_llm_feedback_event_outside_txn():
     record_llm_feedback_event(
-        rating="Good",
-        trace_id="123456789abcdefgh",
-        category="informative",
-        message="message",
-        metadata={"foo": "bar"},
+        rating="Good", trace_id="123456789abcdefgh", category="informative", message="message", metadata={"foo": "bar"}
     )

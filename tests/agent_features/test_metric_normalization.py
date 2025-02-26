@@ -14,9 +14,7 @@
 
 import pytest
 from testing_support.fixtures import reset_core_stats_engine
-from testing_support.validators.validate_dimensional_metric_payload import (
-    validate_dimensional_metric_payload,
-)
+from testing_support.validators.validate_dimensional_metric_payload import validate_dimensional_metric_payload
 from testing_support.validators.validate_metric_payload import validate_metric_payload
 
 from newrelic.api.application import application_instance

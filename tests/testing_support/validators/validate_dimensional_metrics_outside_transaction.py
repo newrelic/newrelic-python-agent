@@ -23,7 +23,6 @@ def validate_dimensional_metrics_outside_transaction(dimensional_metrics=None):
 
     @function_wrapper
     def _validate_wrapper(wrapped, instance, args, kwargs):
-
         record_dimensional_metric_called = []
         recorded_metrics = [None]
 

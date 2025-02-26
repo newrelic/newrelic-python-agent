@@ -15,17 +15,9 @@
 import json
 
 import webtest
-from testing_support.fixtures import (
-    override_application_settings,
-    validate_transaction_event_sample_data,
-)
-from testing_support.sample_applications import (
-    fully_featured_app,
-    user_attributes_added,
-)
-from testing_support.validators.validate_transaction_event_attributes import (
-    validate_transaction_event_attributes,
-)
+from testing_support.fixtures import override_application_settings, validate_transaction_event_sample_data
+from testing_support.sample_applications import fully_featured_app, user_attributes_added
+from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
 
 from newrelic.api.application import application_settings
 from newrelic.api.background_task import background_task
@@ -40,10 +32,7 @@ _user_attributes = user_attributes_added()
 
 _test_capture_attributes_enabled_settings = {"browser_monitoring.attributes.enabled": True}
 
-_intrinsic_attributes = {
-    "name": "WebTransaction/Uri/",
-    "port": 80,
-}
+_intrinsic_attributes = {"name": "WebTransaction/Uri/", "port": 80}
 
 
 @validate_transaction_event_sample_data(required_attrs=_intrinsic_attributes, required_user_attrs=_user_attributes)
@@ -390,10 +379,7 @@ def test_no_database_or_external_attributes_in_analytics():
     assert content == "RESPONSE"
 
 
-_intrinsic_attributes = {
-    "name": "WebTransaction/Uri/db",
-    "databaseCallCount": 2,
-}
+_intrinsic_attributes = {"name": "WebTransaction/Uri/db", "databaseCallCount": 2}
 
 
 @validate_transaction_event_sample_data(required_attrs=_intrinsic_attributes, required_user_attrs=_user_attributes)
@@ -406,9 +392,7 @@ def test_database_attributes_in_analytics():
 
     assert settings.browser_monitoring.enabled
 
-    test_environ = {
-        "db": "2",
-    }
+    test_environ = {"db": "2"}
     response = fully_featured_application.get("/db", extra_environ=test_environ)
 
     # Validation of analytic data happens in the decorator.
@@ -420,10 +404,7 @@ def test_database_attributes_in_analytics():
     assert content == "RESPONSE"
 
 
-_intrinsic_attributes = {
-    "name": "WebTransaction/Uri/ext",
-    "externalCallCount": 2,
-}
+_intrinsic_attributes = {"name": "WebTransaction/Uri/ext", "externalCallCount": 2}
 
 
 @validate_transaction_event_sample_data(required_attrs=_intrinsic_attributes, required_user_attrs=_user_attributes)
@@ -436,9 +417,7 @@ def test_external_attributes_in_analytics():
 
     assert settings.browser_monitoring.enabled
 
-    test_environ = {
-        "external": "2",
-    }
+    test_environ = {"external": "2"}
     response = fully_featured_application.get("/ext", extra_environ=test_environ)
 
     # Validation of analytic data happens in the decorator.
@@ -450,11 +429,7 @@ def test_external_attributes_in_analytics():
     assert content == "RESPONSE"
 
 
-_intrinsic_attributes = {
-    "name": "WebTransaction/Uri/dbext",
-    "databaseCallCount": 2,
-    "externalCallCount": 2,
-}
+_intrinsic_attributes = {"name": "WebTransaction/Uri/dbext", "databaseCallCount": 2, "externalCallCount": 2}
 
 
 @validate_transaction_event_sample_data(required_attrs=_intrinsic_attributes, required_user_attrs=_user_attributes)
@@ -468,10 +443,7 @@ def test_database_and_external_attributes_in_analytics():
 
     assert settings.browser_monitoring.enabled
 
-    test_environ = {
-        "db": "2",
-        "external": "2",
-    }
+    test_environ = {"db": "2", "external": "2"}
     response = fully_featured_application.get("/dbext", extra_environ=test_environ)
 
     # Validation of analytic data happens in the decorator.
@@ -485,11 +457,7 @@ def test_database_and_external_attributes_in_analytics():
 
 # -------------- Test background tasks ----------------
 
-_expected_attributes = {
-    "user": [],
-    "agent": [],
-    "intrinsic": ("name", "duration", "type", "timestamp", "totalTime"),
-}
+_expected_attributes = {"user": [], "agent": [], "intrinsic": ("name", "duration", "type", "timestamp", "totalTime")}
 
 _expected_absent_attributes = {
     "user": ("foo", "drop-me"),

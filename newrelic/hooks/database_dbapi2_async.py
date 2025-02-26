@@ -100,7 +100,6 @@ class AsyncCursorWrapper(ObjectProxy):
 
 
 class AsyncConnectionWrapper(ObjectProxy):
-
     __cursor_wrapper__ = AsyncCursorWrapper
 
     def __init__(self, connection, dbapi2_module, connect_params):
@@ -140,7 +139,6 @@ class AsyncConnectionWrapper(ObjectProxy):
 
 
 class AsyncConnectionFactory(ObjectProxy):
-
     __connection_wrapper__ = AsyncConnectionWrapper
 
     def __init__(self, connect, dbapi2_module):

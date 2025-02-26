@@ -23,7 +23,6 @@ def validate_custom_metrics_outside_transaction(custom_metrics=None):
 
     @function_wrapper
     def _validate_wrapper(wrapped, instance, args, kwargs):
-
         record_custom_metric_called = []
         recorded_metrics = [None]
 

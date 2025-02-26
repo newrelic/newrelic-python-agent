@@ -17,23 +17,24 @@ from newrelic.api.function_trace import FunctionTrace, FunctionTraceWrapper
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_object
 
-from newrelic.hooks.database_dbapi2 import (CursorWrapper as
-        DBAPI2CursorWrapper, ConnectionWrapper as DBAPI2ConnectionWrapper,
-        ConnectionFactory as DBAPI2ConnectionFactory)
+from newrelic.hooks.database_dbapi2 import (
+    CursorWrapper as DBAPI2CursorWrapper,
+    ConnectionWrapper as DBAPI2ConnectionWrapper,
+    ConnectionFactory as DBAPI2ConnectionFactory,
+)
 
 DEFAULT = object()
 
 
 class CursorWrapper(DBAPI2CursorWrapper):
-
     def executescript(self, sql_script):
-        with DatabaseTrace(sql_script, self._nr_dbapi2_module,
-                self._nr_connect_params, source=self.__wrapped__.executescript):
+        with DatabaseTrace(
+            sql_script, self._nr_dbapi2_module, self._nr_connect_params, source=self.__wrapped__.executescript
+        ):
             return self.__wrapped__.executescript(sql_script)
 
 
 class ConnectionWrapper(DBAPI2ConnectionWrapper):
-
     __cursor_wrapper__ = CursorWrapper
 
     def __enter__(self):
@@ -51,22 +52,24 @@ class ConnectionWrapper(DBAPI2ConnectionWrapper):
         name = callable_name(self.__wrapped__.__exit__)
         with FunctionTrace(name, source=self.__wrapped__.__exit__):
             if exc is None and value is None and tb is None:
-                with DatabaseTrace('COMMIT',
-                        self._nr_dbapi2_module, self._nr_connect_params, source=self.__wrapped__.__exit__):
+                with DatabaseTrace(
+                    "COMMIT", self._nr_dbapi2_module, self._nr_connect_params, source=self.__wrapped__.__exit__
+                ):
                     return self.__wrapped__.__exit__(exc, value, tb)
             else:
-                with DatabaseTrace('ROLLBACK',
-                        self._nr_dbapi2_module, self._nr_connect_params, source=self.__wrapped__.__exit__):
+                with DatabaseTrace(
+                    "ROLLBACK", self._nr_dbapi2_module, self._nr_connect_params, source=self.__wrapped__.__exit__
+                ):
                     return self.__wrapped__.__exit__(exc, value, tb)
 
     def execute(self, sql, parameters=DEFAULT):
         if parameters is not DEFAULT:
-            with DatabaseTrace(sql, self._nr_dbapi2_module,
-                    self._nr_connect_params, None, parameters, source=self.__wrapped__.execute):
+            with DatabaseTrace(
+                sql, self._nr_dbapi2_module, self._nr_connect_params, None, parameters, source=self.__wrapped__.execute
+            ):
                 return self.__wrapped__.execute(sql, parameters)
         else:
-            with DatabaseTrace(sql, self._nr_dbapi2_module,
-                    self._nr_connect_params, source=self.__wrapped__.execute):
+            with DatabaseTrace(sql, self._nr_dbapi2_module, self._nr_connect_params, source=self.__wrapped__.execute):
                 return self.__wrapped__.execute(sql)
 
     def executemany(self, sql, seq_of_parameters):
@@ -76,23 +79,29 @@ class ConnectionWrapper(DBAPI2ConnectionWrapper):
         except (TypeError, IndexError):
             parameters = DEFAULT
         if parameters is not DEFAULT:
-            with DatabaseTrace(sql, self._nr_dbapi2_module,
-                    self._nr_connect_params, None,
-                    parameters, source=self.__wrapped__.executemany):
+            with DatabaseTrace(
+                sql,
+                self._nr_dbapi2_module,
+                self._nr_connect_params,
+                None,
+                parameters,
+                source=self.__wrapped__.executemany,
+            ):
                 return self.__wrapped__.executemany(sql, seq_of_parameters)
         else:
-            with DatabaseTrace(sql, self._nr_dbapi2_module,
-                    self._nr_connect_params, None, source=self.__wrapped__.executemany):
+            with DatabaseTrace(
+                sql, self._nr_dbapi2_module, self._nr_connect_params, None, source=self.__wrapped__.executemany
+            ):
                 return self.__wrapped__.executemany(sql, seq_of_parameters)
 
     def executescript(self, sql_script):
-        with DatabaseTrace(sql_script, self._nr_dbapi2_module,
-                self._nr_connect_params, source=self.__wrapped__.executescript):
+        with DatabaseTrace(
+            sql_script, self._nr_dbapi2_module, self._nr_connect_params, source=self.__wrapped__.executescript
+        ):
             return self.__wrapped__.executescript(sql_script)
 
 
 class ConnectionFactory(DBAPI2ConnectionFactory):
-
     __connection_wrapper__ = ConnectionWrapper
 
 
@@ -101,17 +110,16 @@ def instance_info(args, kwargs):
         return database
 
     database = _bind_params(*args, **kwargs)
-    host = 'localhost'
+    host = "localhost"
     port = None
 
     return (host, port, database)
 
 
 def instrument_sqlite3_dbapi2(module):
-    register_database_client(module, 'SQLite', quoting_style='single+double',
-            instance_info=instance_info)
+    register_database_client(module, "SQLite", quoting_style="single+double", instance_info=instance_info)
 
-    wrap_object(module, 'connect', ConnectionFactory, (module,))
+    wrap_object(module, "connect", ConnectionFactory, (module,))
 
 
 def instrument_sqlite3(module):
@@ -123,7 +131,6 @@ def instrument_sqlite3(module):
     # be applied.
 
     if not isinstance(module.connect, ConnectionFactory):
-        register_database_client(module, 'SQLite',
-                quoting_style='single+double', instance_info=instance_info)
+        register_database_client(module, "SQLite", quoting_style="single+double", instance_info=instance_info)
 
-        wrap_object(module, 'connect', ConnectionFactory, (module,))
+        wrap_object(module, "connect", ConnectionFactory, (module,))

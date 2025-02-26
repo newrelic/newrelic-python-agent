@@ -18,20 +18,12 @@ import pytest
 from bs4 import BeautifulSoup
 from testing_support.asgi_testing import AsgiTest
 from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_custom_parameters import (
-    validate_custom_parameters,
-)
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
+from testing_support.validators.validate_custom_parameters import validate_custom_parameters
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 
 from newrelic.api.application import application_settings
 from newrelic.api.asgi_application import asgi_application
-from newrelic.api.transaction import (
-    add_custom_attribute,
-    disable_browser_autorum,
-    get_browser_timing_header,
-)
+from newrelic.api.transaction import add_custom_attribute, disable_browser_autorum, get_browser_timing_header
 from newrelic.common.encoding_utils import deobfuscate
 
 _runtime_error_name = f"{RuntimeError.__module__}:{RuntimeError.__name__}"

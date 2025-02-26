@@ -13,8 +13,7 @@
 # limitations under the License.
 
 from newrelic.api.application import application_instance as default_application
-from newrelic.common.object_wrapper import (wrap_function_wrapper,
-        FunctionWrapper)
+from newrelic.common.object_wrapper import wrap_function_wrapper, FunctionWrapper
 from newrelic.api.background_task import BackgroundTask
 from newrelic.api.function_trace import FunctionTrace, wrap_function_trace
 from newrelic.api.transaction import current_transaction
@@ -24,19 +23,19 @@ from newrelic.api.external_trace import ExternalTrace
 
 # Following wrappers are specifically for a gearman client.
 
+
 def instrument_gearman_client(module):
-    wrap_function_trace(module, 'GearmanClient.submit_job')
-    wrap_function_trace(module, 'GearmanClient.submit_multiple_jobs')
-    wrap_function_trace(module, 'GearmanClient.submit_multiple_requests')
-    wrap_function_trace(module, 'GearmanClient.wait_until_jobs_accepted')
-    wrap_function_trace(module, 'GearmanClient.wait_until_jobs_completed')
-    wrap_function_trace(module, 'GearmanClient.get_job_status')
-    wrap_function_trace(module, 'GearmanClient.get_job_statuses')
-    wrap_function_trace(module, 'GearmanClient.wait_until_job_statuses_received')
+    wrap_function_trace(module, "GearmanClient.submit_job")
+    wrap_function_trace(module, "GearmanClient.submit_multiple_jobs")
+    wrap_function_trace(module, "GearmanClient.submit_multiple_requests")
+    wrap_function_trace(module, "GearmanClient.wait_until_jobs_accepted")
+    wrap_function_trace(module, "GearmanClient.wait_until_jobs_completed")
+    wrap_function_trace(module, "GearmanClient.get_job_status")
+    wrap_function_trace(module, "GearmanClient.get_job_statuses")
+    wrap_function_trace(module, "GearmanClient.wait_until_job_statuses_received")
 
-def wrapper_GearmanConnectionManager_poll_connections_until_stopped(
-        wrapped, instance, args, kwargs):
 
+def wrapper_GearmanConnectionManager_poll_connections_until_stopped(wrapped, instance, args, kwargs):
     def _bind_params(submitted_connections, *args, **kwargs):
         return submitted_connections
 
@@ -69,14 +68,13 @@ def wrapper_GearmanConnectionManager_poll_connections_until_stopped(
 
     first_connection = list(submitted_connections)[0]
 
-    url = f'gearman://{first_connection.gearman_host}:{first_connection.gearman_port}'
+    url = f"gearman://{first_connection.gearman_host}:{first_connection.gearman_port}"
 
-    with ExternalTrace('gearman', url):
+    with ExternalTrace("gearman", url):
         return wrapped(*args, **kwargs)
 
-def wrapper_GearmanConnectionManager_handle_function(wrapped, instance,
-        args, kwargs):
 
+def wrapper_GearmanConnectionManager_handle_function(wrapped, instance, args, kwargs):
     def _bind_params(current_connection, *args, **kwargs):
         return current_connection
 
@@ -99,28 +97,36 @@ def wrapper_GearmanConnectionManager_handle_function(wrapped, instance,
     # some reason. Can't really do much better than this though but will
     # be fine for the expected typical use case of a single server.
 
-    if not tracer.url.startswith('gearman:'):
+    if not tracer.url.startswith("gearman:"):
         return wrapped(*args, **kwargs)
 
     current_connection = _bind_params(*args, **kwargs)
 
-    tracer.url = f'gearman://{current_connection.gearman_host}:{current_connection.gearman_port}'
+    tracer.url = f"gearman://{current_connection.gearman_host}:{current_connection.gearman_port}"
 
     return wrapped(*args, **kwargs)
 
-def instrument_gearman_connection_manager(module):
-    wrap_function_wrapper(module, 'GearmanConnectionManager.handle_read',
-            wrapper_GearmanConnectionManager_handle_function)
-    wrap_function_wrapper(module, 'GearmanConnectionManager.handle_write',
-            wrapper_GearmanConnectionManager_handle_function)
-    wrap_function_wrapper(module, 'GearmanConnectionManager.handle_error',
-            wrapper_GearmanConnectionManager_handle_function)
 
-    wrap_function_wrapper(module,
-            'GearmanConnectionManager.poll_connections_until_stopped',
-            wrapper_GearmanConnectionManager_poll_connections_until_stopped)
+def instrument_gearman_connection_manager(module):
+    wrap_function_wrapper(
+        module, "GearmanConnectionManager.handle_read", wrapper_GearmanConnectionManager_handle_function
+    )
+    wrap_function_wrapper(
+        module, "GearmanConnectionManager.handle_write", wrapper_GearmanConnectionManager_handle_function
+    )
+    wrap_function_wrapper(
+        module, "GearmanConnectionManager.handle_error", wrapper_GearmanConnectionManager_handle_function
+    )
+
+    wrap_function_wrapper(
+        module,
+        "GearmanConnectionManager.poll_connections_until_stopped",
+        wrapper_GearmanConnectionManager_poll_connections_until_stopped,
+    )
+
 
 # Following wrappers are specifically for a gearman worker.
+
 
 def wrapper_GearmanWorker_on_job_execute(wrapped, instance, args, kwargs):
     def _bind_params(current_job, *args, **kwargs):
@@ -134,8 +140,9 @@ def wrapper_GearmanWorker_on_job_execute(wrapped, instance, args, kwargs):
     application = default_application()
     current_job = _bind_params(*args, **kwargs)
 
-    with BackgroundTask(application, current_job.task, 'Gearman'):
+    with BackgroundTask(application, current_job.task, "Gearman"):
         return wrapped(*args, **kwargs)
+
 
 def wrapper_callback_function(wrapped, instance, args, kwargs):
     transaction = current_transaction()
@@ -157,6 +164,7 @@ def wrapper_callback_function(wrapped, instance, args, kwargs):
             trace.notice_error()
             raise
 
+
 def wrapper_GearmanWorker_register_task(wrapped, instance, args, kwargs):
     def _bind_params(task, callback_function, *args, **kwargs):
         return task, callback_function, args, kwargs
@@ -167,13 +175,11 @@ def wrapper_GearmanWorker_register_task(wrapped, instance, args, kwargs):
     # function.
 
     task, callback_function, _args, _kwargs = _bind_params(*args, **kwargs)
-    callback_function = FunctionWrapper(callback_function,
-            wrapper_callback_function)
+    callback_function = FunctionWrapper(callback_function, wrapper_callback_function)
 
     return wrapped(task, callback_function, *_args, **_kwargs)
 
+
 def instrument_gearman_worker(module):
-    wrap_function_wrapper(module, 'GearmanWorker.on_job_execute',
-            wrapper_GearmanWorker_on_job_execute)
-    wrap_function_wrapper(module, 'GearmanWorker.register_task',
-            wrapper_GearmanWorker_register_task)
+    wrap_function_wrapper(module, "GearmanWorker.on_job_execute", wrapper_GearmanWorker_on_job_execute)
+    wrap_function_wrapper(module, "GearmanWorker.register_task", wrapper_GearmanWorker_register_task)

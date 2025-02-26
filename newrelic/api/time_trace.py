@@ -23,17 +23,14 @@ import warnings
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 from newrelic.common.object_names import parse_exc_info
 from newrelic.core.attribute import MAX_NUM_USER_ATTRIBUTES, process_user_attribute
-from newrelic.core.code_level_metrics import (
-    extract_code_from_callable,
-    extract_code_from_traceback,
-)
+from newrelic.core.code_level_metrics import extract_code_from_callable, extract_code_from_traceback
 from newrelic.core.config import is_expected_error, should_ignore_error
 from newrelic.core.trace_cache import trace_cache
 
 _logger = logging.getLogger(__name__)
 
 
-class TimeTrace():
+class TimeTrace:
     def __init__(self, parent=None, source=None):
         self.parent = parent
         self.root = None
@@ -376,12 +373,7 @@ class TimeTrace():
 
         exc, value, tb = error
 
-        recorded = self._observe_exception(
-            error,
-            ignore=ignore,
-            expected=expected,
-            status_code=status_code,
-        )
+        recorded = self._observe_exception(error, ignore=ignore, expected=expected, status_code=status_code)
         if recorded:
             fullname, message, message_raw, tb, is_expected = recorded
             transaction = self.transaction
@@ -452,15 +444,7 @@ class TimeTrace():
                         error_group_name = None
 
             transaction._create_error_node(
-                settings,
-                fullname,
-                message,
-                is_expected,
-                error_group_name,
-                custom_params,
-                self.guid,
-                tb,
-                source=source,
+                settings, fullname, message, is_expected, error_group_name, custom_params, self.guid, tb, source=source
             )
 
     def record_exception(self, exc_info=None, params=None, ignore_errors=None):
@@ -674,9 +658,7 @@ def get_trace_linking_metadata():
 
 
 def get_service_linking_metadata(application=None, settings=None):
-    metadata = {
-        "entity.type": "SERVICE",
-    }
+    metadata = {"entity.type": "SERVICE"}
 
     trace = current_trace()
     if settings is None and trace:
@@ -726,18 +708,10 @@ def notice_error(error=None, attributes=None, expected=None, ignore=None, status
         trace = current_trace()
         if trace:
             trace.notice_error(
-                error=error,
-                attributes=attributes,
-                expected=expected,
-                ignore=ignore,
-                status_code=status_code,
+                error=error, attributes=attributes, expected=expected, ignore=ignore, status_code=status_code
             )
     else:
         if application.enabled:
             application.notice_error(
-                error=error,
-                attributes=attributes,
-                expected=expected,
-                ignore=ignore,
-                status_code=status_code,
+                error=error, attributes=attributes, expected=expected, ignore=ignore, status_code=status_code
             )

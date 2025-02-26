@@ -17,15 +17,9 @@ import sys
 import pytest
 import starlette
 from testing_support.fixtures import override_ignore_status_codes
-from testing_support.validators.validate_code_level_metrics import (
-    validate_code_level_metrics,
-)
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.common.object_names import callable_name
 from newrelic.common.package_version_utils import get_package_version_tuple
@@ -106,15 +100,10 @@ middleware_test = (
 )
 
 
-@pytest.mark.parametrize(
-    "app_name, transaction_name",
-    middleware_test,
-)
+@pytest.mark.parametrize("app_name, transaction_name", middleware_test)
 def test_application_nonexistent_route(target_application, app_name, transaction_name):
     @validate_transaction_metrics(
-        transaction_name,
-        scoped_metrics=[(f"Function/{transaction_name}", 1)],
-        rollup_metrics=[FRAMEWORK_METRIC],
+        transaction_name, scoped_metrics=[(f"Function/{transaction_name}", 1)], rollup_metrics=[FRAMEWORK_METRIC]
     )
     def _test():
         app = target_application[app_name]
@@ -153,12 +142,7 @@ def test_exception_in_middleware(target_application, app_name):
 @pytest.mark.parametrize(
     "app_name,transaction_name,path,scoped_metrics",
     (
-        (
-            "non_async_error_handler_no_middleware",
-            "_test_application:runtime_error",
-            "/runtime_error",
-            [],
-        ),
+        ("non_async_error_handler_no_middleware", "_test_application:runtime_error", "/runtime_error", []),
         (
             "async_error_handler_no_middleware",
             "_test_application:runtime_error",
@@ -169,23 +153,13 @@ def test_exception_in_middleware(target_application, app_name):
             "no_middleware",
             "_test_application:runtime_error",
             "/runtime_error",
-            [
-                (
-                    "Function/starlette.middleware.errors:ServerErrorMiddleware.error_response",
-                    1,
-                )
-            ],
+            [("Function/starlette.middleware.errors:ServerErrorMiddleware.error_response", 1)],
         ),
         (
             "debug_no_middleware",
             "_test_application:runtime_error",
             "/runtime_error",
-            [
-                (
-                    "Function/starlette.middleware.errors:ServerErrorMiddleware.debug_response",
-                    1,
-                )
-            ],
+            [("Function/starlette.middleware.errors:ServerErrorMiddleware.debug_response", 1)],
         ),
         ("no_middleware", "_test_application:CustomRoute", "/raw_runtime_error", []),
     ),
@@ -225,9 +199,7 @@ def test_server_error_middleware(target_application, app_name, transaction_name,
 def test_application_handled_error(target_application, app_name, transaction_name, path, error):
     @validate_transaction_errors(errors=[error])
     @validate_transaction_metrics(
-        transaction_name,
-        scoped_metrics=[(f"Function/{transaction_name}", 1)],
-        rollup_metrics=[FRAMEWORK_METRIC],
+        transaction_name, scoped_metrics=[(f"Function/{transaction_name}", 1)], rollup_metrics=[FRAMEWORK_METRIC]
     )
     def _test():
         app = target_application[app_name]
@@ -240,11 +212,7 @@ def test_application_handled_error(target_application, app_name, transaction_nam
 @pytest.mark.parametrize(
     "app_name,transaction_name,path",
     (
-        (
-            "async_error_handler_no_middleware",
-            "_test_application:handled_error",
-            "/handled_error",
-        ),
+        ("async_error_handler_no_middleware", "_test_application:handled_error", "/handled_error"),
         (
             "non_async_error_handler_no_middleware",
             "_test_application:non_async_handled_error",
@@ -256,9 +224,7 @@ def test_application_handled_error(target_application, app_name, transaction_nam
 def test_application_ignored_error(target_application, app_name, transaction_name, path):
     @validate_transaction_errors(errors=[])
     @validate_transaction_metrics(
-        transaction_name,
-        scoped_metrics=[(f"Function/{transaction_name}", 1)],
-        rollup_metrics=[FRAMEWORK_METRIC],
+        transaction_name, scoped_metrics=[(f"Function/{transaction_name}", 1)], rollup_metrics=[FRAMEWORK_METRIC]
     )
     def _test():
         app = target_application[app_name]
@@ -269,14 +235,8 @@ def test_application_ignored_error(target_application, app_name, transaction_nam
 
 
 middleware_test_exception = (
-    (
-        "no_middleware",
-        [(f"Function/starlette{version_tweak_string}.exceptions:ExceptionMiddleware.http_exception", 1)],
-    ),
-    (
-        "teapot_exception_handler_no_middleware",
-        [("Function/_test_application:teapot_handler", 1)],
-    ),
+    ("no_middleware", [(f"Function/starlette{version_tweak_string}.exceptions:ExceptionMiddleware.http_exception", 1)]),
+    ("teapot_exception_handler_no_middleware", [("Function/_test_application:teapot_handler", 1)]),
 )
 
 

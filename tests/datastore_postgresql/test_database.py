@@ -15,12 +15,8 @@
 import postgresql.driver.dbapi20
 from testing_support.db_settings import postgresql_settings
 from testing_support.util import instance_hostname
-from testing_support.validators.validate_database_trace_inputs import (
-    validate_database_trace_inputs,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_database_trace_inputs import validate_database_trace_inputs
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
@@ -89,7 +85,7 @@ def test_execute_via_cursor():
     ) as connection:
         cursor = connection.cursor()
 
-        cursor.execute(f"""drop table if exists {DB_SETTINGS['table_name']}""")
+        cursor.execute(f"""drop table if exists {DB_SETTINGS["table_name"]}""")
 
         cursor.execute(f"create table {DB_SETTINGS['table_name']} (a integer, b real, c text)")
 
@@ -98,18 +94,15 @@ def test_execute_via_cursor():
             [(1, 1.0, "1.0"), (2, 2.2, "2.2"), (3, 3.3, "3.3")],
         )
 
-        cursor.execute(f"""select * from {DB_SETTINGS['table_name']}""")
+        cursor.execute(f"""select * from {DB_SETTINGS["table_name"]}""")
 
         cursor.execute(
             f"with temporaryTable (averageValue) as (select avg(b) from {DB_SETTINGS['table_name']}) select * from {DB_SETTINGS['table_name']},temporaryTable where {DB_SETTINGS['table_name']}.b > temporaryTable.averageValue"
         )
 
-        cursor.execute(
-            f"update {DB_SETTINGS['table_name']} set a=%s, b=%s, c=%s where a=%s",
-            (4, 4.0, "4.0", 1),
-        )
+        cursor.execute(f"update {DB_SETTINGS['table_name']} set a=%s, b=%s, c=%s where a=%s", (4, 4.0, "4.0", 1))
 
-        cursor.execute(f"""delete from {DB_SETTINGS['table_name']} where a=2""")
+        cursor.execute(f"""delete from {DB_SETTINGS["table_name"]} where a=2""")
 
         connection.commit()
 

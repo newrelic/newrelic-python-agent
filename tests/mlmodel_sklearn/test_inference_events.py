@@ -16,10 +16,7 @@ import sys
 
 import numpy as np
 import pandas
-from testing_support.fixtures import (
-    override_application_settings,
-    reset_core_stats_engine,
-)
+from testing_support.fixtures import override_application_settings, reset_core_stats_engine
 from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_ml_event_count import validate_ml_event_count
 from testing_support.validators.validate_ml_events import validate_ml_events
@@ -39,7 +36,7 @@ pandas_df_category_recorded_custom_events = [
             "label.0": "27.0",
             "new_relic_data_schema_version": 2,
         },
-    ),
+    )
 ]
 
 
@@ -79,7 +76,7 @@ pandas_df_bool_recorded_custom_events = [
             "label.0": true_label_value,
             "new_relic_data_schema_version": 2,
         },
-    ),
+    )
 ]
 
 
@@ -118,7 +115,7 @@ pandas_df_float_recorded_custom_events = [
             "label.0": "345.6",
             "new_relic_data_schema_version": 2,
         },
-    ),
+    )
 ]
 
 
@@ -157,7 +154,7 @@ int_list_recorded_custom_events = [
             "label.0": "1.0",
             "new_relic_data_schema_version": 2,
         },
-    ),
+    )
 ]
 
 
@@ -195,7 +192,7 @@ numpy_int_recorded_custom_events = [
             "label.0": "11.0",
             "new_relic_data_schema_version": 2,
         },
-    ),
+    )
 ]
 
 
@@ -281,14 +278,14 @@ numpy_str_recorded_custom_events_no_value = [
             "model_version": "0.0.0",
             "new_relic_data_schema_version": 2,
         },
-    ),
+    )
 ]
 
 
 disabled_inference_value_settings = {
     "machine_learning.enabled": True,
     "machine_learning.inference_events_value.enabled": False,
-    "ml_insights_events.enabled": True
+    "ml_insights_events.enabled": True,
 }
 
 
@@ -317,7 +314,7 @@ def test_does_not_include_value_when_inference_event_value_enabled_is_false():
 disabled_ml_insights_settings = {
     "machine_learning.enabled": True,
     "machine_learning.inference_events_value.enabled": True,
-    "ml_insights_events.enabled": False
+    "ml_insights_events.enabled": False,
 }
 
 
@@ -350,7 +347,7 @@ def test_does_not_include_events_when_ml_insights_events_enabled_is_false():
 disabled_ml_settings = {
     "machine_learning.enabled": False,
     "machine_learning.inference_events_value.enabled": True,
-    "ml_insights_events.enabled": True
+    "ml_insights_events.enabled": True,
 }
 
 
@@ -408,7 +405,7 @@ multilabel_output_label_events = [
             "feature.19": 4.0,
             "new_relic_data_schema_version": 2,
         },
-    ),
+    )
 ]
 
 

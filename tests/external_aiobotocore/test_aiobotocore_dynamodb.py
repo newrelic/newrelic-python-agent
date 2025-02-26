@@ -21,9 +21,7 @@ from conftest import (  # noqa: F401, pylint: disable=W0611
     loop,
 )
 from testing_support.validators.validate_span_events import validate_span_events
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
@@ -79,7 +77,6 @@ def test_aiobotocore_dynamodb(loop):
                 aws_access_key_id=AWS_ACCESS_KEY_ID,
                 aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
             ) as client:
-
                 resp = await client.create_table(
                     TableName=TEST_TABLE,
                     AttributeDefinitions=[
@@ -90,10 +87,7 @@ def test_aiobotocore_dynamodb(loop):
                         {"AttributeName": "Id", "KeyType": "HASH"},
                         {"AttributeName": "Foo", "KeyType": "RANGE"},
                     ],
-                    ProvisionedThroughput={
-                        "ReadCapacityUnits": 5,
-                        "WriteCapacityUnits": 5,
-                    },
+                    ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
                 )
                 assert resp["TableDescription"]["TableName"] == TEST_TABLE
 
@@ -103,34 +97,21 @@ def test_aiobotocore_dynamodb(loop):
 
                 # Put item
                 resp = await client.put_item(
-                    TableName=TEST_TABLE,
-                    Item={
-                        "Id": {"N": "101"},
-                        "Foo": {"S": "hello_world"},
-                    },
+                    TableName=TEST_TABLE, Item={"Id": {"N": "101"}, "Foo": {"S": "hello_world"}}
                 )
                 assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
 
                 # Get item
                 resp = await client.get_item(
-                    TableName=TEST_TABLE,
-                    Key={
-                        "Id": {"N": "101"},
-                        "Foo": {"S": "hello_world"},
-                    },
+                    TableName=TEST_TABLE, Key={"Id": {"N": "101"}, "Foo": {"S": "hello_world"}}
                 )
                 assert resp["Item"]["Foo"]["S"] == "hello_world"
 
                 # Update item
                 resp = await client.update_item(
                     TableName=TEST_TABLE,
-                    Key={
-                        "Id": {"N": "101"},
-                        "Foo": {"S": "hello_world"},
-                    },
-                    AttributeUpdates={
-                        "Foo2": {"Value": {"S": "hello_world2"}, "Action": "PUT"},
-                    },
+                    Key={"Id": {"N": "101"}, "Foo": {"S": "hello_world"}},
+                    AttributeUpdates={"Foo2": {"Value": {"S": "hello_world2"}, "Action": "PUT"}},
                     ReturnValues="ALL_NEW",
                 )
                 assert resp["Attributes"]["Foo2"]
@@ -152,11 +133,7 @@ def test_aiobotocore_dynamodb(loop):
 
                 # Delete item
                 resp = await client.delete_item(
-                    TableName=TEST_TABLE,
-                    Key={
-                        "Id": {"N": "101"},
-                        "Foo": {"S": "hello_world"},
-                    },
+                    TableName=TEST_TABLE, Key={"Id": {"N": "101"}, "Foo": {"S": "hello_world"}}
                 )
                 assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
 

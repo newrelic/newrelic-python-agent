@@ -18,12 +18,8 @@ import boto3
 from moto import mock_aws
 from testing_support.fixtures import dt_enabled
 from testing_support.validators.validate_span_events import validate_span_events
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
-from testing_support.validators.validate_tt_segment_params import (
-    validate_tt_segment_params,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_tt_segment_params import validate_tt_segment_params
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
@@ -35,9 +31,7 @@ AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"  # nosec (This is fine for testing pur
 
 TEST_USER = f"python-agent-test-{uuid.uuid4()}"
 
-_iam_scoped_metrics = [
-    ("External/iam.amazonaws.com/botocore/POST", 3),
-]
+_iam_scoped_metrics = [("External/iam.amazonaws.com/botocore/POST", 3)]
 
 _iam_rollup_metrics = [
     ("External/all", 3),
@@ -63,11 +57,7 @@ _iam_rollup_metrics = [
 @background_task()
 @mock_aws
 def test_iam():
-    iam = boto3.client(
-        "iam",
-        aws_access_key_id=AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-    )
+    iam = boto3.client("iam", aws_access_key_id=AWS_ACCESS_KEY_ID, aws_secret_access_key=AWS_SECRET_ACCESS_KEY)
 
     # Create user
     resp = iam.create_user(UserName=TEST_USER)

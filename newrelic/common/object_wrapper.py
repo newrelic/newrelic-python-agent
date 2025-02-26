@@ -122,10 +122,13 @@ class CallableObjectProxy(ObjectProxy, _CallableObjectProxy):
 # own code no longer uses it. It reaches down into what are wrapt internals
 # at present which shouldn't be doing.
 
+
 class ObjectWrapper(FunctionWrapper):
     def __init__(self, wrapped, instance, wrapper):
         warnings.warn(
-            ("The ObjectWrapper API is deprecated. Please use one of ObjectProxy, FunctionWrapper, or CallableObjectProxy instead."),
+            (
+                "The ObjectWrapper API is deprecated. Please use one of ObjectProxy, FunctionWrapper, or CallableObjectProxy instead."
+            ),
             DeprecationWarning,
         )
         super(ObjectWrapper, self).__init__(wrapped, wrapper)

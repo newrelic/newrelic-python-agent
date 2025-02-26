@@ -20,10 +20,7 @@ import langchain_core
 import openai
 import pytest
 from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain.chains.openai_functions import (
-    create_structured_output_chain,
-    create_structured_output_runnable,
-)
+from langchain.chains.openai_functions import create_structured_output_chain, create_structured_output_runnable
 from langchain_community.vectorstores.faiss import FAISS
 from mock import patch
 from testing_support.fixtures import reset_core_stats_engine, validate_attributes
@@ -36,15 +33,9 @@ from testing_support.ml_testing_utils import (  # noqa: F401
 )
 from testing_support.validators.validate_custom_event import validate_custom_event_count
 from testing_support.validators.validate_custom_events import validate_custom_events
-from testing_support.validators.validate_error_trace_attributes import (
-    validate_error_trace_attributes,
-)
-from testing_support.validators.validate_transaction_error_event_count import (
-    validate_transaction_error_event_count,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_error_trace_attributes import validate_error_trace_attributes
+from testing_support.validators.validate_transaction_error_event_count import validate_transaction_error_event_count
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
@@ -698,9 +689,7 @@ chat_completion_recorded_events_error_in_langchain = [
     name="test_chain:test_langchain_chain_list_response",
     scoped_metrics=[("Llm/chain/LangChain/invoke", 1)],
     rollup_metrics=[("Llm/chain/LangChain/invoke", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
     background_task=True,
 )
 @background_task()
@@ -716,17 +705,11 @@ def test_langchain_chain_list_response(set_trace_info, comma_separated_list_outp
     human_template = "{text}"
 
     chat_prompt = langchain_core.prompts.ChatPromptTemplate.from_messages(
-        [
-            ("system", template),
-            ("human", human_template),
-        ]
+        [("system", template), ("human", human_template)]
     )
     chain = chat_prompt | chat_openai_client | comma_separated_list_output_parser
     with WithLlmCustomAttributes({"context": "attr"}):
-        chain.invoke(
-            {"text": "colors"},
-            config={"metadata": {"id": "123"}},
-        )
+        chain.invoke({"text": "colors"}, config={"metadata": {"id": "123"}})
 
 
 @pytest.mark.parametrize(
@@ -736,12 +719,7 @@ def test_langchain_chain_list_response(set_trace_info, comma_separated_list_outp
             create_structured_output_runnable,
             "invoke",
             ({"input": "Sally is 13"},),
-            {
-                "config": {
-                    "tags": ["bar"],
-                    "metadata": {"id": "123"},
-                },
-            },
+            {"config": {"tags": ["bar"], "metadata": {"id": "123"}}},
             chat_completion_recorded_events_runnable_invoke,
             id="runnable_chain.invoke-with-args-and-kwargs",
         ),
@@ -749,13 +727,7 @@ def test_langchain_chain_list_response(set_trace_info, comma_separated_list_outp
             create_structured_output_runnable,
             "invoke",
             (),
-            {
-                "input": {"input": "Sally is 13"},
-                "config": {
-                    "tags": ["bar"],
-                    "metadata": {"id": "123"},
-                },
-            },
+            {"input": {"input": "Sally is 13"}, "config": {"tags": ["bar"], "metadata": {"id": "123"}}},
             chat_completion_recorded_events_runnable_invoke,
             id="runnable_chain.invoke-with-only-kwargs",
         ),
@@ -771,13 +743,7 @@ def test_langchain_chain_list_response(set_trace_info, comma_separated_list_outp
             create_structured_output_chain,
             "invoke",
             ({"input": "Sally is 13"},),
-            {
-                "config": {
-                    "tags": ["bar"],
-                    "metadata": {"id": "123"},
-                },
-                "return_only_outputs": True,
-            },
+            {"config": {"tags": ["bar"], "metadata": {"id": "123"}}, "return_only_outputs": True},
             chat_completion_recorded_events_invoke,
             id="chain.invoke-with-args-and-kwargs",
         ),
@@ -787,10 +753,7 @@ def test_langchain_chain_list_response(set_trace_info, comma_separated_list_outp
             (),
             {
                 "input": {"input": "Sally is 13"},
-                "config": {
-                    "tags": ["bar"],
-                    "metadata": {"id": "123"},
-                },
+                "config": {"tags": ["bar"], "metadata": {"id": "123"}},
                 "return_only_outputs": True,
             },
             chat_completion_recorded_events_invoke,
@@ -800,9 +763,7 @@ def test_langchain_chain_list_response(set_trace_info, comma_separated_list_outp
             create_structured_output_chain,
             "invoke",
             ({"input": "Sally is 13"},),
-            {
-                "return_only_outputs": True,
-            },
+            {"return_only_outputs": True},
             chat_completion_recorded_events_invoke_no_metadata_or_tags,
             id="chain.invoke-with-only-args",
         ),
@@ -827,9 +788,7 @@ def test_langchain_chain(
         name="test_chain:test_langchain_chain.<locals>._test",
         scoped_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         rollup_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
-        custom_metrics=[
-            (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
-        ],
+        custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
         background_task=True,
     )
     @validate_attributes("agent", ["llm"])
@@ -856,12 +815,7 @@ def test_langchain_chain(
             create_structured_output_runnable,
             "invoke",
             ({"input": "Sally is 13"},),
-            {
-                "config": {
-                    "tags": ["bar"],
-                    "metadata": {"id": "123"},
-                },
-            },
+            {"config": {"tags": ["bar"], "metadata": {"id": "123"}}},
             events_sans_content(chat_completion_recorded_events_runnable_invoke),
             id="runnable_chain.invoke",
         ),
@@ -869,13 +823,7 @@ def test_langchain_chain(
             create_structured_output_chain,
             "invoke",
             ({"input": "Sally is 13"},),
-            {
-                "config": {
-                    "tags": ["bar"],
-                    "metadata": {"id": "123"},
-                },
-                "return_only_outputs": True,
-            },
+            {"config": {"tags": ["bar"], "metadata": {"id": "123"}}, "return_only_outputs": True},
             events_sans_content(chat_completion_recorded_events_invoke),
             id="chain.invoke",
         ),
@@ -901,9 +849,7 @@ def test_langchain_chain_no_content(
         name="test_chain:test_langchain_chain_no_content.<locals>._test",
         scoped_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         rollup_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
-        custom_metrics=[
-            (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
-        ],
+        custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
         background_task=True,
     )
     @background_task()
@@ -929,12 +875,7 @@ def test_langchain_chain_no_content(
             create_structured_output_runnable,
             "invoke",
             ({"input": "Sally is 13"},),
-            {
-                "config": {
-                    "tags": [],
-                    "metadata": {"id": "123"},
-                }
-            },
+            {"config": {"tags": [], "metadata": {"id": "123"}}},
             chat_completion_recorded_events_runnable_invoke_openai_error,
             id="runnable_chain.invoke-with-args-and-kwargs",
         ),
@@ -942,12 +883,7 @@ def test_langchain_chain_no_content(
             create_structured_output_runnable,
             "invoke",
             (),
-            {
-                "input": {"input": "Sally is 13"},
-                "config": {
-                    "metadata": {"id": "123"},
-                },
-            },
+            {"input": {"input": "Sally is 13"}, "config": {"metadata": {"id": "123"}}},
             chat_completion_recorded_events_runnable_invoke_openai_error,
             id="runnable_chain.invoke-only-kwargs",
         ),
@@ -955,13 +891,7 @@ def test_langchain_chain_no_content(
             create_structured_output_chain,
             "invoke",
             ({"input": "Sally is 13"},),
-            {
-                "config": {
-                    "tags": [],
-                    "metadata": {"id": "123"},
-                },
-                "return_only_outputs": True,
-            },
+            {"config": {"tags": [], "metadata": {"id": "123"}}, "return_only_outputs": True},
             chat_completion_recorded_events_runnable_invoke_openai_error,
             id="chain.run-with-args-and-kwargs",
         ),
@@ -969,13 +899,7 @@ def test_langchain_chain_no_content(
             create_structured_output_chain,
             "invoke",
             (),
-            {
-                "input": {"input": "Sally is 13"},
-                "config": {
-                    "metadata": {"id": "123"},
-                },
-                "return_only_outputs": True,
-            },
+            {"input": {"input": "Sally is 13"}, "config": {"metadata": {"id": "123"}}, "return_only_outputs": True},
             chat_completion_recorded_events_runnable_invoke_openai_error,
             id="chain.invoke-only-kwargs",
         ),
@@ -1000,9 +924,7 @@ def test_langchain_chain_error_in_openai(
         name="test_chain:test_langchain_chain_error_in_openai.<locals>._test",
         scoped_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         rollup_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
-        custom_metrics=[
-            (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
-        ],
+        custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
         background_task=True,
     )
     @background_task()
@@ -1028,12 +950,7 @@ def test_langchain_chain_error_in_openai(
             create_structured_output_runnable,
             "invoke",
             ({"no-exist": "Sally is 13"},),
-            {
-                "config": {
-                    "tags": [],
-                    "metadata": {"id": "123"},
-                }
-            },
+            {"config": {"tags": [], "metadata": {"id": "123"}}},
             chat_completion_recorded_events_invoke_langchain_error,
             KeyError,
             id="runnable_chain.invoke",
@@ -1042,13 +959,7 @@ def test_langchain_chain_error_in_openai(
             create_structured_output_chain,
             "invoke",
             ({"no-exist": "Sally is 13"},),
-            {
-                "config": {
-                    "tags": [],
-                    "metadata": {"id": "123"},
-                },
-                "return_only_outputs": True,
-            },
+            {"config": {"tags": [], "metadata": {"id": "123"}}, "return_only_outputs": True},
             chat_completion_recorded_events_invoke_langchain_error,
             ValueError,
             id="chain.invoke",
@@ -1069,18 +980,14 @@ def test_langchain_chain_error_in_langchain(
 ):
     @reset_core_stats_engine()
     @validate_transaction_error_event_count(1)
-    @validate_error_trace_attributes(
-        callable_name(expected_error),
-    )
+    @validate_error_trace_attributes(callable_name(expected_error))
     @validate_custom_events(expected_events)
     @validate_custom_event_count(count=2)
     @validate_transaction_metrics(
         name="test_chain:test_langchain_chain_error_in_langchain.<locals>._test",
         scoped_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         rollup_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
-        custom_metrics=[
-            (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
-        ],
+        custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
         background_task=True,
     )
     @background_task()
@@ -1105,12 +1012,7 @@ def test_langchain_chain_error_in_langchain(
             create_structured_output_runnable,
             "invoke",
             ({"no-exist": "Sally is 13"},),
-            {
-                "config": {
-                    "tags": [],
-                    "metadata": {"id": "123"},
-                }
-            },
+            {"config": {"tags": [], "metadata": {"id": "123"}}},
             events_sans_content(chat_completion_recorded_events_invoke_langchain_error),
             KeyError,
             id="runnable_chain.invoke",
@@ -1119,13 +1021,7 @@ def test_langchain_chain_error_in_langchain(
             create_structured_output_chain,
             "invoke",
             ({"no-exist": "Sally is 13"},),
-            {
-                "config": {
-                    "tags": [],
-                    "metadata": {"id": "123"},
-                },
-                "return_only_outputs": True,
-            },
+            {"config": {"tags": [], "metadata": {"id": "123"}}, "return_only_outputs": True},
             events_sans_content(chat_completion_recorded_events_invoke_langchain_error),
             ValueError,
             id="chain.invoke",
@@ -1147,18 +1043,14 @@ def test_langchain_chain_error_in_langchain_no_content(
     @reset_core_stats_engine()
     @disabled_ai_monitoring_record_content_settings
     @validate_transaction_error_event_count(1)
-    @validate_error_trace_attributes(
-        callable_name(expected_error),
-    )
+    @validate_error_trace_attributes(callable_name(expected_error))
     @validate_custom_events(expected_events)
     @validate_custom_event_count(count=2)
     @validate_transaction_metrics(
         name="test_chain:test_langchain_chain_error_in_langchain_no_content.<locals>._test",
         scoped_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         rollup_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
-        custom_metrics=[
-            (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
-        ],
+        custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
         background_task=True,
     )
     @background_task()
@@ -1177,8 +1069,7 @@ def test_langchain_chain_error_in_langchain_no_content(
 
 
 @pytest.mark.parametrize(
-    "create_function,call_function,input_",
-    ((create_structured_output_runnable, "invoke", {"input": "Sally is 13"}),),
+    "create_function,call_function,input_", ((create_structured_output_runnable, "invoke", {"input": "Sally is 13"}),)
 )
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
@@ -1199,8 +1090,7 @@ def test_langchain_chain_outside_transaction(
 
 @disabled_ai_monitoring_settings
 @pytest.mark.parametrize(
-    "create_function,call_function,input_",
-    ((create_structured_output_runnable, "invoke", {"input": "Sally is 13"}),),
+    "create_function,call_function,input_", ((create_structured_output_runnable, "invoke", {"input": "Sally is 13"}),)
 )
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
@@ -1225,9 +1115,7 @@ def test_langchain_chain_ai_monitoring_disabled(
     name="test_chain:test_async_langchain_chain_list_response",
     scoped_metrics=[("Llm/chain/LangChain/ainvoke", 1)],
     rollup_metrics=[("Llm/chain/LangChain/ainvoke", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
     background_task=True,
 )
 @background_task()
@@ -1245,21 +1133,11 @@ def test_async_langchain_chain_list_response(
     human_template = "{text}"
 
     chat_prompt = langchain_core.prompts.ChatPromptTemplate.from_messages(
-        [
-            ("system", template),
-            ("human", human_template),
-        ]
+        [("system", template), ("human", human_template)]
     )
     chain = chat_prompt | chat_openai_client | comma_separated_list_output_parser
     with WithLlmCustomAttributes({"context": "attr"}):
-        loop.run_until_complete(
-            chain.ainvoke(
-                {"text": "colors"},
-                config={
-                    "metadata": {"id": "123"},
-                },
-            )
-        )
+        loop.run_until_complete(chain.ainvoke({"text": "colors"}, config={"metadata": {"id": "123"}}))
 
 
 @reset_core_stats_engine()
@@ -1270,9 +1148,7 @@ def test_async_langchain_chain_list_response(
     name="test_chain:test_async_langchain_chain_list_response_no_content",
     scoped_metrics=[("Llm/chain/LangChain/ainvoke", 1)],
     rollup_metrics=[("Llm/chain/LangChain/ainvoke", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
     background_task=True,
 )
 @background_task()
@@ -1290,21 +1166,11 @@ def test_async_langchain_chain_list_response_no_content(
     human_template = "{text}"
 
     chat_prompt = langchain_core.prompts.ChatPromptTemplate.from_messages(
-        [
-            ("system", template),
-            ("human", human_template),
-        ]
+        [("system", template), ("human", human_template)]
     )
     chain = chat_prompt | chat_openai_client | comma_separated_list_output_parser
 
-    loop.run_until_complete(
-        chain.ainvoke(
-            {"text": "colors"},
-            config={
-                "metadata": {"id": "123"},
-            },
-        )
-    )
+    loop.run_until_complete(chain.ainvoke({"text": "colors"}, config={"metadata": {"id": "123"}}))
 
 
 @pytest.mark.parametrize(
@@ -1314,12 +1180,7 @@ def test_async_langchain_chain_list_response_no_content(
             create_structured_output_runnable,
             "ainvoke",
             ({"input": "Sally is 13"},),
-            {
-                "config": {
-                    "tags": ["bar"],
-                    "metadata": {"id": "123"},
-                }
-            },
+            {"config": {"tags": ["bar"], "metadata": {"id": "123"}}},
             chat_completion_recorded_events_runnable_invoke,
             id="runnable_chain.ainvoke-with-args-and-kwargs",
         ),
@@ -1327,13 +1188,7 @@ def test_async_langchain_chain_list_response_no_content(
             create_structured_output_runnable,
             "ainvoke",
             (),
-            {
-                "input": {"input": "Sally is 13"},
-                "config": {
-                    "tags": ["bar"],
-                    "metadata": {"id": "123"},
-                },
-            },
+            {"input": {"input": "Sally is 13"}, "config": {"tags": ["bar"], "metadata": {"id": "123"}}},
             chat_completion_recorded_events_runnable_invoke,
             id="runnable_chain.ainvoke-with-only-kwargs",
         ),
@@ -1349,13 +1204,7 @@ def test_async_langchain_chain_list_response_no_content(
             create_structured_output_chain,
             "ainvoke",
             ({"input": "Sally is 13"},),
-            {
-                "config": {
-                    "tags": ["bar"],
-                    "metadata": {"id": "123"},
-                },
-                "return_only_outputs": True,
-            },
+            {"config": {"tags": ["bar"], "metadata": {"id": "123"}}, "return_only_outputs": True},
             chat_completion_recorded_events_invoke,
             id="chain.ainvoke-with-args-and-kwargs",
         ),
@@ -1365,10 +1214,7 @@ def test_async_langchain_chain_list_response_no_content(
             (),
             {
                 "input": {"input": "Sally is 13"},
-                "config": {
-                    "tags": ["bar"],
-                    "metadata": {"id": "123"},
-                },
+                "config": {"tags": ["bar"], "metadata": {"id": "123"}},
                 "return_only_outputs": True,
             },
             chat_completion_recorded_events_invoke,
@@ -1378,9 +1224,7 @@ def test_async_langchain_chain_list_response_no_content(
             create_structured_output_chain,
             "ainvoke",
             ({"input": "Sally is 13"},),
-            {
-                "return_only_outputs": True,
-            },
+            {"return_only_outputs": True},
             chat_completion_recorded_events_invoke_no_metadata_or_tags,
             id="chain.ainvoke-with-only-args",
         ),
@@ -1406,9 +1250,7 @@ def test_async_langchain_chain(
         name="test_chain:test_async_langchain_chain.<locals>._test",
         scoped_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         rollup_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
-        custom_metrics=[
-            (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
-        ],
+        custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
         background_task=True,
     )
     @validate_attributes("agent", ["llm"])
@@ -1433,12 +1275,7 @@ def test_async_langchain_chain(
             create_structured_output_runnable,
             "ainvoke",
             ({"input": "Sally is 13"},),
-            {
-                "config": {
-                    "tags": [],
-                    "metadata": {"id": "123"},
-                }
-            },
+            {"config": {"tags": [], "metadata": {"id": "123"}}},
             chat_completion_recorded_events_runnable_invoke_openai_error,
             id="runnable_chain.ainvoke-with-args-and-kwargs",
         ),
@@ -1446,12 +1283,7 @@ def test_async_langchain_chain(
             create_structured_output_runnable,
             "ainvoke",
             (),
-            {
-                "input": {"input": "Sally is 13"},
-                "config": {
-                    "metadata": {"id": "123"},
-                },
-            },
+            {"input": {"input": "Sally is 13"}, "config": {"metadata": {"id": "123"}}},
             chat_completion_recorded_events_runnable_invoke_openai_error,
             id="runnable_chain.ainvoke-only-kwargs",
         ),
@@ -1459,13 +1291,7 @@ def test_async_langchain_chain(
             create_structured_output_chain,
             "ainvoke",
             ({"input": "Sally is 13"},),
-            {
-                "config": {
-                    "tags": [],
-                    "metadata": {"id": "123"},
-                },
-                "return_only_outputs": True,
-            },
+            {"config": {"tags": [], "metadata": {"id": "123"}}, "return_only_outputs": True},
             chat_completion_recorded_events_runnable_invoke_openai_error,
             id="chain.arun-with-args-and-kwargs",
         ),
@@ -1473,13 +1299,7 @@ def test_async_langchain_chain(
             create_structured_output_chain,
             "ainvoke",
             (),
-            {
-                "input": {"input": "Sally is 13"},
-                "config": {
-                    "metadata": {"id": "123"},
-                },
-                "return_only_outputs": True,
-            },
+            {"input": {"input": "Sally is 13"}, "config": {"metadata": {"id": "123"}}, "return_only_outputs": True},
             chat_completion_recorded_events_runnable_invoke_openai_error,
             id="chain.arun-only-kwargs",
         ),
@@ -1505,9 +1325,7 @@ def test_async_langchain_chain_error_in_openai(
         name="test_chain:test_async_langchain_chain_error_in_openai.<locals>._test",
         scoped_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         rollup_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
-        custom_metrics=[
-            (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
-        ],
+        custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
         background_task=True,
     )
     @background_task()
@@ -1533,11 +1351,7 @@ def test_async_langchain_chain_error_in_openai(
             create_structured_output_runnable,
             "ainvoke",
             ({"no-exist": "Sally is 13"},),
-            {
-                "config": {
-                    "metadata": {"id": "123"},
-                }
-            },
+            {"config": {"metadata": {"id": "123"}}},
             chat_completion_recorded_events_invoke_langchain_error,
             KeyError,
             id="runnable_chain.ainvoke",
@@ -1546,12 +1360,7 @@ def test_async_langchain_chain_error_in_openai(
             create_structured_output_chain,
             "ainvoke",
             ({"no-exist": "Sally is 13"},),
-            {
-                "config": {
-                    "metadata": {"id": "123"},
-                },
-                "return_only_outputs": True,
-            },
+            {"config": {"metadata": {"id": "123"}}, "return_only_outputs": True},
             chat_completion_recorded_events_invoke_langchain_error,
             ValueError,
             id="chain.ainvoke",
@@ -1573,18 +1382,14 @@ def test_async_langchain_chain_error_in_langchain(
 ):
     @reset_core_stats_engine()
     @validate_transaction_error_event_count(1)
-    @validate_error_trace_attributes(
-        callable_name(expected_error),
-    )
+    @validate_error_trace_attributes(callable_name(expected_error))
     @validate_custom_events(expected_events)
     @validate_custom_event_count(count=2)
     @validate_transaction_metrics(
         name="test_chain:test_async_langchain_chain_error_in_langchain.<locals>._test",
         scoped_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         rollup_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
-        custom_metrics=[
-            (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
-        ],
+        custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
         background_task=True,
     )
     @background_task()
@@ -1609,11 +1414,7 @@ def test_async_langchain_chain_error_in_langchain(
             create_structured_output_runnable,
             "ainvoke",
             ({"no-exist": "Sally is 13"},),
-            {
-                "config": {
-                    "metadata": {"id": "123"},
-                }
-            },
+            {"config": {"metadata": {"id": "123"}}},
             events_sans_content(chat_completion_recorded_events_invoke_langchain_error),
             KeyError,
             id="runnable_chain.ainvoke",
@@ -1622,12 +1423,7 @@ def test_async_langchain_chain_error_in_langchain(
             create_structured_output_chain,
             "ainvoke",
             ({"no-exist": "Sally is 13"},),
-            {
-                "config": {
-                    "metadata": {"id": "123"},
-                },
-                "return_only_outputs": True,
-            },
+            {"config": {"metadata": {"id": "123"}}, "return_only_outputs": True},
             events_sans_content(chat_completion_recorded_events_invoke_langchain_error),
             ValueError,
             id="chain.ainvoke",
@@ -1650,18 +1446,14 @@ def test_async_langchain_chain_error_in_langchain_no_content(
     @reset_core_stats_engine()
     @disabled_ai_monitoring_record_content_settings
     @validate_transaction_error_event_count(1)
-    @validate_error_trace_attributes(
-        callable_name(expected_error),
-    )
+    @validate_error_trace_attributes(callable_name(expected_error))
     @validate_custom_events(expected_events)
     @validate_custom_event_count(count=2)
     @validate_transaction_metrics(
         name="test_chain:test_async_langchain_chain_error_in_langchain_no_content.<locals>._test",
         scoped_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         rollup_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
-        custom_metrics=[
-            (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
-        ],
+        custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
         background_task=True,
     )
     @background_task()
@@ -1708,12 +1500,7 @@ def test_async_langchain_chain_outside_transaction(
             create_structured_output_runnable,
             "ainvoke",
             ({"input": "Sally is 13"},),
-            {
-                "config": {
-                    "tags": ["bar"],
-                    "metadata": {"id": "123"},
-                }
-            },
+            {"config": {"tags": ["bar"], "metadata": {"id": "123"}}},
             chat_completion_recorded_events_runnable_invoke,
             id="runnable_chain.ainvoke-with-args-and-kwargs",
         ),
@@ -1721,13 +1508,7 @@ def test_async_langchain_chain_outside_transaction(
             create_structured_output_chain,
             "ainvoke",
             ({"input": "Sally is 13"},),
-            {
-                "config": {
-                    "tags": ["bar"],
-                    "metadata": {"id": "123"},
-                },
-                "return_only_outputs": True,
-            },
+            {"config": {"tags": ["bar"], "metadata": {"id": "123"}}, "return_only_outputs": True},
             chat_completion_recorded_events_invoke,
             id="chain.ainvoke-with-args-and-kwargs",
         ),
@@ -1762,9 +1543,7 @@ def test_multiple_async_langchain_chain(
         name="test_chain:test_multiple_async_langchain_chain.<locals>._test",
         scoped_metrics=[(f"Llm/chain/LangChain/{call_function}", 2)],
         rollup_metrics=[(f"Llm/chain/LangChain/{call_function}", 2)],
-        custom_metrics=[
-            (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
-        ],
+        custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
         background_task=True,
     )
     @background_task()
@@ -1787,7 +1566,6 @@ def test_multiple_async_langchain_chain(
 
             runnable = create_function(json_schema, chat_openai_client, prompt)
             with WithLlmCustomAttributes({"context": "attr"}):
-
                 call1 = asyncio.ensure_future(
                     getattr(runnable, call_function)(*call_function_args, **call_function_kwargs), loop=loop
                 )
@@ -1806,9 +1584,7 @@ def test_multiple_async_langchain_chain(
     name="test_chain:test_retrieval_chains",
     scoped_metrics=[("Llm/chain/LangChain/invoke", 3)],
     rollup_metrics=[("Llm/chain/LangChain/invoke", 3)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
     background_task=True,
 )
 @background_task()
@@ -1817,10 +1593,7 @@ def test_retrieval_chains(set_trace_info, retrieval_chain_prompt, embedding_open
     documents = [langchain_core.documents.Document(id="1234", page_content="What is 2 + 4?")]
     vectordb = FAISS.from_documents(documents=documents, embedding=embedding_openai_client)
     retriever = vectordb.as_retriever()
-    question_answer_chain = create_stuff_documents_chain(
-        llm=chat_openai_client,
-        prompt=retrieval_chain_prompt,
-    )
+    question_answer_chain = create_stuff_documents_chain(llm=chat_openai_client, prompt=retrieval_chain_prompt)
 
     rag_chain = langchain.chains.create_retrieval_chain(retriever, question_answer_chain)
     response = rag_chain.invoke({"input": "math"})
@@ -1837,11 +1610,7 @@ def json_schema():
         "properties": {
             "name": {"title": "Name", "description": "The person's name", "type": "string"},
             "age": {"title": "Age", "description": "The person's age", "type": "integer"},
-            "fav_food": {
-                "title": "Fav Food",
-                "description": "The person's favorite food",
-                "type": "string",
-            },
+            "fav_food": {"title": "Fav Food", "description": "The person's favorite food", "type": "string"},
         },
         "required": ["name", "age"],
     }
@@ -1871,14 +1640,8 @@ def retrieval_chain_prompt():
 def prompt():
     return langchain_core.prompts.ChatPromptTemplate.from_messages(
         [
-            (
-                "system",
-                "You are a world class algorithm for extracting information in structured formats.",
-            ),
-            (
-                "human",
-                "Use the given format to extract information from the following input: {input}",
-            ),
+            ("system", "You are a world class algorithm for extracting information in structured formats."),
+            ("human", "Use the given format to extract information from the following input: {input}"),
             ("human", "Tip: Make sure to answer in the correct format"),
         ]
     )
@@ -1892,10 +1655,7 @@ def prompt_openai_error():
                 "system",
                 "You are a world class algorithm for extracting information in structured formats with openai failures.",
             ),
-            (
-                "human",
-                "Use the given format to extract information from the following input: {input}",
-            ),
+            ("human", "Use the given format to extract information from the following input: {input}"),
             ("human", "Tip: Make sure to answer in the correct format"),
         ]
     )

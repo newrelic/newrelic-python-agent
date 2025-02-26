@@ -21,11 +21,7 @@ import warnings
 from newrelic.api.application import register_application
 from newrelic.api.background_task import BackgroundTaskWrapper
 from newrelic.api.error_trace import wrap_error_trace
-from newrelic.api.function_trace import (
-    FunctionTrace,
-    FunctionTraceWrapper,
-    wrap_function_trace,
-)
+from newrelic.api.function_trace import FunctionTrace, FunctionTraceWrapper, wrap_function_trace
 from newrelic.api.html_insertion import insert_html_snippet
 from newrelic.api.time_trace import notice_error
 from newrelic.api.transaction import current_transaction
@@ -770,13 +766,7 @@ def instrument_django_core_servers_basehttp(module):
     # instrumentation of the wsgiref module or some other means.
 
     def wrap_wsgi_application_entry_point(server, application, **kwargs):
-        return (
-            (
-                server,
-                WSGIApplicationWrapper(application, framework="Django"),
-            ),
-            kwargs,
-        )
+        return ((server, WSGIApplicationWrapper(application, framework="Django")), kwargs)
 
     if not hasattr(module, "simple_server") and hasattr(module.ServerHandler, "run"):
         # Patch the server to make it work properly.

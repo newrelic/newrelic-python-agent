@@ -104,7 +104,6 @@ class KnownErrorView(web.View):
 
 
 async def websocket_handler(request):
-
     ws = web.WebSocketResponse()
     await ws.prepare(request)
 

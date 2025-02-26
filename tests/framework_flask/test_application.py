@@ -14,19 +14,10 @@
 
 import pytest
 from conftest import async_handler_support, skip_if_not_async_handler_support
-from testing_support.fixtures import (
-    override_application_settings,
-    validate_tt_parenting,
-)
-from testing_support.validators.validate_code_level_metrics import (
-    validate_code_level_metrics,
-)
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.fixtures import override_application_settings, validate_tt_parenting
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 
 try:
@@ -85,27 +76,18 @@ _test_application_index_tt_parenting = (
                         # some flask versions have more FunctionNodes here, as appended
                         # below
                     ],
-                ),
+                )
             ],
         ),
         ("FunctionNode", []),
-        (
-            "FunctionNode",
-            [
-                ("FunctionNode", []),
-            ],
-        ),
+        ("FunctionNode", [("FunctionNode", [])]),
     ],
 )
 
 if is_dev_version or (is_gt_flask060 and flask_version >= (0, 7)):
-    _test_application_index_tt_parenting[1][0][1][0][1].append(
-        ("FunctionNode", []),
-    )
+    _test_application_index_tt_parenting[1][0][1][0][1].append(("FunctionNode", []))
 if is_dev_version or (is_gt_flask060 and flask_version >= (0, 9)):
-    _test_application_index_tt_parenting[1][0][1][0][1].append(
-        ("FunctionNode", []),
-    )
+    _test_application_index_tt_parenting[1][0][1][0][1].append(("FunctionNode", []))
 
 
 @validate_transaction_errors(errors=[])

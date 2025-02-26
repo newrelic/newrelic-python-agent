@@ -48,7 +48,6 @@ _collector_hostname_ids = [t.get("name", None) for t in _tests_json]
 def _test_collector_hostname(
     config_file_key=None, config_override_host=None, env_key=None, env_override_host=None, hostname=None, queue=None
 ):
-
     try:
         ini_contents = "[newrelic]"
 
@@ -92,7 +91,6 @@ def _test_collector_hostname(
 
 @pytest.mark.parametrize(_parameters, _collector_hostname_tests, ids=_collector_hostname_ids)
 def test_collector_hostname(config_file_key, config_override_host, env_key, env_override_host, hostname):
-
     # We run the actual test in a subprocess because we are editing the
     # settings we need to connect to the data collector. With the wrong
     # settings, our requires_data_collector fixture will fail on any tests that

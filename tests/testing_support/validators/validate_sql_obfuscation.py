@@ -16,7 +16,6 @@ from newrelic.common.object_wrapper import transient_function_wrapper, function_
 
 
 def validate_sql_obfuscation(expected_sqls):
-
     actual_sqls = []
 
     @transient_function_wrapper("newrelic.core.database_node", "DatabaseNode.__new__")

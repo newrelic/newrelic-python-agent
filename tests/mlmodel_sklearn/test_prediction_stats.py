@@ -17,9 +17,7 @@ import uuid
 import numpy as np
 import pandas as pd
 import pytest
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
@@ -447,11 +445,7 @@ _test_prediction_stats_tags = frozenset(
 def test_prediction_stats(run_model, x_train, y_train, x_test, metrics, force_uuid):
     expected_transaction_name = "test_prediction_stats:test_prediction_stats.<locals>._test"
 
-    @validate_transaction_metrics(
-        expected_transaction_name,
-        dimensional_metrics=metrics,
-        background_task=True,
-    )
+    @validate_transaction_metrics(expected_transaction_name, dimensional_metrics=metrics, background_task=True)
     @background_task()
     def _test():
         run_model(x_train, y_train, x_test)
@@ -488,11 +482,7 @@ def test_prediction_stats_multilabel_output(force_uuid):
         ]
     )
 
-    @validate_transaction_metrics(
-        expected_transaction_name,
-        dimensional_metrics=metrics,
-        background_task=True,
-    )
+    @validate_transaction_metrics(expected_transaction_name, dimensional_metrics=metrics, background_task=True)
     @background_task()
     def _test():
         from sklearn.datasets import make_multilabel_classification

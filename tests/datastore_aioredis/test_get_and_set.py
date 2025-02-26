@@ -16,28 +16,19 @@
 from testing_support.db_settings import redis_settings
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
 DB_SETTINGS = redis_settings()[0]
 
 
-_enable_instance_settings = {
-    "datastore_tracer.instance_reporting.enabled": True,
-}
+_enable_instance_settings = {"datastore_tracer.instance_reporting.enabled": True}
 
-_disable_instance_settings = {
-    "datastore_tracer.instance_reporting.enabled": False,
-}
+_disable_instance_settings = {"datastore_tracer.instance_reporting.enabled": False}
 
 
-_base_scoped_metrics = (
-    ("Datastore/operation/Redis/get", 1),
-    ("Datastore/operation/Redis/set", 1),
-)
+_base_scoped_metrics = (("Datastore/operation/Redis/get", 1), ("Datastore/operation/Redis/set", 1))
 
 _base_rollup_metrics = (
     ("Datastore/all", 2),

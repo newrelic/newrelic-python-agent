@@ -5,6 +5,7 @@ target-version = "py37"
 extend-exclude = [
     "newrelic/packages/",
     "setup.py",
+    "newrelic/core/infinite_tracing_*_pb2.py",
 ]
 namespace-packages = ["testing_support"]
 

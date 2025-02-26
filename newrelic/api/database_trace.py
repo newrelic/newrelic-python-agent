@@ -27,7 +27,6 @@ _logger = logging.getLogger(__name__)
 def register_database_client(
     dbapi2_module, database_product, quoting_style="single", explain_query=None, explain_stmts=[], instance_info=None
 ):
-
     _logger.debug(
         "Registering database client module %r where database "
         "is %r, quoting style is %r, explain query statement is %r and "
@@ -47,7 +46,6 @@ def register_database_client(
 
 
 class DatabaseTrace(TimeTrace):
-
     __async_explain_plan_logged = False
 
     def __init__(
@@ -61,7 +59,7 @@ class DatabaseTrace(TimeTrace):
         host=None,
         port_path_or_id=None,
         database_name=None,
-        **kwargs
+        **kwargs,
     ):
         parent = kwargs.pop("parent", None)
         source = kwargs.pop("source", None)
@@ -143,9 +141,7 @@ class DatabaseTrace(TimeTrace):
         db_name_enabled = ds_tracer.database_name_reporting.enabled
 
         if instance_enabled or db_name_enabled:
-
             if self.dbapi2_module and self.connect_params and self.dbapi2_module._nr_instance_info is not None:
-
                 instance_info = self.dbapi2_module._nr_instance_info(*self.connect_params)
 
                 if instance_enabled:

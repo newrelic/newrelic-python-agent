@@ -13,24 +13,13 @@
 # limitations under the License.
 
 import pytest
-from framework_graphql.test_application_async import (
-    error_middleware_async,
-    example_middleware_async,
-)
+from framework_graphql.test_application_async import error_middleware_async, example_middleware_async
 from testing_support.fixtures import dt_enabled, override_application_settings
-from testing_support.validators.validate_code_level_metrics import (
-    validate_code_level_metrics,
-)
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 from testing_support.validators.validate_span_events import validate_span_events
-from testing_support.validators.validate_transaction_count import (
-    validate_transaction_count,
-)
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_count import validate_transaction_count
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
@@ -92,25 +81,11 @@ _test_runtime_error = [(_runtime_error_name, "Runtime Error!")]
 def _graphql_base_rollup_metrics(framework, version, background_task=True):
     graphql_version = get_package_version("graphql-core")
 
-    metrics = [
-        (f"Python/Framework/GraphQL/{graphql_version}", 1),
-        ("GraphQL/all", 1),
-        (f"GraphQL/{framework}/all", 1),
-    ]
+    metrics = [(f"Python/Framework/GraphQL/{graphql_version}", 1), ("GraphQL/all", 1), (f"GraphQL/{framework}/all", 1)]
     if background_task:
-        metrics.extend(
-            [
-                ("GraphQL/allOther", 1),
-                (f"GraphQL/{framework}/allOther", 1),
-            ]
-        )
+        metrics.extend([("GraphQL/allOther", 1), (f"GraphQL/{framework}/allOther", 1)])
     else:
-        metrics.extend(
-            [
-                ("GraphQL/allWeb", 1),
-                (f"GraphQL/{framework}/allWeb", 1),
-            ]
-        )
+        metrics.extend([("GraphQL/allWeb", 1), (f"GraphQL/{framework}/allWeb", 1)])
 
     if framework != "GraphQL":
         metrics.append((f"Python/Framework/{framework}/{version}", 1))
@@ -160,10 +135,7 @@ def test_query_and_mutation(target_application):
         "graphql.field.path": "storage_add",
         "graphql.field.returnType": ("String" if framework != "Graphene" else "StorageAdd") + type_annotation,
     }
-    _expected_query_operation_attributes = {
-        "graphql.operation.type": "query",
-        "graphql.operation.name": "<anonymous>",
-    }
+    _expected_query_operation_attributes = {"graphql.operation.type": "query", "graphql.operation.name": "<anonymous>"}
     _expected_query_resolver_attributes = {
         "graphql.field.name": "storage",
         "graphql.field.parentType": "Query",
@@ -171,9 +143,7 @@ def test_query_and_mutation(target_application):
         "graphql.field.returnType": f"[String{type_annotation}]{type_annotation}",
     }
 
-    @validate_code_level_metrics(
-        f"framework_{framework.lower()}._target_schema_{schema_type}", "resolve_storage_add"
-    )
+    @validate_code_level_metrics(f"framework_{framework.lower()}._target_schema_{schema_type}", "resolve_storage_add")
     @validate_span_events(exact_agents=_expected_mutation_operation_attributes)
     @validate_span_events(exact_agents=_expected_mutation_resolver_attributes)
     @validate_transaction_metrics(
@@ -372,9 +342,7 @@ def test_exception_in_validation(target_application, query, exc_class):
 
         exc_class = callable_name(GraphQLError)
 
-    _test_exception_scoped_metrics = [
-        (f"GraphQL/operation/{framework}/<unknown>/<anonymous>/<unknown>", 1),
-    ]
+    _test_exception_scoped_metrics = [(f"GraphQL/operation/{framework}/<unknown>/<anonymous>/<unknown>", 1)]
     _test_exception_rollup_metrics = [
         ("Errors/all", 1),
         (f"Errors/all{'Other' if is_bg else 'Web'}", 1),
@@ -408,10 +376,7 @@ def test_exception_in_validation(target_application, query, exc_class):
 def test_operation_metrics_and_attrs(target_application):
     framework, version, target_application, is_bg, schema_type, extra_spans = target_application
     operation_metrics = [(f"GraphQL/operation/{framework}/query/MyQuery/library", 1)]
-    operation_attrs = {
-        "graphql.operation.type": "query",
-        "graphql.operation.name": "MyQuery",
-    }
+    operation_attrs = {"graphql.operation.type": "query", "graphql.operation.name": "MyQuery"}
 
     # Span count 16: Transaction, Operation, and 7 Resolvers and Resolver functions
     # library, library.name, library.book
@@ -506,24 +471,15 @@ _test_queries = [
     ("{ hello }", "/hello"),  # Basic query
     ("{ error }", "/error"),  # Extract deepest path on field error
     ('{ echo(echo: "test") }', "/echo"),  # Fields with arguments
-    (
-        "{ library(index: 0) { branch, book { isbn branch } } }",
-        "/library",
-    ),  # Complex Example, 1 level
+    ("{ library(index: 0) { branch, book { isbn branch } } }", "/library"),  # Complex Example, 1 level
     (
         "{ library(index: 0) { book { author { first_name }} } }",
         "/library.book.author.first_name",
     ),  # Complex Example, 2 levels
     ("{ library(index: 0) { id, book { name } } }", "/library.book.name"),  # Filtering
     ('{ TestEcho: echo(echo: "test") }', "/echo"),  # Aliases
-    (
-        '{ search(contains: "A") { __typename ... on Book { name } } }',
-        "/search<Book>.name",
-    ),  # InlineFragment
-    (
-        '{ hello echo(echo: "test") }',
-        "",
-    ),  # Multiple root selections. (need to decide on final behavior)
+    ('{ search(contains: "A") { __typename ... on Book { name } } }', "/search<Book>.name"),  # InlineFragment
+    ('{ hello echo(echo: "test") }', ""),  # Multiple root selections. (need to decide on final behavior)
     # FragmentSpread
     (
         "{ library(index: 0) { book { ...MyFragment } } } fragment MyFragment on Book { name id }",  # Fragment filtering
@@ -549,11 +505,7 @@ def test_deepest_unique_path(target_application, query, expected_path):
     else:
         txn_name = f"query/<anonymous>{expected_path}"
 
-    @validate_transaction_metrics(
-        txn_name,
-        "GraphQL",
-        background_task=is_bg,
-    )
+    @validate_transaction_metrics(txn_name, "GraphQL", background_task=is_bg)
     @conditional_decorator(background_task(), is_bg)
     def _test():
         response = target_application(query)

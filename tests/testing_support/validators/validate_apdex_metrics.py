@@ -13,21 +13,16 @@
 # limitations under the License.
 
 from testing_support.fixtures import catch_background_exceptions
-from newrelic.common.object_wrapper import (
-        transient_function_wrapper,
-        function_wrapper)
+from newrelic.common.object_wrapper import transient_function_wrapper, function_wrapper
 
 
-def validate_apdex_metrics(name, group='Function', count=1,
-        apdex_t_min=0.5, apdex_t_max=0.5):
-
+def validate_apdex_metrics(name, group="Function", count=1, apdex_t_min=0.5, apdex_t_max=0.5):
     @function_wrapper
     def _validate_wrapper(wrapped, instance, args, kwargs):
         record_transaction_called = []
         recorded_metrics = []
 
-        @transient_function_wrapper('newrelic.core.stats_engine',
-                'StatsEngine.record_transaction')
+        @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
         @catch_background_exceptions
         def _capture_metrics(wrapped, instance, args, kwargs):
             record_transaction_called.append(True)
@@ -36,8 +31,8 @@ def validate_apdex_metrics(name, group='Function', count=1,
             return result
 
         def _validate():
-            metric_name = f'Apdex/{group}/{name}'
-            key = (metric_name, '')
+            metric_name = f"Apdex/{group}/{name}"
+            key = (metric_name, "")
 
             metric = recorded_metrics.get(key)
 

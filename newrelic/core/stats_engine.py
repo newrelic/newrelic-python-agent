@@ -57,10 +57,7 @@ from newrelic.core.stack_trace import exception_stack
 _logger = logging.getLogger(__name__)
 
 EVENT_HARVEST_METHODS = {
-    "analytic_event_data": (
-        "reset_transaction_events",
-        "reset_synthetics_events",
-    ),
+    "analytic_event_data": ("reset_transaction_events", "reset_synthetics_events"),
     "span_event_data": ("reset_span_events",),
     "custom_event_data": ("reset_custom_events", "reset_ml_events"),
     "error_event_data": ("reset_error_events",),
@@ -73,7 +70,6 @@ def c2t(count=0, total=0.0, min=0.0, max=0.0, sum_of_squares=0.0):
 
 
 class ApdexStats(list):
-
     """Bucket for accumulating apdex metrics."""
 
     # Is based on a list of length 6 as all metrics are sent to the core
@@ -111,7 +107,6 @@ class ApdexStats(list):
 
 
 class TimeStats(list):
-
     """Bucket for accumulating time and value metrics."""
 
     # Is based on a list of length 6 as all metrics are sent to the core
@@ -195,8 +190,7 @@ class CountStats(TimeStats):
         pass
 
 
-class CustomMetrics():
-
+class CustomMetrics:
     """Table for collection a set of value metrics."""
 
     def __init__(self):
@@ -241,8 +235,7 @@ class CustomMetrics():
         self.__stats_table = {}
 
 
-class DimensionalMetrics():
-
+class DimensionalMetrics:
     """Nested dictionary table for collecting a set of metrics broken down by tags."""
 
     def __init__(self):
@@ -377,7 +370,7 @@ class SlowSqlStats(list):
         self[0] += 1
 
 
-class SampledDataSet():
+class SampledDataSet:
     def __init__(self, capacity=100):
         self.pq = []
         self.heap = False
@@ -501,8 +494,7 @@ class LimitedDataSet(list):
         self.num_seen += other_data_set.num_seen - other_data_set.num_samples
 
 
-class StatsEngine():
-
+class StatsEngine:
     """The stats engine object holds the accumulated transactions metrics,
     details of errors and slow transactions. There should be one instance
     of the stats engine per application. This will be cleared upon each
@@ -886,9 +878,7 @@ class StatsEngine():
                 attributes["userAttributes"][attr.name] = attr.value
 
         # pass expected attribute in to ensure we capture overrides
-        attributes["intrinsics"] = {
-            "error.expected": is_expected,
-        }
+        attributes["intrinsics"] = {"error.expected": is_expected}
 
         # set source code attributes
         attributes["agentAttributes"] = {}
@@ -897,11 +887,7 @@ class StatsEngine():
                 attributes["agentAttributes"][attr.name] = attr.value
 
         error_details = TracedError(
-            start_time=time.time(),
-            path="Exception",
-            message=message,
-            type=fullname,
-            parameters=attributes,
+            start_time=time.time(), path="Exception", message=message, type=fullname, parameters=attributes
         )
 
         # Save this error as a trace and an event.
@@ -1290,12 +1276,7 @@ class StatsEngine():
         # Finally, add in linking attributes after checking that there is a valid message or at least 1 attribute
         collected_attributes.update(get_linking_metadata())
 
-        event = LogEventNode(
-            timestamp=timestamp,
-            level=level,
-            message=message,
-            attributes=collected_attributes,
-        )
+        event = LogEventNode(timestamp=timestamp, level=level, message=message, attributes=collected_attributes)
 
         if priority is None:
             # Base priority for log events outside transactions is below those inside transactions
@@ -1329,9 +1310,7 @@ class StatsEngine():
 
         if self.__settings.debug.log_raw_metric_data:
             _logger.info(
-                "Raw metric data for harvest of %r is %r.",
-                self.__settings.app_name,
-                list(self.__stats_table.items()),
+                "Raw metric data for harvest of %r is %r.", self.__settings.app_name, list(self.__stats_table.items())
             )
 
         if normalizer is not None:

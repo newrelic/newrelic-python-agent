@@ -76,10 +76,7 @@ class NewRelicContextFormatter(logging.Formatter):
         _, _, fullnames, message = parse_exc_info(exc_info)
         fullname = fullnames[0]
 
-        formatted = {
-            "error.class": fullname,
-            "error.message": message,
-        }
+        formatted = {"error.class": fullname, "error.message": message}
 
         expected = is_expected_error(exc_info)
         if expected is not None:
@@ -123,7 +120,9 @@ class NewRelicContextFormatter(logging.Formatter):
         return output
 
     def format(self, record):
-        return json.dumps(self.log_record_to_dict(record, self._stack_trace_limit), default=safe_json_encode, separators=(",", ":"))
+        return json.dumps(
+            self.log_record_to_dict(record, self._stack_trace_limit), default=safe_json_encode, separators=(",", ":")
+        )
 
 
 # Export class methods as top level functions for compatibility

@@ -15,23 +15,15 @@
 from conftest import DB_MULTIPLE_SETTINGS, DB_SETTINGS, maybe_await
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
-from testing_support.validators.validate_database_trace_inputs import (
-    validate_database_trace_inputs,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_database_trace_inputs import validate_database_trace_inputs
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
 # Settings
 
-_enable_instance_settings = {
-    "datastore_tracer.instance_reporting.enabled": True,
-}
-_disable_instance_settings = {
-    "datastore_tracer.instance_reporting.enabled": False,
-}
+_enable_instance_settings = {"datastore_tracer.instance_reporting.enabled": True}
+_disable_instance_settings = {"datastore_tracer.instance_reporting.enabled": False}
 
 
 # Metrics
@@ -71,18 +63,8 @@ _port_2 = _postgresql_2["port"]
 _instance_metric_name_1 = f"Datastore/instance/Postgres/{_host_1}/{_port_1}"
 _instance_metric_name_2 = f"Datastore/instance/Postgres/{_host_2}/{_port_2}"
 
-_enable_rollup_metrics.extend(
-    [
-        (_instance_metric_name_1, 2),
-        (_instance_metric_name_2, 3),
-    ]
-)
-_disable_rollup_metrics.extend(
-    [
-        (_instance_metric_name_1, None),
-        (_instance_metric_name_2, None),
-    ]
-)
+_enable_rollup_metrics.extend([(_instance_metric_name_1, 2), (_instance_metric_name_2, 3)])
+_disable_rollup_metrics.extend([(_instance_metric_name_1, None), (_instance_metric_name_2, None)])
 
 
 # Query
@@ -101,9 +83,7 @@ async def _exercise_db(multiple_connections):
     try:
         cursor = connection.cursor()
         await maybe_await(cursor.execute(f"drop table if exists {DB_SETTINGS['table_name']}"))
-        await maybe_await(
-            cursor.execute(f"create table {DB_SETTINGS['table_name']} (a integer, b real, c text)")
-        )
+        await maybe_await(cursor.execute(f"create table {DB_SETTINGS['table_name']} (a integer, b real, c text)"))
         await maybe_await(connection.commit())
     finally:
         await maybe_await(connection.close())

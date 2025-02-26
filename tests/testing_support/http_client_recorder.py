@@ -26,12 +26,7 @@ class HttpClientRecorder(DeveloperModeClient):
     STATE = 0
 
     def send_request(
-        self,
-        method="POST",
-        path="/agent_listener/invoke_raw_method",
-        params=None,
-        headers=None,
-        payload=None,
+        self, method="POST", path="/agent_listener/invoke_raw_method", params=None, headers=None, payload=None
     ):
         request = Request(method=method, path=path, params=params, headers=headers, payload=payload)
         self.SENT.append(request)

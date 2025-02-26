@@ -41,9 +41,7 @@ target_application = dict()
 sanic_app = Sanic(name="SanicGraphQL")
 sanic_middleware = []
 sanic_view = SanicView.as_view(schema=schema, middleware=sanic_middleware)
-routes = [
-    sanic_app.add_route(sanic_view, "/graphql"),
-]
+routes = [sanic_app.add_route(sanic_view, "/graphql")]
 sanic_app = AsgiTest(sanic_app)
 
 
@@ -97,5 +95,6 @@ def flask_execute(query, middleware=None):
         assert "errors" not in body or not body["errors"]
 
     return response
+
 
 target_application["Flask"] = flask_execute

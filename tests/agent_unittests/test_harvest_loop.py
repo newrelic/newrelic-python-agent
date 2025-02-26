@@ -17,11 +17,7 @@ import tempfile
 import time
 
 import pytest
-from testing_support.fixtures import (
-    failing_endpoint,
-    function_not_called,
-    override_generic_settings,
-)
+from testing_support.fixtures import failing_endpoint, function_not_called, override_generic_settings
 
 from newrelic.common.agent_http import DeveloperModeClient
 from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
@@ -317,14 +313,7 @@ def test_serverless_application_harvest():
 
 @pytest.mark.parametrize(
     "distributed_tracing_enabled,span_events_enabled,spans_created",
-    [
-        (True, True, 1),
-        (True, True, 15),
-        (True, False, 1),
-        (True, True, 0),
-        (True, False, 0),
-        (False, True, 0),
-    ],
+    [(True, True, 1), (True, True, 15), (True, False, 1), (True, True, 0), (True, False, 0), (False, True, 0)],
 )
 def test_application_harvest_with_spans(distributed_tracing_enabled, span_events_enabled, spans_created):
     span_endpoints_called = []
@@ -340,10 +329,7 @@ def test_application_harvest_with_spans(distributed_tracing_enabled, span_events
     spans_required_metrics = list(required_metrics)
 
     spans_required_metrics.extend(
-        [
-            ("Supportability/SpanEvent/TotalEventsSeen", seen),
-            ("Supportability/SpanEvent/TotalEventsSent", sent),
-        ]
+        [("Supportability/SpanEvent/TotalEventsSeen", seen), ("Supportability/SpanEvent/TotalEventsSent", sent)]
     )
 
     @validate_metric_payload(metrics=spans_required_metrics, endpoints_called=span_endpoints_called)
@@ -381,12 +367,7 @@ def test_application_harvest_with_spans(distributed_tracing_enabled, span_events
 
 
 @pytest.mark.parametrize(
-    "span_queue_size, spans_to_send, expected_seen, expected_sent",
-    (
-        (0, 1, 1, 0),
-        (1, 1, 1, 1),
-        (7, 10, 10, 7),
-    ),
+    "span_queue_size, spans_to_send, expected_seen, expected_sent", ((0, 1, 1, 0), (1, 1, 1, 1), (7, 10, 10, 7))
 )
 @pytest.mark.parametrize("span_batching", (True, False))
 def test_application_harvest_with_span_streaming(
@@ -484,12 +465,7 @@ def test_transaction_count(transaction_node):
 
 
 @override_generic_settings(
-    settings,
-    {
-        "developer_mode": True,
-        "license_key": "**NOT A LICENSE KEY**",
-        "feature_flag": set(),
-    },
+    settings, {"developer_mode": True, "license_key": "**NOT A LICENSE KEY**", "feature_flag": set()}
 )
 def test_adaptive_sampling(transaction_node, monkeypatch):
     app = Application("Python Agent Test (Harvest Loop)")
@@ -646,12 +622,7 @@ def test_error_event_sampling_info(events_seen):
         (-68, 1, 10),  # more than 1 minute passed, reset fully
     ),
 )
-@override_generic_settings(
-    settings,
-    {
-        "serverless_mode.enabled": True,
-    },
-)
+@override_generic_settings(settings, {"serverless_mode.enabled": True})
 def test_serverless_mode_adaptive_sampling(time_to_next_reset, computed_count, computed_count_last, monkeypatch):
     # fix random.randrange to return 0
     monkeypatch.setattr(random, "randrange", lambda *args, **kwargs: 0)
@@ -668,12 +639,7 @@ def test_serverless_mode_adaptive_sampling(time_to_next_reset, computed_count, c
 
 
 @function_not_called("newrelic.core.adaptive_sampler", "AdaptiveSampler._reset")
-@override_generic_settings(
-    settings,
-    {
-        "developer_mode": True,
-    },
-)
+@override_generic_settings(settings, {"developer_mode": True})
 def test_compute_sampled_no_reset():
     app = Application("Python Agent Test (Harvest Loop)")
     app.connect_to_data_collector(None)
@@ -719,12 +685,7 @@ def test_analytic_event_sampling_info():
 
 @pytest.mark.parametrize("has_synthetic_events", (True, False))
 @pytest.mark.parametrize("has_transaction_events", (True, False))
-@override_generic_settings(
-    settings,
-    {
-        "developer_mode": True,
-    },
-)
+@override_generic_settings(settings, {"developer_mode": True})
 def test_analytic_event_payloads(has_synthetic_events, has_transaction_events):
     def synthetics_validator(payload):
         events = payload[-1]
@@ -757,12 +718,7 @@ def test_analytic_event_payloads(has_synthetic_events, has_transaction_events):
 
 
 @override_generic_settings(
-    settings,
-    {
-        "developer_mode": True,
-        "collect_analytics_events": False,
-        "transaction_events.enabled": False,
-    },
+    settings, {"developer_mode": True, "collect_analytics_events": False, "transaction_events.enabled": False}
 )
 def test_transaction_events_disabled():
     endpoints_called = []
@@ -782,13 +738,7 @@ def test_transaction_events_disabled():
 
 
 @failing_endpoint("analytic_event_data", call_number=2)
-@override_generic_settings(
-    settings,
-    {
-        "developer_mode": True,
-        "license_key": "**NOT A LICENSE KEY**",
-    },
-)
+@override_generic_settings(settings, {"developer_mode": True, "license_key": "**NOT A LICENSE KEY**"})
 def test_reset_synthetics_events():
     app = Application("Python Agent Test (Harvest Loop)")
     app.connect_to_data_collector(None)
@@ -809,13 +759,7 @@ def test_reset_synthetics_events():
     "allowlist_event",
     ("analytic_event_data", "custom_event_data", "log_event_data", "error_event_data", "span_event_data"),
 )
-@override_generic_settings(
-    settings,
-    {
-        "developer_mode": True,
-        "license_key": "**NOT A LICENSE KEY**",
-    },
-)
+@override_generic_settings(settings, {"developer_mode": True, "license_key": "**NOT A LICENSE KEY**"})
 def test_flexible_events_harvested(allowlist_event):
     app = Application("Python Agent Test (Harvest Loop)")
     app.connect_to_data_collector(None)
@@ -865,13 +809,7 @@ def test_flexible_events_harvested(allowlist_event):
     "allowlist_event",
     ("analytic_event_data", "custom_event_data", "log_event_data", "error_event_data", "span_event_data"),
 )
-@override_generic_settings(
-    settings,
-    {
-        "developer_mode": True,
-        "license_key": "**NOT A LICENSE KEY**",
-    },
-)
+@override_generic_settings(settings, {"developer_mode": True, "license_key": "**NOT A LICENSE KEY**"})
 def test_default_events_harvested(allowlist_event):
     app = Application("Python Agent Test (Harvest Loop)")
     app.connect_to_data_collector(None)
@@ -913,13 +851,7 @@ def test_default_events_harvested(allowlist_event):
 
 
 @failing_endpoint("analytic_event_data")
-@override_generic_settings(
-    settings,
-    {
-        "developer_mode": True,
-        "agent_limits.merge_stats_maximum": 0,
-    },
-)
+@override_generic_settings(settings, {"developer_mode": True, "agent_limits.merge_stats_maximum": 0})
 def test_infinite_merges():
     app = Application("Python Agent Test (Harvest Loop)")
     app.connect_to_data_collector(None)
@@ -935,12 +867,7 @@ def test_infinite_merges():
 
 
 @failing_endpoint("analytic_event_data")
-@override_generic_settings(
-    settings,
-    {
-        "developer_mode": True,
-    },
-)
+@override_generic_settings(settings, {"developer_mode": True})
 def test_flexible_harvest_rollback():
     app = Application("Python Agent Test (Harvest Loop)")
     app.connect_to_data_collector(None)
@@ -962,12 +889,7 @@ def test_flexible_harvest_rollback():
     assert app._stats_engine.stats_table[stats_key].call_count == 1
 
 
-@override_generic_settings(
-    settings,
-    {
-        "developer_mode": True,
-    },
-)
+@override_generic_settings(settings, {"developer_mode": True})
 def test_get_agent_commands_returns_none():
     MISSING = object()
     original_return_value = DeveloperModeClient.RESPONSES.get("get_agent_commands", MISSING)
@@ -985,12 +907,7 @@ def test_get_agent_commands_returns_none():
 
 
 @failing_endpoint("get_agent_commands")
-@override_generic_settings(
-    settings,
-    {
-        "developer_mode": True,
-    },
-)
+@override_generic_settings(settings, {"developer_mode": True})
 def test_get_agent_commands_raises():
     app = Application("Python Agent Test (Harvest Loop)")
     app.connect_to_data_collector(None)

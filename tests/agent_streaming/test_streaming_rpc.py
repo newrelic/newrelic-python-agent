@@ -32,14 +32,7 @@ def record_metric(*args, **kwargs):
 
 # This enumeration is taken from gRPC's implementation for compression:
 # https://grpc.github.io/grpc/python/grpc.html#compression
-@pytest.mark.parametrize(
-    "compression_setting, gRPC_compression_val",
-    (
-        (None, 0),
-        (True, 2),
-        (False, 0),
-    ),
-)
+@pytest.mark.parametrize("compression_setting, gRPC_compression_val", ((None, 0), (True, 2), (False, 0)))
 def test_correct_settings(mock_grpc_server, compression_setting, gRPC_compression_val):
     settings = global_settings()
 
@@ -125,9 +118,7 @@ def test_close_while_awaiting_reconnect(mock_grpc_server, monkeypatch, batching)
     monkeypatch.setattr(StreamingRpc, "condition", condition)
 
     span = Span(
-        intrinsics={"status_code": AttributeValue(string_value="INTERNAL")},
-        agent_attributes={},
-        user_attributes={},
+        intrinsics={"status_code": AttributeValue(string_value="INTERNAL")}, agent_attributes={}, user_attributes={}
     )
 
     endpoint = f"localhost:{mock_grpc_server}"
@@ -161,11 +152,7 @@ def test_rpc_serialization_and_deserialization(
     endpoint = f"localhost:{mock_grpc_server}"
     stream_buffer = StreamBuffer(1, batching=batching)
 
-    span = Span(
-        intrinsics={},
-        agent_attributes={},
-        user_attributes={},
-    )
+    span = Span(intrinsics={}, agent_attributes={}, user_attributes={})
 
     rpc = StreamingRpc(endpoint, stream_buffer, DEFAULT_METADATA, record_metric, compression=compression, ssl=False)
 

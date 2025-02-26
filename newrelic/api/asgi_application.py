@@ -21,11 +21,7 @@ from newrelic.api.transaction import current_transaction
 from newrelic.api.web_transaction import WebTransaction
 from newrelic.common.async_proxy import CoroutineProxy, LoopContext
 from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import (
-    FunctionWrapper,
-    function_wrapper,
-    wrap_object,
-)
+from newrelic.common.object_wrapper import FunctionWrapper, function_wrapper, wrap_object
 from newrelic.packages import asgiref_compatibility
 
 
@@ -49,7 +45,7 @@ def double_to_single_callable(wrapped, instance, args, kwargs):
     return coro_function_wrapper(coro_function, receive, send)
 
 
-class ASGIBrowserMiddleware():
+class ASGIBrowserMiddleware:
     def __init__(self, app, transaction=None, search_maximum=64 * 1024):
         self.app = app
         self.send = None
@@ -71,13 +67,7 @@ class ASGIBrowserMiddleware():
     async def send_buffered(self):
         self.pass_through = True
         await self.send(self.initial_message)
-        await self.send(
-            {
-                "type": "http.response.body",
-                "body": self.body,
-                "more_body": self.more_body,
-            }
-        )
+        await self.send({"type": "http.response.body", "body": self.body, "more_body": self.more_body})
         # Clear any saved messages
         self.messages = None
 
@@ -182,10 +172,7 @@ class ASGIBrowserMiddleware():
 
                     if content_length is not None:
                         delta = len(body) - len(self.body)
-                        headers[header_index] = (
-                            b"content-length",
-                            str(content_length + delta).encode("utf-8"),
-                        )
+                        headers[header_index] = (b"content-length", str(content_length + delta).encode("utf-8"))
 
                     # Body is found and modified so we can now send the
                     # modified data and stop searching
@@ -307,11 +294,7 @@ def ASGIApplicationWrapper(wrapped, application=None, name=None, group=None, fra
                 return await wrapped(scope, receive, send)
 
             with ASGIWebTransaction(
-                application=application_instance(application),
-                scope=scope,
-                receive=receive,
-                send=send,
-                source=wrapped,
+                application=application_instance(application), scope=scope, receive=receive, send=send, source=wrapped
             ) as transaction:
                 # Record details of framework against the transaction for later
                 # reporting as supportability metrics.
@@ -379,9 +362,4 @@ def asgi_application(application=None, name=None, group=None, framework=None, di
 def wrap_asgi_application(
     module, object_path, application=None, name=None, group=None, framework=None, dispatcher=None
 ):
-    wrap_object(
-        module,
-        object_path,
-        ASGIApplicationWrapper,
-        (application, name, group, framework, dispatcher),
-    )
+    wrap_object(module, object_path, ASGIApplicationWrapper, (application, name, group, framework, dispatcher))

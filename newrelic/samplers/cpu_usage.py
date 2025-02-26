@@ -24,9 +24,9 @@ from newrelic.common.stopwatch import start_timer
 
 from newrelic.samplers.decorators import data_source_factory
 
-@data_source_factory(name='CPU Usage')
-class _CPUUsageDataSource():
 
+@data_source_factory(name="CPU Usage")
+class _CPUUsageDataSource:
     def __init__(self, settings, environ):
         self._timer = None
         self._times = None
@@ -48,7 +48,7 @@ class _CPUUsageDataSource():
 
         new_times = os.times()
         elapsed_time = self._timer.restart_timer()
-        elapsed_cpu_time = elapsed_time*logical_processor_count()
+        elapsed_cpu_time = elapsed_time * logical_processor_count()
 
         user_time = new_times[0] - self._times[0]
         user_utilization = user_time / elapsed_cpu_time
@@ -61,11 +61,12 @@ class _CPUUsageDataSource():
 
         self._times = new_times
 
-        yield ('CPU/User Time', user_time)
-        yield ('CPU/User/Utilization', user_utilization)
-        yield ('CPU/System Time', system_time)
-        yield ('CPU/System/Utilization', system_utilization)
-        yield ('CPU/Total Time', total_time)
-        yield ('CPU/Total/Utilization', total_utilization)
+        yield ("CPU/User Time", user_time)
+        yield ("CPU/User/Utilization", user_utilization)
+        yield ("CPU/System Time", system_time)
+        yield ("CPU/System/Utilization", system_utilization)
+        yield ("CPU/Total Time", total_time)
+        yield ("CPU/Total/Utilization", total_utilization)
+
 
 cpu_usage_data_source = _CPUUsageDataSource

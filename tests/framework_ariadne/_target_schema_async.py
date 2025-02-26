@@ -14,13 +14,7 @@
 
 import os
 
-from ariadne import (
-    MutationType,
-    QueryType,
-    UnionType,
-    load_schema_from_path,
-    make_executable_schema,
-)
+from ariadne import MutationType, QueryType, UnionType, load_schema_from_path, make_executable_schema
 from ariadne.asgi import GraphQL as GraphQLASGI
 from framework_graphql._target_schema_sync import books, magazines, libraries
 

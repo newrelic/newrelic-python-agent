@@ -30,12 +30,8 @@ from testing_support.validators.validate_time_metrics_outside_transaction import
 from testing_support.validators.validate_transaction_error_trace_attributes import (
     validate_transaction_error_trace_attributes,
 )
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import background_task
@@ -82,12 +78,7 @@ def exercise(expected=None, ignore=None, status_code=None, application=None):
             # Record exception inside transaction
             application = application or application_instance()
 
-        notice_error(
-            expected=expected,
-            ignore=ignore,
-            status_code=status_code,
-            application=application,
-        )
+        notice_error(expected=expected, ignore=ignore, status_code=status_code, application=application)
 
 
 @pytest.mark.parametrize("settings,expected,ignore", classes_settings_matrix)
@@ -101,11 +92,7 @@ def test_classes_error_event_inside_transaction(settings, expected, ignore):
     expected_errors = _runtime_error_name if expected and not ignore else None
 
     @validate_transaction_errors(errors=errors, expected_errors=expected_errors)
-    @validate_error_event_sample_data(
-        required_attrs=attributes,
-        required_user_attrs=False,
-        num_errors=error_count,
-    )
+    @validate_error_event_sample_data(required_attrs=attributes, required_user_attrs=False, num_errors=error_count)
     @background_task(name="test")
     @override_application_settings(settings)
     def _test():
@@ -125,8 +112,7 @@ def test_classes_error_event_outside_transaction(settings, expected, ignore):
 
     @reset_core_stats_engine()
     @validate_error_event_attributes_outside_transaction(
-        exact_attrs={"intrinsic": attributes, "agent": {}, "user": {}},
-        num_errors=error_count,
+        exact_attrs={"intrinsic": attributes, "agent": {}, "user": {}}, num_errors=error_count
     )
     @override_application_settings(settings)
     def _test():
@@ -141,10 +127,7 @@ def test_classes_error_event_outside_transaction(settings, expected, ignore):
 # and resulted in discrepancies between error events and traced errors.
 
 
-error_trace_settings_matrix = [
-    ({}, False),
-    (expected_runtime_error_settings, True),
-]
+error_trace_settings_matrix = [({}, False), (expected_runtime_error_settings, True)]
 override_expected_matrix = (True, False, None)
 
 
@@ -153,13 +136,7 @@ override_expected_matrix = (True, False, None)
 def test_error_trace_attributes_inside_transaction(settings, expected, override_expected):
     expected = override_expected if override_expected is not None else expected
 
-    error_trace_attributes = {
-        "intrinsic": {
-            "error.expected": expected,
-        },
-        "agent": {},
-        "user": {},
-    }
+    error_trace_attributes = {"intrinsic": {"error.expected": expected}, "agent": {}, "user": {}}
 
     @validate_transaction_error_trace_attributes(exact_attrs=error_trace_attributes)
     @background_task(name="test")
@@ -221,10 +198,7 @@ def test_error_metrics_inside_transaction(expected):
 def test_error_metrics_outside_transaction(expected):
     normal_metrics_count = None if expected else 1
     expected_metrics_count = 1 if expected else None
-    metrics_payload = [
-        ("Errors/all", normal_metrics_count),
-        ("ErrorsExpected/all", expected_metrics_count),
-    ]
+    metrics_payload = [("Errors/all", normal_metrics_count), ("ErrorsExpected/all", expected_metrics_count)]
 
     @reset_core_stats_engine()
     @validate_time_metrics_outside_transaction(metrics_payload)
@@ -276,11 +250,7 @@ def test_status_codes_inside_transaction(settings, expected, ignore, status_code
     expected_errors = _teapot_error_name if expected and not ignore else None
 
     @validate_transaction_errors(errors=errors, expected_errors=expected_errors)
-    @validate_error_event_sample_data(
-        required_attrs=attributes,
-        required_user_attrs=False,
-        num_errors=error_count,
-    )
+    @validate_error_event_sample_data(required_attrs=attributes, required_user_attrs=False, num_errors=error_count)
     @background_task(name="test")
     @override_application_settings(settings)
     def _test():
@@ -310,8 +280,7 @@ def test_status_codes_outside_transaction(settings, expected, ignore, status_cod
 
     @reset_core_stats_engine()
     @validate_error_event_attributes_outside_transaction(
-        exact_attrs={"intrinsic": attributes, "agent": {}, "user": {}},
-        num_errors=error_count,
+        exact_attrs={"intrinsic": attributes, "agent": {}, "user": {}}, num_errors=error_count
     )
     @override_application_settings(settings)
     def _test():
@@ -368,11 +337,7 @@ def test_mixed_ignore_expected_settings_inside_transaction(
     expected_errors = _runtime_error_name if expected and not ignore else None
 
     @validate_transaction_errors(errors=errors, expected_errors=expected_errors)
-    @validate_error_event_sample_data(
-        required_attrs=attributes,
-        required_user_attrs=False,
-        num_errors=error_count,
-    )
+    @validate_error_event_sample_data(required_attrs=attributes, required_user_attrs=False, num_errors=error_count)
     @background_task(name="test")
     @override_application_settings(settings)
     def _test():
@@ -399,8 +364,7 @@ def test_mixed_ignore_expected_settings_outside_transaction(
 
     @reset_core_stats_engine()
     @validate_error_event_attributes_outside_transaction(
-        exact_attrs={"intrinsic": attributes, "agent": {}, "user": {}},
-        num_errors=error_count,
+        exact_attrs={"intrinsic": attributes, "agent": {}, "user": {}}, num_errors=error_count
     )
     @override_application_settings(settings)
     def _test():
@@ -438,11 +402,7 @@ def test_overrides_inside_transaction(override, result, parameter):
     expected_errors = _runtime_error_name if expected and not ignore else None
 
     @validate_transaction_errors(errors=errors, expected_errors=expected_errors)
-    @validate_error_event_sample_data(
-        required_attrs=attributes,
-        required_user_attrs=False,
-        num_errors=error_count,
-    )
+    @validate_error_event_sample_data(required_attrs=attributes, required_user_attrs=False, num_errors=error_count)
     @background_task(name="test")
     def _test():
         exercise(**kwargs)
@@ -466,8 +426,7 @@ def test_overrides_outside_transaction(override, result, parameter):
 
     @reset_core_stats_engine()
     @validate_error_event_attributes_outside_transaction(
-        exact_attrs={"intrinsic": attributes, "agent": {}, "user": {}},
-        num_errors=error_count,
+        exact_attrs={"intrinsic": attributes, "agent": {}, "user": {}}, num_errors=error_count
     )
     def _test():
         exercise(**kwargs)

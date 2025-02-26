@@ -22,7 +22,6 @@ from newrelic.common.object_wrapper import function_wrapper, transient_function_
 def validate_ml_event_count(count=1):
     @function_wrapper
     def _validate_wrapper(wrapped, instance, args, kwargs):
-
         record_called = []
         recorded_events = []
 

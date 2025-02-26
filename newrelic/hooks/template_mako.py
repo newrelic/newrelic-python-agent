@@ -15,8 +15,8 @@
 import newrelic.api.function_trace
 import newrelic.common.object_wrapper
 
-class TemplateRenderWrapper():
 
+class TemplateRenderWrapper:
     def __init__(self, wrapped):
         self.__wrapped = wrapped
 
@@ -32,27 +32,28 @@ class TemplateRenderWrapper():
     def __call__(self, template, *args, **kwargs):
         transaction = newrelic.api.transaction.current_transaction()
         if transaction:
-            if hasattr(template, 'filename'):
-                name = template.filename or '<template>'
-                return newrelic.api.function_trace.FunctionTraceWrapper(self.__wrapped, name=name, group='Template/Render')(template, *args, **kwargs)
+            if hasattr(template, "filename"):
+                name = template.filename or "<template>"
+                return newrelic.api.function_trace.FunctionTraceWrapper(
+                    self.__wrapped, name=name, group="Template/Render"
+                )(template, *args, **kwargs)
             else:
                 return self.__wrapped(template, *args, **kwargs)
         else:
             return self.__wrapped(template, *args, **kwargs)
 
-def instrument_mako_runtime(module):
 
-    newrelic.common.object_wrapper.wrap_object(module,
-            '_render', TemplateRenderWrapper)
+def instrument_mako_runtime(module):
+    newrelic.common.object_wrapper.wrap_object(module, "_render", TemplateRenderWrapper)
+
 
 def instrument_mako_template(module):
-
     def template_filename(template, text, filename, *args):
         return filename
 
     newrelic.api.function_trace.wrap_function_trace(
-            module, '_compile_text',
-            name=template_filename, group='Template/Compile')
+        module, "_compile_text", name=template_filename, group="Template/Compile"
+    )
     newrelic.api.function_trace.wrap_function_trace(
-            module, '_compile_module_file',
-            name=template_filename, group='Template/Compile')
+        module, "_compile_module_file", name=template_filename, group="Template/Compile"
+    )

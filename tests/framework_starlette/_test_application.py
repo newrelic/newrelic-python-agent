@@ -78,7 +78,7 @@ def missing_route_handler(request, exc):
     return PlainTextResponse("Missing route handler", status_code=404)
 
 
-class CustomRoute():
+class CustomRoute:
     def __init__(self, route):
         self.route = route
 
@@ -132,11 +132,7 @@ async def middleware_decorator(request, call_next):
 # Generating target applications
 app_name_map = {
     "no_error_handler": (True, False, {}),
-    "async_error_handler_no_middleware": (
-        False,
-        False,
-        {Exception: async_error_handler},
-    ),
+    "async_error_handler_no_middleware": (False, False, {Exception: async_error_handler}),
     "non_async_error_handler_no_middleware": (False, False, {}),
     "no_middleware": (False, False, {}),
     "debug_no_middleware": (False, True, {}),
@@ -151,9 +147,7 @@ for app_name, flags in app_name_map.items():
 
     # Instantiate app
     if not middleware_on:
-        app = Starlette(
-            debug=debug, routes=routes, exception_handlers=exception_handlers
-        )
+        app = Starlette(debug=debug, routes=routes, exception_handlers=exception_handlers)
     else:
         if Middleware:
             app = Starlette(
@@ -163,9 +157,7 @@ for app_name, flags in app_name_map.items():
                 exception_handlers=exception_handlers,
             )
         else:
-            app = Starlette(
-                debug=debug, routes=routes, exception_handlers=exception_handlers
-            )
+            app = Starlette(debug=debug, routes=routes, exception_handlers=exception_handlers)
             # in earlier versions of starlette, middleware is not a legal argument on the Starlette application class
             # In order to keep the counts the same, we add the middleware twice using the add_middleware interface
             app.add_middleware(middleware_factory)

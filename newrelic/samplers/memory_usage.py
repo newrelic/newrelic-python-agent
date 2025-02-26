@@ -16,6 +16,7 @@
 memory usage.
 
 """
+
 import os
 
 from newrelic.core.config import global_settings

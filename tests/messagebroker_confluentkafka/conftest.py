@@ -77,11 +77,7 @@ def producer(topic, client_type, json_serializer, broker):
         )
     elif client_type == "serializer_object":
         producer = SerializingProducer(
-            {
-                "bootstrap.servers": broker,
-                "value.serializer": json_serializer,
-                "key.serializer": json_serializer,
-            }
+            {"bootstrap.servers": broker, "value.serializer": json_serializer, "key.serializer": json_serializer}
         )
 
     yield producer

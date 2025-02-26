@@ -17,16 +17,10 @@ import sqlite3
 import pymongo
 import pytest
 from testing_support.db_settings import mongodb_settings
-from testing_support.validators.validate_database_duration import (
-    validate_database_duration,
-)
+from testing_support.validators.validate_database_duration import validate_database_duration
 from testing_support.validators.validate_span_events import validate_span_events
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.common import system_info
@@ -107,9 +101,7 @@ async def _exercise_mongo(db):
     exact_intrinsics={"name": f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/insert_one"},
 )
 @validate_transaction_metrics(
-    "test_motor_instance_info",
-    rollup_metrics=[(INSTANCE_METRIC_NAME, 1)],
-    background_task=True,
+    "test_motor_instance_info", rollup_metrics=[(INSTANCE_METRIC_NAME, 1)], background_task=True
 )
 @background_task(name="test_motor_instance_info")
 def test_async_collection_instance_info(loop):
@@ -224,7 +216,6 @@ def test_async_collection_mongodb_database_duration(loop):
 @validate_database_duration()
 @background_task()
 def test_async_collection_mongodb_and_sqlite_database_duration(loop):
-
     # Make mongodb queries
 
     client = AsyncMongoClient(MONGODB_HOST, MONGODB_PORT)

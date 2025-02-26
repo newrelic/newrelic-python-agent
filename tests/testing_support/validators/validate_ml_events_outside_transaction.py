@@ -15,10 +15,7 @@
 import copy
 
 from testing_support.fixtures import catch_background_exceptions
-from testing_support.validators.validate_ml_events import (
-    _check_event_attributes,
-    _event_details,
-)
+from testing_support.validators.validate_ml_events import _check_event_attributes, _event_details
 
 from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
 
@@ -26,7 +23,6 @@ from newrelic.common.object_wrapper import function_wrapper, transient_function_
 def validate_ml_events_outside_transaction(events):
     @function_wrapper
     def _validate_wrapper(wrapped, instance, args, kwargs):
-
         record_called = []
         recorded_events = []
 

@@ -13,9 +13,7 @@
 # limitations under the License.
 
 import pytest
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
@@ -23,13 +21,7 @@ from newrelic.common.package_version_utils import get_package_version_tuple
 SKLEARN_VERSION = get_package_version_tuple("sklearn")
 
 
-@pytest.mark.parametrize(
-    "dummy_model_name",
-    [
-        "DummyClassifier",
-        "DummyRegressor",
-    ],
-)
+@pytest.mark.parametrize("dummy_model_name", ["DummyClassifier", "DummyRegressor"])
 def test_model_methods_wrapped_in_function_trace(dummy_model_name, run_dummy_model):
     expected_scoped_metrics = {
         "DummyClassifier": [

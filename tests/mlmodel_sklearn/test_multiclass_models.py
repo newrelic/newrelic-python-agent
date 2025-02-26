@@ -14,21 +14,12 @@
 
 import pytest
 from sklearn.ensemble import AdaBoostClassifier
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
 
-@pytest.mark.parametrize(
-    "multiclass_model_name",
-    [
-        "OneVsRestClassifier",
-        "OneVsOneClassifier",
-        "OutputCodeClassifier",
-    ],
-)
+@pytest.mark.parametrize("multiclass_model_name", ["OneVsRestClassifier", "OneVsOneClassifier", "OutputCodeClassifier"])
 def test_model_methods_wrapped_in_function_trace(multiclass_model_name, run_multiclass_model):
     expected_scoped_metrics = {
         "OneVsRestClassifier": [

@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Instrumentation module for Pyramid framework.
-
-"""
+"""Instrumentation module for Pyramid framework."""
 
 # TODO
 #
@@ -48,11 +46,7 @@ from newrelic.api.function_trace import FunctionTrace, FunctionTraceWrapper
 from newrelic.api.transaction import current_transaction
 from newrelic.api.wsgi_application import wrap_wsgi_application
 from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import (
-    FunctionWrapper,
-    wrap_function_wrapper,
-    wrap_out_function,
-)
+from newrelic.common.object_wrapper import FunctionWrapper, wrap_function_wrapper, wrap_out_function
 from newrelic.common.package_version_utils import get_package_version
 
 

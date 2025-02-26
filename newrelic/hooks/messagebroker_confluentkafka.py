@@ -64,11 +64,7 @@ def wrap_Producer_produce(wrapped, instance, args, kwargs):
             transaction.record_custom_metric(f"MessageBroker/Kafka/Nodes/{server_name}/Produce/{topic}", 1)
 
     with MessageTrace(
-        library="Kafka",
-        operation="Produce",
-        destination_type="Topic",
-        destination_name=topic,
-        source=wrapped,
+        library="Kafka", operation="Produce", destination_type="Topic", destination_name=topic, source=wrapped
     ):
         dt_headers = {k: v.encode("utf-8") for k, v in MessageTrace.generate_request_headers(transaction)}
         # headers can be a list of tuples or a dict so convert to dict for consistency.

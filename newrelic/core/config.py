@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" This module provides a structure to hang the configuration settings. We
+"""This module provides a structure to hang the configuration settings. We
 use an empty class structure and manually populate it. The global defaults
 will be overlaid with any settings from the local agent configuration file.
 For a specific application we will then deep copy the global default
@@ -1346,40 +1346,17 @@ def ignore_status_code(status):
     return status in _settings.error_collector.ignore_status_codes
 
 
-def is_expected_error(
-    exc_info,
-    status_code=None,
-    settings=None,
-):
+def is_expected_error(exc_info, status_code=None, settings=None):
     """Check if an error is expected based on rules matching. Default is False when settings lookup fails."""
-    return error_matches_rules(
-        "expected",
-        exc_info,
-        status_code=status_code,
-        settings=settings,
-    )
+    return error_matches_rules("expected", exc_info, status_code=status_code, settings=settings)
 
 
-def should_ignore_error(
-    exc_info,
-    status_code=None,
-    settings=None,
-):
+def should_ignore_error(exc_info, status_code=None, settings=None):
     """Check if an error should be ignored based on rules matching. Default is True when settings lookup fails."""
-    return error_matches_rules(
-        "ignore",
-        exc_info,
-        status_code=status_code,
-        settings=settings,
-    )
+    return error_matches_rules("ignore", exc_info, status_code=status_code, settings=settings)
 
 
-def error_matches_rules(
-    rules_prefix,
-    exc_info,
-    status_code=None,
-    settings=None,
-):
+def error_matches_rules(rules_prefix, exc_info, status_code=None, settings=None):
     """
     Attempt to match exception to rules based on prefix.
 

@@ -15,9 +15,7 @@
 import pytest
 from sklearn import __init__  # noqa: Needed for get_package_version
 from sklearn.ensemble import AdaBoostClassifier
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
@@ -26,18 +24,13 @@ SKLEARN_VERSION = get_package_version_tuple("sklearn")
 
 
 @pytest.mark.skipif(SKLEARN_VERSION >= (1, 0, 0), reason="Requires sklearn < 1.0")
-@pytest.mark.parametrize(
-    "multioutput_model_name",
-    [
-        "MultiOutputEstimator",
-    ],
-)
+@pytest.mark.parametrize("multioutput_model_name", ["MultiOutputEstimator"])
 def test_below_v1_0_model_methods_wrapped_in_function_trace(multioutput_model_name, run_multioutput_model):
     expected_scoped_metrics = {
         "MultiOutputEstimator": [
             ("Function/MLModel/Sklearn/Named/MultiOutputEstimator.fit", 1),
             ("Function/MLModel/Sklearn/Named/MultiOutputEstimator.predict", 2),
-        ],
+        ]
     }
 
     @validate_transaction_metrics(
@@ -53,14 +46,7 @@ def test_below_v1_0_model_methods_wrapped_in_function_trace(multioutput_model_na
     _test()
 
 
-@pytest.mark.parametrize(
-    "multioutput_model_name",
-    [
-        "MultiOutputClassifier",
-        "ClassifierChain",
-        "RegressorChain",
-    ],
-)
+@pytest.mark.parametrize("multioutput_model_name", ["MultiOutputClassifier", "ClassifierChain", "RegressorChain"])
 def test_above_v1_0_model_methods_wrapped_in_function_trace(multioutput_model_name, run_multioutput_model):
     expected_scoped_metrics = {
         "MultiOutputClassifier": [
@@ -72,9 +58,7 @@ def test_above_v1_0_model_methods_wrapped_in_function_trace(multioutput_model_na
             ("Function/MLModel/Sklearn/Named/ClassifierChain.fit", 1),
             ("Function/MLModel/Sklearn/Named/ClassifierChain.predict_proba", 1),
         ],
-        "RegressorChain": [
-            ("Function/MLModel/Sklearn/Named/RegressorChain.fit", 1),
-        ],
+        "RegressorChain": [("Function/MLModel/Sklearn/Named/RegressorChain.fit", 1)],
     }
 
     @validate_transaction_metrics(

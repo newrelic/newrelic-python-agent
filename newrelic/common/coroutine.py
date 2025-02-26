@@ -21,7 +21,7 @@ def is_coroutine_function(wrapped):
 
 def is_asyncio_coroutine(wrapped):
     """Return True if func is a decorated coroutine function."""
-    return getattr(wrapped, '_is_coroutine', None) is not None
+    return getattr(wrapped, "_is_coroutine", None) is not None
 
 
 def is_generator_function(wrapped):
@@ -29,16 +29,18 @@ def is_generator_function(wrapped):
 
 
 def _iscoroutinefunction_tornado(fn):
-    return hasattr(fn, '__tornado_coroutine__')
+    return hasattr(fn, "__tornado_coroutine__")
 
 
 def is_coroutine_callable(wrapped):
     return is_coroutine_function(wrapped) or is_coroutine_function(getattr(wrapped, "__call__", None))
 
 
-if hasattr(inspect, 'isasyncgenfunction'):
+if hasattr(inspect, "isasyncgenfunction"):
+
     def is_async_generator_function(wrapped):
         return inspect.isasyncgenfunction(wrapped)
 else:
+
     def is_async_generator_function(wrapped):
         return False

@@ -17,24 +17,13 @@ import sys
 from newrelic.api.database_trace import register_database_client
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import (
-    ObjectProxy,
-    wrap_function_wrapper,
-    wrap_object,
-)
-from newrelic.hooks.database_dbapi2_async import (
-    AsyncConnectionFactory as DBAPI2AsyncConnectionFactory,
-)
-from newrelic.hooks.database_dbapi2_async import (
-    AsyncConnectionWrapper as DBAPI2AsyncConnectionWrapper,
-)
-from newrelic.hooks.database_dbapi2_async import (
-    AsyncCursorWrapper as DBAPI2AsyncCursorWrapper,
-)
+from newrelic.common.object_wrapper import ObjectProxy, wrap_function_wrapper, wrap_object
+from newrelic.hooks.database_dbapi2_async import AsyncConnectionFactory as DBAPI2AsyncConnectionFactory
+from newrelic.hooks.database_dbapi2_async import AsyncConnectionWrapper as DBAPI2AsyncConnectionWrapper
+from newrelic.hooks.database_dbapi2_async import AsyncCursorWrapper as DBAPI2AsyncCursorWrapper
 
 
 class AsyncCursorContextManagerWrapper(ObjectProxy):
-
     __cursor_wrapper__ = DBAPI2AsyncCursorWrapper
 
     def __init__(self, context_manager, dbapi2_module, connect_params, cursor_args):
@@ -73,12 +62,10 @@ class AsyncCursorContextManagerWrapper(ObjectProxy):
 
 
 class AsyncConnectionWrapper(DBAPI2AsyncConnectionWrapper):
-
     __cursor_wrapper__ = AsyncCursorContextManagerWrapper
 
 
 class AsyncConnectionFactory(DBAPI2AsyncConnectionFactory):
-
     __connection_wrapper__ = AsyncConnectionWrapper
 
 

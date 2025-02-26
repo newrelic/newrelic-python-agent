@@ -15,12 +15,8 @@
 import aiohttp
 import pytest
 from testing_support.fixtures import override_generic_settings
-from testing_support.validators.validate_code_level_metrics import (
-    validate_code_level_metrics,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.core.config import global_settings
 
@@ -35,9 +31,7 @@ async def middleware_factory(app, handler):
     return middleware_handler
 
 
-middleware_tests = [
-    (middleware_factory, "Function/test_middleware:" "middleware_factory.<locals>.middleware_handler"),
-]
+middleware_tests = [(middleware_factory, "Function/test_middleware:middleware_factory.<locals>.middleware_handler")]
 
 
 if version_info >= (3, 0):
@@ -47,9 +41,7 @@ if version_info >= (3, 0):
         response = await handler(request)
         return response
 
-    middleware_tests.append(
-        (new_style_middleware, "Function/test_middleware:new_style_middleware"),
-    )
+    middleware_tests.append((new_style_middleware, "Function/test_middleware:new_style_middleware"))
 
 
 @pytest.mark.parametrize("nr_enabled", [True, False])
@@ -66,10 +58,7 @@ def test_middleware(nr_enabled, aiohttp_app, middleware, metric):
         aiohttp_app.loop.run_until_complete(fetch())
 
     if nr_enabled:
-        scoped_metrics = [
-            ("Function/_target_application:index", 1),
-            (metric, 1),
-        ]
+        scoped_metrics = [("Function/_target_application:index", 1), (metric, 1)]
 
         rollup_metrics = [
             ("Function/_target_application:index", 1),

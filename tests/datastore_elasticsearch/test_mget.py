@@ -23,20 +23,14 @@ except ImportError:
 from conftest import ES_MULTIPLE_SETTINGS, ES_VERSION
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
 # Settings
 
-_enable_instance_settings = {
-    "datastore_tracer.instance_reporting.enabled": True,
-}
-_disable_instance_settings = {
-    "datastore_tracer.instance_reporting.enabled": False,
-}
+_enable_instance_settings = {"datastore_tracer.instance_reporting.enabled": True}
+_disable_instance_settings = {"datastore_tracer.instance_reporting.enabled": False}
 
 # Metrics
 
@@ -71,19 +65,9 @@ if len(ES_MULTIPLE_SETTINGS) > 1:
     instance_metric_name_1 = f"Datastore/instance/Elasticsearch/{host_1}/{port_1}"
     instance_metric_name_2 = f"Datastore/instance/Elasticsearch/{host_2}/{port_2}"
 
-    _enable_rollup_metrics.extend(
-        [
-            (instance_metric_name_1, 2),
-            (instance_metric_name_2, 1),
-        ]
-    )
+    _enable_rollup_metrics.extend([(instance_metric_name_1, 2), (instance_metric_name_2, 1)])
 
-    _disable_rollup_metrics.extend(
-        [
-            (instance_metric_name_1, None),
-            (instance_metric_name_2, None),
-        ]
-    )
+    _disable_rollup_metrics.extend([(instance_metric_name_1, None), (instance_metric_name_2, None)])
 
 
 @pytest.fixture(scope="module")
@@ -122,12 +106,7 @@ def _exercise_es_multi(es):
         )
 
     # ask db 1, will return info from db 1 and 2
-    mget_body = {
-        "docs": [
-            {"_id": 1, "_index": "contacts"},
-            {"_id": 2, "_index": "contacts"},
-        ]
-    }
+    mget_body = {"docs": [{"_id": 1, "_index": "contacts"}, {"_id": 2, "_index": "contacts"}]}
 
     results = es.mget(body=mget_body)
     assert len(results["docs"]) == 2

@@ -111,7 +111,7 @@ class TraceCache(MutableMapping):
 
         """
 
-        if self.greenlet:
+        if self.greenlet and self._cache.data:
             # Greenlet objects are maintained in a tree structure with
             # the 'parent' attribute pointing to that which a specific
             # instance is associated with. Only the root node has no
@@ -128,10 +128,9 @@ class TraceCache(MutableMapping):
             # Unfortunately, instead of returning None, this will segfault
             # if attempting to access a non-existent greenlet object.
             # https://github.com/python-greenlet/greenlet/blob/master/src/greenlet/TThreadStateCreator.hpp#L57
-            if self._cache.data:
-                current = self.greenlet.getcurrent()
-                if current is not None and current.parent:
-                    return id(current)
+            current = self.greenlet.getcurrent()
+            if current is not None and current.parent:
+                return id(current)
 
         if self.asyncio:
             task = current_task(self.asyncio)

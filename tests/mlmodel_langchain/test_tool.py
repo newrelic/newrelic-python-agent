@@ -20,7 +20,7 @@ import langchain
 import pydantic_core
 import pytest
 from langchain.tools import tool
-from mock import patch
+from unittest.mock import patch
 from testing_support.fixtures import reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (  # noqa: F401
     disabled_ai_monitoring_record_content_settings,

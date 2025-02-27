@@ -39,7 +39,7 @@ select = [
     "EXE",  # flake8-executable
     # "FA",  # flake8-future-annotations
     "ISC",  # flake8-implicit-str-concat
-    # "ICN",  # flake8-import-conventions
+    "ICN",  # flake8-import-conventions
     "LOG",  # flake8-logging
     # "G",  # flake8-logging-format
     # "INP",  # flake8-no-pep420

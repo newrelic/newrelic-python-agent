@@ -15,7 +15,7 @@
 import sys
 
 import numpy as np
-import pandas
+import pandas as pd
 from testing_support.fixtures import override_application_settings, reset_core_stats_engine
 from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_ml_event_count import validate_ml_event_count
@@ -50,11 +50,11 @@ def test_pandas_df_categorical_feature_event():
 
         clf = getattr(sklearn.tree, "DecisionTreeClassifier")(random_state=0)
         model = clf.fit(
-            pandas.DataFrame({"col1": [27.0, 24.0], "col2": [23.0, 25.0]}, dtype="category"),
-            pandas.DataFrame({"label": [27.0, 28.0]}),
+            pd.DataFrame({"col1": [27.0, 24.0], "col2": [23.0, 25.0]}, dtype="category"),
+            pd.DataFrame({"label": [27.0, 28.0]}),
         )
 
-        labels = model.predict(pandas.DataFrame({"col1": [2.0], "col2": [4.0]}, dtype="category"))
+        labels = model.predict(pd.DataFrame({"col1": [2.0], "col2": [4.0]}, dtype="category"))
         return model
 
     _test()
@@ -89,9 +89,9 @@ def test_pandas_df_bool_feature_event():
         import sklearn.tree
 
         dtype_name = "bool" if sys.version_info < (3, 8) else "boolean"
-        x_train = pandas.DataFrame({"col1": [True, False], "col2": [True, False]}, dtype=dtype_name)
-        y_train = pandas.DataFrame({"label": [True, False]}, dtype=dtype_name)
-        x_test = pandas.DataFrame({"col1": [True], "col2": [True]}, dtype=dtype_name)
+        x_train = pd.DataFrame({"col1": [True, False], "col2": [True, False]}, dtype=dtype_name)
+        y_train = pd.DataFrame({"label": [True, False]}, dtype=dtype_name)
+        x_test = pd.DataFrame({"col1": [True], "col2": [True]}, dtype=dtype_name)
 
         clf = getattr(sklearn.tree, "DecisionTreeClassifier")(random_state=0)
         model = clf.fit(x_train, y_train)
@@ -127,9 +127,9 @@ def test_pandas_df_float_feature_event():
     def _test():
         import sklearn.tree
 
-        x_train = pandas.DataFrame({"col1": [120.0, 254.0], "col2": [236.9, 234.5]}, dtype="float64")
-        y_train = pandas.DataFrame({"label": [345.6, 456.7]}, dtype="float64")
-        x_test = pandas.DataFrame({"col1": [100.0], "col2": [300.0]}, dtype="float64")
+        x_train = pd.DataFrame({"col1": [120.0, 254.0], "col2": [236.9, 234.5]}, dtype="float64")
+        y_train = pd.DataFrame({"label": [345.6, 456.7]}, dtype="float64")
+        x_test = pd.DataFrame({"col1": [100.0], "col2": [300.0]}, dtype="float64")
 
         clf = getattr(sklearn.tree, "DecisionTreeRegressor")(random_state=0)
 

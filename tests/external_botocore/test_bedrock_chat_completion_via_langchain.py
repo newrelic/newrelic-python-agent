@@ -19,7 +19,7 @@ from _test_bedrock_chat_completion import (
 )
 from conftest import BOTOCORE_VERSION  # pylint: disable=E0611
 from testing_support.fixtures import reset_core_stats_engine, validate_attributes
-from testing_support.ml_testing_utils import (  # noqa: F401
+from testing_support.ml_testing_utils import (
     events_with_context_attrs,
     set_trace_info,
 )

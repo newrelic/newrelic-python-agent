@@ -14,7 +14,7 @@
 
 import aredis
 from testing_support.db_settings import redis_settings
-from testing_support.fixture.event_loop import event_loop as loop  # noqa: F401
+from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
 from testing_support.validators.validate_tt_collector_json import validate_tt_collector_json

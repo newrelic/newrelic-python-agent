@@ -24,7 +24,7 @@ from langchain.chains.openai_functions import create_structured_output_chain, cr
 from langchain_community.vectorstores.faiss import FAISS
 from mock import patch
 from testing_support.fixtures import reset_core_stats_engine, validate_attributes
-from testing_support.ml_testing_utils import (  # noqa: F401
+from testing_support.ml_testing_utils import (
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
     events_sans_content,

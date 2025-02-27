@@ -17,10 +17,10 @@ import uuid
 import pytest
 from google.cloud.firestore import AsyncClient, Client
 from testing_support.db_settings import firestore_settings
-from testing_support.fixture.event_loop import (  # noqa: F401; pylint: disable=W0611
+from testing_support.fixture.event_loop import (
     event_loop as loop,
 )
-from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
+from testing_support.fixtures import (
     collector_agent_registration_fixture,
     collector_available_fixture,
 )

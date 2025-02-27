@@ -16,17 +16,17 @@ import json
 import os
 
 import pytest
-from _mock_external_openai_server import (  # noqa: F401; pylint: disable=W0611
+from _mock_external_openai_server import (
     MockExternalOpenAIServer,
     extract_shortened_prompt,
     get_openai_version,
     openai_version,
     simple_get,
 )
-from testing_support.fixture.event_loop import (  # noqa: F401; pylint: disable=W0611
+from testing_support.fixture.event_loop import (
     event_loop as loop,
 )
-from testing_support.fixtures import (  # noqa: F401, pylint: disable=W0611
+from testing_support.fixtures import (
     collector_agent_registration_fixture,
     collector_available_fixture,
     override_application_settings,

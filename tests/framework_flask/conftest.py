@@ -28,7 +28,7 @@ except:
     # This only works for flaskmaster
     FLASK_VERSION = get_package_version_tuple("flask")
 
-from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
+from testing_support.fixtures import (
     collector_agent_registration_fixture,
     collector_available_fixture,
 )

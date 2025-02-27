@@ -15,12 +15,12 @@
 import asyncio
 
 import pytest
-from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
+from testing_support.fixtures import (
     collector_agent_registration_fixture,
     collector_available_fixture,
 )
 
-from newrelic.common.object_wrapper import (  # noqa: F401 pylint: disable=W0611
+from newrelic.common.object_wrapper import (
     transient_function_wrapper,
 )
 

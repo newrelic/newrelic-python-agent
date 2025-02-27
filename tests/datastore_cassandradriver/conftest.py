@@ -16,7 +16,7 @@ import sys
 
 import pytest
 from testing_support.db_settings import cassandra_settings
-from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
+from testing_support.fixtures import (
     collector_agent_registration_fixture,
     collector_available_fixture,
 )

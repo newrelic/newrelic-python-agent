@@ -20,7 +20,7 @@ import re
 import pytest
 from _mock_external_bedrock_server import MockExternalBedrockServer, extract_shortened_prompt
 from botocore.response import StreamingBody
-from testing_support.fixtures import (  # noqa: F401, pylint: disable=W0611
+from testing_support.fixtures import (
     collector_agent_registration_fixture,
     collector_available_fixture,
     override_application_settings,

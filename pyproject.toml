@@ -38,7 +38,7 @@ select = [
     # "EM",  # flake8-errmsg
     "EXE",  # flake8-executable
     # "FA",  # flake8-future-annotations
-    # "ISC",  # flake8-implicit-str-concat
+    "ISC",  # flake8-implicit-str-concat
     # "ICN",  # flake8-import-conventions
     "LOG",  # flake8-logging
     # "G",  # flake8-logging-format

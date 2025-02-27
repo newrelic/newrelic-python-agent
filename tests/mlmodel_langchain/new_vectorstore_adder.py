@@ -7,6 +7,7 @@ copy of the newrelic-python-agent repository.
 """
 
 import os
+from textwrap import dedent
 
 from langchain_community import vectorstores
 
@@ -26,12 +27,14 @@ def add_to_config(directory, instrumented_class=None):
         text = file.read()
         text = text.replace(
             "VectorStores with similarity_search method",
-            "VectorStores with similarity_search method\n    "
-            + "_process_module_definition(\n        "
-            + f'"{directory}",\n        '
-            + '"newrelic.hooks.mlmodel_langchain",\n        '
-            + '"instrument_langchain_vectorstore_similarity_search",\n    '
-            + ")\n",
+            dedent(f"""
+                VectorStores with similarity_search method
+                    _process_module_definition(
+                        "{directory}",
+                        "newrelic.hooks.mlmodel_langchain",
+                        "instrument_langchain_vectorstore_similarity_search",
+                    )
+            """.lstrip("\n")),
             1,
         )
         file.seek(0)

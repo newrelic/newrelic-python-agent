@@ -23,7 +23,7 @@ select = [
     # "N",  # pep8-naming
     # "UP",  # pyupgrade
     "YTT",  # flake8-2020
-    # "ASYNC",  # flake8-async
+    "ASYNC",  # flake8-async
     # "S",  # flake8-bandit
     # "BLE",  # flake8-blind-except
     # "FBT",  # flake8-boolean-trap
@@ -109,6 +109,7 @@ ignore = [
     "F811",  # redefined-while-unused (pytest fixtures trigger this)
     "PLR2004",  # magic-value-comparison (comparing to constant values)
     "S101",  # assert (acceptable in tests)
+    "ASYNC251",  # blocking-sleep-in-async-function (acceptable in tests)
 ]
 
 # Alternate linters and formatters

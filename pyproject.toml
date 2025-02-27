@@ -18,43 +18,45 @@ select = [
     # Enabled linters and rules
     # "F",  # Pyflakes
     # "E",  # pycodestyle
-    # "W",  # pycodestyle
+    "W",  # pycodestyle
     # "I",  # isort
     # "N",  # pep8-naming
     # "UP",  # pyupgrade
-    # "YTT",  # flake8-2020
+    "YTT",  # flake8-2020
     # "ASYNC",  # flake8-async
     # "S",  # flake8-bandit
     # "BLE",  # flake8-blind-except
     # "FBT",  # flake8-boolean-trap
     # "B",  # flake8-bugbear
     # "A",  # flake8-builtins
-    # "COM",  # flake8-commas
+    "COM",  # flake8-commas
     # "C4",  # flake8-comprehensions
-    # "T10",  # flake8-debugger
+    "DTZ",  # flake8-datetimez
+    "T10",  # flake8-debugger
     # "EM",  # flake8-errmsg
+    "EXE",  # flake8-executable
     # "FA",  # flake8-future-annotations
     # "ISC",  # flake8-implicit-str-concat
     # "ICN",  # flake8-import-conventions
-    # "LOG",  # flake8-logging
+    "LOG",  # flake8-logging
     # "G",  # flake8-logging-format
     # "INP",  # flake8-no-pep420
     # "PYI",  # flake8-pyi
     # "PT",  # flake8-pytest-style
-    # "Q",  # flake8-quotes
+    "Q",  # flake8-quotes
     # "RSE",  # flake8-raise
     # "RET",  # flake8-return
     # "SLF",  # flake8-self
-    # "SLOT",  # flake8-slots
+    "SLOT",  # flake8-slots
     # "SIM",  # flake8-simplify
-    # "TID",  # flake8-tidy-imports
-    # "INT",  # flake8-gettext
+    "TID",  # flake8-tidy-imports
+    "INT",  # flake8-gettext
     # "ARG",  # flake8-unused-arguments
     # "PTH",  # flake8-use-pathlib
     # "PGH",  # pygrep-hooks
     # "PL",  # Pylint
     # "TRY",  # tryceratops
-    # "FLY",  # flynt
+    "FLY",  # flynt
     # "PERF",  # Perflint
     # "FURB",  # refurb
     # "RUF",  # Ruff-specific rules
@@ -64,10 +66,7 @@ select = [
 # "ANN",  # flake8-annotations
 # "D",  # pydocstyle
 # "C90",  # mccabe
-# "CPY",  # flake8-copyright
-# "DTZ",  # flake8-datetimez
 # "DJ",  # flake8-django
-# "EXE",  # flake8-executable
 # "PIE",  # flake8-pie
 # "T20",  # flake8-print
 # "TC",  # flake8-type-checking
@@ -78,6 +77,9 @@ select = [
 # "NPY",  # NumPy-specific rules
 # "FAST",  # FastAPI
 # "AIR",  # Airflow
+
+# Preview linters (disabled)
+# "CPY",  # flake8-copyright
 # "DOC",  # pydoclint
 
 ignore = [

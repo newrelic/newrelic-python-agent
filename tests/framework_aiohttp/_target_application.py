@@ -28,7 +28,7 @@ async def index(request):
 
 
 async def hang(request):
-    while True:  # noqa
+    while True:
         await asyncio.sleep(0)
 
 

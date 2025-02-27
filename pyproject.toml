@@ -55,7 +55,7 @@ select = [
     "INT",  # flake8-gettext
     # "ARG",  # flake8-unused-arguments
     # "PTH",  # flake8-use-pathlib
-    # "PGH",  # pygrep-hooks
+    "PGH",  # pygrep-hooks
     # "PL",  # Pylint
     # "TRY",  # tryceratops
     "FLY",  # flynt
@@ -103,6 +103,7 @@ ignore = [
     "D213",  # multi-line-summary-second-line
     "ARG001",  # unused-argument
     "PYI024",  # collections-named-tuple (not currently using type annotations)
+    "RUF100",  # unused-noqa (TODO: remove this once all linters are enabled)
 ]
 
 [tool.ruff.lint.per-file-ignores]

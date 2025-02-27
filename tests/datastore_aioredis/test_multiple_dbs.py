@@ -15,7 +15,7 @@
 from conftest import aioredis
 
 import pytest
-from conftest import AIOREDIS_VERSION, loop  # noqa
+from conftest import AIOREDIS_VERSION, loop
 from testing_support.db_settings import redis_settings
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
@@ -82,7 +82,7 @@ if len(DB_SETTINGS) > 1:
 
 
 @pytest.fixture(params=("Redis", "StrictRedis"))
-def client_set(request, loop):  # noqa
+def client_set(request, loop):
     if len(DB_SETTINGS) > 1:
         if AIOREDIS_VERSION >= (2, 0):
             if request.param == "Redis":
@@ -132,7 +132,7 @@ async def exercise_redis(client_1, client_2):
     background_task=True,
 )
 @background_task()
-def test_multiple_datastores_enabled(client_set, loop):  # noqa
+def test_multiple_datastores_enabled(client_set, loop):
     loop.run_until_complete(exercise_redis(client_set[0], client_set[1]))
 
 
@@ -145,7 +145,7 @@ def test_multiple_datastores_enabled(client_set, loop):  # noqa
     background_task=True,
 )
 @background_task()
-def test_multiple_datastores_disabled(client_set, loop):  # noqa
+def test_multiple_datastores_disabled(client_set, loop):
     loop.run_until_complete(exercise_redis(client_set[0], client_set[1]))
 
 
@@ -158,7 +158,7 @@ def test_multiple_datastores_disabled(client_set, loop):  # noqa
 )
 @override_application_settings(_enable_instance_settings)
 @background_task()
-def test_concurrent_calls(client_set, loop):  # noqa
+def test_concurrent_calls(client_set, loop):
     # Concurrent calls made with original instrumenation taken from synchonous Redis
     # instrumentation had a bug where datastore info on concurrent calls to multiple instances
     # would result in all instances reporting as the host/port of the final call made.

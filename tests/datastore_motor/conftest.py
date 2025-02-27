@@ -14,7 +14,7 @@
 
 import pytest
 from testing_support.db_settings import mongodb_settings
-from testing_support.fixture.event_loop import event_loop as loop  # noqa
+from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     collector_agent_registration_fixture,
     collector_available_fixture,

@@ -14,6 +14,8 @@ skip-magic-trailing-comma = true
 
 [tool.ruff.lint]
 isort.split-on-trailing-comma=false
+pep8-naming.extend-ignore-names = ["X", "y"]
+
 select = [
     # Enabled linters and rules
     # "F",  # Pyflakes

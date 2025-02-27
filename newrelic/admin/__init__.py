@@ -125,7 +125,7 @@ def load_external_plugins():
         if sys.version_info >= (3, 10):
             from importlib.metadata import entry_points
         # Introduced in Python 3.8
-        elif sys.version_info >= (3, 8) and sys.version_info <= (3, 9):
+        elif sys.version_info >= (3, 8) and sys.version_info < (3, 9):
             from importlib_metadata import entry_points
         # Removed in Python 3.12
         else:

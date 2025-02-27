@@ -60,7 +60,7 @@ select = [
     # "TRY",  # tryceratops
     "FLY",  # flynt
     # "PERF",  # Perflint
-    # "FURB",  # refurb
+    "FURB",  # refurb
     # "RUF",  # Ruff-specific rules
 ]
 

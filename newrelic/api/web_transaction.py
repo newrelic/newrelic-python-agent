@@ -15,9 +15,8 @@
 import functools
 import logging
 import time
-import warnings
-
 import urllib.parse as urlparse
+import warnings
 
 from newrelic.api.application import Application, application_instance
 from newrelic.api.transaction import Transaction, current_transaction

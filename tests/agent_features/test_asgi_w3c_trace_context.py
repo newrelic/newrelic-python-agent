@@ -13,16 +13,15 @@
 # limitations under the License.
 
 import pytest
-
-from newrelic.api.transaction import current_transaction
-from newrelic.api.external_trace import ExternalTrace
-from newrelic.api.asgi_application import asgi_application
-
 from testing_support.asgi_testing import AsgiTest
 from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+
+from newrelic.api.asgi_application import asgi_application
+from newrelic.api.external_trace import ExternalTrace
+from newrelic.api.transaction import current_transaction
 
 
 @asgi_application()

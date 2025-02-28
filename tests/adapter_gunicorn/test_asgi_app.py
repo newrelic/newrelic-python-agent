@@ -12,17 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 import os
 import random
 import socket
 import time
+
+import pytest
 from testing_support.fixtures import TerminatingPopen
 from testing_support.util import get_open_port
 
-
 pytest.importorskip("asyncio")
 from urllib.request import urlopen
+
 from testing_support.util import get_open_port
 
 

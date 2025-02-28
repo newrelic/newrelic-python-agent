@@ -15,10 +15,9 @@
 from collections import namedtuple
 
 import newrelic.core.trace_node
-
 from newrelic.common import system_info
-from newrelic.core.node_mixin import DatastoreNodeMixin
 from newrelic.core.metric import TimeMetric
+from newrelic.core.node_mixin import DatastoreNodeMixin
 
 _DatastoreNode = namedtuple(
     "_DatastoreNode",

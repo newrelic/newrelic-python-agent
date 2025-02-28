@@ -15,7 +15,6 @@
 import falcon
 import webtest
 
-
 try:
     from falcon import HTTPRouteNotFound
 

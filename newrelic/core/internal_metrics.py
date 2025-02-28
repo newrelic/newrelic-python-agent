@@ -14,9 +14,10 @@
 
 import functools
 import sys
-import types
-import time
 import threading
+import time
+import types
+
 import newrelic.common.object_wrapper
 
 _context = threading.local()

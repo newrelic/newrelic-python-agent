@@ -13,15 +13,13 @@
 # limitations under the License.
 
 import pytest
-
-from newrelic.api.transaction import current_transaction
-from newrelic.api.background_task import background_task
-
 from testing_support.db_settings import redis_settings
 from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.util import instance_hostname
+from testing_support.validators.validate_span_events import validate_span_events
 
+from newrelic.api.background_task import background_task
+from newrelic.api.transaction import current_transaction
 
 DB_SETTINGS = redis_settings()[0]
 

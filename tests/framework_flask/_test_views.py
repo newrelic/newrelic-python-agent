@@ -12,10 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import webtest
-
 import flask
 import flask.views
+import webtest
 
 app = flask.Flask(__name__)
 

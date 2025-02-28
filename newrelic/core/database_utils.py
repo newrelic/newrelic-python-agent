@@ -21,9 +21,8 @@ import logging
 import re
 import weakref
 
-
-from newrelic.core.internal_metrics import internal_metric
 from newrelic.core.config import global_settings
+from newrelic.core.internal_metrics import internal_metric
 
 _logger = logging.getLogger(__name__)
 

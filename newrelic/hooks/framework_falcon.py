@@ -13,12 +13,13 @@
 # limitations under the License.
 
 import sys
-from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import wrap_function_wrapper, function_wrapper
-from newrelic.api.transaction import current_transaction
-from newrelic.api.time_trace import notice_error
-from newrelic.api.wsgi_application import wrap_wsgi_application
+
 from newrelic.api.function_trace import function_trace
+from newrelic.api.time_trace import notice_error
+from newrelic.api.transaction import current_transaction
+from newrelic.api.wsgi_application import wrap_wsgi_application
+from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 
 
 def _bind_handle_exception_v1(ex, req, resp, *args, **kwargs):

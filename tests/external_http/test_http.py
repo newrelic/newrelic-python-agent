@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import http.client
+
 import pytest
 from testing_support.external_fixtures import cache_outgoing_headers, insert_incoming_headers
 from testing_support.fixtures import cat_enabled, override_application_settings
@@ -20,8 +22,6 @@ from testing_support.validators.validate_external_node_params import validate_ex
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
-
-import http.client
 
 
 @pytest.fixture(scope="session")

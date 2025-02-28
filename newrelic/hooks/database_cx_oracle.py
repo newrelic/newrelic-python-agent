@@ -13,8 +13,7 @@
 # limitations under the License.
 
 from newrelic.api.database_trace import register_database_client
-from newrelic.common.object_wrapper import wrap_object, ObjectProxy
-
+from newrelic.common.object_wrapper import ObjectProxy, wrap_object
 from newrelic.hooks.database_dbapi2 import ConnectionFactory
 
 

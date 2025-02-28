@@ -15,7 +15,6 @@
 import json
 import logging
 import sys
-
 from io import StringIO as Buffer
 from traceback import format_exception
 
@@ -25,7 +24,6 @@ from newrelic.agent import get_linking_metadata
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.log import NewRelicContextFormatter
-
 
 _logger = logging.getLogger(__name__)
 

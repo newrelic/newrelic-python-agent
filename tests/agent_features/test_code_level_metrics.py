@@ -25,9 +25,11 @@ from _test_code_level_metrics import (
     ExerciseClassCallable,
     ExerciseTypeConstructor,
     ExerciseTypeConstructorCallable,
+    exercise_function,
+    exercise_lambda,
+    exercise_partial,
 )
 from _test_code_level_metrics import __file__ as FILE_PATH
-from _test_code_level_metrics import exercise_function, exercise_lambda, exercise_partial
 from testing_support.fixtures import dt_enabled, override_application_settings
 from testing_support.validators.validate_span_events import validate_span_events
 

@@ -12,10 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from conftest import aioredis
-
 import pytest
-from conftest import AIOREDIS_VERSION, loop
+from conftest import AIOREDIS_VERSION, aioredis, loop
 from testing_support.db_settings import redis_settings
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname

@@ -11,13 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from testing_support.fixture.event_loop import (
-    event_loop as loop,
-)
-from testing_support.fixtures import (
-    collector_agent_registration_fixture,
-    collector_available_fixture,
-)
+from testing_support.fixture.event_loop import event_loop as loop
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.

@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import aredis
-
 from testing_support.db_settings import redis_settings
 
 DB_SETTINGS = redis_settings()[0]

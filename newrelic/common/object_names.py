@@ -15,11 +15,10 @@
 """This module implements functions for deriving the full name of an object."""
 
 import builtins
+import functools
+import inspect
 import sys
 import types
-import inspect
-import functools
-
 
 # Object model terminology for quick reference.
 #

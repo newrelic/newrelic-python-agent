@@ -15,8 +15,9 @@
 import socket
 
 import cheroot.wsgi
-import newrelic.api.transaction
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+
+import newrelic.api.transaction
 
 
 def get_open_port():

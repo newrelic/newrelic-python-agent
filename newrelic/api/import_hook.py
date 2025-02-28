@@ -14,9 +14,7 @@
 
 import logging
 import sys
-
 from importlib.util import find_spec
-
 
 _logger = logging.getLogger(__name__)
 

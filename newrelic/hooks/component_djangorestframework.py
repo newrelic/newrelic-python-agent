@@ -14,10 +14,10 @@
 
 import sys
 
-from newrelic.common.object_wrapper import wrap_function_wrapper, function_wrapper
-from newrelic.api.transaction import current_transaction
 from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 
 
 def _nr_wrapper_APIView_dispatch_(wrapped, instance, args, kwargs):

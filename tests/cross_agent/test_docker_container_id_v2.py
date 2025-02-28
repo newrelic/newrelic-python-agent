@@ -13,8 +13,9 @@
 # limitations under the License.
 
 import json
-import mock
 import os
+
+import mock
 import pytest
 
 import newrelic.common.utilization as u

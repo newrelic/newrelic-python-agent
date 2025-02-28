@@ -13,9 +13,10 @@
 # limitations under the License.
 
 import pytest
+from testing_support.fixtures import override_generic_settings
+
 from newrelic.core.agent import Agent
 from newrelic.core.config import finalize_application_settings
-from testing_support.fixtures import override_generic_settings
 
 
 class FakeApplication:

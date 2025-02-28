@@ -13,13 +13,7 @@
 # limitations under the License.
 
 import aiobotocore
-from conftest import (
-    AWS_ACCESS_KEY_ID,
-    AWS_SECRET_ACCESS_KEY,
-    PORT,
-    MotoService,
-    loop,
-)
+from conftest import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, PORT, MotoService, loop
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 

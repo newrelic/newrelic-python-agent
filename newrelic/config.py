@@ -48,12 +48,6 @@ from newrelic.core.agent_control_health import (
     agent_control_healthcheck_loop,
 )
 from newrelic.core.config import Settings, apply_config_setting, default_host, fetch_config_setting
-from newrelic.core.agent_control_health import (
-    HealthStatus,
-    agent_control_health_instance,
-    agent_control_healthcheck_loop,
-)
-
 
 __all__ = ["initialize", "filter_app_factory"]
 

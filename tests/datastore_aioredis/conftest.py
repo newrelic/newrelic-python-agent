@@ -16,13 +16,8 @@ import os
 
 import pytest
 from testing_support.db_settings import redis_settings
-from testing_support.fixture.event_loop import (
-    event_loop as loop,
-)
-from testing_support.fixtures import (
-    collector_agent_registration_fixture,
-    collector_available_fixture,
-)
+from testing_support.fixture.event_loop import event_loop as loop
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 from newrelic.common.package_version_utils import get_package_version_tuple
 

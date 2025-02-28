@@ -13,13 +13,13 @@
 # limitations under the License.
 
 import os
-import pytest
 import random
 import socket
 import time
+
+import pytest
 from testing_support.fixtures import TerminatingPopen
 from testing_support.util import get_open_port
-
 
 aiohttp = pytest.importorskip("aiohttp")
 from urllib.request import urlopen

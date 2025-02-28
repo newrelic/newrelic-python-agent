@@ -13,10 +13,7 @@
 # limitations under the License.
 
 import pytest
-from testing_support.fixtures import (
-    collector_agent_registration_fixture,
-    collector_available_fixture,
-)
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 from testing_support.mock_external_http_server import MockExternalHTTPHResponseHeadersServer
 
 _default_settings = {

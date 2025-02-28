@@ -15,9 +15,8 @@
 import threading
 import time
 
-from testing_support.util import get_open_port
-
 from gevent import Timeout, sleep
+from testing_support.util import get_open_port
 
 
 def request_timeout_application(environ, start_response):

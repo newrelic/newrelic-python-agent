@@ -14,7 +14,6 @@
 
 
 from newrelic.common.object_wrapper import transient_function_wrapper
-
 from testing_support.fixtures import catch_background_exceptions
 
 

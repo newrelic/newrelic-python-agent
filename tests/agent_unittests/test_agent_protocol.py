@@ -18,6 +18,7 @@ import ssl
 import tempfile
 
 import pytest
+from testing_support.http_client_recorder import HttpClientRecorder
 
 from newrelic.common import certs, system_info
 from newrelic.common.agent_http import DeveloperModeClient
@@ -34,8 +35,6 @@ from newrelic.network.exceptions import (
     NetworkInterfaceException,
     RetryDataForRequest,
 )
-from testing_support.http_client_recorder import HttpClientRecorder
-
 
 # Global constants used in tests
 APP_NAME = "test_app"

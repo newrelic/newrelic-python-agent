@@ -13,8 +13,8 @@
 # limitations under the License.
 
 from django.core.exceptions import ObjectDoesNotExist
-from tastypie.resources import Resource
 from tastypie.exceptions import NotFound
+from tastypie.resources import Resource
 
 
 class SimpleResource(Resource):

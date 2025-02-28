@@ -15,10 +15,7 @@
 import logging
 
 import pytest
-from testing_support.fixtures import (
-    collector_agent_registration_fixture,
-    collector_available_fixture,
-)
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 from newrelic.api.log import NewRelicLogForwardingHandler
 

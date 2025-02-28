@@ -12,12 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pyramid.httpexceptions as exc
 import webtest
-
+from pyramid.config import Configurator
 from pyramid.response import Response
 from pyramid.view import view_config
-from pyramid.config import Configurator
-import pyramid.httpexceptions as exc
 
 
 @view_config(route_name="home")

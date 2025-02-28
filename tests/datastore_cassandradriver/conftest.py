@@ -16,10 +16,7 @@ import sys
 
 import pytest
 from testing_support.db_settings import cassandra_settings
-from testing_support.fixtures import (
-    collector_agent_registration_fixture,
-    collector_available_fixture,
-)
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 DB_SETTINGS = cassandra_settings()
 PYTHON_VERSION = sys.version_info

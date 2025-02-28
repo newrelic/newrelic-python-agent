@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from __future__ import annotations
+
 from typing import List, Optional
 
 import strawberry
@@ -22,11 +23,12 @@ try:
 except ImportError:
     import strawberry.types.mutation
 
-from framework_strawberry._target_schema_sync import Item, Library, Storage, books, libraries, magazines
 from strawberry import Schema, field
 from strawberry.asgi import GraphQL
 from strawberry.schema.config import StrawberryConfig
 from testing_support.asgi_testing import AsgiTest
+
+from framework_strawberry._target_schema_sync import Item, Library, Storage, books, libraries, magazines
 
 storage = []
 

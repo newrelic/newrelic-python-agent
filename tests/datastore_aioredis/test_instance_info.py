@@ -13,10 +13,11 @@
 # limitations under the License.
 
 from inspect import isawaitable
+
 import pytest
+from conftest import AIOREDIS_VERSION, SKIPIF_AIOREDIS_V1, aioredis
 
 from newrelic.hooks.datastore_aioredis import _conn_attrs_to_dict, _instance_info
-from conftest import aioredis, AIOREDIS_VERSION, SKIPIF_AIOREDIS_V1
 
 _instance_info_tests = [
     ({}, ("localhost", "6379", "0")),

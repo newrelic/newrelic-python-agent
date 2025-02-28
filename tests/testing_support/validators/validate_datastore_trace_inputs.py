@@ -13,9 +13,8 @@
 # limitations under the License.
 
 
-from testing_support.fixtures import catch_background_exceptions
-
 from newrelic.common.object_wrapper import transient_function_wrapper
+from testing_support.fixtures import catch_background_exceptions
 
 """
 operation: method name

@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 import aredis
+import pytest
 
 from newrelic.hooks.datastore_redis import _conn_attrs_to_dict, _instance_info
 

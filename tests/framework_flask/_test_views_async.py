@@ -12,11 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import webtest
 import flask.views
-
+import webtest
 from _test_views import app
-
 from conftest import async_handler_support
 
 # Async view support added in flask v2

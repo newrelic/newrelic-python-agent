@@ -14,7 +14,6 @@
 
 import socket
 import threading
-
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 # This defines an external server test apps can make requests to (instead of

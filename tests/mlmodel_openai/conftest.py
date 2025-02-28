@@ -23,9 +23,7 @@ from _mock_external_openai_server import (
     openai_version,
     simple_get,
 )
-from testing_support.fixture.event_loop import (
-    event_loop as loop,
-)
+from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import (
     collector_agent_registration_fixture,
     collector_available_fixture,

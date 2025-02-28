@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import memcache
+
 from newrelic.hooks.datastore_memcache import _memcache_client_methods, _memcache_multi_methods
 
 

@@ -21,7 +21,7 @@ select = [
     # "F",  # Pyflakes
     # "E",  # pycodestyle
     "W",  # pycodestyle
-    # "I",  # isort
+    "I",  # isort
     # "N",  # pep8-naming
     # "UP",  # pyupgrade
     "YTT",  # flake8-2020

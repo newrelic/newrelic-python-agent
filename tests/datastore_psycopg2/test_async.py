@@ -15,19 +15,17 @@
 import psycopg2
 import psycopg2.extras
 import pytest
-
-from testing_support.fixtures import validate_stats_engine_explain_plan_output_is_none, override_application_settings
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from testing_support.validators.validate_transaction_errors import validate_transaction_errors
-from testing_support.validators.validate_database_trace_inputs import validate_database_trace_inputs
-from testing_support.validators.validate_transaction_slow_sql_count import validate_transaction_slow_sql_count
-from testing_support.util import instance_hostname
 from testing_support.db_settings import postgresql_settings
+from testing_support.fixtures import override_application_settings, validate_stats_engine_explain_plan_output_is_none
+from testing_support.util import instance_hostname
+from testing_support.validators.validate_database_trace_inputs import validate_database_trace_inputs
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_transaction_slow_sql_count import validate_transaction_slow_sql_count
 
 DB_SETTINGS = postgresql_settings()[0]
 
 from newrelic.api.background_task import background_task
-
 
 # Settings
 

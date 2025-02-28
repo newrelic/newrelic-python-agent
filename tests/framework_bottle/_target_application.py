@@ -13,9 +13,8 @@
 # limitations under the License.
 
 import webtest
-
+from bottle import HTTPError, default_app, error, route
 from bottle import __version__ as version
-from bottle import route, error, default_app, HTTPError
 
 version = [int(x) for x in version.split("-")[0].split(".")]
 

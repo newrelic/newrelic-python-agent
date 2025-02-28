@@ -15,7 +15,7 @@
 import logging
 import time
 
-from newrelic.common.coroutine import is_coroutine_callable, is_asyncio_coroutine, is_generator_function
+from newrelic.common.coroutine import is_asyncio_coroutine, is_coroutine_callable, is_generator_function
 from newrelic.common.object_wrapper import ObjectProxy
 from newrelic.core.trace_cache import trace_cache
 

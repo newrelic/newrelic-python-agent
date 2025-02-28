@@ -20,12 +20,9 @@ import subprocess
 import sys
 import threading
 import time
-
 from queue import Queue
 
 import pytest
-
-from testing_support.sample_applications import error_user_params_added, user_attributes_added
 
 from newrelic.admin.record_deploy import record_deploy
 from newrelic.api.application import application_instance, application_settings, register_application
@@ -45,6 +42,7 @@ from newrelic.core.attribute import create_attributes
 from newrelic.core.attribute_filter import DST_ERROR_COLLECTOR, DST_TRANSACTION_TRACER, AttributeFilter
 from newrelic.core.config import apply_config_setting, flatten_settings, global_settings
 from newrelic.network.exceptions import RetryDataForRequest
+from testing_support.sample_applications import error_user_params_added, user_attributes_added
 
 _logger = logging.getLogger("newrelic.tests")
 

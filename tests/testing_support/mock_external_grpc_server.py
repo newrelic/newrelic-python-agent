@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from concurrent import futures
-import grpc
 import socket
+from concurrent import futures
 
+import grpc
 
 # This defines an external grpc server test apps can use for testing.
 #

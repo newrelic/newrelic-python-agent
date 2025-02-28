@@ -12,16 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.api.database_trace import register_database_client, DatabaseTrace
+from newrelic.api.database_trace import DatabaseTrace, register_database_client
 from newrelic.api.function_trace import FunctionTrace, FunctionTraceWrapper
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_object
-
-from newrelic.hooks.database_dbapi2 import (
-    CursorWrapper as DBAPI2CursorWrapper,
-    ConnectionWrapper as DBAPI2ConnectionWrapper,
-    ConnectionFactory as DBAPI2ConnectionFactory,
-)
+from newrelic.hooks.database_dbapi2 import ConnectionFactory as DBAPI2ConnectionFactory
+from newrelic.hooks.database_dbapi2 import ConnectionWrapper as DBAPI2ConnectionWrapper
+from newrelic.hooks.database_dbapi2 import CursorWrapper as DBAPI2CursorWrapper
 
 DEFAULT = object()
 

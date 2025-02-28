@@ -19,13 +19,8 @@ import pytest
 from _target_application import make_app
 from aiohttp.test_utils import AioHTTPTestCase
 from aiohttp.test_utils import TestClient as _TestClient
-from testing_support.fixture.event_loop import (
-    event_loop,
-)
-from testing_support.fixtures import (
-    collector_agent_registration_fixture,
-    collector_available_fixture,
-)
+from testing_support.fixture.event_loop import event_loop
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 from testing_support.mock_external_http_server import MockExternalHTTPHResponseHeadersServer, MockExternalHTTPServer
 
 _default_settings = {

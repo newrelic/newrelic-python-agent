@@ -28,15 +28,13 @@ import sys
 import threading
 import time
 import traceback
-
 from collections import OrderedDict
 from inspect import signature
 
-
 from newrelic.common.object_wrapper import ObjectProxy
 from newrelic.core.agent import agent_instance
-from newrelic.core.config import flatten_settings, global_settings
 from newrelic.core.agent_control_health import HealthStatus, agent_control_health_instance
+from newrelic.core.config import flatten_settings, global_settings
 from newrelic.core.trace_cache import trace_cache
 
 

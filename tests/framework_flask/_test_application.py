@@ -13,8 +13,7 @@
 # limitations under the License.
 
 import webtest
-
-from flask import Flask, render_template_string, render_template, abort
+from flask import Flask, abort, render_template, render_template_string
 from werkzeug.exceptions import NotFound
 from werkzeug.routing import Rule
 

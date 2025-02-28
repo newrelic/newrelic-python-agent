@@ -19,7 +19,6 @@ from testing_support.fixtures import override_application_settings, override_ign
 from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 
-
 CHERRYPY_VERSION = tuple(int(v) for v in cherrypy.__version__.split("."))
 
 

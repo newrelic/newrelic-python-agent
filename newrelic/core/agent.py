@@ -31,11 +31,11 @@ import newrelic
 import newrelic.core.application
 import newrelic.core.config
 from newrelic.common.log_file import initialize_logging
+from newrelic.core.agent_control_health import HealthStatus, agent_control_health_instance
 from newrelic.core.thread_utilization import thread_utilization_data_source
 from newrelic.samplers.cpu_usage import cpu_usage_data_source
 from newrelic.samplers.gc_data import garbage_collector_data_source
 from newrelic.samplers.memory_usage import memory_usage_data_source
-from newrelic.core.agent_control_health import HealthStatus, agent_control_health_instance
 
 _logger = logging.getLogger(__name__)
 

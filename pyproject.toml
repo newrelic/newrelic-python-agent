@@ -85,6 +85,14 @@ select = [
 # "DOC",  # pydoclint
 
 ignore = [
+    # Temporarily disabled rules
+    "RUF100",  # unused-noqa (TODO: remove this once all linters are enabled)
+    "PERF203",  # try-except-in-loop (most of these are unavoidable)
+    # Permanently disabled rules
+    "D203",  # incorrect-blank-line-before-class
+    "D213",  # multi-line-summary-second-line
+    "ARG001",  # unused-argument
+    "PYI024",  # collections-named-tuple (not currently using type annotations)
     # Ruff recommended linter rules to disable when using formatter
     "W191",  # tab-indentation
     "E111",  # indentation-with-invalid-multiple
@@ -98,13 +106,6 @@ ignore = [
     "Q003",  # avoidable-escaped-quote
     "COM812",  # missing-trailing-comma
     "COM819",  # prohibited-trailing-comma
-    # Additional disabled rules
-    "D203",  # incorrect-blank-line-before-class
-    "D213",  # multi-line-summary-second-line
-    "ARG001",  # unused-argument
-    "PYI024",  # collections-named-tuple (not currently using type annotations)
-    "RUF100",  # unused-noqa (TODO: remove this once all linters are enabled)
-    "PERF203",  # try-except-in-loop (most of these are unavoidable)
 ]
 
 [tool.ruff.lint.per-file-ignores]

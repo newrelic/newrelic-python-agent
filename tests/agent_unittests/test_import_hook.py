@@ -53,7 +53,7 @@ def test_import_hook_finder(monkeypatch):
 
 
 @pytest.mark.parametrize(
-    "input,expected",
+    "input_,expected",
     [
         ("*", {"run", "A.run", "B.run"}),
         ("NotFound.*", set()),
@@ -65,9 +65,9 @@ def test_import_hook_finder(monkeypatch):
         ("*.RUN", set()),  # Check for case insensitivity issues
     ],
 )
-def test_module_function_globbing(input, expected):
+def test_module_function_globbing(input_, expected):
     """This asserts the behavior of filename style globbing on modules."""
     import _test_import_hook as module
 
-    result = set(_module_function_glob(module, input))
+    result = set(_module_function_glob(module, input_))
     assert result == expected, (result, expected)

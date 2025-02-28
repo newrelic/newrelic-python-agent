@@ -92,7 +92,7 @@ class MockExternalHTTPServer(threading.Thread):
         self.start()
         return self
 
-    def __exit__(self, type, value, tb):
+    def __exit__(self, exc, val, tb):
         self.stop()
 
     def run(self):

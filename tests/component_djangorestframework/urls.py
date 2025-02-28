@@ -28,7 +28,7 @@ from views import index
 
 
 class View(APIView):
-    def get(self, request, format=None):
+    def get(self, request, format=None):  # noqa: A002
         return Response([{"message": "restframework view response"}])
 
 
@@ -37,7 +37,7 @@ class Error(Exception):
 
 
 class ViewError(APIView):
-    def get(self, request, format=None):
+    def get(self, request, format=None):  # noqa: A002
         raise Error("xxx")
 
 

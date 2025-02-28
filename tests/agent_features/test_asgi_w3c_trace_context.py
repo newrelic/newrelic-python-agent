@@ -28,7 +28,7 @@ from testing_support.validators.validate_transaction_event_attributes import val
 @asgi_application()
 async def target_asgi_application(scope, receive, send):
     status = "200 OK"
-    type = "http.response.start"
+    type_ = "http.response.start"
     txn = current_transaction()
     if txn._sampled is None:
         txn._sampled = True
@@ -40,7 +40,7 @@ async def target_asgi_application(scope, receive, send):
         encoded_val = value.encode("utf-8")
         response_headers.append((encoded_key, encoded_val))
 
-    await send({"type": type, "status": status, "headers": response_headers})
+    await send({"type": type_, "status": status, "headers": response_headers})
 
     await send({"type": "http.response.body", "body": b"Hello World"})
 

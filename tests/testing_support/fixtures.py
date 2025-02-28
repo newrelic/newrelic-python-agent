@@ -1345,7 +1345,7 @@ class Environ:
         for key, val in self._environ_dict.items():
             os.environ[key] = str(val)
 
-    def __exit__(self, type, value, traceback):  # pylint: disable=redefined-builtin
+    def __exit__(self, exc, val, tb):
         os.environ.clear()
         os.environ = self._original_environ
 
@@ -1356,7 +1356,7 @@ class TerminatingPopen(subprocess.Popen):
     def __enter__(self):
         return self
 
-    def __exit__(self, type, value, traceback):  # pylint: disable=redefined-builtin,arguments-differ
+    def __exit__(self, exc, val, tb):
         if self.stdout:
             self.stdout.close()
         if self.stderr:

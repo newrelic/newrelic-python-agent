@@ -125,11 +125,11 @@ class Agent:
     _registration_callables = {}
 
     @staticmethod
-    def run_on_startup(callable):  # pylint: disable=W0622
+    def run_on_startup(callable):  # noqa: A002
         Agent._startup_callables.append(callable)
 
     @staticmethod
-    def run_on_registration(application, callable):  # pylint: disable=W0622
+    def run_on_registration(application, callable):  # noqa: A002
         callables = Agent._registration_callables.setdefault(application, [])
         callables.append(callable)
 
@@ -711,8 +711,8 @@ class Agent:
 
             _logger.debug("Activating agent instance.")
 
-            for callable in self._startup_callables:
-                callable()
+            for callable_ in self._startup_callables:
+                callable_()
 
             _logger.debug("Start Python Agent main thread.")
 

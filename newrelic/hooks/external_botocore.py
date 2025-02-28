@@ -804,7 +804,7 @@ def handle_embedding_event(transaction, bedrock_attrs):
     trace_id = bedrock_attrs.get("trace_id", None)
     request_id = bedrock_attrs.get("request_id", None)
     model = bedrock_attrs.get("model", None)
-    input = bedrock_attrs.get("input")
+    input_ = bedrock_attrs.get("input")
 
     embedding_dict = {
         "vendor": "bedrock",
@@ -813,7 +813,7 @@ def handle_embedding_event(transaction, bedrock_attrs):
         "span_id": span_id,
         "trace_id": trace_id,
         "token_count": (
-            settings.ai_monitoring.llm_token_count_callback(model, input)
+            settings.ai_monitoring.llm_token_count_callback(model, input_)
             if settings.ai_monitoring.llm_token_count_callback
             else None
         ),
@@ -826,7 +826,7 @@ def handle_embedding_event(transaction, bedrock_attrs):
     embedding_dict.update(llm_metadata_dict)
 
     if settings.ai_monitoring.record_content.enabled:
-        embedding_dict["input"] = input
+        embedding_dict["input"] = input_
 
     embedding_dict = {k: v for k, v in embedding_dict.items() if v is not None}
     transaction.record_custom_event("LlmEmbedding", embedding_dict)

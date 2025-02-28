@@ -259,7 +259,7 @@ def _record_embedding_success(transaction, embedding_id, linking_metadata, kwarg
     trace_id = linking_metadata.get("trace.id")
     try:
         response_headers = getattr(response, "_nr_response_headers", {})
-        input = kwargs.get("input")
+        input_ = kwargs.get("input")
 
         attribute_response = response
         # In v1, response objects are pydantic models so this function call converts the
@@ -287,7 +287,7 @@ def _record_embedding_success(transaction, embedding_id, linking_metadata, kwarg
             "span_id": span_id,
             "trace_id": trace_id,
             "token_count": (
-                settings.ai_monitoring.llm_token_count_callback(response_model, input)
+                settings.ai_monitoring.llm_token_count_callback(response_model, input_)
                 if settings.ai_monitoring.llm_token_count_callback
                 else None
             ),
@@ -319,7 +319,7 @@ def _record_embedding_success(transaction, embedding_id, linking_metadata, kwarg
             "ingest_source": "Python",
         }
         if settings.ai_monitoring.record_content.enabled:
-            full_embedding_response_dict["input"] = input
+            full_embedding_response_dict["input"] = input_
         full_embedding_response_dict.update(_get_llm_attributes(transaction))
         transaction.record_custom_event("LlmEmbedding", full_embedding_response_dict)
     except Exception:
@@ -331,7 +331,7 @@ def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs,
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
     model = kwargs.get("model") or kwargs.get("engine")
-    input = kwargs.get("input")
+    input_ = kwargs.get("input")
 
     exc_organization = None
     notice_error_attributes = {}
@@ -376,7 +376,7 @@ def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs,
             "span_id": span_id,
             "trace_id": trace_id,
             "token_count": (
-                settings.ai_monitoring.llm_token_count_callback(model, input)
+                settings.ai_monitoring.llm_token_count_callback(model, input_)
                 if settings.ai_monitoring.llm_token_count_callback
                 else None
             ),
@@ -388,7 +388,7 @@ def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs,
             "error": True,
         }
         if settings.ai_monitoring.record_content.enabled:
-            error_embedding_dict["input"] = input
+            error_embedding_dict["input"] = input_
         error_embedding_dict.update(_get_llm_attributes(transaction))
         transaction.record_custom_event("LlmEmbedding", error_embedding_dict)
     except Exception:

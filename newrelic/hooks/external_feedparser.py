@@ -22,7 +22,7 @@ import newrelic.common.object_wrapper
 import newrelic.api.external_trace
 
 
-class capture_external_trace():
+class capture_external_trace:
     def __init__(self, wrapped):
         newrelic.api.object_wrapper.update_wrapper(self, wrapped)
         self._nr_next_object = wrapped
@@ -30,7 +30,6 @@ class capture_external_trace():
             self._nr_last_object = wrapped
 
     def __call__(self, url, *args, **kwargs):
-
         # The URL be a string or a file like object. Pass call
         # through if not a string.
 

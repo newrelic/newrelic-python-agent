@@ -32,7 +32,7 @@ _logger = logging.getLogger(__name__)
 AGENT_PACKAGE_DIRECTORY = os.path.dirname(newrelic.__file__) + os.sep
 
 
-class SessionState():
+class SessionState:
     RUNNING = 1
     FINISHED = 2
 
@@ -93,8 +93,7 @@ def collect_stack_traces(include_nr_threads=False):
     python threads.
 
     """
-    for (txn, thread_id, thread_category, frame) in trace_cache().active_threads():
-
+    for txn, thread_id, thread_category, frame in trace_cache().active_threads():
         # Skip NR Threads unless explicitly requested.
 
         if (thread_category == "AGENT") and (not include_nr_threads):
@@ -113,7 +112,7 @@ def collect_stack_traces(include_nr_threads=False):
         yield thread_category, stack_trace
 
 
-class ProfileSessionManager():
+class ProfileSessionManager:
     """Singleton class that manages multiple profile sessions. Do NOT
     instantiate directly from this class. Instead use profile_session_manager()
 
@@ -167,7 +166,6 @@ class ProfileSessionManager():
         # not being updated concurrently by the profiler thread.
 
         with self._lock:
-
             self.profile_agent_code = profile_agent_code
             self.sample_period_s = sample_period_s
             self.full_profile_session = ProfileSession(profile_id, stop_time)
@@ -240,9 +238,7 @@ class ProfileSessionManager():
         """
 
         while True:
-
             for category, stack in collect_stack_traces(self.profile_agent_code):
-
                 # Merge the stack_trace to the call tree only for
                 # full_profile_session.
 
@@ -282,7 +278,7 @@ class ProfileSessionManager():
         return True
 
 
-class ProfileSession():
+class ProfileSession:
     def __init__(self, profile_id, stop_time):
         self.profile_id = profile_id
         self.start_time_s = time.time()
@@ -372,7 +368,6 @@ class ProfileSession():
             node.ignore = True
 
     def profile_data(self):
-
         # Generic profiling sessions have to wait for completion before
         # reporting data.
 
@@ -390,7 +385,6 @@ class ProfileSession():
         thread_count = 0
 
         for category, bucket in self.call_buckets.items():
-
             # Only flatten buckets that have data in them. No need to send
             # empty buckets.
 
@@ -410,7 +404,9 @@ class ProfileSession():
         level = settings.agent_limits.data_compression_level
         level = level or zlib.Z_DEFAULT_COMPRESSION
 
-        encoded_tree = base64.standard_b64encode(zlib.compress(json_call_tree.encode("latin-1"), level)).decode("Latin-1")
+        encoded_tree = base64.standard_b64encode(zlib.compress(json_call_tree.encode("latin-1"), level)).decode(
+            "Latin-1"
+        )
 
         profile = [
             [
@@ -431,7 +427,7 @@ class ProfileSession():
         return profile
 
 
-class CallTree():
+class CallTree:
     def __init__(self, method_data, call_count=0, depth=1):
         self.method_data = method_data
         self.call_count = call_count

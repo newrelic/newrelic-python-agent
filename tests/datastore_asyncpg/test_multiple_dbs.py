@@ -17,9 +17,7 @@ import pytest
 from testing_support.db_settings import postgresql_settings
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
@@ -48,19 +46,13 @@ else:
 
 # Settings
 
-_enable_instance_settings = {
-    "datastore_tracer.instance_reporting.enabled": True,
-}
-_disable_instance_settings = {
-    "datastore_tracer.instance_reporting.enabled": False,
-}
+_enable_instance_settings = {"datastore_tracer.instance_reporting.enabled": True}
+_disable_instance_settings = {"datastore_tracer.instance_reporting.enabled": False}
 
 
 # Metrics
 
-_base_scoped_metrics = CONNECT_METRICS + [
-    ("Datastore/statement/Postgres/pg_settings/select", 2),
-]
+_base_scoped_metrics = CONNECT_METRICS + [("Datastore/statement/Postgres/pg_settings/select", 2)]
 
 _base_rollup_metrics = [
     ("Datastore/all", TOTAL_COUNT),
@@ -89,10 +81,7 @@ if len(DB_MULTIPLE_SETTINGS) > 1:
     _instance_metric_name_2 = f"Datastore/instance/Postgres/{_host_2}/{_port_2}"
 
     _enable_rollup_metrics.extend(
-        [
-            (_instance_metric_name_1, STATEMENT_COUNT),
-            (_instance_metric_name_2, STATEMENT_COUNT),
-        ]
+        [(_instance_metric_name_1, STATEMENT_COUNT), (_instance_metric_name_2, STATEMENT_COUNT)]
     )
     _disable_rollup_metrics.extend([(_instance_metric_name_1, None), (_instance_metric_name_2, None)])
 
@@ -132,10 +121,7 @@ async def _exercise_db():
 # Tests
 
 
-@pytest.mark.skipif(
-    len(DB_MULTIPLE_SETTINGS) < 2,
-    reason="Test environment not configured with multiple databases.",
-)
+@pytest.mark.skipif(len(DB_MULTIPLE_SETTINGS) < 2, reason="Test environment not configured with multiple databases.")
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
     "test_multiple_dbs:test_multiple_databases_enable_instance",
@@ -149,10 +135,7 @@ def test_multiple_databases_enable_instance(event_loop):
     event_loop.run_until_complete(_exercise_db())
 
 
-@pytest.mark.skipif(
-    len(DB_MULTIPLE_SETTINGS) < 2,
-    reason="Test environment not configured with multiple databases.",
-)
+@pytest.mark.skipif(len(DB_MULTIPLE_SETTINGS) < 2, reason="Test environment not configured with multiple databases.")
 @override_application_settings(_disable_instance_settings)
 @validate_transaction_metrics(
     "test_multiple_dbs:test_multiple_databases_disable_instance",

@@ -48,7 +48,7 @@ class UtilizationHttpClient(InsecureHttpClient):
         return super(UtilizationHttpClient, self).send_request(*args, **kwargs)
 
 
-class CommonUtilization():
+class CommonUtilization:
     METADATA_HOST = ""
     METADATA_PATH = ""
     METADATA_QUERY = None

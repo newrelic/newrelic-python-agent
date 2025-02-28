@@ -12,15 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Utility functions for calculating URLs of data collector and proxies.
-
-"""
+"""Utility functions for calculating URLs of data collector and proxies."""
 
 import urllib.parse as urlparse
 
 
-def proxy_details(proxy_scheme, proxy_host, proxy_port, proxy_user,
-        proxy_pass):
+def proxy_details(proxy_scheme, proxy_host, proxy_port, proxy_user, proxy_pass):
     """Returns the dictionary of proxy server settings. This is returned
     in form as expected by the 'requests' library when making requests.
 
@@ -47,7 +44,7 @@ def proxy_details(proxy_scheme, proxy_host, proxy_port, proxy_user,
     # anyway. Not sure if the trailing path for a proxy is ever
     # significant so always leave in intact.
 
-    path = ''
+    path = ""
 
     if components.scheme:
         proxy_scheme = components.scheme
@@ -61,20 +58,20 @@ def proxy_details(proxy_scheme, proxy_host, proxy_port, proxy_user,
         netloc = proxy_host
 
     if proxy_port:
-        netloc = f'{netloc}:{proxy_port}'
+        netloc = f"{netloc}:{proxy_port}"
 
     if proxy_user:
-        proxy_user = proxy_user or ''
-        proxy_pass = proxy_pass or ''
+        proxy_user = proxy_user or ""
+        proxy_pass = proxy_pass or ""
 
         if proxy_pass:
-            netloc = f'{proxy_user}:{proxy_pass}@{netloc}'
+            netloc = f"{proxy_user}:{proxy_pass}@{netloc}"
         else:
-            netloc = f'{proxy_user}@{netloc}'
+            netloc = f"{proxy_user}@{netloc}"
 
     if proxy_scheme is None:
-        proxy_scheme = 'http'
+        proxy_scheme = "http"
 
-    proxy = f'{proxy_scheme}://{netloc}{path}'
+    proxy = f"{proxy_scheme}://{netloc}{path}"
 
-    return {'http': proxy, 'https': proxy}
+    return {"http": proxy, "https": proxy}

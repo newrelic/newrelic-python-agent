@@ -21,32 +21,35 @@ from testing_support.validators.validate_code_level_metrics import validate_code
 
 import cherrypy
 
-class EndPoint():
 
+class EndPoint:
     def index(self):
-        return 'INDEX RESPONSE'
+        return "INDEX RESPONSE"
+
 
 dispatcher = cherrypy.dispatch.RoutesDispatcher()
-dispatcher.connect(action='index', name='endpoint', route='/endpoint',
-            controller=EndPoint())
+dispatcher.connect(action="index", name="endpoint", route="/endpoint", controller=EndPoint())
 
-conf = { '/': { 'request.dispatch': dispatcher } }
+conf = {"/": {"request.dispatch": dispatcher}}
 
-application = cherrypy.Application(None, '/', conf)
+application = cherrypy.Application(None, "/", conf)
 test_application = webtest.TestApp(application)
+
 
 @validate_code_level_metrics("test_routes.EndPoint", "index")
 @validate_transaction_errors(errors=[])
 def test_routes_index():
-    response = test_application.get('/endpoint')
-    response.mustcontain('INDEX RESPONSE')
+    response = test_application.get("/endpoint")
+    response.mustcontain("INDEX RESPONSE")
+
 
 @validate_transaction_errors(errors=[])
 def test_on_index_agent_disabled():
-    environ = { 'newrelic.enabled': False }
-    response = test_application.get('/endpoint', extra_environ=environ)
-    response.mustcontain('INDEX RESPONSE')
+    environ = {"newrelic.enabled": False}
+    response = test_application.get("/endpoint", extra_environ=environ)
+    response.mustcontain("INDEX RESPONSE")
+
 
 @validate_transaction_errors(errors=[])
 def test_routes_not_found():
-    response = test_application.get('/missing', status=404)
+    response = test_application.get("/missing", status=404)

@@ -16,19 +16,14 @@ import logging
 
 import pytest
 from conftest import instrumented_logger as conf_logger  # noqa, pylint: disable=W0611
-from testing_support.fixtures import (
-    override_application_settings,
-    reset_core_stats_engine,
-)
+from testing_support.fixtures import override_application_settings, reset_core_stats_engine
 from testing_support.validators.validate_function_called import validate_function_called
 from testing_support.validators.validate_log_event_count import validate_log_event_count
 from testing_support.validators.validate_log_event_count_outside_transaction import (
     validate_log_event_count_outside_transaction,
 )
 from testing_support.validators.validate_log_events import validate_log_events
-from testing_support.validators.validate_log_events_outside_transaction import (
-    validate_log_events_outside_transaction,
-)
+from testing_support.validators.validate_log_events_outside_transaction import validate_log_events_outside_transaction
 
 from newrelic.api.background_task import background_task
 from newrelic.api.log import NewRelicLogForwardingHandler
@@ -113,7 +108,7 @@ def test_handler_dict_message_no_formatter(formatting_logger):
                 "trace.id": "abcdefgh12345678",
                 "message.attr": 3,  # Message attr
             }
-        ],
+        ]
     )
     @validate_log_event_count(1)
     @validate_function_called("newrelic.api.log", "NewRelicLogForwardingHandler.emit")
@@ -177,7 +172,7 @@ def test_handler_formatter_returns_dict_message(formatting_logger):
                 "message.attr": 3,  # Message attr
                 "message.formatter_attr": 1,  # Formatter message attr
             }
-        ],
+        ]
     )
     @validate_log_event_count(1)
     @validate_function_called("newrelic.api.log", "NewRelicLogForwardingHandler.emit")

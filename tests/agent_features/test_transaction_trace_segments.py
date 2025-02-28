@@ -14,9 +14,7 @@
 
 import pytest
 from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_tt_segment_params import (
-    validate_tt_segment_params,
-)
+from testing_support.validators.validate_tt_segment_params import validate_tt_segment_params
 
 from newrelic.api.background_task import background_task
 from newrelic.api.database_trace import DatabaseTrace
@@ -41,11 +39,7 @@ def test_external_segment_attributes_default():
     external()
 
 
-@override_application_settings(
-    {
-        "transaction_segments.attributes.exclude": ["http.url"],
-    }
-)
+@override_application_settings({"transaction_segments.attributes.exclude": ["http.url"]})
 @validate_tt_segment_params(forgone_params=("http.url",))
 @background_task(name="test_external_segment_attributes_disabled")
 def test_external_segment_attributes_disabled():
@@ -74,11 +68,7 @@ def test_database_db_instance_truncation():
         pass
 
 
-@override_application_settings(
-    {
-        "transaction_tracer.record_sql": "raw",
-    }
-)
+@override_application_settings({"transaction_tracer.record_sql": "raw"})
 @validate_tt_segment_params(exact_params={"db.statement": "select 1"})
 @background_task(name="test_database_db_statement")
 def test_database_db_statement_default_enabled():
@@ -86,12 +76,7 @@ def test_database_db_statement_default_enabled():
         pass
 
 
-@override_application_settings(
-    {
-        "transaction_tracer.record_sql": "raw",
-        "agent_limits.sql_query_length_maximum": 1,
-    }
-)
+@override_application_settings({"transaction_tracer.record_sql": "raw", "agent_limits.sql_query_length_maximum": 1})
 @validate_tt_segment_params(exact_params={"db.statement": "a"})
 @background_task(name="test_database_db_statement_truncation")
 def test_database_db_statement_truncation():
@@ -99,11 +84,7 @@ def test_database_db_statement_truncation():
         pass
 
 
-@override_application_settings(
-    {
-        "transaction_segments.attributes.exclude": ["db.*"],
-    }
-)
+@override_application_settings({"transaction_segments.attributes.exclude": ["db.*"]})
 @validate_tt_segment_params(forgone_params=("db.instance", "db.statement"))
 @background_task(name="test_database_segment_attributes_disabled")
 def test_database_segment_attributes_disabled():
@@ -129,15 +110,10 @@ def test_database_segment_attributes_disabled():
 def test_each_segment_type(trace_type, args):
     @validate_tt_segment_params(exact_params={"blah": "bloo"})
     @override_application_settings(
-        {
-            "distributed_tracing.enabled": True,
-            "span_events.enabled": True,
-            "attributes.include": ["blah"],
-        }
+        {"distributed_tracing.enabled": True, "span_events.enabled": True, "attributes.include": ["blah"]}
     )
     @background_task(name="test_each_segment_type")
     def _test():
-
         transaction = current_transaction()
         transaction._sampled = True
 
@@ -148,11 +124,7 @@ def test_each_segment_type(trace_type, args):
 
 
 @override_application_settings(
-    {
-        "distributed_tracing.enabled": True,
-        "span_events.enabled": True,
-        "attributes.include": ["*"],
-    }
+    {"distributed_tracing.enabled": True, "span_events.enabled": True, "attributes.include": ["*"]}
 )
 @background_task(name="test_attribute_overrides")
 def test_attribute_overrides():

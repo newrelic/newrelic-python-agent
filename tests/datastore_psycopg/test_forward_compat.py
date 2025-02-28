@@ -18,7 +18,7 @@ from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.hooks.database_psycopg import wrapper_psycopg_as_string
 
 
-class TestCompatability():
+class TestCompatability:
     def as_string(self, giraffe, lion, tiger=None):
         assert type(giraffe) in (psycopg.Cursor, psycopg.AsyncCursor)
         return "PASS"

@@ -13,9 +13,7 @@
 # limitations under the License.
 
 import pytest
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
@@ -25,11 +23,7 @@ SKLEARN_VERSION_GT_1_6_0 = SKLEARN_VERSION >= (1, 6, 0)
 
 
 @pytest.mark.parametrize(
-    "discriminant_analysis_model_name",
-    [
-        "LinearDiscriminantAnalysis",
-        "QuadraticDiscriminantAnalysis",
-    ],
+    "discriminant_analysis_model_name", ["LinearDiscriminantAnalysis", "QuadraticDiscriminantAnalysis"]
 )
 def test_model_methods_wrapped_in_function_trace(discriminant_analysis_model_name, run_discriminant_analysis_model):
     expected_scoped_metrics = {

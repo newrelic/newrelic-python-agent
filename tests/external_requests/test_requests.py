@@ -15,27 +15,12 @@
 import pytest
 import requests
 import requests.exceptions
-from testing_support.external_fixtures import (
-    cache_outgoing_headers,
-    insert_incoming_headers,
-)
-from testing_support.fixtures import (
-    cat_enabled,
-    override_application_settings,
-    validate_tt_parenting,
-)
-from testing_support.validators.validate_cross_process_headers import (
-    validate_cross_process_headers,
-)
-from testing_support.validators.validate_external_node_params import (
-    validate_external_node_params,
-)
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.external_fixtures import cache_outgoing_headers, insert_incoming_headers
+from testing_support.fixtures import cat_enabled, override_application_settings, validate_tt_parenting
+from testing_support.validators.validate_cross_process_headers import validate_cross_process_headers
+from testing_support.validators.validate_external_node_params import validate_external_node_params
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
@@ -59,12 +44,7 @@ def metrics(server):
     return scoped, rollup
 
 
-_test_requests_http_request_get_parenting = (
-    "TransactionNode",
-    [
-        ("ExternalNode", []),
-    ],
-)
+_test_requests_http_request_get_parenting = ("TransactionNode", [("ExternalNode", [])])
 
 
 def test_http_request_get(server, metrics):
@@ -175,14 +155,7 @@ def test_wrong_datatype_url_get():
         pass
 
 
-@pytest.mark.parametrize(
-    "distributed_tracing,span_events",
-    (
-        (True, True),
-        (True, False),
-        (False, False),
-    ),
-)
+@pytest.mark.parametrize("distributed_tracing,span_events", ((True, True), (True, False), (False, False)))
 def test_requests_cross_process_request(distributed_tracing, span_events, server):
     @validate_transaction_errors(errors=[])
     @background_task(name="test_requests:test_requests_cross_process_request")

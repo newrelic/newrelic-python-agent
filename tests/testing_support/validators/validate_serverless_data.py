@@ -13,20 +13,15 @@
 # limitations under the License.
 
 
-from newrelic.common.object_wrapper import (
-        transient_function_wrapper,
-        function_wrapper)
+from newrelic.common.object_wrapper import transient_function_wrapper, function_wrapper
 
 
-def validate_serverless_data(
-        expected_methods=(), forgone_methods=()):
-
+def validate_serverless_data(expected_methods=(), forgone_methods=()):
     @function_wrapper
     def _validate_wrapper(wrapped, instance, args, kwargs):
         payloads = []
 
-        @transient_function_wrapper('newrelic.common.agent_http',
-                'ServerlessModeClient.finalize')
+        @transient_function_wrapper("newrelic.common.agent_http", "ServerlessModeClient.finalize")
         def _capture(wrapped, instance, args, kwargs):
             payload = wrapped(*args, **kwargs)
             payloads.append(payload)
@@ -36,7 +31,7 @@ def validate_serverless_data(
             assert payloads
 
             for payload in payloads:
-                assert 'metric_data' in payload
+                assert "metric_data" in payload
 
                 for method in expected_methods:
                     assert method in payload

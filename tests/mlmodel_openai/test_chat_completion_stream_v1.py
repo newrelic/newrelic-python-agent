@@ -15,11 +15,7 @@
 import openai
 import pytest
 from conftest import get_openai_version  # pylint: disable=E0611
-from testing_support.fixtures import (
-    override_llm_token_callback_settings,
-    reset_core_stats_engine,
-    validate_attributes,
-)
+from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (  # noqa: F401
     add_token_count_to_events,
     disabled_ai_monitoring_record_content_settings,
@@ -33,9 +29,7 @@ from testing_support.ml_testing_utils import (  # noqa: F401
 )
 from testing_support.validators.validate_custom_event import validate_custom_event_count
 from testing_support.validators.validate_custom_events import validate_custom_events
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
@@ -149,9 +143,7 @@ chat_completion_recorded_events = [
 # @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
     name="test_chat_completion_stream_v1:test_openai_chat_completion_sync_with_llm_metadata",
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -177,14 +169,7 @@ def test_openai_chat_completion_sync_with_llm_metadata(set_trace_info, sync_open
 
 @SKIP_IF_NO_OPENAI_WITH_STREAMING_RESPONSE
 @reset_core_stats_engine()
-@pytest.mark.parametrize(
-    "stream_set, stream_val",
-    [
-        (False, None),
-        (True, True),
-        (True, False),
-    ],
-)
+@pytest.mark.parametrize("stream_set, stream_val", [(False, None), (True, True), (True, False)])
 @validate_transaction_metrics(
     name="test_chat_completion_stream_v1:test_openai_chat_completion_sync_with_llm_metadata_with_streaming_response_lines",
     # custom_metrics=[
@@ -212,21 +197,13 @@ def test_openai_chat_completion_sync_with_llm_metadata_with_streaming_response_l
         create_dict["stream"] = stream_val
 
     with sync_openai_client.chat.completions.with_streaming_response.create(**create_dict) as generator:
-
         for _ in generator.iter_lines():
             pass
 
 
 @SKIP_IF_NO_OPENAI_WITH_STREAMING_RESPONSE
 @reset_core_stats_engine()
-@pytest.mark.parametrize(
-    "stream_set, stream_val",
-    [
-        (False, None),
-        (True, True),
-        (True, False),
-    ],
-)
+@pytest.mark.parametrize("stream_set, stream_val", [(False, None), (True, True), (True, False)])
 @validate_transaction_metrics(
     name="test_chat_completion_stream_v1:test_openai_chat_completion_sync_with_llm_metadata_with_streaming_response_bytes",
     # custom_metrics=[
@@ -254,21 +231,13 @@ def test_openai_chat_completion_sync_with_llm_metadata_with_streaming_response_b
         create_dict["stream"] = stream_val
 
     with sync_openai_client.chat.completions.with_streaming_response.create(**create_dict) as generator:
-
         for _ in generator.iter_bytes():
             pass
 
 
 @SKIP_IF_NO_OPENAI_WITH_STREAMING_RESPONSE
 @reset_core_stats_engine()
-@pytest.mark.parametrize(
-    "stream_set, stream_val",
-    [
-        (False, None),
-        (True, True),
-        (True, False),
-    ],
-)
+@pytest.mark.parametrize("stream_set, stream_val", [(False, None), (True, True), (True, False)])
 @validate_transaction_metrics(
     name="test_chat_completion_stream_v1:test_openai_chat_completion_sync_with_llm_metadata_with_streaming_response_text",
     # custom_metrics=[
@@ -296,7 +265,6 @@ def test_openai_chat_completion_sync_with_llm_metadata_with_streaming_response_t
         create_dict["stream"] = stream_val
 
     with sync_openai_client.chat.completions.with_streaming_response.create(**create_dict) as generator:
-
         for _ in generator.iter_text():
             pass
 
@@ -308,9 +276,7 @@ def test_openai_chat_completion_sync_with_llm_metadata_with_streaming_response_t
 # @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
     name="test_chat_completion_stream_v1:test_openai_chat_completion_sync_no_content",
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -339,9 +305,7 @@ def test_openai_chat_completion_sync_no_content(set_trace_info, sync_openai_clie
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
     name="test_chat_completion_stream_v1:test_openai_chat_completion_sync_in_txn_with_llm_metadata_with_token_count",
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -393,9 +357,7 @@ def test_openai_chat_completion_sync_no_llm_metadata(set_trace_info, sync_openai
 @validate_custom_event_count(count=0)
 @validate_transaction_metrics(
     "test_chat_completion_stream_v1:test_openai_chat_completion_sync_ai_monitoring_streaming_disabled",
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
     rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
     background_task=True,
@@ -480,9 +442,7 @@ def test_openai_chat_completion_async_no_llm_metadata(loop, set_trace_info, asyn
     "test_chat_completion_stream_v1:test_openai_chat_completion_async_with_llm_metadata",
     scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
     rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -510,14 +470,7 @@ def test_openai_chat_completion_async_with_llm_metadata(loop, set_trace_info, as
 
 @SKIP_IF_NO_OPENAI_WITH_STREAMING_RESPONSE
 @reset_core_stats_engine()
-@pytest.mark.parametrize(
-    "stream_set, stream_val",
-    [
-        (False, None),
-        (True, True),
-        (True, False),
-    ],
-)
+@pytest.mark.parametrize("stream_set, stream_val", [(False, None), (True, True), (True, False)])
 # @validate_custom_events(chat_completion_recorded_events)
 # @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
@@ -549,7 +502,6 @@ def test_openai_chat_completion_async_with_llm_metadata_with_streaming_response_
 
     async def consumer():
         async with async_openai_client.chat.completions.with_streaming_response.create(**create_dict) as generator:
-
             async for _ in generator.iter_lines():
                 pass
 
@@ -558,14 +510,7 @@ def test_openai_chat_completion_async_with_llm_metadata_with_streaming_response_
 
 @SKIP_IF_NO_OPENAI_WITH_STREAMING_RESPONSE
 @reset_core_stats_engine()
-@pytest.mark.parametrize(
-    "stream_set, stream_val",
-    [
-        (False, None),
-        (True, True),
-        (True, False),
-    ],
-)
+@pytest.mark.parametrize("stream_set, stream_val", [(False, None), (True, True), (True, False)])
 # @validate_custom_events(chat_completion_recorded_events)
 # @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
@@ -597,7 +542,6 @@ def test_openai_chat_completion_async_with_llm_metadata_with_streaming_response_
 
     async def consumer():
         async with async_openai_client.chat.completions.with_streaming_response.create(**create_dict) as generator:
-
             async for _ in generator.iter_bytes():
                 pass
 
@@ -606,14 +550,7 @@ def test_openai_chat_completion_async_with_llm_metadata_with_streaming_response_
 
 @SKIP_IF_NO_OPENAI_WITH_STREAMING_RESPONSE
 @reset_core_stats_engine()
-@pytest.mark.parametrize(
-    "stream_set, stream_val",
-    [
-        (False, None),
-        (True, True),
-        (True, False),
-    ],
-)
+@pytest.mark.parametrize("stream_set, stream_val", [(False, None), (True, True), (True, False)])
 # @validate_custom_events(chat_completion_recorded_events)
 # @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
@@ -645,7 +582,6 @@ def test_openai_chat_completion_async_with_llm_metadata_with_streaming_response_
 
     async def consumer():
         async with async_openai_client.chat.completions.with_streaming_response.create(**create_dict) as generator:
-
             async for _ in generator.iter_text():
                 pass
 
@@ -660,9 +596,7 @@ def test_openai_chat_completion_async_with_llm_metadata_with_streaming_response_
     "test_chat_completion_stream_v1:test_openai_chat_completion_async_no_content",
     scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
     rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -693,9 +627,7 @@ def test_openai_chat_completion_async_no_content(loop, set_trace_info, async_ope
 # @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
     name="test_chat_completion_stream_v1:test_openai_chat_completion_async_with_token_count",
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -724,9 +656,7 @@ def test_openai_chat_completion_async_with_token_count(set_trace_info, loop, asy
 @validate_custom_event_count(count=0)
 @validate_transaction_metrics(
     "test_chat_completion_stream_v1:test_openai_chat_completion_async_ai_monitoring_streaming_disabled",
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
     rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
     background_task=True,

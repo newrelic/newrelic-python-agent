@@ -15,12 +15,8 @@
 import elasticsearch.client
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
@@ -29,12 +25,8 @@ from conftest import ES_VERSION, ES_SETTINGS
 
 # Settings
 
-_enable_instance_settings = {
-    "datastore_tracer.instance_reporting.enabled": True,
-}
-_disable_instance_settings = {
-    "datastore_tracer.instance_reporting.enabled": False,
-}
+_enable_instance_settings = {"datastore_tracer.instance_reporting.enabled": True}
+_disable_instance_settings = {"datastore_tracer.instance_reporting.enabled": False}
 
 # Metrics
 
@@ -65,6 +57,7 @@ _base_rollup_metrics = [
 ]
 
 # Version support
+
 
 def is_importable(module_path):
     try:
@@ -212,6 +205,7 @@ _exercise_es = _exercise_es_v7 if ES_VERSION < (8, 0, 0) else _exercise_es_v8
 
 
 # Test
+
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(

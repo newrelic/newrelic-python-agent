@@ -13,9 +13,7 @@
 # limitations under the License.
 
 import pytest
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
@@ -52,10 +50,7 @@ def test_below_v1_1_model_methods_wrapped_in_function_trace(cluster_model_name, 
         ],
         "Birch": [
             ("Function/MLModel/Sklearn/Named/Birch.fit", 2),
-            (
-                "Function/MLModel/Sklearn/Named/Birch.predict",
-                1 if SKLEARN_VERSION >= (1, 0, 0) else 3,
-            ),
+            ("Function/MLModel/Sklearn/Named/Birch.predict", 1 if SKLEARN_VERSION >= (1, 0, 0) else 3),
             ("Function/MLModel/Sklearn/Named/Birch.fit_predict", 1),
             ("Function/MLModel/Sklearn/Named/Birch.transform", 1),
         ],
@@ -83,12 +78,8 @@ def test_below_v1_1_model_methods_wrapped_in_function_trace(cluster_model_name, 
             ("Function/MLModel/Sklearn/Named/MiniBatchKMeans.predict", 1),
             ("Function/MLModel/Sklearn/Named/MiniBatchKMeans.fit_predict", 1),
         ],
-        "SpectralBiclustering": [
-            ("Function/MLModel/Sklearn/Named/SpectralBiclustering.fit", 1),
-        ],
-        "SpectralCoclustering": [
-            ("Function/MLModel/Sklearn/Named/SpectralCoclustering.fit", 1),
-        ],
+        "SpectralBiclustering": [("Function/MLModel/Sklearn/Named/SpectralBiclustering.fit", 1)],
+        "SpectralCoclustering": [("Function/MLModel/Sklearn/Named/SpectralCoclustering.fit", 1)],
         "SpectralClustering": [
             ("Function/MLModel/Sklearn/Named/SpectralClustering.fit", 2),
             ("Function/MLModel/Sklearn/Named/SpectralClustering.fit_predict", 1),
@@ -109,13 +100,7 @@ def test_below_v1_1_model_methods_wrapped_in_function_trace(cluster_model_name, 
 
 
 @pytest.mark.skipif(SKLEARN_VERSION < (1, 1, 0), reason="Requires sklearn > 1.1")
-@pytest.mark.parametrize(
-    "cluster_model_name",
-    [
-        "BisectingKMeans",
-        "OPTICS",
-    ],
-)
+@pytest.mark.parametrize("cluster_model_name", ["BisectingKMeans", "OPTICS"])
 def test_above_v1_1_model_methods_wrapped_in_function_trace(cluster_model_name, run_cluster_model):
     expected_scoped_metrics = {
         "BisectingKMeans": [

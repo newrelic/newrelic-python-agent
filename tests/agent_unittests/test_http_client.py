@@ -72,10 +72,7 @@ class InsecureServer(MockExternalHTTPServer):
 
         handler = type(
             "ResponseHandler",
-            (
-                BaseHTTPRequestHandler,
-                object,
-            ),
+            (BaseHTTPRequestHandler, object),
             {"do_GET": handler, "do_POST": handler, "do_CONNECT": do_CONNECT},
         )
         self.httpd = HTTPServer(("localhost", self.port), handler)
@@ -98,9 +95,7 @@ class SecureServer(InsecureServer):
             self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
             self.context.load_cert_chain(certfile=CERT_PATH, keyfile=CERT_PATH)
             self.httpd.socket = self.context.wrap_socket(
-                sock=self.httpd.socket,
-                server_side=True,
-                do_handshake_on_connect=False,
+                sock=self.httpd.socket, server_side=True, do_handshake_on_connect=False
             )
         except (AttributeError, TypeError):
             self.httpd.socket = ssl.wrap_socket(
@@ -130,22 +125,8 @@ def insecure_server():
         (None, "host", 0, None, None, None),
         ("http", None, 8080, None, None, None),
         ("http", "host", 0, None, None, Url(scheme="http", host="host", port=None)),
-        (
-            "http",
-            "host",
-            8080,
-            None,
-            None,
-            Url(scheme="http", host="host", port=8080),
-        ),
-        (
-            "http",
-            "https://host:8081",
-            8080,
-            None,
-            None,
-            Url(scheme="https", host="host", port=8081),
-        ),
+        ("http", "host", 8080, None, None, Url(scheme="http", host="host", port=8080)),
+        ("http", "https://host:8081", 8080, None, None, Url(scheme="https", host="host", port=8081)),
         (
             "http",
             "https://user:pass@host:8081",
@@ -154,14 +135,7 @@ def insecure_server():
             None,
             Url(scheme="https", host="host", port=8081, auth="user:pass"),
         ),
-        (
-            "https",
-            "host",
-            8081,
-            "username",
-            None,
-            Url(scheme="https", auth="username", host="host", port=8081),
-        ),
+        ("https", "host", 8081, "username", None, Url(scheme="https", auth="username", host="host", port=8081)),
         (
             "https",
             "host",
@@ -233,11 +207,7 @@ def test_non_ok_response(client_cls, server):
 
 
 def test_http_close_connection(server):
-    client = HttpClient(
-        "localhost",
-        server.port,
-        disable_certificate_validation=True,
-    )
+    client = HttpClient("localhost", server.port, disable_certificate_validation=True)
 
     status, _ = client.send_request()
     assert status == 200
@@ -300,14 +270,8 @@ def test_http_payload_compression(server, client_cls, method, threshold):
     payload_byte_len = len(sent_payload)
     internal_metrics = dict(internal_metrics.metrics())
     if client_cls is ApplicationModeClient:
-        assert internal_metrics["Supportability/Python/Collector/method1/Output/Bytes"][:2] == [
-            1,
-            len(payload),
-        ]
-        assert internal_metrics["Supportability/Python/Collector/Output/Bytes"][:2] == [
-            2,
-            len(payload) * 2,
-        ]
+        assert internal_metrics["Supportability/Python/Collector/method1/Output/Bytes"][:2] == [1, len(payload)]
+        assert internal_metrics["Supportability/Python/Collector/Output/Bytes"][:2] == [2, len(payload) * 2]
 
         if threshold < 20:
             # Verify compression time is recorded
@@ -445,11 +409,7 @@ def test_non_ssl_via_ssl_proxy(server):
 
 def test_non_ssl_via_non_ssl_proxy(insecure_server):
     with InsecureHttpClient(
-        "localhost",
-        1,
-        proxy_scheme="http",
-        proxy_host="localhost",
-        proxy_port=insecure_server.port,
+        "localhost", 1, proxy_scheme="http", proxy_host="localhost", proxy_port=insecure_server.port
     ) as client:
         status, data = client.send_request()
 
@@ -552,10 +512,7 @@ def test_serverless_mode_client():
     with ServerlessModeClient("localhost", 1) as client:
         for method in methods:
             params = {"method": method}
-            status, data = client.send_request(
-                params=params,
-                payload=json.dumps({"method": method}).encode("utf-8"),
-            )
+            status, data = client.send_request(params=params, payload=json.dumps({"method": method}).encode("utf-8"))
 
             assert status == 200
             assert json.loads(data.decode("utf-8"))

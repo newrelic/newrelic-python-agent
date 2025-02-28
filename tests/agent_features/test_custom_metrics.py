@@ -19,11 +19,7 @@ from testing_support.validators.validate_custom_metrics_outside_transaction impo
 
 from newrelic.api.application import application_instance as application
 from newrelic.api.background_task import background_task
-from newrelic.api.transaction import (
-    current_transaction,
-    record_custom_metric,
-    record_custom_metrics,
-)
+from newrelic.api.transaction import current_transaction, record_custom_metric, record_custom_metrics
 
 
 # Testing record_custom_metric

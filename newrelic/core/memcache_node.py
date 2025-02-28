@@ -19,16 +19,26 @@ import newrelic.core.trace_node
 from newrelic.core.node_mixin import GenericNodeMixin
 from newrelic.core.metric import TimeMetric
 
-_MemcacheNode = namedtuple('_MemcacheNode',
-        ['command', 'children', 'start_time', 'end_time', 'duration',
-        'exclusive', 'guid', 'agent_attributes', 'user_attributes'])
+_MemcacheNode = namedtuple(
+    "_MemcacheNode",
+    [
+        "command",
+        "children",
+        "start_time",
+        "end_time",
+        "duration",
+        "exclusive",
+        "guid",
+        "agent_attributes",
+        "user_attributes",
+    ],
+)
 
 
 class MemcacheNode(_MemcacheNode, GenericNodeMixin):
-
     @property
     def name(self):
-        return f'Memcache/{self.command}'
+        return f"Memcache/{self.command}"
 
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this
@@ -36,23 +46,18 @@ class MemcacheNode(_MemcacheNode, GenericNodeMixin):
 
         """
 
-        yield TimeMetric(name='Memcache/all', scope='',
-                duration=self.duration, exclusive=self.exclusive)
+        yield TimeMetric(name="Memcache/all", scope="", duration=self.duration, exclusive=self.exclusive)
 
-        if root.type == 'WebTransaction':
-            yield TimeMetric(name='Memcache/allWeb', scope='',
-                    duration=self.duration, exclusive=self.exclusive)
+        if root.type == "WebTransaction":
+            yield TimeMetric(name="Memcache/allWeb", scope="", duration=self.duration, exclusive=self.exclusive)
         else:
-            yield TimeMetric(name='Memcache/allOther', scope='',
-                    duration=self.duration, exclusive=self.exclusive)
+            yield TimeMetric(name="Memcache/allOther", scope="", duration=self.duration, exclusive=self.exclusive)
 
-        name = f'Memcache/{self.command}'
+        name = f"Memcache/{self.command}"
 
-        yield TimeMetric(name=name, scope='', duration=self.duration,
-                  exclusive=self.exclusive)
+        yield TimeMetric(name=name, scope="", duration=self.duration, exclusive=self.exclusive)
 
-        yield TimeMetric(name=name, scope=root.path,
-                duration=self.duration, exclusive=self.exclusive)
+        yield TimeMetric(name=name, scope=root.path, duration=self.duration, exclusive=self.exclusive)
 
     def trace_node(self, stats, root, connections):
         name = root.string_table.cache(self.name)
@@ -67,6 +72,6 @@ class MemcacheNode(_MemcacheNode, GenericNodeMixin):
         # Agent attributes
         params = self.get_trace_segment_params(root.settings)
 
-        return newrelic.core.trace_node.TraceNode(start_time=start_time,
-                end_time=end_time, name=name, params=params, children=children,
-                label=None)
+        return newrelic.core.trace_node.TraceNode(
+            start_time=start_time, end_time=end_time, name=name, params=params, children=children, label=None
+        )

@@ -25,28 +25,13 @@ from graphql import (
 )
 
 authors = [
-    {
-        "first_name": "New",
-        "last_name": "Relic",
-    },
-    {
-        "first_name": "Bob",
-        "last_name": "Smith",
-    },
-    {
-        "first_name": "Leslie",
-        "last_name": "Jones",
-    },
+    {"first_name": "New", "last_name": "Relic"},
+    {"first_name": "Bob", "last_name": "Smith"},
+    {"first_name": "Leslie", "last_name": "Jones"},
 ]
 
 books = [
-    {
-        "id": 1,
-        "name": "Python Agent: The Book",
-        "isbn": "a-fake-isbn",
-        "author": authors[0],
-        "branch": "riverside",
-    },
+    {"id": 1, "name": "Python Agent: The Book", "isbn": "a-fake-isbn", "author": authors[0], "branch": "riverside"},
     {
         "id": 2,
         "name": "Ollies for O11y: A Sk8er's Guide to Observability",
@@ -54,13 +39,7 @@ books = [
         "author": authors[1],
         "branch": "downtown",
     },
-    {
-        "id": 3,
-        "name": "[Redacted]",
-        "isbn": "a-third-fake-isbn",
-        "author": authors[2],
-        "branch": "riverside",
-    },
+    {"id": 3, "name": "[Redacted]", "isbn": "a-third-fake-isbn", "author": authors[2], "branch": "riverside"},
 ]
 
 magazines = [
@@ -104,11 +83,7 @@ def resolve_search(parent, info, contains):
 
 
 Author = GraphQLObjectType(
-    "Author",
-    {
-        "first_name": GraphQLField(GraphQLString),
-        "last_name": GraphQLField(GraphQLString),
-    },
+    "Author", {"first_name": GraphQLField(GraphQLString), "last_name": GraphQLField(GraphQLString)}
 )
 
 Book = GraphQLObjectType(
@@ -160,27 +135,18 @@ def resolve_error(root, info):
 
 hello_field = GraphQLField(GraphQLString, resolve=resolve_hello)
 library_field = GraphQLField(
-    Library,
-    resolve=resolve_library,
-    args={"index": GraphQLArgument(GraphQLNonNull(GraphQLInt))},
+    Library, resolve=resolve_library, args={"index": GraphQLArgument(GraphQLNonNull(GraphQLInt))}
 )
 search_field = GraphQLField(
     GraphQLList(GraphQLUnionType("Item", (Book, Magazine), resolve_type=resolve_search)),
     args={"contains": GraphQLArgument(GraphQLNonNull(GraphQLString))},
 )
 echo_field = GraphQLField(
-    GraphQLString,
-    resolve=resolve_echo,
-    args={"echo": GraphQLArgument(GraphQLNonNull(GraphQLString))},
+    GraphQLString, resolve=resolve_echo, args={"echo": GraphQLArgument(GraphQLNonNull(GraphQLString))}
 )
-storage_field = GraphQLField(
-    Storage,
-    resolve=resolve_storage,
-)
+storage_field = GraphQLField(Storage, resolve=resolve_storage)
 storage_add_field = GraphQLField(
-    GraphQLString,
-    resolve=resolve_storage_add,
-    args={"string": GraphQLArgument(GraphQLNonNull(GraphQLString))},
+    GraphQLString, resolve=resolve_storage_add, args={"string": GraphQLArgument(GraphQLNonNull(GraphQLString))}
 )
 error_field = GraphQLField(GraphQLString, resolve=resolve_error)
 error_non_null_field = GraphQLField(GraphQLNonNull(GraphQLString), resolve=resolve_error)
@@ -200,11 +166,6 @@ query = GraphQLObjectType(
     },
 )
 
-mutation = GraphQLObjectType(
-    name="Mutation",
-    fields={
-        "storage_add": storage_add_field,
-    },
-)
+mutation = GraphQLObjectType(name="Mutation", fields={"storage_add": storage_add_field})
 
 target_schema = GraphQLSchema(query=query, mutation=mutation)

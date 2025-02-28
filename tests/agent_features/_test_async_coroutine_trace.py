@@ -19,9 +19,7 @@ import time
 
 import pytest
 from testing_support.fixtures import capture_transaction_metrics
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.api.database_trace import database_trace
@@ -90,7 +88,6 @@ def test_awaitable_timing(event_loop, trace, metric):
 @pytest.mark.parametrize("use_await", [True, False])
 @pytest.mark.parametrize("coro_decorator_first", [True, False])
 def test_asyncio_decorator_timing(event_loop, trace, metric, yield_from, use_await, coro_decorator_first):
-
     if yield_from:
 
         def coro():

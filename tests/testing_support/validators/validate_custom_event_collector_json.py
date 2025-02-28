@@ -55,7 +55,7 @@ def validate_custom_event_collector_json(num_events=1):
         assert decoded_sampling_info["events_seen"] == num_events
         assert len(decoded_events) == num_events
 
-        for (intrinsics, attributes) in decoded_events:
+        for intrinsics, attributes in decoded_events:
             assert isinstance(intrinsics, dict)
             assert isinstance(attributes, dict)
 

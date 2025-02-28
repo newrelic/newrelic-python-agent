@@ -286,11 +286,7 @@ def test_no_delay_on_ok(mock_grpc_server, monkeypatch, app, batching):
     monkeypatch.setattr(StreamingRpc, "condition", condition)
     monkeypatch.setattr(StreamingRpc, "create_channel", create_channel)
 
-    span = Span(
-        intrinsics={"status_code": AttributeValue(string_value="OK")},
-        agent_attributes={},
-        user_attributes={},
-    )
+    span = Span(intrinsics={"status_code": AttributeValue(string_value="OK")}, agent_attributes={}, user_attributes={})
 
     @override_generic_settings(
         settings,
@@ -422,11 +418,7 @@ def test_span_supportability_metrics(mock_grpc_server, monkeypatch, app, dropped
 
     monkeypatch.setattr(StreamBuffer, "condition", condition)
 
-    span = Span(
-        intrinsics={},
-        agent_attributes={},
-        user_attributes={},
-    )
+    span = Span(intrinsics={}, agent_attributes={}, user_attributes={})
 
     @override_generic_settings(
         settings,

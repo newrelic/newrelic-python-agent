@@ -17,9 +17,7 @@ import logging
 import pytest
 from testing_support.fixtures import dt_enabled
 from testing_support.validators.validate_span_events import validate_span_events
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.api.database_trace import DatabaseTrace
@@ -34,9 +32,7 @@ from newrelic.api.transaction import current_transaction, end_of_transaction
 
 
 @validate_transaction_metrics(
-    "test_trace_after_end_of_transaction",
-    background_task=True,
-    scoped_metrics=[("Function/foobar", None)],
+    "test_trace_after_end_of_transaction", background_task=True, scoped_metrics=[("Function/foobar", None)]
 )
 @background_task(name="test_trace_after_end_of_transaction")
 def test_trace_after_end_of_transaction(caplog):
@@ -90,11 +86,7 @@ def test_trace_finalizes_with_transaction_missing_settings(monkeypatch, trace_ty
     ),
 )
 @dt_enabled
-@validate_span_events(
-    count=1,
-    expected_users=["foo"],
-    unexpected_users=["drop-me"],
-)
+@validate_span_events(count=1, expected_users=["foo"], unexpected_users=["drop-me"])
 @background_task()
 def test_trace_filters_out_invalid_attributes(trace_type, args):
     txn = current_transaction()

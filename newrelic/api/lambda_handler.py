@@ -28,23 +28,18 @@ MEGABYTE_IN_BYTES = 2**20
 
 def extract_event_source_arn(event):
     try:
-        arn = event.get('streamArn') or \
-              event.get('deliveryStreamArn')
+        arn = event.get("streamArn") or event.get("deliveryStreamArn")
 
         if not arn:
-            record = event['Records'][0]
-            arn = record.get('eventSourceARN') or \
-                  record.get('EventSubscriptionArn') or \
-                  record['s3']['bucket']['arn']
+            record = event["Records"][0]
+            arn = record.get("eventSourceARN") or record.get("EventSubscriptionArn") or record["s3"]["bucket"]["arn"]
 
         return truncate(str(arn))
     except Exception:
         pass
 
 
-def _LambdaHandlerWrapper(wrapped, application=None, name=None,
-        group=None):
-
+def _LambdaHandlerWrapper(wrapped, application=None, name=None, group=None):
     def _nr_lambda_handler_wrapper_(wrapped, instance, args, kwargs):
         # Check to see if any transaction is present, even an inactive
         # one which has been marked to be ignored or which has been
@@ -68,14 +63,14 @@ def _LambdaHandlerWrapper(wrapped, application=None, name=None,
 
         # FIXME Should this allow for multiple apps if a string.
 
-        if not hasattr(application, 'activate'):
+        if not hasattr(application, "activate"):
             target_application = application_instance(application)
 
         try:
-            request_method = event['httpMethod']
-            request_path = event['path']
-            headers = event['headers']
-            query_params = event.get('multiValueQueryStringParameters')
+            request_method = event["httpMethod"]
+            request_path = event["path"]
+            headers = event["headers"]
+            query_params = event.get("multiValueQueryStringParameters")
             background_task = False
         except Exception:
             request_method = None
@@ -84,29 +79,29 @@ def _LambdaHandlerWrapper(wrapped, application=None, name=None,
             query_params = None
             background_task = True
 
-        transaction_name = name or getattr(context, 'function_name', None)
+        transaction_name = name or getattr(context, "function_name", None)
 
         transaction = WebTransaction(
-                target_application,
-                transaction_name,
-                group=group,
-                request_method=request_method,
-                request_path=request_path,
-                headers=headers)
+            target_application,
+            transaction_name,
+            group=group,
+            request_method=request_method,
+            request_path=request_path,
+            headers=headers,
+        )
 
         transaction.background_task = background_task
 
-        request_id = getattr(context, 'aws_request_id', None)
-        aws_arn = getattr(context, 'invoked_function_arn', None)
+        request_id = getattr(context, "aws_request_id", None)
+        aws_arn = getattr(context, "invoked_function_arn", None)
         event_source = extract_event_source_arn(event)
 
         if request_id:
-            transaction._add_agent_attribute('aws.requestId', request_id)
+            transaction._add_agent_attribute("aws.requestId", request_id)
         if aws_arn:
-            transaction._add_agent_attribute('aws.lambda.arn', aws_arn)
+            transaction._add_agent_attribute("aws.lambda.arn", aws_arn)
         if event_source:
-            transaction._add_agent_attribute(
-                    'aws.lambda.eventSource.arn', event_source)
+            transaction._add_agent_attribute("aws.lambda.eventSource.arn", event_source)
 
         # COLD_START_RECORDED is initialized to "False" when the container
         # first starts up, and will remain that way until the below lines
@@ -118,7 +113,7 @@ def _LambdaHandlerWrapper(wrapped, application=None, name=None,
 
         global COLD_START_RECORDED
         if COLD_START_RECORDED is False:
-            transaction._add_agent_attribute('aws.lambda.coldStart', True)
+            transaction._add_agent_attribute("aws.lambda.coldStart", True)
             COLD_START_RECORDED = True
 
         settings = global_settings()
@@ -129,15 +124,15 @@ def _LambdaHandlerWrapper(wrapped, application=None, name=None,
                 pass
 
         if not settings.aws_lambda_metadata and aws_arn:
-            settings.aws_lambda_metadata['arn'] = aws_arn
+            settings.aws_lambda_metadata["arn"] = aws_arn
 
         with transaction:
             result = wrapped(*args, **kwargs)
 
             if not background_task:
                 try:
-                    status_code = result.get('statusCode')
-                    response_headers = result.get('headers')
+                    status_code = result.get("statusCode")
+                    response_headers = result.get("headers")
 
                     try:
                         response_headers = response_headers.items()
@@ -154,21 +149,21 @@ def _LambdaHandlerWrapper(wrapped, application=None, name=None,
 
 
 def LambdaHandlerWrapper(*args, **kwargs):
-
-    warnings.warn((
-        'The LambdaHandlerWrapper API has been deprecated. Please use the '
-        'APIs provided in the newrelic-lambda package.'
-    ), DeprecationWarning)
+    warnings.warn(
+        (
+            "The LambdaHandlerWrapper API has been deprecated. Please use the "
+            "APIs provided in the newrelic-lambda package."
+        ),
+        DeprecationWarning,
+    )
 
     return _LambdaHandlerWrapper(*args, **kwargs)
 
 
 def lambda_handler(application=None, name=None, group=None):
+    warnings.warn(
+        ("The lambda_handler API has been deprecated. Please use the APIs provided in the newrelic-lambda package."),
+        DeprecationWarning,
+    )
 
-    warnings.warn((
-        'The lambda_handler API has been deprecated. Please use the '
-        'APIs provided in the newrelic-lambda package.'
-    ), DeprecationWarning)
-
-    return functools.partial(_LambdaHandlerWrapper, application=application,
-            name=name, group=group)
+    return functools.partial(_LambdaHandlerWrapper, application=application, name=name, group=group)

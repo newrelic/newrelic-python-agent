@@ -14,18 +14,10 @@
 
 import re
 
-from newrelic.api.datastore_trace import (
-    DatastoreTrace,
-    DatastoreTraceWrapper,
-    wrap_datastore_trace,
-)
+from newrelic.api.datastore_trace import DatastoreTrace, DatastoreTraceWrapper, wrap_datastore_trace
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
-from newrelic.common.async_wrapper import (
-    async_generator_wrapper,
-    coroutine_wrapper,
-    generator_wrapper,
-)
+from newrelic.common.async_wrapper import async_generator_wrapper, coroutine_wrapper, generator_wrapper
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
 _valkey_client_sync_methods = {
@@ -491,18 +483,11 @@ _valkey_client_async_methods = {
     "zunionstore",
 }
 
-_valkey_client_gen_methods = {
-    "scan_iter",
-    "hscan_iter",
-    "sscan_iter",
-    "zscan_iter",
-}
+_valkey_client_gen_methods = {"scan_iter", "hscan_iter", "sscan_iter", "zscan_iter"}
 
 _valkey_client_methods = _valkey_client_sync_methods.union(_valkey_client_async_methods)
 
-_valkey_multipart_commands = set(
-    ["client", "cluster", "command", "config", "debug", "sentinel", "slowlog", "script"]
-)
+_valkey_multipart_commands = set(["client", "cluster", "command", "config", "debug", "sentinel", "slowlog", "script"])
 
 _valkey_operation_re = re.compile(r"[-\s]+")
 
@@ -531,14 +516,7 @@ def _wrap_Valkey_method_wrapper_(module, instance_class_name, operation):
     else:
         async_wrapper = None
 
-    wrap_datastore_trace(
-        module,
-        name,
-        product="Valkey",
-        target=None,
-        operation=operation,
-        async_wrapper=async_wrapper,
-    )
+    wrap_datastore_trace(module, name, product="Valkey", target=None, operation=operation, async_wrapper=async_wrapper)
 
 
 def _wrap_asyncio_Valkey_method_wrapper(module, instance_class_name, operation):
@@ -550,11 +528,7 @@ def _wrap_asyncio_Valkey_method_wrapper(module, instance_class_name, operation):
 
         # Method should be run when awaited or iterated, therefore we wrap in an async wrapper.
         return DatastoreTraceWrapper(
-            wrapped,
-            product="Valkey",
-            target=None,
-            operation=operation,
-            async_wrapper=async_wrapper,
+            wrapped, product="Valkey", target=None, operation=operation, async_wrapper=async_wrapper
         )(*args, **kwargs)
 
     name = f"{instance_class_name}.{operation}"
@@ -614,12 +588,7 @@ async def wrap_async_Connection_send_command(wrapped, instance, args, kwargs):
     operation = _valkey_operation_re.sub("_", operation)
 
     with DatastoreTrace(
-        product="Valkey",
-        target=None,
-        operation=operation,
-        host=host,
-        port_path_or_id=port_path_or_id,
-        database_name=db,
+        product="Valkey", target=None, operation=operation, host=host, port_path_or_id=port_path_or_id, database_name=db
     ):
         return await wrapped(*args, **kwargs)
 
@@ -748,14 +717,10 @@ def _instrument_valkey_commands_module(module, class_name):
 def instrument_valkey_connection(module):
     if hasattr(module, "Connection"):
         if hasattr(module.Connection, "send_command"):
-            wrap_function_wrapper(
-                module, "Connection.send_command", _nr_Connection_send_command_wrapper_
-            )
+            wrap_function_wrapper(module, "Connection.send_command", _nr_Connection_send_command_wrapper_)
 
 
 def instrument_asyncio_valkey_connection(module):
     if hasattr(module, "Connection"):
         if hasattr(module.Connection, "send_command"):
-            wrap_function_wrapper(
-                module, "Connection.send_command", wrap_async_Connection_send_command
-            )
+            wrap_function_wrapper(module, "Connection.send_command", wrap_async_Connection_send_command)

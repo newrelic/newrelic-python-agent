@@ -38,10 +38,7 @@ def cursor(loop, connection):
 
 
 _quoting_style_tests = [
-    (
-        f"SELECT * FROM {DB_SETTINGS['table_name']} WHERE b='2'",
-        f"SELECT * FROM {DB_SETTINGS['table_name']} WHERE b=?",
-    ),
+    (f"SELECT * FROM {DB_SETTINGS['table_name']} WHERE b='2'", f"SELECT * FROM {DB_SETTINGS['table_name']} WHERE b=?"),
     (
         f"SELECT * FROM {DB_SETTINGS['table_name']} WHERE b=$func$2$func$",
         f"SELECT * FROM {DB_SETTINGS['table_name']} WHERE b=?",
@@ -64,10 +61,7 @@ def test_obfuscation_quoting_styles(loop, cursor, sql, obfuscated):
 
 
 _parameter_tests = [
-    (
-        f"SELECT * FROM {DB_SETTINGS['table_name']} where b=%s",
-        f"SELECT * FROM {DB_SETTINGS['table_name']} where b=%s",
-    ),
+    (f"SELECT * FROM {DB_SETTINGS['table_name']} where b=%s", f"SELECT * FROM {DB_SETTINGS['table_name']} where b=%s")
 ]
 
 
@@ -109,14 +103,8 @@ _test_explain_plans = [
     (f";SELECT (b, c) FROM {DB_SETTINGS['table_name']}", no_explain_plan),
     (f"SELECT (b, c) FROM  {DB_SETTINGS['table_name']}", any_length_explain_plan),
     (f"SELECT (b, c) FROM  {DB_SETTINGS['table_name']};", any_length_explain_plan),
-    (
-        f"SELECT (b, c) FROM  {DB_SETTINGS['table_name']};;;;;;",
-        any_length_explain_plan,
-    ),
-    (
-        f"SELECT (b, c) FROM  {DB_SETTINGS['table_name']};\n\n",
-        any_length_explain_plan,
-    ),
+    (f"SELECT (b, c) FROM  {DB_SETTINGS['table_name']};;;;;;", any_length_explain_plan),
+    (f"SELECT (b, c) FROM  {DB_SETTINGS['table_name']};\n\n", any_length_explain_plan),
 ]
 
 

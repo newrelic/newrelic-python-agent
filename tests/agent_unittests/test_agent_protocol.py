@@ -64,12 +64,7 @@ ERROR_EVENT_DATA = 100
 
 class HttpClientException(DeveloperModeClient):
     def send_request(
-        self,
-        method="POST",
-        path="/agent_listener/invoke_raw_method",
-        params=None,
-        headers=None,
-        payload=None,
+        self, method="POST", path="/agent_listener/invoke_raw_method", params=None, headers=None, payload=None
     ):
         raise NetworkInterfaceException
 
@@ -166,10 +161,7 @@ def test_send(status_code):
         "run_id": "RUN_TOKEN",
     }
 
-    assert request.headers == {
-        "Content-Type": "application/json",
-        "custom-header": "value",
-    }
+    assert request.headers == {"Content-Type": "application/json", "custom-header": "value"}
 
     assert request.payload == b"[1,2,3]"
 
@@ -204,11 +196,7 @@ def test_send(status_code):
 def test_status_code_exceptions(status_code, expected_exc, log_level, caplog):
     caplog.set_level(logging.INFO)
     HttpClientRecorder.STATUS_CODE = status_code
-    settings = finalize_application_settings(
-        {
-            "license_key": "123LICENSEKEY",
-        }
-    )
+    settings = finalize_application_settings({"license_key": "123LICENSEKEY"})
     protocol = AgentProtocol(settings, client_cls=HttpClientRecorder)
 
     internal_metrics = CustomMetrics()
@@ -418,13 +406,7 @@ def test_connect(with_aws, with_ecs, with_pcf, with_gcp, with_azure, with_docker
             },
         }
     )
-    protocol = AgentProtocol.connect(
-        APP_NAME,
-        LINKED_APPS,
-        ENVIRONMENT,
-        settings,
-        client_cls=HttpClientRecorder,
-    )
+    protocol = AgentProtocol.connect(APP_NAME, LINKED_APPS, ENVIRONMENT, settings, client_cls=HttpClientRecorder)
 
     # verify there are exactly 3 calls to HttpClientRecorder
     assert len(HttpClientRecorder.SENT) == 3
@@ -475,11 +457,7 @@ def test_connect_metadata(monkeypatch):
     monkeypatch.setenv("NEW_RELIC_METADATA_FOOBAR", "foobar")
     monkeypatch.setenv("_NEW_RELIC_METADATA_WRONG", "wrong")
     AgentProtocol.connect(
-        APP_NAME,
-        LINKED_APPS,
-        ENVIRONMENT,
-        finalize_application_settings(),
-        client_cls=HttpClientRecorder,
+        APP_NAME, LINKED_APPS, ENVIRONMENT, finalize_application_settings(), client_cls=HttpClientRecorder
     )
     connect = HttpClientRecorder.SENT[1]
     assert connect.params["method"] == "connect"
@@ -490,11 +468,7 @@ def test_connect_metadata(monkeypatch):
 def test_serverless_protocol_connect():
     settings = global_settings()
     protocol = ServerlessModeProtocol.connect(
-        "testapp",
-        ["foo"],
-        [("Agent Version", "test")],
-        settings,
-        client_cls=HttpClientRecorder,
+        "testapp", ["foo"], [("Agent Version", "test")], settings, client_cls=HttpClientRecorder
     )
 
     # No client calls should be made
@@ -541,13 +515,7 @@ def test_audit_logging():
     assert len(audit_log_contents) > 2
 
 
-@pytest.mark.parametrize(
-    "ca_bundle_path",
-    (
-        None,
-        "custom",
-    ),
-)
+@pytest.mark.parametrize("ca_bundle_path", (None, "custom"))
 def test_ca_bundle_path(monkeypatch, ca_bundle_path):
     # Pretend CA certificates are not available
     class DefaultVerifyPaths:

@@ -62,14 +62,14 @@ def log_buffer_with_stack_trace(caplog):
     _logger.removeHandler(_handler)
 
 
-class NonPrintableObject():
+class NonPrintableObject:
     def __str__(self):
         raise RuntimeError("Unable to print object.")
 
     __repr__ = __str__
 
 
-class NonSerializableObject():
+class NonSerializableObject:
     def __str__(self):
         return f"<{self.__class__.__name__} object>"
 
@@ -77,9 +77,7 @@ class NonSerializableObject():
 
 
 def test_newrelic_logger_min_extra_keys_no_error(log_buffer):
-    extra = {
-        "string": "foo",
-    }
+    extra = {"string": "foo"}
     _logger.info("Hello %s", "World", extra=extra)
 
     log_buffer.seek(0)
@@ -107,10 +105,7 @@ def test_newrelic_logger_min_extra_keys_no_error(log_buffer):
         "process.name": "MainProcess",
         "extra.string": "foo",
     }
-    expected_extra_txn_keys = (
-        "entity.guid",
-        "hostname",
-    )
+    expected_extra_txn_keys = ("entity.guid", "hostname")
 
     for k, v in expected.items():
         assert message.pop(k) == v
@@ -129,10 +124,7 @@ def test_newrelic_logger_no_error(log_buffer):
         "set": {"set"},
         "non_serializable": NonSerializableObject(),
         "non_printable": NonPrintableObject(),
-        "object": {
-            "first": "bar",
-            "second": "baz",
-        },
+        "object": {"first": "bar", "second": "baz"},
     }
     _logger.info("Hello %s", "World", extra=extra)
 
@@ -168,15 +160,9 @@ def test_newrelic_logger_no_error(log_buffer):
         "extra.set": '["set"]',
         "extra.non_serializable": "<NonSerializableObject object>",
         "extra.non_printable": "<unprintable NonPrintableObject object>",
-        "extra.object": {
-            "first": "bar",
-            "second": "baz",
-        },
+        "extra.object": {"first": "bar", "second": "baz"},
     }
-    expected_extra_txn_keys = (
-        "entity.guid",
-        "hostname",
-    )
+    expected_extra_txn_keys = ("entity.guid", "hostname")
 
     for k, v in expected.items():
         assert message.pop(k) == v
@@ -222,12 +208,7 @@ def test_newrelic_logger_error_inside_transaction_no_stack_trace(log_buffer):
         "error.message": "",
         "error.expected": False,
     }
-    expected_extra_txn_keys = (
-        "trace.id",
-        "span.id",
-        "entity.guid",
-        "hostname",
-    )
+    expected_extra_txn_keys = ("trace.id", "span.id", "entity.guid", "hostname")
 
     for k, v in expected.items():
         assert message.pop(k) == v
@@ -274,14 +255,9 @@ def test_newrelic_logger_error_inside_transaction_with_stack_trace(log_buffer_wi
         "process.name": "MainProcess",
         "error.class": "test_logs_in_context:ExceptionForTest",
         "error.message": "exception-with-cause",
-        "error.expected": False
+        "error.expected": False,
     }
-    expected_extra_txn_keys = (
-        "trace.id",
-        "span.id",
-        "entity.guid",
-        "hostname"
-    )
+    expected_extra_txn_keys = ("trace.id", "span.id", "entity.guid", "hostname")
 
     for k, v in expected.items():
         assert message.pop(k) == v
@@ -321,10 +297,7 @@ def test_newrelic_logger_error_outside_transaction_no_stack_trace(log_buffer):
         "error.class": "test_logs_in_context:ExceptionForTest",
         "error.message": "",
     }
-    expected_extra_txn_keys = (
-        "entity.guid",
-        "hostname",
-    )
+    expected_extra_txn_keys = ("entity.guid", "hostname")
 
     for k, v in expected.items():
         assert message.pop(k) == v
@@ -371,10 +344,7 @@ def test_newrelic_logger_error_outside_transaction_with_stack_trace(log_buffer_w
         "error.class": "test_logs_in_context:ExceptionForTest",
         "error.message": "exception-with-cause",
     }
-    expected_extra_txn_keys = (
-        "entity.guid",
-        "hostname",
-    )
+    expected_extra_txn_keys = ("entity.guid", "hostname")
 
     for k, v in expected.items():
         assert message.pop(k) == v
@@ -382,21 +352,9 @@ def test_newrelic_logger_error_outside_transaction_with_stack_trace(log_buffer_w
     assert set(message.keys()) == set(expected_extra_txn_keys)
 
 
-EXPECTED_KEYS_TXN = (
-    "trace.id",
-    "span.id",
-    "entity.name",
-    "entity.type",
-    "entity.guid",
-    "hostname",
-)
+EXPECTED_KEYS_TXN = ("trace.id", "span.id", "entity.name", "entity.type", "entity.guid", "hostname")
 
-EXPECTED_KEYS_NO_TXN = EXPECTED_KEYS_TRACE_ENDED = (
-    "entity.name",
-    "entity.type",
-    "entity.guid",
-    "hostname",
-)
+EXPECTED_KEYS_NO_TXN = EXPECTED_KEYS_TRACE_ENDED = ("entity.name", "entity.type", "entity.guid", "hostname")
 
 
 def validate_metadata(metadata, expected):

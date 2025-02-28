@@ -16,9 +16,7 @@ from testing_support.fixtures import reset_core_stats_engine
 from testing_support.validators.validate_custom_metrics_outside_transaction import (
     validate_custom_metrics_outside_transaction,
 )
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 

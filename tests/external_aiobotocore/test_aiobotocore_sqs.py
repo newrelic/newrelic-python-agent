@@ -21,9 +21,7 @@ from conftest import (  # noqa: F401, pylint: disable=W0611
     loop,
 )
 from testing_support.validators.validate_span_events import validate_span_events
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
@@ -71,7 +69,6 @@ def test_aiobotocore_sqs(loop):
                 aws_access_key_id=AWS_ACCESS_KEY_ID,
                 aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
             ) as client:
-
                 response = await client.create_queue(QueueName=TEST_QUEUE)
 
                 queue_url = response["QueueUrl"]
@@ -82,16 +79,11 @@ def test_aiobotocore_sqs(loop):
                     assert queue_name
 
                 # Send message
-                resp = await client.send_message(
-                    QueueUrl=queue_url,
-                    MessageBody="hello_world",
-                )
+                resp = await client.send_message(QueueUrl=queue_url, MessageBody="hello_world")
                 assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
 
                 # Receive message
-                resp = await client.receive_message(
-                    QueueUrl=queue_url,
-                )
+                resp = await client.receive_message(QueueUrl=queue_url)
                 assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
 
                 # Send message batch

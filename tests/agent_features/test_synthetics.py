@@ -15,17 +15,9 @@
 import pytest
 import webtest
 from testing_support.external_fixtures import validate_synthetics_external_trace_header
-from testing_support.fixtures import (
-    cat_enabled,
-    make_synthetics_headers,
-    override_application_settings,
-)
-from testing_support.validators.validate_synthetics_event import (
-    validate_synthetics_event,
-)
-from testing_support.validators.validate_synthetics_transaction_trace import (
-    validate_synthetics_transaction_trace,
-)
+from testing_support.fixtures import cat_enabled, make_synthetics_headers, override_application_settings
+from testing_support.validators.validate_synthetics_event import validate_synthetics_event
+from testing_support.validators.validate_synthetics_transaction_trace import validate_synthetics_transaction_trace
 
 from newrelic.api.web_transaction import web_transaction
 from newrelic.api.wsgi_application import wsgi_application
@@ -60,7 +52,18 @@ def _make_synthetics_headers(
     initiator=SYNTHETICS_INITIATOR,
     attributes=SYNTHETICS_ATTRIBUTES,
 ):
-    return make_synthetics_headers(encoding_key, account_id, resource_id, job_id, monitor_id, type_, initiator, attributes, synthetics_version=version, synthetics_info_version=info_version)
+    return make_synthetics_headers(
+        encoding_key,
+        account_id,
+        resource_id,
+        job_id,
+        monitor_id,
+        type_,
+        initiator,
+        attributes,
+        synthetics_version=version,
+        synthetics_info_version=info_version,
+    )
 
 
 def decode_header(header, encoding_key=ENCODING_KEY):
@@ -116,7 +119,9 @@ _test_valid_synthetics_event_without_info_forgone = [
 
 
 @validate_synthetics_event(
-    _test_valid_synthetics_event_without_info_required, _test_valid_synthetics_event_without_info_forgone, should_exist=True
+    _test_valid_synthetics_event_without_info_required,
+    _test_valid_synthetics_event_without_info_forgone,
+    should_exist=True,
 )
 @override_application_settings(_override_settings)
 def test_valid_synthetics_event_without_info():
@@ -132,7 +137,9 @@ def test_no_synthetics_event_unsupported_version():
 
 
 @validate_synthetics_event(
-    _test_valid_synthetics_event_without_info_required, _test_valid_synthetics_event_without_info_forgone, should_exist=True
+    _test_valid_synthetics_event_without_info_required,
+    _test_valid_synthetics_event_without_info_forgone,
+    should_exist=True,
 )
 @override_application_settings(_override_settings)
 def test_synthetics_event_unsupported_info_version():
@@ -156,7 +163,9 @@ def test_no_synthetics_event_mismatched_encoding_key():
 
 
 @validate_synthetics_event(
-    _test_valid_synthetics_event_without_info_required, _test_valid_synthetics_event_without_info_forgone, should_exist=True
+    _test_valid_synthetics_event_without_info_required,
+    _test_valid_synthetics_event_without_info_forgone,
+    should_exist=True,
 )
 @override_application_settings(_override_settings)
 def test_synthetics_event_mismatched_info_encoding_key():
@@ -234,10 +243,7 @@ def test_valid_external_trace_header_with_byte_inbound_header():
     headers = _make_synthetics_headers()
     headers = {k.encode("utf-8"): v.encode("utf-8") for k, v in headers.items()}
 
-    @web_transaction(
-        name="test_valid_external_trace_header_with_byte_inbound_header",
-        headers=headers,
-    )
+    @web_transaction(name="test_valid_external_trace_header_with_byte_inbound_header", headers=headers)
     def webapp():
         pass
 
@@ -251,7 +257,6 @@ def test_no_synthetics_external_trace_header():
 
 
 def _synthetics_limit_test(num_requests, num_events, num_transactions):
-
     # Force harvest to clear stats
 
     instance = agent_instance()

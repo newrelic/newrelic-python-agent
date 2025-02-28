@@ -25,10 +25,12 @@ from newrelic.core.config import global_settings
 
 _global_settings = global_settings()
 
+
 def _format_stack_trace(frames):
-    result = ['Traceback (most recent call last):']
+    result = ["Traceback (most recent call last):"]
     result.extend([f'File "{f["source"]}", line {f["line"]}, in {f["name"]}' for f in frames])
     return result
+
 
 def _extract_stack(f, skip, limit):
     if f is None:
@@ -47,8 +49,7 @@ def _extract_stack(f, skip, limit):
         skip -= 1
 
     while f is not None and n < limit:
-        l.append(dict(source=f.f_code.co_filename,
-                line=f.f_lineno, name=f.f_code.co_name))
+        l.append(dict(source=f.f_code.co_filename, line=f.f_lineno, name=f.f_code.co_name))
 
         f = f.f_back
         n += 1
@@ -56,6 +57,7 @@ def _extract_stack(f, skip, limit):
     l.reverse()
 
     return l
+
 
 def current_stack(skip=0, limit=None):
     if limit is None:
@@ -67,6 +69,7 @@ def current_stack(skip=0, limit=None):
         f = sys.exc_info()[2].tb_frame.f_back
 
     return _format_stack_trace(_extract_stack(f, skip, limit))
+
 
 def _extract_tb(tb, limit):
     if tb is None:
@@ -99,13 +102,13 @@ def _extract_tb(tb, limit):
 
     while tb is not None and n < limit:
         f = tb.tb_frame
-        l.append(dict(source=f.f_code.co_filename,
-                line=tb.tb_lineno, name=f.f_code.co_name))
+        l.append(dict(source=f.f_code.co_filename, line=tb.tb_lineno, name=f.f_code.co_name))
 
         tb = tb.tb_next
         n += 1
 
     return l
+
 
 def exception_stack(tb, limit=None):
     if tb is None:
@@ -124,8 +127,7 @@ def exception_stack(tb, limit=None):
     _tb_stack = _extract_tb(tb, limit)
 
     if len(_tb_stack) < limit:
-        _current_stack = _extract_stack(tb.tb_frame.f_back, skip=0,
-                limit=limit-len(_tb_stack))
+        _current_stack = _extract_stack(tb.tb_frame.f_back, skip=0, limit=limit - len(_tb_stack))
     else:
         _current_stack = []
 

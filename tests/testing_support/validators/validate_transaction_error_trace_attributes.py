@@ -33,7 +33,6 @@ def validate_transaction_error_trace_attributes(required_params=None, forgone_pa
         except:
             raise
         else:
-
             error_data = instance.error_data()
 
             # there should be only one error

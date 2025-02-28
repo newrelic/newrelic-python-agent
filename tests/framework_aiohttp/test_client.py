@@ -16,9 +16,7 @@ import asyncio
 
 import aiohttp
 import pytest
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from yarl import URL
 
 from newrelic.api.background_task import background_task
@@ -77,12 +75,8 @@ def test_client_yield_from(event_loop, local_server_info, method, exc_expected):
     @validate_transaction_metrics(
         "fetch_multiple",
         background_task=True,
-        scoped_metrics=[
-            (local_server_info.base_metric + method.upper(), 2),
-        ],
-        rollup_metrics=[
-            (local_server_info.base_metric + method.upper(), 2),
-        ],
+        scoped_metrics=[(local_server_info.base_metric + method.upper(), 2)],
+        rollup_metrics=[(local_server_info.base_metric + method.upper(), 2)],
     )
     def task_test():
         task(event_loop, method, exc_expected, local_server_info.url)
@@ -97,12 +91,8 @@ def test_client_yarl_yield_from(event_loop, local_server_info):
     @validate_transaction_metrics(
         "fetch_multiple",
         background_task=True,
-        scoped_metrics=[
-            (local_server_info.base_metric + method.upper(), 2),
-        ],
-        rollup_metrics=[
-            (local_server_info.base_metric + method.upper(), 2),
-        ],
+        scoped_metrics=[(local_server_info.base_metric + method.upper(), 2)],
+        rollup_metrics=[(local_server_info.base_metric + method.upper(), 2)],
     )
     def task_test():
         task(event_loop, method, False, URL(local_server_info.url))
@@ -139,15 +129,10 @@ def test_client_throw_yield_from(event_loop, local_server_info, method, exc_expe
     @validate_transaction_metrics(
         "test_client_throw_yield_from",
         background_task=True,
-        scoped_metrics=[
-            (local_server_info.base_metric + method.upper(), 1),
-        ],
-        rollup_metrics=[
-            (local_server_info.base_metric + method.upper(), 1),
-        ],
+        scoped_metrics=[(local_server_info.base_metric + method.upper(), 1)],
+        rollup_metrics=[(local_server_info.base_metric + method.upper(), 1)],
     )
     def task_test():
-
         with pytest.raises(ThrowerException):
             event_loop.run_until_complete(self_driving_thrower())
 
@@ -171,12 +156,8 @@ def test_client_close_yield_from(event_loop, local_server_info, method, exc_expe
     @validate_transaction_metrics(
         "test_client_close_yield_from",
         background_task=True,
-        scoped_metrics=[
-            (local_server_info.base_metric + method.upper(), 1),
-        ],
-        rollup_metrics=[
-            (local_server_info.base_metric + method.upper(), 1),
-        ],
+        scoped_metrics=[(local_server_info.base_metric + method.upper(), 1)],
+        rollup_metrics=[(local_server_info.base_metric + method.upper(), 1)],
     )
     def task_test():
         event_loop.run_until_complete(self_driving_closer())
@@ -197,12 +178,8 @@ def test_ws_connect_yield_from(event_loop, local_server_info, method, exc_expect
     @validate_transaction_metrics(
         "fetch_multiple",
         background_task=True,
-        scoped_metrics=[
-            (f"{local_server_info.base_metric}GET", 2),
-        ],
-        rollup_metrics=[
-            (f"{local_server_info.base_metric}GET", 2),
-        ],
+        scoped_metrics=[(f"{local_server_info.base_metric}GET", 2)],
+        rollup_metrics=[(f"{local_server_info.base_metric}GET", 2)],
     )
     def task_test():
         task(event_loop, method, exc_expected, local_server_info.url)
@@ -213,7 +190,6 @@ def test_ws_connect_yield_from(event_loop, local_server_info, method, exc_expect
 @skipif_aiohttp3
 @pytest.mark.parametrize("method,exc_expected", test_matrix)
 def test_create_task_yield_from(event_loop, local_server_info, method, exc_expected):
-
     # `loop.create_task` returns a Task object which uses the coroutine's
     # `send` method, not `__next__`
 
@@ -232,12 +208,8 @@ def test_create_task_yield_from(event_loop, local_server_info, method, exc_expec
     @validate_transaction_metrics(
         "test_create_task_yield_from",
         background_task=True,
-        scoped_metrics=[
-            (local_server_info.base_metric + method.upper(), 2),
-        ],
-        rollup_metrics=[
-            (local_server_info.base_metric + method.upper(), 2),
-        ],
+        scoped_metrics=[(local_server_info.base_metric + method.upper(), 2)],
+        rollup_metrics=[(local_server_info.base_metric + method.upper(), 2)],
     )
     def task_test():
         result = event_loop.run_until_complete(fetch_multiple(event_loop))

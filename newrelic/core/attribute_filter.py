@@ -25,7 +25,7 @@ DST_TRANSACTION_SEGMENTS = 1 << 5
 DST_LOG_EVENT_CONTEXT_DATA = 1 << 6
 
 
-class AttributeFilter():
+class AttributeFilter:
     # Apply filtering rules to attributes.
     #
     # Upon initialization, an AttributeFilter object will take all attribute
@@ -159,7 +159,7 @@ class AttributeFilter():
         return destinations
 
 
-class AttributeFilterRule():
+class AttributeFilterRule:
     def __init__(self, name, destinations, is_include):
         self.name = name.rstrip("*")
         self.destinations = destinations

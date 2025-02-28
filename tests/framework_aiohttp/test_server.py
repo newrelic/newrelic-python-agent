@@ -23,18 +23,10 @@ from testing_support.fixtures import (
     override_generic_settings,
     override_ignore_status_codes,
 )
-from testing_support.validators.validate_code_level_metrics import (
-    validate_code_level_metrics,
-)
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
-from testing_support.validators.validate_transaction_event_attributes import (
-    validate_transaction_event_attributes,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.core.config import global_settings
 
@@ -49,16 +41,7 @@ BASE_FORGONE_ATTRS = ["request.parameters.hello"]
 
 
 @pytest.mark.parametrize("nr_enabled", [True, False])
-@pytest.mark.parametrize(
-    "method",
-    [
-        "GET",
-        "POST",
-        "PUT",
-        "PATCH",
-        "DELETE",
-    ],
-)
+@pytest.mark.parametrize("method", ["GET", "POST", "PUT", "PATCH", "DELETE"])
 @pytest.mark.parametrize(
     "uri,metric_name,error,status",
     [
@@ -81,37 +64,16 @@ def test_error_exception(method, uri, metric_name, error, status, nr_enabled, ai
         if error:
             errors.append(error)
 
-        @validate_transaction_errors(
-            errors=errors, expected_errors=["aiohttp.web_exceptions:HTTPForbidden"]
-        )
+        @validate_transaction_errors(errors=errors, expected_errors=["aiohttp.web_exceptions:HTTPForbidden"])
         @validate_transaction_metrics(
             metric_name,
-            scoped_metrics=[
-                (f"Function/{metric_name}", 1),
-            ],
-            rollup_metrics=[
-                (f"Function/{metric_name}", 1),
-                (f"Python/Framework/aiohttp/{aiohttp.__version__}", 1),
-            ],
+            scoped_metrics=[(f"Function/{metric_name}", 1)],
+            rollup_metrics=[(f"Function/{metric_name}", 1), (f"Python/Framework/aiohttp/{aiohttp.__version__}", 1)],
         )
         @validate_transaction_event_attributes(
-            required_params={
-                "agent": required_attrs,
-                "user": [],
-                "intrinsic": [],
-            },
-            forgone_params={
-                "agent": forgone_attrs,
-                "user": [],
-                "intrinsic": [],
-            },
-            exact_attrs={
-                "agent": {
-                    "response.status": str(status),
-                },
-                "user": {},
-                "intrinsic": {},
-            },
+            required_params={"agent": required_attrs, "user": [], "intrinsic": []},
+            forgone_params={"agent": forgone_attrs, "user": [], "intrinsic": []},
+            exact_attrs={"agent": {"response.status": str(status)}, "user": {}, "intrinsic": {}},
         )
         @validate_code_level_metrics(*metric_name.split(":"))
         @override_ignore_status_codes([404])
@@ -130,16 +92,7 @@ def test_error_exception(method, uri, metric_name, error, status, nr_enabled, ai
 
 
 @pytest.mark.parametrize("nr_enabled", [True, False])
-@pytest.mark.parametrize(
-    "method",
-    [
-        "GET",
-        "POST",
-        "PUT",
-        "PATCH",
-        "DELETE",
-    ],
-)
+@pytest.mark.parametrize("method", ["GET", "POST", "PUT", "PATCH", "DELETE"])
 @pytest.mark.parametrize(
     "uri,metric_name",
     [
@@ -183,25 +136,12 @@ def test_simultaneous_requests(method, uri, metric_name, nr_enabled, aiohttp_app
         @override_application_settings({"attributes.include": ["request.*"]})
         @validate_transaction_metrics(
             metric_name,
-            scoped_metrics=[
-                (f"Function/{metric_name}", 1),
-            ],
-            rollup_metrics=[
-                (f"Function/{metric_name}", 1),
-                (f"Python/Framework/aiohttp/{aiohttp.__version__}", 1),
-            ],
+            scoped_metrics=[(f"Function/{metric_name}", 1)],
+            rollup_metrics=[(f"Function/{metric_name}", 1), (f"Python/Framework/aiohttp/{aiohttp.__version__}", 1)],
         )
         @validate_transaction_event_attributes(
-            required_params={
-                "agent": required_attrs,
-                "user": [],
-                "intrinsic": [],
-            },
-            forgone_params={
-                "agent": [],
-                "user": [],
-                "intrinsic": [],
-            },
+            required_params={"agent": required_attrs, "user": [], "intrinsic": []},
+            forgone_params={"agent": [], "user": [], "intrinsic": []},
         )
         @validate_code_level_metrics(namespace, func_name)
         @count_transactions(transactions)

@@ -78,7 +78,9 @@ class FunctionTrace(TimeTrace):
         )
 
 
-def FunctionTraceWrapper(wrapped, name=None, group=None, label=None, params=None, terminal=False, rollup=None, async_wrapper=None):
+def FunctionTraceWrapper(
+    wrapped, name=None, group=None, label=None, params=None, terminal=False, rollup=None, async_wrapper=None
+):
     def dynamic_wrapper(wrapped, instance, args, kwargs):
         wrapper = async_wrapper if async_wrapper is not None else get_async_wrapper(wrapped)
         if not wrapper:
@@ -162,11 +164,20 @@ def FunctionTraceWrapper(wrapped, name=None, group=None, label=None, params=None
 
 def function_trace(name=None, group=None, label=None, params=None, terminal=False, rollup=None, async_wrapper=None):
     return functools.partial(
-        FunctionTraceWrapper, name=name, group=group, label=label, params=params, terminal=terminal, rollup=rollup, async_wrapper=async_wrapper
+        FunctionTraceWrapper,
+        name=name,
+        group=group,
+        label=label,
+        params=params,
+        terminal=terminal,
+        rollup=rollup,
+        async_wrapper=async_wrapper,
     )
 
 
 def wrap_function_trace(
     module, object_path, name=None, group=None, label=None, params=None, terminal=False, rollup=None, async_wrapper=None
 ):
-    return wrap_object(module, object_path, FunctionTraceWrapper, (name, group, label, params, terminal, rollup, async_wrapper))
+    return wrap_object(
+        module, object_path, FunctionTraceWrapper, (name, group, label, params, terminal, rollup, async_wrapper)
+    )

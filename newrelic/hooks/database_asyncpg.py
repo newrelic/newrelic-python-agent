@@ -17,7 +17,7 @@ from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.common.object_wrapper import ObjectProxy, wrap_function_wrapper
 
 
-class PostgresApi():
+class PostgresApi:
     @staticmethod
     def _instance_info(addr, connected_fut, con_params, *args, **kwargs):
         if isinstance(addr, str):
@@ -34,10 +34,7 @@ class PostgresApi():
 
 
 register_database_client(
-    PostgresApi,
-    "Postgres",
-    quoting_style="single+dollar",
-    instance_info=PostgresApi.instance_info,
+    PostgresApi, "Postgres", quoting_style="single+dollar", instance_info=PostgresApi.instance_info
 )
 
 
@@ -127,12 +124,7 @@ def wrap_connect(wrapped, instance, args, kwargs):
         host, port, database_name = PostgresApi._instance_info(kwargs["addr"], None, kwargs.get("params"))
 
     with DatastoreTrace(
-        PostgresApi._nr_database_product,
-        None,
-        "connect",
-        host=host,
-        port_path_or_id=port,
-        database_name=database_name,
+        PostgresApi._nr_database_product, None, "connect", host=host, port_path_or_id=port, database_name=database_name
     ):
         return wrapped(*args, **kwargs)
 

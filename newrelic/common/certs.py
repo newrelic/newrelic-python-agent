@@ -12,12 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This module returns the CA certificate bundle included with the agent.
-
-"""
+"""This module returns the CA certificate bundle included with the agent."""
 
 import os
 
 
 def where():
-    return os.path.join(os.path.dirname(__file__), 'cacert.pem')
+    return os.path.join(os.path.dirname(__file__), "cacert.pem")

@@ -25,25 +25,14 @@ from testing_support.fixtures import (
     wait_for_background_threads,
 )
 from testing_support.http_23_testing import make_request
-from testing_support.sample_asgi_applications import (
-    AppWithCall,
-    AppWithCallRaw,
-    simple_app_v2_raw,
-)
+from testing_support.sample_asgi_applications import AppWithCall, AppWithCallRaw, simple_app_v2_raw
 from testing_support.util import get_open_port
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.transaction import ignore_transaction
 from newrelic.common.object_names import callable_name
-from newrelic.common.package_version_utils import (
-    get_package_version,
-    get_package_version_tuple,
-)
+from newrelic.common.package_version_utils import get_package_version, get_package_version_tuple
 
 HYPERCORN_VERSION = get_package_version_tuple("hypercorn")
 asgi_2_unsupported = HYPERCORN_VERSION >= (0, 14, 1)
@@ -67,16 +56,10 @@ def wsgi_app(environ, start_response):
 @pytest.fixture(
     scope="session",
     params=(
-        pytest.param(
-            simple_app_v2_raw,
-            marks=pytest.mark.skipif(asgi_2_unsupported, reason="ASGI2 unsupported"),
-        ),
+        pytest.param(simple_app_v2_raw, marks=pytest.mark.skipif(asgi_2_unsupported, reason="ASGI2 unsupported")),
         AppWithCallRaw(),
         AppWithCall(),
-        pytest.param(
-            wsgi_app,
-            marks=pytest.mark.skipif(wsgi_unsupported, reason="WSGI unsupported"),
-        ),
+        pytest.param(wsgi_app, marks=pytest.mark.skipif(wsgi_unsupported, reason="WSGI unsupported")),
     ),
     ids=("raw", "class_with_call", "class_with_call_double_wrapped", "wsgi"),
 )
@@ -98,11 +81,7 @@ def port(loop, app):
             return True
 
         config = hypercorn.config.Config.from_mapping(
-            {
-                "bind": [f"localhost:{port}"],
-                "certfile": CERT_PATH,
-                "keyfile": CERT_PATH,
-            }
+            {"bind": [f"localhost:{port}"], "certfile": CERT_PATH, "keyfile": CERT_PATH}
         )
 
         try:
@@ -145,10 +124,7 @@ def test_hypercorn_200(port, app, http_version):
     assert hypercorn_version is not None
 
     @validate_transaction_metrics(
-        callable_name(app),
-        custom_metrics=[
-            (f"Python/Dispatcher/Hypercorn/{hypercorn_version}", 1),
-        ],
+        callable_name(app), custom_metrics=[(f"Python/Dispatcher/Hypercorn/{hypercorn_version}", 1)]
     )
     @raise_background_exceptions()
     @wait_for_background_threads()

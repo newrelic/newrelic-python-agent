@@ -18,9 +18,7 @@ import pika
 from compat import basic_consume
 from testing_support.db_settings import rabbitmq_settings
 from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import FunctionTrace
@@ -53,12 +51,7 @@ _test_distributed_tracing_basic_publish_metrics = [
 )
 @background_task()
 def do_basic_publish(channel, QUEUE, properties=None):
-    channel.basic_publish(
-        exchange="",
-        routing_key=QUEUE,
-        body="Testing distributed_tracing 123",
-        properties=properties,
-    )
+    channel.basic_publish(exchange="", routing_key=QUEUE, body="Testing distributed_tracing 123", properties=properties)
 
 
 _test_distributed_tracing_basic_consume_rollup_metrics = [

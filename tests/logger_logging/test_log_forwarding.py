@@ -20,9 +20,7 @@ from testing_support.validators.validate_log_event_count_outside_transaction imp
     validate_log_event_count_outside_transaction,
 )
 from testing_support.validators.validate_log_events import validate_log_events
-from testing_support.validators.validate_log_events_outside_transaction import (
-    validate_log_events_outside_transaction,
-)
+from testing_support.validators.validate_log_events_outside_transaction import validate_log_events_outside_transaction
 
 from newrelic.api.background_task import background_task
 from newrelic.api.time_trace import current_trace

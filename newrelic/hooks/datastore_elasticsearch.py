@@ -47,7 +47,7 @@ def _extract_args_allocation_explain_index(
     include_yes_decisions=None,
     index=None,
     *args,
-    **kwargs
+    **kwargs,
 ):
     return _index_name(index)
 
@@ -530,11 +530,7 @@ def instrument_elasticsearch_client_snapshot_v8(module):
     instrument_es_methods(module, "SnapshotClient", _elasticsearch_client_snapshot_methods_v8, "snapshot")
 
 
-_elasticsearch_client_tasks_methods = (
-    ("list", None),
-    ("cancel", None),
-    ("get", None),
-)
+_elasticsearch_client_tasks_methods = (("list", None), ("cancel", None), ("get", None))
 
 
 def instrument_elasticsearch_client_tasks(module):

@@ -14,9 +14,7 @@
 
 import pytest
 from conftest import AIOREDIS_VERSION, SKIPIF_AIOREDIS_V1, SKIPIF_AIOREDIS_V2
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 
 from newrelic.api.background_task import background_task
 
@@ -40,12 +38,14 @@ def test_pipelines_no_harm(client, in_transaction, loop, key):
 def exercise_transaction_sync(key):
     def _run(pipe):
         pipe.set(key, 1)
+
     return _run
 
 
 def exercise_transaction_async(key):
     async def _run(pipe):
         await pipe.set(key, 1)
+
     return _run
 
 

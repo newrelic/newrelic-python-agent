@@ -25,17 +25,10 @@ from queue import Queue
 
 import pytest
 
-from testing_support.sample_applications import (
-    error_user_params_added,
-    user_attributes_added,
-)
+from testing_support.sample_applications import error_user_params_added, user_attributes_added
 
 from newrelic.admin.record_deploy import record_deploy
-from newrelic.api.application import (
-    application_instance,
-    application_settings,
-    register_application,
-)
+from newrelic.api.application import application_instance, application_settings, register_application
 from newrelic.api.ml_model import set_llm_token_count_callback
 from newrelic.common.agent_http import DeveloperModeClient
 from newrelic.common.encoding_utils import json_encode, obfuscate
@@ -49,11 +42,7 @@ from newrelic.common.object_wrapper import (
 from newrelic.config import initialize
 from newrelic.core.agent import shutdown_agent
 from newrelic.core.attribute import create_attributes
-from newrelic.core.attribute_filter import (
-    DST_ERROR_COLLECTOR,
-    DST_TRANSACTION_TRACER,
-    AttributeFilter,
-)
+from newrelic.core.attribute_filter import DST_ERROR_COLLECTOR, DST_TRANSACTION_TRACER, AttributeFilter
 from newrelic.core.config import apply_config_setting, flatten_settings, global_settings
 from newrelic.network.exceptions import RetryDataForRequest
 
@@ -643,12 +632,7 @@ def validate_transaction_event_sample_data(required_attrs, required_user_attrs=T
             assert "error.expected" not in intrinsics
             assert "transactionName" not in intrinsics
 
-            _validate_event_attributes(
-                intrinsics,
-                user_attributes,
-                required_attrs,
-                required_user_attrs,
-            )
+            _validate_event_attributes(intrinsics, user_attributes, required_attrs, required_user_attrs)
 
             return wrapped(*args, **kwargs)
 
@@ -1350,7 +1334,7 @@ def check_error_attributes(
     check_attributes(parameters, required_params, forgone_params, exact_attrs)
 
 
-class Environ():
+class Environ:
     """Context manager for setting environment variables temporarily."""
 
     def __init__(self, **kwargs):

@@ -21,9 +21,7 @@ from conftest import (  # noqa: F401, pylint: disable=W0611
     loop,
 )
 from testing_support.validators.validate_span_events import validate_span_events
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
@@ -68,11 +66,9 @@ _s3_rollup_metrics = [
 @background_task()
 def test_aiobotocore_s3(loop):
     async def _test():
-
         data = b"hello_world"
 
         async with MotoService("s3", port=PORT):
-
             session = aiobotocore.session.get_session()
 
             async with session.create_client(  # nosec
@@ -82,11 +78,8 @@ def test_aiobotocore_s3(loop):
                 aws_access_key_id=AWS_ACCESS_KEY_ID,
                 aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
             ) as client:
-
                 # Create bucket
-                await client.create_bucket(
-                    Bucket=TEST_BUCKET,
-                )
+                await client.create_bucket(Bucket=TEST_BUCKET)
 
                 # List buckets
                 await client.list_buckets()

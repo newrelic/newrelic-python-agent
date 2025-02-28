@@ -25,12 +25,8 @@ from testing_support.sample_asgi_applications import (
     simple_app_v3,
     simple_app_v3_raw,
 )
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.asgi_application import ASGIApplicationWrapper, asgi_application
 
@@ -46,7 +42,6 @@ simple_app_v2_init_exc = AsgiTest(simple_app_v2_init_exc)
 # Test naming scheme logic and ASGIApplicationWrapper for a single callable
 @pytest.mark.parametrize("naming_scheme", (None, "component", "framework"))
 def test_single_callable_naming_scheme(naming_scheme):
-
     if naming_scheme in ("component", "framework"):
         expected_name = "testing_support.sample_asgi_applications:simple_app_v3_raw"
         expected_group = "Function"

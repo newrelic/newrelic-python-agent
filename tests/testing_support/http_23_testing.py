@@ -18,6 +18,7 @@ VALID_HTTP_VERSIONS = frozenset((None, 1, 2, 3))
 INVALID_HTTP_INPUT_WARNING = "Invalid HTTP version. Expected an integer (1, 2, or 3) or None for no specific version."
 INVALID_HTTP_VERSION_USED_WARNING = "Incorrect HTTP version used: {}"
 
+
 def make_request(host, port, path="", method="GET", body=None, http_version=None, timeout=10):
     assert http_version in VALID_HTTP_VERSIONS, INVALID_HTTP_INPUT_WARNING
 

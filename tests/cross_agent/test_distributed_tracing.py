@@ -18,16 +18,10 @@ import os
 import pytest
 import webtest
 from testing_support.fixtures import override_application_settings, validate_attributes
-from testing_support.validators.validate_error_event_attributes import (
-    validate_error_event_attributes,
-)
+from testing_support.validators.validate_error_event_attributes import validate_error_event_attributes
 from testing_support.validators.validate_span_events import validate_span_events
-from testing_support.validators.validate_transaction_event_attributes import (
-    validate_transaction_event_attributes,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.transaction import current_transaction
 from newrelic.api.wsgi_application import wsgi_application
@@ -160,7 +154,6 @@ def test_distributed_tracing(
     trusted_account_key,
     web_transaction,
 ):
-
     extra_inbound_payloads = []
     if transport_type != "HTTP":
         # Since wsgi_application calls accept_distributed_trace_payload

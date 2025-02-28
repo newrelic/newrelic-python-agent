@@ -45,7 +45,6 @@ def template_name(render_obj, name):
 
 
 def instrument(module):
-
     if module.__name__ == "web.application":
         newrelic.api.out_function.wrap_out_function(module, "application.wsgifunc", WSGIApplicationWrapper)
         newrelic.api.in_function.wrap_in_function(module, "application._delegate", transaction_name_delegate)

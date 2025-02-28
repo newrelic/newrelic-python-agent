@@ -19,12 +19,8 @@ from testing_support.fixtures import reset_core_stats_engine
 from testing_support.validators.validate_error_event_attributes_outside_transaction import (
     validate_error_event_attributes_outside_transaction,
 )
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
@@ -49,13 +45,7 @@ def test_serialization_metrics(skip_if_not_serializing, topic, send_producer_mes
     test()
 
 
-@pytest.mark.parametrize(
-    "key,value",
-    (
-        (object(), "A"),
-        ("A", object()),
-    ),
-)
+@pytest.mark.parametrize("key,value", ((object(), "A"), ("A", object())))
 def test_serialization_errors(skip_if_not_serializing, topic, producer, key, value):
     error_cls = TypeError
 
@@ -68,13 +58,7 @@ def test_serialization_errors(skip_if_not_serializing, topic, producer, key, val
     test()
 
 
-@pytest.mark.parametrize(
-    "key,value",
-    (
-        (b"%", b"{}"),
-        (b"{}", b"%"),
-    ),
-)
+@pytest.mark.parametrize("key,value", ((b"%", b"{}"), (b"{}", b"%")))
 def test_deserialization_errors(skip_if_not_serializing, monkeypatch, topic, producer, consumer, key, value):
     error_cls = json.decoder.JSONDecodeError
 

@@ -32,11 +32,7 @@ from collections import OrderedDict
 
 HEXDIGLC_RE = re.compile("^[0-9a-f]+$")
 DELIMITER_FORMAT_RE = re.compile("[ \t]*,[ \t]*")
-PARENT_TYPE = {
-    "0": "App",
-    "1": "Browser",
-    "2": "Mobile",
-}
+PARENT_TYPE = {"0": "App", "1": "Browser", "2": "Mobile"}
 BASE64_DECODE_STR = getattr(base64, "decodestring", None)
 
 

@@ -14,14 +14,9 @@
 
 import psycopg
 from conftest import DB_SETTINGS, maybe_await
-from testing_support.fixtures import (
-    override_application_settings,
-    validate_tt_parenting,
-)
+from testing_support.fixtures import override_application_settings, validate_tt_parenting
 from testing_support.util import instance_hostname
-from testing_support.validators.validate_tt_collector_json import (
-    validate_tt_collector_json,
-)
+from testing_support.validators.validate_tt_collector_json import validate_tt_collector_json
 
 from newrelic.api.background_task import background_task
 
@@ -46,19 +41,9 @@ _enabled_required = {
 _enabled_forgone = {}
 
 _disabled_required = {}
-_disabled_forgone = {
-    "host": "VALUE NOT USED",
-    "port_path_or_id": "VALUE NOT USED",
-    "db.instance": "VALUE NOT USED",
-}
+_disabled_forgone = {"host": "VALUE NOT USED", "port_path_or_id": "VALUE NOT USED", "db.instance": "VALUE NOT USED"}
 
-_tt_parenting = (
-    "TransactionNode",
-    [
-        ("FunctionNode", []),
-        ("DatabaseNode", []),
-    ],
-)
+_tt_parenting = ("TransactionNode", [("FunctionNode", []), ("DatabaseNode", [])])
 
 
 # Query

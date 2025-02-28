@@ -23,11 +23,12 @@ except ImportError:
 
 _utilization_trackers = {}
 
+
 def utilization_tracker(application):
     return _utilization_trackers.get(application)
 
-class ThreadUtilizationDataSource():
 
+class ThreadUtilizationDataSource:
     def __init__(self, application):
         self._consumer_name = application
         self._utilization_tracker = None
@@ -94,6 +95,7 @@ class ThreadUtilizationDataSource():
             # threads and not the total of what is actually available.
 
             import mod_wsgi
+
             total_threads = mod_wsgi.threads_per_process
 
         except Exception:
@@ -108,13 +110,14 @@ class ThreadUtilizationDataSource():
             # otherwise we end up report zero metrics for task systems
             # such as Celery which skews the results wrongly.
 
-            yield ('Instance/Available', total_threads)
-            yield ('Instance/Used', utilization)
+            yield ("Instance/Available", total_threads)
+            yield ("Instance/Used", utilization)
 
-            busy = total_threads and utilization/total_threads or 0.0
+            busy = total_threads and utilization / total_threads or 0.0
 
-            yield ('Instance/Busy', busy)
+            yield ("Instance/Busy", busy)
 
-@data_source_factory(name='Thread Utilization')
+
+@data_source_factory(name="Thread Utilization")
 def thread_utilization_data_source(settings, environ):
-    return ThreadUtilizationDataSource(environ['consumer.name'])
+    return ThreadUtilizationDataSource(environ["consumer.name"])

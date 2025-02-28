@@ -13,11 +13,7 @@
 # limitations under the License.
 
 import openai
-from testing_support.fixtures import (
-    override_llm_token_callback_settings,
-    reset_core_stats_engine,
-    validate_attributes,
-)
+from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (  # noqa: F401
     add_token_count_to_events,
     disabled_ai_monitoring_record_content_settings,
@@ -28,9 +24,7 @@ from testing_support.ml_testing_utils import (  # noqa: F401
 )
 from testing_support.validators.validate_custom_event import validate_custom_event_count
 from testing_support.validators.validate_custom_events import validate_custom_events
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
@@ -57,7 +51,7 @@ embedding_recorded_events = [
             "vendor": "openai",
             "ingest_source": "Python",
         },
-    ),
+    )
 ]
 
 
@@ -68,9 +62,7 @@ embedding_recorded_events = [
     name="test_embeddings_v1:test_openai_embedding_sync",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -87,9 +79,7 @@ def test_openai_embedding_sync(set_trace_info, sync_openai_client):
     name="test_embeddings_v1:test_openai_embedding_sync_with_raw_response",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -109,9 +99,7 @@ def test_openai_embedding_sync_with_raw_response(set_trace_info, sync_openai_cli
     name="test_embeddings_v1:test_openai_embedding_sync_no_content",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -129,9 +117,7 @@ def test_openai_embedding_sync_no_content(set_trace_info, sync_openai_client):
     name="test_embeddings_v1:test_openai_embedding_sync_with_token_count",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -162,9 +148,7 @@ def test_openai_embedding_sync_ai_monitoring_disabled(sync_openai_client):
     name="test_embeddings_v1:test_openai_embedding_async",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -184,9 +168,7 @@ def test_openai_embedding_async(loop, set_trace_info, async_openai_client):
     name="test_embeddings_v1:test_openai_embedding_async_with_raw_response",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -209,9 +191,7 @@ def test_openai_embedding_async_with_raw_response(loop, set_trace_info, async_op
     name="test_embeddings_v1:test_openai_embedding_async_no_content",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -232,9 +212,7 @@ def test_openai_embedding_async_no_content(loop, set_trace_info, async_openai_cl
     name="test_embeddings_v1:test_openai_embedding_async_with_token_count",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])

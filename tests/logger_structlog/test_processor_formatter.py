@@ -15,10 +15,7 @@
 import platform
 
 import pytest
-from testing_support.fixtures import (
-    override_application_settings,
-    reset_core_stats_engine,
-)
+from testing_support.fixtures import override_application_settings, reset_core_stats_engine
 from testing_support.validators.validate_custom_metrics_outside_transaction import (
     validate_custom_metrics_outside_transaction,
 )
@@ -27,12 +24,8 @@ from testing_support.validators.validate_log_event_count_outside_transaction imp
     validate_log_event_count_outside_transaction,
 )
 from testing_support.validators.validate_log_events import validate_log_events
-from testing_support.validators.validate_log_events_outside_transaction import (
-    validate_log_events_outside_transaction,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_log_events_outside_transaction import validate_log_events_outside_transaction
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.application import application_settings
 from newrelic.api.background_task import background_task, current_transaction
@@ -64,16 +57,12 @@ def structlog_formatter_within_logging(structlog_caplog):
             self.records.append(self.format(record))
 
     structlog.configure(
-        processors=[
-            structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
-        ],
+        processors=[structlog.stdlib.ProcessorFormatter.wrap_for_formatter],
         logger_factory=lambda *args, **kwargs: structlog_caplog,
     )
 
     handler = CaplogHandler()
-    formatter = structlog.stdlib.ProcessorFormatter(
-        processors=[structlog.dev.ConsoleRenderer()],
-    )
+    formatter = structlog.stdlib.ProcessorFormatter(processors=[structlog.dev.ConsoleRenderer()])
 
     handler.setFormatter(formatter)
 
@@ -127,7 +116,7 @@ def exercise_both_loggers(set_trace_ids, structlog_formatter_within_logging, str
             "context.kwarg_attr": 1,
             "context.logger_attr": 2,
         }
-    ],
+    ]
 )
 @validate_log_event_count(1)
 @background_task()

@@ -47,10 +47,7 @@ def psycopg2_cursor():
 
 
 _quoting_style_tests = [
-    (
-        f"SELECT * FROM {DB_SETTINGS['table_name']} WHERE b='2'",
-        f"SELECT * FROM {DB_SETTINGS['table_name']} WHERE b=?",
-    ),
+    (f"SELECT * FROM {DB_SETTINGS['table_name']} WHERE b='2'", f"SELECT * FROM {DB_SETTINGS['table_name']} WHERE b=?"),
     (
         f"SELECT * FROM {DB_SETTINGS['table_name']} WHERE b=$func$2$func$",
         f"SELECT * FROM {DB_SETTINGS['table_name']} WHERE b=?",
@@ -73,10 +70,7 @@ def test_quoting_styles(psycopg2_cursor, sql, obfuscated):
 
 
 _parameter_tests = [
-    (
-        f"SELECT * FROM {DB_SETTINGS['table_name']} where b=%s",
-        f"SELECT * FROM {DB_SETTINGS['table_name']} where b=%s",
-    ),
+    (f"SELECT * FROM {DB_SETTINGS['table_name']} where b=%s", f"SELECT * FROM {DB_SETTINGS['table_name']} where b=%s")
 ]
 
 
@@ -118,14 +112,8 @@ _test_explain_plans = [
     (f";SELECT (b, c) FROM {DB_SETTINGS['table_name']}", no_explain_plan),
     (f"SELECT (b, c) FROM  {DB_SETTINGS['table_name']}", any_length_explain_plan),
     (f"SELECT (b, c) FROM  {DB_SETTINGS['table_name']};", any_length_explain_plan),
-    (
-        f"SELECT (b, c) FROM  {DB_SETTINGS['table_name']};;;;;;",
-        any_length_explain_plan,
-    ),
-    (
-        f"SELECT (b, c) FROM  {DB_SETTINGS['table_name']};\n\n",
-        any_length_explain_plan,
-    ),
+    (f"SELECT (b, c) FROM  {DB_SETTINGS['table_name']};;;;;;", any_length_explain_plan),
+    (f"SELECT (b, c) FROM  {DB_SETTINGS['table_name']};\n\n", any_length_explain_plan),
 ]
 
 
@@ -147,9 +135,7 @@ def test_explain_plans(sql, validator):
         try:
             cursor = connection.cursor()
             cursor.execute(f"drop table if exists {DB_SETTINGS['table_name']}")
-            cursor.execute(
-                f"create table {DB_SETTINGS['table_name']} (b text, c text)"
-            )
+            cursor.execute(f"create table {DB_SETTINGS['table_name']} (b text, c text)")
 
             cursor.execute(sql)
 

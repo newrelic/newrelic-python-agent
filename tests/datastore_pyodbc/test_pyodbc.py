@@ -14,12 +14,8 @@
 import pytest
 from testing_support.db_settings import postgresql_settings
 from testing_support.util import instance_hostname
-from testing_support.validators.validate_database_trace_inputs import (
-    validate_database_trace_inputs,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_database_trace_inputs import validate_database_trace_inputs
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
@@ -28,9 +24,7 @@ DB_SETTINGS = postgresql_settings()[0]
 
 @validate_transaction_metrics(
     "test_pyodbc:test_execute_via_cursor",
-    scoped_metrics=[
-        ("Function/pyodbc:connect", 1),
-    ],
+    scoped_metrics=[("Function/pyodbc:connect", 1)],
     rollup_metrics=[
         ("Datastore/all", 1),
         ("Datastore/allOther", 1),
@@ -56,20 +50,17 @@ def test_execute_via_cursor(pyodbc_driver):
         )
     ) as connection:
         cursor = connection.cursor()
-        cursor.execute(f"""drop table if exists {DB_SETTINGS['table_name']}""")
+        cursor.execute(f"""drop table if exists {DB_SETTINGS["table_name"]}""")
         cursor.execute(f"create table {DB_SETTINGS['table_name']} (a integer, b real, c text)")
         cursor.executemany(
             f"insert into {DB_SETTINGS['table_name']} values (?, ?, ?)",
             [(1, 1.0, "1.0"), (2, 2.2, "2.2"), (3, 3.3, "3.3")],
         )
-        cursor.execute(f"""select * from {DB_SETTINGS['table_name']}""")
+        cursor.execute(f"""select * from {DB_SETTINGS["table_name"]}""")
         for row in cursor:
             pass
-        cursor.execute(
-            f"update {DB_SETTINGS['table_name']} set a=?, b=?, c=? where a=?",
-            (4, 4.0, "4.0", 1),
-        )
-        cursor.execute(f"""delete from {DB_SETTINGS['table_name']} where a=2""")
+        cursor.execute(f"update {DB_SETTINGS['table_name']} set a=?, b=?, c=? where a=?", (4, 4.0, "4.0", 1))
+        cursor.execute(f"""delete from {DB_SETTINGS["table_name"]} where a=2""")
         connection.commit()
 
         cursor.execute("SELECT now()")
@@ -81,9 +72,7 @@ def test_execute_via_cursor(pyodbc_driver):
 
 @validate_transaction_metrics(
     "test_pyodbc:test_rollback_on_exception",
-    scoped_metrics=[
-        ("Function/pyodbc:connect", 1),
-    ],
+    scoped_metrics=[("Function/pyodbc:connect", 1)],
     rollup_metrics=[
         ("Datastore/all", 1),
         ("Datastore/allOther", 1),

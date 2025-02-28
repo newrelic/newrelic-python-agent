@@ -14,20 +14,12 @@
 
 import pytest
 from sklearn.ensemble import AdaBoostClassifier
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
 
-@pytest.mark.parametrize(
-    "model_selection_model_name",
-    [
-        "GridSearchCV",
-        "RandomizedSearchCV",
-    ],
-)
+@pytest.mark.parametrize("model_selection_model_name", ["GridSearchCV", "RandomizedSearchCV"])
 def test_model_methods_wrapped_in_function_trace(model_selection_model_name, run_model_selection_model):
     expected_scoped_metrics = {
         "GridSearchCV": [

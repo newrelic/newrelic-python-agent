@@ -17,15 +17,9 @@ import time
 
 import pytest
 from conftest import cache_kafka_producer_headers
-from testing_support.validators.validate_messagebroker_headers import (
-    validate_messagebroker_headers,
-)
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_messagebroker_headers import validate_messagebroker_headers
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import FunctionTrace
@@ -59,16 +53,7 @@ def test_produce_arguments(topic, producer, client_type, serialize, headers):
             headers=headers,
         )
         # Positional Args
-        producer.produce(
-            topic,
-            serialize({"foo": 1}),
-            serialize("my-key"),
-            0,
-            producer_callback1,
-            None,
-            ts,
-            headers,
-        )
+        producer.produce(topic, serialize({"foo": 1}), serialize("my-key"), 0, producer_callback1, None, ts, headers)
     else:
         # Keyword Args
         producer.produce(
@@ -81,15 +66,7 @@ def test_produce_arguments(topic, producer, client_type, serialize, headers):
             headers=headers,
         )
         # Positional Args
-        producer.produce(
-            topic,
-            serialize("my-key"),
-            serialize({"foo": 1}),
-            0,
-            producer_callback1,
-            ts,
-            headers,
-        )
+        producer.produce(topic, serialize("my-key"), serialize({"foo": 1}), 0, producer_callback1, ts, headers)
     producer.flush()
 
     assert callback1_called.wait(5), "Callback never called."

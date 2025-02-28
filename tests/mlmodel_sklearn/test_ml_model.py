@@ -64,19 +64,9 @@ class CustomTestModel(BaseDecisionTree):
 
     def fit(self, X, y, sample_weight=None, check_input=True):
         if hasattr(super(CustomTestModel, self), "_fit"):
-            return self._fit(
-                X,
-                y,
-                sample_weight=sample_weight,
-                check_input=check_input,
-            )
+            return self._fit(X, y, sample_weight=sample_weight, check_input=check_input)
         else:
-            return super(CustomTestModel, self).fit(
-                X,
-                y,
-                sample_weight=sample_weight,
-                check_input=check_input,
-            )
+            return super(CustomTestModel, self).fit(X, y, sample_weight=sample_weight, check_input=check_input)
 
     def predict(self, X, check_input=True):
         return super(CustomTestModel, self).predict(X, check_input=check_input)
@@ -95,7 +85,7 @@ int_list_recorded_custom_events = [
             "label.0": "0.5",
             "new_relic_data_schema_version": 2,
         },
-    ),
+    )
 ]
 
 
@@ -134,7 +124,7 @@ int_list_recorded_custom_events_with_metadata = [
             "metadata1": "value1",
             "metadata2": "value2",
         },
-    ),
+    )
 ]
 
 
@@ -150,10 +140,7 @@ def test_custom_model_int_list_with_metadata():
 
         model = CustomTestModel().fit(x_train, y_train)
         wrap_mlmodel(
-            model,
-            name="MyCustomModel",
-            version="1.2.3",
-            metadata={"metadata1": "value1", "metadata2": "value2"},
+            model, name="MyCustomModel", version="1.2.3", metadata={"metadata1": "value1", "metadata2": "value2"}
         )
 
         labels = model.predict(x_test)
@@ -177,7 +164,7 @@ pandas_df_recorded_custom_events = [
             "label.label1": "0.5",
             "new_relic_data_schema_version": 2,
         },
-    ),
+    )
 ]
 
 
@@ -218,7 +205,7 @@ pandas_df_recorded_builtin_events = [
             "label.label1": "0",
             "new_relic_data_schema_version": 2,
         },
-    ),
+    )
 ]
 
 
@@ -265,7 +252,7 @@ pandas_df_mismatched_custom_events = [
             "label.0": "1",
             "new_relic_data_schema_version": 2,
         },
-    ),
+    )
 ]
 
 
@@ -310,7 +297,7 @@ numpy_str_mismatched_custom_events = [
             "label.0": "21",
             "new_relic_data_schema_version": 2,
         },
-    ),
+    )
 ]
 
 

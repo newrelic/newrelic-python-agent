@@ -144,11 +144,7 @@ class MotoService:
             self._socket = None
 
         self._server = werkzeug.serving.make_server(
-            self._ip_address,
-            self._port,
-            self._main_app,
-            True,
-            ssl_context=self._ssl_ctx,
+            self._ip_address, self._port, self._main_app, True, ssl_context=self._ssl_ctx
         )
         self._server.serve_forever()
 

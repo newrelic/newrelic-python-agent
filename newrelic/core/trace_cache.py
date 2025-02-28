@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This module implements a global cache for tracking any traces.
-
-"""
+"""This module implements a global cache for tracking any traces."""
 
 import logging
 import random
@@ -22,7 +20,7 @@ import sys
 import threading
 import traceback
 import weakref
-    
+
 from collections.abc import MutableMapping
 
 try:
@@ -71,7 +69,7 @@ def get_event_loop(task):
     return getattr(task, "_loop", None)
 
 
-class cached_module():
+class cached_module:
     def __init__(self, module_path, name=None):
         self.module_path = module_path
         self.name = name or module_path
@@ -381,11 +379,7 @@ class TraceCache(MutableMapping):
         for root in roots:
             guid = f"{random.getrandbits(64):016x}"
             node = LoopNode(
-                fetch_name=fetch_name,
-                start_time=start_time,
-                end_time=end_time,
-                duration=duration,
-                guid=guid,
+                fetch_name=fetch_name, start_time=start_time, end_time=end_time, duration=duration, guid=guid
             )
             transaction = root.transaction
             transaction._process_node(node)

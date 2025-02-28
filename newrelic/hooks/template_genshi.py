@@ -17,7 +17,7 @@ import newrelic.common.object_wrapper
 import newrelic.api.function_trace
 
 
-class stream_wrapper():
+class stream_wrapper:
     def __init__(self, stream, filepath):
         self.__stream = stream
         self.__filepath = filepath
@@ -46,7 +46,7 @@ class stream_wrapper():
         return self.__stream.__html__()
 
 
-class wrap_template():
+class wrap_template:
     def __init__(self, wrapped):
         if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped
@@ -73,7 +73,5 @@ class wrap_template():
 
 
 def instrument(module):
-
     if module.__name__ == "genshi.template.base":
-
         newrelic.common.object_wrapper.wrap_object(module, "Template.generate", wrap_template)

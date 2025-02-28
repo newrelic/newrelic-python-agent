@@ -25,7 +25,7 @@ from newrelic.samplers.decorators import data_source_factory
 
 
 @data_source_factory(name="Garbage Collector Metrics")
-class _GCDataSource():
+class _GCDataSource:
     def __init__(self, settings, environ):
         self.gc_time_metrics = CustomMetrics()
         self.start_time = 0.0
@@ -85,10 +85,7 @@ class _GCDataSource():
             counts = gc.get_count()
             yield (f"GC/objects/{self.pid}/all", {"count": sum(counts)})
             for gen, count in enumerate(counts):
-                yield (
-                    f"GC/objects/{self.pid}/generation/{gen}",
-                    {"count": count},
-                )
+                yield (f"GC/objects/{self.pid}/generation/{gen}", {"count": count})
 
         # Record object count for top five types with highest count
         if hasattr(gc, "get_objects"):
@@ -96,10 +93,7 @@ class _GCDataSource():
             if self.top_object_count_limit > 0:
                 highest_types = Counter(object_types).most_common(self.top_object_count_limit)
                 for obj_type, count in highest_types:
-                    yield (
-                        f"GC/objects/{self.pid}/type/{callable_name(obj_type)}",
-                        {"count": count},
-                    )
+                    yield (f"GC/objects/{self.pid}/type/{callable_name(obj_type)}", {"count": count})
 
         if hasattr(gc, "get_stats"):
             stats_by_gen = gc.get_stats()
@@ -110,10 +104,7 @@ class _GCDataSource():
                     previous_value = self.previous_stats.get((stat_name, "all"), 0)
                     self.previous_stats[(stat_name, "all")] = count
                     change_in_value = count - previous_value
-                    yield (
-                        f"GC/{stat_name}/{self.pid}/all",
-                        {"count": change_in_value},
-                    )
+                    yield (f"GC/{stat_name}/{self.pid}/all", {"count": change_in_value})
 
                     # Breakdowns by generation
                     for gen, stats in enumerate(stats_by_gen):
@@ -121,10 +112,7 @@ class _GCDataSource():
                         self.previous_stats[(stat_name, gen)] = stats[stat_name]
                         change_in_value = stats[stat_name] - previous_value
 
-                        yield (
-                            f"GC/{stat_name}/{self.pid}/{gen}",
-                            {"count": change_in_value},
-                        )
+                        yield (f"GC/{stat_name}/{self.pid}/{gen}", {"count": change_in_value})
 
         # In order to avoid a concurrency issue with getting interrupted by the
         # garbage collector, we save a reference to the old metrics table, and overwrite
@@ -136,13 +124,16 @@ class _GCDataSource():
 
         for metric in gc_time_metrics:
             raw_metric = metric[1]
-            yield metric[0], {
-                "count": raw_metric.call_count,
-                "total": raw_metric.total_call_time,
-                "min": raw_metric.min_call_time,
-                "max": raw_metric.max_call_time,
-                "sum_of_squares": raw_metric.sum_of_squares,
-            }
+            yield (
+                metric[0],
+                {
+                    "count": raw_metric.call_count,
+                    "total": raw_metric.total_call_time,
+                    "min": raw_metric.min_call_time,
+                    "max": raw_metric.max_call_time,
+                    "sum_of_squares": raw_metric.sum_of_squares,
+                },
+            )
 
 
 garbage_collector_data_source = _GCDataSource

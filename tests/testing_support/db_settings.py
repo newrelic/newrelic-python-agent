@@ -113,13 +113,7 @@ def redis_settings():
 
     host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "localhost"
     instances = 2
-    settings = [
-        {
-            "host": host,
-            "port": 8080 + instance_num,
-        }
-        for instance_num in range(instances)
-    ]
+    settings = [{"host": host, "port": 8080 + instance_num} for instance_num in range(instances)]
     return settings
 
 
@@ -138,13 +132,7 @@ def redis_cluster_settings():
     instances = 1
     base_port = 6379
 
-    settings = [
-        {
-            "host": host,
-            "port": base_port + instance_num,
-        }
-        for instance_num in range(instances)
-    ]
+    settings = [{"host": host, "port": base_port + instance_num} for instance_num in range(instances)]
     return settings
 
 
@@ -161,13 +149,7 @@ def valkey_settings():
 
     host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "localhost"
     instances = 2
-    settings = [
-        {
-            "host": host,
-            "port": 8080 + instance_num,
-        }
-        for instance_num in range(instances)
-    ]
+    settings = [{"host": host, "port": 8080 + instance_num} for instance_num in range(instances)]
     return settings
 
 
@@ -185,12 +167,7 @@ def memcached_settings():
     host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "127.0.0.1"
     instances = 2
     settings = [
-        {
-            "host": host,
-            "port": 8080 + instance_num,
-            "namespace": str(os.getpid()),
-        }
-        for instance_num in range(instances)
+        {"host": host, "port": 8080 + instance_num, "namespace": str(os.getpid())} for instance_num in range(instances)
     ]
     return settings
 
@@ -209,11 +186,7 @@ def mongodb_settings():
     host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "127.0.0.1"
     instances = 2
     settings = [
-        {
-            "host": host,
-            "port": 8080 + instance_num,
-            "collection": f"mongodb_collection_{str(os.getpid())}",
-        }
+        {"host": host, "port": 8080 + instance_num, "collection": f"mongodb_collection_{str(os.getpid())}"}
         for instance_num in range(instances)
     ]
     return settings
@@ -278,11 +251,7 @@ def elasticsearch_settings():
     host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "localhost"
     instances = 2
     settings = [
-        {
-            "host": host,
-            "port": str(8080 + instance_num),
-            "namespace": str(os.getpid()),
-        }
+        {"host": host, "port": str(8080 + instance_num), "namespace": str(os.getpid())}
         for instance_num in range(instances)
     ]
     return settings
@@ -302,12 +271,7 @@ def solr_settings():
     host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "127.0.0.1"
     instances = 2
     settings = [
-        {
-            "host": host,
-            "port": 8080 + instance_num,
-            "namespace": str(os.getpid()),
-        }
-        for instance_num in range(instances)
+        {"host": host, "port": 8080 + instance_num, "namespace": str(os.getpid())} for instance_num in range(instances)
     ]
     return settings
 
@@ -325,13 +289,7 @@ def rabbitmq_settings():
 
     host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "localhost"
     instances = 1
-    settings = [
-        {
-            "host": host,
-            "port": 5672 + instance_num,
-        }
-        for instance_num in range(instances)
-    ]
+    settings = [{"host": host, "port": 5672 + instance_num} for instance_num in range(instances)]
     return settings
 
 
@@ -349,13 +307,7 @@ def kafka_settings():
     host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "127.0.0.1"
     base_port = 8082 if "GITHUB_ACTIONS" in os.environ else 8080
     instances = 2
-    settings = [
-        {
-            "host": host,
-            "port": base_port + instance_num,
-        }
-        for instance_num in range(instances)
-    ]
+    settings = [{"host": host, "port": base_port + instance_num} for instance_num in range(instances)]
     return settings
 
 
@@ -372,13 +324,7 @@ def gearman_settings():
 
     host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "localhost"
     instances = 1
-    settings = [
-        {
-            "host": host,
-            "port": 8080 + instance_num,
-        }
-        for instance_num in range(instances)
-    ]
+    settings = [{"host": host, "port": 8080 + instance_num} for instance_num in range(instances)]
     return settings
 
 
@@ -395,11 +341,5 @@ def nginx_settings():
 
     host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "localhost"
     instances = 1
-    settings = [
-        {
-            "host": host,
-            "port": 8080 + instance_num,
-        }
-        for instance_num in range(instances)
-    ]
+    settings = [{"host": host, "port": 8080 + instance_num} for instance_num in range(instances)]
     return settings

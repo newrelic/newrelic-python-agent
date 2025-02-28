@@ -12,10 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from testing_support.fixtures import (
-    check_error_attributes,
-    core_application_stats_engine_error,
-)
+from testing_support.fixtures import check_error_attributes, core_application_stats_engine_error
 
 from newrelic.common.object_wrapper import transient_function_wrapper
 

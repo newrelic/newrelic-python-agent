@@ -14,29 +14,25 @@
 
 """These tests check two things:
 
-    1. Using a notfound_view will name the transaction after the not_found
-       view, not the default_exceptionresponse_view. There can only be one
-       notfound_view per Pyramid application, so to test both cases (default
-       and user-defined notfound_view), we use 2 separate apps.
+1. Using a notfound_view will name the transaction after the not_found
+   view, not the default_exceptionresponse_view. There can only be one
+   notfound_view per Pyramid application, so to test both cases (default
+   and user-defined notfound_view), we use 2 separate apps.
 
-    2. Verifying that we don't double wrap the notfound_view. Because
-       we instrument Configurator._derive_view(), and because
-       Configurator._derive_view() is called twice when adding a
-       notfound_view (once in add_notfound_view(), and again in add_view()),
-       our instrumentation checks to see if a view has already been
-       wrapped before wrapping.
+2. Verifying that we don't double wrap the notfound_view. Because
+   we instrument Configurator._derive_view(), and because
+   Configurator._derive_view() is called twice when adding a
+   notfound_view (once in add_notfound_view(), and again in add_view()),
+   our instrumentation checks to see if a view has already been
+   wrapped before wrapping.
 
-       If our check fails, then the metric '_test_append_slash_app:not_found'
-       will have a count of 2.
+   If our check fails, then the metric '_test_append_slash_app:not_found'
+   will have a count of 2.
 """
 
 import pytest
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.common.package_version_utils import get_package_version_tuple
 

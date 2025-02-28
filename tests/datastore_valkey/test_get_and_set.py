@@ -17,9 +17,7 @@ import valkey
 from newrelic.api.background_task import background_task
 
 from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.db_settings import valkey_settings
 from testing_support.util import instance_hostname
 
@@ -27,19 +25,12 @@ DB_SETTINGS = valkey_settings()[0]
 
 # Settings
 
-_enable_instance_settings = {
-    "datastore_tracer.instance_reporting.enabled": True,
-}
-_disable_instance_settings = {
-    "datastore_tracer.instance_reporting.enabled": False,
-}
+_enable_instance_settings = {"datastore_tracer.instance_reporting.enabled": True}
+_disable_instance_settings = {"datastore_tracer.instance_reporting.enabled": False}
 
 # Metrics
 
-_base_scoped_metrics = (
-    ("Datastore/operation/Valkey/get", 1),
-    ("Datastore/operation/Valkey/set", 1),
-)
+_base_scoped_metrics = (("Datastore/operation/Valkey/get", 1), ("Datastore/operation/Valkey/set", 1))
 
 _base_rollup_metrics = (
     ("Datastore/all", 2),
@@ -82,9 +73,7 @@ def exercise_valkey(client):
 )
 @background_task()
 def test_strict_valkey_operation_enable_instance():
-    client = valkey.StrictValkey(
-        host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0
-    )
+    client = valkey.StrictValkey(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
     exercise_valkey(client)
 
 
@@ -97,9 +86,7 @@ def test_strict_valkey_operation_enable_instance():
 )
 @background_task()
 def test_strict_valkey_operation_disable_instance():
-    client = valkey.StrictValkey(
-        host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0
-    )
+    client = valkey.StrictValkey(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
     exercise_valkey(client)
 
 

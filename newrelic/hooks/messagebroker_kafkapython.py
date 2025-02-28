@@ -21,11 +21,7 @@ from newrelic.api.message_trace import MessageTrace
 from newrelic.api.message_transaction import MessageTransaction
 from newrelic.api.time_trace import current_trace, notice_error
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import (
-    ObjectProxy,
-    function_wrapper,
-    wrap_function_wrapper,
-)
+from newrelic.common.object_wrapper import ObjectProxy, function_wrapper, wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 
 HEARTBEAT_POLL = "MessageBroker/Kafka/Heartbeat/Poll"

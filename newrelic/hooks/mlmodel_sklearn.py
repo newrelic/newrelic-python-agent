@@ -367,20 +367,12 @@ def wrap_metric_scorer(wrapped, instance, args, kwargs):
 
 
 def instrument_sklearn_tree_models(module):
-    model_classes = (
-        "DecisionTreeClassifier",
-        "DecisionTreeRegressor",
-        "ExtraTreeClassifier",
-        "ExtraTreeRegressor",
-    )
+    model_classes = ("DecisionTreeClassifier", "DecisionTreeRegressor", "ExtraTreeClassifier", "ExtraTreeRegressor")
     _instrument_sklearn_models(module, model_classes)
 
 
 def instrument_sklearn_ensemble_bagging_models(module):
-    model_classes = (
-        "BaggingClassifier",
-        "BaggingRegressor",
-    )
+    model_classes = ("BaggingClassifier", "BaggingRegressor")
     _instrument_sklearn_models(module, model_classes)
 
 
@@ -401,42 +393,27 @@ def instrument_sklearn_ensemble_iforest_models(module):
 
 
 def instrument_sklearn_ensemble_weight_boosting_models(module):
-    model_classes = (
-        "AdaBoostClassifier",
-        "AdaBoostRegressor",
-    )
+    model_classes = ("AdaBoostClassifier", "AdaBoostRegressor")
     _instrument_sklearn_models(module, model_classes)
 
 
 def instrument_sklearn_ensemble_gradient_boosting_models(module):
-    model_classes = (
-        "GradientBoostingClassifier",
-        "GradientBoostingRegressor",
-    )
+    model_classes = ("GradientBoostingClassifier", "GradientBoostingRegressor")
     _instrument_sklearn_models(module, model_classes)
 
 
 def instrument_sklearn_ensemble_voting_models(module):
-    model_classes = (
-        "VotingClassifier",
-        "VotingRegressor",
-    )
+    model_classes = ("VotingClassifier", "VotingRegressor")
     _instrument_sklearn_models(module, model_classes)
 
 
 def instrument_sklearn_ensemble_stacking_models(module):
-    module_classes = (
-        "StackingClassifier",
-        "StackingRegressor",
-    )
+    module_classes = ("StackingClassifier", "StackingRegressor")
     _instrument_sklearn_models(module, module_classes)
 
 
 def instrument_sklearn_ensemble_hist_models(module):
-    model_classes = (
-        "HistGradientBoostingClassifier",
-        "HistGradientBoostingRegressor",
-    )
+    model_classes = ("HistGradientBoostingClassifier", "HistGradientBoostingRegressor")
     _instrument_sklearn_models(module, model_classes)
 
 
@@ -455,76 +432,47 @@ def instrument_sklearn_linear_coordinate_descent_models(module):
 
 
 def instrument_sklearn_compose_models(module):
-    model_classes = (
-        "ColumnTransformer",
-        "TransformedTargetRegressor",
-    )
+    model_classes = ("ColumnTransformer", "TransformedTargetRegressor")
     _instrument_sklearn_models(module, model_classes)
 
 
 def instrument_sklearn_covariance_shrunk_models(module):
-    model_classes = (
-        "ShrunkCovariance",
-        "LedoitWolf",
-        "OAS",
-    )
+    model_classes = ("ShrunkCovariance", "LedoitWolf", "OAS")
     _instrument_sklearn_models(module, model_classes)
 
 
 def instrument_sklearn_cross_decomposition_models(module):
-    model_classes = (
-        "PLSRegression",
-        "PLSSVD",
-    )
+    model_classes = ("PLSRegression", "PLSSVD")
     _instrument_sklearn_models(module, model_classes)
 
 
 def instrument_sklearn_covariance_graph_models(module):
-    model_classes = (
-        "GraphicalLasso",
-        "GraphicalLassoCV",
-    )
+    model_classes = ("GraphicalLasso", "GraphicalLassoCV")
     _instrument_sklearn_models(module, model_classes)
 
 
 def instrument_sklearn_discriminant_analysis_models(module):
-    model_classes = (
-        "LinearDiscriminantAnalysis",
-        "QuadraticDiscriminantAnalysis",
-    )
+    model_classes = ("LinearDiscriminantAnalysis", "QuadraticDiscriminantAnalysis")
     _instrument_sklearn_models(module, model_classes)
 
 
 def instrument_sklearn_covariance_models(module):
-    model_classes = (
-        "EmpiricalCovariance",
-        "MinCovDet",
-        "EllipticEnvelope",
-    )
+    model_classes = ("EmpiricalCovariance", "MinCovDet", "EllipticEnvelope")
     _instrument_sklearn_models(module, model_classes)
 
 
 def instrument_sklearn_gaussian_process_models(module):
-    model_classes = (
-        "GaussianProcessClassifier",
-        "GaussianProcessRegressor",
-    )
+    model_classes = ("GaussianProcessClassifier", "GaussianProcessRegressor")
     _instrument_sklearn_models(module, model_classes)
 
 
 def instrument_sklearn_dummy_models(module):
-    model_classes = (
-        "DummyClassifier",
-        "DummyRegressor",
-    )
+    model_classes = ("DummyClassifier", "DummyRegressor")
     _instrument_sklearn_models(module, model_classes)
 
 
 def instrument_sklearn_feature_selection_rfe_models(module):
-    model_classes = (
-        "RFE",
-        "RFECV",
-    )
+    model_classes = ("RFE", "RFECV")
     _instrument_sklearn_models(module, model_classes)
 
 
@@ -539,110 +487,62 @@ def instrument_sklearn_calibration_models(module):
 
 
 def instrument_sklearn_cluster_models(module):
-    model_classes = (
-        "AffinityPropagation",
-        "Birch",
-        "DBSCAN",
-        "MeanShift",
-        "OPTICS",
-    )
+    model_classes = ("AffinityPropagation", "Birch", "DBSCAN", "MeanShift", "OPTICS")
     _instrument_sklearn_models(module, model_classes)
 
 
 def instrument_sklearn_linear_least_angle_models(module):
-    model_classes = (
-        "Lars",
-        "LarsCV",
-        "LassoLars",
-        "LassoLarsCV",
-        "LassoLarsIC",
-    )
+    model_classes = ("Lars", "LarsCV", "LassoLars", "LassoLarsCV", "LassoLarsIC")
     _instrument_sklearn_models(module, model_classes)
 
 
 def instrument_sklearn_feature_selection_models(module):
-    model_classes = (
-        "VarianceThreshold",
-        "SelectFromModel",
-        "SequentialFeatureSelector",
-    )
+    model_classes = ("VarianceThreshold", "SelectFromModel", "SequentialFeatureSelector")
     _instrument_sklearn_models(module, model_classes)
 
 
 def instrument_sklearn_cluster_agglomerative_models(module):
-    model_classes = (
-        "AgglomerativeClustering",
-        "FeatureAgglomeration",
-    )
+    model_classes = ("AgglomerativeClustering", "FeatureAgglomeration")
     _instrument_sklearn_models(module, model_classes)
 
 
 def instrument_sklearn_linear_GLM_models(module):
-    model_classes = (
-        "PoissonRegressor",
-        "GammaRegressor",
-        "TweedieRegressor",
-    )
+    model_classes = ("PoissonRegressor", "GammaRegressor", "TweedieRegressor")
     _instrument_sklearn_models(module, model_classes)
 
 
 def instrument_sklearn_cluster_clustering_models(module):
-    model_classes = (
-        "SpectralBiclustering",
-        "SpectralCoclustering",
-        "SpectralClustering",
-    )
+    model_classes = ("SpectralBiclustering", "SpectralCoclustering", "SpectralClustering")
     _instrument_sklearn_models(module, model_classes)
 
 
 def instrument_sklearn_linear_stochastic_gradient_models(module):
-    model_classes = (
-        "SGDClassifier",
-        "SGDRegressor",
-        "SGDOneClassSVM",
-    )
+    model_classes = ("SGDClassifier", "SGDRegressor", "SGDOneClassSVM")
     _instrument_sklearn_models(module, model_classes)
 
 
 def instrument_sklearn_linear_ridge_models(module):
-    model_classes = (
-        "Ridge",
-        "RidgeCV",
-        "RidgeClassifier",
-        "RidgeClassifierCV",
-    )
+    model_classes = ("Ridge", "RidgeCV", "RidgeClassifier", "RidgeClassifierCV")
     _instrument_sklearn_models(module, model_classes)
 
 
 def instrument_sklearn_linear_logistic_models(module):
-    model_classes = (
-        "LogisticRegression",
-        "LogisticRegressionCV",
-    )
+    model_classes = ("LogisticRegression", "LogisticRegressionCV")
     _instrument_sklearn_models(module, model_classes)
 
 
 def instrument_sklearn_linear_OMP_models(module):
-    model_classes = (
-        "OrthogonalMatchingPursuit",
-        "OrthogonalMatchingPursuitCV",
-    )
+    model_classes = ("OrthogonalMatchingPursuit", "OrthogonalMatchingPursuitCV")
     _instrument_sklearn_models(module, model_classes)
 
 
 def instrument_sklearn_linear_passive_aggressive_models(module):
-    model_classes = (
-        "PassiveAggressiveClassifier",
-        "PassiveAggressiveRegressor",
-    )
+    model_classes = ("PassiveAggressiveClassifier", "PassiveAggressiveRegressor")
     _instrument_sklearn_models(module, model_classes)
 
 
 def instrument_sklearn_linear_bayes_models(module):
-    model_classes = (
-        "ARDRegression",
-        "BayesianRidge",
-    )
+    model_classes = ("ARDRegression", "BayesianRidge")
     _instrument_sklearn_models(module, model_classes)
 
 
@@ -659,66 +559,37 @@ def instrument_sklearn_linear_models(module):
 
 
 def instrument_sklearn_cluster_kmeans_models(module):
-    model_classes = (
-        "BisectingKMeans",
-        "KMeans",
-        "MiniBatchKMeans",
-    )
+    model_classes = ("BisectingKMeans", "KMeans", "MiniBatchKMeans")
     _instrument_sklearn_models(module, model_classes)
 
 
 def instrument_sklearn_multiclass_models(module):
-    model_classes = (
-        "OneVsRestClassifier",
-        "OneVsOneClassifier",
-        "OutputCodeClassifier",
-    )
+    model_classes = ("OneVsRestClassifier", "OneVsOneClassifier", "OutputCodeClassifier")
     _instrument_sklearn_models(module, model_classes)
 
 
 def instrument_sklearn_multioutput_models(module):
-    model_classes = (
-        "MultiOutputEstimator",
-        "MultiOutputClassifier",
-        "ClassifierChain",
-        "RegressorChain",
-    )
+    model_classes = ("MultiOutputEstimator", "MultiOutputClassifier", "ClassifierChain", "RegressorChain")
     _instrument_sklearn_models(module, model_classes)
 
 
 def instrument_sklearn_naive_bayes_models(module):
-    model_classes = (
-        "GaussianNB",
-        "MultinomialNB",
-        "ComplementNB",
-        "BernoulliNB",
-        "CategoricalNB",
-    )
+    model_classes = ("GaussianNB", "MultinomialNB", "ComplementNB", "BernoulliNB", "CategoricalNB")
     _instrument_sklearn_models(module, model_classes)
 
 
 def instrument_sklearn_model_selection_models(module):
-    model_classes = (
-        "GridSearchCV",
-        "RandomizedSearchCV",
-    )
+    model_classes = ("GridSearchCV", "RandomizedSearchCV")
     _instrument_sklearn_models(module, model_classes)
 
 
 def instrument_sklearn_mixture_models(module):
-    model_classes = (
-        "GaussianMixture",
-        "BayesianGaussianMixture",
-    )
+    model_classes = ("GaussianMixture", "BayesianGaussianMixture")
     _instrument_sklearn_models(module, model_classes)
 
 
 def instrument_sklearn_neural_network_models(module):
-    model_classes = (
-        "BernoulliRBM",
-        "MLPClassifier",
-        "MLPRegressor",
-    )
+    model_classes = ("BernoulliRBM", "MLPClassifier", "MLPRegressor")
     _instrument_sklearn_models(module, model_classes)
 
 
@@ -735,32 +606,17 @@ def instrument_sklearn_neighbors_KRadius_models(module):
 
 
 def instrument_sklearn_svm_models(module):
-    model_classes = (
-        "LinearSVC",
-        "LinearSVR",
-        "SVC",
-        "NuSVC",
-        "SVR",
-        "NuSVR",
-        "OneClassSVM",
-    )
+    model_classes = ("LinearSVC", "LinearSVR", "SVC", "NuSVC", "SVR", "NuSVR", "OneClassSVM")
     _instrument_sklearn_models(module, model_classes)
 
 
 def instrument_sklearn_semi_supervised_models(module):
-    model_classes = (
-        "LabelPropagation",
-        "LabelSpreading",
-        "SelfTrainingClassifier",
-    )
+    model_classes = ("LabelPropagation", "LabelSpreading", "SelfTrainingClassifier")
     _instrument_sklearn_models(module, model_classes)
 
 
 def instrument_sklearn_pipeline_models(module):
-    model_classes = (
-        "Pipeline",
-        "FeatureUnion",
-    )
+    model_classes = ("Pipeline", "FeatureUnion")
     _instrument_sklearn_models(module, model_classes)
 
 

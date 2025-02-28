@@ -14,16 +14,9 @@
 
 import pytest
 from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_code_level_metrics import (
-    validate_code_level_metrics,
-)
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
-
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 
 def target_application(with_tweens=False, tweens_explicit=False):
@@ -39,6 +32,7 @@ def target_application(with_tweens=False, tweens_explicit=False):
 
     return _app(with_tweens, tweens_explicit)
 
+
 _test_application_index_scoped_metrics = [
     ("Python/WSGI/Application", 1),
     ("Python/WSGI/Response", 1),
@@ -48,20 +42,13 @@ _test_application_index_scoped_metrics = [
 ]
 
 
-@pytest.mark.parametrize(
-    "with_tweens,tweens_explicit",
-    (
-        (False, False),
-        (True, False),
-        (True, True),
-    ),
-)
+@pytest.mark.parametrize("with_tweens,tweens_explicit", ((False, False), (True, False), (True, True)))
 def test_application_index(with_tweens, tweens_explicit):
     application = target_application(with_tweens, tweens_explicit)
 
     metrics = list(_test_application_index_scoped_metrics)
     if with_tweens:
-        metrics.append(("Function/_test_application:" "simple_tween_factory.<locals>.simple_tween", 1))
+        metrics.append(("Function/_test_application:simple_tween_factory.<locals>.simple_tween", 1))
 
     @validate_code_level_metrics("_test_application", "home_view")
     @validate_transaction_errors(errors=[])

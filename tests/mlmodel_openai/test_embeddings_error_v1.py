@@ -16,11 +16,7 @@ import sys
 
 import openai
 import pytest
-from testing_support.fixtures import (
-    dt_enabled,
-    override_llm_token_callback_settings,
-    reset_core_stats_engine,
-)
+from testing_support.fixtures import dt_enabled, override_llm_token_callback_settings, reset_core_stats_engine
 from testing_support.ml_testing_utils import (  # noqa: F401
     add_token_count_to_events,
     disabled_ai_monitoring_record_content_settings,
@@ -30,13 +26,9 @@ from testing_support.ml_testing_utils import (  # noqa: F401
 )
 from testing_support.validators.validate_custom_event import validate_custom_event_count
 from testing_support.validators.validate_custom_events import validate_custom_events
-from testing_support.validators.validate_error_trace_attributes import (
-    validate_error_trace_attributes,
-)
+from testing_support.validators.validate_error_trace_attributes import validate_error_trace_attributes
 from testing_support.validators.validate_span_events import validate_span_events
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
@@ -54,34 +46,25 @@ no_model_events = [
             "ingest_source": "Python",
             "error": True,
         },
-    ),
+    )
 ]
 
 
 @dt_enabled
 @reset_core_stats_engine()
-@validate_error_trace_attributes(
-    callable_name(TypeError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {},
-    },
-)
+@validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
 @validate_span_events(
     exact_agents={
         "error.message": "create() missing 1 required keyword-only argument: 'model'"
         if sys.version_info < (3, 10)
-        else "Embeddings.create() missing 1 required keyword-only argument: 'model'",
+        else "Embeddings.create() missing 1 required keyword-only argument: 'model'"
     }
 )
 @validate_transaction_metrics(
     name="test_embeddings_error_v1:test_embeddings_invalid_request_error_no_model",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     background_task=True,
 )
 @validate_custom_events(no_model_events)
@@ -96,28 +79,19 @@ def test_embeddings_invalid_request_error_no_model(set_trace_info, sync_openai_c
 @dt_enabled
 @disabled_ai_monitoring_record_content_settings
 @reset_core_stats_engine()
-@validate_error_trace_attributes(
-    callable_name(TypeError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {},
-    },
-)
+@validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
 @validate_span_events(
     exact_agents={
         "error.message": "create() missing 1 required keyword-only argument: 'model'"
         if sys.version_info < (3, 10)
-        else "Embeddings.create() missing 1 required keyword-only argument: 'model'",
+        else "Embeddings.create() missing 1 required keyword-only argument: 'model'"
     }
 )
 @validate_transaction_metrics(
     name="test_embeddings_error_v1:test_embeddings_invalid_request_error_no_model_no_content",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     background_task=True,
 )
 @validate_custom_events(events_sans_content(no_model_events))
@@ -131,28 +105,19 @@ def test_embeddings_invalid_request_error_no_model_no_content(set_trace_info, sy
 
 @dt_enabled
 @reset_core_stats_engine()
-@validate_error_trace_attributes(
-    callable_name(TypeError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {},
-    },
-)
+@validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
 @validate_span_events(
     exact_agents={
         "error.message": "create() missing 1 required keyword-only argument: 'model'"
         if sys.version_info < (3, 10)
-        else "AsyncEmbeddings.create() missing 1 required keyword-only argument: 'model'",
+        else "AsyncEmbeddings.create() missing 1 required keyword-only argument: 'model'"
     }
 )
 @validate_transaction_metrics(
     name="test_embeddings_error_v1:test_embeddings_invalid_request_error_no_model_async",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     background_task=True,
 )
 @validate_custom_events(no_model_events)
@@ -180,7 +145,7 @@ invalid_model_events = [
             "ingest_source": "Python",
             "error": True,
         },
-    ),
+    )
 ]
 
 
@@ -189,27 +154,16 @@ invalid_model_events = [
 @override_llm_token_callback_settings(llm_token_count_callback)
 @validate_error_trace_attributes(
     callable_name(openai.NotFoundError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
-            "http.statusCode": 404,
-            "error.code": "model_not_found",
-        },
-    },
+    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"http.statusCode": 404, "error.code": "model_not_found"}},
 )
 @validate_span_events(
-    exact_agents={
-        "error.message": "The model `does-not-exist` does not exist or you do not have access to it.",
-    }
+    exact_agents={"error.message": "The model `does-not-exist` does not exist or you do not have access to it."}
 )
 @validate_transaction_metrics(
     name="test_embeddings_error_v1:test_embeddings_invalid_request_error_invalid_model_with_token_count",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     background_task=True,
 )
 @validate_custom_events(add_token_count_to_events(invalid_model_events))
@@ -225,27 +179,16 @@ def test_embeddings_invalid_request_error_invalid_model_with_token_count(set_tra
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
     callable_name(openai.NotFoundError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
-            "http.statusCode": 404,
-            "error.code": "model_not_found",
-        },
-    },
+    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"http.statusCode": 404, "error.code": "model_not_found"}},
 )
 @validate_span_events(
-    exact_agents={
-        "error.message": "The model `does-not-exist` does not exist or you do not have access to it.",
-    }
+    exact_agents={"error.message": "The model `does-not-exist` does not exist or you do not have access to it."}
 )
 @validate_transaction_metrics(
     name="test_embeddings_error_v1:test_embeddings_invalid_request_error_invalid_model",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     background_task=True,
 )
 @validate_custom_events(invalid_model_events)
@@ -261,27 +204,16 @@ def test_embeddings_invalid_request_error_invalid_model(set_trace_info, sync_ope
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
     callable_name(openai.NotFoundError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
-            "http.statusCode": 404,
-            "error.code": "model_not_found",
-        },
-    },
+    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"http.statusCode": 404, "error.code": "model_not_found"}},
 )
 @validate_span_events(
-    exact_agents={
-        "error.message": "The model `does-not-exist` does not exist or you do not have access to it.",
-    }
+    exact_agents={"error.message": "The model `does-not-exist` does not exist or you do not have access to it."}
 )
 @validate_transaction_metrics(
     name="test_embeddings_error_v1:test_embeddings_invalid_request_error_invalid_model_async",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     background_task=True,
 )
 @validate_custom_events(invalid_model_events)
@@ -300,27 +232,16 @@ def test_embeddings_invalid_request_error_invalid_model_async(set_trace_info, as
 @disabled_ai_monitoring_record_content_settings
 @validate_error_trace_attributes(
     callable_name(openai.NotFoundError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
-            "http.statusCode": 404,
-            "error.code": "model_not_found",
-        },
-    },
+    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"http.statusCode": 404, "error.code": "model_not_found"}},
 )
 @validate_span_events(
-    exact_agents={
-        "error.message": "The model `does-not-exist` does not exist or you do not have access to it.",
-    }
+    exact_agents={"error.message": "The model `does-not-exist` does not exist or you do not have access to it."}
 )
 @validate_transaction_metrics(
     name="test_embeddings_error_v1:test_embeddings_invalid_request_error_invalid_model_async_no_content",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     background_task=True,
 )
 @validate_custom_events(events_sans_content(invalid_model_events))
@@ -339,27 +260,16 @@ def test_embeddings_invalid_request_error_invalid_model_async_no_content(set_tra
 @override_llm_token_callback_settings(llm_token_count_callback)
 @validate_error_trace_attributes(
     callable_name(openai.NotFoundError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
-            "http.statusCode": 404,
-            "error.code": "model_not_found",
-        },
-    },
+    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"http.statusCode": 404, "error.code": "model_not_found"}},
 )
 @validate_span_events(
-    exact_agents={
-        "error.message": "The model `does-not-exist` does not exist or you do not have access to it.",
-    }
+    exact_agents={"error.message": "The model `does-not-exist` does not exist or you do not have access to it."}
 )
 @validate_transaction_metrics(
     name="test_embeddings_error_v1:test_embeddings_invalid_request_error_invalid_model_async_with_token_count",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     background_task=True,
 )
 @validate_custom_events(add_token_count_to_events(invalid_model_events))
@@ -390,7 +300,7 @@ embedding_invalid_key_error_events = [
             "ingest_source": "Python",
             "error": True,
         },
-    ),
+    )
 ]
 
 
@@ -398,27 +308,18 @@ embedding_invalid_key_error_events = [
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
     callable_name(openai.AuthenticationError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
-            "http.statusCode": 401,
-            "error.code": "invalid_api_key",
-        },
-    },
+    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"http.statusCode": 401, "error.code": "invalid_api_key"}},
 )
 @validate_span_events(
     exact_agents={
-        "error.message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys.",
+        "error.message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys."
     }
 )
 @validate_transaction_metrics(
     name="test_embeddings_error_v1:test_embeddings_wrong_api_key_error",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     background_task=True,
 )
 @validate_custom_events(embedding_invalid_key_error_events)
@@ -435,27 +336,18 @@ def test_embeddings_wrong_api_key_error(set_trace_info, monkeypatch, sync_openai
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
     callable_name(openai.AuthenticationError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
-            "http.statusCode": 401,
-            "error.code": "invalid_api_key",
-        },
-    },
+    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"http.statusCode": 401, "error.code": "invalid_api_key"}},
 )
 @validate_span_events(
     exact_agents={
-        "error.message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys.",
+        "error.message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys."
     }
 )
 @validate_transaction_metrics(
     name="test_embeddings_error_v1:test_embeddings_wrong_api_key_error_async",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     background_task=True,
 )
 @validate_custom_events(embedding_invalid_key_error_events)
@@ -475,28 +367,19 @@ def test_embeddings_wrong_api_key_error_async(set_trace_info, monkeypatch, async
 
 @dt_enabled
 @reset_core_stats_engine()
-@validate_error_trace_attributes(
-    callable_name(TypeError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {},
-    },
-)
+@validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
 @validate_span_events(
     exact_agents={
         "error.message": "create() missing 1 required keyword-only argument: 'model'"
         if sys.version_info < (3, 10)
-        else "Embeddings.create() missing 1 required keyword-only argument: 'model'",
+        else "Embeddings.create() missing 1 required keyword-only argument: 'model'"
     }
 )
 @validate_transaction_metrics(
     name="test_embeddings_error_v1:test_embeddings_invalid_request_error_no_model_with_raw_response",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     background_task=True,
 )
 @validate_custom_events(no_model_events)
@@ -513,28 +396,19 @@ def test_embeddings_invalid_request_error_no_model_with_raw_response(set_trace_i
 @dt_enabled
 @disabled_ai_monitoring_record_content_settings
 @reset_core_stats_engine()
-@validate_error_trace_attributes(
-    callable_name(TypeError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {},
-    },
-)
+@validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
 @validate_span_events(
     exact_agents={
         "error.message": "create() missing 1 required keyword-only argument: 'model'"
         if sys.version_info < (3, 10)
-        else "Embeddings.create() missing 1 required keyword-only argument: 'model'",
+        else "Embeddings.create() missing 1 required keyword-only argument: 'model'"
     }
 )
 @validate_transaction_metrics(
     name="test_embeddings_error_v1:test_embeddings_invalid_request_error_no_model_no_content_with_raw_response",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     background_task=True,
 )
 @validate_custom_events(events_sans_content(no_model_events))
@@ -550,28 +424,19 @@ def test_embeddings_invalid_request_error_no_model_no_content_with_raw_response(
 
 @dt_enabled
 @reset_core_stats_engine()
-@validate_error_trace_attributes(
-    callable_name(TypeError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {},
-    },
-)
+@validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
 @validate_span_events(
     exact_agents={
         "error.message": "create() missing 1 required keyword-only argument: 'model'"
         if sys.version_info < (3, 10)
-        else "AsyncEmbeddings.create() missing 1 required keyword-only argument: 'model'",
+        else "AsyncEmbeddings.create() missing 1 required keyword-only argument: 'model'"
     }
 )
 @validate_transaction_metrics(
     name="test_embeddings_error_v1:test_embeddings_invalid_request_error_no_model_async_with_raw_response",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     background_task=True,
 )
 @validate_custom_events(no_model_events)
@@ -590,27 +455,16 @@ def test_embeddings_invalid_request_error_no_model_async_with_raw_response(set_t
 @override_llm_token_callback_settings(llm_token_count_callback)
 @validate_error_trace_attributes(
     callable_name(openai.NotFoundError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
-            "http.statusCode": 404,
-            "error.code": "model_not_found",
-        },
-    },
+    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"http.statusCode": 404, "error.code": "model_not_found"}},
 )
 @validate_span_events(
-    exact_agents={
-        "error.message": "The model `does-not-exist` does not exist or you do not have access to it.",
-    }
+    exact_agents={"error.message": "The model `does-not-exist` does not exist or you do not have access to it."}
 )
 @validate_transaction_metrics(
     name="test_embeddings_error_v1:test_embeddings_invalid_request_error_invalid_model_with_token_count_with_raw_response",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     background_task=True,
 )
 @validate_custom_events(add_token_count_to_events(invalid_model_events))
@@ -628,27 +482,16 @@ def test_embeddings_invalid_request_error_invalid_model_with_token_count_with_ra
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
     callable_name(openai.NotFoundError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
-            "http.statusCode": 404,
-            "error.code": "model_not_found",
-        },
-    },
+    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"http.statusCode": 404, "error.code": "model_not_found"}},
 )
 @validate_span_events(
-    exact_agents={
-        "error.message": "The model `does-not-exist` does not exist or you do not have access to it.",
-    }
+    exact_agents={"error.message": "The model `does-not-exist` does not exist or you do not have access to it."}
 )
 @validate_transaction_metrics(
     name="test_embeddings_error_v1:test_embeddings_invalid_request_error_invalid_model_with_raw_response",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     background_task=True,
 )
 @validate_custom_events(invalid_model_events)
@@ -665,27 +508,16 @@ def test_embeddings_invalid_request_error_invalid_model_with_raw_response(set_tr
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
     callable_name(openai.NotFoundError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
-            "http.statusCode": 404,
-            "error.code": "model_not_found",
-        },
-    },
+    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"http.statusCode": 404, "error.code": "model_not_found"}},
 )
 @validate_span_events(
-    exact_agents={
-        "error.message": "The model `does-not-exist` does not exist or you do not have access to it.",
-    }
+    exact_agents={"error.message": "The model `does-not-exist` does not exist or you do not have access to it."}
 )
 @validate_transaction_metrics(
     name="test_embeddings_error_v1:test_embeddings_invalid_request_error_invalid_model_async_with_raw_response",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     background_task=True,
 )
 @validate_custom_events(invalid_model_events)
@@ -708,27 +540,16 @@ def test_embeddings_invalid_request_error_invalid_model_async_with_raw_response(
 @disabled_ai_monitoring_record_content_settings
 @validate_error_trace_attributes(
     callable_name(openai.NotFoundError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
-            "http.statusCode": 404,
-            "error.code": "model_not_found",
-        },
-    },
+    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"http.statusCode": 404, "error.code": "model_not_found"}},
 )
 @validate_span_events(
-    exact_agents={
-        "error.message": "The model `does-not-exist` does not exist or you do not have access to it.",
-    }
+    exact_agents={"error.message": "The model `does-not-exist` does not exist or you do not have access to it."}
 )
 @validate_transaction_metrics(
     name="test_embeddings_error_v1:test_embeddings_invalid_request_error_invalid_model_async_no_content_with_raw_response",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     background_task=True,
 )
 @validate_custom_events(events_sans_content(invalid_model_events))
@@ -751,27 +572,16 @@ def test_embeddings_invalid_request_error_invalid_model_async_no_content_with_ra
 @override_llm_token_callback_settings(llm_token_count_callback)
 @validate_error_trace_attributes(
     callable_name(openai.NotFoundError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
-            "http.statusCode": 404,
-            "error.code": "model_not_found",
-        },
-    },
+    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"http.statusCode": 404, "error.code": "model_not_found"}},
 )
 @validate_span_events(
-    exact_agents={
-        "error.message": "The model `does-not-exist` does not exist or you do not have access to it.",
-    }
+    exact_agents={"error.message": "The model `does-not-exist` does not exist or you do not have access to it."}
 )
 @validate_transaction_metrics(
     name="test_embeddings_error_v1:test_embeddings_invalid_request_error_invalid_model_async_with_token_count_with_raw_response",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     background_task=True,
 )
 @validate_custom_events(add_token_count_to_events(invalid_model_events))
@@ -794,27 +604,18 @@ def test_embeddings_invalid_request_error_invalid_model_async_with_token_count_w
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
     callable_name(openai.AuthenticationError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
-            "http.statusCode": 401,
-            "error.code": "invalid_api_key",
-        },
-    },
+    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"http.statusCode": 401, "error.code": "invalid_api_key"}},
 )
 @validate_span_events(
     exact_agents={
-        "error.message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys.",
+        "error.message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys."
     }
 )
 @validate_transaction_metrics(
     name="test_embeddings_error_v1:test_embeddings_wrong_api_key_error_with_raw_response",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     background_task=True,
 )
 @validate_custom_events(embedding_invalid_key_error_events)
@@ -831,27 +632,18 @@ def test_embeddings_wrong_api_key_error_with_raw_response(set_trace_info, monkey
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
     callable_name(openai.AuthenticationError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
-            "http.statusCode": 401,
-            "error.code": "invalid_api_key",
-        },
-    },
+    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"http.statusCode": 401, "error.code": "invalid_api_key"}},
 )
 @validate_span_events(
     exact_agents={
-        "error.message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys.",
+        "error.message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys."
     }
 )
 @validate_transaction_metrics(
     name="test_embeddings_error_v1:test_embeddings_wrong_api_key_error_async_with_raw_response",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
     background_task=True,
 )
 @validate_custom_events(embedding_invalid_key_error_events)

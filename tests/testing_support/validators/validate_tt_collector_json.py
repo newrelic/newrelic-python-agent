@@ -46,12 +46,10 @@ def validate_tt_collector_json(
 
     @function_wrapper
     def _validate_wrapper(wrapped, instance, args, kwargs):
-
         traces_recorded = []
 
         @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
         def _validate_tt_collector_json(wrapped, instance, args, kwargs):
-
             result = wrapped(*args, **kwargs)
 
             # Now that transaction has been recorded, generate
@@ -134,7 +132,9 @@ def validate_tt_collector_json(
                 if segment_name.startswith("Datastore"):
                     for key in datastore_params:
                         assert key in params, key
-                        assert params[key] == datastore_params[key], f"Expected {datastore_params[key]}. Got {params[key]}."
+                        assert params[key] == datastore_params[key], (
+                            f"Expected {datastore_params[key]}. Got {params[key]}."
+                        )
                     for key in datastore_forgone_params:
                         assert key not in params, key
 

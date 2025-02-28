@@ -16,9 +16,7 @@ import valkey
 from testing_support.db_settings import valkey_settings
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
-from testing_support.validators.validate_tt_collector_json import (
-    validate_tt_collector_json,
-)
+from testing_support.validators.validate_tt_collector_json import validate_tt_collector_json
 
 from newrelic.api.background_task import background_task
 
@@ -54,36 +52,20 @@ _enabled_required = {
 _enabled_forgone = {}
 
 _disabled_required = {}
-_disabled_forgone = {
-    "host": "VALUE NOT USED",
-    "port_path_or_id": "VALUE NOT USED",
-    "db.instance": "VALUE NOT USED",
-}
+_disabled_forgone = {"host": "VALUE NOT USED", "port_path_or_id": "VALUE NOT USED", "db.instance": "VALUE NOT USED"}
 
-_instance_only_required = {
-    "host": instance_hostname(DB_SETTINGS["host"]),
-    "port_path_or_id": str(DB_SETTINGS["port"]),
-}
-_instance_only_forgone = {
-    "db.instance": str(DATABASE_NUMBER),
-}
+_instance_only_required = {"host": instance_hostname(DB_SETTINGS["host"]), "port_path_or_id": str(DB_SETTINGS["port"])}
+_instance_only_forgone = {"db.instance": str(DATABASE_NUMBER)}
 
-_database_only_required = {
-    "db.instance": str(DATABASE_NUMBER),
-}
-_database_only_forgone = {
-    "host": "VALUE NOT USED",
-    "port_path_or_id": "VALUE NOT USED",
-}
+_database_only_required = {"db.instance": str(DATABASE_NUMBER)}
+_database_only_forgone = {"host": "VALUE NOT USED", "port_path_or_id": "VALUE NOT USED"}
 
 
 # Query
 
 
 def _exercise_db():
-    client = valkey.StrictValkey(
-        host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=DATABASE_NUMBER
-    )
+    client = valkey.StrictValkey(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=DATABASE_NUMBER)
 
     client.set("key", "value")
     client.get("key")
@@ -95,38 +77,28 @@ def _exercise_db():
 
 
 @override_application_settings(_enable_instance_settings)
-@validate_tt_collector_json(
-    datastore_params=_enabled_required, datastore_forgone_params=_enabled_forgone
-)
+@validate_tt_collector_json(datastore_params=_enabled_required, datastore_forgone_params=_enabled_forgone)
 @background_task()
 def test_trace_node_datastore_params_enable_instance():
     _exercise_db()
 
 
 @override_application_settings(_disable_instance_settings)
-@validate_tt_collector_json(
-    datastore_params=_disabled_required, datastore_forgone_params=_disabled_forgone
-)
+@validate_tt_collector_json(datastore_params=_disabled_required, datastore_forgone_params=_disabled_forgone)
 @background_task()
 def test_trace_node_datastore_params_disable_instance():
     _exercise_db()
 
 
 @override_application_settings(_instance_only_settings)
-@validate_tt_collector_json(
-    datastore_params=_instance_only_required,
-    datastore_forgone_params=_instance_only_forgone,
-)
+@validate_tt_collector_json(datastore_params=_instance_only_required, datastore_forgone_params=_instance_only_forgone)
 @background_task()
 def test_trace_node_datastore_params_instance_only():
     _exercise_db()
 
 
 @override_application_settings(_database_only_settings)
-@validate_tt_collector_json(
-    datastore_params=_database_only_required,
-    datastore_forgone_params=_database_only_forgone,
-)
+@validate_tt_collector_json(datastore_params=_database_only_required, datastore_forgone_params=_database_only_forgone)
 @background_task()
 def test_trace_node_datastore_params_database_only():
     _exercise_db()

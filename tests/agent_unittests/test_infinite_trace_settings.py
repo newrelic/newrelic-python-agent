@@ -40,7 +40,6 @@ infinite_tracing.span_queue_size = 2000
     ),
 )
 def test_infinite_tracing_host(ini, env, expected_host, log, global_settings, caplog):
-
     settings = global_settings()
     assert settings.infinite_tracing.trace_observer_host == expected_host
 
@@ -60,7 +59,6 @@ def test_infinite_tracing_host(ini, env, expected_host, log, global_settings, ca
     ),
 )
 def test_infinite_tracing_port(ini, env, expected_port, global_settings):
-
     settings = global_settings()
     assert settings.infinite_tracing.trace_observer_port == expected_port
 
@@ -77,6 +75,5 @@ def test_infinite_tracing_port(ini, env, expected_port, global_settings):
     ),
 )
 def test_infinite_tracing_span_queue_size(ini, env, expected_size, global_settings):
-
     settings = global_settings()
     assert settings.infinite_tracing.span_queue_size == expected_size

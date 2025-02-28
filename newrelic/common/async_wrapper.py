@@ -26,7 +26,7 @@ def coroutine_wrapper(wrapped, trace):
     async def wrapper(*args, **kwargs):
         with trace:
             return await wrapped(*args, **kwargs)
-    
+
     return wrapper
 
 

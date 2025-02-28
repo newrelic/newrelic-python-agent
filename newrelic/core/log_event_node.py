@@ -14,4 +14,4 @@
 
 from collections import namedtuple
 
-LogEventNode = namedtuple('LogEventNode', ['timestamp', 'level', 'message', 'attributes'])
+LogEventNode = namedtuple("LogEventNode", ["timestamp", "level", "message", "attributes"])

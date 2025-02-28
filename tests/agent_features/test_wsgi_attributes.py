@@ -15,15 +15,11 @@
 import webtest
 from testing_support.fixtures import dt_enabled, override_application_settings
 from testing_support.sample_applications import fully_featured_app
-from testing_support.validators.validate_error_event_attributes import (
-    validate_error_event_attributes,
-)
+from testing_support.validators.validate_error_event_attributes import validate_error_event_attributes
 from testing_support.validators.validate_transaction_error_trace_attributes import (
     validate_transaction_error_trace_attributes,
 )
-from testing_support.validators.validate_transaction_event_attributes import (
-    validate_transaction_event_attributes,
-)
+from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
 
 WSGI_ATTRIBUTES = [
     "wsgi.input.seconds",

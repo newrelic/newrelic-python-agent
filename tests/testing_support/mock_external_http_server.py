@@ -32,7 +32,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 def simple_get(self):
     self.send_response(200)
     self.end_headers()
-    self.wfile.write(b'external response')
+    self.wfile.write(b"external response")
 
 
 class MockExternalHTTPServer(threading.Thread):
@@ -40,26 +40,28 @@ class MockExternalHTTPServer(threading.Thread):
     # before and after making requests to the test app that makes the external
     # calls. For an example see:
     # ../framework_tornado_r3/test_async_application.py
-    RESPONSE = b'external response'
+    RESPONSE = b"external response"
     host = "localhost"
 
     def __init__(self, handler=simple_get, port=None, *args, **kwargs):
         super(MockExternalHTTPServer, self).__init__(*args, **kwargs)
         self.daemon = True
-        handler = type('ResponseHandler',
-                (BaseHTTPRequestHandler, object,),
-                {
-                    'do_GET': handler,
-                    'do_OPTIONS': handler,
-                    'do_HEAD': handler,
-                    'do_POST': handler,
-                    'do_PUT': handler,
-                    'do_PATCH': handler,
-                    'do_DELETE': handler,
-                })
+        handler = type(
+            "ResponseHandler",
+            (BaseHTTPRequestHandler, object),
+            {
+                "do_GET": handler,
+                "do_OPTIONS": handler,
+                "do_HEAD": handler,
+                "do_POST": handler,
+                "do_PUT": handler,
+                "do_PATCH": handler,
+                "do_DELETE": handler,
+            },
+        )
 
         if port:
-            self.httpd = HTTPServer(('localhost', port), handler)
+            self.httpd = HTTPServer(("localhost", port), handler)
             self.port = port
         else:
             # If port not set, try to bind to a port until successful
@@ -71,13 +73,12 @@ class MockExternalHTTPServer(threading.Thread):
                     # Obtain random open port
                     port = self.get_open_port()
                     # Attempt to bind to port
-                    self.httpd = HTTPServer(('localhost', port), handler)
+                    self.httpd = HTTPServer(("localhost", port), handler)
                     self.port = port
                 except OSError as exc:
                     # Reraise errors other than port already in use
                     if "Address already in use" not in exc:
                         raise
-
 
     @staticmethod
     def get_open_port():
@@ -106,7 +107,7 @@ class MockExternalHTTPServer(threading.Thread):
 
 
 def incoming_headers_to_body_text(self):
-    response = str(self.headers).encode('utf-8')
+    response = str(self.headers).encode("utf-8")
     self.send_response(200)
     self.end_headers()
     self.wfile.write(response)
@@ -121,5 +122,4 @@ class MockExternalHTTPHResponseHeadersServer(MockExternalHTTPServer):
     """
 
     def __init__(self, handler=incoming_headers_to_body_text, port=None):
-        super(MockExternalHTTPHResponseHeadersServer, self).__init__(
-                handler=handler, port=port)
+        super(MockExternalHTTPHResponseHeadersServer, self).__init__(handler=handler, port=port)

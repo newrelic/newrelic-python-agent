@@ -14,9 +14,7 @@
 
 import pytest
 from sklearn.ensemble import AdaBoostClassifier
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
@@ -24,13 +22,7 @@ from newrelic.common.package_version_utils import get_package_version_tuple
 SKLEARN_VERSION = get_package_version_tuple("sklearn")
 
 
-@pytest.mark.parametrize(
-    "semi_supervised_model_name",
-    [
-        "LabelPropagation",
-        "LabelSpreading",
-    ],
-)
+@pytest.mark.parametrize("semi_supervised_model_name", ["LabelPropagation", "LabelSpreading"])
 def test_model_methods_wrapped_in_function_trace(semi_supervised_model_name, run_semi_supervised_model):
     expected_scoped_metrics = {
         "LabelPropagation": [
@@ -59,12 +51,7 @@ def test_model_methods_wrapped_in_function_trace(semi_supervised_model_name, run
 
 
 @pytest.mark.skipif(SKLEARN_VERSION < (1, 0, 0), reason="Requires sklearn <= 1.0")
-@pytest.mark.parametrize(
-    "semi_supervised_model_name",
-    [
-        "SelfTrainingClassifier",
-    ],
-)
+@pytest.mark.parametrize("semi_supervised_model_name", ["SelfTrainingClassifier"])
 def test_above_v1_0_model_methods_wrapped_in_function_trace(semi_supervised_model_name, run_semi_supervised_model):
     expected_scoped_metrics = {
         "SelfTrainingClassifier": [
@@ -73,7 +60,7 @@ def test_above_v1_0_model_methods_wrapped_in_function_trace(semi_supervised_mode
             ("Function/MLModel/Sklearn/Named/SelfTrainingClassifier.predict_log_proba", 1),
             ("Function/MLModel/Sklearn/Named/SelfTrainingClassifier.score", 1),
             ("Function/MLModel/Sklearn/Named/SelfTrainingClassifier.predict_proba", 1),
-        ],
+        ]
     }
 
     @validate_transaction_metrics(

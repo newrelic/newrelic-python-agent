@@ -16,45 +16,29 @@ from newrelic.api.application import application_instance as __application
 from newrelic.api.application import application_settings as __application_settings
 from newrelic.api.application import register_application as __register_application
 from newrelic.api.log import NewRelicContextFormatter as __NewRelicContextFormatter
-from newrelic.api.time_trace import (
-    add_custom_span_attribute as __add_custom_span_attribute,
-)
+from newrelic.api.time_trace import add_custom_span_attribute as __add_custom_span_attribute
 from newrelic.api.time_trace import current_trace as __current_trace
 from newrelic.api.time_trace import get_linking_metadata as __get_linking_metadata
 from newrelic.api.time_trace import notice_error as __notice_error
 from newrelic.api.time_trace import record_exception as __record_exception
-from newrelic.api.transaction import (
-    accept_distributed_trace_headers as __accept_distributed_trace_headers,
-)
-from newrelic.api.transaction import (
-    accept_distributed_trace_payload as __accept_distributed_trace_payload,
-)
+from newrelic.api.transaction import accept_distributed_trace_headers as __accept_distributed_trace_headers
+from newrelic.api.transaction import accept_distributed_trace_payload as __accept_distributed_trace_payload
 from newrelic.api.transaction import add_custom_attribute as __add_custom_attribute
 from newrelic.api.transaction import add_custom_attributes as __add_custom_attributes
 from newrelic.api.transaction import add_custom_parameter as __add_custom_parameter
 from newrelic.api.transaction import add_custom_parameters as __add_custom_parameters
 from newrelic.api.transaction import add_framework_info as __add_framework_info
 from newrelic.api.transaction import capture_request_params as __capture_request_params
-from newrelic.api.transaction import (
-    create_distributed_trace_payload as __create_distributed_trace_payload,
-)
+from newrelic.api.transaction import create_distributed_trace_payload as __create_distributed_trace_payload
 from newrelic.api.transaction import current_span_id as __current_span_id
 from newrelic.api.transaction import current_trace_id as __current_trace_id
 from newrelic.api.transaction import current_transaction as __current_transaction
-from newrelic.api.transaction import (
-    disable_browser_autorum as __disable_browser_autorum,
-)
+from newrelic.api.transaction import disable_browser_autorum as __disable_browser_autorum
 from newrelic.api.transaction import end_of_transaction as __end_of_transaction
-from newrelic.api.transaction import (
-    get_browser_timing_footer as __get_browser_timing_footer,
-)
-from newrelic.api.transaction import (
-    get_browser_timing_header as __get_browser_timing_header,
-)
+from newrelic.api.transaction import get_browser_timing_footer as __get_browser_timing_footer
+from newrelic.api.transaction import get_browser_timing_header as __get_browser_timing_header
 from newrelic.api.transaction import ignore_transaction as __ignore_transaction
-from newrelic.api.transaction import (
-    insert_distributed_trace_headers as __insert_distributed_trace_headers,
-)
+from newrelic.api.transaction import insert_distributed_trace_headers as __insert_distributed_trace_headers
 from newrelic.api.transaction import record_custom_event as __record_custom_event
 from newrelic.api.transaction import record_custom_metric as __record_custom_metric
 from newrelic.api.transaction import record_custom_metrics as __record_custom_metrics
@@ -63,15 +47,9 @@ from newrelic.api.transaction import record_ml_event as __record_ml_event
 from newrelic.api.transaction import set_background_task as __set_background_task
 from newrelic.api.transaction import set_transaction_name as __set_transaction_name
 from newrelic.api.transaction import suppress_apdex_metric as __suppress_apdex_metric
-from newrelic.api.transaction import (
-    suppress_transaction_trace as __suppress_transaction_trace,
-)
-from newrelic.api.wsgi_application import (
-    WSGIApplicationWrapper as __WSGIApplicationWrapper,
-)
-from newrelic.api.wsgi_application import (
-    wrap_wsgi_application as __wrap_wsgi_application,
-)
+from newrelic.api.transaction import suppress_transaction_trace as __suppress_transaction_trace
+from newrelic.api.wsgi_application import WSGIApplicationWrapper as __WSGIApplicationWrapper
+from newrelic.api.wsgi_application import wrap_wsgi_application as __wrap_wsgi_application
 from newrelic.api.wsgi_application import wsgi_application as __wsgi_application
 from newrelic.config import extra_settings as __extra_settings
 from newrelic.config import initialize as __initialize
@@ -79,18 +57,12 @@ from newrelic.core.agent import register_data_source as __register_data_source
 from newrelic.core.agent import shutdown_agent as __shutdown_agent
 from newrelic.core.config import global_settings as __global_settings
 from newrelic.samplers.decorators import data_source_factory as __data_source_factory
-from newrelic.samplers.decorators import (
-    data_source_generator as __data_source_generator,
-)
+from newrelic.samplers.decorators import data_source_generator as __data_source_generator
 
 try:
-    from newrelic.api.asgi_application import (
-        ASGIApplicationWrapper as __ASGIApplicationWrapper,
-    )
+    from newrelic.api.asgi_application import ASGIApplicationWrapper as __ASGIApplicationWrapper
     from newrelic.api.asgi_application import asgi_application as __asgi_application
-    from newrelic.api.asgi_application import (
-        wrap_asgi_application as __wrap_asgi_application,
-    )
+    from newrelic.api.asgi_application import wrap_asgi_application as __wrap_asgi_application
 except SyntaxError:
 
     def __asgi_application(*args, **kwargs):
@@ -100,22 +72,16 @@ except SyntaxError:
     __wrap_asgi_application = __asgi_application
 
 from newrelic.api.background_task import BackgroundTask as __BackgroundTask
-from newrelic.api.background_task import (
-    BackgroundTaskWrapper as __BackgroundTaskWrapper,
-)
+from newrelic.api.background_task import BackgroundTaskWrapper as __BackgroundTaskWrapper
 from newrelic.api.background_task import background_task as __background_task
 from newrelic.api.background_task import wrap_background_task as __wrap_background_task
 from newrelic.api.database_trace import DatabaseTrace as __DatabaseTrace
 from newrelic.api.database_trace import DatabaseTraceWrapper as __DatabaseTraceWrapper
 from newrelic.api.database_trace import database_trace as __database_trace
-from newrelic.api.database_trace import (
-    register_database_client as __register_database_client,
-)
+from newrelic.api.database_trace import register_database_client as __register_database_client
 from newrelic.api.database_trace import wrap_database_trace as __wrap_database_trace
 from newrelic.api.datastore_trace import DatastoreTrace as __DatastoreTrace
-from newrelic.api.datastore_trace import (
-    DatastoreTraceWrapper as __DatastoreTraceWrapper,
-)
+from newrelic.api.datastore_trace import DatastoreTraceWrapper as __DatastoreTraceWrapper
 from newrelic.api.datastore_trace import datastore_trace as __datastore_trace
 from newrelic.api.datastore_trace import wrap_datastore_trace as __wrap_datastore_trace
 from newrelic.api.error_trace import ErrorTrace as __ErrorTrace
@@ -130,38 +96,24 @@ from newrelic.api.function_trace import FunctionTrace as __FunctionTrace
 from newrelic.api.function_trace import FunctionTraceWrapper as __FunctionTraceWrapper
 from newrelic.api.function_trace import function_trace as __function_trace
 from newrelic.api.function_trace import wrap_function_trace as __wrap_function_trace
-from newrelic.api.generator_trace import (
-    GeneratorTraceWrapper as __GeneratorTraceWrapper,
-)
+from newrelic.api.generator_trace import GeneratorTraceWrapper as __GeneratorTraceWrapper
 from newrelic.api.generator_trace import generator_trace as __generator_trace
 from newrelic.api.generator_trace import wrap_generator_trace as __wrap_generator_trace
 from newrelic.api.html_insertion import insert_html_snippet as __insert_html_snippet
 from newrelic.api.html_insertion import verify_body_exists as __verify_body_exists
 from newrelic.api.lambda_handler import LambdaHandlerWrapper as __LambdaHandlerWrapper
 from newrelic.api.lambda_handler import lambda_handler as __lambda_handler
-from newrelic.api.llm_custom_attributes import (
-    WithLlmCustomAttributes as __WithLlmCustomAttributes,
-)
+from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes as __WithLlmCustomAttributes
 from newrelic.api.message_trace import MessageTrace as __MessageTrace
 from newrelic.api.message_trace import MessageTraceWrapper as __MessageTraceWrapper
 from newrelic.api.message_trace import message_trace as __message_trace
 from newrelic.api.message_trace import wrap_message_trace as __wrap_message_trace
 from newrelic.api.message_transaction import MessageTransaction as __MessageTransaction
-from newrelic.api.message_transaction import (
-    MessageTransactionWrapper as __MessageTransactionWrapper,
-)
-from newrelic.api.message_transaction import (
-    message_transaction as __message_transaction,
-)
-from newrelic.api.message_transaction import (
-    wrap_message_transaction as __wrap_message_transaction,
-)
-from newrelic.api.ml_model import (
-    record_llm_feedback_event as __record_llm_feedback_event,
-)
-from newrelic.api.ml_model import (
-    set_llm_token_count_callback as __set_llm_token_count_callback,
-)
+from newrelic.api.message_transaction import MessageTransactionWrapper as __MessageTransactionWrapper
+from newrelic.api.message_transaction import message_transaction as __message_transaction
+from newrelic.api.message_transaction import wrap_message_transaction as __wrap_message_transaction
+from newrelic.api.ml_model import record_llm_feedback_event as __record_llm_feedback_event
+from newrelic.api.ml_model import set_llm_token_count_callback as __set_llm_token_count_callback
 from newrelic.api.ml_model import wrap_mlmodel as __wrap_mlmodel
 from newrelic.api.profile_trace import ProfileTraceWrapper as __ProfileTraceWrapper
 from newrelic.api.profile_trace import profile_trace as __profile_trace
@@ -169,17 +121,11 @@ from newrelic.api.profile_trace import wrap_profile_trace as __wrap_profile_trac
 from newrelic.api.settings import set_error_group_callback as __set_error_group_callback
 from newrelic.api.supportability import wrap_api_call as __wrap_api_call
 from newrelic.api.transaction import set_user_id as __set_user_id
-from newrelic.api.transaction_name import (
-    TransactionNameWrapper as __TransactionNameWrapper,
-)
+from newrelic.api.transaction_name import TransactionNameWrapper as __TransactionNameWrapper
 from newrelic.api.transaction_name import transaction_name as __transaction_name
-from newrelic.api.transaction_name import (
-    wrap_transaction_name as __wrap_transaction_name,
-)
+from newrelic.api.transaction_name import wrap_transaction_name as __wrap_transaction_name
 from newrelic.api.web_transaction import WebTransaction as __WebTransaction
-from newrelic.api.web_transaction import (
-    WebTransactionWrapper as __WebTransactionWrapper,
-)
+from newrelic.api.web_transaction import WebTransactionWrapper as __WebTransactionWrapper
 from newrelic.api.web_transaction import web_transaction as __web_transaction
 from newrelic.api.web_transaction import wrap_web_transaction as __wrap_web_transaction
 from newrelic.common.object_names import callable_name as __callable_name
@@ -194,23 +140,15 @@ from newrelic.common.object_wrapper import PreFunctionWrapper as __PreFunctionWr
 from newrelic.common.object_wrapper import function_wrapper as __function_wrapper
 from newrelic.common.object_wrapper import in_function as __in_function
 from newrelic.common.object_wrapper import out_function as __out_function
-from newrelic.common.object_wrapper import (
-    patch_function_wrapper as __patch_function_wrapper,
-)
+from newrelic.common.object_wrapper import patch_function_wrapper as __patch_function_wrapper
 from newrelic.common.object_wrapper import post_function as __post_function
 from newrelic.common.object_wrapper import pre_function as __pre_function
 from newrelic.common.object_wrapper import resolve_path as __resolve_path
-from newrelic.common.object_wrapper import (
-    transient_function_wrapper as __transient_function_wrapper,
-)
-from newrelic.common.object_wrapper import (
-    wrap_function_wrapper as __wrap_function_wrapper,
-)
+from newrelic.common.object_wrapper import transient_function_wrapper as __transient_function_wrapper
+from newrelic.common.object_wrapper import wrap_function_wrapper as __wrap_function_wrapper
 from newrelic.common.object_wrapper import wrap_in_function as __wrap_in_function
 from newrelic.common.object_wrapper import wrap_object as __wrap_object
-from newrelic.common.object_wrapper import (
-    wrap_object_attribute as __wrap_object_attribute,
-)
+from newrelic.common.object_wrapper import wrap_object_attribute as __wrap_object_attribute
 from newrelic.common.object_wrapper import wrap_out_function as __wrap_out_function
 from newrelic.common.object_wrapper import wrap_post_function as __wrap_post_function
 from newrelic.common.object_wrapper import wrap_pre_function as __wrap_pre_function

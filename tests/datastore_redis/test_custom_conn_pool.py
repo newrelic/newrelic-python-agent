@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" The purpose of these tests is to confirm that using a non-standard
+"""The purpose of these tests is to confirm that using a non-standard
 connection pool that does not have a `connection_kwargs` attribute
 will not result in an error.
 """
@@ -22,9 +22,7 @@ import redis
 from testing_support.db_settings import redis_settings
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
@@ -33,7 +31,7 @@ DB_SETTINGS = redis_settings()[0]
 REDIS_PY_VERSION = get_package_version_tuple("redis")
 
 
-class FakeConnectionPool():
+class FakeConnectionPool:
     """Connection Pool without connection_kwargs attribute."""
 
     def __init__(self, connection):
@@ -51,12 +49,8 @@ class FakeConnectionPool():
 
 # Settings
 
-_enable_instance_settings = {
-    "datastore_tracer.instance_reporting.enabled": True,
-}
-_disable_instance_settings = {
-    "datastore_tracer.instance_reporting.enabled": False,
-}
+_enable_instance_settings = {"datastore_tracer.instance_reporting.enabled": True}
+_disable_instance_settings = {"datastore_tracer.instance_reporting.enabled": False}
 
 # Metrics
 
@@ -71,9 +65,7 @@ _base_scoped_metrics = [
 ]
 # client_setinfo was introduced in v5.0.0 and assigns info displayed in client_list output
 if REDIS_PY_VERSION >= (5, 0):
-    _base_scoped_metrics.append(
-        ("Datastore/operation/Redis/client_setinfo", 2),
-    )
+    _base_scoped_metrics.append(("Datastore/operation/Redis/client_setinfo", 2))
 
 _base_rollup_metrics = [
     ("Datastore/all", datastore_all_metric_count),
@@ -85,9 +77,7 @@ _base_rollup_metrics = [
     ("Datastore/operation/Redis/client_list", 1),
 ]
 if REDIS_PY_VERSION >= (5, 0):
-    _base_rollup_metrics.append(
-        ("Datastore/operation/Redis/client_setinfo", 2),
-    )
+    _base_rollup_metrics.append(("Datastore/operation/Redis/client_setinfo", 2))
 
 _host = instance_hostname(DB_SETTINGS["host"])
 _port = DB_SETTINGS["port"]

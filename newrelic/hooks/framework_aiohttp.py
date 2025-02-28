@@ -21,11 +21,7 @@ from newrelic.api.transaction import current_transaction, ignore_transaction
 from newrelic.api.web_transaction import web_transaction
 from newrelic.common.async_wrapper import async_wrapper, is_coroutine_callable
 from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import (
-    ObjectProxy,
-    function_wrapper,
-    wrap_function_wrapper,
-)
+from newrelic.common.object_wrapper import ObjectProxy, function_wrapper, wrap_function_wrapper
 from newrelic.core.config import is_expected_error, should_ignore_error
 
 SUPPORTED_METHODS = ("connect", "head", "get", "delete", "options", "patch", "post", "put", "trace")

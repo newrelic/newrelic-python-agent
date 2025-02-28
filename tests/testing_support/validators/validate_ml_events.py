@@ -99,10 +99,6 @@ def _check_event_attributes(expected, captured, mismatches):
 
 
 def _event_details(matching_ml_events, captured, mismatches):
-    details = [
-        f"matching_ml_events={matching_ml_events}",
-        f"mismatches={mismatches}",
-        f"captured_events={captured}",
-    ]
+    details = [f"matching_ml_events={matching_ml_events}", f"mismatches={mismatches}", f"captured_events={captured}"]
 
     return "\n".join(details)

@@ -19,9 +19,7 @@ from langchain.prompts import ChatPromptTemplate
 from langchain.tools import tool
 from langchain_core.prompts import MessagesPlaceholder
 from testing_support.fixtures import reset_core_stats_engine, validate_attributes
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
@@ -40,18 +38,10 @@ def tools():
 def prompt():
     return ChatPromptTemplate.from_messages(
         [
-            (
-                "system",
-                "You are a world class algorithm for extracting information in structured formats.",
-            ),
-            (
-                "human",
-                "Use the given format to extract information from the following input: {input}",
-            ),
+            ("system", "You are a world class algorithm for extracting information in structured formats."),
+            ("human", "Use the given format to extract information from the following input: {input}"),
             ("human", "Tip: Make sure to answer in the correct format"),
-            MessagesPlaceholder(
-                variable_name="agent_scratchpad",
-            ),
+            MessagesPlaceholder(variable_name="agent_scratchpad"),
         ]
     )
 
@@ -61,9 +51,7 @@ def prompt():
     name="test_agent:test_sync_agent",
     scoped_metrics=[("Llm/agent/LangChain/invoke", 1)],
     rollup_metrics=[("Llm/agent/LangChain/invoke", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -80,9 +68,7 @@ def test_sync_agent(chat_openai_client, tools, prompt):
     name="test_agent:test_async_agent",
     scoped_metrics=[("Llm/agent/LangChain/ainvoke", 1)],
     rollup_metrics=[("Llm/agent/LangChain/ainvoke", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])

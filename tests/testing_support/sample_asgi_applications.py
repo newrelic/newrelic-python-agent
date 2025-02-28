@@ -14,11 +14,7 @@
 
 from newrelic.api.asgi_application import ASGIApplicationWrapper
 from newrelic.api.time_trace import notice_error
-from newrelic.api.transaction import (
-    add_custom_attribute,
-    current_transaction,
-    ignore_transaction,
-)
+from newrelic.api.transaction import add_custom_attribute, current_transaction, ignore_transaction
 
 
 class simple_app_v2_raw:

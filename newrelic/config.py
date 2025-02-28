@@ -4694,12 +4694,6 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
-        "aiobotocore.client",
-        "newrelic.hooks.external_aiobotocore",
-        "instrument_aiobotocore_client",
-    )
-
-    _process_module_definition(
         "botocore.endpoint",
         "newrelic.hooks.external_botocore",
         "instrument_botocore_endpoint",

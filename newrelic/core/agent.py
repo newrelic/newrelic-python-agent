@@ -152,7 +152,7 @@ class Agent:
 
         initialize_logging(settings.log_file, settings.log_level)
 
-        _logger.info(f"New Relic Python Agent ({newrelic.version})")
+        _logger.info("New Relic Python Agent (%s)", newrelic.version)
 
         check_environment()
 
@@ -619,7 +619,7 @@ class Agent:
             try:
                 application.harvest(shutdown=False, flexible=True)
             except Exception:
-                _logger.exception(f"Failed to harvest data for {application.name}.")
+                _logger.exception("Failed to harvest data for %s.", application.name)
 
         self._flexible_harvest_duration = time.time() - self._last_flexible_harvest
 
@@ -643,7 +643,7 @@ class Agent:
             try:
                 application.harvest(shutdown, flexible=False)
             except Exception:
-                _logger.exception(f"Failed to harvest data for {application.name}.")
+                _logger.exception("Failed to harvest data for %s.", application.name)
 
         self._default_harvest_duration = time.time() - self._last_default_harvest
 

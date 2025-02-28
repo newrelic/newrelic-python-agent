@@ -600,7 +600,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
                 except json.decoder.JSONDecodeError:
                     pass
                 except Exception:
-                    _logger.warning(REQUEST_EXTACTOR_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
+                    _logger.warning(REQUEST_EXTACTOR_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
                 error_attributes = bedrock_error_attributes(exc, bedrock_attrs)
                 notice_error_attributes = {
@@ -624,7 +624,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
                 else:
                     handle_chat_completion_event(transaction, error_attributes)
             except Exception:
-                _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
+                _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
             raise
 
@@ -653,7 +653,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
         except json.decoder.JSONDecodeError:
             pass
         except Exception:
-            _logger.warning(REQUEST_EXTACTOR_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
+            _logger.warning(REQUEST_EXTACTOR_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
         try:
             if response_streaming:
@@ -675,7 +675,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
             try:
                 response_extractor(response_body, bedrock_attrs)
             except Exception:
-                _logger.warning(RESPONSE_EXTRACTOR_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
+                _logger.warning(RESPONSE_EXTRACTOR_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
             if operation == "embedding":
                 handle_embedding_event(transaction, bedrock_attrs)
@@ -683,7 +683,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
                 handle_chat_completion_event(transaction, bedrock_attrs)
 
         except Exception:
-            _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
+            _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
         return response
 
@@ -738,7 +738,7 @@ def record_stream_chunk(self, return_val, transaction):
             if _type == "content_block_stop":
                 record_events_on_stop_iteration(self, transaction)
         except Exception:
-            _logger.warning(RESPONSE_EXTRACTOR_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
+            _logger.warning(RESPONSE_EXTRACTOR_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
 
 def record_events_on_stop_iteration(self, transaction):
@@ -754,7 +754,7 @@ def record_events_on_stop_iteration(self, transaction):
             bedrock_attrs["duration"] = self._nr_ft.duration * 1000
             handle_chat_completion_event(transaction, bedrock_attrs)
         except Exception:
-            _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
+            _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
         # Clear cached data as this can be very large.
         self._nr_bedrock_attrs.clear()
@@ -788,7 +788,7 @@ def record_error(self, transaction, exc):
             # Clear cached data as this can be very large.
             error_attributes.clear()
         except Exception:
-            _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
+            _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
 
 def handle_embedding_event(transaction, bedrock_attrs):

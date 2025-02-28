@@ -323,7 +323,7 @@ def _record_embedding_success(transaction, embedding_id, linking_metadata, kwarg
         full_embedding_response_dict.update(_get_llm_attributes(transaction))
         transaction.record_custom_event("LlmEmbedding", full_embedding_response_dict)
     except Exception:
-        _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
+        _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
 
 def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs, ft, exc):
@@ -361,7 +361,7 @@ def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs,
                 "embedding_id": embedding_id,
             }
     except Exception:
-        _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
+        _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
     message = notice_error_attributes.pop("error.message", None)
     if message:
@@ -392,7 +392,7 @@ def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs,
         error_embedding_dict.update(_get_llm_attributes(transaction))
         transaction.record_custom_event("LlmEmbedding", error_embedding_dict)
     except Exception:
-        _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
+        _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
 
 async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
@@ -454,7 +454,7 @@ def _handle_completion_success(transaction, linking_metadata, completion_id, kwa
             return_val._nr_openai_attrs["model"] = kwargs.get("model") or kwargs.get("engine")
             return
         except Exception:
-            _logger.warning(STREAM_PARSING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
+            _logger.warning(STREAM_PARSING_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
     try:
         # If response is not a stream generator, record the event data.
@@ -475,7 +475,7 @@ def _handle_completion_success(transaction, linking_metadata, completion_id, kwa
 
         _record_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, response_headers, response)
     except Exception:
-        _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
+        _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
 
 def _record_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, response_headers, response):
@@ -571,7 +571,7 @@ def _record_completion_success(transaction, linking_metadata, completion_id, kwa
             output_message_list,
         )
     except Exception:
-        _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
+        _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
 
 def _record_completion_error(transaction, linking_metadata, completion_id, kwargs, ft, exc):
@@ -605,7 +605,7 @@ def _record_completion_error(transaction, linking_metadata, completion_id, kwarg
                 "completion_id": completion_id,
             }
     except Exception:
-        _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
+        _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
     # Override the default message if it is not empty.
     message = notice_error_attributes.pop("error.message", None)
     if message:
@@ -657,7 +657,7 @@ def _record_completion_error(transaction, linking_metadata, completion_id, kwarg
             output_message_list,
         )
     except Exception:
-        _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
+        _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
 
 def wrap_convert_to_openai_object(wrapped, instance, args, kwargs):
@@ -767,7 +767,7 @@ def _record_stream_chunk(self, return_val):
                     self._nr_openai_attrs["role"] = self._nr_openai_attrs.get("role") or delta.get("role")
                 self._nr_openai_attrs["finish_reason"] = choices[0].get("finish_reason")
         except Exception:
-            _logger.warning(STREAM_PARSING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
+            _logger.warning(STREAM_PARSING_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
 
 def _record_events_on_stop_iteration(self, transaction):
@@ -787,7 +787,7 @@ def _record_events_on_stop_iteration(self, transaction):
                 transaction, linking_metadata, completion_id, openai_attrs, self._nr_ft, response_headers, None
             )
         except Exception:
-            _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
+            _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
         finally:
             # Clear cached data as this can be very large.
             # Note this is also important for not reporting the events twice. In openai v1

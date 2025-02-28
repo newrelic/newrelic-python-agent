@@ -92,7 +92,7 @@ def wrap_log(wrapped, instance, args, kwargs):
             options[1] += 2
 
     except Exception as e:
-        _logger.debug(f"Exception in loguru handling: {str(e)}")
+        _logger.debug("Exception in loguru handling: %s", e)
         return wrapped(*args, **kwargs)
     else:
         return wrapped(**bound_args)

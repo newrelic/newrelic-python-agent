@@ -653,7 +653,7 @@ def default_otlp_host(host):
     otlp_host = HOST_MAP.get(host, None)
     if not otlp_host:
         default = HOST_MAP["collector.newrelic.com"]
-        _logger.warn(f"Unable to find corresponding OTLP host using default {default}")
+        _logger.warning("Unable to find corresponding OTLP host using default %s", default)
         otlp_host = default
     return otlp_host
 
@@ -1410,7 +1410,7 @@ def error_matches_rules(rules_prefix, exc_info, status_code=None, settings=None)
             # Coerce into integer
             status_code = int(status_code)
         except:
-            _logger.error(f"Failed to coerce status code into integer. status_code: {str(status_code)}")
+            _logger.error("Failed to coerce status code into integer. status_code: %s", str(status_code))
         else:
             if status_code in status_codes_rules:
                 return True

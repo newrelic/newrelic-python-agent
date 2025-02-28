@@ -41,7 +41,7 @@ select = [
     "ISC",  # flake8-implicit-str-concat
     "ICN",  # flake8-import-conventions
     "LOG",  # flake8-logging
-    # "G",  # flake8-logging-format
+    "G",  # flake8-logging-format
     # "INP",  # flake8-no-pep420
     "PYI",  # flake8-pyi
     # "PT",  # flake8-pytest-style

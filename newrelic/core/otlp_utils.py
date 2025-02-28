@@ -102,7 +102,7 @@ def create_key_value(key, value):
     # those are not valid custom attribute types according to our api spec,
     # we will not bother to support them here either.
     else:
-        _logger.warning(f"Unsupported attribute value type {key}: {value}.")
+        _logger.warning("Unsupported attribute value type %s: %s.", key, value)
 
 
 def create_key_values_from_iterable(iterable):

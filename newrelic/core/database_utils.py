@@ -824,7 +824,7 @@ class SQLStatement:
             except UnicodeError as e:
                 settings = global_settings()
                 if settings.debug.log_explain_plan_queries:
-                    _logger.debug(f"An error occurred while decoding sql statement: {e.reason}")
+                    _logger.debug("An error occurred while decoding sql statement: %s", e.reason)
 
                 self._operation = ""
                 self._target = ""

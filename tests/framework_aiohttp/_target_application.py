@@ -28,8 +28,8 @@ async def index(request):
 
 
 async def hang(request):
-    while True:
-        await asyncio.sleep(0)
+    while True:  # noqa: ASYNC110
+        await asyncio.sleep(0)  # noqa: ASYNC110
 
 
 async def error(request):

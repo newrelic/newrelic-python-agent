@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import pytest
-from conftest import AIOREDIS_VERSION, loop  # noqa # pylint: disable=E0611,W0611
+from conftest import AIOREDIS_VERSION, loop
 from testing_support.db_settings import redis_settings
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname

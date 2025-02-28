@@ -34,7 +34,7 @@ class Application:
 
     @cherrypy.expose
     def not_found(self):
-        raise cherrypy.NotFound()
+        raise cherrypy.NotFound
 
     @cherrypy.expose
     def not_found_as_http_error(self):

@@ -311,7 +311,7 @@ def raise_background_exceptions(timeout=5.0):
                 if exc_info[1] is not None:
                     raise exc_info[1]
                 else:
-                    raise exc_info[0]()
+                    raise exc_info[0]
 
         return result
 

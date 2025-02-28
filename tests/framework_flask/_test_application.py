@@ -46,7 +46,7 @@ def abort_404_page():
 
 @application.route("/exception_404")
 def exception_404_page():
-    raise NotFound()
+    raise NotFound
 
 
 @application.route("/template_string")

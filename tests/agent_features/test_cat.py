@@ -85,7 +85,7 @@ _override_settings = {"cross_application_tracing.enabled": True, "distributed_tr
 def test_cat_fips_compliance(monkeypatch, fips_enabled):
     # Set md5 to raise a ValueError to simulate FIPS compliance issues.
     def md5_crash(*args, **kwargs):
-        raise ValueError()
+        raise ValueError
 
     if fips_enabled:
         # monkeypatch.setattr("hashlib.md5", md5_crash)

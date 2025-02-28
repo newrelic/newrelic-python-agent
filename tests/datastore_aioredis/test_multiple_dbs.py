@@ -96,7 +96,7 @@ def client_set(request, loop):
                     aioredis.StrictRedis(host=DB_SETTINGS[1]["host"], port=DB_SETTINGS[1]["port"], db=0),
                 )
             else:
-                raise NotImplementedError()
+                raise NotImplementedError
         else:
             if request.param == "Redis":
                 return (
@@ -110,7 +110,7 @@ def client_set(request, loop):
             elif request.param == "StrictRedis":
                 pytest.skip("StrictRedis not implemented.")
             else:
-                raise NotImplementedError()
+                raise NotImplementedError
 
 
 async def exercise_redis(client_1, client_2):

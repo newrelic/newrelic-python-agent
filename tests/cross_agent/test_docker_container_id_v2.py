@@ -41,10 +41,10 @@ def _load_docker_test_attributes():
 def mock_open(mock_file):
     def _mock_open(filename, mode):
         if filename == "/proc/self/cgroup":
-            raise FileNotFoundError()
+            raise FileNotFoundError
         elif filename == "/proc/self/mountinfo":
             return mock_file
-        raise RuntimeError()
+        raise RuntimeError
 
     return _mock_open
 

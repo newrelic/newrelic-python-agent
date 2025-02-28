@@ -37,7 +37,7 @@ def not_found_exception_response(request):
 
 @view_config(route_name="raise_not_found")
 def raise_not_found(request):
-    raise exc.HTTPNotFound()
+    raise exc.HTTPNotFound
 
 
 @view_config(route_name="return_not_found")

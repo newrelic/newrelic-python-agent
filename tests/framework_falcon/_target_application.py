@@ -49,10 +49,10 @@ class Index:
 
 class BadResponse:
     def on_get(self, req, resp):
-        raise BadGetRequest()
+        raise BadGetRequest
 
     def on_put(self, req, resp):
-        raise BadPutRequest()
+        raise BadPutRequest
 
 
 try:

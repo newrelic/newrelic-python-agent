@@ -37,15 +37,15 @@ async def error(request):
 
 
 async def non_500_error(request):
-    raise web.HTTPGone()
+    raise web.HTTPGone
 
 
 async def raise_403(request):
-    raise web.HTTPForbidden()
+    raise web.HTTPForbidden
 
 
 async def raise_404(request):
-    raise web.HTTPNotFound()
+    raise web.HTTPNotFound
 
 
 @function_trace()

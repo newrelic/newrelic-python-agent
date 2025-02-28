@@ -255,17 +255,17 @@ def _truncate_bytes(s, maxsize):
 def check_name_length(name, max_length=MAX_ATTRIBUTE_LENGTH, encoding="utf-8"):
     trunc_name = truncate(name, max_length, encoding)
     if name != trunc_name:
-        raise NameTooLongException()
+        raise NameTooLongException
 
 
 def check_name_is_string(name):
     if not isinstance(name, (str, bytes)):
-        raise NameIsNotStringException()
+        raise NameIsNotStringException
 
 
 def check_max_int(value, max_int=MAX_64_BIT_INT):
     if isinstance(value, int) and value > max_int:
-        raise IntTooLargeException()
+        raise IntTooLargeException
 
 
 def process_user_attribute(name, value, max_length=MAX_ATTRIBUTE_LENGTH, ending=None):
@@ -372,7 +372,7 @@ def sanitize(value):
         try:
             value = str(value)
         except Exception:
-            raise CastingFailureException()
+            raise CastingFailureException
         else:
             _logger.debug("Attribute value is of type: %r. Casting %r to string: %s", type(original), original, value)
 

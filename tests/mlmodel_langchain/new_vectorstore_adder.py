@@ -27,14 +27,16 @@ def add_to_config(directory, instrumented_class=None):
         text = file.read()
         text = text.replace(
             "VectorStores with similarity_search method",
-            dedent(f"""
-                VectorStores with similarity_search method
-                    _process_module_definition(
-                        "{directory}",
-                        "newrelic.hooks.mlmodel_langchain",
-                        "instrument_langchain_vectorstore_similarity_search",
-                    )
-            """.lstrip("\n")),
+            dedent(
+                f"""
+                    VectorStores with similarity_search method
+                        _process_module_definition(
+                            "{directory}",
+                            "newrelic.hooks.mlmodel_langchain",
+                            "instrument_langchain_vectorstore_similarity_search",
+                        )
+                """.lstrip("\n")
+            ),
             1,
         )
         file.seek(0)

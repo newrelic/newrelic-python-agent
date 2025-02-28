@@ -707,7 +707,8 @@ def _create_successful_chain_run_events(
             output_message_list = [str(response)]
         except Exception as e:
             _logger.warning(
-                "Unable to capture response inside langchain chain instrumentation. No response message event will be captured. Report this issue to New Relic Support.\n%s", traceback.format_exception(*sys.exc_info())
+                "Unable to capture response inside langchain chain instrumentation. No response message event will be captured. Report this issue to New Relic Support.\n%s",
+                traceback.format_exception(*sys.exc_info()),
             )
 
     # Make sure the builtin attributes take precedence over metadata attributes.

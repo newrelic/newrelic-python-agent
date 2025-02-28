@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import sys
+import logging
 
 from newrelic.api.application import application_instance
 from newrelic.api.function_trace import FunctionTraceWrapper
@@ -19,25 +20,15 @@ from newrelic.api.message_trace import MessageTrace
 from newrelic.api.message_transaction import MessageTransaction
 from newrelic.api.time_trace import current_trace, notice_error
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import (
-    ObjectProxy,
-    function_wrapper,
-    wrap_function_wrapper,
-)
+from newrelic.common.object_wrapper import ObjectProxy, function_wrapper, wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
 
-HEARTBEAT_POLL = "MessageBroker/Kafka/Heartbeat/Poll"
-HEARTBEAT_SENT = "MessageBroker/Kafka/Heartbeat/Sent"
-HEARTBEAT_FAIL = "MessageBroker/Kafka/Heartbeat/Fail"
-HEARTBEAT_RECEIVE = "MessageBroker/Kafka/Heartbeat/Receive"
-HEARTBEAT_SESSION_TIMEOUT = "MessageBroker/Kafka/Heartbeat/SessionTimeout"
-HEARTBEAT_POLL_TIMEOUT = "MessageBroker/Kafka/Heartbeat/PollTimeout"
+_logger = logging.getLogger(__name__)
+AVAILABLE_TRANSPORTS = {"py-amqp": "PYAMQP", "librabbitmq": "LIBRABBITMQ", "amqp": "AMQP", "qpid": "QPID"}
 
 
-def _bind_send(
-    topic, value=None, key=None, headers=None, partition=None, timestamp_ms=None
-):
+def _bind_send(topic, value=None, key=None, headers=None, partition=None, timestamp_ms=None):
     return topic, value, key, headers, partition, timestamp_ms
 
 
@@ -64,10 +55,7 @@ def wrap_Producer_publish(wrapped, instance, args, kwargs):
         source=wrapped,
         terminal=False,
     ):
-        dt_headers = {
-            k: v.encode("utf-8")
-            for k, v in MessageTrace.generate_request_headers(transaction)
-        }
+        dt_headers = {k: v.encode("utf-8") for k, v in MessageTrace.generate_request_headers(transaction)}
         # headers can be a list of tuples or a dict so convert to dict for consistency.
         if headers:
             dt_headers.update(headers)
@@ -121,16 +109,25 @@ def wrap_consumer_recieve_callback(wrapped, instance, args, kwargs):
         value = len(str(body).encode("utf-8"))
         message_count = 1
         received_bytes = getattr(message, "body_received", None)
-
         transaction = current_transaction(active_only=False)
         if not transaction:
+            # Try to get the transport type. The default for kombu is py-amqp.
+            # If not in the known transport type list, fallback to "Other".
+            try:
+                transport_name = getattr(
+                    getattr(getattr(instance, "connection", None), "transport", None), "driver_name", "py-amqp"
+                )
+                transport_type = AVAILABLE_TRANSPORTS.get(transport_name.lower(), "Other")
+            except Exception:
+                _logger.debug("Failed to determine transport type.", exc_info=True)
+                transport_type = "Other"
             created_transaction = MessageTransaction(
                 application=application_instance(),
                 library=library,
                 destination_type=destination_type,
                 destination_name=destination_name,
                 headers=dict(getattr(message, "headers", {})),
-                transport_type="AMQP",
+                transport_type=transport_type,
                 routing_key=key,
                 source=wrapped,
             )
@@ -139,12 +136,8 @@ def wrap_consumer_recieve_callback(wrapped, instance, args, kwargs):
             # Obtain consumer client_id to send up as agent attribute
             if hasattr(message, "channel") and hasattr(message.channel, "channel_id"):
                 channel_id = message.channel.channel_id
-                created_transaction._add_agent_attribute(
-                    "kombu.consume.channel_id", channel_id
-                )
-            created_transaction._add_agent_attribute(
-                "kombu.consume.byteCount", received_bytes
-            )
+                created_transaction._add_agent_attribute("kombu.consume.channel_id", channel_id)
+            created_transaction._add_agent_attribute("kombu.consume.byteCount", received_bytes)
 
         transaction = current_transaction()
         if transaction:  # If there is an active transaction now.
@@ -154,12 +147,8 @@ def wrap_consumer_recieve_callback(wrapped, instance, args, kwargs):
             # was an existing one and not a message transaction, reproduce the naming logic here.
             group = f"Message/{library}/{destination_type}"
             name = f"Named/{destination_name}"
-            transaction.record_custom_metric(
-                f"{group}/{name}/Received/Bytes", received_bytes
-            )
-            transaction.record_custom_metric(
-                f"{group}/{name}/Received/Messages", message_count
-            )
+            transaction.record_custom_metric(f"{group}/{name}/Received/Bytes", received_bytes)
+            transaction.record_custom_metric(f"{group}/{name}/Received/Messages", message_count)
             # if hasattr(instance, "config"):
             #    for server_name in instance.config.get("bootstrap_servers", []):
             #        transaction.record_custom_metric(
@@ -191,10 +180,7 @@ def wrap_Producer_init(wrapped, instance, args, kwargs):
         instance, "Serialization/Key", "MessageBroker", get_config_key("key_serializer")
     )
     kwargs["value_serializer"] = wrap_serializer(
-        instance,
-        "Serialization/Value",
-        "MessageBroker",
-        get_config_key("value_serializer"),
+        instance, "Serialization/Value", "MessageBroker", get_config_key("value_serializer")
     )
 
     return wrapped(*args, **kwargs)
@@ -234,9 +220,7 @@ def wrap_serializer(client, serializer_name, group_prefix, serializer):
         else:
             # Find parent message trace to retrieve topic
             message_trace = current_trace()
-            while message_trace is not None and not isinstance(
-                message_trace, MessageTrace
-            ):
+            while message_trace is not None and not isinstance(message_trace, MessageTrace):
                 message_trace = message_trace.parent
             if message_trace:
                 topic = message_trace.destination_name
@@ -252,9 +236,7 @@ def wrap_serializer(client, serializer_name, group_prefix, serializer):
             # Do nothing
             return serializer
         elif isinstance(serializer, Serializer):
-            return NewRelicSerializerWrapper(
-                serializer, group_prefix=group_prefix, serializer_name=serializer_name
-            )
+            return NewRelicSerializerWrapper(serializer, group_prefix=group_prefix, serializer_name=serializer_name)
         else:
             # Wrap callable in wrapper
             return _wrap_serializer(serializer)
@@ -283,34 +265,22 @@ def instrument_kombu_messaging(module):
         # wrap_function_wrapper(module, "Producer.__init__", wrap_Producer_init)
         wrap_function_wrapper(module, "Producer.publish", wrap_Producer_publish)
     if hasattr(module, "Consumer"):
-        wrap_function_wrapper(
-            module, "Consumer._receive_callback", wrap_consumer_recieve_callback
-        )
+        wrap_function_wrapper(module, "Consumer._receive_callback", wrap_consumer_recieve_callback)
 
 
 def instrument_kombu_heartbeat(module):
     if hasattr(module, "Heartbeat"):
         if hasattr(module.Heartbeat, "poll"):
-            wrap_function_wrapper(
-                module, "Heartbeat.poll", metric_wrapper(HEARTBEAT_POLL)
-            )
+            wrap_function_wrapper(module, "Heartbeat.poll", metric_wrapper(HEARTBEAT_POLL))
 
         if hasattr(module.Heartbeat, "fail_heartbeat"):
-            wrap_function_wrapper(
-                module, "Heartbeat.fail_heartbeat", metric_wrapper(HEARTBEAT_FAIL)
-            )
+            wrap_function_wrapper(module, "Heartbeat.fail_heartbeat", metric_wrapper(HEARTBEAT_FAIL))
 
         if hasattr(module.Heartbeat, "sent_heartbeat"):
-            wrap_function_wrapper(
-                module, "Heartbeat.sent_heartbeat", metric_wrapper(HEARTBEAT_SENT)
-            )
+            wrap_function_wrapper(module, "Heartbeat.sent_heartbeat", metric_wrapper(HEARTBEAT_SENT))
 
         if hasattr(module.Heartbeat, "received_heartbeat"):
-            wrap_function_wrapper(
-                module,
-                "Heartbeat.received_heartbeat",
-                metric_wrapper(HEARTBEAT_RECEIVE),
-            )
+            wrap_function_wrapper(module, "Heartbeat.received_heartbeat", metric_wrapper(HEARTBEAT_RECEIVE))
 
         if hasattr(module.Heartbeat, "session_timeout_expired"):
             wrap_function_wrapper(
@@ -321,7 +291,5 @@ def instrument_kombu_heartbeat(module):
 
         if hasattr(module.Heartbeat, "poll_timeout_expired"):
             wrap_function_wrapper(
-                module,
-                "Heartbeat.poll_timeout_expired",
-                metric_wrapper(HEARTBEAT_POLL_TIMEOUT, check_result=True),
+                module, "Heartbeat.poll_timeout_expired", metric_wrapper(HEARTBEAT_POLL_TIMEOUT, check_result=True)
             )

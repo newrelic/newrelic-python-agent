@@ -59,7 +59,7 @@ select = [
     # "PL",  # Pylint
     # "TRY",  # tryceratops
     "FLY",  # flynt
-    # "PERF",  # Perflint
+    "PERF",  # Perflint
     "FURB",  # refurb
     # "RUF",  # Ruff-specific rules
 ]
@@ -104,6 +104,7 @@ ignore = [
     "ARG001",  # unused-argument
     "PYI024",  # collections-named-tuple (not currently using type annotations)
     "RUF100",  # unused-noqa (TODO: remove this once all linters are enabled)
+    "PERF203",  # try-except-in-loop (most of these are unavoidable)
 ]
 
 [tool.ruff.lint.per-file-ignores]

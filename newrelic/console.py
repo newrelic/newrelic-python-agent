@@ -61,11 +61,7 @@ def shell_command(wrapped):
         result = shlex.split(line)
 
         (options, args) = parser.parse_args(result)
-
-        kwargs = {}
-        for key, value in options.__dict__.items():
-            if value is not None:
-                kwargs[key] = value
+        kwargs = {key: value for key, value in options.__dict__.items() if value is not None}
 
         return wrapped(self, *args, **kwargs)
 

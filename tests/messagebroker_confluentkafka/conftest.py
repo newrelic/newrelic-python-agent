@@ -176,7 +176,7 @@ def topic(broker):
     admin = AdminClient({"bootstrap.servers": broker})
     new_topics = [NewTopic(topic, num_partitions=1, replication_factor=1)]
     topics = admin.create_topics(new_topics)
-    for _, f in topics.items():
+    for f in topics.values():
         f.result()  # Block until topic is created.
 
     yield topic

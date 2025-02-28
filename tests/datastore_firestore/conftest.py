@@ -101,7 +101,9 @@ def assert_trace_for_generator():
         # Check for generator trace on collections
         _trace_check = []
         for _ in generator_func(*args, **kwargs):
-            _trace_check.append(isinstance(current_trace(), DatastoreTrace))
+            # Iterate over generator and check trace is correct for each item.
+            # Ignore linter, don't use list comprehensions or it's harder to understand the behavior.
+            _trace_check.append(isinstance(current_trace(), DatastoreTrace))  # noqa: PERF401
         assert _trace_check and all(_trace_check)  # All checks are True, and at least 1 is present.
         assert current_trace() is txn  # Generator trace has exited.
 
@@ -118,7 +120,9 @@ def assert_trace_for_async_generator(loop):
         async def coro():
             # Check for generator trace on collections
             async for _ in generator_func(*args, **kwargs):
-                _trace_check.append(isinstance(current_trace(), DatastoreTrace))
+                # Iterate over async generator and check trace is correct for each item.
+                # Ignore linter, don't use list comprehensions or it's harder to understand the behavior.
+                _trace_check.append(isinstance(current_trace(), DatastoreTrace))  # noqa: PERF401
 
         loop.run_until_complete(coro())
 

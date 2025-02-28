@@ -36,8 +36,7 @@ def validate_error_event_attributes(required_params=None, forgone_params=None, e
                 raise
 
             event_data = instance.error_events
-            for sample in event_data:
-                error_data_samples.append(sample)
+            error_data_samples.extend(event_data)
 
             check_event_attributes(event_data, required_params, forgone_params, exact_attrs)
 

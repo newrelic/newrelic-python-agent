@@ -151,8 +151,7 @@ class PoorResolvingConnector(aiohttp.TCPConnector):
     async def _resolve_host(self, host, port, *args, **kwargs):
         res = [{"hostname": host, "host": host, "port": 1234, "family": self._family, "proto": 0, "flags": 0}]
         hosts = await super(PoorResolvingConnector, self)._resolve_host(host, port, *args, **kwargs)
-        for hinfo in hosts:
-            res.append(hinfo)
+        res.extend(hosts)
         return res
 
 

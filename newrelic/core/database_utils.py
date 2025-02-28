@@ -702,11 +702,10 @@ def _explain_plan(connections, sql, database, connect_params, cursor_params, sql
         else:
             cursor.execute(query, **kwargs)
 
-        columns = []
-
         if cursor.description:
-            for column in cursor.description:
-                columns.append(column[0])
+            columns = [column[0] for column in cursor.description]
+        else:
+            columns = []
 
         rows = cursor.fetchall()
 

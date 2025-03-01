@@ -86,10 +86,7 @@ async def wrap_client__make_api_call(wrapped, instance, args, kwargs):
 
     # Early exit if we can't access the shared settings object from invoke_model instrumentation
     # This settings object helps us determine if AIM was enabled as well as streaming
-    if not settings:
-        return await wrapped(*args, **kwargs)
-
-    if not settings.ai_monitoring.enabled:
+    if not (settings and settings.ai_monitoring.enabled):
         return await wrapped(*args, **kwargs)
 
     # Grab all context data from botocore invoke_model instrumentation off the shared instance

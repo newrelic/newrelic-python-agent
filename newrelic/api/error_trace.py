@@ -20,7 +20,9 @@ from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 
 
 class ErrorTrace:
-    def __init__(self, ignore_errors=[], ignore=None, expected=None, status_code=None, parent=None):
+    def __init__(self, ignore_errors=None, ignore=None, expected=None, status_code=None, parent=None):
+        if ignore_errors is None:
+            ignore_errors = []
         if parent is None:
             parent = current_trace()
 
@@ -51,7 +53,10 @@ class ErrorTrace:
         )
 
 
-def ErrorTraceWrapper(wrapped, ignore_errors=[], ignore=None, expected=None, status_code=None):
+def ErrorTraceWrapper(wrapped, ignore_errors=None, ignore=None, expected=None, status_code=None):
+    if ignore_errors is None:
+        ignore_errors = []
+
     def wrapper(wrapped, instance, args, kwargs):
         parent = current_trace()
 
@@ -64,11 +69,17 @@ def ErrorTraceWrapper(wrapped, ignore_errors=[], ignore=None, expected=None, sta
     return FunctionWrapper(wrapped, wrapper)
 
 
-def error_trace(ignore_errors=[], ignore=None, expected=None, status_code=None):
+def error_trace(ignore_errors=None, ignore=None, expected=None, status_code=None):
+    if ignore_errors is None:
+        ignore_errors = []
+
     return functools.partial(
         ErrorTraceWrapper, ignore_errors=ignore_errors, ignore=ignore, expected=expected, status_code=status_code
     )
 
 
-def wrap_error_trace(module, object_path, ignore_errors=[], ignore=None, expected=None, status_code=None):
+def wrap_error_trace(module, object_path, ignore_errors=None, ignore=None, expected=None, status_code=None):
+    if ignore_errors is None:
+        ignore_errors = []
+
     wrap_object(module, object_path, ErrorTraceWrapper, (ignore_errors, ignore, expected, status_code))

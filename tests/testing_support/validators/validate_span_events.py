@@ -25,15 +25,15 @@ except:
 
 def validate_span_events(
     count=1,
-    exact_intrinsics={},
-    expected_intrinsics=[],
-    unexpected_intrinsics=[],
-    exact_agents={},
-    expected_agents=[],
-    unexpected_agents=[],
-    exact_users={},
-    expected_users=[],
-    unexpected_users=[],
+    exact_intrinsics=None,
+    expected_intrinsics=None,
+    unexpected_intrinsics=None,
+    exact_agents=None,
+    expected_agents=None,
+    unexpected_agents=None,
+    exact_users=None,
+    expected_users=None,
+    unexpected_users=None,
     index=-1,
 ):
     # Used for validating a single span event.
@@ -43,6 +43,25 @@ def validate_span_events(
     # raises an AssertionError.
     #
     # Use this validator once per distinct span event expected.
+
+    if unexpected_users is None:
+        unexpected_users = []
+    if expected_users is None:
+        expected_users = []
+    if exact_users is None:
+        exact_users = {}
+    if unexpected_agents is None:
+        unexpected_agents = []
+    if expected_agents is None:
+        expected_agents = []
+    if exact_agents is None:
+        exact_agents = {}
+    if unexpected_intrinsics is None:
+        unexpected_intrinsics = []
+    if expected_intrinsics is None:
+        expected_intrinsics = []
+    if exact_intrinsics is None:
+        exact_intrinsics = {}
 
     @function_wrapper
     def _validate_wrapper(wrapped, instance, args, kwargs):

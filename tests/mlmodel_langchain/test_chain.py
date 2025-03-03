@@ -553,6 +553,60 @@ recorded_events_retrieval_chain_response = [
     ],
 ]
 
+chat_completion_recorded_events_str_response = [
+    (
+        {"type": "LlmChatCompletionSummary"},
+        {
+            "id": None,
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "virtual_llm": True,
+            "request_id": None,
+            "duration": None,
+            "response.number_of_messages": 2,
+            "metadata.id": "123",
+        },
+    ),
+    (
+        {"type": "LlmChatCompletionMessage"},
+        {
+            "id": None,
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
+            "request_id": None,
+            "span_id": None,
+            "trace_id": "trace-id",
+            "content": "{'text': 'M'}",
+            "completion_id": None,
+            "sequence": 0,
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "virtual_llm": True,
+        },
+    ),
+    (
+        {"type": "LlmChatCompletionMessage"},
+        {
+            "id": None,
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
+            "request_id": None,
+            "span_id": None,
+            "trace_id": "trace-id",
+            "content": "Milo",
+            "completion_id": None,
+            "sequence": 1,
+            "vendor": "langchain",
+            "ingest_source": "Python",
+            "is_response": True,
+            "virtual_llm": True,
+        },
+    ),
+]
 chat_completion_recorded_events_list_response = [
     (
         {"type": "LlmChatCompletionSummary"},
@@ -680,6 +734,35 @@ chat_completion_recorded_events_error_in_langchain = [
         },
     ),
 ]
+
+
+@reset_core_stats_engine()
+@validate_custom_events(events_with_context_attrs(chat_completion_recorded_events_str_response))
+@validate_custom_event_count(count=7)
+@validate_transaction_metrics(
+    name="test_chain:test_langchain_chain_str_response",
+    scoped_metrics=[("Llm/chain/LangChain/invoke", 1)],
+    rollup_metrics=[("Llm/chain/LangChain/invoke", 1)],
+    custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
+    background_task=True,
+)
+@background_task()
+def test_langchain_chain_str_response(set_trace_info, chat_openai_client):
+    set_trace_info()
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
+    add_custom_attribute("non_llm_attr", "python-agent")
+
+    template = """You are a helpful assistant who generates a random first name. A user will pass in a first letter, and you should generate a name that starts with that first letter."""
+    human_template = "{text}"
+
+    chat_prompt = langchain_core.prompts.ChatPromptTemplate.from_messages(
+        [("system", template), ("human", human_template)]
+    )
+    str_output_parser = langchain_core.output_parsers.string.StrOutputParser()
+    chain = chat_prompt | chat_openai_client | str_output_parser
+    with WithLlmCustomAttributes({"context": "attr"}):
+        chain.invoke({"text": "M"}, config={"metadata": {"id": "123"}})
 
 
 @reset_core_stats_engine()

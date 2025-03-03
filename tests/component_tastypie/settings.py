@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+
 import django
 
 BASE_DIR = os.path.dirname(__file__)

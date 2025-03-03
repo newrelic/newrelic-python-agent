@@ -43,12 +43,12 @@ def target_application(request):
     return framework, version, _test_graphql.target_application[framework]
 
 
-def example_middleware(next, root, info, **args):  # pylint: disable=W0622
+def example_middleware(next, root, info, **args):  # noqa: A002
     return_value = next(root, info, **args)
     return return_value
 
 
-def error_middleware(next, root, info, **args):  # pylint: disable=W0622
+def error_middleware(next, root, info, **args):  # noqa: A002
     raise RuntimeError("Runtime Error!")
 
 

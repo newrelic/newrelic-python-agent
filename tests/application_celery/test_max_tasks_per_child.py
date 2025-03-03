@@ -34,7 +34,7 @@ def mock_agent_shutdown(wrapped, instance, args, kwargs):
 @validate_function_called("newrelic.core.agent", "Agent.shutdown_agent")
 def test_max_tasks_per_child():
     def on_exit(*args, **kwargs):
-        raise OnExit()
+        raise OnExit
 
     ctx = get_context()
     worker = Worker(ctx.SimpleQueue(), ctx.SimpleQueue(), None, maxtasks=1, on_exit=on_exit)

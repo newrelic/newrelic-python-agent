@@ -20,12 +20,10 @@ can be found in test/framework_tornado_r3/test_cat_map.py
 
 import json
 import os
+from urllib.request import urlopen
 
 import pytest
 import webtest
-
-from urllib.request import urlopen
-
 from testing_support.fixtures import (
     make_cross_agent_headers,
     override_application_name,

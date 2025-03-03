@@ -13,13 +13,13 @@
 # limitations under the License.
 
 import os
-import webtest
 
+import webtest
 from ariadne import MutationType, QueryType, UnionType, load_schema_from_path, make_executable_schema
 from ariadne.wsgi import GraphQL as GraphQLWSGI
-from framework_graphql._target_schema_sync import books, magazines, libraries
-
+from framework_graphql._target_schema_sync import books, libraries, magazines
 from testing_support.asgi_testing import AsgiTest
+
 from framework_ariadne.test_application import ARIADNE_VERSION
 
 ariadne_version_tuple = tuple(map(int, ARIADNE_VERSION.split(".")))

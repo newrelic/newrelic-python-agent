@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sqlite3 as database
 import os
+import sqlite3 as database
 import sys
 
 is_pypy = hasattr(sys, "pypy_version_info")
 
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.validators.validate_database_trace_inputs import validate_database_trace_inputs
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 

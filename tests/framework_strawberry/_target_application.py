@@ -17,6 +17,7 @@ import asyncio
 import json
 
 import pytest
+
 from framework_strawberry._target_schema_async import target_asgi_application as target_asgi_application_async
 from framework_strawberry._target_schema_async import target_schema as target_schema_async
 from framework_strawberry._target_schema_sync import target_asgi_application as target_asgi_application_sync

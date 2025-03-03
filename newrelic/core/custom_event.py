@@ -40,7 +40,7 @@ class NameInvalidCharactersException(Exception):
 def check_event_type_valid_chars(name):
     regex = EVENT_TYPE_VALID_CHARS_REGEX
     if not regex.match(name):
-        raise NameInvalidCharactersException()
+        raise NameInvalidCharactersException
 
 
 def process_event_type(name):

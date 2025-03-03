@@ -28,7 +28,7 @@ from newrelic.core.error_node import ErrorNode
 from newrelic.core.function_node import FunctionNode
 from newrelic.core.log_event_node import LogEventNode
 from newrelic.core.root_node import RootNode
-from newrelic.core.stats_engine import CustomMetrics, SampledDataSet, DimensionalMetrics
+from newrelic.core.stats_engine import CustomMetrics, DimensionalMetrics, SampledDataSet
 from newrelic.core.transaction_node import TransactionNode
 from newrelic.network.exceptions import RetryDataForRequest
 

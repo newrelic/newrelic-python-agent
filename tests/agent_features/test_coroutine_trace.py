@@ -489,4 +489,4 @@ def test_trace_outlives_transaction(event_loop):
 
 
 if sys.version_info >= (3, 5):
-    from _test_async_coroutine_trace import *  # NOQA
+    from _test_async_coroutine_trace import *

@@ -15,11 +15,10 @@
 import sys
 import types
 
-
-import newrelic.api.transaction
-import newrelic.api.object_wrapper
-import newrelic.common.object_wrapper
 import newrelic.api.external_trace
+import newrelic.api.object_wrapper
+import newrelic.api.transaction
+import newrelic.common.object_wrapper
 
 
 class capture_external_trace:

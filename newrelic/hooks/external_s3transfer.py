@@ -13,8 +13,8 @@
 # limitations under the License.
 
 from newrelic.api.time_trace import current_trace
-from newrelic.common.signature import bind_args
 from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.common.signature import bind_args
 from newrelic.core.context import context_wrapper
 
 

@@ -13,8 +13,7 @@
 # limitations under the License.
 
 import webtest
-
-from flask import Flask, render_template_string, render_template, abort
+from flask import Flask, abort, render_template, render_template_string
 from werkzeug.exceptions import NotFound
 from werkzeug.routing import Rule
 
@@ -46,7 +45,7 @@ def abort_404_page():
 
 @application.route("/exception_404")
 def exception_404_page():
-    raise NotFound()
+    raise NotFound
 
 
 @application.route("/template_string")

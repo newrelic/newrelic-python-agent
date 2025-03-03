@@ -64,7 +64,7 @@ def test_logging_exc_info_context_attributes(logger):
     try:
         raise RuntimeError("Oops")
     except Exception:
-        logger.error("exc_info", exc_info=True)
+        logger.exception("exc_info")
 
 
 @validate_log_events([{"message": "stack_info"}], required_attrs=["context.stack_info"])

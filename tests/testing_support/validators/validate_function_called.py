@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.common.object_wrapper import transient_function_wrapper, function_wrapper
+from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
 
 
 def validate_function_called(module, name):

@@ -127,7 +127,7 @@ def _getattr_deprecation_warning(attr):
         warnings.warn("Testing deprecation warnings.", DeprecationWarning)
         return "3.2.1"
     else:
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 def test_deprecation_warning_suppression(monkeypatch, recwarn):

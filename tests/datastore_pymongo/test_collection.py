@@ -35,11 +35,11 @@ INSTANCE_METRIC_NAME = f"Datastore/instance/MongoDB/{INSTANCE_METRIC_HOST}/{MONG
 
 # Find correct metric name based on import availability.
 try:
-    from pymongo.synchronous.mongo_client import MongoClient  # noqa
+    from pymongo.synchronous.mongo_client import MongoClient
 
     INIT_FUNCTION_METRIC = "Function/pymongo.synchronous.mongo_client:MongoClient.__init__"
 except ImportError:
-    from pymongo.mongo_client import MongoClient  # noqa
+    from pymongo.mongo_client import MongoClient
 
     INIT_FUNCTION_METRIC = "Function/pymongo.mongo_client:MongoClient.__init__"
 

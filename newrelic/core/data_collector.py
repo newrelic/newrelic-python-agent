@@ -19,10 +19,9 @@ import logging
 from newrelic.common.agent_http import ApplicationModeClient, DeveloperModeClient, ServerlessModeClient
 from newrelic.core.agent_protocol import AgentProtocol, OtlpProtocol, ServerlessModeProtocol
 from newrelic.core.agent_streaming import StreamingRpc
+from newrelic.core.attribute import MAX_NUM_USER_ATTRIBUTES, process_user_attribute
 from newrelic.core.config import global_settings
 from newrelic.core.otlp_utils import encode_metric_data, encode_ml_event_data
-
-from newrelic.core.attribute import process_user_attribute, MAX_NUM_USER_ATTRIBUTES
 
 _logger = logging.getLogger(__name__)
 

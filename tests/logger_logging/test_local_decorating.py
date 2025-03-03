@@ -15,7 +15,6 @@
 import platform
 
 import pytest
-
 from testing_support.fixtures import reset_core_stats_engine
 from testing_support.validators.validate_log_event_count import validate_log_event_count
 from testing_support.validators.validate_log_event_count_outside_transaction import (

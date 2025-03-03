@@ -13,7 +13,8 @@
 # limitations under the License.
 
 import pytest
-from newrelic.hooks.database_psycopg2 import instance_info, _add_defaults, _parse_connect_params
+
+from newrelic.hooks.database_psycopg2 import _add_defaults, _parse_connect_params, instance_info
 
 
 def test_kwargs():

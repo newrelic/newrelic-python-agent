@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.common.object_wrapper import wrap_object
 from newrelic.api.database_trace import register_database_client
-
+from newrelic.common.object_wrapper import wrap_object
 from newrelic.hooks.database_dbapi2 import ConnectionFactory
 
 

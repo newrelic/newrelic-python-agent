@@ -28,6 +28,7 @@ from newrelic.common.utilization import (
     KubernetesUtilization,
     PCFUtilization,
 )
+from newrelic.core.agent_control_health import HealthStatus, agent_control_health_instance
 from newrelic.core.attribute import truncate
 from newrelic.core.config import fetch_config_setting, finalize_application_settings, global_settings_dump
 from newrelic.core.internal_metrics import internal_count_metric
@@ -39,7 +40,6 @@ from newrelic.network.exceptions import (
     NetworkInterfaceException,
     RetryDataForRequest,
 )
-from newrelic.core.agent_control_health import HealthStatus, agent_control_health_instance
 
 _logger = logging.getLogger(__name__)
 

@@ -14,16 +14,17 @@
 
 import os
 import random
-import pytest
-import time
 import socket
+import time
+
+import pytest
 from testing_support.fixtures import TerminatingPopen
 from testing_support.util import get_open_port
-
 
 pytest.importorskip("aiohttp.wsgi")
 pytest.importorskip("gunicorn.workers.gaiohttp")
 from urllib.request import urlopen
+
 from testing_support.util import get_open_port
 
 

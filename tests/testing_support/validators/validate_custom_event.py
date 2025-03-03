@@ -14,9 +14,8 @@
 
 import time
 
-from testing_support.fixtures import core_application_stats_engine
-
 from newrelic.common.object_wrapper import function_wrapper
+from testing_support.fixtures import core_application_stats_engine
 
 
 def _validate_custom_event(recorded_event, required_event):

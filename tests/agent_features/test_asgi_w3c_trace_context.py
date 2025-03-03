@@ -13,22 +13,21 @@
 # limitations under the License.
 
 import pytest
-
-from newrelic.api.transaction import current_transaction
-from newrelic.api.external_trace import ExternalTrace
-from newrelic.api.asgi_application import asgi_application
-
 from testing_support.asgi_testing import AsgiTest
 from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+
+from newrelic.api.asgi_application import asgi_application
+from newrelic.api.external_trace import ExternalTrace
+from newrelic.api.transaction import current_transaction
 
 
 @asgi_application()
 async def target_asgi_application(scope, receive, send):
     status = "200 OK"
-    type = "http.response.start"
+    type_ = "http.response.start"
     txn = current_transaction()
     if txn._sampled is None:
         txn._sampled = True
@@ -40,7 +39,7 @@ async def target_asgi_application(scope, receive, send):
         encoded_val = value.encode("utf-8")
         response_headers.append((encoded_key, encoded_val))
 
-    await send({"type": type, "status": status, "headers": response_headers})
+    await send({"type": type_, "status": status, "headers": response_headers})
 
     await send({"type": "http.response.body", "body": b"Hello World"})
 

@@ -13,16 +13,17 @@
 # limitations under the License.
 
 import json
-import webtest
-import pytest
 
-from newrelic.api.transaction import current_transaction
-from newrelic.api.external_trace import ExternalTrace
-from newrelic.api.wsgi_application import wsgi_application
+import pytest
+import webtest
 from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_span_events import validate_span_events
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+
+from newrelic.api.external_trace import ExternalTrace
+from newrelic.api.transaction import current_transaction
+from newrelic.api.wsgi_application import wsgi_application
 
 
 @wsgi_application()

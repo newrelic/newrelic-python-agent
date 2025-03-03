@@ -12,15 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 import os
 import time
 
-
+import pytest
 from testing_support.fixtures import collector_agent_registration_fixture
-from newrelic.core.agent_protocol import AgentProtocol
+
 from newrelic.common.agent_http import HttpClient
-from newrelic.core.config import global_settings, _environ_as_bool
+from newrelic.core.agent_protocol import AgentProtocol
+from newrelic.core.config import _environ_as_bool, global_settings
 
 DEVELOPER_MODE = _environ_as_bool("NEW_RELIC_DEVELOPER_MODE", False) or "NEW_RELIC_LICENSE_KEY" not in os.environ
 SKIP_IF_DEVELOPER_MODE = pytest.mark.skipif(DEVELOPER_MODE, reason="Cannot connect to collector in developer mode")

@@ -172,7 +172,7 @@ def test_distributed_tracing_headers(topic, producer, consumer, serialize, expec
 @pytest.fixture()
 def consumer_next_raises(consumer):
     def _poll(*args, **kwargs):
-        raise RuntimeError()
+        raise RuntimeError
 
     consumer.poll = _poll
     return consumer

@@ -19,7 +19,6 @@ from sanic.response import json
 from sanic.router import Router
 from sanic.views import HTTPMethodView
 
-
 try:
     # Old style response streaming
     from sanic.response import stream

@@ -941,7 +941,7 @@ def test_enduser_id_attribute_api_valid_types(input_user_id, reported_user_id, h
         set_user_id(input_user_id)
 
         try:
-            raise ValueError()
+            raise ValueError
         except Exception:
             notice_error()
 
@@ -957,7 +957,7 @@ def test_enduser_id_attribute_api_invalid_types(input_user_id):
         set_user_id(input_user_id)
 
         try:
-            raise ValueError()
+            raise ValueError
         except Exception:
             notice_error()
 

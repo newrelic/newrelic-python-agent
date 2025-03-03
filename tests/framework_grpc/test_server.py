@@ -22,10 +22,8 @@ from testing_support.validators.validate_transaction_errors import validate_tran
 from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
-from newrelic.core.config import global_settings
-
 from newrelic.common.package_version_utils import get_package_version
-
+from newrelic.core.config import global_settings
 
 GRPC_VERSION = get_package_version("grpc")
 

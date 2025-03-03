@@ -339,7 +339,8 @@ class Transaction:
             self.__exit__(None, None, None)
 
     def __enter__(self):
-        assert self._state == self.STATE_PENDING
+        if self._state != self.STATE_PENDING:
+            raise RuntimeError("Attempting to start Transaction that's in an invalid state.")
 
         # Bail out if the transaction is not enabled.
 
@@ -994,7 +995,7 @@ class Transaction:
     def _compute_sampled_and_priority(self):
         if self._priority is None:
             # truncate priority field to 6 digits past the decimal
-            self._priority = float(f"{random.random():.6f}")  # nosec
+            self._priority = float(f"{random.random():.6f}")  # noqa: S311
 
         if self._sampled is None:
             self._sampled = self._application.compute_sampled()

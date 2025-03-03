@@ -419,7 +419,7 @@ class SampledDataSet:
         self.num_seen += 1
 
         if priority is None:
-            priority = random.random()  # nosec
+            priority = random.random()  # noqa: S311
 
         entry = (priority, self.num_seen, sample)
         if self.num_seen == self.capacity:
@@ -1280,7 +1280,7 @@ class StatsEngine:
 
         if priority is None:
             # Base priority for log events outside transactions is below those inside transactions
-            priority = random.random() - 1  # nosec
+            priority = random.random() - 1  # noqa: S311
 
         self._log_events.add(event, priority=priority)
 

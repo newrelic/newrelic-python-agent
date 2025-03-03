@@ -184,7 +184,7 @@ def newrelic_browser_timing_header():
     from django.utils.safestring import mark_safe
 
     transaction = current_transaction()
-    return transaction and mark_safe(transaction.browser_timing_header()) or ""  # nosec
+    return transaction and mark_safe(transaction.browser_timing_header()) or ""  # noqa: S308
 
 
 def newrelic_browser_timing_footer():

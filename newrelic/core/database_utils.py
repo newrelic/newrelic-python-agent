@@ -531,7 +531,10 @@ class SQLConnection:
         self.connection = connection
         self.cursors = {}
 
-    def cursor(self, args=(), kwargs={}):
+    def cursor(self, args=(), kwargs=None):
+        if kwargs is None:
+            kwargs = {}
+
         key = (args, frozenset(kwargs.items()))
 
         cursor = self.cursors.get(key)

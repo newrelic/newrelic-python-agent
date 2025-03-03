@@ -1073,12 +1073,15 @@ def dynamodb_datastore_trace(
 def aws_function_trace(
     operation,
     destination_name=None,
-    params={},
+    params=None,
     terminal=False,
     async_wrapper=None,
     extract_agent_attrs=None,
     library=None,
 ):
+    if params is None:
+        params = {}
+
     @function_wrapper
     def _nr_aws_function_trace_wrapper_(wrapped, instance, args, kwargs):
         wrapper = async_wrapper if async_wrapper is not None else get_async_wrapper(wrapped)
@@ -1111,12 +1114,15 @@ def aws_message_trace(
     operation,
     destination_type,
     destination_name,
-    params={},
+    params=None,
     terminal=True,
     async_wrapper=None,
     extract_agent_attrs=None,
     library=None,
 ):
+    if params is None:
+        params = {}
+
     @function_wrapper
     def _nr_aws_message_trace_wrapper_(wrapped, instance, args, kwargs):
         wrapper = async_wrapper if async_wrapper is not None else get_async_wrapper(wrapped)

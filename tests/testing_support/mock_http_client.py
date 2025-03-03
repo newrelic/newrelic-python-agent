@@ -28,7 +28,7 @@ def create_client_cls(status, data, url=None):
         elif expected.scheme == "http":
             expected_port = 80
         else:
-            assert False, "Expected URL is missing scheme and port"
+            raise AssertionError("Expected URL is missing scheme and port")
     else:
         expected = None
 

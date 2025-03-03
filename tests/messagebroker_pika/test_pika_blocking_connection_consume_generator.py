@@ -123,9 +123,9 @@ def test_blocking_connection_consume_exception_in_for_loop(producer):
             # Expected error
             pass
         except Exception as e:
-            assert False, f"Wrong exception was raised: {e}"
+            raise AssertionError(f"Wrong exception was raised: {e}")
         else:
-            assert False, "No exception was raised!"
+            raise AssertionError("No exception was raised!")
 
 
 _test_blocking_connection_consume_empty_metrics = [
@@ -155,9 +155,9 @@ def test_blocking_connection_consume_exception_in_generator():
             # Expected error
             pass
         except Exception as e:
-            assert False, f"Wrong exception was raised: {e}"
+            raise AssertionError(f"Wrong exception was raised: {e}")
         else:
-            assert False, "No exception was raised!"
+            raise AssertionError("No exception was raised!")
 
 
 _test_blocking_connection_consume_many_metrics = [
@@ -216,7 +216,7 @@ def test_blocking_connection_consume_using_methods(producer):
             pass
         else:
             # this is not
-            assert False, "No exception was raised!"
+            raise AssertionError("No exception was raised!")
 
         result = consumer.close()
         assert result is None
@@ -305,7 +305,7 @@ def test_blocking_connection_consume_using_methods_outside_txn(producer):
             pass
         else:
             # this is not
-            assert False, "No exception was raised!"
+            raise AssertionError("No exception was raised!")
 
         result = consumer.close()
         assert result is None
@@ -329,4 +329,4 @@ def test_blocking_connection_consume_exception_on_creation():
             pass
         else:
             # this is not
-            assert False, "TypeError was not raised"
+            raise AssertionError("TypeError was not raised")

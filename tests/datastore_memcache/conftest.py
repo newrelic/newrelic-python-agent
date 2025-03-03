@@ -65,6 +65,6 @@ def memcached_multi():
         if all(server_hit):
             break
     else:
-        assert False, "memcached_multi failed to map keys to multiple servers."
+        raise AssertionError("memcached_multi failed to map keys to multiple servers.")
 
     return multi_dict

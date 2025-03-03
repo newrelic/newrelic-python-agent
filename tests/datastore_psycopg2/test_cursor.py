@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 import psycopg2
 import psycopg2.extensions
 import psycopg2.extras
+import pytest
 
 try:
     from psycopg2 import sql
@@ -23,13 +23,12 @@ except ImportError:
     sql = None
 
 from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from testing_support.validators.validate_database_trace_inputs import validate_database_trace_inputs
 from testing_support.util import instance_hostname
+from testing_support.validators.validate_database_trace_inputs import validate_database_trace_inputs
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from utils import DB_SETTINGS
 
 from newrelic.api.background_task import background_task
-
 
 # Settings
 _enable_instance_settings = {"datastore_tracer.instance_reporting.enabled": True}

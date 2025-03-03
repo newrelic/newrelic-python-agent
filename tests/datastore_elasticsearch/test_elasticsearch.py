@@ -13,15 +13,13 @@
 # limitations under the License.
 
 import elasticsearch.client
+from conftest import ES_SETTINGS, ES_VERSION
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
-
-from conftest import ES_VERSION, ES_SETTINGS
-
 
 # Settings
 

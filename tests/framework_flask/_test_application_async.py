@@ -14,7 +14,6 @@
 
 import webtest
 from _test_application import application
-
 from conftest import async_handler_support
 
 # Async handlers only supported in Flask >2.0.0

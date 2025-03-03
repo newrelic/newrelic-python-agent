@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from newrelic.api.function_trace import FunctionTraceWrapper
 from newrelic.api.time_trace import notice_error
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import function_wrapper
-from newrelic.api.function_trace import FunctionTraceWrapper
 
 
 def _bind_get_response(request, *args, **kwargs):

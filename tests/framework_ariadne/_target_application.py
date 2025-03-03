@@ -16,13 +16,14 @@
 import asyncio
 import json
 
+from graphql import MiddlewareManager
+
 from framework_ariadne._target_schema_async import target_asgi_application as target_asgi_application_async
 from framework_ariadne._target_schema_async import target_schema as target_schema_async
+from framework_ariadne._target_schema_sync import ariadne_version_tuple
 from framework_ariadne._target_schema_sync import target_asgi_application as target_asgi_application_sync
 from framework_ariadne._target_schema_sync import target_schema as target_schema_sync
 from framework_ariadne._target_schema_sync import target_wsgi_application as target_wsgi_application_sync
-from framework_ariadne._target_schema_sync import ariadne_version_tuple
-from graphql import MiddlewareManager
 
 
 def check_response(query, success, response):

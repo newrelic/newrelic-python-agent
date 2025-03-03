@@ -15,7 +15,6 @@
 from newrelic.api.transaction import current_transaction
 from newrelic.common.encoding_utils import deobfuscate, json_decode
 
-
 OUTBOUND_TRACE_KEYS_REQUIRED = ("ty", "ac", "ap", "tr", "pr", "sa", "ti")
 
 

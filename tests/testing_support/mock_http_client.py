@@ -15,7 +15,6 @@
 from urllib.parse import urlencode
 
 import newrelic.packages.urllib3 as urllib3
-
 from newrelic.common.agent_http import BaseClient
 
 

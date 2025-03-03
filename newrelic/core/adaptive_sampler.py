@@ -13,8 +13,8 @@
 # limitations under the License.
 
 import random
-import time
 import threading
+import time
 
 
 class AdaptiveSampler:

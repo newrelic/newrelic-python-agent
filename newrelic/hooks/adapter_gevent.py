@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.common.object_wrapper import wrap_in_function
 from newrelic.api.wsgi_application import WSGIApplicationWrapper
+from newrelic.common.object_wrapper import wrap_in_function
 
 
 def instrument_gevent_wsgi(module):

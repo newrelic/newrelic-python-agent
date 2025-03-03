@@ -14,14 +14,14 @@
 
 import json
 import os
+
 import pytest
+from testing_support.validators.validate_metric_payload import validate_metric_payload
 
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import record_custom_metric
 from newrelic.core.rules_engine import RulesEngine
-
-from testing_support.validators.validate_metric_payload import validate_metric_payload
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 FIXTURE = os.path.normpath(os.path.join(CURRENT_DIR, "fixtures", "rules.json"))

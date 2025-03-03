@@ -14,16 +14,14 @@
 
 import psycopg2
 import pytest
-
-from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from testing_support.validators.validate_database_trace_inputs import validate_database_trace_inputs
-from testing_support.util import instance_hostname
-from utils import DB_MULTIPLE_SETTINGS
 from testing_support.db_settings import postgresql_settings
+from testing_support.fixtures import override_application_settings
+from testing_support.util import instance_hostname
+from testing_support.validators.validate_database_trace_inputs import validate_database_trace_inputs
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from utils import DB_MULTIPLE_SETTINGS
 
 from newrelic.api.background_task import background_task
-
 
 # Settings
 

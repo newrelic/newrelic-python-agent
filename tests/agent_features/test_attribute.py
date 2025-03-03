@@ -498,7 +498,7 @@ def test_str_raises_type_error():
 
 class AttributeErrorString:
     def __str__(self):
-        raise AttributeError()
+        raise AttributeError
 
 
 def test_str_raises_attribute_error():

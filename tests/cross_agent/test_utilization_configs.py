@@ -16,7 +16,6 @@ import json
 import os
 import sys
 import tempfile
-
 from importlib import reload
 
 import pytest
@@ -30,7 +29,6 @@ from newrelic.common.object_wrapper import function_wrapper
 from newrelic.common.system_info import BootIdUtilization
 from newrelic.common.utilization import CommonUtilization
 from newrelic.core.agent_protocol import AgentProtocol
-
 
 INITIAL_ENV = os.environ
 

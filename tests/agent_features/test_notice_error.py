@@ -428,7 +428,7 @@ def test_application_error_event_limit():
 @background_task()
 def test_transaction_notice_error_params_not_a_dict():
     try:
-        raise RuntimeError()
+        raise RuntimeError
     except RuntimeError:
         notice_error(sys.exc_info(), attributes=[1, 2, 3])
 
@@ -437,6 +437,6 @@ def test_transaction_notice_error_params_not_a_dict():
 @validate_application_error_trace_count(num_errors=1)
 def test_application_notice_error_params_not_a_dict():
     try:
-        raise RuntimeError()
+        raise RuntimeError
     except RuntimeError:
         notice_error(sys.exc_info(), attributes=[1, 2, 3], application=application())

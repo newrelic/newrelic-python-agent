@@ -13,13 +13,12 @@
 # limitations under the License.
 
 import pytest
-
-from newrelic.api.background_task import background_task
-from newrelic.core.database_utils import SQLConnections
-
 from testing_support.validators.validate_database_node import validate_database_node
 from testing_support.validators.validate_sql_obfuscation import validate_sql_obfuscation
 from utils import DB_SETTINGS
+
+from newrelic.api.background_task import background_task
+from newrelic.core.database_utils import SQLConnections
 
 
 @pytest.fixture()

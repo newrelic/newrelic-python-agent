@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import pytest
-from conftest import AIOREDIS_VERSION, loop  # noqa # pylint: disable=E0611,W0611
+from conftest import AIOREDIS_VERSION, loop
 from testing_support.db_settings import redis_settings
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
@@ -75,7 +75,7 @@ async def exercise_redis_single_arg(client):
     background_task=True,
 )
 @background_task()
-def test_redis_execute_command_as_one_arg_enable(client, loop):  # noqa
+def test_redis_execute_command_as_one_arg_enable(client, loop):
     loop.run_until_complete(exercise_redis_single_arg(client))
 
 
@@ -88,7 +88,7 @@ def test_redis_execute_command_as_one_arg_enable(client, loop):  # noqa
     background_task=True,
 )
 @background_task()
-def test_redis_execute_command_as_one_arg_disable(client, loop):  # noqa
+def test_redis_execute_command_as_one_arg_disable(client, loop):
     loop.run_until_complete(exercise_redis_single_arg(client))
 
 
@@ -100,7 +100,7 @@ def test_redis_execute_command_as_one_arg_disable(client, loop):  # noqa
     background_task=True,
 )
 @background_task()
-def test_redis_execute_command_as_two_args_enable(client, loop):  # noqa
+def test_redis_execute_command_as_two_args_enable(client, loop):
     loop.run_until_complete(exercise_redis_multi_args(client))
 
 
@@ -112,5 +112,5 @@ def test_redis_execute_command_as_two_args_enable(client, loop):  # noqa
     background_task=True,
 )
 @background_task()
-def test_redis_execute_command_as_two_args_disable(client, loop):  # noqa
+def test_redis_execute_command_as_two_args_disable(client, loop):
     loop.run_until_complete(exercise_redis_multi_args(client))

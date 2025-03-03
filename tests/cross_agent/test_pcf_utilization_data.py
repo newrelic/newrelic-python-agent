@@ -14,12 +14,11 @@
 
 import json
 import os
+
 import pytest
-
-from newrelic.common.utilization import PCFUtilization
-
 from testing_support.validators.validate_internal_metrics import validate_internal_metrics
 
+from newrelic.common.utilization import PCFUtilization
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 INITIAL_ENV = os.environ

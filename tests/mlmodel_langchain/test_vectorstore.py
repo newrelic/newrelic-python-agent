@@ -20,7 +20,7 @@ import pytest
 from langchain_community.document_loaders import PyPDFLoader
 from langchain_community.vectorstores.faiss import FAISS
 from testing_support.fixtures import reset_core_stats_engine, validate_attributes
-from testing_support.ml_testing_utils import (  # noqa: F401
+from testing_support.ml_testing_utils import (
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
     events_with_context_attrs,

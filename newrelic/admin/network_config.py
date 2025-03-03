@@ -22,9 +22,9 @@ from newrelic.admin import command, usage
 from <config_file>.""",
 )
 def network_config(args):
+    import logging
     import os
     import sys
-    import logging
 
     if len(args) == 0:
         usage("network-config")

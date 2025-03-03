@@ -21,9 +21,8 @@ import logging
 import re
 import weakref
 
-
-from newrelic.core.internal_metrics import internal_metric
 from newrelic.core.config import global_settings
+from newrelic.core.internal_metrics import internal_metric
 
 _logger = logging.getLogger(__name__)
 
@@ -702,11 +701,10 @@ def _explain_plan(connections, sql, database, connect_params, cursor_params, sql
         else:
             cursor.execute(query, **kwargs)
 
-        columns = []
-
         if cursor.description:
-            for column in cursor.description:
-                columns.append(column[0])
+            columns = [column[0] for column in cursor.description]
+        else:
+            columns = []
 
         rows = cursor.fetchall()
 
@@ -824,7 +822,7 @@ class SQLStatement:
             except UnicodeError as e:
                 settings = global_settings()
                 if settings.debug.log_explain_plan_queries:
-                    _logger.debug(f"An error occurred while decoding sql statement: {e.reason}")
+                    _logger.debug("An error occurred while decoding sql statement: %s", e.reason)
 
                 self._operation = ""
                 self._target = ""

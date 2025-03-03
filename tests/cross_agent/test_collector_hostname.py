@@ -17,11 +17,9 @@ import multiprocessing
 import os
 import sys
 import tempfile
-
 from importlib import reload
 
 import pytest
-
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 FIXTURE = os.path.normpath(os.path.join(CURRENT_DIR, "fixtures", "collector_hostname.json"))

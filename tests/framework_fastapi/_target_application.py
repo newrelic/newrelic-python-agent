@@ -13,9 +13,9 @@
 # limitations under the License.
 
 from fastapi import FastAPI
+from testing_support.asgi_testing import AsgiTest
 
 from newrelic.api.transaction import current_transaction
-from testing_support.asgi_testing import AsgiTest
 
 app = FastAPI()
 

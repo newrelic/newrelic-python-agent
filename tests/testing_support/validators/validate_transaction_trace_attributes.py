@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from testing_support.fixtures import check_attributes
-
 from newrelic.common.encoding_utils import unpack_field
 from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
 from newrelic.core.database_utils import SQLConnections
+from testing_support.fixtures import check_attributes
 
 
 def validate_transaction_trace_attributes(

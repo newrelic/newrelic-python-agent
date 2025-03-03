@@ -13,10 +13,10 @@
 # limitations under the License.
 
 import pytest
+from testing_support.validators.validate_serverless_payload import validate_serverless_payload
 
 from newrelic.api.application import register_application
 from newrelic.api.background_task import background_task
-from testing_support.validators.validate_serverless_payload import validate_serverless_payload
 
 INI_FILE_EMPTY = """
 [newrelic]

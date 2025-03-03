@@ -16,7 +16,7 @@ import re
 
 _head_re = re.compile(b"<head[^>]*>", re.IGNORECASE)
 
-_xua_meta_re = re.compile(b"""<\\s*meta[^>]+http-equiv\\s*=\\s*['"]""" b"""x-ua-compatible['"][^>]*>""", re.IGNORECASE)
+_xua_meta_re = re.compile(b"""<\\s*meta[^>]+http-equiv\\s*=\\s*['"]x-ua-compatible['"][^>]*>""", re.IGNORECASE)
 
 _charset_meta_re = re.compile(b"""<\\s*meta[^>]+charset\\s*=[^>]*>""", re.IGNORECASE)
 

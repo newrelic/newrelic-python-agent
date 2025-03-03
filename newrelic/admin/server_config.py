@@ -24,9 +24,9 @@ side configuration. The application name as specified in the agent
 configuration file is used.""",
 )
 def server_config(args):
+    import logging
     import os
     import sys
-    import logging
     import time
 
     if len(args) == 0:

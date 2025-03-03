@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.common.object_wrapper import wrap_out_function, wrap_function_wrapper
+from newrelic.common.object_wrapper import wrap_function_wrapper, wrap_out_function
 from newrelic.core.trace_cache import trace_cache
 
 

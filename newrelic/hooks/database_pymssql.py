@@ -16,11 +16,8 @@ from newrelic.api.database_trace import register_database_client
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_object
-
-from newrelic.hooks.database_dbapi2 import (
-    ConnectionWrapper as DBAPI2ConnectionWrapper,
-    ConnectionFactory as DBAPI2ConnectionFactory,
-)
+from newrelic.hooks.database_dbapi2 import ConnectionFactory as DBAPI2ConnectionFactory
+from newrelic.hooks.database_dbapi2 import ConnectionWrapper as DBAPI2ConnectionWrapper
 
 
 class ConnectionWrapper(DBAPI2ConnectionWrapper):

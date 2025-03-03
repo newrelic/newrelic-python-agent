@@ -13,15 +13,16 @@
 # limitations under the License.
 
 import os
+
 import pytest
 
 from newrelic.common.system_info import (
-    logical_processor_count,
-    physical_processor_count,
-    total_physical_memory,
-    physical_memory_used,
     _linux_physical_processor_count,
     _linux_total_physical_memory,
+    logical_processor_count,
+    physical_memory_used,
+    physical_processor_count,
+    total_physical_memory,
 )
 
 

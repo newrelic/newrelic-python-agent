@@ -66,7 +66,7 @@ def extract_code_from_callable(func):
         if inspect.isclass(func):
             # For class types don't change anything
             pass
-        elif hasattr(func, "__call__"):
+        elif hasattr(func, "__call__"):  # noqa: B004
             # For callable object, use the __call__ attribute
             func = func.__call__
             module_name, func_path = object_context(func)

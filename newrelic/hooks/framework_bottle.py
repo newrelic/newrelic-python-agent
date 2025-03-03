@@ -145,7 +145,7 @@ def instrument_bottle(module):
     if hasattr(module.Bottle, "wsgi"):  # pragma: no cover
         wrap_wsgi_application(module, "Bottle.wsgi", framework=framework_details)
     # version < 0.9
-    elif hasattr(module.Bottle, "__call__"):  # pragma: no cover
+    elif hasattr(module.Bottle, "__call__"):  # noqa: B004 # pragma: no cover
         wrap_wsgi_application(module, "Bottle.__call__", framework=framework_details)
     # version >= 0.10
     if hasattr(module, "Route") and hasattr(module.Route, "_make_callback"):  # pragma: no cover

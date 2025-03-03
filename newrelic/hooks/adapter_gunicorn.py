@@ -40,7 +40,7 @@ def _nr_wrapper_Application_wsgi_(application):
 
     if is_coroutine(application):
         return application
-    elif hasattr(application, "__call__") and is_coroutine(application.__call__):
+    elif hasattr(application, "__call__") and is_coroutine(application.__call__):  # noqa: B004
         return application
     else:
         return WSGIApplicationWrapper(application)

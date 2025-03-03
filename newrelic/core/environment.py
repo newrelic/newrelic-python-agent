@@ -217,7 +217,7 @@ def plugins():
         try:
             if not module:
                 continue
-        except Exception:  # nosec B112
+        except Exception:  # noqa: S112
             # if the application uses generalimport to manage optional depedencies,
             # it's possible that generalimport.MissingOptionalDependency is raised.
             # In this case, we should not report the module as it is not actually loaded and

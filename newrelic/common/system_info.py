@@ -38,7 +38,7 @@ LOCALHOST_EQUIVALENTS = set(
     [
         "localhost",
         "127.0.0.1",
-        "0.0.0.0",  # nosec
+        "0.0.0.0",  # noqa: S104
         "0:0:0:0:0:0:0:0",
         "0:0:0:0:0:0:0:1",
         "::1",
@@ -173,14 +173,14 @@ def _darwin_physical_processor_count():
     physical_processor_cmd = ["/usr/sbin/sysctl", "-n", "hw.packages"]
 
     try:
-        num_physical_processors = int(_execute_program(physical_processor_cmd, stderr=subprocess.PIPE))  # nosec
+        num_physical_processors = int(_execute_program(physical_processor_cmd, stderr=subprocess.PIPE))  # noqa: S603
     except (subprocess.CalledProcessError, ValueError):
         num_physical_processors = None
 
     physical_core_cmd = ["/usr/sbin/sysctl", "-n", "hw.physicalcpu"]
 
     try:
-        num_physical_cores = int(_execute_program(physical_core_cmd, stderr=subprocess.PIPE))  # nosec
+        num_physical_cores = int(_execute_program(physical_core_cmd, stderr=subprocess.PIPE))  # noqa: S603
     except (subprocess.CalledProcessError, ValueError):
         num_physical_cores = None
 
@@ -233,7 +233,7 @@ def _darwin_total_physical_memory():
     command = ["/usr/sbin/sysctl", "-n", "hw.memsize"]
 
     try:
-        return float(_execute_program(command, stderr=subprocess.PIPE)) / (1024 * 1024)  # nosec
+        return float(_execute_program(command, stderr=subprocess.PIPE)) / (1024 * 1024)  # noqa: S603
     except subprocess.CalledProcessError:
         pass
     except ValueError:

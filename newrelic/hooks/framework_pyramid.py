@@ -157,7 +157,7 @@ def default_view_mapper_wrapper(wrapped, instance, args, kwargs):
                         tracer.name = name
                         tracer.add_code_level_metrics(handler)
                     else:
-                        method = getattr(inst, "__call__")
+                        method = inst.__call__
                         if method:
                             name = callable_name(method)
                             transaction.set_transaction_name(name, priority=2)

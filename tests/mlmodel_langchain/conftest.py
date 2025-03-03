@@ -139,7 +139,7 @@ def wrap_httpx_client_send(extract_shortened_prompt):  # noqa: F811
         if response.status_code >= 400 or response.status_code < 200:
             prompt = "error"
 
-        rheaders = getattr(response, "headers")
+        rheaders = response.headers
 
         headers = dict(
             filter(

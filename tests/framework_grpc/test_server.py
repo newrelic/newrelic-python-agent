@@ -151,7 +151,7 @@ def test_no_exception_client_close(mock_grpc_server):
     with channel:
         request = create_request(False, timesout=True)
 
-        method = getattr(stub, "DoUnaryUnary")
+        method = stub.DoUnaryUnary
 
         @validate_transaction_errors(errors=[])
         @wait_for_transaction_completion
@@ -170,7 +170,7 @@ def test_newrelic_disabled_no_transaction(mock_grpc_server, stub):
     port = mock_grpc_server
     request = create_request(False)
 
-    method = getattr(stub, "DoUnaryUnary")
+    method = stub.DoUnaryUnary
 
     @override_generic_settings(global_settings(), {"enabled": False})
     @function_not_called("newrelic.core.stats_engine", "StatsEngine.record_transaction")

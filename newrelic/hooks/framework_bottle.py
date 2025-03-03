@@ -140,7 +140,7 @@ def instrument_bottle(module):
     global module_bottle
     module_bottle = module
 
-    framework_details = ("Bottle", getattr(module, "__version__"))
+    framework_details = ("Bottle", getattr(module, "__version__", None))
     # version >= 0.9
     if hasattr(module.Bottle, "wsgi"):  # pragma: no cover
         wrap_wsgi_application(module, "Bottle.wsgi", framework=framework_details)

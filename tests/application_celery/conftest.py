@@ -34,10 +34,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 @pytest.fixture(scope="session")
 def celery_config():
     # Used by celery pytest plugin to configure Celery instance
-    return {
-        "broker_url": "memory://",
-        "result_backend": "cache+memory://",
-    }
+    return {"broker_url": "memory://", "result_backend": "cache+memory://"}
 
 
 @pytest.fixture(scope="session")

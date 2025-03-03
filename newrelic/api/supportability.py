@@ -18,7 +18,7 @@ from newrelic.core.config import global_settings
 
 
 def wrap_api_call(method, method_name):
-    metric_name = f'Supportability/api/{method_name}'
+    metric_name = f"Supportability/api/{method_name}"
 
     @function_wrapper
     def _nr_wrap_api_call_(wrapped, instance, args, kwargs):

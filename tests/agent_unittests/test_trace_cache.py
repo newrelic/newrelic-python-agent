@@ -21,7 +21,7 @@ from newrelic.core.trace_cache import TraceCache
 _TEST_CONCURRENT_ITERATION_TC_SIZE = 20
 
 
-class DummyTrace():
+class DummyTrace:
     pass
 
 

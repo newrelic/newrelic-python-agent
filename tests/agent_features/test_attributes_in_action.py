@@ -21,18 +21,12 @@ from testing_support.fixtures import (
     reset_core_stats_engine,
     validate_attributes,
 )
-from testing_support.validators.validate_browser_attributes import (
-    validate_browser_attributes,
-)
-from testing_support.validators.validate_error_event_attributes import (
-    validate_error_event_attributes,
-)
+from testing_support.validators.validate_browser_attributes import validate_browser_attributes
+from testing_support.validators.validate_error_event_attributes import validate_error_event_attributes
 from testing_support.validators.validate_error_event_attributes_outside_transaction import (
     validate_error_event_attributes_outside_transaction,
 )
-from testing_support.validators.validate_error_trace_attributes import (
-    validate_error_trace_attributes,
-)
+from testing_support.validators.validate_error_trace_attributes import validate_error_trace_attributes
 from testing_support.validators.validate_error_trace_attributes_outside_transaction import (
     validate_error_trace_attributes_outside_transaction,
 )
@@ -40,12 +34,8 @@ from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_error_trace_attributes import (
     validate_transaction_error_trace_attributes,
 )
-from testing_support.validators.validate_transaction_event_attributes import (
-    validate_transaction_event_attributes,
-)
-from testing_support.validators.validate_transaction_trace_attributes import (
-    validate_transaction_trace_attributes,
-)
+from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
+from testing_support.validators.validate_transaction_trace_attributes import validate_transaction_trace_attributes
 
 from newrelic.api.application import application_instance as application
 from newrelic.api.background_task import background_task
@@ -145,9 +135,7 @@ ERROR_EVENT_INTRINSICS = (
     "transactionName",
     "duration",
 )
-ERROR_PARAMS = [
-    "ohnoes",
-]
+ERROR_PARAMS = ["ohnoes"]
 ERROR_USER_ATTRS = USER_ATTRS + ERROR_PARAMS
 
 
@@ -871,7 +859,6 @@ _expected_attributes_event = {"user": ["test_key"], "agent": [], "intrinsic": IN
 @validate_error_event_attributes_outside_transaction(_expected_attributes_event)
 @validate_error_trace_attributes_outside_transaction(OutsideWithParamsError.name, _expected_attributes)
 def test_error_outside_transaction():
-
     try:
         raise OutsideWithParamsError("Error outside transaction")
     except OutsideWithParamsError:
@@ -901,7 +888,6 @@ _expected_absent_attributes = {"user": ["test_key"], "agent": [], "intrinsic": [
 )
 @override_application_settings(_override_settings)
 def test_error_outside_transaction_excluded_user_param():
-
     try:
         raise OutsideNoParamsError("Error outside transaction")
     except OutsideNoParamsError:
@@ -938,11 +924,7 @@ _forgone_agent_attributes = []
 
 
 @pytest.mark.parametrize(
-    "input_user_id, reported_user_id, high_security",
-    (
-        ("1234", "1234", True),
-        ("a" * 260, "a" * 255, False),
-    ),
+    "input_user_id, reported_user_id, high_security", (("1234", "1234", True), ("a" * 260, "a" * 255, False))
 )
 def test_enduser_id_attribute_api_valid_types(input_user_id, reported_user_id, high_security):
     @reset_core_stats_engine()

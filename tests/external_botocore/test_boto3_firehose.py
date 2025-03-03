@@ -21,9 +21,7 @@ import pytest
 from moto import mock_aws
 from testing_support.fixtures import dt_enabled, override_application_settings
 from testing_support.validators.validate_span_events import validate_span_events
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
@@ -39,10 +37,7 @@ TEST_S3_BUCKET = f"python-agent-test-{uuid.uuid4()}"
 TEST_S3_BUCKET_ARN = f"arn:aws:s3:::{TEST_S3_BUCKET}"
 TEST_S3_ROLE_ARN = f"arn:aws:iam::123456789012:role/test-role"
 EXPECTED_AGENT_ATTRS = {
-    "exact_agents": {
-        "cloud.platform": "aws_kinesis_delivery_streams",
-        "cloud.resource_id": TEST_STREAM_ARN,
-    },
+    "exact_agents": {"cloud.platform": "aws_kinesis_delivery_streams", "cloud.resource_id": TEST_STREAM_ARN}
 }
 
 AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"
@@ -72,13 +67,9 @@ _firehose_rollup_metrics = [
     (f"External/{URL}/botocore/POST", 6),
 ]
 
-_firehose_scoped_metrics_error = [
-    (f"Firehose/put_record/{TEST_STREAM}", 1),
-]
+_firehose_scoped_metrics_error = [(f"Firehose/put_record/{TEST_STREAM}", 1)]
 
-_firehose_rollup_metrics_error = [
-    (f"Firehose/put_record/{TEST_STREAM}", 1),
-]
+_firehose_rollup_metrics_error = [(f"Firehose/put_record/{TEST_STREAM}", 1)]
 
 
 @background_task()
@@ -105,10 +96,7 @@ def test_instrumented_firehose_methods():
 @override_application_settings({"cloud.aws.account_id": 123456789012})
 @dt_enabled
 @validate_span_events(exact_agents={"aws.operation": "CreateDeliveryStream"}, count=1)
-@validate_span_events(
-    **EXPECTED_AGENT_ATTRS,
-    count=5,
-)
+@validate_span_events(**EXPECTED_AGENT_ATTRS, count=5)
 @validate_span_events(exact_agents={"aws.operation": "DeleteDeliveryStream"}, count=1)
 @validate_transaction_metrics(
     "test_boto3_firehose:test_firehose",
@@ -129,17 +117,12 @@ def test_firehose(firehose_destination):
 
     # Create stream
     resp = client.create_delivery_stream(
-        DeliveryStreamName=TEST_STREAM,
-        DeliveryStreamType="DirectPut",
-        **destination_kwargs,
+        DeliveryStreamName=TEST_STREAM, DeliveryStreamType="DirectPut", **destination_kwargs
     )
     assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     # Call describe on delivery stream
-    resp = client.describe_delivery_stream(
-        DeliveryStreamName=TEST_STREAM,
-        Limit=123,
-    )
+    resp = client.describe_delivery_stream(DeliveryStreamName=TEST_STREAM, Limit=123)
     assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
     assert resp["DeliveryStreamDescription"]["DeliveryStreamARN"] == TEST_STREAM_ARN
 
@@ -180,9 +163,7 @@ def test_firehose_error(firehose_destination):
 
     # Create stream
     resp = client.create_delivery_stream(
-        DeliveryStreamName=TEST_STREAM,
-        DeliveryStreamType="DirectPut",
-        **destination_kwargs,
+        DeliveryStreamName=TEST_STREAM, DeliveryStreamType="DirectPut", **destination_kwargs
     )
     assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
 

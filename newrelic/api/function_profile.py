@@ -20,8 +20,8 @@ import time
 
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 
-class FunctionProfile():
 
+class FunctionProfile:
     def __init__(self, profile):
         self.profile = profile
 
@@ -33,10 +33,10 @@ class FunctionProfile():
         self.profile.disable()
         pass
 
-class FunctionProfileSession():
 
+class FunctionProfileSession:
     def __init__(self, filename, delay=1.0, checkpoint=30):
-        self.filename = filename % { 'pid': os.getpid() }
+        self.filename = filename % {"pid": os.getpid()}
         self.delay = delay
         self.checkpoint = checkpoint
 
@@ -72,15 +72,15 @@ class FunctionProfileSession():
             self.last = time.time()
             self.active = False
 
+
 def FunctionProfileWrapper(wrapped, filename, delay=1.0, checkpoint=30):
     wrapper = FunctionProfileSession(filename, delay, checkpoint)
     return FunctionWrapper(wrapped, wrapper)
 
-def function_profile(filename, delay=1.0, checkpoint=30):
-    return functools.partial(FunctionProfileWrapper, filename=filename,
-            delay=delay, checkpoint=checkpoint)
 
-def wrap_function_profile(module, object_path, filename, delay=1.0,
-        checkpoint=30):
-    wrap_object(module, object_path, FunctionProfileWrapper,
-            (filename, delay, checkpoint))
+def function_profile(filename, delay=1.0, checkpoint=30):
+    return functools.partial(FunctionProfileWrapper, filename=filename, delay=delay, checkpoint=checkpoint)
+
+
+def wrap_function_profile(module, object_path, filename, delay=1.0, checkpoint=30):
+    wrap_object(module, object_path, FunctionProfileWrapper, (filename, delay, checkpoint))

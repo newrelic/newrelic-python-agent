@@ -153,11 +153,7 @@ def test_proxy_error_status(monkeypatch, tmp_path):
 
     # Mock a 407 error to generate a proxy error health status
     HttpClientRecorder.STATUS_CODE = 407
-    settings = finalize_application_settings(
-        {
-            "license_key": "123LICENSEKEY",
-        }
-    )
+    settings = finalize_application_settings({"license_key": "123LICENSEKEY"})
     protocol = AgentProtocol(settings, client_cls=HttpClientRecorder)
 
     with pytest.raises(DiscardDataForRequest):
@@ -215,11 +211,7 @@ def test_update_to_healthy(monkeypatch, tmp_path):
 
     # Send a successful data batch to enable health status to update to "healthy"
     HttpClientRecorder.STATUS_CODE = 200
-    settings = finalize_application_settings(
-        {
-            "license_key": "123LICENSEKEY",
-        }
-    )
+    settings = finalize_application_settings({"license_key": "123LICENSEKEY"})
     protocol = AgentProtocol(settings, client_cls=HttpClientRecorder)
     protocol.send("analytic_event_data")
 

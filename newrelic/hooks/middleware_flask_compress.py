@@ -141,7 +141,7 @@ def _nr_wrapper_Compress_after_request(wrapped, instance, args, kwargs):
     if result is not None:
         if transaction.settings.debug.log_autorum_middleware:
             _logger.debug(
-                "RUM insertion from flask_compress " "triggered. Bytes added was %r.",
+                "RUM insertion from flask_compress triggered. Bytes added was %r.",
                 len(result) - len(response.get_data()),
             )
 

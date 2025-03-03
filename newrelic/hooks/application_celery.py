@@ -218,7 +218,7 @@ def wrap_worker_optimizations(wrapped, instance, args, kwargs):
     # Rewrap finalized BaseTask
     if BaseTask:  # Ensure imports succeeded
         BaseTask.__call__ = CeleryTaskWrapper(BaseTask.__call__)
-    
+
     return result
 
 

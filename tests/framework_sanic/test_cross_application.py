@@ -24,21 +24,15 @@ from testing_support.fixtures import (
     override_application_settings,
     validate_analytics_catmap_data,
 )
-from testing_support.validators.validate_transaction_event_attributes import (
-    validate_transaction_event_attributes,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.application import application_instance
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.transaction import Transaction
 from newrelic.common.encoding_utils import deobfuscate
 
-BASE_METRICS = [
-    ("Function/_target_application:index", 1),
-]
+BASE_METRICS = [("Function/_target_application:index", 1)]
 DT_METRICS = [
     ("Supportability/DistributedTrace/AcceptPayload/Success", None),
     ("Supportability/TraceContext/TraceParent/Accept/Success", 1),
@@ -58,18 +52,10 @@ def raw_headers(response):
 
 
 @validate_transaction_metrics(
-    "_target_application:index",
-    scoped_metrics=BASE_METRICS,
-    rollup_metrics=BASE_METRICS + DT_METRICS,
+    "_target_application:index", scoped_metrics=BASE_METRICS, rollup_metrics=BASE_METRICS + DT_METRICS
 )
-@override_application_settings(
-    {
-        "distributed_tracing.enabled": True,
-    }
-)
-@validate_transaction_event_attributes(
-    required_params={"agent": BASE_ATTRS, "user": [], "intrinsic": []},
-)
+@override_application_settings({"distributed_tracing.enabled": True})
+@validate_transaction_event_attributes(required_params={"agent": BASE_ATTRS, "user": [], "intrinsic": []})
 def test_inbound_distributed_trace(app):
     transaction = Transaction(application_instance())
     dt_headers = ExternalTrace.generate_request_headers(transaction)
@@ -118,16 +104,9 @@ _custom_settings = {
 )
 @pytest.mark.parametrize("url,metric_name", _cat_response_header_urls_to_test)
 def test_cat_response_headers(app, inbound_payload, expected_intrinsics, forgone_intrinsics, cat_id, url, metric_name):
+    _base_metrics = [(f"Function/{metric_name}", 1)]
 
-    _base_metrics = [
-        (f"Function/{metric_name}", 1),
-    ]
-
-    @validate_transaction_metrics(
-        metric_name,
-        scoped_metrics=_base_metrics,
-        rollup_metrics=_base_metrics,
-    )
+    @validate_transaction_metrics(metric_name, scoped_metrics=_base_metrics, rollup_metrics=_base_metrics)
     @validate_analytics_catmap_data(
         f"WebTransaction/Function/{metric_name}",
         expected_attributes=expected_intrinsics,
@@ -158,7 +137,5 @@ def test_cat_response_custom_header(app):
     custom_header_value = b"my-custom-header-value"
     cat_headers = make_cross_agent_headers(inbound_payload, ENCODING_KEY, cat_id)
 
-    response = app.fetch(
-        "get", f"/custom-header/X-NewRelic-App-Data/{custom_header_value}", headers=dict(cat_headers)
-    )
+    response = app.fetch("get", f"/custom-header/X-NewRelic-App-Data/{custom_header_value}", headers=dict(cat_headers))
     assert custom_header_value in raw_headers(response), raw_headers(response)

@@ -15,23 +15,15 @@
 from conftest import DB_SETTINGS
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
-from testing_support.validators.validate_database_trace_inputs import (
-    validate_database_trace_inputs,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_database_trace_inputs import validate_database_trace_inputs
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
 # Settings
 
-_enable_instance_settings = {
-    "datastore_tracer.instance_reporting.enabled": True,
-}
-_disable_instance_settings = {
-    "datastore_tracer.instance_reporting.enabled": False,
-}
+_enable_instance_settings = {"datastore_tracer.instance_reporting.enabled": True}
+_disable_instance_settings = {"datastore_tracer.instance_reporting.enabled": False}
 
 # Metrics
 

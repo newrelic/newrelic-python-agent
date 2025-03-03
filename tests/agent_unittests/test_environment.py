@@ -66,33 +66,21 @@ class NoIteratorDict:
     (
         ({"uvicorn": module("4.5.6")}, "uvicorn", "4.5.6", None),
         (
-            {
-                "gunicorn": module("1.2.3"),
-                "uvicorn": module("4.5.6"),
-                "uvicorn.workers": object(),
-            },
+            {"gunicorn": module("1.2.3"), "uvicorn": module("4.5.6"), "uvicorn.workers": object()},
             "gunicorn (uvicorn)",
             "1.2.3",
             "4.5.6",
         ),
         # New replacement module uvicorn_worker should function the same
         (
-            {
-                "gunicorn": module("1.2.3"),
-                "uvicorn": module("4.5.6"),
-                "uvicorn_worker": object(),
-            },
+            {"gunicorn": module("1.2.3"), "uvicorn": module("4.5.6"), "uvicorn_worker": object()},
             "gunicorn (uvicorn)",
             "1.2.3",
             "4.5.6",
         ),
         ({"uvicorn": object()}, "uvicorn", None, None),
         (
-            {
-                "gunicorn": object(),
-                "uvicorn": module("4.5.6"),
-                "uvicorn.workers": object(),
-            },
+            {"gunicorn": object(), "uvicorn": module("4.5.6"), "uvicorn.workers": object()},
             "gunicorn (uvicorn)",
             None,
             "4.5.6",
@@ -103,12 +91,7 @@ class NoIteratorDict:
             "1.2.3",
             None,
         ),
-        (
-            {"gunicorn": object(), "uvicorn": object(), "uvicorn.workers": object()},
-            "gunicorn (uvicorn)",
-            None,
-            None,
-        ),
+        ({"gunicorn": object(), "uvicorn": object(), "uvicorn.workers": object()}, "gunicorn (uvicorn)", None, None),
     ),
 )
 def test_uvicorn_dispatcher(monkeypatch, loaded_modules, dispatcher, dispatcher_version, worker_version):

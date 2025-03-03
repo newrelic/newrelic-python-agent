@@ -43,7 +43,6 @@ def validate_transaction_event_collector_json():
             events = decoded_json[1]
 
             for event in events:
-
                 # event is an array containing intrinsics, user-attributes,
                 # and agent-attributes
 

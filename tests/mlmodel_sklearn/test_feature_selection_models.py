@@ -14,9 +14,7 @@
 
 import pytest
 from sklearn.ensemble import AdaBoostClassifier
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
@@ -24,20 +22,10 @@ from newrelic.common.package_version_utils import get_package_version_tuple
 SKLEARN_VERSION = get_package_version_tuple("sklearn")
 
 
-@pytest.mark.parametrize(
-    "feature_selection_model_name",
-    [
-        "VarianceThreshold",
-        "RFE",
-        "RFECV",
-        "SelectFromModel",
-    ],
-)
+@pytest.mark.parametrize("feature_selection_model_name", ["VarianceThreshold", "RFE", "RFECV", "SelectFromModel"])
 def test_below_v1_0_model_methods_wrapped_in_function_trace(feature_selection_model_name, run_feature_selection_model):
     expected_scoped_metrics = {
-        "VarianceThreshold": [
-            ("Function/MLModel/Sklearn/Named/VarianceThreshold.fit", 1),
-        ],
+        "VarianceThreshold": [("Function/MLModel/Sklearn/Named/VarianceThreshold.fit", 1)],
         "RFE": [
             ("Function/MLModel/Sklearn/Named/RFE.fit", 1),
             ("Function/MLModel/Sklearn/Named/RFE.predict", 1),
@@ -45,12 +33,8 @@ def test_below_v1_0_model_methods_wrapped_in_function_trace(feature_selection_mo
             ("Function/MLModel/Sklearn/Named/RFE.predict_log_proba", 1),
             ("Function/MLModel/Sklearn/Named/RFE.predict_proba", 1),
         ],
-        "RFECV": [
-            ("Function/MLModel/Sklearn/Named/RFECV.fit", 1),
-        ],
-        "SelectFromModel": [
-            ("Function/MLModel/Sklearn/Named/SelectFromModel.fit", 1),
-        ],
+        "RFECV": [("Function/MLModel/Sklearn/Named/RFECV.fit", 1)],
+        "SelectFromModel": [("Function/MLModel/Sklearn/Named/SelectFromModel.fit", 1)],
     }
 
     @validate_transaction_metrics(
@@ -67,17 +51,10 @@ def test_below_v1_0_model_methods_wrapped_in_function_trace(feature_selection_mo
 
 
 @pytest.mark.skipif(SKLEARN_VERSION < (1, 0, 0), reason="Requires sklearn >= 1.0")
-@pytest.mark.parametrize(
-    "feature_selection_model_name",
-    [
-        "SequentialFeatureSelector",
-    ],
-)
+@pytest.mark.parametrize("feature_selection_model_name", ["SequentialFeatureSelector"])
 def test_above_v1_0_model_methods_wrapped_in_function_trace(feature_selection_model_name, run_feature_selection_model):
     expected_scoped_metrics = {
-        "SequentialFeatureSelector": [
-            ("Function/MLModel/Sklearn/Named/SequentialFeatureSelector.fit", 1),
-        ],
+        "SequentialFeatureSelector": [("Function/MLModel/Sklearn/Named/SequentialFeatureSelector.fit", 1)]
     }
 
     @validate_transaction_metrics(

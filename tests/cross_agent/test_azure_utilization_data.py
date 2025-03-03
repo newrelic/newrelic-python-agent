@@ -22,17 +22,15 @@ from testing_support.validators.validate_internal_metrics import validate_intern
 
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
-FIXTURE = os.path.normpath(os.path.join(CURRENT_DIR, 'fixtures',
-    'utilization_vendor_specific', 'azure.json'))
+FIXTURE = os.path.normpath(os.path.join(CURRENT_DIR, "fixtures", "utilization_vendor_specific", "azure.json"))
 
-_parameters_list = ['testname', 'uri', 'expected_vendors_hash',
-        'expected_metrics']
+_parameters_list = ["testname", "uri", "expected_vendors_hash", "expected_metrics"]
 
-_parameters = ','.join(_parameters_list)
+_parameters = ",".join(_parameters_list)
 
 
 def _load_tests():
-    with open(FIXTURE, 'r') as fh:
+    with open(FIXTURE, "r") as fh:
         js = fh.read()
     return json.loads(js)
 
@@ -45,17 +43,15 @@ _azure_tests = [_parametrize_test(t) for t in _load_tests()]
 
 
 @pytest.mark.parametrize(_parameters, _azure_tests)
-def test_azure(monkeypatch, testname, uri,
-               expected_vendors_hash, expected_metrics):
-
+def test_azure(monkeypatch, testname, uri, expected_vendors_hash, expected_metrics):
     # Generate mock responses for HttpClient
 
     def _get_mock_return_value(api_result):
-        if api_result['timeout']:
+        if api_result["timeout"]:
             return 0, None
         else:
-            body = json.dumps(api_result['response'])
-            return 200, body.encode('utf-8')
+            body = json.dumps(api_result["response"])
+            return 200, body.encode("utf-8")
 
     url, api_result = uri.popitem()
     status, data = _get_mock_return_value(api_result)
@@ -65,18 +61,16 @@ def test_azure(monkeypatch, testname, uri,
 
     metrics = []
     if expected_metrics:
-        metrics = [(k, v.get('call_count')) for k, v in
-                expected_metrics.items()]
+        metrics = [(k, v.get("call_count")) for k, v in expected_metrics.items()]
 
     # Define function that actually runs the test
 
     @validate_internal_metrics(metrics=metrics)
     def _test_azure_data():
-
         data = AzureUtilization.detect()
 
         if data:
-            azure_vendor_hash = {'azure': data}
+            azure_vendor_hash = {"azure": data}
         else:
             azure_vendor_hash = None
 

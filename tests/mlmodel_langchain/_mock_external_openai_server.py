@@ -196,7 +196,7 @@ STREAMED_RESPONSES_V1 = {
                 "choices": [{"index": 0, "delta": {}, "logprobs": None, "finish_reason": "stop"}],
             },
         ],
-    ],
+    ]
 }
 RESPONSES_V1 = {
     "3923": [

@@ -53,6 +53,5 @@ is_not_flask_v2_3 = FLASK_VERSION < (2, 3, 0)
 is_pypy = platform.python_implementation() == "PyPy"
 async_handler_support = is_flask_v2 and not is_pypy
 skip_if_not_async_handler_support = pytest.mark.skipif(
-    not async_handler_support,
-    reason="Requires async handler support. (Flask >=v2.0.0, CPython)",
+    not async_handler_support, reason="Requires async handler support. (Flask >=v2.0.0, CPython)"
 )

@@ -21,14 +21,7 @@ try:
 except ImportError:
     import strawberry.types.mutation
 
-from framework_strawberry._target_schema_sync import (
-    Item,
-    Library,
-    Storage,
-    books,
-    libraries,
-    magazines,
-)
+from framework_strawberry._target_schema_sync import Item, Library, Storage, books, libraries, magazines
 from strawberry import Schema, field
 from strawberry.asgi import GraphQL
 from strawberry.schema.config import StrawberryConfig

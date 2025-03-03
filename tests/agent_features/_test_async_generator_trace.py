@@ -18,12 +18,8 @@ import time
 
 import pytest
 from testing_support.fixtures import capture_transaction_metrics, validate_tt_parenting
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.api.database_trace import database_trace
@@ -71,6 +67,7 @@ def test_async_generator_timing(event_loop, trace, metric):
                 pass
 
         event_loop.run_until_complete(_test())
+
     _test_async_generator_timing()
 
     # Check that coroutines time the total call time (including pauses)
@@ -140,6 +137,7 @@ def test_async_generator_caught_exception(event_loop):
 
         # The ValueError should not be reraised
         event_loop.run_until_complete(_test())
+
     _test_async_generator_caught_exception()
 
     assert full_metrics[("Function/agen", "")].total_call_time >= 0.2
@@ -177,6 +175,7 @@ def test_async_generator_handles_terminal_nodes(event_loop):
             await parent()
 
         event_loop.run_until_complete(_test())
+
     _test_async_generator_handles_terminal_nodes()
 
     metric_key = ("Function/parent", "")
@@ -209,19 +208,8 @@ def test_async_generator_close_ends_trace(event_loop):
 
     event_loop.run_until_complete(_test())
 
-@validate_tt_parenting(
-    (
-        "TransactionNode",
-        [
-            (
-                "FunctionNode",
-                [
-                    ("FunctionNode", []),
-                ],
-            ),
-        ],
-    )
-)
+
+@validate_tt_parenting(("TransactionNode", [("FunctionNode", [("FunctionNode", [])])]))
 @validate_transaction_metrics(
     "test_async_generator_parents",
     background_task=True,
@@ -253,6 +241,7 @@ def test_async_generator_parents(event_loop):
                 pass
 
         event_loop.run_until_complete(_test())
+
     _test_async_generator_parents()
 
     # Check that the child time is subtracted from the parent time (parenting
@@ -269,6 +258,7 @@ def test_async_generator_parents(event_loop):
 )
 def test_asend_receives_a_value(event_loop):
     _received = []
+
     @function_trace(name="agen")
     async def agen():
         value = yield
@@ -340,7 +330,6 @@ def test_multiple_throws_yield_a_value(event_loop):
             except MyException:
                 value = "foo"
 
-
     @background_task(name="test_multiple_throws_yield_a_value")
     async def _test():
         gen = agen()
@@ -383,7 +372,6 @@ def test_athrow_does_not_yield_a_value(event_loop):
         # async generator will raise StopAsyncIteration
         with pytest.raises(StopAsyncIteration):
             await gen.athrow(MyException)
-
 
     event_loop.run_until_complete(_test())
 
@@ -464,6 +452,7 @@ def test_async_generator_time_excludes_creation_time(event_loop):
                 pass
 
         event_loop.run_until_complete(_test())
+
     _test_async_generator_time_excludes_creation_time()
 
     # check that the trace does not include the time between creation and
@@ -517,7 +506,7 @@ def test_incomplete_async_generator(event_loop, nr_transaction):
             scoped_metrics=[("Function/agen", 1)],
             rollup_metrics=[("Function/agen", 1)],
         )(_test_incomplete_async_generator)
-    
+
     _test_incomplete_async_generator()
 
 
@@ -535,6 +524,7 @@ def test_incomplete_async_generator_transaction_exited(event_loop):
     )
     def _test_incomplete_async_generator():
         c = agen()
+
         @background_task(name="test_incomplete_async_generator")
         async def _test():
             async for _ in c:

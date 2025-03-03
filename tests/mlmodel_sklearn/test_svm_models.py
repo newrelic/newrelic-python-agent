@@ -13,9 +13,7 @@
 # limitations under the License.
 
 import pytest
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
@@ -23,18 +21,7 @@ from newrelic.common.package_version_utils import get_package_version_tuple
 SKLEARN_VERSION = get_package_version_tuple("sklearn")
 
 
-@pytest.mark.parametrize(
-    "svm_model_name",
-    [
-        "LinearSVC",
-        "LinearSVR",
-        "SVC",
-        "NuSVC",
-        "SVR",
-        "NuSVR",
-        "OneClassSVM",
-    ],
-)
+@pytest.mark.parametrize("svm_model_name", ["LinearSVC", "LinearSVR", "SVC", "NuSVC", "SVR", "NuSVR", "OneClassSVM"])
 def test_model_methods_wrapped_in_function_trace(svm_model_name, run_svm_model):
     expected_scoped_metrics = {
         "LinearSVC": [
@@ -45,22 +32,10 @@ def test_model_methods_wrapped_in_function_trace(svm_model_name, run_svm_model):
             ("Function/MLModel/Sklearn/Named/LinearSVR.fit", 1),
             ("Function/MLModel/Sklearn/Named/LinearSVR.predict", 1),
         ],
-        "SVC": [
-            ("Function/MLModel/Sklearn/Named/SVC.fit", 1),
-            ("Function/MLModel/Sklearn/Named/SVC.predict", 1),
-        ],
-        "NuSVC": [
-            ("Function/MLModel/Sklearn/Named/NuSVC.fit", 1),
-            ("Function/MLModel/Sklearn/Named/NuSVC.predict", 1),
-        ],
-        "SVR": [
-            ("Function/MLModel/Sklearn/Named/SVR.fit", 1),
-            ("Function/MLModel/Sklearn/Named/SVR.predict", 1),
-        ],
-        "NuSVR": [
-            ("Function/MLModel/Sklearn/Named/NuSVR.fit", 1),
-            ("Function/MLModel/Sklearn/Named/NuSVR.predict", 1),
-        ],
+        "SVC": [("Function/MLModel/Sklearn/Named/SVC.fit", 1), ("Function/MLModel/Sklearn/Named/SVC.predict", 1)],
+        "NuSVC": [("Function/MLModel/Sklearn/Named/NuSVC.fit", 1), ("Function/MLModel/Sklearn/Named/NuSVC.predict", 1)],
+        "SVR": [("Function/MLModel/Sklearn/Named/SVR.fit", 1), ("Function/MLModel/Sklearn/Named/SVR.predict", 1)],
+        "NuSVR": [("Function/MLModel/Sklearn/Named/NuSVR.fit", 1), ("Function/MLModel/Sklearn/Named/NuSVR.predict", 1)],
         "OneClassSVM": [
             ("Function/MLModel/Sklearn/Named/OneClassSVM.fit", 1),
             ("Function/MLModel/Sklearn/Named/OneClassSVM.predict", 1),

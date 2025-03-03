@@ -25,7 +25,7 @@ except Exception:
 _logger = logging.getLogger(__name__)
 
 
-class StreamingRpc():
+class StreamingRpc:
     """Streaming Remote Procedure Call
 
     This class keeps a stream_stream RPC alive, retrying after a timeout when
@@ -33,14 +33,7 @@ class StreamingRpc():
     retry will not occur.
     """
 
-    RETRY_POLICY = (
-        (15, False),
-        (15, False),
-        (30, False),
-        (60, False),
-        (120, False),
-        (300, True),
-    )
+    RETRY_POLICY = ((15, False), (15, False), (30, False), (60, False), (120, False), (300, True))
     OPTIONS = [("grpc.enable_retries", 0)]
 
     def __init__(self, endpoint, stream_buffer, metadata, record_metric, ssl=True, compression=None):
@@ -127,10 +120,7 @@ class StreamingRpc():
                     code = response_iterator.code()
                     details = response_iterator.details()
 
-                    self.record_metric(
-                        f"Supportability/InfiniteTracing/Span/gRPC/{code.name}",
-                        {"count": 1},
-                    )
+                    self.record_metric(f"Supportability/InfiniteTracing/Span/gRPC/{code.name}", {"count": 1})
 
                     if code is grpc.StatusCode.OK:
                         _logger.debug(
@@ -145,10 +135,7 @@ class StreamingRpc():
                         self.create_channel()
 
                     else:
-                        self.record_metric(
-                            "Supportability/InfiniteTracing/Span/Response/Error",
-                            {"count": 1},
-                        )
+                        self.record_metric("Supportability/InfiniteTracing/Span/Response/Error", {"count": 1})
 
                         if code is grpc.StatusCode.UNIMPLEMENTED:
                             _logger.error(

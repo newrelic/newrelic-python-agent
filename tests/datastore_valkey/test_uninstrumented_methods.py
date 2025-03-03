@@ -19,9 +19,7 @@ from testing_support.db_settings import valkey_settings
 DB_SETTINGS = valkey_settings()[0]
 
 valkey_client = valkey.Valkey(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
-strict_valkey_client = valkey.StrictValkey(
-    host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0
-)
+strict_valkey_client = valkey.StrictValkey(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
 
 
 IGNORED_METHODS = {
@@ -95,17 +93,7 @@ IGNORED_METHODS = {
     "invalidate_key_from_cache",
 }
 
-VALKEY_MODULES = {
-    "bf",
-    "cf",
-    "cms",
-    "ft",
-    "graph",
-    "json",
-    "tdigest",
-    "topk",
-    "ts",
-}
+VALKEY_MODULES = {"bf", "cf", "cms", "ft", "graph", "json", "tdigest", "topk", "ts"}
 
 IGNORED_METHODS |= VALKEY_MODULES
 
@@ -121,8 +109,6 @@ def test_uninstrumented_methods(client):
             module_client = getattr(client, module)()
             module_methods = {m for m in dir(module_client) if not m[0] == "_"}
             is_wrapped = lambda m: hasattr(getattr(module_client, m), "__wrapped__")
-            uninstrumented |= {
-                m for m in module_methods - IGNORED_METHODS if not is_wrapped(m)
-            }
+            uninstrumented |= {m for m in module_methods - IGNORED_METHODS if not is_wrapped(m)}
 
     assert not uninstrumented, f"Uninstrumented methods: {sorted(uninstrumented)}"

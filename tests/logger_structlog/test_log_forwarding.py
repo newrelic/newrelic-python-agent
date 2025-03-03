@@ -13,18 +13,13 @@
 # limitations under the License.
 
 import pytest
-from testing_support.fixtures import (
-    override_application_settings,
-    reset_core_stats_engine,
-)
+from testing_support.fixtures import override_application_settings, reset_core_stats_engine
 from testing_support.validators.validate_log_event_count import validate_log_event_count
 from testing_support.validators.validate_log_event_count_outside_transaction import (
     validate_log_event_count_outside_transaction,
 )
 from testing_support.validators.validate_log_events import validate_log_events
-from testing_support.validators.validate_log_events_outside_transaction import (
-    validate_log_events_outside_transaction,
-)
+from testing_support.validators.validate_log_events_outside_transaction import validate_log_events_outside_transaction
 
 from newrelic.api.background_task import background_task
 
@@ -49,10 +44,7 @@ def callsite_parameter_logger(structlog_caplog):
     structlog.configure(
         processors=(
             structlog.processors.CallsiteParameterAdder(
-                [
-                    structlog.processors.CallsiteParameter.FILENAME,
-                    structlog.processors.CallsiteParameter.FUNC_NAME,
-                ],
+                [structlog.processors.CallsiteParameter.FILENAME, structlog.processors.CallsiteParameter.FUNC_NAME]
             ),
             structlog.processors.KeyValueRenderer(),
         ),
@@ -134,12 +126,7 @@ def test_logging_filtering_outside_transaction(exercise_filtering_logging_multip
 @reset_core_stats_engine()
 @override_application_settings({"application_logging.local_decorating.enabled": False})
 @validate_log_events(
-    [
-        {
-            "message": "event='Dog' filename='test_log_forwarding.py' func_name='test_callsite_processor'",
-            "level": "INFO",
-        },
-    ]
+    [{"message": "event='Dog' filename='test_log_forwarding.py' func_name='test_callsite_processor'", "level": "INFO"}]
 )
 @validate_log_event_count(1)
 @background_task()

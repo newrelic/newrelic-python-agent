@@ -27,12 +27,8 @@ try:
     NodeConfig = dict
 except ImportError:
     from elastic_transport._models import NodeConfig
-    from elastic_transport._node._http_requests import (
-        RequestsHttpNode as RequestsHttpConnection,
-    )
-    from elastic_transport._node._http_urllib3 import (
-        Urllib3HttpNode as Urllib3HttpConnection,
-    )
+    from elastic_transport._node._http_requests import RequestsHttpNode as RequestsHttpConnection
+    from elastic_transport._node._http_urllib3 import Urllib3HttpNode as Urllib3HttpConnection
     from elastic_transport._transport import Transport
 
 

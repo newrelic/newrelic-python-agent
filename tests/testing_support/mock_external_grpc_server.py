@@ -27,11 +27,11 @@ import socket
 #       ... test stuff ...
 
 
-class MockExternalgRPCServer():
+class MockExternalgRPCServer:
     def __init__(self, port=None, *args, **kwargs):
         self.server = grpc.server(futures.ThreadPoolExecutor(max_workers=4))
         if port:
-            self.server.port = self.server.add_insecure_port(f'127.0.0.1:{port}')
+            self.server.port = self.server.add_insecure_port(f"127.0.0.1:{port}")
             self.port = port
         else:
             # If port not set, try to bind to a port until successful
@@ -43,7 +43,7 @@ class MockExternalgRPCServer():
                     # Obtain random open port
                     port = self.get_open_port()
                     # Attempt to bind to port
-                    self.server.port = self.server.add_insecure_port(f'127.0.0.1:{port}')
+                    self.server.port = self.server.add_insecure_port(f"127.0.0.1:{port}")
                     self.port = port
                 except OSError as exc:
                     # Reraise errors other than port already in use

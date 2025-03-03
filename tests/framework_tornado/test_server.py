@@ -19,21 +19,11 @@ from testing_support.fixtures import (
     override_generic_settings,
     override_ignore_status_codes,
 )
-from testing_support.validators.validate_code_level_metrics import (
-    validate_code_level_metrics,
-)
-from testing_support.validators.validate_transaction_count import (
-    validate_transaction_count,
-)
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
-from testing_support.validators.validate_transaction_event_attributes import (
-    validate_transaction_event_attributes,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
+from testing_support.validators.validate_transaction_count import validate_transaction_count
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.core.config import global_settings
 
@@ -66,10 +56,7 @@ def test_server(app, uri, name, metrics, method_metric):
     namespace, func_name = name.split(".")
     namespace = namespace.replace(":", ".")
 
-    @validate_transaction_metrics(
-        name,
-        rollup_metrics=metrics,
-    )
+    @validate_transaction_metrics(name, rollup_metrics=metrics)
     @validate_transaction_event_attributes(
         required_params={"agent": ("response.headers.contentType",), "user": (), "intrinsic": ()},
         exact_attrs={
@@ -123,10 +110,7 @@ def test_concurrent_inbound_requests(app, uri, name, metrics, method_metric):
     namespace = namespace.replace(":", ".")
 
     @validate_transaction_count(2)
-    @validate_transaction_metrics(
-        name,
-        rollup_metrics=metrics,
-    )
+    @validate_transaction_metrics(name, rollup_metrics=metrics)
     def _test():
         url = app.get_url(uri)
         coros = (app.http_client.fetch(url) for _ in range(2))
@@ -149,14 +133,7 @@ def test_exceptions_are_recorded(app):
     assert response.code == 500
 
 
-@pytest.mark.parametrize(
-    "nr_enabled,ignore_status_codes",
-    [
-        (True, [405]),
-        (True, []),
-        (False, None),
-    ],
-)
+@pytest.mark.parametrize("nr_enabled,ignore_status_codes", [(True, [405]), (True, []), (False, None)])
 def test_unsupported_method(app, nr_enabled, ignore_status_codes):
     def _test():
         response = app.fetch("/simple", method="TEAPOT", body=b"", allow_nonstandard_methods=True)
@@ -181,23 +158,14 @@ def test_unsupported_method(app, nr_enabled, ignore_status_codes):
 @validate_transaction_metrics("tornado.web:ErrorHandler")
 @validate_transaction_event_attributes(
     required_params={"agent": (), "user": (), "intrinsic": ()},
-    exact_attrs={
-        "agent": {"request.uri": "/does-not-exist"},
-        "user": {},
-        "intrinsic": {},
-    },
+    exact_attrs={"agent": {"request.uri": "/does-not-exist"}, "user": {}, "intrinsic": {}},
 )
 def test_not_found(app):
     response = app.fetch("/does-not-exist")
     assert response.code == 404
 
 
-@override_generic_settings(
-    global_settings(),
-    {
-        "enabled": False,
-    },
-)
+@override_generic_settings(global_settings(), {"enabled": False})
 @function_not_called("newrelic.core.stats_engine", "StatsEngine.record_transaction")
 def test_nr_disabled(app):
     response = app.fetch("/simple")
@@ -218,10 +186,7 @@ def test_web_socket(uri, name, app):
 
     namespace, func_name = name.split(":")
 
-    @validate_transaction_metrics(
-        name,
-        rollup_metrics=[(f"Function/{name}", None)],
-    )
+    @validate_transaction_metrics(name, rollup_metrics=[(f"Function/{name}", None)])
     @validate_code_level_metrics(namespace, func_name)
     def _test():
         url = app.get_url(uri).replace("http", "ws")
@@ -230,9 +195,7 @@ def test_web_socket(uri, name, app):
             conn = await websocket_connect(url)
             return conn
 
-        @validate_transaction_metrics(
-            name,
-        )
+        @validate_transaction_metrics(name)
         def connect():
             return app.io_loop.run_sync(_connect)
 
@@ -252,14 +215,11 @@ def test_web_socket(uri, name, app):
     _test()
 
 
-LOOP_TIME_METRICS = (("EventLoop/Wait/" "WebTransaction/Function/_target_application:BlockingHandler.get", 1),)
+LOOP_TIME_METRICS = (("EventLoop/Wait/WebTransaction/Function/_target_application:BlockingHandler.get", 1),)
 
 
 @pytest.mark.parametrize("yield_before_finish", (True, False))
-@validate_transaction_metrics(
-    "_target_application:BlockingHandler.get",
-    scoped_metrics=LOOP_TIME_METRICS,
-)
+@validate_transaction_metrics("_target_application:BlockingHandler.get", scoped_metrics=LOOP_TIME_METRICS)
 def test_io_loop_blocking_time(app, yield_before_finish):
     from tornado import gen
 

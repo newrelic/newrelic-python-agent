@@ -14,9 +14,7 @@
 
 import pytest
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
@@ -158,12 +156,8 @@ def test_between_v1_0_and_v1_1_model_methods_wrapped_in_function_trace(ensemble_
             ("Function/MLModel/Sklearn/Named/HistGradientBoostingRegressor.predict", 2),
             ("Function/MLModel/Sklearn/Named/HistGradientBoostingRegressor.score", 1),
         ],
-        "StackingClassifier": [
-            ("Function/MLModel/Sklearn/Named/StackingClassifier.fit", 1),
-        ],
-        "StackingRegressor": [
-            ("Function/MLModel/Sklearn/Named/StackingRegressor.fit", 1),
-        ],
+        "StackingClassifier": [("Function/MLModel/Sklearn/Named/StackingClassifier.fit", 1)],
+        "StackingRegressor": [("Function/MLModel/Sklearn/Named/StackingRegressor.fit", 1)],
         "VotingRegressor": [
             ("Function/MLModel/Sklearn/Named/VotingRegressor.fit", 1),
             ("Function/MLModel/Sklearn/Named/VotingRegressor.predict", 2),
@@ -255,10 +249,7 @@ def run_ensemble_model():
         if ensemble_model_name == "StackingClassifier":
             kwargs = {"estimators": [("rf", RandomForestClassifier())], "final_estimator": RandomForestClassifier()}
         elif ensemble_model_name == "VotingClassifier":
-            kwargs = {
-                "estimators": [("rf", RandomForestClassifier())],
-                "voting": "soft",
-            }
+            kwargs = {"estimators": [("rf", RandomForestClassifier())], "voting": "soft"}
         elif ensemble_model_name == "VotingRegressor":
             x_train = x_test = [[1, 1]]
             y_train = y_test = [0]

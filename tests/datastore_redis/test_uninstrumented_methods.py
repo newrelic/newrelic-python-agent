@@ -90,17 +90,7 @@ IGNORED_METHODS = {
     "version",
 }
 
-REDIS_MODULES = {
-    "bf",
-    "cf",
-    "cms",
-    "ft",
-    "graph",
-    "json",
-    "tdigest",
-    "topk",
-    "ts",
-}
+REDIS_MODULES = {"bf", "cf", "cms", "ft", "graph", "json", "tdigest", "topk", "ts"}
 
 IGNORED_METHODS |= REDIS_MODULES
 

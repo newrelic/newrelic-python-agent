@@ -20,7 +20,7 @@ import newrelic.core.agent
 import newrelic.core.config
 
 
-class Application():
+class Application:
     _lock = threading.Lock()
     _instances = {}
 
@@ -124,12 +124,7 @@ class Application():
             return
 
         self._agent.notice_error(
-            self._name,
-            error=error,
-            attributes=attributes,
-            expected=expected,
-            ignore=ignore,
-            status_code=status_code,
+            self._name, error=error, attributes=attributes, expected=expected, ignore=ignore, status_code=status_code
         )
 
     def record_custom_metric(self, name, value):

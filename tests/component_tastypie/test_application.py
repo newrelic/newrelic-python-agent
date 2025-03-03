@@ -16,15 +16,9 @@ import pytest
 import webtest
 from tastypie import VERSION
 from testing_support.fixtures import override_ignore_status_codes
-from testing_support.validators.validate_code_level_metrics import (
-    validate_code_level_metrics,
-)
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from wsgi import application
 
 from newrelic.api.background_task import background_task
@@ -53,7 +47,7 @@ def test_application_index():
     response.mustcontain("INDEX RESPONSE")
 
 
-class TastyPieFullDebugMode():
+class TastyPieFullDebugMode:
     def __init__(self, tastypie_full_debug):
         from django.conf import settings
 
@@ -89,7 +83,7 @@ def test_not_found(api_version, tastypie_full_debug):
         _test_application_not_found_scoped_metrics.append(("Function/django.http.response:HttpResponse.close", 1))
     else:
         _test_application_not_found_scoped_metrics.append(
-            (("Function/django.http.response:" "HttpResponseNotFound.close"), 1)
+            (("Function/django.http.response:HttpResponseNotFound.close"), 1)
         )
 
     _errors = []
@@ -163,7 +157,7 @@ def test_record_404_errors(api_version, tastypie_full_debug):
         _test_application_not_found_scoped_metrics.append(("Function/django.http.response:HttpResponse.close", 1))
     else:
         _test_application_not_found_scoped_metrics.append(
-            (("Function/django.http.response:" "HttpResponseNotFound.close"), 1)
+            (("Function/django.http.response:HttpResponseNotFound.close"), 1)
         )
 
     @validate_transaction_metrics(

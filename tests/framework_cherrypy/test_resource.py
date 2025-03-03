@@ -19,26 +19,29 @@ from testing_support.validators.validate_code_level_metrics import validate_code
 
 import cherrypy
 
-class Resource():
 
+class Resource:
     exposed = True
 
     def GET(self):
-        return 'GET RESPONSE'
+        return "GET RESPONSE"
+
 
 dispatcher = cherrypy.dispatch.MethodDispatcher()
 
-conf = { '/': { 'request.dispatch': dispatcher } }
+conf = {"/": {"request.dispatch": dispatcher}}
 
-application = cherrypy.Application(Resource(), '/', conf)
+application = cherrypy.Application(Resource(), "/", conf)
 test_application = webtest.TestApp(application)
+
 
 @validate_code_level_metrics("test_resource.Resource", "GET")
 @validate_transaction_errors(errors=[])
 def test_resource_get():
-    response = test_application.get('')
-    response.mustcontain('GET RESPONSE')
+    response = test_application.get("")
+    response.mustcontain("GET RESPONSE")
+
 
 @validate_transaction_errors(errors=[])
 def test_resource_not_found():
-    response = test_application.post('', status=405)
+    response = test_application.post("", status=405)

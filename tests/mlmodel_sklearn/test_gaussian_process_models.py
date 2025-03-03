@@ -13,20 +13,12 @@
 # limitations under the License.
 
 import pytest
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
 
-@pytest.mark.parametrize(
-    "gaussian_process_model_name",
-    [
-        "GaussianProcessClassifier",
-        "GaussianProcessRegressor",
-    ],
-)
+@pytest.mark.parametrize("gaussian_process_model_name", ["GaussianProcessClassifier", "GaussianProcessRegressor"])
 def test_model_methods_wrapped_in_function_trace(gaussian_process_model_name, run_gaussian_process_model):
     expected_scoped_metrics = {
         "GaussianProcessClassifier": [

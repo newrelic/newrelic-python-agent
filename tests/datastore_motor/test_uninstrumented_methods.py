@@ -12,10 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.hooks.datastore_motor import (
-    _motor_client_async_methods,
-    _motor_client_sync_methods,
-)
+from newrelic.hooks.datastore_motor import _motor_client_async_methods, _motor_client_sync_methods
 
 expected_motor_client_methods = set(_motor_client_async_methods) | set(_motor_client_sync_methods)
 

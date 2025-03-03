@@ -61,4 +61,3 @@ def test_connection_args():
 def test_connection_kwargs():
     conn = Connection(host="foo", port=8888)
     assert conn._nr_host_port == ("foo", "8888")
-

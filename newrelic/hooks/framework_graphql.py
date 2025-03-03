@@ -413,7 +413,7 @@ def bind_execute_graphql_query(
     operation_name=None,
     middleware=None,
     backend=None,
-    **execute_options
+    **execute_options,
 ):
     return schema, request_string
 

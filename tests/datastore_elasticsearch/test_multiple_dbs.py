@@ -17,20 +17,14 @@ from conftest import ES_MULTIPLE_SETTINGS, ES_VERSION
 from elasticsearch import Elasticsearch
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
 # Settings
 
-_enable_instance_settings = {
-    "datastore_tracer.instance_reporting.enabled": True,
-}
-_disable_instance_settings = {
-    "datastore_tracer.instance_reporting.enabled": False,
-}
+_enable_instance_settings = {"datastore_tracer.instance_reporting.enabled": True}
+_disable_instance_settings = {"datastore_tracer.instance_reporting.enabled": False}
 
 # Metrics
 
@@ -64,19 +58,9 @@ if len(ES_MULTIPLE_SETTINGS) > 1:
     instance_metric_name_1 = f"Datastore/instance/Elasticsearch/{host_1}/{port_1}"
     instance_metric_name_2 = f"Datastore/instance/Elasticsearch/{host_2}/{port_2}"
 
-    _enable_rollup_metrics.extend(
-        [
-            (instance_metric_name_1, 1),
-            (instance_metric_name_2, 1),
-        ]
-    )
+    _enable_rollup_metrics.extend([(instance_metric_name_1, 1), (instance_metric_name_2, 1)])
 
-    _disable_rollup_metrics.extend(
-        [
-            (instance_metric_name_1, None),
-            (instance_metric_name_2, None),
-        ]
-    )
+    _disable_rollup_metrics.extend([(instance_metric_name_1, None), (instance_metric_name_2, None)])
 
 # Query
 

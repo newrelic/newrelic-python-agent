@@ -16,9 +16,7 @@ import sys
 
 import pytest
 from testing_support.fixtures import function_not_called, override_generic_settings
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.application import application_instance as application
 from newrelic.api.background_task import BackgroundTask, background_task
@@ -95,21 +93,11 @@ async def _test(asyncio, schedule, nr_enabled=True):
 
 
 @pytest.mark.parametrize("loop_policy", loop_policies)
-@pytest.mark.parametrize(
-    "schedule",
-    (
-        "create_task",
-        "ensure_future",
-    ),
-)
+@pytest.mark.parametrize("schedule", ("create_task", "ensure_future"))
 @validate_transaction_metrics(
     "test_context_propagation",
     background_task=True,
-    scoped_metrics=(
-        ("Function/waiter1", 2),
-        ("Function/waiter2", 2),
-        ("Function/waiter3", 2),
-    ),
+    scoped_metrics=(("Function/waiter1", 2), ("Function/waiter2", 2), ("Function/waiter3", 2)),
 )
 def test_context_propagation(event_loop, schedule, loop_policy):
     import asyncio
@@ -137,12 +125,7 @@ def test_context_propagation(event_loop, schedule, loop_policy):
     assert not exceptions, exceptions
 
 
-@override_generic_settings(
-    global_settings(),
-    {
-        "enabled": False,
-    },
-)
+@override_generic_settings(global_settings(), {"enabled": False})
 @function_not_called("newrelic.core.stats_engine", "StatsEngine.record_transaction")
 def test_nr_disabled(event_loop):
     import asyncio
@@ -253,14 +236,7 @@ async def trace_in_cache_txn_active(asyncio, bg):
     return task
 
 
-@pytest.mark.parametrize(
-    "fg",
-    (
-        sentinel_in_cache_txn_exited,
-        trace_in_cache_txn_exited,
-        trace_in_cache_txn_active,
-    ),
-)
+@pytest.mark.parametrize("fg", (sentinel_in_cache_txn_exited, trace_in_cache_txn_exited, trace_in_cache_txn_active))
 def test_transaction_exit_trace_cache(event_loop, fg):
     """
     Verifying that the use of ensure_future will not cause errors
@@ -315,11 +291,7 @@ def test_incomplete_traces_exit_when_root_exits(event_loop):
         end.set()
         return task
 
-    @validate_transaction_metrics(
-        "parent",
-        background_task=True,
-        scoped_metrics=[("Function/child", 1)],
-    )
+    @validate_transaction_metrics("parent", background_task=True, scoped_metrics=[("Function/child", 1)])
     def test(loop):
         return loop.run_until_complete(parent())
 
@@ -352,19 +324,11 @@ def test_incomplete_traces_with_multiple_transactions(event_loop):
         await start.wait()
         return task
 
-    @validate_transaction_metrics(
-        "parent",
-        background_task=True,
-        scoped_metrics=[("Function/child", 1)],
-    )
+    @validate_transaction_metrics("parent", background_task=True, scoped_metrics=[("Function/child", 1)])
     def parent_assertions(task):
         return event_loop.run_until_complete(task)
 
-    @validate_transaction_metrics(
-        "dummy",
-        background_task=True,
-        scoped_metrics=[("Function/child", 1)],
-    )
+    @validate_transaction_metrics("dummy", background_task=True, scoped_metrics=[("Function/child", 1)])
     def dummy_assertions(task):
         return event_loop.run_until_complete(task)
 

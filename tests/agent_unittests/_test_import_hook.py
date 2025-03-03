@@ -12,13 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 def run():
     pass
 
-class A():
+
+class A:
     def run():
         pass
 
-class B():
+
+class B:
     def run():
         pass

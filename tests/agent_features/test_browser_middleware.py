@@ -14,22 +14,15 @@
 
 import pytest
 import webtest
-from testing_support.fixtures import (
-    capture_transaction_metrics,
-    override_application_settings,
-)
+from testing_support.fixtures import capture_transaction_metrics, override_application_settings
 
 from newrelic.api.wsgi_application import wsgi_application
 
 PAGE_CONTENTS = b"Hello World"
 
-_browser_enabled_settings = {
-    "browser_monitoring.enabled": True,
-}
+_browser_enabled_settings = {"browser_monitoring.enabled": True}
 
-_browser_disabled_settings = {
-    "browser_monitoring.enabled": False,
-}
+_browser_disabled_settings = {"browser_monitoring.enabled": False}
 
 
 @wsgi_application()

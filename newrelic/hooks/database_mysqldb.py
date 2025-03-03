@@ -54,7 +54,6 @@ class ConnectionWrapper(DBAPI2ConnectionWrapper):
 
 
 class ConnectionFactory(DBAPI2ConnectionFactory):
-
     __connection_wrapper__ = ConnectionWrapper
 
 
@@ -74,7 +73,7 @@ def instance_info(args, kwargs):
         read_default_file=None,
         read_default_group=None,
         *args,
-        **kwargs
+        **kwargs,
     ):
         return (host, port, db, unix_socket, read_default_file, read_default_group)
 

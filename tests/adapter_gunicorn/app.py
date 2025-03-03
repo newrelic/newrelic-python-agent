@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 def application(environ, start_response):
-    start_response('200 OK', [('Content-Type', 'text/html')])
-    return [b'PONG']
+    start_response("200 OK", [("Content-Type", "text/html")])
+    return [b"PONG"]

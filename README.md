@@ -142,11 +142,6 @@ Please review [New Relic\'s General Data Privacy
 Notice](https://newrelic.com/termsandconditions/privacy) for more
 information.
 
-## Product Roadmap
-
-See our [roadmap](./ROADMAP.md), to learn more about our product vision,
-understand our plans, and provide us valuable feedback.
-
 ## Contributing
 
 We encourage your contributions to improve the New Relic Python Agent!

@@ -168,7 +168,7 @@ def _check_span_intrinsics(intrinsics):
     if "parentId" in intrinsics:
         assert_isinstance(intrinsics["parentId"], str)
     assert_isinstance(intrinsics["transactionId"], str)
-    intrinsics["sampled"] is True
+    assert intrinsics["sampled"] is True
     assert_isinstance(intrinsics["priority"], float)
     assert_isinstance(intrinsics["timestamp"], int)
     ts = intrinsics["timestamp"]

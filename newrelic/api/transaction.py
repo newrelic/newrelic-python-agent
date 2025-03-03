@@ -1111,6 +1111,7 @@ class Transaction:
                 "Please use the insert_distributed_trace_headers API."
             ),
             DeprecationWarning,
+            stacklevel=2,
         )
         return self._create_distributed_trace_payload()
 
@@ -1236,6 +1237,7 @@ class Transaction:
                 "Please use the accept_distributed_trace_headers API."
             ),
             DeprecationWarning,
+            stacklevel=2,
         )
         if not self._can_accept_distributed_trace_headers():
             return False
@@ -1592,6 +1594,7 @@ class Transaction:
         warnings.warn(
             ("The record_exception function is deprecated. Please use the new api named notice_error instead."),
             DeprecationWarning,
+            stacklevel=2,
         )
 
         self.notice_error(error=(exc, value, tb), attributes=params, ignore=ignore_errors)
@@ -1780,6 +1783,7 @@ class Transaction:
         warnings.warn(
             ("The add_custom_parameter API has been deprecated. Please use the add_custom_attribute API."),
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.add_custom_attribute(name, value)
 
@@ -1790,6 +1794,7 @@ class Transaction:
         warnings.warn(
             ("The add_custom_parameters API has been deprecated. Please use the add_custom_attributes API."),
             DeprecationWarning,
+            stacklevel=2,
         )
         return self.add_custom_attributes(items)
 
@@ -1900,6 +1905,7 @@ def add_custom_parameter(key, value):  # pragma: no cover
     warnings.warn(
         ("The add_custom_parameter API has been deprecated. Please use the add_custom_attribute API."),
         DeprecationWarning,
+        stacklevel=2,
     )
     return add_custom_attribute(key, value)
 
@@ -1911,6 +1917,7 @@ def add_custom_parameters(items):  # pragma: no cover
     warnings.warn(
         ("The add_custom_parameters API has been deprecated. Please use the add_custom_attributes API."),
         DeprecationWarning,
+        stacklevel=2,
     )
     return add_custom_attributes(items)
 
@@ -1947,6 +1954,7 @@ def get_browser_timing_footer(nonce=None):
     warnings.warn(
         "The get_browser_timing_footer function is deprecated. Please migrate to only using the get_browser_timing_header API instead.",
         DeprecationWarning,
+        stacklevel=2,
     )
     return ""
 

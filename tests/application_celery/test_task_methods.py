@@ -12,15 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import celery
 import pytest
-
 from _target_application import add, tsum
 from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 from testing_support.validators.validate_transaction_count import validate_transaction_count
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-
-import celery
-
 
 FORGONE_TASK_METRICS = [("Function/_target_application.add", None), ("Function/_target_application.tsum", None)]
 

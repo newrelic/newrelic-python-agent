@@ -13,21 +13,21 @@
 # limitations under the License.
 
 import functools
-import textwrap
 import inspect
 import sys
+import textwrap
 import time
-from newrelic.api.function_trace import function_trace
-from newrelic.api.transaction import current_transaction
-from newrelic.api.external_trace import ExternalTrace
-from newrelic.api.time_trace import notice_error, current_trace
-from newrelic.api.web_transaction import WebTransaction
+
 from newrelic.api.application import application_instance
-from newrelic.core.trace_cache import trace_cache
-from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
+from newrelic.api.external_trace import ExternalTrace
+from newrelic.api.function_trace import function_trace
+from newrelic.api.time_trace import current_trace, notice_error
+from newrelic.api.transaction import current_transaction
+from newrelic.api.web_transaction import WebTransaction
 from newrelic.common.async_proxy import async_proxy
 from newrelic.common.object_names import callable_name
-
+from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
+from newrelic.core.trace_cache import trace_cache
 
 _VERSION = None
 _instrumented = set()

@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import webtest
-
 from flask import Flask
 
 

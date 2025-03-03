@@ -31,11 +31,11 @@ import newrelic
 import newrelic.core.application
 import newrelic.core.config
 from newrelic.common.log_file import initialize_logging
+from newrelic.core.agent_control_health import HealthStatus, agent_control_health_instance
 from newrelic.core.thread_utilization import thread_utilization_data_source
 from newrelic.samplers.cpu_usage import cpu_usage_data_source
 from newrelic.samplers.gc_data import garbage_collector_data_source
 from newrelic.samplers.memory_usage import memory_usage_data_source
-from newrelic.core.agent_control_health import HealthStatus, agent_control_health_instance
 
 _logger = logging.getLogger(__name__)
 
@@ -125,11 +125,11 @@ class Agent:
     _registration_callables = {}
 
     @staticmethod
-    def run_on_startup(callable):  # pylint: disable=W0622
+    def run_on_startup(callable):  # noqa: A002
         Agent._startup_callables.append(callable)
 
     @staticmethod
-    def run_on_registration(application, callable):  # pylint: disable=W0622
+    def run_on_registration(application, callable):  # noqa: A002
         callables = Agent._registration_callables.setdefault(application, [])
         callables.append(callable)
 
@@ -152,7 +152,7 @@ class Agent:
 
         initialize_logging(settings.log_file, settings.log_level)
 
-        _logger.info(f"New Relic Python Agent ({newrelic.version})")
+        _logger.info("New Relic Python Agent (%s)", newrelic.version)
 
         check_environment()
 
@@ -619,7 +619,7 @@ class Agent:
             try:
                 application.harvest(shutdown=False, flexible=True)
             except Exception:
-                _logger.exception(f"Failed to harvest data for {application.name}.")
+                _logger.exception("Failed to harvest data for %s.", application.name)
 
         self._flexible_harvest_duration = time.time() - self._last_flexible_harvest
 
@@ -643,7 +643,7 @@ class Agent:
             try:
                 application.harvest(shutdown, flexible=False)
             except Exception:
-                _logger.exception(f"Failed to harvest data for {application.name}.")
+                _logger.exception("Failed to harvest data for %s.", application.name)
 
         self._default_harvest_duration = time.time() - self._last_default_harvest
 
@@ -711,8 +711,8 @@ class Agent:
 
             _logger.debug("Activating agent instance.")
 
-            for callable in self._startup_callables:
-                callable()
+            for callable_ in self._startup_callables:
+                callable_()
 
             _logger.debug("Start Python Agent main thread.")
 

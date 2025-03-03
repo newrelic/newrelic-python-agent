@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-from newrelic.common.object_wrapper import transient_function_wrapper, function_wrapper
+from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
 
 
 def validate_serverless_data(expected_methods=(), forgone_methods=()):

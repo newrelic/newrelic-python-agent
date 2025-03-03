@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from concurrent import futures
-import grpc
 import socket
+from concurrent import futures
 
+import grpc
 
 # This defines an external grpc server test apps can use for testing.
 #
@@ -62,7 +62,7 @@ class MockExternalgRPCServer:
         self.server.start()
         return self.server
 
-    def __exit__(self, type, value, tb):
+    def __exit__(self, exc, val, tb):
         # Set grace period to None so that the server shuts down immediately
         # when the context manager exits. This will hopefully prevent tests
         # from hanging while waiting for the server to shut down.

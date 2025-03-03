@@ -13,10 +13,8 @@
 # limitations under the License.
 
 import logging
-
-from urllib.request import urlopen
-
 import sqlite3 as db
+from urllib.request import urlopen
 
 from newrelic.api.time_trace import notice_error
 from newrelic.api.transaction import add_custom_attribute, get_browser_timing_header, record_custom_event

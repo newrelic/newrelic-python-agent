@@ -259,6 +259,6 @@ def _get_stdlib_builtin_module_names():
     elif python_version >= (3, 10):
         stdlibs = sys.stdlib_module_names
     else:
-        _logger.warn("Unsupported Python version. Unable to determine stdlibs.")
+        _logger.warning("Unsupported Python version. Unable to determine stdlibs.")
         return builtins
     return builtins | stdlibs

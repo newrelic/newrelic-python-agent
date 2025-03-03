@@ -22,13 +22,13 @@ except ImportError:
 
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from rest_framework.views import APIView
 from rest_framework.settings import APISettings, api_settings
+from rest_framework.views import APIView
 from views import index
 
 
 class View(APIView):
-    def get(self, request, format=None):
+    def get(self, request, format=None):  # noqa: A002
         return Response([{"message": "restframework view response"}])
 
 
@@ -37,7 +37,7 @@ class Error(Exception):
 
 
 class ViewError(APIView):
-    def get(self, request, format=None):
+    def get(self, request, format=None):  # noqa: A002
         raise Error("xxx")
 
 

@@ -20,9 +20,9 @@ import os
 import threading
 
 import gearman
+from testing_support.db_settings import gearman_settings
 
 from newrelic.api.background_task import background_task
-from testing_support.db_settings import gearman_settings
 
 worker_thread = None
 worker_event = threading.Event()

@@ -14,12 +14,12 @@
 
 import json
 import os
-import pytest
 
-from newrelic.common.utilization import AWSUtilization
+import pytest
 from testing_support.mock_http_client import create_client_cls
 from testing_support.validators.validate_internal_metrics import validate_internal_metrics
 
+from newrelic.common.utilization import AWSUtilization
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 FIXTURE = os.path.normpath(os.path.join(CURRENT_DIR, "fixtures", "utilization_vendor_specific", "aws.json"))

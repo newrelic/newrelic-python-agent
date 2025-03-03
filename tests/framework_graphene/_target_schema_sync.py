@@ -11,9 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from graphene import Field, Int, List
+from graphene import Field, Int, List, NonNull, ObjectType, Schema, String, Union
 from graphene import Mutation as GrapheneMutation
-from graphene import NonNull, ObjectType, Schema, String, Union
 
 
 class Author(ObjectType):

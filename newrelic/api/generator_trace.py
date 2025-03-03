@@ -13,13 +13,13 @@
 # limitations under the License.
 
 import functools
-import types
 import sys
+import types
 
-from newrelic.api.time_trace import current_trace
 from newrelic.api.function_trace import FunctionTrace
-from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
+from newrelic.api.time_trace import current_trace
 from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 
 
 def GeneratorTraceWrapper(wrapped, name=None, group=None, label=None, params=None):

@@ -13,14 +13,12 @@
 # limitations under the License.
 
 import urllib.parse as urlparse
-
 from collections import namedtuple
 
 import newrelic.core.attribute as attribute
 import newrelic.core.trace_node
-
-from newrelic.core.node_mixin import GenericNodeMixin
 from newrelic.core.metric import TimeMetric
+from newrelic.core.node_mixin import GenericNodeMixin
 
 _ExternalNode = namedtuple(
     "_ExternalNode",

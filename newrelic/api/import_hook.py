@@ -14,9 +14,7 @@
 
 import logging
 import sys
-
 from importlib.util import find_spec
-
 
 _logger = logging.getLogger(__name__)
 
@@ -57,7 +55,7 @@ _ok_modules = (
 _uninstrumented_modules = set()
 
 
-def register_import_hook(name, callable):  # pylint: disable=redefined-builtin
+def register_import_hook(name, callable):  # noqa: A002
     hooks = _import_hooks.get(name, None)
 
     if name not in _import_hooks or hooks is None:

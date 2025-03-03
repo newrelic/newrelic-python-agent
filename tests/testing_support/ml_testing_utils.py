@@ -14,9 +14,9 @@
 import copy
 
 import pytest
-from testing_support.fixtures import override_application_settings
 
 from newrelic.api.transaction import current_transaction
+from testing_support.fixtures import override_application_settings
 
 disabled_ai_monitoring_settings = override_application_settings({"ai_monitoring.enabled": False})
 disabled_ai_monitoring_streaming_settings = override_application_settings({"ai_monitoring.streaming.enabled": False})

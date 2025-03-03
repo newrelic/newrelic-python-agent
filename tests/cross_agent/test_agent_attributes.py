@@ -14,12 +14,12 @@
 
 import json
 import os
+
 import pytest
+from testing_support.fixtures import override_application_settings
 
 from newrelic.core import attribute_filter as af
-from newrelic.core.config import global_settings, Settings
-
-from testing_support.fixtures import override_application_settings
+from newrelic.core.config import Settings, global_settings
 
 
 def _default_settings():

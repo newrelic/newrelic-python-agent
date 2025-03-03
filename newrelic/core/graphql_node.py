@@ -15,10 +15,8 @@
 from collections import namedtuple
 
 import newrelic.core.trace_node
-
 from newrelic.core.metric import TimeMetric
 from newrelic.core.node_mixin import GenericNodeMixin
-
 
 _GraphQLOperationNode = namedtuple(
     "_GraphQLNode",

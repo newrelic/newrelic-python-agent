@@ -13,11 +13,11 @@
 # limitations under the License.
 
 
-import newrelic.api.transaction
 import newrelic.api.function_trace
+import newrelic.api.in_function
+import newrelic.api.transaction
 import newrelic.common.object_wrapper
 from newrelic.common.object_names import callable_name
-import newrelic.api.in_function
 
 
 class MethodWrapper:

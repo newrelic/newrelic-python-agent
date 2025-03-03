@@ -16,7 +16,7 @@
 import openai
 import pytest
 from testing_support.fixtures import dt_enabled, override_llm_token_callback_settings, reset_core_stats_engine
-from testing_support.ml_testing_utils import (  # noqa: F401
+from testing_support.ml_testing_utils import (
     add_token_count_to_events,
     disabled_ai_monitoring_record_content_settings,
     events_sans_content,

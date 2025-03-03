@@ -12,16 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 import json
 import os
-
 from contextlib import contextmanager
+
+import pytest
 
 from newrelic.api.application import application_instance as current_application
 from newrelic.api.background_task import BackgroundTask
-from newrelic.core.rules_engine import SegmentCollapseEngine
 from newrelic.core.agent import agent_instance
+from newrelic.core.rules_engine import SegmentCollapseEngine
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 JSON_DIR = os.path.normpath(os.path.join(CURRENT_DIR, "fixtures"))

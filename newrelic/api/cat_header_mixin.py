@@ -13,12 +13,12 @@
 # limitations under the License.
 
 from newrelic.common.encoding_utils import (
-    obfuscate,
-    deobfuscate,
-    json_encode,
-    json_decode,
-    base64_encode,
     base64_decode,
+    base64_encode,
+    deobfuscate,
+    json_decode,
+    json_encode,
+    obfuscate,
 )
 
 

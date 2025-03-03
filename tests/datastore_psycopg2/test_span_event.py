@@ -12,17 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 import psycopg2
-
-from newrelic.api.transaction import current_transaction
+import pytest
 from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.util import instance_hostname
+from testing_support.validators.validate_span_events import validate_span_events
 from utils import DB_SETTINGS
 
 from newrelic.api.background_task import background_task
-
+from newrelic.api.transaction import current_transaction
 
 # Settings
 

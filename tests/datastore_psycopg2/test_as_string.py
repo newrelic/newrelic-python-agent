@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 import psycopg2
+import pytest
 
 try:
     from psycopg2 import sql
@@ -21,6 +21,7 @@ except ImportError:
     sql = None
 
 from testing_support.db_settings import postgresql_settings
+
 from newrelic.api.background_task import background_task
 
 DB_SETTINGS = postgresql_settings()[0]

@@ -56,9 +56,9 @@ try:
 except ImportError:
     from distutils.core import setup
 
-from distutils.command.build_ext import build_ext  # noqa
-from distutils.core import Extension  # noqa
-from distutils.errors import (  # noqa
+from distutils.command.build_ext import build_ext
+from distutils.core import Extension
+from distutils.errors import (
     CCompilerError,
     DistutilsExecError,
     DistutilsPlatformError,

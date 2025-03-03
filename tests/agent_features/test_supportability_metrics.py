@@ -12,17 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 import subprocess
 import sys
 
-import newrelic.agent
-
-from newrelic.core.agent import agent_instance
-
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+import pytest
 from testing_support.validators.validate_metric_payload import validate_metric_payload
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
+import newrelic.agent
+from newrelic.core.agent import agent_instance
 
 _unscoped_metrics = [
     ("Supportability/api/FunctionTrace", 1),

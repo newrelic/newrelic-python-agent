@@ -25,9 +25,9 @@ from testing_support.fixtures import (
     raise_background_exceptions,
     wait_for_background_threads,
 )
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.sample_asgi_applications import AppWithCall, AppWithCallRaw, simple_app_v2_raw
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from uvicorn.config import Config
 from uvicorn.main import Server
 

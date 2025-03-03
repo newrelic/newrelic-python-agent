@@ -6,7 +6,7 @@ DEFAULT_BRANCH: main # Usually master or main
 SHOW_ELAPSED_TIME: true
 FILEIO_REPORTER: false
 PRINT_ALPACA: false
-VALIDATE_ALL_CODEBASE: false # only lint new and edited files
+VALIDATE_ALL_CODEBASE: true
 IGNORE_GITIGNORED_FILES: true
 FILTER_REGEX_EXCLUDE: "(.*/?packages/.*)" # Ignore packages directories
 
@@ -23,4 +23,6 @@ ENABLE_LINTERS: # If you use ENABLE_LINTERS variable, all other linters will be 
   - YAML_YAMLLINT
 
 PYTHON_RUFF_CONFIG_FILE: pyproject.toml
+PYTHON_RUFF_CLI_LINT_MODE: project
 PYTHON_RUFF_FORMAT_CONFIG_FILE: pyproject.toml
+PYTHON_RUFF_FORMAT_CLI_LINT_MODE: project

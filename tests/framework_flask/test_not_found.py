@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import pytest
-
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 

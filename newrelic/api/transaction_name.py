@@ -15,8 +15,8 @@
 import functools
 
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 
 
 def TransactionNameWrapper(wrapped, name=None, group=None, priority=None):

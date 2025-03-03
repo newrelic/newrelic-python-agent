@@ -81,7 +81,7 @@ class Environ:
 
     def __exit__(self, *args, **kwargs):
         os.environ.clear()
-        os.environ = INITIAL_ENV
+        os.environ[:] = INITIAL_ENV[:]
 
 
 def reset_agent_config(ini_contents, env_dict):

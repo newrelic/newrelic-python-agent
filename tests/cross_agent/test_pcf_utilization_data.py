@@ -60,7 +60,7 @@ class Environ:
 
     def __exit__(self, *args, **kwargs):
         os.environ.clear()
-        os.environ = INITIAL_ENV
+        os.environ[:] = INITIAL_ENV[:]
 
 
 class MockResponse:

@@ -700,15 +700,18 @@ def _create_successful_chain_run_events(
     trace_id = linking_metadata.get("trace.id")
     input_message_list = [_input]
     output_message_list = []
-    try:
-        output_message_list = [response[0]] if response else []
-    except:
+    if isinsance(response, str):
+        output_message_list = [response]
+    else:
         try:
-            output_message_list = [str(response)]
-        except Exception as e:
-            _logger.warning(
-                f"Unable to capture response inside langchain chain instrumentation. No response message event will be captured. Report this issue to New Relic Support.\n{traceback.format_exception(*sys.exc_info())}"
-            )
+            output_message_list = [response[0]] if response else []
+        except:
+            try:
+                output_message_list = [str(response)]
+            except Exception as e:
+                _logger.warning(
+                    f"Unable to capture response inside langchain chain instrumentation. No response message event will be captured. Report this issue to New Relic Support.\n{traceback.format_exception(*sys.exc_info())}"
+                )
 
     # Make sure the builtin attributes take precedence over metadata attributes.
     full_chat_completion_summary_dict = {f"metadata.{key}": value for key, value in metadata.items()}

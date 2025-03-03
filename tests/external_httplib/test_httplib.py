@@ -70,7 +70,7 @@ def test_httplib_https_request(server):
     @background_task(name="test_httplib:test_httplib_https_request")
     def _test():
         # fix HTTPSConnection: https://wiki.openstack.org/wiki/OSSN/OSSN-0033
-        connection = httplib.HTTPSConnection("localhost", server.port)  # nosec
+        connection = httplib.HTTPSConnection("localhost", server.port)
         # It doesn't matter that a SSL exception is raised here because the
         # agent still records this as an external request
         try:

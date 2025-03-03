@@ -62,7 +62,7 @@ _unscoped_metrics = [("Supportability/api/notice_error", 1), ("Supportability/ap
 @newrelic.agent.background_task()
 def test_notice_error():
     try:
-        1 / 0
+        1 / 0  # noqa: B018
     except ZeroDivisionError:
         newrelic.agent.notice_error(sys.exc_info())
 

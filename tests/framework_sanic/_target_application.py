@@ -169,7 +169,7 @@ async def streaming(request):
 # Fake websocket endpoint to enable websockets on the server
 @app.websocket("/socket")
 async def socket(request, ws):
-    assert False
+    raise AssertionError
 
 
 @app.route("/custom-header/<header_key>/<header_value>")

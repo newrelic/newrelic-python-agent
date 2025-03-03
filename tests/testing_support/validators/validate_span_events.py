@@ -137,7 +137,7 @@ def assert_isinstance(value, expected_type):
         elif expected_type is int:
             assert value.HasField("int_value")
         else:
-            assert False
+            raise AssertionError
     else:
         assert isinstance(value, expected_type)
 

@@ -30,11 +30,11 @@ def exception(request):
 
 
 def permission_denied(request):
-    raise PermissionDenied()
+    raise PermissionDenied
 
 
 def middleware_410(request):
-    raise Custom410()
+    raise Custom410
 
 
 class MyView(View):

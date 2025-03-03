@@ -14,13 +14,13 @@
 
 import functools
 import warnings
-from newrelic.common.object_wrapper import FunctionWrapper
+
+from newrelic.api.application import application_instance
 from newrelic.api.transaction import current_transaction
 from newrelic.api.web_transaction import WebTransaction
-from newrelic.api.application import application_instance
+from newrelic.common.object_wrapper import FunctionWrapper
 from newrelic.core.attribute import truncate
 from newrelic.core.config import global_settings
-
 
 COLD_START_RECORDED = False
 MEGABYTE_IN_BYTES = 2**20

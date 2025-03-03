@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 import psycopg2
+import pytest
 from psycopg2 import extensions as ext
 from utils import DB_SETTINGS
+
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.hooks.database_psycopg2 import wrapper_psycopg2_as_string
 

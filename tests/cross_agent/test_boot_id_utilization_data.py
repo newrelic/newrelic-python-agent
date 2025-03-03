@@ -14,14 +14,13 @@
 
 import json
 import os
-import pytest
 import sys
 import tempfile
 
-from newrelic.common.system_info import BootIdUtilization
-
+import pytest
 from testing_support.validators.validate_internal_metrics import validate_internal_metrics
 
+from newrelic.common.system_info import BootIdUtilization
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 SYS_PLATFORM = sys.platform

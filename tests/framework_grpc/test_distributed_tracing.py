@@ -13,17 +13,18 @@
 # limitations under the License.
 
 import json
-import pytest
-from newrelic.api.application import application_instance
-from newrelic.api.transaction import Transaction, current_transaction
-from newrelic.api.background_task import background_task
-from newrelic.api.external_trace import ExternalTrace
-from newrelic.common.encoding_utils import DistributedTracePayload, W3CTraceParent, W3CTraceState, NrTraceState
 
+import pytest
+from _test_common import create_request, wait_for_transaction_completion
 from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_span_events import validate_span_events
-from _test_common import create_request, wait_for_transaction_completion
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+
+from newrelic.api.application import application_instance
+from newrelic.api.background_task import background_task
+from newrelic.api.external_trace import ExternalTrace
+from newrelic.api.transaction import Transaction, current_transaction
+from newrelic.common.encoding_utils import DistributedTracePayload, NrTraceState, W3CTraceParent, W3CTraceState
 
 _test_matrix = (
     "method_name,streaming_request",

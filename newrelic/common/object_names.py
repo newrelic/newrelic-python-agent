@@ -15,11 +15,10 @@
 """This module implements functions for deriving the full name of an object."""
 
 import builtins
+import functools
+import inspect
 import sys
 import types
-import inspect
-import functools
-
 
 # Object model terminology for quick reference.
 #
@@ -63,7 +62,7 @@ import functools
 #     instance to which a method is bound, or None
 
 
-def _module_name(object):
+def _module_name(object):  # noqa: A002
     mname = None
 
     # For the module name we first need to deal with the special
@@ -111,7 +110,7 @@ def _module_name(object):
     return mname
 
 
-def _object_context(object):
+def _object_context(object):  # noqa: A002
     if inspect.ismethod(object):
         # In Python 3, ismethod() returns True for bound methods. We
         # need to distinguish between class methods and instance methods.
@@ -247,7 +246,7 @@ def object_context(target):
     return details
 
 
-def callable_name(object, separator=":"):
+def callable_name(object, separator=":"):  # noqa: A002
     """Returns a string name identifying the supplied object. This will be
     of the form 'module:object_path'.
 

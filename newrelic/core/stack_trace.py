@@ -18,8 +18,8 @@ etc.
 
 """
 
-import sys
 import itertools
+import sys
 
 from newrelic.core.config import global_settings
 

@@ -18,8 +18,7 @@ import pika
 import pytest
 import tornado
 from compat import basic_consume
-from conftest import BODY, CORRELATION_ID, EXCHANGE, EXCHANGE_2, HEADERS, QUEUE, QUEUE_2, REPLY_TO
-from conftest import PIKA_VERSION_INFO
+from conftest import BODY, CORRELATION_ID, EXCHANGE, EXCHANGE_2, HEADERS, PIKA_VERSION_INFO, QUEUE, QUEUE_2, REPLY_TO
 from pika.adapters.tornado_connection import TornadoConnection
 from testing_support.db_settings import rabbitmq_settings
 from testing_support.fixtures import (

@@ -23,7 +23,6 @@ from newrelic.api.application import application_instance as application
 from newrelic.api.background_task import background_task
 from newrelic.api.time_trace import notice_error
 
-
 UNICODE_MESSAGE = "I💜🐍"
 UNICODE_ENGLISH = "I love python"
 BYTES_ENGLISH = b"I love python"

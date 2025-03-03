@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
 from testing_support.fixtures import catch_background_exceptions
-from newrelic.common.object_wrapper import transient_function_wrapper, function_wrapper
 
 
 def validate_apdex_metrics(name, group="Function", count=1, apdex_t_min=0.5, apdex_t_max=0.5):

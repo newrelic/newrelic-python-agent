@@ -28,8 +28,8 @@ async def index(request):
 
 
 async def hang(request):
-    while True:
-        await asyncio.sleep(0)
+    while True:  # noqa: ASYNC110
+        await asyncio.sleep(0)  # noqa: ASYNC110
 
 
 async def error(request):
@@ -37,15 +37,15 @@ async def error(request):
 
 
 async def non_500_error(request):
-    raise web.HTTPGone()
+    raise web.HTTPGone
 
 
 async def raise_403(request):
-    raise web.HTTPForbidden()
+    raise web.HTTPForbidden
 
 
 async def raise_404(request):
-    raise web.HTTPNotFound()
+    raise web.HTTPNotFound
 
 
 @function_trace()

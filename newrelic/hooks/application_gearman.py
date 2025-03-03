@@ -13,13 +13,13 @@
 # limitations under the License.
 
 from newrelic.api.application import application_instance as default_application
-from newrelic.common.object_wrapper import wrap_function_wrapper, FunctionWrapper
 from newrelic.api.background_task import BackgroundTask
-from newrelic.api.function_trace import FunctionTrace, wrap_function_trace
-from newrelic.api.transaction import current_transaction
-from newrelic.api.time_trace import current_trace
-from newrelic.common.object_names import callable_name
 from newrelic.api.external_trace import ExternalTrace
+from newrelic.api.function_trace import FunctionTrace, wrap_function_trace
+from newrelic.api.time_trace import current_trace
+from newrelic.api.transaction import current_transaction
+from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import FunctionWrapper, wrap_function_wrapper
 
 # Following wrappers are specifically for a gearman client.
 

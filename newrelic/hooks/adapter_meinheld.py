@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import newrelic.api.wsgi_application
 import newrelic.api.in_function
+import newrelic.api.wsgi_application
 
 
 def instrument_meinheld_server(module):

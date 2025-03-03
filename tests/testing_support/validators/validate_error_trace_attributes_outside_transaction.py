@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from testing_support.fixtures import check_error_attributes, core_application_stats_engine_error
-
 from newrelic.common.object_wrapper import transient_function_wrapper
+from testing_support.fixtures import check_error_attributes, core_application_stats_engine_error
 
 
 def validate_error_trace_attributes_outside_transaction(

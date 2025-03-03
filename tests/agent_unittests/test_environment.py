@@ -34,7 +34,7 @@ def module(version):
 
 def test_plugin_list():
     # Let's pretend we fired an import hook
-    import pytest  # noqa: F401
+    import pytest
 
     for name, version, _ in plugins():
         if name == "newrelic.hooks.newrelic":

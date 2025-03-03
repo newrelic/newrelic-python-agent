@@ -14,11 +14,11 @@
 
 import time
 
-from newrelic.api.background_task import background_task
-from newrelic.api.function_trace import FunctionTrace
-
 from testing_support.fixtures import validate_tt_parenting
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+
+from newrelic.api.background_task import background_task
+from newrelic.api.function_trace import FunctionTrace
 
 _test_function_trace_default_group_scoped_metrics = [("Function/FunctionTrace", 1)]
 

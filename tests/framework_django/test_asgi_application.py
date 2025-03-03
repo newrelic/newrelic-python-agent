@@ -13,19 +13,20 @@
 # limitations under the License.
 
 import os
-import pytest
-import django
 
-from newrelic.core.config import global_settings
-from newrelic.common.encoding_utils import gzip_decompress
+import django
+import pytest
 from testing_support.fixtures import (
     override_application_settings,
     override_generic_settings,
     override_ignore_status_codes,
 )
 from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+
+from newrelic.common.encoding_utils import gzip_decompress
+from newrelic.core.config import global_settings
 
 DJANGO_VERSION = tuple(map(int, django.get_version().split(".")[:2]))
 
@@ -33,7 +34,6 @@ if DJANGO_VERSION[0] < 3:
     pytest.skip("support for asgi added in django 3", allow_module_level=True)
 
 from testing_support.asgi_testing import AsgiTest
-
 
 scoped_metrics = [
     ("Function/django.contrib.sessions.middleware:SessionMiddleware", 1),

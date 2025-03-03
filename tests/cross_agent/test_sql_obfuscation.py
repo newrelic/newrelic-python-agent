@@ -14,10 +14,10 @@
 
 import json
 import os
+
 import pytest
 
 from newrelic.core.database_utils import SQLStatement
-
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 JSON_DIR = os.path.normpath(os.path.join(CURRENT_DIR, "fixtures", "sql_obfuscation"))

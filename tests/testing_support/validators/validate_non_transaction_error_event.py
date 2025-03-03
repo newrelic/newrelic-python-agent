@@ -14,9 +14,8 @@
 
 from time import time
 
-from testing_support.fixtures import core_application_stats_engine
-
 from newrelic.common.object_wrapper import function_wrapper
+from testing_support.fixtures import core_application_stats_engine
 
 
 def validate_non_transaction_error_event(required_intrinsics=None, num_errors=1, required_user=None, forgone_user=None):

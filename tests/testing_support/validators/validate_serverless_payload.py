@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.common.encoding_utils import serverless_payload_decode, json_decode
-from newrelic.common.object_wrapper import transient_function_wrapper, function_wrapper
+from newrelic.common.encoding_utils import json_decode, serverless_payload_decode
+from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
 
 
 def validate_serverless_payload(count=1):

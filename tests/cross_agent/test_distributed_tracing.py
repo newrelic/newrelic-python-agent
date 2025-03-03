@@ -165,8 +165,7 @@ def test_distributed_tracing(
         # False in this instance, we defer.
         extra_inbound_payloads.append((inbound_payloads, False))
     elif len(inbound_payloads) > 1:
-        for payload in inbound_payloads[1:]:
-            extra_inbound_payloads.append((payload, False))
+        extra_inbound_payloads.extend((payload, False) for payload in inbound_payloads[1:])
 
     global test_settings
     test_settings = {

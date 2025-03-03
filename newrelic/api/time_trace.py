@@ -211,7 +211,9 @@ class TimeTrace:
                 node.add_attrs(self._add_agent_attribute)
             except Exception as exc:
                 _logger.debug(
-                    f"Failed to extract source code context from callable {source}. Report this issue to newrelic support. Exception: {exc}"
+                    "Failed to extract source code context from callable %s. Report this issue to newrelic support. Exception: %s",
+                    source,
+                    exc,
                 )
 
     def _observe_exception(self, exc_info=None, ignore=None, expected=None, status_code=None):

@@ -14,7 +14,6 @@
 
 import os
 import tempfile
-
 from importlib import reload
 
 import pytest
@@ -35,7 +34,6 @@ from newrelic.core.config import (
     finalize_application_settings,
     global_settings,
 )
-
 
 INI_FILE_WITHOUT_UTIL_CONF = b"""
 [newrelic]

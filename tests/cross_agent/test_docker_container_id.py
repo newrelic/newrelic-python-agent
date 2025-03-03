@@ -13,8 +13,9 @@
 # limitations under the License.
 
 import json
-import mock
 import os
+
+import mock
 import pytest
 
 import newrelic.common.utilization as u
@@ -28,23 +29,21 @@ def _load_docker_test_attributes():
     [(<filename>, <containerId>), ...]
 
     """
-    docker_test_attributes = []
     test_cases = os.path.join(DOCKER_FIXTURE, "cases.json")
     with open(test_cases, "r") as fh:
         js = fh.read()
     json_list = json.loads(js)
-    for json_record in json_list:
-        docker_test_attributes.append((json_record["filename"], json_record["containerId"]))
+    docker_test_attributes = [(json_record["filename"], json_record["containerId"]) for json_record in json_list]
     return docker_test_attributes
 
 
 def mock_open(mock_file):
     def _mock_open(filename, mode):
         if filename == "/proc/self/mountinfo":
-            raise FileNotFoundError()
+            raise FileNotFoundError
         elif filename == "/proc/self/cgroup":
             return mock_file
-        raise RuntimeError()
+        raise RuntimeError
 
     return _mock_open
 

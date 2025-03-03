@@ -28,15 +28,13 @@ import sys
 import threading
 import time
 import traceback
-
 from collections import OrderedDict
 from inspect import signature
 
-
 from newrelic.common.object_wrapper import ObjectProxy
 from newrelic.core.agent import agent_instance
-from newrelic.core.config import flatten_settings, global_settings
 from newrelic.core.agent_control_health import HealthStatus, agent_control_health_instance
+from newrelic.core.config import flatten_settings, global_settings
 from newrelic.core.trace_cache import trace_cache
 
 
@@ -61,11 +59,7 @@ def shell_command(wrapped):
         result = shlex.split(line)
 
         (options, args) = parser.parse_args(result)
-
-        kwargs = {}
-        for key, value in options.__dict__.items():
-            if value is not None:
-                kwargs[key] = value
+        kwargs = {key: value for key, value in options.__dict__.items() if value is not None}
 
         return wrapped(self, *args, **kwargs)
 
@@ -380,12 +374,12 @@ class ConsoleShell(cmd.Cmd):
             print("Sorry, the embedded Python interpreter is disabled.", file=self.stdout)
             return
 
-        locals = {}
+        locals_ = {}
 
-        locals["stdin"] = self.stdin
-        locals["stdout"] = self.stdout
+        locals_["stdin"] = self.stdin
+        locals_["stdout"] = self.stdout
 
-        console = EmbeddedConsole(locals)
+        console = EmbeddedConsole(locals_)
 
         console.stdin = self.stdin
         console.stdout = self.stdout
@@ -409,7 +403,7 @@ class ConsoleShell(cmd.Cmd):
         on greenlets, then only the thread stack of the currently
         executing coroutine will be displayed."""
 
-        all = []
+        all_ = []
         for threadId, stack in sys._current_frames().items():
             block = []
             block.append(f"# ThreadID: {threadId}")
@@ -421,9 +415,9 @@ class ConsoleShell(cmd.Cmd):
                 block.append(f"File: '{filename}', line {int(lineno)}, in {name}")
                 if line:
                     block.append(f"  {line.strip()}")
-            all.append("\n".join(block))
+            all_.append("\n".join(block))
 
-        print("\n\n".join(all), file=self.stdout)
+        print("\n\n".join(all_), file=self.stdout)
 
 
 class ConnectionManager:

@@ -14,14 +14,13 @@
 
 import pytest
 import redis
+from testing_support.db_settings import redis_settings
+from testing_support.fixtures import override_application_settings
+from testing_support.util import instance_hostname
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
-
-from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from testing_support.db_settings import redis_settings
-from testing_support.util import instance_hostname
 
 DB_MULTIPLE_SETTINGS = redis_settings()
 REDIS_PY_VERSION = get_package_version_tuple("redis")

@@ -60,7 +60,7 @@ parent_info = {
 @asgi_application()
 async def target_asgi_application(scope, receive, send):
     status = "200 OK"
-    type = "http.response.start"
+    type_ = "http.response.start"
     output = b"hello world"
     response_headers = [
         (b"content-type", b"text/html; charset=utf-8"),
@@ -81,7 +81,7 @@ async def target_asgi_application(scope, receive, send):
     assert txn.priority == 10.001
     assert txn.sampled
 
-    await send({"type": type, "status": status, "headers": response_headers})
+    await send({"type": type_, "status": status, "headers": response_headers})
 
     await send({"type": "http.response.body", "body": b"Hello World"})
 

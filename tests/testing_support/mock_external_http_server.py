@@ -14,7 +14,6 @@
 
 import socket
 import threading
-
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 # This defines an external server test apps can make requests to (instead of
@@ -92,7 +91,7 @@ class MockExternalHTTPServer(threading.Thread):
         self.start()
         return self
 
-    def __exit__(self, type, value, tb):
+    def __exit__(self, exc, val, tb):
         self.stop()
 
     def run(self):

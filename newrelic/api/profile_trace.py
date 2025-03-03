@@ -70,7 +70,7 @@ class ProfileTrace:
             except Exception:
                 pass
 
-            for name, obj in frame.f_globals.items():
+            for obj in frame.f_globals.values():
                 try:
                     if obj.__dict__[func_name].func_code is co:
                         return obj.__dict__[func_name]

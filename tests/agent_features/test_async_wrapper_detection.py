@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
-
 import functools
 import time
+
+import pytest
+from testing_support.fixtures import capture_transaction_metrics
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.api.database_trace import database_trace
@@ -25,11 +27,7 @@ from newrelic.api.function_trace import function_trace
 from newrelic.api.graphql_trace import graphql_operation_trace, graphql_resolver_trace
 from newrelic.api.memcache_trace import memcache_trace
 from newrelic.api.message_trace import message_trace
-
 from newrelic.common.async_wrapper import generator_wrapper
-
-from testing_support.fixtures import capture_transaction_metrics
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 trace_metric_cases = [
     (functools.partial(function_trace, name="simple_gen"), "Function/simple_gen"),

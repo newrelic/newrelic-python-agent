@@ -1,5 +1,6 @@
-import pytest
 import json
+
+import pytest
 from testing_support.mock_external_http_server import MockExternalHTTPServer
 
 STANDARD_RESPONSE = {

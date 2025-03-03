@@ -13,19 +13,17 @@
 # limitations under the License.
 
 import psycopg2
-import psycopg2.extras
 import psycopg2.extensions
+import psycopg2.extras
 import pytest
-
 from testing_support.fixtures import override_application_settings
+from testing_support.util import instance_hostname
 from testing_support.validators.validate_database_node import validate_database_node
 from testing_support.validators.validate_transaction_slow_sql_count import validate_transaction_slow_sql_count
-from newrelic.core.database_utils import SQLConnections
-from testing_support.util import instance_hostname
 from utils import DB_SETTINGS
 
 from newrelic.api.background_task import background_task
-
+from newrelic.core.database_utils import SQLConnections
 
 _host = instance_hostname(DB_SETTINGS["host"])
 _port = DB_SETTINGS["port"]

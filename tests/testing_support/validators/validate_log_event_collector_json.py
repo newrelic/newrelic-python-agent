@@ -15,7 +15,7 @@
 import json
 
 from newrelic.common.encoding_utils import json_encode
-from newrelic.common.object_wrapper import transient_function_wrapper, function_wrapper
+from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
 
 
 def validate_log_event_collector_json(num_logs=1):

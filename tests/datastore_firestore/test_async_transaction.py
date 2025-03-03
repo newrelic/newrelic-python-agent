@@ -73,7 +73,7 @@ def exercise_async_transaction_rollback(async_client, async_collection):
             # set and delete methods
             async_transaction.set(async_collection.document("doc2"), {"x": 99})
             async_transaction.delete(async_collection.document("doc1"))
-            raise RuntimeError()
+            raise RuntimeError
 
         with pytest.raises(RuntimeError):
             await _exercise(async_client.transaction())

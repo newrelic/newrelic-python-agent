@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from testing_support.fixtures import core_application_stats_engine
-
 from newrelic.common.object_wrapper import function_wrapper
+from testing_support.fixtures import core_application_stats_engine
 
 
 def validate_application_error_trace_count(num_errors):

@@ -94,7 +94,7 @@ def test_tracestate_generation(inbound_nr_tracestate):
 
     response = _test()
 
-    for header_name, header_value in response.headers.items():
+    for header_name, header_value in response.headers.items():  # noqa: B007
         if header_name == "tracestate":
             break
     else:
@@ -136,7 +136,7 @@ def test_tracestate_generation(inbound_nr_tracestate):
 def test_tracestate_propagation(inbound_tracestate, expected):
     headers = {"traceparent": INBOUND_TRACEPARENT, "tracestate": inbound_tracestate}
     response = test_asgi_application.make_request("GET", "/", headers=headers)
-    for header_name, header_value in response.headers.items():
+    for header_name, header_value in response.headers.items():  # noqa: B007
         if header_name == "tracestate":
             break
     else:
@@ -162,7 +162,7 @@ def test_traceparent_generation(inbound_traceparent, span_events_enabled):
         return test_asgi_application.make_request("GET", "/", headers=headers)
 
     response = _test()
-    for header_name, header_value in response.headers.items():
+    for header_name, header_value in response.headers.items():  # noqa: B007
         if header_name == "traceparent":
             break
     else:

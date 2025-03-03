@@ -52,7 +52,7 @@ class SampleApplicationServicer(sample_application_pb2_grpc.SampleApplicationSer
         if request.timesout:
             while context.is_active():
                 time.sleep(0.1)
-        for i in range(request.count):
+        for _ in range(request.count):
             yield Message(text=f"unary_stream: {request.text}")
 
     def DoStreamUnary(self, request_iter, context):
@@ -162,5 +162,5 @@ class SampleApplicationServicer(sample_application_pb2_grpc.SampleApplicationSer
 
     def DtNoTxnStreamStream(self, request_iter, context):
         current_transaction().ignore_transaction = True
-        for request in request_iter:
+        for _ in request_iter:
             yield self.extract_dt_value(context.invocation_metadata())

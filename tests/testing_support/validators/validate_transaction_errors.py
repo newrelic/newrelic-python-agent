@@ -61,7 +61,7 @@ def validate_transaction_errors(errors=None, required_params=None, forgone_param
                 assert name in e.custom_params, f"name={name!r}, params={e.custom_params!r}"
                 assert e.custom_params[name] == value, f"name={name!r}, value={value!r}, params={e.custom_params!r}"
 
-            for name, value in forgone_params:
+            for name, _ in forgone_params:
                 assert name not in e.custom_params, f"name={name!r}, params={e.custom_params!r}"
 
             if e.type in expected_errors:

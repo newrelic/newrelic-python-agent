@@ -139,7 +139,7 @@ def validate_span_events(
 def check_value_equals(dictionary, key, expected_value):
     value = dictionary.get(key)
     if AttributeValue and isinstance(value, AttributeValue):
-        for descriptor, val in value.ListFields():
+        for _, val in value.ListFields():
             if val != expected_value:
                 return False
         return True

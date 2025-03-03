@@ -14,13 +14,13 @@
 
 
 def test_pywsgi_application_index(target_application):
-    for i in range(3):
+    for _ in range(3):
         response = target_application.get("/pywsgi")
         response.mustcontain("WSGI RESPONSE")
 
 
 def test_pywsgi_request_timeout_application(target_application):
-    for i in range(3):
+    for _ in range(3):
         response = target_application.get("/request-timeout-application/pywsgi", status=500)
 
 
@@ -35,7 +35,7 @@ def test_pywsgi_request_timeout_response(target_application):
     # as expected. It may all be done to some issue with how coroutines
     # are schedule when done within the one process.
 
-    for i in range(3):
+    for _ in range(3):
         response = target_application.get("/request-timeout-response/pywsgi", status=500)
         # response.mustcontain('WSGI')
 
@@ -45,21 +45,21 @@ def test_pywsgi_request_timeout_finalize(target_application):
     # where the results isn't what we expect when things run in the same
     # process.
 
-    for i in range(3):
+    for _ in range(3):
         response = target_application.get("/request-timeout-finalize/pywsgi", status=500)
         # response.mustcontain('WSGI RESPONSE')
 
 
 def test_pywsgi_raise_exception_application(target_application):
-    for i in range(3):
+    for _ in range(3):
         response = target_application.get("/raise-exception-application/pywsgi", status=500)
 
 
 def test_pywsgi_raise_exception_response(target_application):
-    for i in range(3):
+    for _ in range(3):
         response = target_application.get("/raise-exception-response/pywsgi", status=500)
 
 
 def test_pywsgi_raise_exception_finalize(target_application):
-    for i in range(3):
+    for _ in range(3):
         response = target_application.get("/raise-exception-finalize/pywsgi", status=500)

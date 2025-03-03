@@ -76,7 +76,7 @@ our security goals.
 If you believe you have found a security vulnerability in this project
 or any of New Relic\'s products or websites, we welcome and greatly
 appreciate you reporting it to New Relic through
-[HackerOne](https://hackerone.com/newrelic).
+[our bug bounty program](https://docs.newrelic.com/docs/security/security-privacy/information-security/report-security-vulnerabilities/).
 
 ## Setting Up Your Environment
 

@@ -6743,7 +6743,7 @@ class MockExternalBedrockServer(MockExternalHTTPServer):
     # calls.
 
     def __init__(self, handler=simple_get, port=None, *args, **kwargs):
-        super(MockExternalBedrockServer, self).__init__(handler=handler, port=port, *args, **kwargs)
+        super(MockExternalBedrockServer, self).__init__(handler=handler, port=port, *args, **kwargs)  # noqa: B026
 
 
 if __name__ == "__main__":

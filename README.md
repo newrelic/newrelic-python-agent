@@ -30,21 +30,21 @@ pip install newrelic
 (These instructions can also be found online: [Python Agent Quick
 Start](https://docs.newrelic.com/docs/agents/python-agent/getting-started/python-agent-quick-start).)
 
-1.  Generate the agent configuration file with your [license
+1. Generate the agent configuration file with your [license
     key](https://docs.newrelic.com/docs/accounts-partnerships/accounts/account-setup/license-key).
 
     ```bash
     newrelic-admin generate-config $YOUR_LICENSE_KEY newrelic.ini
     ```
 
-2.  Validate the agent configuration and test the connection to our data
+2. Validate the agent configuration and test the connection to our data
     collector service.
 
     ```bash
     newrelic-admin validate-config newrelic.ini
     ```
 
-3.  Integrate the agent with your web application.
+3. Integrate the agent with your web application.
 
     If you control how your web application or WSGI server is started,
     the recommended way to integrate the agent is to use the
@@ -78,17 +78,17 @@ Start](https://docs.newrelic.com/docs/agents/python-agent/getting-started/python
     newrelic.agent.initialize('/path/to/newrelic.ini')
     ```
 
-4.  Start or restart your Python web application or WSGI server.
+4. Start or restart your Python web application or WSGI server.
 
-5.  Done! Check your application in the [New Relic
+5. Done! Check your application in the [New Relic
     UI](https://rpm.newrelic.com) to see the real time statistics
     generated from your application.
 
 Additional resources may be found here:
 
--   [New Relic for Python
+- [New Relic for Python
     Documentation](https://docs.newrelic.com/docs/agents/python-agent)
--   [New Relic for Python Release
+- [New Relic for Python Release
     Notes](https://docs.newrelic.com/docs/release-notes/agent-release-notes/python-release-notes)
 
 ## Support
@@ -112,17 +112,17 @@ file a Github issue.
 
 ### Support Channels
 
--   [New Relic
+- [New Relic
     Documentation](https://docs.newrelic.com/docs/agents/python-agent):
     Comprehensive guidance for using our platform
--   [New Relic
+- [New Relic
     Community](https://discuss.newrelic.com/c/support-products-agents/python-agent):
     The best place to engage in troubleshooting questions
--   [New Relic Developer](https://developer.newrelic.com/): Resources
+- [New Relic Developer](https://developer.newrelic.com/): Resources
     for building a custom observability applications
--   [New Relic University](https://learn.newrelic.com/): A range of
+- [New Relic University](https://learn.newrelic.com/): A range of
     online training for New Relic users of every level
--   [New Relic Technical Support](https://support.newrelic.com/)
+- [New Relic Technical Support](https://support.newrelic.com/)
     24/7/365 ticketed support. Read more about our [Technical Support
     Offerings](https://docs.newrelic.com/docs/licenses/license-information/general-usage-licenses/support-plan).
 

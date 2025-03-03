@@ -62,9 +62,9 @@ please provide a link to an example app or gist that reproduces the
 issue. When filing an issue, please ensure your description is clear and
 includes the following information.
 
--   Project version (ex: 1.4.0)
--   Custom configurations (ex: flag=true)
--   Any modifications made to the Python Agent
+- Project version (ex: 1.4.0)
+- Custom configurations (ex: flag=true)
+- Any modifications made to the Python Agent
 
 ### A note about vulnerabilities
 
@@ -99,12 +99,12 @@ While we cannot provide direct support in setting up your environment to
 work with this container, we develop it in the open and provide this
 documentation to help reduce the setup burden on new contributors.
 
-### Prerequisites:
+### Prerequisites
 
-1.  Install [Docker](https://www.docker.com/) for you local operating
+1. Install [Docker](https://www.docker.com/) for you local operating
     system.
 
-2.  Login to the [GitHub Container
+2. Login to the [GitHub Container
     Registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-with-a-personal-access-token-classic)
     through Docker.
 
@@ -119,43 +119,43 @@ documentation to help reduce the setup burden on new contributors.
             (Requires a local copy of
             [npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm).)
 
-### Steps for VS Code:
+### Steps for VS Code
 
-1.  Ensure Docker is running.
-2.  Install the [VS Code Extension for Dev
+1. Ensure Docker is running.
+2. Install the [VS Code Extension for Dev
     Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
     into VS Code.
-3.  In VS Code, open the command pallette (Ctrl-Shift-P on Windows/Linux
+3. In VS Code, open the command pallette (Ctrl-Shift-P on Windows/Linux
     or Cmd-Shift-P on Mac) and search for and run \"Dev Containers:
     Rebuild and Reopen in Container\".
-4.  Wait for the container to build and start. This may take a long time
+4. Wait for the container to build and start. This may take a long time
     to pull the first time the container is run, subsequent runs should
     be faster thanks to caching.
-5.  To update your container, open the command pallette and run \"Dev
+5. To update your container, open the command pallette and run \"Dev
     Containers: Rebuild Without Cache and Reopen in Container\".
 
-### Steps for Command Line Editor Users (vim, etc.):
+### Steps for Command Line Editor Users (vim, etc.)
 
-1.  Ensure Docker is running.
-2.  From the root of this repository, run
+1. Ensure Docker is running.
+2. From the root of this repository, run
     `devcontainer up --workspace-folder=.` to start the container. The
     running container ID will be displayed, which is useful for
     subsequent steps.
-3.  To gain shell access to the container, run
+3. To gain shell access to the container, run
     `docker exec -it <container-id> /bin/bash`. Alternative shells
     include `zsh` and `fish`.
-4.  Navigate to the `/workspaces` folder to find your source code.
-5.  To stop the container, run `exit` on any open shells and then run
+4. Navigate to the `/workspaces` folder to find your source code.
+5. To stop the container, run `exit` on any open shells and then run
     `docker stop <container-id>`. `docker ps` may be helpful for finding
     the ID if you\'ve lost it.
 
-### Personalizing Your Container:
+### Personalizing Your Container
 
-1.  If you use a dotfiles repository (such as
+1. If you use a dotfiles repository (such as
     [chezmoi](https://www.chezmoi.io/)), you can configure your
     container to clone and install your dotfiles using [VS Code dotfile
     settings](https://code.visualstudio.com/docs/devcontainers/containers#_personalizing-with-dotfile-repositories).
-2.  To install extra packages and features, you can edit your local copy
+2. To install extra packages and features, you can edit your local copy
     of the .devcontainer/devcontainer.json file to use specific [Dev
     Container Features](https://containers.dev/features). A few common
     needs are already included but commented out.
@@ -176,12 +176,12 @@ contributions are accepted.
 
 Additionally:
 
-1.  Ensure any install or build dependencies are removed before the end
+1. Ensure any install or build dependencies are removed before the end
     of the layer when doing a build.
-2.  Increase the version numbers in any examples files and the README.md
+2. Increase the version numbers in any examples files and the README.md
     to the new version that this Pull Request would represent. The
     versioning scheme we use is [SemVer](http://semver.org/).
-3.  You may merge the Pull Request in once you have the sign-off of two
+3. You may merge the Pull Request in once you have the sign-off of two
     other developers, or if you do not have permission to do that, you
     may request the second reviewer to merge it for you.
 

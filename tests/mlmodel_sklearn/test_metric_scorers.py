@@ -135,7 +135,7 @@ def run_metric_scorer():
             training_steps = [0]
 
         clf = tree.DecisionTreeClassifier(random_state=0)
-        for step in training_steps:
+        for _ in training_steps:
             model = clf.fit(x_train, y_train)
 
             labels = model.predict(x_test)

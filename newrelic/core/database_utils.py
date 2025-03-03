@@ -628,7 +628,7 @@ class SQLConnections:
         if settings.debug.log_explain_plan_queries:
             _logger.debug("Cleaning up SQL connections cache %r.", self)
 
-        for key, connection in self.connections:
+        for _, connection in self.connections:
             connection.cleanup()
 
         self.connections = []

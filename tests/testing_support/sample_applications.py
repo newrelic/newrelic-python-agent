@@ -78,7 +78,7 @@ def fully_featured_app(environ, start_response):
             connection.execute(f"create table test_db{i} (a, b, c)")
 
     if "external" in environ:
-        for i in range(int(environ["external"])):
+        for _ in range(int(environ["external"])):
             r = urlopen("http://www.python.org")
             r.read(10)
 

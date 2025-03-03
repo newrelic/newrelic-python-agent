@@ -92,7 +92,7 @@ def collect_stack_traces(include_nr_threads=False):
     python threads.
 
     """
-    for txn, thread_id, thread_category, frame in trace_cache().active_threads():
+    for _, _, thread_category, frame in trace_cache().active_threads():
         # Skip NR Threads unless explicitly requested.
 
         if (thread_category == "AGENT") and (not include_nr_threads):

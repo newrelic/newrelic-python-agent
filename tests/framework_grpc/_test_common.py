@@ -22,7 +22,7 @@ def create_request(streaming_request, count=1, timesout=False):
     from sample_application import Message
 
     def _message_stream():
-        for i in range(count):
+        for _ in range(count):
             yield Message(text="Hello World", count=count, timesout=timesout)
 
     if streaming_request:

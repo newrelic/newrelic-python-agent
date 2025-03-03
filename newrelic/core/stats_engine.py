@@ -437,7 +437,7 @@ class SampledDataSet:
         if priority is None:
             priority = -1
 
-        for original_priority, seen_at, sample in other_data_set.pq:
+        for original_priority, _, sample in other_data_set.pq:
             self.add(sample, max(priority, original_priority))
 
         # Merge the num_seen from the other_data_set, but take care not to

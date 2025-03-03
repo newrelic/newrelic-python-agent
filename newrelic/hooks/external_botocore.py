@@ -624,7 +624,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
         is_embedding = "embed" in model
 
         # Determine extractor by model type
-        for extractor_name, request_extractor, response_extractor, stream_extractor in MODEL_EXTRACTORS:
+        for extractor_name, request_extractor, response_extractor, stream_extractor in MODEL_EXTRACTORS:  # noqa: B007
             if model.startswith(extractor_name):
                 break
         else:

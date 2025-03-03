@@ -33,6 +33,7 @@ class ErrorTrace:
             warnings.warn(
                 ("The ignore_errors argument is deprecated. Please use the new ignore argument instead."),
                 DeprecationWarning,
+                stacklevel=2,
             )
 
     def __enter__(self):

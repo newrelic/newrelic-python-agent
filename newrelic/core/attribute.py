@@ -371,8 +371,8 @@ def sanitize(value):
 
         try:
             value = str(value)
-        except Exception:
-            raise CastingFailureException
+        except Exception as exc:
+            raise CastingFailureException from exc
         else:
             _logger.debug("Attribute value is of type: %r. Casting %r to string: %s", type(original), original, value)
 

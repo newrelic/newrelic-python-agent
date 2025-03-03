@@ -118,6 +118,7 @@ ignore = [
     "F811",  # redefined-while-unused (pytest fixtures trigger this)
     "PLR2004",  # magic-value-comparison (comparing to constant values)
     "ASYNC251",  # blocking-sleep-in-async-function (acceptable in tests)
+    "B904",  # raise-without-from-inside-except (not necessary in tests)
 ]
 "newrelic/admin/*" = [
     # Disabled rules in admin scripts

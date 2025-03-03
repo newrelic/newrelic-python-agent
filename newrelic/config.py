@@ -927,10 +927,10 @@ def _load_configuration(config_file=None, environment=None, ignore_errors=True, 
         if config_file.endswith(".toml"):
             try:
                 import tomllib
-            except ImportError:
+            except ImportError as exc:
                 raise newrelic.api.exceptions.ConfigurationError(
                     "TOML configuration file can only be used if tomllib is available (Python 3.11+)."
-                )
+                ) from exc
             with open(config_file, "rb") as f:
                 content = tomllib.load(f)
                 newrelic_section = content.get("tool", {}).get("newrelic")

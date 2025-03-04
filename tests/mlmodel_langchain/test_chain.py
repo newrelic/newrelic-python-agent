@@ -1601,6 +1601,38 @@ def test_retrieval_chains(set_trace_info, retrieval_chain_prompt, embedding_open
     assert response
 
 
+@reset_core_stats_engine()
+@validate_custom_events(recorded_events_retrieval_chain_response)
+@validate_custom_event_count(count=17)
+@validate_transaction_metrics(
+    name="test_chain:test_retrieval_chains",
+    scoped_metrics=[("Llm/chain/LangChain/invoke", 3)],
+    rollup_metrics=[("Llm/chain/LangChain/invoke", 3)],
+    custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
+    background_task=True,
+)
+@background_task()
+def test_retrieval_template_chain(
+    set_trace_info, retrieval_chain_template_prompt, embedding_openai_client, chat_openai_client
+):
+    set_trace_info()
+    documents = [langchain_core.documents.Document(id="1234", page_content="What is 2 + 4?")]
+    vectordb = FAISS.from_documents(documents=documents, embedding=embedding_openai_client)
+    retriever = vectordb.as_retriever()
+    # question_answer_chain = create_stuff_documents_chain(llm=chat_openai_client, prompt=retrieval_chain_prompt)
+
+    rag_chain = (
+        {"context": retriever, "input": langchain_core.runnables.passthrough.RunnablePassthrough()}
+        | retrieval_chain_template_prompt
+        | chat_openai_client
+        | langchain_core.output_parsers.string.StrOutputParser()
+    )
+    # langchain.chains.create_retrieval_chain(retriever, question_answer_chain)
+    response = rag_chain.invoke("math")
+
+    assert response
+
+
 @pytest.fixture
 def json_schema():
     return {
@@ -1633,6 +1665,19 @@ def retrieval_chain_prompt():
             ),
             ("human", "{input}"),
         ]
+    )
+
+
+@pytest.fixture
+def retrieval_chain_template_prompt():
+    return langchain_core.prompts.prompt.PromptTemplate.from_template(
+        "You are a generator of quiz questions for a seminar. "
+        "Use the following pieces of retrieved context to generate "
+        "5 multiple choice questions (A,B,C,D) on the subject matter. Use a three sentence "
+        "maximum and keep the answer concise. Render the output as HTML"
+        "\n\n"
+        "{context}"
+        "{input}"
     )
 
 

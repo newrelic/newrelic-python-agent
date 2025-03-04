@@ -101,7 +101,7 @@ def test_execute_via_cursor():
 
         cursor.execute(f"""select * from {DB_SETTINGS["table_name"]}""")
 
-        for _ in cursor:
+        for _row in cursor:
             pass
 
         cursor.execute(f"update {DB_SETTINGS['table_name']} set a=%s, b=%s, c=%s where a=%s", (4, 4.0, "4.0", 1))

@@ -59,9 +59,7 @@ async def exercise(engine):
             await conn.execute(ABCTable.insert().values(input_rows))
             cursor = await conn.execute(ABCTable.select())
 
-            rows = []
-            async for row in cursor:
-                rows.append(row)
+            rows = [row async for row in cursor]
 
             assert rows == input_rows, f"Expected: {input_rows}, Got: {rows}"
 

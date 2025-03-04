@@ -247,12 +247,13 @@ def create_client_wrapper(wrapped, trace):
             try:
                 response = await wrapped(req, raise_error=raise_error)
             except Exception as e:
-                response = getattr(e, 'response', None)
+                response = getattr(e, "response", None)
                 raise
             finally:
                 if response:
                     trace.process_response_headers(response.headers.get_all())
             return response
+
     return wrapper
 
 

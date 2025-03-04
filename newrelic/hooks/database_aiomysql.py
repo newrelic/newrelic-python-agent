@@ -57,7 +57,9 @@ class AsyncCursorContextManagerWrapper(ObjectProxy):
         except StopIteration as e:
             # Catch the StopIteration and wrap the return value.
             cursor = e.value
-            wrapped_cursor = self.__cursor_wrapper__(cursor, self._nr_dbapi2_module, self._nr_connect_params, self._nr_cursor_args)
+            wrapped_cursor = self.__cursor_wrapper__(
+                cursor, self._nr_dbapi2_module, self._nr_connect_params, self._nr_cursor_args
+            )
             return wrapped_cursor  # Return here instead of raising StopIteration to properly follow generator protocol
 
 

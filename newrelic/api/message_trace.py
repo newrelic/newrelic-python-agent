@@ -154,7 +154,9 @@ def MessageTraceWrapper(
     return FunctionWrapper(wrapped, _nr_message_trace_wrapper_)
 
 
-def message_trace(library, operation, destination_type, destination_name, params=None, terminal=True, async_wrapper=None):
+def message_trace(
+    library, operation, destination_type, destination_name, params=None, terminal=True, async_wrapper=None
+):
     if params is None:
         params = {}
 

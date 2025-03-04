@@ -89,7 +89,7 @@ script_directory = os.path.dirname(__file__)
 if not script_directory:
     script_directory = os.getcwd()
 
-readme_file = os.path.join(script_directory, "README.rst")
+readme_file = os.path.join(script_directory, "README.md")
 
 if sys.platform == "win32" and python_version > (2, 6):
     build_ext_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError, IOError)

@@ -39,7 +39,7 @@ def execute_db_calls_with_cursor(cursor):
 
     cursor.execute(f"""select * from {TABLE_NAME}""")
 
-    for _ in cursor:
+    for _row in cursor:
         pass
 
     cursor.execute(f"update {TABLE_NAME} set a=%s, b=%s, c=%s where a=%s", (4, 4.0, "4.0", 1))

@@ -162,5 +162,5 @@ class SampleApplicationServicer(sample_application_pb2_grpc.SampleApplicationSer
 
     def DtNoTxnStreamStream(self, request_iter, context):
         current_transaction().ignore_transaction = True
-        for _ in request_iter:
+        for _request in request_iter:
             yield self.extract_dt_value(context.invocation_metadata())

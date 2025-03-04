@@ -166,7 +166,7 @@ def test_transaction(event_loop, conn):
 def test_cursor(event_loop, conn):
     async def amain():
         async with conn.transaction():
-            async for _ in conn.cursor("SELECT generate_series(0, 0)", prefetch=1):
+            async for _record in conn.cursor("SELECT generate_series(0, 0)", prefetch=1):
                 pass
 
             await conn.cursor("SELECT 0")

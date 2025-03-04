@@ -46,7 +46,7 @@ def memcached_multi():
     client_all = memcache.Client(db_servers)
     num_servers = len(db_servers)
 
-    for _ in range(10 * num_servers):
+    for _try_num in range(10 * num_servers):
         multi_dict = {}
         for _ in range(num_servers):
             random_chars = (random.choice(string.ascii_uppercase) for _ in range(10))

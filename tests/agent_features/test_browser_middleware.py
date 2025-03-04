@@ -63,7 +63,7 @@ def _app_list_exc_1(environ, start_response):
     status = "200 OK"
     response_headers = [("Content-type", "text/plain")]
     start_response(status, response_headers)
-    1 / 0
+    1 / 0  # noqa: B018
     return [PAGE_CONTENTS]
 
 
@@ -74,7 +74,7 @@ target_application_list_exc_1 = webtest.TestApp(_app_list_exc_1)
 def _app_list_exc_2(environ, start_response):
     status = "200 OK"
     response_headers = [("Content-type", "text/plain")]
-    1 / 0
+    1 / 0  # noqa: B018
     start_response(status, response_headers)
     return [PAGE_CONTENTS]
 
@@ -87,7 +87,7 @@ def _app_iter_exc_1(environ, start_response):
     status = "200 OK"
     response_headers = [("Content-type", "text/plain")]
     start_response(status, response_headers)
-    1 / 0
+    1 / 0  # noqa: B018
     yield PAGE_CONTENTS
 
 
@@ -98,7 +98,7 @@ target_application_iter_exc_1 = webtest.TestApp(_app_iter_exc_1)
 def _app_iter_exc_2(environ, start_response):
     status = "200 OK"
     response_headers = [("Content-type", "text/plain")]
-    1 / 0
+    1 / 0  # noqa: B018
     start_response(status, response_headers)
     yield PAGE_CONTENTS
 

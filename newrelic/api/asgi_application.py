@@ -156,7 +156,7 @@ class ASGIBrowserMiddleware:
                     # check to see if we have to modify the content-length
                     # header
                     headers = self.initial_message["headers"]
-                    for header_index, header_data in enumerate(headers):
+                    for header_index, header_data in enumerate(headers):  # noqa: B007
                         header_name, header_value = header_data
                         if header_name.lower() == b"content-length":
                             break

@@ -24,7 +24,7 @@ from testing_support.fixtures import collector_agent_registration_fixture, colle
 
 PORT = 4443
 AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"
-AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"  # nosec
+AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"
 HOST = "127.0.0.1"
 
 

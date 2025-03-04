@@ -78,7 +78,8 @@ def wrap_log(wrapped, instance, args, kwargs):
     try:
         bound_args = bind_args(wrapped, args, kwargs)
         options = bound_args["options"] = list(bound_args["options"])
-        assert len(options) in ALLOWED_LOGURU_OPTIONS_LENGTHS  # Assert the options signature we expect
+        if len(options) not in ALLOWED_LOGURU_OPTIONS_LENGTHS:  # Assert the options signature we expect
+            raise RuntimeError("Unexpected number of options in loguru call. Instrumentation may be out of date.")
 
         options[-2] = nr_log_patcher(options[-2])
         # Loguru looks into the stack trace to find the caller's module and function names.

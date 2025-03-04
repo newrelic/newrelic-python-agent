@@ -269,7 +269,7 @@ def test_future_cancel(service_method_type, service_method_method_name, future_r
         request = create_request(streaming_request, count=3, timesout=False)
 
         reply = service_method_method(request)
-        for result in reply:
+        for _result in reply:
             reply.cancel()
             break
 

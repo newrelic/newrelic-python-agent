@@ -240,8 +240,6 @@ def _prepare_request(request, raise_error=True, **kwargs):
 
 
 def create_client_wrapper(wrapped, trace):
-    values = {"wrapper": None, "wrapped": wrapped, "trace": trace, "functools": functools}
-    wrapper = textwrap.dedent("""
     @functools.wraps(wrapped)
     async def wrapper(req, raise_error):
         with trace:
@@ -249,15 +247,14 @@ def create_client_wrapper(wrapped, trace):
             try:
                 response = await wrapped(req, raise_error=raise_error)
             except Exception as e:
-                response = getattr(e, 'response', None)
+                response = getattr(e, "response", None)
                 raise
             finally:
                 if response:
                     trace.process_response_headers(response.headers.get_all())
             return response
-    """)
-    exec(wrapper, values)
-    return values["wrapper"]
+
+    return wrapper
 
 
 def wrap_httpclient_fetch(wrapped, instance, args, kwargs):

@@ -47,7 +47,7 @@ def test_pandas_df_categorical_feature_event():
     def _test():
         import sklearn.tree
 
-        clf = getattr(sklearn.tree, "DecisionTreeClassifier")(random_state=0)
+        clf = sklearn.tree.DecisionTreeClassifier(random_state=0)
         model = clf.fit(
             pd.DataFrame({"col1": [27.0, 24.0], "col2": [23.0, 25.0]}, dtype="category"),
             pd.DataFrame({"label": [27.0, 28.0]}),
@@ -92,7 +92,7 @@ def test_pandas_df_bool_feature_event():
         y_train = pd.DataFrame({"label": [True, False]}, dtype=dtype_name)
         x_test = pd.DataFrame({"col1": [True], "col2": [True]}, dtype=dtype_name)
 
-        clf = getattr(sklearn.tree, "DecisionTreeClassifier")(random_state=0)
+        clf = sklearn.tree.DecisionTreeClassifier(random_state=0)
         model = clf.fit(x_train, y_train)
 
         labels = model.predict(x_test)
@@ -130,7 +130,7 @@ def test_pandas_df_float_feature_event():
         y_train = pd.DataFrame({"label": [345.6, 456.7]}, dtype="float64")
         x_test = pd.DataFrame({"col1": [100.0], "col2": [300.0]}, dtype="float64")
 
-        clf = getattr(sklearn.tree, "DecisionTreeRegressor")(random_state=0)
+        clf = sklearn.tree.DecisionTreeRegressor(random_state=0)
 
         model = clf.fit(x_train, y_train)
         labels = model.predict(x_test)
@@ -169,7 +169,7 @@ def test_int_list():
         y_train = [0, 1]
         x_test = [[1, 2]]
 
-        clf = getattr(sklearn.tree, "ExtraTreeRegressor")(random_state=0)
+        clf = sklearn.tree.ExtraTreeRegressor(random_state=0)
         model = clf.fit(x_train, y_train)
 
         labels = model.predict(x_test)
@@ -207,7 +207,7 @@ def test_numpy_int_array():
         y_train = np.array([10, 11], dtype="int")
         x_test = np.array([[12, 13]], dtype="int")
 
-        clf = getattr(sklearn.tree, "ExtraTreeRegressor")(random_state=0)
+        clf = sklearn.tree.ExtraTreeRegressor(random_state=0)
         model = clf.fit(x_train, y_train)
 
         labels = model.predict(x_test)
@@ -257,7 +257,7 @@ def test_numpy_str_array_multiple_features():
         x_train = np.array([[20, 20], [21, 21]], dtype="<U4")
         y_train = np.array([20, 21], dtype="<U4")
         x_test = np.array([[20, 21], [22, 23]], dtype="<U4")
-        clf = getattr(sklearn.tree, "DecisionTreeClassifier")(random_state=0)
+        clf = sklearn.tree.DecisionTreeClassifier(random_state=0)
 
         model = clf.fit(x_train, y_train)
         labels = model.predict(x_test)
@@ -300,7 +300,7 @@ def test_does_not_include_value_when_inference_event_value_enabled_is_false():
         x_train = np.array([[20, 20], [21, 21]], dtype="<U4")
         y_train = np.array([20, 21], dtype="<U4")
         x_test = np.array([[20, 21]], dtype="<U4")
-        clf = getattr(sklearn.tree, "DecisionTreeClassifier")(random_state=0)
+        clf = sklearn.tree.DecisionTreeClassifier(random_state=0)
 
         model = clf.fit(x_train, y_train)
         labels = model.predict(x_test)
@@ -333,7 +333,7 @@ def test_does_not_include_events_when_ml_insights_events_enabled_is_false():
         x_train = np.array([[20, 20], [21, 21]], dtype="<U4")
         y_train = np.array([20, 21], dtype="<U4")
         x_test = np.array([[20, 21]], dtype="<U4")
-        clf = getattr(sklearn.tree, "DecisionTreeClassifier")(random_state=0)
+        clf = sklearn.tree.DecisionTreeClassifier(random_state=0)
 
         model = clf.fit(x_train, y_train)
         labels = model.predict(x_test)
@@ -361,7 +361,7 @@ def test_does_not_include_events_when_machine_learning_enabled_is_false():
         x_train = np.array([[20, 20], [21, 21]], dtype="<U4")
         y_train = np.array([20, 21], dtype="<U4")
         x_test = np.array([[20, 21]], dtype="<U4")
-        clf = getattr(sklearn.tree, "DecisionTreeClassifier")(random_state=0)
+        clf = sklearn.tree.DecisionTreeClassifier(random_state=0)
 
         model = clf.fit(x_train, y_train)
         labels = model.predict(x_test)

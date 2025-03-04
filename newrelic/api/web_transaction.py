@@ -489,6 +489,7 @@ class WebTransaction(Transaction):
         warnings.warn(
             "The browser_timing_footer function is deprecated. Please migrate to only using the browser_timing_header api instead.",
             DeprecationWarning,
+            stacklevel=2,
         )
         return ""
 

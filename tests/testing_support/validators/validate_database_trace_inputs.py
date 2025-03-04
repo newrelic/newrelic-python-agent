@@ -55,7 +55,9 @@ def validate_database_trace_inputs(sql_parameters_type):
             assert isinstance(cursor_params[0], tuple)
             assert isinstance(cursor_params[1], dict)
 
-        assert sql_parameters is None or isinstance(sql_parameters, sql_parameters_type), f"Expected: {sql_parameters_type} Got: {type(sql_parameters)}"
+        assert sql_parameters is None or isinstance(sql_parameters, sql_parameters_type), (
+            f"Expected: {sql_parameters_type} Got: {type(sql_parameters)}"
+        )
 
         if execute_params is not None:
             assert len(execute_params) == 2

@@ -446,8 +446,8 @@ def _handle_completion_success(transaction, linking_metadata, completion_id, kwa
         try:
             # The function trace will be exited when in the final iteration of the response
             # generator.
-            setattr(return_val, "_nr_ft", ft)
-            setattr(return_val, "_nr_openai_attrs", getattr(return_val, "_nr_openai_attrs", {}))
+            return_val._nr_ft = ft
+            return_val._nr_openai_attrs = getattr(return_val, "_nr_openai_attrs", {})
             return_val._nr_openai_attrs["messages"] = kwargs.get("messages", [])
             return_val._nr_openai_attrs["temperature"] = kwargs.get("temperature")
             return_val._nr_openai_attrs["max_tokens"] = kwargs.get("max_tokens")
@@ -676,7 +676,7 @@ def wrap_convert_to_openai_object(wrapped, instance, args, kwargs):
     if isinstance(returned_response, openai.openai_object.OpenAIObject) and isinstance(
         resp, openai.openai_response.OpenAIResponse
     ):
-        setattr(returned_response, "_nr_response_headers", getattr(resp, "_headers", {}))
+        returned_response._nr_response_headers = getattr(resp, "_headers", {})
 
     return returned_response
 
@@ -940,7 +940,7 @@ def instrument_openai_api_resources_embedding(module):
             wrap_function_wrapper(module, "Embedding.acreate", wrap_embedding_async)
         # This is to mark where we instrument so the SDK knows not to instrument them
         # again.
-        setattr(module.Embedding, "_nr_wrapped", True)
+        module.Embedding._nr_wrapped = True
 
 
 def instrument_openai_api_resources_chat_completion(module):
@@ -951,7 +951,7 @@ def instrument_openai_api_resources_chat_completion(module):
             wrap_function_wrapper(module, "ChatCompletion.acreate", wrap_chat_completion_async)
         # This is to mark where we instrument so the SDK knows not to instrument them
         # again.
-        setattr(module.ChatCompletion, "_nr_wrapped", True)
+        module.ChatCompletion._nr_wrapped = True
 
 
 def instrument_openai_resources_chat_completions(module):
@@ -976,7 +976,7 @@ def instrument_openai_util(module):
         wrap_function_wrapper(module, "convert_to_openai_object", wrap_convert_to_openai_object)
         # This is to mark where we instrument so the SDK knows not to instrument them
         # again.
-        setattr(module.convert_to_openai_object, "_nr_wrapped", True)
+        module.convert_to_openai_object._nr_wrapped = True
 
 
 def instrument_openai_base_client(module):

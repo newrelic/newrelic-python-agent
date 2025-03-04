@@ -130,6 +130,7 @@ class ObjectWrapper(FunctionWrapper):
                 "The ObjectWrapper API is deprecated. Please use one of ObjectProxy, FunctionWrapper, or CallableObjectProxy instead."
             ),
             DeprecationWarning,
+            stacklevel=2,
         )
         super(ObjectWrapper, self).__init__(wrapped, wrapper)
 

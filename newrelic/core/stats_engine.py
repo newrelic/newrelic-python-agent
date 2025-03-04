@@ -419,7 +419,7 @@ class SampledDataSet:
         self.num_seen += 1
 
         if priority is None:
-            priority = random.random()  # nosec
+            priority = random.random()  # noqa: S311
 
         entry = (priority, self.num_seen, sample)
         if self.num_seen == self.capacity:
@@ -437,7 +437,7 @@ class SampledDataSet:
         if priority is None:
             priority = -1
 
-        for original_priority, seen_at, sample in other_data_set.pq:
+        for original_priority, seen_at, sample in other_data_set.pq:  # noqa: B007
             self.add(sample, max(priority, original_priority))
 
         # Merge the num_seen from the other_data_set, but take care not to
@@ -681,6 +681,7 @@ class StatsEngine:
         warnings.warn(
             ("The record_exception function is deprecated. Please use the new api named notice_error instead."),
             DeprecationWarning,
+            stacklevel=2,
         )
 
         self.notice_error(error=(exc, value, tb), attributes=params, ignore=ignore_errors)
@@ -1280,7 +1281,7 @@ class StatsEngine:
 
         if priority is None:
             # Base priority for log events outside transactions is below those inside transactions
-            priority = random.random() - 1  # nosec
+            priority = random.random() - 1  # noqa: S311
 
         self._log_events.add(event, priority=priority)
 

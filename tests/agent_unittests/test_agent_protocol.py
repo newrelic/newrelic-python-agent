@@ -111,7 +111,7 @@ def override_utilization(monkeypatch):
         elif name.startswith("Kubernetes"):
             output = KUBERNETES
         else:
-            assert False, "Unknown utilization class"
+            raise AssertionError("Unknown utilization class")
 
         if output is Exception:
             raise Exception

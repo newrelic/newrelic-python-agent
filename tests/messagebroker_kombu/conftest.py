@@ -23,25 +23,35 @@ from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     collector_agent_registration_fixture,
     collector_available_fixture,
 )
-from testing_support.validators.validate_distributed_trace_accepted import (
-    validate_distributed_trace_accepted,
-)
+from testing_support.validators.validate_distributed_trace_accepted import validate_distributed_trace_accepted
 
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import transient_function_wrapper
 
+TRANSPORT_TYPES = {"pyamqp": "PYAMQP", "amqp": "AMQP"}
 DB_SETTINGS = rabbitmq_settings()[0]
 # BOOTSTRAP_SERVER = f"{DB_SETTINGS['host']}:{DB_SETTINGS['port']}"
 
 
+@pytest.fixture(
+    scope="session",
+    params=[
+        "pyamqp"  # , "amqp", #"qpid", "redis"
+    ],
+)
+def transport_type(request):
+    return request.param
+
+
 @pytest.fixture(scope="session")
-def producer_connection():
-    with kombu.Connection(DB_SETTINGS["host"]) as conn:
+def producer_connection(transport_type):
+    host = DB_SETTINGS["host"]
+    with kombu.Connection(f"{transport_type}://{host}") as conn:
         yield conn
 
 
 @pytest.fixture(scope="session")
-def consumer_connection():
+def consumer_connection(transport_type):
     with kombu.Connection(DB_SETTINGS["host"]) as conn:
         yield conn
 
@@ -64,9 +74,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 
 @pytest.fixture(
     scope="session",
-    params=[
-        "no_serializer"
-    ],  # , "serializer_function", "callable_object", "serializer_object"]
+    params=["no_serializer"],  # , "serializer_function", "callable_object", "serializer_object"]
 )
 def client_type(request):
     return request.param
@@ -79,21 +87,15 @@ def skip_if_not_serializing(client_type):
 
 
 @pytest.fixture(scope="function")
-def producer(
-    client_type, producer_connection
-):  # json_serializer, json_callable_serializer, connection):
+def producer(client_type, producer_connection):  # json_serializer, json_callable_serializer, connection):
     if client_type == "no_serializer":
         producer = producer_connection.Producer()
     elif client_type == "serializer_function":
         producer = producer_connection.Producer(serializer="json")
     elif client_type == "callable_object":
-        producer = producer_connection.Producer(
-            serializer=lambda v: json.dumps(v).encode("utf-8") if v else None,
-        )
+        producer = producer_connection.Producer(serializer=lambda v: json.dumps(v).encode("utf-8") if v else None)
     elif client_type == "serializer_object":
-        producer = producer_connection.Producer(
-            serializer=json_serializer,
-        )
+        producer = producer_connection.Producer(serializer=json_serializer)
 
     yield producer
 
@@ -159,9 +161,7 @@ def consumer_validate_dt(
 def consume(events):
     def _consume(body, message):
         message.ack()
-        events.append(
-            {"body": body, "routing_key": message.delivery_info["routing_key"]}
-        )
+        events.append({"body": body, "routing_key": message.delivery_info["routing_key"]})
 
     return _consume
 
@@ -170,26 +170,24 @@ def consume(events):
 def consume_error(events):
     def _consume(body, message):
         message.ack()
-        events.append(
-            {"body": body, "routing_key": message.delivery_info["routing_key"]}
-        )
+        events.append({"body": body, "routing_key": message.delivery_info["routing_key"]})
         raise RuntimeError("Error in consumer callback")
 
     return _consume
 
 
 @pytest.fixture
-def consume_validate_dt(events):
-    @validate_distributed_trace_accepted(transport_type="AMQP")
+def consume_validate_dt(events, transport_type):
+    expected_transport_type = TRANSPORT_TYPES[transport_type]
+
+    @validate_distributed_trace_accepted(transport_type=expected_transport_type)
     def _consume(body, message):
         # Capture headers to validate dt headers.
         txn = current_transaction()
         txn._test_request_headers = message.headers
 
         message.ack()
-        events.append(
-            {"body": body, "routing_key": message.delivery_info["routing_key"]}
-        )
+        events.append({"body": body, "routing_key": message.delivery_info["routing_key"]})
 
     return _consume
 
@@ -269,9 +267,7 @@ def group_id():
 @pytest.fixture
 def send_producer_message(producer, exchange, queue):
     def _test():
-        producer.publish(
-            {"foo": 1}, exchange=exchange, routing_key="bar", declare=[queue]
-        )
+        producer.publish({"foo": 1}, exchange=exchange, routing_key="bar", declare=[queue])
 
     return _test
 
@@ -287,9 +283,7 @@ def get_consumer_record(send_producer_message, consumer_connection, consumer):
 
 
 @pytest.fixture
-def get_consumer_record_error(
-    send_producer_message, consumer_connection, consumer_callback_error
-):
+def get_consumer_record_error(send_producer_message, consumer_connection, consumer_callback_error):
     def _test():
         send_producer_message()
 
@@ -311,18 +305,3 @@ def cache_kombu_producer_headers(wrapped, instance, args, kwargs):
     headers = kwargs.get("headers", [])
     transaction._test_request_headers = headers
     return ret
-
-
-# @transient_function_wrapper(messaging, "Consumer._receive_callback")
-## Place transient wrapper underneath instrumentation
-# def cache_kombu_consumer_headers(wrapped, instance, args, kwargs):
-#    record = wrapped(*args, **kwargs)
-#    transaction = current_transaction()
-#
-#    if transaction is None:
-#        return record
-#
-#    headers = record.headers
-#    headers = dict(headers)
-#    transaction._test_request_headers = headers
-#    return record

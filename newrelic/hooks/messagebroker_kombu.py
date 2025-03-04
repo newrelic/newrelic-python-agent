@@ -25,7 +25,19 @@ from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
 
 _logger = logging.getLogger(__name__)
-AVAILABLE_TRANSPORTS = {"py-amqp": "PYAMQP", "librabbitmq": "LIBRABBITMQ", "amqp": "AMQP", "qpid": "QPID"}
+
+# redis
+# SQS
+# zookeeper
+# in-memory
+# SLMQ
+"""
+The following are unsported transport types since the libraries are too old:
+* librabbitmq
+* qpid
+* amqp uses librabbitmq or py-amqp
+"""
+AVAILABLE_TRANSPORTS = {"py-amqp": "PYAMQP"}
 
 
 def _bind_send(topic, value=None, key=None, headers=None, partition=None, timestamp_ms=None):
@@ -43,7 +55,7 @@ def wrap_Producer_publish(wrapped, instance, args, kwargs):
     headers = headers if headers else {}
     value = bound_args["body"]
     key = bound_args["routing_key"]
-    exchange = getattr(bound_args["exchange"], "name", "Default")
+    exchange = getattr(bound_args["exchange"], "name", None) or "Default"
 
     transaction.add_messagebroker_info("Kombu", get_package_version("kombu"))
 
@@ -105,7 +117,7 @@ def wrap_consumer_recieve_callback(wrapped, instance, args, kwargs):
         key = getattr(message, "delivery_info", {}).get("routing_key")
         library = "Kombu"
         destination_type = "Exchange"
-        destination_name = getattr(message, "delivery_info", {}).get("exchange")
+        destination_name = getattr(message, "delivery_info", {}).get("exchange") or "Default"
         value = len(str(body).encode("utf-8"))
         message_count = 1
         received_bytes = getattr(message, "body_received", None)

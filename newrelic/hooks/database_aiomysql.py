@@ -39,6 +39,27 @@ class AsyncCursorContextManagerWrapper(ObjectProxy):
     async def __aexit__(self, exc, val, tb):
         return await self.__wrapped__.__aexit__(exc, val, tb)
 
+    def __await__(self):
+        # Handle bidirectional generator protocol using code from generator_wrapper
+        g = self.__wrapped__.__await__()
+        try:
+            yielded = g.send(None)
+            while True:
+                try:
+                    sent = yield yielded
+                except GeneratorExit as e:
+                    g.close()
+                    raise
+                except BaseException as e:
+                    yielded = g.throw(e)
+                else:
+                    yielded = g.send(sent)
+        except StopIteration as e:
+            # Catch the StopIteration and wrap the return value.
+            cursor = e.value
+            wrapped_cursor = self.__cursor_wrapper__(cursor, self._nr_dbapi2_module, self._nr_connect_params, self._nr_cursor_args)
+            return wrapped_cursor  # Return here instead of raising StopIteration to properly follow generator protocol
+
 
 class AsyncConnectionWrapper(DBAPI2AsyncConnectionWrapper):
     __cursor_wrapper__ = AsyncCursorContextManagerWrapper

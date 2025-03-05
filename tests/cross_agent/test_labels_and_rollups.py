@@ -14,12 +14,12 @@
 
 import json
 import os
+
 import pytest
-
-from newrelic.config import _process_labels_setting, _map_as_mapping
-from newrelic.core.config import global_settings
-
 from testing_support.fixtures import override_application_settings
+
+from newrelic.config import _map_as_mapping, _process_labels_setting
+from newrelic.core.config import global_settings
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 FIXTURE = os.path.join(CURRENT_DIR, "fixtures", "labels.json")

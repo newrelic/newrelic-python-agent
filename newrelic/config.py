@@ -48,12 +48,6 @@ from newrelic.core.agent_control_health import (
     agent_control_healthcheck_loop,
 )
 from newrelic.core.config import Settings, apply_config_setting, default_host, fetch_config_setting
-from newrelic.core.agent_control_health import (
-    HealthStatus,
-    agent_control_health_instance,
-    agent_control_healthcheck_loop,
-)
-
 
 __all__ = ["initialize", "filter_app_factory"]
 
@@ -4019,7 +4013,7 @@ def _process_module_entry_points():
         if sys.version_info >= (3, 10):
             from importlib.metadata import entry_points
         # Introduced in Python 3.8
-        elif sys.version_info >= (3, 8) and sys.version_info <= (3, 9):
+        elif sys.version_info >= (3, 8) and sys.version_info < (3, 9):
             from importlib_metadata import entry_points
         # Removed in Python 3.12
         else:
@@ -4091,7 +4085,7 @@ def _setup_extensions():
         if sys.version_info >= (3, 10):
             from importlib.metadata import entry_points
         # Introduced in Python 3.8
-        elif sys.version_info >= (3, 8) and sys.version_info <= (3, 9):
+        elif sys.version_info >= (3, 8) and sys.version_info < (3, 9):
             from importlib_metadata import entry_points
         # Removed in Python 3.12
         else:

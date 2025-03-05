@@ -13,8 +13,9 @@
 # limitations under the License.
 
 import pytest
-from newrelic.api.background_task import background_task
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+
+from newrelic.api.background_task import background_task
 
 
 @pytest.fixture(scope="session")

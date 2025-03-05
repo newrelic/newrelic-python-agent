@@ -15,9 +15,8 @@
 from collections import namedtuple
 
 import newrelic.core.trace_node
-
-from newrelic.core.node_mixin import GenericNodeMixin
 from newrelic.core.metric import TimeMetric
+from newrelic.core.node_mixin import GenericNodeMixin
 
 _LoopNode = namedtuple("_LoopNode", ["fetch_name", "start_time", "end_time", "duration", "guid"])
 

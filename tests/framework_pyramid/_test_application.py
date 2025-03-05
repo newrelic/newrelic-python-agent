@@ -12,12 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pyramid.httpexceptions as exc
 import webtest
-
+from pyramid.config import Configurator
 from pyramid.response import Response
 from pyramid.view import view_config
-from pyramid.config import Configurator
-import pyramid.httpexceptions as exc
 
 
 @view_config(route_name="home")
@@ -37,7 +36,7 @@ def not_found_exception_response(request):
 
 @view_config(route_name="raise_not_found")
 def raise_not_found(request):
-    raise exc.HTTPNotFound()
+    raise exc.HTTPNotFound
 
 
 @view_config(route_name="return_not_found")

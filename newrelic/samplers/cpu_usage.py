@@ -19,9 +19,8 @@ usage.
 
 import os
 
-from newrelic.common.system_info import logical_processor_count
 from newrelic.common.stopwatch import start_timer
-
+from newrelic.common.system_info import logical_processor_count
 from newrelic.samplers.decorators import data_source_factory
 
 

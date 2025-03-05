@@ -13,11 +13,9 @@
 # limitations under the License.
 
 import pymssql
-
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from testing_support.validators.validate_database_trace_inputs import validate_database_trace_inputs
-
 from testing_support.db_settings import mssql_settings
+from testing_support.validators.validate_database_trace_inputs import validate_database_trace_inputs
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 

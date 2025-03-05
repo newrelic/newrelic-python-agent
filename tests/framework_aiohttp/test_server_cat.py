@@ -35,7 +35,7 @@ test_uris = [
 
 def record_aiohttp1_raw_headers(raw_headers):
     try:
-        import aiohttp.protocol  # noqa: F401, pylint: disable=W0611
+        import aiohttp.protocol
     except ImportError:
 
         def pass_through(function):

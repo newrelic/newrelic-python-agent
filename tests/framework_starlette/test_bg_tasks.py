@@ -23,7 +23,7 @@ from newrelic.common.package_version_utils import get_package_version_tuple
 starlette_version = get_package_version_tuple("starlette")[:3]
 
 try:
-    from starlette.middleware import Middleware  # noqa: F401
+    from starlette.middleware import Middleware
 
     no_middleware = False
 except ImportError:

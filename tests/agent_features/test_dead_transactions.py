@@ -13,11 +13,12 @@
 # limitations under the License.
 
 import gc
+
 import pytest
 
-from newrelic.api.background_task import BackgroundTask
 from newrelic.api.application import application_instance
-from newrelic.common.object_wrapper import transient_function_wrapper, function_wrapper
+from newrelic.api.background_task import BackgroundTask
+from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
 
 
 @function_wrapper

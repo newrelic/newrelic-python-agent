@@ -14,11 +14,10 @@
 
 import sqlite3
 
+from conftest import ES_VERSION
 from testing_support.validators.validate_database_duration import validate_database_duration
 
 from newrelic.api.background_task import background_task
-
-from conftest import ES_VERSION
 
 
 def _exercise_es_v7(es):

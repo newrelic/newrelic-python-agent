@@ -14,13 +14,9 @@
 
 from newrelic.api.database_trace import register_database_client
 from newrelic.common.object_wrapper import wrap_object
-
-from newrelic.hooks.database_mysqldb import (
-    ConnectionFactory as MySqlDBConnectionFactory,
-    ConnectionWrapper as MySqlDBConnectionWrapper,
-)
-
 from newrelic.hooks.database_dbapi2 import CursorWrapper as DBAPI2CursorWrapper
+from newrelic.hooks.database_mysqldb import ConnectionFactory as MySqlDBConnectionFactory
+from newrelic.hooks.database_mysqldb import ConnectionWrapper as MySqlDBConnectionWrapper
 
 
 class CursorWrapper(DBAPI2CursorWrapper):

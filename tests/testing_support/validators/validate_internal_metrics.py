@@ -13,8 +13,8 @@
 # limitations under the License.
 
 from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
-from newrelic.core.stats_engine import CustomMetrics
 from newrelic.core.internal_metrics import InternalTraceContext
+from newrelic.core.stats_engine import CustomMetrics
 
 
 def validate_internal_metrics(metrics=None):

@@ -38,7 +38,6 @@ from newrelic.common.object_wrapper import (
 )
 from newrelic.config import extra_settings
 from newrelic.core.config import global_settings
-
 from newrelic.hooks.framework_django_py3 import (
     _nr_wrap_converted_middleware_async_,
     _nr_wrapper_BaseHandler_get_response_async_,

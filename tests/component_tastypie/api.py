@@ -13,8 +13,8 @@
 # limitations under the License.
 
 from django.core.exceptions import ObjectDoesNotExist
-from tastypie.resources import Resource
 from tastypie.exceptions import NotFound
+from tastypie.resources import Resource
 
 
 class SimpleResource(Resource):
@@ -30,4 +30,4 @@ class SimpleResource(Resource):
         elif pk == "ZeroDivisionError":
             1 / 0
         else:
-            raise NotImplemented()
+            raise NotImplemented

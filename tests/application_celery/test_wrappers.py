@@ -12,12 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import celery
 from _target_application import add
 
-import celery
-
 from newrelic.common.object_wrapper import _NRBoundFunctionWrapper
-
 
 FORGONE_TASK_METRICS = [("Function/_target_application.add", None), ("Function/_target_application.tsum", None)]
 

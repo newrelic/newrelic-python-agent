@@ -15,13 +15,8 @@
 import sys
 
 from newrelic.core.config import global_settings
-from newrelic.core.stack_trace import (
-    exception_stack,
-    current_stack,
-    _format_stack_trace as _format_stack_trace_from_dicts,
-    _extract_stack,
-    _extract_tb,
-)
+from newrelic.core.stack_trace import _extract_stack, _extract_tb, current_stack, exception_stack
+from newrelic.core.stack_trace import _format_stack_trace as _format_stack_trace_from_dicts
 
 
 def _format_stack_trace_from_tuples(frames):

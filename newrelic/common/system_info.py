@@ -213,7 +213,7 @@ def _linux_total_physical_memory(filename=None):
         parser = re.compile(r"^(?P<key>\S*):\s*(?P<value>\d*)\s*kB")
 
         with open(filename, "r") as fp:
-            for line in fp.readlines():
+            for line in fp.readlines():  # noqa: FURB129 # Read all lines at once
                 match = parser.match(line)
                 if not match:
                     continue

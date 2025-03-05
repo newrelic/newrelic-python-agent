@@ -63,7 +63,7 @@ def exercise_transaction_rollback(client, collection):
             # set and delete methods
             transaction.set(collection.document("doc2"), {"x": 99})
             transaction.delete(collection.document("doc1"))
-            raise RuntimeError()
+            raise RuntimeError
 
         with pytest.raises(RuntimeError):
             _exercise(client.transaction())

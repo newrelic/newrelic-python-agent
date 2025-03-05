@@ -295,7 +295,7 @@ def test_sync_client_event_hook_exception(httpx, mock_server):
 
     def exception_event_hook(response):
         if response.status_code >= 400:
-            raise RuntimeError()
+            raise RuntimeError
 
     def empty_hook(response):
         pass
@@ -341,7 +341,7 @@ def test_async_client_event_hook_exception(httpx, mock_server, loop):
 
     def exception_event_hook(response):
         if response.status_code >= 400:
-            raise RuntimeError()
+            raise RuntimeError
 
     def empty_hook(response):
         pass

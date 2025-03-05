@@ -65,7 +65,7 @@ EVENT_HARVEST_METHODS = {
 }
 
 
-def c2t(count=0, total=0.0, min=0.0, max=0.0, sum_of_squares=0.0):
+def c2t(count=0, total=0.0, min=0.0, max=0.0, sum_of_squares=0.0):  # noqa: A002
     return (count, total, total, min, max, sum_of_squares)
 
 

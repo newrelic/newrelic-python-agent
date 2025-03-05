@@ -61,7 +61,8 @@ def run_python(args):
         if name.startswith("NEW_RELIC_") or name.startswith("PYTHON"):
             log_message("%s = %r", name, os.environ.get(name))
 
-    from newrelic import version, __file__ as root_directory
+    from newrelic import __file__ as root_directory
+    from newrelic import version
 
     root_directory = os.path.dirname(root_directory)
     boot_directory = os.path.join(root_directory, "bootstrap")

@@ -96,7 +96,7 @@ class _WSGIApplicationIterable:
 
 
 class _WSGIInputWrapper:
-    def __init__(self, transaction, input):
+    def __init__(self, transaction, input):  # noqa: A002
         self.__transaction = transaction
         self.__input = input
 

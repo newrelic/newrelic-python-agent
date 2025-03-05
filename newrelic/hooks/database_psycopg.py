@@ -14,8 +14,7 @@
 
 import inspect
 import os
-
-from urllib.parse import unquote, parse_qsl
+from urllib.parse import parse_qsl, unquote
 
 from newrelic.api.database_trace import DatabaseTrace, register_database_client
 from newrelic.api.function_trace import FunctionTrace
@@ -28,7 +27,6 @@ from newrelic.hooks.database_dbapi2 import CursorWrapper as DBAPI2CursorWrapper
 from newrelic.hooks.database_dbapi2_async import AsyncConnectionFactory as DBAPI2AsyncConnectionFactory
 from newrelic.hooks.database_dbapi2_async import AsyncConnectionWrapper as DBAPI2AsyncConnectionWrapper
 from newrelic.hooks.database_dbapi2_async import AsyncCursorWrapper as DBAPI2AsyncCursorWrapper
-
 from newrelic.packages.urllib3 import util as ul3_util
 
 # These functions return True if a non-default connection or cursor class is

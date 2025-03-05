@@ -20,12 +20,9 @@ import subprocess
 import sys
 import threading
 import time
-
 from queue import Queue
 
 import pytest
-
-from testing_support.sample_applications import error_user_params_added, user_attributes_added
 
 from newrelic.admin.record_deploy import record_deploy
 from newrelic.api.application import application_instance, application_settings, register_application
@@ -45,6 +42,7 @@ from newrelic.core.attribute import create_attributes
 from newrelic.core.attribute_filter import DST_ERROR_COLLECTOR, DST_TRANSACTION_TRACER, AttributeFilter
 from newrelic.core.config import apply_config_setting, flatten_settings, global_settings
 from newrelic.network.exceptions import RetryDataForRequest
+from testing_support.sample_applications import error_user_params_added, user_attributes_added
 
 _logger = logging.getLogger("newrelic.tests")
 
@@ -311,7 +309,7 @@ def raise_background_exceptions(timeout=5.0):
                 if exc_info[1] is not None:
                     raise exc_info[1]
                 else:
-                    raise exc_info[0]()
+                    raise exc_info[0]
 
         return result
 
@@ -1345,7 +1343,7 @@ class Environ:
         for key, val in self._environ_dict.items():
             os.environ[key] = str(val)
 
-    def __exit__(self, type, value, traceback):  # pylint: disable=redefined-builtin
+    def __exit__(self, exc, val, tb):
         os.environ.clear()
         os.environ = self._original_environ
 
@@ -1356,7 +1354,7 @@ class TerminatingPopen(subprocess.Popen):
     def __enter__(self):
         return self
 
-    def __exit__(self, type, value, traceback):  # pylint: disable=redefined-builtin,arguments-differ
+    def __exit__(self, exc, val, tb):
         if self.stdout:
             self.stdout.close()
         if self.stderr:

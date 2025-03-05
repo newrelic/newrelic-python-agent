@@ -186,7 +186,7 @@ class NewRelicSerializerWrapper(ObjectProxy):
         self._nr_serializer_name = serializer_name
         self._nr_group_prefix = group_prefix
 
-    def serialize(self, topic, object):
+    def serialize(self, topic, object):  # noqa: A002
         wrapped = self.__wrapped__.serialize  # pylint: disable=W0622
         args = (topic, object)
         kwargs = {}

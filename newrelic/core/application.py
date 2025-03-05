@@ -25,6 +25,11 @@ from functools import partial
 
 from newrelic.common.object_names import callable_name
 from newrelic.core.adaptive_sampler import AdaptiveSampler
+from newrelic.core.agent_control_health import (
+    HealthStatus,
+    agent_control_health_instance,
+    agent_control_healthcheck_loop,
+)
 from newrelic.core.config import global_settings
 from newrelic.core.custom_event import create_custom_event
 from newrelic.core.data_collector import create_session
@@ -42,11 +47,6 @@ from newrelic.network.exceptions import (
     RetryDataForRequest,
 )
 from newrelic.samplers.data_sampler import DataSampler
-from newrelic.core.agent_control_health import (
-    HealthStatus,
-    agent_control_healthcheck_loop,
-    agent_control_health_instance,
-)
 
 _logger = logging.getLogger(__name__)
 

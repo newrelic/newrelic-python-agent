@@ -16,4 +16,4 @@ import sys
 
 # Async Generators were introduced in Python 3.6, but some APIs weren't completely stable until Python 3.7.
 if sys.version_info >= (3, 7):
-    from _test_async_generator_trace import *  # NOQA
+    from _test_async_generator_trace import *

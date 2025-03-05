@@ -13,14 +13,13 @@
 # limitations under the License.
 
 import aredis
-
-from newrelic.api.background_task import background_task
-
+from testing_support.db_settings import redis_settings
 from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from testing_support.db_settings import redis_settings
 from testing_support.util import instance_hostname
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+
+from newrelic.api.background_task import background_task
 
 DB_SETTINGS = redis_settings()[0]
 

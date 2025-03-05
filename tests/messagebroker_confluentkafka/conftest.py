@@ -17,10 +17,7 @@ import uuid
 
 import pytest
 from testing_support.db_settings import kafka_settings
-from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
-    collector_agent_registration_fixture,
-    collector_available_fixture,
-)
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import transient_function_wrapper
@@ -176,7 +173,7 @@ def topic(broker):
     admin = AdminClient({"bootstrap.servers": broker})
     new_topics = [NewTopic(topic, num_partitions=1, replication_factor=1)]
     topics = admin.create_topics(new_topics)
-    for _, f in topics.items():
+    for f in topics.values():
         f.result()  # Block until topic is created.
 
     yield topic

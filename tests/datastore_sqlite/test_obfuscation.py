@@ -13,10 +13,9 @@
 # limitations under the License.
 
 import pytest
+from testing_support.validators.validate_sql_obfuscation import validate_sql_obfuscation
 
 from newrelic.api.background_task import background_task
-
-from testing_support.validators.validate_sql_obfuscation import validate_sql_obfuscation
 
 
 @pytest.fixture()

@@ -26,7 +26,6 @@ from newrelic.common.encoding_utils import json_encode
 from newrelic.core.config import global_settings
 from newrelic.core.trace_cache import trace_cache
 
-
 _logger = logging.getLogger(__name__)
 
 AGENT_PACKAGE_DIRECTORY = os.path.dirname(newrelic.__file__) + os.sep

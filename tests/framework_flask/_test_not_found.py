@@ -14,7 +14,6 @@
 
 import pytest
 import webtest
-
 from flask import Flask
 
 application = Flask(__name__)

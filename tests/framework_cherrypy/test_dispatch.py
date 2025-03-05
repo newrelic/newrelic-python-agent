@@ -12,13 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import cherrypy
 import pytest
 import webtest
-
-
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
-
-import cherrypy
 
 is_ge_cherrypy32 = tuple(map(int, cherrypy.__version__.split(".")[:2])) >= (3, 2)
 

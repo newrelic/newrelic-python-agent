@@ -13,18 +13,17 @@
 # limitations under the License.
 
 try:
-    from django.conf.urls import url, include
+    from django.conf.urls import include, url
 except ImportError:
     try:
-        from django.conf.urls.defaults import url, include
+        from django.conf.urls.defaults import include, url
     except ImportError:
-        from django.urls import re_path as url, include
-
-from tastypie.api import Api
+        from django.urls import include
+        from django.urls import re_path as url
 
 import views
-
 from api import SimpleResource
+from tastypie.api import Api
 
 simple_resource = SimpleResource()
 

@@ -21,7 +21,7 @@ from newrelic.core.infinite_tracing_pb2 import Span, SpanBatch
 
 class StopIterationOnWait(CONDITION_CLS):
     def wait(self, *args, **kwargs):
-        raise StopIteration()
+        raise StopIteration
 
 
 @staticmethod

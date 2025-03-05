@@ -12,16 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 import memcache
-
-from newrelic.api.transaction import current_transaction
-from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_span_events import validate_span_events
+import pytest
 from testing_support.db_settings import memcached_settings
+from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
+from testing_support.validators.validate_span_events import validate_span_events
 
 from newrelic.api.background_task import background_task
+from newrelic.api.transaction import current_transaction
 
 DB_SETTINGS = memcached_settings()[0]
 MEMCACHED_ADDR = f"{DB_SETTINGS['host']}:{DB_SETTINGS['port']}"

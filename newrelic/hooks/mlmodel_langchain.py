@@ -452,7 +452,7 @@ def _record_tool_success(
     try:
         result = str(response)
     except Exception:
-        _logger.debug(f"Failed to convert tool response into a string.\n{traceback.format_exception(*sys.exc_info())}")
+        _logger.debug("Failed to convert tool response into a string.\n%s", traceback.format_exception(*sys.exc_info()))
     if settings.ai_monitoring.record_content.enabled:
         full_tool_event_dict.update({"input": tool_input, "output": result})
     full_tool_event_dict.update(_get_llm_metadata(transaction))
@@ -707,7 +707,8 @@ def _create_successful_chain_run_events(
             output_message_list = [str(response)]
         except Exception as e:
             _logger.warning(
-                f"Unable to capture response inside langchain chain instrumentation. No response message event will be captured. Report this issue to New Relic Support.\n{traceback.format_exception(*sys.exc_info())}"
+                "Unable to capture response inside langchain chain instrumentation. No response message event will be captured. Report this issue to New Relic Support.\n%s",
+                traceback.format_exception(*sys.exc_info()),
             )
 
     # Make sure the builtin attributes take precedence over metadata attributes.

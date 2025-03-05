@@ -14,7 +14,6 @@
 
 from newrelic.api.database_trace import register_database_client
 from newrelic.common.object_wrapper import wrap_object
-
 from newrelic.hooks.database_dbapi2 import ConnectionFactory
 from newrelic.hooks.database_psycopg2 import instance_info, instrument_psycopg2_extensions
 

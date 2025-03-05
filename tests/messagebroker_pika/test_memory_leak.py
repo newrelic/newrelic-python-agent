@@ -13,11 +13,11 @@
 # limitations under the License.
 
 import gc
-import pika
 
-from newrelic.api.background_task import background_task
+import pika
 from testing_support.db_settings import rabbitmq_settings
 
+from newrelic.api.background_task import background_task
 
 DB_SETTINGS = rabbitmq_settings()[0]
 

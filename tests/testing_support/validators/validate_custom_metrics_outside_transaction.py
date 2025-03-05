@@ -14,8 +14,8 @@
 
 import copy
 
+from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
 from testing_support.fixtures import catch_background_exceptions
-from newrelic.common.object_wrapper import transient_function_wrapper, function_wrapper
 
 
 def validate_custom_metrics_outside_transaction(custom_metrics=None):

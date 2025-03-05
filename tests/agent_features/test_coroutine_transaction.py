@@ -51,7 +51,7 @@ def coroutine_test(event_loop, transaction, nr_enabled=True, does_hang=False, ca
 
         try:
             if does_hang:
-                await loop.create_future()  # noqa
+                await loop.create_future()
             else:
                 await asyncio.sleep(0.0)
                 if nr_enabled and txn.enabled:

@@ -109,7 +109,7 @@ class TraceCache(MutableMapping):
 
         """
 
-        if self.greenlet:
+        if self.greenlet and self._cache.data:
             # Greenlet objects are maintained in a tree structure with
             # the 'parent' attribute pointing to that which a specific
             # instance is associated with. Only the root node has no
@@ -120,6 +120,12 @@ class TraceCache(MutableMapping):
             # all other cases where we can obtain a current greenlet,
             # then it should indicate we are running as a greenlet.
 
+            # In this case, the garbage collector could have already
+            # collected the final greenlet object, so we need to check if
+            # the weakref is still alive before we can access the parent.
+            # Unfortunately, instead of returning None, this will segfault
+            # if attempting to access a non-existent greenlet object.
+            # https://github.com/python-greenlet/greenlet/blob/master/src/greenlet/TThreadStateCreator.hpp#L57
             current = self.greenlet.getcurrent()
             if current is not None and current.parent:
                 return id(current)

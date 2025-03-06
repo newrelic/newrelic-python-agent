@@ -45,7 +45,6 @@ def validate_custom_events(events):
 
         record_called[:] = []
         recorded_events[:] = []
-
         for expected in events:
             matching_custom_events = 0
             mismatches = []

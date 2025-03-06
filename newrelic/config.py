@@ -2009,6 +2009,12 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "google.genai.models",
+        "newrelic.hooks.mlmodel_gemini",
+        "instrument_genai_models",
+    )
+
+    _process_module_definition(
         "langchain_core.runnables.base",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_runnables_chains_base",

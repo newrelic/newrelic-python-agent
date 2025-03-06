@@ -15,19 +15,44 @@
 from collections import namedtuple
 
 import newrelic.core.trace_node
-
 from newrelic.core.metric import TimeMetric
 from newrelic.core.node_mixin import GenericNodeMixin
 
+_GraphQLOperationNode = namedtuple(
+    "_GraphQLNode",
+    [
+        "operation_type",
+        "operation_name",
+        "deepest_path",
+        "graphql",
+        "children",
+        "start_time",
+        "end_time",
+        "duration",
+        "exclusive",
+        "guid",
+        "agent_attributes",
+        "user_attributes",
+        "product",
+    ],
+)
 
-_GraphQLOperationNode = namedtuple('_GraphQLNode',
-    ['operation_type', 'operation_name', 'deepest_path', 'graphql', 
-    'children', 'start_time', 'end_time', 'duration', 'exclusive', 'guid',
-    'agent_attributes', 'user_attributes', 'product'])
+_GraphQLResolverNode = namedtuple(
+    "_GraphQLNode",
+    [
+        "field_name",
+        "children",
+        "start_time",
+        "end_time",
+        "duration",
+        "exclusive",
+        "guid",
+        "agent_attributes",
+        "user_attributes",
+        "product",
+    ],
+)
 
-_GraphQLResolverNode = namedtuple('_GraphQLNode',
-    ['field_name', 'children', 'start_time', 'end_time', 'duration', 
-    'exclusive', 'guid', 'agent_attributes', 'user_attributes', 'product'])
 
 class GraphQLNodeMixin(GenericNodeMixin):
     def trace_node(self, stats, root, connections):
@@ -50,9 +75,10 @@ class GraphQLNodeMixin(GenericNodeMixin):
         # Agent attributes
         params = self.get_trace_segment_params(root.settings)
 
-        return newrelic.core.trace_node.TraceNode(start_time=start_time,
-                end_time=end_time, name=name, params=params, children=children,
-                label=None)
+        return newrelic.core.trace_node.TraceNode(
+            start_time=start_time, end_time=end_time, name=name, params=params, children=children, label=None
+        )
+
 
 class GraphQLResolverNode(_GraphQLResolverNode, GraphQLNodeMixin):
     @property
@@ -60,7 +86,7 @@ class GraphQLResolverNode(_GraphQLResolverNode, GraphQLNodeMixin):
         field_name = self.field_name or "<unknown>"
         product = self.product
 
-        name = f'GraphQL/resolve/{product}/{field_name}'
+        name = f"GraphQL/resolve/{product}/{field_name}"
 
         return name
 
@@ -74,13 +100,13 @@ class GraphQLResolverNode(_GraphQLResolverNode, GraphQLNodeMixin):
 
         # Determine the scoped metric
 
-        field_resolver_metric_name = f'GraphQL/resolve/{product}/{field_name}'
+        field_resolver_metric_name = f"GraphQL/resolve/{product}/{field_name}"
 
-        yield TimeMetric(name=field_resolver_metric_name, scope=root.path, duration=self.duration,
-                         exclusive=self.exclusive)
+        yield TimeMetric(
+            name=field_resolver_metric_name, scope=root.path, duration=self.duration, exclusive=self.exclusive
+        )
 
-        yield TimeMetric(name=field_resolver_metric_name, scope='', duration=self.duration,
-                         exclusive=self.exclusive)
+        yield TimeMetric(name=field_resolver_metric_name, scope="", duration=self.duration, exclusive=self.exclusive)
 
         # Now for the children
 
@@ -97,7 +123,7 @@ class GraphQLOperationNode(_GraphQLOperationNode, GraphQLNodeMixin):
         deepest_path = self.deepest_path
         product = self.product
 
-        name = f'GraphQL/operation/{product}/{operation_type}/{operation_name}/{deepest_path}'
+        name = f"GraphQL/operation/{product}/{operation_type}/{operation_name}/{deepest_path}"
 
         return name
 
@@ -114,38 +140,34 @@ class GraphQLOperationNode(_GraphQLOperationNode, GraphQLNodeMixin):
 
         # Determine the scoped metric
 
-        operation_metric_name = f'GraphQL/operation/{product}/{operation_type}/{operation_name}/{deepest_path}'
+        operation_metric_name = f"GraphQL/operation/{product}/{operation_type}/{operation_name}/{deepest_path}"
 
         scoped_metric_name = operation_metric_name
 
-        yield TimeMetric(name=scoped_metric_name, scope=root.path,
-                    duration=self.duration, exclusive=self.exclusive)
+        yield TimeMetric(name=scoped_metric_name, scope=root.path, duration=self.duration, exclusive=self.exclusive)
 
         # Unscoped rollup metrics
 
-        yield TimeMetric(name='GraphQL/all', scope='',
-                duration=self.duration, exclusive=self.exclusive)
+        yield TimeMetric(name="GraphQL/all", scope="", duration=self.duration, exclusive=self.exclusive)
 
-        yield TimeMetric(name=f'GraphQL/{product}/all', scope='',
-                duration=self.duration, exclusive=self.exclusive)
+        yield TimeMetric(name=f"GraphQL/{product}/all", scope="", duration=self.duration, exclusive=self.exclusive)
 
-        if root.type == 'WebTransaction':
-            yield TimeMetric(name='GraphQL/allWeb', scope='',
-                    duration=self.duration, exclusive=self.exclusive)
+        if root.type == "WebTransaction":
+            yield TimeMetric(name="GraphQL/allWeb", scope="", duration=self.duration, exclusive=self.exclusive)
 
-            yield TimeMetric(name=f'GraphQL/{product}/allWeb', scope='',
-                    duration=self.duration, exclusive=self.exclusive)
+            yield TimeMetric(
+                name=f"GraphQL/{product}/allWeb", scope="", duration=self.duration, exclusive=self.exclusive
+            )
         else:
-            yield TimeMetric(name='GraphQL/allOther', scope='',
-                    duration=self.duration, exclusive=self.exclusive)
+            yield TimeMetric(name="GraphQL/allOther", scope="", duration=self.duration, exclusive=self.exclusive)
 
-            yield TimeMetric(name=f'GraphQL/{product}/allOther', scope='',
-                    duration=self.duration, exclusive=self.exclusive)
+            yield TimeMetric(
+                name=f"GraphQL/{product}/allOther", scope="", duration=self.duration, exclusive=self.exclusive
+            )
 
         # Unscoped operation metric
 
-        yield TimeMetric(name=operation_metric_name, scope='',
-                duration=self.duration, exclusive=self.exclusive)
+        yield TimeMetric(name=operation_metric_name, scope="", duration=self.duration, exclusive=self.exclusive)
 
         # Now for the children
 

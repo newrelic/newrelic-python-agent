@@ -16,13 +16,8 @@ import asyncio
 import sys
 
 import pytest
-from testing_support.fixtures import (
-    capture_transaction_metrics,
-    override_generic_settings,
-)
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
+from testing_support.fixtures import capture_transaction_metrics, override_generic_settings
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import function_trace
@@ -56,7 +51,7 @@ def coroutine_test(event_loop, transaction, nr_enabled=True, does_hang=False, ca
 
         try:
             if does_hang:
-                await loop.create_future()  # noqa
+                await loop.create_future()
             else:
                 await asyncio.sleep(0.0)
                 if nr_enabled and txn.enabled:
@@ -86,14 +81,7 @@ if native_coroutine_test:
         ),
     ],
 )
-@pytest.mark.parametrize(
-    "nr_enabled,call_exit",
-    (
-        (False, False),
-        (True, False),
-        (True, True),
-    ),
-)
+@pytest.mark.parametrize("nr_enabled,call_exit", ((False, False), (True, False), (True, True)))
 def test_async_coroutine_send(event_loop, num_coroutines, create_test_task, transaction, metric, call_exit, nr_enabled):
     metrics = []
 

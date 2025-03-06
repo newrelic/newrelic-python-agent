@@ -693,11 +693,7 @@ def test_initialize_log_file():
 
 
 @pytest.mark.parametrize(
-    "feature_flag,expect_warning",
-    (
-        (["django.instrumentation.inclusion-tags.r1"], False),
-        (["noexist"], True),
-    ),
+    "feature_flag,expect_warning", ((["django.instrumentation.inclusion-tags.r1"], False), (["noexist"], True))
 )
 def test_initialize_config_file_feature_flag(feature_flag, expect_warning, logger):
     settings = global_settings()
@@ -725,11 +721,7 @@ def test_initialize_config_file_feature_flag(feature_flag, expect_warning, logge
 
 
 @pytest.mark.parametrize(
-    "feature_flag,expect_warning",
-    (
-        (["django.instrumentation.inclusion-tags.r1"], False),
-        (["noexist"], True),
-    ),
+    "feature_flag,expect_warning", ((["django.instrumentation.inclusion-tags.r1"], False), (["noexist"], True))
 )
 def test_initialize_no_config_file_feature_flag(feature_flag, expect_warning, logger):
     settings = global_settings()

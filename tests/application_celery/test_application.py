@@ -13,15 +13,9 @@
 # limitations under the License.
 
 from _target_application import add, nested_add, shared_task_add, tsum
-from testing_support.validators.validate_code_level_metrics import (
-    validate_code_level_metrics,
-)
-from testing_support.validators.validate_transaction_count import (
-    validate_transaction_count,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
+from testing_support.validators.validate_transaction_count import validate_transaction_count
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import end_of_transaction, ignore_transaction

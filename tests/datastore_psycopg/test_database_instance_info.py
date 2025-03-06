@@ -14,11 +14,7 @@
 
 import pytest
 
-from newrelic.hooks.database_psycopg import (
-    _add_defaults,
-    _parse_connect_params,
-    instance_info,
-)
+from newrelic.hooks.database_psycopg import _add_defaults, _parse_connect_params, instance_info
 
 
 def test_kwargs():

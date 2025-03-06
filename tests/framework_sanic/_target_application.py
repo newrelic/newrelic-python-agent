@@ -19,7 +19,6 @@ from sanic.response import json
 from sanic.router import Router
 from sanic.views import HTTPMethodView
 
-
 try:
     # Old style response streaming
     from sanic.response import stream
@@ -220,6 +219,7 @@ async def async_error(request):
 @blueprint.route("/blueprint")
 async def blueprint_route(request):
     return await do_streaming(request)
+
 
 app.blueprint(blueprint)
 app.add_route(MethodView.as_view(), "/method_view")

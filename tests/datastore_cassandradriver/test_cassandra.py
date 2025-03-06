@@ -16,9 +16,7 @@ import pytest
 from cassandra.query import SimpleStatement
 from testing_support.db_settings import cassandra_settings
 from testing_support.util import instance_hostname
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
@@ -42,7 +40,7 @@ def exercise(cluster):
                 execute_query = lambda query, *args: session.execute(query, *args)
 
             execute_query(
-                f"create keyspace if not exists {KEYSPACE} with replication = {REPLICATION_STRATEGY} and durable_writes = false;",
+                f"create keyspace if not exists {KEYSPACE} with replication = {REPLICATION_STRATEGY} and durable_writes = false;"
             )
             session.set_keyspace(KEYSPACE)  # Should be captured as "USE" query
 
@@ -58,8 +56,7 @@ def exercise(cluster):
             execute_query(f"create index {TABLE_NAME}_index on {FULL_TABLE_NAME} (c)")
 
             execute_query(
-                f"insert into {FULL_TABLE_NAME} (a, b, c) values (%(a)s, %(b)s, %(c)s)",
-                {"a": 1, "b": 1.0, "c": "1.0"},
+                f"insert into {FULL_TABLE_NAME} (a, b, c) values (%(a)s, %(b)s, %(c)s)", {"a": 1, "b": 1.0, "c": "1.0"}
             )
 
             execute_query(
@@ -76,36 +73,22 @@ def exercise(cluster):
             _ = [row for row in cursor]
 
             execute_query(
-                f"update {FULL_TABLE_NAME} set b=%(b)s, c=%(c)s where a=%(a)s",
-                {"a": 1, "b": 4.0, "c": "4.0"},
+                f"update {FULL_TABLE_NAME} set b=%(b)s, c=%(c)s where a=%(a)s", {"a": 1, "b": 4.0, "c": "4.0"}
             )
             execute_query(f"delete from {FULL_TABLE_NAME} where a=2")
             execute_query(f"truncate {FULL_TABLE_NAME}")
 
             # SimpleStatement
-            simple_statement = SimpleStatement(
-                f"insert into {FULL_TABLE_NAME} (a, b, c) values (%s, %s, %s)",
-            )
-            execute_query(
-                simple_statement,
-                (6, 6.0, "6.0"),
-            )
+            simple_statement = SimpleStatement(f"insert into {FULL_TABLE_NAME} (a, b, c) values (%s, %s, %s)")
+            execute_query(simple_statement, (6, 6.0, "6.0"))
 
             # PreparedStatement
-            prepared_statement = session.prepare(
-                f"insert into {FULL_TABLE_NAME} (a, b, c) values (?, ?, ?)",
-            )
-            execute_query(
-                prepared_statement,
-                (5, 5.0, "5.0"),
-            )
+            prepared_statement = session.prepare(f"insert into {FULL_TABLE_NAME} (a, b, c) values (?, ?, ?)")
+            execute_query(prepared_statement, (5, 5.0, "5.0"))
 
             # BoundStatement
             bound_statement = prepared_statement.bind((7, 7.0, "7.0"))
-            execute_query(
-                bound_statement,
-                {"a": 5, "b": 5.0, "c": "5.0"},
-            )
+            execute_query(bound_statement, {"a": 5, "b": 5.0, "c": "5.0"})
 
             execute_query(f"drop index {TABLE_NAME}_index")
             execute_query(f"drop table {FULL_TABLE_NAME}")

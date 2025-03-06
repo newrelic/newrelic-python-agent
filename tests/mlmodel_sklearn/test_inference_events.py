@@ -15,12 +15,8 @@
 import sys
 
 import numpy as np
-import pandas
-from testing_support.fixtures import (
-    override_application_settings,
-    reset_core_stats_engine,
-)
-from testing_support.fixtures import override_application_settings
+import pandas as pd
+from testing_support.fixtures import override_application_settings, reset_core_stats_engine
 from testing_support.validators.validate_ml_event_count import validate_ml_event_count
 from testing_support.validators.validate_ml_events import validate_ml_events
 
@@ -39,7 +35,7 @@ pandas_df_category_recorded_custom_events = [
             "label.0": "27.0",
             "new_relic_data_schema_version": 2,
         },
-    ),
+    )
 ]
 
 
@@ -53,11 +49,11 @@ def test_pandas_df_categorical_feature_event():
 
         clf = getattr(sklearn.tree, "DecisionTreeClassifier")(random_state=0)
         model = clf.fit(
-            pandas.DataFrame({"col1": [27.0, 24.0], "col2": [23.0, 25.0]}, dtype="category"),
-            pandas.DataFrame({"label": [27.0, 28.0]}),
+            pd.DataFrame({"col1": [27.0, 24.0], "col2": [23.0, 25.0]}, dtype="category"),
+            pd.DataFrame({"label": [27.0, 28.0]}),
         )
 
-        labels = model.predict(pandas.DataFrame({"col1": [2.0], "col2": [4.0]}, dtype="category"))
+        labels = model.predict(pd.DataFrame({"col1": [2.0], "col2": [4.0]}, dtype="category"))
         return model
 
     _test()
@@ -79,7 +75,7 @@ pandas_df_bool_recorded_custom_events = [
             "label.0": true_label_value,
             "new_relic_data_schema_version": 2,
         },
-    ),
+    )
 ]
 
 
@@ -92,9 +88,9 @@ def test_pandas_df_bool_feature_event():
         import sklearn.tree
 
         dtype_name = "bool" if sys.version_info < (3, 8) else "boolean"
-        x_train = pandas.DataFrame({"col1": [True, False], "col2": [True, False]}, dtype=dtype_name)
-        y_train = pandas.DataFrame({"label": [True, False]}, dtype=dtype_name)
-        x_test = pandas.DataFrame({"col1": [True], "col2": [True]}, dtype=dtype_name)
+        x_train = pd.DataFrame({"col1": [True, False], "col2": [True, False]}, dtype=dtype_name)
+        y_train = pd.DataFrame({"label": [True, False]}, dtype=dtype_name)
+        x_test = pd.DataFrame({"col1": [True], "col2": [True]}, dtype=dtype_name)
 
         clf = getattr(sklearn.tree, "DecisionTreeClassifier")(random_state=0)
         model = clf.fit(x_train, y_train)
@@ -118,7 +114,7 @@ pandas_df_float_recorded_custom_events = [
             "label.0": "345.6",
             "new_relic_data_schema_version": 2,
         },
-    ),
+    )
 ]
 
 
@@ -130,9 +126,9 @@ def test_pandas_df_float_feature_event():
     def _test():
         import sklearn.tree
 
-        x_train = pandas.DataFrame({"col1": [120.0, 254.0], "col2": [236.9, 234.5]}, dtype="float64")
-        y_train = pandas.DataFrame({"label": [345.6, 456.7]}, dtype="float64")
-        x_test = pandas.DataFrame({"col1": [100.0], "col2": [300.0]}, dtype="float64")
+        x_train = pd.DataFrame({"col1": [120.0, 254.0], "col2": [236.9, 234.5]}, dtype="float64")
+        y_train = pd.DataFrame({"label": [345.6, 456.7]}, dtype="float64")
+        x_test = pd.DataFrame({"col1": [100.0], "col2": [300.0]}, dtype="float64")
 
         clf = getattr(sklearn.tree, "DecisionTreeRegressor")(random_state=0)
 
@@ -157,7 +153,7 @@ int_list_recorded_custom_events = [
             "label.0": "1.0",
             "new_relic_data_schema_version": 2,
         },
-    ),
+    )
 ]
 
 
@@ -195,7 +191,7 @@ numpy_int_recorded_custom_events = [
             "label.0": "11.0",
             "new_relic_data_schema_version": 2,
         },
-    ),
+    )
 ]
 
 
@@ -281,14 +277,14 @@ numpy_str_recorded_custom_events_no_value = [
             "model_version": "0.0.0",
             "new_relic_data_schema_version": 2,
         },
-    ),
+    )
 ]
 
 
 disabled_inference_value_settings = {
     "machine_learning.enabled": True,
     "machine_learning.inference_events_value.enabled": False,
-    "ml_insights_events.enabled": True
+    "ml_insights_events.enabled": True,
 }
 
 
@@ -317,7 +313,7 @@ def test_does_not_include_value_when_inference_event_value_enabled_is_false():
 disabled_ml_insights_settings = {
     "machine_learning.enabled": True,
     "machine_learning.inference_events_value.enabled": True,
-    "ml_insights_events.enabled": False
+    "ml_insights_events.enabled": False,
 }
 
 
@@ -350,7 +346,7 @@ def test_does_not_include_events_when_ml_insights_events_enabled_is_false():
 disabled_ml_settings = {
     "machine_learning.enabled": False,
     "machine_learning.inference_events_value.enabled": True,
-    "ml_insights_events.enabled": True
+    "ml_insights_events.enabled": True,
 }
 
 
@@ -408,7 +404,7 @@ multilabel_output_label_events = [
             "feature.19": 4.0,
             "new_relic_data_schema_version": 2,
         },
-    ),
+    )
 ]
 
 

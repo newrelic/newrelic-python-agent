@@ -18,10 +18,7 @@ import uuid
 import kafka
 import pytest
 from testing_support.db_settings import kafka_settings
-from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
-    collector_agent_registration_fixture,
-    collector_available_fixture,
-)
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import transient_function_wrapper
@@ -76,15 +73,11 @@ def producer(client_type, json_serializer, json_callable_serializer, broker):
         )
     elif client_type == "callable_object":
         producer = kafka.KafkaProducer(
-            bootstrap_servers=broker,
-            value_serializer=json_callable_serializer,
-            key_serializer=json_callable_serializer,
+            bootstrap_servers=broker, value_serializer=json_callable_serializer, key_serializer=json_callable_serializer
         )
     elif client_type == "serializer_object":
         producer = kafka.KafkaProducer(
-            bootstrap_servers=broker,
-            value_serializer=json_serializer,
-            key_serializer=json_serializer,
+            bootstrap_servers=broker, value_serializer=json_serializer, key_serializer=json_serializer
         )
 
     yield producer
@@ -176,7 +169,7 @@ def json_deserializer():
 
 @pytest.fixture(scope="session")
 def json_callable_serializer():
-    class JSONCallableSerializer():
+    class JSONCallableSerializer:
         def __call__(self, obj):
             return json.dumps(obj).encode("utf-8") if obj is not None else None
 
@@ -185,7 +178,7 @@ def json_callable_serializer():
 
 @pytest.fixture(scope="session")
 def json_callable_deserializer():
-    class JSONCallableDeserializer():
+    class JSONCallableDeserializer:
         def __call__(self, obj):
             return json.loads(obj.decode("utf-8")) if obj is not None else None
 

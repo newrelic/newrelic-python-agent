@@ -18,11 +18,7 @@ import os
 from newrelic import version
 from newrelic.common import system_info
 from newrelic.common.agent_http import ApplicationModeClient, ServerlessModeClient
-from newrelic.common.encoding_utils import (
-    json_decode,
-    json_encode,
-    serverless_payload_encode,
-)
+from newrelic.common.encoding_utils import json_decode, json_encode, serverless_payload_encode
 from newrelic.common.utilization import (
     AWSUtilization,
     AzureUtilization,
@@ -32,12 +28,9 @@ from newrelic.common.utilization import (
     KubernetesUtilization,
     PCFUtilization,
 )
+from newrelic.core.agent_control_health import HealthStatus, agent_control_health_instance
 from newrelic.core.attribute import truncate
-from newrelic.core.config import (
-    fetch_config_setting,
-    finalize_application_settings,
-    global_settings_dump,
-)
+from newrelic.core.config import fetch_config_setting, finalize_application_settings, global_settings_dump
 from newrelic.core.internal_metrics import internal_count_metric
 from newrelic.core.otlp_utils import OTLP_CONTENT_TYPE, otlp_encode
 from newrelic.network.exceptions import (
@@ -47,12 +40,11 @@ from newrelic.network.exceptions import (
     NetworkInterfaceException,
     RetryDataForRequest,
 )
-from newrelic.core.agent_control_health import HealthStatus, agent_control_health_instance
 
 _logger = logging.getLogger(__name__)
 
 
-class AgentProtocol():
+class AgentProtocol:
     VERSION = 17
 
     STATUS_CODE_RESPONSE = {
@@ -183,11 +175,7 @@ class AgentProtocol():
             audit_log_fp=audit_log_fp,
         )
 
-        self._params = {
-            "protocol_version": self.VERSION,
-            "license_key": settings.license_key,
-            "marshal_format": "json",
-        }
+        self._params = {"protocol_version": self.VERSION, "license_key": settings.license_key, "marshal_format": "json"}
         self._headers = {}
         self._license_key = settings.license_key
 
@@ -223,12 +211,7 @@ class AgentProtocol():
     def close_connection(self):
         self.client.close_connection()
 
-    def send(
-        self,
-        method,
-        payload=(),
-        path="/agent_listener/invoke_raw_method",
-    ):
+    def send(self, method, payload=(), path="/agent_listener/invoke_raw_method"):
         params, headers, payload = self._to_http(method, payload)
 
         try:
@@ -241,10 +224,7 @@ class AgentProtocol():
 
         if not 200 <= status < 300:
             if status == 413:
-                internal_count_metric(
-                    f"Supportability/Python/Collector/MaxPayloadSizeLimit/{method}",
-                    1,
-                )
+                internal_count_metric(f"Supportability/Python/Collector/MaxPayloadSizeLimit/{method}", 1)
             if status == 401:
                 # Check for license key presence again so the original missing license key status set in the
                 # initialize function doesn't get overridden with invalid_license as a missing license key is also
@@ -305,8 +285,7 @@ class AgentProtocol():
         app_names = [app_name] + linked_applications
 
         hostname = system_info.gethostname(
-            settings["heroku.use_dyno_names"],
-            settings["heroku.dyno_name_prefixes_to_shorten"],
+            settings["heroku.use_dyno_names"], settings["heroku.dyno_name_prefixes_to_shorten"]
         )
 
         ip_address = system_info.getips()
@@ -472,21 +451,13 @@ class AgentProtocol():
         return server_settings
 
     @classmethod
-    def connect(
-        cls,
-        app_name,
-        linked_applications,
-        environment,
-        settings,
-        client_cls=ApplicationModeClient,
-    ):
+    def connect(cls, app_name, linked_applications, environment, settings, client_cls=ApplicationModeClient):
         with cls(settings, client_cls=client_cls) as preconnect:
             redirect_host = preconnect.send("preconnect")["redirect_host"]
 
         with cls(settings, host=redirect_host, client_cls=client_cls) as protocol:
             configuration = protocol.send(
-                "connect",
-                cls._connect_payload(app_name, linked_applications, environment, settings),
+                "connect", cls._connect_payload(app_name, linked_applications, environment, settings)
             )
 
         # Apply High Security Mode to server_config, so the local
@@ -535,10 +506,7 @@ class ServerlessModeProtocol(AgentProtocol):
 
         data = self.client.finalize()
 
-        payload = {
-            "metadata": self._metadata,
-            "data": data,
-        }
+        payload = {"metadata": self._metadata, "data": data}
 
         encoded = serverless_payload_encode(payload)
         payload = json_encode((1, "NR_LAMBDA_MONITORING", encoded))
@@ -548,14 +516,7 @@ class ServerlessModeProtocol(AgentProtocol):
         return payload
 
     @classmethod
-    def connect(
-        cls,
-        app_name,
-        linked_applications,
-        environment,
-        settings,
-        client_cls=ServerlessModeClient,
-    ):
+    def connect(cls, app_name, linked_applications, environment, settings, client_cls=ServerlessModeClient):
         aws_lambda_metadata = settings.aws_lambda_metadata
         settings = finalize_application_settings({"cross_application_tracer.enabled": False}, settings)
         # Metadata must come from the original settings object since it
@@ -591,9 +552,7 @@ class OtlpProtocol(AgentProtocol):
         )
 
         self._params = {}
-        self._headers = {
-            "api-key": settings.license_key,
-        }
+        self._headers = {"api-key": settings.license_key}
 
         # In Python 2, the JSON is loaded with unicode keys and values;
         # however, the header name must be a non-unicode value when given to
@@ -619,14 +578,7 @@ class OtlpProtocol(AgentProtocol):
         self.agent_control = agent_control_health_instance()
 
     @classmethod
-    def connect(
-        cls,
-        app_name,
-        linked_applications,
-        environment,
-        settings,
-        client_cls=ApplicationModeClient,
-    ):
+    def connect(cls, app_name, linked_applications, environment, settings, client_cls=ApplicationModeClient):
         with cls(settings, client_cls=client_cls) as protocol:
             pass
 

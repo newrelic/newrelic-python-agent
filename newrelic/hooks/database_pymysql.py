@@ -14,37 +14,27 @@
 
 from newrelic.api.database_trace import register_database_client
 from newrelic.common.object_wrapper import wrap_object
-
-from newrelic.hooks.database_mysqldb import (
-    ConnectionFactory as MySqlDBConnectionFactory,
-    ConnectionWrapper as MySqlDBConnectionWrapper,
-)
-
-from newrelic.hooks.database_dbapi2 import (
-    CursorWrapper as DBAPI2CursorWrapper,
-)
+from newrelic.hooks.database_dbapi2 import CursorWrapper as DBAPI2CursorWrapper
+from newrelic.hooks.database_mysqldb import ConnectionFactory as MySqlDBConnectionFactory
+from newrelic.hooks.database_mysqldb import ConnectionWrapper as MySqlDBConnectionWrapper
 
 
 class CursorWrapper(DBAPI2CursorWrapper):
-
     def __enter__(self):
         self.__wrapped__.__enter__()
         return self
 
 
 class ConnectionWrapper(MySqlDBConnectionWrapper):
-
     __cursor_wrapper__ = CursorWrapper
 
 
 class ConnectionFactory(MySqlDBConnectionFactory):
-
     __connection_wrapper__ = ConnectionWrapper
 
 
 def instance_info(args, kwargs):
-    def _bind_params(host=None, user=None, passwd=None, db=None,
-            port=None, *args, **kwargs):
+    def _bind_params(host=None, user=None, passwd=None, db=None, port=None, *args, **kwargs):
         return host, port, db
 
     host, port, db = _bind_params(*args, **kwargs)
@@ -53,11 +43,16 @@ def instance_info(args, kwargs):
 
 
 def instrument_pymysql(module):
-    register_database_client(module, database_product='MySQL',
-            quoting_style='single+double', explain_query='explain',
-            explain_stmts=('select',), instance_info=instance_info)
+    register_database_client(
+        module,
+        database_product="MySQL",
+        quoting_style="single+double",
+        explain_query="explain",
+        explain_stmts=("select",),
+        instance_info=instance_info,
+    )
 
-    wrap_object(module, 'connect', ConnectionFactory, (module,))
+    wrap_object(module, "connect", ConnectionFactory, (module,))
 
     # The connect() function is actually aliased with Connect() and
     # Connection, the later actually being the Connection type object.
@@ -65,5 +60,5 @@ def instrument_pymysql(module):
     # interferes with direct type usage. If people are using the
     # Connection object directly, they should really be using connect().
 
-    if hasattr(module, 'Connect'):
-        wrap_object(module, 'Connect', ConnectionFactory, (module,))
+    if hasattr(module, "Connect"):
+        wrap_object(module, "Connect", ConnectionFactory, (module,))

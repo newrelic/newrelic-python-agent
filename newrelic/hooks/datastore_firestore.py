@@ -14,7 +14,7 @@
 
 from newrelic.api.datastore_trace import wrap_datastore_trace
 from newrelic.api.function_trace import wrap_function_trace
-from newrelic.common.async_wrapper import generator_wrapper, async_generator_wrapper
+from newrelic.common.async_wrapper import async_generator_wrapper, generator_wrapper
 
 
 def _conn_str_to_host(getter):

@@ -20,15 +20,9 @@ from testing_support.fixtures import (
     override_generic_settings,
     override_ignore_status_codes,
 )
-from testing_support.validators.validate_code_level_metrics import (
-    validate_code_level_metrics,
-)
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.hooks.framework_django import django_settings
 
@@ -71,16 +65,14 @@ _test_django_post_1_10_middleware_scoped_metrics = [
 ]
 
 _test_django_pre_1_10_url_resolver_scoped_metrics = [
-    ("Function/django.core.urlresolvers:RegexURLResolver.resolve", "present"),
+    ("Function/django.core.urlresolvers:RegexURLResolver.resolve", "present")
 ]
 
 _test_django_post_1_10_url_resolver_scoped_metrics = [
-    ("Function/django.urls.resolvers:RegexURLResolver.resolve", "present"),
+    ("Function/django.urls.resolvers:RegexURLResolver.resolve", "present")
 ]
 
-_test_django_post_2_0_url_resolver_scoped_metrics = [
-    ("Function/django.urls.resolvers:URLResolver.resolve", "present"),
-]
+_test_django_post_2_0_url_resolver_scoped_metrics = [("Function/django.urls.resolvers:URLResolver.resolve", "present")]
 
 _test_application_index_scoped_metrics = [
     ("Function/django.core.handlers.wsgi:WSGIHandler.__call__", 1),
@@ -507,11 +499,7 @@ else:
     _test_template_render_exception_errors = ["django.template.exceptions:TemplateSyntaxError"]
 
 _test_template_render_exception_function_scoped_metrics = list(_test_template_render_exception_scoped_metrics_base)
-_test_template_render_exception_function_scoped_metrics.extend(
-    [
-        ("Function/views:render_exception_function", 1),
-    ]
-)
+_test_template_render_exception_function_scoped_metrics.extend([("Function/views:render_exception_function", 1)])
 
 
 @validate_transaction_errors(errors=_test_template_render_exception_errors)
@@ -526,10 +514,7 @@ def test_template_render_exception_function():
 
 _test_template_render_exception_class_scoped_metrics = list(_test_template_render_exception_scoped_metrics_base)
 _test_template_render_exception_class_scoped_metrics.extend(
-    [
-        ("Function/views:RenderExceptionClass", 1),
-        ("Function/views:RenderExceptionClass.get", 1),
-    ]
+    [("Function/views:RenderExceptionClass", 1), ("Function/views:RenderExceptionClass.get", 1)]
 )
 
 

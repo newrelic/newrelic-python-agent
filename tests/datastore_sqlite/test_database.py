@@ -12,64 +12,65 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sqlite3 as database
 import os
+import sqlite3 as database
 import sys
 
-is_pypy = hasattr(sys, 'pypy_version_info')
+is_pypy = hasattr(sys, "pypy_version_info")
 
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.validators.validate_database_trace_inputs import validate_database_trace_inputs
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
-DATABASE_DIR = os.environ.get('TOX_ENV_DIR', '.')
-DATABASE_NAME = ':memory:'
+DATABASE_DIR = os.environ.get("TOX_ENV_DIR", ".")
+DATABASE_NAME = ":memory:"
 
 _test_execute_via_cursor_scoped_metrics = [
-        ('Function/_sqlite3:connect', 1),
-        ('Datastore/statement/SQLite/datastore_sqlite/select', 1),
-        ('Datastore/statement/SQLite/datastore_sqlite/insert', 2),
-        ('Datastore/statement/SQLite/datastore_sqlite/update', 1),
-        ('Datastore/statement/SQLite/datastore_sqlite/delete', 1),
-        ('Datastore/operation/SQLite/drop', 1),
-        ('Datastore/operation/SQLite/create', 1),
-        ('Datastore/operation/SQLite/commit', 3),
-        ('Datastore/operation/SQLite/rollback', 1)]
+    ("Function/_sqlite3:connect", 1),
+    ("Datastore/statement/SQLite/datastore_sqlite/select", 1),
+    ("Datastore/statement/SQLite/datastore_sqlite/insert", 2),
+    ("Datastore/statement/SQLite/datastore_sqlite/update", 1),
+    ("Datastore/statement/SQLite/datastore_sqlite/delete", 1),
+    ("Datastore/operation/SQLite/drop", 1),
+    ("Datastore/operation/SQLite/create", 1),
+    ("Datastore/operation/SQLite/commit", 3),
+    ("Datastore/operation/SQLite/rollback", 1),
+]
 
 _test_execute_via_cursor_rollup_metrics = [
-        ('Datastore/all', 12),
-        ('Datastore/allOther', 12),
-        ('Datastore/SQLite/all', 12),
-        ('Datastore/SQLite/allOther', 12),
-        ('Datastore/operation/SQLite/select', 1),
-        ('Datastore/statement/SQLite/datastore_sqlite/select', 1),
-        ('Datastore/operation/SQLite/insert', 2),
-        ('Datastore/statement/SQLite/datastore_sqlite/insert', 2),
-        ('Datastore/operation/SQLite/update', 1),
-        ('Datastore/statement/SQLite/datastore_sqlite/update', 1),
-        ('Datastore/operation/SQLite/delete', 1),
-        ('Datastore/statement/SQLite/datastore_sqlite/delete', 1),
-        ('Datastore/operation/SQLite/drop', 1),
-        ('Datastore/operation/SQLite/create', 1),
-        ('Datastore/operation/SQLite/commit', 3),
-        ('Datastore/operation/SQLite/rollback', 1)]
+    ("Datastore/all", 12),
+    ("Datastore/allOther", 12),
+    ("Datastore/SQLite/all", 12),
+    ("Datastore/SQLite/allOther", 12),
+    ("Datastore/operation/SQLite/select", 1),
+    ("Datastore/statement/SQLite/datastore_sqlite/select", 1),
+    ("Datastore/operation/SQLite/insert", 2),
+    ("Datastore/statement/SQLite/datastore_sqlite/insert", 2),
+    ("Datastore/operation/SQLite/update", 1),
+    ("Datastore/statement/SQLite/datastore_sqlite/update", 1),
+    ("Datastore/operation/SQLite/delete", 1),
+    ("Datastore/statement/SQLite/datastore_sqlite/delete", 1),
+    ("Datastore/operation/SQLite/drop", 1),
+    ("Datastore/operation/SQLite/create", 1),
+    ("Datastore/operation/SQLite/commit", 3),
+    ("Datastore/operation/SQLite/rollback", 1),
+]
 
 if is_pypy:
-    _test_execute_via_cursor_scoped_metrics.extend([
-        ('Function/_sqlite3:Connection.__exit__', 1)])
-    _test_execute_via_cursor_rollup_metrics.extend([
-        ('Function/_sqlite3:Connection.__exit__', 1)])
+    _test_execute_via_cursor_scoped_metrics.extend([("Function/_sqlite3:Connection.__exit__", 1)])
+    _test_execute_via_cursor_rollup_metrics.extend([("Function/_sqlite3:Connection.__exit__", 1)])
 else:
-    _test_execute_via_cursor_scoped_metrics.extend([
-        ('Function/sqlite3:Connection.__exit__', 1)])
-    _test_execute_via_cursor_rollup_metrics.extend([
-        ('Function/sqlite3:Connection.__exit__', 1)])
+    _test_execute_via_cursor_scoped_metrics.extend([("Function/sqlite3:Connection.__exit__", 1)])
+    _test_execute_via_cursor_rollup_metrics.extend([("Function/sqlite3:Connection.__exit__", 1)])
 
-@validate_transaction_metrics('test_database:test_execute_via_cursor',
-        scoped_metrics=_test_execute_via_cursor_scoped_metrics,
-        rollup_metrics=_test_execute_via_cursor_rollup_metrics,
-        background_task=True)
+
+@validate_transaction_metrics(
+    "test_database:test_execute_via_cursor",
+    scoped_metrics=_test_execute_via_cursor_scoped_metrics,
+    rollup_metrics=_test_execute_via_cursor_rollup_metrics,
+    background_task=True,
+)
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
 def test_execute_via_cursor():
@@ -80,20 +81,23 @@ def test_execute_via_cursor():
 
         cursor.execute("""create table datastore_sqlite (a, b, c)""")
 
-        cursor.executemany("""insert into datastore_sqlite values (?, ?, ?)""",
-                [(1, 1.0, '1.0'), (2, 2.2, '2.2'), (3, 3.3, '3.3')])
+        cursor.executemany(
+            """insert into datastore_sqlite values (?, ?, ?)""", [(1, 1.0, "1.0"), (2, 2.2, "2.2"), (3, 3.3, "3.3")]
+        )
 
-        test_data = [(4, 4.0, '4.0'), (5, 5.5, '5.5'), (6, 6.6, '6.6')]
+        test_data = [(4, 4.0, "4.0"), (5, 5.5, "5.5"), (6, 6.6, "6.6")]
 
-        cursor.executemany("""insert into datastore_sqlite values (?, ?, ?)""",
-                           ((value) for value in test_data))
+        cursor.executemany("""insert into datastore_sqlite values (?, ?, ?)""", ((value) for value in test_data))
 
         cursor.execute("""select * from datastore_sqlite""")
 
         assert len(list(cursor)) == 6
 
-        cursor.execute("""update datastore_sqlite set a=?, b=?, """
-                """c=? where a=?""", (4, 4.0, '4.0', 1))
+        cursor.execute(
+            """update datastore_sqlite set a=?, b=?, """
+            """c=? where a=?""",
+            (4, 4.0, "4.0", 1),
+        )
 
         script = """delete from datastore_sqlite where a = 2;"""
         cursor.executescript(script)
@@ -102,54 +106,60 @@ def test_execute_via_cursor():
         connection.rollback()
         connection.commit()
 
+
 _test_execute_via_connection_scoped_metrics = [
-        ('Function/_sqlite3:connect', 1),
-        ('Datastore/statement/SQLite/datastore_sqlite/select', 1),
-        ('Datastore/statement/SQLite/datastore_sqlite/insert', 2),
-        ('Datastore/statement/SQLite/datastore_sqlite/update', 1),
-        ('Datastore/statement/SQLite/datastore_sqlite/delete', 1),
-        ('Datastore/operation/SQLite/drop', 1),
-        ('Datastore/operation/SQLite/create', 1),
-        ('Datastore/operation/SQLite/commit', 3),
-        ('Datastore/operation/SQLite/rollback', 1)]
+    ("Function/_sqlite3:connect", 1),
+    ("Datastore/statement/SQLite/datastore_sqlite/select", 1),
+    ("Datastore/statement/SQLite/datastore_sqlite/insert", 2),
+    ("Datastore/statement/SQLite/datastore_sqlite/update", 1),
+    ("Datastore/statement/SQLite/datastore_sqlite/delete", 1),
+    ("Datastore/operation/SQLite/drop", 1),
+    ("Datastore/operation/SQLite/create", 1),
+    ("Datastore/operation/SQLite/commit", 3),
+    ("Datastore/operation/SQLite/rollback", 1),
+]
 
 _test_execute_via_connection_rollup_metrics = [
-        ('Datastore/all', 12),
-        ('Datastore/allOther', 12),
-        ('Datastore/SQLite/all', 12),
-        ('Datastore/SQLite/allOther', 12),
-        ('Datastore/operation/SQLite/select', 1),
-        ('Datastore/statement/SQLite/datastore_sqlite/select', 1),
-        ('Datastore/operation/SQLite/insert', 2),
-        ('Datastore/statement/SQLite/datastore_sqlite/insert', 2),
-        ('Datastore/operation/SQLite/update', 1),
-        ('Datastore/statement/SQLite/datastore_sqlite/update', 1),
-        ('Datastore/operation/SQLite/delete', 1),
-        ('Datastore/statement/SQLite/datastore_sqlite/delete', 1),
-        ('Datastore/operation/SQLite/drop', 1),
-        ('Datastore/operation/SQLite/create', 1),
-        ('Datastore/operation/SQLite/commit', 3),
-        ('Datastore/operation/SQLite/rollback', 1)]
+    ("Datastore/all", 12),
+    ("Datastore/allOther", 12),
+    ("Datastore/SQLite/all", 12),
+    ("Datastore/SQLite/allOther", 12),
+    ("Datastore/operation/SQLite/select", 1),
+    ("Datastore/statement/SQLite/datastore_sqlite/select", 1),
+    ("Datastore/operation/SQLite/insert", 2),
+    ("Datastore/statement/SQLite/datastore_sqlite/insert", 2),
+    ("Datastore/operation/SQLite/update", 1),
+    ("Datastore/statement/SQLite/datastore_sqlite/update", 1),
+    ("Datastore/operation/SQLite/delete", 1),
+    ("Datastore/statement/SQLite/datastore_sqlite/delete", 1),
+    ("Datastore/operation/SQLite/drop", 1),
+    ("Datastore/operation/SQLite/create", 1),
+    ("Datastore/operation/SQLite/commit", 3),
+    ("Datastore/operation/SQLite/rollback", 1),
+]
 
 if is_pypy:
-    _test_execute_via_connection_scoped_metrics.extend([
-        ('Function/_sqlite3:Connection.__enter__', 1),
-        ('Function/_sqlite3:Connection.__exit__', 1)])
-    _test_execute_via_connection_rollup_metrics.extend([
-        ('Function/_sqlite3:Connection.__enter__', 1),
-        ('Function/_sqlite3:Connection.__exit__', 1)])
+    _test_execute_via_connection_scoped_metrics.extend(
+        [("Function/_sqlite3:Connection.__enter__", 1), ("Function/_sqlite3:Connection.__exit__", 1)]
+    )
+    _test_execute_via_connection_rollup_metrics.extend(
+        [("Function/_sqlite3:Connection.__enter__", 1), ("Function/_sqlite3:Connection.__exit__", 1)]
+    )
 else:
-    _test_execute_via_connection_scoped_metrics.extend([
-        ('Function/sqlite3:Connection.__enter__', 1),
-        ('Function/sqlite3:Connection.__exit__', 1)])
-    _test_execute_via_connection_rollup_metrics.extend([
-        ('Function/sqlite3:Connection.__enter__', 1),
-        ('Function/sqlite3:Connection.__exit__', 1)])
+    _test_execute_via_connection_scoped_metrics.extend(
+        [("Function/sqlite3:Connection.__enter__", 1), ("Function/sqlite3:Connection.__exit__", 1)]
+    )
+    _test_execute_via_connection_rollup_metrics.extend(
+        [("Function/sqlite3:Connection.__enter__", 1), ("Function/sqlite3:Connection.__exit__", 1)]
+    )
 
-@validate_transaction_metrics('test_database:test_execute_via_connection',
-        scoped_metrics=_test_execute_via_connection_scoped_metrics,
-        rollup_metrics=_test_execute_via_connection_rollup_metrics,
-        background_task=True)
+
+@validate_transaction_metrics(
+    "test_database:test_execute_via_connection",
+    scoped_metrics=_test_execute_via_connection_scoped_metrics,
+    rollup_metrics=_test_execute_via_connection_rollup_metrics,
+    background_task=True,
+)
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
 def test_execute_via_connection():
@@ -158,21 +168,25 @@ def test_execute_via_connection():
 
         connection.execute("""create table datastore_sqlite (a, b, c)""")
 
-        connection.executemany("""insert into datastore_sqlite values """
-                """(?, ?, ?)""", [(1, 1.0, '1.0'), (2, 2.2, '2.2'),
-                (3, 3.3, '3.3')])
+        connection.executemany(
+            """insert into datastore_sqlite values """
+            """(?, ?, ?)""",
+            [(1, 1.0, "1.0"), (2, 2.2, "2.2"), (3, 3.3, "3.3")],
+        )
 
-        test_data = [(4, 4.0, '4.0'), (5, 5.5, '5.5'), (6, 6.6, '6.6')]
+        test_data = [(4, 4.0, "4.0"), (5, 5.5, "5.5"), (6, 6.6, "6.6")]
 
-        connection.executemany("""insert into datastore_sqlite values (?, ?, ?)""",
-                           ((value) for value in test_data))
+        connection.executemany("""insert into datastore_sqlite values (?, ?, ?)""", ((value) for value in test_data))
 
         cursor = connection.execute("""select * from datastore_sqlite""")
 
         assert len(list(cursor)) == 6
 
-        connection.execute("""update datastore_sqlite set a=?, b=?, """
-                """c=? where a=?""", (4, 4.0, '4.0', 1))
+        connection.execute(
+            """update datastore_sqlite set a=?, b=?, """
+            """c=? where a=?""",
+            (4, 4.0, "4.0", 1),
+        )
 
         script = """delete from datastore_sqlite where a = 2;"""
         connection.executescript(script)
@@ -181,41 +195,47 @@ def test_execute_via_connection():
         connection.rollback()
         connection.commit()
 
+
 _test_rollback_on_exception_scoped_metrics = [
-        ('Function/_sqlite3:connect', 1),
-        ('Datastore/operation/SQLite/rollback', 1)]
+    ("Function/_sqlite3:connect", 1),
+    ("Datastore/operation/SQLite/rollback", 1),
+]
 
 _test_rollback_on_exception_rollup_metrics = [
-        ('Datastore/all', 2),
-        ('Datastore/allOther', 2),
-        ('Datastore/SQLite/all', 2),
-        ('Datastore/SQLite/allOther', 2),
-        ('Datastore/operation/SQLite/rollback', 1)]
+    ("Datastore/all", 2),
+    ("Datastore/allOther", 2),
+    ("Datastore/SQLite/all", 2),
+    ("Datastore/SQLite/allOther", 2),
+    ("Datastore/operation/SQLite/rollback", 1),
+]
 
 if is_pypy:
-    _test_rollback_on_exception_scoped_metrics.extend([
-        ('Function/_sqlite3:Connection.__enter__', 1),
-        ('Function/_sqlite3:Connection.__exit__', 1)])
-    _test_rollback_on_exception_rollup_metrics.extend([
-        ('Function/_sqlite3:Connection.__enter__', 1),
-        ('Function/_sqlite3:Connection.__exit__', 1)])
+    _test_rollback_on_exception_scoped_metrics.extend(
+        [("Function/_sqlite3:Connection.__enter__", 1), ("Function/_sqlite3:Connection.__exit__", 1)]
+    )
+    _test_rollback_on_exception_rollup_metrics.extend(
+        [("Function/_sqlite3:Connection.__enter__", 1), ("Function/_sqlite3:Connection.__exit__", 1)]
+    )
 else:
-    _test_rollback_on_exception_scoped_metrics.extend([
-        ('Function/sqlite3:Connection.__enter__', 1),
-        ('Function/sqlite3:Connection.__exit__', 1)])
-    _test_rollback_on_exception_rollup_metrics.extend([
-        ('Function/sqlite3:Connection.__enter__', 1),
-        ('Function/sqlite3:Connection.__exit__', 1)])
+    _test_rollback_on_exception_scoped_metrics.extend(
+        [("Function/sqlite3:Connection.__enter__", 1), ("Function/sqlite3:Connection.__exit__", 1)]
+    )
+    _test_rollback_on_exception_rollup_metrics.extend(
+        [("Function/sqlite3:Connection.__enter__", 1), ("Function/sqlite3:Connection.__exit__", 1)]
+    )
 
-@validate_transaction_metrics('test_database:test_rollback_on_exception',
-        scoped_metrics=_test_rollback_on_exception_scoped_metrics,
-        rollup_metrics=_test_rollback_on_exception_rollup_metrics,
-        background_task=True)
+
+@validate_transaction_metrics(
+    "test_database:test_rollback_on_exception",
+    scoped_metrics=_test_rollback_on_exception_scoped_metrics,
+    rollup_metrics=_test_rollback_on_exception_rollup_metrics,
+    background_task=True,
+)
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
 def test_rollback_on_exception():
     try:
         with database.connect(DATABASE_NAME) as connection:
-            raise RuntimeError('error')
+            raise RuntimeError("error")
     except RuntimeError:
         pass

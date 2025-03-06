@@ -81,10 +81,7 @@ STREAMED_RESPONSES = {
         },
     ],
     "Model does not exist.": [
-        {
-            "Content-Type": "application/json; charset=utf-8",
-            "x-request-id": "cfdf51fb795362ae578c12a21796262c",
-        },
+        {"Content-Type": "application/json; charset=utf-8", "x-request-id": "cfdf51fb795362ae578c12a21796262c"},
         404,
         {
             "error": {
@@ -522,10 +519,7 @@ RESPONSES = {
         },
     ),
     "Model does not exist.": (
-        {
-            "Content-Type": "application/json",
-            "x-request-id": "cfdf51fb795362ae578c12a21796262c",
-        },
+        {"Content-Type": "application/json", "x-request-id": "cfdf51fb795362ae578c12a21796262c"},
         404,
         {
             "error": {
@@ -654,14 +648,7 @@ RESPONSES = {
         200,
         {
             "choices": [
-                {
-                    "finish_reason": "stop",
-                    "index": 0,
-                    "message": {
-                        "content": "1 plus 2 is 3.",
-                        "role": "assistant",
-                    },
-                }
+                {"finish_reason": "stop", "index": 0, "message": {"content": "1 plus 2 is 3.", "role": "assistant"}}
             ],
             "created": 1696888865,
             "id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTeat",
@@ -759,7 +746,7 @@ def extract_shortened_prompt(openai_version):
 def get_openai_version():
     # Import OpenAI so that get package version can catpure the version from the
     # system module. OpenAI does not have a package version in v0.
-    import openai  # noqa: F401; pylint: disable=W0611
+    import openai
 
     return get_package_version_tuple("openai")
 

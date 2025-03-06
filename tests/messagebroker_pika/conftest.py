@@ -16,14 +16,10 @@ import uuid
 
 import pika
 import pytest
+from testing_support.db_settings import rabbitmq_settings
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 from newrelic.common.package_version_utils import get_package_version_tuple
-
-from testing_support.db_settings import rabbitmq_settings
-from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
-    collector_agent_registration_fixture,
-    collector_available_fixture,
-)
 
 PIKA_VERSION_INFO = get_package_version_tuple("pika")
 

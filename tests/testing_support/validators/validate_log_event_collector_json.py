@@ -15,7 +15,7 @@
 import json
 
 from newrelic.common.encoding_utils import json_encode
-from newrelic.common.object_wrapper import transient_function_wrapper, function_wrapper
+from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
 
 
 def validate_log_event_collector_json(num_logs=1):
@@ -30,7 +30,6 @@ def validate_log_event_collector_json(num_logs=1):
         except:
             raise
         else:
-
             samples = list(instance.log_events)
 
             # emulate the payload used in data_collector.py
@@ -44,7 +43,6 @@ def validate_log_event_collector_json(num_logs=1):
 
             assert len(log_events) == num_logs
             for event in log_events:
-
                 # event is an array containing timestamp, level, message, attributes
                 assert len(event) == 4
                 assert isinstance(event["timestamp"], int)

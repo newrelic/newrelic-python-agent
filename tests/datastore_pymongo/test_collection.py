@@ -16,16 +16,10 @@ import sqlite3
 
 import pymongo
 from testing_support.db_settings import mongodb_settings
-from testing_support.validators.validate_database_duration import (
-    validate_database_duration,
-)
+from testing_support.validators.validate_database_duration import validate_database_duration
 from testing_support.validators.validate_span_events import validate_span_events
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.common import system_info
@@ -41,11 +35,11 @@ INSTANCE_METRIC_NAME = f"Datastore/instance/MongoDB/{INSTANCE_METRIC_HOST}/{MONG
 
 # Find correct metric name based on import availability.
 try:
-    from pymongo.synchronous.mongo_client import MongoClient  # noqa
+    from pymongo.synchronous.mongo_client import MongoClient
 
     INIT_FUNCTION_METRIC = "Function/pymongo.synchronous.mongo_client:MongoClient.__init__"
 except ImportError:
-    from pymongo.mongo_client import MongoClient  # noqa
+    from pymongo.mongo_client import MongoClient
 
     INIT_FUNCTION_METRIC = "Function/pymongo.mongo_client:MongoClient.__init__"
 
@@ -152,9 +146,7 @@ def _exercise_mongo(db):
     exact_intrinsics={"name": f"Datastore/statement/MongoDB/{MONGODB_COLLECTION}/insert_one"},
 )
 @validate_transaction_metrics(
-    "test_motor_instance_info",
-    rollup_metrics=[(INSTANCE_METRIC_NAME, 1)],
-    background_task=True,
+    "test_motor_instance_info", rollup_metrics=[(INSTANCE_METRIC_NAME, 1)], background_task=True
 )
 @background_task(name="test_motor_instance_info")
 def test_collection_instance_info(loop):
@@ -333,7 +325,6 @@ def test_collection_mongodb_database_duration():
 @validate_database_duration()
 @background_task()
 def test_collection_mongodb_and_sqlite_database_duration():
-
     # Make mongodb queries
 
     client = MongoClient(MONGODB_HOST, MONGODB_PORT)

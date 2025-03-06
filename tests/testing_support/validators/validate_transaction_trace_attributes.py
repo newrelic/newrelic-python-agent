@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from testing_support.fixtures import check_attributes
-
 from newrelic.common.encoding_utils import unpack_field
 from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
 from newrelic.core.database_utils import SQLConnections
+from testing_support.fixtures import check_attributes
 
 
 def validate_transaction_trace_attributes(
@@ -29,7 +28,6 @@ def validate_transaction_trace_attributes(
 
     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     def _validate_transaction_trace_attributes(wrapped, instance, args, kwargs):
-
         result = wrapped(*args, **kwargs)
 
         # Now that transaction has been recorded, generate

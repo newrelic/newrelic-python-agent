@@ -14,9 +14,7 @@
 
 import pytest
 from sklearn.neighbors import __init__  # noqa: Needed for get_package_version
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
@@ -68,9 +66,7 @@ def test_model_methods_wrapped_in_function_trace(neighbors_model_name, run_neigh
             ("Function/MLModel/Sklearn/Named/RadiusNeighborsRegressor.fit", 1),
             ("Function/MLModel/Sklearn/Named/RadiusNeighborsRegressor.predict", 2),
         ],
-        "NearestNeighbors": [
-            ("Function/MLModel/Sklearn/Named/NearestNeighbors.fit", 1),
-        ],
+        "NearestNeighbors": [("Function/MLModel/Sklearn/Named/NearestNeighbors.fit", 1)],
     }
 
     @validate_transaction_metrics(

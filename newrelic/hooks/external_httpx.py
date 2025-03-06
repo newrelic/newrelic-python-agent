@@ -111,12 +111,11 @@ def create_nr_first_event_hooks(is_async=False):
             del vars(self)["_event_hooks"]
         return self._nr_event_hooks
 
-
     @nr_first_event_hooks.setter
     def nr_first_event_hooks(self, value):
         value = NewRelicFirstDict(value, is_async=is_async)
         self._nr_event_hooks = value
-    
+
     return nr_first_event_hooks
 
 

@@ -19,13 +19,8 @@ import threading
 
 import moto.server
 import werkzeug.serving
-from testing_support.fixture.event_loop import (  # noqa: F401, pylint: disable=W0611
-    event_loop as loop,
-)
-from testing_support.fixtures import (  # noqa: F401, pylint: disable=W0611
-    collector_agent_registration_fixture,
-    collector_available_fixture,
-)
+from testing_support.fixture.event_loop import event_loop as loop
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 PORT = 4443
 AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"
@@ -133,11 +128,7 @@ class MotoService:
             self._socket = None
 
         self._server = werkzeug.serving.make_server(
-            self._ip_address,
-            self._port,
-            self._main_app,
-            True,
-            ssl_context=self._ssl_ctx,
+            self._ip_address, self._port, self._main_app, True, ssl_context=self._ssl_ctx
         )
         self._server.serve_forever()
 

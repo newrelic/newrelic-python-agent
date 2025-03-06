@@ -13,13 +13,11 @@
 # limitations under the License.
 
 import pytest
-from conftest import AIOREDIS_VERSION, loop  # noqa # pylint: disable=E0611,W0611
+from conftest import AIOREDIS_VERSION, loop
 from testing_support.db_settings import redis_settings
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
@@ -27,13 +25,9 @@ DB_SETTINGS = redis_settings()[0]
 
 SKIP_IF_AIOREDIS_V1 = pytest.mark.skipif(AIOREDIS_VERSION < (2, 0), reason="Single arg commands not supported.")
 
-_enable_instance_settings = {
-    "datastore_tracer.instance_reporting.enabled": True,
-}
+_enable_instance_settings = {"datastore_tracer.instance_reporting.enabled": True}
 
-_disable_instance_settings = {
-    "datastore_tracer.instance_reporting.enabled": False,
-}
+_disable_instance_settings = {"datastore_tracer.instance_reporting.enabled": False}
 
 _base_scoped_metrics = (("Datastore/operation/Redis/client_list", 1),)
 
@@ -81,7 +75,7 @@ async def exercise_redis_single_arg(client):
     background_task=True,
 )
 @background_task()
-def test_redis_execute_command_as_one_arg_enable(client, loop):  # noqa
+def test_redis_execute_command_as_one_arg_enable(client, loop):
     loop.run_until_complete(exercise_redis_single_arg(client))
 
 
@@ -94,7 +88,7 @@ def test_redis_execute_command_as_one_arg_enable(client, loop):  # noqa
     background_task=True,
 )
 @background_task()
-def test_redis_execute_command_as_one_arg_disable(client, loop):  # noqa
+def test_redis_execute_command_as_one_arg_disable(client, loop):
     loop.run_until_complete(exercise_redis_single_arg(client))
 
 
@@ -106,7 +100,7 @@ def test_redis_execute_command_as_one_arg_disable(client, loop):  # noqa
     background_task=True,
 )
 @background_task()
-def test_redis_execute_command_as_two_args_enable(client, loop):  # noqa
+def test_redis_execute_command_as_two_args_enable(client, loop):
     loop.run_until_complete(exercise_redis_multi_args(client))
 
 
@@ -118,5 +112,5 @@ def test_redis_execute_command_as_two_args_enable(client, loop):  # noqa
     background_task=True,
 )
 @background_task()
-def test_redis_execute_command_as_two_args_disable(client, loop):  # noqa
+def test_redis_execute_command_as_two_args_disable(client, loop):
     loop.run_until_complete(exercise_redis_multi_args(client))

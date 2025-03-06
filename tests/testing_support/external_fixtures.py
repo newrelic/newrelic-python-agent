@@ -16,8 +16,8 @@ import http.client as httplib
 
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import transient_function_wrapper
 from newrelic.common.encoding_utils import json_encode, obfuscate
+from newrelic.common.object_wrapper import transient_function_wrapper
 
 
 def create_incoming_headers(transaction):
@@ -46,10 +46,7 @@ def create_incoming_headers(transaction):
     return headers
 
 
-def validate_synthetics_external_trace_header(
-    synthetics_header,
-    synthetics_info_header,
-):
+def validate_synthetics_external_trace_header(synthetics_header, synthetics_info_header):
     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     def _validate_synthetics_external_trace_header(wrapped, instance, args, kwargs):
         def _bind_params(transaction, *args, **kwargs):
@@ -77,7 +74,7 @@ def validate_synthetics_external_trace_header(
             # reviewed and a better way of achieving what is
             # required found.
 
-            class _Transaction():
+            class _Transaction:
                 def __init__(self, wrapped):
                     self.__wrapped__ = wrapped
 
@@ -88,16 +85,16 @@ def validate_synthetics_external_trace_header(
             external_headers = {header[0]: header[1] for header in external_headers}
 
             if synthetics_header:
-                assert (
-                    synthetics_header == external_headers["X-NewRelic-Synthetics"]
-                ), f"synthetics_header={synthetics_header!r}, external_headers={external_headers!r}"
+                assert synthetics_header == external_headers["X-NewRelic-Synthetics"], (
+                    f"synthetics_header={synthetics_header!r}, external_headers={external_headers!r}"
+                )
             else:
                 assert "X-NewRelic-Synthetics" not in external_headers
 
             if synthetics_info_header:
-                assert (
-                    synthetics_info_header == external_headers["X-NewRelic-Synthetics-Info"]
-                ), f"synthetics_info_header={synthetics_info_header!r}, external_headers={external_headers!r}"
+                assert synthetics_info_header == external_headers["X-NewRelic-Synthetics-Info"], (
+                    f"synthetics_info_header={synthetics_info_header!r}, external_headers={external_headers!r}"
+                )
             else:
                 assert "X-NewRelic-Synthetics-Info" not in external_headers
 

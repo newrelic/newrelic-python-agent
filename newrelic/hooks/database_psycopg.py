@@ -14,31 +14,19 @@
 
 import inspect
 import os
-
-from urllib.parse import unquote, parse_qsl
+from urllib.parse import parse_qsl, unquote
 
 from newrelic.api.database_trace import DatabaseTrace, register_database_client
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import (
-    ObjectProxy,
-    wrap_function_wrapper,
-    wrap_object,
-)
+from newrelic.common.object_wrapper import ObjectProxy, wrap_function_wrapper, wrap_object
 from newrelic.hooks.database_dbapi2 import DEFAULT
 from newrelic.hooks.database_dbapi2 import ConnectionFactory as DBAPI2ConnectionFactory
 from newrelic.hooks.database_dbapi2 import ConnectionWrapper as DBAPI2ConnectionWrapper
 from newrelic.hooks.database_dbapi2 import CursorWrapper as DBAPI2CursorWrapper
-from newrelic.hooks.database_dbapi2_async import (
-    AsyncConnectionFactory as DBAPI2AsyncConnectionFactory,
-)
-from newrelic.hooks.database_dbapi2_async import (
-    AsyncConnectionWrapper as DBAPI2AsyncConnectionWrapper,
-)
-from newrelic.hooks.database_dbapi2_async import (
-    AsyncCursorWrapper as DBAPI2AsyncCursorWrapper,
-)
-
+from newrelic.hooks.database_dbapi2_async import AsyncConnectionFactory as DBAPI2AsyncConnectionFactory
+from newrelic.hooks.database_dbapi2_async import AsyncConnectionWrapper as DBAPI2AsyncConnectionWrapper
+from newrelic.hooks.database_dbapi2_async import AsyncCursorWrapper as DBAPI2AsyncCursorWrapper
 from newrelic.packages.urllib3 import util as ul3_util
 
 # These functions return True if a non-default connection or cursor class is
@@ -94,7 +82,6 @@ class CursorWrapper(DBAPI2CursorWrapper):
 
 
 class ConnectionSaveParamsWrapper(DBAPI2ConnectionWrapper):
-
     __cursor_wrapper__ = CursorWrapper
 
     def execute(self, query, params=DEFAULT, *args, **kwargs):
@@ -177,7 +164,6 @@ class ConnectionWrapper(ConnectionSaveParamsWrapper):
 
 
 class ConnectionFactory(DBAPI2ConnectionFactory):
-
     __connection_wrapper__ = ConnectionWrapper
 
     def __call__(self, *args, **kwargs):
@@ -240,7 +226,6 @@ class AsyncCursorWrapper(DBAPI2AsyncCursorWrapper):
 
 
 class AsyncConnectionSaveParamsWrapper(DBAPI2AsyncConnectionWrapper):
-
     __cursor_wrapper__ = AsyncCursorWrapper
 
     async def execute(self, query, params=DEFAULT, *args, **kwargs):
@@ -323,7 +308,6 @@ class AsyncConnectionWrapper(AsyncConnectionSaveParamsWrapper):
 
 
 class AsyncConnectionFactory(DBAPI2AsyncConnectionFactory):
-
     __connection_wrapper__ = AsyncConnectionWrapper
 
     async def __call__(self, *args, **kwargs):
@@ -334,7 +318,6 @@ class AsyncConnectionFactory(DBAPI2AsyncConnectionFactory):
 
 
 def instance_info(args, kwargs):
-
     p_host, p_hostaddr, p_port, p_dbname = _parse_connect_params(args, kwargs)
     host, port, db_name = _add_defaults(p_host, p_hostaddr, p_port, p_dbname)
 
@@ -349,7 +332,6 @@ def _parse_connect_params(args, kwargs):
 
     try:
         if dsn and (dsn.startswith("postgres://") or dsn.startswith("postgresql://")):
-
             # Parse dsn as URI
             #
             # According to PGSQL, connect URIs are in the format of RFC 3896
@@ -381,7 +363,6 @@ def _parse_connect_params(args, kwargs):
             db_name = qp.get("dbname") or db_name
 
         elif dsn:
-
             # Parse dsn as a key-value connection string
 
             kv = dict([pair.split("=", 2) for pair in dsn.split()])
@@ -391,7 +372,6 @@ def _parse_connect_params(args, kwargs):
             db_name = kv.get("dbname")
 
         else:
-
             # No dsn, so get the instance info from keyword arguments.
 
             host = kwargs.get("host")
@@ -413,7 +393,6 @@ def _parse_connect_params(args, kwargs):
 
 
 def _add_defaults(parsed_host, parsed_hostaddr, parsed_port, parsed_database):
-
     # ENV variables set the default values
 
     parsed_host = parsed_host or os.environ.get("PGHOST")

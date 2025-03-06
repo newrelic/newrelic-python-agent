@@ -28,7 +28,6 @@ def status_code(exc, value, tb):
 
 
 def _nr_wrap_Api_handle_error_(wrapped, instance, args, kwargs):
-
     # If calling wrapped raises an exception, the error will bubble up to
     # flask's exception handler and we will capture it there.
     resp = wrapped(*args, **kwargs)
@@ -39,5 +38,4 @@ def _nr_wrap_Api_handle_error_(wrapped, instance, args, kwargs):
 
 
 def instrument_flask_rest(module):
-    wrap_function_wrapper(module, 'Api.handle_error',
-            _nr_wrap_Api_handle_error_)
+    wrap_function_wrapper(module, "Api.handle_error", _nr_wrap_Api_handle_error_)

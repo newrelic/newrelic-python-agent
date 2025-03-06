@@ -13,15 +13,14 @@
 # limitations under the License.
 
 
-import newrelic.api.transaction
 import newrelic.api.function_trace
+import newrelic.api.in_function
+import newrelic.api.transaction
 import newrelic.common.object_wrapper
 from newrelic.common.object_names import callable_name
-import newrelic.api.in_function
 
 
-class MethodWrapper():
-
+class MethodWrapper:
     def __init__(self, wrapped, priority=None):
         self._nr_name = callable_name(wrapped)
         self._nr_wrapped = wrapped
@@ -39,15 +38,15 @@ class MethodWrapper():
     def __call__(self, *args, **kwargs):
         transaction = newrelic.api.transaction.current_transaction()
         if transaction:
-            transaction.set_transaction_name(self._nr_name,
-                    priority=self._nr_priority)
-            return newrelic.api.function_trace.FunctionTraceWrapper(self._nr_wrapped, name=self._nr_name)(*args, **kwargs)
+            transaction.set_transaction_name(self._nr_name, priority=self._nr_priority)
+            return newrelic.api.function_trace.FunctionTraceWrapper(self._nr_wrapped, name=self._nr_name)(
+                *args, **kwargs
+            )
         else:
             return self._nr_wrapped(*args, **kwargs)
 
 
-class ResourceInitWrapper():
-
+class ResourceInitWrapper:
     def __init__(self, wrapped):
         if isinstance(wrapped, tuple):
             (instance, wrapped) = wrapped
@@ -70,22 +69,17 @@ class ResourceInitWrapper():
         handler = self.__instance.handler
         for name in self.__instance.callmap.values():
             if hasattr(handler, name):
-                setattr(handler, name, MethodWrapper(
-                        getattr(handler, name), priority=6))
+                setattr(handler, name, MethodWrapper(getattr(handler, name), priority=6))
 
 
 def instrument_piston_resource(module):
-
-    newrelic.common.object_wrapper.wrap_object(module,
-            'Resource.__init__', ResourceInitWrapper)
+    newrelic.common.object_wrapper.wrap_object(module, "Resource.__init__", ResourceInitWrapper)
 
 
 def instrument_piston_doc(module):
-
     def in_HandlerMethod_init(self, method, *args, **kwargs):
         if isinstance(method, MethodWrapper):
             method = method._nr_wrapped
         return ((self, method) + args, kwargs)
 
-    newrelic.api.in_function.wrap_in_function(module,
-            'HandlerMethod.__init__', in_HandlerMethod_init)
+    newrelic.api.in_function.wrap_in_function(module, "HandlerMethod.__init__", in_HandlerMethod_init)

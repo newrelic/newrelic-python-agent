@@ -14,9 +14,7 @@
 
 import pytest
 from sklearn import __init__  # noqa: needed for get_package_version
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
@@ -25,12 +23,7 @@ SKLEARN_VERSION = get_package_version_tuple("sklearn")
 
 
 @pytest.mark.skipif(SKLEARN_VERSION < (1, 0, 0), reason="Requires sklearn >= 1.0")
-@pytest.mark.parametrize(
-    "naive_bayes_model_name",
-    [
-        "CategoricalNB",
-    ],
-)
+@pytest.mark.parametrize("naive_bayes_model_name", ["CategoricalNB"])
 def test_above_v1_0_model_methods_wrapped_in_function_trace(naive_bayes_model_name, run_naive_bayes_model):
     expected_scoped_metrics = {
         "CategoricalNB": [
@@ -38,7 +31,7 @@ def test_above_v1_0_model_methods_wrapped_in_function_trace(naive_bayes_model_na
             ("Function/MLModel/Sklearn/Named/CategoricalNB.predict", 1),
             ("Function/MLModel/Sklearn/Named/CategoricalNB.predict_log_proba", 2),
             ("Function/MLModel/Sklearn/Named/CategoricalNB.predict_proba", 1),
-        ],
+        ]
     }
 
     @validate_transaction_metrics(
@@ -54,15 +47,7 @@ def test_above_v1_0_model_methods_wrapped_in_function_trace(naive_bayes_model_na
     _test()
 
 
-@pytest.mark.parametrize(
-    "naive_bayes_model_name",
-    [
-        "GaussianNB",
-        "MultinomialNB",
-        "ComplementNB",
-        "BernoulliNB",
-    ],
-)
+@pytest.mark.parametrize("naive_bayes_model_name", ["GaussianNB", "MultinomialNB", "ComplementNB", "BernoulliNB"])
 def test_model_methods_wrapped_in_function_trace(naive_bayes_model_name, run_naive_bayes_model):
     expected_scoped_metrics = {
         "GaussianNB": [

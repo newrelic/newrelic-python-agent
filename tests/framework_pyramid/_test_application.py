@@ -12,12 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pyramid.httpexceptions as exc
 import webtest
-
+from pyramid.config import Configurator
 from pyramid.response import Response
 from pyramid.view import view_config
-from pyramid.config import Configurator
-import pyramid.httpexceptions as exc
 
 
 @view_config(route_name="home")
@@ -37,7 +36,7 @@ def not_found_exception_response(request):
 
 @view_config(route_name="raise_not_found")
 def raise_not_found(request):
-    raise exc.HTTPNotFound()
+    raise exc.HTTPNotFound
 
 
 @view_config(route_name="return_not_found")
@@ -88,14 +87,12 @@ except ImportError:
 else:
     service = cornice.Service(name="service", path="/service", description="Service")
 
-
     @service.get()
     def cornice_service_get_info(request):
         return {"Hello": "World"}
 
-
     @cornice.resource.resource(collection_path="/resource", path="/resource/{id}")
-    class Resource():
+    class Resource:
         def __init__(self, request, context=None):
             self.request = request
 
@@ -106,11 +103,7 @@ else:
         def get(self):
             return self.request.matchdict["id"]
 
-
-    cornice_error = cornice.Service(
-        name="cornice_error", path="/cornice_error", description="Error"
-    )
-
+    cornice_error = cornice.Service(name="cornice_error", path="/cornice_error", description="Error")
 
     @cornice_error.get()
     def cornice_error_get_info(request):
@@ -123,13 +116,10 @@ else:
 def target_application(with_tweens=False, tweens_explicit=False, handle_exceptions=False):
     settings = {}
     if with_tweens and tweens_explicit:
-        settings["pyramid.tweens"] = [
-            "_test_application:simple_tween_factory",
-        ]
+        settings["pyramid.tweens"] = ["_test_application:simple_tween_factory"]
 
     config = Configurator(settings=settings)
     if cornice:
-
         # Use an execution policy which doesn't re-trigger the error handler
         def execution_policy(environ, router):
             with router.request_context(environ) as request:

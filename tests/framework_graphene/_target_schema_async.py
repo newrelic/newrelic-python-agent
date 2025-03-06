@@ -11,12 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from graphene import Field, Int, List
+from graphene import Field, Int, List, NonNull, ObjectType, Schema, String, Union
 from graphene import Mutation as GrapheneMutation
-from graphene import NonNull, ObjectType, Schema, String, Union
 
-from ._target_schema_sync import Author, Book, Magazine, Item, Library, Storage, authors, books, magazines, libraries
-
+from ._target_schema_sync import Author, Book, Item, Library, Magazine, Storage, authors, books, libraries, magazines
 
 storage = []
 
@@ -24,22 +22,28 @@ storage = []
 async def resolve_library(self, info, index):
     return libraries[index]
 
+
 async def resolve_storage(self, info):
     return [storage.pop()]
+
 
 async def resolve_search(self, info, contains):
     search_books = [b for b in books if contains in b.name]
     search_magazines = [m for m in magazines if contains in m.name]
     return search_books + search_magazines
 
+
 async def resolve_hello(self, info):
     return "Hello!"
+
 
 async def resolve_echo(self, info, echo):
     return echo
 
+
 async def resolve_error(self, info):
     raise RuntimeError("Runtime Error!")
+
 
 async def resolve_storage_add(self, info, string):
     storage.append(string)

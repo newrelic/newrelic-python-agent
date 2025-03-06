@@ -16,7 +16,7 @@ import json
 import os
 
 import pytest
-from _mock_external_openai_server import (  # noqa: F401; pylint: disable=W0611
+from _mock_external_openai_server import (
     MockExternalOpenAIServer,
     extract_shortened_prompt,
     get_openai_version,
@@ -24,10 +24,8 @@ from _mock_external_openai_server import (  # noqa: F401; pylint: disable=W0611
     simple_get,
 )
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
-from testing_support.fixture.event_loop import (  # noqa: F401; pylint: disable=W0611
-    event_loop as loop,
-)
-from testing_support.fixtures import (  # noqa: F401, pylint: disable=W0611
+from testing_support.fixture.event_loop import event_loop as loop
+from testing_support.fixtures import (
     collector_agent_registration_fixture,
     collector_available_fixture,
     override_application_settings,
@@ -70,11 +68,7 @@ def openai_clients(openai_version, MockExternalOpenAIServer):  # noqa: F811
 
     if not _environ_as_bool("NEW_RELIC_TESTING_RECORD_OPENAI_RESPONSES", False):
         with MockExternalOpenAIServer() as server:
-            chat = ChatOpenAI(
-                base_url=f"http://localhost:{server.port}",
-                api_key="NOT-A-REAL-SECRET",
-                temperature=0.7,
-            )
+            chat = ChatOpenAI(base_url=f"http://localhost:{server.port}", api_key="NOT-A-REAL-SECRET", temperature=0.7)
             embeddings = OpenAIEmbeddings(
                 openai_api_key="NOT-A-REAL-SECRET", openai_api_base=f"http://localhost:{server.port}"
             )
@@ -83,9 +77,7 @@ def openai_clients(openai_version, MockExternalOpenAIServer):  # noqa: F811
         openai_api_key = os.environ.get("OPENAI_API_KEY")
         if not openai_api_key:
             raise RuntimeError("OPENAI_API_KEY environment variable required.")
-        chat = ChatOpenAI(
-            api_key=openai_api_key,
-        )
+        chat = ChatOpenAI(api_key=openai_api_key)
         embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
         yield chat, embeddings
 
@@ -119,11 +111,7 @@ def openai_server(
 
     if _environ_as_bool("NEW_RELIC_TESTING_RECORD_OPENAI_RESPONSES", False):
         wrap_function_wrapper("httpx._client", "Client.send", wrap_httpx_client_send)
-        wrap_function_wrapper(
-            "openai._streaming",
-            "Stream._iter_events",
-            wrap_stream_iter_events,
-        )
+        wrap_function_wrapper("openai._streaming", "Stream._iter_events", wrap_stream_iter_events)
         yield  # Run tests
         # Write responses to audit log
         with open(OPENAI_AUDIT_LOG_FILE, "w") as audit_log_fp:

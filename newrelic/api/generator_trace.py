@@ -13,18 +13,16 @@
 # limitations under the License.
 
 import functools
-import types
 import sys
+import types
 
-from newrelic.api.time_trace import current_trace
 from newrelic.api.function_trace import FunctionTrace
-from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
+from newrelic.api.time_trace import current_trace
 from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 
 
-def GeneratorTraceWrapper(wrapped, name=None, group=None, label=None,
-            params=None):
-
+def GeneratorTraceWrapper(wrapped, name=None, group=None, label=None, params=None):
     def wrapper(wrapped, instance, args, kwargs):
         parent = current_trace()
 
@@ -71,7 +69,7 @@ def GeneratorTraceWrapper(wrapped, name=None, group=None, label=None,
             _params = params
 
         def _generator(generator):
-            _gname = f'{_name} (generator)'
+            _gname = f"{_name} (generator)"
 
             try:
                 value = None
@@ -84,11 +82,10 @@ def GeneratorTraceWrapper(wrapped, name=None, group=None, label=None,
 
                     frame = generator.gi_frame
 
-                    params['filename'] = frame.f_code.co_filename
-                    params['lineno'] = frame.f_lineno
+                    params["filename"] = frame.f_code.co_filename
+                    params["lineno"] = frame.f_lineno
 
-                    with FunctionTrace(_gname, _group,
-                             params=params, parent=parent):
+                    with FunctionTrace(_gname, _group, params=params, parent=parent):
                         try:
                             if exc is not None:
                                 yielded = generator.throw(*exc)
@@ -129,11 +126,8 @@ def GeneratorTraceWrapper(wrapped, name=None, group=None, label=None,
 
 
 def generator_trace(name=None, group=None, label=None, params=None):
-    return functools.partial(GeneratorTraceWrapper, name=name,
-            group=group, label=label, params=params)
+    return functools.partial(GeneratorTraceWrapper, name=name, group=group, label=label, params=params)
 
 
-def wrap_generator_trace(module, object_path, name=None,
-        group=None, label=None, params=None):
-    return wrap_object(module, object_path, GeneratorTraceWrapper,
-            (name, group, label, params))
+def wrap_generator_trace(module, object_path, name=None, group=None, label=None, params=None):
+    return wrap_object(module, object_path, GeneratorTraceWrapper, (name, group, label, params))

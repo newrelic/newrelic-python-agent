@@ -13,11 +13,9 @@
 # limitations under the License.
 
 import pymssql
-
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from testing_support.validators.validate_database_trace_inputs import validate_database_trace_inputs
-
 from testing_support.db_settings import mssql_settings
+from testing_support.validators.validate_database_trace_inputs import validate_database_trace_inputs
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
@@ -32,8 +30,7 @@ def execute_db_calls_with_cursor(cursor):
     cursor.execute(f"create table {TABLE_NAME} (a integer, b real, c text)")
 
     cursor.executemany(
-        f"insert into {TABLE_NAME} values (%s, %s, %s)",
-        [(1, 1.0, "1.0"), (2, 2.2, "2.2"), (3, 3.3, "3.3")],
+        f"insert into {TABLE_NAME} values (%s, %s, %s)", [(1, 1.0, "1.0"), (2, 2.2, "2.2"), (3, 3.3, "3.3")]
     )
 
     cursor.execute(f"""select * from {TABLE_NAME}""")

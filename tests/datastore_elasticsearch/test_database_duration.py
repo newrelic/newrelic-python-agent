@@ -14,15 +14,10 @@
 
 import sqlite3
 
-from testing_support.validators.validate_database_duration import (
-    validate_database_duration,
-)
+from conftest import ES_VERSION
+from testing_support.validators.validate_database_duration import validate_database_duration
 
 from newrelic.api.background_task import background_task
-
-from conftest import ES_VERSION
-
-
 
 
 def _exercise_es_v7(es):
@@ -53,7 +48,6 @@ def test_elasticsearch_database_duration(client):
 @validate_database_duration()
 @background_task()
 def test_elasticsearch_and_sqlite_database_duration(client):
-
     # Make Elasticsearch queries
 
     _exercise_es(client)

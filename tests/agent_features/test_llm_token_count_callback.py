@@ -53,7 +53,7 @@ def test_exception_in_user_callback():
     settings = application().settings
 
     def user_exc():
-        raise TypeError()
+        raise TypeError
 
     set_llm_token_count_callback(user_exc)
 

@@ -15,32 +15,41 @@
 from collections import namedtuple
 
 import newrelic.core.trace_node
-
-from newrelic.core.node_mixin import GenericNodeMixin
 from newrelic.core.metric import TimeMetric
+from newrelic.core.node_mixin import GenericNodeMixin
 
-
-_FunctionNode = namedtuple('_FunctionNode',
-        ['group', 'name', 'children', 'start_time', 'end_time',
-        'duration', 'exclusive', 'label', 'params', 'rollup',
-        'guid', 'agent_attributes', 'user_attributes'])
+_FunctionNode = namedtuple(
+    "_FunctionNode",
+    [
+        "group",
+        "name",
+        "children",
+        "start_time",
+        "end_time",
+        "duration",
+        "exclusive",
+        "label",
+        "params",
+        "rollup",
+        "guid",
+        "agent_attributes",
+        "user_attributes",
+    ],
+)
 
 
 class FunctionNode(_FunctionNode, GenericNodeMixin):
-
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this
         function node as well as all the child nodes.
 
         """
 
-        name = f'{self.group}/{self.name}'
+        name = f"{self.group}/{self.name}"
 
-        yield TimeMetric(name=name, scope='', duration=self.duration,
-                exclusive=self.exclusive)
+        yield TimeMetric(name=name, scope="", duration=self.duration, exclusive=self.exclusive)
 
-        yield TimeMetric(name=name, scope=root.path,
-                duration=self.duration, exclusive=self.exclusive)
+        yield TimeMetric(name=name, scope=root.path, duration=self.duration, exclusive=self.exclusive)
 
         # Generate one or more rollup metric if any have been specified.
         # We can actually get a single string value or a list of strings
@@ -65,20 +74,16 @@ class FunctionNode(_FunctionNode, GenericNodeMixin):
                 rollups = self.rollup
 
             for rollup in rollups:
-                if rollup.endswith('/all'):
-                    yield TimeMetric(name=rollup, scope='',
-                            duration=self.duration, exclusive=None)
+                if rollup.endswith("/all"):
+                    yield TimeMetric(name=rollup, scope="", duration=self.duration, exclusive=None)
 
-                    if root.type == 'WebTransaction':
-                        yield TimeMetric(name=rollup + 'Web', scope='',
-                                duration=self.duration, exclusive=None)
+                    if root.type == "WebTransaction":
+                        yield TimeMetric(name=rollup + "Web", scope="", duration=self.duration, exclusive=None)
                     else:
-                        yield TimeMetric(name=rollup + 'Other', scope='',
-                                duration=self.duration, exclusive=None)
+                        yield TimeMetric(name=rollup + "Other", scope="", duration=self.duration, exclusive=None)
 
                 else:
-                    yield TimeMetric(name=rollup, scope=root.type,
-                            duration=self.duration, exclusive=None)
+                    yield TimeMetric(name=rollup, scope=root.type, duration=self.duration, exclusive=None)
 
         # Now for the children.
 
@@ -87,8 +92,7 @@ class FunctionNode(_FunctionNode, GenericNodeMixin):
                 yield metric
 
     def trace_node(self, stats, root, connections):
-
-        name = f'{self.group}/{self.name}'
+        name = f"{self.group}/{self.name}"
 
         name = root.string_table.cache(name)
 
@@ -104,17 +108,16 @@ class FunctionNode(_FunctionNode, GenericNodeMixin):
                 break
             children.append(child.trace_node(stats, root, connections))
 
-        params = self.get_trace_segment_params(
-                root.settings, params=self.params)
+        params = self.get_trace_segment_params(root.settings, params=self.params)
 
-        return newrelic.core.trace_node.TraceNode(start_time=start_time,
-                end_time=end_time, name=name, params=params, children=children,
-                label=self.label)
+        return newrelic.core.trace_node.TraceNode(
+            start_time=start_time, end_time=end_time, name=name, params=params, children=children, label=self.label
+        )
 
     def span_event(self, *args, **kwargs):
         attrs = super(FunctionNode, self).span_event(*args, **kwargs)
         i_attrs = attrs[0]
 
-        i_attrs['name'] = f'{self.group}/{self.name}'
+        i_attrs["name"] = f"{self.group}/{self.name}"
 
         return attrs

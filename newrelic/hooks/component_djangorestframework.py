@@ -14,11 +14,10 @@
 
 import sys
 
-from newrelic.common.object_wrapper import (wrap_function_wrapper,
-        function_wrapper)
-from newrelic.api.transaction import current_transaction
 from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 
 
 def _nr_wrapper_APIView_dispatch_(wrapped, instance, args, kwargs):
@@ -39,22 +38,20 @@ def _nr_wrapper_APIView_dispatch_(wrapped, instance, args, kwargs):
     else:
         handler = view.http_method_not_allowed
 
-    view_func = getattr(view, '_nr_view_func', None)
-    view_func_callable_name = getattr(view, '_nr_view_func_callable_name',
-            None)
+    view_func = getattr(view, "_nr_view_func", None)
+    view_func_callable_name = getattr(view, "_nr_view_func_callable_name", None)
     if view_func_callable_name:
         if handler == view.http_method_not_allowed:
-            name = f'{view_func_callable_name}.http_method_not_allowed'
+            name = f"{view_func_callable_name}.http_method_not_allowed"
         else:
-            name = f'{view_func_callable_name}.{request_method}'
+            name = f"{view_func_callable_name}.{request_method}"
     else:
         name = callable_name(handler)
 
     transaction.set_transaction_name(name)
 
     # catch exceptions handled by view.handle_exception
-    view.handle_exception = _nr_wrapper_APIView_handle_exception_(
-            view.handle_exception, request)
+    view.handle_exception = _nr_wrapper_APIView_handle_exception_(view.handle_exception, request)
 
     with FunctionTrace(name=name, source=view_func or handler):
         return wrapped(*args, **kwargs)
@@ -65,6 +62,7 @@ def _nr_wrapper_APIView_handle_exception_(handler, request):
     def _handle_exception_wrapper(wrapped, instance, args, kwargs):
         request._nr_exc_info = sys.exc_info()
         return wrapped(*args, **kwargs)
+
     return _handle_exception_wrapper(handler)
 
 
@@ -89,10 +87,8 @@ def _nr_wrapper_api_view_(wrapped, instance, args, kwargs):
 
 
 def instrument_rest_framework_views(module):
-    wrap_function_wrapper(module, 'APIView.dispatch',
-            _nr_wrapper_APIView_dispatch_)
+    wrap_function_wrapper(module, "APIView.dispatch", _nr_wrapper_APIView_dispatch_)
 
 
 def instrument_rest_framework_decorators(module):
-    wrap_function_wrapper(module, 'api_view',
-            _nr_wrapper_api_view_)
+    wrap_function_wrapper(module, "api_view", _nr_wrapper_api_view_)

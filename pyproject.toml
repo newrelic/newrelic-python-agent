@@ -5,6 +5,7 @@ target-version = "py37"
 extend-exclude = [
     "newrelic/packages/",
     "setup.py",
+    "newrelic/core/infinite_tracing_*_pb2.py",
 ]
 namespace-packages = ["testing_support"]
 
@@ -13,60 +14,61 @@ skip-magic-trailing-comma = true
 
 [tool.ruff.lint]
 isort.split-on-trailing-comma=false
+pep8-naming.extend-ignore-names = ["X", "y"]
+
 select = [
     # Enabled linters and rules
-    "F",  # Pyflakes
-    "E",  # pycodestyle
+    # "F",  # Pyflakes
+    # "E",  # pycodestyle
     "W",  # pycodestyle
     "I",  # isort
-    "N",  # pep8-naming
-    "D",  # pydocstyle
-    "UP",  # pyupgrade
+    # "N",  # pep8-naming
+    # "UP",  # pyupgrade
     "YTT",  # flake8-2020
-    "ANN",  # flake8-annotations
     "ASYNC",  # flake8-async
-    "S",  # flake8-bandit
-    "BLE",  # flake8-blind-except
-    "FBT",  # flake8-boolean-trap
-    "B",  # flake8-bugbear
+    # "S",  # flake8-bandit
+    # "BLE",  # flake8-blind-except
+    # "FBT",  # flake8-boolean-trap
+    # "B",  # flake8-bugbear
     "A",  # flake8-builtins
     "COM",  # flake8-commas
-    "C4",  # flake8-comprehensions
+    # "C4",  # flake8-comprehensions
+    "DTZ",  # flake8-datetimez
     "T10",  # flake8-debugger
-    "EM",  # flake8-errmsg
+    # "EM",  # flake8-errmsg
+    "EXE",  # flake8-executable
     "FA",  # flake8-future-annotations
     "ISC",  # flake8-implicit-str-concat
     "ICN",  # flake8-import-conventions
     "LOG",  # flake8-logging
     "G",  # flake8-logging-format
-    "INP",  # flake8-no-pep420
+    # "INP",  # flake8-no-pep420
     "PYI",  # flake8-pyi
-    "PT",  # flake8-pytest-style
+    # "PT",  # flake8-pytest-style
     "Q",  # flake8-quotes
     "RSE",  # flake8-raise
-    "RET",  # flake8-return
-    "SLF",  # flake8-self
+    # "RET",  # flake8-return
+    # "SLF",  # flake8-self
     "SLOT",  # flake8-slots
-    "SIM",  # flake8-simplify
+    # "SIM",  # flake8-simplify
     "TID",  # flake8-tidy-imports
     "INT",  # flake8-gettext
-    "ARG",  # flake8-unused-arguments
-    "PTH",  # flake8-use-pathlib
+    # "ARG",  # flake8-unused-arguments
+    # "PTH",  # flake8-use-pathlib
     "PGH",  # pygrep-hooks
-    "PL",  # Pylint
-    "TRY",  # tryceratops
+    # "PL",  # Pylint
+    # "TRY",  # tryceratops
     "FLY",  # flynt
     "PERF",  # Perflint
     "FURB",  # refurb
-    "RUF",  # Ruff-specific rules
+    # "RUF",  # Ruff-specific rules
 ]
 
 # Disabled Linters
+# "ANN",  # flake8-annotations
+# "D",  # pydocstyle
 # "C90",  # mccabe
-# "CPY",  # flake8-copyright
-# "DTZ",  # flake8-datetimez
 # "DJ",  # flake8-django
-# "EXE",  # flake8-executable
 # "PIE",  # flake8-pie
 # "T20",  # flake8-print
 # "TC",  # flake8-type-checking
@@ -77,9 +79,20 @@ select = [
 # "NPY",  # NumPy-specific rules
 # "FAST",  # FastAPI
 # "AIR",  # Airflow
+
+# Preview linters (disabled)
+# "CPY",  # flake8-copyright
 # "DOC",  # pydoclint
 
 ignore = [
+    # Temporarily disabled rules
+    "RUF100",  # unused-noqa (TODO: remove this once all linters are enabled)
+    "PERF203",  # try-except-in-loop (most of these are unavoidable)
+    # Permanently disabled rules
+    "D203",  # incorrect-blank-line-before-class
+    "D213",  # multi-line-summary-second-line
+    "ARG001",  # unused-argument
+    "PYI024",  # collections-named-tuple (not currently using type annotations)
     # Ruff recommended linter rules to disable when using formatter
     "W191",  # tab-indentation
     "E111",  # indentation-with-invalid-multiple
@@ -93,13 +106,17 @@ ignore = [
     "Q003",  # avoidable-escaped-quote
     "COM812",  # missing-trailing-comma
     "COM819",  # prohibited-trailing-comma
-    # Additional disabled rules
-    "D203",  # incorrect-blank-line-before-class
-    "D213",  # multi-line-summary-second-line
 ]
 
 [tool.ruff.lint.per-file-ignores]
-"conftest.py" = ["F401"]
+"tests/*" = [
+    # Disabled rules in tests
+    "F401",  # unused-import
+    "F811",  # redefined-while-unused (pytest fixtures trigger this)
+    "PLR2004",  # magic-value-comparison (comparing to constant values)
+    "S101",  # assert (acceptable in tests)
+    "ASYNC251",  # blocking-sleep-in-async-function (acceptable in tests)
+]
 
 # Alternate linters and formatters
 [tool.black]

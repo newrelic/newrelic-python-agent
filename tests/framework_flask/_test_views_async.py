@@ -12,15 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import webtest
 import flask.views
-
+import webtest
 from _test_views import app
-
 from conftest import async_handler_support
 
 # Async view support added in flask v2
 if async_handler_support:
+
     class TestAsyncView(flask.views.View):
         async def dispatch_request(self):
             return "ASYNC VIEW RESPONSE"
@@ -30,9 +29,6 @@ if async_handler_support:
             return "ASYNC METHODVIEW GET RESPONSE"
 
     app.add_url_rule("/async_view", view_func=TestAsyncView.as_view("test_async_view"))
-    app.add_url_rule(
-        "/async_methodview",
-        view_func=TestAsyncMethodView.as_view("test_async_methodview"),
-    )
+    app.add_url_rule("/async_methodview", view_func=TestAsyncMethodView.as_view("test_async_methodview"))
 
 _test_application = webtest.TestApp(app)

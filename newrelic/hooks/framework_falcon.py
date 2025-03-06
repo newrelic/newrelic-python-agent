@@ -13,13 +13,13 @@
 # limitations under the License.
 
 import sys
-from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import (wrap_function_wrapper,
-        function_wrapper)
-from newrelic.api.transaction import current_transaction
-from newrelic.api.time_trace import notice_error
-from newrelic.api.wsgi_application import wrap_wsgi_application
+
 from newrelic.api.function_trace import function_trace
+from newrelic.api.time_trace import notice_error
+from newrelic.api.transaction import current_transaction
+from newrelic.api.wsgi_application import wrap_wsgi_application
+from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 
 
 def _bind_handle_exception_v1(ex, req, resp, *args, **kwargs):
@@ -81,44 +81,36 @@ def wrap_responder(wrapped, instance, args, kwargs):
 
 def framework_details():
     import falcon
-    return ('Falcon', getattr(falcon, '__version__', None))
+
+    return ("Falcon", getattr(falcon, "__version__", None))
 
 
 def instrument_falcon_api(module):
     framework = framework_details()
 
-    major_version = int(framework[1].split('.')[0])
+    major_version = int(framework[1].split(".")[0])
     if major_version < 2:
-        wrap_handle_exception = \
-                build_wrap_handle_exception(_bind_handle_exception_v1)
+        wrap_handle_exception = build_wrap_handle_exception(_bind_handle_exception_v1)
     else:
-        wrap_handle_exception = \
-                build_wrap_handle_exception(_bind_handle_exception_v2)
+        wrap_handle_exception = build_wrap_handle_exception(_bind_handle_exception_v2)
 
-    wrap_wsgi_application(module, 'API.__call__',
-            framework=framework)
+    wrap_wsgi_application(module, "API.__call__", framework=framework)
 
-    wrap_function_wrapper(module, 'API._handle_exception',
-            wrap_handle_exception)
+    wrap_function_wrapper(module, "API._handle_exception", wrap_handle_exception)
 
 
 def instrument_falcon_app(module):
     framework = framework_details()
 
-    wrap_handle_exception = \
-            build_wrap_handle_exception(_bind_handle_exception_v2)
+    wrap_handle_exception = build_wrap_handle_exception(_bind_handle_exception_v2)
 
-    wrap_wsgi_application(module, 'App.__call__',
-            framework=framework)
+    wrap_wsgi_application(module, "App.__call__", framework=framework)
 
-    wrap_function_wrapper(module, 'App._handle_exception',
-            wrap_handle_exception)
+    wrap_function_wrapper(module, "App._handle_exception", wrap_handle_exception)
 
 
 def instrument_falcon_routing_util(module):
-    if hasattr(module, 'map_http_methods'):
-        wrap_function_wrapper(module, 'map_http_methods',
-                wrap_responder)
-    elif hasattr(module, 'create_http_method_map'):
-        wrap_function_wrapper(module, 'create_http_method_map',
-                wrap_responder)
+    if hasattr(module, "map_http_methods"):
+        wrap_function_wrapper(module, "map_http_methods", wrap_responder)
+    elif hasattr(module, "create_http_method_map"):
+        wrap_function_wrapper(module, "create_http_method_map", wrap_responder)

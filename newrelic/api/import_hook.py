@@ -14,9 +14,7 @@
 
 import logging
 import sys
-
 from importlib.util import find_spec
-
 
 _logger = logging.getLogger(__name__)
 
@@ -57,11 +55,10 @@ _ok_modules = (
 _uninstrumented_modules = set()
 
 
-def register_import_hook(name, callable):  # pylint: disable=redefined-builtin
+def register_import_hook(name, callable):  # noqa: A002
     hooks = _import_hooks.get(name, None)
 
     if name not in _import_hooks or hooks is None:
-
         # If no entry in registry or entry already flagged with
         # None then module may have been loaded, in which case
         # need to check and fire hook immediately.
@@ -71,7 +68,6 @@ def register_import_hook(name, callable):  # pylint: disable=redefined-builtin
         module = sys.modules.get(name, None)
 
         if module is not None:
-
             # The module has already been loaded so fire hook
             # immediately.
 
@@ -101,14 +97,12 @@ def register_import_hook(name, callable):  # pylint: disable=redefined-builtin
             callable(module)
 
         else:
-
             # No hook has been registered so far so create list
             # and add current hook.
 
             _import_hooks[name] = [callable]
 
     else:
-
         # Hook has already been registered, so append current
         # hook.
 
@@ -116,7 +110,6 @@ def register_import_hook(name, callable):  # pylint: disable=redefined-builtin
 
 
 def _notify_import_hooks(name, module):
-
     # Is assumed that this function is called with the global
     # import lock held. This should be the case as should only
     # be called from load_module() of the import hook loader.
@@ -132,7 +125,6 @@ def _notify_import_hooks(name, module):
 
 class _ImportHookLoader:
     def load_module(self, fullname):
-
         # Call the import hooks on the module being handled.
 
         module = sys.modules[fullname]

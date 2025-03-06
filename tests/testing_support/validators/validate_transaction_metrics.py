@@ -14,11 +14,9 @@
 
 import copy
 
-from newrelic.common.object_wrapper import (
-    function_wrapper,
-    transient_function_wrapper,
-)
+from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
 from testing_support.fixtures import catch_background_exceptions
+
 
 def validate_transaction_metrics(
     name,
@@ -55,7 +53,6 @@ def validate_transaction_metrics(
 
     @function_wrapper
     def _validate_wrapper(wrapped, instance, args, kwargs):
-
         record_transaction_called = []
         recorded_metrics = []
         recorded_dimensional_metrics = []

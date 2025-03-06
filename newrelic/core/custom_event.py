@@ -30,10 +30,7 @@ from newrelic.core.config import global_settings
 _logger = logging.getLogger(__name__)
 
 EVENT_TYPE_VALID_CHARS_REGEX = re.compile(r"^[a-zA-Z0-9:_ ]+$")
-NO_LIMIT_LLM_EVENT_TYPE = {
-    "LlmChatCompletionMessage": "content",
-    "LlmEmbedding": "input",
-}
+NO_LIMIT_LLM_EVENT_TYPE = {"LlmChatCompletionMessage": "content", "LlmEmbedding": "input"}
 
 
 class NameInvalidCharactersException(Exception):
@@ -43,7 +40,7 @@ class NameInvalidCharactersException(Exception):
 def check_event_type_valid_chars(name):
     regex = EVENT_TYPE_VALID_CHARS_REGEX
     if not regex.match(name):
-        raise NameInvalidCharactersException()
+        raise NameInvalidCharactersException
 
 
 def process_event_type(name):
@@ -144,10 +141,7 @@ def create_custom_event(event_type, params, settings=None, is_ml_event=False):
         )
         return None
 
-    intrinsics = {
-        "type": name,
-        "timestamp": int(1000.0 * time.time()),
-    }
+    intrinsics = {"type": name, "timestamp": int(1000.0 * time.time())}
 
     event = [intrinsics, attributes]
     return event

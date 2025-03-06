@@ -14,15 +14,13 @@
 
 import pytest
 import valkey
-
-from newrelic.api.transaction import current_transaction
-from newrelic.api.background_task import background_task
-
 from testing_support.db_settings import valkey_settings
 from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.util import instance_hostname
+from testing_support.validators.validate_span_events import validate_span_events
 
+from newrelic.api.background_task import background_task
+from newrelic.api.transaction import current_transaction
 
 DB_SETTINGS = valkey_settings()[0]
 DATABASE_NUMBER = 0
@@ -45,9 +43,7 @@ _disable_instance_settings = {
 
 
 def _exercise_db():
-    client = valkey.StrictValkey(
-        host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=DATABASE_NUMBER
-    )
+    client = valkey.StrictValkey(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=DATABASE_NUMBER)
 
     client.set("key", "value")
     client.get("key")
@@ -78,27 +74,13 @@ def test_span_events(instance_enabled, db_instance_enabled):
     if instance_enabled:
         settings = _enable_instance_settings.copy()
         hostname = instance_hostname(DB_SETTINGS["host"])
-        exact_agents.update(
-            {
-                "peer.address": f"{hostname}:{DB_SETTINGS['port']}",
-                "peer.hostname": hostname,
-            }
-        )
+        exact_agents.update({"peer.address": f"{hostname}:{DB_SETTINGS['port']}", "peer.hostname": hostname})
     else:
         settings = _disable_instance_settings.copy()
-        exact_agents.update(
-            {
-                "peer.address": "Unknown:Unknown",
-                "peer.hostname": "Unknown",
-            }
-        )
+        exact_agents.update({"peer.address": "Unknown:Unknown", "peer.hostname": "Unknown"})
 
     if db_instance_enabled and instance_enabled:
-        exact_agents.update(
-            {
-                "db.instance": str(DATABASE_NUMBER),
-            }
-        )
+        exact_agents.update({"db.instance": str(DATABASE_NUMBER)})
         unexpected_agents = ()
     else:
         settings["attributes.exclude"] = ["db.instance"]

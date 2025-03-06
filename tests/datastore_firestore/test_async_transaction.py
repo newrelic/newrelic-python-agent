@@ -13,15 +13,9 @@
 # limitations under the License.
 
 import pytest
-from testing_support.validators.validate_database_duration import (
-    validate_database_duration,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
-from testing_support.validators.validate_tt_collector_json import (
-    validate_tt_collector_json,
-)
+from testing_support.validators.validate_database_duration import validate_database_duration
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_tt_collector_json import validate_tt_collector_json
 
 from newrelic.api.background_task import background_task
 
@@ -79,7 +73,7 @@ def exercise_async_transaction_rollback(async_client, async_collection):
             # set and delete methods
             async_transaction.set(async_collection.document("doc2"), {"x": 99})
             async_transaction.delete(async_collection.document("doc1"))
-            raise RuntimeError()
+            raise RuntimeError
 
         with pytest.raises(RuntimeError):
             await _exercise(async_client.transaction())

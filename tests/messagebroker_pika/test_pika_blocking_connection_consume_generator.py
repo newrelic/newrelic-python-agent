@@ -15,12 +15,8 @@
 import pika
 from conftest import BODY, CORRELATION_ID, EXCHANGE, HEADERS, QUEUE, REPLY_TO
 from testing_support.db_settings import rabbitmq_settings
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
-from testing_support.validators.validate_tt_collector_json import (
-    validate_tt_collector_json,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_tt_collector_json import validate_tt_collector_json
 
 from newrelic.api.background_task import background_task
 
@@ -122,7 +118,7 @@ def test_blocking_connection_consume_exception_in_for_loop(producer):
             # We should still create the metric in this case even if there is
             # an exception
             for result in channel.consume(QUEUE):
-                1 / 0  # noqa
+                1 / 0
         except ZeroDivisionError:
             # Expected error
             pass

@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.common.object_wrapper import (transient_function_wrapper,
-        function_wrapper)
+from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
 
 
 def validate_metric_payload(metrics=[]):
@@ -22,21 +21,19 @@ def validate_metric_payload(metrics=[]):
 
     @function_wrapper
     def _validate_wrapper(wrapped, instance, args, kwargs):
-
         recorded_metrics = []
 
-        @transient_function_wrapper('newrelic.core.agent_protocol',
-                'AgentProtocol.send')
+        @transient_function_wrapper("newrelic.core.agent_protocol", "AgentProtocol.send")
         def send_request_wrapper(wrapped, instance, args, kwargs):
             def _bind_params(method, payload=(), *args, **kwargs):
                 return method, payload
 
             method, payload = _bind_params(*args, **kwargs)
 
-            if method == 'metric_data' and payload:
+            if method == "metric_data" and payload:
                 sent_metrics = {}
                 for metric_info, metric_values in payload[3]:
-                    metric_key = (metric_info['name'], metric_info['scope'])
+                    metric_key = (metric_info["name"], metric_info["scope"])
                     sent_metrics[metric_key] = metric_values
 
                 recorded_metrics.append(sent_metrics)
@@ -50,7 +47,7 @@ def validate_metric_payload(metrics=[]):
         for sent_metrics in recorded_metrics:
             for metric, count in metrics:
                 # only look for unscoped metrics
-                unscoped_metric = (metric, '')
+                unscoped_metric = (metric, "")
                 if not count:
                     assert unscoped_metric not in sent_metrics, unscoped_metric
                 else:

@@ -12,25 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" The purpose of these tests is to confirm that using a non-standard
+"""The purpose of these tests is to confirm that using a non-standard
 connection pool that does not have a `connection_kwargs` attribute
 will not result in an error.
 """
 
 from testing_support.db_settings import redis_settings
-from testing_support.fixture.event_loop import event_loop as loop  # noqa
+from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
 DB_SETTINGS = redis_settings()[0]
 
 
-class FakeConnectionPool():
+class FakeConnectionPool:
     """Connection Pool without connection_kwargs attribute."""
 
     def __init__(self, connection):
@@ -51,12 +49,8 @@ class FakeConnectionPool():
 
 # Settings
 
-_enable_instance_settings = {
-    "datastore_tracer.instance_reporting.enabled": True,
-}
-_disable_instance_settings = {
-    "datastore_tracer.instance_reporting.enabled": False,
-}
+_enable_instance_settings = {"datastore_tracer.instance_reporting.enabled": True}
+_disable_instance_settings = {"datastore_tracer.instance_reporting.enabled": False}
 
 
 _base_scoped_metrics = (
@@ -110,7 +104,7 @@ async def exercise_redis(client):
     background_task=True,
 )
 @background_task()
-def test_fake_conn_pool_enable_instance(client, loop, monkeypatch):  # noqa
+def test_fake_conn_pool_enable_instance(client, loop, monkeypatch):
     # Get a real connection
     conn = getattr(client, "_pool_or_conn", None)
     if conn is None:
@@ -135,7 +129,7 @@ def test_fake_conn_pool_enable_instance(client, loop, monkeypatch):  # noqa
     background_task=True,
 )
 @background_task()
-def test_fake_conn_pool_disable_instance(client, loop, monkeypatch):  # noqa
+def test_fake_conn_pool_disable_instance(client, loop, monkeypatch):
     # Get a real connection
     conn = getattr(client, "_pool_or_conn", None)
     if conn is None:

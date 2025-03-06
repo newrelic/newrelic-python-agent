@@ -28,7 +28,7 @@ from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.message_trace import MessageTrace
 from newrelic.api.pre_function import wrap_pre_function
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import FunctionWrapper, wrap_function_wrapper, _NRBoundFunctionWrapper
+from newrelic.common.object_wrapper import FunctionWrapper, _NRBoundFunctionWrapper, wrap_function_wrapper
 from newrelic.core.agent import shutdown_agent
 
 UNKNOWN_TASK_NAME = "<Unknown Task>"
@@ -218,7 +218,7 @@ def wrap_worker_optimizations(wrapped, instance, args, kwargs):
     # Rewrap finalized BaseTask
     if BaseTask:  # Ensure imports succeeded
         BaseTask.__call__ = CeleryTaskWrapper(BaseTask.__call__)
-    
+
     return result
 
 

@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import newrelic.api.import_hook as import_hook
 import pytest
 
+import newrelic.api.import_hook as import_hook
 from newrelic.config import _module_function_glob
+
 
 # a dummy hook just to be able to register hooks for modules
 def hook(*args, **kwargs):
@@ -32,10 +33,7 @@ def test_import_hook_finder(monkeypatch):
     finder = import_hook.ImportHookFinder()
 
     # Override the registered import hooks for the scope of this test
-    registered_hooks = {
-        "registered_but_does_not_exist": hook,
-        "newrelic.api": hook,
-    }
+    registered_hooks = {"registered_but_does_not_exist": hook, "newrelic.api": hook}
     monkeypatch.setattr(import_hook, "_import_hooks", registered_hooks)
 
     # Finding a module that does not exist returns None, whether or not it is registered.
@@ -54,19 +52,22 @@ def test_import_hook_finder(monkeypatch):
     assert module is not None
 
 
-@pytest.mark.parametrize("input,expected", [
-    ("*", {"run", "A.run", "B.run"}),
-    ("NotFound.*", set()),
-    ("r*", {"run"}),
-    ("*.run", {"A.run", "B.run"}),
-    ("A.*", {"A.run"}),
-    ("[A,B].run", {"A.run", "B.run"}),
-    ("B.r?n", {"B.run"}),
-    ("*.RUN", set()),  # Check for case insensitivity issues
-])
-def test_module_function_globbing(input, expected):
+@pytest.mark.parametrize(
+    "input_,expected",
+    [
+        ("*", {"run", "A.run", "B.run"}),
+        ("NotFound.*", set()),
+        ("r*", {"run"}),
+        ("*.run", {"A.run", "B.run"}),
+        ("A.*", {"A.run"}),
+        ("[A,B].run", {"A.run", "B.run"}),
+        ("B.r?n", {"B.run"}),
+        ("*.RUN", set()),  # Check for case insensitivity issues
+    ],
+)
+def test_module_function_globbing(input_, expected):
     """This asserts the behavior of filename style globbing on modules."""
     import _test_import_hook as module
-    
-    result = set(_module_function_glob(module, input))
+
+    result = set(_module_function_glob(module, input_))
     assert result == expected, (result, expected)

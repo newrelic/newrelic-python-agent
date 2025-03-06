@@ -13,17 +13,11 @@
 # limitations under the License.
 
 import logging
-
+import sqlite3 as db
 from urllib.request import urlopen
 
-import sqlite3 as db
-
 from newrelic.api.time_trace import notice_error
-from newrelic.api.transaction import (
-    add_custom_attribute,
-    get_browser_timing_header,
-    record_custom_event,
-)
+from newrelic.api.transaction import add_custom_attribute, get_browser_timing_header, record_custom_event
 from newrelic.api.wsgi_application import wsgi_application
 
 _logger = logging.getLogger(__name__)
@@ -123,11 +117,11 @@ def simple_exceptional_app(environ, start_response):
 
 def simple_app_raw(environ, start_response):
     status = "200 OK"
-    
+
     logger = logging.getLogger("simple_app_raw")
     logger.setLevel(logging.INFO)
     logger.info("Starting response")
-    
+
     start_response(status, response_headers=[])
 
     return []

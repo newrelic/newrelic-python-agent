@@ -15,19 +15,13 @@
 import functools
 import logging
 import time
-import warnings
-
 import urllib.parse as urlparse
+import warnings
 
 from newrelic.api.application import Application, application_instance
 from newrelic.api.transaction import Transaction, current_transaction
 from newrelic.common.async_proxy import TransactionContext, async_proxy
-from newrelic.common.encoding_utils import (
-    decode_newrelic_header,
-    ensure_str,
-    json_encode,
-    obfuscate,
-)
+from newrelic.common.encoding_utils import decode_newrelic_header, ensure_str, json_encode, obfuscate
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.core.attribute_filter import DST_BROWSER_MONITORING
@@ -526,7 +520,7 @@ class WebTransaction(Transaction):
         return intrinsics
 
 
-class WSGIHeaderProxy():
+class WSGIHeaderProxy:
     def __init__(self, environ):
         self.environ = environ
         self.length = None

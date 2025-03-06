@@ -13,23 +13,14 @@
 # limitations under the License.
 
 import time
-
 from importlib import reload
 
 import pytest
-from testing_support.fixtures import (
-    function_not_called,
-    override_application_settings,
-    reset_core_stats_engine,
-)
+from testing_support.fixtures import function_not_called, override_application_settings, reset_core_stats_engine
 from testing_support.validators.validate_ml_event_count import validate_ml_event_count
-from testing_support.validators.validate_ml_event_payload import (
-    validate_ml_event_payload,
-)
+from testing_support.validators.validate_ml_event_payload import validate_ml_event_payload
 from testing_support.validators.validate_ml_events import validate_ml_events
-from testing_support.validators.validate_ml_events_outside_transaction import (
-    validate_ml_events_outside_transaction,
-)
+from testing_support.validators.validate_ml_events_outside_transaction import validate_ml_events_outside_transaction
 
 import newrelic.core.otlp_utils
 from newrelic.api.application import application_instance as application
@@ -37,13 +28,9 @@ from newrelic.api.background_task import background_task
 from newrelic.api.transaction import record_ml_event
 from newrelic.core.config import global_settings
 
-
 _now = time.time()
 
-_intrinsics = {
-    "type": "LabelEvent",
-    "timestamp": _now,
-}
+_intrinsics = {"type": "LabelEvent", "timestamp": _now}
 
 
 @pytest.fixture(scope="session")

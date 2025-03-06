@@ -16,10 +16,11 @@
 memory usage.
 
 """
+
 import os
 
-from newrelic.core.config import global_settings
 from newrelic.common.system_info import physical_memory_used, total_physical_memory
+from newrelic.core.config import global_settings
 from newrelic.samplers.decorators import data_source_generator
 
 

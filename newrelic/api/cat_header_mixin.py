@@ -12,19 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.common.encoding_utils import (obfuscate, deobfuscate,
-        json_encode, json_decode, base64_encode, base64_decode)
+from newrelic.common.encoding_utils import (
+    base64_decode,
+    base64_encode,
+    deobfuscate,
+    json_decode,
+    json_encode,
+    obfuscate,
+)
 
 
 # CatHeaderMixin assumes the mixin class also inherits from TimeTrace
-class CatHeaderMixin():
-    cat_id_key = 'X-NewRelic-ID'
-    cat_transaction_key = 'X-NewRelic-Transaction'
-    cat_appdata_key = 'X-NewRelic-App-Data'
-    cat_synthetics_key = 'X-NewRelic-Synthetics'
-    cat_synthetics_info_key = 'X-NewRelic-Synthetics-Info'
-    cat_metadata_key = 'x-newrelic-trace'
-    cat_distributed_trace_key = 'newrelic'
+class CatHeaderMixin:
+    cat_id_key = "X-NewRelic-ID"
+    cat_transaction_key = "X-NewRelic-Transaction"
+    cat_appdata_key = "X-NewRelic-App-Data"
+    cat_synthetics_key = "X-NewRelic-Synthetics"
+    cat_synthetics_info_key = "X-NewRelic-Synthetics-Info"
+    cat_metadata_key = "x-newrelic-trace"
+    cat_distributed_trace_key = "newrelic"
     settings = None
 
     def __enter__(self):
@@ -52,14 +58,13 @@ class CatHeaderMixin():
         try:
             for k, v in response_headers:
                 if k.upper() == self.cat_appdata_key.upper():
-                    appdata = json_decode(deobfuscate(v,
-                            settings.encoding_key))
+                    appdata = json_decode(deobfuscate(v, settings.encoding_key))
                     break
 
             if appdata:
-                self.params['cross_process_id'] = appdata[0]
-                self.params['external_txn_name'] = appdata[1]
-                self.params['transaction_guid'] = appdata[5]
+                self.params["cross_process_id"] = appdata[0]
+                self.params["external_txn_name"] = appdata[1]
+                self.params["transaction_guid"] = appdata[5]
 
         except Exception:
             pass
@@ -94,16 +99,12 @@ class CatHeaderMixin():
                 # Disable cat if path_hash fails to generate.
                 transaction.is_part_of_cat = False
             else:
-                encoded_cross_process_id = obfuscate(settings.cross_process_id,
-                        settings.encoding_key)
+                encoded_cross_process_id = obfuscate(settings.cross_process_id, settings.encoding_key)
                 nr_headers.append((cls.cat_id_key, encoded_cross_process_id))
 
-                transaction_data = [transaction.guid, transaction.record_tt,
-                        transaction.trip_id, path_hash]
-                encoded_transaction = obfuscate(json_encode(transaction_data),
-                        settings.encoding_key)
-                nr_headers.append(
-                        (cls.cat_transaction_key, encoded_transaction))
+                transaction_data = [transaction.guid, transaction.record_tt, transaction.trip_id, path_hash]
+                encoded_transaction = obfuscate(json_encode(transaction_data), settings.encoding_key)
+                nr_headers.append((cls.cat_transaction_key, encoded_transaction))
 
         if transaction.synthetics_header:
             nr_headers.append((cls.cat_synthetics_key, transaction.synthetics_header))

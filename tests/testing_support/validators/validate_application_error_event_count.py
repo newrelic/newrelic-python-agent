@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from testing_support.fixtures import core_application_stats_engine
-
 from newrelic.common.object_wrapper import function_wrapper
+from testing_support.fixtures import core_application_stats_engine
 
 
 def validate_application_error_event_count(num_errors):
@@ -24,13 +23,11 @@ def validate_application_error_event_count(num_errors):
 
     @function_wrapper
     def _validate_application_error_event_count(wrapped, instace, args, kwargs):
-
         try:
             result = wrapped(*args, **kwargs)
         except:
             raise
         else:
-
             stats = core_application_stats_engine(None)
             assert len(list(stats.error_events)) == num_errors
 

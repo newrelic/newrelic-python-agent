@@ -17,24 +17,13 @@ import sys
 from newrelic.api.database_trace import register_database_client
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import (
-    ObjectProxy,
-    wrap_function_wrapper,
-    wrap_object,
-)
-from newrelic.hooks.database_dbapi2_async import (
-    AsyncConnectionFactory as DBAPI2AsyncConnectionFactory,
-)
-from newrelic.hooks.database_dbapi2_async import (
-    AsyncConnectionWrapper as DBAPI2AsyncConnectionWrapper,
-)
-from newrelic.hooks.database_dbapi2_async import (
-    AsyncCursorWrapper as DBAPI2AsyncCursorWrapper,
-)
+from newrelic.common.object_wrapper import ObjectProxy, wrap_function_wrapper, wrap_object
+from newrelic.hooks.database_dbapi2_async import AsyncConnectionFactory as DBAPI2AsyncConnectionFactory
+from newrelic.hooks.database_dbapi2_async import AsyncConnectionWrapper as DBAPI2AsyncConnectionWrapper
+from newrelic.hooks.database_dbapi2_async import AsyncCursorWrapper as DBAPI2AsyncCursorWrapper
 
 
 class AsyncCursorContextManagerWrapper(ObjectProxy):
-
     __cursor_wrapper__ = DBAPI2AsyncCursorWrapper
 
     def __init__(self, context_manager, dbapi2_module, connect_params, cursor_args):
@@ -50,14 +39,33 @@ class AsyncCursorContextManagerWrapper(ObjectProxy):
     async def __aexit__(self, exc, val, tb):
         return await self.__wrapped__.__aexit__(exc, val, tb)
 
+    def __await__(self):
+        # Handle bidirectional generator protocol using code from generator_wrapper
+        g = self.__wrapped__.__await__()
+        try:
+            yielded = g.send(None)
+            while True:
+                try:
+                    sent = yield yielded
+                except GeneratorExit as e:
+                    g.close()
+                    raise
+                except BaseException as e:
+                    yielded = g.throw(e)
+                else:
+                    yielded = g.send(sent)
+        except StopIteration as e:
+            # Catch the StopIteration and wrap the return value.
+            cursor = e.value
+            wrapped_cursor = self.__cursor_wrapper__(cursor, self._nr_dbapi2_module, self._nr_connect_params, self._nr_cursor_args)
+            return wrapped_cursor  # Return here instead of raising StopIteration to properly follow generator protocol
+
 
 class AsyncConnectionWrapper(DBAPI2AsyncConnectionWrapper):
-
     __cursor_wrapper__ = AsyncCursorContextManagerWrapper
 
 
 class AsyncConnectionFactory(DBAPI2AsyncConnectionFactory):
-
     __connection_wrapper__ = AsyncConnectionWrapper
 
 

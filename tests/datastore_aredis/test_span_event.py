@@ -12,19 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 import aredis
-
-from newrelic.api.transaction import current_transaction
-from newrelic.api.background_task import background_task
-
+import pytest
 from testing_support.db_settings import redis_settings
 from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_span_events import (
-        validate_span_events)
 from testing_support.util import instance_hostname
+from testing_support.validators.validate_span_events import validate_span_events
 
+from newrelic.api.background_task import background_task
+from newrelic.api.transaction import current_transaction
 
 DB_SETTINGS = redis_settings()[0]
 DATABASE_NUMBER = 0
@@ -33,100 +30,95 @@ DATABASE_NUMBER = 0
 # Settings
 
 _enable_instance_settings = {
-    'datastore_tracer.instance_reporting.enabled': True,
-    'datastore_tracer.database_name_reporting.enabled': True,
-    'distributed_tracing.enabled': True,
-    'span_events.enabled': True,
+    "datastore_tracer.instance_reporting.enabled": True,
+    "datastore_tracer.database_name_reporting.enabled": True,
+    "distributed_tracing.enabled": True,
+    "span_events.enabled": True,
 }
 _disable_instance_settings = {
-    'datastore_tracer.instance_reporting.enabled': False,
-    'datastore_tracer.database_name_reporting.enabled': False,
-    'distributed_tracing.enabled': True,
-    'span_events.enabled': True,
+    "datastore_tracer.instance_reporting.enabled": False,
+    "datastore_tracer.database_name_reporting.enabled": False,
+    "distributed_tracing.enabled": True,
+    "span_events.enabled": True,
 }
 
 
 async def _exercise_db():
-    client = aredis.StrictRedis(host=DB_SETTINGS['host'],
-            port=DB_SETTINGS['port'], db=DATABASE_NUMBER)
+    client = aredis.StrictRedis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=DATABASE_NUMBER)
 
-    await client.set('key', 'value')
-    await client.get('key')
+    await client.set("key", "value")
+    await client.get("key")
 
-    await client.execute_command('CLIENT', 'LIST', parse='LIST')
+    await client.execute_command("CLIENT", "LIST", parse="LIST")
 
 
 # Tests
 
-@pytest.mark.parametrize('db_instance_enabled', (True, False))
-@pytest.mark.parametrize('instance_enabled', (True, False))
+
+@pytest.mark.parametrize("db_instance_enabled", (True, False))
+@pytest.mark.parametrize("instance_enabled", (True, False))
 def test_span_events(instance_enabled, db_instance_enabled, loop):
-    guid = 'dbb533c53b749e0b'
+    guid = "dbb533c53b749e0b"
     priority = 0.5
 
     common = {
-        'type': 'Span',
-        'transactionId': guid,
-        'priority': priority,
-        'sampled': True,
-        'category': 'datastore',
-        'component': 'Redis',
-        'span.kind': 'client',
+        "type": "Span",
+        "transactionId": guid,
+        "priority": priority,
+        "sampled": True,
+        "category": "datastore",
+        "component": "Redis",
+        "span.kind": "client",
     }
     exact_agents = {}
 
     if instance_enabled:
         settings = _enable_instance_settings.copy()
-        hostname = instance_hostname(DB_SETTINGS['host'])
-        exact_agents.update({
-            'peer.address': f"{hostname}:{DB_SETTINGS['port']}",
-            'peer.hostname': hostname,
-        })
+        hostname = instance_hostname(DB_SETTINGS["host"])
+        exact_agents.update({"peer.address": f"{hostname}:{DB_SETTINGS['port']}", "peer.hostname": hostname})
     else:
         settings = _disable_instance_settings.copy()
-        exact_agents.update({
-            'peer.address': 'Unknown:Unknown',
-            'peer.hostname': 'Unknown',
-        })
+        exact_agents.update({"peer.address": "Unknown:Unknown", "peer.hostname": "Unknown"})
 
     if db_instance_enabled and instance_enabled:
-        exact_agents.update({
-            'db.instance': str(DATABASE_NUMBER),
-        })
+        exact_agents.update({"db.instance": str(DATABASE_NUMBER)})
         unexpected_agents = ()
     else:
-        settings['attributes.exclude'] = ['db.instance']
-        unexpected_agents = ('db.instance',)
+        settings["attributes.exclude"] = ["db.instance"]
+        unexpected_agents = ("db.instance",)
 
     query_1 = common.copy()
-    query_1['name'] = 'Datastore/operation/Redis/set'
+    query_1["name"] = "Datastore/operation/Redis/set"
 
     query_2 = common.copy()
-    query_2['name'] = 'Datastore/operation/Redis/get'
+    query_2["name"] = "Datastore/operation/Redis/get"
 
     query_3 = common.copy()
-    query_3['name'] = 'Datastore/operation/Redis/client_list'
+    query_3["name"] = "Datastore/operation/Redis/client_list"
 
     @validate_span_events(
-            count=1,
-            exact_intrinsics=query_1,
-            unexpected_intrinsics=('db.instance'),
-            exact_agents=exact_agents,
-            unexpected_agents=unexpected_agents)
+        count=1,
+        exact_intrinsics=query_1,
+        unexpected_intrinsics=("db.instance"),
+        exact_agents=exact_agents,
+        unexpected_agents=unexpected_agents,
+    )
     @validate_span_events(
-            count=1,
-            exact_intrinsics=query_2,
-            unexpected_intrinsics=('db.instance'),
-            exact_agents=exact_agents,
-            unexpected_agents=unexpected_agents)
+        count=1,
+        exact_intrinsics=query_2,
+        unexpected_intrinsics=("db.instance"),
+        exact_agents=exact_agents,
+        unexpected_agents=unexpected_agents,
+    )
     @validate_span_events(
-            count=1,
-            exact_intrinsics=query_3,
-            unexpected_intrinsics=('db.instance'),
-            exact_agents=exact_agents,
-            unexpected_agents=unexpected_agents)
+        count=1,
+        exact_intrinsics=query_3,
+        unexpected_intrinsics=("db.instance"),
+        exact_agents=exact_agents,
+        unexpected_agents=unexpected_agents,
+    )
     @override_application_settings(settings)
-    @background_task(name='span_events')
+    @background_task(name="span_events")
     def _test():
         txn = current_transaction()
         txn.guid = guid

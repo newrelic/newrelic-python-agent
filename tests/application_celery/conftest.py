@@ -12,10 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import pytest
-from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
-    collector_agent_registration_fixture,
-    collector_available_fixture,
-)
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
@@ -34,10 +31,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 @pytest.fixture(scope="session")
 def celery_config():
     # Used by celery pytest plugin to configure Celery instance
-    return {
-        "broker_url": "memory://",
-        "result_backend": "cache+memory://",
-    }
+    return {"broker_url": "memory://", "result_backend": "cache+memory://"}
 
 
 @pytest.fixture(scope="session")

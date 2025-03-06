@@ -13,37 +13,26 @@
 # limitations under the License.
 
 import valkey
+from testing_support.db_settings import valkey_settings
+from testing_support.fixtures import override_application_settings
+from testing_support.util import instance_hostname
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
-
-from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
-from testing_support.db_settings import valkey_settings
-from testing_support.util import instance_hostname
 
 DB_SETTINGS = valkey_settings()[0]
 
 
 # Settings
 
-_enable_instance_settings = {
-    "datastore_tracer.instance_reporting.enabled": True,
-}
-_disable_instance_settings = {
-    "datastore_tracer.instance_reporting.enabled": False,
-}
+_enable_instance_settings = {"datastore_tracer.instance_reporting.enabled": True}
+_disable_instance_settings = {"datastore_tracer.instance_reporting.enabled": False}
 
 # Metrics
 
-_base_scoped_metrics = [
-    ("Datastore/operation/Valkey/client_list", 1),
-]
+_base_scoped_metrics = [("Datastore/operation/Valkey/client_list", 1)]
 
-_base_scoped_metrics.append(
-    ("Datastore/operation/Valkey/client_setinfo", 2),
-)
+_base_scoped_metrics.append(("Datastore/operation/Valkey/client_setinfo", 2))
 
 _base_rollup_metrics = [
     ("Datastore/all", 3),
@@ -52,9 +41,7 @@ _base_rollup_metrics = [
     ("Datastore/Valkey/allOther", 3),
     ("Datastore/operation/Valkey/client_list", 1),
 ]
-_base_rollup_metrics.append(
-    ("Datastore/operation/Valkey/client_setinfo", 2),
-)
+_base_rollup_metrics.append(("Datastore/operation/Valkey/client_setinfo", 2))
 
 _host = instance_hostname(DB_SETTINGS["host"])
 _port = DB_SETTINGS["port"]
@@ -63,9 +50,7 @@ _instance_metric_name = f"Datastore/instance/Valkey/{_host}/{_port}"
 
 instance_metric_count = 3
 
-_enable_rollup_metrics = _base_rollup_metrics.append(
-    (_instance_metric_name, instance_metric_count)
-)
+_enable_rollup_metrics = _base_rollup_metrics.append((_instance_metric_name, instance_metric_count))
 
 _disable_rollup_metrics = _base_rollup_metrics.append((_instance_metric_name, None))
 

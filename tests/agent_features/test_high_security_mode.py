@@ -28,18 +28,10 @@ from testing_support.validators.validate_custom_event import (
     validate_custom_event_count,
     validate_custom_event_in_application_stats_engine,
 )
-from testing_support.validators.validate_custom_parameters import (
-    validate_custom_parameters,
-)
-from testing_support.validators.validate_non_transaction_error_event import (
-    validate_non_transaction_error_event,
-)
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
-from testing_support.validators.validate_tt_segment_params import (
-    validate_tt_segment_params,
-)
+from testing_support.validators.validate_custom_parameters import validate_custom_parameters
+from testing_support.validators.validate_non_transaction_error_event import validate_non_transaction_error_event
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_tt_segment_params import validate_tt_segment_params
 
 from newrelic.api.application import application_instance as application
 from newrelic.api.background_task import background_task
@@ -57,12 +49,7 @@ from newrelic.api.wsgi_application import wsgi_application
 from newrelic.common.object_names import callable_name
 from newrelic.config import apply_local_high_security_mode_setting
 from newrelic.core.agent_protocol import AgentProtocol
-from newrelic.core.attribute import (
-    DST_ALL,
-    DST_ERROR_COLLECTOR,
-    DST_TRANSACTION_TRACER,
-    Attribute,
-)
+from newrelic.core.attribute import DST_ALL, DST_ERROR_COLLECTOR, DST_TRANSACTION_TRACER, Attribute
 from newrelic.core.config import Settings, apply_config_setting, global_settings
 
 
@@ -290,7 +277,7 @@ _server_side_config_settings_hsm_disabled = [
                 "application_logging.forwarding.enabled": True,
                 "machine_learning.inference_events_value.enabled": True,
                 "ai_monitoring.enabled": True,
-            },
+            }
         },
     ),
     (
@@ -315,7 +302,7 @@ _server_side_config_settings_hsm_disabled = [
                 "application_logging.forwarding.enabled": False,
                 "machine_learning.inference_events_value.enabled": False,
                 "ai_monitoring.enabled": False,
-            },
+            }
         },
     ),
 ]

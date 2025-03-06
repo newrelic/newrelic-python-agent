@@ -21,11 +21,7 @@ from pprint import pprint
 import newrelic.packages.urllib3 as urllib3
 from newrelic import version
 from newrelic.common import certs
-from newrelic.common.encoding_utils import (
-    json_decode,
-    json_encode,
-    obfuscate_license_key,
-)
+from newrelic.common.encoding_utils import json_decode, json_encode, obfuscate_license_key
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import patch_function_wrapper
 from newrelic.core.internal_metrics import internal_count_metric, internal_metric
@@ -136,10 +132,7 @@ class BaseClient:
         # across threads when audit logging is on
         cls.AUDIT_LOG_ID += 1
 
-        print(
-            f"TIME: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())!r}",
-            file=fp,
-        )
+        print(f"TIME: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())!r}", file=fp)
         print(file=fp)
         print(f"ID: {cls.AUDIT_LOG_ID!r}", file=fp)
         print(file=fp)
@@ -216,12 +209,7 @@ class BaseClient:
         fp.flush()
 
     def send_request(
-        self,
-        method="POST",
-        path="/agent_listener/invoke_raw_method",
-        params=None,
-        headers=None,
-        payload=None,
+        self, method="POST", path="/agent_listener/invoke_raw_method", params=None, headers=None, payload=None
     ):
         return 202, b""
 
@@ -262,9 +250,7 @@ class HttpClient(BaseClient):
         self._prefix = ""
 
         self._headers = dict(self.BASE_HEADERS)
-        self._connection_kwargs = connection_kwargs = {
-            "timeout": timeout,
-        }
+        self._connection_kwargs = connection_kwargs = {"timeout": timeout}
         self._urlopen_kwargs = urlopen_kwargs = {}
 
         if self.CONNECTION_CLS.scheme == "https":
@@ -286,13 +272,7 @@ class HttpClient(BaseClient):
             if disable_certificate_validation:
                 connection_kwargs["cert_reqs"] = "NONE"
 
-        proxy = self._parse_proxy(
-            proxy_scheme,
-            proxy_host,
-            proxy_port,
-            proxy_user,
-            proxy_pass,
-        )
+        proxy = self._parse_proxy(proxy_scheme, proxy_host, proxy_port, proxy_user, proxy_pass)
         proxy_headers = proxy and proxy.auth and urllib3.make_headers(proxy_basic_auth=proxy.auth)
 
         if proxy:
@@ -364,17 +344,7 @@ class HttpClient(BaseClient):
             self._connection_attr.close()
             self._connection_attr = None
 
-    def log_request(
-        self,
-        fp,
-        method,
-        url,
-        params,
-        payload,
-        headers,
-        body=None,
-        compression_time=None,
-    ):
+    def log_request(self, fp, method, url, params, payload, headers, body=None, compression_time=None):
         if not self._prefix:
             url = f"{self.CONNECTION_CLS.scheme}://{self._host}{url}"
 
@@ -395,12 +365,7 @@ class HttpClient(BaseClient):
         return data, compression_time
 
     def send_request(
-        self,
-        method="POST",
-        path="/agent_listener/invoke_raw_method",
-        params=None,
-        headers=None,
-        payload=None,
+        self, method="POST", path="/agent_listener/invoke_raw_method", params=None, headers=None, payload=None
     ):
         if self._proxy:
             proxy_scheme = self._proxy.scheme or "http"
@@ -417,23 +382,14 @@ class HttpClient(BaseClient):
         if payload is not None:
             if len(payload) > self._compression_threshold:
                 body, compression_time = self._compress(
-                    payload,
-                    method=self._compression_method,
-                    level=self._compression_level,
+                    payload, method=self._compression_method, level=self._compression_level
                 )
                 merged_headers["Content-Encoding"] = self._compression_method
             elif self._default_content_encoding_header:
                 merged_headers["Content-Encoding"] = self._default_content_encoding_header
 
         request_id = self.log_request(
-            self._audit_log_fp,
-            "POST",
-            path,
-            params,
-            payload,
-            merged_headers,
-            body,
-            compression_time,
+            self._audit_log_fp, "POST", path, params, payload, merged_headers, body, compression_time
         )
 
         if body and len(body) > self._max_payload_size_in_bytes:
@@ -444,26 +400,12 @@ class HttpClient(BaseClient):
                 method, path, fields=params, body=body, headers=merged_headers, **self._urlopen_kwargs
             )
         except urllib3.exceptions.HTTPError as e:
-            self.log_response(
-                self._audit_log_fp,
-                request_id,
-                0,
-                None,
-                None,
-                connection,
-            )
+            self.log_response(self._audit_log_fp, request_id, 0, None, None, connection)
             # All urllib3 HTTP errors should be treated as a network
             # interface exception.
             raise NetworkInterfaceException(e)
 
-        self.log_response(
-            self._audit_log_fp,
-            request_id,
-            response.status,
-            response.headers,
-            response.data,
-            connection,
-        )
+        self.log_response(self._audit_log_fp, request_id, response.status, response.headers, response.data, connection)
 
         return response.status, response.data
 
@@ -534,19 +476,10 @@ class SupportabilityMixin:
         if agent_method and payload:
             # Compression was applied
             if compression_time is not None:
-                internal_metric(
-                    f"Supportability/Python/Collector/{agent_method}/ZLIB/Bytes",
-                    len(body),
-                )
+                internal_metric(f"Supportability/Python/Collector/{agent_method}/ZLIB/Bytes", len(body))
                 internal_metric("Supportability/Python/Collector/ZLIB/Bytes", len(body))
-                internal_metric(
-                    f"Supportability/Python/Collector/{agent_method}/ZLIB/Compress",
-                    compression_time,
-                )
-            internal_metric(
-                f"Supportability/Python/Collector/{agent_method}/Output/Bytes",
-                len(payload),
-            )
+                internal_metric(f"Supportability/Python/Collector/{agent_method}/ZLIB/Compress", compression_time)
+            internal_metric(f"Supportability/Python/Collector/{agent_method}/Output/Bytes", len(payload))
             # Top level metric to aggregate overall bytes being sent
             internal_metric("Supportability/Python/Collector/Output/Bytes", len(payload))
 
@@ -557,10 +490,7 @@ class SupportabilityMixin:
             internal_count_metric(f"Supportability/Python/Collector/Failures/{connection}", 1)
 
             if exc:
-                internal_count_metric(
-                    f"Supportability/Python/Collector/Exception/{callable_name(exc)}",
-                    1,
-                )
+                internal_count_metric(f"Supportability/Python/Collector/Exception/{callable_name(exc)}", 1)
             else:
                 internal_count_metric(f"Supportability/Python/Collector/HTTPError/{status}", 1)
 
@@ -614,20 +544,10 @@ class DeveloperModeClient(SupportabilityMixin, BaseClient):
     }
 
     def send_request(
-        self,
-        method="POST",
-        path="/agent_listener/invoke_raw_method",
-        params=None,
-        headers=None,
-        payload=None,
+        self, method="POST", path="/agent_listener/invoke_raw_method", params=None, headers=None, payload=None
     ):
         request_id = self.log_request(
-            self._audit_log_fp,
-            "POST",
-            f"https://fake-collector.newrelic.com{path}",
-            params,
-            payload,
-            headers,
+            self._audit_log_fp, "POST", f"https://fake-collector.newrelic.com{path}", params, payload, headers
         )
         if not params or "method" not in params:
             return 400, b"Missing method parameter"
@@ -639,13 +559,7 @@ class DeveloperModeClient(SupportabilityMixin, BaseClient):
         result = self.RESPONSES[method]
         payload = {"return_value": result}
         response_data = json_encode(payload).encode("utf-8")
-        self.log_response(
-            self._audit_log_fp,
-            request_id,
-            200,
-            {},
-            response_data,
-        )
+        self.log_response(self._audit_log_fp, request_id, 200, {}, response_data)
         return 200, response_data
 
 
@@ -655,12 +569,7 @@ class ServerlessModeClient(DeveloperModeClient):
         self.payload = {}
 
     def send_request(
-        self,
-        method="POST",
-        path="/agent_listener/invoke_raw_method",
-        params=None,
-        headers=None,
-        payload=None,
+        self, method="POST", path="/agent_listener/invoke_raw_method", params=None, headers=None, payload=None
     ):
         result = super(ServerlessModeClient, self).send_request(
             method=method, path=path, params=params, headers=headers, payload=payload

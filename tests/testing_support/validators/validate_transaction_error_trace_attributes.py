@@ -13,9 +13,8 @@
 # limitations under the License.
 
 
-from testing_support.fixtures import check_error_attributes
-
 from newrelic.common.object_wrapper import transient_function_wrapper
+from testing_support.fixtures import check_error_attributes
 
 
 def validate_transaction_error_trace_attributes(required_params=None, forgone_params=None, exact_attrs=None):
@@ -33,7 +32,6 @@ def validate_transaction_error_trace_attributes(required_params=None, forgone_pa
         except:
             raise
         else:
-
             error_data = instance.error_data()
 
             # there should be only one error

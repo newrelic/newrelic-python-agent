@@ -13,17 +13,9 @@
 # limitations under the License.
 
 from aiobotocore.session import get_session
-from conftest import (  # noqa: F401, pylint: disable=W0611
-    AWS_ACCESS_KEY_ID,
-    AWS_SECRET_ACCESS_KEY,
-    PORT,
-    MotoService,
-    loop,
-)
+from conftest import AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, PORT, MotoService, loop
 from testing_support.validators.validate_span_events import validate_span_events
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
@@ -46,7 +38,6 @@ sns_metrics = [
 @background_task()
 def test_publish_to_sns(loop):
     async def _test():
-
         async with MotoService("sns", port=PORT):
             session = get_session()
 
@@ -57,7 +48,6 @@ def test_publish_to_sns(loop):
                 aws_access_key_id=AWS_ACCESS_KEY_ID,
                 aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
             ) as client:
-
                 topic_arn = await client.create_topic(Name="some-topic")
                 topic_arn_name = topic_arn["TopicArn"]
 

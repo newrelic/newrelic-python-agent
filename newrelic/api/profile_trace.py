@@ -25,7 +25,7 @@ from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 AGENT_PACKAGE_DIRECTORY = f"{os.path.dirname(AGENT_PACKAGE_FILE)}/"
 
 
-class ProfileTrace():
+class ProfileTrace:
     def __init__(self, depth):
         self.function_traces = []
         self.maximum_depth = depth
@@ -70,7 +70,7 @@ class ProfileTrace():
             except Exception:
                 pass
 
-            for name, obj in frame.f_globals.items():
+            for obj in frame.f_globals.values():
                 try:
                     if obj.__dict__[func_name].func_code is co:
                         return obj.__dict__[func_name]

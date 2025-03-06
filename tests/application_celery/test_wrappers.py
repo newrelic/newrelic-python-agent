@@ -12,12 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import celery
 from _target_application import add
 
-import celery
-
 from newrelic.common.object_wrapper import _NRBoundFunctionWrapper
-
 
 FORGONE_TASK_METRICS = [("Function/_target_application.add", None), ("Function/_target_application.tsum", None)]
 
@@ -38,9 +36,9 @@ def test_worker_optimizations_preserve_instrumentation(celery_worker_available):
 
     celery.app.trace.reset_worker_optimizations()
     assert is_instrumented(), "Instrumentation not initially applied."
-    
+
     celery.app.trace.setup_worker_optimizations(celery_worker_available.app)
     assert is_instrumented(), "setup_worker_optimizations removed instrumentation."
-    
+
     celery.app.trace.reset_worker_optimizations()
     assert is_instrumented(), "reset_worker_optimizations removed instrumentation."

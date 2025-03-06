@@ -19,12 +19,8 @@ import pytest
 import webtest
 from testing_support.fixtures import override_application_settings, validate_attributes
 from testing_support.validators.validate_span_events import validate_span_events
-from testing_support.validators.validate_transaction_event_attributes import (
-    validate_transaction_event_attributes,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.transaction import (
     accept_distributed_trace_headers,
@@ -151,10 +147,7 @@ def target_wsgi_application(environ, start_response):
             transaction.notice_error()
 
     if ".inbound_headers" in environ:
-        accept_distributed_trace_headers(
-            environ[".inbound_headers"],
-            transport_type=environ[".transport_type"],
-        )
+        accept_distributed_trace_headers(environ[".inbound_headers"], transport_type=environ[".transport_type"])
 
     payloads = []
     for _ in range(environ[".outbound_calls"]):
@@ -239,11 +232,7 @@ def test_trace_context(
     @override_application_settings(override_settings)
     @override_compute_sampled(force_sampled_true)
     def _test():
-        return test_application.get(
-            f"/{test_name}",
-            headers=inbound_headers,
-            extra_environ=extra_environ,
-        )
+        return test_application.get(f"/{test_name}", headers=inbound_headers, extra_environ=extra_environ)
 
     if "Span" in intrinsics:
         span_intrinsics = intrinsics.get("Span")

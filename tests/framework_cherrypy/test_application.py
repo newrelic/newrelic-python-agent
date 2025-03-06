@@ -15,22 +15,14 @@
 import cherrypy
 import pytest
 import webtest
-from testing_support.fixtures import (
-    override_application_settings,
-    override_ignore_status_codes,
-)
-from testing_support.validators.validate_code_level_metrics import (
-    validate_code_level_metrics,
-)
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
-
+from testing_support.fixtures import override_application_settings, override_ignore_status_codes
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 
 CHERRYPY_VERSION = tuple(int(v) for v in cherrypy.__version__.split("."))
 
 
-class Application():
+class Application:
     @cherrypy.expose
     def index(self):
         return "INDEX RESPONSE"
@@ -41,7 +33,7 @@ class Application():
 
     @cherrypy.expose
     def not_found(self):
-        raise cherrypy.NotFound()
+        raise cherrypy.NotFound
 
     @cherrypy.expose
     def not_found_as_http_error(self):
@@ -166,13 +158,7 @@ if CHERRYPY_VERSION >= (3, 2):
 
 
 @pytest.mark.parametrize("endpoint", _error_endpoints)
-@pytest.mark.parametrize(
-    "ignore_overrides,expected_errors",
-    [
-        ([], ["cherrypy._cperror:HTTPError"]),
-        ([404, 500], []),
-    ],
-)
+@pytest.mark.parametrize("ignore_overrides,expected_errors", [([], ["cherrypy._cperror:HTTPError"]), ([404, 500], [])])
 def test_ignore_status_code(endpoint, ignore_overrides, expected_errors):
     @validate_transaction_errors(errors=expected_errors)
     @override_ignore_status_codes(ignore_overrides)

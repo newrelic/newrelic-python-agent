@@ -49,11 +49,7 @@ async def resolve_search(parent, info, contains):
 
 
 Author = GraphQLObjectType(
-    "Author",
-    {
-        "first_name": GraphQLField(GraphQLString),
-        "last_name": GraphQLField(GraphQLString),
-    },
+    "Author", {"first_name": GraphQLField(GraphQLString), "last_name": GraphQLField(GraphQLString)}
 )
 
 Book = GraphQLObjectType(
@@ -105,27 +101,18 @@ async def resolve_error(root, info):
 
 hello_field = GraphQLField(GraphQLString, resolver=resolve_hello)
 library_field = GraphQLField(
-    Library,
-    resolver=resolve_library,
-    args={"index": GraphQLArgument(GraphQLNonNull(GraphQLInt))},
+    Library, resolver=resolve_library, args={"index": GraphQLArgument(GraphQLNonNull(GraphQLInt))}
 )
 search_field = GraphQLField(
     GraphQLList(GraphQLUnionType("Item", (Book, Magazine), resolve_type=resolve_search)),
     args={"contains": GraphQLArgument(GraphQLNonNull(GraphQLString))},
 )
 echo_field = GraphQLField(
-    GraphQLString,
-    resolver=resolve_echo,
-    args={"echo": GraphQLArgument(GraphQLNonNull(GraphQLString))},
+    GraphQLString, resolver=resolve_echo, args={"echo": GraphQLArgument(GraphQLNonNull(GraphQLString))}
 )
-storage_field = GraphQLField(
-    Storage,
-    resolver=resolve_storage,
-)
+storage_field = GraphQLField(Storage, resolver=resolve_storage)
 storage_add_field = GraphQLField(
-    GraphQLString,
-    resolver=resolve_storage_add,
-    args={"string": GraphQLArgument(GraphQLNonNull(GraphQLString))},
+    GraphQLString, resolver=resolve_storage_add, args={"string": GraphQLArgument(GraphQLNonNull(GraphQLString))}
 )
 error_field = GraphQLField(GraphQLString, resolver=resolve_error)
 error_non_null_field = GraphQLField(GraphQLNonNull(GraphQLString), resolver=resolve_error)
@@ -145,11 +132,6 @@ query = GraphQLObjectType(
     },
 )
 
-mutation = GraphQLObjectType(
-    name="Mutation",
-    fields={
-        "storage_add": storage_add_field,
-    },
-)
+mutation = GraphQLObjectType(name="Mutation", fields={"storage_add": storage_add_field})
 
 target_schema = GraphQLSchema(query=query, mutation=mutation)

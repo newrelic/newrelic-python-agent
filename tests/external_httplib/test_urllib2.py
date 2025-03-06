@@ -13,23 +13,14 @@
 # limitations under the License.
 
 import os
-
-import pytest
-
 import urllib.request as urllib2
 
-from testing_support.external_fixtures import (
-    cache_outgoing_headers,
-    insert_incoming_headers,
-)
+import pytest
+from testing_support.external_fixtures import cache_outgoing_headers, insert_incoming_headers
 from testing_support.fixtures import cat_enabled
+from testing_support.validators.validate_cross_process_headers import validate_cross_process_headers
+from testing_support.validators.validate_external_node_params import validate_external_node_params
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from testing_support.validators.validate_cross_process_headers import (
-    validate_cross_process_headers,
-)
-from testing_support.validators.validate_external_node_params import (
-    validate_external_node_params,
-)
 
 from newrelic.api.background_task import background_task
 
@@ -133,9 +124,7 @@ def test_urlopen_cross_process_request(server):
 
 @cat_enabled
 def test_urlopen_cross_process_response(server):
-    _test_urlopen_cross_process_response_scoped_metrics = [
-        (f"ExternalTransaction/localhost:{server.port}/1#2/test", 1)
-    ]
+    _test_urlopen_cross_process_response_scoped_metrics = [(f"ExternalTransaction/localhost:{server.port}/1#2/test", 1)]
 
     _test_urlopen_cross_process_response_rollup_metrics = [
         ("External/all", 1),

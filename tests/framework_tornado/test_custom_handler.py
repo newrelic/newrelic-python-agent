@@ -13,23 +13,20 @@
 # limitations under the License.
 
 import pytest
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 pytestmark = pytest.mark.custom_app
 
 
 def test_custom_handler(app):
-    FRAMEWORK_METRIC = f'Python/Framework/Tornado/{app.tornado_version}'
+    FRAMEWORK_METRIC = f"Python/Framework/Tornado/{app.tornado_version}"
 
-    @validate_transaction_metrics(
-        name='_target_application:CustomApplication',
-        rollup_metrics=((FRAMEWORK_METRIC, 1),),
-    )
+    @validate_transaction_metrics(name="_target_application:CustomApplication", rollup_metrics=((FRAMEWORK_METRIC, 1),))
     @validate_code_level_metrics("_target_application", "CustomApplication")
     def _test():
-        response = app.fetch('/')
+        response = app.fetch("/")
         assert response.code == 200
-        assert response.body == b'*'
+        assert response.body == b"*"
 
     _test()

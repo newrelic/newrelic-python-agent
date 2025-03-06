@@ -12,12 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.common.object_wrapper import (
-    function_wrapper,
-    transient_function_wrapper,
-)
-from newrelic.core.stats_engine import CustomMetrics
+from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
 from newrelic.core.internal_metrics import InternalTraceContext
+from newrelic.core.stats_engine import CustomMetrics
 
 
 def validate_internal_metrics(metrics=None):
@@ -29,8 +26,12 @@ def validate_internal_metrics(metrics=None):
     @function_wrapper
     def _validate_wrapper(wrapped, instance, args, kwargs):
         # Apply no-op wrappers to prevent new internal trace contexts from being started, preventing capture
-        wrapped = transient_function_wrapper("newrelic.core.internal_metrics", "InternalTraceContext.__enter__")(no_op)(wrapped)
-        wrapped = transient_function_wrapper("newrelic.core.internal_metrics", "InternalTraceContext.__exit__")(no_op)(wrapped)
+        wrapped = transient_function_wrapper("newrelic.core.internal_metrics", "InternalTraceContext.__enter__")(no_op)(
+            wrapped
+        )
+        wrapped = transient_function_wrapper("newrelic.core.internal_metrics", "InternalTraceContext.__exit__")(no_op)(
+            wrapped
+        )
 
         captured_metrics = CustomMetrics()
         with InternalTraceContext(captured_metrics):

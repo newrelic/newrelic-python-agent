@@ -15,10 +15,7 @@
 import logging
 
 import pytest
-from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
-    collector_agent_registration_fixture,
-    collector_available_fixture,
-)
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 from newrelic.api.log import NewRelicLogForwardingHandler
 
@@ -38,8 +35,7 @@ _default_settings = {
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
-    app_name="Python Agent Test (logger_logging)",
-    default_settings=_default_settings,
+    app_name="Python Agent Test (logger_logging)", default_settings=_default_settings
 )
 
 

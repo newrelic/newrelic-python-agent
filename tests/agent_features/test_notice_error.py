@@ -21,21 +21,11 @@ from testing_support.fixtures import (
     reset_core_stats_engine,
     validate_transaction_error_trace_count,
 )
-from testing_support.validators.validate_application_error_event_count import (
-    validate_application_error_event_count,
-)
-from testing_support.validators.validate_application_error_trace_count import (
-    validate_application_error_trace_count,
-)
-from testing_support.validators.validate_application_errors import (
-    validate_application_errors,
-)
-from testing_support.validators.validate_transaction_error_event_count import (
-    validate_transaction_error_event_count,
-)
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
+from testing_support.validators.validate_application_error_event_count import validate_application_error_event_count
+from testing_support.validators.validate_application_error_trace_count import validate_application_error_trace_count
+from testing_support.validators.validate_application_errors import validate_application_errors
+from testing_support.validators.validate_transaction_error_event_count import validate_transaction_error_event_count
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 
 from newrelic.api.application import application_instance as application
 from newrelic.api.application import application_settings
@@ -186,9 +176,7 @@ def test_application_exception_multiple():
 
 _test_notice_error_strip_message_disabled = [(_runtime_error_name, "one")]
 
-_strip_message_disabled_settings = {
-    "strip_exception_messages.enabled": False,
-}
+_strip_message_disabled_settings = {"strip_exception_messages.enabled": False}
 
 
 @validate_transaction_errors(errors=_test_notice_error_strip_message_disabled)
@@ -229,9 +217,7 @@ def test_notice_error_strip_message_disabled_outside_transaction():
 
 _test_notice_error_strip_message_enabled = [(_runtime_error_name, STRIP_EXCEPTION_MESSAGE)]
 
-_strip_message_enabled_settings = {
-    "strip_exception_messages.enabled": True,
-}
+_strip_message_enabled_settings = {"strip_exception_messages.enabled": True}
 
 
 @validate_transaction_errors(errors=_test_notice_error_strip_message_enabled)
@@ -442,7 +428,7 @@ def test_application_error_event_limit():
 @background_task()
 def test_transaction_notice_error_params_not_a_dict():
     try:
-        raise RuntimeError()
+        raise RuntimeError
     except RuntimeError:
         notice_error(sys.exc_info(), attributes=[1, 2, 3])
 
@@ -451,6 +437,6 @@ def test_transaction_notice_error_params_not_a_dict():
 @validate_application_error_trace_count(num_errors=1)
 def test_application_notice_error_params_not_a_dict():
     try:
-        raise RuntimeError()
+        raise RuntimeError
     except RuntimeError:
         notice_error(sys.exc_info(), attributes=[1, 2, 3], application=application())

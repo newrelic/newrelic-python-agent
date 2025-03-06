@@ -13,9 +13,9 @@
 # limitations under the License.
 
 import pytest
-
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+
 
 def target_application():
     # We need to delay Flask application creation because of ordering
@@ -25,24 +25,27 @@ def target_application():
     # file is imported, which is too late.
 
     from _test_user_exceptions import _test_application
+
     return _test_application
 
+
 _test_user_exception_handler_scoped_metrics = [
-        ('Function/flask.app:Flask.wsgi_app', 1),
-        ('Python/WSGI/Application', 1),
-        ('Python/WSGI/Response', 1),
-        ('Python/WSGI/Finalize', 1),
-        ('Function/_test_user_exceptions:page_not_found', 1),
-        ('Function/_test_user_exceptions:error_page', 1),
-        ('Function/werkzeug.wsgi:ClosingIterator.close', 1),
-        ('Function/flask.app:Flask.handle_user_exception', 1)]
+    ("Function/flask.app:Flask.wsgi_app", 1),
+    ("Python/WSGI/Application", 1),
+    ("Python/WSGI/Response", 1),
+    ("Python/WSGI/Finalize", 1),
+    ("Function/_test_user_exceptions:page_not_found", 1),
+    ("Function/_test_user_exceptions:error_page", 1),
+    ("Function/werkzeug.wsgi:ClosingIterator.close", 1),
+    ("Function/flask.app:Flask.handle_user_exception", 1),
+]
 
 
-
-@validate_transaction_errors(errors=['_test_user_exceptions:UserException'])
-@validate_transaction_metrics('_test_user_exceptions:error_page',
-        scoped_metrics=_test_user_exception_handler_scoped_metrics)
+@validate_transaction_errors(errors=["_test_user_exceptions:UserException"])
+@validate_transaction_metrics(
+    "_test_user_exceptions:error_page", scoped_metrics=_test_user_exception_handler_scoped_metrics
+)
 def test_user_exception_handler():
     application = target_application()
-    response = application.get('/user_exception', status=500)
-    response.mustcontain('USER EXCEPTION')
+    response = application.get("/user_exception", status=500)
+    response.mustcontain("USER EXCEPTION")

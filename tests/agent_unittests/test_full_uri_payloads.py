@@ -12,24 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 import os
 import time
 
-
+import pytest
 from testing_support.fixtures import collector_agent_registration_fixture
-from newrelic.core.agent_protocol import AgentProtocol
+
 from newrelic.common.agent_http import HttpClient
-from newrelic.core.config import global_settings, _environ_as_bool
+from newrelic.core.agent_protocol import AgentProtocol
+from newrelic.core.config import _environ_as_bool, global_settings
 
 DEVELOPER_MODE = _environ_as_bool("NEW_RELIC_DEVELOPER_MODE", False) or "NEW_RELIC_LICENSE_KEY" not in os.environ
 SKIP_IF_DEVELOPER_MODE = pytest.mark.skipif(DEVELOPER_MODE, reason="Cannot connect to collector in developer mode")
 
 
 class FullUriClient(HttpClient):
-    def send_request(
-        self, method="POST", path="/agent_listener/invoke_raw_method", *args, **kwargs
-    ):
+    def send_request(self, method="POST", path="/agent_listener/invoke_raw_method", *args, **kwargs):
         path = f"https://{self._host}{path}"
         return super(FullUriClient, self).send_request(method, path, *args, **kwargs)
 
@@ -40,8 +38,7 @@ _default_settings = {
     "startup_timeout": 10.0,
 }
 application = collector_agent_registration_fixture(
-    app_name="Python Agent Test (test_full_uri_payloads)",
-    default_settings=_default_settings,
+    app_name="Python Agent Test (test_full_uri_payloads)", default_settings=_default_settings
 )
 
 
@@ -52,10 +49,7 @@ def session(application):
 
 
 NOW = time.time()
-EMPTY_SAMPLES = {
-    "reservoir_size": 100,
-    "events_seen": 0,
-}
+EMPTY_SAMPLES = {"reservoir_size": 100, "events_seen": 0}
 
 
 @SKIP_IF_DEVELOPER_MODE
@@ -79,9 +73,7 @@ def test_full_uri_payload(session, method, payload):
     redirect_host = session._protocol.client._host
     if method == "agent_command_results":
         payload[0] = session.configuration.agent_run_id
-    protocol = AgentProtocol(
-        session.configuration, redirect_host, client_cls=FullUriClient
-    )
+    protocol = AgentProtocol(session.configuration, redirect_host, client_cls=FullUriClient)
     # An exception will be raised here if there's a problem with the response
     protocol.send(method, payload)
 
@@ -90,9 +82,5 @@ def test_full_uri_payload(session, method, payload):
 def test_full_uri_connect():
     # An exception will be raised here if there's a problem with the response
     AgentProtocol.connect(
-        "Python Agent Test (test_full_uri_payloads)",
-        [],
-        [],
-        global_settings(),
-        client_cls=FullUriClient,
+        "Python Agent Test (test_full_uri_payloads)", [], [], global_settings(), client_cls=FullUriClient
     )

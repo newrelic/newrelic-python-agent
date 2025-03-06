@@ -20,21 +20,17 @@ can be found in test/framework_tornado_r3/test_cat_map.py
 
 import json
 import os
+from urllib.request import urlopen
 
 import pytest
 import webtest
-
-from urllib.request import urlopen
-
 from testing_support.fixtures import (
     make_cross_agent_headers,
     override_application_name,
     override_application_settings,
     validate_analytics_catmap_data,
 )
-from testing_support.mock_external_http_server import (
-    MockExternalHTTPHResponseHeadersServer,
-)
+from testing_support.mock_external_http_server import MockExternalHTTPHResponseHeadersServer
 from testing_support.validators.validate_tt_parameters import validate_tt_parameters
 
 from newrelic.api.external_trace import ExternalTrace

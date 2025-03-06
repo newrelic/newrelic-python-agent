@@ -23,15 +23,15 @@ from newrelic.api.application import application_instance as application
 from newrelic.api.background_task import background_task
 from newrelic.api.time_trace import notice_error
 
-
-UNICODE_MESSAGE = 'I💜🐍'
-UNICODE_ENGLISH = 'I love python'
-BYTES_ENGLISH = b'I love python'
-BYTES_UTF8_ENCODED = b'I\xf0\x9f\x92\x9c\xf0\x9f\x90\x8d'
-INCORRECTLY_DECODED_BYTES_PY2 = 'I\u00f0\u009f\u0092\u009c\u00f0\u009f\u0090\u008d'
+UNICODE_MESSAGE = "I💜🐍"
+UNICODE_ENGLISH = "I love python"
+BYTES_ENGLISH = b"I love python"
+BYTES_UTF8_ENCODED = b"I\xf0\x9f\x92\x9c\xf0\x9f\x90\x8d"
+INCORRECTLY_DECODED_BYTES_PY2 = "I\u00f0\u009f\u0092\u009c\u00f0\u009f\u0090\u008d"
 INCORRECTLY_DECODED_BYTES_PY3 = "b'I\\xf0\\x9f\\x92\\x9c\\xf0\\x9f\\x90\\x8d'"
 
 # =================== Exception messages during transaction ====================
+
 
 @validate_transaction_exception_message(UNICODE_MESSAGE)
 @background_task()
@@ -70,7 +70,9 @@ def test_transaction_exception_message_bytes_non_english():
     except ValueError:
         notice_error()
 
+
 # =================== Exception messages outside transaction ====================
+
 
 @reset_core_stats_engine()
 @validate_application_exception_message(UNICODE_MESSAGE)

@@ -26,7 +26,7 @@ try:
     # increasing.
 
     default_timer = time.perf_counter
-    timer_implementation = 'time.perf_counter()'
+    timer_implementation = "time.perf_counter()"
 
 except AttributeError:
     try:
@@ -36,8 +36,9 @@ except AttributeError:
         # monotonic clock should suit our requirements okay.
 
         from newrelic.common._monotonic import monotonic as default_timer
+
         default_timer()
-        timer_implementation = '_monotonic.monotonic()'
+        timer_implementation = "_monotonic.monotonic()"
 
     except (ImportError, NotImplementedError, OSError):
         # If neither of the above, fallback to using the default
@@ -46,15 +47,16 @@ except AttributeError:
         # albeit that it isn't monotonically increasing.
 
         import timeit
+
         default_timer = timeit.default_timer
-        timer_implementation = 'timeit.default_timer()'
+        timer_implementation = "timeit.default_timer()"
 
 # A timer class which deals with remembering the start time based on
 # wall clock time and duration based on a monotonic clock where
 # available.
 
-class _Timer():
 
+class _Timer:
     def __init__(self):
         self._time_started = time.time()
         self._started = default_timer()
@@ -79,6 +81,7 @@ class _Timer():
         if self._stopped is not None:
             return self._stopped - self._started
         return default_timer() - self._started
+
 
 def start_timer():
     return _Timer()

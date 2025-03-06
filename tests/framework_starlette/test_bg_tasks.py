@@ -15,19 +15,15 @@
 import sys
 
 import pytest
-from testing_support.validators.validate_transaction_count import (
-    validate_transaction_count,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_count import validate_transaction_count
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.common.package_version_utils import get_package_version_tuple
 
 starlette_version = get_package_version_tuple("starlette")[:3]
 
 try:
-    from starlette.middleware import Middleware  # noqa: F401
+    from starlette.middleware import Middleware
 
     no_middleware = False
 except ImportError:
@@ -99,10 +95,7 @@ def test_basehttp_style_middleware(target_application, route):
         )
     )
     BUG_PARTIALLY_FIXED = any(
-        (
-            (0, 20, 1) <= starlette_version < (0, 21, 0),
-            (0, 23, 1) <= starlette_version < (0, 29, 0),
-        )
+        ((0, 20, 1) <= starlette_version < (0, 21, 0), (0, 23, 1) <= starlette_version < (0, 29, 0))
     )
     if BUG_COMPLETELY_FIXED:
         # Assert both web transaction and background task transactions are present.

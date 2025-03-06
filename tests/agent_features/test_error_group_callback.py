@@ -17,19 +17,12 @@ import threading
 import traceback
 
 import pytest
-from testing_support.fixtures import (
-    override_application_settings,
-    reset_core_stats_engine,
-)
-from testing_support.validators.validate_error_event_attributes import (
-    validate_error_event_attributes,
-)
+from testing_support.fixtures import override_application_settings, reset_core_stats_engine
+from testing_support.validators.validate_error_event_attributes import validate_error_event_attributes
 from testing_support.validators.validate_error_event_attributes_outside_transaction import (
     validate_error_event_attributes_outside_transaction,
 )
-from testing_support.validators.validate_error_trace_attributes import (
-    validate_error_trace_attributes,
-)
+from testing_support.validators.validate_error_trace_attributes import validate_error_trace_attributes
 from testing_support.validators.validate_error_trace_attributes_outside_transaction import (
     validate_error_trace_attributes_outside_transaction,
 )
@@ -113,7 +106,6 @@ def test_error_group_name_callback(exc_class, group_name, high_security):
     @override_application_settings({"high_security": high_security})
     @background_task()
     def _test():
-
         try:
             raise exc_class()
         except Exception:
@@ -178,12 +170,7 @@ def test_error_group_name_callback_outside_transaction(exc_class, group_name, hi
     [
         background_task(name="TestBackgroundTask"),
         web_transaction(
-            name="TestWebTransaction",
-            host="localhost",
-            port=1234,
-            request_method="GET",
-            request_path="/",
-            headers=[],
+            name="TestWebTransaction", host="localhost", port=1234, request_method="GET", request_path="/", headers=[]
         ),
         None,
     ],
@@ -246,7 +233,9 @@ def test_error_group_name_callback_attributes(transaction_decorator):
             app = application() if transaction_decorator is None else None  # Only set outside transaction
             notice_error(application=app, attributes={"notice_error_attribute": 1})
 
-        assert not callback_errors, f"Callback inputs failed to validate.\nerror: {traceback.format_exception(*callback_errors[0])}\ndata: {str(_data[0])}"
+        assert not callback_errors, (
+            f"Callback inputs failed to validate.\nerror: {traceback.format_exception(*callback_errors[0])}\ndata: {str(_data[0])}"
+        )
 
     if transaction_decorator is not None:
         _test = transaction_decorator(_test)  # Manually decorate test function

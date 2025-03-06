@@ -13,32 +13,28 @@
 # limitations under the License.
 
 import json
-import pytest
-from newrelic.api.application import application_instance
-from newrelic.api.transaction import Transaction, current_transaction
-from newrelic.api.background_task import background_task
-from newrelic.api.external_trace import ExternalTrace
-from newrelic.common.encoding_utils import (
-        DistributedTracePayload, W3CTraceParent, W3CTraceState, NrTraceState)
 
-from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_span_events import (
-        validate_span_events)
+import pytest
 from _test_common import create_request, wait_for_transaction_completion
+from testing_support.fixtures import override_application_settings
+from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
-_test_matrix = ('method_name,streaming_request', (
-    ('DoUnaryUnary', False),
-    ('DoUnaryStream', False),
-    ('DoStreamUnary', True),
-    ('DoStreamStream', True)
-))
+from newrelic.api.application import application_instance
+from newrelic.api.background_task import background_task
+from newrelic.api.external_trace import ExternalTrace
+from newrelic.api.transaction import Transaction, current_transaction
+from newrelic.common.encoding_utils import DistributedTracePayload, NrTraceState, W3CTraceParent, W3CTraceState
+
+_test_matrix = (
+    "method_name,streaming_request",
+    (("DoUnaryUnary", False), ("DoUnaryStream", False), ("DoStreamUnary", True), ("DoStreamStream", True)),
+)
 
 
-@override_application_settings({'distributed_tracing.enabled': True})
+@override_application_settings({"distributed_tracing.enabled": True})
 @pytest.mark.parametrize(*_test_matrix)
-def test_inbound_distributed_trace(mock_grpc_server, method_name,
-        streaming_request, stub):
+def test_inbound_distributed_trace(mock_grpc_server, method_name, streaming_request, stub):
     request = create_request(streaming_request)
 
     transaction = Transaction(application_instance())
@@ -46,9 +42,7 @@ def test_inbound_distributed_trace(mock_grpc_server, method_name,
 
     @validate_transaction_metrics(
         f"sample_application:SampleApplicationServicer.{method_name}",
-        rollup_metrics=(
-            ('Supportability/TraceContext/Accept/Success', 1),
-        ),
+        rollup_metrics=(("Supportability/TraceContext/Accept/Success", 1),),
     )
     @wait_for_transaction_completion
     def _test():
@@ -63,27 +57,25 @@ def test_inbound_distributed_trace(mock_grpc_server, method_name,
     _test()
 
 
-_test_matrix = ('method_type,method_name', (
-        ('unary_unary', '__call__'),
-        ('unary_unary', 'with_call'),
-        ('stream_unary', '__call__'),
-        ('stream_unary', 'with_call'),
-        ('unary_stream', '__call__'),
-        ('stream_stream', '__call__'),
-))
+_test_matrix = (
+    "method_type,method_name",
+    (
+        ("unary_unary", "__call__"),
+        ("unary_unary", "with_call"),
+        ("stream_unary", "__call__"),
+        ("stream_unary", "with_call"),
+        ("unary_stream", "__call__"),
+        ("stream_stream", "__call__"),
+    ),
+)
 
 
 @pytest.mark.parametrize(*_test_matrix)
-@pytest.mark.parametrize('dt_enabled,dt_error', (
-    (True, False),
-    (True, True),
-    (False, False),
-))
-def test_outbound_distributed_trace(
-        mock_grpc_server, method_type, method_name, dt_enabled, dt_error, stub):
-    request_type, response_type = method_type.split('_', 1)
-    streaming_request = request_type == 'stream'
-    streaming_response = response_type == 'stream'
+@pytest.mark.parametrize("dt_enabled,dt_error", ((True, False), (True, True), (False, False)))
+def test_outbound_distributed_trace(mock_grpc_server, method_type, method_name, dt_enabled, dt_error, stub):
+    request_type, response_type = method_type.split("_", 1)
+    streaming_request = request_type == "stream"
+    streaming_response = response_type == "stream"
     stub_method = f"DtNoTxn{method_type.title().replace('_', '')}"
 
     request = create_request(streaming_request)
@@ -91,16 +83,13 @@ def test_outbound_distributed_trace(
     method_callable = getattr(stub, stub_method)
     method = getattr(method_callable, method_name)
 
-    exact_intrinsics = {
-        'category': 'http',
-        'span.kind': 'client',
-    }
+    exact_intrinsics = {"category": "http", "span.kind": "client"}
 
-    txn_name = f'test_outbound_DT[{method_type}-{method_name}-{dt_enabled}-{dt_error}]'
-    settings = {'distributed_tracing.enabled': dt_enabled}
+    txn_name = f"test_outbound_DT[{method_type}-{method_name}-{dt_enabled}-{dt_error}]"
+    settings = {"distributed_tracing.enabled": dt_enabled}
     span_count = 1 if dt_enabled else 0
     if dt_error:
-        settings['trusted_account_key'] = None
+        settings["trusted_account_key"] = None
 
     @override_application_settings(settings)
     @validate_span_events(count=span_count, exact_intrinsics=exact_intrinsics)
@@ -129,38 +118,36 @@ def test_outbound_distributed_trace(
         metadata = json.loads(reply[0].text)
 
         if not dt_enabled or dt_error:
-            assert 'newrelic' not in metadata
-            assert 'traceparent' not in metadata
-            assert 'tracestate' not in metadata
+            assert "newrelic" not in metadata
+            assert "traceparent" not in metadata
+            assert "tracestate" not in metadata
         else:
-            decoded = DistributedTracePayload.decode(metadata['newrelic'])
+            decoded = DistributedTracePayload.decode(metadata["newrelic"])
 
             # The external span should be the parent
-            exact_intrinsics['guid'] = decoded['d']['id']
+            exact_intrinsics["guid"] = decoded["d"]["id"]
 
             # Check that tracestate / traceparent payload matches newrelic
             # payload
-            w3c_data = W3CTraceParent.decode(metadata['traceparent'])
-            nr_tracestate = list(W3CTraceState.decode(
-                    metadata['tracestate']).values())[0]
+            w3c_data = W3CTraceParent.decode(metadata["traceparent"])
+            nr_tracestate = list(W3CTraceState.decode(metadata["tracestate"]).values())[0]
             nr_tracestate = NrTraceState.decode(nr_tracestate, None)
             w3c_data.update(nr_tracestate)
 
             # Remove all trust keys
-            decoded['d'].pop('tk', None)
-            w3c_data.pop('tk')
+            decoded["d"].pop("tk", None)
+            w3c_data.pop("tk")
 
-            assert decoded['d'] == w3c_data
+            assert decoded["d"] == w3c_data
 
     _test()
 
 
 @pytest.mark.parametrize(*_test_matrix)
-def test_outbound_payload_outside_transaction(
-        mock_grpc_server, method_type, method_name, stub):
-    request_type, response_type = method_type.split('_', 1)
-    streaming_request = request_type == 'stream'
-    streaming_response = response_type == 'stream'
+def test_outbound_payload_outside_transaction(mock_grpc_server, method_type, method_name, stub):
+    request_type, response_type = method_type.split("_", 1)
+    streaming_request = request_type == "stream"
+    streaming_response = response_type == "stream"
     stub_method = f"DtNoTxn{method_type.title().replace('_', '')}"
 
     request = create_request(streaming_request)
@@ -186,6 +173,6 @@ def test_outbound_payload_outside_transaction(
     # Verify there were no DT headers sent
     metadata = json.loads(reply[0].text)
 
-    assert 'newrelic' not in metadata
-    assert 'traceparent' not in metadata
-    assert 'tracestate' not in metadata
+    assert "newrelic" not in metadata
+    assert "traceparent" not in metadata
+    assert "tracestate" not in metadata

@@ -13,8 +13,8 @@
 # limitations under the License.
 
 import pytest
-
 from framework_graphql.test_application import *
+
 from newrelic.common.package_version_utils import get_package_version
 
 GRAPHENE_VERSION = get_package_version("graphene")

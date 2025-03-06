@@ -21,9 +21,8 @@ import logging
 import re
 import weakref
 
-
-from newrelic.core.internal_metrics import internal_metric
 from newrelic.core.config import global_settings
+from newrelic.core.internal_metrics import internal_metric
 
 _logger = logging.getLogger(__name__)
 
@@ -41,9 +40,11 @@ _logger = logging.getLogger(__name__)
 
 _single_quotes_p = r"'(?:[^']|'')*?(?:\\'.*|'(?!'))"
 _double_quotes_p = r'"(?:[^"]|"")*?(?:\\".*|"(?!"))'
-_dollar_quotes_p = r'(\$(?!\d)[^$]*?\$).*?(?:\1|$)'
-_oracle_quotes_p = (r"q'\[.*?(?:\]'|$)|q'\{.*?(?:\}'|$)|"
-        r"q'\<.*?(?:\>'|$)|q'\(.*?(?:\)'|$)")
+_dollar_quotes_p = r"(\$(?!\d)[^$]*?\$).*?(?:\1|$)"
+_oracle_quotes_p = (
+    r"q'\[.*?(?:\]'|$)|q'\{.*?(?:\}'|$)|"
+    r"q'\<.*?(?:\>'|$)|q'\(.*?(?:\)'|$)"
+)
 _any_quotes_p = f"{_single_quotes_p}|{_double_quotes_p}"
 _single_dollar_p = f"{_single_quotes_p}|{_dollar_quotes_p}"
 _single_oracle_p = f"{_single_quotes_p}|{_oracle_quotes_p}"
@@ -76,10 +77,10 @@ _single_dollar_cleanup_re = re.compile(_single_dollar_cleanup_p)
 # follows on from a ':'. This is because ':1' can be used as positional
 # parameter with database adapters where 'paramstyle' is 'numeric'.
 
-_uuid_p = r'\{?(?:[0-9a-f]\-?){32}\}?'
-_int_p = r'(?<!:)-?\b(?:[0-9]+\.)?[0-9]+(e[+-]?[0-9]+)?'
-_hex_p = r'0x[0-9a-f]+'
-_bool_p = r'\b(?:true|false|null)\b'
+_uuid_p = r"\{?(?:[0-9a-f]\-?){32}\}?"
+_int_p = r"(?<!:)-?\b(?:[0-9]+\.)?[0-9]+(e[+-]?[0-9]+)?"
+_hex_p = r"0x[0-9a-f]+"
+_bool_p = r"\b(?:true|false|null)\b"
 
 # Join all literals into one compiled regular expression. Longest expressions
 # first to avoid the situation of partial matches on shorter expressions. UUIDs
@@ -89,32 +90,34 @@ _all_literals_p = f"({_uuid_p})|({_hex_p})|({_int_p})|({_bool_p})"
 _all_literals_re = re.compile(_all_literals_p, re.IGNORECASE)
 
 _quotes_table = {
-    'single': (_single_quotes_re, _single_quotes_cleanup_re),
-    'single+double': (_any_quotes_re, _any_quotes_cleanup_re),
-    'single+dollar': (_single_dollar_re, _single_dollar_cleanup_re),
-    'single+oracle': (_single_oracle_re, _single_quotes_cleanup_re),
+    "single": (_single_quotes_re, _single_quotes_cleanup_re),
+    "single+double": (_any_quotes_re, _any_quotes_cleanup_re),
+    "single+dollar": (_single_dollar_re, _single_dollar_cleanup_re),
+    "single+oracle": (_single_oracle_re, _single_quotes_cleanup_re),
 }
 
 
 def _obfuscate_sql(sql, database):
-    quotes_re, quotes_cleanup_re = _quotes_table.get(database.quoting_style,
-            (_single_quotes_re, _single_quotes_cleanup_re))
+    quotes_re, quotes_cleanup_re = _quotes_table.get(
+        database.quoting_style, (_single_quotes_re, _single_quotes_cleanup_re)
+    )
 
     # Substitute quoted strings first.
 
-    sql = quotes_re.sub('?', sql)
+    sql = quotes_re.sub("?", sql)
 
     # Replace all other sensitive fields
 
-    sql = _all_literals_re.sub('?', sql)
+    sql = _all_literals_re.sub("?", sql)
 
     # Determine if the obfuscated query was malformed by searching for
     # remaining quote characters
 
     if quotes_cleanup_re.search(sql):
-        sql = '?'
+        sql = "?"
 
     return sql
+
 
 # Normalization of the SQL is done so that when we can produce a hash
 # value for a slow SQL such that it generates the same value for two SQL
@@ -135,21 +138,21 @@ def _obfuscate_sql(sql, database):
 # then it likely isn't valid in SQL anyway for that param style.
 
 
-_normalize_params_1_p = r'%\([^)]*\)s'
+_normalize_params_1_p = r"%\([^)]*\)s"
 _normalize_params_1_re = re.compile(_normalize_params_1_p)
-_normalize_params_2_p = r'%s'
+_normalize_params_2_p = r"%s"
 _normalize_params_2_re = re.compile(_normalize_params_2_p)
-_normalize_params_3_p = r':\w+'
+_normalize_params_3_p = r":\w+"
 _normalize_params_3_re = re.compile(_normalize_params_3_p)
 
-_normalize_values_p = r'\([^)]+\)'
+_normalize_values_p = r"\([^)]+\)"
 _normalize_values_re = re.compile(_normalize_values_p)
 
-_normalize_whitespace_1_p = r'\s+'
+_normalize_whitespace_1_p = r"\s+"
 _normalize_whitespace_1_re = re.compile(_normalize_whitespace_1_p)
-_normalize_whitespace_2_p = r'\s+(?!\w)'
+_normalize_whitespace_2_p = r"\s+(?!\w)"
 _normalize_whitespace_2_re = re.compile(_normalize_whitespace_2_p)
-_normalize_whitespace_3_p = r'(?<!\w)\s+'
+_normalize_whitespace_3_p = r"(?<!\w)\s+"
 _normalize_whitespace_3_re = re.compile(_normalize_whitespace_3_p)
 
 
@@ -161,16 +164,16 @@ def _normalize_sql(sql):
     # this before collapsing sets of values to a single value
     # due to the use of the parenthesis in the param style.
 
-    sql = _normalize_params_1_re.sub('?', sql)
+    sql = _normalize_params_1_re.sub("?", sql)
 
     # Collapse any parenthesised set of values to a single value.
 
-    sql = _normalize_values_re.sub('(?)', sql)
+    sql = _normalize_values_re.sub("(?)", sql)
 
     # Convert '%s', ':1' and ':name' param styles to '?'.
 
-    sql = _normalize_params_2_re.sub('?', sql)
-    sql = _normalize_params_3_re.sub('?', sql)
+    sql = _normalize_params_2_re.sub("?", sql)
+    sql = _normalize_params_3_re.sub("?", sql)
 
     # Strip leading and trailing white space.
 
@@ -178,15 +181,16 @@ def _normalize_sql(sql):
 
     # Collapse multiple white space to single white space.
 
-    sql = _normalize_whitespace_1_re.sub(' ', sql)
+    sql = _normalize_whitespace_1_re.sub(" ", sql)
 
     # Drop spaces adjacent to identifier except for case where
     # identifiers follow each other.
 
-    sql = _normalize_whitespace_2_re.sub('', sql)
-    sql = _normalize_whitespace_3_re.sub('', sql)
+    sql = _normalize_whitespace_2_re.sub("", sql)
+    sql = _normalize_whitespace_3_re.sub("", sql)
 
     return sql
+
 
 # Helper function for extracting out any identifier from a string which
 # might be preceded or followed by punctuation which we can expect in
@@ -200,19 +204,20 @@ _identifier_re = re.compile(r'[\',"`\[\]\(\)]*')
 
 
 def _extract_identifier(token):
-    return _identifier_re.sub('', token).strip().lower()
+    return _identifier_re.sub("", token).strip().lower()
 
 
 # Helper function for removing C style comments embedded in SQL statements.
 
-_uncomment_sql_p = r'(?:#|--).*?(?=\r|\n|$)'
-_uncomment_sql_q = r'\/\*(?:[^\/]|\/[^*])*?(?:\*\/|\/\*.*)'
-_uncomment_sql_x = r'(%s)|(%s)' % (_uncomment_sql_p, _uncomment_sql_q)
+_uncomment_sql_p = r"(?:#|--).*?(?=\r|\n|$)"
+_uncomment_sql_q = r"\/\*(?:[^\/]|\/[^*])*?(?:\*\/|\/\*.*)"
+_uncomment_sql_x = r"(%s)|(%s)" % (_uncomment_sql_p, _uncomment_sql_q)
 _uncomment_sql_re = re.compile(_uncomment_sql_x, re.DOTALL)
 
 
 def _uncomment_sql(sql):
-    return _uncomment_sql_re.sub('', sql)
+    return _uncomment_sql_re.sub("", sql)
+
 
 # Parser routines for the different SQL statement operation types.
 #
@@ -267,25 +272,25 @@ def _uncomment_sql(sql):
 
 def _parse_default(sql, regex):
     match = regex.search(sql)
-    return match and _extract_identifier(match.group(1)) or ''
+    return match and _extract_identifier(match.group(1)) or ""
 
 
 _parse_identifier_1_p = r'"((?:[^"]|"")+)"(?:\."((?:[^"]|"")+)")?'
 _parse_identifier_2_p = r"'((?:[^']|'')+)'(?:\.'((?:[^']|'')+)')?"
-_parse_identifier_3_p = r'`((?:[^`]|``)+)`(?:\.`((?:[^`]|``)+)`)?'
-_parse_identifier_4_p = r'\[\s*(\S+)\s*\]'
-_parse_identifier_5_p = r'\(\s*(\S+)\s*\)'
-_parse_identifier_6_p = r'\{\s*(\S+)\s*\}'
-_parse_identifier_7_p = r'([^\s\(\)\[\],]+)'
+_parse_identifier_3_p = r"`((?:[^`]|``)+)`(?:\.`((?:[^`]|``)+)`)?"
+_parse_identifier_4_p = r"\[\s*(\S+)\s*\]"
+_parse_identifier_5_p = r"\(\s*(\S+)\s*\)"
+_parse_identifier_6_p = r"\{\s*(\S+)\s*\}"
+_parse_identifier_7_p = r"([^\s\(\)\[\],]+)"
 
 _parse_identifier_p = f"({_parse_identifier_1_p}|{_parse_identifier_2_p}|{_parse_identifier_3_p}|{_parse_identifier_4_p}|{_parse_identifier_5_p}|{_parse_identifier_6_p}|{_parse_identifier_7_p})"
 
-_parse_from_p = r'\s+FROM\s+' + _parse_identifier_p
+_parse_from_p = r"\s+FROM\s+" + _parse_identifier_p
 _parse_from_re = re.compile(_parse_from_p, re.IGNORECASE)
 
 
 def _join_identifier(m):
-    return m and '.'.join([s for s in m.groups()[1:] if s]).lower() or ''
+    return m and ".".join([s for s in m.groups()[1:] if s]).lower() or ""
 
 
 def _parse_select(sql):
@@ -296,7 +301,7 @@ def _parse_delete(sql):
     return _join_identifier(_parse_from_re.search(sql))
 
 
-_parse_into_p = r'\s+INTO\s+' + _parse_identifier_p
+_parse_into_p = r"\s+INTO\s+" + _parse_identifier_p
 _parse_into_re = re.compile(_parse_into_p, re.IGNORECASE)
 
 
@@ -304,7 +309,7 @@ def _parse_insert(sql):
     return _join_identifier(_parse_into_re.search(sql))
 
 
-_parse_update_p = r'\s*UPDATE\s+' + _parse_identifier_p
+_parse_update_p = r"\s*UPDATE\s+" + _parse_identifier_p
 _parse_update_re = re.compile(_parse_update_p, re.IGNORECASE)
 
 
@@ -312,7 +317,7 @@ def _parse_update(sql):
     return _join_identifier(_parse_update_re.search(sql))
 
 
-_parse_table_p = r'\s+TABLE\s+' + _parse_identifier_p
+_parse_table_p = r"\s+TABLE\s+" + _parse_identifier_p
 _parse_table_re = re.compile(_parse_table_p, re.IGNORECASE)
 
 
@@ -324,18 +329,19 @@ def _parse_drop(sql):
     return _join_identifier(_parse_table_re.search(sql))
 
 
-_parse_call_p = r'\s*CALL\s+(?!\()(\w+(\.\w+)*)'
+_parse_call_p = r"\s*CALL\s+(?!\()(\w+(\.\w+)*)"
 _parse_call_re = re.compile(_parse_call_p, re.IGNORECASE)
 
 
 def _parse_call(sql):
     return _parse_default(sql, _parse_call_re)
 
+
 # TODO Following need to be reviewed again. They aren't currently used
 # in actual use as only parse out target for select/insert/update/delete.
 
 
-_parse_show_p = r'\s*SHOW\s+(.*)'
+_parse_show_p = r"\s*SHOW\s+(.*)"
 _parse_show_re = re.compile(_parse_show_p, re.IGNORECASE | re.DOTALL)
 
 
@@ -343,7 +349,7 @@ def _parse_show(sql):
     return _parse_default(sql, _parse_show_re)
 
 
-_parse_set_p = r'\s*SET\s+(.*?)\W+.*'
+_parse_set_p = r"\s*SET\s+(.*?)\W+.*"
 _parse_set_re = re.compile(_parse_set_p, re.IGNORECASE | re.DOTALL)
 
 
@@ -351,7 +357,7 @@ def _parse_set(sql):
     return _parse_default(sql, _parse_set_re)
 
 
-_parse_exec_p = r'\s*EXEC\s+(?!\()(\w+)'
+_parse_exec_p = r"\s*EXEC\s+(?!\()(\w+)"
 _parse_exec_re = re.compile(_parse_exec_p, re.IGNORECASE)
 
 
@@ -359,7 +365,7 @@ def _parse_exec(sql):
     return _parse_default(sql, _parse_exec_re)
 
 
-_parse_execute_p = r'\s*EXECUTE\s+(?!\()(\w+)'
+_parse_execute_p = r"\s*EXECUTE\s+(?!\()(\w+)"
 _parse_execute_re = re.compile(_parse_execute_p, re.IGNORECASE)
 
 
@@ -367,12 +373,13 @@ def _parse_execute(sql):
     return _parse_default(sql, _parse_execute_re)
 
 
-_parse_alter_p = r'\s*ALTER\s+(?!\()(\w+)'
+_parse_alter_p = r"\s*ALTER\s+(?!\()(\w+)"
 _parse_alter_re = re.compile(_parse_alter_p, re.IGNORECASE)
 
 
 def _parse_alter(sql):
     return _parse_default(sql, _parse_alter_re)
+
 
 # For SQL queries, if a target of some sort, such as a table can be
 # meaningfully extracted, then this table should map to the function
@@ -383,39 +390,40 @@ def _parse_alter(sql):
 
 
 _operation_table = {
-    'select': _parse_select,
-    'delete': _parse_delete,
-    'insert': _parse_insert,
-    'update': _parse_update,
-    'create': None,
-    'drop': None,
-    'call': _parse_call,
-    'show': None,
-    'set': None,
-    'exec': None,
-    'execute': None,
-    'alter': None,
-    'commit': None,
-    'rollback': None,
-    'begin': None,
-    'prepare': None,
-    'copy': None,
+    "select": _parse_select,
+    "delete": _parse_delete,
+    "insert": _parse_insert,
+    "update": _parse_update,
+    "create": None,
+    "drop": None,
+    "call": _parse_call,
+    "show": None,
+    "set": None,
+    "exec": None,
+    "execute": None,
+    "alter": None,
+    "commit": None,
+    "rollback": None,
+    "begin": None,
+    "prepare": None,
+    "copy": None,
 }
 
-_parse_operation_p = r'(\w+)'
+_parse_operation_p = r"(\w+)"
 _parse_operation_re = re.compile(_parse_operation_p)
 
 
 def _parse_operation(sql):
     match = _parse_operation_re.search(sql)
-    operation = match and match.group(1).lower() or ''
-    return operation if operation in _operation_table else ''
+    operation = match and match.group(1).lower() or ""
+    return operation if operation in _operation_table else ""
 
 
 def _parse_target(sql, operation):
-    sql = sql.rstrip(';')
+    sql = sql.rstrip(";")
     parse = _operation_table.get(operation, None)
-    return parse and parse(sql) or ''
+    return parse and parse(sql) or ""
+
 
 # For explain plan obfuscation, the regular expression for matching the
 # explain plan needs to give precedence to replacing double quotes from
@@ -432,14 +440,15 @@ _explain_plan_postgresql_re_1_mask_false = re.compile(
     r"""(?P<sub_plan_ref>\bSubPlan\s+\d+\b)|"""
     r"""(?P<init_plan_ref>\bInitPlan\s+\d+\b)|"""
     r"""(?P<dollar_var_ref>\$\d+\b)|"""
-    r"""(?P<numeric_value>(?<![\w])[-+]?\d*\.?\d+([eE][-+]?\d+)?\b))""")
+    r"""(?P<numeric_value>(?<![\w])[-+]?\d*\.?\d+([eE][-+]?\d+)?\b))"""
+)
 
 _explain_plan_postgresql_re_1_mask_true = re.compile(
     r"""((?P<double_quotes>"[^"]*")|"""
-    r"""(?P<single_quotes>'([^']|'')*'))""")
+    r"""(?P<single_quotes>'([^']|'')*'))"""
+)
 
-_explain_plan_postgresql_re_2 = re.compile(
-    r"""^(?P<label>[^:]*:\s+).*$""", re.MULTILINE)
+_explain_plan_postgresql_re_2 = re.compile(r"""^(?P<label>[^:]*:\s+).*$""", re.MULTILINE)
 
 
 def _obfuscate_explain_plan_postgresql_substitute(text, mask):
@@ -455,8 +464,8 @@ def _obfuscate_explain_plan_postgresql_substitute(text, mask):
 
         for name, value in list(matchobj.groupdict().items()):
             if value is not None:
-                if name in ('numeric_value', 'single_quotes'):
-                    return '?'
+                if name in ("numeric_value", "single_quotes"):
+                    return "?"
                 return value
 
     if mask:
@@ -469,7 +478,7 @@ def _obfuscate_explain_plan_postgresql(columns, rows, mask=None):
     settings = global_settings()
 
     if mask is None:
-        mask = (settings.debug.explain_plan_obfuscation == 'simple')
+        mask = settings.debug.explain_plan_obfuscation == "simple"
 
     # Only deal with where we get back the one expected column. If we
     # get more than one column just ignore the whole explain plan. Need
@@ -486,7 +495,7 @@ def _obfuscate_explain_plan_postgresql(columns, rows, mask=None):
     # any text quoted from the original SQL can result in that line of
     # the explain plan being split across multiple rows.
 
-    text = '\n'.join(item[0] for item in rows)
+    text = "\n".join(item[0] for item in rows)
 
     # Now need to perform the replacements on the complete text of the
     # explain plan.
@@ -497,18 +506,16 @@ def _obfuscate_explain_plan_postgresql(columns, rows, mask=None):
     # obfuscation and simply mask out any line preceded by a label.
 
     if mask:
-        text = _explain_plan_postgresql_re_2.sub(r'\g<label>?', text)
+        text = _explain_plan_postgresql_re_2.sub(r"\g<label>?", text)
 
     # Now regenerate the list of rows by splitting again on newline.
 
-    rows = [(_,) for _ in text.split('\n')]
+    rows = [(_,) for _ in text.split("\n")]
 
     return columns, rows
 
 
-_obfuscate_explain_plan_table = {
-    'Postgres': _obfuscate_explain_plan_postgresql
-}
+_obfuscate_explain_plan_table = {"Postgres": _obfuscate_explain_plan_postgresql}
 
 
 def _obfuscate_explain_plan(database, columns, rows):
@@ -518,8 +525,7 @@ def _obfuscate_explain_plan(database, columns, rows):
     return columns, rows
 
 
-class SQLConnection():
-
+class SQLConnection:
     def __init__(self, database, connection):
         self.database = database
         self.connection = connection
@@ -534,8 +540,7 @@ class SQLConnection():
             settings = global_settings()
 
             if settings.debug.log_explain_plan_queries:
-                _logger.debug('Created database cursor for %r.',
-                        self.database.client)
+                _logger.debug("Created database cursor for %r.", self.database.client)
 
             cursor = self.connection.cursor(*args, **kwargs)
             self.cursors[key] = cursor
@@ -546,8 +551,7 @@ class SQLConnection():
         settings = global_settings()
 
         if settings.debug.log_explain_plan_queries:
-            _logger.debug('Cleanup database connection for %r.',
-                    self.database)
+            _logger.debug("Cleanup database connection for %r.", self.database)
 
         try:
             self.connection.rollback()
@@ -558,8 +562,7 @@ class SQLConnection():
         self.connection.close()
 
 
-class SQLConnections():
-
+class SQLConnections:
     def __init__(self, maximum=4):
         self.connections = []
         self.maximum = maximum
@@ -567,7 +570,7 @@ class SQLConnections():
         settings = global_settings()
 
         if settings.debug.log_explain_plan_queries:
-            _logger.debug('Creating SQL connections cache %r.', self)
+            _logger.debug("Creating SQL connections cache %r.", self)
 
     def connection(self, database, args, kwargs):
         key = (database.client, args, kwargs)
@@ -596,24 +599,23 @@ class SQLConnections():
             if len(self.connections) == self.maximum:
                 connection = self.connections.pop(0)[1]
 
-                internal_metric('Supportability/Python/DatabaseUtils/Counts/'
-                                'drop_database_connection', 1)
+                internal_metric("Supportability/Python/DatabaseUtils/Counts/drop_database_connection", 1)
 
                 if settings.debug.log_explain_plan_queries:
-                    _logger.debug('Drop database connection for %r as '
-                            'reached maximum of %r.',
-                            connection.database.client, self.maximum)
+                    _logger.debug(
+                        "Drop database connection for %r as reached maximum of %r.",
+                        connection.database.client,
+                        self.maximum,
+                    )
 
                 connection.cleanup()
 
-            connection = SQLConnection(database,
-                    database.connect(*args, **kwargs))
+            connection = SQLConnection(database, database.connect(*args, **kwargs))
 
             self.connections.append((key, connection))
 
             if settings.debug.log_explain_plan_queries:
-                _logger.debug('Created database connection for %r.',
-                        database.client)
+                _logger.debug("Created database connection for %r.", database.client)
 
         return connection
 
@@ -621,7 +623,7 @@ class SQLConnections():
         settings = global_settings()
 
         if settings.debug.log_explain_plan_queries:
-            _logger.debug('Cleaning up SQL connections cache %r.', self)
+            _logger.debug("Cleaning up SQL connections cache %r.", self)
 
         for key, connection in self.connections:
             connection.cleanup()
@@ -650,28 +652,25 @@ def _query_result_dicts_to_tuples(columns, rows):
 
 
 def _could_be_multi_query(sql):
-    return sql.rstrip().rstrip(';').count(';') > 0
+    return sql.rstrip().rstrip(";").count(";") > 0
 
 
-def _explain_plan(connections, sql, database, connect_params, cursor_params,
-        sql_parameters, execute_params):
-
+def _explain_plan(connections, sql, database, connect_params, cursor_params, sql_parameters, execute_params):
     settings = global_settings()
 
     if _could_be_multi_query(sql):
         if settings.debug.log_explain_plan_queries:
-            _logger.debug('Skipping explain plan for %r on %r due to '
-                    'semicolons in the query string.', sql, database.client)
+            _logger.debug(
+                "Skipping explain plan for %r on %r due to semicolons in the query string.", sql, database.client
+            )
         else:
-            _logger.debug('Skipping explain plan on %s due to '
-                    'semicolons in the query string.', database.client)
+            _logger.debug("Skipping explain plan on %s due to semicolons in the query string.", database.client)
         return None
 
-    query = f'{database.explain_query} {sql}'
+    query = f"{database.explain_query} {sql}"
 
     if settings.debug.log_explain_plan_queries:
-        _logger.debug('Executing explain plan for %r on %r.', query,
-                database.client)
+        _logger.debug("Executing explain plan for %r on %r.", query, database.client)
 
     try:
         args, kwargs = connect_params
@@ -702,11 +701,10 @@ def _explain_plan(connections, sql, database, connect_params, cursor_params,
         else:
             cursor.execute(query, **kwargs)
 
-        columns = []
-
         if cursor.description:
-            for column in cursor.description:
-                columns.append(column[0])
+            columns = [column[0] for column in cursor.description]
+        else:
+            columns = []
 
         rows = cursor.fetchall()
 
@@ -714,8 +712,7 @@ def _explain_plan(connections, sql, database, connect_params, cursor_params,
         # them to a list of tuples before returning.
 
         if settings.debug.log_explain_plan_queries:
-            _logger.debug('Explain plan row data type is %r',
-                    rows and type(rows[0]))
+            _logger.debug("Explain plan row data type is %r", rows and type(rows[0]))
 
         if rows and isinstance(rows[0], dict):
             rows = _query_result_dicts_to_tuples(columns, rows)
@@ -727,17 +724,18 @@ def _explain_plan(connections, sql, database, connect_params, cursor_params,
 
     except Exception:
         if settings.debug.log_explain_plan_queries:
-            _logger.exception('Error occurred when executing explain '
-                    'plan for %r on %r where cursor_params=%r and '
-                    'execute_params=%r.', query, database.client,
-                    cursor_params, execute_params)
+            _logger.exception(
+                "Error occurred when executing explain plan for %r on %r where cursor_params=%r and execute_params=%r.",
+                query,
+                database.client,
+                cursor_params,
+                execute_params,
+            )
 
     return None
 
 
-def explain_plan(connections, sql_statement, connect_params, cursor_params,
-        sql_parameters, execute_params, sql_format):
-
+def explain_plan(connections, sql_statement, connect_params, cursor_params, sql_parameters, execute_params, sql_format):
     # If no parameters supplied for creating database connection
     # then mustn't have been a candidate for explain plans in the
     # first place, so skip it.
@@ -753,19 +751,20 @@ def explain_plan(connections, sql_statement, connect_params, cursor_params,
     if sql_statement.operation not in database.explain_stmts:
         return
 
-    details = _explain_plan(connections, sql_statement.sql, database,
-            connect_params, cursor_params, sql_parameters, execute_params)
+    details = _explain_plan(
+        connections, sql_statement.sql, database, connect_params, cursor_params, sql_parameters, execute_params
+    )
 
-    if details is not None and sql_format != 'raw':
+    if details is not None and sql_format != "raw":
         return _obfuscate_explain_plan(database, *details)
 
     return details
 
+
 # Wrapper for information about a specific database.
 
 
-class SQLDatabase():
-
+class SQLDatabase:
     def __init__(self, dbapi2_module):
         self.dbapi2_module = dbapi2_module
 
@@ -774,33 +773,33 @@ class SQLDatabase():
 
     @property
     def product(self):
-        return getattr(self.dbapi2_module, '_nr_database_product', None)
+        return getattr(self.dbapi2_module, "_nr_database_product", None)
 
     @property
     def client(self):
-        name = getattr(self.dbapi2_module, '__name__', None)
+        name = getattr(self.dbapi2_module, "__name__", None)
         if name is None:
-            name = getattr(self.dbapi2_module, '__file__', None)
+            name = getattr(self.dbapi2_module, "__file__", None)
         if name is None:
             name = str(self.dbapi2_module)
         return name
 
     @property
     def quoting_style(self):
-        result = getattr(self.dbapi2_module, '_nr_quoting_style', None)
+        result = getattr(self.dbapi2_module, "_nr_quoting_style", None)
 
         if result is None:
-            result = 'single'
+            result = "single"
 
         return result
 
     @property
     def explain_query(self):
-        return getattr(self.dbapi2_module, '_nr_explain_query', None)
+        return getattr(self.dbapi2_module, "_nr_explain_query", None)
 
     @property
     def explain_stmts(self):
-        result = getattr(self.dbapi2_module, '_nr_explain_stmts', None)
+        result = getattr(self.dbapi2_module, "_nr_explain_stmts", None)
 
         if result is None:
             result = ()
@@ -808,8 +807,7 @@ class SQLDatabase():
         return result
 
 
-class SQLStatement():
-
+class SQLStatement:
     def __init__(self, sql, database=None):
         self._operation = None
         self._target = None
@@ -820,17 +818,17 @@ class SQLStatement():
 
         if isinstance(sql, bytes):
             try:
-                sql = sql.decode('utf-8')
+                sql = sql.decode("utf-8")
             except UnicodeError as e:
                 settings = global_settings()
                 if settings.debug.log_explain_plan_queries:
-                    _logger.debug(f'An error occurred while decoding sql statement: {e.reason}')
+                    _logger.debug("An error occurred while decoding sql statement: %s", e.reason)
 
-                self._operation = ''
-                self._target = ''
-                self._uncommented = ''
-                self._obfuscated = ''
-                self._normalized = ''
+                self._operation = ""
+                self._target = ""
+                self._uncommented = ""
+                self._obfuscated = ""
+                self._normalized = ""
 
         self.sql = sql
         self.database = database
@@ -856,8 +854,7 @@ class SQLStatement():
     @property
     def obfuscated(self):
         if self._obfuscated is None:
-            self._obfuscated = _uncomment_sql(_obfuscate_sql(self.sql,
-                self.database))
+            self._obfuscated = _uncomment_sql(_obfuscate_sql(self.sql, self.database))
         return self._obfuscated
 
     @property
@@ -873,10 +870,10 @@ class SQLStatement():
         return self._identifier
 
     def formatted(self, sql_format):
-        if sql_format == 'off':
-            return ''
+        if sql_format == "off":
+            return ""
 
-        elif sql_format == 'raw':
+        elif sql_format == "raw":
             return self.sql
 
         else:

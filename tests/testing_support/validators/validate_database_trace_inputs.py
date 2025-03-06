@@ -14,27 +14,32 @@
 
 
 from newrelic.common.object_wrapper import transient_function_wrapper
-
 from testing_support.fixtures import catch_background_exceptions
 
 
 def validate_database_trace_inputs(sql_parameters_type):
-
-    @transient_function_wrapper('newrelic.api.database_trace',
-            'DatabaseTrace.__init__')
+    @transient_function_wrapper("newrelic.api.database_trace", "DatabaseTrace.__init__")
     @catch_background_exceptions
     def _validate_database_trace_inputs(wrapped, instance, args, kwargs):
-        def _bind_params(sql, dbapi2_module=None,
-                connect_params=None, cursor_params=None, sql_parameters=None,
-                execute_params=None, host=None, port_path_or_id=None,
-                database_name=None, source=None):
-            return (sql, dbapi2_module, connect_params,
-                    cursor_params, sql_parameters, execute_params, source)
+        def _bind_params(
+            sql,
+            dbapi2_module=None,
+            connect_params=None,
+            cursor_params=None,
+            sql_parameters=None,
+            execute_params=None,
+            host=None,
+            port_path_or_id=None,
+            database_name=None,
+            source=None,
+        ):
+            return (sql, dbapi2_module, connect_params, cursor_params, sql_parameters, execute_params, source)
 
-        (sql, dbapi2_module, connect_params, cursor_params,
-            sql_parameters, execute_params, source) = _bind_params(*args, **kwargs)
+        (sql, dbapi2_module, connect_params, cursor_params, sql_parameters, execute_params, source) = _bind_params(
+            *args, **kwargs
+        )
 
-        assert hasattr(dbapi2_module, 'connect')
+        assert hasattr(dbapi2_module, "connect")
 
         assert connect_params is None or isinstance(connect_params, tuple)
 
@@ -50,8 +55,7 @@ def validate_database_trace_inputs(sql_parameters_type):
             assert isinstance(cursor_params[0], tuple)
             assert isinstance(cursor_params[1], dict)
 
-        assert sql_parameters is None or isinstance(
-                sql_parameters, sql_parameters_type)
+        assert sql_parameters is None or isinstance(sql_parameters, sql_parameters_type), f"Expected: {sql_parameters_type} Got: {type(sql_parameters)}"
 
         if execute_params is not None:
             assert len(execute_params) == 2

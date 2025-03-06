@@ -12,27 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This module implements the communications layer with the data collector.
-
-"""
+"""This module implements the communications layer with the data collector."""
 
 import logging
 
-from newrelic.common.agent_http import (
-    ApplicationModeClient,
-    DeveloperModeClient,
-    ServerlessModeClient,
-)
-from newrelic.core.agent_protocol import (
-    AgentProtocol,
-    OtlpProtocol,
-    ServerlessModeProtocol,
-)
+from newrelic.common.agent_http import ApplicationModeClient, DeveloperModeClient, ServerlessModeClient
+from newrelic.core.agent_protocol import AgentProtocol, OtlpProtocol, ServerlessModeProtocol
 from newrelic.core.agent_streaming import StreamingRpc
+from newrelic.core.attribute import MAX_NUM_USER_ATTRIBUTES, process_user_attribute
 from newrelic.core.config import global_settings
 from newrelic.core.otlp_utils import encode_metric_data, encode_ml_event_data
-
-from newrelic.core.attribute import process_user_attribute, MAX_NUM_USER_ATTRIBUTES
 
 _logger = logging.getLogger(__name__)
 
@@ -159,7 +148,7 @@ class Session:
     def get_log_events_common_block(self):
         """ "Generate common block for log events."""
         common = {}
-        
+
         try:
             # Add global custom log attributes to common block
             if self.configuration.application_logging.forwarding.custom_attributes:
@@ -167,7 +156,11 @@ class Session:
                 custom_attributes = {}
                 for attr_name, attr_value in self.configuration.application_logging.forwarding.custom_attributes:
                     if len(custom_attributes) >= MAX_NUM_USER_ATTRIBUTES:
-                        _logger.debug("Maximum number of custom attributes already added. Dropping attribute: %r=%r", attr_name, attr_value)
+                        _logger.debug(
+                            "Maximum number of custom attributes already added. Dropping attribute: %r=%r",
+                            attr_name,
+                            attr_value,
+                        )
                         break
 
                     key, val = process_user_attribute(attr_name, attr_value)
@@ -182,16 +175,16 @@ class Session:
             if not labels or not self.configuration.application_logging.forwarding.labels.enabled:
                 return common
             elif not self.configuration.application_logging.forwarding.labels.exclude:
-                common.update({
-                    f"tags.{label['label_type']}": label['label_value']
-                    for label in labels
-                })
+                common.update({f"tags.{label['label_type']}": label["label_value"] for label in labels})
             else:
-                common.update({
-                    f"tags.{label['label_type']}": label['label_value']
-                    for label in labels
-                    if label['label_type'].lower() not in self.configuration.application_logging.forwarding.labels.exclude
-                })
+                common.update(
+                    {
+                        f"tags.{label['label_type']}": label["label_value"]
+                        for label in labels
+                        if label["label_type"].lower()
+                        not in self.configuration.application_logging.forwarding.labels.exclude
+                    }
+                )
 
         except Exception:
             _logger.exception("Cannot generate common block for log events.")

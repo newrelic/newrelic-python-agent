@@ -12,15 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.common.object_wrapper import (transient_function_wrapper,
-        function_wrapper)
+from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
 
 
 def validate_transaction_count(count):
     transactions = []
 
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
+    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     def _increment_count(wrapped, instance, args, kwargs):
         transactions.append(getattr(args[0], "name", True))
         return wrapped(*args, **kwargs)

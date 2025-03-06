@@ -16,7 +16,6 @@ import json
 import os
 import sys
 import tempfile
-
 from importlib import reload
 
 import pytest
@@ -30,7 +29,6 @@ from newrelic.common.object_wrapper import function_wrapper
 from newrelic.common.system_info import BootIdUtilization
 from newrelic.common.utilization import CommonUtilization
 from newrelic.core.agent_protocol import AgentProtocol
-
 
 INITIAL_ENV = os.environ
 
@@ -72,7 +70,7 @@ def _mock_getips(ip_addresses):
     return getips
 
 
-class UpdatedSettings():
+class UpdatedSettings:
     def __init__(self):
         self.initial_settings = newrelic.core.config._settings
 
@@ -192,7 +190,6 @@ def test_utilization_settings(test, monkeypatch):
     @patch_boot_id_file(test)
     @patch_system_info(test, monkeypatch)
     def _test_utilization_data():
-
         data = _get_response_body_for_test(test)
         client_cls = create_client_cls(200, data)
         monkeypatch.setattr(CommonUtilization, "CLIENT_CLS", client_cls)

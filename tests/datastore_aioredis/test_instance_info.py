@@ -13,10 +13,11 @@
 # limitations under the License.
 
 from inspect import isawaitable
+
 import pytest
+from conftest import AIOREDIS_VERSION, SKIPIF_AIOREDIS_V1, aioredis
 
 from newrelic.hooks.datastore_aioredis import _conn_attrs_to_dict, _instance_info
-from conftest import aioredis, AIOREDIS_VERSION, SKIPIF_AIOREDIS_V1
 
 _instance_info_tests = [
     ({}, ("localhost", "6379", "0")),
@@ -30,15 +31,14 @@ _instance_info_tests = [
 
 if AIOREDIS_VERSION >= (2, 0):
     clients = [aioredis.Redis, aioredis.StrictRedis]
+
     class DisabledConnection(aioredis.Connection):
         @staticmethod
         async def connect(*args, **kwargs):
             pass
-    
+
         async def can_read_destructive(self, *args, **kwargs):
             return False
-
-
 
     class DisabledUnixConnection(aioredis.UnixDomainSocketConnection, DisabledConnection):
         pass
@@ -46,7 +46,6 @@ if AIOREDIS_VERSION >= (2, 0):
 else:
     clients = []
     DisabledConnection, DisabledUnixConnection = None, None
-
 
 
 @SKIPIF_AIOREDIS_V1
@@ -87,7 +86,7 @@ _instance_info_from_url_tests = [
     (("redis://@:1234/",), {}, ("localhost", "1234", "0")),
     (("redis://localhost:1234/garbage",), {}, ("localhost", "1234", "0")),
     (("redis://127.0.0.1",), {}, ("127.0.0.1", "6379", "0")),
-    (("rediss://localhost:6379/2/",), {}, ("localhost", "6379", "2")),          # rediss: Not a typo
+    (("rediss://localhost:6379/2/",), {}, ("localhost", "6379", "2")),  # rediss: Not a typo
     (("redis://localhost:6379",), {"host": "someotherhost"}, ("localhost", "6379", "0")),
     (("redis://localhost:6379/2",), {"db": 3}, ("localhost", "6379", "2")),
     (("redis://localhost:6379/2/?db=111",), {}, ("localhost", "6379", "111")),

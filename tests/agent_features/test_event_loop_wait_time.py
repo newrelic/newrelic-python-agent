@@ -17,15 +17,9 @@ import time
 
 import pytest
 from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_transaction_event_attributes import (
-    validate_transaction_event_attributes,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
-from testing_support.validators.validate_transaction_trace_attributes import (
-    validate_transaction_trace_attributes,
-)
+from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_transaction_trace_attributes import validate_transaction_trace_attributes
 
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import FunctionTrace, function_trace
@@ -67,12 +61,7 @@ async def wait_for_loop(ready, done, times=1):
 
 
 @pytest.mark.parametrize(
-    "blocking_transaction_active,event_loop_visibility_enabled",
-    (
-        (True, True),
-        (False, True),
-        (False, False),
-    ),
+    "blocking_transaction_active,event_loop_visibility_enabled", ((True, True), (False, True), (False, False))
 )
 def test_record_event_loop_wait(event_loop, blocking_transaction_active, event_loop_visibility_enabled):
     # import asyncio
@@ -88,43 +77,21 @@ def test_record_event_loop_wait(event_loop, blocking_transaction_active, event_l
         execute_attributes = {"forgone_params": execute_attributes}
 
     scoped = (("EventLoop/Wait/OtherTransaction/Function/block", metric_count),)
-    rollup = (
-        ("EventLoop/Wait/all", metric_count),
-        ("EventLoop/Wait/allOther", metric_count),
-    )
+    rollup = (("EventLoop/Wait/all", metric_count), ("EventLoop/Wait/allOther", metric_count))
 
     ready, done = (asyncio.Event(), asyncio.Event())
-    future = asyncio.gather(
-        wait_for_loop(ready, done, 2),
-        block_loop(ready, done, blocking_transaction_active, 2),
-    )
+    future = asyncio.gather(wait_for_loop(ready, done, 2), block_loop(ready, done, blocking_transaction_active, 2))
 
     index = 0 if blocking_transaction_active else -1
 
     @override_application_settings(
-        {
-            "event_loop_visibility.enabled": event_loop_visibility_enabled,
-            "distributed_tracing.enabled": True,
-        }
+        {"event_loop_visibility.enabled": event_loop_visibility_enabled, "distributed_tracing.enabled": True}
     )
-    @validate_transaction_trace_attributes(
-        index=index + 1,
-        **execute_attributes,
-    )
-    @validate_transaction_event_attributes(
-        index=index,
-        **wait_attributes,
-    )
-    @validate_transaction_event_attributes(
-        index=index + 1,
-        **execute_attributes,
-    )
+    @validate_transaction_trace_attributes(index=index + 1, **execute_attributes)
+    @validate_transaction_event_attributes(index=index, **wait_attributes)
+    @validate_transaction_event_attributes(index=index + 1, **execute_attributes)
     @validate_transaction_metrics(
-        "wait",
-        scoped_metrics=scoped,
-        rollup_metrics=rollup,
-        background_task=True,
-        index=index,
+        "wait", scoped_metrics=scoped, rollup_metrics=rollup, background_task=True, index=index
     )
     def _test():
         event_loop.run_until_complete(future)
@@ -132,11 +99,7 @@ def test_record_event_loop_wait(event_loop, blocking_transaction_active, event_l
     _test()
 
 
-@override_application_settings(
-    {
-        "event_loop_visibility.blocking_threshold": 0,
-    }
-)
+@override_application_settings({"event_loop_visibility.blocking_threshold": 0})
 def test_record_event_loop_wait_outside_task():
     # Insert a random trace into the trace cache
     trace = FunctionTrace(name="testing")
@@ -150,11 +113,7 @@ def test_record_event_loop_wait_outside_task():
         pass
 
 
-@validate_transaction_metrics(
-    "wait",
-    background_task=True,
-    rollup_metrics=(("EventLoop/Wait/all", None),),
-)
+@validate_transaction_metrics("wait", background_task=True, rollup_metrics=(("EventLoop/Wait/all", None),))
 def test_blocking_task_on_different_loop():
     loops = [asyncio.new_event_loop() for _ in range(2)]
 

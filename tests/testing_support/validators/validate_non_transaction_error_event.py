@@ -14,9 +14,8 @@
 
 from time import time
 
-from testing_support.fixtures import core_application_stats_engine
-
 from newrelic.common.object_wrapper import function_wrapper
+from testing_support.fixtures import core_application_stats_engine
 
 
 def validate_non_transaction_error_event(required_intrinsics=None, num_errors=1, required_user=None, forgone_user=None):
@@ -29,18 +28,15 @@ def validate_non_transaction_error_event(required_intrinsics=None, num_errors=1,
 
     @function_wrapper
     def _validate_non_transaction_error_event(wrapped, instace, args, kwargs):
-
         try:
             result = wrapped(*args, **kwargs)
         except:
             raise
         else:
-
             stats = core_application_stats_engine(None)
 
             assert stats.error_events.num_seen == num_errors
             for event in stats.error_events:
-
                 assert len(event) == 3  # [intrinsic, user, agent attributes]
 
                 intrinsics = event[0]

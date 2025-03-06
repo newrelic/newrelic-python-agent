@@ -16,17 +16,15 @@ import json
 import os
 
 import pytest
-from _mock_external_openai_server import (  # noqa: F401; pylint: disable=W0611
+from _mock_external_openai_server import (
     MockExternalOpenAIServer,
     extract_shortened_prompt,
     get_openai_version,
     openai_version,
     simple_get,
 )
-from testing_support.fixture.event_loop import (  # noqa: F401; pylint: disable=W0611
-    event_loop as loop,
-)
-from testing_support.fixtures import (  # noqa: F401, pylint: disable=W0611
+from testing_support.fixture.event_loop import event_loop as loop
+from testing_support.fixtures import (
     collector_agent_registration_fixture,
     collector_available_fixture,
     override_application_settings,
@@ -97,13 +95,9 @@ def openai_clients(openai_version, MockExternalOpenAIServer):  # noqa: F811
                 openai.api_key = "NOT-A-REAL-SECRET"
                 yield
             else:
-                openai_sync = openai.OpenAI(
-                    base_url=f"http://localhost:{server.port}",
-                    api_key="NOT-A-REAL-SECRET",
-                )
+                openai_sync = openai.OpenAI(base_url=f"http://localhost:{server.port}", api_key="NOT-A-REAL-SECRET")
                 openai_async = openai.AsyncOpenAI(
-                    base_url=f"http://localhost:{server.port}",
-                    api_key="NOT-A-REAL-SECRET",
+                    base_url=f"http://localhost:{server.port}", api_key="NOT-A-REAL-SECRET"
                 )
                 yield (openai_sync, openai_async)
     else:
@@ -115,12 +109,8 @@ def openai_clients(openai_version, MockExternalOpenAIServer):  # noqa: F811
             openai.api_key = openai_api_key
             yield
         else:
-            openai_sync = openai.OpenAI(
-                api_key=openai_api_key,
-            )
-            openai_async = openai.AsyncOpenAI(
-                api_key=openai_api_key,
-            )
+            openai_sync = openai.OpenAI(api_key=openai_api_key)
+            openai_async = openai.AsyncOpenAI(api_key=openai_api_key)
             yield (openai_sync, openai_async)
 
 
@@ -170,11 +160,7 @@ def openai_server(
         else:
             # Apply function wrappers to record data
             wrap_function_wrapper("httpx._client", "Client.send", wrap_httpx_client_send)
-            wrap_function_wrapper(
-                "openai._streaming",
-                "Stream._iter_events",
-                wrap_stream_iter_events,
-            )
+            wrap_function_wrapper("openai._streaming", "Stream._iter_events", wrap_stream_iter_events)
             yield  # Run tests
         # Write responses to audit log
         with open(OPENAI_AUDIT_LOG_FILE, "w") as audit_log_fp:

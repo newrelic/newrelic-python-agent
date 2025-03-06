@@ -72,27 +72,13 @@ def test_span_events(loop, connection, instance_enabled, db_instance_enabled):
     if instance_enabled:
         settings = _enable_instance_settings.copy()
         hostname = instance_hostname(DB_SETTINGS["host"])
-        exact_agents.update(
-            {
-                "peer.address": f"{hostname}:{DB_SETTINGS['port']}",
-                "peer.hostname": hostname,
-            }
-        )
+        exact_agents.update({"peer.address": f"{hostname}:{DB_SETTINGS['port']}", "peer.hostname": hostname})
     else:
         settings = _disable_instance_settings.copy()
-        exact_agents.update(
-            {
-                "peer.address": "Unknown:Unknown",
-                "peer.hostname": "Unknown",
-            }
-        )
+        exact_agents.update({"peer.address": "Unknown:Unknown", "peer.hostname": "Unknown"})
 
     if db_instance_enabled and instance_enabled:
-        exact_agents.update(
-            {
-                "db.instance": DB_SETTINGS["name"],
-            }
-        )
+        exact_agents.update({"db.instance": DB_SETTINGS["name"]})
         unexpected_agents = ()
     else:
         settings["attributes.exclude"] = ["db.instance"]

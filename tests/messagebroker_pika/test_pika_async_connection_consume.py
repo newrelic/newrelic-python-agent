@@ -18,17 +18,7 @@ import pika
 import pytest
 import tornado
 from compat import basic_consume
-from conftest import (
-    BODY,
-    CORRELATION_ID,
-    EXCHANGE,
-    EXCHANGE_2,
-    HEADERS,
-    QUEUE,
-    QUEUE_2,
-    REPLY_TO,
-)
-from conftest import PIKA_VERSION_INFO
+from conftest import BODY, CORRELATION_ID, EXCHANGE, EXCHANGE_2, HEADERS, PIKA_VERSION_INFO, QUEUE, QUEUE_2, REPLY_TO
 from pika.adapters.tornado_connection import TornadoConnection
 from testing_support.db_settings import rabbitmq_settings
 from testing_support.fixtures import (
@@ -37,16 +27,10 @@ from testing_support.fixtures import (
     function_not_called,
     override_application_settings,
 )
-from testing_support.validators.validate_code_level_metrics import (
-    validate_code_level_metrics,
-)
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 from testing_support.validators.validate_span_events import validate_span_events
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
-from testing_support.validators.validate_tt_collector_json import (
-    validate_tt_collector_json,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_tt_collector_json import validate_tt_collector_json
 
 from newrelic.api.background_task import background_task
 
@@ -88,8 +72,7 @@ _test_select_conn_basic_get_inside_txn_metrics = [
 @pytest.mark.parametrize("callback_as_partial", [True, False])
 @dt_enabled
 @validate_code_level_metrics(
-    "test_pika_async_connection_consume.test_async_connection_basic_get_inside_txn.<locals>",
-    "on_message",
+    "test_pika_async_connection_consume.test_async_connection_basic_get_inside_txn.<locals>", "on_message"
 )
 @validate_span_events(
     count=1,
@@ -274,8 +257,7 @@ _test_select_conn_basic_consume_in_txn_metrics = [
     background_task=True,
 )
 @validate_code_level_metrics(
-    "test_pika_async_connection_consume.test_async_connection_basic_consume_inside_txn.<locals>",
-    "on_message",
+    "test_pika_async_connection_consume.test_async_connection_basic_consume_inside_txn.<locals>", "on_message"
 )
 @validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 @background_task()
@@ -328,12 +310,10 @@ _test_select_conn_basic_consume_two_exchanges = [
     background_task=True,
 )
 @validate_code_level_metrics(
-    "test_pika_async_connection_consume.test_async_connection_basic_consume_two_exchanges.<locals>",
-    "on_message_1",
+    "test_pika_async_connection_consume.test_async_connection_basic_consume_two_exchanges.<locals>", "on_message_1"
 )
 @validate_code_level_metrics(
-    "test_pika_async_connection_consume.test_async_connection_basic_consume_two_exchanges.<locals>",
-    "on_message_2",
+    "test_pika_async_connection_consume.test_async_connection_basic_consume_two_exchanges.<locals>", "on_message_2"
 )
 @background_task()
 def test_async_connection_basic_consume_two_exchanges(producer, producer_2, ConnectionClass):
@@ -415,7 +395,7 @@ _test_select_connection_consume_outside_txn_metrics = [
     (
         "Function/test_pika_async_connection_consume:test_select_connection_basic_consume_outside_transaction.<locals>.on_message",
         None,
-    ),
+    )
 ]
 
 
@@ -428,8 +408,7 @@ _test_select_connection_consume_outside_txn_metrics = [
     group=f"Message/RabbitMQ/Exchange/{EXCHANGE}",
 )
 @validate_code_level_metrics(
-    "test_pika_async_connection_consume.test_select_connection_basic_consume_outside_transaction.<locals>",
-    "on_message",
+    "test_pika_async_connection_consume.test_select_connection_basic_consume_outside_transaction.<locals>", "on_message"
 )
 def test_select_connection_basic_consume_outside_transaction(producer):
     def on_message(channel, method_frame, header_frame, body):

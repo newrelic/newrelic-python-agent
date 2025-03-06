@@ -25,13 +25,9 @@ from testing_support.fixtures import (
     raise_background_exceptions,
     wait_for_background_threads,
 )
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.sample_asgi_applications import AppWithCall, AppWithCallRaw, simple_app_v2_raw
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
-from testing_support.sample_asgi_applications import (
-    AppWithCall,
-    AppWithCallRaw,
-    simple_app_v2_raw,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from uvicorn.config import Config
 from uvicorn.main import Server
 
@@ -51,14 +47,8 @@ def get_open_port():
 @pytest.fixture(
     params=(
         simple_app_v2_raw,
-        pytest.param(
-            AppWithCallRaw(),
-            marks=pytest.mark.skipif(UVICORN_VERSION < (0, 6), reason="ASGI3 unsupported"),
-        ),
-        pytest.param(
-            AppWithCall(),
-            marks=pytest.mark.skipif(UVICORN_VERSION < (0, 6), reason="ASGI3 unsupported"),
-        ),
+        pytest.param(AppWithCallRaw(), marks=pytest.mark.skipif(UVICORN_VERSION < (0, 6), reason="ASGI3 unsupported")),
+        pytest.param(AppWithCall(), marks=pytest.mark.skipif(UVICORN_VERSION < (0, 6), reason="ASGI3 unsupported")),
     ),
     ids=("raw", "class_with_call", "class_with_call_double_wrapped"),
 )

@@ -13,22 +13,21 @@
 # limitations under the License.
 
 import functools
-import textwrap
 import inspect
 import sys
+import textwrap
 import time
-from newrelic.api.function_trace import function_trace
-from newrelic.api.transaction import current_transaction
-from newrelic.api.external_trace import ExternalTrace
-from newrelic.api.time_trace import notice_error, current_trace
-from newrelic.api.web_transaction import WebTransaction
+
 from newrelic.api.application import application_instance
-from newrelic.core.trace_cache import trace_cache
-from newrelic.common.object_wrapper import (
-        function_wrapper, wrap_function_wrapper)
+from newrelic.api.external_trace import ExternalTrace
+from newrelic.api.function_trace import function_trace
+from newrelic.api.time_trace import current_trace, notice_error
+from newrelic.api.transaction import current_transaction
+from newrelic.api.web_transaction import WebTransaction
 from newrelic.common.async_proxy import async_proxy
 from newrelic.common.object_names import callable_name
-
+from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
+from newrelic.core.trace_cache import trace_cache
 
 _VERSION = None
 _instrumented = set()
@@ -36,10 +35,11 @@ _instrumented = set()
 
 def _store_version_info():
     import tornado
+
     global _VERSION
 
     try:
-        _VERSION = '.'.join(map(str, tornado.version_info))
+        _VERSION = ".".join(map(str, tornado.version_info))
     except:
         pass
 
@@ -49,6 +49,7 @@ def _store_version_info():
 def convert_yielded(*args, **kwargs):
     global convert_yielded
     from tornado.gen import convert_yielded as _convert_yielded
+
     convert_yielded = _convert_yielded
     return _convert_yielded(*args, **kwargs)
 
@@ -59,8 +60,7 @@ def _wrap_if_not_wrapped(obj, attr, wrapper):
     if not callable(wrapped):
         return
 
-    if not (hasattr(wrapped, '__wrapped__') and
-            wrapped.__wrapped__ in _instrumented):
+    if not (hasattr(wrapped, "__wrapped__") and wrapped.__wrapped__ in _instrumented):
         setattr(obj, attr, wrapper(wrapped))
         _instrumented.add(wrapped)
 
@@ -74,7 +74,6 @@ def _bind_headers_received(start_line, headers, *args, **kwargs):
 
 
 def wrap_headers_received(request_conn):
-
     @function_wrapper
     def _wrap_headers_received(wrapped, instance, args, kwargs):
         start_line, headers = _bind_headers_received(*args, **kwargs)
@@ -90,7 +89,7 @@ def wrap_headers_received(request_conn):
         except:
             pass
 
-        path, sep, query = start_line.path.partition('?')
+        path, sep, query = start_line.path.partition("?")
 
         transaction = WebTransaction(
             application=application_instance(),
@@ -107,14 +106,14 @@ def wrap_headers_received(request_conn):
         if not transaction.enabled:
             return wrapped(*args, **kwargs)
 
-        transaction.add_framework_info('Tornado', _VERSION)
+        transaction.add_framework_info("Tornado", _VERSION)
 
         # Store the transaction on the HTTPMessageDelegate object since the
         # transaction lives for the lifetime of that object.
         request_conn._nr_transaction = transaction
 
         # Remove the headers_received circular reference
-        vars(instance).pop('headers_received')
+        vars(instance).pop("headers_received")
 
         return wrapped(*args, **kwargs)
 
@@ -127,7 +126,7 @@ def _bind_response_headers(start_line, headers, *args, **kwargs):
 
 @function_wrapper
 def wrap_write_headers(wrapped, instance, args, kwargs):
-    transaction = getattr(instance, '_nr_transaction', None)
+    transaction = getattr(instance, "_nr_transaction", None)
 
     if transaction:
         http_status, headers = _bind_response_headers(*args, **kwargs)
@@ -144,15 +143,13 @@ def wrap_finish(wrapped, instance, args, kwargs):
     try:
         return wrapped(*args, **kwargs)
     finally:
-        transaction = getattr(instance, '_nr_transaction', None)
+        transaction = getattr(instance, "_nr_transaction", None)
         if transaction:
-            start_time = getattr(transaction, '_async_start_time', None)
+            start_time = getattr(transaction, "_async_start_time", None)
             if start_time:
                 trace_cache().record_event_loop_wait(start_time, time.time())
                 transaction._async_start_time = None
-            notice_error(
-                    sys.exc_info(),
-                    status_code=status_code)
+            notice_error(sys.exc_info(), status_code=status_code)
             transaction.__exit__(None, None, None)
             instance._nr_transaction = None
 
@@ -163,16 +160,13 @@ def wrap_start_request(wrapped, instance, args, kwargs):
 
     # Wrap headers_received (request method / path is known)
     wrapper = wrap_headers_received(request_conn)
-    message_delegate.headers_received = wrapper(
-            message_delegate.headers_received)
+    message_delegate.headers_received = wrapper(message_delegate.headers_received)
 
     # Wrap write_headers to get response
-    _wrap_if_not_wrapped(
-            type(request_conn), 'write_headers', wrap_write_headers)
+    _wrap_if_not_wrapped(type(request_conn), "write_headers", wrap_write_headers)
 
     # Wrap finish (response has been written)
-    _wrap_if_not_wrapped(
-            type(request_conn), 'finish', wrap_finish)
+    _wrap_if_not_wrapped(type(request_conn), "finish", wrap_finish)
 
     return message_delegate
 
@@ -184,8 +178,7 @@ def instrument_tornado_httpserver(module):
     if version_info[0] < 6:
         return
 
-    wrap_function_wrapper(
-            module, 'HTTPServer.start_request', wrap_start_request)
+    wrap_function_wrapper(module, "HTTPServer.start_request", wrap_start_request)
 
 
 def status_code(exc, value, tb):
@@ -195,9 +188,7 @@ def status_code(exc, value, tb):
         return value.status_code
 
 
-def _nr_wrapper__NormalizedHeaderCache___missing__(
-        wrapped, instance, args, kwargs):
-
+def _nr_wrapper__NormalizedHeaderCache___missing__(wrapped, instance, args, kwargs):
     def _bind_params(key, *args, **kwargs):
         return key
 
@@ -205,7 +196,7 @@ def _nr_wrapper__NormalizedHeaderCache___missing__(
 
     normalized = wrapped(*args, **kwargs)
 
-    if key.startswith('X-NewRelic'):
+    if key.startswith("X-NewRelic"):
         instance[key] = key
         return key
 
@@ -217,7 +208,7 @@ def _nr_wrapper_normalize_header(wrapped, instance, args, kwargs):
         return name
 
     name = _bind_params(*args, **kwargs)
-    if name.startswith('X-NewRelic'):
+    if name.startswith("X-NewRelic"):
         return name
 
     return wrapped(*args, **kwargs)
@@ -230,12 +221,12 @@ def instrument_tornado_httputil(module):
     if version_info[0] < 6:
         return
 
-    if hasattr(module, '_NormalizedHeaderCache'):
-        wrap_function_wrapper(module, '_NormalizedHeaderCache.__missing__',
-                _nr_wrapper__NormalizedHeaderCache___missing__)
-    elif hasattr(module, '_normalize_header'):
-        wrap_function_wrapper(module, '_normalize_header',
-                _nr_wrapper_normalize_header)
+    if hasattr(module, "_NormalizedHeaderCache"):
+        wrap_function_wrapper(
+            module, "_NormalizedHeaderCache.__missing__", _nr_wrapper__NormalizedHeaderCache___missing__
+        )
+    elif hasattr(module, "_normalize_header"):
+        wrap_function_wrapper(module, "_normalize_header", _nr_wrapper_normalize_header)
 
 
 def _prepare_request(request, raise_error=True, **kwargs):
@@ -249,8 +240,7 @@ def _prepare_request(request, raise_error=True, **kwargs):
 
 
 def create_client_wrapper(wrapped, trace):
-    values = {'wrapper': None, 'wrapped': wrapped,
-            'trace': trace, 'functools': functools}
+    values = {"wrapper": None, "wrapped": wrapped, "trace": trace, "functools": functools}
     wrapper = textwrap.dedent("""
     @functools.wraps(wrapped)
     async def wrapper(req, raise_error):
@@ -267,7 +257,7 @@ def create_client_wrapper(wrapped, trace):
             return response
     """)
     exec(wrapper, values)
-    return values['wrapper']
+    return values["wrapper"]
 
 
 def wrap_httpclient_fetch(wrapped, instance, args, kwargs):
@@ -276,7 +266,7 @@ def wrap_httpclient_fetch(wrapped, instance, args, kwargs):
     except:
         return wrapped(*args, **kwargs)
 
-    trace = ExternalTrace('tornado', req.url, req.method.upper(), source=wrapped)
+    trace = ExternalTrace("tornado", req.url, req.method.upper(), source=wrapped)
 
     outgoing_headers = trace.generate_request_headers(current_transaction())
     for header_name, header_value in outgoing_headers:
@@ -300,8 +290,7 @@ def instrument_tornado_httpclient(module):
     if version_info[0] < 6:
         return
 
-    wrap_function_wrapper(module,
-            'AsyncHTTPClient.fetch', wrap_httpclient_fetch)
+    wrap_function_wrapper(module, "AsyncHTTPClient.fetch", wrap_httpclient_fetch)
 
 
 def _nr_rulerouter_process_rule(wrapped, instance, args, kwargs):
@@ -322,13 +311,13 @@ def _nr_method(wrapped, instance, args, kwargs):
     if transaction is None:
         return wrapped(*args, **kwargs)
 
-    if getattr(transaction, '_method_seen', None):
+    if getattr(transaction, "_method_seen", None):
         return wrapped(*args, **kwargs)
 
     name = callable_name(wrapped)
     transaction.set_transaction_name(name, priority=2)
     transaction._method_seen = True
-    if getattr(wrapped, '__tornado_coroutine__', False):
+    if getattr(wrapped, "__tornado_coroutine__", False):
         current_trace().add_code_level_metrics(wrapped)
         return wrapped(*args, **kwargs)
     return function_trace(name=name)(wrapped)(*args, **kwargs)
@@ -337,9 +326,9 @@ def _nr_method(wrapped, instance, args, kwargs):
 def _wrap_handlers(rule):
     if isinstance(rule, (tuple, list)):
         handler = rule[1]
-    elif hasattr(rule, 'target'):
+    elif hasattr(rule, "target"):
         handler = rule.target
-    elif hasattr(rule, 'handler_class'):
+    elif hasattr(rule, "handler_class"):
         handler = rule.handler_class
     else:
         return
@@ -360,16 +349,16 @@ def _wrap_handlers(rule):
             _wrap_handlers(subrule)
         return
 
-    elif (not inspect.isclass(handler) or
-            issubclass(handler, WebSocketHandler) or
-            not issubclass(handler, RequestHandler)):
+    elif (
+        not inspect.isclass(handler) or issubclass(handler, WebSocketHandler) or not issubclass(handler, RequestHandler)
+    ):
         # This handler does not inherit from RequestHandler so we ignore it.
         # Tornado supports non class based views and this is probably one of
         # those. It has also been observed that tornado's internals will pass
         # class instances as well.
         return
 
-    if not hasattr(handler, 'SUPPORTED_METHODS'):
+    if not hasattr(handler, "SUPPORTED_METHODS"):
         return
 
     # Wrap all supported view methods with our FunctionTrace
@@ -398,8 +387,7 @@ def instrument_tornado_routing(module):
     if version_info[0] < 6:
         return
 
-    wrap_function_wrapper(module, 'RuleRouter.process_rule',
-            _nr_rulerouter_process_rule)
+    wrap_function_wrapper(module, "RuleRouter.process_rule", _nr_rulerouter_process_rule)
 
 
 def instrument_tornado_web(module):
@@ -409,13 +397,11 @@ def instrument_tornado_web(module):
     if version_info[0] < 6:
         return
 
-    wrap_function_wrapper(module, 'RequestHandler.__init__',
-            _nr_wrapper_web_requesthandler_init)
-    wrap_function_wrapper(module, 'RequestHandler._execute',
-            track_loop_time)
+    wrap_function_wrapper(module, "RequestHandler.__init__", _nr_wrapper_web_requesthandler_init)
+    wrap_function_wrapper(module, "RequestHandler._execute", track_loop_time)
 
 
-class TornadoContext():
+class TornadoContext:
     def __init__(self):
         self.transaction = None
 

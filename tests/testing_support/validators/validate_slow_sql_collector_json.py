@@ -19,29 +19,29 @@ from newrelic.common.system_info import LOCALHOST_EQUIVALENTS
 from newrelic.core.database_utils import SQLConnections
 
 
-def validate_slow_sql_collector_json(required_params=set(),
-        forgone_params=set(), exact_params=None):
-    """Check that slow_sql json output is in accordance with agent specs.
-    """
-    @transient_function_wrapper('newrelic.core.stats_engine',
-            'StatsEngine.record_transaction')
+def validate_slow_sql_collector_json(required_params=set(), forgone_params=set(), exact_params=None):
+    """Check that slow_sql json output is in accordance with agent specs."""
+
+    @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     def _validate_slow_sql_collector_json(wrapped, instance, args, kwargs):
-        legal_param_keys = set([
-            'explain_plan',
-            'backtrace',
-            'host',
-            'port_path_or_id',
-            'database_name',
-            'parent.type',
-            'parent.app',
-            'parent.account',
-            'parent.transportType',
-            'parent.transportDuration',
-            'guid',
-            'traceId',
-            'priority',
-            'sampled',
-        ])
+        legal_param_keys = set(
+            [
+                "explain_plan",
+                "backtrace",
+                "host",
+                "port_path_or_id",
+                "database_name",
+                "parent.type",
+                "parent.app",
+                "parent.account",
+                "parent.transportType",
+                "parent.transportDuration",
+                "guid",
+                "traceId",
+                "priority",
+                "sampled",
+            ]
+        )
         try:
             result = wrapped(*args, **kwargs)
         except:
@@ -53,13 +53,13 @@ def validate_slow_sql_collector_json(required_params=set(),
             for slow_sql in slow_sql_list:
                 assert isinstance(slow_sql[0], str)  # txn_name
                 assert isinstance(slow_sql[1], str)  # txn_url
-                assert isinstance(slow_sql[2], int)               # sql_id
+                assert isinstance(slow_sql[2], int)  # sql_id
                 assert isinstance(slow_sql[3], str)  # sql
                 assert isinstance(slow_sql[4], str)  # metric_name
-                assert isinstance(slow_sql[5], int)               # count
-                assert isinstance(slow_sql[6], float)             # total
-                assert isinstance(slow_sql[7], float)             # min
-                assert isinstance(slow_sql[8], float)             # max
+                assert isinstance(slow_sql[5], int)  # count
+                assert isinstance(slow_sql[6], float)  # total
+                assert isinstance(slow_sql[7], float)  # min
+                assert isinstance(slow_sql[8], float)  # max
                 assert isinstance(slow_sql[9], str)  # params
 
                 params = slow_sql[9]
@@ -69,8 +69,8 @@ def validate_slow_sql_collector_json(required_params=set(),
                 assert len(set(data.keys()) - legal_param_keys) == 0
 
                 # if host is reported, it cannot be localhost
-                if 'host' in data:
-                    assert data['host'] not in LOCALHOST_EQUIVALENTS
+                if "host" in data:
+                    assert data["host"] not in LOCALHOST_EQUIVALENTS
 
                 if required_params:
                     for param in required_params:

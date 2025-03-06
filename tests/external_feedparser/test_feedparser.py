@@ -13,21 +13,19 @@
 # limitations under the License.
 
 import pytest
-from newrelic.api.background_task import background_task
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+
+from newrelic.api.background_task import background_task
 
 
 @pytest.fixture(scope="session")
 def feedparser():
     import feedparser
+
     return feedparser
 
 
-@pytest.mark.parametrize("url", (
-    "http://localhost",
-    "feed:http://localhost",
-    "feed://localhost",
-))
+@pytest.mark.parametrize("url", ("http://localhost", "feed:http://localhost", "feed://localhost"))
 def test_feedparser_external(feedparser, server, url):
     url = f"{url}:{str(server.port)}"
 
@@ -46,7 +44,6 @@ def test_feedparser_external(feedparser, server, url):
 
 @pytest.mark.parametrize("stream", (True, False))
 def test_feedparser_file(feedparser, stream, server):
-
     @validate_transaction_metrics(
         "test_feedparser_file",
         background_task=True,
@@ -64,12 +61,9 @@ def test_feedparser_file(feedparser, stream, server):
     _test()
 
 
-@pytest.mark.parametrize("url", (
-    "http://localhost",
-    "packages.xml",
-))
+@pytest.mark.parametrize("url", ("http://localhost", "packages.xml"))
 def test_feedparser_no_transaction(feedparser, server, url):
-    if url.startswith('http://'):
+    if url.startswith("http://"):
         url = f"{url}:{str(server.port)}"
     feed = feedparser.parse(url)
     assert feed["feed"]["link"] == "https://pypi.org/"

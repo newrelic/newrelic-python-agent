@@ -12,18 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from testing_support.fixtures import (
-    override_application_settings,
-    validate_tt_parenting,
-)
+from conftest import ES_SETTINGS, ES_VERSION
+from testing_support.fixtures import override_application_settings, validate_tt_parenting
 from testing_support.util import instance_hostname
-from testing_support.validators.validate_tt_collector_json import (
-    validate_tt_collector_json,
-)
+from testing_support.validators.validate_tt_collector_json import validate_tt_collector_json
 
 from newrelic.api.background_task import background_task
-
-from conftest import ES_SETTINGS, ES_VERSION
 
 # Settings
 
@@ -42,35 +36,16 @@ _instance_only_settings = {
 
 # Expected parameters
 
-_enabled_required = {
-    "host": instance_hostname(ES_SETTINGS["host"]),
-    "port_path_or_id": str(ES_SETTINGS["port"]),
-}
-_enabled_forgone = {
-    "db.instance": "VALUE NOT USED",
-}
+_enabled_required = {"host": instance_hostname(ES_SETTINGS["host"]), "port_path_or_id": str(ES_SETTINGS["port"])}
+_enabled_forgone = {"db.instance": "VALUE NOT USED"}
 
 _disabled_required = {}
-_disabled_forgone = {
-    "host": "VALUE NOT USED",
-    "port_path_or_id": "VALUE NOT USED",
-    "db.instance": "VALUE NOT USED",
-}
+_disabled_forgone = {"host": "VALUE NOT USED", "port_path_or_id": "VALUE NOT USED", "db.instance": "VALUE NOT USED"}
 
-_instance_only_required = {
-    "host": instance_hostname(ES_SETTINGS["host"]),
-    "port_path_or_id": str(ES_SETTINGS["port"]),
-}
-_instance_only_forgone = {
-    "db.instance": "VALUE NOT USED",
-}
+_instance_only_required = {"host": instance_hostname(ES_SETTINGS["host"]), "port_path_or_id": str(ES_SETTINGS["port"])}
+_instance_only_forgone = {"db.instance": "VALUE NOT USED"}
 
-_tt_parenting = (
-    "TransactionNode",
-    [
-        ("DatastoreNode", []),
-    ],
-)
+_tt_parenting = ("TransactionNode", [("DatastoreNode", [])])
 
 
 # Query

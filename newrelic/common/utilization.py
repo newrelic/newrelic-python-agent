@@ -12,18 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import logging
 import os
 import re
 import socket
-import json
 import string
-import newrelic.packages.urllib3 as urllib3
 
+import newrelic.packages.urllib3 as urllib3
 from newrelic.common.agent_http import InsecureHttpClient
 from newrelic.common.encoding_utils import json_decode
 from newrelic.core.internal_metrics import internal_count_metric
-
 
 _logger = logging.getLogger(__name__)
 VALID_CHARS_RE = re.compile(r"[0-9a-zA-Z_ ./-]")
@@ -48,7 +47,7 @@ class UtilizationHttpClient(InsecureHttpClient):
         return super(UtilizationHttpClient, self).send_request(*args, **kwargs)
 
 
-class CommonUtilization():
+class CommonUtilization:
     METADATA_HOST = ""
     METADATA_PATH = ""
     METADATA_QUERY = None

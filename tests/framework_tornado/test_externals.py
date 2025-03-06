@@ -18,17 +18,10 @@ import sys
 
 import pytest
 from testing_support.fixtures import override_application_settings
+from testing_support.mock_external_http_server import MockExternalHTTPHResponseHeadersServer, MockExternalHTTPServer
+from testing_support.validators.validate_distributed_tracing_header import validate_distributed_tracing_header
+from testing_support.validators.validate_outbound_headers import validate_outbound_headers
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from testing_support.mock_external_http_server import (
-    MockExternalHTTPHResponseHeadersServer,
-    MockExternalHTTPServer,
-)
-from testing_support.validators.validate_distributed_tracing_header import (
-    validate_distributed_tracing_header,
-)
-from testing_support.validators.validate_outbound_headers import (
-    validate_outbound_headers,
-)
 
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import FunctionTrace
@@ -92,7 +85,6 @@ def make_request(port, req_type, client_cls, count=1, raise_error=True, as_kwarg
 
     @tornado.gen.coroutine
     def _make_request():
-
         if as_kwargs:
             futures = [client.fetch(req, raise_error=raise_error, **kwargs) for _ in range(count)]
         elif tornado.version_info < (6, 0):
@@ -160,7 +152,6 @@ def test_httpclient(
     external,
     as_kwargs,
 ):
-
     port = external.port
 
     expected_metrics = [(f"External/localhost:{port}/tornado/GET", num_requests)]
@@ -255,14 +246,7 @@ def cat_response_server():
 @pytest.mark.parametrize("client_class", ["AsyncHTTPClient", "CurlAsyncHTTPClient", "HTTPClient"])
 @pytest.mark.parametrize("cat_enabled", [True, False])
 @pytest.mark.parametrize("request_type", ["uri", "class"])
-@pytest.mark.parametrize(
-    "response_code,raise_error",
-    [
-        (500, True),
-        (500, False),
-        (200, False),
-    ],
-)
+@pytest.mark.parametrize("response_code,raise_error", [(500, True), (500, False), (200, False)])
 def test_client_cat_response_processing(
     cat_enabled, request_type, client_class, raise_error, response_code, cat_response_server
 ):
@@ -280,7 +264,7 @@ def test_client_cat_response_processing(
 
     port = cat_response_server.port
     expected_metrics = [
-        (f"ExternalTransaction/localhost:{port}/1#1/WebTransaction/Function/app:beep", 1 if cat_enabled else None),
+        (f"ExternalTransaction/localhost:{port}/1#1/WebTransaction/Function/app:beep", 1 if cat_enabled else None)
     ]
 
     @validate_transaction_metrics(

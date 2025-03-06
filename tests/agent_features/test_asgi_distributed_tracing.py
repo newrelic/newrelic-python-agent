@@ -18,9 +18,7 @@ import json
 import pytest
 from testing_support.asgi_testing import AsgiTest
 from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.application import application_instance
 from newrelic.api.asgi_application import ASGIWebTransaction, asgi_application
@@ -62,7 +60,7 @@ parent_info = {
 @asgi_application()
 async def target_asgi_application(scope, receive, send):
     status = "200 OK"
-    type = "http.response.start"
+    type_ = "http.response.start"
     output = b"hello world"
     response_headers = [
         (b"content-type", b"text/html; charset=utf-8"),
@@ -83,20 +81,9 @@ async def target_asgi_application(scope, receive, send):
     assert txn.priority == 10.001
     assert txn.sampled
 
-    await send(
-        {
-            "type": type,
-            "status": status,
-            "headers": response_headers,
-        }
-    )
+    await send({"type": type_, "status": status, "headers": response_headers})
 
-    await send(
-        {
-            "type": "http.response.body",
-            "body": b"Hello World",
-        }
-    )
+    await send({"type": "http.response.body", "body": b"Hello World"})
 
     return [output]
 
@@ -104,10 +91,7 @@ async def target_asgi_application(scope, receive, send):
 test_application = AsgiTest(target_asgi_application)
 
 
-_override_settings = {
-    "trusted_account_key": "1",
-    "distributed_tracing.enabled": True,
-}
+_override_settings = {"trusted_account_key": "1", "distributed_tracing.enabled": True}
 
 _metrics = [
     ("Supportability/DistributedTrace/AcceptPayload/Success", 1),
@@ -123,7 +107,7 @@ def test_distributed_tracing_web_transaction():
     assert "X-NewRelic-App-Data" not in response.headers
 
 
-class TestAsgiRequest():
+class TestAsgiRequest:
     scope = {
         "asgi": {"spec_version": "2.1", "version": "3.0"},
         "client": ("127.0.0.1", 54768),
@@ -177,9 +161,7 @@ def test_distributed_tracing_metrics(web_transaction, gen_error, has_parent):
 
     # now run the test
     transaction_name = f"test_dt_metrics_{'_'.join(metrics)}"
-    _rollup_metrics = [
-        (f"{x}/{tag}{bt}", 1) for x in metrics for bt in ["", "Web" if web_transaction else "Other"]
-    ]
+    _rollup_metrics = [(f"{x}/{tag}{bt}", 1) for x in metrics for bt in ["", "Web" if web_transaction else "Other"]]
 
     def _make_test_transaction():
         application = application_instance()

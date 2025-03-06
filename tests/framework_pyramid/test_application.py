@@ -14,16 +14,9 @@
 
 import pytest
 from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_code_level_metrics import (
-    validate_code_level_metrics,
-)
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
-
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 def target_application(with_tweens=False, tweens_explicit=False):
     # We need to delay Pyramid application creation because of ordering
@@ -48,14 +41,7 @@ _test_application_index_scoped_metrics = [
 ]
 
 
-@pytest.mark.parametrize(
-    "with_tweens,tweens_explicit",
-    (
-        (False, False),
-        (True, False),
-        (True, True),
-    ),
-)
+@pytest.mark.parametrize("with_tweens,tweens_explicit", ((False, False), (True, False), (True, True)))
 def test_application_index(with_tweens, tweens_explicit):
     application = target_application(with_tweens, tweens_explicit)
 

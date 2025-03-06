@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-""" This module provides a structure to hang the configuration settings. We
+"""This module provides a structure to hang the configuration settings. We
 use an empty class structure and manually populate it. The global defaults
 will be overlaid with any settings from the local agent configuration file.
 For a specific application we will then deep copy the global default
@@ -37,9 +37,7 @@ from newrelic.core.attribute_filter import AttributeFilter
 try:
     import grpc
 
-    from newrelic.core.infinite_tracing_pb2 import (  # pylint: disable=W0611,C0412  # noqa: F401
-        Span,
-    )
+    from newrelic.core.infinite_tracing_pb2 import Span  # pylint: disable=W0611,C0412  # noqa: F401
 except Exception:
     grpc = None
 
@@ -653,7 +651,7 @@ def default_otlp_host(host):
     otlp_host = HOST_MAP.get(host, None)
     if not otlp_host:
         default = HOST_MAP["collector.newrelic.com"]
-        _logger.warn(f"Unable to find corresponding OTLP host using default {default}")
+        _logger.warning("Unable to find corresponding OTLP host using default %s", default)
         otlp_host = default
     return otlp_host
 
@@ -1346,40 +1344,17 @@ def ignore_status_code(status):
     return status in _settings.error_collector.ignore_status_codes
 
 
-def is_expected_error(
-    exc_info,
-    status_code=None,
-    settings=None,
-):
+def is_expected_error(exc_info, status_code=None, settings=None):
     """Check if an error is expected based on rules matching. Default is False when settings lookup fails."""
-    return error_matches_rules(
-        "expected",
-        exc_info,
-        status_code=status_code,
-        settings=settings,
-    )
+    return error_matches_rules("expected", exc_info, status_code=status_code, settings=settings)
 
 
-def should_ignore_error(
-    exc_info,
-    status_code=None,
-    settings=None,
-):
+def should_ignore_error(exc_info, status_code=None, settings=None):
     """Check if an error should be ignored based on rules matching. Default is True when settings lookup fails."""
-    return error_matches_rules(
-        "ignore",
-        exc_info,
-        status_code=status_code,
-        settings=settings,
-    )
+    return error_matches_rules("ignore", exc_info, status_code=status_code, settings=settings)
 
 
-def error_matches_rules(
-    rules_prefix,
-    exc_info,
-    status_code=None,
-    settings=None,
-):
+def error_matches_rules(rules_prefix, exc_info, status_code=None, settings=None):
     """
     Attempt to match exception to rules based on prefix.
 
@@ -1433,7 +1408,7 @@ def error_matches_rules(
             # Coerce into integer
             status_code = int(status_code)
         except:
-            _logger.error(f"Failed to coerce status code into integer. status_code: {str(status_code)}")
+            _logger.error("Failed to coerce status code into integer. status_code: %s", str(status_code))
         else:
             if status_code in status_codes_rules:
                 return True

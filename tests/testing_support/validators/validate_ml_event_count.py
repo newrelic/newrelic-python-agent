@@ -14,15 +14,13 @@
 
 import copy
 
-from testing_support.fixtures import catch_background_exceptions
-
 from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
+from testing_support.fixtures import catch_background_exceptions
 
 
 def validate_ml_event_count(count=1):
     @function_wrapper
     def _validate_wrapper(wrapped, instance, args, kwargs):
-
         record_called = []
         recorded_events = []
 

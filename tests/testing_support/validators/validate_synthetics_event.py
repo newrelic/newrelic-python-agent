@@ -13,10 +13,7 @@
 # limitations under the License.
 
 
-from newrelic.common.object_wrapper import (
-    function_wrapper,
-    transient_function_wrapper,
-)
+from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
 
 
 def validate_synthetics_event(required_attrs=None, forgone_attrs=None, should_exist=True):
@@ -40,8 +37,7 @@ def validate_synthetics_event(required_attrs=None, forgone_attrs=None, should_ex
                 def _flatten(event):
                     result = {}
                     for elem in event:
-                        for k, v in elem.items():
-                            result[k] = v
+                        result.update({k: v for k, v in elem.items()})
                     return result
 
                 flat_event = _flatten(event)

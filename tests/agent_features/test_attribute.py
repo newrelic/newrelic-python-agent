@@ -21,9 +21,7 @@ from testing_support.fixtures import (
     validate_attributes_complete,
 )
 from testing_support.sample_applications import fully_featured_app
-from testing_support.validators.validate_custom_parameters import (
-    validate_custom_parameters,
-)
+from testing_support.validators.validate_custom_parameters import validate_custom_parameters
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute, add_custom_attributes
@@ -479,7 +477,7 @@ def test_sanitize_tuple():
     assert sanitize(t) == "('one', 'two', 'three')"
 
 
-class Foo():
+class Foo:
     pass
 
 
@@ -488,7 +486,7 @@ def test_sanitize_object():
     assert sanitize(f) == str(f)
 
 
-class TypeErrorString():
+class TypeErrorString:
     def __str__(self):
         return 42
 
@@ -498,9 +496,9 @@ def test_str_raises_type_error():
         sanitize(TypeErrorString())
 
 
-class AttributeErrorString():
+class AttributeErrorString:
     def __str__(self):
-        raise AttributeError()
+        raise AttributeError
 
 
 def test_str_raises_attribute_error():

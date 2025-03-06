@@ -13,11 +13,11 @@
 # limitations under the License.
 
 import random
-import time
 import threading
+import time
 
 
-class AdaptiveSampler():
+class AdaptiveSampler:
     def __init__(self, sampling_target, sampling_period):
         self.adaptive_target = 0.0
         self.period = sampling_period
@@ -50,19 +50,16 @@ class AdaptiveSampler():
                 return False
 
             elif self.sampled_count < self.sampling_target:
-                sampled = random.randrange(
-                        self.computed_count_last) < self.sampling_target
+                sampled = random.randrange(self.computed_count_last) < self.sampling_target
                 if sampled:
                     self.sampled_count += 1
             else:
-                sampled = random.randrange(
-                        self.computed_count) < self.adaptive_target
+                sampled = random.randrange(self.computed_count) < self.adaptive_target
                 if sampled:
                     self.sampled_count += 1
 
                     ratio = float(self.sampling_target) / self.sampled_count
-                    self.adaptive_target = (self.sampling_target ** ratio -
-                                            self.sampling_target ** 0.5)
+                    self.adaptive_target = self.sampling_target**ratio - self.sampling_target**0.5
 
             self.computed_count += 1
         return sampled
@@ -72,10 +69,8 @@ class AdaptiveSampler():
         # self.sampling_target value.
         self.last_reset = time.time()
         self.max_sampled = 2 * self.sampling_target
-        self.adaptive_target = (self.sampling_target -
-                                self.sampling_target ** 0.5)
+        self.adaptive_target = self.sampling_target - self.sampling_target**0.5
 
-        self.computed_count_last = max(self.computed_count,
-                                       self.sampling_target)
+        self.computed_count_last = max(self.computed_count, self.sampling_target)
         self.computed_count = 0
         self.sampled_count = 0

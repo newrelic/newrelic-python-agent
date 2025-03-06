@@ -15,58 +15,72 @@
 import sys
 
 from newrelic.core.config import global_settings
-from newrelic.core.stack_trace import (exception_stack, current_stack,
-    _format_stack_trace as _format_stack_trace_from_dicts, _extract_stack,
-    _extract_tb)
+from newrelic.core.stack_trace import _extract_stack, _extract_tb, current_stack, exception_stack
+from newrelic.core.stack_trace import _format_stack_trace as _format_stack_trace_from_dicts
 
 
 def _format_stack_trace_from_tuples(frames):
-    result = ['Traceback (most recent call last):']
+    result = ["Traceback (most recent call last):"]
     result.extend([f'File "{v[0]}", line {v[1]}, in {v[2]}' for v in frames])
     return result
 
+
 def function0():
-    raise RuntimeError('function0')
+    raise RuntimeError("function0")
+
 
 def function1():
     function0()
 
+
 def function2():
     function1()
+
 
 def function3():
     function2()
 
+
 def function4():
     function3()
+
 
 def function5():
     function4()
 
+
 def function6():
     function5()
+
 
 def function7():
     function6()
 
+
 def function8():
     function7()
+
 
 def function9():
     function8()
 
+
 def function10():
     function9()
+
 
 def function11():
     function10()
 
+
 def function12():
     function11()
+
 
 # When using a try/except with stack trace formatting being done within
 # the except block, all line numbers for the combine stack trace will be
 # correct.
+
 
 def test_trace_inline():
     try:
@@ -77,23 +91,25 @@ def test_trace_inline():
         require = _stack_trace_inline
         assert actual == require, (actual, require)
 
-_stack_trace_inline = _format_stack_trace_from_tuples([
-    (__file__, test_trace_inline.__code__.co_firstlineno+2,
-        test_trace_inline.__name__),
-    (__file__, function12.__code__.co_firstlineno+1, function12.__name__),
-    (__file__, function11.__code__.co_firstlineno+1, function11.__name__),
-    (__file__, function10.__code__.co_firstlineno+1, function10.__name__),
-    (__file__, function9.__code__.co_firstlineno+1, function9.__name__),
-    (__file__, function8.__code__.co_firstlineno+1, function8.__name__),
-    (__file__, function7.__code__.co_firstlineno+1, function7.__name__),
-    (__file__, function6.__code__.co_firstlineno+1, function6.__name__),
-    (__file__, function5.__code__.co_firstlineno+1, function5.__name__),
-    (__file__, function4.__code__.co_firstlineno+1, function4.__name__),
-    (__file__, function3.__code__.co_firstlineno+1, function3.__name__),
-    (__file__, function2.__code__.co_firstlineno+1, function2.__name__),
-    (__file__, function1.__code__.co_firstlineno+1, function1.__name__),
-    (__file__, function0.__code__.co_firstlineno+1, function0.__name__)
-])
+
+_stack_trace_inline = _format_stack_trace_from_tuples(
+    [
+        (__file__, test_trace_inline.__code__.co_firstlineno + 2, test_trace_inline.__name__),
+        (__file__, function12.__code__.co_firstlineno + 1, function12.__name__),
+        (__file__, function11.__code__.co_firstlineno + 1, function11.__name__),
+        (__file__, function10.__code__.co_firstlineno + 1, function10.__name__),
+        (__file__, function9.__code__.co_firstlineno + 1, function9.__name__),
+        (__file__, function8.__code__.co_firstlineno + 1, function8.__name__),
+        (__file__, function7.__code__.co_firstlineno + 1, function7.__name__),
+        (__file__, function6.__code__.co_firstlineno + 1, function6.__name__),
+        (__file__, function5.__code__.co_firstlineno + 1, function5.__name__),
+        (__file__, function4.__code__.co_firstlineno + 1, function4.__name__),
+        (__file__, function3.__code__.co_firstlineno + 1, function3.__name__),
+        (__file__, function2.__code__.co_firstlineno + 1, function2.__name__),
+        (__file__, function1.__code__.co_firstlineno + 1, function1.__name__),
+        (__file__, function0.__code__.co_firstlineno + 1, function0.__name__),
+    ]
+)
 
 # Where the traceback is saved away and then returned to a scope outside
 # of the except block, the line numbers for the exception part of the
@@ -108,11 +124,13 @@ _stack_trace_inline = _format_stack_trace_from_tuples([
 # which is where the parent stack frame is being calculated within the
 # exception_stack() function.
 
+
 def _test_trace_passed1():
     try:
         function12()
     except Exception:
         return sys.exc_info()[2]
+
 
 def test_trace_passed1():
     tb = _test_trace_passed1()
@@ -120,25 +138,26 @@ def test_trace_passed1():
     require = _stack_trace_passed1
     assert actual == require, (actual, require)
 
-_stack_trace_passed1 = _format_stack_trace_from_tuples([
-    (__file__, test_trace_passed1.__code__.co_firstlineno+2,
-        test_trace_passed1.__name__),
-    (__file__, _test_trace_passed1.__code__.co_firstlineno+2,
-        _test_trace_passed1.__name__),
-    (__file__, function12.__code__.co_firstlineno+1, function12.__name__),
-    (__file__, function11.__code__.co_firstlineno+1, function11.__name__),
-    (__file__, function10.__code__.co_firstlineno+1, function10.__name__),
-    (__file__, function9.__code__.co_firstlineno+1, function9.__name__),
-    (__file__, function8.__code__.co_firstlineno+1, function8.__name__),
-    (__file__, function7.__code__.co_firstlineno+1, function7.__name__),
-    (__file__, function6.__code__.co_firstlineno+1, function6.__name__),
-    (__file__, function5.__code__.co_firstlineno+1, function5.__name__),
-    (__file__, function4.__code__.co_firstlineno+1, function4.__name__),
-    (__file__, function3.__code__.co_firstlineno+1, function3.__name__),
-    (__file__, function2.__code__.co_firstlineno+1, function2.__name__),
-    (__file__, function1.__code__.co_firstlineno+1, function1.__name__),
-    (__file__, function0.__code__.co_firstlineno+1, function0.__name__)
-])
+
+_stack_trace_passed1 = _format_stack_trace_from_tuples(
+    [
+        (__file__, test_trace_passed1.__code__.co_firstlineno + 2, test_trace_passed1.__name__),
+        (__file__, _test_trace_passed1.__code__.co_firstlineno + 2, _test_trace_passed1.__name__),
+        (__file__, function12.__code__.co_firstlineno + 1, function12.__name__),
+        (__file__, function11.__code__.co_firstlineno + 1, function11.__name__),
+        (__file__, function10.__code__.co_firstlineno + 1, function10.__name__),
+        (__file__, function9.__code__.co_firstlineno + 1, function9.__name__),
+        (__file__, function8.__code__.co_firstlineno + 1, function8.__name__),
+        (__file__, function7.__code__.co_firstlineno + 1, function7.__name__),
+        (__file__, function6.__code__.co_firstlineno + 1, function6.__name__),
+        (__file__, function5.__code__.co_firstlineno + 1, function5.__name__),
+        (__file__, function4.__code__.co_firstlineno + 1, function4.__name__),
+        (__file__, function3.__code__.co_firstlineno + 1, function3.__name__),
+        (__file__, function2.__code__.co_firstlineno + 1, function2.__name__),
+        (__file__, function1.__code__.co_firstlineno + 1, function1.__name__),
+        (__file__, function0.__code__.co_firstlineno + 1, function0.__name__),
+    ]
+)
 
 # An additional example for the changing line numbers as described above
 # is the following. Note that _test_trace_passed2b() does not actually
@@ -148,43 +167,48 @@ _stack_trace_passed1 = _format_stack_trace_from_tuples([
 # frame. This is instead of being at the point of call for the function
 # _test_trace_passed2a() where the exception was generated.
 
+
 def _test_trace_passed2a():
     try:
         function12()
     except Exception:
         return sys.exc_info()[2]
 
+
 def _test_trace_passed2b(tb):
     actual = exception_stack(tb, limit=15)
     require = _stack_trace_passed2
     assert actual == require, (actual, require)
 
+
 def test_trace_passed2():
     tb = _test_trace_passed2a()
     _test_trace_passed2b(tb)
 
-_stack_trace_passed2 = _format_stack_trace_from_tuples([
-    (__file__, test_trace_passed2.__code__.co_firstlineno+2,
-        test_trace_passed2.__name__),
-    (__file__, _test_trace_passed2a.__code__.co_firstlineno+2,
-        _test_trace_passed2a.__name__),
-    (__file__, function12.__code__.co_firstlineno+1, function12.__name__),
-    (__file__, function11.__code__.co_firstlineno+1, function11.__name__),
-    (__file__, function10.__code__.co_firstlineno+1, function10.__name__),
-    (__file__, function9.__code__.co_firstlineno+1, function9.__name__),
-    (__file__, function8.__code__.co_firstlineno+1, function8.__name__),
-    (__file__, function7.__code__.co_firstlineno+1, function7.__name__),
-    (__file__, function6.__code__.co_firstlineno+1, function6.__name__),
-    (__file__, function5.__code__.co_firstlineno+1, function5.__name__),
-    (__file__, function4.__code__.co_firstlineno+1, function4.__name__),
-    (__file__, function3.__code__.co_firstlineno+1, function3.__name__),
-    (__file__, function2.__code__.co_firstlineno+1, function2.__name__),
-    (__file__, function1.__code__.co_firstlineno+1, function1.__name__),
-    (__file__, function0.__code__.co_firstlineno+1, function0.__name__)
-])
+
+_stack_trace_passed2 = _format_stack_trace_from_tuples(
+    [
+        (__file__, test_trace_passed2.__code__.co_firstlineno + 2, test_trace_passed2.__name__),
+        (__file__, _test_trace_passed2a.__code__.co_firstlineno + 2, _test_trace_passed2a.__name__),
+        (__file__, function12.__code__.co_firstlineno + 1, function12.__name__),
+        (__file__, function11.__code__.co_firstlineno + 1, function11.__name__),
+        (__file__, function10.__code__.co_firstlineno + 1, function10.__name__),
+        (__file__, function9.__code__.co_firstlineno + 1, function9.__name__),
+        (__file__, function8.__code__.co_firstlineno + 1, function8.__name__),
+        (__file__, function7.__code__.co_firstlineno + 1, function7.__name__),
+        (__file__, function6.__code__.co_firstlineno + 1, function6.__name__),
+        (__file__, function5.__code__.co_firstlineno + 1, function5.__name__),
+        (__file__, function4.__code__.co_firstlineno + 1, function4.__name__),
+        (__file__, function3.__code__.co_firstlineno + 1, function3.__name__),
+        (__file__, function2.__code__.co_firstlineno + 1, function2.__name__),
+        (__file__, function1.__code__.co_firstlineno + 1, function1.__name__),
+        (__file__, function0.__code__.co_firstlineno + 1, function0.__name__),
+    ]
+)
 
 # Here we limit to bottom most stack frames within just the exception
 # stack.
+
 
 def test_trace_truncated():
     try:
@@ -195,17 +219,21 @@ def test_trace_truncated():
         require = _stack_trace_limit_truncated
         assert actual == require, (actual, require)
 
-_stack_trace_limit_truncated = _format_stack_trace_from_tuples([
-    (__file__, function4.__code__.co_firstlineno+1, function4.__name__),
-    (__file__, function3.__code__.co_firstlineno+1, function3.__name__),
-    (__file__, function2.__code__.co_firstlineno+1, function2.__name__),
-    (__file__, function1.__code__.co_firstlineno+1, function1.__name__),
-    (__file__, function0.__code__.co_firstlineno+1, function0.__name__)
-])
+
+_stack_trace_limit_truncated = _format_stack_trace_from_tuples(
+    [
+        (__file__, function4.__code__.co_firstlineno + 1, function4.__name__),
+        (__file__, function3.__code__.co_firstlineno + 1, function3.__name__),
+        (__file__, function2.__code__.co_firstlineno + 1, function2.__name__),
+        (__file__, function1.__code__.co_firstlineno + 1, function1.__name__),
+        (__file__, function0.__code__.co_firstlineno + 1, function0.__name__),
+    ]
+)
 
 # Previous examples truncated at stack frame of test as can't easily
 # compare to frames above. This test collects all stack frames to make
 # sure it can handle them, but can't compare.
+
 
 def test_trace_exception_full():
     try:
@@ -232,61 +260,78 @@ def test_trace_line_limit():
 
     assert len(actual) == 41
 
+
 # Test just the ability to get the current stack frame. Limited so we
 # can compare to what we expect.
+
 
 def skip0(skip, limit):
     return current_stack(skip=skip, limit=limit)
 
+
 def skip1(skip, limit):
     return skip0(skip, limit)
+
 
 def skip2(skip, limit):
     return skip1(skip, limit)
 
+
 def skip3(skip, limit):
     return skip2(skip, limit)
+
 
 def skip4(skip, limit):
     return skip3(skip, limit)
 
+
 def skip5(skip, limit):
     return skip4(skip, limit)
+
 
 def test_trace_current():
     actual = skip5(skip=0, limit=5)
     require = _stack_trace_current
     assert actual == require, (actual, require)
 
-_stack_trace_current = _format_stack_trace_from_tuples([
-    (__file__, skip4.__code__.co_firstlineno+1, skip4.__name__),
-    (__file__, skip3.__code__.co_firstlineno+1, skip3.__name__),
-    (__file__, skip2.__code__.co_firstlineno+1, skip2.__name__),
-    (__file__, skip1.__code__.co_firstlineno+1, skip1.__name__),
-    (__file__, skip0.__code__.co_firstlineno+1, skip0.__name__)
-])
+
+_stack_trace_current = _format_stack_trace_from_tuples(
+    [
+        (__file__, skip4.__code__.co_firstlineno + 1, skip4.__name__),
+        (__file__, skip3.__code__.co_firstlineno + 1, skip3.__name__),
+        (__file__, skip2.__code__.co_firstlineno + 1, skip2.__name__),
+        (__file__, skip1.__code__.co_firstlineno + 1, skip1.__name__),
+        (__file__, skip0.__code__.co_firstlineno + 1, skip0.__name__),
+    ]
+)
 
 # Test the ability to skip some frames at the bottom of the stack.
+
 
 def test_trace_current_skip():
     actual = skip5(skip=1, limit=5)
     require = _stack_trace_current_skip
     assert actual == require, (actual, require)
 
-_stack_trace_current_skip = _format_stack_trace_from_tuples([
-    (__file__, skip5.__code__.co_firstlineno+1, skip5.__name__),
-    (__file__, skip4.__code__.co_firstlineno+1, skip4.__name__),
-    (__file__, skip3.__code__.co_firstlineno+1, skip3.__name__),
-    (__file__, skip2.__code__.co_firstlineno+1, skip2.__name__),
-    (__file__, skip1.__code__.co_firstlineno+1, skip1.__name__)
-])
+
+_stack_trace_current_skip = _format_stack_trace_from_tuples(
+    [
+        (__file__, skip5.__code__.co_firstlineno + 1, skip5.__name__),
+        (__file__, skip4.__code__.co_firstlineno + 1, skip4.__name__),
+        (__file__, skip3.__code__.co_firstlineno + 1, skip3.__name__),
+        (__file__, skip2.__code__.co_firstlineno + 1, skip2.__name__),
+        (__file__, skip1.__code__.co_firstlineno + 1, skip1.__name__),
+    ]
+)
 
 # Previous examples truncated current stack as can't easily compare to
 # frames above. This test collects all stack frames to make sure it can
 # handle them, but can't compare.
 
+
 def test_trace_current_full():
     actual = skip5(skip=0, limit=1000)
+
 
 # This example shows the relationship between functions _extract_stack()
 # and _extract_tb(). _extract_stack() collects the outer frames starting
@@ -296,6 +341,7 @@ def test_trace_current_full():
 # should be the same as having used the exception_stack() function. This
 # test just takes the limit calculations done inside of the function
 # exception_stack() out of play.
+
 
 def test_trace_current_plus_traceback():
     try:
@@ -307,7 +353,6 @@ def test_trace_current_plus_traceback():
     limit = 10000
 
     actual = exception_stack(tb)
-    require = _format_stack_trace_from_dicts(
-            _extract_stack(frame, 0, limit)+_extract_tb(tb, limit))
+    require = _format_stack_trace_from_dicts(_extract_stack(frame, 0, limit) + _extract_tb(tb, limit))
 
     assert actual == require, (actual, require)

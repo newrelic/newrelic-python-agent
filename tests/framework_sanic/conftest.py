@@ -15,14 +15,9 @@
 import asyncio
 
 import pytest
-from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
-    collector_agent_registration_fixture,
-    collector_available_fixture,
-)
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
-from newrelic.common.object_wrapper import (  # noqa: F401 pylint: disable=W0611
-    transient_function_wrapper,
-)
+from newrelic.common.object_wrapper import transient_function_wrapper
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
@@ -48,11 +43,7 @@ def create_request_class(app, method, url, headers=None, loop=None):
 
     try:
         _request = Request(
-            method=method.upper(),
-            url_bytes=url.encode("utf-8"),
-            headers=headers,
-            version="1.0",
-            transport=None,
+            method=method.upper(), url_bytes=url.encode("utf-8"), headers=headers, version="1.0", transport=None
         )
     except TypeError:
         _request = Request(
@@ -109,9 +100,7 @@ def create_request_coroutine(app, method, url, headers=None, loop=None):
                 RESPONSES.append(response)
 
         coro = app.handle_request(
-            create_request_class(app, method, url, headers, loop=loop),
-            write_callback,
-            stream_callback,
+            create_request_class(app, method, url, headers, loop=loop), write_callback, stream_callback
         )
 
     return coro
@@ -142,7 +131,7 @@ def request(app, method, url, headers=None):
     return RESPONSES.pop()
 
 
-class TestApplication():
+class TestApplication:
     def __init__(self, app):
         self.app = app
 

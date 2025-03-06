@@ -15,27 +15,13 @@
 import asyncio
 
 import pytest
-from testing_support.fixtures import (
-    dt_enabled,
-    override_application_settings,
-    override_generic_settings,
-)
-from testing_support.mock_external_http_server import (
-    MockExternalHTTPHResponseHeadersServer,
-)
-from testing_support.validators.validate_cross_process_headers import (
-    validate_cross_process_headers,
-)
+from testing_support.fixtures import dt_enabled, override_application_settings, override_generic_settings
+from testing_support.mock_external_http_server import MockExternalHTTPHResponseHeadersServer
+from testing_support.validators.validate_cross_process_headers import validate_cross_process_headers
 from testing_support.validators.validate_span_events import validate_span_events
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
-from testing_support.validators.validate_tt_segment_params import (
-    validate_tt_segment_params,
-)
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_tt_segment_params import validate_tt_segment_params
 
 from newrelic.api.background_task import background_task
 from newrelic.api.time_trace import current_trace
@@ -94,23 +80,9 @@ def exercise_sync_client(server, client, method, protocol="http"):
     return response
 
 
-@pytest.mark.parametrize(
-    "method",
-    (
-        "get",
-        "options",
-        "head",
-        "post",
-        "put",
-        "patch",
-        "delete",
-    ),
-)
+@pytest.mark.parametrize("method", ("get", "options", "head", "post", "put", "patch", "delete"))
 @validate_transaction_metrics(
-    "test_sync_client",
-    scoped_metrics=SCOPED_METRICS,
-    rollup_metrics=ROLLUP_METRICS,
-    background_task=True,
+    "test_sync_client", scoped_metrics=SCOPED_METRICS, rollup_metrics=ROLLUP_METRICS, background_task=True
 )
 @background_task(name="test_sync_client")
 def test_sync_client(httpx, sync_client, mock_server, method):
@@ -131,23 +103,9 @@ async def exercise_async_client(server, client, method, protocol="http"):
     return responses
 
 
-@pytest.mark.parametrize(
-    "method",
-    (
-        "get",
-        "options",
-        "head",
-        "post",
-        "put",
-        "patch",
-        "delete",
-    ),
-)
+@pytest.mark.parametrize("method", ("get", "options", "head", "post", "put", "patch", "delete"))
 @validate_transaction_metrics(
-    "test_async_client",
-    scoped_metrics=SCOPED_METRICS,
-    rollup_metrics=ROLLUP_METRICS,
-    background_task=True,
+    "test_async_client", scoped_metrics=SCOPED_METRICS, rollup_metrics=ROLLUP_METRICS, background_task=True
 )
 @background_task(name="test_async_client")
 def test_async_client(httpx, async_client, mock_server, loop, method):
@@ -158,14 +116,7 @@ def test_async_client(httpx, async_client, mock_server, loop, method):
     assert all(response.status_code == 200 for response in responses)
 
 
-@pytest.mark.parametrize(
-    "distributed_tracing,span_events",
-    (
-        (True, True),
-        (True, False),
-        (False, False),
-    ),
-)
+@pytest.mark.parametrize("distributed_tracing,span_events", ((True, True), (True, False), (False, False)))
 def test_sync_cross_process_request(httpx, sync_client, mock_server, distributed_tracing, span_events):
     global CAT_RESPONSE_CODE
     CAT_RESPONSE_CODE = 200
@@ -193,14 +144,7 @@ def test_sync_cross_process_request(httpx, sync_client, mock_server, distributed
     _test()
 
 
-@pytest.mark.parametrize(
-    "distributed_tracing,span_events",
-    (
-        (True, True),
-        (True, False),
-        (False, False),
-    ),
-)
+@pytest.mark.parametrize("distributed_tracing,span_events", ((True, True), (True, False), (False, False)))
 @validate_transaction_errors(errors=[])
 @background_task(name="test_async_cross_process_request")
 @validate_cross_process_headers
@@ -209,10 +153,7 @@ def test_async_cross_process_request(httpx, async_client, mock_server, loop, dis
     CAT_RESPONSE_CODE = 200
 
     @override_application_settings(
-        {
-            "distributed_tracing.enabled": distributed_tracing,
-            "span_events.enabled": span_events,
-        }
+        {"distributed_tracing.enabled": distributed_tracing, "span_events.enabled": span_events}
     )
     async def _test():
         async with async_client:
@@ -228,11 +169,7 @@ def test_async_cross_process_request(httpx, async_client, mock_server, loop, dis
 
 
 @override_application_settings(
-    {
-        "distributed_tracing.enabled": True,
-        "span_events.enabled": True,
-        "cross_application_tracer.enabled": True,
-    }
+    {"distributed_tracing.enabled": True, "span_events.enabled": True, "cross_application_tracer.enabled": True}
 )
 @validate_transaction_errors(errors=[])
 @background_task(name="test_sync_cross_process_override_headers")
@@ -251,12 +188,7 @@ def test_sync_cross_process_override_headers(httpx, sync_client, mock_server, lo
     assert response.request.headers["newrelic"] == "1234"
 
 
-@override_application_settings(
-    {
-        "distributed_tracing.enabled": True,
-        "span_events.enabled": True,
-    }
-)
+@override_application_settings({"distributed_tracing.enabled": True, "span_events.enabled": True})
 @validate_transaction_errors(errors=[])
 @background_task(name="test_async_cross_process_override_headers")
 def test_async_cross_process_override_headers(httpx, async_client, mock_server, loop):
@@ -294,7 +226,7 @@ def test_sync_client_cat_response_processing(cat_enabled, response_code, sync_cl
         (
             f"ExternalTransaction/localhost:{mock_server.port}/1#1/WebTransaction/Function/app:beep",
             1 if cat_enabled else None,
-        ),
+        )
     ]
 
     @validate_transaction_metrics(
@@ -332,7 +264,7 @@ def test_async_client_cat_response_processing(cat_enabled, response_code, httpx,
         (
             f"ExternalTransaction/localhost:{mock_server.port}/1#1/WebTransaction/Function/app:beep",
             1 if cat_enabled else None,
-        ),
+        )
     ]
 
     @validate_transaction_metrics(
@@ -363,7 +295,7 @@ def test_sync_client_event_hook_exception(httpx, mock_server):
 
     def exception_event_hook(response):
         if response.status_code >= 400:
-            raise RuntimeError()
+            raise RuntimeError
 
     def empty_hook(response):
         pass
@@ -409,7 +341,7 @@ def test_async_client_event_hook_exception(httpx, mock_server, loop):
 
     def exception_event_hook(response):
         if response.status_code >= 400:
-            raise RuntimeError()
+            raise RuntimeError
 
     def empty_hook(response):
         pass
@@ -451,12 +383,8 @@ def test_async_client_event_hook_exception(httpx, mock_server, loop):
             client.event_hooks = {"request": [empty_hook]}
             make_request(client, exc_expected=False)
 
-@override_generic_settings(
-    global_settings(),
-    {
-        "enabled": False,
-    },
-)
+
+@override_generic_settings(global_settings(), {"enabled": False})
 def test_sync_nr_disabled(httpx, mock_server):
     global CAT_RESPONSE_CODE
     CAT_RESPONSE_CODE = 200
@@ -469,12 +397,7 @@ def test_sync_nr_disabled(httpx, mock_server):
         assert trace is None
 
 
-@override_generic_settings(
-    global_settings(),
-    {
-        "enabled": False,
-    },
-)
+@override_generic_settings(global_settings(), {"enabled": False})
 def test_async_nr_disabled(httpx, mock_server, loop):
     global CAT_RESPONSE_CODE
     CAT_RESPONSE_CODE = 200
@@ -491,13 +414,7 @@ def test_async_nr_disabled(httpx, mock_server, loop):
     assert trace is None
 
 
-@pytest.mark.parametrize(
-    "client",
-    (
-        "Client",
-        "AsyncClient",
-    ),
-)
+@pytest.mark.parametrize("client", ("Client", "AsyncClient"))
 def test_invalid_import_order_client(monkeypatch, httpx, mock_server, loop, client):
     global CAT_RESPONSE_CODE
     CAT_RESPONSE_CODE = 200
@@ -527,10 +444,7 @@ def test_invalid_import_order_client(monkeypatch, httpx, mock_server, loop, clie
 
 
 @validate_transaction_metrics(
-    "test_sync_client_http2",
-    scoped_metrics=SCOPED_METRICS,
-    rollup_metrics=ROLLUP_METRICS,
-    background_task=True,
+    "test_sync_client_http2", scoped_metrics=SCOPED_METRICS, rollup_metrics=ROLLUP_METRICS, background_task=True
 )
 @background_task(name="test_sync_client_http2")
 def test_sync_client_http2(httpx, real_server):
@@ -545,10 +459,7 @@ def test_sync_client_http2(httpx, real_server):
 
 
 @validate_transaction_metrics(
-    "test_async_client_http2",
-    scoped_metrics=SCOPED_METRICS,
-    rollup_metrics=ROLLUP_METRICS,
-    background_task=True,
+    "test_async_client_http2", scoped_metrics=SCOPED_METRICS, rollup_metrics=ROLLUP_METRICS, background_task=True
 )
 @background_task(name="test_async_client_http2")
 def test_async_client_http2(httpx, real_server, loop):

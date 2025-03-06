@@ -19,24 +19,16 @@ from _test_bedrock_chat_completion import (
 )
 from conftest import BOTOCORE_VERSION  # pylint: disable=E0611
 from testing_support.fixtures import reset_core_stats_engine, validate_attributes
-from testing_support.ml_testing_utils import (  # noqa: F401
-    events_with_context_attrs,
-    set_trace_info,
-)
+from testing_support.ml_testing_utils import events_with_context_attrs, set_trace_info
 from testing_support.validators.validate_custom_event import validate_custom_event_count
 from testing_support.validators.validate_custom_events import validate_custom_events
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 from newrelic.api.transaction import add_custom_attribute
 
-UNSUPPORTED_LANGCHAIN_MODELS = [
-    "ai21.j2-mid-v1",
-    "cohere.command-text-v14",
-]
+UNSUPPORTED_LANGCHAIN_MODELS = ["ai21.j2-mid-v1", "cohere.command-text-v14"]
 
 
 @pytest.fixture(
@@ -71,11 +63,7 @@ def exercise_model(bedrock_server, model_id, response_streaming):
         pytest.skip(reason="Langchain not installed.")
 
     def _exercise_model(prompt):
-        bedrock_llm = BedrockChat(
-            model_id=model_id,
-            client=bedrock_server,
-            streaming=response_streaming,
-        )
+        bedrock_llm = BedrockChat(model_id=model_id, client=bedrock_server, streaming=response_streaming)
         conversation = ConversationChain(llm=bedrock_llm)
         result = conversation.predict(input=prompt)
         if response_streaming:
@@ -103,11 +91,7 @@ def expected_metrics(response_streaming):
 
 @reset_core_stats_engine()
 def test_bedrock_chat_completion_in_txn_with_llm_metadata(
-    set_trace_info,
-    exercise_model,
-    expected_events,
-    expected_metrics,
-    response_streaming,
+    set_trace_info, exercise_model, expected_events, expected_metrics, response_streaming
 ):
     @validate_custom_events(events_with_context_attrs(expected_events))
     # One summary event, one user message, and one response message from the assistant
@@ -116,9 +100,7 @@ def test_bedrock_chat_completion_in_txn_with_llm_metadata(
         name="test_bedrock_chat_completion_in_txn_with_llm_metadata",
         scoped_metrics=expected_metrics,
         rollup_metrics=expected_metrics,
-        custom_metrics=[
-            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
-        ],
+        custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
         background_task=True,
     )
     @validate_attributes("agent", ["llm"])

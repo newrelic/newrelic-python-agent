@@ -15,44 +15,48 @@
 from collections import namedtuple
 
 import newrelic.core.trace_node
-
-from newrelic.core.node_mixin import GenericNodeMixin
 from newrelic.core.metric import TimeMetric
+from newrelic.core.node_mixin import GenericNodeMixin
 
-_SolrNode = namedtuple('_SolrNode',
-        ['library', 'command', 'children', 'start_time', 'end_time',
-        'duration', 'exclusive', 'guid', 'agent_attributes',
-        'user_attributes'])
+_SolrNode = namedtuple(
+    "_SolrNode",
+    [
+        "library",
+        "command",
+        "children",
+        "start_time",
+        "end_time",
+        "duration",
+        "exclusive",
+        "guid",
+        "agent_attributes",
+        "user_attributes",
+    ],
+)
 
 
 class SolrNode(_SolrNode, GenericNodeMixin):
-
     @property
     def name(self):
-        return f'SolrClient/{self.library}/{self.command}'
+        return f"SolrClient/{self.library}/{self.command}"
 
     def time_metrics(self, stats, root, parent):
         """Return a generator yielding the timed metrics for this
         memcache node as well as all the child nodes.
 
         """
-        yield TimeMetric(name='Solr/all', scope='',
-                duration=self.duration, exclusive=self.exclusive)
+        yield TimeMetric(name="Solr/all", scope="", duration=self.duration, exclusive=self.exclusive)
 
-        if root.type == 'WebTransaction':
-            yield TimeMetric(name='Solr/allWeb', scope='',
-                    duration=self.duration, exclusive=self.exclusive)
+        if root.type == "WebTransaction":
+            yield TimeMetric(name="Solr/allWeb", scope="", duration=self.duration, exclusive=self.exclusive)
         else:
-            yield TimeMetric(name='Solr/allOther', scope='',
-                    duration=self.duration, exclusive=self.exclusive)
+            yield TimeMetric(name="Solr/allOther", scope="", duration=self.duration, exclusive=self.exclusive)
 
-        name = f'Solr/{self.command}'
+        name = f"Solr/{self.command}"
 
-        yield TimeMetric(name=name, scope='', duration=self.duration,
-                  exclusive=self.exclusive)
+        yield TimeMetric(name=name, scope="", duration=self.duration, exclusive=self.exclusive)
 
-        yield TimeMetric(name=name, scope=root.path,
-                duration=self.duration, exclusive=self.exclusive)
+        yield TimeMetric(name=name, scope=root.path, duration=self.duration, exclusive=self.exclusive)
 
     def trace_node(self, stats, root, connections):
         name = root.string_table.cache(self.name)
@@ -67,6 +71,6 @@ class SolrNode(_SolrNode, GenericNodeMixin):
         # Agent attributes
         params = self.get_trace_segment_params(root.settings)
 
-        return newrelic.core.trace_node.TraceNode(start_time=start_time,
-                end_time=end_time, name=name, params=params, children=children,
-                label=None)
+        return newrelic.core.trace_node.TraceNode(
+            start_time=start_time, end_time=end_time, name=name, params=params, children=children, label=None
+        )

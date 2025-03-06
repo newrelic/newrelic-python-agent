@@ -15,9 +15,7 @@ import elasticsearch
 import elasticsearch.client
 import pytest
 from conftest import ES_VERSION
-from testing_support.validators.validate_datastore_trace_inputs import (
-    validate_datastore_trace_inputs,
-)
+from testing_support.validators.validate_datastore_trace_inputs import validate_datastore_trace_inputs
 
 from newrelic.api.background_task import background_task
 

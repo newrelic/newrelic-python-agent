@@ -13,9 +13,7 @@
 # limitations under the License.
 
 from celery import Celery, shared_task
-from testing_support.validators.validate_distributed_trace_accepted import (
-    validate_distributed_trace_accepted,
-)
+from testing_support.validators.validate_distributed_trace_accepted import validate_distributed_trace_accepted
 
 from newrelic.api.transaction import current_transaction
 

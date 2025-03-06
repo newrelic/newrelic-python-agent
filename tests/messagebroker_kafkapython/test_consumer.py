@@ -15,21 +15,13 @@
 import pytest
 from conftest import cache_kafka_consumer_headers
 from testing_support.fixtures import reset_core_stats_engine, validate_attributes
-from testing_support.validators.validate_distributed_trace_accepted import (
-    validate_distributed_trace_accepted,
-)
+from testing_support.validators.validate_distributed_trace_accepted import validate_distributed_trace_accepted
 from testing_support.validators.validate_error_event_attributes_outside_transaction import (
     validate_error_event_attributes_outside_transaction,
 )
-from testing_support.validators.validate_transaction_count import (
-    validate_transaction_count,
-)
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_count import validate_transaction_count
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import end_of_transaction
@@ -84,7 +76,6 @@ def test_custom_metrics_on_existing_transaction(get_consumer_record, topic, expe
 
 
 def test_custom_metrics_inactive_transaction(get_consumer_record, topic, expected_missing_broker_metrics):
-
     @validate_transaction_metrics(
         "test_consumer:test_custom_metrics_inactive_transaction.<locals>._test",
         custom_metrics=[
@@ -181,7 +172,7 @@ def test_distributed_tracing_headers(topic, producer, consumer, serialize, expec
 @pytest.fixture()
 def consumer_next_raises(consumer):
     def _poll(*args, **kwargs):
-        raise RuntimeError()
+        raise RuntimeError
 
     consumer.poll = _poll
     return consumer

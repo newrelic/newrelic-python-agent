@@ -13,14 +13,9 @@
 # limitations under the License.
 
 import pytest
-from testing_support.fixture.event_loop import (  # noqa: F401; pylint: disable=W0611
-    event_loop as loop,
-)
-from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
-    collector_agent_registration_fixture,
-    collector_available_fixture,
-)
 from testing_support.db_settings import nginx_settings
+from testing_support.fixture.event_loop import event_loop as loop
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.

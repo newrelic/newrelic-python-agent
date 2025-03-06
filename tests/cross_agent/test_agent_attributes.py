@@ -14,65 +14,70 @@
 
 import json
 import os
+
 import pytest
+from testing_support.fixtures import override_application_settings
 
 from newrelic.core import attribute_filter as af
-from newrelic.core.config import global_settings, Settings
+from newrelic.core.config import Settings, global_settings
 
-from testing_support.fixtures import override_application_settings
 
 def _default_settings():
     return {
-        'attributes.enabled': True,
-        'transaction_events.attributes.enabled': True,
-        'transaction_tracer.attributes.enabled': True,
-        'error_collector.attributes.enabled': True,
-        'browser_monitoring.attributes.enabled': False,
-        'attributes.include': [],
-        'attributes.exclude': [],
-        'transaction_events.attributes.include': [],
-        'transaction_events.attributes.exclude': [],
-        'transaction_tracer.attributes.include': [],
-        'transaction_tracer.attributes.exclude': [],
-        'error_collector.attributes.include': [],
-        'error_collector.attributes.exclude': [],
-        'browser_monitoring.attributes.include': [],
-        'browser_monitoring.attributes.exclude': [],
+        "attributes.enabled": True,
+        "transaction_events.attributes.enabled": True,
+        "transaction_tracer.attributes.enabled": True,
+        "error_collector.attributes.enabled": True,
+        "browser_monitoring.attributes.enabled": False,
+        "attributes.include": [],
+        "attributes.exclude": [],
+        "transaction_events.attributes.include": [],
+        "transaction_events.attributes.exclude": [],
+        "transaction_tracer.attributes.include": [],
+        "transaction_tracer.attributes.exclude": [],
+        "error_collector.attributes.include": [],
+        "error_collector.attributes.exclude": [],
+        "browser_monitoring.attributes.include": [],
+        "browser_monitoring.attributes.exclude": [],
     }
 
+
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
-FIXTURE = os.path.join(CURRENT_DIR, 'fixtures', 'attribute_configuration.json')
+FIXTURE = os.path.join(CURRENT_DIR, "fixtures", "attribute_configuration.json")
+
 
 def _load_tests():
-    with open(FIXTURE, 'r') as fh:
+    with open(FIXTURE, "r") as fh:
         js = fh.read()
     return json.loads(js)
 
-_fields = ['testname', 'config', 'input_key', 'input_default_destinations',
-           'expected_destinations']
+
+_fields = ["testname", "config", "input_key", "input_default_destinations", "expected_destinations"]
+
 
 def _parametrize_test(test):
     return tuple([test.get(f, None) for f in _fields])
 
+
 _attributes_tests = [_parametrize_test(t) for t in _load_tests()]
+
 
 def destinations_as_int(destinations):
     result = af.DST_NONE
     for d in destinations:
-        if d == 'transaction_events':
+        if d == "transaction_events":
             result |= af.DST_TRANSACTION_EVENTS
-        elif d == 'transaction_tracer':
+        elif d == "transaction_tracer":
             result |= af.DST_TRANSACTION_TRACER
-        elif d == 'error_collector':
+        elif d == "error_collector":
             result |= af.DST_ERROR_COLLECTOR
-        elif d == 'browser_monitoring':
+        elif d == "browser_monitoring":
             result |= af.DST_BROWSER_MONITORING
     return result
 
-@pytest.mark.parametrize(','.join(_fields), _attributes_tests)
-def test_attributes(testname, config, input_key, input_default_destinations,
-            expected_destinations):
 
+@pytest.mark.parametrize(",".join(_fields), _attributes_tests)
+def test_attributes(testname, config, input_key, input_default_destinations, expected_destinations):
     settings = _default_settings()
     for k, v in config.items():
         settings[k] = v
@@ -84,14 +89,16 @@ def test_attributes(testname, config, input_key, input_default_destinations,
     expected = destinations_as_int(expected_destinations)
     assert result == expected, attribute_filter
 
+
 _sorting_tests = [
-    ('lexicographic', ('a', 1, True), ('ab', 1, True)),
-    ('is_include', ('a', 1, True), ('a', 1, False)),
-    ('wildcard', ('a*', 1, True), ('a', 1, False)),
-    ('wildcard same length', ('a*', 1, True), ('ab', 1, False)),
+    ("lexicographic", ("a", 1, True), ("ab", 1, True)),
+    ("is_include", ("a", 1, True), ("a", 1, False)),
+    ("wildcard", ("a*", 1, True), ("a", 1, False)),
+    ("wildcard same length", ("a*", 1, True), ("ab", 1, False)),
 ]
 
-@pytest.mark.parametrize('testname, rule1, rule2', _sorting_tests)
+
+@pytest.mark.parametrize("testname, rule1, rule2", _sorting_tests)
 def test_attribute_filter_rule_sort(testname, rule1, rule2):
     first = af.AttributeFilterRule(*rule1)
     second = af.AttributeFilterRule(*rule2)
@@ -102,12 +109,15 @@ def test_attribute_filter_rule_sort(testname, rule1, rule2):
     assert second >= first
     assert first != second
 
+
 _equality_tests = [
-    ('is_include', ('a', 1, True), ('a', 1, True)),
-    ('not is_include', ('a', 1, False), ('a', 1, False)),
-    ('is_wildcard', ('a*', 1, True), ('a*', 1, True)),
+    ("is_include", ("a", 1, True), ("a", 1, True)),
+    ("not is_include", ("a", 1, False), ("a", 1, False)),
+    ("is_wildcard", ("a*", 1, True), ("a*", 1, True)),
 ]
-@pytest.mark.parametrize('testname, rule1, rule2', _equality_tests)
+
+
+@pytest.mark.parametrize("testname, rule1, rule2", _equality_tests)
 def test_attribute_filter_rule_equality(testname, rule1, rule2):
     first = af.AttributeFilterRule(*rule1)
     second = af.AttributeFilterRule(*rule2)

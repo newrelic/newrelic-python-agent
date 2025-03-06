@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from testing_support.fixtures import check_event_attributes
-
 from newrelic.common.object_wrapper import transient_function_wrapper
+from testing_support.fixtures import check_event_attributes
 
 
 def validate_error_event_attributes_outside_transaction(
@@ -25,7 +24,6 @@ def validate_error_event_attributes_outside_transaction(
 
     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.notice_error")
     def _validate_error_event_attributes_outside_transaction(wrapped, instance, args, kwargs):
-
         try:
             result = wrapped(*args, **kwargs)
         except:

@@ -15,7 +15,6 @@
 from urllib.parse import urlencode
 
 import newrelic.packages.urllib3 as urllib3
-
 from newrelic.common.agent_http import BaseClient
 
 
@@ -24,9 +23,9 @@ def create_client_cls(status, data, url=None):
         expected = urllib3.util.parse_url(url)
         if expected.port:
             expected_port = expected.port
-        elif expected.scheme == 'https':
+        elif expected.scheme == "https":
             expected_port = 443
-        elif expected.scheme == 'http':
+        elif expected.scheme == "http":
             expected_port = 80
         else:
             assert False, "Expected URL is missing scheme and port"
@@ -41,12 +40,7 @@ def create_client_cls(status, data, url=None):
             self.port = port
 
         def send_request(
-                self,
-                method="POST",
-                path="/agent_listener/invoke_raw_method",
-                params=None,
-                headers=None,
-                payload=None,
+            self, method="POST", path="/agent_listener/invoke_raw_method", params=None, headers=None, payload=None
         ):
             if expected:
                 try:

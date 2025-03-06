@@ -13,14 +13,14 @@
 # limitations under the License.
 
 
-import newrelic.api.transaction
 import newrelic.api.function_trace
 import newrelic.api.in_function
 import newrelic.api.out_function
 import newrelic.api.pre_function
-from newrelic.common.object_names import callable_name
-from newrelic.api.wsgi_application import WSGIApplicationWrapper
+import newrelic.api.transaction
 from newrelic.api.time_trace import notice_error
+from newrelic.api.wsgi_application import WSGIApplicationWrapper
+from newrelic.common.object_names import callable_name
 
 
 def transaction_name_delegate(*args, **kwargs):
@@ -45,7 +45,6 @@ def template_name(render_obj, name):
 
 
 def instrument(module):
-
     if module.__name__ == "web.application":
         newrelic.api.out_function.wrap_out_function(module, "application.wsgifunc", WSGIApplicationWrapper)
         newrelic.api.in_function.wrap_in_function(module, "application._delegate", transaction_name_delegate)

@@ -12,31 +12,27 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 import subprocess
 import sys
 
-import newrelic.agent
+import pytest
+from testing_support.validators.validate_metric_payload import validate_metric_payload
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
+import newrelic.agent
 from newrelic.core.agent import agent_instance
 
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from testing_support.validators.validate_metric_payload import (
-        validate_metric_payload)
-
-
 _unscoped_metrics = [
-        ('Supportability/api/FunctionTrace', 1),
-        ('Supportability/api/current_transaction', 1),
-        ('Supportability/api/callable_name', 1),
-        ('Supportability/api/background_task', None),
+    ("Supportability/api/FunctionTrace", 1),
+    ("Supportability/api/current_transaction", 1),
+    ("Supportability/api/callable_name", 1),
+    ("Supportability/api/background_task", None),
 ]
 
 
 @validate_transaction_metrics(
-        'test_supportability_metrics:test_apis_in_transaction',
-        custom_metrics=_unscoped_metrics,
-        background_task=True)
+    "test_supportability_metrics:test_apis_in_transaction", custom_metrics=_unscoped_metrics, background_task=True
+)
 @newrelic.agent.background_task()
 def test_apis_in_transaction():
     transaction = newrelic.agent.current_transaction()
@@ -45,31 +41,24 @@ def test_apis_in_transaction():
         pass
 
 
-_unscoped_metrics = [
-        ('Supportability/api/global_settings', 2),
-        ('Supportability/api/background_task', None),
-]
+_unscoped_metrics = [("Supportability/api/global_settings", 2), ("Supportability/api/background_task", None)]
 
 
 @validate_transaction_metrics(
-        'test_supportability_metrics:test_uses_api_twice',
-        custom_metrics=_unscoped_metrics,
-        background_task=True)
+    "test_supportability_metrics:test_uses_api_twice", custom_metrics=_unscoped_metrics, background_task=True
+)
 @newrelic.agent.background_task()
 def test_uses_api_twice():
     newrelic.agent.global_settings()
     newrelic.agent.global_settings()
 
 
-_unscoped_metrics = [
-        ('Supportability/api/notice_error', 1),
-        ('Supportability/api/background_task', None),
-]
+_unscoped_metrics = [("Supportability/api/notice_error", 1), ("Supportability/api/background_task", None)]
+
 
 @validate_transaction_metrics(
-        'test_supportability_metrics:test_notice_error',
-        custom_metrics=_unscoped_metrics,
-        background_task=True)
+    "test_supportability_metrics:test_notice_error", custom_metrics=_unscoped_metrics, background_task=True
+)
 @newrelic.agent.background_task()
 def test_notice_error():
     try:
@@ -79,16 +68,15 @@ def test_notice_error():
 
 
 _unscoped_metrics = [
-        ('Supportability/api/end_of_transaction', 1),
-        ('Supportability/api/function_trace', None),
-        ('Supportability/api/background_task', None),
+    ("Supportability/api/end_of_transaction", 1),
+    ("Supportability/api/function_trace", None),
+    ("Supportability/api/background_task", None),
 ]
 
 
 @validate_transaction_metrics(
-        'test_supportability_metrics:test_end_of_transaction',
-        custom_metrics=_unscoped_metrics,
-        background_task=True)
+    "test_supportability_metrics:test_end_of_transaction", custom_metrics=_unscoped_metrics, background_task=True
+)
 @newrelic.agent.background_task()
 def test_end_of_transaction():
     # test that even if the transaction is ignored that we still create the
@@ -102,12 +90,10 @@ def test_end_of_transaction():
         pass
 
 
-@validate_metric_payload(metrics=[
-        ('Supportability/Python/Uninstrumented', None),
-])
+@validate_metric_payload(metrics=[("Supportability/Python/Uninstrumented", None)])
 def test_uninstrumented_none():
     # tests a bug that returned "TypeError: 'NoneType' object is not iterable"
-    app_name = 'Python Agent Test (uninstrumented 3)'
+    app_name = "Python Agent Test (uninstrumented 3)"
     agent = agent_instance()
     agent.activate_application(app_name)
     application = agent._applications.get(app_name)

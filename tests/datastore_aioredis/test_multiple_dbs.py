@@ -12,27 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from conftest import aioredis
-
 import pytest
-from conftest import AIOREDIS_VERSION, loop  # noqa
+from conftest import AIOREDIS_VERSION, aioredis, loop
 from testing_support.db_settings import redis_settings
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
 DB_SETTINGS = redis_settings()
 
-_enable_instance_settings = {
-    "datastore_tracer.instance_reporting.enabled": True,
-}
-_disable_instance_settings = {
-    "datastore_tracer.instance_reporting.enabled": False,
-}
+_enable_instance_settings = {"datastore_tracer.instance_reporting.enabled": True}
+_disable_instance_settings = {"datastore_tracer.instance_reporting.enabled": False}
 
 _base_scoped_metrics = (
     ("Datastore/operation/Redis/get", 1),
@@ -50,10 +42,7 @@ _base_rollup_metrics = (
     ("Datastore/operation/Redis/client_list", 1),
 )
 
-_concurrent_scoped_metrics = [
-    ("Datastore/operation/Redis/get", 2),
-    ("Datastore/operation/Redis/set", 2),
-]
+_concurrent_scoped_metrics = [("Datastore/operation/Redis/get", 2), ("Datastore/operation/Redis/set", 2)]
 
 _concurrent_rollup_metrics = [
     ("Datastore/all", 4),
@@ -84,29 +73,14 @@ if len(DB_SETTINGS) > 1:
     instance_metric_name_1 = f"Datastore/instance/Redis/{_host_1}/{_port_1}"
     instance_metric_name_2 = f"Datastore/instance/Redis/{_host_2}/{_port_2}"
 
-    _enable_rollup_metrics.extend(
-        [
-            (instance_metric_name_1, 2),
-            (instance_metric_name_2, 1),
-        ]
-    )
+    _enable_rollup_metrics.extend([(instance_metric_name_1, 2), (instance_metric_name_2, 1)])
 
-    _disable_rollup_metrics.extend(
-        [
-            (instance_metric_name_1, None),
-            (instance_metric_name_2, None),
-        ]
-    )
-    _concurrent_rollup_metrics.extend(
-        [
-            (instance_metric_name_1, 2),
-            (instance_metric_name_2, 2),
-        ]
-    )
+    _disable_rollup_metrics.extend([(instance_metric_name_1, None), (instance_metric_name_2, None)])
+    _concurrent_rollup_metrics.extend([(instance_metric_name_1, 2), (instance_metric_name_2, 2)])
 
 
 @pytest.fixture(params=("Redis", "StrictRedis"))
-def client_set(request, loop):  # noqa
+def client_set(request, loop):
     if len(DB_SETTINGS) > 1:
         if AIOREDIS_VERSION >= (2, 0):
             if request.param == "Redis":
@@ -120,7 +94,7 @@ def client_set(request, loop):  # noqa
                     aioredis.StrictRedis(host=DB_SETTINGS[1]["host"], port=DB_SETTINGS[1]["port"], db=0),
                 )
             else:
-                raise NotImplementedError()
+                raise NotImplementedError
         else:
             if request.param == "Redis":
                 return (
@@ -134,7 +108,7 @@ def client_set(request, loop):  # noqa
             elif request.param == "StrictRedis":
                 pytest.skip("StrictRedis not implemented.")
             else:
-                raise NotImplementedError()
+                raise NotImplementedError
 
 
 async def exercise_redis(client_1, client_2):
@@ -156,7 +130,7 @@ async def exercise_redis(client_1, client_2):
     background_task=True,
 )
 @background_task()
-def test_multiple_datastores_enabled(client_set, loop):  # noqa
+def test_multiple_datastores_enabled(client_set, loop):
     loop.run_until_complete(exercise_redis(client_set[0], client_set[1]))
 
 
@@ -169,7 +143,7 @@ def test_multiple_datastores_enabled(client_set, loop):  # noqa
     background_task=True,
 )
 @background_task()
-def test_multiple_datastores_disabled(client_set, loop):  # noqa
+def test_multiple_datastores_disabled(client_set, loop):
     loop.run_until_complete(exercise_redis(client_set[0], client_set[1]))
 
 
@@ -182,7 +156,7 @@ def test_multiple_datastores_disabled(client_set, loop):  # noqa
 )
 @override_application_settings(_enable_instance_settings)
 @background_task()
-def test_concurrent_calls(client_set, loop):  # noqa
+def test_concurrent_calls(client_set, loop):
     # Concurrent calls made with original instrumenation taken from synchonous Redis
     # instrumentation had a bug where datastore info on concurrent calls to multiple instances
     # would result in all instances reporting as the host/port of the final call made.

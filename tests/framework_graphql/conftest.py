@@ -13,11 +13,7 @@
 # limitations under the License.
 
 import pytest
-from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
-    collector_agent_registration_fixture,
-    collector_available_fixture,
-)
-
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
@@ -29,8 +25,7 @@ _default_settings = {
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
-    app_name="Python Agent Test (framework_graphql)",
-    default_settings=_default_settings,
+    app_name="Python Agent Test (framework_graphql)", default_settings=_default_settings
 )
 
 

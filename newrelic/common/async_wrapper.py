@@ -13,11 +13,12 @@
 # limitations under the License.
 
 import functools
+
 from newrelic.common.coroutine import (
-    is_coroutine_callable,
-    is_asyncio_coroutine,
-    is_generator_function,
     is_async_generator_function,
+    is_asyncio_coroutine,
+    is_coroutine_callable,
+    is_generator_function,
 )
 
 
@@ -26,7 +27,7 @@ def coroutine_wrapper(wrapped, trace):
     async def wrapper(*args, **kwargs):
         with trace:
             return await wrapped(*args, **kwargs)
-    
+
     return wrapper
 
 

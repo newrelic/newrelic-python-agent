@@ -15,12 +15,8 @@
 
 import openai
 import pytest
-from testing_support.fixtures import (
-    dt_enabled,
-    override_llm_token_callback_settings,
-    reset_core_stats_engine,
-)
-from testing_support.ml_testing_utils import (  # noqa: F401
+from testing_support.fixtures import dt_enabled, override_llm_token_callback_settings, reset_core_stats_engine
+from testing_support.ml_testing_utils import (
     add_token_count_to_events,
     disabled_ai_monitoring_record_content_settings,
     events_sans_content,
@@ -30,13 +26,9 @@ from testing_support.ml_testing_utils import (  # noqa: F401
 )
 from testing_support.validators.validate_custom_event import validate_custom_event_count
 from testing_support.validators.validate_custom_events import validate_custom_events
-from testing_support.validators.validate_error_trace_attributes import (
-    validate_error_trace_attributes,
-)
+from testing_support.validators.validate_error_trace_attributes import validate_error_trace_attributes
 from testing_support.validators.validate_span_events import validate_span_events
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
@@ -102,17 +94,11 @@ expected_events_on_no_model_error = [
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
     callable_name(openai.InvalidRequestError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
-            "error.param": "engine",
-        },
-    },
+    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.param": "engine"}},
 )
 @validate_span_events(
     exact_agents={
-        "error.message": "Must provide an 'engine' or 'model' parameter to create a <class 'openai.api_resources.chat_completion.ChatCompletion'>",
+        "error.message": "Must provide an 'engine' or 'model' parameter to create a <class 'openai.api_resources.chat_completion.ChatCompletion'>"
     }
 )
 @validate_transaction_metrics(
@@ -145,17 +131,11 @@ def test_chat_completion_invalid_request_error_no_model(set_trace_info):
 @disabled_ai_monitoring_record_content_settings
 @validate_error_trace_attributes(
     callable_name(openai.InvalidRequestError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
-            "error.param": "engine",
-        },
-    },
+    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.param": "engine"}},
 )
 @validate_span_events(
     exact_agents={
-        "error.message": "Must provide an 'engine' or 'model' parameter to create a <class 'openai.api_resources.chat_completion.ChatCompletion'>",
+        "error.message": "Must provide an 'engine' or 'model' parameter to create a <class 'openai.api_resources.chat_completion.ChatCompletion'>"
     }
 )
 @validate_transaction_metrics(
@@ -223,20 +203,9 @@ expected_events_on_invalid_model_error = [
 @override_llm_token_callback_settings(llm_token_count_callback)
 @validate_error_trace_attributes(
     callable_name(openai.InvalidRequestError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
-            "error.code": "model_not_found",
-            "http.statusCode": 404,
-        },
-    },
+    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.code": "model_not_found", "http.statusCode": 404}},
 )
-@validate_span_events(
-    exact_agents={
-        "error.message": "The model `does-not-exist` does not exist",
-    }
-)
+@validate_span_events(exact_agents={"error.message": "The model `does-not-exist` does not exist"})
 @validate_transaction_metrics(
     "test_chat_completion_stream_error:test_chat_completion_invalid_request_error_invalid_model_with_token_count",
     scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
@@ -265,20 +234,9 @@ def test_chat_completion_invalid_request_error_invalid_model_with_token_count(se
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
     callable_name(openai.InvalidRequestError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
-            "error.code": "model_not_found",
-            "http.statusCode": 404,
-        },
-    },
+    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.code": "model_not_found", "http.statusCode": 404}},
 )
-@validate_span_events(
-    exact_agents={
-        "error.message": "The model `does-not-exist` does not exist",
-    }
-)
+@validate_span_events(exact_agents={"error.message": "The model `does-not-exist` does not exist"})
 @validate_transaction_metrics(
     "test_chat_completion_stream_error:test_chat_completion_invalid_request_error_invalid_model",
     scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
@@ -357,16 +315,11 @@ expected_events_on_auth_error = [
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(openai.error.AuthenticationError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {},
-    },
+    callable_name(openai.error.AuthenticationError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}}
 )
 @validate_span_events(
     exact_agents={
-        "error.message": "No API key provided. You can set your API key in code using 'openai.api_key = <API-KEY>', or you can set the environment variable OPENAI_API_KEY=<API-KEY>). If your API key is stored in a file, you can point the openai module at it with 'openai.api_key_path = <PATH>'. You can generate API keys in the OpenAI web interface. See https://platform.openai.com/account/api-keys for details.",
+        "error.message": "No API key provided. You can set your API key in code using 'openai.api_key = <API-KEY>', or you can set the environment variable OPENAI_API_KEY=<API-KEY>). If your API key is stored in a file, you can point the openai module at it with 'openai.api_key_path = <PATH>'. You can generate API keys in the OpenAI web interface. See https://platform.openai.com/account/api-keys for details."
     }
 )
 @validate_transaction_metrics(
@@ -432,17 +385,11 @@ expected_events_on_wrong_api_key_error = [
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
     callable_name(openai.error.AuthenticationError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
-            "http.statusCode": 401,
-        },
-    },
+    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"http.statusCode": 401}},
 )
 @validate_span_events(
     exact_agents={
-        "error.message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys.",
+        "error.message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys."
     }
 )
 @validate_transaction_metrics(
@@ -473,17 +420,11 @@ def test_chat_completion_wrong_api_key_error(monkeypatch, set_trace_info):
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
     callable_name(openai.InvalidRequestError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
-            "error.param": "engine",
-        },
-    },
+    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.param": "engine"}},
 )
 @validate_span_events(
     exact_agents={
-        "error.message": "Must provide an 'engine' or 'model' parameter to create a <class 'openai.api_resources.chat_completion.ChatCompletion'>",
+        "error.message": "Must provide an 'engine' or 'model' parameter to create a <class 'openai.api_resources.chat_completion.ChatCompletion'>"
     }
 )
 @validate_transaction_metrics(
@@ -516,17 +457,11 @@ def test_chat_completion_invalid_request_error_no_model_async(loop, set_trace_in
 @disabled_ai_monitoring_record_content_settings
 @validate_error_trace_attributes(
     callable_name(openai.InvalidRequestError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
-            "error.param": "engine",
-        },
-    },
+    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.param": "engine"}},
 )
 @validate_span_events(
     exact_agents={
-        "error.message": "Must provide an 'engine' or 'model' parameter to create a <class 'openai.api_resources.chat_completion.ChatCompletion'>",
+        "error.message": "Must provide an 'engine' or 'model' parameter to create a <class 'openai.api_resources.chat_completion.ChatCompletion'>"
     }
 )
 @validate_transaction_metrics(
@@ -558,20 +493,9 @@ def test_chat_completion_invalid_request_error_no_model_async_no_content(loop, s
 @override_llm_token_callback_settings(llm_token_count_callback)
 @validate_error_trace_attributes(
     callable_name(openai.InvalidRequestError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
-            "error.code": "model_not_found",
-            "http.statusCode": 404,
-        },
-    },
+    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.code": "model_not_found", "http.statusCode": 404}},
 )
-@validate_span_events(
-    exact_agents={
-        "error.message": "The model `does-not-exist` does not exist",
-    }
-)
+@validate_span_events(exact_agents={"error.message": "The model `does-not-exist` does not exist"})
 @validate_transaction_metrics(
     "test_chat_completion_stream_error:test_chat_completion_invalid_request_error_invalid_model_with_token_count_async",
     scoped_metrics=[("Llm/completion/OpenAI/acreate", 1)],
@@ -600,20 +524,9 @@ def test_chat_completion_invalid_request_error_invalid_model_with_token_count_as
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
     callable_name(openai.InvalidRequestError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
-            "error.code": "model_not_found",
-            "http.statusCode": 404,
-        },
-    },
+    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.code": "model_not_found", "http.statusCode": 404}},
 )
-@validate_span_events(
-    exact_agents={
-        "error.message": "The model `does-not-exist` does not exist",
-    }
-)
+@validate_span_events(exact_agents={"error.message": "The model `does-not-exist` does not exist"})
 @validate_transaction_metrics(
     "test_chat_completion_stream_error:test_chat_completion_invalid_request_error_invalid_model_async",
     scoped_metrics=[("Llm/completion/OpenAI/acreate", 1)],
@@ -641,16 +554,11 @@ def test_chat_completion_invalid_request_error_invalid_model_async(loop, set_tra
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(openai.error.AuthenticationError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {},
-    },
+    callable_name(openai.error.AuthenticationError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}}
 )
 @validate_span_events(
     exact_agents={
-        "error.message": "No API key provided. You can set your API key in code using 'openai.api_key = <API-KEY>', or you can set the environment variable OPENAI_API_KEY=<API-KEY>). If your API key is stored in a file, you can point the openai module at it with 'openai.api_key_path = <PATH>'. You can generate API keys in the OpenAI web interface. See https://platform.openai.com/account/api-keys for details.",
+        "error.message": "No API key provided. You can set your API key in code using 'openai.api_key = <API-KEY>', or you can set the environment variable OPENAI_API_KEY=<API-KEY>). If your API key is stored in a file, you can point the openai module at it with 'openai.api_key_path = <PATH>'. You can generate API keys in the OpenAI web interface. See https://platform.openai.com/account/api-keys for details."
     }
 )
 @validate_transaction_metrics(
@@ -682,17 +590,11 @@ def test_chat_completion_authentication_error_async(loop, monkeypatch, set_trace
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
     callable_name(openai.error.AuthenticationError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
-            "http.statusCode": 401,
-        },
-    },
+    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"http.statusCode": 401}},
 )
 @validate_span_events(
     exact_agents={
-        "error.message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys.",
+        "error.message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys."
     }
 )
 @validate_transaction_metrics(
@@ -757,18 +659,11 @@ expected_events_stream_parsing_error = [
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(openai.error.APIError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
-            "http.statusCode": 200,
-        },
-    },
+    callable_name(openai.error.APIError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {"http.statusCode": 200}}
 )
 @validate_span_events(
     exact_agents={
-        "error.message": 'HTTP code 200 from API ({"id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv", "object": "chat.completion.chunk", "created": 1706565311, "model": "gpt-3.5-turbo-0613", "system_fingerprint": null, "choices": [{"index": 0, "delta": {"role": "assistant", "content": ""}, "logprobs": null, "finish_reason": null}]}data: {"id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv", "object": "chat.completion.chunk", "created": 1706565311, "model": "gpt-3.5-turbo-0613", "system_fingerprint": null, "choices": [{"index": 0, "delta": {"content": "212"}, "logprobs": null, "finish_reason": null}]})',
+        "error.message": 'HTTP code 200 from API ({"id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv", "object": "chat.completion.chunk", "created": 1706565311, "model": "gpt-3.5-turbo-0613", "system_fingerprint": null, "choices": [{"index": 0, "delta": {"role": "assistant", "content": ""}, "logprobs": null, "finish_reason": null}]}data: {"id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv", "object": "chat.completion.chunk", "created": 1706565311, "model": "gpt-3.5-turbo-0613", "system_fingerprint": null, "choices": [{"index": 0, "delta": {"content": "212"}, "logprobs": null, "finish_reason": null}]})'
     }
 )
 @validate_transaction_metrics(
@@ -801,18 +696,11 @@ def test_chat_completion_stream_parsing_error_async(loop, monkeypatch, set_trace
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(
-    callable_name(openai.error.APIError),
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
-            "http.statusCode": 200,
-        },
-    },
+    callable_name(openai.error.APIError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {"http.statusCode": 200}}
 )
 @validate_span_events(
     exact_agents={
-        "error.message": 'HTTP code 200 from API ({"id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv", "object": "chat.completion.chunk", "created": 1706565311, "model": "gpt-3.5-turbo-0613", "system_fingerprint": null, "choices": [{"index": 0, "delta": {"role": "assistant", "content": ""}, "logprobs": null, "finish_reason": null}]}data: {"id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv", "object": "chat.completion.chunk", "created": 1706565311, "model": "gpt-3.5-turbo-0613", "system_fingerprint": null, "choices": [{"index": 0, "delta": {"content": "212"}, "logprobs": null, "finish_reason": null}]})',
+        "error.message": 'HTTP code 200 from API ({"id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv", "object": "chat.completion.chunk", "created": 1706565311, "model": "gpt-3.5-turbo-0613", "system_fingerprint": null, "choices": [{"index": 0, "delta": {"role": "assistant", "content": ""}, "logprobs": null, "finish_reason": null}]}data: {"id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv", "object": "chat.completion.chunk", "created": 1706565311, "model": "gpt-3.5-turbo-0613", "system_fingerprint": null, "choices": [{"index": 0, "delta": {"content": "212"}, "logprobs": null, "finish_reason": null}]})'
     }
 )
 @validate_transaction_metrics(

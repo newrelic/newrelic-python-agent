@@ -14,29 +14,33 @@
 
 import json
 import os
-import pytest
 import sys
 import tempfile
 
-from newrelic.common.system_info import BootIdUtilization
-
+import pytest
 from testing_support.validators.validate_internal_metrics import validate_internal_metrics
 
+from newrelic.common.system_info import BootIdUtilization
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 SYS_PLATFORM = sys.platform
-FIXTURE = os.path.normpath(os.path.join(CURRENT_DIR, 'fixtures', 'utilization',
-    'boot_id.json'))
+FIXTURE = os.path.normpath(os.path.join(CURRENT_DIR, "fixtures", "utilization", "boot_id.json"))
 
-_parameters_list = ['testname', 'input_total_ram_mib',
-        'input_logical_processors', 'input_hostname', 'input_boot_id',
-        'expected_output_json', 'expected_metrics']
+_parameters_list = [
+    "testname",
+    "input_total_ram_mib",
+    "input_logical_processors",
+    "input_hostname",
+    "input_boot_id",
+    "expected_output_json",
+    "expected_metrics",
+]
 
-_parameters = ','.join(_parameters_list)
+_parameters = ",".join(_parameters_list)
 
 
 def _load_tests():
-    with open(FIXTURE, 'r') as fh:
+    with open(FIXTURE, "r") as fh:
         js = fh.read()
     return json.loads(js)
 
@@ -48,19 +52,19 @@ def _parametrize_test(test):
 _boot_id_tests = [_parametrize_test(t) for t in _load_tests()]
 
 
-class MockedBootIdEndpoint():
+class MockedBootIdEndpoint:
     def __init__(self, boot_id):
         self.boot_id = boot_id
 
     def __enter__(self):
         if self.boot_id is not None:
             self.boot_id_file = tempfile.NamedTemporaryFile()
-            self.boot_id_file.write(self.boot_id.encode('utf8'))
+            self.boot_id_file.write(self.boot_id.encode("utf8"))
             self.boot_id_file.seek(0)
             BootIdUtilization.METADATA_URL = self.boot_id_file.name
         else:
-            BootIdUtilization.METADATA_URL = '/file/does/not/exist/I/hope'
-        sys.platform = 'linux-mock-testing'  # ensure boot_id is gathered
+            BootIdUtilization.METADATA_URL = "/file/does/not/exist/I/hope"
+        sys.platform = "linux-mock-testing"  # ensure boot_id is gathered
 
     def __exit__(self, *args, **kwargs):
         sys.platform = SYS_PLATFORM
@@ -69,19 +73,24 @@ class MockedBootIdEndpoint():
 
 
 @pytest.mark.parametrize(_parameters, _boot_id_tests)
-def test_boot_id(testname, input_total_ram_mib, input_logical_processors,
-        input_hostname, input_boot_id, expected_output_json, expected_metrics):
-
+def test_boot_id(
+    testname,
+    input_total_ram_mib,
+    input_logical_processors,
+    input_hostname,
+    input_boot_id,
+    expected_output_json,
+    expected_metrics,
+):
     metrics = []
     if expected_metrics:
-        metrics = [(k, v.get('call_count')) for k, v in
-                expected_metrics.items()]
+        metrics = [(k, v.get("call_count")) for k, v in expected_metrics.items()]
 
     @validate_internal_metrics(metrics=metrics)
     def _test_boot_id_data():
         data = BootIdUtilization.detect()
 
-        assert data == expected_output_json.get('boot_id')
+        assert data == expected_output_json.get("boot_id")
 
     with MockedBootIdEndpoint(input_boot_id):
         _test_boot_id_data()

@@ -18,15 +18,9 @@ import importlib
 import pytest
 from testing_support.fixtures import dt_enabled
 from testing_support.validators.validate_span_events import validate_span_events
-from testing_support.validators.validate_transaction_count import (
-    validate_transaction_count,
-)
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_count import validate_transaction_count
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.common.object_names import callable_name
 
@@ -49,12 +43,12 @@ def target_application(request):
     return framework, version, _test_graphql.target_application[framework]
 
 
-def example_middleware(next, root, info, **args):  # pylint: disable=W0622
+def example_middleware(next, root, info, **args):  # noqa: A002
     return_value = next(root, info, **args)
     return return_value
 
 
-def error_middleware(next, root, info, **args):  # pylint: disable=W0622
+def error_middleware(next, root, info, **args):  # noqa: A002
     raise RuntimeError("Runtime Error!")
 
 
@@ -84,9 +78,7 @@ def test_basic(target_application):
     ]
 
     @validate_transaction_metrics(
-        "query/<anonymous>/hello",
-        "GraphQL",
-        rollup_metrics=_graphql_base_rollup_metrics + FRAMEWORK_METRICS,
+        "query/<anonymous>/hello", "GraphQL", rollup_metrics=_graphql_base_rollup_metrics + FRAMEWORK_METRICS
     )
     def _test():
         response = target_application("{ hello }")
@@ -327,9 +319,7 @@ def test_exception_in_validation(target_application, is_graphql_2, query, exc_cl
 
         exc_class = callable_name(GraphQLError)
 
-    _test_exception_scoped_metrics = [
-        ("GraphQL/operation/GraphQLServer/<unknown>/<anonymous>/<unknown>", 1),
-    ]
+    _test_exception_scoped_metrics = [("GraphQL/operation/GraphQLServer/<unknown>/<anonymous>/<unknown>", 1)]
     _test_exception_rollup_metrics = [
         ("Errors/all", 1),
         ("Errors/allWeb", 1),
@@ -361,10 +351,7 @@ def test_exception_in_validation(target_application, is_graphql_2, query, exc_cl
 def test_operation_metrics_and_attrs(target_application):
     framework, version, target_application = target_application
     operation_metrics = [("GraphQL/operation/GraphQLServer/query/MyQuery/library", 1)]
-    operation_attrs = {
-        "graphql.operation.type": "query",
-        "graphql.operation.name": "MyQuery",
-    }
+    operation_attrs = {"graphql.operation.type": "query", "graphql.operation.name": "MyQuery"}
 
     # Base span count 17: Transaction, View, Operation, and 7 Resolvers and Resolver functions
     # library, library.name, library.book
@@ -419,10 +406,7 @@ def test_field_resolver_metrics_and_attrs(target_application):
 _test_queries = [
     ("{ hello }", "{ hello }"),  # Basic query extraction
     ("{ error }", "{ error }"),  # Extract query on field error
-    (
-        "{ library(index: 0) { branch } }",
-        "{ library(index: ?) { branch } }",
-    ),  # Integers
+    ("{ library(index: 0) { branch } }", "{ library(index: ?) { branch } }"),  # Integers
     ('{ echo(echo: "123") }', "{ echo(echo: ?) }"),  # Strings with numerics
     ('{ echo(echo: "test") }', "{ echo(echo: ?) }"),  # Strings
     ('{ TestEcho: echo(echo: "test") }', "{ TestEcho: echo(echo: ?) }"),  # Aliases
@@ -454,24 +438,15 @@ _test_queries = [
     ("{ hello }", "/hello"),  # Basic query
     ("{ error }", "/error"),  # Extract deepest path on field error
     ('{ echo(echo: "test") }', "/echo"),  # Fields with arguments
-    (
-        "{ library(index: 0) { branch, book { isbn branch } } }",
-        "/library",
-    ),  # Complex Example, 1 level
+    ("{ library(index: 0) { branch, book { isbn branch } } }", "/library"),  # Complex Example, 1 level
     (
         "{ library(index: 0) { book { author { first_name }} } }",
         "/library.book.author.first_name",
     ),  # Complex Example, 2 levels
     ("{ library(index: 0) { id, book { name } } }", "/library.book.name"),  # Filtering
     ('{ TestEcho: echo(echo: "test") }', "/echo"),  # Aliases
-    (
-        '{ search(contains: "A") { __typename ... on Book { name } } }',
-        "/search<Book>.name",
-    ),  # InlineFragment
-    (
-        '{ hello echo(echo: "test") }',
-        "",
-    ),  # Multiple root selections. (need to decide on final behavior)
+    ('{ search(contains: "A") { __typename ... on Book { name } } }', "/search<Book>.name"),  # InlineFragment
+    ('{ hello echo(echo: "test") }', ""),  # Multiple root selections. (need to decide on final behavior)
     # FragmentSpread
     (
         "{ library(index: 0) { book { ...MyFragment } } } fragment MyFragment on Book { name id }",  # Fragment filtering
@@ -497,10 +472,7 @@ def test_deepest_unique_path(target_application, query, expected_path):
     else:
         txn_name = f"query/<anonymous>{expected_path}"
 
-    @validate_transaction_metrics(
-        txn_name,
-        "GraphQL",
-    )
+    @validate_transaction_metrics(txn_name, "GraphQL")
     def _test():
         response = target_application(query)
 

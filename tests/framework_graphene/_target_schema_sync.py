@@ -11,9 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from graphene import Field, Int, List
+from graphene import Field, Int, List, NonNull, ObjectType, Schema, String, Union
 from graphene import Mutation as GrapheneMutation
-from graphene import NonNull, ObjectType, Schema, String, Union
 
 
 class Author(ObjectType):
@@ -52,28 +51,13 @@ Storage = List(String)
 
 
 authors = [
-    Author(
-        first_name="New",
-        last_name="Relic",
-    ),
-    Author(
-        first_name="Bob",
-        last_name="Smith",
-    ),
-    Author(
-        first_name="Leslie",
-        last_name="Jones",
-    ),
+    Author(first_name="New", last_name="Relic"),
+    Author(first_name="Bob", last_name="Smith"),
+    Author(first_name="Leslie", last_name="Jones"),
 ]
 
 books = [
-    Book(
-        id=1,
-        name="Python Agent: The Book",
-        isbn="a-fake-isbn",
-        author=authors[0],
-        branch="riverside",
-    ),
+    Book(id=1, name="Python Agent: The Book", isbn="a-fake-isbn", author=authors[0], branch="riverside"),
     Book(
         id=2,
         name="Ollies for O11y: A Sk8er's Guide to Observability",
@@ -81,13 +65,7 @@ books = [
         author=authors[1],
         branch="downtown",
     ),
-    Book(
-        id=3,
-        name="[Redacted]",
-        isbn="a-third-fake-isbn",
-        author=authors[2],
-        branch="riverside",
-    ),
+    Book(id=3, name="[Redacted]", isbn="a-third-fake-isbn", author=authors[2], branch="riverside"),
 ]
 
 magazines = [
@@ -114,22 +92,28 @@ storage = []
 def resolve_library(self, info, index):
     return libraries[index]
 
+
 def resolve_storage(self, info):
     return [storage.pop()]
+
 
 def resolve_search(self, info, contains):
     search_books = [b for b in books if contains in b.name]
     search_magazines = [m for m in magazines if contains in m.name]
     return search_books + search_magazines
 
+
 def resolve_hello(self, info):
     return "Hello!"
+
 
 def resolve_echo(self, info, echo):
     return echo
 
+
 def resolve_error(self, info):
     raise RuntimeError("Runtime Error!")
+
 
 def resolve_storage_add(self, info, string):
     storage.append(string)

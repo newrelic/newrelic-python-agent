@@ -20,9 +20,7 @@ from testing_support.fixtures import (
     override_application_settings,
     validate_analytics_catmap_data,
 )
-from testing_support.validators.validate_transaction_event_attributes import (
-    validate_transaction_event_attributes,
-)
+from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
 
 from newrelic.common.encoding_utils import deobfuscate
 from newrelic.common.object_wrapper import transient_function_wrapper
@@ -37,7 +35,7 @@ test_uris = [
 
 def record_aiohttp1_raw_headers(raw_headers):
     try:
-        import aiohttp.protocol  # noqa: F401, pylint: disable=W0611
+        import aiohttp.protocol
     except ImportError:
 
         def pass_through(function):
@@ -95,7 +93,6 @@ def record_aiohttp1_raw_headers(raw_headers):
 def test_cat_headers(
     method, uri, metric_name, inbound_payload, expected_intrinsics, forgone_intrinsics, cat_id, aiohttp_app
 ):
-
     _raw_headers = {}
 
     async def fetch():

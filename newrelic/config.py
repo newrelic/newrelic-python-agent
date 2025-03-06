@@ -47,14 +47,7 @@ from newrelic.core.agent_control_health import (
     agent_control_health_instance,
     agent_control_healthcheck_loop,
 )
-from newrelic.core.config import (
-    Settings,
-    apply_config_setting,
-    default_host,
-    fetch_config_setting,
-)
-from newrelic.core.agent_control_health import HealthStatus, agent_control_health_instance, agent_control_healthcheck_loop
-
+from newrelic.core.config import Settings, apply_config_setting, default_host, fetch_config_setting
 
 __all__ = ["initialize", "filter_app_factory"]
 
@@ -75,11 +68,7 @@ sys.meta_path.insert(0, newrelic.api.import_hook.ImportHookFinder())
 # This will be used to validate what is provided and issue warnings
 # if feature flags not in set are provided.
 
-_FEATURE_FLAGS = set(
-    [
-        "django.instrumentation.inclusion-tags.r1",
-    ]
-)
+_FEATURE_FLAGS = set(["django.instrumentation.inclusion-tags.r1"])
 
 # Names of configuration file and deployment environment. This
 # will be overridden by the load_configuration() function when
@@ -365,12 +354,7 @@ def _process_configuration(section):
     _process_setting(section, "memory_runtime_pid_metrics.enabled", "getboolean", None)
     _process_setting(section, "thread_profiler.enabled", "getboolean", None)
     _process_setting(section, "transaction_tracer.enabled", "getboolean", None)
-    _process_setting(
-        section,
-        "transaction_tracer.transaction_threshold",
-        "get",
-        _map_transaction_threshold,
-    )
+    _process_setting(section, "transaction_tracer.transaction_threshold", "get", _map_transaction_threshold)
     _process_setting(section, "transaction_tracer.record_sql", "get", _map_record_sql)
     _process_setting(section, "transaction_tracer.stack_trace_threshold", "getfloat", None)
     _process_setting(section, "transaction_tracer.explain_enabled", "getboolean", None)
@@ -379,37 +363,17 @@ def _process_configuration(section):
     _process_setting(section, "transaction_tracer.generator_trace", "get", _map_split_strings)
     _process_setting(section, "transaction_tracer.top_n", "getint", None)
     _process_setting(section, "transaction_tracer.attributes.enabled", "getboolean", None)
-    _process_setting(
-        section,
-        "transaction_tracer.attributes.exclude",
-        "get",
-        _map_inc_excl_attributes,
-    )
-    _process_setting(
-        section,
-        "transaction_tracer.attributes.include",
-        "get",
-        _map_inc_excl_attributes,
-    )
+    _process_setting(section, "transaction_tracer.attributes.exclude", "get", _map_inc_excl_attributes)
+    _process_setting(section, "transaction_tracer.attributes.include", "get", _map_inc_excl_attributes)
     _process_setting(section, "error_collector.enabled", "getboolean", None)
     _process_setting(section, "error_collector.capture_events", "getboolean", None)
     _process_setting(section, "error_collector.max_event_samples_stored", "getint", None)
     _process_setting(section, "error_collector.capture_source", "getboolean", None)
     _process_setting(section, "error_collector.ignore_errors", "get", _map_split_strings)
     _process_setting(section, "error_collector.ignore_classes", "get", _map_split_strings)
-    _process_setting(
-        section,
-        "error_collector.ignore_status_codes",
-        "get",
-        _merge_ignore_status_codes,
-    )
+    _process_setting(section, "error_collector.ignore_status_codes", "get", _merge_ignore_status_codes)
     _process_setting(section, "error_collector.expected_classes", "get", _map_split_strings)
-    _process_setting(
-        section,
-        "error_collector.expected_status_codes",
-        "get",
-        _merge_expected_status_codes,
-    )
+    _process_setting(section, "error_collector.expected_status_codes", "get", _merge_expected_status_codes)
     _process_setting(section, "error_collector.attributes.enabled", "getboolean", None)
     _process_setting(section, "error_collector.attributes.exclude", "get", _map_inc_excl_attributes)
     _process_setting(section, "error_collector.attributes.include", "get", _map_inc_excl_attributes)
@@ -420,35 +384,15 @@ def _process_configuration(section):
     _process_setting(section, "browser_monitoring.ssl_for_http", "getboolean", None)
     _process_setting(section, "browser_monitoring.content_type", "get", _map_split_strings)
     _process_setting(section, "browser_monitoring.attributes.enabled", "getboolean", None)
-    _process_setting(
-        section,
-        "browser_monitoring.attributes.exclude",
-        "get",
-        _map_inc_excl_attributes,
-    )
-    _process_setting(
-        section,
-        "browser_monitoring.attributes.include",
-        "get",
-        _map_inc_excl_attributes,
-    )
+    _process_setting(section, "browser_monitoring.attributes.exclude", "get", _map_inc_excl_attributes)
+    _process_setting(section, "browser_monitoring.attributes.include", "get", _map_inc_excl_attributes)
     _process_setting(section, "slow_sql.enabled", "getboolean", None)
     _process_setting(section, "synthetics.enabled", "getboolean", None)
     _process_setting(section, "transaction_events.enabled", "getboolean", None)
     _process_setting(section, "transaction_events.max_samples_stored", "getint", None)
     _process_setting(section, "transaction_events.attributes.enabled", "getboolean", None)
-    _process_setting(
-        section,
-        "transaction_events.attributes.exclude",
-        "get",
-        _map_inc_excl_attributes,
-    )
-    _process_setting(
-        section,
-        "transaction_events.attributes.include",
-        "get",
-        _map_inc_excl_attributes,
-    )
+    _process_setting(section, "transaction_events.attributes.exclude", "get", _map_inc_excl_attributes)
+    _process_setting(section, "transaction_events.attributes.include", "get", _map_inc_excl_attributes)
     _process_setting(section, "custom_insights_events.enabled", "getboolean", None)
     _process_setting(section, "custom_insights_events.max_samples_stored", "getint", None)
     _process_setting(section, "custom_insights_events.max_attribute_value", "getint", None)
@@ -461,18 +405,8 @@ def _process_configuration(section):
     _process_setting(section, "span_events.attributes.exclude", "get", _map_inc_excl_attributes)
     _process_setting(section, "span_events.attributes.include", "get", _map_inc_excl_attributes)
     _process_setting(section, "transaction_segments.attributes.enabled", "getboolean", None)
-    _process_setting(
-        section,
-        "transaction_segments.attributes.exclude",
-        "get",
-        _map_inc_excl_attributes,
-    )
-    _process_setting(
-        section,
-        "transaction_segments.attributes.include",
-        "get",
-        _map_inc_excl_attributes,
-    )
+    _process_setting(section, "transaction_segments.attributes.exclude", "get", _map_inc_excl_attributes)
+    _process_setting(section, "transaction_segments.attributes.include", "get", _map_inc_excl_attributes)
     _process_setting(section, "local_daemon.socket_path", "get", None)
     _process_setting(section, "local_daemon.synchronous_startup", "getboolean", None)
     _process_setting(section, "agent_limits.transaction_traces_nodes", "getint", None)
@@ -526,12 +460,7 @@ def _process_configuration(section):
     _process_setting(section, "utilization.total_ram_mib", "getint", None)
     _process_setting(section, "utilization.billing_hostname", "get", None)
     _process_setting(section, "strip_exception_messages.enabled", "getboolean", None)
-    _process_setting(
-        section,
-        "strip_exception_messages.allowlist",
-        "get",
-        _map_strip_exception_messages_allowlist,
-    )
+    _process_setting(section, "strip_exception_messages.allowlist", "get", _map_strip_exception_messages_allowlist)
     _process_setting(section, "datastore_tracer.instance_reporting.enabled", "getboolean", None)
     _process_setting(section, "datastore_tracer.database_name_reporting.enabled", "getboolean", None)
     _process_setting(section, "heroku.use_dyno_names", "getboolean", None)
@@ -540,12 +469,7 @@ def _process_configuration(section):
     _process_setting(section, "apdex_t", "getfloat", None)
     _process_setting(section, "event_loop_visibility.enabled", "getboolean", None)
     _process_setting(section, "event_loop_visibility.blocking_threshold", "getfloat", None)
-    _process_setting(
-        section,
-        "event_harvest_config.harvest_limits.analytic_event_data",
-        "getint",
-        None,
-    )
+    _process_setting(section, "event_harvest_config.harvest_limits.analytic_event_data", "getint", None)
     _process_setting(section, "event_harvest_config.harvest_limits.custom_event_data", "getint", None)
     _process_setting(section, "event_harvest_config.harvest_limits.ml_event_data", "getint", None)
     _process_setting(section, "event_harvest_config.harvest_limits.span_event_data", "getint", None)
@@ -730,68 +654,27 @@ def translate_deprecated_settings(settings, cached_settings):
     cached = dict(cached_settings)
 
     deprecated_settings_map = [
-        (
-            "transaction_tracer.capture_attributes",
-            "transaction_tracer.attributes.enabled",
-        ),
+        ("transaction_tracer.capture_attributes", "transaction_tracer.attributes.enabled"),
         ("error_collector.capture_attributes", "error_collector.attributes.enabled"),
-        (
-            "browser_monitoring.capture_attributes",
-            "browser_monitoring.attributes.enabled",
-        ),
-        (
-            "analytics_events.capture_attributes",
-            "transaction_events.attributes.enabled",
-        ),
+        ("browser_monitoring.capture_attributes", "browser_monitoring.attributes.enabled"),
+        ("analytics_events.capture_attributes", "transaction_events.attributes.enabled"),
         ("analytics_events.enabled", "transaction_events.enabled"),
-        (
-            "analytics_events.max_samples_stored",
-            "event_harvest_config.harvest_limits.analytic_event_data",
-        ),
-        (
-            "transaction_events.max_samples_stored",
-            "event_harvest_config.harvest_limits.analytic_event_data",
-        ),
-        (
-            "span_events.max_samples_stored",
-            "event_harvest_config.harvest_limits.span_event_data",
-        ),
-        (
-            "error_collector.max_event_samples_stored",
-            "event_harvest_config.harvest_limits.error_event_data",
-        ),
-        (
-            "custom_insights_events.max_samples_stored",
-            "event_harvest_config.harvest_limits.custom_event_data",
-        ),
-        (
-            "application_logging.forwarding.max_samples_stored",
-            "event_harvest_config.harvest_limits.log_event_data",
-        ),
-        (
-            "error_collector.ignore_errors",
-            "error_collector.ignore_classes",
-        ),
-        (
-            "strip_exception_messages.whitelist",
-            "strip_exception_messages.allowlist",
-        ),
+        ("analytics_events.max_samples_stored", "event_harvest_config.harvest_limits.analytic_event_data"),
+        ("transaction_events.max_samples_stored", "event_harvest_config.harvest_limits.analytic_event_data"),
+        ("span_events.max_samples_stored", "event_harvest_config.harvest_limits.span_event_data"),
+        ("error_collector.max_event_samples_stored", "event_harvest_config.harvest_limits.error_event_data"),
+        ("custom_insights_events.max_samples_stored", "event_harvest_config.harvest_limits.custom_event_data"),
+        ("application_logging.forwarding.max_samples_stored", "event_harvest_config.harvest_limits.log_event_data"),
+        ("error_collector.ignore_errors", "error_collector.ignore_classes"),
+        ("strip_exception_messages.whitelist", "strip_exception_messages.allowlist"),
     ]
 
     for old_key, new_key in deprecated_settings_map:
         if old_key in cached:
-            _logger.info(
-                "Deprecated setting found: %r. Please use new setting: %r.",
-                old_key,
-                new_key,
-            )
+            _logger.info("Deprecated setting found: %r. Please use new setting: %r.", old_key, new_key)
 
             if new_key in cached:
-                _logger.info(
-                    "Ignoring deprecated setting: %r. Using new setting: %r.",
-                    old_key,
-                    new_key,
-                )
+                _logger.info("Ignoring deprecated setting: %r. Using new setting: %r.", old_key, new_key)
             else:
                 apply_config_setting(settings, new_key, cached[old_key])
                 _logger.info("Applying value of deprecated setting %r to %r.", old_key, new_key)
@@ -828,8 +711,7 @@ def translate_deprecated_settings(settings, cached_settings):
                 if attr_value not in excluded_attrs:
                     settings.attributes.exclude.append(attr_value)
                     _logger.info(
-                        "Applying value of deprecated setting ignored_params to attributes.exclude: %r.",
-                        attr_value,
+                        "Applying value of deprecated setting ignored_params to attributes.exclude: %r.", attr_value
                     )
 
         delete_setting(settings, "ignored_params")
@@ -961,13 +843,7 @@ def _toml_config_to_configparser_dict(d, top=None, _path=None):
     return top
 
 
-def _load_configuration(
-    config_file=None,
-    environment=None,
-    ignore_errors=True,
-    log_file=None,
-    log_level=None,
-):
+def _load_configuration(config_file=None, environment=None, ignore_errors=True, log_file=None, log_level=None):
     global _configuration_done
 
     global _config_file
@@ -1948,15 +1824,7 @@ def _startup_data_source():
 
     agent_instance = newrelic.core.agent.agent_instance()
 
-    for (
-        section,
-        module,
-        object_path,
-        application,
-        name,
-        settings,
-        properties,
-    ) in _data_sources:
+    for section, module, object_path, application, name, settings, properties in _data_sources:
         try:
             source = getattr(newrelic.api.import_hook.import_module(module), object_path)
 
@@ -2107,9 +1975,7 @@ def _process_trace_cache_import_hooks():
 
 def _process_module_builtin_defaults():
     _process_module_definition(
-        "openai.api_resources.embedding",
-        "newrelic.hooks.mlmodel_openai",
-        "instrument_openai_api_resources_embedding",
+        "openai.api_resources.embedding", "newrelic.hooks.mlmodel_openai", "instrument_openai_api_resources_embedding"
     )
     _process_module_definition(
         "openai.api_resources.chat_completion",
@@ -2117,25 +1983,15 @@ def _process_module_builtin_defaults():
         "instrument_openai_api_resources_chat_completion",
     )
     _process_module_definition(
-        "openai.resources.embeddings",
-        "newrelic.hooks.mlmodel_openai",
-        "instrument_openai_resources_embeddings",
+        "openai.resources.embeddings", "newrelic.hooks.mlmodel_openai", "instrument_openai_resources_embeddings"
     )
-    _process_module_definition(
-        "openai.util",
-        "newrelic.hooks.mlmodel_openai",
-        "instrument_openai_util",
-    )
+    _process_module_definition("openai.util", "newrelic.hooks.mlmodel_openai", "instrument_openai_util")
     _process_module_definition(
         "openai.api_resources.abstract.engine_api_resource",
         "newrelic.hooks.mlmodel_openai",
         "instrument_openai_api_resources_abstract_engine_api_resource",
     )
-    _process_module_definition(
-        "openai._streaming",
-        "newrelic.hooks.mlmodel_openai",
-        "instrument_openai__streaming",
-    )
+    _process_module_definition("openai._streaming", "newrelic.hooks.mlmodel_openai", "instrument_openai__streaming")
 
     _process_module_definition(
         "openai.resources.chat.completions",
@@ -2144,20 +2000,12 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
-        "openai.resources.completions",
-        "newrelic.hooks.mlmodel_openai",
-        "instrument_openai_resources_chat_completions",
+        "openai.resources.completions", "newrelic.hooks.mlmodel_openai", "instrument_openai_resources_chat_completions"
     )
-    _process_module_definition(
-        "openai._base_client",
-        "newrelic.hooks.mlmodel_openai",
-        "instrument_openai_base_client",
-    )
+    _process_module_definition("openai._base_client", "newrelic.hooks.mlmodel_openai", "instrument_openai_base_client")
 
     _process_module_definition(
-        "asyncio.base_events",
-        "newrelic.hooks.coroutines_asyncio",
-        "instrument_asyncio_base_events",
+        "asyncio.base_events", "newrelic.hooks.coroutines_asyncio", "instrument_asyncio_base_events"
     )
 
     _process_module_definition(
@@ -2171,14 +2019,10 @@ def _process_module_builtin_defaults():
         "instrument_langchain_core_runnables_config",
     )
     _process_module_definition(
-        "langchain.chains.base",
-        "newrelic.hooks.mlmodel_langchain",
-        "instrument_langchain_chains_base",
+        "langchain.chains.base", "newrelic.hooks.mlmodel_langchain", "instrument_langchain_chains_base"
     )
     _process_module_definition(
-        "langchain_core.callbacks.manager",
-        "newrelic.hooks.mlmodel_langchain",
-        "instrument_langchain_callbacks_manager",
+        "langchain_core.callbacks.manager", "newrelic.hooks.mlmodel_langchain", "instrument_langchain_callbacks_manager"
     )
 
     # VectorStores with similarity_search method
@@ -2741,59 +2585,35 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
-        "langchain_core.tools",
-        "newrelic.hooks.mlmodel_langchain",
-        "instrument_langchain_core_tools",
+        "langchain_core.tools", "newrelic.hooks.mlmodel_langchain", "instrument_langchain_core_tools"
     )
 
     _process_module_definition(
-        "langchain_core.callbacks.manager",
-        "newrelic.hooks.mlmodel_langchain",
-        "instrument_langchain_callbacks_manager",
+        "langchain_core.callbacks.manager", "newrelic.hooks.mlmodel_langchain", "instrument_langchain_callbacks_manager"
     )
 
-    _process_module_definition(
-        "asyncio.events",
-        "newrelic.hooks.coroutines_asyncio",
-        "instrument_asyncio_events",
-    )
+    _process_module_definition("asyncio.events", "newrelic.hooks.coroutines_asyncio", "instrument_asyncio_events")
 
     _process_module_definition("asgiref.sync", "newrelic.hooks.adapter_asgiref", "instrument_asgiref_sync")
 
     _process_module_definition(
-        "django.core.handlers.base",
-        "newrelic.hooks.framework_django",
-        "instrument_django_core_handlers_base",
+        "django.core.handlers.base", "newrelic.hooks.framework_django", "instrument_django_core_handlers_base"
     )
     _process_module_definition(
-        "django.core.handlers.asgi",
-        "newrelic.hooks.framework_django",
-        "instrument_django_core_handlers_asgi",
+        "django.core.handlers.asgi", "newrelic.hooks.framework_django", "instrument_django_core_handlers_asgi"
     )
     _process_module_definition(
-        "django.core.handlers.wsgi",
-        "newrelic.hooks.framework_django",
-        "instrument_django_core_handlers_wsgi",
+        "django.core.handlers.wsgi", "newrelic.hooks.framework_django", "instrument_django_core_handlers_wsgi"
     )
     _process_module_definition(
-        "django.core.urlresolvers",
-        "newrelic.hooks.framework_django",
-        "instrument_django_core_urlresolvers",
+        "django.core.urlresolvers", "newrelic.hooks.framework_django", "instrument_django_core_urlresolvers"
+    )
+    _process_module_definition("django.template", "newrelic.hooks.framework_django", "instrument_django_template")
+    _process_module_definition(
+        "django.template.loader_tags", "newrelic.hooks.framework_django", "instrument_django_template_loader_tags"
     )
     _process_module_definition(
-        "django.template",
-        "newrelic.hooks.framework_django",
-        "instrument_django_template",
-    )
-    _process_module_definition(
-        "django.template.loader_tags",
-        "newrelic.hooks.framework_django",
-        "instrument_django_template_loader_tags",
-    )
-    _process_module_definition(
-        "django.core.servers.basehttp",
-        "newrelic.hooks.framework_django",
-        "instrument_django_core_servers_basehttp",
+        "django.core.servers.basehttp", "newrelic.hooks.framework_django", "instrument_django_core_servers_basehttp"
     )
     _process_module_definition(
         "django.contrib.staticfiles.views",
@@ -2805,114 +2625,58 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.framework_django",
         "instrument_django_contrib_staticfiles_handlers",
     )
+    _process_module_definition("django.views.debug", "newrelic.hooks.framework_django", "instrument_django_views_debug")
     _process_module_definition(
-        "django.views.debug",
-        "newrelic.hooks.framework_django",
-        "instrument_django_views_debug",
+        "django.http.multipartparser", "newrelic.hooks.framework_django", "instrument_django_http_multipartparser"
+    )
+    _process_module_definition("django.core.mail", "newrelic.hooks.framework_django", "instrument_django_core_mail")
+    _process_module_definition(
+        "django.core.mail.message", "newrelic.hooks.framework_django", "instrument_django_core_mail_message"
     )
     _process_module_definition(
-        "django.http.multipartparser",
-        "newrelic.hooks.framework_django",
-        "instrument_django_http_multipartparser",
+        "django.views.generic.base", "newrelic.hooks.framework_django", "instrument_django_views_generic_base"
     )
     _process_module_definition(
-        "django.core.mail",
-        "newrelic.hooks.framework_django",
-        "instrument_django_core_mail",
+        "django.core.management.base", "newrelic.hooks.framework_django", "instrument_django_core_management_base"
     )
     _process_module_definition(
-        "django.core.mail.message",
-        "newrelic.hooks.framework_django",
-        "instrument_django_core_mail_message",
+        "django.template.base", "newrelic.hooks.framework_django", "instrument_django_template_base"
     )
     _process_module_definition(
-        "django.views.generic.base",
-        "newrelic.hooks.framework_django",
-        "instrument_django_views_generic_base",
-    )
-    _process_module_definition(
-        "django.core.management.base",
-        "newrelic.hooks.framework_django",
-        "instrument_django_core_management_base",
-    )
-    _process_module_definition(
-        "django.template.base",
-        "newrelic.hooks.framework_django",
-        "instrument_django_template_base",
-    )
-    _process_module_definition(
-        "django.middleware.gzip",
-        "newrelic.hooks.framework_django",
-        "instrument_django_gzip_middleware",
+        "django.middleware.gzip", "newrelic.hooks.framework_django", "instrument_django_gzip_middleware"
     )
 
     # New modules in Django 1.10
     _process_module_definition(
-        "django.urls.resolvers",
-        "newrelic.hooks.framework_django",
-        "instrument_django_core_urlresolvers",
+        "django.urls.resolvers", "newrelic.hooks.framework_django", "instrument_django_core_urlresolvers"
     )
+    _process_module_definition("django.urls.base", "newrelic.hooks.framework_django", "instrument_django_urls_base")
     _process_module_definition(
-        "django.urls.base",
-        "newrelic.hooks.framework_django",
-        "instrument_django_urls_base",
-    )
-    _process_module_definition(
-        "django.core.handlers.exception",
-        "newrelic.hooks.framework_django",
-        "instrument_django_core_handlers_exception",
+        "django.core.handlers.exception", "newrelic.hooks.framework_django", "instrument_django_core_handlers_exception"
     )
 
     _process_module_definition("falcon.api", "newrelic.hooks.framework_falcon", "instrument_falcon_api")
     _process_module_definition("falcon.app", "newrelic.hooks.framework_falcon", "instrument_falcon_app")
     _process_module_definition(
-        "falcon.routing.util",
-        "newrelic.hooks.framework_falcon",
-        "instrument_falcon_routing_util",
+        "falcon.routing.util", "newrelic.hooks.framework_falcon", "instrument_falcon_routing_util"
     )
 
-    _process_module_definition(
-        "fastapi.routing",
-        "newrelic.hooks.framework_fastapi",
-        "instrument_fastapi_routing",
-    )
+    _process_module_definition("fastapi.routing", "newrelic.hooks.framework_fastapi", "instrument_fastapi_routing")
 
     _process_module_definition("flask.app", "newrelic.hooks.framework_flask", "instrument_flask_app")
-    _process_module_definition(
-        "flask.templating",
-        "newrelic.hooks.framework_flask",
-        "instrument_flask_templating",
-    )
-    _process_module_definition(
-        "flask.blueprints",
-        "newrelic.hooks.framework_flask",
-        "instrument_flask_blueprints",
-    )
+    _process_module_definition("flask.templating", "newrelic.hooks.framework_flask", "instrument_flask_templating")
+    _process_module_definition("flask.blueprints", "newrelic.hooks.framework_flask", "instrument_flask_blueprints")
     _process_module_definition("flask.views", "newrelic.hooks.framework_flask", "instrument_flask_views")
 
     _process_module_definition(
-        "flask_compress",
-        "newrelic.hooks.middleware_flask_compress",
-        "instrument_flask_compress",
+        "flask_compress", "newrelic.hooks.middleware_flask_compress", "instrument_flask_compress"
     )
 
     _process_module_definition("flask_restful", "newrelic.hooks.component_flask_rest", "instrument_flask_rest")
-    _process_module_definition(
-        "flask_restplus.api",
-        "newrelic.hooks.component_flask_rest",
-        "instrument_flask_rest",
-    )
-    _process_module_definition(
-        "flask_restx.api",
-        "newrelic.hooks.component_flask_rest",
-        "instrument_flask_rest",
-    )
+    _process_module_definition("flask_restplus.api", "newrelic.hooks.component_flask_rest", "instrument_flask_rest")
+    _process_module_definition("flask_restx.api", "newrelic.hooks.component_flask_rest", "instrument_flask_rest")
 
-    _process_module_definition(
-        "graphql_server",
-        "newrelic.hooks.component_graphqlserver",
-        "instrument_graphqlserver",
-    )
+    _process_module_definition("graphql_server", "newrelic.hooks.component_graphqlserver", "instrument_graphqlserver")
 
     _process_module_definition(
         "sentry_sdk.integrations.asgi", "newrelic.hooks.component_sentry", "instrument_sentry_sdk_integrations_asgi"
@@ -2924,61 +2688,37 @@ def _process_module_builtin_defaults():
     _process_module_definition("gluon.contrib.memcache.memcache", "newrelic.hooks.memcache_memcache")
 
     _process_module_definition(
-        "graphene.types.schema",
-        "newrelic.hooks.framework_graphene",
-        "instrument_graphene_types_schema",
+        "graphene.types.schema", "newrelic.hooks.framework_graphene", "instrument_graphene_types_schema"
+    )
+
+    _process_module_definition("graphql.graphql", "newrelic.hooks.framework_graphql", "instrument_graphql")
+    _process_module_definition(
+        "graphql.execution.execute", "newrelic.hooks.framework_graphql", "instrument_graphql_execute"
+    )
+    _process_module_definition(
+        "graphql.execution.executor", "newrelic.hooks.framework_graphql", "instrument_graphql_execute"
+    )
+    _process_module_definition(
+        "graphql.execution.middleware", "newrelic.hooks.framework_graphql", "instrument_graphql_execution_middleware"
+    )
+    _process_module_definition(
+        "graphql.execution.utils", "newrelic.hooks.framework_graphql", "instrument_graphql_execution_utils"
+    )
+    _process_module_definition(
+        "graphql.error.located_error", "newrelic.hooks.framework_graphql", "instrument_graphql_error_located_error"
+    )
+    _process_module_definition(
+        "graphql.language.parser", "newrelic.hooks.framework_graphql", "instrument_graphql_parser"
+    )
+    _process_module_definition(
+        "graphql.validation.validate", "newrelic.hooks.framework_graphql", "instrument_graphql_validate"
+    )
+    _process_module_definition(
+        "graphql.validation.validation", "newrelic.hooks.framework_graphql", "instrument_graphql_validate"
     )
 
     _process_module_definition(
-        "graphql.graphql",
-        "newrelic.hooks.framework_graphql",
-        "instrument_graphql",
-    )
-    _process_module_definition(
-        "graphql.execution.execute",
-        "newrelic.hooks.framework_graphql",
-        "instrument_graphql_execute",
-    )
-    _process_module_definition(
-        "graphql.execution.executor",
-        "newrelic.hooks.framework_graphql",
-        "instrument_graphql_execute",
-    )
-    _process_module_definition(
-        "graphql.execution.middleware",
-        "newrelic.hooks.framework_graphql",
-        "instrument_graphql_execution_middleware",
-    )
-    _process_module_definition(
-        "graphql.execution.utils",
-        "newrelic.hooks.framework_graphql",
-        "instrument_graphql_execution_utils",
-    )
-    _process_module_definition(
-        "graphql.error.located_error",
-        "newrelic.hooks.framework_graphql",
-        "instrument_graphql_error_located_error",
-    )
-    _process_module_definition(
-        "graphql.language.parser",
-        "newrelic.hooks.framework_graphql",
-        "instrument_graphql_parser",
-    )
-    _process_module_definition(
-        "graphql.validation.validate",
-        "newrelic.hooks.framework_graphql",
-        "instrument_graphql_validate",
-    )
-    _process_module_definition(
-        "graphql.validation.validation",
-        "newrelic.hooks.framework_graphql",
-        "instrument_graphql_validate",
-    )
-
-    _process_module_definition(
-        "graphql.type.schema",
-        "newrelic.hooks.framework_graphql",
-        "instrument_graphql_schema_get_field",
+        "graphql.type.schema", "newrelic.hooks.framework_graphql", "instrument_graphql_schema_get_field"
     )
 
     _process_module_definition(
@@ -3062,21 +2802,9 @@ def _process_module_builtin_defaults():
         "instrument_google_cloud_firestore_v1_async_transaction",
     )
 
-    _process_module_definition(
-        "ariadne.asgi",
-        "newrelic.hooks.framework_ariadne",
-        "instrument_ariadne_asgi",
-    )
-    _process_module_definition(
-        "ariadne.graphql",
-        "newrelic.hooks.framework_ariadne",
-        "instrument_ariadne_execute",
-    )
-    _process_module_definition(
-        "ariadne.wsgi",
-        "newrelic.hooks.framework_ariadne",
-        "instrument_ariadne_wsgi",
-    )
+    _process_module_definition("ariadne.asgi", "newrelic.hooks.framework_ariadne", "instrument_ariadne_asgi")
+    _process_module_definition("ariadne.graphql", "newrelic.hooks.framework_ariadne", "instrument_ariadne_execute")
+    _process_module_definition("ariadne.wsgi", "newrelic.hooks.framework_ariadne", "instrument_ariadne_wsgi")
 
     _process_module_definition("grpc._channel", "newrelic.hooks.framework_grpc", "instrument_grpc__channel")
     _process_module_definition("grpc._server", "newrelic.hooks.framework_grpc", "instrument_grpc_server")
@@ -3084,35 +2812,19 @@ def _process_module_builtin_defaults():
     _process_module_definition("bottle", "newrelic.hooks.framework_bottle", "instrument_bottle")
 
     _process_module_definition(
-        "cherrypy._cpreqbody",
-        "newrelic.hooks.framework_cherrypy",
-        "instrument_cherrypy__cpreqbody",
+        "cherrypy._cpreqbody", "newrelic.hooks.framework_cherrypy", "instrument_cherrypy__cpreqbody"
     )
     _process_module_definition(
-        "cherrypy._cprequest",
-        "newrelic.hooks.framework_cherrypy",
-        "instrument_cherrypy__cprequest",
+        "cherrypy._cprequest", "newrelic.hooks.framework_cherrypy", "instrument_cherrypy__cprequest"
     )
     _process_module_definition(
-        "cherrypy._cpdispatch",
-        "newrelic.hooks.framework_cherrypy",
-        "instrument_cherrypy__cpdispatch",
+        "cherrypy._cpdispatch", "newrelic.hooks.framework_cherrypy", "instrument_cherrypy__cpdispatch"
     )
-    _process_module_definition(
-        "cherrypy._cpwsgi",
-        "newrelic.hooks.framework_cherrypy",
-        "instrument_cherrypy__cpwsgi",
-    )
-    _process_module_definition(
-        "cherrypy._cptree",
-        "newrelic.hooks.framework_cherrypy",
-        "instrument_cherrypy__cptree",
-    )
+    _process_module_definition("cherrypy._cpwsgi", "newrelic.hooks.framework_cherrypy", "instrument_cherrypy__cpwsgi")
+    _process_module_definition("cherrypy._cptree", "newrelic.hooks.framework_cherrypy", "instrument_cherrypy__cptree")
 
     _process_module_definition(
-        "confluent_kafka.cimpl",
-        "newrelic.hooks.messagebroker_confluentkafka",
-        "instrument_confluentkafka_cimpl",
+        "confluent_kafka.cimpl", "newrelic.hooks.messagebroker_confluentkafka", "instrument_confluentkafka_cimpl"
     )
     _process_module_definition(
         "confluent_kafka.serializing_producer",
@@ -3126,58 +2838,24 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
-        "kafka.consumer.group",
-        "newrelic.hooks.messagebroker_kafkapython",
-        "instrument_kafka_consumer_group",
+        "kafka.consumer.group", "newrelic.hooks.messagebroker_kafkapython", "instrument_kafka_consumer_group"
     )
     _process_module_definition(
-        "kafka.producer.kafka",
-        "newrelic.hooks.messagebroker_kafkapython",
-        "instrument_kafka_producer",
+        "kafka.producer.kafka", "newrelic.hooks.messagebroker_kafkapython", "instrument_kafka_producer"
     )
     _process_module_definition(
-        "kafka.coordinator.heartbeat",
-        "newrelic.hooks.messagebroker_kafkapython",
-        "instrument_kafka_heartbeat",
+        "kafka.coordinator.heartbeat", "newrelic.hooks.messagebroker_kafkapython", "instrument_kafka_heartbeat"
     )
 
-    _process_module_definition(
-        "logging",
-        "newrelic.hooks.logger_logging",
-        "instrument_logging",
-    )
+    _process_module_definition("logging", "newrelic.hooks.logger_logging", "instrument_logging")
 
-    _process_module_definition(
-        "loguru",
-        "newrelic.hooks.logger_loguru",
-        "instrument_loguru",
-    )
-    _process_module_definition(
-        "loguru._logger",
-        "newrelic.hooks.logger_loguru",
-        "instrument_loguru_logger",
-    )
-    _process_module_definition(
-        "structlog._base",
-        "newrelic.hooks.logger_structlog",
-        "instrument_structlog__base",
-    )
-    _process_module_definition(
-        "structlog._frames",
-        "newrelic.hooks.logger_structlog",
-        "instrument_structlog__frames",
-    )
-    _process_module_definition(
-        "paste.httpserver",
-        "newrelic.hooks.adapter_paste",
-        "instrument_paste_httpserver",
-    )
+    _process_module_definition("loguru", "newrelic.hooks.logger_loguru", "instrument_loguru")
+    _process_module_definition("loguru._logger", "newrelic.hooks.logger_loguru", "instrument_loguru_logger")
+    _process_module_definition("structlog._base", "newrelic.hooks.logger_structlog", "instrument_structlog__base")
+    _process_module_definition("structlog._frames", "newrelic.hooks.logger_structlog", "instrument_structlog__frames")
+    _process_module_definition("paste.httpserver", "newrelic.hooks.adapter_paste", "instrument_paste_httpserver")
 
-    _process_module_definition(
-        "gunicorn.app.base",
-        "newrelic.hooks.adapter_gunicorn",
-        "instrument_gunicorn_app_base",
-    )
+    _process_module_definition("gunicorn.app.base", "newrelic.hooks.adapter_gunicorn", "instrument_gunicorn_app_base")
 
     _process_module_definition("cassandra", "newrelic.hooks.datastore_cassandradriver", "instrument_cassandra")
     _process_module_definition(
@@ -3204,60 +2882,32 @@ def _process_module_builtin_defaults():
 
     _process_module_definition("psycopg2", "newrelic.hooks.database_psycopg2", "instrument_psycopg2")
     _process_module_definition(
-        "psycopg2._psycopg2",
-        "newrelic.hooks.database_psycopg2",
-        "instrument_psycopg2__psycopg2",
+        "psycopg2._psycopg2", "newrelic.hooks.database_psycopg2", "instrument_psycopg2__psycopg2"
     )
     _process_module_definition(
-        "psycopg2.extensions",
-        "newrelic.hooks.database_psycopg2",
-        "instrument_psycopg2_extensions",
+        "psycopg2.extensions", "newrelic.hooks.database_psycopg2", "instrument_psycopg2_extensions"
     )
-    _process_module_definition(
-        "psycopg2._json",
-        "newrelic.hooks.database_psycopg2",
-        "instrument_psycopg2__json",
-    )
-    _process_module_definition(
-        "psycopg2._range",
-        "newrelic.hooks.database_psycopg2",
-        "instrument_psycopg2__range",
-    )
+    _process_module_definition("psycopg2._json", "newrelic.hooks.database_psycopg2", "instrument_psycopg2__json")
+    _process_module_definition("psycopg2._range", "newrelic.hooks.database_psycopg2", "instrument_psycopg2__range")
     _process_module_definition("psycopg2.sql", "newrelic.hooks.database_psycopg2", "instrument_psycopg2_sql")
 
     _process_module_definition("psycopg2ct", "newrelic.hooks.database_psycopg2ct", "instrument_psycopg2ct")
     _process_module_definition(
-        "psycopg2ct.extensions",
-        "newrelic.hooks.database_psycopg2ct",
-        "instrument_psycopg2ct_extensions",
+        "psycopg2ct.extensions", "newrelic.hooks.database_psycopg2ct", "instrument_psycopg2ct_extensions"
+    )
+
+    _process_module_definition("psycopg2cffi", "newrelic.hooks.database_psycopg2cffi", "instrument_psycopg2cffi")
+    _process_module_definition(
+        "psycopg2cffi.extensions", "newrelic.hooks.database_psycopg2cffi", "instrument_psycopg2cffi_extensions"
     )
 
     _process_module_definition(
-        "psycopg2cffi",
-        "newrelic.hooks.database_psycopg2cffi",
-        "instrument_psycopg2cffi",
+        "asyncpg.connect_utils", "newrelic.hooks.database_asyncpg", "instrument_asyncpg_connect_utils"
     )
-    _process_module_definition(
-        "psycopg2cffi.extensions",
-        "newrelic.hooks.database_psycopg2cffi",
-        "instrument_psycopg2cffi_extensions",
-    )
+    _process_module_definition("asyncpg.protocol", "newrelic.hooks.database_asyncpg", "instrument_asyncpg_protocol")
 
     _process_module_definition(
-        "asyncpg.connect_utils",
-        "newrelic.hooks.database_asyncpg",
-        "instrument_asyncpg_connect_utils",
-    )
-    _process_module_definition(
-        "asyncpg.protocol",
-        "newrelic.hooks.database_asyncpg",
-        "instrument_asyncpg_protocol",
-    )
-
-    _process_module_definition(
-        "postgresql.driver.dbapi20",
-        "newrelic.hooks.database_postgresql",
-        "instrument_postgresql_driver_dbapi20",
+        "postgresql.driver.dbapi20", "newrelic.hooks.database_postgresql", "instrument_postgresql_driver_dbapi20"
     )
 
     _process_module_definition(
@@ -3270,33 +2920,17 @@ def _process_module_builtin_defaults():
     _process_module_definition("sqlite3.dbapi2", "newrelic.hooks.database_sqlite", "instrument_sqlite3_dbapi2")
 
     _process_module_definition("pysqlite2", "newrelic.hooks.database_sqlite", "instrument_sqlite3")
-    _process_module_definition(
-        "pysqlite2.dbapi2",
-        "newrelic.hooks.database_sqlite",
-        "instrument_sqlite3_dbapi2",
-    )
+    _process_module_definition("pysqlite2.dbapi2", "newrelic.hooks.database_sqlite", "instrument_sqlite3_dbapi2")
 
     _process_module_definition("memcache", "newrelic.hooks.datastore_memcache", "instrument_memcache")
+    _process_module_definition("pylibmc.client", "newrelic.hooks.datastore_pylibmc", "instrument_pylibmc_client")
     _process_module_definition(
-        "pylibmc.client",
-        "newrelic.hooks.datastore_pylibmc",
-        "instrument_pylibmc_client",
+        "bmemcached.client", "newrelic.hooks.datastore_bmemcached", "instrument_bmemcached_client"
     )
     _process_module_definition(
-        "bmemcached.client",
-        "newrelic.hooks.datastore_bmemcached",
-        "instrument_bmemcached_client",
+        "pymemcache.client", "newrelic.hooks.datastore_pymemcache", "instrument_pymemcache_client"
     )
-    _process_module_definition(
-        "pymemcache.client",
-        "newrelic.hooks.datastore_pymemcache",
-        "instrument_pymemcache_client",
-    )
-    _process_module_definition(
-        "aiomcache.client",
-        "newrelic.hooks.datastore_aiomcache",
-        "instrument_aiomcache_client",
-    )
+    _process_module_definition("aiomcache.client", "newrelic.hooks.datastore_aiomcache", "instrument_aiomcache_client")
 
     _process_module_definition("jinja2.environment", "newrelic.hooks.template_jinja2")
 
@@ -3312,40 +2946,24 @@ def _process_module_builtin_defaults():
     _process_module_definition("urllib.request", "newrelic.hooks.external_urllib")
 
     _process_module_definition(
-        "urllib3.connectionpool",
-        "newrelic.hooks.external_urllib3",
-        "instrument_urllib3_connectionpool",
+        "urllib3.connectionpool", "newrelic.hooks.external_urllib3", "instrument_urllib3_connectionpool"
     )
+    _process_module_definition("urllib3.connection", "newrelic.hooks.external_urllib3", "instrument_urllib3_connection")
     _process_module_definition(
-        "urllib3.connection",
-        "newrelic.hooks.external_urllib3",
-        "instrument_urllib3_connection",
-    )
-    _process_module_definition(
-        "requests.packages.urllib3.connection",
-        "newrelic.hooks.external_urllib3",
-        "instrument_urllib3_connection",
+        "requests.packages.urllib3.connection", "newrelic.hooks.external_urllib3", "instrument_urllib3_connection"
     )
 
     _process_module_definition(
-        "starlette.requests",
-        "newrelic.hooks.framework_starlette",
-        "instrument_starlette_requests",
+        "starlette.requests", "newrelic.hooks.framework_starlette", "instrument_starlette_requests"
     )
     _process_module_definition(
-        "starlette.routing",
-        "newrelic.hooks.framework_starlette",
-        "instrument_starlette_routing",
+        "starlette.routing", "newrelic.hooks.framework_starlette", "instrument_starlette_routing"
     )
     _process_module_definition(
-        "starlette.applications",
-        "newrelic.hooks.framework_starlette",
-        "instrument_starlette_applications",
+        "starlette.applications", "newrelic.hooks.framework_starlette", "instrument_starlette_applications"
     )
     _process_module_definition(
-        "starlette.middleware.errors",
-        "newrelic.hooks.framework_starlette",
-        "instrument_starlette_middleware_errors",
+        "starlette.middleware.errors", "newrelic.hooks.framework_starlette", "instrument_starlette_middleware_errors"
     )
     _process_module_definition(
         "starlette.middleware.exceptions",
@@ -3353,31 +2971,19 @@ def _process_module_builtin_defaults():
         "instrument_starlette_middleware_exceptions",
     )
     _process_module_definition(
-        "starlette.exceptions",
-        "newrelic.hooks.framework_starlette",
-        "instrument_starlette_exceptions",
+        "starlette.exceptions", "newrelic.hooks.framework_starlette", "instrument_starlette_exceptions"
     )
     _process_module_definition(
-        "starlette.background",
-        "newrelic.hooks.framework_starlette",
-        "instrument_starlette_background_task",
+        "starlette.background", "newrelic.hooks.framework_starlette", "instrument_starlette_background_task"
     )
     _process_module_definition(
-        "starlette.concurrency",
-        "newrelic.hooks.framework_starlette",
-        "instrument_starlette_concurrency",
+        "starlette.concurrency", "newrelic.hooks.framework_starlette", "instrument_starlette_concurrency"
     )
 
-    _process_module_definition(
-        "strawberry.asgi",
-        "newrelic.hooks.framework_strawberry",
-        "instrument_strawberry_asgi",
-    )
+    _process_module_definition("strawberry.asgi", "newrelic.hooks.framework_strawberry", "instrument_strawberry_asgi")
 
     _process_module_definition(
-        "strawberry.schema.schema",
-        "newrelic.hooks.framework_strawberry",
-        "instrument_strawberry_schema",
+        "strawberry.schema.schema", "newrelic.hooks.framework_strawberry", "instrument_strawberry_schema"
     )
 
     _process_module_definition(
@@ -3407,42 +3013,22 @@ def _process_module_builtin_defaults():
     _process_module_definition("aiohttp.wsgi", "newrelic.hooks.framework_aiohttp", "instrument_aiohttp_wsgi")
     _process_module_definition("aiohttp.web", "newrelic.hooks.framework_aiohttp", "instrument_aiohttp_web")
     _process_module_definition(
-        "aiohttp.web_reqrep",
-        "newrelic.hooks.framework_aiohttp",
-        "instrument_aiohttp_web_response",
+        "aiohttp.web_reqrep", "newrelic.hooks.framework_aiohttp", "instrument_aiohttp_web_response"
     )
     _process_module_definition(
-        "aiohttp.web_response",
-        "newrelic.hooks.framework_aiohttp",
-        "instrument_aiohttp_web_response",
+        "aiohttp.web_response", "newrelic.hooks.framework_aiohttp", "instrument_aiohttp_web_response"
     )
     _process_module_definition(
-        "aiohttp.web_urldispatcher",
-        "newrelic.hooks.framework_aiohttp",
-        "instrument_aiohttp_web_urldispatcher",
+        "aiohttp.web_urldispatcher", "newrelic.hooks.framework_aiohttp", "instrument_aiohttp_web_urldispatcher"
     )
+    _process_module_definition("aiohttp.client", "newrelic.hooks.framework_aiohttp", "instrument_aiohttp_client")
     _process_module_definition(
-        "aiohttp.client",
-        "newrelic.hooks.framework_aiohttp",
-        "instrument_aiohttp_client",
+        "aiohttp.client_reqrep", "newrelic.hooks.framework_aiohttp", "instrument_aiohttp_client_reqrep"
     )
-    _process_module_definition(
-        "aiohttp.client_reqrep",
-        "newrelic.hooks.framework_aiohttp",
-        "instrument_aiohttp_client_reqrep",
-    )
-    _process_module_definition(
-        "aiohttp.protocol",
-        "newrelic.hooks.framework_aiohttp",
-        "instrument_aiohttp_protocol",
-    )
+    _process_module_definition("aiohttp.protocol", "newrelic.hooks.framework_aiohttp", "instrument_aiohttp_protocol")
 
     _process_module_definition("requests.api", "newrelic.hooks.external_requests", "instrument_requests_api")
-    _process_module_definition(
-        "requests.sessions",
-        "newrelic.hooks.external_requests",
-        "instrument_requests_sessions",
-    )
+    _process_module_definition("requests.sessions", "newrelic.hooks.external_requests", "instrument_requests_sessions")
 
     _process_module_definition("feedparser", "newrelic.hooks.external_feedparser")
 
@@ -3458,11 +3044,7 @@ def _process_module_builtin_defaults():
 
     _process_module_definition("aredis.client", "newrelic.hooks.datastore_aredis", "instrument_aredis_client")
 
-    _process_module_definition(
-        "aredis.connection",
-        "newrelic.hooks.datastore_aredis",
-        "instrument_aredis_connection",
-    )
+    _process_module_definition("aredis.connection", "newrelic.hooks.datastore_aredis", "instrument_aredis_connection")
 
     _process_module_definition("aioredis.client", "newrelic.hooks.datastore_aioredis", "instrument_aioredis_client")
 
@@ -3474,22 +3056,16 @@ def _process_module_builtin_defaults():
 
     # v7 and below
     _process_module_definition(
-        "elasticsearch.client",
-        "newrelic.hooks.datastore_elasticsearch",
-        "instrument_elasticsearch_client",
+        "elasticsearch.client", "newrelic.hooks.datastore_elasticsearch", "instrument_elasticsearch_client"
     )
     # v8 and above
     _process_module_definition(
-        "elasticsearch._sync.client",
-        "newrelic.hooks.datastore_elasticsearch",
-        "instrument_elasticsearch_client_v8",
+        "elasticsearch._sync.client", "newrelic.hooks.datastore_elasticsearch", "instrument_elasticsearch_client_v8"
     )
 
     # v7 and below
     _process_module_definition(
-        "elasticsearch.client.cat",
-        "newrelic.hooks.datastore_elasticsearch",
-        "instrument_elasticsearch_client_cat",
+        "elasticsearch.client.cat", "newrelic.hooks.datastore_elasticsearch", "instrument_elasticsearch_client_cat"
     )
     # v8 and above
     _process_module_definition(
@@ -3526,9 +3102,7 @@ def _process_module_builtin_defaults():
 
     # v7 and below
     _process_module_definition(
-        "elasticsearch.client.nodes",
-        "newrelic.hooks.datastore_elasticsearch",
-        "instrument_elasticsearch_client_nodes",
+        "elasticsearch.client.nodes", "newrelic.hooks.datastore_elasticsearch", "instrument_elasticsearch_client_nodes"
     )
     # v8 and above
     _process_module_definition(
@@ -3552,9 +3126,7 @@ def _process_module_builtin_defaults():
 
     # v7 and below
     _process_module_definition(
-        "elasticsearch.client.tasks",
-        "newrelic.hooks.datastore_elasticsearch",
-        "instrument_elasticsearch_client_tasks",
+        "elasticsearch.client.tasks", "newrelic.hooks.datastore_elasticsearch", "instrument_elasticsearch_client_tasks"
     )
     # v8 and above
     _process_module_definition(
@@ -3591,9 +3163,7 @@ def _process_module_builtin_defaults():
 
     # v7 and below
     _process_module_definition(
-        "elasticsearch.transport",
-        "newrelic.hooks.datastore_elasticsearch",
-        "instrument_elasticsearch_transport",
+        "elasticsearch.transport", "newrelic.hooks.datastore_elasticsearch", "instrument_elasticsearch_transport"
     )
     # v8 and above
     _process_module_definition(
@@ -3607,21 +3177,15 @@ def _process_module_builtin_defaults():
     _process_module_definition("pika.spec", "newrelic.hooks.messagebroker_pika", "instrument_pika_spec")
 
     _process_module_definition(
-        "pyelasticsearch.client",
-        "newrelic.hooks.datastore_pyelasticsearch",
-        "instrument_pyelasticsearch_client",
+        "pyelasticsearch.client", "newrelic.hooks.datastore_pyelasticsearch", "instrument_pyelasticsearch_client"
     )
 
     # Newer pymongo module locations
     _process_module_definition(
-        "pymongo.synchronous.pool",
-        "newrelic.hooks.datastore_pymongo",
-        "instrument_pymongo_synchronous_pool",
+        "pymongo.synchronous.pool", "newrelic.hooks.datastore_pymongo", "instrument_pymongo_synchronous_pool"
     )
     _process_module_definition(
-        "pymongo.asynchronous.pool",
-        "newrelic.hooks.datastore_pymongo",
-        "instrument_pymongo_asynchronous_pool",
+        "pymongo.asynchronous.pool", "newrelic.hooks.datastore_pymongo", "instrument_pymongo_asynchronous_pool"
     )
 
     _process_module_definition(
@@ -3648,19 +3212,13 @@ def _process_module_builtin_defaults():
 
     # Older pymongo module locations
     _process_module_definition(
-        "pymongo.connection",
-        "newrelic.hooks.datastore_pymongo",
-        "instrument_pymongo_synchronous_pool",
+        "pymongo.connection", "newrelic.hooks.datastore_pymongo", "instrument_pymongo_synchronous_pool"
     )
     _process_module_definition(
-        "pymongo.collection",
-        "newrelic.hooks.datastore_pymongo",
-        "instrument_pymongo_synchronous_collection",
+        "pymongo.collection", "newrelic.hooks.datastore_pymongo", "instrument_pymongo_synchronous_collection"
     )
     _process_module_definition(
-        "pymongo.mongo_client",
-        "newrelic.hooks.datastore_pymongo",
-        "instrument_pymongo_synchronous_mongo_client",
+        "pymongo.mongo_client", "newrelic.hooks.datastore_pymongo", "instrument_pymongo_synchronous_mongo_client"
     )
 
     # Redis v4.2+
@@ -3678,11 +3236,7 @@ def _process_module_builtin_defaults():
         "redis.asyncio.connection", "newrelic.hooks.datastore_redis", "instrument_asyncio_redis_connection"
     )
 
-    _process_module_definition(
-        "redis.connection",
-        "newrelic.hooks.datastore_redis",
-        "instrument_redis_connection",
-    )
+    _process_module_definition("redis.connection", "newrelic.hooks.datastore_redis", "instrument_redis_connection")
     _process_module_definition("redis.client", "newrelic.hooks.datastore_redis", "instrument_redis_client")
 
     _process_module_definition(
@@ -3731,11 +3285,7 @@ def _process_module_builtin_defaults():
         "valkey.asyncio.connection", "newrelic.hooks.datastore_valkey", "instrument_asyncio_valkey_connection"
     )
 
-    _process_module_definition(
-        "valkey.connection",
-        "newrelic.hooks.datastore_valkey",
-        "instrument_valkey_connection",
-    )
+    _process_module_definition("valkey.connection", "newrelic.hooks.datastore_valkey", "instrument_valkey_connection")
     _process_module_definition("valkey.client", "newrelic.hooks.datastore_valkey", "instrument_valkey_client")
 
     _process_module_definition(
@@ -3781,48 +3331,28 @@ def _process_module_builtin_defaults():
         "motor.motor_tornado", "newrelic.hooks.datastore_motor", "instrument_motor_motor_tornado"
     )
 
-    _process_module_definition(
-        "piston.resource",
-        "newrelic.hooks.component_piston",
-        "instrument_piston_resource",
-    )
+    _process_module_definition("piston.resource", "newrelic.hooks.component_piston", "instrument_piston_resource")
     _process_module_definition("piston.doc", "newrelic.hooks.component_piston", "instrument_piston_doc")
 
     _process_module_definition(
-        "tastypie.resources",
-        "newrelic.hooks.component_tastypie",
-        "instrument_tastypie_resources",
+        "tastypie.resources", "newrelic.hooks.component_tastypie", "instrument_tastypie_resources"
     )
     _process_module_definition("tastypie.api", "newrelic.hooks.component_tastypie", "instrument_tastypie_api")
 
-    _process_module_definition(
-        "sklearn.metrics",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_metrics",
-    )
+    _process_module_definition("sklearn.metrics", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_metrics")
 
     _process_module_definition(
-        "sklearn.tree._classes",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_tree_models",
+        "sklearn.tree._classes", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_tree_models"
     )
     # In scikit-learn < 0.21 the model classes are in tree.py instead of _classes.py.
+    _process_module_definition("sklearn.tree.tree", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_tree_models")
+
     _process_module_definition(
-        "sklearn.tree.tree",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_tree_models",
+        "sklearn.compose._column_transformer", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_compose_models"
     )
 
     _process_module_definition(
-        "sklearn.compose._column_transformer",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_compose_models",
-    )
-
-    _process_module_definition(
-        "sklearn.compose._target",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_compose_models",
+        "sklearn.compose._target", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_compose_models"
     )
 
     _process_module_definition(
@@ -3874,9 +3404,7 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
-        "sklearn.covariance.elliptic_envelope",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_covariance_models",
+        "sklearn.covariance.elliptic_envelope", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_covariance_models"
     )
 
     _process_module_definition(
@@ -3886,39 +3414,27 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
-        "sklearn.ensemble._bagging",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_ensemble_bagging_models",
+        "sklearn.ensemble._bagging", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_ensemble_bagging_models"
     )
 
     _process_module_definition(
-        "sklearn.ensemble.bagging",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_ensemble_bagging_models",
+        "sklearn.ensemble.bagging", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_ensemble_bagging_models"
     )
 
     _process_module_definition(
-        "sklearn.ensemble._forest",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_ensemble_forest_models",
+        "sklearn.ensemble._forest", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_ensemble_forest_models"
     )
 
     _process_module_definition(
-        "sklearn.ensemble.forest",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_ensemble_forest_models",
+        "sklearn.ensemble.forest", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_ensemble_forest_models"
     )
 
     _process_module_definition(
-        "sklearn.ensemble._iforest",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_ensemble_iforest_models",
+        "sklearn.ensemble._iforest", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_ensemble_iforest_models"
     )
 
     _process_module_definition(
-        "sklearn.ensemble.iforest",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_ensemble_iforest_models",
+        "sklearn.ensemble.iforest", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_ensemble_iforest_models"
     )
 
     _process_module_definition(
@@ -3934,9 +3450,7 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
-        "sklearn.ensemble._gb",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_ensemble_gradient_boosting_models",
+        "sklearn.ensemble._gb", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_ensemble_gradient_boosting_models"
     )
 
     _process_module_definition(
@@ -3946,9 +3460,7 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
-        "sklearn.ensemble._voting",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_ensemble_voting_models",
+        "sklearn.ensemble._voting", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_ensemble_voting_models"
     )
 
     _process_module_definition(
@@ -3958,9 +3470,7 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
-        "sklearn.ensemble._stacking",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_ensemble_stacking_models",
+        "sklearn.ensemble._stacking", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_ensemble_stacking_models"
     )
 
     _process_module_definition(
@@ -3970,27 +3480,19 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
-        "sklearn.linear_model._base",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_linear_models",
+        "sklearn.linear_model._base", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_linear_models"
     )
 
     _process_module_definition(
-        "sklearn.linear_model.base",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_linear_models",
+        "sklearn.linear_model.base", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_linear_models"
     )
 
     _process_module_definition(
-        "sklearn.linear_model._bayes",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_linear_bayes_models",
+        "sklearn.linear_model._bayes", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_linear_bayes_models"
     )
 
     _process_module_definition(
-        "sklearn.linear_model.bayes",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_linear_bayes_models",
+        "sklearn.linear_model.bayes", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_linear_bayes_models"
     )
 
     _process_module_definition(
@@ -4018,21 +3520,15 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
-        "sklearn.linear_model._glm",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_linear_GLM_models",
+        "sklearn.linear_model._glm", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_linear_GLM_models"
     )
 
     _process_module_definition(
-        "sklearn.linear_model._huber",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_linear_models",
+        "sklearn.linear_model._huber", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_linear_models"
     )
 
     _process_module_definition(
-        "sklearn.linear_model.huber",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_linear_models",
+        "sklearn.linear_model.huber", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_linear_models"
     )
 
     _process_module_definition(
@@ -4048,39 +3544,27 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
-        "sklearn.linear_model._ridge",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_linear_ridge_models",
+        "sklearn.linear_model._ridge", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_linear_ridge_models"
     )
 
     _process_module_definition(
-        "sklearn.linear_model.ridge",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_linear_ridge_models",
+        "sklearn.linear_model.ridge", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_linear_ridge_models"
     )
 
     _process_module_definition(
-        "sklearn.linear_model._logistic",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_linear_logistic_models",
+        "sklearn.linear_model._logistic", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_linear_logistic_models"
     )
 
     _process_module_definition(
-        "sklearn.linear_model.logistic",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_linear_logistic_models",
+        "sklearn.linear_model.logistic", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_linear_logistic_models"
     )
 
     _process_module_definition(
-        "sklearn.linear_model._omp",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_linear_OMP_models",
+        "sklearn.linear_model._omp", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_linear_OMP_models"
     )
 
     _process_module_definition(
-        "sklearn.linear_model.omp",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_linear_OMP_models",
+        "sklearn.linear_model.omp", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_linear_OMP_models"
     )
 
     _process_module_definition(
@@ -4096,45 +3580,31 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
-        "sklearn.linear_model._perceptron",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_linear_models",
+        "sklearn.linear_model._perceptron", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_linear_models"
     )
 
     _process_module_definition(
-        "sklearn.linear_model.perceptron",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_linear_models",
+        "sklearn.linear_model.perceptron", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_linear_models"
     )
 
     _process_module_definition(
-        "sklearn.linear_model._quantile",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_linear_models",
+        "sklearn.linear_model._quantile", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_linear_models"
     )
 
     _process_module_definition(
-        "sklearn.linear_model._ransac",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_linear_models",
+        "sklearn.linear_model._ransac", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_linear_models"
     )
 
     _process_module_definition(
-        "sklearn.linear_model.ransac",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_linear_models",
+        "sklearn.linear_model.ransac", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_linear_models"
     )
 
     _process_module_definition(
-        "sklearn.linear_model._theil_sen",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_linear_models",
+        "sklearn.linear_model._theil_sen", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_linear_models"
     )
 
     _process_module_definition(
-        "sklearn.linear_model.theil_sen",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_linear_models",
+        "sklearn.linear_model.theil_sen", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_linear_models"
     )
 
     _process_module_definition(
@@ -4156,34 +3626,22 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
-        "sklearn.gaussian_process._gpc",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_gaussian_process_models",
+        "sklearn.gaussian_process._gpc", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_gaussian_process_models"
     )
 
     _process_module_definition(
-        "sklearn.gaussian_process.gpc",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_gaussian_process_models",
+        "sklearn.gaussian_process.gpc", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_gaussian_process_models"
     )
 
     _process_module_definition(
-        "sklearn.gaussian_process._gpr",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_gaussian_process_models",
+        "sklearn.gaussian_process._gpr", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_gaussian_process_models"
     )
 
     _process_module_definition(
-        "sklearn.gaussian_process.gpr",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_gaussian_process_models",
+        "sklearn.gaussian_process.gpr", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_gaussian_process_models"
     )
 
-    _process_module_definition(
-        "sklearn.dummy",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_dummy_models",
-    )
+    _process_module_definition("sklearn.dummy", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_dummy_models")
 
     _process_module_definition(
         "sklearn.feature_selection._rfe",
@@ -4228,9 +3686,7 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
-        "sklearn.kernel_ridge",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_kernel_ridge_models",
+        "sklearn.kernel_ridge", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_kernel_ridge_models"
     )
 
     _process_module_definition(
@@ -4246,33 +3702,23 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
-        "sklearn.neural_network._rbm",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_neural_network_models",
+        "sklearn.neural_network._rbm", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_neural_network_models"
     )
 
     _process_module_definition(
-        "sklearn.neural_network.rbm",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_neural_network_models",
+        "sklearn.neural_network.rbm", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_neural_network_models"
     )
 
     _process_module_definition(
-        "sklearn.calibration",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_calibration_models",
+        "sklearn.calibration", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_calibration_models"
     )
 
     _process_module_definition(
-        "sklearn.cluster._affinity_propagation",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_cluster_models",
+        "sklearn.cluster._affinity_propagation", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_cluster_models"
     )
 
     _process_module_definition(
-        "sklearn.cluster.affinity_propagation_",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_cluster_models",
+        "sklearn.cluster.affinity_propagation_", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_cluster_models"
     )
 
     _process_module_definition(
@@ -4288,147 +3734,99 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
-        "sklearn.cluster._birch",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_cluster_models",
+        "sklearn.cluster._birch", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_cluster_models"
     )
 
     _process_module_definition(
-        "sklearn.cluster.birch",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_cluster_models",
+        "sklearn.cluster.birch", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_cluster_models"
     )
 
     _process_module_definition(
-        "sklearn.cluster._bisect_k_means",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_cluster_kmeans_models",
+        "sklearn.cluster._bisect_k_means", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_cluster_kmeans_models"
     )
 
     _process_module_definition(
-        "sklearn.cluster._dbscan",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_cluster_models",
+        "sklearn.cluster._dbscan", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_cluster_models"
     )
 
     _process_module_definition(
-        "sklearn.cluster.dbscan_",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_cluster_models",
+        "sklearn.cluster.dbscan_", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_cluster_models"
     )
 
     _process_module_definition(
-        "sklearn.cluster._feature_agglomeration",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_cluster_models",
+        "sklearn.cluster._feature_agglomeration", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_cluster_models"
     )
 
     _process_module_definition(
-        "sklearn.cluster._kmeans",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_cluster_kmeans_models",
+        "sklearn.cluster._kmeans", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_cluster_kmeans_models"
     )
 
     _process_module_definition(
-        "sklearn.cluster.k_means_",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_cluster_kmeans_models",
+        "sklearn.cluster.k_means_", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_cluster_kmeans_models"
     )
 
     _process_module_definition(
-        "sklearn.cluster._mean_shift",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_cluster_models",
+        "sklearn.cluster._mean_shift", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_cluster_models"
     )
 
     _process_module_definition(
-        "sklearn.cluster.mean_shift_",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_cluster_models",
+        "sklearn.cluster.mean_shift_", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_cluster_models"
     )
 
     _process_module_definition(
-        "sklearn.cluster._optics",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_cluster_models",
+        "sklearn.cluster._optics", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_cluster_models"
     )
 
     _process_module_definition(
-        "sklearn.cluster._spectral",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_cluster_clustering_models",
+        "sklearn.cluster._spectral", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_cluster_clustering_models"
     )
 
     _process_module_definition(
-        "sklearn.cluster.spectral",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_cluster_clustering_models",
+        "sklearn.cluster.spectral", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_cluster_clustering_models"
     )
 
     _process_module_definition(
-        "sklearn.cluster._bicluster",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_cluster_clustering_models",
+        "sklearn.cluster._bicluster", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_cluster_clustering_models"
     )
 
     _process_module_definition(
-        "sklearn.cluster.bicluster",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_cluster_clustering_models",
+        "sklearn.cluster.bicluster", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_cluster_clustering_models"
     )
 
     _process_module_definition(
-        "sklearn.multiclass",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_multiclass_models",
+        "sklearn.multiclass", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_multiclass_models"
     )
 
     _process_module_definition(
-        "sklearn.multioutput",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_multioutput_models",
+        "sklearn.multioutput", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_multioutput_models"
     )
 
     _process_module_definition(
-        "sklearn.naive_bayes",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_naive_bayes_models",
+        "sklearn.naive_bayes", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_naive_bayes_models"
     )
 
     _process_module_definition(
-        "sklearn.model_selection._search",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_model_selection_models",
+        "sklearn.model_selection._search", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_model_selection_models"
     )
 
     _process_module_definition(
-        "sklearn.mixture._bayesian_mixture",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_mixture_models",
+        "sklearn.mixture._bayesian_mixture", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_mixture_models"
     )
 
     _process_module_definition(
-        "sklearn.mixture.bayesian_mixture",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_mixture_models",
+        "sklearn.mixture.bayesian_mixture", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_mixture_models"
     )
 
     _process_module_definition(
-        "sklearn.mixture._gaussian_mixture",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_mixture_models",
+        "sklearn.mixture._gaussian_mixture", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_mixture_models"
     )
 
     _process_module_definition(
-        "sklearn.mixture.gaussian_mixture",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_mixture_models",
+        "sklearn.mixture.gaussian_mixture", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_mixture_models"
     )
 
     _process_module_definition(
-        "sklearn.pipeline",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_pipeline_models",
+        "sklearn.pipeline", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_pipeline_models"
     )
 
     _process_module_definition(
@@ -4450,16 +3848,10 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
-        "sklearn.svm._classes",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_svm_models",
+        "sklearn.svm._classes", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_svm_models"
     )
 
-    _process_module_definition(
-        "sklearn.svm.classes",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_svm_models",
-    )
+    _process_module_definition("sklearn.svm.classes", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_svm_models")
 
     _process_module_definition(
         "sklearn.neighbors._classification",
@@ -4474,81 +3866,55 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
-        "sklearn.neighbors._graph",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_neighbors_KRadius_models",
+        "sklearn.neighbors._graph", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_neighbors_KRadius_models"
     )
 
     _process_module_definition(
-        "sklearn.neighbors._kde",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_neighbors_models",
+        "sklearn.neighbors._kde", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_neighbors_models"
     )
 
     _process_module_definition(
-        "sklearn.neighbors.kde",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_neighbors_models",
+        "sklearn.neighbors.kde", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_neighbors_models"
     )
 
     _process_module_definition(
-        "sklearn.neighbors._lof",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_neighbors_models",
+        "sklearn.neighbors._lof", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_neighbors_models"
     )
 
     _process_module_definition(
-        "sklearn.neighbors.lof",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_neighbors_models",
+        "sklearn.neighbors.lof", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_neighbors_models"
     )
 
     _process_module_definition(
-        "sklearn.neighbors._nca",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_neighbors_models",
+        "sklearn.neighbors._nca", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_neighbors_models"
     )
 
     _process_module_definition(
-        "sklearn.neighbors._nearest_centroid",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_neighbors_models",
+        "sklearn.neighbors._nearest_centroid", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_neighbors_models"
     )
 
     _process_module_definition(
-        "sklearn.neighbors.nearest_centroid",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_neighbors_models",
+        "sklearn.neighbors.nearest_centroid", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_neighbors_models"
     )
 
     _process_module_definition(
-        "sklearn.neighbors._regression",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_neighbors_KRadius_models",
+        "sklearn.neighbors._regression", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_neighbors_KRadius_models"
     )
 
     _process_module_definition(
-        "sklearn.neighbors.regression",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_neighbors_KRadius_models",
+        "sklearn.neighbors.regression", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_neighbors_KRadius_models"
     )
 
     _process_module_definition(
-        "sklearn.neighbors._unsupervised",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_neighbors_models",
+        "sklearn.neighbors._unsupervised", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_neighbors_models"
     )
 
     _process_module_definition(
-        "sklearn.neighbors.unsupervised",
-        "newrelic.hooks.mlmodel_sklearn",
-        "instrument_sklearn_neighbors_models",
+        "sklearn.neighbors.unsupervised", "newrelic.hooks.mlmodel_sklearn", "instrument_sklearn_neighbors_models"
     )
 
     _process_module_definition(
-        "rest_framework.views",
-        "newrelic.hooks.component_djangorestframework",
-        "instrument_rest_framework_views",
+        "rest_framework.views", "newrelic.hooks.component_djangorestframework", "instrument_rest_framework_views"
     )
     _process_module_definition(
         "rest_framework.decorators",
@@ -4556,180 +3922,86 @@ def _process_module_builtin_defaults():
         "instrument_rest_framework_decorators",
     )
 
-    _process_module_definition(
-        "celery.task.base",
-        "newrelic.hooks.application_celery",
-        "instrument_celery_app_task",
-    )
-    _process_module_definition(
-        "celery.app.task",
-        "newrelic.hooks.application_celery",
-        "instrument_celery_app_task",
-    )
-    _process_module_definition(
-        "celery.app.trace",
-        "newrelic.hooks.application_celery",
-        "instrument_celery_app_trace",
-    )
+    _process_module_definition("celery.task.base", "newrelic.hooks.application_celery", "instrument_celery_app_task")
+    _process_module_definition("celery.app.task", "newrelic.hooks.application_celery", "instrument_celery_app_task")
+    _process_module_definition("celery.app.trace", "newrelic.hooks.application_celery", "instrument_celery_app_trace")
     _process_module_definition("celery.worker", "newrelic.hooks.application_celery", "instrument_celery_worker")
     _process_module_definition(
-        "celery.concurrency.processes",
-        "newrelic.hooks.application_celery",
-        "instrument_celery_worker",
+        "celery.concurrency.processes", "newrelic.hooks.application_celery", "instrument_celery_worker"
     )
     _process_module_definition(
-        "celery.concurrency.prefork",
-        "newrelic.hooks.application_celery",
-        "instrument_celery_worker",
+        "celery.concurrency.prefork", "newrelic.hooks.application_celery", "instrument_celery_worker"
     )
 
-    _process_module_definition(
-        "celery.app.base",
-        "newrelic.hooks.application_celery",
-        "instrument_celery_app_base",
-    )
+    _process_module_definition("celery.app.base", "newrelic.hooks.application_celery", "instrument_celery_app_base")
     _process_module_definition("billiard.pool", "newrelic.hooks.application_celery", "instrument_billiard_pool")
 
     _process_module_definition("flup.server.cgi", "newrelic.hooks.adapter_flup", "instrument_flup_server_cgi")
+    _process_module_definition("flup.server.ajp_base", "newrelic.hooks.adapter_flup", "instrument_flup_server_ajp_base")
     _process_module_definition(
-        "flup.server.ajp_base",
-        "newrelic.hooks.adapter_flup",
-        "instrument_flup_server_ajp_base",
+        "flup.server.fcgi_base", "newrelic.hooks.adapter_flup", "instrument_flup_server_fcgi_base"
     )
     _process_module_definition(
-        "flup.server.fcgi_base",
-        "newrelic.hooks.adapter_flup",
-        "instrument_flup_server_fcgi_base",
-    )
-    _process_module_definition(
-        "flup.server.scgi_base",
-        "newrelic.hooks.adapter_flup",
-        "instrument_flup_server_scgi_base",
+        "flup.server.scgi_base", "newrelic.hooks.adapter_flup", "instrument_flup_server_scgi_base"
     )
 
-    _process_module_definition(
-        "meinheld.server",
-        "newrelic.hooks.adapter_meinheld",
-        "instrument_meinheld_server",
-    )
+    _process_module_definition("meinheld.server", "newrelic.hooks.adapter_meinheld", "instrument_meinheld_server")
 
-    _process_module_definition(
-        "waitress.server",
-        "newrelic.hooks.adapter_waitress",
-        "instrument_waitress_server",
-    )
+    _process_module_definition("waitress.server", "newrelic.hooks.adapter_waitress", "instrument_waitress_server")
 
     _process_module_definition("gevent.wsgi", "newrelic.hooks.adapter_gevent", "instrument_gevent_wsgi")
     _process_module_definition("gevent.pywsgi", "newrelic.hooks.adapter_gevent", "instrument_gevent_pywsgi")
 
     _process_module_definition(
-        "wsgiref.simple_server",
-        "newrelic.hooks.adapter_wsgiref",
-        "instrument_wsgiref_simple_server",
+        "wsgiref.simple_server", "newrelic.hooks.adapter_wsgiref", "instrument_wsgiref_simple_server"
     )
 
     _process_module_definition(
-        "cherrypy.wsgiserver",
-        "newrelic.hooks.adapter_cherrypy",
-        "instrument_cherrypy_wsgiserver",
+        "cherrypy.wsgiserver", "newrelic.hooks.adapter_cherrypy", "instrument_cherrypy_wsgiserver"
     )
 
+    _process_module_definition("cheroot.wsgi", "newrelic.hooks.adapter_cheroot", "instrument_cheroot_wsgiserver")
+
+    _process_module_definition("pyramid.router", "newrelic.hooks.framework_pyramid", "instrument_pyramid_router")
+    _process_module_definition("pyramid.config", "newrelic.hooks.framework_pyramid", "instrument_pyramid_config_views")
     _process_module_definition(
-        "cheroot.wsgi",
-        "newrelic.hooks.adapter_cheroot",
-        "instrument_cheroot_wsgiserver",
+        "pyramid.config.views", "newrelic.hooks.framework_pyramid", "instrument_pyramid_config_views"
+    )
+    _process_module_definition(
+        "pyramid.config.tweens", "newrelic.hooks.framework_pyramid", "instrument_pyramid_config_tweens"
     )
 
-    _process_module_definition(
-        "pyramid.router",
-        "newrelic.hooks.framework_pyramid",
-        "instrument_pyramid_router",
-    )
-    _process_module_definition(
-        "pyramid.config",
-        "newrelic.hooks.framework_pyramid",
-        "instrument_pyramid_config_views",
-    )
-    _process_module_definition(
-        "pyramid.config.views",
-        "newrelic.hooks.framework_pyramid",
-        "instrument_pyramid_config_views",
-    )
-    _process_module_definition(
-        "pyramid.config.tweens",
-        "newrelic.hooks.framework_pyramid",
-        "instrument_pyramid_config_tweens",
-    )
-
-    _process_module_definition(
-        "cornice.service",
-        "newrelic.hooks.component_cornice",
-        "instrument_cornice_service",
-    )
+    _process_module_definition("cornice.service", "newrelic.hooks.component_cornice", "instrument_cornice_service")
 
     _process_module_definition("gevent.monkey", "newrelic.hooks.coroutines_gevent", "instrument_gevent_monkey")
 
     _process_module_definition("thrift.transport.TSocket", "newrelic.hooks.external_thrift")
 
+    _process_module_definition("gearman.client", "newrelic.hooks.application_gearman", "instrument_gearman_client")
     _process_module_definition(
-        "gearman.client",
-        "newrelic.hooks.application_gearman",
-        "instrument_gearman_client",
+        "gearman.connection_manager", "newrelic.hooks.application_gearman", "instrument_gearman_connection_manager"
     )
+    _process_module_definition("gearman.worker", "newrelic.hooks.application_gearman", "instrument_gearman_worker")
+
     _process_module_definition(
-        "gearman.connection_manager",
-        "newrelic.hooks.application_gearman",
-        "instrument_gearman_connection_manager",
+        "aiobotocore.endpoint", "newrelic.hooks.external_aiobotocore", "instrument_aiobotocore_endpoint"
     )
+
+    _process_module_definition("botocore.endpoint", "newrelic.hooks.external_botocore", "instrument_botocore_endpoint")
+    _process_module_definition("botocore.client", "newrelic.hooks.external_botocore", "instrument_botocore_client")
+
     _process_module_definition(
-        "gearman.worker",
-        "newrelic.hooks.application_gearman",
-        "instrument_gearman_worker",
+        "s3transfer.futures", "newrelic.hooks.external_s3transfer", "instrument_s3transfer_futures"
     )
 
     _process_module_definition(
-        "aiobotocore.endpoint",
-        "newrelic.hooks.external_aiobotocore",
-        "instrument_aiobotocore_endpoint",
+        "tornado.httpserver", "newrelic.hooks.framework_tornado", "instrument_tornado_httpserver"
     )
-
+    _process_module_definition("tornado.httputil", "newrelic.hooks.framework_tornado", "instrument_tornado_httputil")
     _process_module_definition(
-        "botocore.endpoint",
-        "newrelic.hooks.external_botocore",
-        "instrument_botocore_endpoint",
+        "tornado.httpclient", "newrelic.hooks.framework_tornado", "instrument_tornado_httpclient"
     )
-    _process_module_definition(
-        "botocore.client",
-        "newrelic.hooks.external_botocore",
-        "instrument_botocore_client",
-    )
-
-    _process_module_definition(
-        "s3transfer.futures",
-        "newrelic.hooks.external_s3transfer",
-        "instrument_s3transfer_futures",
-    )
-
-    _process_module_definition(
-        "tornado.httpserver",
-        "newrelic.hooks.framework_tornado",
-        "instrument_tornado_httpserver",
-    )
-    _process_module_definition(
-        "tornado.httputil",
-        "newrelic.hooks.framework_tornado",
-        "instrument_tornado_httputil",
-    )
-    _process_module_definition(
-        "tornado.httpclient",
-        "newrelic.hooks.framework_tornado",
-        "instrument_tornado_httpclient",
-    )
-    _process_module_definition(
-        "tornado.routing",
-        "newrelic.hooks.framework_tornado",
-        "instrument_tornado_routing",
-    )
+    _process_module_definition("tornado.routing", "newrelic.hooks.framework_tornado", "instrument_tornado_routing")
     _process_module_definition("tornado.web", "newrelic.hooks.framework_tornado", "instrument_tornado_web")
 
 
@@ -4739,7 +4011,7 @@ def _process_module_entry_points():
         if sys.version_info >= (3, 10):
             from importlib.metadata import entry_points
         # Introduced in Python 3.8
-        elif sys.version_info >= (3, 8) and sys.version_info <= (3, 9):
+        elif sys.version_info >= (3, 8) and sys.version_info < (3, 9):
             from importlib_metadata import entry_points
         # Removed in Python 3.12
         else:
@@ -4811,7 +4083,7 @@ def _setup_extensions():
         if sys.version_info >= (3, 10):
             from importlib.metadata import entry_points
         # Introduced in Python 3.8
-        elif sys.version_info >= (3, 8) and sys.version_info <= (3, 9):
+        elif sys.version_info >= (3, 8) and sys.version_info < (3, 9):
             from importlib_metadata import entry_points
         # Removed in Python 3.12
         else:
@@ -4858,13 +4130,7 @@ def _setup_agent_control_health():
         agent_control_health_thread.start()
 
 
-def initialize(
-    config_file=None,
-    environment=None,
-    ignore_errors=None,
-    log_file=None,
-    log_level=None,
-):
+def initialize(config_file=None, environment=None, ignore_errors=None, log_file=None, log_level=None):
     agent_control_health.start_time_unix_nano = time.time_ns()
 
     if config_file is None:

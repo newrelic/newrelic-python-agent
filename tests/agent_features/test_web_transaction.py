@@ -20,9 +20,7 @@ import pytest
 import webtest
 from testing_support.fixtures import validate_attributes
 from testing_support.sample_applications import simple_app, simple_app_raw
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.application import application_instance
 from newrelic.api.web_transaction import WebTransaction
@@ -155,9 +153,6 @@ def validate_no_garbage():
     assert not gc.garbage
 
 
-@validate_transaction_metrics(
-    name="",
-    group="Uri",
-)
+@validate_transaction_metrics(name="", group="Uri")
 def test_wsgi_app_memory(validate_no_garbage):
     application.get("/")

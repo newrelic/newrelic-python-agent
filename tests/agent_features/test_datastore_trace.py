@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from testing_support.validators.validate_datastore_trace_inputs import (
-    validate_datastore_trace_inputs,
-)
+from testing_support.validators.validate_datastore_trace_inputs import validate_datastore_trace_inputs
 
 from newrelic.api.background_task import background_task
 from newrelic.api.datastore_trace import DatastoreTrace, DatastoreTraceWrapper

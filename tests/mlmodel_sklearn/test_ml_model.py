@@ -14,7 +14,7 @@
 
 import logging
 
-import pandas
+import pandas as pd
 from testing_support.fixtures import reset_core_stats_engine
 from testing_support.validators.validate_ml_event_count import validate_ml_event_count
 from testing_support.validators.validate_ml_events import validate_ml_events
@@ -64,19 +64,9 @@ class CustomTestModel(BaseDecisionTree):
 
     def fit(self, X, y, sample_weight=None, check_input=True):
         if hasattr(super(CustomTestModel, self), "_fit"):
-            return self._fit(
-                X,
-                y,
-                sample_weight=sample_weight,
-                check_input=check_input,
-            )
+            return self._fit(X, y, sample_weight=sample_weight, check_input=check_input)
         else:
-            return super(CustomTestModel, self).fit(
-                X,
-                y,
-                sample_weight=sample_weight,
-                check_input=check_input,
-            )
+            return super(CustomTestModel, self).fit(X, y, sample_weight=sample_weight, check_input=check_input)
 
     def predict(self, X, check_input=True):
         return super(CustomTestModel, self).predict(X, check_input=check_input)
@@ -95,7 +85,7 @@ int_list_recorded_custom_events = [
             "label.0": "0.5",
             "new_relic_data_schema_version": 2,
         },
-    ),
+    )
 ]
 
 
@@ -134,7 +124,7 @@ int_list_recorded_custom_events_with_metadata = [
             "metadata1": "value1",
             "metadata2": "value2",
         },
-    ),
+    )
 ]
 
 
@@ -150,10 +140,7 @@ def test_custom_model_int_list_with_metadata():
 
         model = CustomTestModel().fit(x_train, y_train)
         wrap_mlmodel(
-            model,
-            name="MyCustomModel",
-            version="1.2.3",
-            metadata={"metadata1": "value1", "metadata2": "value2"},
+            model, name="MyCustomModel", version="1.2.3", metadata={"metadata1": "value1", "metadata2": "value2"}
         )
 
         labels = model.predict(x_test)
@@ -177,7 +164,7 @@ pandas_df_recorded_custom_events = [
             "label.label1": "0.5",
             "new_relic_data_schema_version": 2,
         },
-    ),
+    )
 ]
 
 
@@ -187,9 +174,9 @@ def test_wrapper_attrs_custom_model_pandas_df():
     @validate_ml_events(pandas_df_recorded_custom_events)
     @background_task()
     def _test():
-        x_train = pandas.DataFrame({"col1": [0, 1], "col2": [0, 1], "col3": [1, 2]}, dtype="category")
+        x_train = pd.DataFrame({"col1": [0, 1], "col2": [0, 1], "col3": [1, 2]}, dtype="category")
         y_train = [0, 1]
-        x_test = pandas.DataFrame({"col1": [0], "col2": [0], "col3": [1]}, dtype="category")
+        x_test = pd.DataFrame({"col1": [0], "col2": [0], "col3": [1]}, dtype="category")
 
         model = CustomTestModel(random_state=0).fit(x_train, y_train)
         wrap_mlmodel(
@@ -218,7 +205,7 @@ pandas_df_recorded_builtin_events = [
             "label.label1": "0",
             "new_relic_data_schema_version": 2,
         },
-    ),
+    )
 ]
 
 
@@ -230,9 +217,9 @@ def test_wrapper_attrs_builtin_model():
     def _test():
         import sklearn.tree
 
-        x_train = pandas.DataFrame({"col1": [0, 0], "col2": [1, 1]}, dtype="int")
-        y_train = pandas.DataFrame({"label": [0, 1]}, dtype="int")
-        x_test = pandas.DataFrame({"col1": [12], "col2": [14]}, dtype="int")
+        x_train = pd.DataFrame({"col1": [0, 0], "col2": [1, 1]}, dtype="int")
+        y_train = pd.DataFrame({"label": [0, 1]}, dtype="int")
+        x_test = pd.DataFrame({"col1": [12], "col2": [14]}, dtype="int")
 
         clf = getattr(sklearn.tree, "DecisionTreeClassifier")(random_state=0)
 
@@ -265,7 +252,7 @@ pandas_df_mismatched_custom_events = [
             "label.0": "1",
             "new_relic_data_schema_version": 2,
         },
-    ),
+    )
 ]
 
 
@@ -277,9 +264,9 @@ def test_wrapper_mismatched_features_and_labels_df():
     def _test():
         import sklearn.tree
 
-        x_train = pandas.DataFrame({"col1": [7, 8], "col2": [9, 10], "col3": [24, 25]}, dtype="int")
-        y_train = pandas.DataFrame({"label": [0, 1]}, dtype="int")
-        x_test = pandas.DataFrame({"col1": [12], "col2": [14], "col3": [16]}, dtype="int")
+        x_train = pd.DataFrame({"col1": [7, 8], "col2": [9, 10], "col3": [24, 25]}, dtype="int")
+        y_train = pd.DataFrame({"label": [0, 1]}, dtype="int")
+        x_test = pd.DataFrame({"col1": [12], "col2": [14], "col3": [16]}, dtype="int")
 
         clf = getattr(sklearn.tree, "DecisionTreeClassifier")(random_state=0)
 
@@ -310,7 +297,7 @@ numpy_str_mismatched_custom_events = [
             "label.0": "21",
             "new_relic_data_schema_version": 2,
         },
-    ),
+    )
 ]
 
 

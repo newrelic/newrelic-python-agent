@@ -12,24 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import webtest
-
-from pyramid.response import Response
-from pyramid.view import view_config, notfound_view_config
-from pyramid.config import Configurator
 import pyramid.httpexceptions as exc
+import webtest
+from pyramid.config import Configurator
+from pyramid.response import Response
+from pyramid.view import notfound_view_config, view_config
 
 
-@view_config(route_name='home')
+@view_config(route_name="home")
 def home_view(request):
-    return Response('<p>INDEX RESPONSE</p>')
+    return Response("<p>INDEX RESPONSE</p>")
+
 
 @notfound_view_config(append_slash=True)
 def not_found(request):
-    return Response('<p>NOT FOUND</p>', status='404 Not Found')
+    return Response("<p>NOT FOUND</p>", status="404 Not Found")
+
 
 config = Configurator()
-config.add_route('home', '/')
+config.add_route("home", "/")
 config.scan()
 
 application = config.make_wsgi_app()

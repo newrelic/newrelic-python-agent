@@ -21,11 +21,7 @@ from newrelic.api.message_trace import MessageTrace
 from newrelic.api.message_transaction import MessageTransaction
 from newrelic.api.time_trace import current_trace, notice_error
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import (
-    ObjectProxy,
-    function_wrapper,
-    wrap_function_wrapper,
-)
+from newrelic.common.object_wrapper import ObjectProxy, function_wrapper, wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 
 HEARTBEAT_POLL = "MessageBroker/Kafka/Heartbeat/Poll"
@@ -190,7 +186,7 @@ class NewRelicSerializerWrapper(ObjectProxy):
         self._nr_serializer_name = serializer_name
         self._nr_group_prefix = group_prefix
 
-    def serialize(self, topic, object):
+    def serialize(self, topic, object):  # noqa: A002
         wrapped = self.__wrapped__.serialize  # pylint: disable=W0622
         args = (topic, object)
         kwargs = {}

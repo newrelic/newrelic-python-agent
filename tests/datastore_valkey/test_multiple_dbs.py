@@ -14,27 +14,20 @@
 
 import pytest
 import valkey
+from testing_support.db_settings import valkey_settings
+from testing_support.fixtures import override_application_settings
+from testing_support.util import instance_hostname
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
-
-from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
-from testing_support.db_settings import valkey_settings
-from testing_support.util import instance_hostname
 
 DB_MULTIPLE_SETTINGS = valkey_settings()
 
 
 # Settings
 
-_enable_instance_settings = {
-    "datastore_tracer.instance_reporting.enabled": True,
-}
-_disable_instance_settings = {
-    "datastore_tracer.instance_reporting.enabled": False,
-}
+_enable_instance_settings = {"datastore_tracer.instance_reporting.enabled": True}
+_disable_instance_settings = {"datastore_tracer.instance_reporting.enabled": False}
 
 # Metrics
 
@@ -44,9 +37,7 @@ _base_scoped_metrics = [
     ("Datastore/operation/Valkey/client_list", 1),
 ]
 
-_base_scoped_metrics.append(
-    ("Datastore/operation/Valkey/client_setinfo", 2),
-)
+_base_scoped_metrics.append(("Datastore/operation/Valkey/client_setinfo", 2))
 
 datastore_all_metric_count = 5
 
@@ -60,9 +51,7 @@ _base_rollup_metrics = [
     ("Datastore/operation/Valkey/client_list", 1),
 ]
 
-_base_rollup_metrics.append(
-    ("Datastore/operation/Valkey/client_setinfo", 2),
-)
+_base_rollup_metrics.append(("Datastore/operation/Valkey/client_setinfo", 2))
 
 
 if len(DB_MULTIPLE_SETTINGS) > 1:
@@ -82,17 +71,11 @@ if len(DB_MULTIPLE_SETTINGS) > 1:
     instance_metric_name_2_count = 3
 
     _enable_rollup_metrics = _base_rollup_metrics.extend(
-        [
-            (instance_metric_name_1, instance_metric_name_1_count),
-            (instance_metric_name_2, instance_metric_name_2_count),
-        ]
+        [(instance_metric_name_1, instance_metric_name_1_count), (instance_metric_name_2, instance_metric_name_2_count)]
     )
 
     _disable_rollup_metrics = _base_rollup_metrics.extend(
-        [
-            (instance_metric_name_1, None),
-            (instance_metric_name_2, None),
-        ]
+        [(instance_metric_name_1, None), (instance_metric_name_2, None)]
     )
 
 
@@ -103,10 +86,7 @@ def exercise_valkey(client_1, client_2):
     client_2.execute_command("CLIENT", "LIST", parse="LIST")
 
 
-@pytest.mark.skipif(
-    len(DB_MULTIPLE_SETTINGS) < 2,
-    reason="Test environment not configured with multiple databases.",
-)
+@pytest.mark.skipif(len(DB_MULTIPLE_SETTINGS) < 2, reason="Test environment not configured with multiple databases.")
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
     "test_multiple_dbs:test_multiple_datastores_enabled",
@@ -124,10 +104,7 @@ def test_multiple_datastores_enabled():
     exercise_valkey(client_1, client_2)
 
 
-@pytest.mark.skipif(
-    len(DB_MULTIPLE_SETTINGS) < 2,
-    reason="Test environment not configured with multiple databases.",
-)
+@pytest.mark.skipif(len(DB_MULTIPLE_SETTINGS) < 2, reason="Test environment not configured with multiple databases.")
 @override_application_settings(_disable_instance_settings)
 @validate_transaction_metrics(
     "test_multiple_dbs:test_multiple_datastores_disabled",

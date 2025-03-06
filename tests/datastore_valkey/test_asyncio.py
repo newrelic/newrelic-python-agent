@@ -16,11 +16,9 @@ import asyncio
 
 import pytest
 from testing_support.db_settings import valkey_settings
-from testing_support.fixture.event_loop import event_loop as loop  # noqa: F401
+from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.util import instance_hostname
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
@@ -33,9 +31,7 @@ datastore_all_metric_count = 5
 _base_scoped_metrics = [("Datastore/operation/Valkey/publish", 3)]
 
 
-_base_scoped_metrics.append(
-    ("Datastore/operation/Valkey/client_setinfo", 2),
-)
+_base_scoped_metrics.append(("Datastore/operation/Valkey/client_setinfo", 2))
 
 _base_rollup_metrics = [
     ("Datastore/all", datastore_all_metric_count),
@@ -48,9 +44,7 @@ _base_rollup_metrics = [
         datastore_all_metric_count,
     ),
 ]
-_base_rollup_metrics.append(
-    ("Datastore/operation/Valkey/client_setinfo", 2),
-)
+_base_rollup_metrics.append(("Datastore/operation/Valkey/client_setinfo", 2))
 
 
 # Metrics for connection pool test
@@ -69,10 +63,7 @@ _base_pool_rollup_metrics = [
     ("Datastore/operation/Valkey/get", 1),
     ("Datastore/operation/Valkey/set", 1),
     ("Datastore/operation/Valkey/client_list", 1),
-    (
-        f"Datastore/instance/Valkey/{instance_hostname(DB_SETTINGS['host'])}/{DB_SETTINGS['port']}",
-        3,
-    ),
+    (f"Datastore/instance/Valkey/{instance_hostname(DB_SETTINGS['host'])}/{DB_SETTINGS['port']}", 3),
 ]
 
 
@@ -80,24 +71,18 @@ _base_pool_rollup_metrics = [
 
 
 @pytest.fixture()
-def client(loop):  # noqa
+def client(loop):
     import valkey.asyncio
 
-    return loop.run_until_complete(
-        valkey.asyncio.Valkey(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
-    )
+    return loop.run_until_complete(valkey.asyncio.Valkey(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0))
 
 
 @pytest.fixture()
-def client_pool(loop):  # noqa
+def client_pool(loop):
     import valkey.asyncio
 
-    connection_pool = valkey.asyncio.ConnectionPool(
-        host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0
-    )
-    return loop.run_until_complete(
-        valkey.asyncio.Valkey(connection_pool=connection_pool)
-    )
+    connection_pool = valkey.asyncio.ConnectionPool(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
+    return loop.run_until_complete(valkey.asyncio.Valkey(connection_pool=connection_pool))
 
 
 @validate_transaction_metrics(
@@ -107,7 +92,7 @@ def client_pool(loop):  # noqa
     background_task=True,
 )
 @background_task()
-def test_async_connection_pool(client_pool, loop):  # noqa
+def test_async_connection_pool(client_pool, loop):
     async def _test_async_pool(client_pool):
         await client_pool.set("key1", "value1")
         await client_pool.get("key1")
@@ -118,7 +103,7 @@ def test_async_connection_pool(client_pool, loop):  # noqa
 
 @validate_transaction_metrics("test_asyncio:test_async_pipeline", background_task=True)
 @background_task()
-def test_async_pipeline(client, loop):  # noqa
+def test_async_pipeline(client, loop):
     async def _test_pipeline(client):
         async with client.pipeline(transaction=True) as pipe:
             await pipe.set("key1", "value1")
@@ -134,7 +119,7 @@ def test_async_pipeline(client, loop):  # noqa
     background_task=True,
 )
 @background_task()
-def test_async_pubsub(client, loop):  # noqa
+def test_async_pubsub(client, loop):
     messages_received = []
 
     async def reader(pubsub):

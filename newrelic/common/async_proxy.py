@@ -15,8 +15,7 @@
 import logging
 import time
 
-from newrelic.common.coroutine import (is_coroutine_callable,
-        is_asyncio_coroutine, is_generator_function)
+from newrelic.common.coroutine import is_asyncio_coroutine, is_coroutine_callable, is_generator_function
 from newrelic.common.object_wrapper import ObjectProxy
 from newrelic.core.trace_cache import trace_cache
 
@@ -25,7 +24,7 @@ _logger = logging.getLogger(__name__)
 CancelledError = None
 
 
-class TransactionContext():
+class TransactionContext:
     def __init__(self, transaction_init):
         self.enter_time = None
         self.transaction = None
@@ -92,8 +91,7 @@ class TransactionContext():
                 CancelledError = GeneratorExit
 
         # case: coroutine completed or cancelled
-        if (exc is StopIteration or exc is GeneratorExit or
-                exc is CancelledError):
+        if exc is StopIteration or exc is GeneratorExit or exc is CancelledError:
             self.transaction.__exit__(None, None, None)
 
         # case: coroutine completed because of error
@@ -101,7 +99,7 @@ class TransactionContext():
             self.transaction.__exit__(exc, value, tb)
 
 
-class LoopContext():
+class LoopContext:
     def __enter__(self):
         self.enter_time = time.time()
 

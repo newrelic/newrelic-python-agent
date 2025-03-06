@@ -27,10 +27,7 @@ DEFAULT = object()
 LINKED_APPLICATIONS = []
 ENVIRONMENT = []
 NOW = time.time()
-EMPTY_SAMPLES = {
-    "reservoir_size": 100,
-    "events_seen": 0,
-}
+EMPTY_SAMPLES = {"reservoir_size": 100, "events_seen": 0}
 
 
 _all_endpoints = (
@@ -62,12 +59,7 @@ class CustomTestClient(DeveloperModeClient):
         return super(CustomTestClient, self).log_request(fp, method, url, params, payload, headers)
 
     def send_request(
-        self,
-        method="POST",
-        path="/agent_listener/invoke_raw_method",
-        params=None,
-        headers=None,
-        payload=None,
+        self, method="POST", path="/agent_listener/invoke_raw_method", params=None, headers=None, payload=None
     ):
         agent_method = params["method"]
         if agent_method == "connect" and self.connect_response_fields is not DEFAULT:
@@ -77,13 +69,7 @@ class CustomTestClient(DeveloperModeClient):
             response_data = json_encode(payload).encode("utf-8")
             return (200, response_data)
         else:
-            return super(CustomTestClient, self).send_request(
-                method,
-                path,
-                params,
-                headers,
-                payload,
-            )
+            return super(CustomTestClient, self).send_request(method, path, params, headers, payload)
 
 
 @pytest.mark.parametrize("headers_map_present", (True, False))
@@ -101,9 +87,7 @@ def test_no_blob_behavior(headers_map_present):
     protocol.send("shutdown")
 
     headers = protocol.client.headers[-1]
-    assert headers == {
-        "Content-Type": "application/json",
-    }
+    assert headers == {"Content-Type": "application/json"}
 
 
 def test_blob():
@@ -119,23 +103,12 @@ def test_blob():
     protocol.send("shutdown")
 
     headers = protocol.client.headers[-1]
-    assert headers == {
-        "Content-Type": "application/json",
-        "X-Foo": "Bar",
-    }
+    assert headers == {"Content-Type": "application/json", "X-Foo": "Bar"}
 
 
-@override_generic_settings(
-    global_settings(),
-    {
-        "developer_mode": True,
-    },
-)
+@override_generic_settings(global_settings(), {"developer_mode": True})
 def test_server_side_config_precedence():
-    connect_response_fields = {
-        "agent_config": {"span_events.enabled": True},
-        "span_events.enabled": False,
-    }
+    connect_response_fields = {"agent_config": {"span_events.enabled": True}, "span_events.enabled": False}
     client_cls = functools.partial(CustomTestClient, connect_response_fields=connect_response_fields)
 
     protocol = AgentProtocol.connect(
@@ -145,12 +118,7 @@ def test_server_side_config_precedence():
     assert protocol.configuration.span_events.enabled is False
 
 
-@override_generic_settings(
-    global_settings(),
-    {
-        "developer_mode": True,
-    },
-)
+@override_generic_settings(global_settings(), {"developer_mode": True})
 @pytest.mark.parametrize(
     "connect_response_fields",
     (
@@ -175,12 +143,7 @@ def test_span_event_harvest_config(connect_response_fields):
     assert protocol.configuration.event_harvest_config.harvest_limits.span_event_data == expected
 
 
-@override_generic_settings(
-    global_settings(),
-    {
-        "developer_mode": True,
-    },
-)
+@override_generic_settings(global_settings(), {"developer_mode": True})
 @pytest.mark.parametrize("connect_response_fields", ({}, {"collect_ai": True}, {"collect_ai": False}))
 def test_account_level_aim(connect_response_fields):
     client_cls = functools.partial(CustomTestClient, connect_response_fields=connect_response_fields)

@@ -19,12 +19,8 @@ import time
 
 import pytest
 from testing_support.fixtures import capture_transaction_metrics, validate_tt_parenting
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.api.database_trace import database_trace
@@ -78,20 +74,7 @@ def test_coroutine_timing(trace, metric):
     assert full_metrics[metric_key].total_call_time >= 0.2
 
 
-@validate_tt_parenting(
-    (
-        "TransactionNode",
-        [
-            (
-                "FunctionNode",
-                [
-                    ("FunctionNode", []),
-                    ("FunctionNode", []),
-                ],
-            ),
-        ],
-    )
-)
+@validate_tt_parenting(("TransactionNode", [("FunctionNode", [("FunctionNode", []), ("FunctionNode", [])])]))
 @validate_transaction_metrics(
     "test_coroutine_siblings",
     background_task=True,
@@ -262,19 +245,7 @@ def test_coroutine_close_ends_trace():
     gen.close()
 
 
-@validate_tt_parenting(
-    (
-        "TransactionNode",
-        [
-            (
-                "FunctionNode",
-                [
-                    ("FunctionNode", []),
-                ],
-            ),
-        ],
-    )
-)
+@validate_tt_parenting(("TransactionNode", [("FunctionNode", [("FunctionNode", [])])]))
 @validate_transaction_metrics(
     "test_coroutine_parents",
     background_task=True,
@@ -506,9 +477,7 @@ def test_trace_outlives_transaction(event_loop):
         await running.wait()
 
     @validate_transaction_metrics(
-        "test_trace_outlives_transaction",
-        background_task=True,
-        scoped_metrics=(("Function/coro", None),),
+        "test_trace_outlives_transaction", background_task=True, scoped_metrics=(("Function/coro", None),)
     )
     @background_task(name="test_trace_outlives_transaction")
     def _test():
@@ -520,4 +489,4 @@ def test_trace_outlives_transaction(event_loop):
 
 
 if sys.version_info >= (3, 5):
-    from _test_async_coroutine_trace import *  # NOQA
+    from _test_async_coroutine_trace import *

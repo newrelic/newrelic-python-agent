@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+
 import django
 
 BASE_DIR = os.path.dirname(__file__)
@@ -24,26 +25,19 @@ django_version = django.VERSION
 SECRET_KEY = "cookies"
 
 # List of callables that know how to import templates from various sources.
-TEMPLATE_LOADERS = (
-    'django.template.loaders.filesystem.Loader',
-    'django.template.loaders.app_directories.Loader',
-)
+TEMPLATE_LOADERS = ("django.template.loaders.filesystem.Loader", "django.template.loaders.app_directories.Loader")
 
 middleware = (
-    'django.middleware.common.CommonMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
+    "django.middleware.common.CommonMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
 )
 
-ROOT_URLCONF = 'urls'
+ROOT_URLCONF = "urls"
 
 TEMPLATE_DIRS = ()
 
 
-INSTALLED_APPS = (
-    'tastypie',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-)
+INSTALLED_APPS = ("tastypie", "django.contrib.auth", "django.contrib.contenttypes")

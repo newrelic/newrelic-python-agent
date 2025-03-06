@@ -15,11 +15,7 @@
 import time
 
 import pytest
-from testing_support.fixtures import (
-    function_not_called,
-    override_application_settings,
-    reset_core_stats_engine,
-)
+from testing_support.fixtures import function_not_called, override_application_settings, reset_core_stats_engine
 from testing_support.validators.validate_custom_event import (
     validate_custom_event_count,
     validate_custom_event_in_application_stats_engine,
@@ -64,10 +60,7 @@ def test_process_event_type_name_invalid_chars():
 
 _now = time.time()
 
-_intrinsics = {
-    "type": "FooEvent",
-    "timestamp": _now,
-}
+_intrinsics = {"type": "FooEvent", "timestamp": _now}
 _user_params = {"foo": "bar"}
 _event = [_intrinsics, _user_params]
 
@@ -243,42 +236,18 @@ def test_application_create_custom_event_not_called():
     (
         [
             "LlmChatCompletionMessage",
-            {
-                "content": "A" * 9001,
-                "input": "B" * 9001,
-                "foo": f"b{'a' * 9000}r",
-            },
-            {
-                "content": "A" * 9001,
-                "input": "B" * 300,
-                "foo": f"b{'a' * 299}",
-            },
+            {"content": "A" * 9001, "input": "B" * 9001, "foo": f"b{'a' * 9000}r"},
+            {"content": "A" * 9001, "input": "B" * 300, "foo": f"b{'a' * 299}"},
         ],
         [
             "LlmEmbedding",
-            {
-                "content": "A" * 9001,
-                "input": "B" * 9001,
-                "foo": f"b{'a' * 9000}r",
-            },
-            {
-                "content": "A" * 300,
-                "input": "B" * 9001,
-                "foo": f"b{'a' * 299}",
-            },
+            {"content": "A" * 9001, "input": "B" * 9001, "foo": f"b{'a' * 9000}r"},
+            {"content": "A" * 300, "input": "B" * 9001, "foo": f"b{'a' * 299}"},
         ],
         [
             "MyCustomEvent",
-            {
-                "content": "A" * 9001,
-                "input": "B" * 9001,
-                "foo": f"b{'a' * 9000}r",
-            },
-            {
-                "content": "A" * 300,
-                "input": "B" * 300,
-                "foo": f"b{'a' * 299}",
-            },
+            {"content": "A" * 9001, "input": "B" * 9001, "foo": f"b{'a' * 9000}r"},
+            {"content": "A" * 300, "input": "B" * 300, "foo": f"b{'a' * 299}"},
         ],
     ),
 )

@@ -13,25 +13,18 @@
 # limitations under the License.
 
 import pytest
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
 
-@pytest.mark.parametrize(
-    "kernel_ridge_model_name",
-    [
-        "KernelRidge",
-    ],
-)
+@pytest.mark.parametrize("kernel_ridge_model_name", ["KernelRidge"])
 def test_model_methods_wrapped_in_function_trace(kernel_ridge_model_name, run_kernel_ridge_model):
     expected_scoped_metrics = {
         "KernelRidge": [
             ("Function/MLModel/Sklearn/Named/KernelRidge.fit", 1),
             ("Function/MLModel/Sklearn/Named/KernelRidge.predict", 1),
-        ],
+        ]
     }
 
     @validate_transaction_metrics(

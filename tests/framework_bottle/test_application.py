@@ -17,19 +17,10 @@ import base64
 import pytest
 import webtest
 from bottle import __version__ as version
-from testing_support.fixtures import (
-    override_application_settings,
-    override_ignore_status_codes,
-)
-from testing_support.validators.validate_code_level_metrics import (
-    validate_code_level_metrics,
-)
-from testing_support.validators.validate_transaction_errors import (
-    validate_transaction_errors,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.fixtures import override_application_settings, override_ignore_status_codes
+from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.common.package_version_utils import get_package_version_tuple
 

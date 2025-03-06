@@ -18,22 +18,16 @@ import os
 import re
 
 import pytest
-from _mock_external_bedrock_server import (
-    MockExternalBedrockServer,
-    extract_shortened_prompt,
-)
+from _mock_external_bedrock_server import MockExternalBedrockServer, extract_shortened_prompt
 from botocore.response import StreamingBody
-from testing_support.fixtures import (  # noqa: F401, pylint: disable=W0611
+from testing_support.fixtures import (
     collector_agent_registration_fixture,
     collector_available_fixture,
     override_application_settings,
 )
 
 from newrelic.common.object_wrapper import wrap_function_wrapper
-from newrelic.common.package_version_utils import (
-    get_package_version,
-    get_package_version_tuple,
-)
+from newrelic.common.package_version_utils import get_package_version, get_package_version_tuple
 from newrelic.common.signature import bind_args
 
 BOTOCORE_VERSION = get_package_version("botocore")
@@ -89,25 +83,18 @@ def bedrock_server():
             yield client
     else:
         # Use real Bedrock backend and record responses
-        assert (
-            os.environ["AWS_ACCESS_KEY_ID"] and os.environ["AWS_SECRET_ACCESS_KEY"]
-        ), "AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are required."
+        assert os.environ["AWS_ACCESS_KEY_ID"] and os.environ["AWS_SECRET_ACCESS_KEY"], (
+            "AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are required."
+        )
 
         # Construct real client
-        client = boto3.client(
-            "bedrock-runtime",
-            "us-east-1",
-        )
+        client = boto3.client("bedrock-runtime", "us-east-1")
 
         # Apply function wrappers to record data
         wrap_function_wrapper(
             "botocore.endpoint", "Endpoint._do_get_response", wrap_botocore_endpoint_Endpoint__do_get_response
         )
-        wrap_function_wrapper(
-            "botocore.eventstream",
-            "EventStreamBuffer.add_data",
-            wrap_botocore_eventstream_add_data,
-        )
+        wrap_function_wrapper("botocore.eventstream", "EventStreamBuffer.add_data", wrap_botocore_eventstream_add_data)
         yield client  # Run tests
 
         # Write responses to audit log
@@ -149,10 +136,7 @@ def wrap_botocore_endpoint_Endpoint__do_get_response(wrapped, instance, args, kw
     prompt = extract_shortened_prompt(content, model)
     headers = dict(response.headers.items())
     headers = dict(
-        filter(
-            lambda k: k[0].lower() in RECORDED_HEADERS or k[0].startswith("x-ratelimit"),
-            headers.items(),
-        )
+        filter(lambda k: k[0].lower() in RECORDED_HEADERS or k[0].startswith("x-ratelimit"), headers.items())
     )
     status_code = response.status_code
 

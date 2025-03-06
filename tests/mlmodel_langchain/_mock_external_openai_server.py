@@ -196,7 +196,7 @@ STREAMED_RESPONSES_V1 = {
                 "choices": [{"index": 0, "delta": {}, "logprobs": None, "finish_reason": "stop"}],
             },
         ],
-    ],
+    ]
 }
 RESPONSES_V1 = {
     "3923": [
@@ -519,7 +519,7 @@ def extract_shortened_prompt(openai_version):
 def get_openai_version():
     # Import OpenAI so that get package version can catpure the version from the
     # system module. OpenAI does not have a package version in v0.
-    import openai  # noqa: F401; pylint: disable=W0611
+    import openai
 
     return get_package_version_tuple("openai")
 

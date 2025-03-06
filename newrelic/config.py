@@ -3983,6 +3983,8 @@ def _process_module_builtin_defaults():
     )
     _process_module_definition("gearman.worker", "newrelic.hooks.application_gearman", "instrument_gearman_worker")
 
+    _process_module_definition("aiobotocore.client", "newrelic.hooks.external_aiobotocore", "instrument_aiobotocore_client")
+
     _process_module_definition(
         "aiobotocore.endpoint", "newrelic.hooks.external_aiobotocore", "instrument_aiobotocore_endpoint"
     )

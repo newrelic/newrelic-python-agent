@@ -221,7 +221,7 @@ def test_wrapper_attrs_builtin_model():
         y_train = pd.DataFrame({"label": [0, 1]}, dtype="int")
         x_test = pd.DataFrame({"col1": [12], "col2": [14]}, dtype="int")
 
-        clf = getattr(sklearn.tree, "DecisionTreeClassifier")(random_state=0)
+        clf = sklearn.tree.DecisionTreeClassifier(random_state=0)
 
         model = clf.fit(x_train, y_train)
         wrap_mlmodel(
@@ -268,7 +268,7 @@ def test_wrapper_mismatched_features_and_labels_df():
         y_train = pd.DataFrame({"label": [0, 1]}, dtype="int")
         x_test = pd.DataFrame({"col1": [12], "col2": [14], "col3": [16]}, dtype="int")
 
-        clf = getattr(sklearn.tree, "DecisionTreeClassifier")(random_state=0)
+        clf = sklearn.tree.DecisionTreeClassifier(random_state=0)
 
         model = clf.fit(x_train, y_train)
         wrap_mlmodel(
@@ -313,7 +313,7 @@ def test_wrapper_mismatched_features_and_labels_np_array():
         x_train = np.array([[20, 20], [21, 21]], dtype="<U4")
         y_train = np.array([20, 21], dtype="<U4")
         x_test = np.array([[20, 21]], dtype="<U4")
-        clf = getattr(sklearn.tree, "DecisionTreeClassifier")(random_state=0)
+        clf = sklearn.tree.DecisionTreeClassifier(random_state=0)
 
         model = clf.fit(x_train, y_train)
         wrap_mlmodel(model, name="MyDecisionTreeClassifier", version="0.0.1", feature_names=["feature1"])

@@ -93,8 +93,8 @@ class KnownErrorView(web.View):
             await asyncio.sleep(0)
         except KnownException:
             pass
-        finally:
-            return web.Response(text="Hello Aiohttp!")
+
+        return web.Response(text="Hello Aiohttp!")
 
     get = _respond
     post = _respond

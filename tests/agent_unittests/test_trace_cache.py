@@ -60,11 +60,11 @@ def iterate_trace_cache(trace_cache):
         while True:
             if shutdown.is_set():
                 return
-            for k, v in trace_cache.items():
+            for _, _ in trace_cache.items():
                 pass
-            for v in trace_cache.values():
+            for _ in trace_cache.values():
                 pass
-            for v in trace_cache.keys():
+            for _ in trace_cache.keys():
                 pass
 
     return _iterate_trace_cache

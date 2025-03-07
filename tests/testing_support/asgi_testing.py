@@ -116,7 +116,7 @@ class AsgiTest:
                 if not more_body:
                     self.response_state = ResponseState.DONE
             else:
-                assert False, "ASGI protocol error: unexpected message"
+                raise AssertionError("ASGI protocol error: unexpected message")
 
         assert self.response_state is ResponseState.DONE, (
             "ASGI protocol error: state is not DONE, expected additional messages"

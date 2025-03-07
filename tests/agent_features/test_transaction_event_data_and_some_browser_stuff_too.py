@@ -265,7 +265,7 @@ def test_capture_attributes_disabled():
 
 @transient_function_wrapper("newrelic.core.stats_engine", "SampledDataSet.add")
 def validate_no_analytics_sample_data(wrapped, instance, args, kwargs):
-    assert False, "Should not be recording analytic event."
+    raise AssertionError("Should not be recording analytic event.")
     return wrapped(*args, **kwargs)
 
 

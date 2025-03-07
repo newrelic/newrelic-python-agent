@@ -79,7 +79,7 @@ def test_deserialization_errors(skip_if_not_serializing, monkeypatch, topic, pro
             attempts = 0
             record = None
             while not record and attempts < timeout:
-                for record in consumer:
+                for _record in consumer:
                     pass
                 attempts += 1
 

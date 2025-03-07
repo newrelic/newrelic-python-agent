@@ -32,7 +32,7 @@ def _exercise_solr(solr):
 
     solr.add_many([{"id": x} for x in documents])
     solr.commit()
-    solr.query(f"id:{documents[0]}").results
+    solr.query(f"id:{documents[0]}").results  # noqa: B018
     solr.delete(f"id:*_{DB_SETTINGS['namespace']}")
     solr.commit()
 

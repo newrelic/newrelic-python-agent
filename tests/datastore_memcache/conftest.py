@@ -46,9 +46,9 @@ def memcached_multi():
     client_all = memcache.Client(db_servers)
     num_servers = len(db_servers)
 
-    for try_num in range(10 * num_servers):
+    for _try_num in range(10 * num_servers):
         multi_dict = {}
-        for i in range(num_servers):
+        for _ in range(num_servers):
             random_chars = (random.choice(string.ascii_uppercase) for _ in range(10))
             key_candidate = "".join(random_chars)
             multi_dict[key_candidate] = key_candidate
@@ -65,6 +65,6 @@ def memcached_multi():
         if all(server_hit):
             break
     else:
-        assert False, "memcached_multi failed to map keys to multiple servers."
+        raise AssertionError("memcached_multi failed to map keys to multiple servers.")
 
     return multi_dict

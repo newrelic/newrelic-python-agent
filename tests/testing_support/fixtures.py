@@ -1345,7 +1345,7 @@ class Environ:
 
     def __exit__(self, exc, val, tb):
         os.environ.clear()
-        os.environ = self._original_environ
+        os.environ[:] = self._original_environ[:]
 
 
 class TerminatingPopen(subprocess.Popen):

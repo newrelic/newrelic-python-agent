@@ -37,8 +37,11 @@ class _GCDataSource:
         settings = global_settings()
         if platform.python_implementation() == "PyPy" or not settings:
             return False
-        else:
+        # This might be inheriting from Settings instead of TopLevelSettings
+        elif settings and hasattr(settings, "gc_runtime_metrics"):
             return settings.gc_runtime_metrics.enabled
+        else:
+            return False
 
     @property
     def top_object_count_limit(self):

@@ -102,6 +102,8 @@ def override_utilization(monkeypatch):
             output = AWS
         elif name.startswith("ECS"):
             output = ECS
+        elif name.startswith("AzureFunction"):
+            output = AZUREFUNCTION
         elif name.startswith("Azure"):
             output = AZURE
         elif name.startswith("ECS"):
@@ -114,8 +116,6 @@ def override_utilization(monkeypatch):
             output = DOCKER
         elif name.startswith("Kubernetes"):
             output = KUBERNETES
-        elif name.startswith("AzureFunction"):
-            output = AZUREFUNCTION
         else:
             assert False, "Unknown utilization class"
 
@@ -295,7 +295,7 @@ def connect_payload_asserts(
         assert "ip_address" not in payload_data["utilization"]
 
     utilization_len = utilization_len + any(
-        [with_aws, with_ecs, with_pcf, with_gcp, with_azure, with_docker, with_kubernetes]
+        [with_aws, with_ecs, with_pcf, with_gcp, with_azure, with_docker, with_kubernetes, with_azurefunction]
     )
     assert len(payload_data["utilization"]) == utilization_len
     assert payload_data["utilization"]["hostname"] == HOST
@@ -313,7 +313,7 @@ def connect_payload_asserts(
     assert harvest_limits["error_event_data"] == ERROR_EVENT_DATA
 
     vendors_len = 0
-    if any([with_aws, with_pcf, with_gcp, with_azure]):
+    if any([with_aws, with_pcf, with_gcp, with_azure, with_azurefunction]):
         vendors_len += 1
 
     if with_ecs:
@@ -337,6 +337,8 @@ def connect_payload_asserts(
             assert payload_data["utilization"]["vendors"]["gcp"] == GCP
         elif with_azure:
             assert payload_data["utilization"]["vendors"]["azure"] == AZURE
+        elif with_azurefunction:
+            assert payload_data["utilization"]["vendors"]["azurefunction"] == AZUREFUNCTION
 
         if with_ecs:
             assert payload_data["utilization"]["vendors"]["ecs"] == ECS
@@ -346,36 +348,35 @@ def connect_payload_asserts(
 
         if with_kubernetes:
             assert payload_data["utilization"]["vendors"]["kubernetes"] == KUBERNETES
-        if with_azurefunction:
-            assert payload_data["utilization"]["vendors"]["azurefunction"] == AZUREFUNCTION
     else:
         assert "vendors" not in payload_data["utilization"]
 
 
-# TODO: Add setting for with_azurefunction to be True
 @pytest.mark.parametrize(
-    "with_aws,with_ecs,with_pcf,with_gcp,with_azure,with_docker,with_kubernetes,with_azurefunction,with_ip",
+    "with_aws,with_ecs,with_pcf,with_gcp,with_azure,with_azurefunction,with_docker,with_kubernetes,with_ip",
     [
         (False, False, False, False, False, False, False, False, False),
         (False, False, False, False, False, False, False, False, True),
-        (True, True, False, False, False, True, False, False, True),
-        (True, True, False, False, False, True, True, False, True),
-        (False, False, True, False, False, True, True, False, True),
-        (False, False, False, True, False, True, True, False, True),
-        (False, False, False, False, True, True, True, False, True),
+        (True, True, False, False, False, False, True, False, True),
+        (True, True, False, False, False, False, True, True, True),
+        (False, False, True, False, False, False, True, True, True),
+        (False, False, False, True, False, False, True, True, True),
+        (False, False, False, False, True, False, True, True, True),
+        (False, False, False, False, False, True, True, True, True),  #
         (True, True, False, False, False, False, False, False, True),
         (False, False, True, False, False, False, False, False, True),
         (False, False, False, True, False, False, False, False, True),
         (False, False, False, False, True, False, False, False, True),
+        (False, False, False, False, False, True, False, False, True),  #
+        (True, True, True, True, True, True, True, True, True),
         (True, True, True, True, True, True, True, False, True),
-        (True, True, True, True, True, True, False, False, True),
-        (True, True, True, True, True, False, True, False, True),
+        (True, True, True, True, True, True, False, True, True),
     ],
 )
 def test_connect(
-    with_aws, with_ecs, with_pcf, with_gcp, with_azure, with_docker, with_kubernetes, with_azurefunction, with_ip
+    with_aws, with_ecs, with_pcf, with_gcp, with_azure, with_azurefunction, with_docker, with_kubernetes, with_ip
 ):
-    global AWS, AZURE, GCP, PCF, BOOT_ID, DOCKER, KUBERNETES, AZUREFUNCTION, IP_ADDRESS
+    global AWS, AZURE, AZUREFUNCTION, GCP, PCF, BOOT_ID, DOCKER, KUBERNETES, IP_ADDRESS
     if not with_aws:
         AWS = Exception
     if not with_pcf:

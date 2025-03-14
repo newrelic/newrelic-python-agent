@@ -50,14 +50,13 @@ async def wrap_dispatcher__handle__invocation_request(wrapped, instance, args, k
     return await wrapped(*args, **kwargs)
 
 
-def bind_run_func_params(invocation_id, context, func, params, *args, **kwargs):
-    return invocation_id, context, func, params
-
-
 async def wrap_dispatcher__run_async_func(wrapped, instance, args, kwargs):
     from azure.functions.http import HttpRequest
 
-    invocation_id, context, func, params = bind_run_func_params(*args, **kwargs)
+    def bind_params(context, func, args, *_args, **_kwargs):
+        return context, func, args
+
+    context, func, params = bind_params(*args, **kwargs)
     application = application_instance()
 
     http_request = None
@@ -103,13 +102,11 @@ async def wrap_dispatcher__run_async_func(wrapped, instance, args, kwargs):
         website_owner_name = os.environ.get("WEBSITE_OWNER_NAME", "")
         subscription_id = re.search(r"(?:(?!\+).)*", website_owner_name) and re.search(
             r"(?:(?!\+).)*", website_owner_name
-        ).group(
-            0
-        )  # everything before the first (+)
+        ).group(0)
         resource_group_name = os.environ.get(
             "WEBSITE_RESOURCE_GROUP",
             re.search(r"\+([a-zA-Z0-9\-]+)-[a-zA-Z0-9]+(?:-Linux)?", website_owner_name).group(0),
-        )  # the first group
+        )
         azure_function_app_name = os.environ.get("WEBSITE_SITE_NAME", application.name)
 
         cloud_resource_id = f"/subscriptions/{subscription_id}/resourceGroups/{resource_group_name}/providers/Microsoft.Web/sites/{azure_function_app_name}/functions/{context.function_name}"
@@ -119,7 +116,7 @@ async def wrap_dispatcher__run_async_func(wrapped, instance, args, kwargs):
             "cloud.resource_id": cloud_resource_id,
             "faas.name": faas_name,
             "faas.trigger": trigger_type,
-            "faas.invocation_id": invocation_id,
+            "faas.invocation_id": context.invocation_id,
         }
 
         # Only add this attribute if this is a cold start
@@ -136,7 +133,10 @@ async def wrap_dispatcher__run_async_func(wrapped, instance, args, kwargs):
 def wrap_dispatcher__run_sync_func(wrapped, instance, args, kwargs):
     from azure.functions.http import HttpRequest
 
-    invocation_id, context, func, params = bind_run_func_params(*args, **kwargs)
+    def bind_params(invocation_id, context, func, params, *args, **kwargs):
+        return invocation_id, context, func, params
+
+    invocation_id, context, func, params = bind_params(*args, **kwargs)
     application = application_instance()
 
     http_request = None

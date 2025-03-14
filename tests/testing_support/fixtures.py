@@ -1335,17 +1335,29 @@ def check_error_attributes(
 class Environ:
     """Context manager for setting environment variables temporarily."""
 
-    def __init__(self, **kwargs):
-        self._original_environ = os.environ
-        self._environ_dict = kwargs
+    def __init__(self, env_dict=None, **kwargs):
+        self._environ_dict = {}
+
+        env_dict = env_dict or kwargs
+        for key, val in env_dict.items():
+            if val is None:
+                continue
+            elif isinstance(val, str):
+                self._environ_dict[key] = val
+            elif isinstance(val, bytes):
+                self._environ_dict[key] = val.encode("utf-8")
+            else:
+                self._environ_dict[key] = str(val)
 
     def __enter__(self):
+        self._original_environ = os.environ.copy()
+
         for key, val in self._environ_dict.items():
             os.environ[key] = str(val)
 
     def __exit__(self, exc, val, tb):
         os.environ.clear()
-        os.environ[:] = self._original_environ[:]
+        os.environ.update(self._original_environ)
 
 
 class TerminatingPopen(subprocess.Popen):

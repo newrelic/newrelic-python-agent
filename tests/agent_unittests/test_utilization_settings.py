@@ -17,6 +17,7 @@ import tempfile
 from importlib import reload
 
 import pytest
+from testing_support.fixtures import Environ
 
 # these will be reloaded for each test
 import newrelic.config
@@ -65,24 +66,8 @@ ENV_WITH_HEROKU = {
     "NEW_RELIC_HEROKU_DYNO_NAME_PREFIXES_TO_SHORTEN": "meow wruff",
 }
 
-INITIAL_ENV = os.environ
 
 # Tests for loading settings and testing for values precedence
-
-
-class Environ:
-    def __init__(self, env_dict):
-        self.env_dict = {}
-        for key in env_dict.keys():
-            self.env_dict[key] = str(env_dict[key])
-
-    def __enter__(self):
-        os.environ.update(self.env_dict)
-
-    def __exit__(self, *args, **kwargs):
-        os.environ.clear()
-        os.environ[:] = INITIAL_ENV[:]
-
 
 def reset_agent_config(ini_contents, env_dict):
     @function_wrapper

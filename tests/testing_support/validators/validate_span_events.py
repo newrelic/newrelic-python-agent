@@ -155,6 +155,8 @@ def assert_isinstance(value, expected_type):
             assert value.HasField("double_value")
         elif expected_type is int:
             assert value.HasField("int_value")
+        elif expected_type is bool:
+            assert value.HasField("bool_value")
         else:
             raise AssertionError
     else:
@@ -187,7 +189,7 @@ def _check_span_intrinsics(intrinsics):
     if "parentId" in intrinsics:
         assert_isinstance(intrinsics["parentId"], str)
     assert_isinstance(intrinsics["transactionId"], str)
-    assert intrinsics["sampled"] is True
+    assert_isinstance(intrinsics["sampled"], bool)
     assert_isinstance(intrinsics["priority"], float)
     assert_isinstance(intrinsics["timestamp"], int)
     ts = intrinsics["timestamp"]

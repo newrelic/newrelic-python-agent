@@ -11,6 +11,7 @@ IGNORE_GITIGNORED_FILES: true
 FILTER_REGEX_EXCLUDE: "(.*/?packages/.*)" # Ignore packages directories
 
 ENABLE_LINTERS: # If you use ENABLE_LINTERS variable, all other linters will be disabled by default
+  - ACTION_ACTIONLINT
   - MARKDOWN_MARKDOWN_LINK_CHECK
   - MARKDOWN_MARKDOWNLINT
   - PYTHON_RUFF

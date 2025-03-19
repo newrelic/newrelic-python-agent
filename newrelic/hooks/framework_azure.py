@@ -145,10 +145,14 @@ def wrap_dispatcher__run_sync_func(wrapped, instance, args, kwargs):
             http_request = value
             url_split = urlparse.urlsplit(http_request.url)
             scheme = url_split.scheme
+            query = url_split.query
             host_port = url_split.netloc
             host = port = None
-            host, port = host_port.split(":")
-            query = url_split.query
+            try:
+                host, port = host_port.split(":")
+            except:
+                host = host_port
+                port = None
             break
 
     # If this is an HTTP Request object, we can create a web transaction

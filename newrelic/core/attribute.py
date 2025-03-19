@@ -68,6 +68,7 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set(
         "faas.name",
         "faas.trigger",
         "faas.invocation_id",
+        "faas.coldStart",
         "graphql.field.name",
         "graphql.field.parentType",
         "graphql.field.path",

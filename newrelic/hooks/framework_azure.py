@@ -66,9 +66,13 @@ async def wrap_dispatcher__run_async_func(wrapped, instance, args, kwargs):
             url_split = urlparse.urlsplit(http_request.url)
             scheme = url_split.scheme
             host_port = url_split.netloc
-            host = port = None
-            host, port = host_port.split(":")
             query = url_split.query
+            host = port = None
+            try:
+                host, port = host_port.split(":")
+            except:
+                host = host_port
+                port = None
             break
 
     # If this is an HTTP http_request object, create a web transaction.
@@ -99,7 +103,7 @@ async def wrap_dispatcher__run_async_func(wrapped, instance, args, kwargs):
         else:
             cold_start = False
 
-        website_owner_name = os.environ.get("WEBSITE_OWNER_NAME", "")
+        website_owner_name = os.environ.get("WEBSITE_OWNER_NAME", None)
         subscription_id = re.search(r"(?:(?!\+).)*", website_owner_name) and re.search(
             r"(?:(?!\+).)*", website_owner_name
         ).group(0)
@@ -122,6 +126,9 @@ async def wrap_dispatcher__run_async_func(wrapped, instance, args, kwargs):
         # Only add this attribute if this is a cold start
         if cold_start:
             azure_intrinsics.update({"faas.coldStart": True})
+
+        if not transaction:
+            return await wrapped(*args, **kwargs)
 
         with transaction:
             for key, value in azure_intrinsics.items():
@@ -182,7 +189,7 @@ def wrap_dispatcher__run_sync_func(wrapped, instance, args, kwargs):
         else:
             cold_start = False
 
-        website_owner_name = os.environ.get("WEBSITE_OWNER_NAME", "")
+        website_owner_name = os.environ.get("WEBSITE_OWNER_NAME", None)
         subscription_id = re.search(r"(?:(?!\+).)*", website_owner_name) and re.search(
             r"(?:(?!\+).)*", website_owner_name
         ).group(
@@ -207,6 +214,9 @@ def wrap_dispatcher__run_sync_func(wrapped, instance, args, kwargs):
         # Only add this attribute if this is a cold start
         if cold_start:
             azure_intrinsics.update({"faas.coldStart": True})
+
+        if not transaction:
+            return wrapped(*args, **kwargs)
 
         with transaction:
             for key, value in azure_intrinsics.items():

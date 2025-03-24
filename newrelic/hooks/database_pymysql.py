@@ -14,9 +14,9 @@
 
 from newrelic.api.database_trace import register_database_client
 from newrelic.common.object_wrapper import wrap_object
+from newrelic.hooks.database_dbapi2 import ConnectionFactory as DBAPI2ConnectionFactory
+from newrelic.hooks.database_dbapi2 import ConnectionWrapper as DBAPI2ConnectionWrapper
 from newrelic.hooks.database_dbapi2 import CursorWrapper as DBAPI2CursorWrapper
-from newrelic.hooks.database_mysqldb import ConnectionFactory as MySqlDBConnectionFactory
-from newrelic.hooks.database_mysqldb import ConnectionWrapper as MySqlDBConnectionWrapper
 
 
 class CursorWrapper(DBAPI2CursorWrapper):
@@ -25,11 +25,15 @@ class CursorWrapper(DBAPI2CursorWrapper):
         return self
 
 
-class ConnectionWrapper(MySqlDBConnectionWrapper):
+class ConnectionWrapper(DBAPI2ConnectionWrapper):
     __cursor_wrapper__ = CursorWrapper
 
+    def __enter__(self):
+        self.__wrapped__.__enter__()
+        return self
 
-class ConnectionFactory(MySqlDBConnectionFactory):
+
+class ConnectionFactory(DBAPI2ConnectionFactory):
     __connection_wrapper__ = ConnectionWrapper
 
 
@@ -52,13 +56,8 @@ def instrument_pymysql(module):
         instance_info=instance_info,
     )
 
-    wrap_object(module, "connect", ConnectionFactory, (module,))
-
-    # The connect() function is actually aliased with Connect() and
-    # Connection, the later actually being the Connection type object.
-    # Instrument Connect(), but don't instrument Connection in case that
-    # interferes with direct type usage. If people are using the
-    # Connection object directly, they should really be using connect().
-
-    if hasattr(module, "Connect"):
-        wrap_object(module, "Connect", ConnectionFactory, (module,))
+    # The names connect, Connect, and Connection all are aliases to the same connections.Connection() class.
+    # We need to wrap each name separately since they are module level objects.
+    for name in ("connect", "Connect", "Connection"):
+        if hasattr(module, name):
+            wrap_object(module, name, ConnectionFactory, (module,))

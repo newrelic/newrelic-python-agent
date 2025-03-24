@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 import inspect
+import json
 import logging
 import re
 import sys
@@ -30,11 +30,7 @@ from newrelic.api.message_trace import MessageTrace, message_trace
 from newrelic.api.time_trace import current_trace, get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
 from newrelic.common.async_wrapper import async_wrapper as get_async_wrapper
-from newrelic.common.object_wrapper import (
-    ObjectProxy,
-    function_wrapper,
-    wrap_function_wrapper,
-)
+from newrelic.common.object_wrapper import ObjectProxy, function_wrapper, wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
 from newrelic.core.config import global_settings
@@ -141,9 +137,9 @@ def extract_firehose_agent_attrs(instance, *args, **kwargs):
                 region = instance._client_config.region_name
             if account_id and region:
                 agent_attrs["cloud.platform"] = "aws_kinesis_delivery_streams"
-                agent_attrs[
-                    "cloud.resource_id"
-                ] = f"arn:aws:firehose:{region}:{account_id}:deliverystream/{stream_name}"
+                agent_attrs["cloud.resource_id"] = (
+                    f"arn:aws:firehose:{region}:{account_id}:deliverystream/{stream_name}"
+                )
     except Exception as e:
         _logger.debug("Failed to capture AWS Kinesis Delivery Stream (Firehose) info.", exc_info=True)
     return agent_attrs
@@ -501,18 +497,8 @@ def extract_bedrock_cohere_model_streaming_response(response_body, bedrock_attrs
 
 NULL_EXTRACTOR = lambda *args: {}  # Empty extractor that returns nothing
 MODEL_EXTRACTORS = [  # Order is important here, avoiding dictionaries
-    (
-        "amazon.titan-embed",
-        extract_bedrock_titan_embedding_model_request,
-        NULL_EXTRACTOR,
-        NULL_EXTRACTOR,
-    ),
-    (
-        "cohere.embed",
-        extract_bedrock_cohere_embedding_model_request,
-        NULL_EXTRACTOR,
-        NULL_EXTRACTOR,
-    ),
+    ("amazon.titan-embed", extract_bedrock_titan_embedding_model_request, NULL_EXTRACTOR, NULL_EXTRACTOR),
+    ("cohere.embed", extract_bedrock_cohere_embedding_model_request, NULL_EXTRACTOR, NULL_EXTRACTOR),
     (
         "amazon.titan",
         extract_bedrock_titan_text_model_request,
@@ -551,11 +537,7 @@ def handle_bedrock_exception(
     exc, is_embedding, model, span_id, trace_id, request_extractor, request_body, ft, transaction
 ):
     try:
-        bedrock_attrs = {
-            "model": model,
-            "span_id": span_id,
-            "trace_id": trace_id,
-        }
+        bedrock_attrs = {"model": model, "span_id": span_id, "trace_id": trace_id}
         try:
             request_extractor(request_body, bedrock_attrs)
         except json.decoder.JSONDecodeError:
@@ -576,9 +558,7 @@ def handle_bedrock_exception(
             notice_error_attributes.update({"completion_id": str(uuid.uuid4())})
 
         if ft:
-            ft.notice_error(
-                attributes=notice_error_attributes,
-            )
+            ft.notice_error(attributes=notice_error_attributes)
 
             ft.__exit__(*sys.exc_info())
             error_attributes["duration"] = ft.duration * 1000
@@ -870,9 +850,7 @@ def record_error(self, transaction, exc):
             }
             notice_error_attributes.update({"completion_id": str(uuid.uuid4())})
 
-            ft.notice_error(
-                attributes=notice_error_attributes,
-            )
+            ft.notice_error(attributes=notice_error_attributes)
 
             ft.__exit__(*sys.exc_info())
             error_attributes["duration"] = ft.duration * 1000
@@ -987,13 +965,7 @@ def handle_chat_completion_event(transaction, bedrock_attrs):
 
 
 def dynamodb_datastore_trace(
-    product,
-    target,
-    operation,
-    host=None,
-    port_path_or_id=None,
-    database_name=None,
-    async_wrapper=None,
+    product, target, operation, host=None, port_path_or_id=None, database_name=None, async_wrapper=None
 ):
     @function_wrapper
     def _nr_dynamodb_datastore_trace_wrapper_(wrapped, instance, args, kwargs):
@@ -1080,9 +1052,9 @@ def dynamodb_datastore_trace(
                     partition = "aws-us-gov"
 
             if partition and region and account_id and _target:
-                agent_attrs[
-                    "cloud.resource_id"
-                ] = f"arn:{partition}:dynamodb:{region}:{account_id:012d}:table/{_target}"
+                agent_attrs["cloud.resource_id"] = (
+                    f"arn:{partition}:dynamodb:{region}:{account_id:012d}:table/{_target}"
+                )
                 agent_attrs["db.system"] = "DynamoDB"
 
         except Exception as e:
@@ -1120,14 +1092,7 @@ def aws_function_trace(
         _destination_name = destination_name(*args, **kwargs) if destination_name is not None else None
         name = f"{operation}/{_destination_name}" if _destination_name else operation
 
-        trace = FunctionTrace(
-            name=name,
-            group=library,
-            params=params,
-            terminal=terminal,
-            parent=parent,
-            source=wrapped,
-        )
+        trace = FunctionTrace(name=name, group=library, params=params, terminal=terminal, parent=parent, source=wrapped)
 
         # Attach extracted agent attributes.
         _agent_attrs = extract_agent_attrs(instance, *args, **kwargs) if extract_agent_attrs is not None else {}

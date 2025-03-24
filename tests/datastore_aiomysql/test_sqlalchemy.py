@@ -13,18 +13,13 @@
 # limitations under the License.
 
 from aiomysql.sa import create_engine
+from sqlalchemy import Column, Float, Integer, String
 from sqlalchemy.orm import declarative_base
-from sqlalchemy import Integer, String, Column, Float
 from sqlalchemy.schema import CreateTable, DropTable
-
 from testing_support.db_settings import mysql_settings
 from testing_support.util import instance_hostname
-from testing_support.validators.validate_database_trace_inputs import (
-    validate_database_trace_inputs,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_database_trace_inputs import validate_database_trace_inputs
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
@@ -38,13 +33,14 @@ PORT = DB_SETTINGS["port"]
 
 Base = declarative_base()
 
+
 class ABCModel(Base):
     __tablename__ = TABLE_NAME
 
     a = Column(Integer, primary_key=True)
     b = Column(Float)
     c = Column(String(100))
-    
+
 
 ABCTable = ABCModel.__table__
 
@@ -100,6 +96,7 @@ ROLLUP_METRICS = [
     ("Datastore/operation/MySQL/commit", 1),
     (f"Datastore/instance/MySQL/{HOST}/{PORT}", 8),
 ]
+
 
 @validate_transaction_metrics(
     "test_sqlalchemy:test_execute_via_engine",

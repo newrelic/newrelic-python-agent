@@ -160,7 +160,7 @@ async def wrap_client__make_api_call(wrapped, instance, args, kwargs):
         run_bedrock_response_extractor(response_extractor, response_body, bedrock_attrs, is_embedding, transaction)
 
     except Exception:
-        _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
+        _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
     return response
 

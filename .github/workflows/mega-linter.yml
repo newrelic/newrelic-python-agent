@@ -28,6 +28,7 @@ jobs:
       contents: write
       issues: write
       pull-requests: write
+      statuses: write
     steps:
       # Git Checkout
       - name: Checkout Code
@@ -40,13 +41,15 @@ jobs:
         id: ml
         # You can override MegaLinter flavor used to have faster performances
         # More info at https://megalinter.io/flavors/
-        uses: oxsecurity/megalinter/flavors/python@ec124f7998718d79379a3c5b39f5359952baf21d # 8.4.2
+        uses: oxsecurity/megalinter/flavors/python@146333030da68e2e58c6ff826633824fabe01eaf # 8.5.0
         env:
           # All available variables are described in documentation
           # https://megalinter.io/configuration/
           VALIDATE_ALL_CODEBASE: "true"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # ADD YOUR CUSTOM ENV VARIABLES HERE OR DEFINE THEM IN A FILE .mega-linter.yml AT THE ROOT OF YOUR REPOSITORY
+          GITHUB_STATUS_REPORTER: "true"
+          GITHUB_COMMENT_REPORTER: "true"
           PYTHON_RUFF_ARGUMENTS: --config pyproject.toml --config 'output-format="github"'
           PYTHON_RUFF_FORMAT_ARGUMENTS: --config pyproject.toml --config 'output-format="github"'
 

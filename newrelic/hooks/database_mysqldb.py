@@ -14,10 +14,7 @@
 
 import os
 
-from newrelic.api.database_trace import DatabaseTrace, register_database_client
-from newrelic.api.function_trace import FunctionTrace
-from newrelic.api.transaction import current_transaction
-from newrelic.common.object_names import callable_name
+from newrelic.api.database_trace import register_database_client
 from newrelic.common.object_wrapper import wrap_object
 from newrelic.hooks.database_dbapi2 import ConnectionFactory as DBAPI2ConnectionFactory
 from newrelic.hooks.database_dbapi2 import ConnectionWrapper as DBAPI2ConnectionWrapper
@@ -29,9 +26,6 @@ class CursorWrapper(DBAPI2CursorWrapper):
         self.__wrapped__.__enter__()
         return self
 
-    def __exit__(self, exc, value, tb):
-        return self.__wrapped__.__exit__(exc, value, tb)
-
 
 class ConnectionWrapper(DBAPI2ConnectionWrapper):
     __cursor_wrapper__ = CursorWrapper
@@ -39,9 +33,6 @@ class ConnectionWrapper(DBAPI2ConnectionWrapper):
     def __enter__(self):
         self.__wrapped__.__enter__()
         return self
-
-    def __exit__(self, exc, value, tb):
-        return self.__wrapped__.__exit__(exc, value, tb)
 
 
 class ConnectionFactory(DBAPI2ConnectionFactory):
@@ -105,7 +96,7 @@ def instrument_mysqldb(module):
         instance_info=instance_info,
     )
 
-    # The names connect, Connection, Connect all are aliases to the same Connect() function.
+    # The names connect, Connection, and Connect all are aliases to the same Connect() function.
     # We need to wrap each name separately since they are module level objects.
     for name in ("connect", "Connection", "Connect"):
         if hasattr(module, name):

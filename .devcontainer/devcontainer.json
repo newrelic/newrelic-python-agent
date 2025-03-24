@@ -12,7 +12,7 @@
 	"runArgs": ["--network=host"],
 	"features": {
 	// Available Features: https://containers.dev/features
-		// "ghcr.io/devcontainers/features/docker-from-docker:1": {"moby": false},
+		// "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {"moby": false},
 		// "ghcr.io/devcontainers/features/aws-cli:1": {},
 		// "ghcr.io/devcontainers/features/github-cli:1": {}
 	},

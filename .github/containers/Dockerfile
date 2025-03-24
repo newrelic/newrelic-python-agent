@@ -22,6 +22,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         bash \
         build-essential \
         curl \
+        default-libmysqlclient-dev \
         expat \
         fish \
         fontconfig \
@@ -45,6 +46,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         make \
         odbc-postgresql \
         openssl \
+        pkg-config \
         python3-dev \
         python3-pip \
         sudo \

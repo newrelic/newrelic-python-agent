@@ -21,36 +21,27 @@ from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_object
 from newrelic.hooks.database_dbapi2 import ConnectionFactory as DBAPI2ConnectionFactory
 from newrelic.hooks.database_dbapi2 import ConnectionWrapper as DBAPI2ConnectionWrapper
+from newrelic.hooks.database_dbapi2 import CursorWrapper as DBAPI2CursorWrapper
+
+
+class CursorWrapper(DBAPI2CursorWrapper):
+    def __enter__(self):
+        self.__wrapped__.__enter__()
+        return self
+
+    def __exit__(self, exc, value, tb):
+        return self.__wrapped__.__exit__(exc, value, tb)
 
 
 class ConnectionWrapper(DBAPI2ConnectionWrapper):
+    __cursor_wrapper__ = CursorWrapper
+
     def __enter__(self):
-        transaction = current_transaction()
-        name = callable_name(self.__wrapped__.__enter__)
-        with FunctionTrace(name, source=self.__wrapped__.__enter__):
-            cursor = self.__wrapped__.__enter__()
-
-        # The __enter__() method of original connection object returns
-        # a new cursor instance for use with 'as' assignment. We need
-        # to wrap that in a cursor wrapper otherwise we will not track
-        # any queries done via it.
-
-        return self.__cursor_wrapper__(cursor, self._nr_dbapi2_module, self._nr_connect_params, None)
+        self.__wrapped__.__enter__()
+        return self
 
     def __exit__(self, exc, value, tb):
-        transaction = current_transaction()
-        name = callable_name(self.__wrapped__.__exit__)
-        with FunctionTrace(name, source=self.__wrapped__.__exit__):
-            if exc is None:
-                with DatabaseTrace(
-                    "COMMIT", self._nr_dbapi2_module, self._nr_connect_params, source=self.__wrapped__.__exit__
-                ):
-                    return self.__wrapped__.__exit__(exc, value, tb)
-            else:
-                with DatabaseTrace(
-                    "ROLLBACK", self._nr_dbapi2_module, self._nr_connect_params, source=self.__wrapped__.__exit__
-                ):
-                    return self.__wrapped__.__exit__(exc, value, tb)
+        return self.__wrapped__.__exit__(exc, value, tb)
 
 
 class ConnectionFactory(DBAPI2ConnectionFactory):
@@ -114,13 +105,8 @@ def instrument_mysqldb(module):
         instance_info=instance_info,
     )
 
-    wrap_object(module, "connect", ConnectionFactory, (module,))
-
-    # The connect() function is actually aliased with Connect() and
-    # Connection, the later actually being the Connection type object.
-    # Instrument Connect(), but don't instrument Connection in case that
-    # interferes with direct type usage. If people are using the
-    # Connection object directly, they should really be using connect().
-
-    if hasattr(module, "Connect"):
-        wrap_object(module, "Connect", ConnectionFactory, (module,))
+    # The names connect, Connection, Connect all are aliases to the same Connect() function.
+    # We need to wrap each name separately since they are module level objects.
+    for name in ("connect", "Connection", "Connect"):
+        if hasattr(module, name):
+            wrap_object(module, name, ConnectionFactory, (module,))

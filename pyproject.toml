@@ -2,6 +2,7 @@
 output-format = "grouped"
 line-length = 120
 target-version = "py37"
+force-exclude = true  # Fixes issue with megalinter config preventing exclusion of files
 extend-exclude = [
     "newrelic/packages/",
     "setup.py",

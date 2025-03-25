@@ -17,17 +17,14 @@ import logging
 import socket
 import threading
 
-import pytest
 import moto.server
+import pytest
 import werkzeug.serving
+from external_botocore._mock_external_bedrock_server import MockExternalBedrockServer
 from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
-from newrelic.common.package_version_utils import (
-    get_package_version,
-    get_package_version_tuple,
-)
-from external_botocore._mock_external_bedrock_server import MockExternalBedrockServer
+from newrelic.common.package_version_utils import get_package_version, get_package_version_tuple
 
 BOTOCORE_VERSION = get_package_version("botocore")
 

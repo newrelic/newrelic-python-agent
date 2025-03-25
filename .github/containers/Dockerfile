@@ -117,3 +117,8 @@ RUN mkdir -p "${PIPX_BIN_DIR}" && \
         pyenv exec pipx install --global "${line}"; \
     done </tmp/requirements-tools.txt && \
     rm /tmp/requirements-tools.txt
+
+# Inject compatibile dependencies for tox
+COPY ./requirements-tox.txt /tmp/requirements-tox.txt
+RUN pipx inject --force tox -r /tmp/requirements-tox.txt && \
+    rm /tmp/requirements-tox.txt

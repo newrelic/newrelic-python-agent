@@ -88,13 +88,10 @@ def _exercise_db(connection, table_name):
         with connection.cursor() as cursor:
             cursor.execute(f"""drop table if exists `{table_name}`""")
 
-            cursor.execute(
-                f"""create table `{table_name}` (a integer, b real, c text)"""
-            )
+            cursor.execute(f"""create table `{table_name}` (a integer, b real, c text)""")
 
             cursor.executemany(
-                f"insert into `{table_name}` values (%s, %s, %s)",
-                [(1, 1.0, "1.0"), (2, 2.2, "2.2"), (3, 3.3, "3.3")],
+                f"insert into `{table_name}` values (%s, %s, %s)", [(1, 1.0, "1.0"), (2, 2.2, "2.2"), (3, 3.3, "3.3")]
             )
 
             cursor.execute(f"""select * from {table_name}""")
@@ -102,10 +99,7 @@ def _exercise_db(connection, table_name):
             for _ in cursor:
                 pass
 
-            cursor.execute(
-                f"update `{table_name}` set a=%s, b=%s, c=%s where a=%s",
-                (4, 4.0, "4.0", 1),
-            )
+            cursor.execute(f"update `{table_name}` set a=%s, b=%s, c=%s where a=%s", (4, 4.0, "4.0", 1))
 
             cursor.execute(f"""delete from `{table_name}` where a=2""")
 

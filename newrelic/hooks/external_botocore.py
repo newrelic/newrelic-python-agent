@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 import inspect
+import json
 import logging
 import re
 import sys
@@ -30,11 +30,7 @@ from newrelic.api.message_trace import MessageTrace, message_trace
 from newrelic.api.time_trace import current_trace, get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
 from newrelic.common.async_wrapper import async_wrapper as get_async_wrapper
-from newrelic.common.object_wrapper import (
-    ObjectProxy,
-    function_wrapper,
-    wrap_function_wrapper,
-)
+from newrelic.common.object_wrapper import ObjectProxy, function_wrapper, wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
 from newrelic.core.config import global_settings
@@ -141,9 +137,9 @@ def extract_firehose_agent_attrs(instance, *args, **kwargs):
                 region = instance._client_config.region_name
             if account_id and region:
                 agent_attrs["cloud.platform"] = "aws_kinesis_delivery_streams"
-                agent_attrs[
-                    "cloud.resource_id"
-                ] = f"arn:aws:firehose:{region}:{account_id}:deliverystream/{stream_name}"
+                agent_attrs["cloud.resource_id"] = (
+                    f"arn:aws:firehose:{region}:{account_id}:deliverystream/{stream_name}"
+                )
     except Exception as e:
         _logger.debug("Failed to capture AWS Kinesis Delivery Stream (Firehose) info.", exc_info=True)
     return agent_attrs
@@ -501,18 +497,8 @@ def extract_bedrock_cohere_model_streaming_response(response_body, bedrock_attrs
 
 NULL_EXTRACTOR = lambda *args: {}  # Empty extractor that returns nothing
 MODEL_EXTRACTORS = [  # Order is important here, avoiding dictionaries
-    (
-        "amazon.titan-embed",
-        extract_bedrock_titan_embedding_model_request,
-        NULL_EXTRACTOR,
-        NULL_EXTRACTOR,
-    ),
-    (
-        "cohere.embed",
-        extract_bedrock_cohere_embedding_model_request,
-        NULL_EXTRACTOR,
-        NULL_EXTRACTOR,
-    ),
+    ("amazon.titan-embed", extract_bedrock_titan_embedding_model_request, NULL_EXTRACTOR, NULL_EXTRACTOR),
+    ("cohere.embed", extract_bedrock_cohere_embedding_model_request, NULL_EXTRACTOR, NULL_EXTRACTOR),
     (
         "amazon.titan",
         extract_bedrock_titan_text_model_request,
@@ -551,17 +537,13 @@ def handle_bedrock_exception(
     exc, is_embedding, model, span_id, trace_id, request_extractor, request_body, ft, transaction
 ):
     try:
-        bedrock_attrs = {
-            "model": model,
-            "span_id": span_id,
-            "trace_id": trace_id,
-        }
+        bedrock_attrs = {"model": model, "span_id": span_id, "trace_id": trace_id}
         try:
             request_extractor(request_body, bedrock_attrs)
         except json.decoder.JSONDecodeError:
             pass
         except Exception:
-            _logger.warning(REQUEST_EXTACTOR_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
+            _logger.warning(REQUEST_EXTACTOR_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
         error_attributes = bedrock_error_attributes(exc, bedrock_attrs)
         notice_error_attributes = {
@@ -576,9 +558,7 @@ def handle_bedrock_exception(
             notice_error_attributes.update({"completion_id": str(uuid.uuid4())})
 
         if ft:
-            ft.notice_error(
-                attributes=notice_error_attributes,
-            )
+            ft.notice_error(attributes=notice_error_attributes)
 
             ft.__exit__(*sys.exc_info())
             error_attributes["duration"] = ft.duration * 1000
@@ -588,7 +568,7 @@ def handle_bedrock_exception(
         else:
             handle_chat_completion_event(transaction, error_attributes)
     except Exception:
-        _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
+        _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
     raise
 
@@ -598,7 +578,7 @@ def run_bedrock_response_extractor(response_extractor, response_body, bedrock_at
     try:
         response_extractor(response_body, bedrock_attrs)
     except Exception:
-        _logger.warning(RESPONSE_EXTRACTOR_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
+        _logger.warning(RESPONSE_EXTRACTOR_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
     if is_embedding:
         handle_embedding_event(transaction, bedrock_attrs)
@@ -612,7 +592,7 @@ def run_bedrock_request_extractor(request_extractor, request_body, bedrock_attrs
     except json.decoder.JSONDecodeError:
         pass
     except Exception:
-        _logger.warning(REQUEST_EXTACTOR_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
+        _logger.warning(REQUEST_EXTACTOR_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
 
 def wrap_bedrock_runtime_invoke_model(response_streaming=False):
@@ -739,7 +719,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
             run_bedrock_response_extractor(response_extractor, response_body, bedrock_attrs, is_embedding, transaction)
 
         except Exception:
-            _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
+            _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
         return response
 
@@ -830,7 +810,7 @@ def record_stream_chunk(self, return_val, transaction):
             if _type == "content_block_stop":
                 record_events_on_stop_iteration(self, transaction)
         except Exception:
-            _logger.warning(RESPONSE_EXTRACTOR_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
+            _logger.warning(RESPONSE_EXTRACTOR_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
 
 def record_events_on_stop_iteration(self, transaction):
@@ -846,7 +826,7 @@ def record_events_on_stop_iteration(self, transaction):
             bedrock_attrs["duration"] = self._nr_ft.duration * 1000
             handle_chat_completion_event(transaction, bedrock_attrs)
         except Exception:
-            _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
+            _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
         # Clear cached data as this can be very large.
         self._nr_bedrock_attrs.clear()
@@ -870,9 +850,7 @@ def record_error(self, transaction, exc):
             }
             notice_error_attributes.update({"completion_id": str(uuid.uuid4())})
 
-            ft.notice_error(
-                attributes=notice_error_attributes,
-            )
+            ft.notice_error(attributes=notice_error_attributes)
 
             ft.__exit__(*sys.exc_info())
             error_attributes["duration"] = ft.duration * 1000
@@ -882,7 +860,7 @@ def record_error(self, transaction, exc):
             # Clear cached data as this can be very large.
             error_attributes.clear()
         except Exception:
-            _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
+            _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
 
 def handle_embedding_event(transaction, bedrock_attrs):
@@ -898,7 +876,7 @@ def handle_embedding_event(transaction, bedrock_attrs):
     trace_id = bedrock_attrs.get("trace_id", None)
     request_id = bedrock_attrs.get("request_id", None)
     model = bedrock_attrs.get("model", None)
-    input = bedrock_attrs.get("input")
+    input_ = bedrock_attrs.get("input")
 
     embedding_dict = {
         "vendor": "bedrock",
@@ -907,7 +885,7 @@ def handle_embedding_event(transaction, bedrock_attrs):
         "span_id": span_id,
         "trace_id": trace_id,
         "token_count": (
-            settings.ai_monitoring.llm_token_count_callback(model, input)
+            settings.ai_monitoring.llm_token_count_callback(model, input_)
             if settings.ai_monitoring.llm_token_count_callback
             else None
         ),
@@ -920,7 +898,7 @@ def handle_embedding_event(transaction, bedrock_attrs):
     embedding_dict.update(llm_metadata_dict)
 
     if settings.ai_monitoring.record_content.enabled:
-        embedding_dict["input"] = input
+        embedding_dict["input"] = input_
 
     embedding_dict = {k: v for k, v in embedding_dict.items() if v is not None}
     transaction.record_custom_event("LlmEmbedding", embedding_dict)
@@ -987,13 +965,7 @@ def handle_chat_completion_event(transaction, bedrock_attrs):
 
 
 def dynamodb_datastore_trace(
-    product,
-    target,
-    operation,
-    host=None,
-    port_path_or_id=None,
-    database_name=None,
-    async_wrapper=None,
+    product, target, operation, host=None, port_path_or_id=None, database_name=None, async_wrapper=None
 ):
     @function_wrapper
     def _nr_dynamodb_datastore_trace_wrapper_(wrapped, instance, args, kwargs):
@@ -1080,9 +1052,9 @@ def dynamodb_datastore_trace(
                     partition = "aws-us-gov"
 
             if partition and region and account_id and _target:
-                agent_attrs[
-                    "cloud.resource_id"
-                ] = f"arn:{partition}:dynamodb:{region}:{account_id:012d}:table/{_target}"
+                agent_attrs["cloud.resource_id"] = (
+                    f"arn:{partition}:dynamodb:{region}:{account_id:012d}:table/{_target}"
+                )
                 agent_attrs["db.system"] = "DynamoDB"
 
         except Exception as e:
@@ -1120,14 +1092,7 @@ def aws_function_trace(
         _destination_name = destination_name(*args, **kwargs) if destination_name is not None else None
         name = f"{operation}/{_destination_name}" if _destination_name else operation
 
-        trace = FunctionTrace(
-            name=name,
-            group=library,
-            params=params,
-            terminal=terminal,
-            parent=parent,
-            source=wrapped,
-        )
+        trace = FunctionTrace(name=name, group=library, params=params, terminal=terminal, parent=parent, source=wrapped)
 
         # Attach extracted agent attributes.
         _agent_attrs = extract_agent_attrs(instance, *args, **kwargs) if extract_agent_attrs is not None else {}

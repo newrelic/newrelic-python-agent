@@ -1,5 +1,5 @@
-pip
+pip==24.0
 pipx
 setuptools
-virtualenv
+virtualenv==20.26.6
 wheel

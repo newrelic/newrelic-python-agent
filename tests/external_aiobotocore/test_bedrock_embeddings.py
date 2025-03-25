@@ -17,6 +17,7 @@ from io import BytesIO
 
 import botocore.exceptions
 import pytest
+from conftest import BOTOCORE_VERSION  # pylint: disable=E0611
 from external_botocore._test_bedrock_embeddings import (
     embedding_expected_events,
     embedding_expected_malformed_request_body_events,
@@ -24,12 +25,7 @@ from external_botocore._test_bedrock_embeddings import (
     embedding_invalid_access_key_error_events,
     embedding_payload_templates,
 )
-from conftest import BOTOCORE_VERSION  # pylint: disable=E0611
-from testing_support.fixtures import (
-    override_llm_token_callback_settings,
-    reset_core_stats_engine,
-    validate_attributes,
-)
+from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (  # noqa: F401
     add_token_count_to_events,
     disabled_ai_monitoring_record_content_settings,
@@ -41,12 +37,8 @@ from testing_support.ml_testing_utils import (  # noqa: F401
 )
 from testing_support.validators.validate_custom_event import validate_custom_event_count
 from testing_support.validators.validate_custom_events import validate_custom_events
-from testing_support.validators.validate_error_trace_attributes import (
-    validate_error_trace_attributes,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_error_trace_attributes import validate_error_trace_attributes
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
@@ -60,12 +52,7 @@ def request_streaming(request):
 
 
 @pytest.fixture(
-    scope="module",
-    params=[
-        "amazon.titan-embed-text-v1",
-        "amazon.titan-embed-g1-text-02",
-        "cohere.embed-english-v3",
-    ],
+    scope="module", params=["amazon.titan-embed-text-v1", "amazon.titan-embed-g1-text-02", "cohere.embed-english-v3"]
 )
 def model_id(request):
     return request.param
@@ -82,10 +69,7 @@ def exercise_model(loop, bedrock_server, model_id, request_streaming):
                 body = BytesIO(body)
 
             response = await bedrock_server.invoke_model(
-                body=body,
-                modelId=model_id,
-                accept="application/json",
-                contentType="application/json",
+                body=body, modelId=model_id, accept="application/json", contentType="application/json"
             )
             body = await response["body"].read()
             response_body = json.loads(body)
@@ -119,9 +103,7 @@ def test_bedrock_embedding_with_llm_metadata(set_trace_info, exercise_model, exp
         name="test_bedrock_embedding",
         scoped_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
         rollup_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
-        custom_metrics=[
-            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
-        ],
+        custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
         background_task=True,
     )
     @validate_attributes("agent", ["llm"])
@@ -145,9 +127,7 @@ def test_bedrock_embedding_no_content(set_trace_info, exercise_model, model_id):
         name="test_bedrock_embedding",
         scoped_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
         rollup_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
-        custom_metrics=[
-            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
-        ],
+        custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
         background_task=True,
     )
     @validate_attributes("agent", ["llm"])
@@ -170,9 +150,7 @@ def test_bedrock_embedding_no_llm_metadata(set_trace_info, exercise_model, expec
         name="test_bedrock_embedding_no_llm_metadata",
         scoped_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
         rollup_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
-        custom_metrics=[
-            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
-        ],
+        custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
         background_task=True,
     )
     @background_task(name="test_bedrock_embedding_no_llm_metadata")
@@ -192,9 +170,7 @@ def test_bedrock_embedding_with_token_count(set_trace_info, exercise_model, expe
         name="test_bedrock_embedding",
         scoped_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
         rollup_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
-        custom_metrics=[
-            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
-        ],
+        custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
         background_task=True,
     )
     @validate_attributes("agent", ["llm"])
@@ -231,11 +207,7 @@ _client_error_name = callable_name(_client_error)
 
 @reset_core_stats_engine()
 def test_bedrock_embedding_error_incorrect_access_key(
-    monkeypatch,
-    bedrock_server,
-    exercise_model,
-    set_trace_info,
-    expected_invalid_access_key_error_events,
+    monkeypatch, bedrock_server, exercise_model, set_trace_info, expected_invalid_access_key_error_events
 ):
     """
     A request is made to the server with invalid credentials. botocore will reach out to the server and receive an
@@ -260,9 +232,7 @@ def test_bedrock_embedding_error_incorrect_access_key(
         name="test_bedrock_embedding",
         scoped_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
         rollup_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
-        custom_metrics=[
-            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
-        ],
+        custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
         background_task=True,
     )
     @background_task(name="test_bedrock_embedding")
@@ -283,11 +253,7 @@ def test_bedrock_embedding_error_incorrect_access_key(
 @reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
 def test_bedrock_embedding_error_incorrect_access_key_no_content(
-    monkeypatch,
-    bedrock_server,
-    exercise_model,
-    set_trace_info,
-    expected_invalid_access_key_error_events,
+    monkeypatch, bedrock_server, exercise_model, set_trace_info, expected_invalid_access_key_error_events
 ):
     @validate_custom_events(events_sans_content(expected_invalid_access_key_error_events))
     @validate_error_trace_attributes(
@@ -326,11 +292,7 @@ def test_bedrock_embedding_error_incorrect_access_key_no_content(
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
 def test_bedrock_embedding_error_incorrect_access_key_with_token_count(
-    monkeypatch,
-    bedrock_server,
-    exercise_model,
-    set_trace_info,
-    expected_invalid_access_key_error_events,
+    monkeypatch, bedrock_server, exercise_model, set_trace_info, expected_invalid_access_key_error_events
 ):
     @validate_custom_events(add_token_count_to_events(expected_invalid_access_key_error_events))
     @validate_error_trace_attributes(
@@ -385,17 +347,11 @@ def test_bedrock_embedding_error_incorrect_access_key_with_token_count(
     name="test_bedrock_embedding",
     scoped_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
     rollup_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
     background_task=True,
 )
 @background_task(name="test_bedrock_embedding")
-def test_bedrock_embedding_error_malformed_request_body(
-    loop,
-    bedrock_server,
-    set_trace_info,
-):
+def test_bedrock_embedding_error_malformed_request_body(loop, bedrock_server, set_trace_info):
     """
     A request was made to the server, but the request body contains invalid JSON. The library will accept the invalid
     payload, and still send a request. Our instrumentation will be unable to read it. As a result, no request
@@ -414,10 +370,7 @@ def test_bedrock_embedding_error_malformed_request_body(
 
         with pytest.raises(_client_error):
             await bedrock_server.invoke_model(
-                body=body,
-                modelId=model,
-                accept="application/json",
-                contentType="application/json",
+                body=body, modelId=model, accept="application/json", contentType="application/json"
             )
 
     loop.run_until_complete(_test())
@@ -430,17 +383,11 @@ def test_bedrock_embedding_error_malformed_request_body(
     name="test_bedrock_embedding",
     scoped_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
     rollup_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
     background_task=True,
 )
 @background_task(name="test_bedrock_embedding")
-def test_bedrock_embedding_error_malformed_response_body(
-    loop,
-    bedrock_server,
-    set_trace_info,
-):
+def test_bedrock_embedding_error_malformed_response_body(loop, bedrock_server, set_trace_info):
     """
     After a non-streaming request was made to the server, the server responded with a response body that contains
     invalid JSON. Since the JSON body is not parsed by botocore and just returned to the user as bytes, no parsing
@@ -457,10 +404,7 @@ def test_bedrock_embedding_error_malformed_response_body(
         add_custom_attribute("non_llm_attr", "python-agent")
 
         response = await bedrock_server.invoke_model(
-            body=body,
-            modelId=model,
-            accept="application/json",
-            contentType="application/json",
+            body=body, modelId=model, accept="application/json", contentType="application/json"
         )
         assert response
 
@@ -478,12 +422,7 @@ def test_embedding_models_instrumented():
         pytest.skip(reason="Credentials not available.")
 
     session = aiobotocore.session.get_session()
-    client = loop.run_until_complete(
-        session.create_client(
-            "bedrock",
-            "us-east-1",
-        ).__aenter__()
-    )
+    client = loop.run_until_complete(session.create_client("bedrock", "us-east-1").__aenter__())
 
     try:
         response = client.list_foundation_models(byOutputModality="EMBEDDING")

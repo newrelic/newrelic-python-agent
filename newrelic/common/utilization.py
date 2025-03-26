@@ -19,10 +19,10 @@ import re
 import socket
 import string
 
-import newrelic.packages.urllib3 as urllib3
 from newrelic.common.agent_http import InsecureHttpClient
 from newrelic.common.encoding_utils import json_decode
 from newrelic.core.internal_metrics import internal_count_metric
+from newrelic.packages import urllib3
 
 _logger = logging.getLogger(__name__)
 VALID_CHARS_RE = re.compile(r"[0-9a-zA-Z_ ./-]")

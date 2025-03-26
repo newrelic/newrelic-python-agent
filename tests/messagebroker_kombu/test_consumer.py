@@ -13,20 +13,18 @@
 # limitations under the License.
 
 import pytest
-
-from testing_support.fixtures import override_application_settings
-from testing_support.fixtures import reset_core_stats_engine, validate_attributes
+from testing_support.fixtures import override_application_settings, reset_core_stats_engine, validate_attributes
 from testing_support.validators.validate_error_event_attributes_outside_transaction import (
     validate_error_event_attributes_outside_transaction,
 )
 from testing_support.validators.validate_transaction_count import validate_transaction_count
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from newrelic.common.package_version_utils import get_package_version
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import end_of_transaction
 from newrelic.common.object_names import callable_name
+from newrelic.common.package_version_utils import get_package_version
 
 
 def test_custom_metrics(get_consumer_record, events):

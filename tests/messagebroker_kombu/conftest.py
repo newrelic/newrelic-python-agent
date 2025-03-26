@@ -17,8 +17,8 @@ import pickle
 import uuid
 
 import kombu
-from amqp.exceptions import NotFound
 import pytest
+from amqp.exceptions import NotFound
 from kombu import messaging, serialization
 from testing_support.db_settings import rabbitmq_settings
 from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611

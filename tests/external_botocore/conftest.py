@@ -104,7 +104,7 @@ def bedrock_server():
 
 
 # Intercept outgoing requests and log to file for mocking
-RECORDED_HEADERS = set(["x-amzn-requestid", "x-amzn-errortype", "content-type"])
+RECORDED_HEADERS = {"x-amzn-requestid", "x-amzn-errortype", "content-type"}
 
 
 def wrap_botocore_endpoint_Endpoint__do_get_response(wrapped, instance, args, kwargs):

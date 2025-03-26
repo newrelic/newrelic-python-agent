@@ -75,7 +75,7 @@ else:
 OPENAI_AUDIT_LOG_FILE = os.path.join(os.path.realpath(os.path.dirname(__file__)), "openai_audit.log")
 OPENAI_AUDIT_LOG_CONTENTS = {}
 # Intercept outgoing requests and log to file for mocking
-RECORDED_HEADERS = set(["x-request-id", "content-type"])
+RECORDED_HEADERS = {"x-request-id", "content-type"}
 
 
 @pytest.fixture(scope="session")

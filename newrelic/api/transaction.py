@@ -66,9 +66,19 @@ from newrelic.core.trace_cache import TraceCacheActiveTraceError, TraceCacheNoAc
 _logger = logging.getLogger(__name__)
 
 DISTRIBUTED_TRACE_KEYS_REQUIRED = ("ty", "ac", "ap", "tr", "ti")
-DISTRIBUTED_TRACE_TRANSPORT_TYPES = set(
-    ("HTTP", "HTTPS", "Kafka", "JMS", "IronMQ", "AMQP", "Queue", "SQS", "REDIS", "ZooKeeper", "Other")
-)
+DISTRIBUTED_TRACE_TRANSPORT_TYPES = {
+    "HTTP",
+    "HTTPS",
+    "Kafka",
+    "JMS",
+    "IronMQ",
+    "AMQP",
+    "Queue",
+    "SQS",
+    "REDIS",
+    "ZooKeeper",
+    "Other",
+}
 DELIMITER_FORMAT_RE = re.compile("[ \t]*,[ \t]*")
 ACCEPTED_DISTRIBUTED_TRACE = 1
 CREATED_DISTRIBUTED_TRACE = 2
@@ -740,7 +750,7 @@ class Transaction:
         hash.
 
         """
-        return sorted(set(self._alternate_path_hashes.values()) - set([self.path_hash]))
+        return sorted(set(self._alternate_path_hashes.values()) - {self.path_hash})
 
     @property
     def path_hash(self):

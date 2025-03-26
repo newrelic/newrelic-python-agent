@@ -239,7 +239,7 @@ class HttpClient(BaseClient):
         default_content_encoding_header="Identity",
     ):
         self._host = host
-        port = self._port = port
+        self._port = port
         self._compression_threshold = compression_threshold
         self._compression_level = compression_level
         self._compression_method = compression_method

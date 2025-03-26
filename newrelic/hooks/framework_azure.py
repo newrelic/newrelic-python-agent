@@ -24,7 +24,6 @@ from newrelic.common.object_wrapper import wrap_function_wrapper
 
 def wrap_dispatcher__init__(wrapped, instance, args, kwargs):
     instance._nr_cold_start = True
-    application_instance()  # Activates New Relic agent if not already activated
     return wrapped(*args, **kwargs)
 
 
@@ -57,7 +56,10 @@ async def wrap_dispatcher__run_async_func(wrapped, instance, args, kwargs):
         return context, func, args
 
     context, func, params = bind_params(*args, **kwargs)
-    application = application_instance()
+    application = application_instance(activate=False)
+    if not application:
+        # Create new application instance here
+        application = application_instance(os.environ.get("WEBSITE_SITE_NAME", None))
 
     http_request = None
     for key, value in params.items():
@@ -65,14 +67,8 @@ async def wrap_dispatcher__run_async_func(wrapped, instance, args, kwargs):
             http_request = value
             url_split = urlparse.urlsplit(http_request.url)
             scheme = url_split.scheme
-            host_port = url_split.netloc
             query = url_split.query
-            host = port = None
-            try:
-                host, port = host_port.split(":")
-            except:
-                host = host_port
-                port = None
+            host, port = url_split.netloc, None if (":" not in url_split.netloc) else url_split.netloc.split(":")
             break
 
     # If this is an HTTP http_request object, create a web transaction.
@@ -109,8 +105,15 @@ async def wrap_dispatcher__run_async_func(wrapped, instance, args, kwargs):
         ).group(0)
         resource_group_name = os.environ.get(
             "WEBSITE_RESOURCE_GROUP",
-            re.search(r"\+([a-zA-Z0-9\-]+)-[a-zA-Z0-9]+(?:-Linux)?", website_owner_name).group(0),
+            None,
         )
+        if resource_group_name is None:
+            if website_owner_name.endswith("-Linux"):
+                resource_group_name = re.search(r"\+([a-zA-z0-9\-]+)-[a-zA-Z0-9]+(?:-Linux)", website_owner_name).group(
+                    1
+                )
+            else:
+                resource_group_name = re.search(r"\+([a-zA-z0-9\-]+)-[a-zA-Z0-9]+", website_owner_name).group(1)
         azure_function_app_name = os.environ.get("WEBSITE_SITE_NAME", application.name)
 
         cloud_resource_id = f"/subscriptions/{subscription_id}/resourceGroups/{resource_group_name}/providers/Microsoft.Web/sites/{azure_function_app_name}/functions/{context.function_name}"
@@ -136,6 +139,8 @@ async def wrap_dispatcher__run_async_func(wrapped, instance, args, kwargs):
             response = await wrapped(*args, **kwargs)
             return response
 
+    return await wrapped(*args, **kwargs)
+
 
 def wrap_dispatcher__run_sync_func(wrapped, instance, args, kwargs):
     from azure.functions.http import HttpRequest
@@ -144,7 +149,10 @@ def wrap_dispatcher__run_sync_func(wrapped, instance, args, kwargs):
         return invocation_id, context, func, params
 
     invocation_id, context, func, params = bind_params(*args, **kwargs)
-    application = application_instance()
+    application = application_instance(activate=False)
+    if not application:
+        # Create new application instance here
+        application = application_instance(os.environ.get("WEBSITE_SITE_NAME", None))
 
     http_request = None
     for key, value in params.items():
@@ -153,13 +161,7 @@ def wrap_dispatcher__run_sync_func(wrapped, instance, args, kwargs):
             url_split = urlparse.urlsplit(http_request.url)
             scheme = url_split.scheme
             query = url_split.query
-            host_port = url_split.netloc
-            host = port = None
-            try:
-                host, port = host_port.split(":")
-            except:
-                host = host_port
-                port = None
+            host, port = url_split.netloc, None if (":" not in url_split.netloc) else url_split.netloc.split(":")
             break
 
     # If this is an HTTP Request object, we can create a web transaction
@@ -192,13 +194,18 @@ def wrap_dispatcher__run_sync_func(wrapped, instance, args, kwargs):
         website_owner_name = os.environ.get("WEBSITE_OWNER_NAME", None)
         subscription_id = re.search(r"(?:(?!\+).)*", website_owner_name) and re.search(
             r"(?:(?!\+).)*", website_owner_name
-        ).group(
-            0
-        )  # everything before the first (+)
+        ).group(0)
         resource_group_name = os.environ.get(
             "WEBSITE_RESOURCE_GROUP",
-            re.search(r"\+([a-zA-Z0-9\-]+)-[a-zA-Z0-9]+(?:-Linux)?", website_owner_name).group(0),
-        )  # the first group
+            None,
+        )
+        if resource_group_name is None:
+            if website_owner_name.endswith("-Linux"):
+                resource_group_name = re.search(r"\+([a-zA-z0-9\-]+)-[a-zA-Z0-9]+(?:-Linux)", website_owner_name).group(
+                    1
+                )
+            else:
+                resource_group_name = re.search(r"\+([a-zA-z0-9\-]+)-[a-zA-Z0-9]+", website_owner_name).group(1)
         azure_function_app_name = os.environ.get("WEBSITE_SITE_NAME", application.name)
 
         cloud_resource_id = f"/subscriptions/{subscription_id}/resourceGroups/{resource_group_name}/providers/Microsoft.Web/sites/{azure_function_app_name}/functions/{context.function_name}"
@@ -223,6 +230,8 @@ def wrap_dispatcher__run_sync_func(wrapped, instance, args, kwargs):
                 transaction._add_agent_attribute(key, value)
             response = wrapped(*args, **kwargs)
             return response
+
+    return wrapped(*args, **kwargs)
 
 
 def wrap_httpresponse__init__(wrapped, instance, args, kwargs):

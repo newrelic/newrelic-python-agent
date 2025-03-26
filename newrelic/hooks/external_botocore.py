@@ -570,8 +570,6 @@ def handle_bedrock_exception(
     except Exception:
         _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
-    raise
-
 
 def run_bedrock_response_extractor(response_extractor, response_body, bedrock_attrs, is_embedding, transaction):
     # Run response extractor for non-streaming responses
@@ -673,6 +671,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
             handle_bedrock_exception(
                 exc, is_embedding, model, span_id, trace_id, request_extractor, request_body, ft, transaction
             )
+            raise
 
         if not response or response_streaming and not settings.ai_monitoring.streaming.enabled:
             ft.__exit__(None, None, None)

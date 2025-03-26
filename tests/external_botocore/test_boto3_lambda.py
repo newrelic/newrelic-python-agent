@@ -30,7 +30,7 @@ MOTO_VERSION = get_package_version_tuple("moto")
 BOTOCORE_VERSION = get_package_version_tuple("botocore")
 
 AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"
-AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"  # nosec
+AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"
 AWS_REGION_NAME = "us-west-2"
 
 LAMBDA_URL = "lambda.us-west-2.amazonaws.com"

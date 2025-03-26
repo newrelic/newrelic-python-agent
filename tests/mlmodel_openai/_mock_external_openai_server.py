@@ -726,7 +726,7 @@ def MockExternalOpenAIServer(simple_get):
         # calls.
 
         def __init__(self, handler=simple_get, port=None, *args, **kwargs):
-            super(_MockExternalOpenAIServer, self).__init__(handler=handler, port=port, *args, **kwargs)
+            super(_MockExternalOpenAIServer, self).__init__(handler=handler, port=port, *args, **kwargs)  # noqa: B026
 
     return _MockExternalOpenAIServer
 

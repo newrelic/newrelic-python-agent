@@ -531,7 +531,10 @@ class SQLConnection:
         self.connection = connection
         self.cursors = {}
 
-    def cursor(self, args=(), kwargs={}):
+    def cursor(self, args=(), kwargs=None):
+        if kwargs is None:
+            kwargs = {}
+
         key = (args, frozenset(kwargs.items()))
 
         cursor = self.cursors.get(key)
@@ -625,7 +628,7 @@ class SQLConnections:
         if settings.debug.log_explain_plan_queries:
             _logger.debug("Cleaning up SQL connections cache %r.", self)
 
-        for key, connection in self.connections:
+        for _key, connection in self.connections:
             connection.cleanup()
 
         self.connections = []

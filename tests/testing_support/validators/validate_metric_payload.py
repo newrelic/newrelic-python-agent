@@ -15,9 +15,12 @@
 from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
 
 
-def validate_metric_payload(metrics=[]):
+def validate_metric_payload(metrics=None):
     # Validates metrics as they are sent to the collector. Useful for testing
     # Supportability metrics that are created at harvest time.
+
+    if metrics is None:
+        metrics = []
 
     @function_wrapper
     def _validate_wrapper(wrapped, instance, args, kwargs):

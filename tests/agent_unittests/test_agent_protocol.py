@@ -363,7 +363,7 @@ def connect_payload_asserts(
     ],
 )
 def test_connect(with_aws, with_ecs, with_pcf, with_gcp, with_azure, with_docker, with_kubernetes, with_ip):
-    global AWS, AZURE, GCP, PCF, BOOT_ID, DOCKER, KUBERNETES, IP_ADDRESS
+    global AWS, AZURE, GCP, PCF, DOCKER, KUBERNETES, IP_ADDRESS
     if not with_aws:
         AWS = Exception
     if not with_pcf:

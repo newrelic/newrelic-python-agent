@@ -1082,16 +1082,16 @@ class Transaction:
             return
 
         self._compute_sampled_and_priority()
-        data = dict(
-            ty="App",
-            ac=account_id,
-            ap=application_id,
-            tr=self.trace_id,
-            sa=self.sampled,
-            pr=self.priority,
-            tx=self.guid,
-            ti=int(time.time() * 1000.0),
-        )
+        data = {
+            "ty": "App",
+            "ac": account_id,
+            "ap": application_id,
+            "tr": self.trace_id,
+            "sa": self.sampled,
+            "pr": self.priority,
+            "tx": self.guid,
+            "ti": int(time.time() * 1000.0),
+        }
 
         if account_id != trusted_account_key:
             data["tk"] = trusted_account_key

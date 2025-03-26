@@ -49,7 +49,7 @@ def _extract_stack(f, skip, limit):
         skip -= 1
 
     while f is not None and n < limit:
-        l.append(dict(source=f.f_code.co_filename, line=f.f_lineno, name=f.f_code.co_name))
+        l.append({"source": f.f_code.co_filename, "line": f.f_lineno, "name": f.f_code.co_name})
 
         f = f.f_back
         n += 1
@@ -102,7 +102,7 @@ def _extract_tb(tb, limit):
 
     while tb is not None and n < limit:
         f = tb.tb_frame
-        l.append(dict(source=f.f_code.co_filename, line=tb.tb_lineno, name=f.f_code.co_name))
+        l.append({"source": f.f_code.co_filename, "line": tb.tb_lineno, "name": f.f_code.co_name})
 
         tb = tb.tb_next
         n += 1

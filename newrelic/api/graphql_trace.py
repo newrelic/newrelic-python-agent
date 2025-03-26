@@ -39,7 +39,7 @@ class GraphQLOperationTrace(TimeTrace):
         self.product = "GraphQL"
 
     def __repr__(self):
-        return f"<{self.__class__.__name__} object at 0x{id(self):x} {dict(operation_name=self.operation_name, operation_type=self.operation_type, deepest_path=self.deepest_path, graphql=self.graphql)}>"
+        return f"<{self.__class__.__name__} object at 0x{id(self):x} { {'operation_name': self.operation_name, 'operation_type': self.operation_type, 'deepest_path': self.deepest_path, 'graphql': self.graphql} }>"
 
     @property
     def formatted(self):
@@ -145,7 +145,7 @@ class GraphQLResolverTrace(TimeTrace):
         self._product = None
 
     def __repr__(self):
-        return f"<{self.__class__.__name__} object at 0x{id(self):x} {dict(field_name=self.field_name)}>"
+        return f"<{self.__class__.__name__} object at 0x{id(self):x} { {'field_name': self.field_name} }>"
 
     def __enter__(self):
         super(GraphQLResolverTrace, self).__enter__()

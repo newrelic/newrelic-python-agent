@@ -155,6 +155,7 @@ def LambdaHandlerWrapper(*args, **kwargs):
             "APIs provided in the newrelic-lambda package."
         ),
         DeprecationWarning,
+        stacklevel=2,
     )
 
     return _LambdaHandlerWrapper(*args, **kwargs)
@@ -164,6 +165,7 @@ def lambda_handler(application=None, name=None, group=None):
     warnings.warn(
         ("The lambda_handler API has been deprecated. Please use the APIs provided in the newrelic-lambda package."),
         DeprecationWarning,
+        stacklevel=2,
     )
 
     return functools.partial(_LambdaHandlerWrapper, application=application, name=name, group=group)

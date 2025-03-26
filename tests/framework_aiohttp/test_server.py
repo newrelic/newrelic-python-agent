@@ -198,7 +198,7 @@ def test_aborted_connection_creates_transaction(aiohttp_app):
             await asyncio.sleep(0)
             return
 
-        assert False, "Request did not time out"
+        raise AssertionError("Request did not time out")
 
     transactions = []
 
@@ -217,7 +217,7 @@ def test_work_after_request_not_recorded(aiohttp_app):
     async def timeout():
         await asyncio.sleep(1)
         aiohttp_app.loop.stop()
-        assert False
+        raise AssertionError
 
     task = aiohttp_app.loop.create_task(timeout())
     aiohttp_app.loop.run_forever()

@@ -807,6 +807,7 @@ class Application:
         warnings.warn(
             ("The record_exception function is deprecated. Please use the new api named notice_error instead."),
             DeprecationWarning,
+            stacklevel=2,
         )
 
         self.notice_error(error=(exc, value, tb), attributes=params, ignore=ignore_errors)

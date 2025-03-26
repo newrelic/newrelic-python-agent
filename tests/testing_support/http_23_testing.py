@@ -43,7 +43,7 @@ def make_request(host, port, path="", method="GET", body=None, http_version=None
 
         # Send Request
         response = session.request(method.upper(), f"https://{host}:{port}{path}", data=body, timeout=timeout)
-        response.ok  # Ensure response is completed
+        response.ok  # noqa: B018 # Ensure response is completed
         response.raise_for_status()  # Check response status code
 
         # Check HTTP version used was correct

@@ -27,7 +27,7 @@ from newrelic.common.package_version_utils import get_package_version_tuple
 MOTO_VERSION = get_package_version_tuple("moto")
 
 AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"
-AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"  # nosec (This is fine for testing purposes)
+AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"
 
 TEST_USER = f"python-agent-test-{uuid.uuid4()}"
 

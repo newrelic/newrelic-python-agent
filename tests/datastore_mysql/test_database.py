@@ -106,7 +106,7 @@ def test_execute_via_cursor(table_name):
 
     cursor.execute(f"""select * from {table_name}""")
 
-    for row in cursor:
+    for _row in cursor:
         pass
 
     cursor.execute(
@@ -198,7 +198,7 @@ def test_connect_using_alias(table_name):
 
     cursor.execute(f"""select * from {table_name}""")
 
-    for row in cursor:
+    for _row in cursor:
         pass
 
     cursor.execute(

@@ -17,8 +17,8 @@ import warnings
 from functools import lru_cache
 
 # Need to account for 4 possible variations of version declaration specified in (rejected) PEP 396
-VERSION_ATTRS = ("__version__", "version", "__version_tuple__", "version_tuple")  # nosec
-NULL_VERSIONS = frozenset((None, "", "0", "0.0", "0.0.0", "0.0.0.0", (0,), (0, 0), (0, 0, 0), (0, 0, 0, 0)))  # nosec
+VERSION_ATTRS = ("__version__", "version", "__version_tuple__", "version_tuple")
+NULL_VERSIONS = frozenset((None, "", "0", "0.0", "0.0.0", "0.0.0.0", (0,), (0, 0), (0, 0, 0), (0, 0, 0, 0)))  # noqa: S104
 
 
 def get_package_version(name):

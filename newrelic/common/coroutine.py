@@ -33,7 +33,7 @@ def _iscoroutinefunction_tornado(fn):
 
 
 def is_coroutine_callable(wrapped):
-    return is_coroutine_function(wrapped) or is_coroutine_function(getattr(wrapped, "__call__", None))
+    return is_coroutine_function(wrapped) or is_coroutine_function(getattr(wrapped, "__call__", None))  # noqa: B004
 
 
 if hasattr(inspect, "isasyncgenfunction"):

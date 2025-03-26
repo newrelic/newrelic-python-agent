@@ -122,7 +122,7 @@ def _object_context(object):  # noqa: A002
         # If it's not a class method, it must be an instance method.
 
         if cname is None:
-            cname = getattr(object.__self__.__class__, "__qualname__")
+            cname = object.__self__.__class__.__qualname__
 
         path = f"{cname}.{object.__name__}"
 
@@ -140,7 +140,7 @@ def _object_context(object):  # noqa: A002
         # qualified name.
 
         if path is None and hasattr(object, "__class__"):
-            path = getattr(object.__class__, "__qualname__")
+            path = object.__class__.__qualname__
 
     # Now calculate the name of the module object is defined in.
 

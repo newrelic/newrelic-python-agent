@@ -47,7 +47,8 @@ def record_llm_feedback_event(trace_id, rating, category=None, message=None, met
     if not transaction:
         warnings.warn(
             "No message feedback events will be recorded. record_llm_feedback_event must be called within the "
-            "scope of a transaction."
+            "scope of a transaction.",
+            stacklevel=2,
         )
         return
 

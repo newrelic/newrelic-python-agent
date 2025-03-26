@@ -38,7 +38,7 @@ def test_plugin_list():
 
     for name, version, _ in plugins():
         if name == "newrelic.hooks.newrelic":
-            assert False, "Bogus plugin found"
+            raise AssertionError("Bogus plugin found")
         if name == "pytest":
             # Check that plugin that should get reported has version info.
             assert version == pytest.__version__

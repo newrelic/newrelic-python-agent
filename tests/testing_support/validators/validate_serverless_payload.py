@@ -43,7 +43,7 @@ def validate_serverless_payload(count=1):
                 decoded = serverless_payload_decode(obj[2])
 
                 # Keys should only contain metadata / data
-                set(decoded.keys()) == set(("metadata", "data"))
+                assert set(decoded.keys()) == set(("metadata", "data"))
 
         capture_wrapped = _capture(wrapped)
         result = capture_wrapped(*args, **kwargs)

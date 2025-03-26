@@ -664,7 +664,7 @@ def instrument_valkey_client(module):
 
 def instrument_asyncio_valkey_client(module):
     if hasattr(module, "Valkey"):
-        class_ = getattr(module, "Valkey")
+        class_ = module.Valkey
         for operation in _valkey_client_async_methods:
             if hasattr(class_, operation):
                 _wrap_asyncio_Valkey_method_wrapper(module, "Valkey", operation)

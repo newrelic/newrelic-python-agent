@@ -37,7 +37,7 @@ def _run_validation_test():
 
     @function_trace()
     def _function2():
-        for i in range(10):
+        for _ in range(10):
             _function1()
 
     @error_trace()
@@ -68,7 +68,7 @@ def _run_validation_test():
         response_headers = [("Content-type", "text/plain"), ("Content-Length", str(len(output)))]
         start_response(status, response_headers)
 
-        for i in range(10):
+        for _ in range(10):
             _function1()
 
         _function2()
@@ -84,7 +84,7 @@ def _run_validation_test():
 
     @background_task()
     def _background_task():
-        for i in range(10):
+        for _ in range(10):
             _function1()
 
         _function2()
@@ -154,7 +154,7 @@ def validate_config(args):
     if len(args) >= 2:
         log_file = args[1]
     else:
-        log_file = "/tmp/python-agent-test.log"  # nosec
+        log_file = "/tmp/python-agent-test.log"
 
     log_level = logging.DEBUG
 

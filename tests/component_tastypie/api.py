@@ -28,6 +28,6 @@ class SimpleResource(Resource):
         elif pk == "ObjectDoesNotExist":
             raise ObjectDoesNotExist("Object does not exist.")
         elif pk == "ZeroDivisionError":
-            1 / 0
+            1 / 0  # noqa: B018
         else:
             raise NotImplemented

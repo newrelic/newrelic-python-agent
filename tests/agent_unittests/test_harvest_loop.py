@@ -168,7 +168,11 @@ def transaction_node(request):
     return node
 
 
-def validate_metric_payload(metrics=[], endpoints_called=[]):
+def validate_metric_payload(metrics=None, endpoints_called=None):
+    if endpoints_called is None:
+        endpoints_called = []
+    if metrics is None:
+        metrics = []
     sent_metrics = {}
 
     @transient_function_wrapper("newrelic.core.agent_protocol", "AgentProtocol.send")
@@ -236,7 +240,10 @@ def validate_transaction_event_payloads(payload_validators):
     return _wrapper
 
 
-def validate_error_event_sampling(events_seen, reservoir_size, endpoints_called=[]):
+def validate_error_event_sampling(events_seen, reservoir_size, endpoints_called=None):
+    if endpoints_called is None:
+        endpoints_called = []
+
     @transient_function_wrapper("newrelic.core.data_collector", "AgentProtocol.send")
     def send_request_wrapper(wrapped, instance, args, kwargs):
         def _bind_params(method, payload=(), *args, **kwargs):

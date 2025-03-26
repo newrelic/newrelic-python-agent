@@ -215,7 +215,7 @@ def test_async_connection_basic_get_empty(ConnectionClass, callback_as_partial):
     QUEUE = "test_async_empty"
 
     def on_message(channel, method_frame, header_frame, body):
-        assert False, body.decode("UTF-8")
+        raise AssertionError(body.decode("UTF-8"))
 
     if callback_as_partial:
         on_message = functools.partial(on_message)

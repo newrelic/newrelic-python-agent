@@ -72,7 +72,7 @@ def bedrock_server():
     if not _environ_as_bool("NEW_RELIC_TESTING_RECORD_BEDROCK_RESPONSES", False):
         # Use mocked Bedrock backend and prerecorded responses
         with MockExternalBedrockServer() as server:
-            client = boto3.client(  # nosec
+            client = boto3.client(
                 "bedrock-runtime",
                 "us-east-1",
                 endpoint_url=f"http://localhost:{server.port}",

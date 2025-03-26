@@ -116,9 +116,9 @@ def test_vectorstore_modules_instrumented():
             # also be found, so separate logic is not necessary to check this.
             continue
 
-        if not hasattr(getattr(class_, "similarity_search"), "__wrapped__"):
+        if not hasattr(class_.similarity_search, "__wrapped__"):
             uninstrumented_sync_classes.append(class_name)
-        if not hasattr(getattr(class_, "asimilarity_search"), "__wrapped__"):
+        if not hasattr(class_.asimilarity_search, "__wrapped__"):
             uninstrumented_async_classes.append(class_name)
 
     assert not uninstrumented_sync_classes, f"Uninstrumented sync classes found: {str(uninstrumented_sync_classes)}"

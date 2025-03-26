@@ -399,11 +399,11 @@ class HttpClient(BaseClient):
             response = self._connection.request_encode_url(
                 method, path, fields=params, body=body, headers=merged_headers, **self._urlopen_kwargs
             )
-        except urllib3.exceptions.HTTPError as e:
+        except urllib3.exceptions.HTTPError as exc:
             self.log_response(self._audit_log_fp, request_id, 0, None, None, connection)
             # All urllib3 HTTP errors should be treated as a network
             # interface exception.
-            raise NetworkInterfaceException(e)
+            raise NetworkInterfaceException(exc) from exc
 
         self.log_response(self._audit_log_fp, request_id, response.status, response.headers, response.data, connection)
 

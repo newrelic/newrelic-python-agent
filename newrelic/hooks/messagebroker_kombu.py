@@ -28,7 +28,7 @@ from newrelic.common.signature import bind_args
 _logger = logging.getLogger(__name__)
 
 """
-The following are unsported transport types since the libraries are too old:
+The following are unsupported transport types since the libraries are too old:
 * librabbitmq
 * qpid
 * amqp uses librabbitmq or py-amqp

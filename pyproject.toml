@@ -57,7 +57,7 @@ select = [
     # "ARG",  # flake8-unused-arguments
     # "PTH",  # flake8-use-pathlib
     "PGH",  # pygrep-hooks
-    # "PL",  # Pylint
+    "PL",  # Pylint
     # "TRY",  # tryceratops
     "FLY",  # flynt
     "PERF",  # Perflint

@@ -17,6 +17,7 @@ import pickle
 import uuid
 
 import kombu
+from amqp.exceptions import NotFound
 import pytest
 from kombu import messaging, serialization
 from testing_support.db_settings import rabbitmq_settings
@@ -75,9 +76,12 @@ collector_agent_registration = collector_agent_registration_fixture(
 
 @pytest.fixture(scope="function")
 def producer(producer_connection):
-    # Purge the queue.
-    channel = producer_connection.channel()
-    channel.queue_purge("bar")
+    try:
+        # Purge the queue.
+        channel = producer_connection.channel()
+        channel.queue_purge("bar")
+    except NotFound:  # This can happen if the queue is not found.
+        pass
 
     producer = producer_connection.Producer(serializer="json")
 

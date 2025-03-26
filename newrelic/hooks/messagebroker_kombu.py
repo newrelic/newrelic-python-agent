@@ -80,10 +80,10 @@ def wrap_Producer_publish(wrapped, instance, args, kwargs):
 def wrap_consumer_recieve_callback(wrapped, instance, args, kwargs):
     # In cases where Kombu is being used to talk to the queue via Celery (aka Celery
     # is the toplevel api) a transaction will be created for Kombu and a separate
-    # transaction will be created for Celery. If kombu.consumer.enabled is disabled,
-    # do not create the duplicate Kombu transaction.
+    # transaction will be created for Celery. If instrumentation.kombu.consumer.enabled
+    # is disabled, do not create the duplicate Kombu transaction.
     settings = application_settings() or global_settings()
-    if not settings.kombu.consumer.enabled:
+    if not settings.instrumentation.kombu.consumer.enabled:
         return wrapped(*args, **kwargs)
 
     # This will be the transaction if any that is created by this wrapper.
@@ -122,7 +122,7 @@ def wrap_consumer_recieve_callback(wrapped, instance, args, kwargs):
         received_bytes = len(str(body).encode("utf-8"))
         message_count = 1
         transaction = current_transaction(active_only=False)
-        if not transaction and destination_name not in settings.kombu.ignored_exchanges:
+        if not transaction and destination_name not in settings.instrumentation.kombu.ignored_exchanges:
             # Try to get the transport type. The default for kombu is py-amqp.
             # If not in the known transport type list, fallback to "Other".
             try:

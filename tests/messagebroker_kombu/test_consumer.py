@@ -50,7 +50,7 @@ def test_custom_metrics(get_consumer_record, events):
     _test()
 
 
-@override_application_settings({"kombu.consumer.enabled": False})
+@override_application_settings({"instrumentation.kombu.consumer.enabled": False})
 @validate_transaction_count(0)
 def test_no_transaction_created_when_kombu_consumer_disabled(get_consumer_record):
     get_consumer_record()

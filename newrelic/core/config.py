@@ -152,18 +152,6 @@ class AttributesSettings(Settings):
     pass
 
 
-class KombuSettings(Settings):
-    pass
-
-
-class IgnoredExchangesSettings(Settings):
-    pass
-
-
-class KombuConsumerSettings(Settings):
-    enabled = False
-
-
 class GCRuntimeMetricsSettings(Settings):
     enabled = False
 
@@ -441,6 +429,18 @@ class InstrumentationGraphQLSettings(Settings):
     pass
 
 
+class InstrumentationKombuSettings(Settings):
+    pass
+
+
+class InstrumentationKombuIgnoredExchangesSettings(Settings):
+    pass
+
+
+class InstrumentationKombuConsumerSettings(Settings):
+    enabled = False
+
+
 class EventHarvestConfigSettings(Settings):
     nested = True
     _lock = threading.Lock()
@@ -499,14 +499,14 @@ _settings.event_harvest_config = EventHarvestConfigSettings()
 _settings.event_harvest_config.harvest_limits = EventHarvestConfigHarvestLimitSettings()
 _settings.event_loop_visibility = EventLoopVisibilitySettings()
 _settings.gc_runtime_metrics = GCRuntimeMetricsSettings()
-_settings.kombu = KombuSettings()
-_settings.kombu.ignored_exchanges = IgnoredExchangesSettings()
-_settings.kombu.consumer = KombuConsumerSettings()
 _settings.memory_runtime_pid_metrics = MemoryRuntimeMetricsSettings()
 _settings.heroku = HerokuSettings()
 _settings.infinite_tracing = InfiniteTracingSettings()
 _settings.instrumentation = InstrumentationSettings()
 _settings.instrumentation.graphql = InstrumentationGraphQLSettings()
+_settings.instrumentation.kombu = InstrumentationKombuSettings()
+_settings.instrumentation.kombu.ignored_exchanges = InstrumentationKombuIgnoredExchangesSettings()
+_settings.instrumentation.kombu.consumer = InstrumentationKombuConsumerSettings()
 _settings.message_tracer = MessageTracerSettings()
 _settings.process_host = ProcessHostSettings()
 _settings.rum = RumSettings()
@@ -794,11 +794,6 @@ _settings.attributes.include = []
 _settings.thread_profiler.enabled = True
 _settings.cross_application_tracer.enabled = False
 
-# celeryev is the monitoring queue for rabbitmq which we do not need to monitor-it just makes a lot of noise.
-_settings.kombu.ignored_exchanges = parse_space_separated_into_list(
-    os.environ.get("NEW_RELIC_KOMBU_IGNORED_EXCHANGES", "celeryev")
-)
-_settings.kombu.consumer.enabled = _environ_as_bool("NEW_RELIC_KOMBU_PRODUCER_ENABLED", default=False)
 _settings.gc_runtime_metrics.enabled = _environ_as_bool("NEW_RELIC_GC_RUNTIME_METRICS_ENABLED", default=False)
 _settings.gc_runtime_metrics.top_object_count_limit = 5
 
@@ -900,6 +895,12 @@ _settings.infinite_tracing.span_queue_size = _environ_as_int("NEW_RELIC_INFINITE
 _settings.instrumentation.graphql.capture_introspection_queries = os.environ.get(
     "NEW_RELIC_INSTRUMENTATION_GRAPHQL_CAPTURE_INTROSPECTION_QUERIES", False
 )
+
+# celeryev is the monitoring queue for rabbitmq which we do not need to monitor-it just makes a lot of noise.
+_settings.instrumentation.kombu.ignored_exchanges = parse_space_separated_into_list(
+    os.environ.get("NEW_RELIC_INSTRUMENTATION_KOMBU_IGNORED_EXCHANGES", "celeryev")
+)
+_settings.instrumentation.kombu.consumer.enabled = _environ_as_bool("NEW_RELIC_INSTRUMENTATION_KOMBU_CONSUMER_ENABLED", default=False)
 
 _settings.event_harvest_config.harvest_limits.analytic_event_data = _environ_as_int(
     "NEW_RELIC_ANALYTICS_EVENTS_MAX_SAMPLES_STORED", DEFAULT_RESERVOIR_SIZE

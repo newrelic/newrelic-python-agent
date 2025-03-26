@@ -25,15 +25,15 @@ except:
 
 def validate_span_events(
     count=1,
-    exact_intrinsics={},
-    expected_intrinsics=[],
-    unexpected_intrinsics=[],
-    exact_agents={},
-    expected_agents=[],
-    unexpected_agents=[],
-    exact_users={},
-    expected_users=[],
-    unexpected_users=[],
+    exact_intrinsics=None,
+    expected_intrinsics=None,
+    unexpected_intrinsics=None,
+    exact_agents=None,
+    expected_agents=None,
+    unexpected_agents=None,
+    exact_users=None,
+    expected_users=None,
+    unexpected_users=None,
     index=-1,
 ):
     # Used for validating a single span event.
@@ -43,6 +43,25 @@ def validate_span_events(
     # raises an AssertionError.
     #
     # Use this validator once per distinct span event expected.
+
+    if unexpected_users is None:
+        unexpected_users = []
+    if expected_users is None:
+        expected_users = []
+    if exact_users is None:
+        exact_users = {}
+    if unexpected_agents is None:
+        unexpected_agents = []
+    if expected_agents is None:
+        expected_agents = []
+    if exact_agents is None:
+        exact_agents = {}
+    if unexpected_intrinsics is None:
+        unexpected_intrinsics = []
+    if expected_intrinsics is None:
+        expected_intrinsics = []
+    if exact_intrinsics is None:
+        exact_intrinsics = {}
 
     @function_wrapper
     def _validate_wrapper(wrapped, instance, args, kwargs):
@@ -120,7 +139,7 @@ def validate_span_events(
 def check_value_equals(dictionary, key, expected_value):
     value = dictionary.get(key)
     if AttributeValue and isinstance(value, AttributeValue):
-        for descriptor, val in value.ListFields():
+        for _, val in value.ListFields():
             if val != expected_value:
                 return False
         return True
@@ -136,8 +155,10 @@ def assert_isinstance(value, expected_type):
             assert value.HasField("double_value")
         elif expected_type is int:
             assert value.HasField("int_value")
+        elif expected_type is bool:
+            assert value.HasField("bool_value")
         else:
-            assert False
+            raise AssertionError
     else:
         assert isinstance(value, expected_type)
 
@@ -168,7 +189,7 @@ def _check_span_intrinsics(intrinsics):
     if "parentId" in intrinsics:
         assert_isinstance(intrinsics["parentId"], str)
     assert_isinstance(intrinsics["transactionId"], str)
-    intrinsics["sampled"] is True
+    assert_isinstance(intrinsics["sampled"], bool)
     assert_isinstance(intrinsics["priority"], float)
     assert_isinstance(intrinsics["timestamp"], int)
     ts = intrinsics["timestamp"]

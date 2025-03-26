@@ -48,7 +48,7 @@ _test_blocking_connection_consume_metrics = [
 def test_blocking_connection_consume_break(producer):
     with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
         channel = connection.channel()
-        for method_frame, properties, body in channel.consume(QUEUE):
+        for method_frame, _properties, body in channel.consume(QUEUE):
             assert hasattr(method_frame, "_nr_start_time")
             assert body == BODY
             break
@@ -67,7 +67,7 @@ def test_blocking_connection_consume_connection_close(producer):
     channel = connection.channel()
 
     try:
-        for method_frame, properties, body in channel.consume(QUEUE):
+        for method_frame, _properties, body in channel.consume(QUEUE):
             assert hasattr(method_frame, "_nr_start_time")
             assert body == BODY
             channel.close()
@@ -117,15 +117,15 @@ def test_blocking_connection_consume_exception_in_for_loop(producer):
         try:
             # We should still create the metric in this case even if there is
             # an exception
-            for result in channel.consume(QUEUE):
-                1 / 0
+            for _result in channel.consume(QUEUE):
+                1 / 0  # noqa: B018
         except ZeroDivisionError:
             # Expected error
             pass
         except Exception as e:
-            assert False, f"Wrong exception was raised: {e}"
+            raise AssertionError(f"Wrong exception was raised: {e}")
         else:
-            assert False, "No exception was raised!"
+            raise AssertionError("No exception was raised!")
 
 
 _test_blocking_connection_consume_empty_metrics = [
@@ -149,15 +149,15 @@ def test_blocking_connection_consume_exception_in_generator():
 
         try:
             # Since the pytest fixture is not used, the QUEUE will not exist
-            for result in channel.consume(QUEUE):
+            for _result in channel.consume(QUEUE):
                 pass
         except pika.exceptions.ChannelClosed:
             # Expected error
             pass
         except Exception as e:
-            assert False, f"Wrong exception was raised: {e}"
+            raise AssertionError(f"Wrong exception was raised: {e}")
         else:
-            assert False, "No exception was raised!"
+            raise AssertionError("No exception was raised!")
 
 
 _test_blocking_connection_consume_many_metrics = [
@@ -216,7 +216,7 @@ def test_blocking_connection_consume_using_methods(producer):
             pass
         else:
             # this is not
-            assert False, "No exception was raised!"
+            raise AssertionError("No exception was raised!")
 
         result = consumer.close()
         assert result is None
@@ -236,7 +236,7 @@ def test_blocking_connection_consume_outside_txn(producer):
         consumer = channel.consume(QUEUE)
 
         try:
-            for method_frame, properties, body in consumer:
+            for method_frame, _properties, body in consumer:
                 assert hasattr(method_frame, "_nr_start_time")
                 assert body == BODY
                 break
@@ -268,7 +268,7 @@ def test_blocking_connection_consume_many_outside_txn(produce_five):
         consumer = channel.consume(QUEUE)
 
         up_next = None
-        for i in range(6):
+        for _ in range(6):
             try:
                 up_next = consume_it(consumer, up_next=up_next)
             except StopIteration:
@@ -305,7 +305,7 @@ def test_blocking_connection_consume_using_methods_outside_txn(producer):
             pass
         else:
             # this is not
-            assert False, "No exception was raised!"
+            raise AssertionError("No exception was raised!")
 
         result = consumer.close()
         assert result is None
@@ -329,4 +329,4 @@ def test_blocking_connection_consume_exception_on_creation():
             pass
         else:
             # this is not
-            assert False, "TypeError was not raised"
+            raise AssertionError("TypeError was not raised")

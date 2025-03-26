@@ -85,11 +85,11 @@ def test_tracestate_generation(inbound_nr_tracestate):
         return test_application.get("/", headers=headers)
 
     response = _test()
-    for header_name, header_value in response.json:
+    for header_name, header_value in response.json:  # noqa: B007
         if header_name == "tracestate":
             break
     else:
-        assert False, "tracestate header not propagated"
+        raise AssertionError("tracestate header not propagated")
 
     header_value = header_value.split(",", 1)[0]
     key, value = header_value.split("=", 2)
@@ -127,11 +127,11 @@ def test_tracestate_generation(inbound_nr_tracestate):
 def test_tracestate_propagation(inbound_tracestate, expected):
     headers = {"traceparent": INBOUND_TRACEPARENT, "tracestate": inbound_tracestate}
     response = test_application.get("/", headers=headers)
-    for header_name, header_value in response.json:
+    for header_name, header_value in response.json:  # noqa: B007
         if header_name == "tracestate":
             break
     else:
-        assert False, "tracestate header not propagated"
+        raise AssertionError("tracestate header not propagated")
 
     assert not header_value.endswith(",")
     if inbound_tracestate:
@@ -153,11 +153,11 @@ def test_traceparent_generation(inbound_traceparent, span_events_enabled):
         return test_application.get("/", headers=headers)
 
     response = _test()
-    for header_name, header_value in response.json:
+    for header_name, header_value in response.json:  # noqa: B007
         if header_name == "traceparent":
             break
     else:
-        assert False, "traceparent header not present"
+        raise AssertionError("traceparent header not present")
 
     assert len(header_value) == 55
     assert header_value.startswith("00-")

@@ -50,11 +50,11 @@ class AdaptiveSampler:
                 return False
 
             elif self.sampled_count < self.sampling_target:
-                sampled = random.randrange(self.computed_count_last) < self.sampling_target
+                sampled = random.randrange(self.computed_count_last) < self.sampling_target  # noqa: S311
                 if sampled:
                     self.sampled_count += 1
             else:
-                sampled = random.randrange(self.computed_count) < self.adaptive_target
+                sampled = random.randrange(self.computed_count) < self.adaptive_target  # noqa: S311
                 if sampled:
                     self.sampled_count += 1
 

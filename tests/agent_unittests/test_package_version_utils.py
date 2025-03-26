@@ -124,7 +124,7 @@ def test_pkg_resources_metadata():
 
 def _getattr_deprecation_warning(attr):
     if attr == "__version__":
-        warnings.warn("Testing deprecation warnings.", DeprecationWarning)
+        warnings.warn("Testing deprecation warnings.", DeprecationWarning, stacklevel=2)
         return "3.2.1"
     else:
         raise NotImplementedError

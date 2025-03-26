@@ -75,4 +75,4 @@ def test_gunicorn_gaiohttp_worker(nr_enabled):
         # test passed
         break
     else:
-        assert False, "Gunicorn test did not run"
+        raise AssertionError("Gunicorn test did not run")

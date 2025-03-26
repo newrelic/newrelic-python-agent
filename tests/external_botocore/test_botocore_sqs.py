@@ -63,7 +63,7 @@ if BOTOCORE_VERSION < (1, 29, 0):
     EXPECTED_SEND_MESSAGE_BATCH_AGENT_ATTRS = {"exact_agents": {"aws.operation": "SendMessageBatch"}}
 
 AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"
-AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"  # nosec
+AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"
 AWS_REGION = "us-east-1"
 
 TEST_QUEUE = f"python-agent-test-{uuid.uuid4()}"

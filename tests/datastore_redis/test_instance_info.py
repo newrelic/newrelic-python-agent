@@ -144,7 +144,7 @@ def test_redis_connection_from_url(args, kwargs, expected):
     elif r.connection_pool.connection_class is redis.SSLConnection:
         r.connection_pool.connection_class = DisabledSSLConnection
     else:
-        assert False, r.connection_pool.connection_class
+        raise AssertionError(r.connection_pool.connection_class)
     connection = r.connection_pool.get_connection("SELECT")
     try:
         conn_kwargs = _conn_attrs_to_dict(connection)
@@ -164,7 +164,7 @@ def test_strict_redis_connection_from_url(args, kwargs, expected):
     elif r.connection_pool.connection_class is redis.SSLConnection:
         r.connection_pool.connection_class = DisabledSSLConnection
     else:
-        assert False, r.connection_pool.connection_class
+        raise AssertionError(r.connection_pool.connection_class)
     connection = r.connection_pool.get_connection("SELECT")
     try:
         conn_kwargs = _conn_attrs_to_dict(connection)

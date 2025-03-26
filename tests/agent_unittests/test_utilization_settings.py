@@ -69,6 +69,7 @@ ENV_WITH_HEROKU = {
 
 # Tests for loading settings and testing for values precedence
 
+
 def reset_agent_config(ini_contents, env_dict):
     @function_wrapper
     def reset(wrapped, instance, args, kwargs):

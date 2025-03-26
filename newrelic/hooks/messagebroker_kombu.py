@@ -34,7 +34,7 @@ The following are unsported transport types since the libraries are too old:
 * amqp uses librabbitmq or py-amqp
 """
 AVAILABLE_TRANSPORTS = {
-    "py-amqp": "PYAMQP",
+    "py-amqp": "AMQP",
     "sqs": "SQS",
     "redis": "REDIS",
     "zookeeper": "ZooKeeper",

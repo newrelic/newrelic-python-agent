@@ -30,7 +30,7 @@ from testing_support.validators.validate_distributed_trace_accepted import valid
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import transient_function_wrapper
 
-TRANSPORT_TYPES = {"pyamqp": "PYAMQP", "amqp": "AMQP"}
+TRANSPORT_TYPES = {"pyamqp": "AMQP", "amqp": "AMQP"}
 DB_SETTINGS = rabbitmq_settings()[0]
 
 

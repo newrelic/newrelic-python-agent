@@ -67,7 +67,7 @@ _logger = logging.getLogger(__name__)
 
 DISTRIBUTED_TRACE_KEYS_REQUIRED = ("ty", "ac", "ap", "tr", "ti")
 DISTRIBUTED_TRACE_TRANSPORT_TYPES = set(
-    ("HTTP", "HTTPS", "Kafka", "JMS", "IronMQ", "AMQP", "Queue", "PYAMQP", "SQS", "REDIS", "ZooKeeper", "Other")
+    ("HTTP", "HTTPS", "Kafka", "JMS", "IronMQ", "AMQP", "Queue", "SQS", "REDIS", "ZooKeeper", "Other")
 )
 DELIMITER_FORMAT_RE = re.compile("[ \t]*,[ \t]*")
 ACCEPTED_DISTRIBUTED_TRACE = 1

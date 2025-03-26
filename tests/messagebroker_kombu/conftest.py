@@ -13,13 +13,12 @@
 # limitations under the License.
 
 import json
-import uuid
 import pickle
+import uuid
 
 import kombu
 import pytest
-from kombu import messaging
-from kombu import serialization
+from kombu import messaging, serialization
 from testing_support.db_settings import rabbitmq_settings
 from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     collector_agent_registration_fixture,

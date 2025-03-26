@@ -84,4 +84,4 @@ def test_aiohttp_app_factory(nr_enabled):
         # test passed
         break
     else:
-        assert False, "Gunicorn test did not run"
+        raise AssertionError("Gunicorn test did not run")

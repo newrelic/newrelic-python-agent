@@ -265,8 +265,8 @@ def _record_vector_search_success(transaction, linking_metadata, ft, search_id, 
 
     for index, doc in enumerate(response):
         sequence = index
-        page_content = getattr(doc, "page_content")
-        metadata = getattr(doc, "metadata") or {}
+        page_content = doc.page_content
+        metadata = doc.metadata or {}
 
         metadata_dict = {f"metadata.{key}": value for key, value in metadata.items()}
 
@@ -839,16 +839,16 @@ def _capture_chain_run_id(transaction, run_manager, completion_id):
 
 
 def instrument_langchain_runnables_chains_base(module):
-    if hasattr(getattr(module, "RunnableSequence"), "invoke"):
+    if hasattr(module.RunnableSequence, "invoke"):
         wrap_function_wrapper(module, "RunnableSequence.invoke", wrap_chain_sync_run)
-    if hasattr(getattr(module, "RunnableSequence"), "ainvoke"):
+    if hasattr(module.RunnableSequence, "ainvoke"):
         wrap_function_wrapper(module, "RunnableSequence.ainvoke", wrap_chain_async_run)
 
 
 def instrument_langchain_chains_base(module):
-    if hasattr(getattr(module, "Chain"), "invoke"):
+    if hasattr(module.Chain, "invoke"):
         wrap_function_wrapper(module, "Chain.invoke", wrap_chain_sync_run)
-    if hasattr(getattr(module, "Chain"), "ainvoke"):
+    if hasattr(module.Chain, "ainvoke"):
         wrap_function_wrapper(module, "Chain.ainvoke", wrap_chain_async_run)
 
 
@@ -870,20 +870,20 @@ def instrument_langchain_vectorstore_similarity_search(module):
 
 
 def instrument_langchain_core_tools(module):
-    if hasattr(getattr(module, "BaseTool"), "run"):
+    if hasattr(module.BaseTool, "run"):
         wrap_function_wrapper(module, "BaseTool.run", wrap_tool_sync_run)
-    if hasattr(getattr(module, "BaseTool"), "arun"):
+    if hasattr(module.BaseTool, "arun"):
         wrap_function_wrapper(module, "BaseTool.arun", wrap_tool_async_run)
 
 
 def instrument_langchain_callbacks_manager(module):
-    if hasattr(getattr(module, "CallbackManager"), "on_tool_start"):
+    if hasattr(module.CallbackManager, "on_tool_start"):
         wrap_function_wrapper(module, "CallbackManager.on_tool_start", wrap_on_tool_start_sync)
-    if hasattr(getattr(module, "AsyncCallbackManager"), "on_tool_start"):
+    if hasattr(module.AsyncCallbackManager, "on_tool_start"):
         wrap_function_wrapper(module, "AsyncCallbackManager.on_tool_start", wrap_on_tool_start_async)
-    if hasattr(getattr(module, "CallbackManager"), "on_chain_start"):
+    if hasattr(module.CallbackManager, "on_chain_start"):
         wrap_function_wrapper(module, "CallbackManager.on_chain_start", wrap_on_chain_start)
-    if hasattr(getattr(module, "AsyncCallbackManager"), "on_chain_start"):
+    if hasattr(module.AsyncCallbackManager, "on_chain_start"):
         wrap_function_wrapper(module, "AsyncCallbackManager.on_chain_start", wrap_async_on_chain_start)
 
 

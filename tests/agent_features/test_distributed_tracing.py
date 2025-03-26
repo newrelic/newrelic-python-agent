@@ -264,7 +264,7 @@ def test_distributed_tracing_metrics(web_transaction, gen_error, has_parent):
 
             if gen_error:
                 try:
-                    1 / 0
+                    1 / 0  # noqa: B018
                 except ZeroDivisionError:
                     transaction.notice_error()
 

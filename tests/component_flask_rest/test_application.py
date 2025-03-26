@@ -31,7 +31,7 @@ def application(request):
     elif request.param == "flask_restx":
         import flask_restx as module
     else:
-        assert False
+        raise AssertionError
 
     if "propagate_exceptions" in request.fixturenames:
         propagate_exceptions = request.getfixturevalue("propagate_exceptions")

@@ -114,7 +114,7 @@ def target_wsgi_application(environ, start_response):
 
     if test_settings["raises_exception"]:
         try:
-            1 / 0
+            1 / 0  # noqa: B018
         except ZeroDivisionError:
             txn.notice_error()
 

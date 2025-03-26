@@ -66,7 +66,7 @@ def test_header_attributes():
     assert settings.beacon
     assert settings.error_beacon
 
-    token = "0123456789ABCDEF"  # nosec
+    token = "0123456789ABCDEF"
     headers = {"Cookie": f"NRAGENT=tk={token}"}
 
     response = target_application_manual_rum.get("/", headers=headers)

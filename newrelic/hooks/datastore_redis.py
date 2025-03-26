@@ -664,7 +664,7 @@ def instrument_redis_client(module):
 
 def instrument_asyncio_redis_client(module):
     if hasattr(module, "Redis"):
-        class_ = getattr(module, "Redis")
+        class_ = module.Redis
         for operation in _redis_client_async_methods:
             if hasattr(class_, operation):
                 _wrap_asyncio_Redis_method_wrapper(module, "Redis", operation)

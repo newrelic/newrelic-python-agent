@@ -127,7 +127,7 @@ async def not_found(request):
 
 @app.route("/zero")
 async def zero_division_error(request):
-    1 / 0
+    1 / 0  # noqa: B018
 
 
 @app.middleware("request")
@@ -169,7 +169,7 @@ async def streaming(request):
 # Fake websocket endpoint to enable websockets on the server
 @app.websocket("/socket")
 async def socket(request, ws):
-    assert False
+    raise AssertionError
 
 
 @app.route("/custom-header/<header_key>/<header_value>")

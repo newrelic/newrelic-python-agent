@@ -218,7 +218,7 @@ class AgentProtocol:
             response = self.client.send_request(path=path, params=params, headers=headers, payload=payload)
         except NetworkInterfaceException:
             # All HTTP errors are currently retried
-            raise RetryDataForRequest
+            raise RetryDataForRequest  # noqa: B904
 
         status, data = response
 

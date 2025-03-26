@@ -27,10 +27,10 @@ select = [
     # "UP",  # pyupgrade
     "YTT",  # flake8-2020
     "ASYNC",  # flake8-async
-    # "S",  # flake8-bandit
+    "S",  # flake8-bandit
     # "BLE",  # flake8-blind-except
     # "FBT",  # flake8-boolean-trap
-    # "B",  # flake8-bugbear
+    "B",  # flake8-bugbear
     "A",  # flake8-builtins
     "COM",  # flake8-commas
     # "C4",  # flake8-comprehensions
@@ -89,6 +89,7 @@ ignore = [
     # Temporarily disabled rules
     "RUF100",  # unused-noqa (TODO: remove this once all linters are enabled)
     "PERF203",  # try-except-in-loop (most of these are unavoidable)
+    "S110",  # try-except-pass (Bandit wants us to log the exception, which is usually pointless. Spot check these later)
     # Permanently disabled rules
     "D203",  # incorrect-blank-line-before-class
     "D213",  # multi-line-summary-second-line
@@ -112,11 +113,16 @@ ignore = [
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = [
     # Disabled rules in tests
+    "S",  # flake8-bandit (security checks are not necessary in tests)
     "F401",  # unused-import
     "F811",  # redefined-while-unused (pytest fixtures trigger this)
     "PLR2004",  # magic-value-comparison (comparing to constant values)
-    "S101",  # assert (acceptable in tests)
     "ASYNC251",  # blocking-sleep-in-async-function (acceptable in tests)
+    "B904",  # raise-without-from-inside-except (not necessary in tests)
+]
+"newrelic/admin/*" = [
+    # Disabled rules in admin scripts
+    "S108",  # flake8-bandit (hardcoded log files are never used as input)
 ]
 
 # Alternate linters and formatters

@@ -199,7 +199,7 @@ def wrap_RedisConnection_execute(wrapped, instance, args, kwargs):  # pragma: no
 def instrument_aioredis_client(module):
     # StrictRedis is just an alias of Redis, no need to wrap it as well.
     if hasattr(module, "Redis"):
-        class_ = getattr(module, "Redis")
+        class_ = module.Redis
         for operation in _redis_client_methods:
             if hasattr(class_, operation):
                 _wrap_AioRedis_method_wrapper(module, "Redis", operation)

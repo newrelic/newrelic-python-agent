@@ -40,7 +40,7 @@ def validate_custom_parameters(required_params=None, forgone_params=None):
             assert name in attrs, f"name={name!r}, params={attrs!r}"
             assert attrs[name] == value, f"name={name!r}, value={value!r}, params={attrs!r}"
 
-        for name, value in forgone_params:
+        for name, _ in forgone_params:
             assert name not in attrs, f"name={name!r}, params={attrs!r}"
 
         return wrapped(*args, **kwargs)

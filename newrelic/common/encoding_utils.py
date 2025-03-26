@@ -241,7 +241,7 @@ def generate_path_hash(name, seed):
     if not isinstance(name, bytes):
         name = name.encode("UTF-8")
 
-    path_hash = rotated ^ int(hashlib.md5(name).hexdigest()[-8:], base=16)  # nosec
+    path_hash = rotated ^ int(hashlib.md5(name).hexdigest()[-8:], base=16)  # noqa: S324
     return f"{path_hash:08x}"
 
 

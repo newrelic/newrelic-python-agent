@@ -266,7 +266,7 @@ def _synthetics_limit_test(num_requests, num_events, num_transactions):
     # Send requests
 
     headers = _make_synthetics_headers()
-    for i in range(num_requests):
+    for _ in range(num_requests):
         response = target_application.get("/", headers=headers)
 
     # Check that we've saved the right number events and traces

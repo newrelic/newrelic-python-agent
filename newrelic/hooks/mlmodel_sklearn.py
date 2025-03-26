@@ -89,7 +89,7 @@ def _wrap_method_trace(module, class_, method, name=None, group=None):
         # If this is the fit method, increment the training_step counter.
         if method in ("fit", "fit_predict"):
             training_step = getattr(instance, "_nr_wrapped_training_step", -1)
-            setattr(instance, "_nr_wrapped_training_step", training_step + 1)
+            instance._nr_wrapped_training_step = training_step + 1
 
         # If this is the predict method, wrap the return type in an nr type with
         # _nr_wrapped attrs that will attach model info to the data.

@@ -113,7 +113,7 @@ def _nr_aiohttp_wrap_view_(wrapped, instance, args, kwargs):
 
     if inspect.isclass(instance._handler):
         try:
-            init = getattr(instance._handler, "__init__")
+            init = instance._handler.__init__
         except AttributeError:
 
             def init(*args, **kwargs):

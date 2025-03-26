@@ -163,7 +163,7 @@ def patch_partition_queries(monkeypatch, async_client, collection, sample_data):
     from google.cloud.firestore_v1.types.query import Cursor
 
     subcollection = collection.document("subcollection").collection("subcollection1")
-    documents = [d for d in subcollection.list_documents()]
+    documents = list(subcollection.list_documents())
 
     async def mock_partition_query(*args, **kwargs):
         async def _mock_partition_query():

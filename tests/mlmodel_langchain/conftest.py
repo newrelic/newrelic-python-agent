@@ -187,7 +187,7 @@ def generator_proxy(openai_version):
             try:
                 return_val = self.__wrapped__.__next__()
                 if return_val:
-                    prompt = [k for k in OPENAI_AUDIT_LOG_CONTENTS.keys()][-1]
+                    prompt = list(OPENAI_AUDIT_LOG_CONTENTS.keys())[-1]
                     if openai_version < (1, 0):
                         headers = dict(
                             filter(

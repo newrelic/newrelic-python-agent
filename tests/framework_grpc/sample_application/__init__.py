@@ -144,7 +144,7 @@ class SampleApplicationServicer(sample_application_pb2_grpc.SampleApplicationSer
         context.abort_with_status(Status)
 
     def extract_dt_value(self, metadata):
-        d = {k: v for k, v in metadata}
+        d = dict(metadata)
         return Message(text=json.dumps(d))
 
     def DtNoTxnUnaryUnary(self, request, context):

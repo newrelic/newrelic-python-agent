@@ -29,8 +29,8 @@ def sample_data(collection):
 @pytest.fixture()
 def exercise_client(client, sample_data):
     def _exercise_client():
-        assert len([_ for _ in client.collections()])
-        doc = [_ for _ in client.get_all([sample_data])][0]
+        assert len(list(client.collections()))
+        doc = list(client.get_all([sample_data]))[0]
         assert doc.to_dict()["x"] == 1
 
     return _exercise_client

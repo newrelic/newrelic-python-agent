@@ -17,8 +17,8 @@ import pickle
 import uuid
 
 import kombu
-from amqp.exceptions import NotFound
 import pytest
+from amqp.exceptions import NotFound
 from kombu import messaging, serialization
 from testing_support.db_settings import rabbitmq_settings
 from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
@@ -34,12 +34,7 @@ TRANSPORT_TYPES = {"pyamqp": "AMQP", "amqp": "AMQP"}
 DB_SETTINGS = rabbitmq_settings()[0]
 
 
-@pytest.fixture(
-    scope="session",
-    params=[
-        "pyamqp"  # , "amqp", #"qpid", "redis"
-    ],
-)
+@pytest.fixture(scope="session", params=["pyamqp"])
 def transport_type(request):
     return request.param
 
@@ -75,11 +70,11 @@ collector_agent_registration = collector_agent_registration_fixture(
 
 
 @pytest.fixture(scope="function")
-def producer(producer_connection):
+def producer(producer_connection, queue):
+    # Purge the queue.
     try:
-        # Purge the queue.
         channel = producer_connection.channel()
-        channel.queue_purge("bar")
+        channel.queue_purge(queue.name)
     except NotFound:  # This can happen if the queue is not found.
         pass
 
@@ -153,14 +148,16 @@ def events():
     return []
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def exchange():
-    return kombu.Exchange("exchange", "direct", durable=True)
+    exchange_uuid = str(uuid.uuid4())
+    return kombu.Exchange(f"exchange-{exchange_uuid}", "direct", durable=True)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def queue(exchange):
-    return kombu.Queue("bar", exchange=exchange, routing_key="bar")
+    queue_uuid = str(uuid.uuid4())
+    return kombu.Queue(f"queue-{queue_uuid}", exchange=exchange, routing_key="bar")
 
 
 @pytest.fixture

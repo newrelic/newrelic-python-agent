@@ -24,12 +24,12 @@ from newrelic.api.function_trace import FunctionTrace
 from newrelic.common.object_names import callable_name
 
 
-def test_trace_metrics(send_producer_message):
+def test_trace_metrics(send_producer_message, exchange):
     import kombu
 
     version = kombu.__version__
 
-    scoped_metrics = [("MessageBroker/Kombu/Exchange/Produce/Named/exchange", 1)]
+    scoped_metrics = [(f"MessageBroker/Kombu/Exchange/Produce/Named/{exchange.name}", 1)]
     unscoped_metrics = scoped_metrics
 
     @validate_transaction_metrics(
@@ -38,7 +38,7 @@ def test_trace_metrics(send_producer_message):
         rollup_metrics=unscoped_metrics,
         custom_metrics=[
             (f"Python/MessageBroker/Kombu/{version}", 1),
-            ("MessageBroker/Kombu/Exchange/Named/exchange/Serialization/Value", 1),
+            (f"MessageBroker/Kombu/Exchange/Named/{exchange.name}/Serialization/Value", 1),
         ],
         background_task=True,
     )

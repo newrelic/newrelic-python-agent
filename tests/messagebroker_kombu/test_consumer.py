@@ -27,14 +27,14 @@ from newrelic.common.object_names import callable_name
 from newrelic.common.package_version_utils import get_package_version
 
 
-def test_custom_metrics(get_consumer_record, events):
+def test_custom_metrics(get_consumer_record, events, exchange):
     @validate_transaction_metrics(
-        "Named/exchange",
+        f"Named/{exchange.name}",
         group="Message/Kombu/Exchange",
         custom_metrics=[
-            ("Message/Kombu/Exchange/Named/exchange/Received/Bytes", 1),
-            ("Message/Kombu/Exchange/Named/exchange/Received/Messages", 1),
-            ("MessageBroker/Kombu/Exchange/Named/exchange/Serialization/Value", 1),
+            (f"Message/Kombu/Exchange/Named/{exchange.name}/Received/Bytes", 1),
+            (f"Message/Kombu/Exchange/Named/{exchange.name}/Received/Messages", 1),
+            (f"MessageBroker/Kombu/Exchange/Named/{exchange.name}/Serialization/Value", 1),
         ],
         background_task=True,
     )
@@ -60,16 +60,16 @@ def test_multiple_transactions(get_consumer_record):
     get_consumer_record()
 
 
-def test_custom_metrics_on_existing_transaction(get_consumer_record):
+def test_custom_metrics_on_existing_transaction(get_consumer_record, exchange):
     version = get_package_version("kombu")
 
     @validate_transaction_metrics(
         "test_consumer:test_custom_metrics_on_existing_transaction.<locals>._test",
         custom_metrics=[
-            ("Message/Kombu/Exchange/Named/exchange/Received/Bytes", 1),
-            ("Message/Kombu/Exchange/Named/exchange/Received/Messages", 1),
+            (f"Message/Kombu/Exchange/Named/{exchange.name}/Received/Bytes", 1),
+            (f"Message/Kombu/Exchange/Named/{exchange.name}/Received/Messages", 1),
             (f"Python/MessageBroker/Kombu/{version}", 1),
-            ("MessageBroker/Kombu/Exchange/Named/exchange/Serialization/Value", 1),
+            (f"MessageBroker/Kombu/Exchange/Named/{exchange.name}/Serialization/Value", 1),
             ("MessageBroker/Kombu/Exchange/Named/Unknown/Serialization/Value", 1),
         ],
         background_task=True,
@@ -82,12 +82,12 @@ def test_custom_metrics_on_existing_transaction(get_consumer_record):
     _test()
 
 
-def test_custom_metrics_inactive_transaction(get_consumer_record):  # , expected_missing_broker_metrics):
+def test_custom_metrics_inactive_transaction(get_consumer_record, exchange):
     @validate_transaction_metrics(
         "test_consumer:test_custom_metrics_inactive_transaction.<locals>._test",
         custom_metrics=[
-            ("Message/Kombu/Exchange/Named/exchange/Received/Bytes", None),
-            ("Message/Kombu/Exchange/Named/exchange/Received/Messages", None),
+            (f"Message/Kombu/Exchange/Named/{exchange.name}/Received/Bytes", None),
+            (f"Message/Kombu/Exchange/Named/{exchange.name}/Received/Messages", None),
         ],
         # + expected_missing_broker_metrics,
         background_task=True,
@@ -123,14 +123,14 @@ def test_consumer_errors(get_consumer_record_error):
     _test()
 
 
-def test_distributed_tracing_headers(send_producer_message, consumer_connection, consumer_validate_dt):
+def test_distributed_tracing_headers(send_producer_message, consumer_connection, consumer_validate_dt, exchange):
     # Produce the messages inside a transaction, making sure to close it.
     @background_task()
     def _produce():
         send_producer_message()
 
     @validate_transaction_metrics(
-        "Named/exchange",
+        f"Named/{exchange.name}",
         group="Message/Kombu/Exchange",
         rollup_metrics=[
             ("Supportability/DistributedTrace/AcceptPayload/Success", None),

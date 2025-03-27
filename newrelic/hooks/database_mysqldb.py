@@ -43,8 +43,8 @@ def instance_info(args, kwargs):
     def _bind_params(
         host=None,
         user=None,
-        passwd=None,
-        db=None,
+        password=None,
+        database=None,
         port=None,
         unix_socket=None,
         conv=None,
@@ -57,10 +57,13 @@ def instance_info(args, kwargs):
         *args,
         **kwargs,
     ):
-        return (host, port, db, unix_socket, read_default_file, read_default_group)
+        # db allowed as an alias for database, but only in kwargs
+        if "db" in kwargs:
+            database = kwargs["db"]
+        return (host, port, database, unix_socket, read_default_file, read_default_group)
 
     params = _bind_params(*args, **kwargs)
-    host, port, db, unix_socket, read_default_file, read_default_group = params
+    host, port, database, unix_socket, read_default_file, read_default_group = params
     explicit_host = host
 
     port_path_or_id = None
@@ -81,9 +84,9 @@ def instance_info(args, kwargs):
 
     # There is no default database if omitted from the connect params
     # In this case, we should report unknown
-    db = db or "unknown"
+    database = database or "unknown"
 
-    return (host, port_path_or_id, db)
+    return (host, port_path_or_id, database)
 
 
 def instrument_mysqldb(module):

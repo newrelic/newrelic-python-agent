@@ -169,7 +169,9 @@ def wrap_consumer_recieve_callback(wrapped, instance, args, kwargs):
     try:
         return_val = wrapped(*args, **kwargs)
     except Exception:
-        if current_transaction():
+        if created_transaction:
+            created_transaction.__exit__(*sys.exc_info())
+        elif current_transaction():
             # Report error on existing transaction if there is one
             notice_error()
         else:

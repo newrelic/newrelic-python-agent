@@ -2846,7 +2846,10 @@ def _process_module_builtin_defaults():
     _process_module_definition(
         "kafka.coordinator.heartbeat", "newrelic.hooks.messagebroker_kafkapython", "instrument_kafka_heartbeat"
     )
-
+    _process_module_definition("kombu.messaging", "newrelic.hooks.messagebroker_kombu", "instrument_kombu_messaging")
+    _process_module_definition(
+        "kombu.serialization", "newrelic.hooks.messagebroker_kombu", "instrument_kombu_serializaion"
+    )
     _process_module_definition("logging", "newrelic.hooks.logger_logging", "instrument_logging")
 
     _process_module_definition("loguru", "newrelic.hooks.logger_loguru", "instrument_loguru")

@@ -48,8 +48,6 @@ _disabled_required = {}
 _disabled_forgone = {"host": "VALUE NOT USED", "port_path_or_id": "VALUE NOT USED", "db.instance": "VALUE NOT USED"}
 
 
-
-
 def _exercise_db():
     connection = MySQLdb.connect(
         db=DB_SETTINGS["name"],
@@ -62,8 +60,6 @@ def _exercise_db():
         with connection.cursor() as cursor:
             cursor.execute("SELECT version();")
         connection.commit()
-
-
 
 
 @override_application_settings(_enable_instance_settings)

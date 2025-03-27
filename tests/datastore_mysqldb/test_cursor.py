@@ -81,7 +81,6 @@ _enable_rollup_metrics.append((_instance_metric_name, 10))
 _disable_rollup_metrics.append((_instance_metric_name, None))
 
 
-
 def _exercise_db(connection, table_name):
     with connection:
         with connection.cursor() as cursor:
@@ -107,8 +106,6 @@ def _exercise_db(connection, table_name):
         connection.commit()
         connection.rollback()
         connection.commit()
-
-
 
 
 @override_application_settings(_enable_instance_settings)

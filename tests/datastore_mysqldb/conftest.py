@@ -28,7 +28,7 @@ _default_settings = {
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
-    app_name="Python Agent Test (datastore_mysql)",
+    app_name="Python Agent Test (datastore_mysqldb)",
     default_settings=_default_settings,
     linked_applications=["Python Agent Test (datastore)"],
 )
@@ -36,4 +36,4 @@ collector_agent_registration = collector_agent_registration_fixture(
 
 @pytest.fixture(scope="session")
 def table_name():
-    return f"datastore_mysql_{os.getpid()}"
+    return f"datastore_mysqldb_{os.getpid()}"

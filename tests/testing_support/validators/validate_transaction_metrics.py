@@ -107,7 +107,7 @@ def validate_transaction_metrics(
                 return "\n".join(out)
 
             def _metric_details():
-                return f"metric={key!r}, count={metric.call_count!r}"
+                return f"metric={key!r}, expected={count!r}, got={metric.call_count!r}"
 
             if count is not None:
                 assert metric is not None, _metrics_table()

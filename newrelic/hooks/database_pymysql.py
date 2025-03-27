@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+
 from newrelic.api.database_trace import register_database_client
 from newrelic.common.object_wrapper import wrap_object
+from newrelic.hooks.database_dbapi2 import ConnectionFactory as DBAPI2ConnectionFactory
+from newrelic.hooks.database_dbapi2 import ConnectionWrapper as DBAPI2ConnectionWrapper
 from newrelic.hooks.database_dbapi2 import CursorWrapper as DBAPI2CursorWrapper
-from newrelic.hooks.database_mysqldb import ConnectionFactory as MySqlDBConnectionFactory
-from newrelic.hooks.database_mysqldb import ConnectionWrapper as MySqlDBConnectionWrapper
 
 
 class CursorWrapper(DBAPI2CursorWrapper):
@@ -25,21 +27,71 @@ class CursorWrapper(DBAPI2CursorWrapper):
         return self
 
 
-class ConnectionWrapper(MySqlDBConnectionWrapper):
+class ConnectionWrapper(DBAPI2ConnectionWrapper):
     __cursor_wrapper__ = CursorWrapper
 
+    def __enter__(self):
+        self.__wrapped__.__enter__()
+        return self
 
-class ConnectionFactory(MySqlDBConnectionFactory):
+
+class ConnectionFactory(DBAPI2ConnectionFactory):
     __connection_wrapper__ = ConnectionWrapper
 
 
 def instance_info(args, kwargs):
-    def _bind_params(host=None, user=None, passwd=None, db=None, port=None, *args, **kwargs):
-        return host, port, db
+    # Taken mostly from newrelic/hooks/database_mysqldb.py, with changes to the argument list.
+    def _bind_params(
+        user=None,
+        password=None,
+        host=None,
+        database=None,
+        unix_socket=None,
+        port=None,
+        charset=None,
+        collation=None,
+        sql_mode=None,
+        read_default_file=None,
+        conv=None,
+        use_unicode=None,
+        client_flag=None,
+        cursorclass=None,
+        init_command=None,
+        connect_timeout=None,
+        read_default_group=None,
+        *args,
+        **kwargs,
+    ):
+        # db allowed as an alias for database, but only in kwargs
+        if "db" in kwargs:
+            database = kwargs["db"]
+        return (host, port, database, unix_socket, read_default_file, read_default_group)
 
-    host, port, db = _bind_params(*args, **kwargs)
+    params = _bind_params(*args, **kwargs)
+    host, port, database, unix_socket, read_default_file, read_default_group = params
+    explicit_host = host
 
-    return (host, port, db)
+    port_path_or_id = None
+    if read_default_file or read_default_group:
+        host = host or "default"
+        port_path_or_id = "unknown"
+    elif not host:
+        host = "localhost"
+
+    if host == "localhost":
+        # precedence: explicit -> cnf (if used) -> env -> 'default'
+        port_path_or_id = unix_socket or port_path_or_id or os.getenv("MYSQL_UNIX_PORT", "default")
+    elif explicit_host:
+        # only reach here if host is explicitly passed in
+        port = port and str(port)
+        # precedence: explicit -> cnf (if used) -> env -> '3306'
+        port_path_or_id = port or port_path_or_id or os.getenv("MYSQL_TCP_PORT", "3306")
+
+    # There is no default database if omitted from the connect params
+    # In this case, we should report unknown
+    database = database or "unknown"
+
+    return (host, port_path_or_id, database)
 
 
 def instrument_pymysql(module):
@@ -52,13 +104,8 @@ def instrument_pymysql(module):
         instance_info=instance_info,
     )
 
-    wrap_object(module, "connect", ConnectionFactory, (module,))
-
-    # The connect() function is actually aliased with Connect() and
-    # Connection, the later actually being the Connection type object.
-    # Instrument Connect(), but don't instrument Connection in case that
-    # interferes with direct type usage. If people are using the
-    # Connection object directly, they should really be using connect().
-
-    if hasattr(module, "Connect"):
-        wrap_object(module, "Connect", ConnectionFactory, (module,))
+    # The names connect, Connect, and Connection all are aliases to the same connections.Connection() class.
+    # We need to wrap each name separately since they are module level objects.
+    for name in ("connect", "Connect", "Connection"):
+        if hasattr(module, name):
+            wrap_object(module, name, ConnectionFactory, (module,))

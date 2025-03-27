@@ -66,6 +66,13 @@ jobs:
       - tests
 
     steps:
+      # This upgrades Python packages on Ubuntu to avoid a bug between Ubuntu and pip
+      # where it doesn't upgrade dependencies of installed packages.
+      - name: Install Dependencies
+        run: |
+          pip install -U pip
+          pip install -U setuptools packaging
+
       # Git Checkout
       - name: Checkout Code
         uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1

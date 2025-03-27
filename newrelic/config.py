@@ -2846,7 +2846,10 @@ def _process_module_builtin_defaults():
     _process_module_definition(
         "kafka.coordinator.heartbeat", "newrelic.hooks.messagebroker_kafkapython", "instrument_kafka_heartbeat"
     )
-
+    _process_module_definition("kombu.messaging", "newrelic.hooks.messagebroker_kombu", "instrument_kombu_messaging")
+    _process_module_definition(
+        "kombu.serialization", "newrelic.hooks.messagebroker_kombu", "instrument_kombu_serializaion"
+    )
     _process_module_definition("logging", "newrelic.hooks.logger_logging", "instrument_logging")
 
     _process_module_definition("loguru", "newrelic.hooks.logger_loguru", "instrument_loguru")
@@ -4130,8 +4133,11 @@ def _setup_agent_control_health():
     if agent_control_health_thread.is_alive():
         return
 
-    if agent_control_health.health_check_enabled:
-        agent_control_health_thread.start()
+    try:
+        if agent_control_health.health_check_enabled:
+            agent_control_health_thread.start()
+    except Exception:
+        _logger.warning("Unable to start Agent Control health check thread. Health checks will not be enabled.")
 
 
 def initialize(config_file=None, environment=None, ignore_errors=None, log_file=None, log_level=None):

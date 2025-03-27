@@ -59,7 +59,7 @@ def mysql_settings():
     """
 
     host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "127.0.0.1"
-    instances = 1
+    instances = 2
     settings = [
         {
             "user": "python_agent",

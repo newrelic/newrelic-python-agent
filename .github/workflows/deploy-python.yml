@@ -185,6 +185,11 @@ jobs:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
 
+      - name: Wait for release to be available
+        id: wait
+        run: |
+          sleep 60
+
       - name: Create release tags for Lambda and K8s Init Containers
         run: |
           RELEASE_TITLE="New Relic Python Agent ${GITHUB_REF_NAME}.0"

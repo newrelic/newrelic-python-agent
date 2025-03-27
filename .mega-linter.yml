@@ -6,11 +6,14 @@ DEFAULT_BRANCH: main # Usually master or main
 SHOW_ELAPSED_TIME: true
 FILEIO_REPORTER: false
 PRINT_ALPACA: false
+CLEAR_REPORT_FOLDER: true
 VALIDATE_ALL_CODEBASE: true
 IGNORE_GITIGNORED_FILES: true
+FAIL_IF_MISSING_LINTER_IN_FLAVOR: true
 FILTER_REGEX_EXCLUDE: "(.*/?packages/.*)" # Ignore packages directories
 
 ENABLE_LINTERS: # If you use ENABLE_LINTERS variable, all other linters will be disabled by default
+  - ACTION_ACTIONLINT
   - MARKDOWN_MARKDOWN_LINK_CHECK
   - MARKDOWN_MARKDOWNLINT
   - PYTHON_RUFF

@@ -67,7 +67,6 @@ if len(DB_MULTIPLE_SETTINGS) > 1:
     _enable_rollup_metrics.extend([(instance_metric_name_1, 2), (instance_metric_name_2, 2)])
     _disable_rollup_metrics.extend([(instance_metric_name_1, None), (instance_metric_name_2, None)])
 
-# Query
 
 
 def exercise_mysql(connection):
@@ -77,7 +76,6 @@ def exercise_mysql(connection):
         connection.commit()
 
 
-# Tests
 
 
 @pytest.mark.skipif(len(DB_MULTIPLE_SETTINGS) < 2, reason="Test environment not configured with multiple databases.")

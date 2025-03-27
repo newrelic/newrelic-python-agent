@@ -48,7 +48,6 @@ _disabled_required = {}
 _disabled_forgone = {"host": "VALUE NOT USED", "port_path_or_id": "VALUE NOT USED", "db.instance": "VALUE NOT USED"}
 
 
-# Query
 
 
 def _exercise_db():
@@ -65,7 +64,6 @@ def _exercise_db():
         connection.commit()
 
 
-# Tests
 
 
 @override_application_settings(_enable_instance_settings)

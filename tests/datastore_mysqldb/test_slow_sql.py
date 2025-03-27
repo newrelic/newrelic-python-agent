@@ -42,7 +42,6 @@ _disabled_required = set()
 _disabled_forgone = set(["host", "port_path_or_id", "database_name"])
 
 
-# Query
 
 
 def _exercise_db():
@@ -59,7 +58,6 @@ def _exercise_db():
         connection.commit()
 
 
-# Tests
 
 
 @override_application_settings(_enable_instance_settings)

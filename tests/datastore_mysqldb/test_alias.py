@@ -80,7 +80,6 @@ _enable_rollup_metrics.append((_instance_metric_name, 10))
 
 _disable_rollup_metrics.append((_instance_metric_name, None))
 
-# Query
 
 
 def _exercise_db(connection, table_name):

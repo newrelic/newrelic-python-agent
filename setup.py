@@ -167,6 +167,7 @@ kwargs = dict(
     setup_requires=["setuptools_scm>=3.2,<9"],
     description="New Relic Python Agent",
     long_description=open(readme_file).read(),
+    long_description_content_type="text/markdown",
     url="https://docs.newrelic.com/docs/apm/agents/python-agent/",
     project_urls={"Source": "https://github.com/newrelic/newrelic-python-agent"},
     author="New Relic",

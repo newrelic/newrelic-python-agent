@@ -25,8 +25,10 @@ _instance_info_tests = [
     ((), {"host": "1.2.3.4"}, ("1.2.3.4", "3306", "unknown")),
     ((), {"host": "1.2.3.4", "port": 1234}, ("1.2.3.4", "1234", "unknown")),
     ((), {"host": "1.2.3.4", "port": 1234, "unix_socket": "/foo"}, ("1.2.3.4", "1234", "unknown")),
-    ((), {"db": "foobar", "unix_socket": "/tmp/mysql.sock"}, ("localhost", "/tmp/mysql.sock", "foobar")),
+    # Both db and database are allowed as kwargs for the same parameter
+    ((), {"database": "foobar"}, ("localhost", "default", "foobar")),
     ((), {"db": "foobar"}, ("localhost", "default", "foobar")),
+    ((), {"database": "foobar", "unix_socket": "/tmp/mysql.sock"}, ("localhost", "/tmp/mysql.sock", "foobar")),
     ((), {"host": "1.2.3.4", "port": 0}, ("1.2.3.4", "3306", "unknown")),
     ((), {"host": "", "port": 1234}, ("localhost", "default", "unknown")),
     ((), {"db": ""}, ("localhost", "default", "unknown")),

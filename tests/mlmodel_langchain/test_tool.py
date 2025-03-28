@@ -15,12 +15,12 @@
 import asyncio
 import copy
 import uuid
+from unittest.mock import patch
 
 import langchain
 import pydantic_core
 import pytest
 from langchain.tools import tool
-from mock import patch
 from testing_support.fixtures import reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     disabled_ai_monitoring_record_content_settings,

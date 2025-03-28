@@ -20,9 +20,10 @@ from newrelic.api.message_trace import MessageTrace
 from newrelic.api.message_transaction import MessageTransaction
 from newrelic.api.time_trace import current_trace, notice_error
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import ObjectProxy, function_wrapper, wrap_function_wrapper
+from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
+from newrelic.core.config import global_settings
 
 _logger = logging.getLogger(__name__)
 
@@ -201,7 +202,7 @@ def wrap_serialize(wrapped, instance, args, kwargs):
         if message_trace:
             exchange = message_trace.destination_name
 
-    group = f"MessageBroker/Kombu/Exchange"
+    group = "MessageBroker/Kombu/Exchange"
     name = f"Named/{exchange}/Serialization/Value"
 
     with FunctionTrace(name=name, group=group) as ft:

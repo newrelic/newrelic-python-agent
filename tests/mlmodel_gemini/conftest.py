@@ -14,11 +14,10 @@
 
 import json
 import os
+
 import google.genai
-
-from _mock_external_gemini_server import MockExternalGeminiServer, extract_shortened_prompt, simple_get
-
 import pytest
+from _mock_external_gemini_server import MockExternalGeminiServer, extract_shortened_prompt, simple_get
 from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import (
     collector_agent_registration_fixture,

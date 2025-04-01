@@ -62,7 +62,7 @@ async def wrap_dispatcher__run_async_func(wrapped, instance, args, kwargs):
         application = application_instance(os.environ.get("WEBSITE_SITE_NAME", None))
 
     http_request = None
-    for key, value in params.items():
+    for _, value in params.items():
         if isinstance(value, HttpRequest):
             http_request = value
             url_split = urlparse.urlsplit(http_request.url)
@@ -155,7 +155,7 @@ def wrap_dispatcher__run_sync_func(wrapped, instance, args, kwargs):
         application = application_instance(os.environ.get("WEBSITE_SITE_NAME", None))
 
     http_request = None
-    for key, value in params.items():
+    for _, value in params.items():
         if isinstance(value, HttpRequest):
             http_request = value
             url_split = urlparse.urlsplit(http_request.url)

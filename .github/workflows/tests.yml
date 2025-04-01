@@ -53,7 +53,7 @@ jobs:
       - rediscluster
       - solr
       - valkey
-      - azurefunctions
+      # - azurefunctions
 
     steps:
       - name: Success

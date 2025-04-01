@@ -14,6 +14,7 @@
 
 import asyncio
 import uuid
+from unittest.mock import patch
 
 import langchain
 import langchain_core
@@ -22,7 +23,7 @@ import pytest
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains.openai_functions import create_structured_output_chain, create_structured_output_runnable
 from langchain_community.vectorstores.faiss import FAISS
-from mock import patch
+
 from testing_support.fixtures import reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     disabled_ai_monitoring_record_content_settings,

@@ -122,3 +122,10 @@ RUN mkdir -p "${PIPX_BIN_DIR}" && \
 COPY ./requirements-tox.txt /tmp/requirements-tox.txt
 RUN pipx inject --force tox -r /tmp/requirements-tox.txt && \
     rm /tmp/requirements-tox.txt
+
+# Install Azure Function Core Tools
+RUN wget -q https://packages.microsoft.com/config/ubuntu/20.04/packages-microsoft-prod.deb && \
+    sudo dpkg -i packages-microsoft-prod.deb && \
+    sudo apt-get update && \
+    sudo apt-get install azure-functions-core-tools-4
+

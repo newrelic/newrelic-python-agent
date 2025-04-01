@@ -222,10 +222,12 @@ class AzureFunctionUtilization(CommonUtilization):
         azure_function_app_name = os.environ.get("WEBSITE_SITE_NAME")
 
         if all((cloud_region, website_owner_name, azure_function_app_name)):
-            resource_group_name = os.environ.get(
-                "WEBSITE_RESOURCE_GROUP",
-                re.search(r"\+([a-zA-Z0-9\-]+)-[a-zA-Z0-9]+(?:-Linux)?", website_owner_name).group(0),
-            )
+            if website_owner_name.endswith("-Linux"):
+                resource_group_name = re.search(r"\+([a-zA-z0-9\-]+)-[a-zA-Z0-9]+(?:-Linux)", website_owner_name).group(
+                    1
+                )
+            else:
+                resource_group_name = re.search(r"\+([a-zA-z0-9\-]+)-[a-zA-Z0-9]+", website_owner_name).group(1)
             subscription_id = re.search(r"(?:(?!\+).)*", website_owner_name).group(0)
             faas_app_name = "/subscriptions/{0}/resourceGroups/{1}/providers/Microsoft.Web/sites/{2}".format(
                 subscription_id, resource_group_name, azure_function_app_name

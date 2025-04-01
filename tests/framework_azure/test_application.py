@@ -135,7 +135,7 @@ def func_start_dispatcher():
     # azure_function_command = os.path.join(os.environ["TOX_ENV_DIR"], "bin", "func")
     # azure_function_command = "func"
 
-    cmd = ["cd", f"{os.environ['PWD']}/tests/framework_azure", "&&", "func", "start", "--port", str(PORT)]
+    cmd = ["cd", f"{os.environ['TOX_ENV_DIR']}/tests/framework_azure", "&&", "func", "start", "--port", str(PORT)]
     cmd_str = " ".join(cmd)
     # cmd = f"cd tests/framework_azure && newrelic-admin run-program func start --port {str(PORT)}"
 

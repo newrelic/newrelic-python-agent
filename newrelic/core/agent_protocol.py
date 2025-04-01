@@ -18,11 +18,7 @@ import os
 from newrelic import version
 from newrelic.common import system_info
 from newrelic.common.agent_http import ApplicationModeClient, ServerlessModeClient
-from newrelic.common.encoding_utils import (
-    json_decode,
-    json_encode,
-    serverless_payload_encode,
-)
+from newrelic.common.encoding_utils import json_decode, json_encode, serverless_payload_encode
 from newrelic.common.utilization import (
     AWSUtilization,
     AzureFunctionUtilization,
@@ -33,16 +29,9 @@ from newrelic.common.utilization import (
     KubernetesUtilization,
     PCFUtilization,
 )
-from newrelic.core.agent_control_health import (
-    HealthStatus,
-    agent_control_health_instance,
-)
+from newrelic.core.agent_control_health import HealthStatus, agent_control_health_instance
 from newrelic.core.attribute import truncate
-from newrelic.core.config import (
-    fetch_config_setting,
-    finalize_application_settings,
-    global_settings_dump,
-)
+from newrelic.core.config import fetch_config_setting, finalize_application_settings, global_settings_dump
 from newrelic.core.internal_metrics import internal_count_metric
 from newrelic.core.otlp_utils import OTLP_CONTENT_TYPE, otlp_encode
 from newrelic.network.exceptions import (

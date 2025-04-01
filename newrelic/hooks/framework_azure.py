@@ -103,10 +103,7 @@ async def wrap_dispatcher__run_async_func(wrapped, instance, args, kwargs):
         subscription_id = re.search(r"(?:(?!\+).)*", website_owner_name) and re.search(
             r"(?:(?!\+).)*", website_owner_name
         ).group(0)
-        resource_group_name = os.environ.get(
-            "WEBSITE_RESOURCE_GROUP",
-            None,
-        )
+        resource_group_name = os.environ.get("WEBSITE_RESOURCE_GROUP", None)
         if resource_group_name is None:
             if website_owner_name.endswith("-Linux"):
                 resource_group_name = re.search(r"\+([a-zA-z0-9\-]+)-[a-zA-Z0-9]+(?:-Linux)", website_owner_name).group(
@@ -195,10 +192,7 @@ def wrap_dispatcher__run_sync_func(wrapped, instance, args, kwargs):
         subscription_id = re.search(r"(?:(?!\+).)*", website_owner_name) and re.search(
             r"(?:(?!\+).)*", website_owner_name
         ).group(0)
-        resource_group_name = os.environ.get(
-            "WEBSITE_RESOURCE_GROUP",
-            None,
-        )
+        resource_group_name = os.environ.get("WEBSITE_RESOURCE_GROUP", None)
         if resource_group_name is None:
             if website_owner_name.endswith("-Linux"):
                 resource_group_name = re.search(r"\+([a-zA-z0-9\-]+)-[a-zA-Z0-9]+(?:-Linux)", website_owner_name).group(

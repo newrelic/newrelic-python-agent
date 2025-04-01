@@ -24,11 +24,7 @@ app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 @app.route(route="basic")
 def basic_page(req):
     user = req.params.get("user")
-    return func.HttpResponse(
-        f"Hello, {user}!",
-        status_code=200,
-        headers={"Content-Type": "text/plain"},
-    )
+    return func.HttpResponse(f"Hello, {user}!", status_code=200, headers={"Content-Type": "text/plain"})
 
 
 # mock_http_request = func.HttpRequest(

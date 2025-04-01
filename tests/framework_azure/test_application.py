@@ -132,7 +132,6 @@ PORT = available_port()
 # )
 # @pytest.fixture(autouse=True, scope="module")
 def func_start_dispatcher():
-
     # azure_function_command = os.path.join(os.environ["TOX_ENV_DIR"], "bin", "func")
     # azure_function_command = "func"
 

@@ -933,10 +933,10 @@ def _load_configuration(config_file=None, environment=None, ignore_errors=True, 
         if config_file.endswith(".toml"):
             try:
                 import tomllib
-            except ImportError:
+            except ImportError as exc:
                 raise newrelic.api.exceptions.ConfigurationError(
                     "TOML configuration file can only be used if tomllib is available (Python 3.11+)."
-                )
+                ) from exc
             with open(config_file, "rb") as f:
                 content = tomllib.load(f)
                 newrelic_section = content.get("tool", {}).get("newrelic")
@@ -1296,7 +1296,7 @@ def _process_background_task_configuration():
 
             if name and name.startswith("lambda "):
                 callable_vars = {"callable_name": callable_name}
-                name = eval(name, callable_vars)  # nosec, pylint: disable=W0123
+                name = eval(name, callable_vars)  # noqa: S307
 
             _logger.debug("register background-task %s", ((module, object_path, application, name, group),))
 
@@ -1346,7 +1346,7 @@ def _process_database_trace_configuration():
 
             if sql.startswith("lambda "):
                 callable_vars = {"callable_name": callable_name}
-                sql = eval(sql, callable_vars)  # nosec, pylint: disable=W0123
+                sql = eval(sql, callable_vars)  # noqa: S307
 
             _logger.debug("register database-trace %s", ((module, object_path, sql),))
 
@@ -1401,11 +1401,11 @@ def _process_external_trace_configuration():
 
             if url.startswith("lambda "):
                 callable_vars = {"callable_name": callable_name}
-                url = eval(url, callable_vars)  # nosec, pylint: disable=W0123
+                url = eval(url, callable_vars)  # noqa: S307
 
             if method and method.startswith("lambda "):
                 callable_vars = {"callable_name": callable_name}
-                method = eval(method, callable_vars)  # nosec, pylint: disable=W0123
+                method = eval(method, callable_vars)  # noqa: S307
 
             _logger.debug("register external-trace %s", ((module, object_path, library, url, method),))
 
@@ -1473,7 +1473,7 @@ def _process_function_trace_configuration():
 
             if name and name.startswith("lambda "):
                 callable_vars = {"callable_name": callable_name}
-                name = eval(name, callable_vars)  # nosec, pylint: disable=W0123
+                name = eval(name, callable_vars)  # noqa: S307
 
             _logger.debug(
                 "register function-trace %s", ((module, object_path, name, group, label, params, terminal, rollup),)
@@ -1531,7 +1531,7 @@ def _process_generator_trace_configuration():
 
             if name and name.startswith("lambda "):
                 callable_vars = {"callable_name": callable_name}
-                name = eval(name, callable_vars)  # nosec, pylint: disable=W0123
+                name = eval(name, callable_vars)  # noqa: S307
 
             _logger.debug("register generator-trace %s", ((module, object_path, name, group),))
 
@@ -1590,7 +1590,7 @@ def _process_profile_trace_configuration():
 
             if name and name.startswith("lambda "):
                 callable_vars = {"callable_name": callable_name}
-                name = eval(name, callable_vars)  # nosec, pylint: disable=W0123
+                name = eval(name, callable_vars)  # noqa: S307
 
             _logger.debug("register profile-trace %s", ((module, object_path, name, group, depth),))
 
@@ -1640,7 +1640,7 @@ def _process_memcache_trace_configuration():
 
             if command.startswith("lambda "):
                 callable_vars = {"callable_name": callable_name}
-                command = eval(command, callable_vars)  # nosec, pylint: disable=W0123
+                command = eval(command, callable_vars)  # noqa: S307
 
             _logger.debug("register memcache-trace %s", (module, object_path, command))
 
@@ -1700,7 +1700,7 @@ def _process_transaction_name_configuration():
 
             if name and name.startswith("lambda "):
                 callable_vars = {"callable_name": callable_name}
-                name = eval(name, callable_vars)  # nosec, pylint: disable=W0123
+                name = eval(name, callable_vars)  # noqa: S307
 
             _logger.debug("register transaction-name %s", ((module, object_path, name, group, priority),))
 
@@ -2852,7 +2852,10 @@ def _process_module_builtin_defaults():
     _process_module_definition(
         "kafka.coordinator.heartbeat", "newrelic.hooks.messagebroker_kafkapython", "instrument_kafka_heartbeat"
     )
-
+    _process_module_definition("kombu.messaging", "newrelic.hooks.messagebroker_kombu", "instrument_kombu_messaging")
+    _process_module_definition(
+        "kombu.serialization", "newrelic.hooks.messagebroker_kombu", "instrument_kombu_serializaion"
+    )
     _process_module_definition("logging", "newrelic.hooks.logger_logging", "instrument_logging")
 
     _process_module_definition("loguru", "newrelic.hooks.logger_loguru", "instrument_loguru")
@@ -3989,7 +3992,9 @@ def _process_module_builtin_defaults():
     )
     _process_module_definition("gearman.worker", "newrelic.hooks.application_gearman", "instrument_gearman_worker")
 
-    _process_module_definition("aiobotocore.client", "newrelic.hooks.external_aiobotocore", "instrument_aiobotocore_client")
+    _process_module_definition(
+        "aiobotocore.client", "newrelic.hooks.external_aiobotocore", "instrument_aiobotocore_client"
+    )
 
     _process_module_definition(
         "aiobotocore.endpoint", "newrelic.hooks.external_aiobotocore", "instrument_aiobotocore_endpoint"
@@ -4144,8 +4149,11 @@ def _setup_agent_control_health():
     if agent_control_health_thread.is_alive():
         return
 
-    if agent_control_health.health_check_enabled:
-        agent_control_health_thread.start()
+    try:
+        if agent_control_health.health_check_enabled:
+            agent_control_health_thread.start()
+    except Exception:
+        _logger.warning("Unable to start Agent Control health check thread. Health checks will not be enabled.")
 
 
 def initialize(config_file=None, environment=None, ignore_errors=None, log_file=None, log_level=None):

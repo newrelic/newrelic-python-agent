@@ -72,7 +72,7 @@ def wrap_Producer_produce(wrapped, instance, args, kwargs):
             dt_headers.update(dict(headers))
 
         try:
-            return wrapped(topic, headers=dt_headers, *args, **kwargs)
+            return wrapped(topic, *args, **kwargs, headers=dt_headers)
         except Exception as error:
             # Unwrap kafka errors
             while hasattr(error, "exception"):

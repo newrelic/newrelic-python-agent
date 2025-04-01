@@ -79,6 +79,10 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = set(
         "host.displayName",
         "http.statusCode",
         "http.url",
+        "kafka.consume.channel_id",
+        "kafka.consume.byteCount",
+        "kombu.consume.channel_id",
+        "kombu.consume.byteCount",
         "llm",
         "message.queueName",
         "message.routingKey",
@@ -375,8 +379,8 @@ def sanitize(value):
 
         try:
             value = str(value)
-        except Exception:
-            raise CastingFailureException
+        except Exception as exc:
+            raise CastingFailureException from exc
         else:
             _logger.debug("Attribute value is of type: %r. Casting %r to string: %s", type(original), original, value)
 

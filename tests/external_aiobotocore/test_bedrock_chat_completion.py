@@ -19,6 +19,7 @@ import botocore.errorfactory
 import botocore.eventstream
 import botocore.exceptions
 import pytest
+from conftest import BOTOCORE_VERSION  # pylint: disable=E0611
 from external_botocore._test_bedrock_chat_completion import (
     chat_completion_expected_events,
     chat_completion_expected_malformed_request_body_events,
@@ -31,12 +32,7 @@ from external_botocore._test_bedrock_chat_completion import (
     chat_completion_payload_templates,
     chat_completion_streaming_expected_events,
 )
-from conftest import BOTOCORE_VERSION  # pylint: disable=E0611
-from testing_support.fixtures import (
-    override_llm_token_callback_settings,
-    reset_core_stats_engine,
-    validate_attributes,
-)
+from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (  # noqa: F401
     add_token_count_to_events,
     disabled_ai_monitoring_record_content_settings,
@@ -50,12 +46,8 @@ from testing_support.ml_testing_utils import (  # noqa: F401
 )
 from testing_support.validators.validate_custom_event import validate_custom_event_count
 from testing_support.validators.validate_custom_events import validate_custom_events
-from testing_support.validators.validate_error_trace_attributes import (
-    validate_error_trace_attributes,
-)
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_error_trace_attributes import validate_error_trace_attributes
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
@@ -104,10 +96,7 @@ def exercise_model(loop, bedrock_server, model_id, request_streaming, response_s
                 body = BytesIO(body)
 
             response = await bedrock_server.invoke_model(
-                body=body,
-                modelId=model_id,
-                accept="application/json",
-                contentType="application/json",
+                body=body, modelId=model_id, accept="application/json", contentType="application/json"
             )
             body = await response["body"].read()
             response_body = json.loads(body)
@@ -124,10 +113,7 @@ def exercise_model(loop, bedrock_server, model_id, request_streaming, response_s
                 body = BytesIO(body)
 
             response = await bedrock_server.invoke_model_with_response_stream(
-                body=body,
-                modelId=model_id,
-                accept="application/json",
-                contentType="application/json",
+                body=body, modelId=model_id, accept="application/json", contentType="application/json"
             )
             body = response.get("body")
             async for resp in body:
@@ -176,9 +162,7 @@ def test_bedrock_chat_completion_in_txn_with_llm_metadata(
         name="test_bedrock_chat_completion_in_txn_with_llm_metadata",
         scoped_metrics=expected_metrics,
         rollup_metrics=expected_metrics,
-        custom_metrics=[
-            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
-        ],
+        custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
         background_task=True,
     )
     @validate_attributes("agent", ["llm"])
@@ -204,9 +188,7 @@ def test_bedrock_chat_completion_no_content(set_trace_info, exercise_model, expe
         name="test_bedrock_chat_completion_no_content",
         scoped_metrics=expected_metrics,
         rollup_metrics=expected_metrics,
-        custom_metrics=[
-            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
-        ],
+        custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
         background_task=True,
     )
     @validate_attributes("agent", ["llm"])
@@ -231,9 +213,7 @@ def test_bedrock_chat_completion_with_token_count(set_trace_info, exercise_model
         name="test_bedrock_chat_completion_with_token_count",
         scoped_metrics=expected_metrics,
         rollup_metrics=expected_metrics,
-        custom_metrics=[
-            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
-        ],
+        custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
         background_task=True,
     )
     @validate_attributes("agent", ["llm"])
@@ -257,9 +237,7 @@ def test_bedrock_chat_completion_no_llm_metadata(set_trace_info, exercise_model,
         name="test_bedrock_chat_completion_in_txn_no_llm_metadata",
         scoped_metrics=expected_metrics,
         rollup_metrics=expected_metrics,
-        custom_metrics=[
-            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
-        ],
+        custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
         background_task=True,
     )
     @background_task(name="test_bedrock_chat_completion_in_txn_no_llm_metadata")
@@ -292,17 +270,12 @@ def test_bedrock_chat_completion_outside_txn(exercise_model):
     name="test_bedrock_chat_completion",
     scoped_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
     rollup_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
     background_task=True,
 )
 @background_task(name="test_bedrock_chat_completion")
 @disabled_ai_monitoring_streaming_settings
-def test_bedrock_chat_completion_streaming_disabled(
-    loop,
-    bedrock_server,
-):
+def test_bedrock_chat_completion_streaming_disabled(loop, bedrock_server):
     """Streaming is disabled, but the rest of the AI settings are enabled. Custom events should not be collected."""
 
     async def _test():
@@ -311,10 +284,7 @@ def test_bedrock_chat_completion_streaming_disabled(
             "utf-8"
         )
         response = await bedrock_server.invoke_model_with_response_stream(
-            body=body,
-            modelId=model,
-            accept="application/json",
-            contentType="application/json",
+            body=body, modelId=model, accept="application/json", contentType="application/json"
         )
         body = response.get("body")
         async for resp in body:
@@ -333,19 +303,13 @@ def invoke_model_invalid_model(loop, bedrock_server, response_streaming):
             with WithLlmCustomAttributes({"context": "attr"}):
                 if response_streaming:
                     stream = await bedrock_server.invoke_model_with_response_stream(
-                        body=b"{}",
-                        modelId="does-not-exist",
-                        accept="application/json",
-                        contentType="application/json",
+                        body=b"{}", modelId="does-not-exist", accept="application/json", contentType="application/json"
                     )
                     for _ in stream:
                         pass
                 else:
                     await bedrock_server.invoke_model(
-                        body=b"{}",
-                        modelId="does-not-exist",
-                        accept="application/json",
-                        contentType="application/json",
+                        body=b"{}", modelId="does-not-exist", accept="application/json", contentType="application/json"
                     )
 
     loop.run_until_complete(_coro())
@@ -375,9 +339,7 @@ def test_bedrock_chat_completion_error_invalid_model(loop, bedrock_server, set_t
         name="test_bedrock_chat_completion_error_invalid_model",
         scoped_metrics=expected_metrics,
         rollup_metrics=expected_metrics,
-        custom_metrics=[
-            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
-        ],
+        custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
         background_task=True,
     )
     @background_task(name="test_bedrock_chat_completion_error_invalid_model")
@@ -424,9 +386,7 @@ def test_bedrock_chat_completion_error_incorrect_access_key(
         name="test_bedrock_chat_completion",
         scoped_metrics=expected_metrics,
         rollup_metrics=expected_metrics,
-        custom_metrics=[
-            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
-        ],
+        custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
         background_task=True,
     )
     @background_task(name="test_bedrock_chat_completion")
@@ -477,9 +437,7 @@ def test_bedrock_chat_completion_error_incorrect_access_key_no_content(
         name="test_bedrock_chat_completion",
         scoped_metrics=expected_metrics,
         rollup_metrics=expected_metrics,
-        custom_metrics=[
-            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
-        ],
+        custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
         background_task=True,
     )
     @background_task(name="test_bedrock_chat_completion")
@@ -524,9 +482,7 @@ def test_bedrock_chat_completion_error_incorrect_access_key_with_token(
         name="test_bedrock_chat_completion",
         scoped_metrics=expected_metrics,
         rollup_metrics=expected_metrics,
-        custom_metrics=[
-            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
-        ],
+        custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
         background_task=True,
     )
     @background_task(name="test_bedrock_chat_completion")
@@ -565,12 +521,7 @@ def invoke_model_malformed_request_body(loop, bedrock_server, response_streaming
     loop.run_until_complete(_coro())
 
 
-def test_bedrock_chat_completion_error_malformed_request_body(
-    loop,
-    bedrock_server,
-    set_trace_info,
-    response_streaming,
-):
+def test_bedrock_chat_completion_error_malformed_request_body(loop, bedrock_server, set_trace_info, response_streaming):
     """
     A request was made to the server, but the request body contains invalid JSON. The library will accept the invalid
     payload, and still send a request. Our instrumentation will be unable to read it. As a result, no request
@@ -602,9 +553,7 @@ def test_bedrock_chat_completion_error_malformed_request_body(
         name="test_bedrock_chat_completion",
         scoped_metrics=expected_metrics,
         rollup_metrics=expected_metrics,
-        custom_metrics=[
-            (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
-        ],
+        custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
         background_task=True,
     )
     @background_task(name="test_bedrock_chat_completion")
@@ -626,17 +575,11 @@ def test_bedrock_chat_completion_error_malformed_request_body(
     name="test_bedrock_chat_completion",
     scoped_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
     rollup_metrics=[("Llm/completion/Bedrock/invoke_model", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
     background_task=True,
 )
 @background_task(name="test_bedrock_chat_completion")
-def test_bedrock_chat_completion_error_malformed_response_body(
-    loop,
-    bedrock_server,
-    set_trace_info,
-):
+def test_bedrock_chat_completion_error_malformed_response_body(loop, bedrock_server, set_trace_info):
     """
     After a non-streaming request was made to the server, the server responded with a response body that contains
     invalid JSON. Since the JSON body is not parsed by botocore and just returned to the user as bytes, no parsing
@@ -653,10 +596,7 @@ def test_bedrock_chat_completion_error_malformed_response_body(
         add_custom_attribute("non_llm_attr", "python-agent")
 
         response = await bedrock_server.invoke_model(
-            body=body,
-            modelId=model,
-            accept="application/json",
-            contentType="application/json",
+            body=body, modelId=model, accept="application/json", contentType="application/json"
         )
         assert response
 
@@ -670,17 +610,11 @@ def test_bedrock_chat_completion_error_malformed_response_body(
     name="test_bedrock_chat_completion",
     scoped_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
     rollup_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
     background_task=True,
 )
 @background_task(name="test_bedrock_chat_completion")
-def test_bedrock_chat_completion_error_malformed_response_streaming_body(
-    loop,
-    bedrock_server,
-    set_trace_info,
-):
+def test_bedrock_chat_completion_error_malformed_response_streaming_body(loop, bedrock_server, set_trace_info):
     """
     A chunk in the stream returned by the server is valid, but contains a body with JSON that cannot be parsed.
     Since the JSON body is not parsed by botocore and just returned to the user as bytes, no parsing exceptions will
@@ -699,10 +633,7 @@ def test_bedrock_chat_completion_error_malformed_response_streaming_body(
         add_custom_attribute("non_llm_attr", "python-agent")
 
         response = await bedrock_server.invoke_model_with_response_stream(
-            body=body,
-            modelId=model,
-            accept="application/json",
-            contentType="application/json",
+            body=body, modelId=model, accept="application/json", contentType="application/json"
         )
 
         async for chunk in response.get("body"):
@@ -717,34 +648,18 @@ def test_bedrock_chat_completion_error_malformed_response_streaming_body(
 @validate_custom_event_count(count=2)
 @validate_error_trace_attributes(
     "botocore.eventstream:ChecksumMismatch",
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
-            "llm.conversation_id": "my-awesome-id",
-        },
-    },
-    forgone_params={
-        "agent": (),
-        "intrinsic": (),
-        "user": ("http.statusCode", "error.message", "error.code"),
-    },
+    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"llm.conversation_id": "my-awesome-id"}},
+    forgone_params={"agent": (), "intrinsic": (), "user": ("http.statusCode", "error.message", "error.code")},
 )
 @validate_transaction_metrics(
     name="test_bedrock_chat_completion",
     scoped_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
     rollup_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
     background_task=True,
 )
 @background_task(name="test_bedrock_chat_completion")
-def test_bedrock_chat_completion_error_malformed_response_streaming_chunk(
-    loop,
-    bedrock_server,
-    set_trace_info,
-):
+def test_bedrock_chat_completion_error_malformed_response_streaming_chunk(loop, bedrock_server, set_trace_info):
     """
     A chunk in the stream returned by the server is missing the prelude which causes an InvalidHeadersLength exception
     to be raised during parsing of the chunk. Since the streamed chunk is not able to be parsed, the response
@@ -762,10 +677,7 @@ def test_bedrock_chat_completion_error_malformed_response_streaming_chunk(
             add_custom_attribute("non_llm_attr", "python-agent")
 
             response = await bedrock_server.invoke_model_with_response_stream(
-                body=body,
-                modelId=model,
-                accept="application/json",
-                contentType="application/json",
+                body=body, modelId=model, accept="application/json", contentType="application/json"
             )
 
             body = response.get("body")
@@ -792,27 +704,17 @@ _event_stream_error_name = "botocore.exceptions:EventStreamError"
             "error.code": "ValidationException",
         },
     },
-    forgone_params={
-        "agent": (),
-        "intrinsic": (),
-        "user": ("http.statusCode"),
-    },
+    forgone_params={"agent": (), "intrinsic": (), "user": ("http.statusCode")},
 )
 @validate_transaction_metrics(
     name="test_bedrock_chat_completion",
     scoped_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
     rollup_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
     background_task=True,
 )
 @background_task(name="test_bedrock_chat_completion")
-def test_bedrock_chat_completion_error_streaming_exception(
-    loop,
-    bedrock_server,
-    set_trace_info,
-):
+def test_bedrock_chat_completion_error_streaming_exception(loop, bedrock_server, set_trace_info):
     """
     During a streaming call, the streamed chunk's headers indicate an error. These headers are not HTTP headers, but
     headers embedded in the binary format of the response from the server. The streamed chunk's response body is not
@@ -834,10 +736,7 @@ def test_bedrock_chat_completion_error_streaming_exception(
             add_custom_attribute("non_llm_attr", "python-agent")
 
             response = await bedrock_server.invoke_model_with_response_stream(
-                body=body,
-                modelId=model,
-                accept="application/json",
-                contentType="application/json",
+                body=body, modelId=model, accept="application/json", contentType="application/json"
             )
 
             body = response.get("body")
@@ -861,27 +760,17 @@ def test_bedrock_chat_completion_error_streaming_exception(
             "error.code": "ValidationException",
         },
     },
-    forgone_params={
-        "agent": (),
-        "intrinsic": (),
-        "user": ("http.statusCode"),
-    },
+    forgone_params={"agent": (), "intrinsic": (), "user": ("http.statusCode")},
 )
 @validate_transaction_metrics(
     name="test_bedrock_chat_completion",
     scoped_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
     rollup_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
     background_task=True,
 )
 @background_task(name="test_bedrock_chat_completion")
-def test_bedrock_chat_completion_error_streaming_exception_no_content(
-    loop,
-    bedrock_server,
-    set_trace_info,
-):
+def test_bedrock_chat_completion_error_streaming_exception_no_content(loop, bedrock_server, set_trace_info):
     """
     Duplicate of test_bedrock_chat_completion_error_streaming_exception, but with content recording disabled.
 
@@ -899,10 +788,7 @@ def test_bedrock_chat_completion_error_streaming_exception_no_content(
             add_custom_attribute("non_llm_attr", "python-agent")
 
             response = await bedrock_server.invoke_model_with_response_stream(
-                body=body,
-                modelId=model,
-                accept="application/json",
-                contentType="application/json",
+                body=body, modelId=model, accept="application/json", contentType="application/json"
             )
 
             body = response.get("body")
@@ -926,27 +812,17 @@ def test_bedrock_chat_completion_error_streaming_exception_no_content(
             "error.code": "ValidationException",
         },
     },
-    forgone_params={
-        "agent": (),
-        "intrinsic": (),
-        "user": ("http.statusCode"),
-    },
+    forgone_params={"agent": (), "intrinsic": (), "user": ("http.statusCode")},
 )
 @validate_transaction_metrics(
     name="test_bedrock_chat_completion",
     scoped_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
     rollup_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
-    custom_metrics=[
-        (f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1),
-    ],
+    custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
     background_task=True,
 )
 @background_task(name="test_bedrock_chat_completion")
-def test_bedrock_chat_completion_error_streaming_exception_with_token_count(
-    loop,
-    bedrock_server,
-    set_trace_info,
-):
+def test_bedrock_chat_completion_error_streaming_exception_with_token_count(loop, bedrock_server, set_trace_info):
     """
     Duplicate of test_bedrock_chat_completion_error_streaming_exception, but with token callback being set.
 
@@ -964,10 +840,7 @@ def test_bedrock_chat_completion_error_streaming_exception_with_token_count(
             add_custom_attribute("non_llm_attr", "python-agent")
 
             response = await bedrock_server.invoke_model_with_response_stream(
-                body=body,
-                modelId=model,
-                accept="application/json",
-                contentType="application/json",
+                body=body, modelId=model, accept="application/json", contentType="application/json"
             )
 
             body = response.get("body")
@@ -992,12 +865,7 @@ def test_chat_models_instrumented():
         pytest.skip(reason="Credentials not available.")
 
     session = aiobotocore.session.get_session()
-    client = loop.run_until_complete(
-        session.create_client(
-            "bedrock",
-            "us-east-1",
-        ).__aenter__()
-    )
+    client = loop.run_until_complete(session.create_client("bedrock", "us-east-1").__aenter__())
 
     try:
         response = loop.run_until_complete(client.list_foundation_models(byOutputModality="TEXT"))

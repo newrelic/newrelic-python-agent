@@ -25,8 +25,11 @@ _logger = logging.getLogger(__name__)
 
 
 def register_database_client(
-    dbapi2_module, database_product, quoting_style="single", explain_query=None, explain_stmts=[], instance_info=None
+    dbapi2_module, database_product, quoting_style="single", explain_query=None, explain_stmts=None, instance_info=None
 ):
+    if explain_stmts is None:
+        explain_stmts = []
+
     _logger.debug(
         "Registering database client module %r where database "
         "is %r, quoting style is %r, explain query statement is %r and "

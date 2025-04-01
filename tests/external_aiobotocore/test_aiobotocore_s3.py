@@ -65,7 +65,7 @@ def test_aiobotocore_s3(loop):
         async with MotoService("s3", port=PORT):
             session = aiobotocore.session.get_session()
 
-            async with session.create_client(  # nosec
+            async with session.create_client(
                 "s3",
                 region_name="us-east-1",
                 endpoint_url=f"http://localhost:{PORT}",

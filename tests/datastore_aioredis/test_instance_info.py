@@ -117,7 +117,7 @@ def test_strict_redis_connection_from_url(client_cls, args, kwargs, expected, lo
     elif r.connection_pool.connection_class is aioredis.UnixDomainSocketConnection:
         r.connection_pool.connection_class = DisabledUnixConnection
     else:
-        assert False, r.connection_pool.connection_class
+        raise AssertionError(r.connection_pool.connection_class)
 
     connection = loop.run_until_complete(r.connection_pool.get_connection("SELECT"))
     try:

@@ -14,43 +14,25 @@
 
 import os
 
-from newrelic.api.database_trace import DatabaseTrace, register_database_client
-from newrelic.api.function_trace import FunctionTrace
-from newrelic.api.transaction import current_transaction
-from newrelic.common.object_names import callable_name
+from newrelic.api.database_trace import register_database_client
 from newrelic.common.object_wrapper import wrap_object
 from newrelic.hooks.database_dbapi2 import ConnectionFactory as DBAPI2ConnectionFactory
 from newrelic.hooks.database_dbapi2 import ConnectionWrapper as DBAPI2ConnectionWrapper
+from newrelic.hooks.database_dbapi2 import CursorWrapper as DBAPI2CursorWrapper
+
+
+class CursorWrapper(DBAPI2CursorWrapper):
+    def __enter__(self):
+        self.__wrapped__.__enter__()
+        return self
 
 
 class ConnectionWrapper(DBAPI2ConnectionWrapper):
+    __cursor_wrapper__ = CursorWrapper
+
     def __enter__(self):
-        transaction = current_transaction()
-        name = callable_name(self.__wrapped__.__enter__)
-        with FunctionTrace(name, source=self.__wrapped__.__enter__):
-            cursor = self.__wrapped__.__enter__()
-
-        # The __enter__() method of original connection object returns
-        # a new cursor instance for use with 'as' assignment. We need
-        # to wrap that in a cursor wrapper otherwise we will not track
-        # any queries done via it.
-
-        return self.__cursor_wrapper__(cursor, self._nr_dbapi2_module, self._nr_connect_params, None)
-
-    def __exit__(self, exc, value, tb):
-        transaction = current_transaction()
-        name = callable_name(self.__wrapped__.__exit__)
-        with FunctionTrace(name, source=self.__wrapped__.__exit__):
-            if exc is None:
-                with DatabaseTrace(
-                    "COMMIT", self._nr_dbapi2_module, self._nr_connect_params, source=self.__wrapped__.__exit__
-                ):
-                    return self.__wrapped__.__exit__(exc, value, tb)
-            else:
-                with DatabaseTrace(
-                    "ROLLBACK", self._nr_dbapi2_module, self._nr_connect_params, source=self.__wrapped__.__exit__
-                ):
-                    return self.__wrapped__.__exit__(exc, value, tb)
+        self.__wrapped__.__enter__()
+        return self
 
 
 class ConnectionFactory(DBAPI2ConnectionFactory):
@@ -61,8 +43,8 @@ def instance_info(args, kwargs):
     def _bind_params(
         host=None,
         user=None,
-        passwd=None,
-        db=None,
+        password=None,
+        database=None,
         port=None,
         unix_socket=None,
         conv=None,
@@ -75,10 +57,13 @@ def instance_info(args, kwargs):
         *args,
         **kwargs,
     ):
-        return (host, port, db, unix_socket, read_default_file, read_default_group)
+        # db allowed as an alias for database, but only in kwargs
+        if "db" in kwargs:
+            database = kwargs["db"]
+        return (host, port, database, unix_socket, read_default_file, read_default_group)
 
     params = _bind_params(*args, **kwargs)
-    host, port, db, unix_socket, read_default_file, read_default_group = params
+    host, port, database, unix_socket, read_default_file, read_default_group = params
     explicit_host = host
 
     port_path_or_id = None
@@ -99,9 +84,9 @@ def instance_info(args, kwargs):
 
     # There is no default database if omitted from the connect params
     # In this case, we should report unknown
-    db = db or "unknown"
+    database = database or "unknown"
 
-    return (host, port_path_or_id, db)
+    return (host, port_path_or_id, database)
 
 
 def instrument_mysqldb(module):
@@ -114,13 +99,8 @@ def instrument_mysqldb(module):
         instance_info=instance_info,
     )
 
-    wrap_object(module, "connect", ConnectionFactory, (module,))
-
-    # The connect() function is actually aliased with Connect() and
-    # Connection, the later actually being the Connection type object.
-    # Instrument Connect(), but don't instrument Connection in case that
-    # interferes with direct type usage. If people are using the
-    # Connection object directly, they should really be using connect().
-
-    if hasattr(module, "Connect"):
-        wrap_object(module, "Connect", ConnectionFactory, (module,))
+    # The names connect, Connection, and Connect all are aliases to the same Connect() function.
+    # We need to wrap each name separately since they are module level objects.
+    for name in ("connect", "Connection", "Connect"):
+        if hasattr(module, name):
+            wrap_object(module, name, ConnectionFactory, (module,))

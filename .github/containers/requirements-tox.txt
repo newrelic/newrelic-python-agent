@@ -1,0 +1,2 @@
+virtualenv==20.26.6
+pip==24.0

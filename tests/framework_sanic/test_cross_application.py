@@ -64,7 +64,7 @@ def test_inbound_distributed_trace(app):
     assert response.status == 200
 
 
-ENCODING_KEY = "".join(random.choice(string.ascii_lowercase) for _ in range(40))  # nosec
+ENCODING_KEY = "".join(random.choice(string.ascii_lowercase) for _ in range(40))
 _cat_response_header_urls_to_test = (
     ("/", "_target_application:index"),
     ("/streaming", "_target_application:streaming"),

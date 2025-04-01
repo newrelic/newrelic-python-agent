@@ -113,7 +113,7 @@ def target_wsgi_application(environ, start_response):
         else:
             if "X-NewRelic-Transaction" in generated_outbound_header:
                 status = "500 Outbound Headers Check Failed."
-        r = urlopen(environ["server_url"])  # nosec B310
+        r = urlopen(environ["server_url"])
         r.read(10)
 
     # Set the final transaction name.

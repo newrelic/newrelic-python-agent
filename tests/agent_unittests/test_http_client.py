@@ -307,7 +307,7 @@ def test_http_payload_compression(server, client_cls, method, threshold):
             content_encoding = content_encoding.strip()
             break
     else:
-        assert False, "Missing content-encoding header"
+        raise AssertionError("Missing content-encoding header")
 
     assert content_encoding == expected_content_encoding
     assert sent_payload == payload

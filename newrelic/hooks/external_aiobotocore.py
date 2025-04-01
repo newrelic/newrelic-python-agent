@@ -1,4 +1,3 @@
-
 # Copyright 2010 New Relic, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,20 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import logging
-import traceback
 import sys
-from aiobotocore.response import StreamingBody
+import traceback
 from io import BytesIO
+
+from aiobotocore.response import StreamingBody
 
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.hooks.external_botocore import (
-    AsyncEventStreamWrapper,
-    handle_bedrock_exception,
-    run_bedrock_response_extractor,
-    run_bedrock_request_extractor,
     EMBEDDING_STREAMING_UNSUPPORTED_LOG_MESSAGE,
     RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE,
+    AsyncEventStreamWrapper,
+    handle_bedrock_exception,
+    run_bedrock_request_extractor,
+    run_bedrock_response_extractor,
 )
 
 _logger = logging.getLogger(__name__)
@@ -160,7 +160,7 @@ async def wrap_client__make_api_call(wrapped, instance, args, kwargs):
         run_bedrock_response_extractor(response_extractor, response_body, bedrock_attrs, is_embedding, transaction)
 
     except Exception:
-        _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE % traceback.format_exception(*sys.exc_info()))
+        _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
     return response
 

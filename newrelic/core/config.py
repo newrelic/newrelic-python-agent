@@ -71,6 +71,10 @@ _logger = logging.getLogger(__name__)
 _logger.addHandler(_NullHandler())
 
 
+def parse_space_separated_into_list(string):
+    return string.split()
+
+
 def _map_aws_account_id(s, logger):
     # The AWS account id must be a 12 digit number.
     # See https://docs.aws.amazon.com/accounts/latest/reference/manage-acct-identifiers.html#awsaccountid.
@@ -425,6 +429,18 @@ class InstrumentationGraphQLSettings(Settings):
     pass
 
 
+class InstrumentationKombuSettings(Settings):
+    pass
+
+
+class InstrumentationKombuIgnoredExchangesSettings(Settings):
+    pass
+
+
+class InstrumentationKombuConsumerSettings(Settings):
+    enabled = False
+
+
 class EventHarvestConfigSettings(Settings):
     nested = True
     _lock = threading.Lock()
@@ -488,6 +504,9 @@ _settings.heroku = HerokuSettings()
 _settings.infinite_tracing = InfiniteTracingSettings()
 _settings.instrumentation = InstrumentationSettings()
 _settings.instrumentation.graphql = InstrumentationGraphQLSettings()
+_settings.instrumentation.kombu = InstrumentationKombuSettings()
+_settings.instrumentation.kombu.ignored_exchanges = InstrumentationKombuIgnoredExchangesSettings()
+_settings.instrumentation.kombu.consumer = InstrumentationKombuConsumerSettings()
 _settings.message_tracer = MessageTracerSettings()
 _settings.process_host = ProcessHostSettings()
 _settings.rum = RumSettings()
@@ -875,6 +894,14 @@ _settings.infinite_tracing.span_queue_size = _environ_as_int("NEW_RELIC_INFINITE
 
 _settings.instrumentation.graphql.capture_introspection_queries = os.environ.get(
     "NEW_RELIC_INSTRUMENTATION_GRAPHQL_CAPTURE_INTROSPECTION_QUERIES", False
+)
+
+# celeryev is the monitoring queue for rabbitmq which we do not need to monitor-it just makes a lot of noise.
+_settings.instrumentation.kombu.ignored_exchanges = parse_space_separated_into_list(
+    os.environ.get("NEW_RELIC_INSTRUMENTATION_KOMBU_IGNORED_EXCHANGES", "celeryev")
+)
+_settings.instrumentation.kombu.consumer.enabled = _environ_as_bool(
+    "NEW_RELIC_INSTRUMENTATION_KOMBU_CONSUMER_ENABLED", default=False
 )
 
 _settings.event_harvest_config.harvest_limits.analytic_event_data = _environ_as_int(
@@ -1296,7 +1323,7 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
         derived_vals = settings_snapshot.cross_process_id.split("#")
 
         if len(derived_vals) == 2:
-            for idx, val in enumerate(derived_vals):
+            for idx, _val in enumerate(derived_vals):
                 # only override the value if the server side does not provide
                 # the value specifically
                 if vals[idx] is None:

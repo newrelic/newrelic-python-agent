@@ -157,7 +157,7 @@ class AWSUtilization(CommonUtilization):
     EXPECTED_KEYS = ("availabilityZone", "instanceId", "instanceType")
     METADATA_HOST = "169.254.169.254"
     METADATA_PATH = "/latest/dynamic/instance-identity/document"
-    METADATA_TOKEN_PATH = "/latest/api/token"  # nosec: B105
+    METADATA_TOKEN_PATH = "/latest/api/token"  # noqa: S105
     HEADERS = {"X-aws-ec2-metadata-token-ttl-seconds": "21600"}
     VENDOR_NAME = "aws"
 

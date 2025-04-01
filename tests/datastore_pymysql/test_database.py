@@ -39,7 +39,7 @@ def execute_db_calls_with_cursor(cursor):
 
     cursor.execute(f"""select * from {TABLE_NAME}""")
 
-    for row in cursor:
+    for _row in cursor:
         pass
 
     cursor.execute(f"update {TABLE_NAME} set a=%s, b=%s, c=%s where a=%s", (4, 4.0, "4.0", 1))
@@ -57,7 +57,7 @@ def execute_db_calls_with_cursor(cursor):
 
 
 _test_execute_via_cursor_scoped_metrics = [
-    ("Function/pymysql:Connect", 1),
+    ("Function/pymysql.connections:Connection", 1),
     (f"Datastore/statement/MySQL/{TABLE_NAME}/select", 1),
     (f"Datastore/statement/MySQL/{TABLE_NAME}/insert", 1),
     (f"Datastore/statement/MySQL/{TABLE_NAME}/update", 1),
@@ -109,71 +109,10 @@ def test_execute_via_cursor():
         port=DB_SETTINGS["port"],
     )
 
-    with connection.cursor() as cursor:
-        execute_db_calls_with_cursor(cursor)
+    with connection:
+        with connection.cursor() as cursor:
+            execute_db_calls_with_cursor(cursor)
 
-    connection.commit()
-    connection.rollback()
-    connection.commit()
-
-
-_test_execute_via_cursor_context_mangaer_scoped_metrics = [
-    ("Function/pymysql:Connect", 1),
-    (f"Datastore/statement/MySQL/{TABLE_NAME}/select", 1),
-    (f"Datastore/statement/MySQL/{TABLE_NAME}/insert", 1),
-    (f"Datastore/statement/MySQL/{TABLE_NAME}/update", 1),
-    (f"Datastore/statement/MySQL/{TABLE_NAME}/delete", 1),
-    ("Datastore/operation/MySQL/drop", 2),
-    ("Datastore/operation/MySQL/create", 2),
-    (f"Datastore/statement/MySQL/{PROCEDURE_NAME}/call", 1),
-    ("Datastore/operation/MySQL/commit", 2),
-    ("Datastore/operation/MySQL/rollback", 1),
-]
-
-_test_execute_via_cursor_context_mangaer_rollup_metrics = [
-    ("Datastore/all", 13),
-    ("Datastore/allOther", 13),
-    ("Datastore/MySQL/all", 13),
-    ("Datastore/MySQL/allOther", 13),
-    (f"Datastore/statement/MySQL/{TABLE_NAME}/select", 1),
-    (f"Datastore/statement/MySQL/{TABLE_NAME}/insert", 1),
-    (f"Datastore/statement/MySQL/{TABLE_NAME}/update", 1),
-    (f"Datastore/statement/MySQL/{TABLE_NAME}/delete", 1),
-    ("Datastore/operation/MySQL/select", 1),
-    ("Datastore/operation/MySQL/insert", 1),
-    ("Datastore/operation/MySQL/update", 1),
-    ("Datastore/operation/MySQL/delete", 1),
-    (f"Datastore/statement/MySQL/{PROCEDURE_NAME}/call", 1),
-    ("Datastore/operation/MySQL/call", 1),
-    ("Datastore/operation/MySQL/drop", 2),
-    ("Datastore/operation/MySQL/create", 2),
-    ("Datastore/operation/MySQL/commit", 2),
-    ("Datastore/operation/MySQL/rollback", 1),
-    (f"Datastore/instance/MySQL/{HOST}/{PORT}", 12),
-]
-
-
-@validate_transaction_metrics(
-    "test_database:test_execute_via_cursor_context_manager",
-    scoped_metrics=_test_execute_via_cursor_context_mangaer_scoped_metrics,
-    rollup_metrics=_test_execute_via_cursor_context_mangaer_rollup_metrics,
-    background_task=True,
-)
-@validate_database_trace_inputs(sql_parameters_type=tuple)
-@background_task()
-def test_execute_via_cursor_context_manager():
-    connection = pymysql.connect(
-        db=DB_SETTINGS["name"],
-        user=DB_SETTINGS["user"],
-        passwd=DB_SETTINGS["password"],
-        host=DB_SETTINGS["host"],
-        port=DB_SETTINGS["port"],
-    )
-    cursor = connection.cursor()
-
-    with cursor:
-        execute_db_calls_with_cursor(cursor)
-
-    connection.commit()
-    connection.rollback()
-    connection.commit()
+        connection.commit()
+        connection.rollback()
+        connection.commit()

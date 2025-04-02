@@ -15,14 +15,17 @@
 # import asyncio
 import os
 
-# import pytest
 # import pathlib
 # import random
 import socket
 import subprocess
 import time
 
+import pytest
 import requests
+from testing_support.validators.validate_transaction_metrics import (
+    validate_transaction_metrics,
+)
 
 # from urllib.request import urlopen
 
@@ -36,10 +39,6 @@ import requests
 
 # from testing_support.db_settings import azurefunction_settings
 # from testing_support.util import instance_hostname
-
-# from testing_support.validators.validate_transaction_metrics import (
-#     validate_transaction_metrics,
-# )
 
 
 # ATTEMPT #3
@@ -121,30 +120,39 @@ class TerminatingPopen(subprocess.Popen):
         self.terminate()
 
 
-PORT = available_port()
-# PORT = 7071
+# @pytest.fixture(autouse=True, scope="module")
+# def func_start_storage_emulator():
+#     # Emulate storage
+#     subprocess.Popen(["azurite", "--tableHost", "127.0.0.1"])
 
 
-# @validate_transaction_metrics(
-#     "function_app:basic_page",
-#     group="AzureFunction",
-#     # scoped_metrics=_test_application_index_scoped_metrics
-# )
+# PORT = available_port()
+PORT = 7071
+
+
+@validate_transaction_metrics(
+    "function_app:basic_page",
+    group="AzureFunction",
+    # scoped_metrics=_test_application_index_scoped_metrics
+)
 # @pytest.fixture(autouse=True, scope="module")
 def func_start_dispatcher():
     # azure_function_command = os.path.join(os.environ["TOX_ENV_DIR"], "bin", "func")
     # azure_function_command = "func"
 
-    cmd = ["cd", f"{os.environ['TOX_ENV_DIR']}/tests/framework_azure", "&&", "func", "start", "--port", str(PORT)]
+    # cmd = ["cd", f"{os.getcwd()}/tests/framework_azure/", "&&", "func", "start"] #, "--port", str(PORT)]
+    cmd = ["func", "start"]  # , "--port", str(PORT)]
+    # cmd = ["cd", f"{os.environ.get('TOX_ENV_DIR')}/tests/framework_azure", "&&", "func", "start", "--port", str(PORT)]
     cmd_str = " ".join(cmd)
     # cmd = f"cd tests/framework_azure && newrelic-admin run-program func start --port {str(PORT)}"
 
     try:
         # runs but on different process from instrumentation.
         # We need to do this, but somehow on the same process
-        # subprocess.Popen(cmd_str, shell=True, env=os.environ)
-        # subprocess.run(cmd, shell=True, env=os.environ)
-        os.system(cmd_str)  # nosec
+        # subprocess.Popen(cmd_str, shell=True, env=os.environ, cwd=f"{os.getcwd()}") # nosec # also passes but diff process
+        subprocess.Popen(cmd, env=os.environ, cwd=f"{os.getcwd()}")  # passes, but diff process
+        # subprocess.run(cmd, shell=True, env=os.environ) # nosec
+        # os.system(cmd_str)  # nosec
 
     except Exception as e:
         print(f"Error: {e}")

@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import google.genai
-
 from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     add_token_count_to_events,
@@ -29,7 +28,6 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import add_custom_attribute
-
 
 embedding_recorded_events = [
     (

@@ -103,8 +103,10 @@ def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs,
 
     notice_error_attributes = {}
     try:
-        embedding_content = kwargs.get("contents")
-        embedding_content = str(embedding_content) if embedding_content else ""
+        # We key directly into the kwargs dict here so that we can raise a KeyError if "contents" is not available
+        embedding_content = kwargs["contents"]
+        # embedding_content could be a list, so we typecast it to a string
+        embedding_content = str(embedding_content)
         model = kwargs.get("model")
 
         notice_error_attributes = {

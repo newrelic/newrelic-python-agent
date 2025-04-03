@@ -181,22 +181,48 @@ def test_database_db_statement_exclude():
 
 
 @pytest.mark.parametrize(
-    "trace_type,args,attrs",
+    "trace_type,args,i_attrs,a_attrs",
     (
         (
             DatastoreTrace,
-            ("db_product", "db_target", "db_operation"),
-            {"db.collection": "db_target", "db.operation": "db_operation"},
+            ("db_product", "db_target", "db_operation", "db_host", "1234", "db_name"),
+            {"component": "db_product", "span.kind": "client"},
+            {
+                "db.system": "db_product",
+                "db.operation": "db_operation",
+                "db.collection": "db_target",
+                "db.instance": "db_name",
+                "peer.address": "db_host:1234",
+                "peer.hostname": "db_host",
+                "server.address": "db_host",
+                "server.port": 1234,
+            },
         ),
         (
             DatabaseTrace,
             ("select 1 from db_table",),
-            {"db.collection": "db_table", "db.statement": "select ? from db_table"},
+            {"span.kind": "client"},
+            {"db.collection": "db_table", "db.statement": "select ? from db_table", "db.operation": "select"},
+        ),
+        (
+            DatabaseTrace,
+            ("select 1 from db_table", None, None, None, None, None, "db_host", "1234", "db_name"),
+            {"span.kind": "client"},
+            {
+                "db.statement": "select ? from db_table",
+                "db.operation": "select",
+                "db.collection": "db_table",
+                "db.instance": "db_name",
+                "peer.address": "db_host:1234",
+                "peer.hostname": "db_host",
+                "server.address": "db_host",
+                "server.port": 1234,
+            },
         ),
     ),
 )
-def test_datastore_database_trace_attrs(trace_type, args, attrs):
-    @validate_span_events(count=1, exact_agents=attrs)
+def test_datastore_database_trace_attrs(trace_type, args, i_attrs, a_attrs):
+    @validate_span_events(count=1, exact_intrinsics=i_attrs, exact_agents=a_attrs)
     @override_application_settings({"distributed_tracing.enabled": True, "span_events.enabled": True})
     @background_task(name="test_database_db_statement_exclude")
     def test():
@@ -293,8 +319,23 @@ def test_external_span_limits(kwarg_override, attr_override):
 @pytest.mark.parametrize(
     "kwarg_override,attribute_override",
     (
-        ({"host": "a" * 256}, {"peer.hostname": "a" * 255, "peer.address": "a" * 255}),
-        ({"port_path_or_id": "a" * 256, "host": "a"}, {"peer.hostname": "a", "peer.address": f"a:{'a' * 253}"}),
+        ({"product": "a" * 256}, {"component": "a" * 255, "db.system": "a" * 255}),
+        ({"target": "a" * 256}, {"db.collection": "a" * 255}),
+        ({"operation": "a" * 256}, {"db.operation": "a" * 255}),
+        ({"host": "a" * 256}, {"peer.hostname": "a" * 255, "peer.address": "a" * 255, "server.address": "a" * 255}),
+        (
+            {"port_path_or_id": "a" * 256, "host": "a"},
+            {"peer.hostname": "a", "peer.address": f"a:{'a' * 253}", "server.address": "a", "server.port": None},
+        ),
+        (
+            {"port_path_or_id": "1" * 256, "host": "a"},
+            {
+                "peer.hostname": "a",
+                "peer.address": f"a:{'1' * 253}",
+                "server.address": "a",
+                "server.port": int("1" * 256),
+            },
+        ),
         ({"database_name": "a" * 256}, {"db.instance": "a" * 255}),
     ),
 )
@@ -308,7 +349,16 @@ def test_datastore_span_limits(kwarg_override, attribute_override):
         "component": "library",
     }
 
-    exact_agents = {"db.instance": "db", "peer.hostname": "foo", "peer.address": "foo:1234"}
+    exact_agents = {
+        "db.collection": "table",
+        "db.instance": "db",
+        "db.operation": "operation",
+        "db.system": "library",
+        "peer.address": "foo:1234",
+        "peer.hostname": "foo",
+        "server.address": "foo",
+        "server.port": 1234,
+    }
 
     for k, v in attribute_override.items():
         if k in exact_agents:

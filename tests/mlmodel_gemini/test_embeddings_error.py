@@ -38,7 +38,7 @@ embedding_recorded_events = [
             "id": None,  # UUID that varies with each run
             "span_id": None,
             "trace_id": "trace-id",
-            "contents": "This is an embedding test.",
+            "input": "This is an embedding test.",
             "duration": None,  # Response time varies each test run
             "vendor": "gemini",
             "ingest_source": "Python",
@@ -107,7 +107,7 @@ invalid_model_events = [
             "id": None,  # UUID that varies with each run
             "span_id": None,
             "trace_id": "trace-id",
-            "contents": "Embedded: Model does not exist.",
+            "input": "Embedded: Model does not exist.",
             "duration": None,  # Response time varies each test run
             "request.model": "does-not-exist",  # No model in this test case
             "vendor": "gemini",
@@ -180,7 +180,7 @@ embedding_invalid_key_error_events = [
             "id": None,  # UUID that varies with each run
             "span_id": None,
             "trace_id": "trace-id",
-            "contents": "Invalid API key.",
+            "input": "Invalid API key.",
             "duration": None,  # Response time varies each test run
             "request.model": "text-embedding-004",  # No model in this test case
             "vendor": "gemini",

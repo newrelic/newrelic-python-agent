@@ -36,7 +36,7 @@ embedding_recorded_events = [
             "id": None,  # UUID that varies with each run
             "span_id": None,
             "trace_id": "trace-id",
-            "contents": "This is an embedding test.",
+            "input": "This is an embedding test.",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "duration": None,  # Response time varies each test run

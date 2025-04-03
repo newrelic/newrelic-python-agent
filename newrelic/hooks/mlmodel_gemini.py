@@ -14,7 +14,6 @@
 
 import logging
 import sys
-import traceback
 import uuid
 
 from newrelic.api.function_trace import FunctionTrace
@@ -25,8 +24,8 @@ from newrelic.common.package_version_utils import get_package_version
 from newrelic.core.config import global_settings
 
 GEMINI_VERSION = get_package_version("google-genai")
-EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE = "Exception occurred in Gemini instrumentation: While reporting an exception in Gemini, another exception occurred. Report this issue to New Relic Support.\n%s"
-RECORD_EVENTS_FAILURE_LOG_MESSAGE = "Exception occurred in Gemini instrumentation: Failed to record LLM events. Please report this issue to New Relic Support.\n%s"
+EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE = "Exception occurred in Gemini instrumentation: While reporting an exception in Gemini, another exception occurred. Report this issue to New Relic Support.\n"
+RECORD_EVENTS_FAILURE_LOG_MESSAGE = "Exception occurred in Gemini instrumentation: Failed to record LLM events. Please report this issue to New Relic Support.\n"
 
 _logger = logging.getLogger(__name__)
 
@@ -115,7 +114,7 @@ def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs,
             "embedding_id": embedding_id,
         }
     except Exception:
-        _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
+        _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE, exc_info=True)
 
     message = notice_error_attributes.pop("error.message", None)
     if message:
@@ -142,12 +141,12 @@ def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs,
             "error": True,
         }
         if settings.ai_monitoring.record_content.enabled:
-            error_embedding_dict["contents"] = embedding_content
+            error_embedding_dict["input"] = embedding_content
 
         error_embedding_dict.update(_get_llm_attributes(transaction))
         transaction.record_custom_event("LlmEmbedding", error_embedding_dict)
     except Exception:
-        _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
+        _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
 
 
 def _record_embedding_success(transaction, embedding_id, linking_metadata, kwargs, ft):
@@ -174,14 +173,14 @@ def _record_embedding_success(transaction, embedding_id, linking_metadata, kwarg
             "ingest_source": "Python",
         }
         if settings.ai_monitoring.record_content.enabled:
-            full_embedding_response_dict["contents"] = embedding_content
+            full_embedding_response_dict["input"] = embedding_content
 
         full_embedding_response_dict.update(_get_llm_attributes(transaction))
 
         transaction.record_custom_event("LlmEmbedding", full_embedding_response_dict)
 
     except Exception:
-        _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
+        _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
 
 
 def _get_llm_attributes(transaction):

@@ -154,8 +154,10 @@ def _record_embedding_success(transaction, embedding_id, linking_metadata, kwarg
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
     try:
-        embedding_content = kwargs.get("contents")
-        embedding_content = str(embedding_content) if embedding_content else ""
+        # We key directly into the kwargs dict here so that we can raise a KeyError if "contents" is not available
+        embedding_content = kwargs["contents"]
+        # embedding_content could be a list, so we typecast it to a string
+        embedding_content = str(embedding_content)
         request_model = kwargs.get("model")
 
         full_embedding_response_dict = {

@@ -27,12 +27,22 @@ def wrap_dispatcher__init__(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
+# async def wrap_dispatcher_connect(wrapped, instance, args, kwargs):
+#     return await wrapped(*args, **kwargs)
+
+
 # TODO: This should serve as a way to determine the trigger type.
 # Right now, we only support HTTP, so this function is moot
 # but this will need to be utilized in the future
 async def wrap_dispatcher__handle__invocation_request(wrapped, instance, args, kwargs):
     def bind_params(request, *args, **kwargs):
         return request
+
+    # Force default registration of the application instance
+    # instead of lazy registration upon the first request
+    # application = application_instance(os.environ.get("WEBSITE_SITE_NAME", None))
+    # if application and not application.active:
+    #     application.activate()
 
     request = bind_params(*args, **kwargs)
 
@@ -56,10 +66,14 @@ async def wrap_dispatcher__run_async_func(wrapped, instance, args, kwargs):
         return context, func, args
 
     context, func, params = bind_params(*args, **kwargs)
-    application = application_instance(activate=False)
-    if not application:
-        # Create new application instance here
-        application = application_instance(os.environ.get("WEBSITE_SITE_NAME", None))
+    application = application_instance(
+        os.environ.get("NEW_RELIC_APP_NAME", os.environ.get("WEBSITE_SITE_NAME", None)), activate=False
+    )
+    if application and not application.active:
+        application.activate()
+    elif not application:
+        application = application_instance()
+        application.activate()
 
     http_request = None
     for key, value in params.items():
@@ -149,10 +163,14 @@ def wrap_dispatcher__run_sync_func(wrapped, instance, args, kwargs):
         return invocation_id, context, func, params
 
     invocation_id, context, func, params = bind_params(*args, **kwargs)
-    application = application_instance(activate=False)
-    if not application:
-        # Create new application instance here
-        application = application_instance(os.environ.get("WEBSITE_SITE_NAME", None))
+    application = application_instance(
+        os.environ.get("NEW_RELIC_APP_NAME", os.environ.get("WEBSITE_SITE_NAME", None)), activate=False
+    )
+    if application and not application.active:
+        application.activate()
+    elif not application:
+        application = application_instance()
+        application.activate()
 
     http_request = None
     for key, value in params.items():
@@ -260,6 +278,8 @@ def instrument_azure_functions_worker_dispatcher(module):
         wrap_function_wrapper(
             module, "Dispatcher._handle__invocation_request", wrap_dispatcher__handle__invocation_request
         )
+    # if hasattr(module, "Dispatcher") and hasattr(module.Dispatcher, "connect"):
+    #     wrap_function_wrapper(module, "Dispatcher.connect", wrap_dispatcher_connect)
     if hasattr(module, "Dispatcher") and hasattr(module.Dispatcher, "__init__"):
         wrap_function_wrapper(module, "Dispatcher.__init__", wrap_dispatcher__init__)
     if hasattr(module, "Dispatcher") and hasattr(module.Dispatcher, "_run_sync_func"):

@@ -22,14 +22,14 @@ from newrelic.api.transaction import current_transaction
 try:
     from elasticsearch.connection.http_aiohttp import AiohttpHttpConnection
     from elasticsearch.connection.http_httpx import HttpxHttpConnection
-    from elasticsearch.transport import Transport, AsyncTransport
+    from elasticsearch.transport import AsyncTransport, Transport
 
     NodeConfig = dict
 except ImportError:
+    from elastic_transport._async_transport import AsyncTransport
     from elastic_transport._models import NodeConfig
     from elastic_transport._node._http_aiohttp import AiohttpHttpNode as AiohttpHttpConnection
     from elastic_transport._node._http_httpx import HttpxAsyncHttpNode as HttpxHttpConnection
-    from elastic_transport._async_transport import AsyncTransport
 
 
 IS_V8 = ES_VERSION >= (8,)
@@ -52,7 +52,6 @@ if hasattr(BODY, "encode"):
     BODY = BODY.encode("utf-8")
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "transport_kwargs, perform_request_kwargs",
     [
@@ -74,11 +73,11 @@ if hasattr(BODY, "encode"):
     ],
 )
 @background_task()
-async def test_async_transport_connection_classes(transport_kwargs, perform_request_kwargs):
+def test_async_transport_connection_classes(loop, transport_kwargs, perform_request_kwargs):
     transaction = current_transaction()
 
     transport = AsyncTransport([HOST], **transport_kwargs)
-    await transport.perform_request("POST", METHOD, **perform_request_kwargs)
+    loop.run_until_complete(transport.perform_request("POST", METHOD, **perform_request_kwargs))
 
     expected = (ES_SETTINGS["host"], ES_SETTINGS["port"], None)
     assert transaction._nr_datastore_instance_info == expected

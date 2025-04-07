@@ -20,8 +20,7 @@ except ImportError:
     from elastic_transport._models import NodeConfig
     from elastic_transport._node._base_async import BaseAsyncNode as AsyncConnection
 
-from conftest import ES_VERSION, ES_SETTINGS
-
+from conftest import ES_SETTINGS, ES_VERSION
 
 HOST = {"scheme": "http", "host": ES_SETTINGS["host"], "port": int(ES_SETTINGS["port"])}
 

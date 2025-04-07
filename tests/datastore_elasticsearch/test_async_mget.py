@@ -18,12 +18,12 @@ try:
     from elastic_transport import RoundRobinSelector
     from elasticsearch import AsyncElasticsearch
 except ImportError:
-    from elasticsearch.connection_pool import RoundRobinSelector
     from elasticsearch._async.client import AsyncElasticsearch
+    from elasticsearch.connection_pool import RoundRobinSelector
 
 from conftest import ES_MULTIPLE_SETTINGS, ES_VERSION
-from testing_support.fixtures import override_application_settings
 from testing_support.fixture.event_loop import event_loop as loop  # noqa: F401
+from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 

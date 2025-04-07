@@ -24,7 +24,6 @@ RUN_IF_V8 = pytest.mark.skipif(
 )
 
 
-@pytest.mark.asyncio
 @pytest.mark.parametrize(
     "sub_module,method,args,kwargs,expected_index",
     [
@@ -58,8 +57,8 @@ RUN_IF_V8 = pytest.mark.skipif(
         ("ingest", "geo_ip_stats", (), {}, None),
     ],
 )
-async def test_method_on_async_client_datastore_trace_inputs(
-    async_client, sub_module, method, args, kwargs, expected_index
+def test_method_on_async_client_datastore_trace_inputs(
+    loop, async_client, sub_module, method, args, kwargs, expected_index
 ):
     expected_operation = f"{sub_module}.{method}" if sub_module else method
 
@@ -71,7 +70,7 @@ async def test_method_on_async_client_datastore_trace_inputs(
         else:
             getattr(getattr(async_client, sub_module), method)(*args, **kwargs)
 
-    await _test()
+    loop.run_until_complete(_test())
 
 
 def _test_methods_wrapped(_object, ignored_methods=None):

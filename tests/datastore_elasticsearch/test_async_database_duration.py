@@ -13,12 +13,12 @@
 # limitations under the License.
 
 import sqlite3
+
 import pytest
+from conftest import ES_VERSION
 from testing_support.validators.validate_database_duration import validate_database_duration
 
 from newrelic.api.background_task import background_task
-
-from conftest import ES_VERSION
 
 
 async def _exercise_es_v7(es):
@@ -44,20 +44,18 @@ async def _exercise_es_v8(es):
 _exercise_es = _exercise_es_v7 if ES_VERSION < (8, 0, 0) else _exercise_es_v8
 
 
-@pytest.mark.asyncio
 @validate_database_duration()
 @background_task()
-async def test_elasticsearch_database_duration(async_client):
-    await _exercise_es(async_client)
+def test_elasticsearch_database_duration(loop, async_client):
+    loop.run_until_complete(_exercise_es(async_client))
 
 
-@pytest.mark.asyncio
 @validate_database_duration()
 @background_task()
-async def test_elasticsearch_and_sqlite_database_duration(async_client):
+def test_elasticsearch_and_sqlite_database_duration(loop, async_client):
     # Make Elasticsearch queries
 
-    await _exercise_es(async_client)
+    loop.run_until_complete(_exercise_es(async_client))
 
     # Make sqlite queries
 

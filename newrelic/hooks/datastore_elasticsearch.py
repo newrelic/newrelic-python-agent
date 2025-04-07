@@ -11,9 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from common.async_wrapper import coroutine_wrapper
-
-from newrelic.api.datastore_trace import DatastoreTrace, DatastoreTraceWrapper
+from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version_tuple
@@ -176,6 +174,7 @@ def wrap_async_elasticsearch_client_method(module, class_name, method_name, arg_
         with dt:
             result = await wrapped(*args, **kwargs)
 
+            # TODO Fix this
             instance_info = transaction._nr_datastore_instance_info
             host, port_path_or_id, _ = instance_info
 
@@ -184,7 +183,6 @@ def wrap_async_elasticsearch_client_method(module, class_name, method_name, arg_
 
             return result
 
-    wrapped = coroutine_wrapper
     wrap_function_wrapper(module, f"{class_name}.{method_name}", _nr_wrapper_AsyncElasticsearch_method_)
 
 
@@ -673,8 +671,7 @@ def instrument_async_elasticsearch_client_snapshot_v8(module):
 
 
 _elasticsearch_client_tasks_methods = (("list", None), ("cancel", None), ("get", None))
-
-_async_elasticsearch_client_tasks_methods = tuple(_elasticsearch_client_tasks_methods)
+_async_elasticsearch_client_tasks_methods = _elasticsearch_client_tasks_methods
 
 
 def instrument_elasticsearch_client_tasks(module):
@@ -766,15 +763,34 @@ def _nr_Connection__init__wrapper(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
+def _nr__AsyncConnection__init__wrapper(wrapped, instance, args, kwargs):
+    """Cache datastore instance info on Connection object"""
+
+    def _bind_params(host="localhost", port=9200, *args, **kwargs):
+        return host, port
+
+    host, port = _bind_params(*args, **kwargs)
+    port = str(port)
+    instance._nr_host_port = (host, port)
+
+    return wrapped(*args, **kwargs)
+
+
 def instrument_elasticsearch_connection_base(module):
     wrap_function_wrapper(module, "Connection.__init__", _nr_Connection__init__wrapper)
 
 
 def instrument_async_elasticsearch_connection_base(module):
-    wrap_function_wrapper(module, "AsyncConnection.__init__", _nr_Connection__init__wrapper)
+    wrap_function_wrapper(module, "AsyncConnection.__init__", _nr__AsyncConnection__init__wrapper)
 
 
 def BaseNode__init__wrapper(wrapped, instance, args, kwargs):
+    result = wrapped(*args, **kwargs)
+    instance._nr_host_port = (instance.host, str(instance.port))
+    return result
+
+
+def BaseAsyncNode__init__wrapper(wrapped, instance, args, kwargs):
     result = wrapped(*args, **kwargs)
     instance._nr_host_port = (instance.host, str(instance.port))
     return result
@@ -786,8 +802,8 @@ def instrument_elastic_transport__node__base(module):
 
 
 def instrument_async_elastic_transport__node__base(module):
-    if hasattr(module, "BaseNode"):
-        wrap_function_wrapper(module, "BaseAsyncNode.__init__", BaseNode__init__wrapper)
+    if hasattr(module, "BaseAsyncNode"):
+        wrap_function_wrapper(module, "BaseAsyncNode.__init__", BaseAsyncNode__init__wrapper)
 
 
 def _nr_get_connection_wrapper(wrapped, instance, args, kwargs):

@@ -12,14 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from testing_support.fixtures import override_application_settings, validate_tt_parenting
+from conftest import ES_SETTINGS, ES_VERSION
 from testing_support.fixture.event_loop import event_loop as loop  # noqa: F401
+from testing_support.fixtures import override_application_settings, validate_tt_parenting
 from testing_support.util import instance_hostname
 from testing_support.validators.validate_tt_collector_json import validate_tt_collector_json
 
 from newrelic.api.background_task import background_task
-
-from conftest import ES_SETTINGS, ES_VERSION
 
 # Settings
 

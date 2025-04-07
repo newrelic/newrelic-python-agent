@@ -108,7 +108,7 @@ async def wrap_dispatcher__run_async_func(wrapped, instance, args, kwargs):
         trigger_type = "http"
 
         if hasattr(instance, "_nr_cold_start"):
-            cold_start = instance._nr_cold_start
+            cold_start = True
             # Delete the attribute so that subsequent calls to this
             # method are noted as not being cold starts
             del instance._nr_cold_start
@@ -204,7 +204,7 @@ def wrap_dispatcher__run_sync_func(wrapped, instance, args, kwargs):
         trigger_type = "http"
 
         if hasattr(instance, "_nr_cold_start"):
-            cold_start = instance._nr_cold_start
+            cold_start = True
             # Delete the attribute so that subsequent calls to this
             # method are noted as not being cold starts
             del instance._nr_cold_start

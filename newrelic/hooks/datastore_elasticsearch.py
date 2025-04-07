@@ -227,7 +227,7 @@ _elasticsearch_client_methods_below_v8 = (
     ("update", _extract_args_index),
 )
 
-_async_elasticsearch_client_methods_below_v8 = tuple(_elasticsearch_client_methods_below_v8)
+_async_elasticsearch_client_methods_below_v8 = _elasticsearch_client_methods_below_v8
 
 _elasticsearch_client_methods_v8 = (
     ("bulk", _extract_args_operations_index),
@@ -277,7 +277,7 @@ _elasticsearch_client_methods_v8 = (
     ("update_by_query_rethrottle", None),
 )
 
-_async_elasticsearch_client_methods_v8 = tuple(_elasticsearch_client_methods_v8)
+_async_elasticsearch_client_methods_v8 = _elasticsearch_client_methods_v8
 
 
 def instrument_elasticsearch_client(module):
@@ -288,20 +288,18 @@ def instrument_elasticsearch_client(module):
         instrument_es_methods(module, "Elasticsearch", _elasticsearch_client_methods_below_v8)
 
 
-def instrument_async_elasticsearch_client(module):
+def instrument_elasticsearch__async_client(module):
     # The module path was remapped in v8 to match previous versions.
     # In order to avoid double wrapping we check the version before
     # wrapping.
     if ES_VERSION < (8,):
         instrument_async_es_methods(module, "AsyncElasticsearch", _async_elasticsearch_client_methods_below_v8)
+    else:
+        instrument_async_es_methods(module, "AsyncElasticsearch", _async_elasticsearch_client_methods_v8)
 
 
 def instrument_elasticsearch_client_v8(module):
     instrument_es_methods(module, "Elasticsearch", _elasticsearch_client_methods_v8)
-
-
-def instrument_async_elasticsearch_client_v8(module):
-    instrument_async_es_methods(module, "AsyncElasticsearch", _async_elasticsearch_client_methods_v8)
 
 
 _elasticsearch_client_indices_methods_below_v8 = (
@@ -346,7 +344,7 @@ _elasticsearch_client_indices_methods_below_v8 = (
     ("validate_query", _extract_args_index),
 )
 
-_async_elasticsearch_client_indices_methods_below_v8 = tuple(_elasticsearch_client_indices_methods_below_v8)
+_async_elasticsearch_client_indices_methods_below_v8 = _elasticsearch_client_indices_methods_below_v8
 
 _elasticsearch_client_indices_methods_v8 = (
     ("add_block", _extract_args_index),
@@ -405,7 +403,7 @@ _elasticsearch_client_indices_methods_v8 = (
     ("validate_query", _extract_args_index),
 )
 
-_async_elasticsearch_client_indices_methods_v8 = tuple(_elasticsearch_client_indices_methods_v8)
+_async_elasticsearch_client_indices_methods_v8 = _elasticsearch_client_indices_methods_v8
 
 
 def instrument_elasticsearch_client_indices(module):
@@ -416,20 +414,18 @@ def instrument_elasticsearch_client_indices(module):
         instrument_es_methods(module, "IndicesClient", _elasticsearch_client_indices_methods_below_v8, "indices")
 
 
-def instrument_async_elasticsearch_client_indices(module):
+def instrument_elasticsearch__async_client_indices(module):
     # The module path was remapped in v8 to match previous versions.
     # In order to avoid double wrapping we check the version before
     # wrapping.
     if ES_VERSION < (8,):
         instrument_async_es_methods(module, "IndicesClient", _elasticsearch_client_indices_methods_below_v8, "indices")
+    else:
+        instrument_async_es_methods(module, "IndicesClient", _async_elasticsearch_client_indices_methods_v8, "indices")
 
 
 def instrument_elasticsearch_client_indices_v8(module):
     instrument_es_methods(module, "IndicesClient", _elasticsearch_client_indices_methods_v8, "indices")
-
-
-def instrument_async_elasticsearch_client_indices_v8(module):
-    instrument_async_es_methods(module, "IndicesClient", _async_elasticsearch_client_indices_methods_v8, "indices")
 
 
 _elasticsearch_client_cat_methods_below_v8 = (
@@ -450,7 +446,7 @@ _elasticsearch_client_cat_methods_below_v8 = (
     ("thread_pool", None),
 )
 
-_async_elasticsearch_client_cat_methods_below_v8 = tuple(_elasticsearch_client_cat_methods_below_v8)
+_async_elasticsearch_client_cat_methods_below_v8 = _elasticsearch_client_cat_methods_below_v8
 
 _elasticsearch_client_cat_methods_v8 = (
     ("aliases", None),
@@ -481,7 +477,7 @@ _elasticsearch_client_cat_methods_v8 = (
     ("transforms", None),
 )
 
-_async_elasticsearch_client_cat_methods_v8 = tuple(_elasticsearch_client_cat_methods_v8)
+_async_elasticsearch_client_cat_methods_v8 = _elasticsearch_client_cat_methods_v8
 
 
 def instrument_elasticsearch_client_cat(module):
@@ -492,20 +488,18 @@ def instrument_elasticsearch_client_cat(module):
         instrument_es_methods(module, "CatClient", _elasticsearch_client_cat_methods_below_v8, "cat")
 
 
-def instrument_async_elasticsearch_client_cat(module):
+def instrument_elasticsearch__async_client_cat(module):
     # The module path was remapped in v8 to match previous versions.
     # In order to avoid double wrapping we check the version before
     # wrapping.
     if ES_VERSION < (8,):
         instrument_async_es_methods(module, "CatClient", _async_elasticsearch_client_cat_methods_below_v8, "cat")
+    else:
+        instrument_async_es_methods(module, "CatClient", _async_elasticsearch_client_cat_methods_v8, "cat")
 
 
 def instrument_elasticsearch_client_cat_v8(module):
     instrument_es_methods(module, "CatClient", _elasticsearch_client_cat_methods_v8, "cat")
-
-
-def instrument_async_elasticsearch_client_cat_v8(module):
-    instrument_async_es_methods(module, "CatClient", _async_elasticsearch_client_cat_methods_v8, "cat")
 
 
 _elasticsearch_client_cluster_methods_below_v8 = (
@@ -518,7 +512,7 @@ _elasticsearch_client_cluster_methods_below_v8 = (
     ("stats", None),
 )
 
-_async_elasticsearch_client_cluster_methods_below_v8 = tuple(_elasticsearch_client_cluster_methods_below_v8)
+_async_elasticsearch_client_cluster_methods_below_v8 = _elasticsearch_client_cluster_methods_below_v8
 
 _elasticsearch_client_cluster_methods_v8 = (
     ("allocation_explain", _extract_args_allocation_explain_index),
@@ -538,7 +532,7 @@ _elasticsearch_client_cluster_methods_v8 = (
     ("stats", None),
 )
 
-_async_elasticsearch_client_cluster_methods_v8 = tuple(_elasticsearch_client_cluster_methods_v8)
+_async_elasticsearch_client_cluster_methods_v8 = _elasticsearch_client_cluster_methods_v8
 
 
 def instrument_elasticsearch_client_cluster(module):
@@ -549,7 +543,7 @@ def instrument_elasticsearch_client_cluster(module):
         instrument_es_methods(module, "ClusterClient", _elasticsearch_client_cluster_methods_below_v8, "cluster")
 
 
-def instrument_async_elasticsearch_client_cluster(module):
+def instrument_elasticsearch__async_client_cluster(module):
     # The module path was remapped in v8 to match previous versions.
     # In order to avoid double wrapping we check the version before
     # wrapping.
@@ -557,14 +551,12 @@ def instrument_async_elasticsearch_client_cluster(module):
         instrument_async_es_methods(
             module, "ClusterClient", _async_elasticsearch_client_cluster_methods_below_v8, "cluster"
         )
+    else:
+        instrument_async_es_methods(module, "ClusterClient", _async_elasticsearch_client_cluster_methods_v8, "cluster")
 
 
 def instrument_elasticsearch_client_cluster_v8(module):
     instrument_es_methods(module, "ClusterClient", _elasticsearch_client_cluster_methods_v8, "cluster")
-
-
-def instrument_async_elasticsearch_client_cluster_v8(module):
-    instrument_async_es_methods(module, "ClusterClient", _async_elasticsearch_client_cluster_methods_v8, "cluster")
 
 
 _elasticsearch_client_nodes_methods_below_v8 = (
@@ -574,7 +566,7 @@ _elasticsearch_client_nodes_methods_below_v8 = (
     ("stats", None),
 )
 
-_async_elasticsearch_client_nodes_methods_below_v8 = tuple(_elasticsearch_client_nodes_methods_below_v8)
+_async_elasticsearch_client_nodes_methods_below_v8 = _elasticsearch_client_nodes_methods_below_v8
 
 _elasticsearch_client_nodes_methods_v8 = (
     ("clear_repositories_metering_archive", None),
@@ -586,7 +578,7 @@ _elasticsearch_client_nodes_methods_v8 = (
     ("usage", None),
 )
 
-_async_elasticsearch_client_nodes_methods_v8 = tuple(_elasticsearch_client_nodes_methods_v8)
+_async_elasticsearch_client_nodes_methods_v8 = _elasticsearch_client_nodes_methods_v8
 
 
 def instrument_elasticsearch_client_nodes(module):
@@ -597,20 +589,18 @@ def instrument_elasticsearch_client_nodes(module):
         instrument_es_methods(module, "NodesClient", _elasticsearch_client_nodes_methods_below_v8, "nodes")
 
 
-def instrument_async_elasticsearch_client_nodes(module):
+def instrument_elasticsearch__async_client_nodes(module):
     # The module path was remapped in v8 to match previous versions.
     # In order to avoid double wrapping we check the version before
     # wrapping.
     if ES_VERSION < (8,):
         instrument_async_es_methods(module, "NodesClient", _async_elasticsearch_client_nodes_methods_below_v8, "nodes")
+    else:
+        instrument_async_es_methods(module, "NodesClient", _async_elasticsearch_client_nodes_methods_v8, "nodes")
 
 
 def instrument_elasticsearch_client_nodes_v8(module):
     instrument_es_methods(module, "NodesClient", _elasticsearch_client_nodes_methods_v8, "nodes")
-
-
-def instrument_async_elasticsearch_client_nodes_v8(module):
-    instrument_async_es_methods(module, "NodesClient", _async_elasticsearch_client_nodes_methods_v8, "nodes")
 
 
 _elasticsearch_client_snapshot_methods_below_v8 = (
@@ -625,7 +615,7 @@ _elasticsearch_client_snapshot_methods_below_v8 = (
     ("verify_repository", None),
 )
 
-_async_elasticsearch_client_snapshot_methods_below_v8 = tuple(_elasticsearch_client_snapshot_methods_below_v8)
+_async_elasticsearch_client_snapshot_methods_below_v8 = _elasticsearch_client_snapshot_methods_below_v8
 
 _elasticsearch_client_snapshot_methods_v8 = (
     ("cleanup_repository", None),
@@ -641,7 +631,7 @@ _elasticsearch_client_snapshot_methods_v8 = (
     ("verify_repository", None),
 )
 
-_async_elasticsearch_client_snapshot_methods_v8 = tuple(_elasticsearch_client_snapshot_methods_v8)
+_async_elasticsearch_client_snapshot_methods_v8 = _elasticsearch_client_snapshot_methods_v8
 
 
 def instrument_elasticsearch_client_snapshot(module):
@@ -652,7 +642,7 @@ def instrument_elasticsearch_client_snapshot(module):
         instrument_es_methods(module, "SnapshotClient", _elasticsearch_client_snapshot_methods_below_v8, "snapshot")
 
 
-def instrument_async_elasticsearch_client_snapshot(module):
+def instrument_elasticsearch__async_client_snapshot(module):
     # The module path was remapped in v8 to match previous versions.
     # In order to avoid double wrapping we check the version before
     # wrapping.
@@ -660,14 +650,14 @@ def instrument_async_elasticsearch_client_snapshot(module):
         instrument_async_es_methods(
             module, "SnapshotClient", _async_elasticsearch_client_snapshot_methods_below_v8, "snapshot"
         )
+    else:
+        instrument_async_es_methods(
+            module, "SnapshotClient", _async_elasticsearch_client_snapshot_methods_v8, "snapshot"
+        )
 
 
 def instrument_elasticsearch_client_snapshot_v8(module):
     instrument_es_methods(module, "SnapshotClient", _elasticsearch_client_snapshot_methods_v8, "snapshot")
-
-
-def instrument_async_elasticsearch_client_snapshot_v8(module):
-    instrument_async_es_methods(module, "SnapshotClient", _async_elasticsearch_client_snapshot_methods_v8, "snapshot")
 
 
 _elasticsearch_client_tasks_methods = (("list", None), ("cancel", None), ("get", None))
@@ -682,20 +672,18 @@ def instrument_elasticsearch_client_tasks(module):
         instrument_es_methods(module, "TasksClient", _elasticsearch_client_tasks_methods, "tasks")
 
 
-def instrument_async_elasticsearch_client_tasks(module):
+def instrument_elasticsearch__async_client_tasks(module):
     # The module path was remapped in v8 to match previous versions.
     # In order to avoid double wrapping we check the version before
     # wrapping.
     if ES_VERSION < (8,):
         instrument_async_es_methods(module, "TasksClient", _async_elasticsearch_client_tasks_methods, "tasks")
+    else:
+        instrument_async_es_methods(module, "TasksClient", _async_elasticsearch_client_tasks_methods, "tasks")
 
 
 def instrument_elasticsearch_client_tasks_v8(module):
     instrument_es_methods(module, "TasksClient", _elasticsearch_client_tasks_methods, "tasks")
-
-
-def instrument_async_elasticsearch_client_tasks_v8(module):
-    instrument_async_es_methods(module, "TasksClient", _async_elasticsearch_client_tasks_methods, "tasks")
 
 
 _elasticsearch_client_ingest_methods_below_v8 = (
@@ -705,7 +693,7 @@ _elasticsearch_client_ingest_methods_below_v8 = (
     ("simulate", None),
 )
 
-_async_elasticsearch_client_ingest_methods_below_v8 = tuple(_elasticsearch_client_ingest_methods_below_v8)
+_async_elasticsearch_client_ingest_methods_below_v8 = _elasticsearch_client_ingest_methods_below_v8
 
 _elasticsearch_client_ingest_methods_v8 = (
     ("delete_pipeline", None),
@@ -716,7 +704,7 @@ _elasticsearch_client_ingest_methods_v8 = (
     ("simulate", None),
 )
 
-_async_elasticsearch_client_ingest_methods_v8 = tuple(_elasticsearch_client_ingest_methods_v8)
+_async_elasticsearch_client_ingest_methods_v8 = _elasticsearch_client_ingest_methods_v8
 
 
 def instrument_elasticsearch_client_ingest(module):
@@ -727,7 +715,7 @@ def instrument_elasticsearch_client_ingest(module):
         instrument_es_methods(module, "IngestClient", _elasticsearch_client_ingest_methods_below_v8, "ingest")
 
 
-def instrument_async_elasticsearch_client_ingest(module):
+def instrument_elasticsearch__async_client_ingest(module):
     # The module path was remapped in v8 to match previous versions.
     # In order to avoid double wrapping we check the version before
     # wrapping.
@@ -735,14 +723,12 @@ def instrument_async_elasticsearch_client_ingest(module):
         instrument_async_es_methods(
             module, "IngestClient", _async_elasticsearch_client_ingest_methods_below_v8, "ingest"
         )
+    else:
+        instrument_async_es_methods(module, "IngestClient", _async_elasticsearch_client_ingest_methods_v8, "ingest")
 
 
 def instrument_elasticsearch_client_ingest_v8(module):
     instrument_es_methods(module, "IngestClient", _elasticsearch_client_ingest_methods_v8, "ingest")
-
-
-def instrument_async_elasticsearch_client_ingest_v8(module):
-    instrument_async_es_methods(module, "IngestClient", _async_elasticsearch_client_ingest_methods_v8, "ingest")
 
 
 #

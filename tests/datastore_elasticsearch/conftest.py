@@ -14,6 +14,7 @@
 
 import pytest
 from testing_support.db_settings import elasticsearch_settings
+from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 from newrelic.common.package_version_utils import get_package_version
@@ -43,11 +44,16 @@ ES_URL = f"http://{ES_SETTINGS['host']}:{ES_SETTINGS['port']}"
 def client():
     from elasticsearch import Elasticsearch
 
-    return Elasticsearch(ES_URL)
+    _client = Elasticsearch(ES_URL)
+    yield _client
+    _client.close()
 
 
 @pytest.fixture(scope="session")
-def async_client():
+def async_client(loop):
     from elasticsearch import AsyncElasticsearch
 
-    return AsyncElasticsearch(ES_URL)
+    # Manual context manager
+    _async_client = AsyncElasticsearch(ES_URL)
+    yield _async_client
+    loop.run_until_complete(_async_client.close())

@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import elasticsearch._async.client as client
-import pytest
 from conftest import ES_SETTINGS, ES_VERSION
 from testing_support.fixture.event_loop import event_loop as loop  # noqa: F401
 from testing_support.fixtures import override_application_settings

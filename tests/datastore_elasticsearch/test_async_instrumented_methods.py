@@ -66,9 +66,9 @@ def test_method_on_async_client_datastore_trace_inputs(
     @background_task()
     async def _test():
         if not sub_module:
-            getattr(async_client, method)(*args, **kwargs)
+            await getattr(async_client, method)(*args, **kwargs)
         else:
-            getattr(getattr(async_client, sub_module), method)(*args, **kwargs)
+            await getattr(getattr(async_client, sub_module), method)(*args, **kwargs)
 
     loop.run_until_complete(_test())
 

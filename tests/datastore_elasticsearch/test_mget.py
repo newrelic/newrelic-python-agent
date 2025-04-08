@@ -78,10 +78,12 @@ def client():
     # doing two db calls will mean elastic search is talking to two different
     # dbs.
     if ES_VERSION >= (8,):
-        client = Elasticsearch(urls, node_selector_class=RoundRobinSelector, randomize_hosts=False)
+        _client = Elasticsearch(urls, node_selector_class=RoundRobinSelector, randomize_nodes_in_pool=False)
     else:
-        client = Elasticsearch(urls, selector_class=RoundRobinSelector, randomize_hosts=False)
-    return client
+        _client = Elasticsearch(urls, selector_class=RoundRobinSelector, randomize_nodes_in_pool=False)
+
+    yield _client
+    _client.close()
 
 
 # Query

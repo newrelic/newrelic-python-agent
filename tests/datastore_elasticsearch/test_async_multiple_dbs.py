@@ -78,6 +78,19 @@ async def _exercise_es(es):
 # Test
 
 
+@pytest.fixture(scope="session")
+def async_clients(loop):
+    clients = []
+    for db in ES_MULTIPLE_SETTINGS:
+        es_url = f"http://{db['host']}:{db['port']}"
+        clients.append(AsyncElasticsearch(es_url))
+
+    yield clients
+
+    for client in clients:
+        loop.run_until_complete(client.close())
+
+
 @pytest.mark.skipif(len(ES_MULTIPLE_SETTINGS) < 2, reason="Test environment not configured with multiple databases.")
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
@@ -87,11 +100,11 @@ async def _exercise_es(es):
     background_task=True,
 )
 @background_task()
-def test_async_multiple_dbs_enabled(loop):
-    for db in ES_MULTIPLE_SETTINGS:
-        es_url = f"http://{db['host']}:{db['port']}"
-        client = AsyncElasticsearch(es_url)
-        loop.run_until_complete(_exercise_es(client))
+def test_async_multiple_dbs_enabled(loop, async_clients):
+    import asyncio
+
+    # Run multiple queries in parallel
+    loop.run_until_complete(asyncio.gather(*(_exercise_es(client) for client in async_clients)))
 
 
 @pytest.mark.skipif(len(ES_MULTIPLE_SETTINGS) < 2, reason="Test environment not configured with multiple databases.")
@@ -103,8 +116,8 @@ def test_async_multiple_dbs_enabled(loop):
     background_task=True,
 )
 @background_task()
-def test_async_multiple_dbs_disabled(loop):
-    for db in ES_MULTIPLE_SETTINGS:
-        es_url = f"http://{db['host']}:{db['port']}"
-        client = AsyncElasticsearch(es_url)
-        loop.run_until_complete(_exercise_es(client))
+def test_async_multiple_dbs_disabled(loop, async_clients):
+    import asyncio
+
+    # Run multiple queries in parallel
+    loop.run_until_complete(asyncio.gather(*(_exercise_es(client) for client in async_clients)))

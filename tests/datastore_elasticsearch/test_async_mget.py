@@ -73,17 +73,19 @@ if len(ES_MULTIPLE_SETTINGS) > 1:
 
 
 @pytest.fixture(scope="module")
-def client():
+def client(loop):
     urls = [f"http://{db['host']}:{db['port']}" for db in ES_MULTIPLE_SETTINGS]
     # When selecting a connection from the pool, use the round robin method.
     # This is actually the default already. Using round robin will ensure that
     # doing two db calls will mean elastic search is talking to two different
     # dbs.
     if ES_VERSION >= (8,):
-        client = AsyncElasticsearch(urls, node_selector_class=RoundRobinSelector, randomize_hosts=False)
+        _client = AsyncElasticsearch(urls, node_selector_class=RoundRobinSelector, randomize_nodes_in_pool=False)
     else:
-        client = AsyncElasticsearch(urls, selector_class=RoundRobinSelector, randomize_hosts=False)
-    return client
+        _client = AsyncElasticsearch(urls, selector_class=RoundRobinSelector, randomize_nodes_in_pool=False)
+
+    yield _client
+    loop.run_until_complete(_client.close())
 
 
 # Query

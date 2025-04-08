@@ -90,68 +90,10 @@ text_generation_recorded_events = [
         },
     ),
 ]
-#     (
-#         {"type": "LlmChatCompletionSummary"},
-#         {
-#             "id": None,  # UUID that varies with each run
-#             "llm.conversation_id": "my-awesome-id",
-#             "llm.foo": "bar",
-#             "span_id": None,
-#             "trace_id": "trace-id",
-#             "duration": None,  # Response time varies each test run
-#             "request.model": "gemini-2.0-flash",
-#             "response.model": "gemini-2.0-flash",
-#             "request.temperature": 0.7,
-#             "request.max_tokens": 100,
-#             "cheese": "burger",
-#             "response.choices.finish_reason": "STOP",
-#             "vendor": "gemini",
-#             "ingest_source": "Python",
-#             "response.number_of_messages": 2,
-#         },
-#     ),
-#     (
-#         {"type": "LlmChatCompletionMessage"},
-#         {
-#             "id": None,
-#             "llm.conversation_id": "my-awesome-id",
-#             "llm.foo": "bar",
-#             "span_id": None,
-#             "trace_id": "trace-id",
-#             #"content": None,
-#             "content": "Who invented the Python programming language?",
-#             "role": "user",
-#             "completion_id": None,
-#             "sequence": 0,
-#             "response.model": "gemini-2.0-flash",
-#             "vendor": "gemini",
-#             "ingest_source": "Python",
-#         },
-#     ),
-#     (
-#         {"type": "LlmChatCompletionMessage"},
-#         {
-#             "id": None,
-#             "llm.conversation_id": "my-awesome-id",
-#             "llm.foo": "bar",
-#             "span_id": None,
-#             "trace_id": "trace-id",
-#             #"content": None,
-#             #"content": 'The Python programming language was invented by **Guido van Rossum**.\n',
-#             "content": 'Guido van Rossum invented the Python programming language.\n',
-#             "role": "model",
-#             "completion_id": None,
-#             "sequence": 1,
-#             "response.model": "gemini-2.0-flash",
-#             "vendor": "gemini",
-#             "is_response": True,
-#             "ingest_source": "Python",
-#         },
-#     ),
-# ]
 
 
 @reset_core_stats_engine()
+# Expect one summary event, one message event for the input, and message event for the output for each send_message_call
 @validate_custom_event_count(count=6)
 @validate_transaction_metrics(
     name="test_text_generation:test_gemini_multi_text_generation",

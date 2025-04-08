@@ -264,8 +264,9 @@ async def wrap_generate_content_async(wrapped, instance, args, kwargs):
         _record_generation_error(transaction, linking_metadata, completion_id, kwargs, ft, exc)
         raise
 
-    _handle_generation_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val)
     ft.__exit__(None, None, None)
+
+    _handle_generation_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val)
 
     return return_val
 

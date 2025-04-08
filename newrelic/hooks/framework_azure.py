@@ -23,14 +23,9 @@ from newrelic.common.object_wrapper import wrap_function_wrapper
 
 
 def wrap_dispatcher__init__(wrapped, instance, args, kwargs):
-    setattr(instance, "_nr_cold_start", True)
-    # instance._nr_cold_start = True
-    return wrapped(*args, **kwargs)
-
-
-async def wrap_dispatcher_connect(wrapped, instance, args, kwargs):
-    setattr(instance, "_nr_cold_start", True)
-    return await wrapped(*args, **kwargs)
+    instance._nr_cold_start = True
+    result = wrapped(*args, **kwargs)
+    return result
 
 
 # TODO: This should serve as a way to determine the trigger type.
@@ -280,11 +275,15 @@ def instrument_azure_functions_worker_dispatcher(module):
         wrap_function_wrapper(
             module, "Dispatcher._handle__invocation_request", wrap_dispatcher__handle__invocation_request
         )
-    if hasattr(module, "Dispatcher") and hasattr(module.Dispatcher, "connect"):
-        wrap_function_wrapper(module, "Dispatcher.connect", wrap_dispatcher_connect)
-    if hasattr(module, "Dispatcher") and hasattr(module.Dispatcher, "__init__"):
-        wrap_function_wrapper(module, "Dispatcher.__init__", wrap_dispatcher__init__)
     if hasattr(module, "Dispatcher") and hasattr(module.Dispatcher, "_run_sync_func"):
         wrap_function_wrapper(module, "Dispatcher._run_sync_func", wrap_dispatcher__run_sync_func)
     if hasattr(module, "Dispatcher") and hasattr(module.Dispatcher, "_run_async_func"):
         wrap_function_wrapper(module, "Dispatcher._run_async_func", wrap_dispatcher__run_async_func)
+
+        # if hasattr(module.Dispatcher, "connect"):
+        #     wrap_function_wrapper(module, "Dispatcher.connect", wrap_dispatcher_connect)
+
+    # if hasattr(module, "Dispatcher") and hasattr(module.Dispatcher, "_run_sync_func"):
+    #     wrap_function_wrapper(module, "Dispatcher._run_sync_func", wrap_dispatcher__run_sync_func)
+    # if hasattr(module, "Dispatcher") and hasattr(module.Dispatcher, "_run_async_func"):
+    #     wrap_function_wrapper(module, "Dispatcher._run_async_func", wrap_dispatcher__run_async_func)

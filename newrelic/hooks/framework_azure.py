@@ -22,24 +22,30 @@ from newrelic.api.web_transaction import WebTransaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
 
-def wrap_dispatcher__init__(wrapped, instance, args, kwargs):
-    instance._nr_cold_start = True
-    result = wrapped(*args, **kwargs)
-    return result
-
-
 # TODO: This should serve as a way to determine the trigger type.
-# Right now, we only support HTTP, so this function is moot
-# but this will need to be utilized in the future
+# Right now, we only support HTTP, so this function serves to activate
+# the application if not already registered with the collector as well
+# as determining if this invocation was a cold start or not.
 async def wrap_dispatcher__handle__invocation_request(wrapped, instance, args, kwargs):
     def bind_params(request, *args, **kwargs):
         return request
 
     # Force default registration of the application instance
     # instead of lazy registration upon the first request
-    # application = application_instance(os.environ.get("WEBSITE_SITE_NAME", None))
-    # if application and not application.active:
-    #     application.activate()
+    app_name = os.environ.get("NEW_RELIC_APP_NAME", os.environ.get("WEBSITE_SITE_NAME", None))
+    application = application_instance(app_name, activate=False)
+    if application and not application.active:
+        application.activate()
+    elif not application:
+        application = application_instance(app_name)
+        application.activate()
+
+    # Logic to determine if this is a cold start since we are not
+    # able to access the logic in the __init__ method of the Dispatcher
+    # class with Python (in the Portal, this is done in C#)
+    if not hasattr(instance, "_nr_running_dispatcher"):
+        instance._nr_running_dispatcher = True
+        instance._nr_cold_start = True
 
     request = bind_params(*args, **kwargs)
 
@@ -63,13 +69,16 @@ async def wrap_dispatcher__run_async_func(wrapped, instance, args, kwargs):
         return context, func, args
 
     context, func, params = bind_params(*args, **kwargs)
+
     application = application_instance(
         os.environ.get("NEW_RELIC_APP_NAME", os.environ.get("WEBSITE_SITE_NAME", None)), activate=False
     )
     if application and not application.active:
         application.activate()
     elif not application:
-        application = application_instance()
+        application = application_instance(
+            os.environ.get("NEW_RELIC_APP_NAME", os.environ.get("WEBSITE_SITE_NAME", None))
+        )
         application.activate()
 
     http_request = None
@@ -166,7 +175,9 @@ def wrap_dispatcher__run_sync_func(wrapped, instance, args, kwargs):
     if application and not application.active:
         application.activate()
     elif not application:
-        application = application_instance()
+        application = application_instance(
+            os.environ.get("NEW_RELIC_APP_NAME", os.environ.get("WEBSITE_SITE_NAME", None))
+        )
         application.activate()
 
     http_request = None
@@ -265,12 +276,20 @@ def wrap_httpresponse__init__(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
+# def wrap_dispatcher_get_worker_metadata(wrapped, instance, args, kwargs):
+#     breakpoint()
+#     print("MADE IT TO get_worker_metadata")
+#     return wrapped(*args, **kwargs)
+
+
 def instrument_azure__http(module):
     if hasattr(module, "HttpResponse"):
         wrap_function_wrapper(module, "HttpResponse.__init__", wrap_httpresponse__init__)
 
 
 def instrument_azure_functions_worker_dispatcher(module):
+    # wrap_function_wrapper(module, "Dispatcher.__init__", wrap_dispatcher__init__)
+
     if hasattr(module, "Dispatcher") and hasattr(module.Dispatcher, "_handle__invocation_request"):
         wrap_function_wrapper(
             module, "Dispatcher._handle__invocation_request", wrap_dispatcher__handle__invocation_request
@@ -280,8 +299,11 @@ def instrument_azure_functions_worker_dispatcher(module):
     if hasattr(module, "Dispatcher") and hasattr(module.Dispatcher, "_run_async_func"):
         wrap_function_wrapper(module, "Dispatcher._run_async_func", wrap_dispatcher__run_async_func)
 
-        # if hasattr(module.Dispatcher, "connect"):
-        #     wrap_function_wrapper(module, "Dispatcher.connect", wrap_dispatcher_connect)
+    # if hasattr(module, "Dispatcher") and hasattr(module.Dispatcher, "get_worker_metadata"):
+    #     wrap_function_wrapper(module, "Dispatcher.get_worker_metadata", wrap_dispatcher_get_worker_metadata)
+
+    # if hasattr(module.Dispatcher, "connect"):
+    #     wrap_function_wrapper(module, "Dispatcher.connect", wrap_dispatcher_connect)
 
     # if hasattr(module, "Dispatcher") and hasattr(module.Dispatcher, "_run_sync_func"):
     #     wrap_function_wrapper(module, "Dispatcher._run_sync_func", wrap_dispatcher__run_sync_func)

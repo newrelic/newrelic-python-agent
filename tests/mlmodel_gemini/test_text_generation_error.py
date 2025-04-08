@@ -15,6 +15,7 @@
 
 import google.genai
 import pytest
+import sys
 from testing_support.fixtures import dt_enabled, override_llm_token_callback_settings, reset_core_stats_engine
 from testing_support.ml_testing_utils import (
     add_token_count_to_events,
@@ -71,60 +72,72 @@ expected_events_on_no_model_error = [
 ]
 
 
-# No model provided
-@dt_enabled
-@reset_core_stats_engine()
-@validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
-@validate_span_events(
-    exact_agents={"error.message": "Models.generate_content() missing 1 required keyword-only argument: 'model'"}
-)
-@validate_transaction_metrics(
-    "test_text_generation_error:test_text_generation_invalid_request_error_no_model",
-    scoped_metrics=[("Llm/completion/Gemini/generate_content", 1)],
-    rollup_metrics=[("Llm/completion/Gemini/generate_content", 1)],
-    background_task=True,
-)
-@validate_custom_events(events_with_context_attrs(expected_events_on_no_model_error))
-@validate_custom_event_count(count=2)
-@background_task()
 def test_text_generation_invalid_request_error_no_model(gemini_dev_client, set_trace_info):
-    with pytest.raises(TypeError):
-        set_trace_info()
-        add_custom_attribute("llm.conversation_id", "my-awesome-id")
-        with WithLlmCustomAttributes({"context": "attr"}):
+    if sys.version_info < (3, 10):
+        error_message = "generate_content() missing 1 required keyword-only argument: 'model'"
+    else:
+        error_message = "Models.generate_content() missing 1 required keyword-only argument: 'model'"
+
+    # No model provided
+    @dt_enabled
+    @reset_core_stats_engine()
+    @validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
+    @validate_span_events(exact_agents={"error.message": error_message})
+    @validate_transaction_metrics(
+        "test_text_generation_error:test_text_generation_invalid_request_error_no_model.<locals>._test",
+        scoped_metrics=[("Llm/completion/Gemini/generate_content", 1)],
+        rollup_metrics=[("Llm/completion/Gemini/generate_content", 1)],
+        background_task=True,
+    )
+    @validate_custom_events(events_with_context_attrs(expected_events_on_no_model_error))
+    @validate_custom_event_count(count=2)
+    @background_task()
+    def _test():
+        with pytest.raises(TypeError):
+            set_trace_info()
+            add_custom_attribute("llm.conversation_id", "my-awesome-id")
+            with WithLlmCustomAttributes({"context": "attr"}):
+                gemini_dev_client.models.generate_content(
+                    # no model
+                    contents=["How many letters are in the word Python?"],
+                    config=google.genai.types.GenerateContentConfig(max_output_tokens=100, temperature=0.7),
+                )
+
+    _test()
+
+
+def test_text_generation_invalid_request_error_no_model_no_content(gemini_dev_client, set_trace_info):
+    if sys.version_info < (3, 10):
+        error_message = "generate_content() missing 1 required keyword-only argument: 'model'"
+    else:
+        error_message = "Models.generate_content() missing 1 required keyword-only argument: 'model'"
+
+    @dt_enabled
+    @disabled_ai_monitoring_record_content_settings
+    @reset_core_stats_engine()
+    @validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
+    @validate_span_events(exact_agents={"error.message": error_message})
+    @validate_transaction_metrics(
+        "test_text_generation_error:test_text_generation_invalid_request_error_no_model_no_content.<locals>._test",
+        scoped_metrics=[("Llm/completion/Gemini/generate_content", 1)],
+        rollup_metrics=[("Llm/completion/Gemini/generate_content", 1)],
+        background_task=True,
+    )
+    @validate_custom_events(events_sans_content(expected_events_on_no_model_error))
+    @validate_custom_event_count(count=2)
+    @background_task()
+    def _test():
+        with pytest.raises(TypeError):
+            set_trace_info()
+            add_custom_attribute("llm.conversation_id", "my-awesome-id")
+
             gemini_dev_client.models.generate_content(
                 # no model
                 contents=["How many letters are in the word Python?"],
                 config=google.genai.types.GenerateContentConfig(max_output_tokens=100, temperature=0.7),
             )
 
-
-@dt_enabled
-@disabled_ai_monitoring_record_content_settings
-@reset_core_stats_engine()
-@validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
-@validate_span_events(
-    exact_agents={"error.message": "Models.generate_content() missing 1 required keyword-only argument: 'model'"}
-)
-@validate_transaction_metrics(
-    "test_text_generation_error:test_text_generation_invalid_request_error_no_model_no_content",
-    scoped_metrics=[("Llm/completion/Gemini/generate_content", 1)],
-    rollup_metrics=[("Llm/completion/Gemini/generate_content", 1)],
-    background_task=True,
-)
-@validate_custom_events(events_sans_content(expected_events_on_no_model_error))
-@validate_custom_event_count(count=2)
-@background_task()
-def test_text_generation_invalid_request_error_no_model_no_content(gemini_dev_client, set_trace_info):
-    with pytest.raises(TypeError):
-        set_trace_info()
-        add_custom_attribute("llm.conversation_id", "my-awesome-id")
-
-        gemini_dev_client.models.generate_content(
-            # no model
-            contents=["How many letters are in the word Python?"],
-            config=google.genai.types.GenerateContentConfig(max_output_tokens=100, temperature=0.7),
-        )
+    _test()
 
 
 expected_events_on_invalid_model_error = [
@@ -259,27 +272,66 @@ def test_text_generation_wrong_api_key_error(gemini_dev_client, set_trace_info):
         )
 
 
-# No model provided
-@dt_enabled
-@reset_core_stats_engine()
-@validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
-@validate_span_events(
-    exact_agents={"error.message": "Models.generate_content() missing 1 required keyword-only argument: 'model'"}
-)
-@validate_transaction_metrics(
-    "test_text_generation_error:test_text_generation_async_invalid_request_error_no_model",
-    scoped_metrics=[("Llm/completion/Gemini/generate_content", 1)],
-    rollup_metrics=[("Llm/completion/Gemini/generate_content", 1)],
-    background_task=True,
-)
-@validate_custom_events(events_with_context_attrs(expected_events_on_no_model_error))
-@validate_custom_event_count(count=2)
-@background_task()
 def test_text_generation_async_invalid_request_error_no_model(gemini_dev_client, loop, set_trace_info):
-    with pytest.raises(TypeError):
-        set_trace_info()
-        add_custom_attribute("llm.conversation_id", "my-awesome-id")
-        with WithLlmCustomAttributes({"context": "attr"}):
+    if sys.version_info < (3, 10):
+        error_message = "generate_content() missing 1 required keyword-only argument: 'model'"
+    else:
+        error_message = "Models.generate_content() missing 1 required keyword-only argument: 'model'"
+
+    # No model provided
+    @dt_enabled
+    @reset_core_stats_engine()
+    @validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
+    @validate_span_events(exact_agents={"error.message": error_message})
+    @validate_transaction_metrics(
+        "test_text_generation_error:test_text_generation_async_invalid_request_error_no_model.<locals>._test",
+        scoped_metrics=[("Llm/completion/Gemini/generate_content", 1)],
+        rollup_metrics=[("Llm/completion/Gemini/generate_content", 1)],
+        background_task=True,
+    )
+    @validate_custom_events(events_with_context_attrs(expected_events_on_no_model_error))
+    @validate_custom_event_count(count=2)
+    @background_task()
+    def _test():
+        with pytest.raises(TypeError):
+            set_trace_info()
+            add_custom_attribute("llm.conversation_id", "my-awesome-id")
+            with WithLlmCustomAttributes({"context": "attr"}):
+                loop.run_until_complete(
+                    gemini_dev_client.models.generate_content(
+                        # no model
+                        contents=["How many letters are in the word Python?"],
+                        config=google.genai.types.GenerateContentConfig(max_output_tokens=100, temperature=0.7),
+                    )
+                )
+
+    _test()
+
+
+def test_text_generation_async_invalid_request_error_no_model_no_content(gemini_dev_client, loop, set_trace_info):
+    if sys.version_info < (3, 10):
+        error_message = "generate_content() missing 1 required keyword-only argument: 'model'"
+    else:
+        error_message = "Models.generate_content() missing 1 required keyword-only argument: 'model'"
+
+    @dt_enabled
+    @disabled_ai_monitoring_record_content_settings
+    @reset_core_stats_engine()
+    @validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
+    @validate_span_events(exact_agents={"error.message": error_message})
+    @validate_transaction_metrics(
+        "test_text_generation_error:test_text_generation_async_invalid_request_error_no_model_no_content.<locals>._test",
+        scoped_metrics=[("Llm/completion/Gemini/generate_content", 1)],
+        rollup_metrics=[("Llm/completion/Gemini/generate_content", 1)],
+        background_task=True,
+    )
+    @validate_custom_events(events_sans_content(expected_events_on_no_model_error))
+    @validate_custom_event_count(count=2)
+    @background_task()
+    def _test():
+        with pytest.raises(TypeError):
+            set_trace_info()
+            add_custom_attribute("llm.conversation_id", "my-awesome-id")
             loop.run_until_complete(
                 gemini_dev_client.models.generate_content(
                     # no model
@@ -288,34 +340,7 @@ def test_text_generation_async_invalid_request_error_no_model(gemini_dev_client,
                 )
             )
 
-
-@dt_enabled
-@disabled_ai_monitoring_record_content_settings
-@reset_core_stats_engine()
-@validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
-@validate_span_events(
-    exact_agents={"error.message": "Models.generate_content() missing 1 required keyword-only argument: 'model'"}
-)
-@validate_transaction_metrics(
-    "test_text_generation_error:test_text_generation_async_invalid_request_error_no_model_no_content",
-    scoped_metrics=[("Llm/completion/Gemini/generate_content", 1)],
-    rollup_metrics=[("Llm/completion/Gemini/generate_content", 1)],
-    background_task=True,
-)
-@validate_custom_events(events_sans_content(expected_events_on_no_model_error))
-@validate_custom_event_count(count=2)
-@background_task()
-def test_text_generation_async_invalid_request_error_no_model_no_content(gemini_dev_client, loop, set_trace_info):
-    with pytest.raises(TypeError):
-        set_trace_info()
-        add_custom_attribute("llm.conversation_id", "my-awesome-id")
-        loop.run_until_complete(
-            gemini_dev_client.models.generate_content(
-                # no model
-                contents=["How many letters are in the word Python?"],
-                config=google.genai.types.GenerateContentConfig(max_output_tokens=100, temperature=0.7),
-            )
-        )
+    _test()
 
 
 @dt_enabled

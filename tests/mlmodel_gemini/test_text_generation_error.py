@@ -35,7 +35,6 @@ from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.object_names import callable_name
 
-
 expected_events_on_no_model_error = [
     (
         {"type": "LlmChatCompletionSummary"},

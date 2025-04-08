@@ -15,6 +15,7 @@
 import logging
 import sys
 import uuid
+
 import google
 
 from newrelic.api.function_trace import FunctionTrace

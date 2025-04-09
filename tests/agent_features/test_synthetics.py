@@ -260,7 +260,7 @@ def _synthetics_limit_test(num_requests, num_events, num_transactions):
     # Force harvest to clear stats
 
     instance = agent_instance()
-    application = list(instance.applications.values())[0]
+    application = next(iter(instance.applications.values()))
     application.harvest()
 
     # Send requests

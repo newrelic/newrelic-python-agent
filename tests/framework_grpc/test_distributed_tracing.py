@@ -130,7 +130,7 @@ def test_outbound_distributed_trace(mock_grpc_server, method_type, method_name, 
             # Check that tracestate / traceparent payload matches newrelic
             # payload
             w3c_data = W3CTraceParent.decode(metadata["traceparent"])
-            nr_tracestate = list(W3CTraceState.decode(metadata["tracestate"]).values())[0]
+            nr_tracestate = next(iter(W3CTraceState.decode(metadata["tracestate"]).values()))
             nr_tracestate = NrTraceState.decode(nr_tracestate, None)
             w3c_data.update(nr_tracestate)
 

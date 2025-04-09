@@ -96,7 +96,7 @@ def exercise_async_aggregation_query(async_collection):
     async def _exercise_async_aggregation_query():
         async_aggregation_query = async_collection.select("x").where(field_path="x", op_string="<=", value=3).count()
         assert (await async_aggregation_query.get())[0][0].value == 3
-        assert [_ async for _ in async_aggregation_query.stream()][0][0].value == 3
+        assert [_ async for _ in async_aggregation_query.stream()][0][0].value == 3  # noqa: RUF015
 
     return _exercise_async_aggregation_query
 

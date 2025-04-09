@@ -49,7 +49,7 @@ _logger = logging.getLogger(__name__)
 class AgentProtocol:
     VERSION = 17
 
-    STATUS_CODE_RESPONSE = {
+    STATUS_CODE_RESPONSE = {  # noqa: RUF012
         400: DiscardDataForRequest,
         401: ForceAgentRestart,
         403: DiscardDataForRequest,
@@ -69,7 +69,7 @@ class AgentProtocol:
         500: RetryDataForRequest,
         503: RetryDataForRequest,
     }
-    LOG_MESSAGES = {
+    LOG_MESSAGES = {  # noqa: RUF012
         401: (
             logging.ERROR,
             (
@@ -146,7 +146,7 @@ class AgentProtocol:
         "ai_monitoring.enabled",
     )
 
-    LOGGER_FUNC_MAPPING = {
+    LOGGER_FUNC_MAPPING = {  # noqa: RUF012
         "ERROR": _logger.error,
         "WARN": _logger.warning,
         "INFO": _logger.info,

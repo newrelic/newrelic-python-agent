@@ -501,7 +501,7 @@ class ApplicationModeClient(SupportabilityMixin, HttpClient):
 
 
 class DeveloperModeClient(SupportabilityMixin, BaseClient):
-    RESPONSES = {
+    RESPONSES = {  # noqa: RUF012
         "preconnect": {"redirect_host": "fake-collector.newrelic.com"},
         "agent_settings": [],
         "connect": {

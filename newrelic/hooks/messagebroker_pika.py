@@ -130,7 +130,7 @@ def _nr_wrapper_basic_publish(wrapped, instance, args, kwargs):
     user_headers.pop("traceparent", None)
     user_headers.pop("tracestate", None)
 
-    args = (exchange, routing_key, body, properties) + args
+    args = (exchange, routing_key, body, properties, *args)
 
     params = {}
     if routing_key is not None:
@@ -218,28 +218,28 @@ def _nr_wrap_BlockingChannel___init__(wrapped, instance, args, kwargs):
 
 
 def _wrap_basic_consume_BlockingChannel_old(wrapper, consumer_callback, queue, *args, **kwargs):
-    args = (wrapper(consumer_callback), queue) + args
+    args = (wrapper(consumer_callback), queue, *args)
     return queue, args, kwargs
 
 
 def _wrap_basic_consume_Channel_old(wrapper, consumer_callback, queue="", *args, **kwargs):
-    return queue, (wrapper(consumer_callback), queue) + args, kwargs
+    return queue, (wrapper(consumer_callback), queue, *args), kwargs
 
 
 def _wrap_basic_consume_Channel(wrapper, queue, on_message_callback, *args, **kwargs):
-    args = (queue, wrapper(on_message_callback)) + args
+    args = (queue, wrapper(on_message_callback), *args)
     return queue, args, kwargs
 
 
 def _wrap_basic_get_Channel(wrapper, queue, callback, *args, **kwargs):
-    args = (queue, wrapper(callback)) + args
+    args = (queue, wrapper(callback), *args)
     return queue, args, kwargs
 
 
 def _wrap_basic_get_Channel_old(wrapper, callback=None, queue="", *args, **kwargs):  # pragma: no cover
     if callback is not None:
         callback = wrapper(callback)
-    args = (callback, queue) + args
+    args = (callback, queue, *args)
     return queue, args, kwargs
 
 

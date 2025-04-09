@@ -92,7 +92,7 @@ class ApdexStats(list):
         self[1] += other[1]
         self[2] += other[2]
 
-        self[3] = (self[0] or self[1] or self[2]) and min(self[3], other[3]) or other[3]
+        self[3] = ((self[0] or self[1] or self[2]) and min(self[3], other[3])) or other[3]
         self[4] = max(self[4], other[3])
 
     def merge_apdex_metric(self, metric):
@@ -102,7 +102,7 @@ class ApdexStats(list):
         self[1] += metric.tolerating
         self[2] += metric.frustrating
 
-        self[3] = (self[0] or self[1] or self[2]) and min(self[3], metric.apdex_t) or metric.apdex_t
+        self[3] = ((self[0] or self[1] or self[2]) and min(self[3], metric.apdex_t)) or metric.apdex_t
         self[4] = max(self[4], metric.apdex_t)
 
 
@@ -140,7 +140,7 @@ class TimeStats(list):
 
         self[1] += other[1]
         self[2] += other[2]
-        self[3] = self[0] and min(self[3], other[3]) or other[3]
+        self[3] = (self[0] and min(self[3], other[3])) or other[3]
         self[4] = max(self[4], other[4])
         self[5] += other[5]
 
@@ -157,7 +157,7 @@ class TimeStats(list):
 
         self[1] += duration
         self[2] += exclusive
-        self[3] = self[0] and min(self[3], duration) or duration
+        self[3] = (self[0] and min(self[3], duration)) or duration
         self[4] = max(self[4], duration)
         self[5] += duration**2
 
@@ -341,7 +341,7 @@ class SlowSqlStats(list):
         """Merge data from another instance of this object."""
 
         self[1] += other[1]
-        self[2] = self[0] and min(self[2], other[2]) or other[2]
+        self[2] = (self[0] and min(self[2], other[2])) or other[2]
         self[3] = max(self[3], other[3])
 
         if self[3] == other[3]:
@@ -358,7 +358,7 @@ class SlowSqlStats(list):
         duration = node.duration
 
         self[1] += duration
-        self[2] = self[0] and min(self[2], duration) or duration
+        self[2] = (self[0] and min(self[2], duration)) or duration
         self[3] = max(self[3], duration)
 
         if self[3] == duration:

@@ -209,7 +209,7 @@ def plugins():
     for name, module in sys.modules.copy().items():
         # Exclude lib.sub_paths as independent modules except for newrelic.hooks.
         nr_hook = name.startswith("newrelic.hooks.")
-        if "." in name and not nr_hook or name.startswith("_"):
+        if ("." in name and not nr_hook) or name.startswith("_"):
             continue
 
         # If the module isn't actually loaded (such as failed relative imports

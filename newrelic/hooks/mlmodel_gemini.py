@@ -44,7 +44,7 @@ def wrap_embed_content_sync(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
+    settings = transaction.settings or global_settings()
     if not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
@@ -77,7 +77,7 @@ async def wrap_embed_content_async(wrapped, instance, args, kwargs):
     if not transaction:
         return await wrapped(*args, **kwargs)
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
+    settings = transaction.settings or global_settings()
     if not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
@@ -106,7 +106,7 @@ async def wrap_embed_content_async(wrapped, instance, args, kwargs):
 
 
 def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs, ft, exc):
-    settings = transaction.settings if transaction.settings is not None else global_settings()
+    settings = transaction.settings or global_settings()
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
 
@@ -161,7 +161,7 @@ def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs,
 
 
 def _record_embedding_success(transaction, embedding_id, linking_metadata, kwargs, ft):
-    settings = transaction.settings if transaction.settings is not None else global_settings()
+    settings = transaction.settings or global_settings()
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
     try:
@@ -213,7 +213,7 @@ def wrap_generate_content_sync(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
+    settings = transaction.settings or global_settings()
     if not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
@@ -245,7 +245,7 @@ async def wrap_generate_content_async(wrapped, instance, args, kwargs):
     if not transaction:
         return await wrapped(*args, **kwargs)
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
+    settings = transaction.settings or global_settings()
     if not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
@@ -282,27 +282,22 @@ def _record_generation_error(transaction, linking_metadata, completion_id, kwarg
     # multiple lists to capture each input to the LLM (only inputs and not responses)
     messages = kwargs.get("contents")
 
-    if isinstance(messages, list):
-        # Only grab the last message in the input messages list so we report the latest input and don't re-report
-        # inputs we already sent LLM message events for
-        last_request_message_index = len(messages) - 1
-        input_message = messages[last_request_message_index]
-
-    elif isinstance(messages, str):
+    if isinstance(messages, str):
         input_message = messages
-
     else:
-        input_message = None
-        _logger.warning(
-            "Unable to parse input message to Gemini LLM. Message content and role will be omitted from "
-            "corresponding LlmChatCompletionMessage event. "
-        )
+        try:
+            input_message = messages[-1]
+        except Exception:
+            input_message = None
+            _logger.warning(
+                "Unable to parse input message to Gemini LLM. Message content and role will be omitted from "
+                "corresponding LlmChatCompletionMessage event. "
+            )
 
     generation_config = kwargs.get("config")
     if generation_config:
-        generation_config_dict = generation_config.model_dump()
-        request_temperature = generation_config_dict.get("temperature")
-        request_max_tokens = generation_config_dict.get("max_output_tokens")
+        request_temperature = generation_config.temperature
+        request_max_tokens = generation_config.max_output_tokens
     else:
         request_temperature = None
         request_max_tokens = None
@@ -372,6 +367,7 @@ def _handle_generation_success(transaction, linking_metadata, completion_id, kwa
         if hasattr(response, "model_dump"):
             response = response.model_dump()
         _record_generation_success(transaction, linking_metadata, completion_id, kwargs, ft, response)
+
     except Exception:
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
 
@@ -400,27 +396,22 @@ def _record_generation_success(transaction, linking_metadata, completion_id, kwa
         # multiple lists to capture each input to the LLM (only inputs and not responses)
         messages = kwargs.get("contents")
 
-        if isinstance(messages, list):
-            # Only grab the last message in the input messages list so we report the latest input and don't re-report
-            # inputs we already sent LLM message events for
-            last_request_message_index = len(messages) - 1
-            input_message = messages[last_request_message_index]
-
-        elif isinstance(messages, str):
+        if isinstance(messages, str):
             input_message = messages
-
         else:
-            input_message = None
-            _logger.warning(
-                "Unable to parse input message to Gemini LLM. Message content and role will be omitted from "
-                "corresponding LlmChatCompletionMessage event. "
-            )
+            try:
+                input_message = messages[-1]
+            except Exception:
+                input_message = None
+                _logger.warning(
+                    "Unable to parse input message to Gemini LLM. Message content and role will be omitted from "
+                    "corresponding LlmChatCompletionMessage event. "
+                )
 
         generation_config = kwargs.get("config")
         if generation_config:
-            generation_config_dict = generation_config.model_dump()
-            request_temperature = generation_config_dict.get("temperature")
-            request_max_tokens = generation_config_dict.get("max_output_tokens")
+            request_temperature = generation_config.temperature
+            request_max_tokens = generation_config.max_output_tokens
         else:
             request_temperature = None
             request_max_tokens = None
@@ -474,7 +465,7 @@ def create_chat_completion_message_event(
     output_message_list,
 ):
     try:
-        settings = transaction.settings if transaction.settings is not None else global_settings()
+        settings = transaction.settings or global_settings()
 
         if input_message:
             # The input_message will be a string if generate_content was called directly. In this case, we don't have

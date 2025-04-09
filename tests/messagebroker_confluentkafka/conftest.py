@@ -168,7 +168,7 @@ def json_deserializer():
 def topic(broker):
     from confluent_kafka.admin import AdminClient, NewTopic
 
-    topic = f"test-topic-{str(uuid.uuid4())}"
+    topic = f"test-topic-{uuid.uuid4()!s}"
 
     admin = AdminClient({"bootstrap.servers": broker})
     new_topics = [NewTopic(topic, num_partitions=1, replication_factor=1)]

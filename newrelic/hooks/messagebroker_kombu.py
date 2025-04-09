@@ -255,7 +255,7 @@ def wrap_serialize(wrapped, instance, args, kwargs):
     group = "MessageBroker/Kombu/Exchange"
     name = f"Named/{exchange}/Serialization/Value"
 
-    with FunctionTrace(name=name, group=group) as ft:
+    with FunctionTrace(name=name, group=group):
         return wrapped(*args, **kwargs)
 
 

@@ -96,7 +96,7 @@ def is_valid_file_delivery_location(file_uri):
 
         return True
 
-    except Exception as e:
+    except Exception:
         _logger.warning(
             "Configured Agent Control health delivery location is not valid. Health check will not be enabled."
         )

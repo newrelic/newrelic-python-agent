@@ -453,7 +453,7 @@ def wrap_graphql_impl(wrapped, instance, args, kwargs):
     try:
         with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
             result = wrapped(*args, **kwargs)
-    except Exception as e:
+    except Exception:
         # Execution finished synchronously, exit immediately.
         trace.__exit__(*sys.exc_info())
         raise

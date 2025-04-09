@@ -90,6 +90,7 @@ ignore = [
     "RUF100",  # unused-noqa (TODO: remove this once all linters are enabled)
     "PERF203",  # try-except-in-loop (most of these are unavoidable)
     "S110",  # try-except-pass (Bandit wants us to log the exception, which is usually pointless. Spot check these later)
+    "E722",  # bare-except (too many to fix all at once)
     # Permanently disabled rules
     "D203",  # incorrect-blank-line-before-class
     "D213",  # multi-line-summary-second-line

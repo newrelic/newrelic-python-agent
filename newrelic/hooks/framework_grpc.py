@@ -34,7 +34,7 @@ def _prepare_request(transaction, guid, request, timeout=None, metadata=None, *a
     metadata = (metadata and list(metadata)) or []
     dt_metadata = transaction._create_distributed_trace_data_with_guid(guid)
     metadata.extend(transaction._generate_distributed_trace_headers(dt_metadata))
-    args = (request, timeout, metadata) + args
+    args = (request, timeout, metadata, *args)
     return args, kwargs
 
 

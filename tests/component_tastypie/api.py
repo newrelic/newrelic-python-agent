@@ -30,4 +30,4 @@ class SimpleResource(Resource):
         elif pk == "ZeroDivisionError":
             1 / 0  # noqa: B018
         else:
-            raise NotImplemented
+            raise NotImplementedError

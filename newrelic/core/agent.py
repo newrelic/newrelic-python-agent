@@ -781,7 +781,7 @@ def shutdown_agent(timeout=None):
 
 def register_data_source(source, application=None, name=None, settings=None, **properties):
     agent = agent_instance()
-    agent.register_data_source(source, application and application.name or None, name, settings, **properties)
+    agent.register_data_source(source, (application and application.name) or None, name, settings, **properties)
 
 
 def _remove_thread_utilization():

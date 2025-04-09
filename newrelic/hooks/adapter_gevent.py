@@ -25,7 +25,7 @@ def instrument_gevent_wsgi(module):
 
         application = WSGIApplicationWrapper(application)
 
-        _args = (self, listener, application) + _args
+        _args = (self, listener, application, *_args)
 
         return _args, _kwargs
 
@@ -41,7 +41,7 @@ def instrument_gevent_pywsgi(module):
 
         application = WSGIApplicationWrapper(application)
 
-        _args = (self, listener, application) + _args
+        _args = (self, listener, application, *_args)
 
         return _args, _kwargs
 

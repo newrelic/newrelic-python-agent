@@ -284,7 +284,7 @@ class AgentProtocol:
     @staticmethod
     def _connect_payload(app_name, linked_applications, environment, settings):
         settings = global_settings_dump(settings)
-        app_names = [app_name] + linked_applications
+        app_names = [app_name, *linked_applications]
 
         hostname = system_info.gethostname(
             settings["heroku.use_dyno_names"], settings["heroku.dyno_name_prefixes_to_shorten"]

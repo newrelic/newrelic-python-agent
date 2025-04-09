@@ -63,6 +63,10 @@ class ConnectionSaveParamsWrapper(DBAPI2ConnectionWrapper):
 
     def __enter__(self):
         transaction = current_transaction()
+        if not transaction:
+            # Return unwrapped connection if there is no transaction
+            return self.__wrapped__.__enter__()
+
         name = callable_name(self.__wrapped__.__enter__)
         with FunctionTrace(name, source=self.__wrapped__.__enter__):
             self.__wrapped__.__enter__()
@@ -77,6 +81,9 @@ class ConnectionSaveParamsWrapper(DBAPI2ConnectionWrapper):
 
     def __exit__(self, exc, value, tb):
         transaction = current_transaction()
+        if not transaction:
+            return self.__wrapped__.__exit__(exc, value, tb)
+
         name = callable_name(self.__wrapped__.__exit__)
         with FunctionTrace(name, source=self.__wrapped__.__exit__):
             if exc is None:

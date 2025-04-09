@@ -49,7 +49,6 @@ select = [
     "Q",  # flake8-quotes
     "RSE",  # flake8-raise
     # "RET",  # flake8-return
-    # "SLF",  # flake8-self
     "SLOT",  # flake8-slots
     # "SIM",  # flake8-simplify
     "TID",  # flake8-tidy-imports
@@ -80,6 +79,7 @@ select = [
 # "NPY",  # NumPy-specific rules
 # "FAST",  # FastAPI
 # "AIR",  # Airflow
+# "SLF",  # flake8-self (only scans for private member access, which is intentional)
 
 # Preview linters (disabled)
 # "CPY",  # flake8-copyright

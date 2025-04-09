@@ -103,8 +103,6 @@ def wrap_Producer_publish(wrapped, instance, args, kwargs):
 
     headers = bound_args["headers"]
     headers = headers if headers else {}
-    value = bound_args["body"]
-    key = bound_args["routing_key"]
     exchange = getattr(bound_args["exchange"], "name", None) or "Default"
 
     transaction.add_messagebroker_info("Kombu", get_package_version("kombu"))

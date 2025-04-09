@@ -35,7 +35,7 @@ TEST_STREAM = f"python-agent-test-{uuid.uuid4()}"
 TEST_STREAM_ARN = f"arn:aws:firehose:us-east-1:123456789012:deliverystream/{TEST_STREAM}"
 TEST_S3_BUCKET = f"python-agent-test-{uuid.uuid4()}"
 TEST_S3_BUCKET_ARN = f"arn:aws:s3:::{TEST_S3_BUCKET}"
-TEST_S3_ROLE_ARN = f"arn:aws:iam::123456789012:role/test-role"
+TEST_S3_ROLE_ARN = "arn:aws:iam::123456789012:role/test-role"
 EXPECTED_AGENT_ATTRS = {
     "exact_agents": {"cloud.platform": "aws_kinesis_delivery_streams", "cloud.resource_id": TEST_STREAM_ARN}
 }
@@ -49,7 +49,7 @@ _firehose_scoped_metrics = [
     (f"Firehose/put_record/{TEST_STREAM}", 1),
     (f"Firehose/put_record_batch/{TEST_STREAM}", 1),
     (f"Firehose/describe_delivery_stream/{TEST_STREAM}", 1),
-    (f"Firehose/list_delivery_streams", 1),
+    ("Firehose/list_delivery_streams", 1),
     (f"Firehose/delete_delivery_stream/{TEST_STREAM}", 1),
     (f"External/{URL}/botocore/POST", 6),
 ]
@@ -59,7 +59,7 @@ _firehose_rollup_metrics = [
     (f"Firehose/put_record/{TEST_STREAM}", 1),
     (f"Firehose/put_record_batch/{TEST_STREAM}", 1),
     (f"Firehose/describe_delivery_stream/{TEST_STREAM}", 1),
-    (f"Firehose/list_delivery_streams", 1),
+    ("Firehose/list_delivery_streams", 1),
     (f"Firehose/delete_delivery_stream/{TEST_STREAM}", 1),
     ("External/all", 7),  # Includes creating S3 bucket
     ("External/allOther", 7),

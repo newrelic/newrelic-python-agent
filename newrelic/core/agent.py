@@ -121,8 +121,8 @@ class Agent:
 
     _instance_lock = threading.Lock()
     _instance = None
-    _startup_callables = []
-    _registration_callables = {}
+    _startup_callables = []  # noqa: RUF012
+    _registration_callables = {}  # noqa: RUF012
 
     @staticmethod
     def run_on_startup(callable):  # noqa: A002

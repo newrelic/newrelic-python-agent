@@ -116,7 +116,7 @@ async def wrap_client__make_api_call(wrapped, instance, args, kwargs):
             exc, is_embedding, model, span_id, trace_id, request_extractor, request_body, ft, transaction
         )
 
-    if not response or response_streaming and not settings.ai_monitoring.streaming.enabled:
+    if not response or (response_streaming and not settings.ai_monitoring.streaming.enabled):
         if ft:
             ft.__exit__(None, None, None)
         return response

@@ -243,7 +243,7 @@ def metric_wrapper(metric_name, check_result=False):
 
         application = application_instance(activate=False)
         if application:
-            if not check_result or check_result and result:
+            if not check_result or (check_result and result):
                 # If the result does not need validated, send metric.
                 # If the result does need validated, ensure it is True.
                 application.record_custom_metric(metric_name, 1)

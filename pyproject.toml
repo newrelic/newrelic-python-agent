@@ -75,7 +75,7 @@ select = [
     "FLY",  # flynt
     "PERF",  # Perflint
     "FURB",  # refurb
-    # "RUF",  # Ruff-specific rules
+    "RUF",  # Ruff-specific rules
 ]
 
 # Disabled Linters

@@ -50,7 +50,7 @@ class GenericNodeMixin:
         return _params
 
     def span_event(self, settings, base_attrs=None, parent_guid=None, attr_class=dict):
-        i_attrs = base_attrs and base_attrs.copy() or attr_class()
+        i_attrs = (base_attrs and base_attrs.copy()) or attr_class()
         i_attrs["type"] = "Span"
         i_attrs["name"] = self.name
         i_attrs["guid"] = self.guid

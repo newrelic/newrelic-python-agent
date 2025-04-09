@@ -93,7 +93,6 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     transaction._add_agent_attribute("llm", True)
 
     completion_id = str(uuid.uuid4())
-    request_message_list = kwargs.get("messages", [])
 
     ft = FunctionTrace(name=wrapped.__name__, group="Llm/completion/OpenAI")
     ft.__enter__()
@@ -275,7 +274,6 @@ def _record_embedding_success(transaction, embedding_id, linking_metadata, kwarg
 
         request_id = response_headers.get("x-request-id")
         response_model = attribute_response.get("model")
-        response_usage = attribute_response.get("usage", {}) or {}
         organization = (
             response_headers.get("openai-organization")
             if OPENAI_V1
@@ -430,9 +428,6 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
 
 def _handle_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val):
     settings = transaction.settings if transaction.settings is not None else global_settings()
-    span_id = linking_metadata.get("span.id")
-    trace_id = linking_metadata.get("trace.id")
-    request_message_list = kwargs.get("messages") or []
     stream = kwargs.get("stream", False)
     # Only if streaming and streaming monitoring is enabled and the response is not empty
     # do we not exit the function trace.
@@ -485,7 +480,6 @@ def _record_completion_success(transaction, linking_metadata, completion_id, kwa
         if response:
             response_model = response.get("model")
             response_id = response.get("id")
-            response_usage = response.get("usage") or {}
             output_message_list = []
             finish_reason = None
             choices = response.get("choices") or []
@@ -497,7 +491,6 @@ def _record_completion_success(transaction, linking_metadata, completion_id, kwa
         else:
             response_model = kwargs.get("response.model")
             response_id = kwargs.get("id")
-            response_usage = {}
             output_message_list = []
             finish_reason = None
             if "content" in kwargs:

@@ -630,7 +630,7 @@ def test_span_event_error_attributes_observed(trace_type, args):
     exact_agents = {"error.class": callable_name(error), "error.message": "whoops"}
 
     # Verify errors are not recorded since notice_error is not called
-    rollups = [("Errors/all", None)] + _span_event_metrics
+    rollups = [("Errors/all", None), *_span_event_metrics]
 
     @dt_enabled
     @validate_transaction_metrics(

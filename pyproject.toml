@@ -94,6 +94,7 @@ select = [
 # "NPY",  # NumPy-specific rules
 # "FAST",  # FastAPI
 # "AIR",  # Airflow
+# "SLF",  # flake8-self (only scans for private member access, which is intentional)
 
 # Preview linters (disabled)
 # "CPY",  # flake8-copyright

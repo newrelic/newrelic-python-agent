@@ -6751,6 +6751,6 @@ if __name__ == "__main__":
     print(f"RESPONSES = {dict(sorted(RESPONSES.items(), key=lambda i: (i[1][1], i[0])))}")
 
     with MockExternalBedrockServer() as server:
-        print(f"MockExternalBedrockServer serving on port {str(server.port)}")
+        print(f"MockExternalBedrockServer serving on port {server.port!s}")
         while True:
             pass  # Serve forever

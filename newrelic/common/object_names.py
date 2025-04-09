@@ -18,7 +18,6 @@ import builtins
 import functools
 import inspect
 import sys
-import types
 
 # Object model terminology for quick reference.
 #

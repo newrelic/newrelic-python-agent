@@ -19,7 +19,7 @@ pep8-naming.extend-ignore-names = ["X", "y"]
 
 select = [
     # Enabled linters and rules
-    # "F",  # Pyflakes
+    "F",  # Pyflakes
     # "E",  # pycodestyle
     "W",  # pycodestyle
     "I",  # isort

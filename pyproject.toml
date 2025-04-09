@@ -95,6 +95,7 @@ ignore = [
     "D213",  # multi-line-summary-second-line
     "ARG001",  # unused-argument
     "PYI024",  # collections-named-tuple (not currently using type annotations)
+    "E501",  # line-too-long (line length handled by formatter)
     # Ruff recommended linter rules to disable when using formatter
     "W191",  # tab-indentation
     "E111",  # indentation-with-invalid-multiple

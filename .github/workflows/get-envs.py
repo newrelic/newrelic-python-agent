@@ -26,7 +26,7 @@ def main(f):
     joined_envs = ",".join(filtered_envs)
 
     assert joined_envs, (  # noqa: S101
-        f"No environments found.\nenvironments = {str(environments)}\nGROUP_NUMBER = {GROUP_NUMBER + 1}\nTOTAL_GROUPS = {TOTAL_GROUPS}"
+        f"No environments found.\nenvironments = {environments!s}\nGROUP_NUMBER = {GROUP_NUMBER + 1}\nTOTAL_GROUPS = {TOTAL_GROUPS}"
     )
     print(joined_envs)
 

@@ -45,7 +45,10 @@ def _store_version_info():
     return tornado.version_info
 
 
-def convert_yielded(*args, **kwargs):
+def convert_yielded(*args, **kwargs):  # noqa: F811
+    # Delays import of convert_yielded until this function is called to avoid
+    # import ordering issues.
+
     global convert_yielded
     from tornado.gen import convert_yielded as _convert_yielded
 

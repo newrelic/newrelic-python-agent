@@ -15,7 +15,6 @@
 import functools
 import inspect
 import sys
-import textwrap
 import time
 
 from newrelic.api.application import application_instance

@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import sys
-import types
 
 import newrelic.api.external_trace
 import newrelic.api.object_wrapper

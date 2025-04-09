@@ -121,8 +121,8 @@ def test_vectorstore_modules_instrumented():
         if not hasattr(class_.asimilarity_search, "__wrapped__"):
             uninstrumented_async_classes.append(class_name)
 
-    assert not uninstrumented_sync_classes, f"Uninstrumented sync classes found: {str(uninstrumented_sync_classes)}"
-    assert not uninstrumented_async_classes, f"Uninstrumented async classes found: {str(uninstrumented_async_classes)}"
+    assert not uninstrumented_sync_classes, f"Uninstrumented sync classes found: {uninstrumented_sync_classes!s}"
+    assert not uninstrumented_async_classes, f"Uninstrumented async classes found: {uninstrumented_async_classes!s}"
 
 
 @reset_core_stats_engine()

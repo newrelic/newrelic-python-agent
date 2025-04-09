@@ -964,7 +964,7 @@ def dt_enabled(wrapped, instance, args, kwargs):
     wrapped = override_application_settings(settings)(wrapped)
     wrapped = force_sampled(wrapped)
 
-    return wrapped(*args, **kwargs)  # pylint: disable=E1102
+    return wrapped(*args, **kwargs)
 
 
 @function_wrapper

@@ -37,7 +37,7 @@ from newrelic.core.attribute_filter import AttributeFilter
 try:
     import grpc
 
-    from newrelic.core.infinite_tracing_pb2 import Span  # pylint: disable=W0611,C0412  # noqa: F401
+    from newrelic.core.infinite_tracing_pb2 import Span  # noqa: F401
 except Exception:
     grpc = None
 

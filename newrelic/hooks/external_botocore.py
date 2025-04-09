@@ -1059,7 +1059,7 @@ def dynamodb_datastore_trace(
             _logger.debug("Failed to capture AWS DynamoDB info.", exc_info=True)
         trace.agent_attributes.update(agent_attrs)
 
-        if wrapper:  # pylint: disable=W0125,W0126
+        if wrapper:
             return wrapper(wrapped, trace)(*args, **kwargs)
 
         with trace:
@@ -1099,7 +1099,7 @@ def aws_function_trace(
         _agent_attrs = extract_agent_attrs(instance, *args, **kwargs) if extract_agent_attrs is not None else {}
         trace.agent_attributes.update(_agent_attrs)
 
-        if wrapper:  # pylint: disable=W0125,W0126
+        if wrapper:
             return wrapper(wrapped, trace)(*args, **kwargs)
 
         with trace:
@@ -1151,7 +1151,7 @@ def aws_message_trace(
         _agent_attrs = extract_agent_attrs(instance, *args, **kwargs)
         trace.agent_attributes.update(_agent_attrs)
 
-        if wrapper:  # pylint: disable=W0125,W0126
+        if wrapper:
             return wrapper(wrapped, trace)(*args, **kwargs)
 
         with trace:

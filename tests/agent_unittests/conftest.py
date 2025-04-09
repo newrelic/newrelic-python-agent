@@ -56,8 +56,8 @@ def global_settings(request, monkeypatch):
         for k, v in env.items():
             monkeypatch.setenv(k, v)
 
-    import newrelic.core.config as core_config  # pylint: disable=R0402
-    from newrelic import config  # pylint: disable=R0402
+    import newrelic.core.config as core_config
+    from newrelic import config
 
     original = {}
     for attr in dir(core_config):

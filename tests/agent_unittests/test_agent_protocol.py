@@ -135,10 +135,7 @@ def override_system_info(monkeypatch):
 def test_send(status_code):
     HttpClientRecorder.STATUS_CODE = status_code
     settings = finalize_application_settings(
-        {
-            "request_headers_map": {"custom-header": "value"},  # pylint: disable=W1406
-            "agent_run_id": "RUN_TOKEN",
-        }
+        {"request_headers_map": {"custom-header": "value"}, "agent_run_id": "RUN_TOKEN"}
     )
     protocol = AgentProtocol(settings, client_cls=HttpClientRecorder)
     response = protocol.send("metric_data", (1, 2, 3))

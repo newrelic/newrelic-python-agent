@@ -113,7 +113,7 @@ class ThreadUtilizationDataSource:
             yield ("Instance/Available", total_threads)
             yield ("Instance/Used", utilization)
 
-            busy = total_threads and utilization / total_threads or 0.0
+            busy = (total_threads and utilization / total_threads) or 0.0
 
             yield ("Instance/Busy", busy)
 

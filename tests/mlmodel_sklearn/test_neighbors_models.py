@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import pytest
-from sklearn.neighbors import __init__  # noqa: Needed for get_package_version
+from sklearn.neighbors import __init__
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task

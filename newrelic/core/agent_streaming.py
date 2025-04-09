@@ -34,7 +34,7 @@ class StreamingRpc:
     """
 
     RETRY_POLICY = ((15, False), (15, False), (30, False), (60, False), (120, False), (300, True))
-    OPTIONS = [("grpc.enable_retries", 0)]
+    OPTIONS = (("grpc.enable_retries", 0),)
 
     def __init__(self, endpoint, stream_buffer, metadata, record_metric, ssl=True, compression=None):
         self._endpoint = endpoint

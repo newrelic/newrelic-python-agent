@@ -137,6 +137,7 @@ ignore = [
     "S",  # flake8-bandit (security checks are not necessary in tests)
     "F401",  # unused-import
     "F811",  # redefined-while-unused (pytest fixtures trigger this)
+    "F841",  # unused-variable (intentional in tests to document what an unused output is)
     "E731",  # lambda-assignment (acceptable in tests)
     "PLR2004",  # magic-value-comparison (comparing to constant values)
     "ASYNC251",  # blocking-sleep-in-async-function (acceptable in tests)

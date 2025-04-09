@@ -725,7 +725,7 @@ class GeneratorProxy(ObjectProxy):
         try:
             return_val = self.__wrapped__.__next__()
             _record_stream_chunk(self, return_val)
-        except StopIteration as e:
+        except StopIteration:
             _record_events_on_stop_iteration(self, transaction)
             raise
         except Exception as exc:
@@ -822,7 +822,7 @@ class AsyncGeneratorProxy(ObjectProxy):
         try:
             return_val = await self._nr_wrapped_iter.__anext__()
             _record_stream_chunk(self, return_val)
-        except StopAsyncIteration as e:
+        except StopAsyncIteration:
             _record_events_on_stop_iteration(self, transaction)
             raise
         except Exception as exc:

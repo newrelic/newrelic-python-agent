@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import pytest
-from framework_graphql.test_application import *
+from framework_graphql.test_application import *  # noqa: F403
 
 from newrelic.common.package_version_utils import get_package_version
 

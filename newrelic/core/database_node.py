@@ -288,7 +288,4 @@ class DatabaseNode(_DatabaseNode, DatastoreNodeMixin):
 
         self.agent_attributes["db.statement"] = sql
 
-        if self.target:
-            self.agent_attributes["db.collection"] = self.target
-
         return super(DatabaseNode, self).span_event(*args, **kwargs)

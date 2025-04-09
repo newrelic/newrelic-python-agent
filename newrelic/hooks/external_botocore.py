@@ -1055,7 +1055,6 @@ def dynamodb_datastore_trace(
                 agent_attrs["cloud.resource_id"] = (
                     f"arn:{partition}:dynamodb:{region}:{account_id:012d}:table/{_target}"
                 )
-                agent_attrs["db.system"] = "DynamoDB"
 
         except Exception as e:
             _logger.debug("Failed to capture AWS DynamoDB info.", exc_info=True)

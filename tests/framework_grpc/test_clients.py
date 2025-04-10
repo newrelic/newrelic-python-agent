@@ -125,9 +125,9 @@ def test_client(
         _test_client()
     except grpc.RpcError as e:
         if raises_exception:
-            assert f"{service_method_type}: Hello World" in e.details()
+            assert f"{service_method_type}: Hello World" in e.details()  # noqa: PT017
         elif cancel:
-            assert e.code() == grpc.StatusCode.CANCELLED
+            assert e.code() == grpc.StatusCode.CANCELLED  # noqa: PT017
         else:
             raise
     except grpc.FutureCancelledError:

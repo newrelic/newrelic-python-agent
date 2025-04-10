@@ -21,7 +21,7 @@ from newrelic.api.background_task import background_task
 from newrelic.core.database_utils import SQLConnections
 
 
-@pytest.fixture()
+@pytest.fixture
 def cursor(loop, connection):
     try:
         cursor = connection.cursor()

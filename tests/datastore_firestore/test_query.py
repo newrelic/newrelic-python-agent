@@ -33,7 +33,7 @@ def sample_data(collection):
 # ===== Query =====
 
 
-@pytest.fixture()
+@pytest.fixture
 def exercise_query(collection):
     def _exercise_query():
         query = collection.select("x").limit(10).order_by("x").where(field_path="x", op_string="<=", value=3)
@@ -89,7 +89,7 @@ def test_firestore_query_trace_node_datastore_params(exercise_query, instance_in
 # ===== AggregationQuery =====
 
 
-@pytest.fixture()
+@pytest.fixture
 def exercise_aggregation_query(collection):
     def _exercise_aggregation_query():
         aggregation_query = collection.select("x").where(field_path="x", op_string="<=", value=3).count()
@@ -145,7 +145,7 @@ def test_firestore_aggregation_query_trace_node_datastore_params(exercise_aggreg
 # ===== CollectionGroup =====
 
 
-@pytest.fixture()
+@pytest.fixture
 def patch_partition_queries(monkeypatch, client, collection, sample_data):
     """
     Partitioning is not implemented in the Firestore emulator.
@@ -168,7 +168,7 @@ def patch_partition_queries(monkeypatch, client, collection, sample_data):
     yield
 
 
-@pytest.fixture()
+@pytest.fixture
 def exercise_collection_group(client, collection, patch_partition_queries):
     def _exercise_collection_group():
         collection_group = client.collection_group(collection.id)

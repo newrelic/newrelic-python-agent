@@ -40,7 +40,7 @@ def core_app(collector_agent_registration):
     return app._agent.application(app.name)
 
 
-@pytest.fixture()
+@pytest.fixture
 def rules_engine_fixture(core_app):
     rules_engine = core_app._rules_engine
     previous_rules = rules_engine["metric"]

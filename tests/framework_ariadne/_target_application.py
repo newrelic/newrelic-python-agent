@@ -28,7 +28,8 @@ from framework_ariadne._target_schema_sync import target_wsgi_application as tar
 
 def check_response(query, success, response):
     if isinstance(query, str) and "error" not in query:
-        assert success and "errors" not in response, response
+        assert success
+        assert "errors" not in response, response
         assert response.get("data", None), response
     else:
         assert "errors" in response, response

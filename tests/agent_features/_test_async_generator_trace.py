@@ -273,7 +273,8 @@ def test_asend_receives_a_value(event_loop):
         await gen.asend(None)
 
         assert await gen.asend("foobar") == "foobar"
-        assert _received and _received[0] == "foobar"
+        assert _received
+        assert _received[0] == "foobar"
 
         # finish consumption of the coroutine if necessary
         async for _ in gen:

@@ -42,4 +42,4 @@ def celery_worker_parameters():
 
 @pytest.fixture(scope="session", autouse=True)
 def celery_worker_available(celery_session_worker):
-    yield celery_session_worker
+    return celery_session_worker

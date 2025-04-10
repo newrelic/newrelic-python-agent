@@ -47,7 +47,7 @@ def patched_pytest_module(monkeypatch):
         if hasattr(pytest, attr):
             monkeypatch.delattr(pytest, attr)
 
-    yield pytest
+    return pytest
 
 
 @pytest.fixture(autouse=True)

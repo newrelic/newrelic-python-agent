@@ -73,7 +73,7 @@ def structlog_formatter_within_logging(structlog_caplog):
 
     structlog_logger = structlog.get_logger(logger_attr=2)
 
-    yield logging_logger, structlog_logger
+    return logging_logger, structlog_logger
 
 
 @pytest.fixture

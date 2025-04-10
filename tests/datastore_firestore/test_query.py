@@ -165,7 +165,6 @@ def patch_partition_queries(monkeypatch, client, collection, sample_data):
         yield Cursor(before=False, values=[Value(reference_value=documents[0].path)])
 
     monkeypatch.setattr(client._firestore_api, "partition_query", mock_partition_query)
-    yield
 
 
 @pytest.fixture

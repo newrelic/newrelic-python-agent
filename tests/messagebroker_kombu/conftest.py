@@ -77,7 +77,7 @@ def producer(producer_connection, queue):
 
     producer = producer_connection.Producer(serializer="json")
 
-    yield producer
+    return producer
 
 
 @pytest.fixture

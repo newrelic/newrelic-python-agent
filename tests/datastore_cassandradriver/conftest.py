@@ -77,7 +77,7 @@ def cluster_options(connection_class):
         "connection_class": connection_class,
         "protocol_version": 4,
     }
-    yield cluster_options
+    return cluster_options
 
 
 @pytest.fixture
@@ -85,4 +85,4 @@ def cluster(cluster_options):
     from cassandra.cluster import Cluster
 
     cluster = Cluster(**cluster_options)
-    yield cluster
+    return cluster

@@ -46,7 +46,7 @@ def real_server():
         host = settings["host"]
         port = settings["port"]
 
-    yield RealHTTP2Server
+    return RealHTTP2Server
 
 
 @pytest.fixture

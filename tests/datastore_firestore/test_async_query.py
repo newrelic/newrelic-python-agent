@@ -172,7 +172,6 @@ def patch_partition_queries(monkeypatch, async_client, collection, sample_data):
         return _mock_partition_query()
 
     monkeypatch.setattr(async_client._firestore_api, "partition_query", mock_partition_query)
-    yield
 
 
 @pytest.fixture

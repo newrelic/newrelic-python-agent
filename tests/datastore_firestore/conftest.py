@@ -84,7 +84,7 @@ def async_client(loop):
 @pytest.fixture
 def async_collection(async_client, collection):
     # Use the same collection name as the collection fixture
-    yield async_client.collection(collection.id)
+    return async_client.collection(collection.id)
 
 
 @pytest.fixture(scope="session")

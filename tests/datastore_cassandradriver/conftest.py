@@ -40,7 +40,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 )
 
 
-@pytest.fixture(scope="function", params=["Libev", "AsyncCore", "Twisted"])
+@pytest.fixture(params=["Libev", "AsyncCore", "Twisted"])
 def connection_class(request):
     # Configure tests to run against a specific async reactor.
     reactor_name = request.param
@@ -62,7 +62,7 @@ def connection_class(request):
     return Connection
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def cluster_options(connection_class):
     from cassandra.cluster import ExecutionProfile
     from cassandra.policies import RoundRobinPolicy
@@ -80,7 +80,7 @@ def cluster_options(connection_class):
     yield cluster_options
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def cluster(cluster_options):
     from cassandra.cluster import Cluster
 

@@ -25,7 +25,7 @@ from newrelic.api.background_task import background_task
 ML_METRIC_FORCED_UUID = "0b59992f-2349-4a46-8de1-696d3fe1088b"
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def force_uuid(monkeypatch):
     monkeypatch.setattr(uuid, "uuid4", lambda *a, **k: ML_METRIC_FORCED_UUID)
 

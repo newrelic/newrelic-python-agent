@@ -49,11 +49,11 @@ def real_server():
     yield RealHTTP2Server
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def sync_client(httpx):
     return httpx.Client()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def async_client(httpx):
     return httpx.AsyncClient()

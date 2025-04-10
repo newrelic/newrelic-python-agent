@@ -37,7 +37,7 @@ _common_attributes_trace_linking = {
 }
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def callsite_parameter_logger(structlog_caplog):
     import structlog
 

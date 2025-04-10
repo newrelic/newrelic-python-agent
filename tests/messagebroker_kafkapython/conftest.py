@@ -61,7 +61,7 @@ def skip_if_not_serializing(client_type):
         pytest.skip("Only serializing clients supported.")
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def producer(client_type, json_serializer, json_callable_serializer, broker):
     if client_type == "no_serializer":
         producer = kafka.KafkaProducer(bootstrap_servers=broker)
@@ -84,7 +84,7 @@ def producer(client_type, json_serializer, json_callable_serializer, broker):
     producer.close()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def consumer(group_id, topic, producer, client_type, json_deserializer, json_callable_deserializer, broker):
     if client_type == "no_serializer":
         consumer = kafka.KafkaConsumer(
@@ -185,7 +185,7 @@ def json_callable_deserializer():
     return JSONCallableDeserializer()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def topic(broker):
     from kafka.admin.client import KafkaAdminClient
     from kafka.admin.new_topic import NewTopic

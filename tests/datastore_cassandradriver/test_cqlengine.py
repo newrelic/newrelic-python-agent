@@ -41,7 +41,7 @@ class ABCModel(Model):
     b = columns.Double()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def exercise(cluster_options):
     # Silence warning from cqlengine when creating tables
     os.environ["CQLENG_ALLOW_SCHEMA_MANAGEMENT"] = "true"

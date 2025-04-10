@@ -31,7 +31,7 @@ from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def uninstrument_logging():
     instrumented = logging.Logger.callHandlers
     while hasattr(logging.Logger.callHandlers, "__wrapped__"):
@@ -40,7 +40,7 @@ def uninstrument_logging():
     logging.Logger.callHandlers = instrumented
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def formatting_logger(conf_logger, uninstrument_logging):
     handler = NewRelicLogForwardingHandler()
     handler.setFormatter(logging.Formatter(r"%(levelname)s - %(message)s"))

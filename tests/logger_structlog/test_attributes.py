@@ -19,7 +19,7 @@ from testing_support.validators.validate_log_events import validate_log_events
 from newrelic.api.background_task import background_task
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def logger(structlog_caplog):
     import structlog
 

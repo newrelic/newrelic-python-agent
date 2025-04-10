@@ -37,7 +37,7 @@ from newrelic.api.background_task import background_task, current_transaction
 """
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def structlog_formatter_within_logging(structlog_caplog):
     import logging
 

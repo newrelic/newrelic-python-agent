@@ -45,7 +45,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 )
 
 
-@pytest.fixture()
+@pytest.fixture
 def instance_info():
     host = gethostname() if FIRESTORE_HOST in LOCALHOST_EQUIVALENTS else FIRESTORE_HOST
     return {
@@ -64,7 +64,7 @@ def client():
     return client
 
 
-@pytest.fixture()
+@pytest.fixture
 def collection(client):
     collection_ = client.collection(f"firestore_collection_{str(uuid.uuid4())}")
     yield collection_
@@ -81,7 +81,7 @@ def async_client(loop):
     return client
 
 
-@pytest.fixture()
+@pytest.fixture
 def async_collection(async_client, collection):
     # Use the same collection name as the collection fixture
     yield async_client.collection(collection.id)

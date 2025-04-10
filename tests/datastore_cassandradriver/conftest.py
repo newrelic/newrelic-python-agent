@@ -62,7 +62,7 @@ def connection_class(request):
     return Connection
 
 
-@pytest.fixture()
+@pytest.fixture
 def cluster_options(connection_class):
     from cassandra.cluster import ExecutionProfile
     from cassandra.policies import RoundRobinPolicy
@@ -80,7 +80,7 @@ def cluster_options(connection_class):
     yield cluster_options
 
 
-@pytest.fixture()
+@pytest.fixture
 def cluster(cluster_options):
     from cassandra.cluster import Cluster
 

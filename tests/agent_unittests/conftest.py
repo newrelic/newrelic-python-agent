@@ -44,7 +44,7 @@ sys.modules["grpc"] = object()
 sys.modules["newrelic.core.infinite_tracing_pb2"] = FakeProtos
 
 
-@pytest.fixture()
+@pytest.fixture
 def global_settings(request, monkeypatch):
     ini_contents = request.getfixturevalue("ini")
 

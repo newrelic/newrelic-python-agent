@@ -31,7 +31,7 @@ settings = global_settings()
 CONDITION_CLS = type(threading.Condition())
 
 
-@pytest.fixture()
+@pytest.fixture
 def app():
     app = Application("Python Agent Test (Infinite Tracing)")
     yield app

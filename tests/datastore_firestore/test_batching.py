@@ -22,7 +22,7 @@ from newrelic.api.background_task import background_task
 # ===== WriteBatch =====
 
 
-@pytest.fixture()
+@pytest.fixture
 def exercise_write_batch(client, collection):
     def _exercise_write_batch():
         docs = [collection.document(str(x)) for x in range(1, 4)]
@@ -70,7 +70,7 @@ def test_firestore_write_batch_trace_node_datastore_params(exercise_write_batch,
 # ===== BulkWriteBatch =====
 
 
-@pytest.fixture()
+@pytest.fixture
 def exercise_bulk_write_batch(client, collection):
     def _exercise_bulk_write_batch():
         from google.cloud.firestore_v1.bulk_batch import BulkWriteBatch

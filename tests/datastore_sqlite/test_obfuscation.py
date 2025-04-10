@@ -18,7 +18,7 @@ from testing_support.validators.validate_sql_obfuscation import validate_sql_obf
 from newrelic.api.background_task import background_task
 
 
-@pytest.fixture()
+@pytest.fixture
 def sqlite3_cursor():
     import sqlite3
 

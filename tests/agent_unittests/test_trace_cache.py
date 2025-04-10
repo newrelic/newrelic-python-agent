@@ -25,7 +25,7 @@ class DummyTrace:
     pass
 
 
-@pytest.fixture()
+@pytest.fixture
 def trace_cache():
     return TraceCache()
 
@@ -54,7 +54,7 @@ def test_trace_cache_methods(trace_cache):
     assert len(list(trace_cache.values())) == 1
 
 
-@pytest.fixture()
+@pytest.fixture
 def iterate_trace_cache(trace_cache):
     def _iterate_trace_cache(shutdown):
         while True:
@@ -70,7 +70,7 @@ def iterate_trace_cache(trace_cache):
     return _iterate_trace_cache
 
 
-@pytest.fixture()
+@pytest.fixture
 def change_weakref_dict_size(trace_cache):
     def _change_weakref_dict_size(shutdown, obj_refs):
         """

@@ -257,7 +257,7 @@ def collector_agent_registration_fixture(
     return _collector_agent_registration_fixture
 
 
-@pytest.fixture()
+@pytest.fixture
 def collector_available_fixture(request, collector_agent_registration):
     application = application_instance()
     active = application.active
@@ -1375,7 +1375,7 @@ class TerminatingPopen(subprocess.Popen):
         self.terminate()
 
 
-@pytest.fixture()
+@pytest.fixture
 def newrelic_caplog(caplog):
     logger = logging.getLogger("newrelic")
     logger.propagate = True

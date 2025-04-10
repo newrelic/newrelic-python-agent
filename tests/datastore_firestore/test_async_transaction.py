@@ -26,7 +26,7 @@ def sample_data(collection):
         collection.add({"x": x}, f"doc{x}")
 
 
-@pytest.fixture()
+@pytest.fixture
 def exercise_async_transaction_commit(async_client, async_collection):
     async def _exercise_async_transaction_commit():
         from google.cloud.firestore import async_transactional
@@ -63,7 +63,7 @@ def exercise_async_transaction_commit(async_client, async_collection):
     return _exercise_async_transaction_commit
 
 
-@pytest.fixture()
+@pytest.fixture
 def exercise_async_transaction_rollback(async_client, async_collection):
     async def _exercise_async_transaction_rollback():
         from google.cloud.firestore import async_transactional

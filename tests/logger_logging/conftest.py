@@ -83,7 +83,7 @@ def logger(request):
     logging.Logger.callHandlers = instrumented
 
 
-@pytest.fixture()
+@pytest.fixture
 def instrumented_logger():
     _logger = logging.getLogger("my_app")
     caplog = CaplogHandler()

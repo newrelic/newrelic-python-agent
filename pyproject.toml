@@ -59,7 +59,7 @@ select = [
     "G",  # flake8-logging-format
     # "INP",  # flake8-no-pep420
     "PYI",  # flake8-pyi
-    # "PT",  # flake8-pytest-style
+    "PT",  # flake8-pytest-style
     "Q",  # flake8-quotes
     "RSE",  # flake8-raise
     # "RET",  # flake8-return
@@ -141,6 +141,9 @@ ignore = [
     "PLR2004",  # magic-value-comparison (comparing to constant values)
     "ASYNC251",  # blocking-sleep-in-async-function (acceptable in tests)
     "B904",  # raise-without-from-inside-except (not necessary in tests)
+    "PT006",  # pytest-parametrize-names-wrong-type (style choice)
+    "PT007",  # pytest-parametrize-values-wrong-type (style choice)
+    "PT011",  # pytest-raises-too-broad (we frequently test for generic errors)
 ]
 "newrelic/admin/*" = [
     # Disabled rules in admin scripts

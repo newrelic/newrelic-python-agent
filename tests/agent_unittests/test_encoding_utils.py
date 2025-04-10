@@ -43,7 +43,6 @@ def test_camel_case(input_, expected, upper):
     "input_,expected",
     [
         ("", ""),
-        ("", ""),
         ("my_string", "my_string"),
         ("myString", "my_string"),
         ("MyString", "my_string"),

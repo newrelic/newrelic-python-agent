@@ -247,12 +247,9 @@ def collector_agent_registration_fixture(
             except Exception:
                 _logger.exception("Unable to record deployment marker.")
 
-        def finalize():
-            shutdown_agent()
+        yield application
 
-        request.addfinalizer(finalize)
-
-        return application
+        shutdown_agent()
 
     return _collector_agent_registration_fixture
 

@@ -51,7 +51,7 @@ class CaplogHandler(logging.StreamHandler):
         self.records.append(self.format(record))
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def logger():
     import loguru
 

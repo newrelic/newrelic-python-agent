@@ -117,13 +117,13 @@ def bad_response_get(self):
     self.wfile.write(response)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def mock_server():
     with MockExternalHTTPServer(handler=simple_get) as mock_server:
         yield mock_server
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def bad_response_mock_server():
     with MockExternalHTTPServer(handler=bad_response_get) as bad_response_mock_server:
         yield bad_response_mock_server

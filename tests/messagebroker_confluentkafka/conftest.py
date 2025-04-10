@@ -58,7 +58,7 @@ def skip_if_not_serializing(client_type):
         pytest.skip("Only serializing clients supported.")
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def producer(topic, client_type, json_serializer, broker):
     from confluent_kafka import Producer, SerializingProducer
 
@@ -83,7 +83,7 @@ def producer(topic, client_type, json_serializer, broker):
         producer.purge()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def consumer(group_id, topic, producer, client_type, json_deserializer, broker):
     from confluent_kafka import Consumer, DeserializingConsumer
 
@@ -164,7 +164,7 @@ def json_deserializer():
     return JSONDeserializer()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def topic(broker):
     from confluent_kafka.admin import AdminClient, NewTopic
 

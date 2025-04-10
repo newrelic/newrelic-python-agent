@@ -257,7 +257,7 @@ def collector_agent_registration_fixture(
     return _collector_agent_registration_fixture
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def collector_available_fixture(request, collector_agent_registration):
     application = application_instance()
     active = application.active

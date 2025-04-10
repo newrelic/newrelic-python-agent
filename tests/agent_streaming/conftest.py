@@ -68,7 +68,7 @@ class SetEventOnWait(CONDITION_CLS):
         return super(SetEventOnWait, self).wait(*args, **kwargs)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def buffer_empty_event(monkeypatch):
     event = threading.Event()
 
@@ -85,7 +85,7 @@ def batching(request):
     return request.param
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def spans_received():
     from _test_handler import SPANS_RECEIVED
 
@@ -93,7 +93,7 @@ def spans_received():
     return SPANS_RECEIVED
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def span_batches_received():
     from _test_handler import SPAN_BATCHES_RECEIVED
 
@@ -101,7 +101,7 @@ def span_batches_received():
     return SPAN_BATCHES_RECEIVED
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def spans_processed_event():
     from _test_handler import SPANS_PROCESSED_EVENT
 

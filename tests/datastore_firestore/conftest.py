@@ -64,7 +64,7 @@ def client():
     return client
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def collection(client):
     collection_ = client.collection(f"firestore_collection_{str(uuid.uuid4())}")
     yield collection_
@@ -81,7 +81,7 @@ def async_client(loop):
     return client
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture()
 def async_collection(async_client, collection):
     # Use the same collection name as the collection fixture
     yield async_client.collection(collection.id)

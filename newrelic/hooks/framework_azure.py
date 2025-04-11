@@ -22,11 +22,6 @@ from newrelic.api.web_transaction import WebTransaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
 
-def wrap_dispatcher__init__(wrapped, instance, args, kwargs):
-    instance._nr_cold_start = True
-    return wrapped(*args, **kwargs)
-
-
 # TODO: This should serve as a way to determine the trigger type.
 # Right now, we only support HTTP, so this function is moot
 # but this will need to be utilized in the future
@@ -38,6 +33,8 @@ async def wrap_dispatcher__handle__invocation_request(wrapped, instance, args, k
 
     if not request:
         return await wrapped(*args, **kwargs)
+
+    breakpoint()
 
     # For now, NR only supports HTTP triggers
     function_id = request.invocation_request.function_id
@@ -254,8 +251,6 @@ def instrument_azure_functions_worker_dispatcher(module):
         wrap_function_wrapper(
             module, "Dispatcher._handle__invocation_request", wrap_dispatcher__handle__invocation_request
         )
-    if hasattr(module, "Dispatcher") and hasattr(module.Dispatcher, "__init__"):
-        wrap_function_wrapper(module, "Dispatcher.__init__", wrap_dispatcher__init__)
     if hasattr(module, "Dispatcher") and hasattr(module.Dispatcher, "_run_sync_func"):
         wrap_function_wrapper(module, "Dispatcher._run_sync_func", wrap_dispatcher__run_sync_func)
     if hasattr(module, "Dispatcher") and hasattr(module.Dispatcher, "_run_async_func"):

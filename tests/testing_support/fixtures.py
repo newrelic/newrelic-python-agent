@@ -76,8 +76,8 @@ def initialize_agent(app_name=None, default_settings=None):
         settings.developer_mode = True
         settings.license_key = "DEVELOPERMODELICENSEKEY"
 
-    settings.startup_timeout = float(os.environ.get("NEW_RELIC_STARTUP_TIMEOUT", 20.0))
-    settings.shutdown_timeout = float(os.environ.get("NEW_RELIC_SHUTDOWN_TIMEOUT", 20.0))
+    settings.startup_timeout = float(os.environ.get("NEW_RELIC_STARTUP_TIMEOUT", "20.0"))
+    settings.shutdown_timeout = float(os.environ.get("NEW_RELIC_SHUTDOWN_TIMEOUT", "20.0"))
 
     # Disable the harvest thread during testing so that harvest is explicitly
     # called on test shutdown

@@ -31,7 +31,7 @@ def existing_document(collection):
 def exercise_async_client(async_client, existing_document):
     async def _exercise_async_client():
         assert len([_ async for _ in async_client.collections()]) >= 1
-        doc = next(_ async for _ in async_client.get_all([existing_document]))
+        doc = next(iter(_ async for _ in async_client.get_all([existing_document])))
         assert doc.to_dict()["x"] == 1
 
     return _exercise_async_client

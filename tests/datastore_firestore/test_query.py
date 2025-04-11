@@ -173,7 +173,7 @@ def exercise_collection_group(client, collection, patch_partition_queries):
     def _exercise_collection_group():
         collection_group = client.collection_group(collection.id)
         assert len(collection_group.get())
-        assert len([d for d in collection_group.stream()])
+        assert len([d for d in collection_group.stream()]) >= 1
 
         partitions = [p for p in collection_group.get_partitions(1)]
         assert len(partitions) == 2

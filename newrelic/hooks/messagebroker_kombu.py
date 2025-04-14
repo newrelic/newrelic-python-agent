@@ -20,6 +20,7 @@ from newrelic.api.message_trace import MessageTrace
 from newrelic.api.message_transaction import MessageTransaction
 from newrelic.api.time_trace import current_trace, notice_error
 from newrelic.api.transaction import current_transaction
+from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
@@ -47,8 +48,9 @@ def wrap_Producer_publish(wrapped, instance, args, kwargs):
 
     if transaction is None:
         return wrapped(*args, **kwargs)
-
+    print(f"Calling bind_args with callable_name={callable_name(wrapped)} args={args} kwargs={kwargs}")
     bound_args = bind_args(wrapped, args, kwargs)
+    print(f"Successfully called bind_args body={bound_args['body']}")
     headers = bound_args["headers"]
     headers = headers if headers else {}
     value = bound_args["body"]

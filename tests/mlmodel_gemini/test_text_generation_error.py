@@ -209,6 +209,38 @@ def test_text_generation_invalid_request_error_invalid_model_with_token_count(ge
         )
 
 
+@dt_enabled
+@reset_core_stats_engine()
+@override_llm_token_callback_settings(llm_token_count_callback)
+@validate_error_trace_attributes(
+    callable_name(google.genai.errors.ClientError),
+    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.code": "NOT_FOUND", "http.statusCode": 404}},
+)
+@validate_span_events(
+    exact_agents={
+        "error.message": "models/does-not-exist is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods."
+    }
+)
+@validate_transaction_metrics(
+    "test_text_generation_error:test_text_generation_invalid_request_error_invalid_model_chat",
+    scoped_metrics=[("Llm/completion/Gemini/generate_content", 1)],
+    rollup_metrics=[("Llm/completion/Gemini/generate_content", 1)],
+    background_task=True,
+)
+@validate_custom_events(add_token_count_to_events(expected_events_on_invalid_model_error))
+@validate_custom_event_count(count=2)
+@background_task()
+def test_text_generation_invalid_request_error_invalid_model_chat(gemini_dev_client, set_trace_info):
+    with pytest.raises(google.genai.errors.ClientError):
+        set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        chat = gemini_dev_client.chats.create(model="does-not-exist")
+        chat.send_message(
+            message=["Model does not exist."],
+            config=google.genai.types.GenerateContentConfig(max_output_tokens=100, temperature=0.7),
+        )
+
+
 expected_events_on_wrong_api_key_error = [
     (
         {"type": "LlmChatCompletionSummary"},
@@ -374,6 +406,40 @@ def test_text_generation_async_invalid_request_error_invalid_model_with_token_co
             gemini_dev_client.models.generate_content(
                 model="does-not-exist",
                 contents=["Model does not exist."],
+                config=google.genai.types.GenerateContentConfig(max_output_tokens=100, temperature=0.7),
+            )
+        )
+
+
+@dt_enabled
+@reset_core_stats_engine()
+@override_llm_token_callback_settings(llm_token_count_callback)
+@validate_error_trace_attributes(
+    callable_name(google.genai.errors.ClientError),
+    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.code": "NOT_FOUND", "http.statusCode": 404}},
+)
+@validate_span_events(
+    exact_agents={
+        "error.message": "models/does-not-exist is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods."
+    }
+)
+@validate_transaction_metrics(
+    "test_text_generation_error:test_text_generation_async_invalid_request_error_invalid_model_chat",
+    scoped_metrics=[("Llm/completion/Gemini/generate_content", 1)],
+    rollup_metrics=[("Llm/completion/Gemini/generate_content", 1)],
+    background_task=True,
+)
+@validate_custom_events(add_token_count_to_events(expected_events_on_invalid_model_error))
+@validate_custom_event_count(count=2)
+@background_task()
+def test_text_generation_async_invalid_request_error_invalid_model_chat(gemini_dev_client, loop, set_trace_info):
+    with pytest.raises(google.genai.errors.ClientError):
+        set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        chat = gemini_dev_client.chats.create(model="does-not-exist")
+        loop.run_until_complete(
+            chat.send_message(
+                message=["Model does not exist."],
                 config=google.genai.types.GenerateContentConfig(max_output_tokens=100, temperature=0.7),
             )
         )

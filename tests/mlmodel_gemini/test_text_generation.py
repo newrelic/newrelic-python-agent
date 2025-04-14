@@ -117,6 +117,29 @@ def test_gemini_multi_text_generation(gemini_dev_client, set_trace_info):
 @validate_custom_events(events_with_context_attrs(text_generation_recorded_events))
 @validate_custom_event_count(count=3)
 @validate_transaction_metrics(
+    name="test_text_generation:test_gemini_text_generation_sync_generate_content",
+    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
+    background_task=True,
+)
+@validate_attributes("agent", ["llm"])
+@background_task()
+def test_gemini_text_generation_sync_generate_content(gemini_dev_client, set_trace_info):
+    set_trace_info()
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
+    add_custom_attribute("non_llm_attr", "python-agent")
+    with WithLlmCustomAttributes({"context": "attr"}):
+        gemini_dev_client.models.generate_content(
+            model="gemini-2.0-flash",
+            contents="How many letters are in the word Python?",
+            config=google.genai.types.GenerateContentConfig(max_output_tokens=100, temperature=0.7),
+        )
+
+
+@reset_core_stats_engine()
+@validate_custom_events(events_with_context_attrs(text_generation_recorded_events))
+@validate_custom_event_count(count=3)
+@validate_transaction_metrics(
     name="test_text_generation:test_gemini_text_generation_sync_with_llm_metadata",
     custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
     background_task=True,
@@ -223,6 +246,31 @@ def test_gemini_text_generation_sync_ai_monitoring_disabled(gemini_dev_client):
         message="How many letters are in the word Python?",
         config=google.genai.types.GenerateContentConfig(max_output_tokens=100, temperature=0.7),
     )
+
+
+@reset_core_stats_engine()
+@validate_custom_events(events_with_context_attrs(text_generation_recorded_events))
+@validate_custom_event_count(count=3)
+@validate_transaction_metrics(
+    name="test_text_generation:test_gemini_text_generation_async_generate_content",
+    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
+    background_task=True,
+)
+@validate_attributes("agent", ["llm"])
+@background_task()
+def test_gemini_text_generation_async_generate_content(gemini_dev_client, loop, set_trace_info):
+    set_trace_info()
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
+    add_custom_attribute("non_llm_attr", "python-agent")
+    with WithLlmCustomAttributes({"context": "attr"}):
+        loop.run_until_complete(
+            gemini_dev_client.aio.models.generate_content(
+                model="gemini-2.0-flash",
+                contents="How many letters are in the word Python?",
+                config=google.genai.types.GenerateContentConfig(max_output_tokens=100, temperature=0.7),
+            )
+        )
 
 
 @reset_core_stats_engine()

@@ -296,21 +296,19 @@ def _record_generation_error(transaction, linking_metadata, completion_id, kwarg
 
     generation_config = kwargs.get("config")
     if generation_config:
-        request_temperature = generation_config.temperature
-        request_max_tokens = generation_config.max_output_tokens
+        request_temperature = getattr(generation_config, "temperature", None)
+        request_max_tokens = getattr(generation_config, "max_output_tokens", None)
     else:
         request_temperature = None
         request_max_tokens = None
 
-    try:
-        notice_error_attributes = {
-            "http.statusCode": getattr(exc, "code", None),
-            "error.message": getattr(exc, "message", None),
-            "error.code": getattr(exc, "status", None),  # ex: 'NOT_FOUND'
-            "completion_id": completion_id,
-        }
-    except Exception:
-        _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE, exc_info=True)
+    notice_error_attributes = {
+        "http.statusCode": getattr(exc, "code", None),
+        "error.message": getattr(exc, "message", None),
+        "error.code": getattr(exc, "status", None),  # ex: 'NOT_FOUND'
+        "completion_id": completion_id,
+    }
+
     # Override the default message if it is not empty.
     message = notice_error_attributes.pop("error.message", None)
     if message:
@@ -410,8 +408,8 @@ def _record_generation_success(transaction, linking_metadata, completion_id, kwa
 
         generation_config = kwargs.get("config")
         if generation_config:
-            request_temperature = generation_config.temperature
-            request_max_tokens = generation_config.max_output_tokens
+            request_temperature = getattr(generation_config, "temperature", None)
+            request_max_tokens = getattr(generation_config, "max_output_tokens", None)
         else:
             request_temperature = None
             request_max_tokens = None

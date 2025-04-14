@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import google.genai
-
 from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     add_token_count_to_events,

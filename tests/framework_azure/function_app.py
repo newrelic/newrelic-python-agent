@@ -12,10 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# import newrelic.agent
+import os
+
 import azure.functions as func
 
-# newrelic.agent.initialize() # Initialize the New Relic agent
+import newrelic.agent
+
+newrelic.agent.initialize()  # Initialize the New Relic agent
+app_name = os.environ.get("NEW_RELIC_APP_NAME", os.environ.get("WEBSITE_SITE_NAME", None))
+newrelic.agent.register_application(app_name)
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 
@@ -24,7 +29,10 @@ app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 @app.route(route="basic")
 def basic_page(req):
     user = req.params.get("user")
-    return func.HttpResponse(f"Hello, {user}!", status_code=200, headers={"Content-Type": "text/plain"})
+    response = func.HttpResponse(f"Hello, {user}!", status_code=200, headers={"Content-Type": "text/plain"})
+    transaction = newrelic.agent.current_transaction()
+    assert transaction, "Transaction should be available"
+    return response
 
 
 # mock_http_request = func.HttpRequest(

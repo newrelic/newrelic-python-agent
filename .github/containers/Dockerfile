@@ -14,6 +14,7 @@
 # limitations under the License.
 
 FROM ubuntu:20.04
+ARG TARGETPLATFORM
 
 # Install OS packages
 RUN export DEBIAN_FRONTEND=noninteractive && \
@@ -60,6 +61,17 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         zlib1g-dev \
         zsh && \
     rm -rf /var/lib/apt/lists/*
+
+# Install addlicense binary
+ARG ADDLICENSE_VERSION=1.1.1
+RUN [[ "$TARGETPLATFORM" == "linux/amd64" ]] && ARCH="x86_64" || ARCH="arm64" && \
+    mkdir -p /tmp/addlicense && \
+    wget https://github.com/google/addlicense/releases/download/v${ADDLICENSE_VERSION}/addlicense_${ADDLICENSE_VERSION}_Linux_${ARCH}.tar.gz \
+        -O /tmp/addlicense/addlicense.tar.gz && \
+        tar -xzvf /tmp/addlicense/addlicense.tar.gz -C /tmp/addlicense && \
+    mv /tmp/addlicense/addlicense /usr/local/bin/addlicense && \
+    rm -rf /tmp/addlicense && \
+    chmod +x /usr/local/bin/addlicense
 
 # Build librdkafka from source
 ARG LIBRDKAFKA_VERSION=2.1.1

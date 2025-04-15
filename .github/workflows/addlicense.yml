@@ -29,8 +29,6 @@ concurrency:
 jobs:
   # Tests
   addlicense:
-    strategy:
-      fail-fast: false
     runs-on: ubuntu-22.04
     container:
       image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
@@ -46,13 +44,15 @@ jobs:
       - name: Check License Headers
         shell: bash
         run: |
-          addlicense -f ./.github/LICENSE_HEADER -check -ignore "newrelic/packages/**/*" $(git ls-tree -r HEAD --name-only) >output.log
-          if [[ $? -eq 0 ]]; then
-            echo "All files have the correct license header."
+          # shellcheck disable=SC2046
+          if addlicense -f ./.github/LICENSE_HEADER -check -ignore "newrelic/packages/**/*" $(git ls-tree -r HEAD --name-only) >output.log; then
+          echo "All files have the correct license header."
           else
-            echo "License header missing from the following files:"
-            cat output.log | sed s'/^/ - /'
-            echo '
+          echo "License header missing from the following files:"
+          sed s'/^/ - /' <output.log
+
+          # shellcheck disable=SC2016
+          echo '
               To automatically add the license header to files that are missing it:
               Download the addlicense binary for your architecture and add it to your $PATH
               https://github.com/google/addlicense/releases
@@ -60,5 +60,5 @@ jobs:
               Then run the following command from the repository root directory:
               addlicense -f ./.github/LICENSE_HEADER -ignore "newrelic/packages/**/*" $(git ls-tree -r HEAD --name-only)' \
                   | sed 's/^ *//'
-            exit 1
+          exit 1
           fi

@@ -1481,10 +1481,6 @@ jobs:
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1
 
-      - name: Create directory for Azure Functions
-        run: |
-          mkdir -p /home/site/wwwroot/.python_packages/lib/site-packages
-
       - name: Fetch git tags
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
@@ -1494,6 +1490,10 @@ jobs:
         run: |
           mkdir -p /github/home/.cache/pip
           chown -R $(whoami) /github/home/.cache/pip
+
+      - name: Create directory for Azure Functions
+        run: |
+          mkdir -p /home/site/wwwroot/.python_packages/lib/site-packages
 
       - name: Install dependencies
         run: |

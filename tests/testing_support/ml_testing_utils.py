@@ -44,6 +44,8 @@ def events_sans_content(event):
             del _event[1]["input"]
         elif "content" in _event[1]:
             del _event[1]["content"]
+        elif "contents" in _event[1]:
+            del _event[1]["contents"]
     return new_event
 
 

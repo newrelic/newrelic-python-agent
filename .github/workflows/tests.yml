@@ -1484,7 +1484,8 @@ jobs:
       - name: Fetch git tags
         run: |
           apt-get update
-          apt-get -y install git 
+          apt-get -y install git
+          export GIT_DISCOVERY_ACROSS_FILESYSTEM=1
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
 

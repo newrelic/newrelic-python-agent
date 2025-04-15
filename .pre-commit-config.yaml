@@ -22,26 +22,32 @@
 # To revert that, you can use:
 #   git update-index --no-assume-unchanged .pre-commit-config.yaml
 
-default_install_hook_types: 
+default_install_hook_types:
   - pre-commit
   - pre-push
 
 repos:
-- repo: https://github.com/astral-sh/ruff-pre-commit
-  # Ruff version.
-  rev: v0.11.5
-  hooks:
-    # Run the linter.
-    - id: ruff
-      args: [ --fix ]
-      stages: [ pre-push ]
-    # Run the formatter.
-    - id: ruff-format
-      stages: [ pre-push ]
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    # Ruff version.
+    rev: v0.11.5
+    hooks:
+      # Run the linter.
+      - id: ruff
+        args: [--fix]
+        stages: [pre-push]
+      # Run the formatter.
+      - id: ruff-format
+        stages: [pre-push]
 
-- repo: https://github.com/google/addlicense
-  rev: 55a521bf81c24480094950caa3566548fa63875e
-  hooks:
-  - id: addlicense
-    args: [ "-f", "./.github/LICENSE_HEADER", "-ignore", "newrelic/packages/**/*" ]
-    stages: [ pre-push ]
+  - repo: https://github.com/google/addlicense
+    rev: 55a521bf81c24480094950caa3566548fa63875e
+    hooks:
+      - id: addlicense
+        args:
+          [
+            "-f",
+            "./.github/LICENSE_HEADER",
+            "-ignore",
+            "newrelic/packages/**/*",
+          ]
+        stages: [pre-push]

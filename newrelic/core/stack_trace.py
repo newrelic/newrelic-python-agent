@@ -32,8 +32,8 @@ def _format_stack_trace(frames):
     return result
 
 
-def _extract_stack(f, skip, limit):
-    if f is None:
+def _extract_stack(frame, skip, limit):
+    if frame is None:
         return []
 
     # For calculating the stack trace we have the bottom most frame we
@@ -42,21 +42,21 @@ def _extract_stack(f, skip, limit):
     # order we want as it is more efficient.
 
     n = 0
-    l = []
+    frame_list = []
 
-    while f is not None and skip > 0:
-        f = f.f_back
+    while frame is not None and skip > 0:
+        frame = frame.f_back
         skip -= 1
 
-    while f is not None and n < limit:
-        l.append({"source": f.f_code.co_filename, "line": f.f_lineno, "name": f.f_code.co_name})
+    while frame is not None and n < limit:
+        frame_list.append({"source": frame.f_code.co_filename, "line": frame.f_lineno, "name": frame.f_code.co_name})
 
-        f = f.f_back
+        frame = frame.f_back
         n += 1
 
-    l.reverse()
+    frame_list.reverse()
 
-    return l
+    return frame_list
 
 
 def current_stack(skip=0, limit=None):
@@ -66,9 +66,9 @@ def current_stack(skip=0, limit=None):
     try:
         raise ZeroDivisionError
     except ZeroDivisionError:
-        f = sys.exc_info()[2].tb_frame.f_back
+        frame = sys.exc_info()[2].tb_frame.f_back
 
-    return _format_stack_trace(_extract_stack(f, skip, limit))
+    return _format_stack_trace(_extract_stack(frame, skip, limit))
 
 
 def _extract_tb(tb, limit):
@@ -93,7 +93,7 @@ def _extract_tb(tb, limit):
         n += 1
 
     n = 0
-    l = []
+    frame_list = []
 
     # We have now the top traceback object for the limit of what we are
     # to return. The bottom most will be that where the error occurred.
@@ -101,13 +101,13 @@ def _extract_tb(tb, limit):
     tb = top
 
     while tb is not None and n < limit:
-        f = tb.tb_frame
-        l.append({"source": f.f_code.co_filename, "line": tb.tb_lineno, "name": f.f_code.co_name})
+        frame = tb.tb_frame
+        frame_list.append({"source": frame.f_code.co_filename, "line": tb.tb_lineno, "name": frame.f_code.co_name})
 
         tb = tb.tb_next
         n += 1
 
-    return l
+    return frame_list
 
 
 def exception_stack(tb, limit=None):

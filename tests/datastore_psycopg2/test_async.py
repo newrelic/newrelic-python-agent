@@ -23,9 +23,10 @@ from testing_support.validators.validate_transaction_errors import validate_tran
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.validators.validate_transaction_slow_sql_count import validate_transaction_slow_sql_count
 
+from newrelic.api.background_task import background_task
+
 DB_SETTINGS = postgresql_settings()[0]
 
-from newrelic.api.background_task import background_task
 
 # Settings
 

@@ -495,7 +495,7 @@ def extract_bedrock_cohere_model_streaming_response(response_body, bedrock_attrs
     return bedrock_attrs
 
 
-NULL_EXTRACTOR = lambda *args: {}  # Empty extractor that returns nothing
+NULL_EXTRACTOR = lambda *args: {}  # noqa: E731  # Empty extractor that returns nothing
 MODEL_EXTRACTORS = [  # Order is important here, avoiding dictionaries
     ("amazon.titan-embed", extract_bedrock_titan_embedding_model_request, NULL_EXTRACTOR, NULL_EXTRACTOR),
     ("cohere.embed", extract_bedrock_cohere_embedding_model_request, NULL_EXTRACTOR, NULL_EXTRACTOR),

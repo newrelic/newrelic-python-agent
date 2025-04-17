@@ -67,7 +67,7 @@ def shell_command(wrapped):
         prototype = f"{wrapper.__name__[3:]} {doc_signature(wrapped)}"
 
         if hasattr(wrapper, "__doc__") and wrapper.__doc__ is not None:
-            wrapper.__doc__ = "\n".join((prototype, wrapper.__doc__.lstrip("\n")))  # noqa: flynt
+            wrapper.__doc__ = "\n".join((prototype, wrapper.__doc__.lstrip("\n")))
 
     return wrapper
 

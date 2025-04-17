@@ -415,7 +415,7 @@ class SampledDataSet:
         # Always sample if under capacity
         return True
 
-    def add(self, sample, priority=None):  # pylint: disable=E0202
+    def add(self, sample, priority=None):
         self.num_seen += 1
 
         if priority is None:
@@ -479,7 +479,7 @@ class LimitedDataSet(list):
         self.clear()
         self.num_seen = 0
 
-    def add(self, sample):  # pylint: disable=E0202
+    def add(self, sample):
         if self.should_sample():
             self.append(sample)
         self.num_seen += 1

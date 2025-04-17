@@ -19,7 +19,7 @@ import tempfile
 
 import pytest
 
-import newrelic.core.agent as agent
+from newrelic.core import agent
 
 
 @pytest.mark.parametrize("content", [{}, {"opt": [1, 2, 3]}])

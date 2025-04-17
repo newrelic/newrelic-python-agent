@@ -76,7 +76,7 @@ def wrap_Producer_produce(wrapped, instance, args, kwargs):
         except Exception as error:
             # Unwrap kafka errors
             while hasattr(error, "exception"):
-                error = error.exception  # pylint: disable=E1101
+                error = error.exception
 
             _, _, tb = sys.exc_info()
             notice_error((type(error), error, tb))
@@ -151,7 +151,7 @@ def wrap_Consumer_poll(wrapped, instance, args, kwargs):
                 source=wrapped,
             )
             instance._nr_transaction = transaction
-            transaction.__enter__()  # pylint: disable=C2801
+            transaction.__enter__()
 
             transaction._add_agent_attribute("kafka.consume.byteCount", received_bytes)
 

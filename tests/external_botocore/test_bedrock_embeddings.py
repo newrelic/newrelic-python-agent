@@ -25,7 +25,7 @@ from _test_bedrock_embeddings import (
     embedding_invalid_access_key_error_events,
     embedding_payload_templates,
 )
-from conftest import BOTOCORE_VERSION  # pylint: disable=E0611
+from conftest import BOTOCORE_VERSION
 from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     add_token_count_to_events,

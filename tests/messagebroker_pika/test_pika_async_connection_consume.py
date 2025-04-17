@@ -50,7 +50,7 @@ try:
 
     class MyIOLoop(tornado.ioloop.IOLoop.configured_class()):
         def handle_callback_exception(self, *args, **kwargs):
-            raise
+            raise  # noqa: PLE0704
 
     tornado.ioloop.IOLoop.configure(MyIOLoop)
 except AttributeError:

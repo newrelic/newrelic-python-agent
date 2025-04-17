@@ -17,7 +17,7 @@ from io import BytesIO
 
 import botocore.exceptions
 import pytest
-from conftest import BOTOCORE_VERSION  # pylint: disable=E0611
+from conftest import BOTOCORE_VERSION
 from external_botocore._test_bedrock_embeddings import (
     embedding_expected_events,
     embedding_expected_malformed_request_body_events,

@@ -145,7 +145,7 @@ def MessageTraceWrapper(
             source=wrapped,
         )
 
-        if wrapper:  # pylint: disable=W0125,W0126
+        if wrapper:
             return wrapper(wrapped, trace)(*args, **kwargs)
 
         with trace:

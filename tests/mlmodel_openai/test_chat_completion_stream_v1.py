@@ -14,7 +14,7 @@
 
 import openai
 import pytest
-from conftest import get_openai_version  # pylint: disable=E0611
+from conftest import get_openai_version
 from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     add_token_count_to_events,

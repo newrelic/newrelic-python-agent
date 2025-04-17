@@ -143,7 +143,7 @@ def wrap_consumer_recieve_callback(wrapped, instance, args, kwargs):
                 routing_key=key,
                 source=wrapped,
             )
-            created_transaction.__enter__()  # pylint: disable=C2801
+            created_transaction.__enter__()
             created_transaction.destination_name = destination_name
 
             # Obtain consumer client_id to send up as agent attribute

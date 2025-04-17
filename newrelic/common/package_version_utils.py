@@ -99,14 +99,14 @@ def _get_package_version(name):
     if "importlib" in sys.modules and hasattr(sys.modules["importlib"], "metadata"):
         try:
             # In Python3.10+ packages_distribution can be checked for as well
-            if hasattr(sys.modules["importlib"].metadata, "packages_distributions"):  # pylint: disable=E1101
-                distributions = sys.modules["importlib"].metadata.packages_distributions()  # pylint: disable=E1101
+            if hasattr(sys.modules["importlib"].metadata, "packages_distributions"):
+                distributions = sys.modules["importlib"].metadata.packages_distributions()
                 distribution_name = distributions.get(name, name)
                 distribution_name = distribution_name[0] if isinstance(distribution_name, list) else distribution_name
             else:
                 distribution_name = name
 
-            version = sys.modules["importlib"].metadata.version(distribution_name)  # pylint: disable=E1101
+            version = sys.modules["importlib"].metadata.version(distribution_name)
             if version not in NULL_VERSIONS:
                 return version
         except Exception:

@@ -14,8 +14,8 @@
 
 from urllib.parse import urlencode
 
-import newrelic.packages.urllib3 as urllib3
 from newrelic.common.agent_http import BaseClient
+from newrelic.packages import urllib3
 
 
 def create_client_cls(status, data, url=None):

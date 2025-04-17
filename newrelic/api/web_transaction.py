@@ -468,7 +468,7 @@ class WebTransaction(Transaction):
 
             except UnicodeError:
                 if not WebTransaction.unicode_error_reported:
-                    _logger.error("ASCII encoding of js-agent-header failed.", header)
+                    _logger.error("ASCII encoding of js-agent-header failed: %s", header)
                     WebTransaction.unicode_error_reported = True
 
                 header = ""

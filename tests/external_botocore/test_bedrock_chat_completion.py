@@ -32,7 +32,7 @@ from _test_bedrock_chat_completion import (
     chat_completion_payload_templates,
     chat_completion_streaming_expected_events,
 )
-from conftest import BOTOCORE_VERSION  # pylint: disable=E0611
+from conftest import BOTOCORE_VERSION
 from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     add_token_count_to_events,

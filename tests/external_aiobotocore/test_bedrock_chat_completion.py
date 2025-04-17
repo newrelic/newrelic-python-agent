@@ -19,7 +19,7 @@ import botocore.errorfactory
 import botocore.eventstream
 import botocore.exceptions
 import pytest
-from conftest import BOTOCORE_VERSION  # pylint: disable=E0611
+from conftest import BOTOCORE_VERSION
 from external_botocore._test_bedrock_chat_completion import (
     chat_completion_expected_events,
     chat_completion_expected_malformed_request_body_events,

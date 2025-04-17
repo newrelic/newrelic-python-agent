@@ -14,9 +14,9 @@
 
 from collections import namedtuple
 
-import newrelic.core.attribute as attribute
 import newrelic.core.trace_node
 from newrelic.common import system_info
+from newrelic.core import attribute
 from newrelic.core.database_utils import explain_plan, sql_statement
 from newrelic.core.metric import TimeMetric
 from newrelic.core.node_mixin import DatastoreNodeMixin

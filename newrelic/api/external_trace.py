@@ -92,7 +92,7 @@ def ExternalTraceWrapper(wrapped, library, url, method=None, async_wrapper=None)
 
         trace = ExternalTrace(library, _url, _method, parent=parent, source=wrapped)
 
-        if wrapper:  # pylint: disable=W0125,W0126
+        if wrapper:
             return wrapper(wrapped, trace)(*args, **kwargs)
 
         with trace:
@@ -109,7 +109,7 @@ def ExternalTraceWrapper(wrapped, library, url, method=None, async_wrapper=None)
 
         trace = ExternalTrace(library, url, method, parent=parent, source=wrapped)
 
-        if wrapper:  # pylint: disable=W0125,W0126
+        if wrapper:
             return wrapper(wrapped, trace)(*args, **kwargs)
 
         with trace:

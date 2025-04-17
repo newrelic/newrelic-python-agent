@@ -42,13 +42,57 @@ AVAILABLE_TRANSPORTS = {
 }
 
 
+def bind_publish(
+    body,
+    routing_key=None,
+    delivery_mode=None,
+    mandatory=False,
+    immediate=False,
+    priority=0,
+    content_type=None,
+    content_encoding=None,
+    serializer=None,
+    headers=None,
+    compression=None,
+    exchange=None,
+    retry=False,
+    retry_policy=None,
+    declare=None,
+    expiration=None,
+    timeout=None,
+    confirm_timeout=None,
+    **properties,
+):
+    return {
+        "body": body,
+        "routing_key": routing_key,
+        "delivery_mode": delivery_mode,
+        "mandatory": mandatory,
+        "immediate": immediate,
+        "priority": priority,
+        "content_type": content_type,
+        "content_encoding": content_encoding,
+        "serializer": serializer,
+        "headers": headers,
+        "compression": compression,
+        "exchange": exchange,
+        "retry": retry,
+        "retry_policy": retry_policy,
+        "declare": declare,
+        "expiration": expiration,
+        "timeout": timeout,
+        "confirm_timeout": confirm_timeout,
+        "properties": properties,
+    }
+
+
 def wrap_Producer_publish(wrapped, instance, args, kwargs):
     transaction = current_transaction()
 
     if transaction is None:
         return wrapped(*args, **kwargs)
 
-    bound_args = bind_args(wrapped, args, kwargs)
+    bound_args = bind_publish(*args, **kwargs)
     headers = bound_args["headers"]
     headers = headers if headers else {}
     value = bound_args["body"]

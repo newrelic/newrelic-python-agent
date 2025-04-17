@@ -72,7 +72,7 @@ def BackgroundTaskWrapper(wrapped, application=None, name=None, group=None):
         else:
             _group = group
 
-        if type(application) != Application:
+        if type(application) is not Application:
             _application = application_instance(application)
         else:
             _application = application

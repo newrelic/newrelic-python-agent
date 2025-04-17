@@ -799,7 +799,7 @@ def WebTransactionWrapper(
     source=None,
 ):
     def wrapper(wrapped, instance, args, kwargs):
-        if type(application) != Application:
+        if type(application) is not Application:
             _application = application_instance(application)
         else:
             _application = application

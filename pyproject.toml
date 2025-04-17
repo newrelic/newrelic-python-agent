@@ -20,7 +20,7 @@ pep8-naming.extend-ignore-names = ["X", "y"]
 select = [
     # Enabled linters and rules
     # "F",  # Pyflakes
-    # "E",  # pycodestyle
+    "E",  # pycodestyle
     "W",  # pycodestyle
     "I",  # isort
     # "N",  # pep8-naming
@@ -90,11 +90,13 @@ ignore = [
     "RUF100",  # unused-noqa (TODO: remove this once all linters are enabled)
     "PERF203",  # try-except-in-loop (most of these are unavoidable)
     "S110",  # try-except-pass (Bandit wants us to log the exception, which is usually pointless. Spot check these later)
+    "E722",  # bare-except (too many to fix all at once)
     # Permanently disabled rules
     "D203",  # incorrect-blank-line-before-class
     "D213",  # multi-line-summary-second-line
     "ARG001",  # unused-argument
     "PYI024",  # collections-named-tuple (not currently using type annotations)
+    "E501",  # line-too-long (line length handled by formatter)
     # Ruff recommended linter rules to disable when using formatter
     "W191",  # tab-indentation
     "E111",  # indentation-with-invalid-multiple
@@ -116,6 +118,7 @@ ignore = [
     "S",  # flake8-bandit (security checks are not necessary in tests)
     "F401",  # unused-import
     "F811",  # redefined-while-unused (pytest fixtures trigger this)
+    "E731",  # lambda-assignment (acceptable in tests)
     "PLR2004",  # magic-value-comparison (comparing to constant values)
     "ASYNC251",  # blocking-sleep-in-async-function (acceptable in tests)
     "B904",  # raise-without-from-inside-except (not necessary in tests)

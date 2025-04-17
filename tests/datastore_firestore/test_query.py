@@ -94,7 +94,7 @@ def exercise_aggregation_query(collection):
     def _exercise_aggregation_query():
         aggregation_query = collection.select("x").where(field_path="x", op_string="<=", value=3).count()
         assert aggregation_query.get()[0][0].value == 3
-        assert [_ for _ in aggregation_query.stream()][0][0].value == 3
+        assert list(aggregation_query.stream())[0][0].value == 3  # noqa: RUF015
 
     return _exercise_aggregation_query
 

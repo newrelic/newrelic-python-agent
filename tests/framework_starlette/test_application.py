@@ -50,13 +50,14 @@ else:
 MIDDLEWARE_METRICS = [
     ("Function/_test_application:middleware_factory.<locals>.middleware", 2),
     ("Function/_test_application:middleware_decorator", 1),
-] + DEFAULT_MIDDLEWARE_METRICS
+    *DEFAULT_MIDDLEWARE_METRICS,
+]
 
 
 @pytest.mark.parametrize("app_name", ("no_error_handler",))
 @validate_transaction_metrics(
     "_test_application:index",
-    scoped_metrics=MIDDLEWARE_METRICS + [("Function/_test_application:index", 1)],
+    scoped_metrics=[*MIDDLEWARE_METRICS, ("Function/_test_application:index", 1)],
     rollup_metrics=[FRAMEWORK_METRIC],
 )
 @validate_code_level_metrics("_test_application", "index")
@@ -70,7 +71,7 @@ def test_application_index(target_application, app_name):
 @pytest.mark.parametrize("app_name", ("no_error_handler",))
 @validate_transaction_metrics(
     "_test_application:non_async",
-    scoped_metrics=MIDDLEWARE_METRICS + [("Function/_test_application:non_async", 1)],
+    scoped_metrics=[*MIDDLEWARE_METRICS, ("Function/_test_application:non_async", 1)],
     rollup_metrics=[FRAMEWORK_METRIC],
 )
 @validate_code_level_metrics("_test_application", "non_async")
@@ -168,7 +169,7 @@ def test_exception_in_middleware(target_application, app_name):
 def test_server_error_middleware(target_application, app_name, transaction_name, path, scoped_metrics):
     @validate_transaction_metrics(
         transaction_name,
-        scoped_metrics=scoped_metrics + [("Function/_test_application:runtime_error", 1)] + DEFAULT_MIDDLEWARE_METRICS,
+        scoped_metrics=[*scoped_metrics, ("Function/_test_application:runtime_error", 1), *DEFAULT_MIDDLEWARE_METRICS],
         rollup_metrics=[FRAMEWORK_METRIC],
     )
     def _test():

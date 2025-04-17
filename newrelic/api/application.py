@@ -22,9 +22,9 @@ import newrelic.core.config
 
 class Application:
     _lock = threading.Lock()
-    _instances = {}
+    _instances = {}  # noqa: RUF012
 
-    _delayed_callables = {}
+    _delayed_callables = {}  # noqa: RUF012
 
     @staticmethod
     def _instance(name, activate=True):

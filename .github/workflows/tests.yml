@@ -1529,10 +1529,10 @@ jobs:
             zsh
           rm -rf /var/lib/apt/lists/*
 
-      - name: Fetch git tags
-        run: |
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          git fetch --tags origin
+      # - name: Fetch git tags
+      #   run: |
+      #     git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      #     git fetch --tags origin
 
       - name: Configure pip cache
         run: |

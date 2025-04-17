@@ -16,6 +16,7 @@ import os
 
 import django
 import pytest
+from testing_support.asgi_testing import AsgiTest
 from testing_support.fixtures import (
     override_application_settings,
     override_generic_settings,
@@ -32,8 +33,6 @@ DJANGO_VERSION = tuple(map(int, django.get_version().split(".")[:2]))
 
 if DJANGO_VERSION[0] < 3:
     pytest.skip("support for asgi added in django 3", allow_module_level=True)
-
-from testing_support.asgi_testing import AsgiTest
 
 scoped_metrics = [
     ("Function/django.contrib.sessions.middleware:SessionMiddleware", 1),

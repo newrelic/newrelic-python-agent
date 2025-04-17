@@ -201,7 +201,9 @@ class _WSGIApplicationMiddleware:
         # works then we are done, else we move to next phase of
         # buffering up content until we find the body element.
 
-        html_to_be_inserted = lambda: self.transaction.browser_timing_header().encode("latin-1")
+        def html_to_be_inserted():
+            return self.transaction.browser_timing_header().encode("latin-1")
+
         if not self.response_data:
             modified = insert_html_snippet(data, html_to_be_inserted)
 

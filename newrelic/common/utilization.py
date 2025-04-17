@@ -181,7 +181,7 @@ class AWSUtilization(CommonUtilization):
     def fetch(cls):
         try:
             authToken = cls.fetchAuthToken()
-            if authToken == None:
+            if authToken is None:
                 return
             cls.HEADERS = {"X-aws-ec2-metadata-token": authToken}
             with cls.CLIENT_CLS(cls.METADATA_HOST, timeout=cls.FETCH_TIMEOUT) as client:

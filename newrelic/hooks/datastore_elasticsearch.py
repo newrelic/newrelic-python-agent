@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
@@ -106,6 +105,12 @@ def instrument_es_methods(module, _class, client_methods, prefix=None):
             wrap_elasticsearch_client_method(module, _class, method_name, arg_extractor, prefix)
 
 
+def instrument_async_es_methods(module, _class, client_methods, prefix=None):
+    for method_name, arg_extractor in client_methods:
+        if hasattr(getattr(module, _class), method_name):
+            wrap_async_elasticsearch_client_method(module, _class, method_name, arg_extractor, prefix)
+
+
 def wrap_elasticsearch_client_method(module, class_name, method_name, arg_extractor, prefix=None):
     def _nr_wrapper_Elasticsearch_method_(wrapped, instance, args, kwargs):
         transaction = current_transaction()
@@ -143,6 +148,42 @@ def wrap_elasticsearch_client_method(module, class_name, method_name, arg_extrac
             return result
 
     wrap_function_wrapper(module, f"{class_name}.{method_name}", _nr_wrapper_Elasticsearch_method_)
+
+
+def wrap_async_elasticsearch_client_method(module, class_name, method_name, arg_extractor, prefix=None):
+    async def _nr_wrapper_AsyncElasticsearch_method_(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
+
+        if transaction is None:
+            return await wrapped(*args, **kwargs)
+
+        if arg_extractor is None:
+            index = None
+        else:
+            index = arg_extractor(*args, **kwargs)
+
+        if prefix:
+            operation = f"{prefix}.{method_name}"
+        else:
+            operation = method_name
+
+        transaction._nr_datastore_instance_info = (None, None, None)
+
+        dt = DatastoreTrace(product="Elasticsearch", target=index, operation=operation, source=wrapped)
+
+        with dt:
+            result = await wrapped(*args, **kwargs)
+
+            # TODO Fix this
+            instance_info = transaction._nr_datastore_instance_info
+            host, port_path_or_id, _ = instance_info
+
+            dt.host = host
+            dt.port_path_or_id = port_path_or_id
+
+            return result
+
+    wrap_function_wrapper(module, f"{class_name}.{method_name}", _nr_wrapper_AsyncElasticsearch_method_)
 
 
 _elasticsearch_client_methods_below_v8 = (
@@ -186,6 +227,7 @@ _elasticsearch_client_methods_below_v8 = (
     ("update", _extract_args_index),
 )
 
+_async_elasticsearch_client_methods_below_v8 = _elasticsearch_client_methods_below_v8
 
 _elasticsearch_client_methods_v8 = (
     ("bulk", _extract_args_operations_index),
@@ -235,6 +277,8 @@ _elasticsearch_client_methods_v8 = (
     ("update_by_query_rethrottle", None),
 )
 
+_async_elasticsearch_client_methods_v8 = _elasticsearch_client_methods_v8
+
 
 def instrument_elasticsearch_client(module):
     # The module path was remapped in v8 to match previous versions.
@@ -242,6 +286,16 @@ def instrument_elasticsearch_client(module):
     # wrapping.
     if ES_VERSION < (8,):
         instrument_es_methods(module, "Elasticsearch", _elasticsearch_client_methods_below_v8)
+
+
+def instrument_elasticsearch__async_client(module):
+    # The module path was remapped in v8 to match previous versions.
+    # In order to avoid double wrapping we check the version before
+    # wrapping.
+    if ES_VERSION < (8,):
+        instrument_async_es_methods(module, "AsyncElasticsearch", _async_elasticsearch_client_methods_below_v8)
+    else:
+        instrument_async_es_methods(module, "AsyncElasticsearch", _async_elasticsearch_client_methods_v8)
 
 
 def instrument_elasticsearch_client_v8(module):
@@ -290,6 +344,7 @@ _elasticsearch_client_indices_methods_below_v8 = (
     ("validate_query", _extract_args_index),
 )
 
+_async_elasticsearch_client_indices_methods_below_v8 = _elasticsearch_client_indices_methods_below_v8
 
 _elasticsearch_client_indices_methods_v8 = (
     ("add_block", _extract_args_index),
@@ -348,6 +403,8 @@ _elasticsearch_client_indices_methods_v8 = (
     ("validate_query", _extract_args_index),
 )
 
+_async_elasticsearch_client_indices_methods_v8 = _elasticsearch_client_indices_methods_v8
+
 
 def instrument_elasticsearch_client_indices(module):
     # The module path was remapped in v8 to match previous versions.
@@ -355,6 +412,16 @@ def instrument_elasticsearch_client_indices(module):
     # wrapping.
     if ES_VERSION < (8,):
         instrument_es_methods(module, "IndicesClient", _elasticsearch_client_indices_methods_below_v8, "indices")
+
+
+def instrument_elasticsearch__async_client_indices(module):
+    # The module path was remapped in v8 to match previous versions.
+    # In order to avoid double wrapping we check the version before
+    # wrapping.
+    if ES_VERSION < (8,):
+        instrument_async_es_methods(module, "IndicesClient", _elasticsearch_client_indices_methods_below_v8, "indices")
+    else:
+        instrument_async_es_methods(module, "IndicesClient", _async_elasticsearch_client_indices_methods_v8, "indices")
 
 
 def instrument_elasticsearch_client_indices_v8(module):
@@ -378,6 +445,8 @@ _elasticsearch_client_cat_methods_below_v8 = (
     ("segments", _extract_args_index),
     ("thread_pool", None),
 )
+
+_async_elasticsearch_client_cat_methods_below_v8 = _elasticsearch_client_cat_methods_below_v8
 
 _elasticsearch_client_cat_methods_v8 = (
     ("aliases", None),
@@ -408,6 +477,8 @@ _elasticsearch_client_cat_methods_v8 = (
     ("transforms", None),
 )
 
+_async_elasticsearch_client_cat_methods_v8 = _elasticsearch_client_cat_methods_v8
+
 
 def instrument_elasticsearch_client_cat(module):
     # The module path was remapped in v8 to match previous versions.
@@ -415,6 +486,16 @@ def instrument_elasticsearch_client_cat(module):
     # wrapping.
     if ES_VERSION < (8,):
         instrument_es_methods(module, "CatClient", _elasticsearch_client_cat_methods_below_v8, "cat")
+
+
+def instrument_elasticsearch__async_client_cat(module):
+    # The module path was remapped in v8 to match previous versions.
+    # In order to avoid double wrapping we check the version before
+    # wrapping.
+    if ES_VERSION < (8,):
+        instrument_async_es_methods(module, "CatClient", _async_elasticsearch_client_cat_methods_below_v8, "cat")
+    else:
+        instrument_async_es_methods(module, "CatClient", _async_elasticsearch_client_cat_methods_v8, "cat")
 
 
 def instrument_elasticsearch_client_cat_v8(module):
@@ -431,6 +512,7 @@ _elasticsearch_client_cluster_methods_below_v8 = (
     ("stats", None),
 )
 
+_async_elasticsearch_client_cluster_methods_below_v8 = _elasticsearch_client_cluster_methods_below_v8
 
 _elasticsearch_client_cluster_methods_v8 = (
     ("allocation_explain", _extract_args_allocation_explain_index),
@@ -450,6 +532,8 @@ _elasticsearch_client_cluster_methods_v8 = (
     ("stats", None),
 )
 
+_async_elasticsearch_client_cluster_methods_v8 = _elasticsearch_client_cluster_methods_v8
+
 
 def instrument_elasticsearch_client_cluster(module):
     # The module path was remapped in v8 to match previous versions.
@@ -457,6 +541,18 @@ def instrument_elasticsearch_client_cluster(module):
     # wrapping.
     if ES_VERSION < (8,):
         instrument_es_methods(module, "ClusterClient", _elasticsearch_client_cluster_methods_below_v8, "cluster")
+
+
+def instrument_elasticsearch__async_client_cluster(module):
+    # The module path was remapped in v8 to match previous versions.
+    # In order to avoid double wrapping we check the version before
+    # wrapping.
+    if ES_VERSION < (8,):
+        instrument_async_es_methods(
+            module, "ClusterClient", _async_elasticsearch_client_cluster_methods_below_v8, "cluster"
+        )
+    else:
+        instrument_async_es_methods(module, "ClusterClient", _async_elasticsearch_client_cluster_methods_v8, "cluster")
 
 
 def instrument_elasticsearch_client_cluster_v8(module):
@@ -469,6 +565,9 @@ _elasticsearch_client_nodes_methods_below_v8 = (
     ("shutdown", None),
     ("stats", None),
 )
+
+_async_elasticsearch_client_nodes_methods_below_v8 = _elasticsearch_client_nodes_methods_below_v8
+
 _elasticsearch_client_nodes_methods_v8 = (
     ("clear_repositories_metering_archive", None),
     ("get_repositories_metering_info", None),
@@ -479,6 +578,8 @@ _elasticsearch_client_nodes_methods_v8 = (
     ("usage", None),
 )
 
+_async_elasticsearch_client_nodes_methods_v8 = _elasticsearch_client_nodes_methods_v8
+
 
 def instrument_elasticsearch_client_nodes(module):
     # The module path was remapped in v8 to match previous versions.
@@ -486,6 +587,16 @@ def instrument_elasticsearch_client_nodes(module):
     # wrapping.
     if ES_VERSION < (8,):
         instrument_es_methods(module, "NodesClient", _elasticsearch_client_nodes_methods_below_v8, "nodes")
+
+
+def instrument_elasticsearch__async_client_nodes(module):
+    # The module path was remapped in v8 to match previous versions.
+    # In order to avoid double wrapping we check the version before
+    # wrapping.
+    if ES_VERSION < (8,):
+        instrument_async_es_methods(module, "NodesClient", _async_elasticsearch_client_nodes_methods_below_v8, "nodes")
+    else:
+        instrument_async_es_methods(module, "NodesClient", _async_elasticsearch_client_nodes_methods_v8, "nodes")
 
 
 def instrument_elasticsearch_client_nodes_v8(module):
@@ -503,6 +614,9 @@ _elasticsearch_client_snapshot_methods_below_v8 = (
     ("status", None),
     ("verify_repository", None),
 )
+
+_async_elasticsearch_client_snapshot_methods_below_v8 = _elasticsearch_client_snapshot_methods_below_v8
+
 _elasticsearch_client_snapshot_methods_v8 = (
     ("cleanup_repository", None),
     ("clone", None),
@@ -517,6 +631,8 @@ _elasticsearch_client_snapshot_methods_v8 = (
     ("verify_repository", None),
 )
 
+_async_elasticsearch_client_snapshot_methods_v8 = _elasticsearch_client_snapshot_methods_v8
+
 
 def instrument_elasticsearch_client_snapshot(module):
     # The module path was remapped in v8 to match previous versions.
@@ -526,11 +642,26 @@ def instrument_elasticsearch_client_snapshot(module):
         instrument_es_methods(module, "SnapshotClient", _elasticsearch_client_snapshot_methods_below_v8, "snapshot")
 
 
+def instrument_elasticsearch__async_client_snapshot(module):
+    # The module path was remapped in v8 to match previous versions.
+    # In order to avoid double wrapping we check the version before
+    # wrapping.
+    if ES_VERSION < (8,):
+        instrument_async_es_methods(
+            module, "SnapshotClient", _async_elasticsearch_client_snapshot_methods_below_v8, "snapshot"
+        )
+    else:
+        instrument_async_es_methods(
+            module, "SnapshotClient", _async_elasticsearch_client_snapshot_methods_v8, "snapshot"
+        )
+
+
 def instrument_elasticsearch_client_snapshot_v8(module):
     instrument_es_methods(module, "SnapshotClient", _elasticsearch_client_snapshot_methods_v8, "snapshot")
 
 
 _elasticsearch_client_tasks_methods = (("list", None), ("cancel", None), ("get", None))
+_async_elasticsearch_client_tasks_methods = _elasticsearch_client_tasks_methods
 
 
 def instrument_elasticsearch_client_tasks(module):
@@ -539,6 +670,16 @@ def instrument_elasticsearch_client_tasks(module):
     # wrapping.
     if ES_VERSION < (8,):
         instrument_es_methods(module, "TasksClient", _elasticsearch_client_tasks_methods, "tasks")
+
+
+def instrument_elasticsearch__async_client_tasks(module):
+    # The module path was remapped in v8 to match previous versions.
+    # In order to avoid double wrapping we check the version before
+    # wrapping.
+    if ES_VERSION < (8,):
+        instrument_async_es_methods(module, "TasksClient", _async_elasticsearch_client_tasks_methods, "tasks")
+    else:
+        instrument_async_es_methods(module, "TasksClient", _async_elasticsearch_client_tasks_methods, "tasks")
 
 
 def instrument_elasticsearch_client_tasks_v8(module):
@@ -552,6 +693,8 @@ _elasticsearch_client_ingest_methods_below_v8 = (
     ("simulate", None),
 )
 
+_async_elasticsearch_client_ingest_methods_below_v8 = _elasticsearch_client_ingest_methods_below_v8
+
 _elasticsearch_client_ingest_methods_v8 = (
     ("delete_pipeline", None),
     ("geo_ip_stats", None),
@@ -561,6 +704,8 @@ _elasticsearch_client_ingest_methods_v8 = (
     ("simulate", None),
 )
 
+_async_elasticsearch_client_ingest_methods_v8 = _elasticsearch_client_ingest_methods_v8
+
 
 def instrument_elasticsearch_client_ingest(module):
     # The module path was remapped in v8 to match previous versions.
@@ -568,6 +713,18 @@ def instrument_elasticsearch_client_ingest(module):
     # wrapping.
     if ES_VERSION < (8,):
         instrument_es_methods(module, "IngestClient", _elasticsearch_client_ingest_methods_below_v8, "ingest")
+
+
+def instrument_elasticsearch__async_client_ingest(module):
+    # The module path was remapped in v8 to match previous versions.
+    # In order to avoid double wrapping we check the version before
+    # wrapping.
+    if ES_VERSION < (8,):
+        instrument_async_es_methods(
+            module, "IngestClient", _async_elasticsearch_client_ingest_methods_below_v8, "ingest"
+        )
+    else:
+        instrument_async_es_methods(module, "IngestClient", _async_elasticsearch_client_ingest_methods_v8, "ingest")
 
 
 def instrument_elasticsearch_client_ingest_v8(module):
@@ -592,8 +749,25 @@ def _nr_Connection__init__wrapper(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
+def _nr__AsyncConnection__init__wrapper(wrapped, instance, args, kwargs):
+    """Cache datastore instance info on Connection object"""
+
+    def _bind_params(host="localhost", port=9200, *args, **kwargs):
+        return host, port
+
+    host, port = _bind_params(*args, **kwargs)
+    port = str(port)
+    instance._nr_host_port = (host, port)
+
+    return wrapped(*args, **kwargs)
+
+
 def instrument_elasticsearch_connection_base(module):
     wrap_function_wrapper(module, "Connection.__init__", _nr_Connection__init__wrapper)
+
+
+def instrument_async_elasticsearch_connection_base(module):
+    wrap_function_wrapper(module, "AsyncConnection.__init__", _nr__AsyncConnection__init__wrapper)
 
 
 def BaseNode__init__wrapper(wrapped, instance, args, kwargs):
@@ -602,9 +776,20 @@ def BaseNode__init__wrapper(wrapped, instance, args, kwargs):
     return result
 
 
+def BaseAsyncNode__init__wrapper(wrapped, instance, args, kwargs):
+    result = wrapped(*args, **kwargs)
+    instance._nr_host_port = (instance.host, str(instance.port))
+    return result
+
+
 def instrument_elastic_transport__node__base(module):
     if hasattr(module, "BaseNode"):
         wrap_function_wrapper(module, "BaseNode.__init__", BaseNode__init__wrapper)
+
+
+def instrument_async_elastic_transport__node__base(module):
+    if hasattr(module, "BaseAsyncNode"):
+        wrap_function_wrapper(module, "BaseAsyncNode.__init__", BaseAsyncNode__init__wrapper)
 
 
 def _nr_get_connection_wrapper(wrapped, instance, args, kwargs):
@@ -616,6 +801,31 @@ def _nr_get_connection_wrapper(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     conn = wrapped(*args, **kwargs)
+
+    instance_info = (None, None, None)
+    try:
+        tracer_settings = transaction.settings.datastore_tracer
+
+        if tracer_settings.instance_reporting.enabled:
+            host, port_path_or_id = conn._nr_host_port
+            instance_info = (host, port_path_or_id, None)
+    except Exception:
+        instance_info = ("unknown", "unknown", None)
+
+    transaction._nr_datastore_instance_info = instance_info
+
+    return conn
+
+
+async def _nr_get_async_connection_wrapper(wrapped, instance, args, kwargs):
+    """Read instance info from async Connection and stash on Transaction."""
+
+    transaction = current_transaction()
+
+    if transaction is None:
+        return await wrapped(*args, **kwargs)
+
+    conn = await wrapped(*args, **kwargs)
 
     instance_info = (None, None, None)
     try:
@@ -647,11 +857,35 @@ def _nr_perform_request_wrapper(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
+async def _nr_async_perform_request_wrapper(wrapped, instance, args, kwargs):
+    """Read instance info from Async Connection and stash on Transaction."""
+    transaction = current_transaction()
+
+    if transaction is None:
+        return await wrapped(*args, **kwargs)
+
+    if not hasattr(instance.node_pool.get, "_nr_wrapped"):
+        instance.node_pool.get = function_wrapper(_nr_get_connection_wrapper)(instance.node_pool.get)
+        instance.node_pool.get._nr_wrapped = True
+
+    return await wrapped(*args, **kwargs)
+
+
 def instrument_elasticsearch_transport(module):
     if hasattr(module, "Transport") and hasattr(module.Transport, "get_connection"):
         wrap_function_wrapper(module, "Transport.get_connection", _nr_get_connection_wrapper)
 
 
+def instrument_async_elasticsearch_transport(module):
+    if hasattr(module, "AsyncTransport") and hasattr(module.AsyncTransport, "get_connection"):
+        wrap_function_wrapper(module, "AsyncTransport.get_connection", _nr_get_async_connection_wrapper)
+
+
 def instrument_elastic_transport__transport(module):
     if hasattr(module, "Transport") and hasattr(module.Transport, "perform_request"):
         wrap_function_wrapper(module, "Transport.perform_request", _nr_perform_request_wrapper)
+
+
+def instrument_async_elastic_transport__transport(module):
+    if hasattr(module, "AsyncTransport") and hasattr(module.AsyncTransport, "perform_request"):
+        wrap_function_wrapper(module, "AsyncTransport.perform_request", _nr_async_perform_request_wrapper)

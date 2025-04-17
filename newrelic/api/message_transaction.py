@@ -190,7 +190,7 @@ def MessageTransactionWrapper(
 
                 return None
 
-            if type(application) != Application:
+            if type(application) is not Application:
                 _application = application_instance(application)
             else:
                 _application = application

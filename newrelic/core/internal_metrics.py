@@ -43,7 +43,7 @@ class InternalTrace:
 
 class InternalTraceWrapper:
     def __init__(self, wrapped, name):
-        if type(wrapped) == type(()):
+        if type(wrapped) is tuple:
             (instance, wrapped) = wrapped
         else:
             instance = None

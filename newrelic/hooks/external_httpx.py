@@ -32,14 +32,14 @@ async def newrelic_event_hook_async(response):
         tracer.process_response(getattr(response, "status_code", None), headers)
 
 
-def newrelic_first_gen(l, is_async=False):
+def newrelic_first_gen(wrapped, is_async=False):
     if is_async:
         yield newrelic_event_hook_async
     else:
         yield newrelic_event_hook
     while True:
         try:
-            yield next(l)
+            yield next(wrapped)
         except StopIteration:
             break
 
@@ -50,8 +50,8 @@ class NewRelicFirstList(list):
         self.is_async = is_async
 
     def __iter__(self):
-        l = super().__iter__()
-        return iter(newrelic_first_gen(l, self.is_async))
+        wrapped_iter = super().__iter__()
+        return iter(newrelic_first_gen(wrapped_iter, self.is_async))
 
 
 class NewRelicFirstDict(dict):

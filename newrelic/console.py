@@ -442,7 +442,7 @@ class ConnectionManager:
             pass
 
     def __thread_run(self):
-        if type(self.__listener_socket) == type(()):
+        if type(self.__listener_socket) is tuple:
             listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             listener.bind(self.__listener_socket)

@@ -37,7 +37,7 @@ def validate_synthetics_event(required_attrs=None, forgone_attrs=None, should_ex
                 def _flatten(event):
                     result = {}
                     for elem in event:
-                        result.update({k: v for k, v in elem.items()})
+                        result.update(dict(elem.items()))
                     return result
 
                 flat_event = _flatten(event)

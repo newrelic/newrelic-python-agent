@@ -89,12 +89,10 @@ vectorstore_recorded_events = [
 ]
 
 
-_test_vectorstore_modules_instrumented_ignored_classes = set(
-    [
-        "VectorStore",  # Base class
-        "Zilliz",  # Inherited from Milvus, which we are already instrumenting.
-    ]
-)
+_test_vectorstore_modules_instrumented_ignored_classes = {
+    "VectorStore",  # Base class
+    "Zilliz",  # Inherited from Milvus, which we are already instrumenting.
+}
 
 
 # Test to check if all classes containing "similarity_search"

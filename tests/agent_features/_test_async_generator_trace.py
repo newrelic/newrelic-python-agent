@@ -475,7 +475,7 @@ def test_complete_async_generator(event_loop):
 
     async def _test():
         gen = agen()
-        assert [x async for x in gen] == [x for x in range(5)]
+        assert [x async for x in gen] == list(range(5))
 
     event_loop.run_until_complete(_test())
 

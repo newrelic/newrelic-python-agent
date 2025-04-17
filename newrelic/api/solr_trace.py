@@ -31,9 +31,7 @@ class SolrTrace(newrelic.api.time_trace.TimeTrace):
         self.command = command
 
     def __repr__(self):
-        return (
-            f"<{self.__class__.__name__} object at 0x{id(self):x} {dict(library=self.library, command=self.command)}>"
-        )
+        return f"<{self.__class__.__name__} object at 0x{id(self):x} { {'library': self.library, 'command': self.command} }>"
 
     def terminal_node(self):
         return True

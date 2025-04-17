@@ -117,7 +117,7 @@ def nr_log_patcher(original_patcher=None):
                 record["message"] = add_nr_linking_metadata(message)
 
     if original_patcher is not None:
-        patchers = [p for p in original_patcher]  # Consumer iterable into list so we can modify
+        patchers = list(original_patcher)  # Consumer iterable into list so we can modify
         # Wipe out reference so patchers aren't called twice, as the framework will handle calling other patchers.
         original_patcher = None
     else:

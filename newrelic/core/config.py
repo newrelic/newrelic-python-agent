@@ -997,9 +997,9 @@ _settings.application_logging.forwarding.custom_attributes = _environ_as_mapping
 _settings.application_logging.forwarding.labels.enabled = _environ_as_bool(
     "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_LABELS_ENABLED", default=False
 )
-_settings.application_logging.forwarding.labels.exclude = set(
+_settings.application_logging.forwarding.labels.exclude = {
     v.lower() for v in _environ_as_set("NEW_RELIC_APPLICATION_LOGGING_FORWARDING_LABELS_EXCLUDE", default="")
-)
+}
 
 _settings.application_logging.forwarding.context_data.enabled = _environ_as_bool(
     "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_CONTEXT_DATA_ENABLED", default=False

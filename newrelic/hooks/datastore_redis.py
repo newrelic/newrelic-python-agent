@@ -487,7 +487,7 @@ _redis_client_gen_methods = {"scan_iter", "hscan_iter", "sscan_iter", "zscan_ite
 
 _redis_client_methods = _redis_client_sync_methods.union(_redis_client_async_methods)
 
-_redis_multipart_commands = set(["client", "cluster", "command", "config", "debug", "sentinel", "slowlog", "script"])
+_redis_multipart_commands = {"client", "cluster", "command", "config", "debug", "sentinel", "slowlog", "script"}
 
 _redis_operation_re = re.compile(r"[-\s]+")
 

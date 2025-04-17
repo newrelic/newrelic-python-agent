@@ -75,7 +75,7 @@ else:
 OPENAI_AUDIT_LOG_FILE = os.path.join(os.path.realpath(os.path.dirname(__file__)), "openai_audit.log")
 OPENAI_AUDIT_LOG_CONTENTS = {}
 # Intercept outgoing requests and log to file for mocking
-RECORDED_HEADERS = set(["x-request-id", "content-type"])
+RECORDED_HEADERS = {"x-request-id", "content-type"}
 
 
 @pytest.fixture(scope="session")
@@ -297,7 +297,7 @@ def generator_proxy(openai_version):
             try:
                 return_val = self.__wrapped__.__next__()
                 if return_val:
-                    prompt = [k for k in OPENAI_AUDIT_LOG_CONTENTS.keys()][-1]
+                    prompt = list(OPENAI_AUDIT_LOG_CONTENTS.keys())[-1]
                     if openai_version < (1, 0):
                         headers = dict(
                             filter(

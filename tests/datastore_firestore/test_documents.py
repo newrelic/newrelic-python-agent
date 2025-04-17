@@ -28,7 +28,7 @@ def exercise_documents(collection):
         italy_doc.get()
         italian_cities = italy_doc.collection("cities")
         italian_cities.add({"capital": "Rome"})
-        retrieved_coll = [_ for _ in italy_doc.collections()]
+        retrieved_coll = list(italy_doc.collections())
         assert len(retrieved_coll) == 1
 
         usa_doc = collection.document("USA")
@@ -84,7 +84,7 @@ def test_firestore_documents_generators(collection, assert_trace_for_generator):
     subcollection_doc.set({})
     subcollection_doc.collection("collection1").add({})
     subcollection_doc.collection("collection2").add({})
-    assert len([_ for _ in subcollection_doc.collections()]) == 2
+    assert len(list(subcollection_doc.collections())) == 2
 
     assert_trace_for_generator(subcollection_doc.collections)
 

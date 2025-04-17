@@ -68,7 +68,7 @@ class TimeTrace:
         return self.child_count == len(self.children)
 
     def __repr__(self):
-        return f"<{self.__class__.__name__} object at 0x{id(self):x} {dict(name=getattr(self, 'name', None))}>"
+        return f"<{self.__class__.__name__} object at 0x{id(self):x} { {'name': getattr(self, 'name', None)} }>"
 
     def __enter__(self):
         self.parent = parent = self.parent or current_trace()

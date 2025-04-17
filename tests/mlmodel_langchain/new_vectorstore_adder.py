@@ -72,12 +72,10 @@ def add_to_hooks(class_name, directory, instrumented_class=None):
 
 
 def main():
-    _test_vectorstore_modules_instrumented_ignored_classes = set(
-        [
-            "VectorStore",  # Base class
-            "Zilliz",  # Inherited from Milvus, which we are already instrumenting.
-        ]
-    )
+    _test_vectorstore_modules_instrumented_ignored_classes = {
+        "VectorStore",  # Base class
+        "Zilliz",  # Inherited from Milvus, which we are already instrumenting.
+    }
 
     vector_store_class_directory = vectorstores._module_lookup
     for class_name, directory in vector_store_class_directory.items():

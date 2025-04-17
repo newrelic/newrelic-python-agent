@@ -32,7 +32,7 @@ class MemcacheTrace(TimeTrace):
         self.command = command
 
     def __repr__(self):
-        return f"<{self.__class__.__name__} object at 0x{id(self):x} {dict(command=self.command)}>"
+        return f"<{self.__class__.__name__} object at 0x{id(self):x} { {'command': self.command} }>"
 
     def terminal_node(self):
         return True

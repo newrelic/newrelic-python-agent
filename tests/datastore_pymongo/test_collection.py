@@ -105,17 +105,17 @@ def _exercise_mongo_v4(db):
     collection.delete_one({"x": 4})
     collection.delete_many({"x": 4})
     collection.distinct(key="x")
-    [item for item in collection.find_raw_batches()]
+    list(collection.find_raw_batches())
 
     collection.create_index("x")
     collection.create_indexes([pymongo.IndexModel([("y", pymongo.DESCENDING)])])
-    [item for item in collection.list_indexes()]
+    list(collection.list_indexes())
     collection.index_information()
     collection.drop_index("x_1")
     collection.drop_indexes()
 
-    [item for item in collection.aggregate([])]
-    [item for item in collection.aggregate_raw_batches([])]
+    list(collection.aggregate([]))
+    list(collection.aggregate_raw_batches([]))
     collection.find_one_and_delete({"x": 10})
     collection.find_one_and_replace({"x": 300}, {"x": 301})
     collection.find_one_and_update({"x": 301}, {"$inc": {"x": 300}})

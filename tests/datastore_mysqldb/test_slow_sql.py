@@ -35,11 +35,11 @@ _disable_instance_settings = {
 
 # Expected parameters
 
-_enabled_required = set(["host", "port_path_or_id", "database_name"])
+_enabled_required = {"host", "port_path_or_id", "database_name"}
 _enabled_forgone = set()
 
 _disabled_required = set()
-_disabled_forgone = set(["host", "port_path_or_id", "database_name"])
+_disabled_forgone = {"host", "port_path_or_id", "database_name"}
 
 
 def _exercise_db():

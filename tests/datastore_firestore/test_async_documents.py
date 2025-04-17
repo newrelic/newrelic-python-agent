@@ -86,7 +86,7 @@ def test_firestore_async_documents_generators(
     subcollection_doc.set({})
     subcollection_doc.collection("collection1").add({})
     subcollection_doc.collection("collection2").add({})
-    assert len([_ for _ in subcollection_doc.collections()]) == 2
+    assert len(list(subcollection_doc.collections())) == 2
 
     async_subcollection = async_collection.document(subcollection_doc.id)
 

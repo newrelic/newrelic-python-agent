@@ -33,7 +33,7 @@ select = [
     "B",  # flake8-bugbear
     "A",  # flake8-builtins
     "COM",  # flake8-commas
-    # "C4",  # flake8-comprehensions
+    "C4",  # flake8-comprehensions
     "DTZ",  # flake8-datetimez
     "T10",  # flake8-debugger
     # "EM",  # flake8-errmsg

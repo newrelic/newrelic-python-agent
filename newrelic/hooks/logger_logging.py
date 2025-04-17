@@ -20,7 +20,7 @@ from newrelic.api.transaction import current_transaction, record_log_event
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 from newrelic.core.config import global_settings
 
-IGNORED_LOG_RECORD_KEYS = set(["message", "msg"])
+IGNORED_LOG_RECORD_KEYS = {"message", "msg"}
 
 
 def add_nr_linking_metadata(message):

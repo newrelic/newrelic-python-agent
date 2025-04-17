@@ -220,7 +220,7 @@ def test_application_handled_error(target_application, app_name, transaction_nam
         ),
     ),
 )
-@override_ignore_status_codes(set((500,)))
+@override_ignore_status_codes({500})
 def test_application_ignored_error(target_application, app_name, transaction_name, path):
     @validate_transaction_errors(errors=[])
     @validate_transaction_metrics(

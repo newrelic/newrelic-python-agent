@@ -573,7 +573,7 @@ def test_reservoir_size_zeros(harvest_name, event_name):
     assert app._stats_engine.log_events.num_seen == 1
     assert app._stats_engine.span_events.num_seen == 1
 
-    stat_events = set(("transaction_events", "error_events", "custom_events", "log_events", "span_events"))
+    stat_events = {"transaction_events", "error_events", "custom_events", "log_events", "span_events"}
 
     for stat_event in stat_events:
         event = getattr(app._stats_engine, stat_event)

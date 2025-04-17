@@ -68,7 +68,7 @@ sys.meta_path.insert(0, newrelic.api.import_hook.ImportHookFinder())
 # This will be used to validate what is provided and issue warnings
 # if feature flags not in set are provided.
 
-_FEATURE_FLAGS = set(["django.instrumentation.inclusion-tags.r1"])
+_FEATURE_FLAGS = {"django.instrumentation.inclusion-tags.r1"}
 
 # Names of configuration file and deployment environment. This
 # will be overridden by the load_configuration() function when

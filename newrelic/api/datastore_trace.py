@@ -92,7 +92,7 @@ class DatastoreTrace(TimeTrace):
         return result
 
     def __repr__(self):
-        return f"<{self.__class__.__name__} object at 0x{id(self):x} {dict(product=self.product, target=self.target, operation=self.operation, host=self.host, port_path_or_id=self.port_path_or_id, database_name=self.database_name)}>"
+        return f"<{self.__class__.__name__} object at 0x{id(self):x} { {'product': self.product, 'target': self.target, 'operation': self.operation, 'host': self.host, 'port_path_or_id': self.port_path_or_id, 'database_name': self.database_name} }>"
 
     def finalize_data(self, transaction, exc=None, value=None, tb=None):
         if not self.instance_reporting_enabled:

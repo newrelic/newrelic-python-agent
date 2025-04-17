@@ -33,19 +33,23 @@ _disable_instance_settings = {
 
 # Expected parameters
 
-_enabled_required = set(["host", "port_path_or_id", "database_name"])
+_enabled_required = {"host", "port_path_or_id", "database_name"}
 _enabled_forgone = set()
 
 _disabled_required = set()
-_disabled_forgone = set(["host", "port_path_or_id", "database_name"])
+_disabled_forgone = {"host", "port_path_or_id", "database_name"}
 
 # Guid is always required, regardless of DT status.
 # It should be excluded from the forgone params set.
-_distributed_tracing_required_params = set(["guid", "traceId", "priority", "sampled"])
-_distributed_tracing_forgone_params = set(["traceId", "priority", "sampled"])
-_distributed_tracing_payload_received_params = set(
-    ["parent.type", "parent.app", "parent.account", "parent.transportType", "parent.transportDuration"]
-)
+_distributed_tracing_required_params = {"guid", "traceId", "priority", "sampled"}
+_distributed_tracing_forgone_params = {"traceId", "priority", "sampled"}
+_distributed_tracing_payload_received_params = {
+    "parent.type",
+    "parent.app",
+    "parent.account",
+    "parent.transportType",
+    "parent.transportDuration",
+}
 
 _transaction_guid = "1234567890"
 _distributed_tracing_exact_params = {"guid": _transaction_guid}

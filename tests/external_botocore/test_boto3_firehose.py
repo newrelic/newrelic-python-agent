@@ -82,10 +82,10 @@ def test_instrumented_firehose_methods():
         region_name=AWS_REGION,
     )
 
-    ignored_methods = set(
+    ignored_methods = {
         ("firehose", method)
         for method in ("generate_presigned_url", "close", "get_waiter", "can_paginate", "get_paginator")
-    )
+    }
     client_methods = inspect.getmembers(client, predicate=inspect.ismethod)
     methods = {("firehose", name) for (name, method) in client_methods if not name.startswith("_")}
 

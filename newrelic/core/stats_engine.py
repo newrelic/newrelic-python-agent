@@ -1337,7 +1337,7 @@ class StatsEngine:
             )
 
         for key, value in normalized_stats.items():
-            key = dict(name=key[0], scope=key[1])
+            key = {"name": key[0], "scope": key[1]}
             result.append((key, value))
 
         return result

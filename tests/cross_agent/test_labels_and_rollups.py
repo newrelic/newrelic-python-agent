@@ -34,7 +34,7 @@ def _load_tests():
 def _parametrize_test(test):
     # pytest.mark.parametrize expects each test to be a tuple
 
-    return tuple([test["name"], test["labelString"], test["warning"], test["expected"]])
+    return (test["name"], test["labelString"], test["warning"], test["expected"])
 
 
 _labels_tests = [_parametrize_test(t) for t in _load_tests()]

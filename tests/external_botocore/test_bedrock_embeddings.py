@@ -421,7 +421,7 @@ def test_embedding_models_instrumented():
     models = [model["modelId"] for model in response["modelSummaries"]]
     not_supported = []
     for model in models:
-        is_supported = any([model.startswith(supported_model) for supported_model in SUPPORTED_MODELS])
+        is_supported = any(model.startswith(supported_model) for supported_model in SUPPORTED_MODELS)
         if not is_supported:
             not_supported.append(model)
 

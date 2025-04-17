@@ -504,6 +504,10 @@ def _process_configuration(section):
     _process_setting(section, "azure_operator.enabled", "getboolean", None)
     _process_setting(section, "package_reporting.enabled", "getboolean", None)
     _process_setting(section, "instrumentation.graphql.capture_introspection_queries", "getboolean", None)
+    _process_setting(
+        section, "instrumentation.kombu.ignored_exchanges", "get", newrelic.core.config.parse_space_separated_into_list
+    )
+    _process_setting(section, "instrumentation.kombu.consumer.enabled", "getboolean", None)
 
 
 # Loading of configuration from specified file and for specified

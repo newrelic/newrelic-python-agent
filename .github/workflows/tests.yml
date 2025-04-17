@@ -1470,6 +1470,8 @@ jobs:
     runs-on: ubuntu-22.04
     container:
       image: mcr.microsoft.com/azure-functions/python:4-python3.11 #ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      ports:
+        - 8080:80
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
@@ -1481,11 +1483,54 @@ jobs:
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1
 
-      - name: Fetch git tags
+      - name: Install OS packages
         run: |
           apt-get update
-          apt-get -y install git
-          export GIT_DISCOVERY_ACROSS_FILESYSTEM=1
+          apt-get install -y \
+            bash \
+            build-essential \
+            curl \
+            default-libmysqlclient-dev \
+            expat \
+            fish \
+            fontconfig \
+            freetds-common \
+            freetds-dev \
+            gcc \
+            git \
+            libbz2-dev \
+            libcurl4-openssl-dev \
+            libffi-dev \
+            libgmp-dev \
+            libkrb5-dev \
+            liblzma-dev \
+            libmpfr-dev \
+            libncurses-dev \
+            libpq-dev \
+            libreadline-dev \
+            libsqlite3-dev \
+            libssl-dev \
+            locales \
+            make \
+            odbc-postgresql \
+            openssl \
+            pkg-config \
+            python3-dev \
+            python3-pip \
+            sudo \
+            tzdata \
+            unixodbc-dev \
+            unzip \
+            vim \
+            wget \
+            zip \
+            zlib1g \
+            zlib1g-dev \
+            zsh
+          rm -rf /var/lib/apt/lists/*
+
+      - name: Fetch git tags
+        run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
 

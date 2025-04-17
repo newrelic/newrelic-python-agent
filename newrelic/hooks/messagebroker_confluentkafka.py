@@ -120,7 +120,7 @@ def wrap_Consumer_poll(wrapped, instance, args, kwargs):
     # Step 2: Poll for records
     try:
         record = wrapped(*args, **kwargs)
-    except Exception as e:
+    except Exception:
         if current_transaction():
             notice_error()
         else:

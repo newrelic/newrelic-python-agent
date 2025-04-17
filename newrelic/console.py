@@ -366,8 +366,6 @@ class ConsoleShell(cmd.Cmd):
         interactive Python interpreter. Invoke 'exit()' or 'quit()' to
         escape the interpreter session."""
 
-        enabled = False
-
         _settings = global_settings()
 
         if not _settings.console.allow_interpreter_cmd:

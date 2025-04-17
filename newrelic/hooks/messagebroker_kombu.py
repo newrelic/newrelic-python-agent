@@ -51,8 +51,6 @@ def wrap_Producer_publish(wrapped, instance, args, kwargs):
     bound_args = bind_args(wrapped, args, kwargs)
     headers = bound_args["headers"]
     headers = headers if headers else {}
-    value = bound_args["body"]
-    key = bound_args["routing_key"]
     exchange = getattr(bound_args["exchange"], "name", None) or "Default"
 
     transaction.add_messagebroker_info("Kombu", get_package_version("kombu"))
@@ -205,7 +203,7 @@ def wrap_serialize(wrapped, instance, args, kwargs):
     group = "MessageBroker/Kombu/Exchange"
     name = f"Named/{exchange}/Serialization/Value"
 
-    with FunctionTrace(name=name, group=group) as ft:
+    with FunctionTrace(name=name, group=group):
         return wrapped(*args, **kwargs)
 
 

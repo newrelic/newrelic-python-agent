@@ -16,7 +16,7 @@ import os
 import pwd
 
 from newrelic.admin import command, usage
-from newrelic.common import agent_http, certs, encoding_utils
+from newrelic.common import agent_http, encoding_utils
 from newrelic.config import initialize
 from newrelic.core.config import global_settings
 

@@ -47,7 +47,7 @@ class AsyncCursorContextManagerWrapper(ObjectProxy):
             while True:
                 try:
                     sent = yield yielded
-                except GeneratorExit as e:
+                except GeneratorExit:
                     g.close()
                     raise
                 except BaseException as e:

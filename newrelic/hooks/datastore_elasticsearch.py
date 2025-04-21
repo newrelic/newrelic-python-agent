@@ -149,7 +149,6 @@ def wrap_elasticsearch_client_method(module, class_name, method_name, arg_extrac
 
             return result
 
-
     wrap_function_wrapper(module, f"{class_name}.{method_name}", _nr_wrapper_Elasticsearch_method_)
 
 
@@ -539,9 +538,7 @@ def instrument_elasticsearch__async_client_cluster(module):
     # In order to avoid double wrapping we check the version before
     # wrapping.
     if ES_VERSION < (8,):
-        instrument_async_es_methods(
-            module, "ClusterClient", _elasticsearch_client_cluster_methods_below_v8, "cluster"
-        )
+        instrument_async_es_methods(module, "ClusterClient", _elasticsearch_client_cluster_methods_below_v8, "cluster")
     else:
         instrument_async_es_methods(module, "ClusterClient", _elasticsearch_client_cluster_methods_v8, "cluster")
 
@@ -634,9 +631,7 @@ def instrument_elasticsearch__async_client_snapshot(module):
             module, "SnapshotClient", _elasticsearch_client_snapshot_methods_below_v8, "snapshot"
         )
     else:
-        instrument_async_es_methods(
-            module, "SnapshotClient", _elasticsearch_client_snapshot_methods_v8, "snapshot"
-        )
+        instrument_async_es_methods(module, "SnapshotClient", _elasticsearch_client_snapshot_methods_v8, "snapshot")
 
 
 def instrument_elasticsearch_client_snapshot_v8(module):
@@ -644,6 +639,7 @@ def instrument_elasticsearch_client_snapshot_v8(module):
 
 
 _elasticsearch_client_tasks_methods = (("list", None), ("cancel", None), ("get", None))
+
 
 def instrument_elasticsearch_client_tasks(module):
     # The module path was remapped in v8 to match previous versions.
@@ -695,9 +691,7 @@ def instrument_elasticsearch__async_client_ingest(module):
     # In order to avoid double wrapping we check the version before
     # wrapping.
     if ES_VERSION < (8,):
-        instrument_async_es_methods(
-            module, "IngestClient", _elasticsearch_client_ingest_methods_below_v8, "ingest"
-        )
+        instrument_async_es_methods(module, "IngestClient", _elasticsearch_client_ingest_methods_below_v8, "ingest")
     else:
         instrument_async_es_methods(module, "IngestClient", _elasticsearch_client_ingest_methods_v8, "ingest")
 

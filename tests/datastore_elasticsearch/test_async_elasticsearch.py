@@ -11,8 +11,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from elasticsearch._async import client
 from conftest import ES_SETTINGS, ES_VERSION
+from elasticsearch._async import client
 from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname

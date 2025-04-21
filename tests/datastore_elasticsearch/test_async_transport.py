@@ -13,14 +13,13 @@
 # limitations under the License.
 
 import pytest
-from conftest import ES_SETTINGS, ES_VERSION, ES_URL
-
-from newrelic.api.background_task import background_task
-from newrelic.api.transaction import current_transaction
-
+from conftest import ES_SETTINGS, ES_URL, ES_VERSION
 from testing_support.util import instance_hostname
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+
+from newrelic.api.background_task import background_task
+from newrelic.api.transaction import current_transaction
 
 try:
     from elasticsearch._async.http_aiohttp import AIOHttpConnection
@@ -55,16 +54,8 @@ async def _exercise_es(es):
 @pytest.mark.parametrize(
     "client_kwargs",
     [
-        pytest.param(
-            {"node_class": AIOHttpConnection},
-            id="AIOHttpConnectionV8",
-            marks=RUN_IF_V8,
-        ),
-        pytest.param(
-            {"node_class": HttpxAsyncHttpNode},
-            id="HttpxAsyncHttpNodeV8",
-            marks=RUN_IF_V8,
-        ),
+        pytest.param({"node_class": AIOHttpConnection}, id="AIOHttpConnectionV8", marks=RUN_IF_V8),
+        pytest.param({"node_class": HttpxAsyncHttpNode}, id="HttpxAsyncHttpNodeV8", marks=RUN_IF_V8),
         pytest.param({"node_class": AIOHttpConnection}, id="AIOHttpConnectionV7", marks=RUN_IF_V7),
     ],
 )

@@ -13,14 +13,13 @@
 # limitations under the License.
 
 import pytest
-from conftest import ES_SETTINGS, ES_VERSION, ES_URL
-
-from newrelic.api.background_task import background_task
-from newrelic.api.transaction import current_transaction
-
+from conftest import ES_SETTINGS, ES_URL, ES_VERSION
 from testing_support.util import instance_hostname
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+
+from newrelic.api.background_task import background_task
+from newrelic.api.transaction import current_transaction
 
 try:
     from elasticsearch.connection.http_requests import RequestsHttpConnection
@@ -58,36 +57,14 @@ def _exercise_es(es):
     "client_kwargs",
     [
         pytest.param({}, id="DefaultTransport"),
+        pytest.param({"connection_class": Urllib3HttpConnection}, id="Urllib3HttpConnectionv7", marks=RUN_IF_BELOW_V7),
         pytest.param(
-            {"connection_class": Urllib3HttpConnection},
-            id="Urllib3HttpConnectionv7",
-            marks=RUN_IF_BELOW_V7,
+            {"connection_class": RequestsHttpConnection}, id="RequestsHttpConnectionv7", marks=RUN_IF_BELOW_V7
         ),
-        pytest.param(
-            {"connection_class": RequestsHttpConnection},
-            id="RequestsHttpConnectionv7",
-            marks=RUN_IF_BELOW_V7,
-        ),
-        pytest.param(
-            {"connection_class": Urllib3HttpConnection},
-            id="Urllib3HttpConnectionv7",
-            marks=RUN_IF_V7,
-        ),
-        pytest.param(
-            {"connection_class": RequestsHttpConnection},
-            id="RequestsHttpConnectionv7",
-            marks=RUN_IF_V7,
-        ),
-        pytest.param(
-            {"node_class": Urllib3HttpConnection},
-            id="Urllib3HttpNodev8",
-            marks=RUN_IF_V8,
-        ),
-        pytest.param(
-            {"node_class": RequestsHttpConnection},
-            id="RequestsHttpNodev8",
-            marks=RUN_IF_V8,
-        ),
+        pytest.param({"connection_class": Urllib3HttpConnection}, id="Urllib3HttpConnectionv7", marks=RUN_IF_V7),
+        pytest.param({"connection_class": RequestsHttpConnection}, id="RequestsHttpConnectionv7", marks=RUN_IF_V7),
+        pytest.param({"node_class": Urllib3HttpConnection}, id="Urllib3HttpNodev8", marks=RUN_IF_V8),
+        pytest.param({"node_class": RequestsHttpConnection}, id="RequestsHttpNodev8", marks=RUN_IF_V8),
     ],
 )
 @validate_transaction_errors(errors=[])

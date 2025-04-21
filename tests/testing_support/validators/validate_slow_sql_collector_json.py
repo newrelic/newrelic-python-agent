@@ -29,24 +29,22 @@ def validate_slow_sql_collector_json(required_params=None, forgone_params=None, 
 
     @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     def _validate_slow_sql_collector_json(wrapped, instance, args, kwargs):
-        legal_param_keys = set(
-            [
-                "explain_plan",
-                "backtrace",
-                "host",
-                "port_path_or_id",
-                "database_name",
-                "parent.type",
-                "parent.app",
-                "parent.account",
-                "parent.transportType",
-                "parent.transportDuration",
-                "guid",
-                "traceId",
-                "priority",
-                "sampled",
-            ]
-        )
+        legal_param_keys = {
+            "explain_plan",
+            "backtrace",
+            "host",
+            "port_path_or_id",
+            "database_name",
+            "parent.type",
+            "parent.app",
+            "parent.account",
+            "parent.transportType",
+            "parent.transportDuration",
+            "guid",
+            "traceId",
+            "priority",
+            "sampled",
+        }
         try:
             result = wrapped(*args, **kwargs)
         except:

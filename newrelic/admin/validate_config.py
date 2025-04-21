@@ -187,7 +187,7 @@ def validate_config(args):
     _settings.debug.log_data_collector_payloads = True
     _settings.debug.log_transaction_trace_payload = True
 
-    print(_user_message % dict(app_name=app_name, log_file=log_file))
+    print(_user_message % {"app_name": app_name, "log_file": log_file})
 
     _logger.debug("Register test application.")
 

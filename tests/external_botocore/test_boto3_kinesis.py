@@ -117,10 +117,10 @@ def test_instrumented_kinesis_methods():
         region_name=AWS_REGION,
     )
 
-    ignored_methods = set(
+    ignored_methods = {
         ("kinesis", method)
         for method in ("generate_presigned_url", "close", "get_waiter", "can_paginate", "get_paginator")
-    )
+    }
     client_methods = inspect.getmembers(client, predicate=inspect.ismethod)
     methods = {("kinesis", name) for (name, method) in client_methods if not name.startswith("_")}
 

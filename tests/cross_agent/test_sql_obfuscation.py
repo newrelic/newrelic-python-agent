@@ -49,7 +49,7 @@ _quoting_styles = {
 
 
 def get_quoting_styles(dialects):
-    return set([_quoting_styles.get(dialect) for dialect in dialects])
+    return {_quoting_styles.get(dialect) for dialect in dialects}
 
 
 class DummyDB:

@@ -78,7 +78,7 @@ def exercise(cluster_options):
             ABCModel.batch(b).create(a=3, b=3.0, c="3.0")
 
         cursor = ABCModel.objects()  # Select query
-        _ = [row for row in cursor]
+        _ = list(cursor)
 
         # Update query
         m1.update(**{"b": 4.0, "c": "4.0"})

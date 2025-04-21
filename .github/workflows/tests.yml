@@ -1545,11 +1545,14 @@ jobs:
 
       - name: Install pyenv
         run: |
-          export HOME=/root
           export PYENV_ROOT="/usr/local/pyenv"
           curl https://pyenv.run/ | /bin/bash
           export PATH="${PYENV_ROOT}/bin:${PYENV_ROOT}/shims:${PATH}"
-          echo 'eval "$(pyenv init -)"' >>${HOME}/.bashrc && pyenv update
+          echo 'eval "$(pyenv init -)"' >>/root/.bashrc && pyenv update
+
+      - name: Install dependencies for main python installation
+        run: |
+          pyenv exec pip install --upgrade -r .github/containers/requirements.txt
 
       - name: Install tools with pipx in isolated environments
         run: |

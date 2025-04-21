@@ -141,13 +141,16 @@ def wrap_elasticsearch_client_method(module, class_name, method_name, arg_extrac
         with dt:
             result = wrapped(*args, **kwargs)
 
-            instance_info = transaction._nr_datastore_instance_info
-            host, port_path_or_id, _ = instance_info
-
-            dt.host = host
-            dt.port_path_or_id = port_path_or_id
+            try:
+                node_config = result.meta.node
+                dt.host = node_config.host
+                port = node_config.port
+                dt.port_path_or_id = str(port) if port is not None else None
+            except Exception:
+                pass
 
             return result
+
 
     wrap_function_wrapper(module, f"{class_name}.{method_name}", _nr_wrapper_Elasticsearch_method_)
 
@@ -803,33 +806,9 @@ def instrument_async_elastic_transport__node__base(module):
 def _nr_get_connection_wrapper(wrapped, instance, args, kwargs):
     """Read instance info from Connection and stash on Transaction."""
 
-    transaction = current_transaction()
-
-    if transaction is None:
+    # Instance info provided in request metadata for v8
+    if ES_VERSION >= (8,):
         return wrapped(*args, **kwargs)
-
-    conn = wrapped(*args, **kwargs)
-
-    instance_info = (None, None, None)
-    try:
-        tracer_settings = transaction.settings.datastore_tracer
-
-        if tracer_settings.instance_reporting.enabled:
-            host, port_path_or_id = conn._nr_host_port
-            instance_info = (host, port_path_or_id, None)
-    except Exception:
-        instance_info = ("unknown", "unknown", None)
-
-    transaction._nr_datastore_instance_info = instance_info
-
-    return conn
-
-
-def _nr_get_async_connection_wrapper(wrapped, instance, args, kwargs):
-    """
-    Read instance info from async Connection and stash on Transaction.
-    Only necessary for elasticsearch v7 and below, as v8 supplies metadata with the response.
-    """
 
     trace = current_trace()
 
@@ -840,7 +819,7 @@ def _nr_get_async_connection_wrapper(wrapped, instance, args, kwargs):
 
     host = port_path_or_id = "unknown"
     try:
-        tracer_settings = trace.settings.datastore_tracer
+        tracer_settings = transaction.settings.datastore_tracer
 
         if tracer_settings.instance_reporting.enabled:
             host, port_path_or_id = conn._nr_host_port
@@ -876,7 +855,7 @@ async def _nr_async_perform_request_wrapper(wrapped, instance, args, kwargs):
         return await wrapped(*args, **kwargs)
 
     if not hasattr(instance.node_pool.get, "_nr_wrapped"):
-        instance.node_pool.get = function_wrapper(_nr_get_async_connection_wrapper)(instance.node_pool.get)
+        instance.node_pool.get = function_wrapper(_nr_get_connection_wrapper)(instance.node_pool.get)
         instance.node_pool.get._nr_wrapped = True
 
     return await wrapped(*args, **kwargs)
@@ -889,7 +868,7 @@ def instrument_elasticsearch_transport(module):
 
 def instrument_async_elasticsearch_transport(module):
     if hasattr(module, "AsyncTransport") and hasattr(module.AsyncTransport, "get_connection"):
-        wrap_function_wrapper(module, "AsyncTransport.get_connection", _nr_get_async_connection_wrapper)
+        wrap_function_wrapper(module, "AsyncTransport.get_connection", _nr_get_connection_wrapper)
 
 
 def instrument_elastic_transport__transport(module):

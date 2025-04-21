@@ -503,6 +503,7 @@ def _process_configuration(section):
     _process_setting(section, "k8s_operator.enabled", "getboolean", None)
     _process_setting(section, "azure_operator.enabled", "getboolean", None)
     _process_setting(section, "package_reporting.enabled", "getboolean", None)
+    _process_setting(section, "instrumentation.graphql.capture_introspection_queries", "getboolean", None)
 
 
 # Loading of configuration from specified file and for specified

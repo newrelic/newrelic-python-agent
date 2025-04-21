@@ -1481,8 +1481,6 @@ jobs:
     #     ports:
     #       - 8080:80
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1
-
       - name: Install OS packages
         run: |
           apt-get update
@@ -1529,10 +1527,12 @@ jobs:
             zsh
           rm -rf /var/lib/apt/lists/*
 
-      # - name: Fetch git tags
-      #   run: |
-      #     git config --global --add safe.directory "$GITHUB_WORKSPACE"
-      #     git fetch --tags origin
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # 4.1.1
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
 
       - name: Configure pip cache
         run: |
@@ -1568,7 +1568,7 @@ jobs:
         run: |
           pip install --upgrade -r .github/containers/requirements.txt --target=/home/site/wwwroot/.python_packages/lib/site-packages
           pip install azure-functions requests --target=/home/site/wwwroot/.python_packages/lib/site-packages
-          # pipx inject --force tox -r .github/containers/requirements-tox.txt
+          pipx inject --force tox -r .github/containers/requirements-tox.txt
 
       # - name: Get Environments
       #   id: get-envs

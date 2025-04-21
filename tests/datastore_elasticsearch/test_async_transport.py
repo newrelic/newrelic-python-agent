@@ -20,16 +20,16 @@ from newrelic.api.background_task import background_task
 from newrelic.api.transaction import current_transaction
 
 try:
-    from elasticsearch.connection.http_aiohttp import AiohttpHttpConnection
-    from elasticsearch.connection.http_httpx import HttpxHttpConnection
-    from elasticsearch.transport import AsyncTransport, Transport
+    from elasticsearch._async.http_aiohttp import AIOHttpConnection
+    from elasticsearch._async.transport import AsyncTransport
+    HttpxAsyncHttpNode = None  # Not implemented in v7
 
     NodeConfig = dict
 except ImportError:
     from elastic_transport._async_transport import AsyncTransport
     from elastic_transport._models import NodeConfig
-    from elastic_transport._node._http_aiohttp import AiohttpHttpNode as AiohttpHttpConnection
-    from elastic_transport._node._http_httpx import HttpxAsyncHttpNode as HttpxHttpConnection
+    from elastic_transport._node._http_aiohttp import AiohttpHttpNode as AIOHttpConnection
+    from elastic_transport._node._http_httpx import HttpxAsyncHttpNode
 
 
 IS_V8 = ES_VERSION >= (8,)
@@ -56,19 +56,19 @@ if hasattr(BODY, "encode"):
     "transport_kwargs, perform_request_kwargs",
     [
         pytest.param(
-            {"node_class": AiohttpHttpConnection},
+            {"node_class": AIOHttpConnection},
             {"headers": HEADERS, "body": DATA},
-            id="AiohttpHttpConnectionV8",
+            id="AIOHttpConnectionV8",
             marks=RUN_IF_V8,
         ),
         pytest.param(
-            {"node_class": HttpxHttpConnection},
+            {"node_class": HttpxAsyncHttpNode},
             {"headers": HEADERS, "body": DATA},
-            id="HttpxHttpConnectionV8",
+            id="HttpxAsyncHttpNodeV8",
             marks=RUN_IF_V8,
         ),
         pytest.param(
-            {"node_class": AiohttpHttpConnection}, {"body": DATA}, id="AiohttpHttpConnectionV7", marks=RUN_IF_V7
+            {"node_class": AIOHttpConnection}, {"body": DATA}, id="AIOHttpConnectionV7", marks=RUN_IF_V7
         ),
     ],
 )

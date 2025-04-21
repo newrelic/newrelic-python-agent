@@ -13,6 +13,7 @@
 # limitations under the License.
 from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.transaction import current_transaction
+from newrelic.api.time_trace import current_trace
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version_tuple
 
@@ -117,6 +118,7 @@ def wrap_elasticsearch_client_method(module, class_name, method_name, arg_extrac
 
         if transaction is None:
             return wrapped(*args, **kwargs)
+
         # When index is None, it means there is no target field
         # associated with this method. Hence this method will only
         # create an operation metric and no statement metric. This is
@@ -157,6 +159,11 @@ def wrap_async_elasticsearch_client_method(module, class_name, method_name, arg_
         if transaction is None:
             return await wrapped(*args, **kwargs)
 
+        # When index is None, it means there is no target field
+        # associated with this method. Hence this method will only
+        # create an operation metric and no statement metric. This is
+        # handled by setting the target to None when calling the
+        # DatastoreTraceWrapper.
         if arg_extractor is None:
             index = None
         else:
@@ -174,12 +181,13 @@ def wrap_async_elasticsearch_client_method(module, class_name, method_name, arg_
         with dt:
             result = await wrapped(*args, **kwargs)
 
-            # TODO Fix this
-            instance_info = transaction._nr_datastore_instance_info
-            host, port_path_or_id, _ = instance_info
-
-            dt.host = host
-            dt.port_path_or_id = port_path_or_id
+            try:
+                node_config = result.meta.node
+                dt.host = node_config.host
+                port = node_config.port
+                dt.port_path_or_id = str(port) if port is not None else None
+            except Exception:
+                pass
 
             return result
 
@@ -817,27 +825,31 @@ def _nr_get_connection_wrapper(wrapped, instance, args, kwargs):
     return conn
 
 
-async def _nr_get_async_connection_wrapper(wrapped, instance, args, kwargs):
-    """Read instance info from async Connection and stash on Transaction."""
+def _nr_get_async_connection_wrapper(wrapped, instance, args, kwargs):
+    """
+    Read instance info from async Connection and stash on Transaction.
+    
+    Only necessary for elasticsearch v7 and below, as v8 supplies metadata with the response.
+    """
 
-    transaction = current_transaction()
+    trace = current_trace()
 
-    if transaction is None:
-        return await wrapped(*args, **kwargs)
+    if trace is None or not isinstance(trace, DatastoreTrace):
+        return wrapped(*args, **kwargs)
 
-    conn = await wrapped(*args, **kwargs)
+    conn = wrapped(*args, **kwargs)
 
-    instance_info = (None, None, None)
+    host = port_path_or_id = "unknown"
     try:
-        tracer_settings = transaction.settings.datastore_tracer
+        tracer_settings = trace.settings.datastore_tracer
 
         if tracer_settings.instance_reporting.enabled:
             host, port_path_or_id = conn._nr_host_port
-            instance_info = (host, port_path_or_id, None)
     except Exception:
-        instance_info = ("unknown", "unknown", None)
+        pass
 
-    transaction._nr_datastore_instance_info = instance_info
+    trace.host = host
+    trace.port_path_or_id = port_path_or_id
 
     return conn
 
@@ -865,7 +877,7 @@ async def _nr_async_perform_request_wrapper(wrapped, instance, args, kwargs):
         return await wrapped(*args, **kwargs)
 
     if not hasattr(instance.node_pool.get, "_nr_wrapped"):
-        instance.node_pool.get = function_wrapper(_nr_get_connection_wrapper)(instance.node_pool.get)
+        instance.node_pool.get = function_wrapper(_nr_get_async_connection_wrapper)(instance.node_pool.get)
         instance.node_pool.get._nr_wrapped = True
 
     return await wrapped(*args, **kwargs)

@@ -13,22 +13,20 @@
 # limitations under the License.
 
 import pytest
-from conftest import ES_SETTINGS, ES_VERSION
-from elasticsearch.serializer import JSONSerializer
+from conftest import ES_SETTINGS, ES_VERSION, ES_URL
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import current_transaction
 
+from testing_support.util import instance_hostname
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+
 try:
     from elasticsearch._async.http_aiohttp import AIOHttpConnection
-    from elasticsearch._async.transport import AsyncTransport
 
     HttpxAsyncHttpNode = None  # Not implemented in v7
-
-    NodeConfig = dict
 except ImportError:
-    from elastic_transport._async_transport import AsyncTransport
-    from elastic_transport._models import NodeConfig
     from elastic_transport._node._http_aiohttp import AiohttpHttpNode as AIOHttpConnection
     from elastic_transport._node._http_httpx import HttpxAsyncHttpNode
 
@@ -41,42 +39,46 @@ RUN_IF_V8 = pytest.mark.skipif(IS_V7 or IS_BELOW_V7, reason="Only run for v8+")
 RUN_IF_V7 = pytest.mark.skipif(IS_V8 or IS_BELOW_V7, reason="Only run for v7")
 RUN_IF_BELOW_V7 = pytest.mark.skipif(not IS_BELOW_V7, reason="Only run for versions below v7")
 
+HOST = instance_hostname(ES_SETTINGS["host"])
+PORT = ES_SETTINGS["port"]
 
-HOST = NodeConfig(scheme="http", host=ES_SETTINGS["host"], port=8080)
 
-METHOD = "/contacts/person/1"
-HEADERS = {"Content-Type": "application/json"}
-DATA = {"name": "Joe Tester"}
-
-BODY = JSONSerializer().dumps(DATA)
-if hasattr(BODY, "encode"):
-    BODY = BODY.encode("utf-8")
+async def _exercise_es(es):
+    if ES_VERSION >= (8,):
+        await es.index(index="contacts", body={"name": "Joe Tester", "age": 25, "title": "QA Engineer"}, id=1)
+    else:
+        await es.index(
+            index="contacts", doc_type="person", body={"name": "Joe Tester", "age": 25, "title": "QA Engineer"}, id=1
+        )
 
 
 @pytest.mark.parametrize(
-    "transport_kwargs, perform_request_kwargs",
+    "client_kwargs",
     [
         pytest.param(
             {"node_class": AIOHttpConnection},
-            {"headers": HEADERS, "body": DATA},
             id="AIOHttpConnectionV8",
             marks=RUN_IF_V8,
         ),
         pytest.param(
             {"node_class": HttpxAsyncHttpNode},
-            {"headers": HEADERS, "body": DATA},
             id="HttpxAsyncHttpNodeV8",
             marks=RUN_IF_V8,
         ),
-        pytest.param({"node_class": AIOHttpConnection}, {"body": DATA}, id="AIOHttpConnectionV7", marks=RUN_IF_V7),
+        pytest.param({"node_class": AIOHttpConnection}, id="AIOHttpConnectionV7", marks=RUN_IF_V7),
     ],
 )
+@validate_transaction_errors(errors=[])
+@validate_transaction_metrics(
+    "test_async_transport:test_async_transport_connection_classes",
+    rollup_metrics=[(f"Datastore/instance/Elasticsearch/{HOST}/{PORT}", 1)],
+    scoped_metrics=[(f"Datastore/instance/Elasticsearch/{HOST}/{PORT}", None)],
+    background_task=True,
+)
 @background_task()
-def test_async_transport_connection_classes(loop, transport_kwargs, perform_request_kwargs):
-    transaction = current_transaction()
+def test_async_transport_connection_classes(loop, client_kwargs):
+    from elasticsearch import AsyncElasticsearch
 
-    transport = AsyncTransport([HOST], **transport_kwargs)
-    loop.run_until_complete(transport.perform_request("POST", METHOD, **perform_request_kwargs))
-
-    expected = (ES_SETTINGS["host"], ES_SETTINGS["port"], None)
-    assert transaction._nr_datastore_instance_info == expected
+    async_client = AsyncElasticsearch(ES_URL, **client_kwargs)
+    loop.run_until_complete(_exercise_es(async_client))
+    loop.run_until_complete(async_client.close())

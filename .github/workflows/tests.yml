@@ -1566,8 +1566,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install --upgrade -r .github/containers/requirements.txt --target=/home/site/wwwroot/.python_packages/lib/site-packages
-          pip install azure-functions requests --target=/home/site/wwwroot/.python_packages/lib/site-packages
+          pip install --upgrade -r .github/containers/requirements.txt #--target=/home/site/wwwroot/.python_packages/lib/site-packages
+          # pip install azure-functions requests --target=/home/site/wwwroot/.python_packages/lib/site-packages
           # pipx inject --force tox -r .github/containers/requirements-tox.txt
 
       # - name: Get Environments

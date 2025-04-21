@@ -77,6 +77,19 @@ def _exercise_es(es):
 # Test
 
 
+@pytest.fixture(scope="session")
+def clients(loop):
+    clients = []
+    for db in ES_MULTIPLE_SETTINGS:
+        es_url = f"http://{db['host']}:{db['port']}"
+        clients.append(Elasticsearch(es_url))
+
+    yield clients
+
+    for client in clients:
+        client.close()
+
+
 @pytest.mark.skipif(len(ES_MULTIPLE_SETTINGS) < 2, reason="Test environment not configured with multiple databases.")
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
@@ -86,10 +99,8 @@ def _exercise_es(es):
     background_task=True,
 )
 @background_task()
-def test_multiple_dbs_enabled():
-    for db in ES_MULTIPLE_SETTINGS:
-        es_url = f"http://{db['host']}:{db['port']}"
-        client = Elasticsearch(es_url)
+def test_multiple_dbs_enabled(clients):
+    for client in clients:
         _exercise_es(client)
 
 
@@ -102,8 +113,6 @@ def test_multiple_dbs_enabled():
     background_task=True,
 )
 @background_task()
-def test_multiple_dbs_disabled():
-    for db in ES_MULTIPLE_SETTINGS:
-        es_url = f"http://{db['host']}:{db['port']}"
-        client = Elasticsearch(es_url)
+def test_multiple_dbs_disabled(clients):
+    for client in clients:
         _exercise_es(client)

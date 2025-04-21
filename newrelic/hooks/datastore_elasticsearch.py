@@ -109,7 +109,7 @@ def instrument_es_methods(module, _class, client_methods, prefix=None):
 def instrument_async_es_methods(module, _class, client_methods, prefix=None):
     for method_name, arg_extractor in client_methods:
         if hasattr(getattr(module, _class), method_name):
-            wrap_elasticsearch_client_method(module, _class, method_name, arg_extractor, prefix)
+            wrap_async_elasticsearch_client_method(module, _class, method_name, arg_extractor, prefix)
 
 
 def wrap_elasticsearch_client_method(module, class_name, method_name, arg_extractor, prefix=None):
@@ -134,18 +134,16 @@ def wrap_elasticsearch_client_method(module, class_name, method_name, arg_extrac
         else:
             operation = method_name
 
-        transaction._nr_datastore_instance_info = (None, None, None)
+        trace = DatastoreTrace(product="Elasticsearch", target=index, operation=operation, source=wrapped)
 
-        dt = DatastoreTrace(product="Elasticsearch", target=index, operation=operation, source=wrapped)
-
-        with dt:
+        with trace:
             result = wrapped(*args, **kwargs)
 
             try:
                 node_config = result.meta.node
-                dt.host = node_config.host
+                trace.host = node_config.host
                 port = node_config.port
-                dt.port_path_or_id = str(port) if port is not None else None
+                trace.port_path_or_id = str(port) if port is not None else None
             except Exception:
                 pass
 
@@ -177,18 +175,16 @@ def wrap_async_elasticsearch_client_method(module, class_name, method_name, arg_
         else:
             operation = method_name
 
-        transaction._nr_datastore_instance_info = (None, None, None)
+        trace = DatastoreTrace(product="Elasticsearch", target=index, operation=operation, source=wrapped)
 
-        dt = DatastoreTrace(product="Elasticsearch", target=index, operation=operation, source=wrapped)
-
-        with dt:
+        with trace:
             result = await wrapped(*args, **kwargs)
 
             try:
                 node_config = result.meta.node
-                dt.host = node_config.host
+                trace.host = node_config.host
                 port = node_config.port
-                dt.port_path_or_id = str(port) if port is not None else None
+                trace.port_path_or_id = str(port) if port is not None else None
             except Exception:
                 pass
 
@@ -662,8 +658,6 @@ def instrument_elasticsearch__async_client_tasks(module):
     # In order to avoid double wrapping we check the version before
     # wrapping.
     if ES_VERSION < (8,):
-        instrument_async_es_methods(module, "TasksClient", _elasticsearch_client_tasks_methods, "tasks")
-    else:
         instrument_async_es_methods(module, "TasksClient", _elasticsearch_client_tasks_methods, "tasks")
 
 

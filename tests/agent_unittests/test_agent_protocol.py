@@ -135,10 +135,7 @@ def override_system_info(monkeypatch):
 def test_send(status_code):
     HttpClientRecorder.STATUS_CODE = status_code
     settings = finalize_application_settings(
-        {
-            "request_headers_map": {"custom-header": "value"},  # pylint: disable=W1406
-            "agent_run_id": "RUN_TOKEN",
-        }
+        {"request_headers_map": {"custom-header": "value"}, "agent_run_id": "RUN_TOKEN"}
     )
     protocol = AgentProtocol(settings, client_cls=HttpClientRecorder)
     response = protocol.send("metric_data", (1, 2, 3))
@@ -363,7 +360,7 @@ def connect_payload_asserts(
     ],
 )
 def test_connect(with_aws, with_ecs, with_pcf, with_gcp, with_azure, with_docker, with_kubernetes, with_ip):
-    global AWS, AZURE, GCP, PCF, BOOT_ID, DOCKER, KUBERNETES, IP_ADDRESS
+    global AWS, AZURE, GCP, PCF, DOCKER, KUBERNETES, IP_ADDRESS
     if not with_aws:
         AWS = Exception
     if not with_pcf:

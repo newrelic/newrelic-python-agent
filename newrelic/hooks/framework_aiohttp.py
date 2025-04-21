@@ -286,7 +286,7 @@ def _nr_aiohttp_request_wrapper_(wrapped, instance, args, kwargs):
             return response
         except Exception as e:
             try:
-                trace.process_response_headers(e.headers.items())  # pylint: disable=E1101
+                trace.process_response_headers(e.headers.items())
             except:
                 pass
 

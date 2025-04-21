@@ -14,7 +14,7 @@
 
 import pytest
 
-import newrelic.api.import_hook as import_hook
+from newrelic.api import import_hook
 from newrelic.config import _module_function_glob
 
 

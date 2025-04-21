@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from newrelic.api.datastore_trace import DatastoreTrace
-from newrelic.api.transaction import current_transaction
 from newrelic.api.time_trace import current_trace
+from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version_tuple
 
@@ -828,7 +828,6 @@ def _nr_get_connection_wrapper(wrapped, instance, args, kwargs):
 def _nr_get_async_connection_wrapper(wrapped, instance, args, kwargs):
     """
     Read instance info from async Connection and stash on Transaction.
-    
     Only necessary for elasticsearch v7 and below, as v8 supplies metadata with the response.
     """
 

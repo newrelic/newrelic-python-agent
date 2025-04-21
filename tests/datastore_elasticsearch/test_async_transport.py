@@ -22,6 +22,7 @@ from newrelic.api.transaction import current_transaction
 try:
     from elasticsearch._async.http_aiohttp import AIOHttpConnection
     from elasticsearch._async.transport import AsyncTransport
+
     HttpxAsyncHttpNode = None  # Not implemented in v7
 
     NodeConfig = dict
@@ -67,9 +68,7 @@ if hasattr(BODY, "encode"):
             id="HttpxAsyncHttpNodeV8",
             marks=RUN_IF_V8,
         ),
-        pytest.param(
-            {"node_class": AIOHttpConnection}, {"body": DATA}, id="AIOHttpConnectionV7", marks=RUN_IF_V7
-        ),
+        pytest.param({"node_class": AIOHttpConnection}, {"body": DATA}, id="AIOHttpConnectionV7", marks=RUN_IF_V7),
     ],
 )
 @background_task()

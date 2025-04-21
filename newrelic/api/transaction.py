@@ -119,7 +119,7 @@ class Sentinel(TimeTrace):
             self.exited = True
 
     @staticmethod
-    def complete_trace():  # pylint: disable=arguments-differ
+    def complete_trace():
         pass
 
     @property

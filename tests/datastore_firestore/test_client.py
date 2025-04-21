@@ -29,7 +29,7 @@ def sample_data(collection):
 @pytest.fixture()
 def exercise_client(client, sample_data):
     def _exercise_client():
-        assert len(list(client.collections()))
+        assert list(client.collections())
         doc = list(client.get_all([sample_data]))[0]
         assert doc.to_dict()["x"] == 1
 

@@ -26,12 +26,7 @@ from newrelic.packages.wrapt import BoundFunctionWrapper as _BoundFunctionWrappe
 from newrelic.packages.wrapt import CallableObjectProxy as _CallableObjectProxy
 from newrelic.packages.wrapt import FunctionWrapper as _FunctionWrapper
 from newrelic.packages.wrapt import ObjectProxy as _ObjectProxy
-from newrelic.packages.wrapt import (  # noqa: F401; pylint: disable=W0611
-    apply_patch,
-    resolve_path,
-    wrap_object,
-    wrap_object_attribute,
-)
+from newrelic.packages.wrapt import apply_patch, resolve_path, wrap_object, wrap_object_attribute  # noqa: F401
 
 # We previously had our own pure Python implementation of the generic
 # object wrapper but we now defer to using the wrapt module as its C

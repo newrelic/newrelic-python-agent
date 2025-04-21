@@ -37,7 +37,7 @@ from newrelic.core.attribute_filter import AttributeFilter
 try:
     import grpc
 
-    from newrelic.core.infinite_tracing_pb2 import Span  # pylint: disable=W0611,C0412  # noqa: F401
+    from newrelic.core.infinite_tracing_pb2 import Span  # noqa: F401
 except Exception:
     grpc = None
 
@@ -892,8 +892,8 @@ _settings.infinite_tracing.batching = _environ_as_bool("NEW_RELIC_INFINITE_TRACI
 _settings.infinite_tracing.ssl = True
 _settings.infinite_tracing.span_queue_size = _environ_as_int("NEW_RELIC_INFINITE_TRACING_SPAN_QUEUE_SIZE", 10000)
 
-_settings.instrumentation.graphql.capture_introspection_queries = os.environ.get(
-    "NEW_RELIC_INSTRUMENTATION_GRAPHQL_CAPTURE_INTROSPECTION_QUERIES", False
+_settings.instrumentation.graphql.capture_introspection_queries = _environ_as_bool(
+    "NEW_RELIC_INSTRUMENTATION_GRAPHQL_CAPTURE_INTROSPECTION_QUERIES", default=False
 )
 
 # celeryev is the monitoring queue for rabbitmq which we do not need to monitor-it just makes a lot of noise.

@@ -15,8 +15,8 @@
 import urllib.parse as urlparse
 from collections import namedtuple
 
-import newrelic.core.attribute as attribute
 import newrelic.core.trace_node
+from newrelic.core import attribute
 from newrelic.core.metric import TimeMetric
 from newrelic.core.node_mixin import GenericNodeMixin
 

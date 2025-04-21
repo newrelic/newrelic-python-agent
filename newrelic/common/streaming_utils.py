@@ -159,8 +159,8 @@ class SpanProtoAttrs(dict):
                 for k, v in arg:
                     self[k] = v
 
-        for k in kwargs:
-            self[k] = kwargs[k]
+        for k, v in kwargs.items():
+            self[k] = v
 
     def __setitem__(self, key, value):
         super(SpanProtoAttrs, self).__setitem__(key, SpanProtoAttrs.get_attribute_value(value))

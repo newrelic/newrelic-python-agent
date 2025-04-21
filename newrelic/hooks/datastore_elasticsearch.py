@@ -139,13 +139,16 @@ def wrap_elasticsearch_client_method(module, class_name, method_name, arg_extrac
         with trace:
             result = wrapped(*args, **kwargs)
 
-            try:
-                node_config = result.meta.node
-                trace.host = node_config.host
-                port = node_config.port
-                trace.port_path_or_id = str(port) if port is not None else None
-            except Exception:
-                pass
+            tracer_settings = trace.settings.datastore_tracer
+
+            if tracer_settings.instance_reporting.enabled:
+                try:
+                    node_config = result.meta.node
+                    trace.host = node_config.host
+                    port = node_config.port
+                    trace.port_path_or_id = str(port) if port is not None else None
+                except Exception:
+                    pass
 
             return result
 
@@ -179,13 +182,16 @@ def wrap_async_elasticsearch_client_method(module, class_name, method_name, arg_
         with trace:
             result = await wrapped(*args, **kwargs)
 
-            try:
-                node_config = result.meta.node
-                trace.host = node_config.host
-                port = node_config.port
-                trace.port_path_or_id = str(port) if port is not None else None
-            except Exception:
-                pass
+            tracer_settings = trace.settings.datastore_tracer
+
+            if tracer_settings.instance_reporting.enabled:
+                try:
+                    node_config = result.meta.node
+                    trace.host = node_config.host
+                    port = node_config.port
+                    trace.port_path_or_id = str(port) if port is not None else None
+                except Exception:
+                    pass
 
             return result
 
@@ -777,7 +783,7 @@ def _nr_get_connection_wrapper(wrapped, instance, args, kwargs):
 
     host = port_path_or_id = "unknown"
     try:
-        tracer_settings = transaction.settings.datastore_tracer
+        tracer_settings = trace.settings.datastore_tracer
 
         if tracer_settings.instance_reporting.enabled:
             host, port_path_or_id = conn._nr_host_port

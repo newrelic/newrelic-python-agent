@@ -1472,8 +1472,8 @@ jobs:
       image: mcr.microsoft.com/azure-functions/python:4-python3.11 #ghcr.io/newrelic/newrelic-python-agent-ci:latest
       ports:
         - 8080:80
-      options: >-
-        --add-host=host.docker.internal:host-gateway
+      # options: >-
+      #   --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     # services:
     #   azurefunctions:
@@ -1568,7 +1568,7 @@ jobs:
         run: |
           pip install --upgrade -r .github/containers/requirements.txt --target=/home/site/wwwroot/.python_packages/lib/site-packages
           pip install azure-functions requests --target=/home/site/wwwroot/.python_packages/lib/site-packages
-          # pipx inject --force tox -r .github/containers/requirements-tox.txt
+          pipx inject --force tox -r .github/containers/requirements-tox.txt
 
       - name: Get Environments
         id: get-envs

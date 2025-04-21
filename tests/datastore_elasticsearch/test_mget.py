@@ -65,7 +65,12 @@ if len(ES_MULTIPLE_SETTINGS) > 1:
     instance_metric_name_1 = f"Datastore/instance/Elasticsearch/{host_1}/{port_1}"
     instance_metric_name_2 = f"Datastore/instance/Elasticsearch/{host_2}/{port_2}"
 
-    _enable_rollup_metrics.extend([(instance_metric_name_1, 2), (instance_metric_name_2, 1)])
+    if ES_VERSION >= (8,):
+        _enable_rollup_metrics.extend([(instance_metric_name_1, 2), (instance_metric_name_2, 1)])
+    else:
+        # Cannot deterministicly set the number of calls to each instance as it's random
+        # which node is selected first and called twice. Instead, check that both metrics are simply present.
+        _enable_rollup_metrics.extend([(instance_metric_name_1, "present"), (instance_metric_name_2, "present")])
 
     _disable_rollup_metrics.extend([(instance_metric_name_1, None), (instance_metric_name_2, None)])
 

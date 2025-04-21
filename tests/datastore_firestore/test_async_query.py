@@ -179,8 +179,8 @@ def patch_partition_queries(monkeypatch, async_client, collection, sample_data):
 def exercise_async_collection_group(async_client, async_collection):
     async def _exercise_async_collection_group():
         async_collection_group = async_client.collection_group(async_collection.id)
-        assert len(await async_collection_group.get()) >= 1
-        assert len([d async for d in async_collection_group.stream()]) >= 1
+        assert await async_collection_group.get()
+        assert [d async for d in async_collection_group.stream()]
 
         partitions = [p async for p in async_collection_group.get_partitions(1)]
         assert len(partitions) == 2

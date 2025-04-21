@@ -488,7 +488,7 @@ def test_sanitize_object():
 
 class TypeErrorString:
     def __str__(self):
-        return 42
+        return 42  # noqa: PLE0307
 
 
 def test_str_raises_type_error():

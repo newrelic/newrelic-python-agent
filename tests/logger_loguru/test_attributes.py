@@ -50,7 +50,7 @@ def test_loguru_default_context_attributes(logger):
     bound_logger = logger.bind(bound_attr=1)
     bound_logger = bound_logger.patch(_patcher)
     with bound_logger.contextualize(contextual_attr=2):
-        bound_logger.error("context_attrs: {}", "arg1", kwarg_attr=4)
+        bound_logger.error("context_attrs: {}", "arg1", kwarg_attr=4)  # noqa: PLE1205
 
 
 @validate_log_events([{"message": "exc_info"}], required_attrs=["context.exception"])

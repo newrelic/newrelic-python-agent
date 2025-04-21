@@ -70,7 +70,7 @@ def logger(request):
         _logger.addHandler(forwarding_handler)
 
         # Uninstrument Logging
-        logging.Logger.callHandlers = logging.Logger.callHandlers.__wrapped__  # noqa, pylint: disable=E1101
+        logging.Logger.callHandlers = logging.Logger.callHandlers.__wrapped__
 
     yield _logger
     del caplog.records[:]

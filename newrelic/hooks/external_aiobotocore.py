@@ -115,6 +115,7 @@ async def wrap_client__make_api_call(wrapped, instance, args, kwargs):
         handle_bedrock_exception(
             exc, is_embedding, model, span_id, trace_id, request_extractor, request_body, ft, transaction
         )
+        raise
 
     if not response or response_streaming and not settings.ai_monitoring.streaming.enabled:
         if ft:

@@ -21,23 +21,8 @@ except Exception:
 
 # Import appropriate generated pb2 file for protobuf version
 if PROTOBUF_VERSION >= (5,):
-    from newrelic.core.infinite_tracing_v5_pb2 import (  # noqa: F401; pylint: disable=W0611
-        AttributeValue,
-        RecordStatus,
-        Span,
-        SpanBatch,
-    )
+    from newrelic.core.infinite_tracing_v5_pb2 import AttributeValue, RecordStatus, Span, SpanBatch  # noqa: F401
 elif PROTOBUF_VERSION >= (4,):
-    from newrelic.core.infinite_tracing_v4_pb2 import (  # noqa: F401; pylint: disable=W0611
-        AttributeValue,
-        RecordStatus,
-        Span,
-        SpanBatch,
-    )
+    from newrelic.core.infinite_tracing_v4_pb2 import AttributeValue, RecordStatus, Span, SpanBatch  # noqa: F401
 else:
-    from newrelic.core.infinite_tracing_v3_pb2 import (  # noqa: F401; pylint: disable=W0611
-        AttributeValue,
-        RecordStatus,
-        Span,
-        SpanBatch,
-    )
+    from newrelic.core.infinite_tracing_v3_pb2 import AttributeValue, RecordStatus, Span, SpanBatch  # noqa: F401

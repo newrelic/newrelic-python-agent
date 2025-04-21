@@ -349,7 +349,6 @@ def gethostname(use_dyno_names=False, dyno_shorten_prefixes=()):
     """
 
     global _nr_cached_hostname
-    global _nr_cached_hostname_lock
 
     if _nr_cached_hostname:
         return _nr_cached_hostname
@@ -371,7 +370,6 @@ def getips():
     """
 
     global _nr_cached_ip_address
-    global _nr_cached_ipaddress_lock
 
     if _nr_cached_ip_address is not None:
         return _nr_cached_ip_address

@@ -122,14 +122,14 @@ def wrap_add_middleware(wrapped, instance, args, kwargs):
     return wrapped(wrap_middleware(middleware), *args, **kwargs)
 
 
-def bind_middleware_starlette(debug=False, routes=None, middleware=None, *args, **kwargs):  # pylint: disable=W1113
+def bind_middleware_starlette(debug=False, routes=None, middleware=None, *args, **kwargs):
     return middleware
 
 
 def wrap_starlette(wrapped, instance, args, kwargs):
     middlewares = bind_middleware_starlette(*args, **kwargs)
     if middlewares:
-        for middleware in middlewares:  # pylint: disable=E1133
+        for middleware in middlewares:
             cls = getattr(middleware, "cls", None)
             if cls and not hasattr(cls, "__wrapped__"):
                 middleware.cls = wrap_middleware(cls)

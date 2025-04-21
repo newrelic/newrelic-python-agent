@@ -32,7 +32,7 @@ _port = DB_SETTINGS["port"]
 class CustomConnection(psycopg2.extensions.connection):
     def __init__(self, *args, **kwargs):
         self.ready = False
-        return super(CustomConnection, self).__init__(*args, **kwargs)
+        super(CustomConnection, self).__init__(*args, **kwargs)
 
     def cursor(self, *args, **kwargs):
         assert self.ready  # Force a failure when generating an explain plan
@@ -42,7 +42,7 @@ class CustomConnection(psycopg2.extensions.connection):
 class CustomCursor(psycopg2.extensions.cursor):
     def __init__(self, *args, **kwargs):
         self.ready = False
-        return super(CustomCursor, self).__init__(*args, **kwargs)
+        super(CustomCursor, self).__init__(*args, **kwargs)
 
     def execute(self, *args, **kwargs):
         assert self.ready  # Force a failure when generating an explain plan

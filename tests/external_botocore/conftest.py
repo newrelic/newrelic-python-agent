@@ -104,7 +104,7 @@ def bedrock_server():
 
 
 # Intercept outgoing requests and log to file for mocking
-RECORDED_HEADERS = set(["x-amzn-requestid", "x-amzn-errortype", "content-type"])
+RECORDED_HEADERS = {"x-amzn-requestid", "x-amzn-errortype", "content-type"}
 
 
 def wrap_botocore_endpoint_Endpoint__do_get_response(wrapped, instance, args, kwargs):
@@ -160,6 +160,6 @@ def bind__do_get_response(request, operation_model, context):
 def wrap_botocore_eventstream_add_data(wrapped, instance, args, kwargs):
     bound_args = bind_args(wrapped, args, kwargs)
     data = bound_args["data"].hex()  # convert bytes to hex for storage
-    prompt = [k for k in BEDROCK_AUDIT_LOG_CONTENTS.keys()][-1]
+    prompt = list(BEDROCK_AUDIT_LOG_CONTENTS.keys())[-1]
     BEDROCK_AUDIT_LOG_CONTENTS[prompt][2].append(data)
     return wrapped(*args, **kwargs)

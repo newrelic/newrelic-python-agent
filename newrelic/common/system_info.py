@@ -34,17 +34,15 @@ except ImportError:
     pass
 
 
-LOCALHOST_EQUIVALENTS = set(
-    [
-        "localhost",
-        "127.0.0.1",
-        "0.0.0.0",  # noqa: S104
-        "0:0:0:0:0:0:0:0",
-        "0:0:0:0:0:0:0:1",
-        "::1",
-        "::",
-    ]
-)
+LOCALHOST_EQUIVALENTS = {
+    "localhost",
+    "127.0.0.1",
+    "0.0.0.0",  # noqa: S104
+    "0:0:0:0:0:0:0:0",
+    "0:0:0:0:0:0:0:1",
+    "::1",
+    "::",
+}
 
 
 def logical_processor_count():

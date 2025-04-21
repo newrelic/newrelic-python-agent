@@ -90,7 +90,7 @@ class DatabaseTrace(TimeTrace):
         return result
 
     def __repr__(self):
-        return f"<{self.__class__.__name__} object at 0x{id(self):x} {dict(sql=self.sql, dbapi2_module=self.dbapi2_module)}>"
+        return f"<{self.__class__.__name__} object at 0x{id(self):x} { {'sql': self.sql, 'dbapi2_module': self.dbapi2_module} }>"
 
     @property
     def is_async_mode(self):

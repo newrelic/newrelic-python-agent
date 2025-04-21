@@ -1568,7 +1568,7 @@ jobs:
         run: |
           pip install --upgrade -r .github/containers/requirements.txt
           # pipx inject --force tox -r .github/containers/requirements-tox.txt
-          pip install --upgrade tox "virtualenv==20.26.6" "setuptools-scm=8.0"
+          pip install --upgrade tox "virtualenv==20.26.6" "setuptools-scm==8.0"
 
       # - name: Get Environments
       #   id: get-envs

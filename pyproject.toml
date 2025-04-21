@@ -57,7 +57,7 @@ select = [
     # "ARG",  # flake8-unused-arguments
     # "PTH",  # flake8-use-pathlib
     "PGH",  # pygrep-hooks
-    # "PL",  # Pylint
+    "PL",  # Pylint
     # "TRY",  # tryceratops
     "FLY",  # flynt
     "PERF",  # Perflint
@@ -90,12 +90,17 @@ ignore = [
     "RUF100",  # unused-noqa (TODO: remove this once all linters are enabled)
     "PERF203",  # try-except-in-loop (most of these are unavoidable)
     "S110",  # try-except-pass (Bandit wants us to log the exception, which is usually pointless. Spot check these later)
+    "PLW0603",  # global-statement (this is currently used extensively)
+    "PLW2901",  # redefined-loop-name (frequently used, not generally an issue)
+    "PLR",  # Pylint Recommendations (too many to fix all at once)
     "E722",  # bare-except (too many to fix all at once)
     # Permanently disabled rules
     "D203",  # incorrect-blank-line-before-class
     "D213",  # multi-line-summary-second-line
     "ARG001",  # unused-argument
     "PYI024",  # collections-named-tuple (not currently using type annotations)
+    "PLR0913", # too-many-arguments
+    "PLR0915",  # too-many-statements
     "E501",  # line-too-long (line length handled by formatter)
     # Ruff recommended linter rules to disable when using formatter
     "W191",  # tab-indentation

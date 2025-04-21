@@ -226,7 +226,7 @@ def DatastoreTraceWrapper(
             _product, _target, _operation, _host, _port_path_or_id, _database_name, parent=parent, source=wrapped
         )
 
-        if wrapper:  # pylint: disable=W0125,W0126
+        if wrapper:
             return wrapper(wrapped, trace)(*args, **kwargs)
 
         with trace:

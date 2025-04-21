@@ -218,7 +218,6 @@ CAT_RESPONSE_CODE = None
 
 
 def cat_response_handler(self):
-    global CAT_RESPONSE_CODE
     # payload
     # (
     #     u'1#1', u'WebTransaction/Function/app:beep',

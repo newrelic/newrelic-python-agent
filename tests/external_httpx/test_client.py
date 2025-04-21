@@ -36,7 +36,6 @@ CAT_RESPONSE_CODE = None
 
 
 def cat_response_handler(self):
-    global CAT_RESPONSE_CODE
     if not CAT_RESPONSE_CODE:
         raise ValueError("CAT_RESPONSE_CODE must be a valid status_code.")
 

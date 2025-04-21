@@ -49,7 +49,7 @@ import requests
 def test_ping():
     # response = requests.get("http://127.0.0.1:8080/basic?user=Reli")
     # assert requests.get("http://127.0.0.1:7071").status_code == 200
-    response = requests.get("http://127.0.0.1:7071/basic?user=Reli")
+    response = requests.get("http://127.0.0.1:8080/basic?user=Reli")
     assert response.status_code == 200
     assert response.text == "Hello, Reli!"
     assert response.headers["Content-Type"] == "text/plain; charset=utf-8"

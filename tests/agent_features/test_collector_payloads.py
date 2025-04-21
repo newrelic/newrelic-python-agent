@@ -52,7 +52,7 @@ def test_transaction_trace_json():
 
 
 @validate_tt_collector_json(exclude_request_uri=True)
-@override_application_settings({"attributes.exclude": set(("request.uri",))})
+@override_application_settings({"attributes.exclude": {"request.uri"}})
 def test_transaction_trace_json_no_request_uri():
     normal_application.get("/")
 

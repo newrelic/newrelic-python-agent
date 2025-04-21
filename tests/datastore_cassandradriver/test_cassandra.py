@@ -70,7 +70,7 @@ def exercise(cluster):
             )
 
             cursor = execute_query(f"select * from {FULL_TABLE_NAME}")
-            _ = [row for row in cursor]
+            _ = list(cursor)
 
             execute_query(
                 f"update {FULL_TABLE_NAME} set b=%(b)s, c=%(c)s where a=%(a)s", {"a": 1, "b": 4.0, "c": "4.0"}

@@ -140,7 +140,7 @@ app_name_map = {
 }
 
 
-target_application = dict()
+target_application = {}
 for app_name, flags in app_name_map.items():
     # Bind options
     middleware_on, debug, exception_handlers = flags

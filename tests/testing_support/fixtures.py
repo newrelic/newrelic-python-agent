@@ -734,15 +734,13 @@ def validate_error_event_sample_data(required_attrs=None, required_user_attrs=Tr
     return _validate_error_event_sample_data
 
 
-SYNTHETICS_INTRINSIC_ATTR_NAMES = set(
-    [
-        "nr.syntheticsResourceId",
-        "nr.syntheticsJobId",
-        "nr.syntheticsMonitorId",
-        "nr.syntheticsType",
-        "nr.syntheticsInitiator",
-    ]
-)
+SYNTHETICS_INTRINSIC_ATTR_NAMES = {
+    "nr.syntheticsResourceId",
+    "nr.syntheticsJobId",
+    "nr.syntheticsMonitorId",
+    "nr.syntheticsType",
+    "nr.syntheticsInitiator",
+}
 
 
 def _validate_event_attributes(intrinsics, user_attributes, required_intrinsics, required_user):

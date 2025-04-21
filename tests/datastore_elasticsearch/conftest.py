@@ -40,7 +40,7 @@ ES_MULTIPLE_SETTINGS = elasticsearch_settings()
 ES_URL = f"http://{ES_SETTINGS['host']}:{ES_SETTINGS['port']}"
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def client():
     from elasticsearch import Elasticsearch
 
@@ -49,7 +49,7 @@ def client():
     _client.close()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def async_client(loop):
     from elasticsearch import AsyncElasticsearch
 

@@ -1568,14 +1568,14 @@ jobs:
         run: |
           pip install --upgrade -r .github/containers/requirements.txt --target=/home/site/wwwroot/.python_packages/lib/site-packages
           pip install azure-functions requests --target=/home/site/wwwroot/.python_packages/lib/site-packages
-          pipx inject --force tox -r .github/containers/requirements-tox.txt
+          # pipx inject --force tox -r .github/containers/requirements-tox.txt
 
-      - name: Get Environments
-        id: get-envs
-        run: |
-          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
-        env:
-          GROUP_NUMBER: ${{ matrix.group-number }}
+      # - name: Get Environments
+      #   id: get-envs
+      #   run: |
+      #     echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
+      #   env:
+      #     GROUP_NUMBER: ${{ matrix.group-number }}
 
       - name: Copy test files
         run: |

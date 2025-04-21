@@ -23,7 +23,7 @@ from sanic import Sanic
 from testing_support.asgi_testing import AsgiTest
 
 # Sanic
-target_application = dict()
+target_application = {}
 
 
 def set_middlware(middleware, view_middleware):
@@ -36,7 +36,7 @@ def set_middlware(middleware, view_middleware):
 
 
 # Sanic
-target_application = dict()
+target_application = {}
 
 sanic_app = Sanic(name="SanicGraphQL")
 sanic_middleware = []

@@ -28,9 +28,7 @@ def create_metric_identity(name, tags=None):
         # Apply attribute system sanitization.
         # process_user_attribute returns (None, None) for results that fail sanitization.
         # The filter removes these results from the iterable before creating the frozenset.
-        tags = frozenset(
-            filter(lambda args: args[0] is not None, map(lambda args: process_user_attribute(*args), tags))
-        )
+        tags = frozenset(filter(lambda args: args[0] is not None, (process_user_attribute(*args) for args in tags)))
 
     tags = tags or None  # Set empty iterables after filtering to None
 

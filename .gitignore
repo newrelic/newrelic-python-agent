@@ -3,7 +3,6 @@
 
 # Linter
 megalinter-reports/
-.pre-commit-config.yaml
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

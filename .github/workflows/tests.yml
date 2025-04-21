@@ -1552,7 +1552,8 @@ jobs:
 
       - name: Install dependencies for main python installation
         run: |
-          pyenv exec pip install --upgrade -r .github/containers/requirements.txt
+          # pyenv exec pip install --upgrade -r .github/containers/requirements.txt
+          pip install --upgrade -r .github/containers/requirements.txt
 
       - name: Install tools with pipx in isolated environments
         run: |

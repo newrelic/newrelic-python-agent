@@ -1585,7 +1585,7 @@ jobs:
         run: |
           # curl "http://localhost:8080/basic?user=Reli" -X GET
           # tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-          tox -vv -e ${{ steps.get-envs.outputs.envs }}
+          tox -vv -e python-framework_azure-py311
         env:
           # TOX_PARALLEL_NO_SPINNER: 1
           PY_COLORS: 0

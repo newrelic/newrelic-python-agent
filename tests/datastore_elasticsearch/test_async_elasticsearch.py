@@ -11,9 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import elasticsearch._async.client as client
+from elasticsearch._async import client
 from conftest import ES_SETTINGS, ES_VERSION
-from testing_support.fixture.event_loop import event_loop as loop  # noqa: F401
+from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
@@ -65,9 +65,9 @@ def is_importable(module_path):
         return False
 
 
-_all_count = 17
+_all_count = 14
 
-if is_importable("elasticsearch._async.client.cat") or is_importable("elasticsearch._async.client.cat"):
+if is_importable("elasticsearch._async.client.cat"):
     _base_scoped_metrics.append(("Datastore/operation/Elasticsearch/cat.health", 1))
     _base_rollup_metrics.append(("Datastore/operation/Elasticsearch/cat.health", 1))
     _all_count += 1
@@ -75,7 +75,7 @@ else:
     _base_scoped_metrics.append(("Datastore/operation/Elasticsearch/cat.health", None))
     _base_rollup_metrics.append(("Datastore/operation/Elasticsearch/cat.health", None))
 
-if is_importable("elasticsearch._async.client.nodes") or is_importable("elasticsearch._async.client.nodes"):
+if is_importable("elasticsearch._async.client.nodes"):
     _base_scoped_metrics.append(("Datastore/operation/Elasticsearch/nodes.info", 1))
     _base_rollup_metrics.append(("Datastore/operation/Elasticsearch/nodes.info", 1))
     _all_count += 1
@@ -91,7 +91,7 @@ else:
     _base_scoped_metrics.append(("Datastore/operation/Elasticsearch/snapshot.status", None))
     _base_rollup_metrics.append(("Datastore/operation/Elasticsearch/snapshot.status", None))
 
-if hasattr(client.IndicesClient, "status"):
+if hasattr(client, "IndicesClient") and hasattr(client.IndicesClient, "status"):
     _base_scoped_metrics.append(("Datastore/statement/Elasticsearch/_all/indices.status", 1))
     _base_rollup_metrics.extend(
         [

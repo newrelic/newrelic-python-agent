@@ -1577,9 +1577,9 @@ jobs:
       #   env:
       #     GROUP_NUMBER: ${{ matrix.group-number }}
 
-      - name: Copy test files
-        run: |
-          cp -r ./tests/framework_azure/* /home/site/wwwroot/
+      # - name: Copy test files
+      #   run: |
+      #     cp -r ./tests/framework_azure/* /home/site/wwwroot/
 
       - name: Test
         run: |

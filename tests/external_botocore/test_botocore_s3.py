@@ -24,7 +24,7 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
 
-MOTO_VERSION = MOTO_VERSION = get_package_version_tuple("moto")
+MOTO_VERSION = get_package_version_tuple("moto")
 BOTOCORE_VERSION = get_package_version_tuple("botocore")
 
 AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"

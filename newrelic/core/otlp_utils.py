@@ -81,7 +81,7 @@ if otlp_content_setting == "json":
 
 
 def otlp_encode(payload):
-    if type(payload) is dict:  # pylint: disable=C0123
+    if type(payload) is dict:
         _logger.warning(
             "Using OTLP integration while protobuf is not installed. This may result in larger payload sizes and data loss."
         )
@@ -159,7 +159,7 @@ def stats_to_otlp_metrics(metric_data, start_time, end_time):
     for name, metric_container in metric_data:
         # Types are checked here using type() instead of isinstance, as CountStats is a subclass of TimeStats.
         # Imporperly checking with isinstance will lead to count metrics being encoded and reported twice.
-        if any(type(metric) is CountStats for metric in metric_container.values()):  # pylint: disable=C0123
+        if any(type(metric) is CountStats for metric in metric_container.values()):
             # Metric contains Sum metric data points.
             yield Metric(
                 name=name,
@@ -174,11 +174,11 @@ def stats_to_otlp_metrics(metric_data, start_time, end_time):
                             attributes=create_key_values_from_iterable(tags),
                         )
                         for tags, value in metric_container.items()
-                        if type(value) is CountStats  # pylint: disable=C0123
+                        if type(value) is CountStats
                     ],
                 ),
             )
-        if any(type(metric) is TimeStats for metric in metric_container.values()):  # pylint: disable=C0123
+        if any(type(metric) is TimeStats for metric in metric_container.values()):
             # Metric contains Summary metric data points.
             yield Metric(
                 name=name,
@@ -191,7 +191,7 @@ def stats_to_otlp_metrics(metric_data, start_time, end_time):
                             attributes=create_key_values_from_iterable(tags),
                         )
                         for tags, value in metric_container.items()
-                        if type(value) is TimeStats  # pylint: disable=C0123
+                        if type(value) is TimeStats
                     ]
                 ),
             )

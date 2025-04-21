@@ -18,7 +18,6 @@ import time
 import zlib
 from pprint import pprint
 
-import newrelic.packages.urllib3 as urllib3
 from newrelic import version
 from newrelic.common import certs
 from newrelic.common.encoding_utils import json_decode, json_encode, obfuscate_license_key
@@ -26,6 +25,7 @@ from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import patch_function_wrapper
 from newrelic.core.internal_metrics import internal_count_metric, internal_metric
 from newrelic.network.exceptions import NetworkInterfaceException
+from newrelic.packages import urllib3
 
 try:
     from ssl import get_default_verify_paths
@@ -239,7 +239,7 @@ class HttpClient(BaseClient):
         default_content_encoding_header="Identity",
     ):
         self._host = host
-        port = self._port = port
+        self._port = port
         self._compression_threshold = compression_threshold
         self._compression_level = compression_level
         self._compression_method = compression_method

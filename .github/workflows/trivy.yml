@@ -25,7 +25,7 @@ jobs:
   # Upload Trivy data
   trivy:
     if: success() || failure() # Does not run on cancelled workflows
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       # Git Checkout
       - name: Checkout Code

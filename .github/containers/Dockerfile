@@ -64,7 +64,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
 
 # Install addlicense binary
 ARG ADDLICENSE_VERSION=1.1.1
-RUN [[ "$TARGETPLATFORM" == "linux/amd64" ]] && ARCH="x86_64" || ARCH="arm64" && \
+RUN if [ "${TARGETPLATFORM}" = "linux/amd64" ]; then export ARCH="x86_64"; else export ARCH="arm64"; fi && \
     mkdir -p /tmp/addlicense && \
     wget https://github.com/google/addlicense/releases/download/v${ADDLICENSE_VERSION}/addlicense_${ADDLICENSE_VERSION}_Linux_${ARCH}.tar.gz \
         -O /tmp/addlicense/addlicense.tar.gz && \
@@ -86,7 +86,7 @@ RUN cd /tmp && \
     rm -rf ./librdkafka-${LIBRDKAFKA_VERSION}
 
 # Setup ODBC config
-RUN [[ "$TARGETPLATFORM" == "linux/amd64" ]] && ARCH="x86_64" || ARCH="aarch64" && \
+RUN if [ "${TARGETPLATFORM}" = "linux/amd64" ]; then export ARCH="x86_64"; else export ARCH="aarch64"; fi && \
     sed -i 's|Driver=psqlodbca.so|Driver=/usr/lib/${ARCH}-linux-gnu/odbc/psqlodbca.so|g' /etc/odbcinst.ini && \
     sed -i 's|Driver=psqlodbcw.so|Driver=/usr/lib/${ARCH}-linux-gnu/odbc/psqlodbcw.so|g' /etc/odbcinst.ini && \
     sed -i 's|Setup=libodbcpsqlS.so|Setup=/usr/lib/${ARCH}-linux-gnu/odbc/libodbcpsqlS.so|g' /etc/odbcinst.ini

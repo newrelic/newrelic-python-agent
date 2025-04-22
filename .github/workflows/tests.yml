@@ -1472,6 +1472,7 @@ jobs:
       image: mcr.microsoft.com/azure-functions/python:4-python3.10 #ghcr.io/newrelic/newrelic-python-agent-ci:latest
       ports:
         - 8080:80
+        - 8081:80
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30

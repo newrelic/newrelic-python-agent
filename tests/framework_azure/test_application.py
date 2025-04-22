@@ -22,6 +22,7 @@
 
 # import pytest
 import requests
+from testing_support.db_settings import azurefunction_settings
 
 # from testing_support.validators.validate_transaction_metrics import (
 #     validate_transaction_metrics,
@@ -36,9 +37,17 @@ import requests
 # from azure_functions_worker.main import start_async
 # from azure_functions_worker.utils.dependency import DependencyManager
 
-# from testing_support.db_settings import azurefunction_settings
+
 # from testing_support.util import instance_hostname
 
+DB_SETTINGS = azurefunction_settings()[0]
+AZURE_HOST = DB_SETTINGS["host"]
+AZURE_PORT = DB_SETTINGS["port"]
+
+
+# Metric checks example:
+# INSTANCE_METRIC_HOST = system_info.gethostname() if MONGODB_HOST == "127.0.0.1" else MONGODB_HOST
+# INSTANCE_METRIC_NAME = f"Datastore/instance/MongoDB/{INSTANCE_METRIC_HOST}/{MONGODB_PORT}"
 
 # @validate_transaction_metrics(
 #     "test_application:test_ping",
@@ -47,13 +56,8 @@ import requests
 # )
 # @web_transaction(name="test_application:test_ping", group="AzureFunction")
 def test_ping():
-    try:
-        requests.get("http://127.0.0.1:80")
-    except:
-        requests.get("http://127.0.0.1:8080")
-    # assert requests.get("http://127.0.0.1:80").status_code == 200
-    response = requests.get("http://127.0.0.1:8080/basic?user=Reli")
-    # response = requests.get("http://127.0.0.1:7071/basic?user=Reli")
+    # response = requests.get("http://127.0.0.1:8080/basic?user=Reli")
+    response = requests.get(f"http://{AZURE_HOST}:{AZURE_PORT}/basic?user=Reli")
     assert response.status_code == 200
     assert response.text == "Hello, Reli!"
     assert response.headers["Content-Type"] == "text/plain; charset=utf-8"

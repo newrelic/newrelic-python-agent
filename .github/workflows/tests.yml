@@ -1473,8 +1473,8 @@ jobs:
       ports:
         - 8080:80
         - 8081:80
-      options: >-
-        --add-host=host.docker.internal:host-gateway
+      # options: >-
+      #   --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     # services:
     #   azurefunctions:

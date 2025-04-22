@@ -56,7 +56,7 @@ def test_agent_control_not_enabled(monkeypatch, tmp_path):
 
 def test_write_to_file_healthy_status(monkeypatch, tmp_path):
     # Setup expected env vars to run agent control health check
-    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_ENABLED", True)
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_ENABLED", "True")
     file_path = tmp_path.as_uri()
     monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", file_path)
 
@@ -76,7 +76,7 @@ def test_write_to_file_healthy_status(monkeypatch, tmp_path):
 
 def test_write_to_file_unhealthy_status(monkeypatch, tmp_path):
     # Setup expected env vars to run agent control health check
-    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_ENABLED", True)
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_ENABLED", "True")
     file_path = tmp_path.as_uri()
     monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", file_path)
 
@@ -100,7 +100,7 @@ def test_write_to_file_unhealthy_status(monkeypatch, tmp_path):
 
 def test_no_override_on_unhealthy_shutdown(monkeypatch, tmp_path):
     # Setup expected env vars to run agent control health check
-    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_ENABLED", True)
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_ENABLED", "True")
     file_path = tmp_path.as_uri()
     monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", file_path)
 
@@ -127,7 +127,7 @@ def test_health_check_running_threads(monkeypatch, tmp_path):
     # Only the main thread should be running since not agent control env vars are set
     assert len(running_threads) == 1
 
-    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_ENABLED", True)
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_ENABLED", "True")
     file_path = tmp_path.as_uri()
     monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", file_path)
 
@@ -144,7 +144,7 @@ def test_health_check_running_threads(monkeypatch, tmp_path):
 
 def test_proxy_error_status(monkeypatch, tmp_path):
     # Setup expected env vars to run agent control health check
-    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_ENABLED", True)
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_ENABLED", "True")
     file_path = tmp_path.as_uri()
     monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", file_path)
 
@@ -173,7 +173,7 @@ def test_proxy_error_status(monkeypatch, tmp_path):
 
 def test_multiple_activations_running_threads(monkeypatch, tmp_path):
     # Setup expected env vars to run agent control health check
-    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_ENABLED", True)
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_ENABLED", "True")
     file_path = tmp_path.as_uri()
     monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", file_path)
 
@@ -198,7 +198,7 @@ def test_multiple_activations_running_threads(monkeypatch, tmp_path):
 
 def test_update_to_healthy(monkeypatch, tmp_path):
     # Setup expected env vars to run agent control health check
-    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_ENABLED", True)
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_ENABLED", "True")
     file_path = tmp_path.as_uri()
     monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", file_path)
 
@@ -226,7 +226,7 @@ def test_update_to_healthy(monkeypatch, tmp_path):
 
 def test_max_app_name_status(monkeypatch, tmp_path):
     # Setup expected env vars to run agent control health check
-    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_ENABLED", True)
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_ENABLED", "True")
     file_path = tmp_path.as_uri()
     monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", file_path)
 

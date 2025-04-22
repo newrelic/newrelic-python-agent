@@ -57,7 +57,7 @@ select = [
     "ICN",  # flake8-import-conventions
     "LOG",  # flake8-logging
     "G",  # flake8-logging-format
-    # "INP",  # flake8-no-pep420
+    "INP",  # flake8-no-pep420
     "PYI",  # flake8-pyi
     # "PT",  # flake8-pytest-style
     "Q",  # flake8-quotes

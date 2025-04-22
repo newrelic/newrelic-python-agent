@@ -34,3 +34,10 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 1
+    groups:
+      cibuildwheel:
+        patterns:
+          - "pypa/cibuildwheel*"
+      other:
+        patterns:
+          - "*"

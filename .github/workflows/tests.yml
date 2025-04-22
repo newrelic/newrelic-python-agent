@@ -1542,9 +1542,9 @@ jobs:
       - name: Create directory for Azure Functions
         run: |
           mkdir -p /home/site/wwwroot/.python_packages/lib/site-packages
-          cp /tests/framework_azure/function_app.py /home/site/wwwroot/
-          cp /tests/framework_azure/host.json /home/site/wwwroot/
-          cp /tests/framework_azure/local.settings.json /home/site/wwwroot/
+          cp .tests/framework_azure/function_app.py /home/site/wwwroot/
+          cp .tests/framework_azure/host.json /home/site/wwwroot/
+          cp .tests/framework_azure/local.settings.json /home/site/wwwroot/
 
       - name: Install pyenv
         run: |

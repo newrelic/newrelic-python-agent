@@ -1472,8 +1472,8 @@ jobs:
       image: mcr.microsoft.com/azure-functions/python:4-python3.10 #ghcr.io/newrelic/newrelic-python-agent-ci:latest
       ports:
         - 8080:80
-      # options: >-
-      #   --add-host=host.docker.internal:host-gateway
+      options: >-
+        --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     # services:
     #   azurefunctions:
@@ -1583,10 +1583,6 @@ jobs:
 
       - name: Test
         run: |
-          # export PYTHONPATH=${PYTHONPATH}:/home/site/wwwroot/.python_packages/lib/site-packages
-          # export AzureWebJobsScriptRoot=/home/site/wwwroot
-          # curl "http://localhost:8080/basic?user=Reli" -X GET
-          # tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
           tox -vv -e python-framework_azure-py310
         env:
           TOX_PARALLEL_NO_SPINNER: 1

@@ -1555,14 +1555,14 @@ jobs:
           # pyenv exec pip install --upgrade -r .github/containers/requirements.txt
           pip install --upgrade -r .github/containers/requirements.txt
 
-      # - name: Install tools with pipx in isolated environments
-      #   run: |
-      #     export PIPX_BIN_DIR="/opt/pipx/bin"
-      #     export PATH="${PIPX_BIN_DIR}:${PATH}"
-      #     mkdir -p "${PIPX_BIN_DIR}" && while IFS="" read -r line || [ -n "$line" ]; do \
-      #     # pyenv exec pipx install --global "${line}"; \
-      #     pipx install --global "${line}"; \
-      #     done <.github/containers/requirements-tools.txt 
+      - name: Install tools with pipx in isolated environments
+        run: |
+          export PIPX_BIN_DIR="/opt/pipx/bin"
+          export PATH="${PIPX_BIN_DIR}:${PATH}"
+          mkdir -p "${PIPX_BIN_DIR}" && while IFS="" read -r line || [ -n "$line" ]; do \
+          # pyenv exec pipx install --global "${line}"; \
+          pipx install --global "${line}"; \
+          done <.github/containers/requirements-tools.txt 
 
       - name: Install dependencies
         run: |

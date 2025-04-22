@@ -141,7 +141,11 @@ ignore = [
     "F401",  # unused-import
     "F811",  # redefined-while-unused (pytest fixtures trigger this)
     "F841",  # unused-variable (intentional in tests to document what an unused output is)
+    "RUF012",  # mutable-class-default
+    "RUF015",  # unnecessary-iterable-allocation-for-first-element (more readable in tests)
     "E731",  # lambda-assignment (acceptable in tests)
+    "RUF012",  # mutable-class-default
+    "RUF015",  # unnecessary-iterable-allocation-for-first-element (more readable in tests)
     "PLR2004",  # magic-value-comparison (comparing to constant values)
     "ASYNC251",  # blocking-sleep-in-async-function (acceptable in tests)
     "B904",  # raise-without-from-inside-except (not necessary in tests)

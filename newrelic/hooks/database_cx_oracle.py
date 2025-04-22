@@ -19,7 +19,7 @@ from newrelic.hooks.database_dbapi2 import ConnectionFactory
 
 class SessionPoolProxy(ObjectProxy):
     def __init__(self, pool, dbapi2_module):
-        super(SessionPoolProxy, self).__init__(pool)
+        super().__init__(pool)
         self._nr_dbapi2_module = dbapi2_module
 
     def acquire(self, *args, **kwargs):
@@ -40,7 +40,7 @@ class SessionPoolProxy(ObjectProxy):
 
 class CreateSessionPoolProxy(ObjectProxy):
     def __init__(self, pool_init, dbapi2_module):
-        super(CreateSessionPoolProxy, self).__init__(pool_init)
+        super().__init__(pool_init)
         self._nr_dbapi2_module = dbapi2_module
 
     def __call__(self, *args, **kwargs):

@@ -80,7 +80,7 @@ class LoopNode(_LoopNode, GenericNodeMixin):
         )
 
     def span_event(self, *args, **kwargs):
-        attrs = super(LoopNode, self).span_event(*args, **kwargs)
+        attrs = super().span_event(*args, **kwargs)
         i_attrs = attrs[0]
 
         i_attrs["name"] = f"EventLoop/Wait/{self.name}"

@@ -43,7 +43,7 @@ class MockExternalHTTPServer(threading.Thread):
     host = "localhost"
 
     def __init__(self, handler=simple_get, port=None, *args, **kwargs):
-        super(MockExternalHTTPServer, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.daemon = True
         handler = type(
             "ResponseHandler",
@@ -121,4 +121,4 @@ class MockExternalHTTPHResponseHeadersServer(MockExternalHTTPServer):
     """
 
     def __init__(self, handler=incoming_headers_to_body_text, port=None):
-        super(MockExternalHTTPHResponseHeadersServer, self).__init__(handler=handler, port=port)
+        super().__init__(handler=handler, port=port)

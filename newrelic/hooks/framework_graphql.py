@@ -196,7 +196,7 @@ def traverse_deepest_unique_path(fields, fragments):
 
             # list(fragments.values())[0] 's index is OK because the previous line
             # ensures that there is only one field in the list
-            full_fragment_selection_set = list(fragments.values())[0].selection_set.selections
+            full_fragment_selection_set = next(iter(fragments.values())).selection_set.selections
             fragment_selection_set = filter_ignored_fields(full_fragment_selection_set)
 
             if len(fragment_selection_set) != 1:

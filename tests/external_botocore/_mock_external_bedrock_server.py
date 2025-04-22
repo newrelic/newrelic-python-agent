@@ -15,8 +15,9 @@
 import json
 import re
 
-from external_botocore._mock_bedrock_encoding_utils import encode_streaming_payload
 from testing_support.mock_external_http_server import MockExternalHTTPServer
+
+from external_botocore._mock_bedrock_encoding_utils import encode_streaming_payload
 
 # This defines an external server test apps can make requests to instead of
 # the real Bedrock backend. This provides 3 features:

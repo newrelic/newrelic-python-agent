@@ -120,9 +120,12 @@ async def wrap_dispatcher__run_async_func(wrapped, instance, args, kwargs):
             cold_start = False
 
         website_owner_name = os.environ.get("WEBSITE_OWNER_NAME", None)
-        subscription_id = re.search(r"(?:(?!\+).)*", website_owner_name) and re.search(
-            r"(?:(?!\+).)*", website_owner_name
-        ).group(1)
+        if not website_owner_name:
+            subscription_id = None
+        else:
+            subscription_id = re.search(r"(?:(?!\+).)*", website_owner_name) and re.search(
+                r"(?:(?!\+).)*", website_owner_name
+            ).group(1)
         resource_group_name = os.environ.get(
             "WEBSITE_RESOURCE_GROUP",
             None,
@@ -218,9 +221,12 @@ def wrap_dispatcher__run_sync_func(wrapped, instance, args, kwargs):
             cold_start = False
 
         website_owner_name = os.environ.get("WEBSITE_OWNER_NAME", None)
-        subscription_id = re.search(r"(?:(?!\+).)*", website_owner_name) and re.search(
-            r"(?:(?!\+).)*", website_owner_name
-        ).group(1)
+        if not website_owner_name:
+            subscription_id = None
+        else:
+            subscription_id = re.search(r"(?:(?!\+).)*", website_owner_name) and re.search(
+                r"(?:(?!\+).)*", website_owner_name
+            ).group(1)
         resource_group_name = os.environ.get(
             "WEBSITE_RESOURCE_GROUP",
             None,

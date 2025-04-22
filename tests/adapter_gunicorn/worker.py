@@ -44,6 +44,6 @@ class AsgiWorker(SyncWorker):
         self.wsgi = WsgiProxy(asgi)
 
         try:
-            return super(AsgiWorker, self).handle_request(*args, **kwargs)
+            return super().handle_request(*args, **kwargs)
         finally:
             self.wsgi = asgi

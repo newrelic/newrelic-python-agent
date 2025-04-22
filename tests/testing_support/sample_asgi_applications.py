@@ -86,7 +86,7 @@ class AppWithCallRaw:
 class AppWithCall(AppWithCallRaw):
     @ASGIApplicationWrapper
     async def __call__(self, scope, receive, send):
-        return await super(AppWithCall, self).__call__(scope, receive, send)
+        return await super().__call__(scope, receive, send)
 
 
 simple_app_v2 = ASGIApplicationWrapper(simple_app_v2_raw)

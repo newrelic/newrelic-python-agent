@@ -22,7 +22,7 @@ DEFAULT = object()
 
 class CursorWrapper(ObjectProxy):
     def __init__(self, cursor, dbapi2_module, connect_params, cursor_params):
-        super(CursorWrapper, self).__init__(cursor)
+        super().__init__(cursor)
         self._nr_dbapi2_module = dbapi2_module
         self._nr_connect_params = connect_params
         self._nr_cursor_params = cursor_params
@@ -94,7 +94,7 @@ class ConnectionWrapper(ObjectProxy):
     __cursor_wrapper__ = CursorWrapper
 
     def __init__(self, connection, dbapi2_module, connect_params):
-        super(ConnectionWrapper, self).__init__(connection)
+        super().__init__(connection)
         self._nr_dbapi2_module = dbapi2_module
         self._nr_connect_params = connect_params
 
@@ -126,7 +126,7 @@ class ConnectionFactory(ObjectProxy):
     __connection_wrapper__ = ConnectionWrapper
 
     def __init__(self, connect, dbapi2_module):
-        super(ConnectionFactory, self).__init__(connect)
+        super().__init__(connect)
         self._nr_dbapi2_module = dbapi2_module
 
     def __call__(self, *args, **kwargs):

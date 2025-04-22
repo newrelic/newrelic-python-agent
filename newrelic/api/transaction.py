@@ -87,7 +87,7 @@ PARENT_TYPE = {"0": "App", "1": "Browser", "2": "Mobile"}
 
 class Sentinel(TimeTrace):
     def __init__(self, transaction):
-        super(Sentinel, self).__init__(None)
+        super().__init__(None)
         self.transaction = transaction
 
         # Set the thread id to the same as the transaction

@@ -45,7 +45,7 @@ class CursorWrapper(DBAPI2CursorWrapper):
         if hasattr(sql, "as_string"):
             sql = sql.as_string(self)
 
-        return super(CursorWrapper, self).execute(sql, parameters, *args, **kwargs)
+        return super().execute(sql, parameters, *args, **kwargs)
 
     def __enter__(self):
         self.__wrapped__.__enter__()
@@ -55,7 +55,7 @@ class CursorWrapper(DBAPI2CursorWrapper):
         if hasattr(sql, "as_string"):
             sql = sql.as_string(self)
 
-        return super(CursorWrapper, self).executemany(sql, seq_of_parameters)
+        return super().executemany(sql, seq_of_parameters)
 
 
 class ConnectionSaveParamsWrapper(DBAPI2ConnectionWrapper):
@@ -114,7 +114,7 @@ class ConnectionFactory(DBAPI2ConnectionFactory):
         if _bind_connect(*args, **kwargs):
             self.__connection_wrapper__ = ConnectionSaveParamsWrapper
 
-        return super(ConnectionFactory, self).__call__(*args, **kwargs)
+        return super().__call__(*args, **kwargs)
 
 
 def instance_info(args, kwargs):

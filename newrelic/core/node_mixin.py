@@ -110,7 +110,7 @@ class DatastoreNodeMixin(GenericNodeMixin):
 
     def span_event(self, *args, **kwargs):
         self.agent_attributes["db.instance"] = self.db_instance
-        attrs = super(DatastoreNodeMixin, self).span_event(*args, **kwargs)
+        attrs = super().span_event(*args, **kwargs)
         i_attrs = attrs[0]
         a_attrs = attrs[2]
 

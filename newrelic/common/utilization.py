@@ -44,7 +44,7 @@ class UtilizationHttpClient(InsecureHttpClient):
         finally:
             sock.close()
 
-        return super(UtilizationHttpClient, self).send_request(*args, **kwargs)
+        return super().send_request(*args, **kwargs)
 
 
 class CommonUtilization:
@@ -227,7 +227,7 @@ class GCPUtilization(CommonUtilization):
         else:
             formatted = data
 
-        return super(GCPUtilization, cls).normalize(key, formatted)
+        return super().normalize(key, formatted)
 
 
 class PCFUtilization(CommonUtilization):

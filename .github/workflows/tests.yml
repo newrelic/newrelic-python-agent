@@ -1542,6 +1542,9 @@ jobs:
       - name: Create directory for Azure Functions
         run: |
           mkdir -p /home/site/wwwroot/.python_packages/lib/site-packages
+          cp /tests/framework_azure/function_app.py /home/site/wwwroot/
+          cp /tests/framework_azure/host.json /home/site/wwwroot/
+          cp /tests/framework_azure/local.settings.json /home/site/wwwroot/
 
       - name: Install pyenv
         run: |
@@ -1569,6 +1572,7 @@ jobs:
           # pipx inject --force tox -r .github/containers/requirements-tox.txt
           pip install --upgrade -r .github/containers/requirements-tox.txt
           pip install --upgrade packaging twine
+          pip install azure-functions requests --target=/home/site/wwwroot/.python_packages/lib/site-packages
 
       - name: Get Environments
         id: get-envs
@@ -1579,6 +1583,8 @@ jobs:
 
       - name: Test
         run: |
+          export PYTHONPATH=${PYTHONPATH}:/home/site/wwwroot/.python_packages/lib/site-packages
+          export AzureWebJobsScriptRoot=/home/site/wwwroot
           # curl "http://localhost:8080/basic?user=Reli" -X GET
           # tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
           tox -vv -e python-framework_azure-py311

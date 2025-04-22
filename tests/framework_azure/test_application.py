@@ -47,8 +47,8 @@ import requests
 # )
 # @web_transaction(name="test_application:test_ping", group="AzureFunction")
 def test_ping():
-    assert requests.get("http://127.0.0.1:8080").status_code == 200
-    response = requests.get("http://127.0.0.1:8080/basic?user=Reli")
+    assert requests.get("http://127.0.0.1:80").status_code == 200
+    response = requests.get("http://127.0.0.1:80/basic?user=Reli")
     # response = requests.get("http://127.0.0.1:7071/basic?user=Reli")
     assert response.status_code == 200
     assert response.text == "Hello, Reli!"

@@ -1469,7 +1469,7 @@ jobs:
 
     runs-on: ubuntu-22.04
     container:
-      image: mcr.microsoft.com/azure-functions/python:4-python3.11 #ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      image: mcr.microsoft.com/azure-functions/python:4-python3.10 #ghcr.io/newrelic/newrelic-python-agent-ci:latest
       ports:
         - 8080:80
       # options: >-

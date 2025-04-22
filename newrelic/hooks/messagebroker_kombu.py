@@ -92,7 +92,12 @@ def wrap_Producer_publish(wrapped, instance, args, kwargs):
     if transaction is None:
         return wrapped(*args, **kwargs)
 
-    bound_args = bind_publish(*args, **kwargs)
+    try:
+        bound_args = bind_publish(*args, **kwargs)
+    except Exception:
+        _logger.debug("Unable to bind publish arguments. Report this issue to New Relic support.", record_exception=True)
+        return wrapped(*args, **kwargs)
+
     headers = bound_args["headers"]
     headers = headers if headers else {}
     value = bound_args["body"]

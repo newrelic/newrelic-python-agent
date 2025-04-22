@@ -94,3 +94,13 @@ def test_producer_errors(exchange, producer, queue, monkeypatch):
             producer.publish({"foo": object()}, exchange=exchange, routing_key="bar", declare=[queue])
 
     test()
+
+
+def test_producer_tries_to_parse_args(exchange, producer, queue, monkeypatch):
+    @validate_transaction_errors([callable_name(EncodeError)])
+    @background_task()
+    def test():
+        with pytest.raises(TypeError):
+            producer.publish({"foo": object()}, body={"foo": object()}, exchange=exchange, routing_key="bar", declare=[queue])
+
+    test()

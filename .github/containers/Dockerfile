@@ -14,6 +14,7 @@
 # limitations under the License.
 
 FROM ubuntu:20.04
+ARG TARGETPLATFORM
 
 # Install OS packages
 RUN export DEBIAN_FRONTEND=noninteractive && \
@@ -61,6 +62,17 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         zsh && \
     rm -rf /var/lib/apt/lists/*
 
+# Install addlicense binary
+ARG ADDLICENSE_VERSION=1.1.1
+RUN if [ "${TARGETPLATFORM}" = "linux/amd64" ]; then export ARCH="x86_64"; else export ARCH="arm64"; fi && \
+    mkdir -p /tmp/addlicense && \
+    wget https://github.com/google/addlicense/releases/download/v${ADDLICENSE_VERSION}/addlicense_${ADDLICENSE_VERSION}_Linux_${ARCH}.tar.gz \
+        -O /tmp/addlicense/addlicense.tar.gz && \
+        tar -xzvf /tmp/addlicense/addlicense.tar.gz -C /tmp/addlicense && \
+    mv /tmp/addlicense/addlicense /usr/local/bin/addlicense && \
+    rm -rf /tmp/addlicense && \
+    chmod +x /usr/local/bin/addlicense
+
 # Build librdkafka from source
 ARG LIBRDKAFKA_VERSION=2.1.1
 RUN cd /tmp && \
@@ -74,9 +86,10 @@ RUN cd /tmp && \
     rm -rf ./librdkafka-${LIBRDKAFKA_VERSION}
 
 # Setup ODBC config
-RUN sed -i 's|Driver=psqlodbca.so|Driver=/usr/lib/x86_64-linux-gnu/odbc/psqlodbca.so|g' /etc/odbcinst.ini && \
-    sed -i 's|Driver=psqlodbcw.so|Driver=/usr/lib/x86_64-linux-gnu/odbc/psqlodbcw.so|g' /etc/odbcinst.ini && \
-    sed -i 's|Setup=libodbcpsqlS.so|Setup=/usr/lib/x86_64-linux-gnu/odbc/libodbcpsqlS.so|g' /etc/odbcinst.ini
+RUN if [ "${TARGETPLATFORM}" = "linux/amd64" ]; then export ARCH="x86_64"; else export ARCH="aarch64"; fi && \
+    sed -i 's|Driver=psqlodbca.so|Driver=/usr/lib/${ARCH}-linux-gnu/odbc/psqlodbca.so|g' /etc/odbcinst.ini && \
+    sed -i 's|Driver=psqlodbcw.so|Driver=/usr/lib/${ARCH}-linux-gnu/odbc/psqlodbcw.so|g' /etc/odbcinst.ini && \
+    sed -i 's|Setup=libodbcpsqlS.so|Setup=/usr/lib/${ARCH}-linux-gnu/odbc/libodbcpsqlS.so|g' /etc/odbcinst.ini
 
 # Set the locale
 RUN locale-gen --no-purge en_US.UTF-8

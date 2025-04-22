@@ -1552,7 +1552,6 @@ jobs:
 
       - name: Install dependencies for main python installation
         run: |
-          # pyenv exec pip install --upgrade -r .github/containers/requirements.txt
           pip install --upgrade -r .github/containers/requirements.txt
 
       - name: Install tools with pipx in isolated environments
@@ -1566,16 +1565,17 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install --upgrade -r .github/containers/requirements.txt
+          # pip install --upgrade -r .github/containers/requirements.txt
           # pipx inject --force tox -r .github/containers/requirements-tox.txt
-          pip install --upgrade tox "virtualenv==20.26.6" packaging twine
+          pip install --upgrade -r .github/containers/requirements-tox.txt
+          pip install --upgrade packaging twine
 
-      # - name: Get Environments
-      #   id: get-envs
-      #   run: |
-      #     echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
-      #   env:
-      #     GROUP_NUMBER: ${{ matrix.group-number }}
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> $GITHUB_OUTPUT
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
 
       - name: Test
         run: |
@@ -1583,7 +1583,7 @@ jobs:
           # tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
           tox -vv -e python-framework_azure-py311
         env:
-          # TOX_PARALLEL_NO_SPINNER: 1
+          TOX_PARALLEL_NO_SPINNER: 1
           PY_COLORS: 0
 
       - name: Upload Coverage Artifacts

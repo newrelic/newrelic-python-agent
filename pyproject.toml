@@ -57,7 +57,7 @@ select = [
     "ICN",  # flake8-import-conventions
     "LOG",  # flake8-logging
     "G",  # flake8-logging-format
-    # "INP",  # flake8-no-pep420
+    "INP",  # flake8-no-pep420
     "PYI",  # flake8-pyi
     # "PT",  # flake8-pytest-style
     "Q",  # flake8-quotes
@@ -135,6 +135,7 @@ ignore = [
 "tests/*" = [
     # Disabled rules in tests
     "S",  # flake8-bandit (security checks are not necessary in tests)
+    "INP",  # flake8-no-pep420 (tests need not be not part of a package)
     "F401",  # unused-import
     "F811",  # redefined-while-unused (pytest fixtures trigger this)
     "E731",  # lambda-assignment (acceptable in tests)

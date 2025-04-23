@@ -215,8 +215,7 @@ def target_wsgi_application_yield_multi_no_head(environ, start_response):
     response_headers = [("Content-Type", "text/html; charset=utf-8"), ("Content-Length", str(len(b"".join(output))))]
     start_response(status, response_headers)
 
-    for data in output:
-        yield data
+    yield from output
 
 
 target_application_yield_multi_no_head = webtest.TestApp(target_wsgi_application_yield_multi_no_head)

@@ -76,7 +76,7 @@ class GenericNodeMixin:
         yield self.span_event(settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class)
 
         for child in self.children:
-            for event in child.span_events(
+            for event in child.span_events(  # noqa: UP028
                 settings, base_attrs=base_attrs, parent_guid=self.guid, attr_class=attr_class
             ):
                 yield event

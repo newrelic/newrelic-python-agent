@@ -35,20 +35,10 @@ DB_SETTINGS = postgresql_settings()[0]
 )
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
-def test_execute_via_cursor(pyodbc_driver):
+def test_execute_via_cursor(connection_string):
     import pyodbc
 
-    with pyodbc.connect(
-        "DRIVER={%s};SERVER=%s;PORT=%s;DATABASE=%s;UID=%s;PWD=%s"
-        % (
-            pyodbc_driver,
-            DB_SETTINGS["host"],
-            DB_SETTINGS["port"],
-            DB_SETTINGS["name"],
-            DB_SETTINGS["user"],
-            DB_SETTINGS["password"],
-        )
-    ) as connection:
+    with pyodbc.connect(connection_string) as connection:
         cursor = connection.cursor()
         cursor.execute(f"""drop table if exists {DB_SETTINGS["table_name"]}""")
         cursor.execute(f"create table {DB_SETTINGS['table_name']} (a integer, b real, c text)")
@@ -83,21 +73,11 @@ def test_execute_via_cursor(pyodbc_driver):
 )
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
-def test_rollback_on_exception(pyodbc_driver):
+def test_rollback_on_exception(connection_string):
     import pyodbc
 
     with pytest.raises(RuntimeError):
-        with pyodbc.connect(
-            "DRIVER={%s};SERVER=%s;PORT=%s;DATABASE=%s;UID=%s;PWD=%s"
-            % (
-                pyodbc_driver,
-                DB_SETTINGS["host"],
-                DB_SETTINGS["port"],
-                DB_SETTINGS["name"],
-                DB_SETTINGS["user"],
-                DB_SETTINGS["password"],
-            )
-        ) as connection:
+        with pyodbc.connect(connection_string) as connection:
             raise RuntimeError("error")
 
 
@@ -108,3 +88,16 @@ def pyodbc_driver():
     driver_name = "PostgreSQL Unicode"
     assert driver_name in pyodbc.drivers()
     return driver_name
+
+
+@pytest.fixture
+def connection_string(pyodbc_driver):
+    _connection_string = f"""
+    DRIVER={{{pyodbc_driver}}};
+    SERVER={DB_SETTINGS["host"]};
+    PORT={DB_SETTINGS["port"]};
+    DATABASE={DB_SETTINGS["name"]};
+    UID={DB_SETTINGS["user"]};
+    PWD={DB_SETTINGS["password"]}
+    """
+    return _connection_string

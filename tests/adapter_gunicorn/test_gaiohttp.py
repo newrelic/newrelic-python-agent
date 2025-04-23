@@ -61,7 +61,7 @@ def test_gunicorn_gaiohttp_worker(nr_enabled):
                 try:
                     s.connect(("127.0.0.1", PORT))
                     break
-                except socket.error:
+                except OSError:
                     pass
 
                 time.sleep(0.1)

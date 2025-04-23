@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-from typing import List, Optional, Union
+from typing import List, Union
 
 import strawberry
 
@@ -141,7 +141,7 @@ class Query:
     search: list[Item] = field(resolver=resolve_search)
     echo: str = field(resolver=resolve_echo)
     storage: Storage = field(resolver=resolve_storage)
-    error: Optional[str] = field(resolver=resolve_error)
+    error: str | None = field(resolver=resolve_error)
     error_non_null: str = field(resolver=resolve_error)
 
 

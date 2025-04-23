@@ -112,7 +112,7 @@ def _linux_physical_processor_count(filename=None):
     physical_processors = {}
 
     try:
-        with open(filename, "r") as fp:
+        with open(filename) as fp:
             processor_id = None
             cores = None
 
@@ -210,7 +210,7 @@ def _linux_total_physical_memory(filename=None):
     try:
         parser = re.compile(r"^(?P<key>\S*):\s*(?P<value>\d*)\s*kB")
 
-        with open(filename, "r") as fp:
+        with open(filename) as fp:
             for line in fp.readlines():  # noqa: FURB129 # Read all lines at once
                 match = parser.match(line)
                 if not match:
@@ -274,7 +274,7 @@ def _linux_physical_memory_used(filename=None):
     filename = filename or f"/proc/{os.getpid()}/statm"
 
     try:
-        with open(filename, "r") as fp:
+        with open(filename) as fp:
             rss_pages = float(fp.read().split()[1])
             memory_bytes = rss_pages * resource.getpagesize()
             return memory_bytes / (1024 * 1024)

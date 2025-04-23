@@ -33,7 +33,7 @@ _parameters_list = ["testname", "transaction_segment_terms", "tests"]
 def load_tests():
     result = []
     path = os.path.join(JSON_DIR, "transaction_segment_terms.json")
-    with open(path, "r") as fh:
+    with open(path) as fh:
         tests = json.load(fh)
 
     for test in tests:

@@ -29,13 +29,13 @@ events = {}
 
 
 def _load_tests():
-    with open(FIXTURE, "r") as fh:
+    with open(FIXTURE) as fh:
         for test in json.loads(fh.read()):
             test_name = test.pop("name")
 
             test_file = f"{test_name}.json"
             path = os.path.join(FIXTURE_DIR, "lambda_event_source", test_file)
-            with open(path, "r") as fh:
+            with open(path) as fh:
                 events[test_name] = json.loads(fh.read())
 
             tests[test_name] = test

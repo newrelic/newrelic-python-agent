@@ -1473,8 +1473,8 @@ jobs:
       ports:
         - 8080:80
         - 8081:80
-      # options: >-
-      #   --add-host=host.docker.internal:host-gateway
+      options: >-
+        --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     # services:
     #   azurefunctions:
@@ -1563,17 +1563,14 @@ jobs:
           export PIPX_BIN_DIR="/opt/pipx/bin"
           export PATH="${PIPX_BIN_DIR}:${PATH}"
           mkdir -p "${PIPX_BIN_DIR}" && while IFS="" read -r line || [ -n "$line" ]; do \
-          # pyenv exec pipx install --global "${line}"; \
           pipx install --global "${line}"; \
           done <.github/containers/requirements-tools.txt 
 
       - name: Install dependencies
         run: |
-          # pip install --upgrade -r .github/containers/requirements.txt
-          # pipx inject --force tox -r .github/containers/requirements-tox.txt
           pip install --upgrade -r .github/containers/requirements-tox.txt
           pip install --upgrade packaging twine
-          # pip install azure-functions requests --target=/home/site/wwwroot/.python_packages/lib/site-packages
+          # pip install azure-functions requests pytest==8.3.2
 
       - name: Get Environments
         id: get-envs
@@ -1584,6 +1581,7 @@ jobs:
 
       - name: Test
         run: |
+          # curl http://localhost:80/
           tox -vv -e python-framework_azure-py310
         env:
           TOX_PARALLEL_NO_SPINNER: 1

@@ -486,7 +486,7 @@ def simple_get(openai_version, extract_shortened_prompt):
         if not prompt:
             self.send_response(500)
             self.end_headers()
-            self.wfile.write("Could not parse prompt.".encode("utf-8"))
+            self.wfile.write(b"Could not parse prompt.")
             return
 
         headers, response = ({}, "")
@@ -502,7 +502,7 @@ def simple_get(openai_version, extract_shortened_prompt):
         else:  # If no matches found
             self.send_response(500)
             self.end_headers()
-            self.wfile.write(f"Unknown Prompt:\n{prompt}".encode("utf-8"))
+            self.wfile.write(f"Unknown Prompt:\n{prompt}".encode())
             return
 
         # Send response code

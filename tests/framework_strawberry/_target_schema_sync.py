@@ -56,8 +56,8 @@ class Magazine:
 class Library:
     id: int
     branch: str
-    magazine: List[Magazine]
-    book: List[Book]
+    magazine: list[Magazine]
+    book: list[Book]
 
 
 Item = Union[Book, Magazine]
@@ -138,7 +138,7 @@ def resolve_search(contains: str):
 class Query:
     library: Library = field(resolver=resolve_library)
     hello: str = field(resolver=resolve_hello)
-    search: List[Item] = field(resolver=resolve_search)
+    search: list[Item] = field(resolver=resolve_search)
     echo: str = field(resolver=resolve_echo)
     storage: Storage = field(resolver=resolve_storage)
     error: Optional[str] = field(resolver=resolve_error)

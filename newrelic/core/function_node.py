@@ -88,7 +88,7 @@ class FunctionNode(_FunctionNode, GenericNodeMixin):
         # Now for the children.
 
         for child in self.children:
-            for metric in child.time_metrics(stats, root, self):
+            for metric in child.time_metrics(stats, root, self):  # noqa: UP028
                 yield metric
 
     def trace_node(self, stats, root, connections):

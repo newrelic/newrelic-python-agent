@@ -63,7 +63,6 @@ select = [
     "Q",  # flake8-quotes
     "RSE",  # flake8-raise
     # "RET",  # flake8-return
-    # "SLF",  # flake8-self
     "SLOT",  # flake8-slots
     # "SIM",  # flake8-simplify
     "TID",  # flake8-tidy-imports
@@ -86,6 +85,7 @@ select = [
 # "DJ",  # flake8-django
 # "PIE",  # flake8-pie
 # "T20",  # flake8-print
+# "SLF",  # flake8-self
 # "TC",  # flake8-type-checking
 # "TD",  # flake8-todos
 # "FIX",  # flake8-fixme

@@ -38,11 +38,15 @@ AZURE_PORT = DB_SETTINGS["port"]
 def test_ping():
     # response = requests.get("http://127.0.0.1:8080/basic?user=Reli")
     try:
-        print(f"{AZURE_HOST}, {AZURE_PORT}")
-        response = requests.get(f"{AZURE_HOST}:{AZURE_PORT}")
+        print(f"http {AZURE_HOST}, {AZURE_PORT}")
+        response = requests.get(f"http://{AZURE_HOST}:{AZURE_PORT}")
     except:
-        print("127.0.0.1:8080")
-        response = requests.get("http://127.0.0.1:8080")
+        try:
+            print(f"https {AZURE_HOST}, {AZURE_PORT}")
+            response = requests.get(f"https://{AZURE_HOST}:{AZURE_PORT}")
+        except:
+            print("127.0.0.1:8080")
+            response = requests.get("http://127.0.0.1:8080")
     assert response.status_code == 200
     # assert response.text == "Hello, Reli!"
     # assert response.headers["Content-Type"] == "text/plain; charset=utf-8"

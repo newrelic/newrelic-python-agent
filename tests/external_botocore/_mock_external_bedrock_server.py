@@ -6663,7 +6663,7 @@ def simple_get(self):
     if not prompt:
         self.send_response(500)
         self.end_headers()
-        self.wfile.write("Could not parse prompt.".encode("utf-8"))
+        self.wfile.write(b"Could not parse prompt.")
         return
 
     headers, status_code, response = ({}, 0, "")
@@ -6689,7 +6689,7 @@ def simple_get(self):
         # If no matches found
         self.send_response(500)
         self.end_headers()
-        self.wfile.write(f"Unknown Prompt:\n{prompt}".encode("utf-8"))
+        self.wfile.write(f"Unknown Prompt:\n{prompt}".encode())
         return
 
     if stream:

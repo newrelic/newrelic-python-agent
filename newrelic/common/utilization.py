@@ -313,7 +313,7 @@ class DockerUtilization(CommonUtilization):
             return False
         hex_digits = set(string.hexdigits)
 
-        valid = all((c in hex_digits for c in data))
+        valid = all(c in hex_digits for c in data)
         if valid:
             return True
 

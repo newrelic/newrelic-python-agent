@@ -34,10 +34,15 @@ collector_agent_registration = collector_agent_registration_fixture(
     linked_applications=["Python Agent Test (datastore)"],
 )
 
-ES_VERSION = get_package_version_tuple("elasticsearch")
 ES_SETTINGS = elasticsearch_settings()[0]
 ES_MULTIPLE_SETTINGS = elasticsearch_settings()
 ES_URL = f"http://{ES_SETTINGS['host']}:{ES_SETTINGS['port']}"
+ES_VERSION = get_package_version_tuple("elasticsearch")
+
+IS_V8_OR_ABOVE = ES_VERSION >= (8,)
+IS_V7_OR_BELOW = not IS_V8_OR_ABOVE
+RUN_IF_V8_OR_ABOVE = pytest.mark.skipif(not IS_V8_OR_ABOVE, reason="Unsupported for elasticsearch>=8")
+RUN_IF_V7_OR_BELOW = pytest.mark.skipif(not IS_V7_OR_BELOW, reason="Unsupported for elasticsearch<=7")
 
 
 @pytest.fixture(scope="function")

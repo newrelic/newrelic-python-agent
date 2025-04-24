@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import pytest
-from conftest import ES_SETTINGS, ES_URL, ES_VERSION
+from conftest import ES_SETTINGS, ES_URL, ES_VERSION, RUN_IF_V8_OR_ABOVE
 from testing_support.util import instance_hostname
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
@@ -31,15 +31,6 @@ except ImportError:
 
     HttpxAsyncHttpNode = None  # Not implemented in v7
 
-
-IS_V8 = ES_VERSION >= (8,)
-IS_V7 = ES_VERSION >= (7,) and ES_VERSION < (8, 0)
-IS_BELOW_V7 = ES_VERSION < (7,)
-
-RUN_IF_V8 = pytest.mark.skipif(IS_V7 or IS_BELOW_V7, reason="Only run for v8+")
-RUN_IF_V7 = pytest.mark.skipif(IS_V8 or IS_BELOW_V7, reason="Only run for v7")
-RUN_IF_BELOW_V7 = pytest.mark.skipif(not IS_BELOW_V7, reason="Only run for versions below v7")
-
 HOST = instance_hostname(ES_SETTINGS["host"])
 PORT = ES_SETTINGS["port"]
 
@@ -56,9 +47,8 @@ async def _exercise_es(es):
 @pytest.mark.parametrize(
     "client_kwargs",
     [
-        pytest.param({"node_class": AIOHttpConnection}, id="AIOHttpConnectionV8", marks=RUN_IF_V8),
-        pytest.param({"node_class": HttpxAsyncHttpNode}, id="HttpxAsyncHttpNodeV8", marks=RUN_IF_V8),
-        pytest.param({"node_class": AIOHttpConnection}, id="AIOHttpConnectionV7", marks=RUN_IF_V7),
+        pytest.param({"node_class": HttpxAsyncHttpNode}, id="HttpxAsyncHttpNodeV8", marks=RUN_IF_V8_OR_ABOVE),
+        pytest.param({"node_class": AIOHttpConnection}, id="AIOHttpConnection"),
     ],
 )
 @validate_transaction_errors(errors=[])

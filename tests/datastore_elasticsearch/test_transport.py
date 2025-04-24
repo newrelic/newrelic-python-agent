@@ -22,14 +22,16 @@ from newrelic.api.background_task import background_task
 from newrelic.api.transaction import current_transaction
 
 try:
+    # v8+
+    from elastic_transport._models import NodeConfig
+    from elastic_transport._node._http_requests import RequestsHttpNode as RequestsHttpConnection
+    from elastic_transport._node._http_urllib3 import Urllib3HttpNode as Urllib3HttpConnection
+except ImportError:
+    # v7
     from elasticsearch.connection.http_requests import RequestsHttpConnection
     from elasticsearch.connection.http_urllib3 import Urllib3HttpConnection
 
     NodeConfig = dict
-except ImportError:
-    from elastic_transport._models import NodeConfig
-    from elastic_transport._node._http_requests import RequestsHttpNode as RequestsHttpConnection
-    from elastic_transport._node._http_urllib3 import Urllib3HttpNode as Urllib3HttpConnection
 
 
 IS_V8 = ES_VERSION >= (8,)

@@ -22,12 +22,14 @@ from newrelic.api.background_task import background_task
 from newrelic.api.transaction import current_transaction
 
 try:
+    # v8+
+    from elastic_transport._node._http_aiohttp import AiohttpHttpNode as AIOHttpConnection
+    from elastic_transport._node._http_httpx import HttpxAsyncHttpNode
+except ImportError:
+    # v7
     from elasticsearch._async.http_aiohttp import AIOHttpConnection
 
     HttpxAsyncHttpNode = None  # Not implemented in v7
-except ImportError:
-    from elastic_transport._node._http_aiohttp import AiohttpHttpNode as AIOHttpConnection
-    from elastic_transport._node._http_httpx import HttpxAsyncHttpNode
 
 
 IS_V8 = ES_VERSION >= (8,)

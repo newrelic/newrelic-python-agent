@@ -13,14 +13,15 @@
 # limitations under the License.
 
 import pytest
+from conftest import ES_SETTINGS, ES_VERSION
 
 try:
-    from elasticsearch._async.http_aiohttp import AsyncConnection
-except ImportError:
+    # v8+
     from elastic_transport._models import NodeConfig
     from elastic_transport._node._base_async import BaseAsyncNode as AsyncConnection
-
-from conftest import ES_SETTINGS, ES_VERSION
+except ImportError:
+    # v7
+    from elasticsearch._async.http_aiohttp import AsyncConnection
 
 HOST = {"scheme": "http", "host": ES_SETTINGS["host"], "port": int(ES_SETTINGS["port"])}
 

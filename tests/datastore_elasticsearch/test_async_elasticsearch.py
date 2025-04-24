@@ -233,3 +233,7 @@ def test_async_elasticsearch_operation_disabled(async_client, loop):
 @background_task()
 def test_async_elasticsearch_operation_enabled(async_client, loop):
     loop.run_until_complete(_exercise_es(async_client))
+
+
+def test_async_elasticsearch_no_transaction(async_client, loop):
+    loop.run_until_complete(_exercise_es(async_client))

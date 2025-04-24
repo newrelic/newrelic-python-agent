@@ -229,3 +229,7 @@ def test_elasticsearch_operation_disabled(client):
 @background_task()
 def test_elasticsearch_operation_enabled(client):
     _exercise_es(client)
+
+
+def test_elasticsearch_no_transaction(client):
+    _exercise_es(client)

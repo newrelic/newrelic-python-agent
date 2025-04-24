@@ -14,9 +14,10 @@
 
 import pytest
 from testing_support.db_settings import elasticsearch_settings
+from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
-from newrelic.common.package_version_utils import get_package_version
+from newrelic.common.package_version_utils import get_package_version_tuple
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
@@ -33,14 +34,31 @@ collector_agent_registration = collector_agent_registration_fixture(
     linked_applications=["Python Agent Test (datastore)"],
 )
 
-ES_VERSION = tuple([int(n) for n in get_package_version("elasticsearch").split(".")])
 ES_SETTINGS = elasticsearch_settings()[0]
 ES_MULTIPLE_SETTINGS = elasticsearch_settings()
 ES_URL = f"http://{ES_SETTINGS['host']}:{ES_SETTINGS['port']}"
+ES_VERSION = get_package_version_tuple("elasticsearch")
+
+IS_V8_OR_ABOVE = ES_VERSION >= (8,)
+IS_V7_OR_BELOW = not IS_V8_OR_ABOVE
+RUN_IF_V8_OR_ABOVE = pytest.mark.skipif(not IS_V8_OR_ABOVE, reason="Unsupported for elasticsearch>=8")
+RUN_IF_V7_OR_BELOW = pytest.mark.skipif(not IS_V7_OR_BELOW, reason="Unsupported for elasticsearch<=7")
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def client():
     from elasticsearch import Elasticsearch
 
-    return Elasticsearch(ES_URL)
+    _client = Elasticsearch(ES_URL)
+    yield _client
+    _client.close()
+
+
+@pytest.fixture(scope="function")
+def async_client(loop):
+    from elasticsearch import AsyncElasticsearch
+
+    # Manual context manager
+    _async_client = AsyncElasticsearch(ES_URL)
+    yield _async_client
+    loop.run_until_complete(_async_client.close())

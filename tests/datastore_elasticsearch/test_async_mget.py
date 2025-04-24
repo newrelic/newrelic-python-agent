@@ -14,12 +14,20 @@
 
 import pytest
 from conftest import ES_MULTIPLE_SETTINGS, ES_VERSION
-from elasticsearch import Elasticsearch
+from elasticsearch import AsyncElasticsearch
+from testing_support.fixture.event_loop import event_loop as loop  # noqa: F401
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
+
+try:
+    # v8+
+    from elastic_transport import RoundRobinSelector
+except ImportError:
+    # v7
+    from elasticsearch.connection_pool import RoundRobinSelector
 
 # Settings
 
@@ -31,11 +39,12 @@ _disable_instance_settings = {"datastore_tracer.instance_reporting.enabled": Fal
 _base_scoped_metrics = (("Datastore/statement/Elasticsearch/contacts/index", 2),)
 
 _base_rollup_metrics = (
-    ("Datastore/all", 2),
-    ("Datastore/allOther", 2),
-    ("Datastore/Elasticsearch/all", 2),
-    ("Datastore/Elasticsearch/allOther", 2),
+    ("Datastore/all", 3),
+    ("Datastore/allOther", 3),
+    ("Datastore/Elasticsearch/all", 3),
+    ("Datastore/Elasticsearch/allOther", 3),
     ("Datastore/operation/Elasticsearch/index", 2),
+    ("Datastore/operation/Elasticsearch/mget", 1),
     ("Datastore/statement/Elasticsearch/contacts/index", 2),
 )
 
@@ -58,61 +67,84 @@ if len(ES_MULTIPLE_SETTINGS) > 1:
     instance_metric_name_1 = f"Datastore/instance/Elasticsearch/{host_1}/{port_1}"
     instance_metric_name_2 = f"Datastore/instance/Elasticsearch/{host_2}/{port_2}"
 
-    _enable_rollup_metrics.extend([(instance_metric_name_1, 1), (instance_metric_name_2, 1)])
+    if ES_VERSION >= (8,):
+        _enable_rollup_metrics.extend([(instance_metric_name_1, 2), (instance_metric_name_2, 1)])
+    else:
+        # Cannot deterministicly set the number of calls to each instance as it's random
+        # which node is selected first and called twice. Instead, check that both metrics are simply present.
+        _enable_rollup_metrics.extend([(instance_metric_name_1, "present"), (instance_metric_name_2, "present")])
 
     _disable_rollup_metrics.extend([(instance_metric_name_1, None), (instance_metric_name_2, None)])
+
+
+@pytest.fixture(scope="module")
+def client(loop):
+    urls = [f"http://{db['host']}:{db['port']}" for db in ES_MULTIPLE_SETTINGS]
+    # When selecting a connection from the pool, use the round robin method.
+    # This is actually the default already. Using round robin will ensure that
+    # doing two db calls will mean elastic search is talking to two different
+    # dbs.
+    if ES_VERSION >= (8,):
+        _client = AsyncElasticsearch(urls, node_selector_class=RoundRobinSelector, randomize_nodes_in_pool=False)
+    else:
+        _client = AsyncElasticsearch(urls, selector_class=RoundRobinSelector, randomize_nodes_in_pool=False)
+
+    yield _client
+    loop.run_until_complete(_client.close())
+
 
 # Query
 
 
-def _exercise_es(es):
+async def _exercise_es_multi(es):
+    # set on db 1
     if ES_VERSION >= (8,):
-        es.index(index="contacts", body={"name": "Joe Tester", "age": 25, "title": "QA Engineer"}, id=1)
+        await es.index(index="contacts", body={"name": "Joe Tester", "age": 25, "title": "QA Engineer"}, id=1)
+        # set on db 2
+        await es.index(index="contacts", body={"name": "Jane Tester", "age": 22, "title": "Senior QA Engineer"}, id=2)
     else:
-        es.index(
+        await es.index(
             index="contacts", doc_type="person", body={"name": "Joe Tester", "age": 25, "title": "QA Engineer"}, id=1
         )
+        # set on db 2
+        await es.index(
+            index="contacts",
+            doc_type="person",
+            body={"name": "Jane Tester", "age": 22, "title": "Senior QA Engineer"},
+            id=2,
+        )
+
+    # ask db 1, will return info from db 1 and 2
+    mget_body = {"docs": [{"_id": 1, "_index": "contacts"}, {"_id": 2, "_index": "contacts"}]}
+
+    results = await es.mget(body=mget_body)
+    assert len(results["docs"]) == 2
 
 
 # Test
 
 
-@pytest.fixture(scope="session")
-def clients(loop):
-    clients = []
-    for db in ES_MULTIPLE_SETTINGS:
-        es_url = f"http://{db['host']}:{db['port']}"
-        clients.append(Elasticsearch(es_url))
-
-    yield clients
-
-    for client in clients:
-        client.close()
-
-
 @pytest.mark.skipif(len(ES_MULTIPLE_SETTINGS) < 2, reason="Test environment not configured with multiple databases.")
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
-    "test_multiple_dbs:test_multiple_dbs_enabled",
+    "test_async_mget:test_async_multi_get_enabled",
     scoped_metrics=_enable_scoped_metrics,
     rollup_metrics=_enable_rollup_metrics,
     background_task=True,
 )
 @background_task()
-def test_multiple_dbs_enabled(clients):
-    for client in clients:
-        _exercise_es(client)
+def test_async_multi_get_enabled(client, loop):
+    loop.run_until_complete(_exercise_es_multi(client))
 
 
 @pytest.mark.skipif(len(ES_MULTIPLE_SETTINGS) < 2, reason="Test environment not configured with multiple databases.")
 @override_application_settings(_disable_instance_settings)
 @validate_transaction_metrics(
-    "test_multiple_dbs:test_multiple_dbs_disabled",
+    "test_async_mget:test_async_multi_get_disabled",
     scoped_metrics=_disable_scoped_metrics,
     rollup_metrics=_disable_rollup_metrics,
     background_task=True,
 )
 @background_task()
-def test_multiple_dbs_disabled(clients):
-    for client in clients:
-        _exercise_es(client)
+def test_async_multi_get_disabled(client, loop):
+    loop.run_until_complete(_exercise_es_multi(client))

@@ -10,21 +10,18 @@
 # Retrieve files to use in startup script:
 curl -L https://raw.githubusercontent.com/newrelic/newrelic-agent-init-container/refs/heads/main/src/python/newrelic_k8s_operator.py > newrelic_k8s_operator.py
 curl -L https://raw.githubusercontent.com/newrelic/newrelic-agent-init-container/refs/heads/main/src/python/requirements-vendor.txt > requirements-vendor.txt
-curl -L https://raw.githubusercontent.com/newrelic/newrelic-agent-init-container/refs/heads/main/src/python/requirements-builder.txt > requirements-builder.txt
 
-cd /home/
-
-pip install -r requirements-builder.txt
+mkdir -p /home/.newrelic
+cd /home/.newrelic
 
 export NEW_RELIC_EXTENSIONS=false
 export WRAPT_DISABLE_EXTENSIONS=true
 
-pip install newrelic --target=./workspace/newrelic
+pip install 'setuptools>=40.8.0' wheel
+pip install newrelic --target=./newrelic
+pip install --target=./vendor -r /home/site/wwwroot/requirements-vendor.txt
 
-mkdir -p ./workspace/vendor
-pip install --target=./workspace/vendor -r requirements-vendor.txt
-
-cp ./workspace/* /home/
-cp /home/workspace/newrelic/newrelic/bootstrap/sitecustomize.py /home/sitecustomize.py
+mv /home/site/wwwroot/newrelic_k8s_operator.py /home/.newrelic/newrelic/
+cp /home/.newrelic/newrelic/newrelic/bootstrap/sitecustomize.py /home/sitecustomize.py 
 
 cd /home/site/wwwroot

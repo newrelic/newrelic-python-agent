@@ -571,9 +571,7 @@ class ServerlessModeClient(DeveloperModeClient):
     def send_request(
         self, method="POST", path="/agent_listener/invoke_raw_method", params=None, headers=None, payload=None
     ):
-        result = super().send_request(
-            method=method, path=path, params=params, headers=headers, payload=payload
-        )
+        result = super().send_request(method=method, path=path, params=params, headers=headers, payload=payload)
 
         if result[0] == 200:
             agent_method = params["method"]

@@ -87,9 +87,9 @@ RUN cd /tmp && \
 
 # Setup ODBC config
 RUN if [ "${TARGETPLATFORM}" = "linux/amd64" ]; then export ARCH="x86_64"; else export ARCH="aarch64"; fi && \
-    sed -i 's|Driver=psqlodbca.so|Driver=/usr/lib/${ARCH}-linux-gnu/odbc/psqlodbca.so|g' /etc/odbcinst.ini && \
-    sed -i 's|Driver=psqlodbcw.so|Driver=/usr/lib/${ARCH}-linux-gnu/odbc/psqlodbcw.so|g' /etc/odbcinst.ini && \
-    sed -i 's|Setup=libodbcpsqlS.so|Setup=/usr/lib/${ARCH}-linux-gnu/odbc/libodbcpsqlS.so|g' /etc/odbcinst.ini
+    sed -i "s|Driver=psqlodbca.so|Driver=/usr/lib/${ARCH}-linux-gnu/odbc/psqlodbca.so|g" /etc/odbcinst.ini && \
+    sed -i "s|Driver=psqlodbcw.so|Driver=/usr/lib/${ARCH}-linux-gnu/odbc/psqlodbcw.so|g" /etc/odbcinst.ini && \
+    sed -i "s|Setup=libodbcpsqlS.so|Setup=/usr/lib/${ARCH}-linux-gnu/odbc/libodbcpsqlS.so|g" /etc/odbcinst.ini
 
 # Set the locale
 RUN locale-gen --no-purge en_US.UTF-8

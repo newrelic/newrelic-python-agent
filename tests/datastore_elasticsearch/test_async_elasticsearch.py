@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from conftest import ES_SETTINGS, ES_VERSION
+from conftest import ES_SETTINGS, IS_V8_OR_ABOVE
 from elasticsearch._async import client
 from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import override_application_settings
@@ -29,6 +29,9 @@ _disable_instance_settings = {"datastore_tracer.instance_reporting.enabled": Fal
 # Metrics
 
 _base_scoped_metrics = [
+    ("Datastore/operation/Elasticsearch/cat.health", 1),
+    ("Datastore/operation/Elasticsearch/nodes.info", 1),
+    ("Datastore/operation/Elasticsearch/snapshot.status", 1),
     ("Datastore/statement/Elasticsearch/_all/cluster.health", 1),
     ("Datastore/statement/Elasticsearch/_all/search", 2),
     ("Datastore/statement/Elasticsearch/address/index", 2),
@@ -39,11 +42,19 @@ _base_scoped_metrics = [
     ("Datastore/statement/Elasticsearch/other/search", 2),
 ]
 
+_all_count = 17
 _base_rollup_metrics = [
+    ("Datastore/all", _all_count),
+    ("Datastore/allOther", _all_count),
+    ("Datastore/Elasticsearch/all", _all_count),
+    ("Datastore/Elasticsearch/allOther", _all_count),
+    ("Datastore/operation/Elasticsearch/cat.health", 1),
     ("Datastore/operation/Elasticsearch/cluster.health", 1),
     ("Datastore/operation/Elasticsearch/index", 5),
     ("Datastore/operation/Elasticsearch/indices.refresh", 1),
+    ("Datastore/operation/Elasticsearch/nodes.info", 1),
     ("Datastore/operation/Elasticsearch/search", 7),
+    ("Datastore/operation/Elasticsearch/snapshot.status", 1),
     ("Datastore/statement/Elasticsearch/_all/cluster.health", 1),
     ("Datastore/statement/Elasticsearch/_all/search", 2),
     ("Datastore/statement/Elasticsearch/address/index", 2),
@@ -64,59 +75,6 @@ def is_importable(module_path):
     except ImportError:
         return False
 
-
-_all_count = 14
-
-if is_importable("elasticsearch._async.client.cat"):
-    _base_scoped_metrics.append(("Datastore/operation/Elasticsearch/cat.health", 1))
-    _base_rollup_metrics.append(("Datastore/operation/Elasticsearch/cat.health", 1))
-    _all_count += 1
-else:
-    _base_scoped_metrics.append(("Datastore/operation/Elasticsearch/cat.health", None))
-    _base_rollup_metrics.append(("Datastore/operation/Elasticsearch/cat.health", None))
-
-if is_importable("elasticsearch._async.client.nodes"):
-    _base_scoped_metrics.append(("Datastore/operation/Elasticsearch/nodes.info", 1))
-    _base_rollup_metrics.append(("Datastore/operation/Elasticsearch/nodes.info", 1))
-    _all_count += 1
-else:
-    _base_scoped_metrics.append(("Datastore/operation/Elasticsearch/nodes.info", None))
-    _base_rollup_metrics.append(("Datastore/operation/Elasticsearch/nodes.info", None))
-
-if hasattr(client, "SnapshotClient") and hasattr(client.SnapshotClient, "status"):
-    _base_scoped_metrics.append(("Datastore/operation/Elasticsearch/snapshot.status", 1))
-    _base_rollup_metrics.append(("Datastore/operation/Elasticsearch/snapshot.status", 1))
-    _all_count += 1
-else:
-    _base_scoped_metrics.append(("Datastore/operation/Elasticsearch/snapshot.status", None))
-    _base_rollup_metrics.append(("Datastore/operation/Elasticsearch/snapshot.status", None))
-
-if hasattr(client, "IndicesClient") and hasattr(client.IndicesClient, "status"):
-    _base_scoped_metrics.append(("Datastore/statement/Elasticsearch/_all/indices.status", 1))
-    _base_rollup_metrics.extend(
-        [
-            ("Datastore/operation/Elasticsearch/indices.status", 1),
-            ("Datastore/statement/Elasticsearch/_all/indices.status", 1),
-        ]
-    )
-    _all_count += 1
-else:
-    _base_scoped_metrics.append(("Datastore/operation/Elasticsearch/indices.status", None))
-    _base_rollup_metrics.extend(
-        [
-            ("Datastore/operation/Elasticsearch/indices.status", None),
-            ("Datastore/statement/Elasticsearch/_all/indices.status", None),
-        ]
-    )
-
-_base_rollup_metrics.extend(
-    [
-        ("Datastore/all", _all_count),
-        ("Datastore/allOther", _all_count),
-        ("Datastore/Elasticsearch/all", _all_count),
-        ("Datastore/Elasticsearch/allOther", _all_count),
-    ]
-)
 
 # Instance info
 
@@ -203,7 +161,7 @@ async def _exercise_es_v8(es):
         await es.indices.status()
 
 
-_exercise_es = _exercise_es_v7 if ES_VERSION < (8, 0, 0) else _exercise_es_v8
+_exercise_es = _exercise_es_v8 if IS_V8_OR_ABOVE else _exercise_es_v7
 
 
 # Test

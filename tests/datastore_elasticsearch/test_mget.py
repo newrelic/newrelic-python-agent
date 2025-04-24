@@ -13,19 +13,20 @@
 # limitations under the License.
 
 import pytest
-from elasticsearch import Elasticsearch
-
-try:
-    from elastic_transport import RoundRobinSelector
-except ImportError:
-    from elasticsearch.connection_pool import RoundRobinSelector
-
 from conftest import ES_MULTIPLE_SETTINGS, ES_VERSION
+from elasticsearch import Elasticsearch
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
+
+try:
+    # v8+
+    from elastic_transport import RoundRobinSelector
+except ImportError:
+    # v7
+    from elasticsearch.connection_pool import RoundRobinSelector
 
 # Settings
 
@@ -65,7 +66,12 @@ if len(ES_MULTIPLE_SETTINGS) > 1:
     instance_metric_name_1 = f"Datastore/instance/Elasticsearch/{host_1}/{port_1}"
     instance_metric_name_2 = f"Datastore/instance/Elasticsearch/{host_2}/{port_2}"
 
-    _enable_rollup_metrics.extend([(instance_metric_name_1, 2), (instance_metric_name_2, 1)])
+    if ES_VERSION >= (8,):
+        _enable_rollup_metrics.extend([(instance_metric_name_1, 2), (instance_metric_name_2, 1)])
+    else:
+        # Cannot deterministicly set the number of calls to each instance as it's random
+        # which node is selected first and called twice. Instead, check that both metrics are simply present.
+        _enable_rollup_metrics.extend([(instance_metric_name_1, "present"), (instance_metric_name_2, "present")])
 
     _disable_rollup_metrics.extend([(instance_metric_name_1, None), (instance_metric_name_2, None)])
 
@@ -78,10 +84,12 @@ def client():
     # doing two db calls will mean elastic search is talking to two different
     # dbs.
     if ES_VERSION >= (8,):
-        client = Elasticsearch(urls, node_selector_class=RoundRobinSelector, randomize_hosts=False)
+        _client = Elasticsearch(urls, node_selector_class=RoundRobinSelector, randomize_nodes_in_pool=False)
     else:
-        client = Elasticsearch(urls, selector_class=RoundRobinSelector, randomize_hosts=False)
-    return client
+        _client = Elasticsearch(urls, selector_class=RoundRobinSelector, randomize_nodes_in_pool=False)
+
+    yield _client
+    _client.close()
 
 
 # Query

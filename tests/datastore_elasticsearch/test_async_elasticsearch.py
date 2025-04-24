@@ -11,9 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-import elasticsearch.client
 from conftest import ES_SETTINGS, IS_V8_OR_ABOVE
+from elasticsearch._async import client
+from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
@@ -96,65 +96,69 @@ _disable_rollup_metrics.append((_instance_metric_name, None))
 # Query
 
 
-def _exercise_es_v7(es):
-    es.index(index="contacts", doc_type="person", body={"name": "Joe Tester", "age": 25, "title": "QA Engineer"}, id=1)
-    es.index(
+async def _exercise_es_v7(es):
+    await es.index(
+        index="contacts", doc_type="person", body={"name": "Joe Tester", "age": 25, "title": "QA Engineer"}, id=1
+    )
+    await es.index(
         index="contacts", doc_type="person", body={"name": "Jessica Coder", "age": 32, "title": "Programmer"}, id=2
     )
-    es.index(index="contacts", doc_type="person", body={"name": "Freddy Tester", "age": 29, "title": "Assistant"}, id=3)
-    es.indices.refresh("contacts")
-    es.index(
+    await es.index(
+        index="contacts", doc_type="person", body={"name": "Freddy Tester", "age": 29, "title": "Assistant"}, id=3
+    )
+    await es.indices.refresh("contacts")
+    await es.index(
         index="address", doc_type="employee", body={"name": "Sherlock", "address": "221B Baker Street, London"}, id=1
     )
-    es.index(
+    await es.index(
         index="address",
         doc_type="employee",
         body={"name": "Bilbo", "address": "Bag End, Bagshot row, Hobbiton, Shire"},
         id=2,
     )
-    es.search(index="contacts", q="name:Joe")
-    es.search(index="contacts", q="name:jessica")
-    es.search(index="address", q="name:Sherlock")
-    es.search(index=["contacts", "address"], q="name:Bilbo")
-    es.search(index="contacts,address", q="name:Bilbo")
-    es.search(index="*", q="name:Bilbo")
-    es.search(q="name:Bilbo")
-    es.cluster.health()
+    await es.search(index="contacts", q="name:Joe")
+    await es.search(index="contacts", q="name:jessica")
+    await es.search(index="address", q="name:Sherlock")
+    await es.search(index=["contacts", "address"], q="name:Bilbo")
+    await es.search(index="contacts,address", q="name:Bilbo")
+    await es.search(index="*", q="name:Bilbo")
+    await es.search(q="name:Bilbo")
+    await es.cluster.health()
 
     if hasattr(es, "cat"):
-        es.cat.health()
+        await es.cat.health()
     if hasattr(es, "nodes"):
-        es.nodes.info()
+        await es.nodes.info()
     if hasattr(es, "snapshot") and hasattr(es.snapshot, "status"):
-        es.snapshot.status()
+        await es.snapshot.status()
     if hasattr(es.indices, "status"):
-        es.indices.status()
+        await es.indices.status()
 
 
-def _exercise_es_v8(es):
-    es.index(index="contacts", body={"name": "Joe Tester", "age": 25, "title": "QA Engineer"}, id=1)
-    es.index(index="contacts", body={"name": "Jessica Coder", "age": 32, "title": "Programmer"}, id=2)
-    es.index(index="contacts", body={"name": "Freddy Tester", "age": 29, "title": "Assistant"}, id=3)
-    es.indices.refresh(index="contacts")
-    es.index(index="address", body={"name": "Sherlock", "address": "221B Baker Street, London"}, id=1)
-    es.index(index="address", body={"name": "Bilbo", "address": "Bag End, Bagshot row, Hobbiton, Shire"}, id=2)
-    es.search(index="contacts", q="name:Joe")
-    es.search(index="contacts", q="name:jessica")
-    es.search(index="address", q="name:Sherlock")
-    es.search(index=["contacts", "address"], q="name:Bilbo")
-    es.search(index="contacts,address", q="name:Bilbo")
-    es.search(index="*", q="name:Bilbo")
-    es.search(q="name:Bilbo")
-    es.cluster.health()
+async def _exercise_es_v8(es):
+    await es.index(index="contacts", body={"name": "Joe Tester", "age": 25, "title": "QA Engineer"}, id=1)
+    await es.index(index="contacts", body={"name": "Jessica Coder", "age": 32, "title": "Programmer"}, id=2)
+    await es.index(index="contacts", body={"name": "Freddy Tester", "age": 29, "title": "Assistant"}, id=3)
+    await es.indices.refresh(index="contacts")
+    await es.index(index="address", body={"name": "Sherlock", "address": "221B Baker Street, London"}, id=1)
+    await es.index(index="address", body={"name": "Bilbo", "address": "Bag End, Bagshot row, Hobbiton, Shire"}, id=2)
+    await es.search(index="contacts", q="name:Joe")
+    await es.search(index="contacts", q="name:jessica")
+    await es.search(index="address", q="name:Sherlock")
+    await es.search(index=["contacts", "address"], q="name:Bilbo")
+    await es.search(index="contacts,address", q="name:Bilbo")
+    await es.search(index="*", q="name:Bilbo")
+    await es.search(q="name:Bilbo")
+    await es.cluster.health()
 
     if hasattr(es, "cat"):
-        es.cat.health()
+        await es.cat.health()
     if hasattr(es, "nodes"):
-        es.nodes.info()
+        await es.nodes.info()
     if hasattr(es, "snapshot") and hasattr(es.snapshot, "status"):
-        es.snapshot.status()
+        await es.snapshot.status()
     if hasattr(es.indices, "status"):
-        es.indices.status()
+        await es.indices.status()
 
 
 _exercise_es = _exercise_es_v8 if IS_V8_OR_ABOVE else _exercise_es_v7
@@ -165,29 +169,29 @@ _exercise_es = _exercise_es_v8 if IS_V8_OR_ABOVE else _exercise_es_v7
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(
-    "test_elasticsearch:test_elasticsearch_operation_disabled",
+    "test_async_elasticsearch:test_async_elasticsearch_operation_disabled",
     scoped_metrics=_disable_scoped_metrics,
     rollup_metrics=_disable_rollup_metrics,
     background_task=True,
 )
 @override_application_settings(_disable_instance_settings)
 @background_task()
-def test_elasticsearch_operation_disabled(client):
-    _exercise_es(client)
+def test_async_elasticsearch_operation_disabled(async_client, loop):
+    loop.run_until_complete(_exercise_es(async_client))
 
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(
-    "test_elasticsearch:test_elasticsearch_operation_enabled",
+    "test_async_elasticsearch:test_async_elasticsearch_operation_enabled",
     scoped_metrics=_enable_scoped_metrics,
     rollup_metrics=_enable_rollup_metrics,
     background_task=True,
 )
 @override_application_settings(_enable_instance_settings)
 @background_task()
-def test_elasticsearch_operation_enabled(client):
-    _exercise_es(client)
+def test_async_elasticsearch_operation_enabled(async_client, loop):
+    loop.run_until_complete(_exercise_es(async_client))
 
 
-def test_elasticsearch_no_transaction(client):
-    _exercise_es(client)
+def test_async_elasticsearch_no_transaction(async_client, loop):
+    loop.run_until_complete(_exercise_es(async_client))

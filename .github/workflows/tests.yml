@@ -162,7 +162,7 @@ jobs:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
           include-hidden-files: true
-          if-no-files-found: fail
+          if-no-files-found: error
           retention-days: 1
 
   grpc:
@@ -213,7 +213,7 @@ jobs:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
           include-hidden-files: true
-          if-no-files-found: fail
+          if-no-files-found: error
           retention-days: 1
 
   nginx:
@@ -278,7 +278,7 @@ jobs:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
           include-hidden-files: true
-          if-no-files-found: fail
+          if-no-files-found: error
           retention-days: 1
 
   postgres16:
@@ -344,7 +344,7 @@ jobs:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
           include-hidden-files: true
-          if-no-files-found: fail
+          if-no-files-found: error
           retention-days: 1
 
   postgres9:
@@ -410,7 +410,7 @@ jobs:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
           include-hidden-files: true
-          if-no-files-found: fail
+          if-no-files-found: error
           retention-days: 1
 
   mssql:
@@ -479,7 +479,7 @@ jobs:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
           include-hidden-files: true
-          if-no-files-found: fail
+          if-no-files-found: error
           retention-days: 1
 
   mysql:
@@ -548,7 +548,7 @@ jobs:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
           include-hidden-files: true
-          if-no-files-found: fail
+          if-no-files-found: error
           retention-days: 1
 
   rediscluster:
@@ -653,7 +653,7 @@ jobs:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
           include-hidden-files: true
-          if-no-files-found: fail
+          if-no-files-found: error
           retention-days: 1
 
   redis:
@@ -717,7 +717,7 @@ jobs:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
           include-hidden-files: true
-          if-no-files-found: fail
+          if-no-files-found: error
           retention-days: 1
 
   solr:
@@ -783,7 +783,7 @@ jobs:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
           include-hidden-files: true
-          if-no-files-found: fail
+          if-no-files-found: error
           retention-days: 1
 
   memcached:
@@ -847,7 +847,7 @@ jobs:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
           include-hidden-files: true
-          if-no-files-found: fail
+          if-no-files-found: error
           retention-days: 1
 
   rabbitmq:
@@ -912,7 +912,7 @@ jobs:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
           include-hidden-files: true
-          if-no-files-found: fail
+          if-no-files-found: error
           retention-days: 1
 
   kafka:
@@ -988,7 +988,7 @@ jobs:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
           include-hidden-files: true
-          if-no-files-found: fail
+          if-no-files-found: error
           retention-days: 1
 
   mongodb3:
@@ -1052,7 +1052,7 @@ jobs:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
           include-hidden-files: true
-          if-no-files-found: fail
+          if-no-files-found: error
           retention-days: 1
 
   mongodb8:
@@ -1116,7 +1116,7 @@ jobs:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
           include-hidden-files: true
-          if-no-files-found: fail
+          if-no-files-found: error
           retention-days: 1
 
   cassandra:
@@ -1185,7 +1185,7 @@ jobs:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
           include-hidden-files: true
-          if-no-files-found: fail
+          if-no-files-found: error
           retention-days: 1
 
   elasticsearchserver07:
@@ -1251,7 +1251,7 @@ jobs:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
           include-hidden-files: true
-          if-no-files-found: fail
+          if-no-files-found: error
           retention-days: 1
 
   elasticsearchserver08:
@@ -1318,7 +1318,7 @@ jobs:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
           include-hidden-files: true
-          if-no-files-found: fail
+          if-no-files-found: error
           retention-days: 1
 
   firestore:
@@ -1389,7 +1389,7 @@ jobs:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
           include-hidden-files: true
-          if-no-files-found: fail
+          if-no-files-found: error
           retention-days: 1
 
   valkey:
@@ -1453,5 +1453,5 @@ jobs:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
           include-hidden-files: true
-          if-no-files-found: fail
+          if-no-files-found: error
           retention-days: 1

@@ -71,8 +71,8 @@ no_model_events = [
 @validate_custom_event_count(count=1)
 @background_task()
 def test_embeddings_invalid_request_error_no_model(set_trace_info, sync_openai_client):
+    set_trace_info()
     with pytest.raises(TypeError):
-        set_trace_info()
         sync_openai_client.embeddings.create(input="This is an embedding test with no model.")  # no model provided
 
 
@@ -98,8 +98,8 @@ def test_embeddings_invalid_request_error_no_model(set_trace_info, sync_openai_c
 @validate_custom_event_count(count=1)
 @background_task()
 def test_embeddings_invalid_request_error_no_model_no_content(set_trace_info, sync_openai_client):
+    set_trace_info()
     with pytest.raises(TypeError):
-        set_trace_info()
         sync_openai_client.embeddings.create(input="This is an embedding test with no model.")  # no model provided
 
 
@@ -124,8 +124,8 @@ def test_embeddings_invalid_request_error_no_model_no_content(set_trace_info, sy
 @validate_custom_event_count(count=1)
 @background_task()
 def test_embeddings_invalid_request_error_no_model_async(set_trace_info, async_openai_client, loop):
+    set_trace_info()
     with pytest.raises(TypeError):
-        set_trace_info()
         loop.run_until_complete(
             async_openai_client.embeddings.create(input="This is an embedding test with no model.")
         )  # no model provided
@@ -170,8 +170,8 @@ invalid_model_events = [
 @validate_custom_event_count(count=1)
 @background_task()
 def test_embeddings_invalid_request_error_invalid_model_with_token_count(set_trace_info, sync_openai_client):
+    set_trace_info()
     with pytest.raises(openai.NotFoundError):
-        set_trace_info()
         sync_openai_client.embeddings.create(input="Model does not exist.", model="does-not-exist")
 
 
@@ -195,8 +195,8 @@ def test_embeddings_invalid_request_error_invalid_model_with_token_count(set_tra
 @validate_custom_event_count(count=1)
 @background_task()
 def test_embeddings_invalid_request_error_invalid_model(set_trace_info, sync_openai_client):
+    set_trace_info()
     with pytest.raises(openai.NotFoundError):
-        set_trace_info()
         sync_openai_client.embeddings.create(input="Model does not exist.", model="does-not-exist")
 
 
@@ -220,8 +220,8 @@ def test_embeddings_invalid_request_error_invalid_model(set_trace_info, sync_ope
 @validate_custom_event_count(count=1)
 @background_task()
 def test_embeddings_invalid_request_error_invalid_model_async(set_trace_info, async_openai_client, loop):
+    set_trace_info()
     with pytest.raises(openai.NotFoundError):
-        set_trace_info()
         loop.run_until_complete(
             async_openai_client.embeddings.create(input="Model does not exist.", model="does-not-exist")
         )
@@ -248,8 +248,8 @@ def test_embeddings_invalid_request_error_invalid_model_async(set_trace_info, as
 @validate_custom_event_count(count=1)
 @background_task()
 def test_embeddings_invalid_request_error_invalid_model_async_no_content(set_trace_info, async_openai_client, loop):
+    set_trace_info()
     with pytest.raises(openai.NotFoundError):
-        set_trace_info()
         loop.run_until_complete(
             async_openai_client.embeddings.create(input="Model does not exist.", model="does-not-exist")
         )
@@ -278,8 +278,8 @@ def test_embeddings_invalid_request_error_invalid_model_async_no_content(set_tra
 def test_embeddings_invalid_request_error_invalid_model_async_with_token_count(
     set_trace_info, async_openai_client, loop
 ):
+    set_trace_info()
     with pytest.raises(openai.NotFoundError):
-        set_trace_info()
 
         loop.run_until_complete(
             async_openai_client.embeddings.create(input="Model does not exist.", model="does-not-exist")
@@ -326,9 +326,9 @@ embedding_invalid_key_error_events = [
 @validate_custom_event_count(count=1)
 @background_task()
 def test_embeddings_wrong_api_key_error(set_trace_info, monkeypatch, sync_openai_client):
+    set_trace_info()
+    monkeypatch.setattr(sync_openai_client, "api_key", "DEADBEEF")
     with pytest.raises(openai.AuthenticationError):
-        set_trace_info()
-        monkeypatch.setattr(sync_openai_client, "api_key", "DEADBEEF")
         sync_openai_client.embeddings.create(input="Invalid API key.", model="text-embedding-ada-002")
 
 
@@ -354,9 +354,9 @@ def test_embeddings_wrong_api_key_error(set_trace_info, monkeypatch, sync_openai
 @validate_custom_event_count(count=1)
 @background_task()
 def test_embeddings_wrong_api_key_error_async(set_trace_info, monkeypatch, async_openai_client, loop):
+    set_trace_info()
+    monkeypatch.setattr(async_openai_client, "api_key", "DEADBEEF")
     with pytest.raises(openai.AuthenticationError):
-        set_trace_info()
-        monkeypatch.setattr(async_openai_client, "api_key", "DEADBEEF")
         loop.run_until_complete(
             async_openai_client.embeddings.create(input="Invalid API key.", model="text-embedding-ada-002")
         )
@@ -386,8 +386,8 @@ def test_embeddings_wrong_api_key_error_async(set_trace_info, monkeypatch, async
 @validate_custom_event_count(count=1)
 @background_task()
 def test_embeddings_invalid_request_error_no_model_with_raw_response(set_trace_info, sync_openai_client):
+    set_trace_info()
     with pytest.raises(TypeError):
-        set_trace_info()
         sync_openai_client.embeddings.with_raw_response.create(
             input="This is an embedding test with no model."
         )  # no model provided
@@ -415,8 +415,8 @@ def test_embeddings_invalid_request_error_no_model_with_raw_response(set_trace_i
 @validate_custom_event_count(count=1)
 @background_task()
 def test_embeddings_invalid_request_error_no_model_no_content_with_raw_response(set_trace_info, sync_openai_client):
+    set_trace_info()
     with pytest.raises(TypeError):
-        set_trace_info()
         sync_openai_client.embeddings.with_raw_response.create(
             input="This is an embedding test with no model."
         )  # no model provided
@@ -443,8 +443,8 @@ def test_embeddings_invalid_request_error_no_model_no_content_with_raw_response(
 @validate_custom_event_count(count=1)
 @background_task()
 def test_embeddings_invalid_request_error_no_model_async_with_raw_response(set_trace_info, async_openai_client, loop):
+    set_trace_info()
     with pytest.raises(TypeError):
-        set_trace_info()
         loop.run_until_complete(
             async_openai_client.embeddings.with_raw_response.create(input="This is an embedding test with no model.")
         )  # no model provided
@@ -473,8 +473,8 @@ def test_embeddings_invalid_request_error_no_model_async_with_raw_response(set_t
 def test_embeddings_invalid_request_error_invalid_model_with_token_count_with_raw_response(
     set_trace_info, sync_openai_client
 ):
+    set_trace_info()
     with pytest.raises(openai.NotFoundError):
-        set_trace_info()
         sync_openai_client.embeddings.with_raw_response.create(input="Model does not exist.", model="does-not-exist")
 
 
@@ -498,8 +498,8 @@ def test_embeddings_invalid_request_error_invalid_model_with_token_count_with_ra
 @validate_custom_event_count(count=1)
 @background_task()
 def test_embeddings_invalid_request_error_invalid_model_with_raw_response(set_trace_info, sync_openai_client):
+    set_trace_info()
     with pytest.raises(openai.NotFoundError):
-        set_trace_info()
         sync_openai_client.embeddings.with_raw_response.create(input="Model does not exist.", model="does-not-exist")
 
 
@@ -526,8 +526,8 @@ def test_embeddings_invalid_request_error_invalid_model_with_raw_response(set_tr
 def test_embeddings_invalid_request_error_invalid_model_async_with_raw_response(
     set_trace_info, async_openai_client, loop
 ):
+    set_trace_info()
     with pytest.raises(openai.NotFoundError):
-        set_trace_info()
         loop.run_until_complete(
             async_openai_client.embeddings.with_raw_response.create(
                 input="Model does not exist.", model="does-not-exist"
@@ -558,8 +558,8 @@ def test_embeddings_invalid_request_error_invalid_model_async_with_raw_response(
 def test_embeddings_invalid_request_error_invalid_model_async_no_content_with_raw_response(
     set_trace_info, async_openai_client, loop
 ):
+    set_trace_info()
     with pytest.raises(openai.NotFoundError):
-        set_trace_info()
         loop.run_until_complete(
             async_openai_client.embeddings.with_raw_response.create(
                 input="Model does not exist.", model="does-not-exist"
@@ -590,8 +590,8 @@ def test_embeddings_invalid_request_error_invalid_model_async_no_content_with_ra
 def test_embeddings_invalid_request_error_invalid_model_async_with_token_count_with_raw_response(
     set_trace_info, async_openai_client, loop
 ):
+    set_trace_info()
     with pytest.raises(openai.NotFoundError):
-        set_trace_info()
 
         loop.run_until_complete(
             async_openai_client.embeddings.with_raw_response.create(
@@ -622,9 +622,9 @@ def test_embeddings_invalid_request_error_invalid_model_async_with_token_count_w
 @validate_custom_event_count(count=1)
 @background_task()
 def test_embeddings_wrong_api_key_error_with_raw_response(set_trace_info, monkeypatch, sync_openai_client):
+    set_trace_info()
+    monkeypatch.setattr(sync_openai_client, "api_key", "DEADBEEF")
     with pytest.raises(openai.AuthenticationError):
-        set_trace_info()
-        monkeypatch.setattr(sync_openai_client, "api_key", "DEADBEEF")
         sync_openai_client.embeddings.with_raw_response.create(input="Invalid API key.", model="text-embedding-ada-002")
 
 
@@ -650,9 +650,9 @@ def test_embeddings_wrong_api_key_error_with_raw_response(set_trace_info, monkey
 @validate_custom_event_count(count=1)
 @background_task()
 def test_embeddings_wrong_api_key_error_async_with_raw_response(set_trace_info, monkeypatch, async_openai_client, loop):
+    set_trace_info()
+    monkeypatch.setattr(async_openai_client, "api_key", "DEADBEEF")
     with pytest.raises(openai.AuthenticationError):
-        set_trace_info()
-        monkeypatch.setattr(async_openai_client, "api_key", "DEADBEEF")
         loop.run_until_complete(
             async_openai_client.embeddings.with_raw_response.create(
                 input="Invalid API key.", model="text-embedding-ada-002"

@@ -180,7 +180,7 @@ kwargs = dict(
     packages=packages,
     python_requires=">=3.7",
     package_data={
-        "newrelic": ["newrelic.ini", "version.txt", "packages/urllib3/LICENSE.txt", "common/cacert.pem"],
+        "newrelic": ["newrelic.ini", "version.txt", "packages/urllib3/LICENSE.txt", "common/cacert.pem", "scripts/azure-prebuild.sh"],
     },
     extras_require={"infinite-tracing": ["grpcio", "protobuf"]},
 )

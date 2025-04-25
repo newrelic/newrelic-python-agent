@@ -101,7 +101,6 @@ select = [
 
 ignore = [
     # Temporarily disabled rules
-    "RUF100",  # unused-noqa (TODO: remove this once all linters are enabled)
     "PERF203",  # try-except-in-loop (most of these are unavoidable)
     "S110",  # try-except-pass (Bandit wants us to log the exception, which is usually pointless. Spot check these later)
     "PLW0603",  # global-statement (this is currently used extensively)

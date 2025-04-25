@@ -108,6 +108,7 @@ ignore = [
     "PLW2901",  # redefined-loop-name (frequently used, not generally an issue)
     "PLR",  # Pylint Recommendations (too many to fix all at once)
     "E722",  # bare-except (too many to fix all at once)
+    "PT012",  # pytest-raises-with-multiple-statements (too many to fix all at once)
     # Permanently disabled rules
     "D203",  # incorrect-blank-line-before-class
     "D213",  # multi-line-summary-second-line

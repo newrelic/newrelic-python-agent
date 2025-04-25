@@ -53,6 +53,7 @@ jobs:
         with:
           name: ${{ github.job }}-${{ matrix.wheel }}
           path: ./wheelhouse/*.whl
+          if-no-files-found: fail
           retention-days: 1
 
   build-linux-py3:
@@ -98,6 +99,7 @@ jobs:
         with:
           name: ${{ github.job }}-${{ matrix.wheel }}
           path: ./wheelhouse/*.whl
+          if-no-files-found: fail
           retention-days: 1
 
   build-sdist:
@@ -130,6 +132,7 @@ jobs:
           path: |
             ./dist/*.tar.gz
             ./dist/*.tar.gz.md5
+          if-no-files-found: fail
           retention-days: 1
 
   deploy:

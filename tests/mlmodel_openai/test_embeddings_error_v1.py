@@ -280,7 +280,6 @@ def test_embeddings_invalid_request_error_invalid_model_async_with_token_count(
 ):
     set_trace_info()
     with pytest.raises(openai.NotFoundError):
-
         loop.run_until_complete(
             async_openai_client.embeddings.create(input="Model does not exist.", model="does-not-exist")
         )
@@ -592,7 +591,6 @@ def test_embeddings_invalid_request_error_invalid_model_async_with_token_count_w
 ):
     set_trace_info()
     with pytest.raises(openai.NotFoundError):
-
         loop.run_until_complete(
             async_openai_client.embeddings.with_raw_response.create(
                 input="Model does not exist.", model="does-not-exist"

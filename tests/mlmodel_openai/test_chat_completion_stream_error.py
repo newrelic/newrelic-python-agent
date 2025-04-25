@@ -715,7 +715,6 @@ def test_chat_completion_stream_parsing_error_async(loop, monkeypatch, set_trace
 def test_chat_completion_stream_parsing_error(monkeypatch, set_trace_info):
     set_trace_info()
     with pytest.raises(openai.error.APIError):
-
         generator = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=({"role": "user", "content": "Stream parsing error."},),

@@ -34,6 +34,11 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 1
+    # Ignore pinned version of cibuildwheel for Python 3.7
+    ignore:
+      - dependency-name: "pypa/cibuildwheel*"
+        versions: ["8d945475ac4b1aac4ae08b2fd27db9917158b6ce", "2.17.0"]
+    # Don't group cibuildwheel with other actions, so we don't accidentally upgrade too far
     groups:
       cibuildwheel:
         patterns:

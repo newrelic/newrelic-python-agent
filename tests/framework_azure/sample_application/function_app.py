@@ -13,9 +13,7 @@
 # limitations under the License.
 
 import os
-
 import azure.functions as func
-
 import newrelic.agent
 
 newrelic.agent.initialize()  # Initialize the New Relic agent
@@ -30,15 +28,5 @@ app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 def basic_page(req):
     user = req.params.get("user")
     response = func.HttpResponse(f"Hello, {user}!", status_code=200, headers={"Content-Type": "text/plain"})
-    transaction = newrelic.agent.current_transaction()
-    assert transaction, "Transaction should be available"
+    assert newrelic.agent.current_transaction(), "No active transaction."
     return response
-
-
-# mock_http_request = func.HttpRequest(
-#     method="GET",
-#     url=f"http://127.0.0.1:{PORT}/basic",
-#     body=None,
-#     headers={"Content-Type": "text/plain"},
-#     params={"user": "Reli"},
-# )

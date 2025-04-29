@@ -1,0 +1,15 @@
+FROM mcr.microsoft.com/azure-functions/python:4-python3.11
+
+RUN apt-get update
+RUN apt-get -y install git
+
+ENV AzureWebJobsScriptRoot=/home/site/wwwroot \
+    AzureFunctionsJobHost__Logging__Console__IsEnabled=true
+
+# This will need to be updated when the tests are run from a different branch
+RUN pip install git+https://github.com/newrelic/newrelic-python-agent.git@azure-function-instrumentation-test  --target /home/site/wwwroot/.python_packages/lib/site-packages
+
+COPY function_app.py /home/site/wwwroot/
+COPY host.json /home/site/wwwroot/
+
+

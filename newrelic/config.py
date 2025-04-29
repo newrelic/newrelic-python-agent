@@ -4011,10 +4011,10 @@ def _process_module_builtin_defaults():
     )
     _process_module_definition("tornado.routing", "newrelic.hooks.framework_tornado", "instrument_tornado_routing")
     _process_module_definition("tornado.web", "newrelic.hooks.framework_tornado", "instrument_tornado_web")
-    _process_module_definition("azure.functions._http", "newrelic.hooks.framework_azure", "instrument_azure__http")
+    _process_module_definition("azure.functions._http", "newrelic.hooks.serverless_azure", "instrument_azure__http")
     _process_module_definition(
         "azure_functions_worker.dispatcher",
-        "newrelic.hooks.framework_azure",
+        "newrelic.hooks.serverless_azure",
         "instrument_azure_functions_worker_dispatcher",
     )
 

@@ -1474,7 +1474,7 @@ jobs:
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     services:
-      elasticsearch:
+      azurefunctions:
         image: lrafeei/azure-functions:v0.1.1
         ports:
           - 8080:80

@@ -121,22 +121,19 @@ async def wrap_dispatcher__run_async_func(wrapped, instance, args, kwargs):
 
         website_owner_name = os.environ.get("WEBSITE_OWNER_NAME", None)
         if not website_owner_name:
-            subscription_id = None
+            subscription_id = "Unknown"
         else:
             subscription_id = re.search(r"(?:(?!\+).)*", website_owner_name) and re.search(
                 r"(?:(?!\+).)*", website_owner_name
             ).group(0)
-        resource_group_name = os.environ.get(
-            "WEBSITE_RESOURCE_GROUP",
-            None,
-        )
-        if resource_group_name is None:
-            if website_owner_name.endswith("-Linux"):
-                resource_group_name = re.search(r"\+([a-zA-z0-9\-]+)-[a-zA-Z0-9]+(?:-Linux)", website_owner_name).group(
-                    1
-                )
-            else:
-                resource_group_name = re.search(r"\+([a-zA-z0-9\-]+)-[a-zA-Z0-9]+", website_owner_name).group(1)
+        if website_owner_name and website_owner_name.endswith("-Linux"):
+            resource_group_name = re.search(r"\+([a-zA-z0-9\-]+)-[a-zA-Z0-9]+(?:-Linux)", website_owner_name).group(
+                1
+            )
+        elif website_owner_name:
+            resource_group_name = re.search(r"\+([a-zA-z0-9\-]+)-[a-zA-Z0-9]+", website_owner_name).group(1)
+        else:
+            resource_group_name = os.environ.get("WEBSITE_RESOURCE_GROUP", "Unknown")
         azure_function_app_name = os.environ.get("WEBSITE_SITE_NAME", application.name)
 
         cloud_resource_id = f"/subscriptions/{subscription_id}/resourceGroups/{resource_group_name}/providers/Microsoft.Web/sites/{azure_function_app_name}/functions/{context.function_name}"
@@ -222,22 +219,20 @@ def wrap_dispatcher__run_sync_func(wrapped, instance, args, kwargs):
 
         website_owner_name = os.environ.get("WEBSITE_OWNER_NAME", None)
         if not website_owner_name:
-            subscription_id = None
+            subscription_id = "Unknown"
         else:
             subscription_id = re.search(r"(?:(?!\+).)*", website_owner_name) and re.search(
                 r"(?:(?!\+).)*", website_owner_name
             ).group(0)
-        resource_group_name = os.environ.get(
-            "WEBSITE_RESOURCE_GROUP",
-            None,
-        )
-        if resource_group_name is None:
-            if website_owner_name.endswith("-Linux"):
-                resource_group_name = re.search(r"\+([a-zA-z0-9\-]+)-[a-zA-Z0-9]+(?:-Linux)", website_owner_name).group(
-                    1
-                )
-            else:
-                resource_group_name = re.search(r"\+([a-zA-z0-9\-]+)-[a-zA-Z0-9]+", website_owner_name).group(1)
+        if website_owner_name and website_owner_name.endswith("-Linux"):
+            resource_group_name = re.search(r"\+([a-zA-z0-9\-]+)-[a-zA-Z0-9]+(?:-Linux)", website_owner_name).group(
+                1
+            )
+        elif website_owner_name:
+            resource_group_name = re.search(r"\+([a-zA-z0-9\-]+)-[a-zA-Z0-9]+", website_owner_name).group(1)
+        else:
+            resource_group_name = os.environ.get("WEBSITE_RESOURCE_GROUP", "Unknown")
+            
         azure_function_app_name = os.environ.get("WEBSITE_SITE_NAME", application.name)
 
         cloud_resource_id = f"/subscriptions/{subscription_id}/resourceGroups/{resource_group_name}/providers/Microsoft.Web/sites/{azure_function_app_name}/functions/{context.function_name}"

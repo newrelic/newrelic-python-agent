@@ -63,33 +63,7 @@ from distutils.core import Extension
 from distutils.errors import CCompilerError, DistutilsExecError, DistutilsPlatformError
 
 
-def newrelic_agent_guess_next_version(tag_version):
-    if hasattr(tag_version, "tag"):  # For setuptools_scm 7.0+
-        tag_version = tag_version.tag
-
-    version, _, _ = str(tag_version).partition("+")
-    version_info = list(map(int, version.split(".")))
-    if len(version_info) < 3:
-        return version
-    version_info[1] += 1
-    version_info[2] = 0
-    return ".".join(map(str, version_info))
-
-
-def newrelic_agent_next_version(version):
-    if version.exact:
-        return version.format_with("{tag}")
-    else:
-        return version.format_next_version(newrelic_agent_guess_next_version, fmt="{guessed}")
-
-
-script_directory = Path(__file__).parent
-
-readme_file = script_directory / "README.md"
-with readme_file.open() as f:
-    readme_file_contents = f.read()
-
-if sys.platform == "win32" and python_version > (2, 6):
+if sys.platform == "win32":
     build_ext_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError, IOError)
 else:
     build_ext_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError)
@@ -113,82 +87,58 @@ class optional_build_ext(build_ext):
             raise BuildExtFailed()
 
 
-packages = [
-    "newrelic",
-    "newrelic.admin",
-    "newrelic.api",
-    "newrelic.bootstrap",
-    "newrelic.common",
-    "newrelic.core",
-    "newrelic.extras",
-    "newrelic.extras.framework_django",
-    "newrelic.extras.framework_django.templatetags",
-    "newrelic.hooks",
-    "newrelic.network",
-    "newrelic/packages",
-    "newrelic/packages/isort",
-    "newrelic/packages/isort/stdlibs",
-    "newrelic/packages/urllib3",
-    "newrelic/packages/urllib3/util",
-    "newrelic/packages/urllib3/contrib",
-    "newrelic/packages/urllib3/contrib/_securetransport",
-    "newrelic/packages/urllib3/packages",
-    "newrelic/packages/urllib3/packages/backports",
-    "newrelic/packages/wrapt",
-    "newrelic/packages/opentelemetry_proto",
-    "newrelic.samplers",
-]
-
-classifiers = [
-    "Development Status :: 5 - Production/Stable",
-    "License :: OSI Approved :: Apache Software License",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
-    "Programming Language :: Python :: Implementation :: CPython",
-    "Programming Language :: Python :: Implementation :: PyPy",
-    "Topic :: System :: Monitoring",
-]
-
 kwargs = dict(
     name="newrelic",
-    use_scm_version={
-        "version_scheme": newrelic_agent_next_version,
-        "local_scheme": "no-local-version",
-        "git_describe_command": "git describe --dirty --tags --long --match *.*.*",
-        "write_to": "newrelic/version.txt",
-    },
-    setup_requires=["setuptools_scm>=3.2,<9"],
-    description="New Relic Python Agent",
-    long_description=readme_file_contents,
-    long_description_content_type="text/markdown",
-    url="https://docs.newrelic.com/docs/apm/agents/python-agent/",
-    project_urls={"Source": "https://github.com/newrelic/newrelic-python-agent"},
-    author="New Relic",
-    author_email="support@newrelic.com",
-    maintainer="New Relic",
-    maintainer_email="support@newrelic.com",
+    setup_requires=["setuptools>=61.2", "setuptools_scm>=3.2,<10"], 
     license="Apache-2.0",
-    zip_safe=False,
-    classifiers=classifiers,
-    packages=packages,
-    python_requires=">=3.7",
-    package_data={
-        "newrelic": ["newrelic.ini", "version.txt", "packages/urllib3/LICENSE.txt", "common/cacert.pem", "scripts/azure-prebuild.sh"],
-    },
-    extras_require={"infinite-tracing": ["grpcio", "protobuf"]},
 )
 
-if with_setuptools:
-    kwargs["entry_points"] = {
-        "console_scripts": ["newrelic-admin = newrelic.admin:main"],
-    }
-else:
+if not with_setuptools:
+    script_directory = os.path.dirname(__file__)
+    if not script_directory:
+        script_directory = os.getcwd()
+
+    readme_file = os.path.join(script_directory, "README.md")
+
     kwargs["scripts"] = ["scripts/newrelic-admin"]
+
+    # Old config that now lives in pyproject.toml
+    # Preserved here for backwards compatibility with distutils
+    packages = [
+        "newrelic",
+        "newrelic.admin",
+        "newrelic.api",
+        "newrelic.bootstrap",
+        "newrelic.common",
+        "newrelic.core",
+        "newrelic.extras",
+        "newrelic.extras.framework_django",
+        "newrelic.extras.framework_django.templatetags",
+        "newrelic.hooks",
+        "newrelic.network",
+        "newrelic.packages",
+        "newrelic.packages.isort",
+        "newrelic.packages.isort.stdlibs",
+        "newrelic.packages.urllib3",
+        "newrelic.packages.urllib3.util",
+        "newrelic.packages.urllib3.contrib",
+        "newrelic.packages.urllib3.contrib._securetransport",
+        "newrelic.packages.urllib3.packages",
+        "newrelic.packages.urllib3.packages.backports",
+        "newrelic.packages.wrapt",
+        "newrelic.packages.opentelemetry_proto",
+        "newrelic.samplers",
+    ]
+
+    kwargs.update(dict(
+        python_requires=">=3.7",
+        zip_safe=False,
+        packages=packages,
+        package_data={
+            "newrelic": ["newrelic.ini", "version.txt", "packages/urllib3/LICENSE.txt", "common/cacert.pem", "scripts/azure-prebuild.sh"],
+        },
+    ))
+
 
 
 def with_librt():
@@ -253,9 +203,9 @@ optimised C versions, will also be used resulting in additional overheads.
 
 with_extensions = os.environ.get("NEW_RELIC_EXTENSIONS", None)
 if with_extensions:
-    if with_extensions.lower() == "true":
+    if with_extensions.lower() in ["on", "true", "1"]:
         with_extensions = True
-    elif with_extensions.lower() == "false":
+    elif with_extensions.lower() in ["off", "false", "0"]:
         with_extensions = False
     else:
         with_extensions = None

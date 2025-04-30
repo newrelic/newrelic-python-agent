@@ -12,6 +12,96 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# ===========================
+# Project Build Configuration
+# ===========================
+
+[project]
+name="newrelic"
+description = "New Relic Python Agent"
+authors = [{name = "New Relic", email = "support@newrelic.com"}]
+maintainers = [{name = "New Relic", email = "support@newrelic.com"}]
+readme = "README.md"
+# License requires setuptools>=77.0.3 for pyproject.toml, which is Python 3.9+
+# license = "Apache-2.0"
+# license-files = [
+#     "LICENSE",
+#     "THIRD_PARTY_NOTICES.md",
+# ]
+requires-python = ">=3.7"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Topic :: System :: Monitoring",
+]
+dynamic = ["version", "license"]
+
+[project.urls]
+Homepage = "https://docs.newrelic.com/docs/apm/agents/python-agent/"
+GitHub = "https://github.com/newrelic/newrelic-python-agent"
+"Release Notes" = "https://docs.newrelic.com/docs/release-notes/agent-release-notes/python-release-notes/"
+
+[project.optional-dependencies]
+infinite-tracing = ["grpcio", "protobuf"]
+
+[project.scripts]
+newrelic-admin = "newrelic.admin:main"
+
+[build-system]
+requires = [
+    "setuptools>=61.2",
+    "setuptools_scm>=3.2,<10",
+]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+zip-safe = false
+packages = [
+    "newrelic",
+    "newrelic.admin",
+    "newrelic.api",
+    "newrelic.bootstrap",
+    "newrelic.common",
+    "newrelic.core",
+    "newrelic.extras",
+    "newrelic.extras.framework_django",
+    "newrelic.extras.framework_django.templatetags",
+    "newrelic.hooks",
+    "newrelic.network",
+    "newrelic.packages",
+    "newrelic.packages.isort",
+    "newrelic.packages.isort.stdlibs",
+    "newrelic.packages.urllib3",
+    "newrelic.packages.urllib3.util",
+    "newrelic.packages.urllib3.contrib",
+    "newrelic.packages.urllib3.contrib._securetransport",
+    "newrelic.packages.urllib3.packages",
+    "newrelic.packages.urllib3.packages.backports",
+    "newrelic.packages.wrapt",
+    "newrelic.packages.opentelemetry_proto",
+    "newrelic.samplers",
+]
+
+[tool.setuptools.package-data]
+newrelic = ["newrelic.ini", "version.txt", "packages/urllib3/LICENSE.txt", "common/cacert.pem", "scripts/azure-prebuild.sh"]
+
+[tool.setuptools_scm]
+write_to = "newrelic/_version.py"
+# Don't convert git_describe_command to an array, it doesn't seem to work properly on any versions of setuptools_scm.
+git_describe_command = 'git describe --dirty --tags --long --match "*.*.*"'
+
+# ==================
+# Ruff Configuration
+# ==================
+
 [tool.ruff]
 output-format = "grouped"
 line-length = 120
@@ -159,7 +249,10 @@ ignore = [
     "S108",  # flake8-bandit (hardcoded log files are never used as input)
 ]
 
-# Other linters and formatters
+# =========================
+# Other Tools Configuration
+# =========================
+
 [tool.flynt]
 line-length = 999999
 aggressive = true

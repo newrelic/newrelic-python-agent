@@ -50,7 +50,7 @@ def azure_start():
     # Start the Azure Function app using subprocess
     cur_dir = os.path.dirname(os.path.abspath(__file__))
     cmd = ["func", "start"]
-    process = subprocess.Popen(cmd, cwd=f"{cur_dir}/sample_application")
+    process = subprocess.Popen(cmd, cwd=f"{cur_dir}/sample_application", env=os.environ.copy())
     return process
 
 

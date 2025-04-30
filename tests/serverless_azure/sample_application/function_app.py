@@ -13,11 +13,11 @@
 # limitations under the License.
 
 import newrelic.agent
-import os
 
 newrelic.agent.initialize()  # Initialize the New Relic agent
 app_name = "Python Agent Test (serverless_azure)"
-newrelic.agent.register_application(app_name)
+application = newrelic.agent.register_application(app_name)
+print(f"Registered application: {app_name}", application)
 
 import azure.functions as func
 

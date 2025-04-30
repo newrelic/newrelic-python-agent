@@ -75,7 +75,6 @@ def test_ping():
 
         time.sleep(0.5)
 
-    breakpoint()
     # Send a request to the Azure Function app
     response = requests.get(f"http://localhost:7071/basic?user=Reli+5Ever")
     assert response.status_code == 200
@@ -84,50 +83,3 @@ def test_ping():
         
     azure_end(process)
 
-
-
-# def available_port():
-#     """
-#     Get an available port on the local machine.
-#     """
-#     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#     sock.bind(("", 0))
-#     port = sock.getsockname()[1]
-#     sock.close()
-#     return port
-
-# # PORT = available_port()
-# PORT = 7071
-
-# def azure_start():
-#     DependencyManager.initialize()
-#     DependencyManager.use_worker_dependencies()
-
-#     return asyncio.run(
-#         start_async(
-#             "127.0.0.1",
-#             PORT,
-#             "8663d118-7e07-4d53-a1d0-064a8f185940",
-#             "7cdc5d8d-6109-435a-b329-5a7a2e71af9f",
-#         )
-#     )
-
-
-# def test_send_request():
-#     azure_start()
-#     # Wait until the connection is established before making the request.
-#     for _ in range(50):
-#         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#         try:
-#             sock.connect(("127.0.0.1", PORT))
-#             sock.close()
-#             break
-#         except (socket.error, ConnectionRefusedError) as e:
-#             pass
-
-#         time.sleep(0.5)
-
-#     response = requests.get(f"http://127.0.0.1:{PORT}/basic?user=Reli")
-#     assert response.status_code == 200
-#     assert response.text == "Hello, Reli!"
-#     assert response.headers["Content-Type"] == "text/plain"

@@ -16,7 +16,7 @@ import newrelic.agent
 import os
 
 newrelic.agent.initialize()  # Initialize the New Relic agent
-app_name = os.environ.get("NEW_RELIC_APP_NAME", os.environ.get("WEBSITE_SITE_NAME", None))
+app_name = "Python Agent Test (serverless_azure)"
 newrelic.agent.register_application(app_name)
 
 import azure.functions as func

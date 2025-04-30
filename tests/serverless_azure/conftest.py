@@ -40,5 +40,5 @@ _default_settings = {
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
-    app_name="Python Agent Test (serverless_azure)", default_settings=_default_settings
+    app_name="Python Agent Test (serverless_azure_ping)", default_settings=_default_settings
 )

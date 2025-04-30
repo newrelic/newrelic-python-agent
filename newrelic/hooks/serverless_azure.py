@@ -281,11 +281,6 @@ def wrap_httpresponse__init__(wrapped, instance, args, kwargs):
     return response
 
 
-# def wrap_dispatcher_get_worker_metadata(wrapped, instance, args, kwargs):
-#     breakpoint()
-#     print("MADE IT TO get_worker_metadata")
-#     return wrapped(*args, **kwargs)
-
 
 def instrument_azure__http(module):
     if hasattr(module, "HttpResponse"):
@@ -293,8 +288,6 @@ def instrument_azure__http(module):
 
 
 def instrument_azure_functions_worker_dispatcher(module):
-    # wrap_function_wrapper(module, "Dispatcher.__init__", wrap_dispatcher__init__)
-
     if hasattr(module, "Dispatcher") and hasattr(module.Dispatcher, "_handle__invocation_request"):
         wrap_function_wrapper(
             module, "Dispatcher._handle__invocation_request", wrap_dispatcher__handle__invocation_request
@@ -303,14 +296,3 @@ def instrument_azure_functions_worker_dispatcher(module):
         wrap_function_wrapper(module, "Dispatcher._run_sync_func", wrap_dispatcher__run_sync_func)
     if hasattr(module, "Dispatcher") and hasattr(module.Dispatcher, "_run_async_func"):
         wrap_function_wrapper(module, "Dispatcher._run_async_func", wrap_dispatcher__run_async_func)
-
-    # if hasattr(module, "Dispatcher") and hasattr(module.Dispatcher, "get_worker_metadata"):
-    #     wrap_function_wrapper(module, "Dispatcher.get_worker_metadata", wrap_dispatcher_get_worker_metadata)
-
-    # if hasattr(module.Dispatcher, "connect"):
-    #     wrap_function_wrapper(module, "Dispatcher.connect", wrap_dispatcher_connect)
-
-    # if hasattr(module, "Dispatcher") and hasattr(module.Dispatcher, "_run_sync_func"):
-    #     wrap_function_wrapper(module, "Dispatcher._run_sync_func", wrap_dispatcher__run_sync_func)
-    # if hasattr(module, "Dispatcher") and hasattr(module.Dispatcher, "_run_async_func"):
-    #     wrap_function_wrapper(module, "Dispatcher._run_async_func", wrap_dispatcher__run_async_func)

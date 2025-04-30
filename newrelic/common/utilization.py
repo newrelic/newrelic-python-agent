@@ -181,7 +181,7 @@ class AWSUtilization(CommonUtilization):
     def fetch(cls):
         try:
             authToken = cls.fetchAuthToken()
-            if authToken == None:
+            if authToken is None:
                 return
             cls.HEADERS = {"X-aws-ec2-metadata-token": authToken}
             with cls.CLIENT_CLS(cls.METADATA_HOST, timeout=cls.FETCH_TIMEOUT) as client:
@@ -205,6 +205,47 @@ class AzureUtilization(CommonUtilization):
     EXPECTED_KEYS = ("location", "name", "vmId", "vmSize")
     HEADERS = {"Metadata": "true"}
     VENDOR_NAME = "azure"
+
+
+class AzureFunctionUtilization(CommonUtilization):
+    METADATA_HOST = "169.254.169.254"
+    METADATA_PATH = "/metadata/instance/compute"
+    METADATA_QUERY = {"api-version": "2017-03-01"}
+    EXPECTED_KEYS = ("faas.app_name", "cloud.region")
+    HEADERS = {"Metadata": "true"}
+    VENDOR_NAME = "azurefunction"
+
+    @staticmethod
+    def fetch():
+        cloud_region = os.environ.get("REGION_NAME")
+        website_owner_name = os.environ.get("WEBSITE_OWNER_NAME")
+        azure_function_app_name = os.environ.get("WEBSITE_SITE_NAME")
+
+        if all((cloud_region, website_owner_name, azure_function_app_name)):
+            if website_owner_name.endswith("-Linux"):
+                resource_group_name = re.search(r"\+([a-zA-z0-9\-]+)-[a-zA-Z0-9]+(?:-Linux)", website_owner_name).group(
+                    1
+                )
+            else:
+                resource_group_name = re.search(r"\+([a-zA-z0-9\-]+)-[a-zA-Z0-9]+", website_owner_name).group(1)
+            subscription_id = re.search(r"(?:(?!\+).)*", website_owner_name).group(0)
+            faas_app_name = "/subscriptions/{0}/resourceGroups/{1}/providers/Microsoft.Web/sites/{2}".format(
+                subscription_id, resource_group_name, azure_function_app_name
+            )
+            # Only send if all values are present
+            return (faas_app_name, cloud_region)
+
+    @classmethod
+    def get_values(cls, response):
+        if response is None or len(response) != 2:
+            return
+
+        values = {}
+        for k, v in zip(cls.EXPECTED_KEYS, response):
+            if hasattr(v, "decode"):
+                v = v.decode("utf-8")
+            values[k] = v
+        return values
 
 
 class GCPUtilization(CommonUtilization):

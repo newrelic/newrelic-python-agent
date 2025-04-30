@@ -37,6 +37,25 @@ def add_token_count_to_events(expected_events):
     return events
 
 
+def add_token_counts_to_events(expected_events):
+    events = copy.deepcopy(expected_events)
+    for event in events:
+        if event[0]["type"] == "LlmChatCompletionSummary":
+            event[1]["response.usage.prompt_tokens"] = 105
+            event[1]["response.usage.completion_tokens"] = 105
+            event[1]["response.usage.total_tokens"] = 210
+    return events
+
+
+def add_token_counts_to_events_error(expected_events):
+    events = copy.deepcopy(expected_events)
+    for event in events:
+        if event[0]["type"] == "LlmChatCompletionSummary":
+            event[1]["response.usage.prompt_tokens"] = 105
+            event[1]["response.usage.total_tokens"] = 105
+    return events
+
+
 def events_sans_content(event):
     new_event = copy.deepcopy(event)
     for _event in new_event:

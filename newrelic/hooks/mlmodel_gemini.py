@@ -230,12 +230,12 @@ def wrap_generate_content_sync(wrapped, instance, args, kwargs):
     try:
         return_val = wrapped(*args, **kwargs)
     except Exception as exc:
-        _record_generation_error(transaction, linking_metadata, completion_id, kwargs, ft, exc)
+        _record_generation_error(transaction, settings, linking_metadata, completion_id, kwargs, ft, exc)
         raise
 
     ft.__exit__(None, None, None)
 
-    _handle_generation_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val)
+    _handle_generation_success(transaction, settings, linking_metadata, completion_id, kwargs, ft, return_val)
 
     return return_val
 
@@ -261,27 +261,25 @@ async def wrap_generate_content_async(wrapped, instance, args, kwargs):
     try:
         return_val = await wrapped(*args, **kwargs)
     except Exception as exc:
-        _record_generation_error(transaction, linking_metadata, completion_id, kwargs, ft, exc)
+        _record_generation_error(transaction, settings, linking_metadata, completion_id, kwargs, ft, exc)
         raise
 
     ft.__exit__(None, None, None)
 
-    _handle_generation_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val)
+    _handle_generation_success(transaction, settings, linking_metadata, completion_id, kwargs, ft, return_val)
 
     return return_val
 
 
-def _record_generation_error(transaction, linking_metadata, completion_id, kwargs, ft, exc):
+def _record_generation_error(transaction, settings, linking_metadata, completion_id, kwargs, ft, exc):
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
-    notice_error_attributes = {}
 
     # If generate_content was called directly, "contents" should hold a string with just the user input.
     # If send_message was called, "contents" should hold a list containing the user input & role.
     # When send_message is called multiple times within a chat conversation, "contents" will hold chat history with
     # multiple lists to capture each input to the LLM (only inputs and not responses)
     messages = kwargs.get("contents")
-
     if isinstance(messages, str):
         input_message = messages
     else:
@@ -293,15 +291,21 @@ def _record_generation_error(transaction, linking_metadata, completion_id, kwarg
                 "Unable to parse input message to Gemini LLM. Message content and role will be omitted from "
                 "corresponding LlmChatCompletionMessage event. "
             )
+    # Extract the input message content and role from the input message if it exists
+    input_message_content, input_role = _parse_input_message(input_message) if input_message else (None, None)
 
-    generation_config = kwargs.get("config")
-    if generation_config:
-        request_temperature = getattr(generation_config, "temperature", None)
-        request_max_tokens = getattr(generation_config, "max_output_tokens", None)
-    else:
-        request_temperature = None
-        request_max_tokens = None
+    # Extract data from generation config object
+    request_temperature, request_max_tokens = _extract_generation_config(kwargs)
 
+    # Extract model and prompt token count
+    request_model = kwargs.get("model")
+    prompt_tokens = (
+        settings.ai_monitoring.llm_token_count_callback(request_model, input_message_content)
+        if settings.ai_monitoring.llm_token_count_callback and input_message_content
+        else None
+    )
+
+    # Prepare error attributes
     notice_error_attributes = {
         "http.statusCode": getattr(exc, "code", None),
         "error.message": getattr(exc, "message", None),
@@ -319,7 +323,6 @@ def _record_generation_error(transaction, linking_metadata, completion_id, kwarg
     ft.__exit__(*sys.exc_info())
 
     try:
-        request_model = kwargs.get("model")
         error_chat_completion_dict = {
             "id": completion_id,
             "span_id": span_id,
@@ -328,6 +331,10 @@ def _record_generation_error(transaction, linking_metadata, completion_id, kwarg
             "request.model": request_model,
             "request.temperature": request_temperature,
             "request.max_tokens": request_max_tokens,
+            "response.usage.prompt_tokens": prompt_tokens,
+            # In error cases, we do not have a response to calculate completion tokens on so omit them from the LLM
+            # event and set total tokens to the prompt tokens value
+            "response.usage.total_tokens": prompt_tokens,
             "vendor": "gemini",
             "ingest_source": "Python",
             "duration": ft.duration * 1000,
@@ -337,25 +344,24 @@ def _record_generation_error(transaction, linking_metadata, completion_id, kwarg
         error_chat_completion_dict.update(llm_metadata)
         transaction.record_custom_event("LlmChatCompletionSummary", error_chat_completion_dict)
 
-        output_message_list = []
-
         create_chat_completion_message_event(
             transaction,
-            input_message,
+            input_message_content,
+            input_role,
             completion_id,
             span_id,
             trace_id,
             # Passing the request model as the response model here since we do not have access to a response model
             request_model,
-            request_model,
             llm_metadata,
-            output_message_list,
+            # Pass an empty output_message_list since we didn't receive a response from the LLM
+            [],
         )
     except Exception:
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
 
 
-def _handle_generation_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val):
+def _handle_generation_success(transaction, settings, linking_metadata, completion_id, kwargs, ft, return_val):
     if not return_val:
         return
 
@@ -364,28 +370,33 @@ def _handle_generation_success(transaction, linking_metadata, completion_id, kwa
         # Response objects are pydantic models so this function call converts the response into a dict
         if hasattr(response, "model_dump"):
             response = response.model_dump()
-        _record_generation_success(transaction, linking_metadata, completion_id, kwargs, ft, response)
+        _record_generation_success(transaction, settings, linking_metadata, completion_id, kwargs, ft, response)
 
     except Exception:
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
 
 
-def _record_generation_success(transaction, linking_metadata, completion_id, kwargs, ft, response):
+def _record_generation_success(transaction, settings, linking_metadata, completion_id, kwargs, ft, response):
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
     try:
+        # Parse response details
         if response:
             response_model = response.get("model_version")
             # finish_reason is an enum, so grab just the stringified value from it to report
             finish_reason = response.get("candidates")[0].get("finish_reason").value
             output_message_list = [response.get("candidates")[0].get("content")]
+            token_usage = response.get("usage_metadata") or {}
+
         else:
             # Set all values to NoneTypes since we cannot access them through kwargs or another method that doesn't
             # require the response object
             response_model = None
             output_message_list = []
             finish_reason = None
+            token_usage = {}
 
+        # Parse request details
         request_model = kwargs.get("model")
 
         # If generate_content was called directly, "contents" should hold a string with just the user input.
@@ -406,13 +417,49 @@ def _record_generation_success(transaction, linking_metadata, completion_id, kwa
                     "corresponding LlmChatCompletionMessage event. "
                 )
 
-        generation_config = kwargs.get("config")
-        if generation_config:
-            request_temperature = getattr(generation_config, "temperature", None)
-            request_max_tokens = getattr(generation_config, "max_output_tokens", None)
+        input_message_content, input_role = _parse_input_message(input_message) if input_message else (None, None)
+
+        # Parse output message content
+        # This list should have a length of 1 to represent the output message
+        # Parse the message text out to pass to any registered token counting callback
+        output_message_content = output_message_list[0].get("parts")[0].get("text") if output_message_list else None
+
+        # Extract token counts from response object
+        if token_usage:
+            response_prompt_tokens = token_usage.get("prompt_token_count")
+            response_completion_tokens = token_usage.get("candidates_token_count")
+            response_total_tokens = token_usage.get("total_token_count")
+            # Filter out the token usage object to only include the keys we want to report in the LLM event
+            filtered_token_usage = {
+                key: token_usage.get(key)
+                for key in ["prompt_token_count", "candidates_token_count", "total_token_count"]
+            }
+            token_usage_object = str(filtered_token_usage)
+
         else:
-            request_temperature = None
-            request_max_tokens = None
+            response_prompt_tokens = None
+            response_completion_tokens = None
+            response_total_tokens = None
+            token_usage_object = None
+
+        # Calculate token counts by checking if a callback is registered and if we have the necessary content to pass
+        # to it. If not, then we use the token counts provided in the response object
+        prompt_tokens = (
+            settings.ai_monitoring.llm_token_count_callback(request_model, input_message_content)
+            if settings.ai_monitoring.llm_token_count_callback and input_message_content
+            else response_prompt_tokens
+        )
+        completion_tokens = (
+            settings.ai_monitoring.llm_token_count_callback(response_model, output_message_content)
+            if settings.ai_monitoring.llm_token_count_callback and output_message_content
+            else response_completion_tokens
+        )
+        total_tokens = (
+            prompt_tokens + completion_tokens if all([prompt_tokens, completion_tokens]) else response_total_tokens
+        )
+
+        # Extract generation config
+        request_temperature, request_max_tokens = _extract_generation_config(kwargs)
 
         full_chat_completion_summary_dict = {
             "id": completion_id,
@@ -430,6 +477,10 @@ def _record_generation_success(transaction, linking_metadata, completion_id, kwa
             # message This value should be 2 in almost all cases since we will report a summary event for each
             # separate request (every input and output from the LLM)
             "response.number_of_messages": 1 + len(output_message_list),
+            "response.usage.prompt_tokens": prompt_tokens,
+            "response.usage.completion_tokens": completion_tokens,
+            "response.usage.total_tokens": total_tokens,
+            "token_usage": token_usage_object,
         }
 
         llm_metadata = _get_llm_attributes(transaction)
@@ -438,12 +489,12 @@ def _record_generation_success(transaction, linking_metadata, completion_id, kwa
 
         create_chat_completion_message_event(
             transaction,
-            input_message,
+            input_message_content,
+            input_role,
             completion_id,
             span_id,
             trace_id,
             response_model,
-            request_model,
             llm_metadata,
             output_message_list,
         )
@@ -451,47 +502,53 @@ def _record_generation_success(transaction, linking_metadata, completion_id, kwa
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
 
 
+def _parse_input_message(input_message):
+    # The input_message will be a string if generate_content was called directly. In this case, we don't have
+    # access to the role, so we default to user since this was an input message
+    if isinstance(input_message, str):
+        return input_message, "user"
+    # The input_message will be a Google Content type if send_message was called, so we parse out the message
+    # text and role (which should be "user")
+    elif isinstance(input_message, google.genai.types.Content):
+        return input_message.parts[0].text, input_message.role
+    else:
+        return None, None
+
+
+def _extract_generation_config(kwargs):
+    generation_config = kwargs.get("config")
+    if generation_config:
+        request_temperature = getattr(generation_config, "temperature", None)
+        request_max_tokens = getattr(generation_config, "max_output_tokens", None)
+    else:
+        request_temperature = None
+        request_max_tokens = None
+
+    return request_temperature, request_max_tokens
+
+
 def create_chat_completion_message_event(
     transaction,
-    input_message,
+    input_message_content,
+    input_role,
     chat_completion_id,
     span_id,
     trace_id,
     response_model,
-    request_model,
     llm_metadata,
     output_message_list,
 ):
     try:
         settings = transaction.settings or global_settings()
 
-        if input_message:
-            # The input_message will be a string if generate_content was called directly. In this case, we don't have
-            # access to the role, so we default to user since this was an input message
-            if isinstance(input_message, str):
-                input_message_content = input_message
-                input_role = "user"
-            # The input_message will be a Google Content type if send_message was called, so we parse out the message
-            # text and role (which should be "user")
-            elif isinstance(input_message, google.genai.types.Content):
-                input_message_content = input_message.parts[0].text
-                input_role = input_message.role
-            # Set input data to NoneTypes to ensure token_count callback is not called
-            else:
-                input_message_content = None
-                input_role = None
-
+        if input_message_content:
             message_id = str(uuid.uuid4())
 
             chat_completion_input_message_dict = {
                 "id": message_id,
                 "span_id": span_id,
                 "trace_id": trace_id,
-                "token_count": (
-                    settings.ai_monitoring.llm_token_count_callback(request_model, input_message_content)
-                    if settings.ai_monitoring.llm_token_count_callback and input_message_content
-                    else None
-                ),
+                "token_count": 0,
                 "role": input_role,
                 "completion_id": chat_completion_id,
                 # The input message will always be the first message in our request/ response sequence so this will
@@ -517,7 +574,7 @@ def create_chat_completion_message_event(
 
                 # Add one to the index to account for the single input message so our sequence value is accurate for
                 # the output message
-                if input_message:
+                if input_message_content:
                     index += 1
 
                 message_id = str(uuid.uuid4())
@@ -526,11 +583,7 @@ def create_chat_completion_message_event(
                     "id": message_id,
                     "span_id": span_id,
                     "trace_id": trace_id,
-                    "token_count": (
-                        settings.ai_monitoring.llm_token_count_callback(response_model, message_content)
-                        if settings.ai_monitoring.llm_token_count_callback
-                        else None
-                    ),
+                    "token_count": 0,
                     "role": message.get("role"),
                     "completion_id": chat_completion_id,
                     "sequence": index,

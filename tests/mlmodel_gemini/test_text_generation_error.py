@@ -19,7 +19,7 @@ import google.genai
 import pytest
 from testing_support.fixtures import dt_enabled, override_llm_token_callback_settings, reset_core_stats_engine
 from testing_support.ml_testing_utils import (
-    add_token_count_to_events,
+    add_token_counts_to_events_error,
     disabled_ai_monitoring_record_content_settings,
     events_sans_content,
     events_with_context_attrs,
@@ -61,6 +61,7 @@ expected_events_on_no_model_error = [
             "llm.conversation_id": "my-awesome-id",
             "span_id": None,
             "trace_id": "trace-id",
+            "token_count": 0,
             "content": "How many letters are in the word Python?",
             "role": "user",
             "completion_id": None,
@@ -165,6 +166,7 @@ expected_events_on_invalid_model_error = [
             "llm.conversation_id": "my-awesome-id",
             "span_id": None,
             "trace_id": "trace-id",
+            "token_count": 0,
             "content": "Model does not exist.",
             "role": "user",
             "completion_id": None,
@@ -195,7 +197,7 @@ expected_events_on_invalid_model_error = [
     rollup_metrics=[("Llm/completion/Gemini/generate_content", 1)],
     background_task=True,
 )
-@validate_custom_events(add_token_count_to_events(expected_events_on_invalid_model_error))
+@validate_custom_events(add_token_counts_to_events_error(expected_events_on_invalid_model_error))
 @validate_custom_event_count(count=2)
 @background_task()
 def test_text_generation_invalid_request_error_invalid_model_with_token_count(gemini_dev_client, set_trace_info):
@@ -227,7 +229,7 @@ def test_text_generation_invalid_request_error_invalid_model_with_token_count(ge
     rollup_metrics=[("Llm/completion/Gemini/generate_content", 1)],
     background_task=True,
 )
-@validate_custom_events(add_token_count_to_events(expected_events_on_invalid_model_error))
+@validate_custom_events(add_token_counts_to_events_error(expected_events_on_invalid_model_error))
 @validate_custom_event_count(count=2)
 @background_task()
 def test_text_generation_invalid_request_error_invalid_model_chat(gemini_dev_client, set_trace_info):
@@ -264,6 +266,7 @@ expected_events_on_wrong_api_key_error = [
             "id": None,
             "span_id": None,
             "trace_id": "trace-id",
+            "token_count": 0,
             "content": "Invalid API key.",
             "role": "user",
             "response.model": "gemini-flash-2.0",
@@ -393,7 +396,7 @@ def test_text_generation_async_invalid_request_error_no_model_no_content(gemini_
     rollup_metrics=[("Llm/completion/Gemini/generate_content", 1)],
     background_task=True,
 )
-@validate_custom_events(add_token_count_to_events(expected_events_on_invalid_model_error))
+@validate_custom_events(add_token_counts_to_events_error(expected_events_on_invalid_model_error))
 @validate_custom_event_count(count=2)
 @background_task()
 def test_text_generation_async_invalid_request_error_invalid_model_with_token_count(
@@ -429,7 +432,7 @@ def test_text_generation_async_invalid_request_error_invalid_model_with_token_co
     rollup_metrics=[("Llm/completion/Gemini/generate_content", 1)],
     background_task=True,
 )
-@validate_custom_events(add_token_count_to_events(expected_events_on_invalid_model_error))
+@validate_custom_events(add_token_counts_to_events_error(expected_events_on_invalid_model_error))
 @validate_custom_event_count(count=2)
 @background_task()
 def test_text_generation_async_invalid_request_error_invalid_model_chat(gemini_dev_client, loop, set_trace_info):

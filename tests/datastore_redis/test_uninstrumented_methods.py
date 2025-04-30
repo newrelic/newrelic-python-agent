@@ -86,7 +86,7 @@ IGNORED_METHODS = {
     "set_path",
     "set_response_callback",
     "set_retry",
-    "single_connection_lock",   # this is just the threading lock object
+    "single_connection_lock",  # this is just the threading lock object
     "transaction",
     "version",
 }

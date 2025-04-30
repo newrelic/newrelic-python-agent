@@ -18,14 +18,14 @@ import requests
 import subprocess
 import socket
 import time
-# from testing_support.db_settings import azurefunction_settings
+from testing_support.db_settings import azurefunction_settings
 
 # from testing_support.validators.validate_transaction_metrics import (
 #     validate_transaction_metrics,
 # )
 
-# DB_SETTINGS = azurefunction_settings()[0]
-# AZURE_HOST = DB_SETTINGS["host"]
+DB_SETTINGS = azurefunction_settings()[0]
+AZURE_HOST = DB_SETTINGS["host"]
 # AZURE_PORT = DB_SETTINGS["port"]
 
 
@@ -67,7 +67,7 @@ def test_ping():
     for _ in range(50):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
-            sock.connect(("127.0.0.1", 7071))
+            sock.connect((f"{AZURE_HOST}", 7071))
             sock.close()
             break
         except (socket.error, ConnectionRefusedError) as e:
@@ -76,9 +76,9 @@ def test_ping():
         time.sleep(0.5)
 
     # Send a request to the Azure Function app
-    response = requests.get(f"http://localhost:7071/basic?user=Reli+5Ever")
+    response = requests.get(f"http://{AZURE_HOST}:7071/basic?user=Reli")
     assert response.status_code == 200
-    assert response.text == "Hello, Reli 5Ever!"
+    assert response.text == "Hello, Reli!"
     assert response.headers["Content-Type"] == "text/plain"
         
     azure_end(process)

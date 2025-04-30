@@ -67,7 +67,7 @@ def test_ping():
     for _ in range(50):
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
-            sock.connect((f"{AZURE_HOST}", 7071))
+            sock.connect((f"127.0.0.1", 7071))
             sock.close()
             break
         except (socket.error, ConnectionRefusedError) as e:
@@ -76,7 +76,7 @@ def test_ping():
         time.sleep(0.5)
 
     # Send a request to the Azure Function app
-    response = requests.get(f"http://{AZURE_HOST}:7071/basic?user=Reli")
+    response = requests.get(f"http://127.0.0.1:7071/basic?user=Reli")
     assert response.status_code == 200
     assert response.text == "Hello, Reli!"
     assert response.headers["Content-Type"] == "text/plain"

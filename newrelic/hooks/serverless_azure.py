@@ -250,7 +250,9 @@ def wrap_dispatcher__run_sync_func(wrapped, instance, args, kwargs):
             azure_intrinsics.update({"faas.coldStart": True})
 
         if not transaction:
-            return wrapped(*args, **kwargs)
+            response = wrapped(*args, **kwargs)
+            response._nr_no_transaction = True
+            return response
 
         with transaction:
             for key, value in azure_intrinsics.items():
@@ -259,7 +261,9 @@ def wrap_dispatcher__run_sync_func(wrapped, instance, args, kwargs):
             response._nr_wrapped = True
             return response
 
-    return wrapped(*args, **kwargs)
+    response = wrapped(*args, **kwargs)
+    response._nr_not_http = True
+    return response
 
 
 def wrap_httpresponse__init__(wrapped, instance, args, kwargs):

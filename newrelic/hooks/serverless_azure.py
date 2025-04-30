@@ -272,14 +272,18 @@ def wrap_httpresponse__init__(wrapped, instance, args, kwargs):
 
     transaction = current_transaction()
     if not transaction:
-        return wrapped(*args, **kwargs)
+        response = wrapped(*args, **kwargs)
+        response._nr_no_transaction_response = True
+        return response
 
     status_code, headers = bind_params(*args, **kwargs)
 
     if status_code:
         transaction.process_response(status_code, headers)
 
-    return wrapped(*args, **kwargs)
+    response = wrapped(*args, **kwargs)
+    response._nr_wrapped_response = True
+    return response
 
 
 # def wrap_dispatcher_get_worker_metadata(wrapped, instance, args, kwargs):

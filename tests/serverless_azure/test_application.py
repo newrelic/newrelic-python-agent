@@ -47,10 +47,16 @@ AZURE_HOST = DB_SETTINGS["host"]
 
 
 def azure_start():
+    nr_env = {
+        "NEW_RELIC_ENABLED": "true",
+        "NEW_RELIC_HOST": "staging-collector.newrelic.com",
+        "NEW_RELIC_APP_NAME": "Python Agent Test (serverless_azure_ping)",
+        "NEW_RELIC_STARTUP_TIMEOUT": "10.0",
+    }
     # Start the Azure Function app using subprocess
     cur_dir = os.path.dirname(os.path.abspath(__file__))
     cmd = ["func", "start"]
-    process = subprocess.Popen(cmd, cwd=f"{cur_dir}/sample_application", env=os.environ.copy())
+    process = subprocess.Popen(cmd, cwd=f"{cur_dir}/sample_application", env=nr_env)
     return process
 
 

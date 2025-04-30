@@ -37,7 +37,6 @@ _default_settings = {
     "debug.log_data_collector_payloads": True,
     "debug.record_transaction_failure": True,
     "host": "staging-collector.newrelic.com",
-    "startup_timeout": 10.0,
 }
 
 collector_agent_registration = collector_agent_registration_fixture(

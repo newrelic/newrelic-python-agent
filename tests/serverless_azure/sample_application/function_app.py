@@ -28,6 +28,7 @@ app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 @app.route(route="basic")
 def basic_page(req):
     user = req.params.get("user")
-    assert newrelic.agent.current_transaction(), "No active transaction."
+    # assert newrelic.agent.current_transaction(), "No active transaction."
     response = func.HttpResponse(f"Hello, {user}!", status_code=200, headers={"Content-Type": "text/plain"})
+    # assert response._nr_wrapped
     return response

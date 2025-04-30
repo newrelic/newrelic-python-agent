@@ -13,16 +13,20 @@
 # limitations under the License.
 
 # import pytest
+import os
 import requests
-from testing_support.db_settings import azurefunction_settings
+import subprocess
+import socket
+import time
+# from testing_support.db_settings import azurefunction_settings
 
 # from testing_support.validators.validate_transaction_metrics import (
 #     validate_transaction_metrics,
 # )
 
-DB_SETTINGS = azurefunction_settings()[0]
-AZURE_HOST = DB_SETTINGS["host"]
-AZURE_PORT = DB_SETTINGS["port"]
+# DB_SETTINGS = azurefunction_settings()[0]
+# AZURE_HOST = DB_SETTINGS["host"]
+# AZURE_PORT = DB_SETTINGS["port"]
 
 
 # Metric checks example:
@@ -35,11 +39,51 @@ AZURE_PORT = DB_SETTINGS["port"]
 #     # scoped_metrics=_test_application_index_scoped_metrics
 # )
 # @web_transaction(name="test_application:test_ping", group="AzureFunction")
+# def old_test_ping():
+#     response = requests.get(f"http://{AZURE_HOST}:{AZURE_PORT}/basic?user=Reli")
+#     assert response.status_code == 200
+#     assert response.text == "Hello, Reli!"
+#     assert response.headers["Content-Type"] == "text/plain"
+
+
+def azure_start():
+    # Start the Azure Function app using subprocess
+    cur_dir = os.path.dirname(os.path.abspath(__file__))
+    cmd = ["func", "start"]
+    process = subprocess.Popen(cmd, cwd=f"{cur_dir}/sample_application")
+    return process
+
+
+def azure_end(process):
+    # Terminate the Azure Function app process
+    process.terminate()
+
+
 def test_ping():
-    response = requests.get(f"http://{AZURE_HOST}:{AZURE_PORT}/basic?user=Reli")
+    # Start the Azure Function app
+    process = azure_start()
+
+    # Wait until the connection is established before making the request.
+    for _ in range(50):
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        try:
+            sock.connect(("127.0.0.1", 7071))
+            sock.close()
+            break
+        except (socket.error, ConnectionRefusedError) as e:
+            pass
+
+        time.sleep(0.5)
+
+    breakpoint()
+    # Send a request to the Azure Function app
+    response = requests.get(f"http://localhost:7071/basic?user=Reli+5Ever")
     assert response.status_code == 200
-    assert response.text == "Hello, Reli!"
+    assert response.text == "Hello, Reli 5Ever!"
     assert response.headers["Content-Type"] == "text/plain"
+        
+    azure_end(process)
+
 
 
 # def available_port():

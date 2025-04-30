@@ -3,7 +3,6 @@
 	"Values": {
 		"FUNCTIONS_WORKER_RUNTIME": "python",
 		"PYTHON_ENABLE_WORKER_EXTENSIONS": true,
-		"WEBSITE_SITE_NAME": "azure-functions-test-app",
 		"WEBSITE_OWNER_NAME": "b888887b-cb91-49e0-b911-c9177372bdba+testing-rg-EastUS2webspace-Linux",
 		"REGION_NAME": "East US 2"
 	},

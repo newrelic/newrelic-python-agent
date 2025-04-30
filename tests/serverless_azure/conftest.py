@@ -12,22 +12,22 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
+# import os
 
 from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
     collector_agent_registration_fixture,
     collector_available_fixture,
 )
 
-testing_environment_variables = {
-    "FUNCTIONS_WORKER_RUNTIME": "Python",
-    "PYTHON_ENABLE_WORKER_EXTENSIONS": "True",
-    "WEBSITE_SITE_NAME": "azure-functions-test-app",
-    "WEBSITE_OWNER_NAME": "b999997b-cb91-49e0-b922-c9188372bdba+testing-rg-EastUS2webspace-Linux",
-    "REGION_NAME": "East US 2",
-}
+# testing_environment_variables = {
+#     "FUNCTIONS_WORKER_RUNTIME": "Python",
+#     "PYTHON_ENABLE_WORKER_EXTENSIONS": "True",
+#     # "WEBSITE_SITE_NAME": "azure-functions-test-app",
+#     "WEBSITE_OWNER_NAME": "b999997b-cb91-49e0-b922-c9188372bdba+testing-rg-EastUS2webspace-Linux",
+#     "REGION_NAME": "East US 2",
+# }
 
-os.environ.update(testing_environment_variables)
+# os.environ.update(testing_environment_variables)
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.

@@ -36,8 +36,6 @@ AZURE_PORT = DB_SETTINGS["port"]
 # )
 # @web_transaction(name="test_application:test_ping", group="AzureFunction")
 def test_ping():
-    breakpoint()
-    # response = requests.get("http://127.0.0.1:8080/basic?user=Reli")
     response = requests.get(f"http://{AZURE_HOST}:{AZURE_PORT}/basic?user=Reli")
     assert response.status_code == 200
     assert response.text == "Hello, Reli!"

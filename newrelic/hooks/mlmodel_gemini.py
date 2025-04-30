@@ -291,6 +291,7 @@ def _record_generation_error(transaction, settings, linking_metadata, completion
                 "Unable to parse input message to Gemini LLM. Message content and role will be omitted from "
                 "corresponding LlmChatCompletionMessage event. "
             )
+
     # Extract the input message content and role from the input message if it exists
     input_message_content, input_role = _parse_input_message(input_message) if input_message else (None, None)
 
@@ -387,7 +388,6 @@ def _record_generation_success(transaction, settings, linking_metadata, completi
             finish_reason = response.get("candidates")[0].get("finish_reason").value
             output_message_list = [response.get("candidates")[0].get("content")]
             token_usage = response.get("usage_metadata") or {}
-
         else:
             # Set all values to NoneTypes since we cannot access them through kwargs or another method that doesn't
             # require the response object
@@ -416,7 +416,7 @@ def _record_generation_success(transaction, settings, linking_metadata, completi
                     "Unable to parse input message to Gemini LLM. Message content and role will be omitted from "
                     "corresponding LlmChatCompletionMessage event. "
                 )
-
+         
         input_message_content, input_role = _parse_input_message(input_message) if input_message else (None, None)
 
         # Parse output message content
@@ -501,7 +501,7 @@ def _record_generation_success(transaction, settings, linking_metadata, completi
     except Exception:
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
 
-
+        
 def _parse_input_message(input_message):
     # The input_message will be a string if generate_content was called directly. In this case, we don't have
     # access to the role, so we default to user since this was an input message
@@ -601,6 +601,7 @@ def create_chat_completion_message_event(
                 transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_output_message_dict)
     except Exception:
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
+
 
 
 def instrument_genai_models(module):

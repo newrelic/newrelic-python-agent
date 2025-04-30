@@ -258,7 +258,7 @@ def wrap_dispatcher__run_sync_func(wrapped, instance, args, kwargs):
             for key, value in azure_intrinsics.items():
                 transaction._add_agent_attribute(key, value)
             response = wrapped(*args, **kwargs)
-            response._nr_wrapped = True
+            # response._nr_wrapped = True
             return response
 
     response = wrapped(*args, **kwargs)

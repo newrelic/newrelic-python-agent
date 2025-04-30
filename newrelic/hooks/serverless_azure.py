@@ -251,18 +251,15 @@ def wrap_dispatcher__run_sync_func(wrapped, instance, args, kwargs):
 
         if not transaction:
             response = wrapped(*args, **kwargs)
-            response._nr_no_transaction = True
             return response
 
         with transaction:
             for key, value in azure_intrinsics.items():
                 transaction._add_agent_attribute(key, value)
             response = wrapped(*args, **kwargs)
-            # response._nr_wrapped = True
             return response
 
     response = wrapped(*args, **kwargs)
-    response._nr_not_http = True
     return response
 
 
@@ -273,7 +270,6 @@ def wrap_httpresponse__init__(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
         response = wrapped(*args, **kwargs)
-        response._nr_no_transaction_response = True
         return response
 
     status_code, headers = bind_params(*args, **kwargs)
@@ -282,7 +278,6 @@ def wrap_httpresponse__init__(wrapped, instance, args, kwargs):
         transaction.process_response(status_code, headers)
 
     response = wrapped(*args, **kwargs)
-    response._nr_wrapped_response = True
     return response
 
 

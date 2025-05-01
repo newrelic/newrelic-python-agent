@@ -34,14 +34,10 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 1
-    # Ignore cibuildwheel to avoid dropped Python versions
     ignore:
+      # Ignore cibuildwheel to avoid dropped Python versions
       - dependency-name: "pypa/cibuildwheel*"
-    # Don't group cibuildwheel with other actions, so we don't accidentally upgrade too far
     groups:
-      cibuildwheel:
-        patterns:
-          - "pypa/cibuildwheel*"
-      other:
+      github_actions:
         patterns:
           - "*"

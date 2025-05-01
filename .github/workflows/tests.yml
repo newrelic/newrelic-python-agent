@@ -32,6 +32,7 @@ jobs:
   # Aggregate job that provides a single check for all tests passing
   tests:
     runs-on: ubuntu-24.04
+    if: always() # Always run, even on cancellation or failure
     needs:
       - python
       - cassandra
@@ -55,13 +56,23 @@ jobs:
       - valkey
 
     steps:
-      - name: Success
-        run: echo "Success!"
+      - name: Status
+        run: |
+          if [[ "${{ contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+            echo "Workflow cancelled."
+            exit 1
+          elif [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
+            echo "One or more jobs failed."
+            exit 1
+          else
+            echo "All jobs completed successfully."
+            exit 0
+          fi
 
   # Combine and upload coverage data
   coverage:
-    if: success() || failure() # Does not run on cancelled workflows
     runs-on: ubuntu-24.04
+    if: success() || failure() # Does not run on cancelled workflows
     needs:
       - tests
 

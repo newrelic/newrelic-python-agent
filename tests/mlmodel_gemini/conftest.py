@@ -49,7 +49,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 GEMINI_AUDIT_LOG_FILE = os.path.join(os.path.realpath(os.path.dirname(__file__)), "gemini_audit.log")
 GEMINI_AUDIT_LOG_CONTENTS = {}
 # Intercept outgoing requests and log to file for mocking
-RECORDED_HEADERS = set(["content-type"])
+RECORDED_HEADERS = {"content-type"}
 
 
 @pytest.fixture(scope="session")
@@ -59,7 +59,7 @@ def gemini_clients(MockExternalGeminiServer):  # noqa: F811
     """
     from newrelic.core.config import _environ_as_bool
 
-    if _environ_as_bool("NEW_RELIC_TESTING_RECORD_GEMINI_RESPONSES", True):
+    if not _environ_as_bool("NEW_RELIC_TESTING_RECORD_GEMINI_RESPONSES", False):
         with MockExternalGeminiServer() as server:
             gemini_dev_client = google.genai.Client(
                 api_key="GEMINI_API_KEY",
@@ -82,13 +82,6 @@ def gemini_dev_client(gemini_clients):
     return gemini_dev_client
 
 
-# @pytest.fixture(scope="session")
-# def vertexai_client(gemini_clients):
-#     # This will eventually also be yielded up in gemini_clients() to test again the Vertex AI API
-#     _, vertexai_client = gemini_clients
-#     return vertexai_client
-
-
 @pytest.fixture(autouse=True, scope="session")
 def gemini_server(gemini_clients, wrap_httpx_client_send):
     """
@@ -99,7 +92,7 @@ def gemini_server(gemini_clients, wrap_httpx_client_send):
     """
     from newrelic.core.config import _environ_as_bool
 
-    if _environ_as_bool("NEW_RELIC_TESTING_RECORD_GEMINI_RESPONSES", True):
+    if _environ_as_bool("NEW_RELIC_TESTING_RECORD_GEMINI_RESPONSES", False):
         wrap_function_wrapper("httpx._client", "Client.send", wrap_httpx_client_send)
         yield  # Run tests
         # Write responses to audit log

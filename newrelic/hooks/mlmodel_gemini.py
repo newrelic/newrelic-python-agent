@@ -61,6 +61,8 @@ def wrap_embed_content_sync(wrapped, instance, args, kwargs):
     try:
         response = wrapped(*args, **kwargs)
     except Exception as exc:
+        # In error cases, exit the function trace in _record_embedding_error before recording the LLM error event so
+        # that the duration is calculated correctly.
         _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs, ft, exc)
         raise
     ft.__exit__(None, None, None)
@@ -94,6 +96,8 @@ async def wrap_embed_content_async(wrapped, instance, args, kwargs):
     try:
         response = await wrapped(*args, **kwargs)
     except Exception as exc:
+        # In error cases, exit the function trace in _record_embedding_error before recording the LLM error event so
+        # that the duration is calculated correctly.
         _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs, ft, exc)
         raise
     ft.__exit__(None, None, None)
@@ -230,6 +234,8 @@ def wrap_generate_content_sync(wrapped, instance, args, kwargs):
     try:
         return_val = wrapped(*args, **kwargs)
     except Exception as exc:
+        # In error cases, exit the function trace in _record_generation_error before recording the LLM error event so
+        # that the duration is calculated correctly.
         _record_generation_error(transaction, linking_metadata, completion_id, kwargs, ft, exc)
         raise
 
@@ -261,6 +267,8 @@ async def wrap_generate_content_async(wrapped, instance, args, kwargs):
     try:
         return_val = await wrapped(*args, **kwargs)
     except Exception as exc:
+        # In error cases, exit the function trace in _record_generation_error before recording the LLM error event so
+        # that the duration is calculated correctly.
         _record_generation_error(transaction, linking_metadata, completion_id, kwargs, ft, exc)
         raise
 
@@ -274,7 +282,6 @@ async def wrap_generate_content_async(wrapped, instance, args, kwargs):
 def _record_generation_error(transaction, linking_metadata, completion_id, kwargs, ft, exc):
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
-    notice_error_attributes = {}
 
     # If generate_content was called directly, "contents" should hold a string with just the user input.
     # If send_message was called, "contents" should hold a list containing the user input & role.
@@ -360,10 +367,9 @@ def _handle_generation_success(transaction, linking_metadata, completion_id, kwa
         return
 
     try:
-        response = return_val
         # Response objects are pydantic models so this function call converts the response into a dict
-        if hasattr(response, "model_dump"):
-            response = response.model_dump()
+        response = return_val.model_dump() if hasattr(return_val, "model_dump") else return_val
+
         _record_generation_success(transaction, linking_metadata, completion_id, kwargs, ft, response)
 
     except Exception:

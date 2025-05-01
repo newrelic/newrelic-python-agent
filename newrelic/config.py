@@ -3342,8 +3342,16 @@ def _process_module_builtin_defaults():
         "redis.commands.bf.commands", "newrelic.hooks.datastore_redis", "instrument_redis_commands_bf_commands"
     )
 
+    # Redis version <6.0
     _process_module_definition(
         "redis.commands.graph.commands", "newrelic.hooks.datastore_redis", "instrument_redis_commands_graph_commands"
+    )
+
+    # Added in Redis v6.0+
+    _process_module_definition(
+        "redis.commands.vectorset.commands",
+        "newrelic.hooks.datastore_redis",
+        "instrument_redis_commands_vectorset_commands",
     )
 
     _process_module_definition(

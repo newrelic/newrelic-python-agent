@@ -129,7 +129,8 @@ IGNORED_METHODS = {
     "nodes_manager",
     "on_connect",
     "pubsub",
-    "read_from_replicas",
+    "read_from_replicas",   # Deprecated in redis-py v5.3.0
+    "load_balancing_strategy", # Use instead of read_from_replicas after v5.3.0 
     "reinitialize_counter",
     "reinitialize_steps",
     "replace_default_node",
@@ -138,7 +139,7 @@ IGNORED_METHODS = {
     "user_on_connect_func",
 }
 
-REDIS_MODULES = {"bf", "cf", "cms", "ft", "graph", "json", "tdigest", "topk", "ts"}
+REDIS_MODULES = {"bf", "cf", "cms", "ft", "graph", "json", "tdigest", "topk", "ts", "vset"}
 
 IGNORED_METHODS |= REDIS_MODULES
 

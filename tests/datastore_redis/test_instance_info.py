@@ -20,6 +20,13 @@ from newrelic.hooks.datastore_redis import _conn_attrs_to_dict, _instance_info
 
 REDIS_PY_VERSION = get_package_version_tuple("redis")
 
+# Call to `get_connection` function with the usage of the command
+# name as an input argument has been deprecated since v5.3.0.
+_select_command_as_arg = [
+    (pytest.param(None, marks=pytest.mark.skipif(REDIS_PY_VERSION < (5, 3), reason="Deprecated after v5.3"))),
+    (pytest.param("SELECT", marks=pytest.mark.skipif(REDIS_PY_VERSION >= (5, 3), reason="Needed until v5.3"))),
+]
+
 _instance_info_tests = [
     ((), {}, ("localhost", "6379", "0")),
     ((), {"host": None}, ("localhost", "6379", "0")),
@@ -71,11 +78,12 @@ def test_redis_connection_instance_info(args, kwargs, expected):
         r.connection_pool.release(connection)
 
 
+@pytest.mark.parametrize("command_name", _select_command_as_arg)
 @pytest.mark.parametrize("args,kwargs,expected", _instance_info_tests)
-def test_strict_redis_connection_instance_info(args, kwargs, expected):
+def test_strict_redis_connection_instance_info(args, kwargs, expected, command_name):
     r = redis.StrictRedis(*args, **kwargs)
     r.connection_pool.connection_class = DisabledConnection
-    connection = r.connection_pool.get_connection("SELECT")
+    connection = r.connection_pool.get_connection(command_name)
     try:
         conn_kwargs = _conn_attrs_to_dict(connection)
         assert _instance_info(conn_kwargs) == expected
@@ -93,31 +101,18 @@ _instance_info_from_url_tests = [
     (("redis://:1234/",), {}, ("localhost", "1234", "0")),
     (("redis://@:1234/",), {}, ("localhost", "1234", "0")),
     (("redis://localhost:1234/garbage",), {}, ("localhost", "1234", "0")),
+    (("redis://localhost:6379/2/",), {}, ("localhost", "6379", "2")),
+    (("redis://localhost:6379",), {"host": "someotherhost"}, ("localhost", "6379", "0")),
+    (("redis://localhost:6379/2",), {"db": 3}, ("localhost", "6379", "2")),
+    (("redis://localhost:6379/2/?db=111",), {}, ("localhost", "6379", "111")),
+    (("redis://localhost:6379?db=2",), {}, ("localhost", "6379", "2")),
+    (("redis://localhost:6379/2?db=111",), {}, ("localhost", "6379", "111")),
+    (("unix:///path/to/socket.sock",), {}, ("localhost", "/path/to/socket.sock", "0")),
+    (("unix:///path/to/socket.sock?db=2",), {}, ("localhost", "/path/to/socket.sock", "2")),
+    (("unix:///path/to/socket.sock",), {"db": 2}, ("localhost", "/path/to/socket.sock", "2")),
 ]
 
-# Behavior to default port to 6379 was added in v2.7.5
-# (https://github.com/redis/redis-py/commit/cfe1041bbb8a8887531810429879bffbe705b03a)
-# and removed in v4.0.0b1 (https://github.com/redis/redis-py/blame/v4.0.0b1/redis/connection.py#L997)
-if (3, 5, 3) >= REDIS_PY_VERSION >= (2, 7, 5):
-    _instance_info_from_url_tests.append((("redis://127.0.0.1",), {}, ("127.0.0.1", "6379", "0")))
 
-if REDIS_PY_VERSION >= (2, 10):
-    _instance_info_from_url_tests.extend(
-        [
-            (("rediss://localhost:6379/2/",), {}, ("localhost", "6379", "2")),
-            (("redis://localhost:6379",), {"host": "someotherhost"}, ("localhost", "6379", "0")),
-            (("redis://localhost:6379/2",), {"db": 3}, ("localhost", "6379", "2")),
-            (("redis://localhost:6379/2/?db=111",), {}, ("localhost", "6379", "111")),
-            (("redis://localhost:6379?db=2",), {}, ("localhost", "6379", "2")),
-            (("redis://localhost:6379/2?db=111",), {}, ("localhost", "6379", "111")),
-            (("unix:///path/to/socket.sock",), {}, ("localhost", "/path/to/socket.sock", "0")),
-            (("unix:///path/to/socket.sock?db=2",), {}, ("localhost", "/path/to/socket.sock", "2")),
-            (("unix:///path/to/socket.sock",), {"db": 2}, ("localhost", "/path/to/socket.sock", "2")),
-        ]
-    )
-
-
-@pytest.mark.skipif(REDIS_PY_VERSION < (2, 6), reason="from_url not yet implemented in this redis-py version")
 @pytest.mark.parametrize("args,kwargs,expected", _instance_info_from_url_tests)
 def test_redis_client_from_url(args, kwargs, expected):
     r = redis.Redis.from_url(*args, **kwargs)
@@ -125,7 +120,6 @@ def test_redis_client_from_url(args, kwargs, expected):
     assert _instance_info(conn_kwargs) == expected
 
 
-@pytest.mark.skipif(REDIS_PY_VERSION < (2, 6), reason="from_url not yet implemented in this redis-py version")
 @pytest.mark.parametrize("args,kwargs,expected", _instance_info_from_url_tests)
 def test_strict_redis_client_from_url(args, kwargs, expected):
     r = redis.StrictRedis.from_url(*args, **kwargs)
@@ -133,9 +127,9 @@ def test_strict_redis_client_from_url(args, kwargs, expected):
     assert _instance_info(conn_kwargs) == expected
 
 
-@pytest.mark.skipif(REDIS_PY_VERSION < (2, 6), reason="from_url not yet implemented in this redis-py version")
+@pytest.mark.parametrize("command_name", _select_command_as_arg)
 @pytest.mark.parametrize("args,kwargs,expected", _instance_info_from_url_tests)
-def test_redis_connection_from_url(args, kwargs, expected):
+def test_redis_connection_from_url(args, kwargs, expected, command_name):
     r = redis.Redis.from_url(*args, **kwargs)
     if r.connection_pool.connection_class is redis.Connection:
         r.connection_pool.connection_class = DisabledConnection
@@ -145,7 +139,7 @@ def test_redis_connection_from_url(args, kwargs, expected):
         r.connection_pool.connection_class = DisabledSSLConnection
     else:
         raise AssertionError(r.connection_pool.connection_class)
-    connection = r.connection_pool.get_connection("SELECT")
+    connection = r.connection_pool.get_connection(command_name)
     try:
         conn_kwargs = _conn_attrs_to_dict(connection)
         assert _instance_info(conn_kwargs) == expected
@@ -153,9 +147,9 @@ def test_redis_connection_from_url(args, kwargs, expected):
         r.connection_pool.release(connection)
 
 
-@pytest.mark.skipif(REDIS_PY_VERSION < (2, 6), reason="from_url not yet implemented in this redis-py version")
+@pytest.mark.parametrize("command_name", _select_command_as_arg)
 @pytest.mark.parametrize("args,kwargs,expected", _instance_info_from_url_tests)
-def test_strict_redis_connection_from_url(args, kwargs, expected):
+def test_strict_redis_connection_from_url(args, kwargs, expected, command_name):
     r = redis.StrictRedis.from_url(*args, **kwargs)
     if r.connection_pool.connection_class is redis.Connection:
         r.connection_pool.connection_class = DisabledConnection
@@ -165,7 +159,7 @@ def test_strict_redis_connection_from_url(args, kwargs, expected):
         r.connection_pool.connection_class = DisabledSSLConnection
     else:
         raise AssertionError(r.connection_pool.connection_class)
-    connection = r.connection_pool.get_connection("SELECT")
+    connection = r.connection_pool.get_connection(command_name)
     try:
         conn_kwargs = _conn_attrs_to_dict(connection)
         assert _instance_info(conn_kwargs) == expected

@@ -37,7 +37,7 @@ class FakeConnectionPool:
     def __init__(self, connection):
         self.connection = connection
 
-    def get_connection(self, name, *keys, **options):
+    def get_connection(self, name=None, *keys, **options):
         return self.connection
 
     def release(self, connection):
@@ -46,6 +46,15 @@ class FakeConnectionPool:
     def disconnect(self):
         self.connection.disconnect()
 
+
+# Backwards compatibility between redis-py v4 and v6
+
+# Call to `get_connection` function with the usage of the command
+# name as an input argument has been deprecated since v5.3.0.
+_get_command_as_arg = [
+    (pytest.param(None, marks=pytest.mark.skipif(REDIS_PY_VERSION < (5, 3), reason="Deprecated after v5.3"))),
+    (pytest.param("GET", marks=pytest.mark.skipif(REDIS_PY_VERSION >= (5, 3), reason="Needed until v5.3"))),
+]
 
 # Settings
 
@@ -102,7 +111,7 @@ def exercise_redis(client):
 # Tests
 
 
-@pytest.mark.skipif(REDIS_PY_VERSION < (2, 7), reason="Client list command introduced in 2.7")
+@pytest.mark.parametrize("command_name", _get_command_as_arg)
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
     "test_custom_conn_pool:test_fake_conn_pool_enable_instance",
@@ -111,12 +120,12 @@ def exercise_redis(client):
     background_task=True,
 )
 @background_task()
-def test_fake_conn_pool_enable_instance():
+def test_fake_conn_pool_enable_instance(command_name):
     client = redis.StrictRedis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
 
     # Get a real connection
 
-    conn = client.connection_pool.get_connection("GET")
+    conn = client.connection_pool.get_connection(command_name)
 
     # Replace the original connection pool with one that doesn't
     # have the `connection_kwargs` attribute.
@@ -128,7 +137,7 @@ def test_fake_conn_pool_enable_instance():
     exercise_redis(client)
 
 
-@pytest.mark.skipif(REDIS_PY_VERSION < (2, 7), reason="Client list command introduced in 2.7")
+@pytest.mark.parametrize("command_name", _get_command_as_arg)
 @override_application_settings(_disable_instance_settings)
 @validate_transaction_metrics(
     "test_custom_conn_pool:test_fake_conn_pool_disable_instance",
@@ -137,12 +146,12 @@ def test_fake_conn_pool_enable_instance():
     background_task=True,
 )
 @background_task()
-def test_fake_conn_pool_disable_instance():
+def test_fake_conn_pool_disable_instance(command_name):
     client = redis.StrictRedis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
 
     # Get a real connection
 
-    conn = client.connection_pool.get_connection("GET")
+    conn = client.connection_pool.get_connection(command_name)
 
     # Replace the original connection pool with one that doesn't
     # have the `connection_kwargs` attribute.

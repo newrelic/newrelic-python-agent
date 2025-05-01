@@ -1282,6 +1282,9 @@ CUSTOM_TRACE_POINTS = {
         "list_stream_consumers", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
     ("kinesis", "list_streams"): aws_function_trace("list_streams", library="Kinesis"),
+    ("kinesis", "list_tags_for_resource"): aws_function_trace(
+        "list_tags_for_resource", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
     ("kinesis", "list_tags_for_stream"): aws_function_trace(
         "list_tags_for_stream", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
@@ -1308,6 +1311,12 @@ CUSTOM_TRACE_POINTS = {
     ),
     ("kinesis", "subscribe_to_shard"): aws_function_trace(
         "subscribe_to_shard", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "tag_resource"): aws_function_trace(
+        "tag_resource", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "untag_resource"): aws_function_trace(
+        "untag_resource", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
     ("kinesis", "update_shard_count"): aws_function_trace(
         "update_shard_count", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"

@@ -99,8 +99,8 @@ IGNORED_METHODS = {
     "cluster_addslotsrange",
     "cluster_bumpepoch",
     "cluster_delslotsrange",
-    "cluster_error_retry_attempts", # Deprecated in redis-py v5.3.0
-    "retry",    # Use instead of cluster_error_retry_attempts after v5.3.0 
+    "cluster_error_retry_attempts",  # Deprecated in redis-py v5.3.0
+    "retry",  # Use instead of cluster_error_retry_attempts after v5.3.0
     "cluster_flushslots",
     "cluster_links",
     "cluster_myid",

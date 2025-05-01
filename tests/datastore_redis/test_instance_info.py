@@ -159,7 +159,7 @@ def test_strict_redis_connection_from_url(args, kwargs, expected, command_name):
         r.connection_pool.connection_class = DisabledSSLConnection
     else:
         raise AssertionError(r.connection_pool.connection_class)
-    connection = r.connection_pool.get_connection(command_name) 
+    connection = r.connection_pool.get_connection(command_name)
     try:
         conn_kwargs = _conn_attrs_to_dict(connection)
         assert _instance_info(conn_kwargs) == expected

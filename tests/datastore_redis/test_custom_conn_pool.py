@@ -101,6 +101,7 @@ _disable_rollup_metrics = _base_rollup_metrics.append((_instance_metric_name, No
 
 # Operations
 
+
 def exercise_redis(client):
     client.set("key", "value")
     client.get("key")
@@ -108,6 +109,7 @@ def exercise_redis(client):
 
 
 # Tests
+
 
 @pytest.mark.parametrize("command_name", _get_command_as_arg)
 @override_application_settings(_enable_instance_settings)

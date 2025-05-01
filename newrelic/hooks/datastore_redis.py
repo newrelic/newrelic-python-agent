@@ -39,11 +39,14 @@ _redis_client_sync_methods = {
     "hexpire",
     "hexpireat",
     "hexpiretime",
+    "hgetdel",
+    "hgetex",
     "hpersist",
     "hpexpire",
     "hpexpireat",
     "hpexpiretime",
     "hpttl",
+    "hsetex",
     "httl",
     "latency_doctor",
     "latency_graph",
@@ -79,6 +82,17 @@ _redis_client_sync_methods = {
     "spop",
     "srandmember",
     "unwatch",
+    "vadd",
+    "vcard",
+    "vdim",
+    "vemb",
+    "vgetattr",
+    "vinfo",
+    "vlinks",
+    "vrandmember",
+    "vrem",
+    "vsetattr",
+    "vsim",
     "watch",
     "zlexcount",
     "zrevrangebyscore",
@@ -692,6 +706,10 @@ def instrument_redis_commands_timeseries_commands(module):
 
 def instrument_redis_commands_graph_commands(module):
     _instrument_redis_commands_module(module, "GraphCommands")
+
+
+def instrument_redis_commands_vectorset_commands(module):
+    _instrument_redis_commands_module(module, "VectorSetCommands")
 
 
 def instrument_redis_commands_bf_commands(module):

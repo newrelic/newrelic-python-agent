@@ -32,21 +32,21 @@ _port = DB_SETTINGS["port"]
 class CustomConnection(psycopg2.extensions.connection):
     def __init__(self, *args, **kwargs):
         self.ready = False
-        super(CustomConnection, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def cursor(self, *args, **kwargs):
         assert self.ready  # Force a failure when generating an explain plan
-        return super(CustomConnection, self).cursor(*args, **kwargs)
+        return super().cursor(*args, **kwargs)
 
 
 class CustomCursor(psycopg2.extensions.cursor):
     def __init__(self, *args, **kwargs):
         self.ready = False
-        super(CustomCursor, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def execute(self, *args, **kwargs):
         assert self.ready  # Force a failure when generating an explain plan
-        return super(CustomCursor, self).execute(*args, **kwargs)
+        return super().execute(*args, **kwargs)
 
 
 def _exercise_db(connection_factory=None, cursor_factory=None, cursor_kwargs=None):

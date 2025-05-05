@@ -61,7 +61,7 @@ class DatastoreTrace(TimeTrace):
         if kwargs:
             raise TypeError("Invalid keyword arguments:", kwargs)
 
-        super(DatastoreTrace, self).__init__(parent=parent, source=source)
+        super().__init__(parent=parent, source=source)
 
         self.instance_reporting_enabled = False
         self.database_name_enabled = False
@@ -75,7 +75,7 @@ class DatastoreTrace(TimeTrace):
         self.database_name = database_name
 
     def __enter__(self):
-        result = super(DatastoreTrace, self).__enter__()
+        result = super().__enter__()
         if result and self.transaction:
             transaction = self.transaction
 

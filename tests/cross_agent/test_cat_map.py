@@ -69,7 +69,7 @@ def server():
 def load_tests():
     result = []
     path = os.path.join(JSON_DIR, "cat_map.json")
-    with open(path, "r") as fh:
+    with open(path) as fh:
         tests = json.load(fh)
 
     for test in tests:

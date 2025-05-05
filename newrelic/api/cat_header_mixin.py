@@ -34,7 +34,7 @@ class CatHeaderMixin:
     settings = None
 
     def __enter__(self):
-        result = super(CatHeaderMixin, self).__enter__()
+        result = super().__enter__()
         if result is self and self.transaction:
             self.settings = self.transaction.settings or None
         return result

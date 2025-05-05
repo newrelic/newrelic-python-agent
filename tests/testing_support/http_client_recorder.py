@@ -38,7 +38,7 @@ class HttpClientRecorder(DeveloperModeClient):
                 return self.STATUS_CODE, response_data
             return self.STATUS_CODE, b""
 
-        return super(HttpClientRecorder, self).send_request(method, path, params, headers, payload)
+        return super().send_request(method, path, params, headers, payload)
 
     def __enter__(self):
         HttpClientRecorder.STATE += 1

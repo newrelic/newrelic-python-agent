@@ -17,7 +17,7 @@ import os.path
 THIS_DIR = os.path.dirname(__file__)
 
 try:
-    with open(os.path.join(THIS_DIR, "version.txt"), "r") as f:
+    with open(os.path.join(THIS_DIR, "version.txt")) as f:
         version = f.read()
 except:
     version = "0.0.0"

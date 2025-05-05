@@ -62,7 +62,7 @@ class MessageNode(_MessageNode, GenericNodeMixin):
         # Now for the children, if the trace is not terminal.
 
         for child in self.children:
-            for metric in child.time_metrics(stats, root, self):
+            for metric in child.time_metrics(stats, root, self):  # noqa: UP028
                 yield metric
 
     def trace_node(self, stats, root, connections):

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import pytest
-from framework_graphql.test_application import *
+from framework_graphql.test_application import *  # noqa: F403
 from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_transaction_count import validate_transaction_count
 

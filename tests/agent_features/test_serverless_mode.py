@@ -28,7 +28,7 @@ from newrelic.api.transaction import current_transaction
 from newrelic.core.config import global_settings
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def serverless_application(request):
     settings = global_settings()
     orig = settings.serverless_mode.enabled

@@ -63,7 +63,7 @@ def mock_server():
         yield external
 
 
-@pytest.fixture()
+@pytest.fixture
 def populate_metrics(mock_server, request):
     SCOPED_METRICS[:] = []
     method = request.getfixturevalue("method").upper()

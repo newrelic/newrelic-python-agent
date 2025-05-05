@@ -131,7 +131,7 @@ format_exc_info = NewRelicContextFormatter.format_exc_info
 
 
 class NewRelicLogForwardingHandler(logging.Handler):
-    IGNORED_LOG_RECORD_KEYS = {"message", "msg"}
+    IGNORED_LOG_RECORD_KEYS = frozenset(("message", "msg"))
 
     def emit(self, record):
         try:

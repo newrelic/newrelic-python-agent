@@ -32,7 +32,8 @@ def test_custom_metrics(get_consumer_record, topic, expected_broker_metrics):
     custom_metrics = [
         (f"Message/Kafka/Topic/Named/{topic}/Received/Bytes", 1),
         (f"Message/Kafka/Topic/Named/{topic}/Received/Messages", 1),
-    ] + expected_broker_metrics
+        *expected_broker_metrics,
+    ]
 
     @validate_transaction_metrics(
         f"Named/{topic}", group="Message/Kafka/Topic", custom_metrics=custom_metrics, background_task=True
@@ -62,8 +63,8 @@ def test_custom_metrics_on_existing_transaction(get_consumer_record, topic, expe
             (f"Message/Kafka/Topic/Named/{topic}/Received/Bytes", 1),
             (f"Message/Kafka/Topic/Named/{topic}/Received/Messages", 1),
             (f"Python/MessageBroker/Confluent-Kafka/{version}", 1),
-        ]
-        + expected_broker_metrics,
+            *expected_broker_metrics,
+        ],
         background_task=True,
     )
     @validate_transaction_count(1)
@@ -80,8 +81,8 @@ def test_custom_metrics_inactive_transaction(get_consumer_record, topic, expecte
         custom_metrics=[
             (f"Message/Kafka/Topic/Named/{topic}/Received/Bytes", None),
             (f"Message/Kafka/Topic/Named/{topic}/Received/Messages", None),
-        ]
-        + expected_missing_broker_metrics,
+            *expected_missing_broker_metrics,
+        ],
         background_task=True,
     )
     @validate_transaction_count(1)
@@ -144,8 +145,8 @@ def test_distributed_tracing_headers(topic, producer, consumer, serialize, expec
         rollup_metrics=[
             ("Supportability/DistributedTrace/AcceptPayload/Success", None),
             ("Supportability/TraceContext/Accept/Success", 1),
-        ]
-        + expected_broker_metrics,
+            *expected_broker_metrics,
+        ],
         background_task=True,
     )
     @validate_transaction_count(1)

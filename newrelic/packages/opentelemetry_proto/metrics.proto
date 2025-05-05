@@ -12,12 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// =============================================================================
+// WARNING: Manually edited with the following changes.
+// 1. Replace listed .proto file paths with newrelic/packages/opentelemetry_proto/
+// 2. Replace listed __module__ paths with newrelic.packages.opentelemetry_proto
+// This prevents conflicts with other packages using different versions
+// of opentelemetry's pb2 files.
+// =============================================================================
+
 syntax = "proto3";
 
-package opentelemetry.proto.metrics.v1;
+package newrelic.packages.opentelemetry_proto;
 
-import "opentelemetry/proto/common/v1/common.proto";
-import "opentelemetry/proto/resource/v1/resource.proto";
+import "newrelic/packages/opentelemetry_proto/common.proto";
+import "newrelic/packages/opentelemetry_proto/resource.proto";
 
 option csharp_namespace = "OpenTelemetry.Proto.Metrics.V1";
 option java_multiple_files = true;
@@ -50,7 +58,7 @@ message ResourceMetrics {
 
   // The resource for the metrics in this message.
   // If this field is not set then no resource info is known.
-  opentelemetry.proto.resource.v1.Resource resource = 1;
+  newrelic.packages.opentelemetry_proto.Resource resource = 1;
 
   // A list of metrics that originate from a resource.
   repeated ScopeMetrics scope_metrics = 2;
@@ -68,7 +76,7 @@ message ScopeMetrics {
   // The instrumentation scope information for the metrics in this message.
   // Semantically when InstrumentationScope isn't set, it is equivalent with
   // an empty instrumentation scope name (unknown).
-  opentelemetry.proto.common.v1.InstrumentationScope scope = 1;
+  newrelic.packages.opentelemetry_proto.InstrumentationScope scope = 1;
 
   // A list of metrics that originate from an instrumentation library.
   repeated Metric metrics = 2;
@@ -196,7 +204,7 @@ message Metric {
   // for lossless roundtrip translation to / from another data model.
   // Attribute keys MUST be unique (it is not allowed to have more than one
   // attribute with the same key).
-  repeated opentelemetry.proto.common.v1.KeyValue metadata = 12;
+  repeated newrelic.packages.opentelemetry_proto.KeyValue metadata = 12;
 }
 
 // Gauge represents the type of a scalar metric that always exports the
@@ -355,7 +363,7 @@ message NumberDataPoint {
   // where this point belongs. The list may be empty (may contain 0 elements).
   // Attribute keys MUST be unique (it is not allowed to have more than one
   // attribute with the same key).
-  repeated opentelemetry.proto.common.v1.KeyValue attributes = 7;
+  repeated newrelic.packages.opentelemetry_proto.KeyValue attributes = 7;
 
   // StartTimeUnixNano is optional but strongly encouraged, see the
   // the detailed comments above Metric.
@@ -403,7 +411,7 @@ message HistogramDataPoint {
   // where this point belongs. The list may be empty (may contain 0 elements).
   // Attribute keys MUST be unique (it is not allowed to have more than one
   // attribute with the same key).
-  repeated opentelemetry.proto.common.v1.KeyValue attributes = 9;
+  repeated newrelic.packages.opentelemetry_proto.KeyValue attributes = 9;
 
   // StartTimeUnixNano is optional but strongly encouraged, see the
   // the detailed comments above Metric.
@@ -482,7 +490,7 @@ message ExponentialHistogramDataPoint {
   // where this point belongs. The list may be empty (may contain 0 elements).
   // Attribute keys MUST be unique (it is not allowed to have more than one
   // attribute with the same key).
-  repeated opentelemetry.proto.common.v1.KeyValue attributes = 1;
+  repeated newrelic.packages.opentelemetry_proto.KeyValue attributes = 1;
 
   // StartTimeUnixNano is optional but strongly encouraged, see the
   // the detailed comments above Metric.
@@ -511,7 +519,7 @@ message ExponentialHistogramDataPoint {
   // doing so.  This is specifically to enforce compatibility w/ OpenMetrics,
   // see: https://github.com/OpenObservability/OpenMetrics/blob/main/specification/OpenMetrics.md#histogram
   optional double sum = 5;
-  
+
   // scale describes the resolution of the histogram.  Boundaries are
   // located at powers of the base, where:
   //
@@ -549,7 +557,7 @@ message ExponentialHistogramDataPoint {
   // of counts.
   message Buckets {
     // Offset is the bucket index of the first entry in the bucket_counts array.
-    // 
+    //
     // Note: This uses a varint encoding as a simple form of compression.
     sint32 offset = 1;
 
@@ -563,7 +571,7 @@ message ExponentialHistogramDataPoint {
     // especially zeros, so uint64 has been selected to ensure
     // varint encoding.
     repeated uint64 bucket_counts = 2;
-  } 
+  }
 
   // Flags that apply to this specific data point.  See DataPointFlags
   // for the available flags and their meaning.
@@ -597,7 +605,7 @@ message SummaryDataPoint {
   // where this point belongs. The list may be empty (may contain 0 elements).
   // Attribute keys MUST be unique (it is not allowed to have more than one
   // attribute with the same key).
-  repeated opentelemetry.proto.common.v1.KeyValue attributes = 7;
+  repeated newrelic.packages.opentelemetry_proto.KeyValue attributes = 7;
 
   // StartTimeUnixNano is optional but strongly encouraged, see the
   // the detailed comments above Metric.
@@ -663,7 +671,7 @@ message Exemplar {
   // The set of key/value pairs that were filtered out by the aggregator, but
   // recorded alongside the original measurement. Only key/value pairs that were
   // filtered out by the aggregator should be included
-  repeated opentelemetry.proto.common.v1.KeyValue filtered_attributes = 7;
+  repeated newrelic.packages.opentelemetry_proto.KeyValue filtered_attributes = 7;
 
   // time_unix_nano is the exact time when this exemplar was recorded
   //

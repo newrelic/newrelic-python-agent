@@ -12,9 +12,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// =============================================================================
+// WARNING: Manually edited with the following changes.
+// 1. Replace listed .proto file paths with newrelic/packages/opentelemetry_proto/
+// 2. Replace listed __module__ paths with newrelic.packages.opentelemetry_proto
+// This prevents conflicts with other packages using different versions
+// of opentelemetry's pb2 files.
+// =============================================================================
+
 syntax = "proto3";
 
-package opentelemetry.proto.common.v1;
+package newrelic.packages.opentelemetry_proto;
 
 option csharp_namespace = "OpenTelemetry.Proto.Common.V1";
 option java_multiple_files = true;
@@ -67,7 +75,7 @@ message KeyValue {
 }
 
 // InstrumentationScope is a message representing the instrumentation scope information
-// such as the fully qualified name and version. 
+// such as the fully qualified name and version.
 message InstrumentationScope {
   // An empty instrumentation scope name means the name is unknown.
   string name = 1;

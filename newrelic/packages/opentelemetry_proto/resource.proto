@@ -12,11 +12,19 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// =============================================================================
+// WARNING: Manually edited with the following changes.
+// 1. Replace listed .proto file paths with newrelic/packages/opentelemetry_proto/
+// 2. Replace listed __module__ paths with newrelic.packages.opentelemetry_proto
+// This prevents conflicts with other packages using different versions
+// of opentelemetry's pb2 files.
+// =============================================================================
+
 syntax = "proto3";
 
-package opentelemetry.proto.resource.v1;
+package newrelic.packages.opentelemetry_proto;
 
-import "opentelemetry/proto/common/v1/common.proto";
+import "newrelic/packages/opentelemetry_proto/common.proto";
 
 option csharp_namespace = "OpenTelemetry.Proto.Resource.V1";
 option java_multiple_files = true;
@@ -29,7 +37,7 @@ message Resource {
   // Set of attributes that describe the resource.
   // Attribute keys MUST be unique (it is not allowed to have more than one
   // attribute with the same key).
-  repeated opentelemetry.proto.common.v1.KeyValue attributes = 1;
+  repeated newrelic.packages.opentelemetry_proto.KeyValue attributes = 1;
 
   // dropped_attributes_count is the number of dropped attributes. If the value is 0, then
   // no attributes were dropped.

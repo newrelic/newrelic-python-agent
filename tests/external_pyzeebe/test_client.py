@@ -13,30 +13,51 @@
 # limitations under the License.
 
 import pytest
+import asyncio
+import sys, types
+import _dummy_client as dummy_module
 
+from newrelic.api.background_task import background_task
+
+# Force import system to use dummy PyzeebeClient
+pyzeebe_mod = types.ModuleType("pyzeebe")
+pyzeebe_client_pkg = types.ModuleType("pyzeebe.client")
+
+pyzeebe_mod.client = pyzeebe_client_pkg
+pyzeebe_client_pkg.client = dummy_module
+
+sys.modules["pyzeebe"] = pyzeebe_mod
+sys.modules["pyzeebe.client"] = pyzeebe_client_pkg
+sys.modules["pyzeebe.client.client"] = dummy_module
+
+from pyzeebe.client.client import ZeebeClient
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from _dummy_client import create_dummy_client
 
-CLIENT_GROUP = "ZeebeClient"
-
-# Test ZeebeClient.run_process
 @validate_transaction_metrics(
-    f"OtherTransaction/{CLIENT_GROUP}/run_process",
-    scoped_metrics=[],
+    "test_run_process:function_trace",
+    rollup_metrics=[("ZeebeClient/run_process", 1)],
+    background_task=True,
+)
+def test_run_process_as_function_trace():
+    @background_task(name="test_run_process:function_trace")
+    def _test():
+        client = ZeebeClient()
+        result = asyncio.run(client.run_process("DummyProcess"))
+        assert hasattr(result, "process_instance_key")
+        assert result.process_instance_key == 12345
+    _test()
+
+
+# TODO: fix failure
+@validate_transaction_metrics(
+    "ZeebeClient/run_process",
     rollup_metrics=[
-        ("OtherTransaction/all", 1),
-        (f"OtherTransaction/{CLIENT_GROUP}/all", 1),
-        (f"OtherTransaction/{CLIENT_GROUP}/run_process", 1),
+        ("OtherTransaction/ZeebeClient/run_process", 1),
     ],
     background_task=True,
 )
-@pytest.mark.asyncio
-async def test_run_process_outside(pyzeebe, monkeypatch):
-    # async def _dummy_run_process(self, process_id, *args, **kwargs):
-    #     return None
-    monkeypatch.setattr(pyzeebe, "ZeebeClient", lambda *args, **kwargs: create_dummy_client())
-
-    channel = pyzeebe.create_insecure_channel("localhost:1")
-    client = pyzeebe.ZeebeClient(channel)
-
-    await client.run_process("process_123")
+def test_run_process_as_background_tx():
+    client = ZeebeClient()
+    result = asyncio.run(client.run_process("DummyProcess"))
+    assert hasattr(result, "process_instance_key")
+    assert result.process_instance_key == 12345

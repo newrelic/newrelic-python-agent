@@ -27,9 +27,3 @@ _default_settings = {
 collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (external_pyzeebe)", default_settings=_default_settings
 )
-
-@pytest.fixture(scope="session")
-def pyzeebe():
-    import pyzeebe
-
-    return pyzeebe

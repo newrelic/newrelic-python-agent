@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import functools
 import sys
+import time
 
 import pytest
 from testing_support.fixtures import capture_transaction_metrics, validate_tt_parenting
@@ -83,7 +85,7 @@ class MyException(Exception):
     scoped_metrics=[("Function/agen", 1)],
     rollup_metrics=[("Function/agen", 1)],
 )
-@validate_transaction_errors(errors=["_test_async_generator_trace:MyException"])
+@validate_transaction_errors(errors=["test_async_generator_trace:MyException"])
 def test_async_generator_error(event_loop):
     @function_trace(name="agen")
     async def agen():

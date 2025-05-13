@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from collections import abc
-
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.common.object_wrapper import wrap_function_wrapper
 

@@ -57,7 +57,7 @@ Start](https://docs.newrelic.com/docs/agents/python-agent/getting-started/python
     Modify the existing startup script, prefixing the existing startup
     command and options with `newrelic-admin run-program`.
 
-    Also, set the [NEW_RELIC_CONFIG_FILE]{.title-ref} environment
+    Also, set the **NEW_RELIC_CONFIG_FILE** environment
     variable to the name of the configuration file you created above:
 
     ```bash

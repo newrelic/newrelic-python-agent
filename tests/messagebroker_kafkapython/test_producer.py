@@ -96,6 +96,6 @@ def test_producer_errors(topic, producer, monkeypatch):
     test()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def expected_broker_metrics(broker, topic):
     return [(f"MessageBroker/Kafka/Nodes/{server}/Produce/{topic}", 1) for server in broker]

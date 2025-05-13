@@ -53,7 +53,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 )
 
 
-@pytest.fixture()
+@pytest.fixture
 def producer():
     # put something into the queue so it can be consumed
     with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
@@ -74,7 +74,7 @@ def producer():
         channel.exchange_delete(exchange=EXCHANGE)
 
 
-@pytest.fixture()
+@pytest.fixture
 def producer_2():
     # put something into the queue so it can be consumed
     with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
@@ -95,7 +95,7 @@ def producer_2():
         channel.exchange_delete(exchange=EXCHANGE_2)
 
 
-@pytest.fixture()
+@pytest.fixture
 def produce_five():
     # put something into the queue so it can be consumed
     with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:

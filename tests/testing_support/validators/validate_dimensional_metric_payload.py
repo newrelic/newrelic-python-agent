@@ -56,7 +56,8 @@ def payload_to_metrics(payload):
     resource_metrics = resource_metrics[0]
 
     resource = resource_metrics.get("resource")
-    assert resource and resource.get("attributes")[0] == {
+    assert resource
+    assert resource.get("attributes")[0] == {
         "key": "instrumentation.provider",
         "value": {"string_value": "newrelic-opentelemetry-python-ml"},
     }

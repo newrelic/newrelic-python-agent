@@ -45,7 +45,7 @@ RUN_IF_V8_OR_ABOVE = pytest.mark.skipif(not IS_V8_OR_ABOVE, reason="Unsupported 
 RUN_IF_V7_OR_BELOW = pytest.mark.skipif(not IS_V7_OR_BELOW, reason="Unsupported for elasticsearch<=7")
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def client():
     from elasticsearch import Elasticsearch
 
@@ -54,7 +54,7 @@ def client():
     _client.close()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def async_client(loop):
     from elasticsearch import AsyncElasticsearch
 

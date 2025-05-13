@@ -173,11 +173,11 @@ def test_distributed_tracing_headers(topic, producer, consumer, serialize, expec
     _consume()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def expected_broker_metrics(broker, topic):
     return [(f"MessageBroker/Kafka/Nodes/{server}/Consume/{topic}", 1) for server in broker.split(",")]
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def expected_missing_broker_metrics(broker, topic):
     return [(f"MessageBroker/Kafka/Nodes/{server}/Consume/{topic}", None) for server in broker.split(",")]

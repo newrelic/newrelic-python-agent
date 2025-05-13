@@ -12,14 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import pytest
-from testing_support.db_settings import postgresql_settings
+from conftest import DB_SETTINGS
 from testing_support.util import instance_hostname
 from testing_support.validators.validate_database_trace_inputs import validate_database_trace_inputs
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
-
-DB_SETTINGS = postgresql_settings()[0]
 
 
 @validate_transaction_metrics(
@@ -79,25 +77,3 @@ def test_rollback_on_exception(connection_string):
     with pytest.raises(RuntimeError):
         with pyodbc.connect(connection_string) as connection:
             raise RuntimeError("error")
-
-
-@pytest.fixture
-def pyodbc_driver():
-    import pyodbc
-
-    driver_name = "PostgreSQL Unicode"
-    assert driver_name in pyodbc.drivers()
-    return driver_name
-
-
-@pytest.fixture
-def connection_string(pyodbc_driver):
-    _connection_string = f"""
-    DRIVER={{{pyodbc_driver}}};
-    SERVER={DB_SETTINGS["host"]};
-    PORT={DB_SETTINGS["port"]};
-    DATABASE={DB_SETTINGS["name"]};
-    UID={DB_SETTINGS["user"]};
-    PWD={DB_SETTINGS["password"]}
-    """
-    return _connection_string

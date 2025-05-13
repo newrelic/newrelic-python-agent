@@ -114,14 +114,14 @@ def test_chat_completion_invalid_request_error_no_model(set_trace_info):
     set_trace_info()
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
     with WithLlmCustomAttributes({"context": "attr"}):
-        generator = openai.ChatCompletion.create(
-            # no model provided,
-            messages=_test_openai_chat_completion_messages,
-            temperature=0.7,
-            max_tokens=100,
-            stream=True,
-        )
         with pytest.raises(openai.InvalidRequestError):
+            generator = openai.ChatCompletion.create(
+                # no model provided,
+                messages=_test_openai_chat_completion_messages,
+                temperature=0.7,
+                max_tokens=100,
+                stream=True,
+            )
             for resp in generator:
                 assert resp
 

@@ -109,6 +109,7 @@ ignore = [
     "PLR",  # Pylint Recommendations (too many to fix all at once)
     "E722",  # bare-except (too many to fix all at once)
     # Permanently disabled rules
+    "UP006",  # non-pep585-annotation (not compatible with Python 3.7 or 3.8)
     "D203",  # incorrect-blank-line-before-class
     "D213",  # multi-line-summary-second-line
     "ARG001",  # unused-argument

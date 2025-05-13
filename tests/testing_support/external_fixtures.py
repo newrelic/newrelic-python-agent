@@ -39,7 +39,7 @@ def create_incoming_headers(transaction):
 
     value = obfuscate(app_data, encoding_key)
 
-    assert isinstance(value, type(""))
+    assert isinstance(value, str)
 
     headers.append(("X-NewRelic-App-Data", value))
 

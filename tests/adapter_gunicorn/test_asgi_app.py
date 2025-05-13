@@ -61,7 +61,7 @@ def test_asgi_app(nr_enabled):
                     s.connect(("127.0.0.1", PORT))
                     s.close()
                     break
-                except socket.error:
+                except OSError:
                     pass
 
                 time.sleep(0.1)

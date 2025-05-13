@@ -19,7 +19,7 @@ from newrelic.api.transaction import current_transaction
 _logger = logging.getLogger(__name__)
 
 
-class WithLlmCustomAttributes(object):
+class WithLlmCustomAttributes:
     def __init__(self, custom_attr_dict):
         transaction = current_transaction()
         if not custom_attr_dict or not isinstance(custom_attr_dict, dict):

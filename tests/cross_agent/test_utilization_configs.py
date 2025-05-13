@@ -37,7 +37,7 @@ FIXTURE = os.path.normpath(os.path.join(CURRENT_DIR, "fixtures", "utilization", 
 
 
 def _load_tests():
-    with open(FIXTURE, "r") as fh:
+    with open(FIXTURE) as fh:
         js = fh.read()
     return json.loads(js)
 

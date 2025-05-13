@@ -28,7 +28,7 @@ class ExternalTrace(CatHeaderMixin, TimeTrace):
         if kwargs:
             raise TypeError("Invalid keyword arguments:", kwargs)
 
-        super(ExternalTrace, self).__init__(parent=parent, source=source)
+        super().__init__(parent=parent, source=source)
 
         self.library = library
         self.url = url

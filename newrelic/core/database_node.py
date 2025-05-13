@@ -288,4 +288,4 @@ class DatabaseNode(_DatabaseNode, DatastoreNodeMixin):
 
         self.agent_attributes["db.statement"] = sql
 
-        return super(DatabaseNode, self).span_event(*args, **kwargs)
+        return super().span_event(*args, **kwargs)

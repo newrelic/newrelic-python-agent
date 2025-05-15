@@ -134,7 +134,7 @@ jobs:
 
       - name: Prepare MD5 Hash File
         run: |
-          tarball="$(basename $(ls ./dist/*.tar.gz))"
+          tarball="$(basename ./dist/*.tar.gz)"
           md5_file="${tarball}.md5"
           openssl md5 -binary "dist/${tarball}" | xxd -p | tr -d '\n' > "dist/${md5_file}"
 
@@ -169,7 +169,7 @@ jobs:
 
       - name: Upload Package to S3
         run: |
-          tarball="$(basename $(ls ./dist/*.tar.gz))"
+          tarball="$(basename ./dist/*.tar.gz)"
           md5_file="${tarball}.md5"
           aws s3 cp "dist/${md5_file}" "${S3_DST}/${md5_file}"
           aws s3 cp "dist/${tarball}" "${S3_DST}/${tarball}"

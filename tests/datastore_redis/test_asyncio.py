@@ -143,7 +143,7 @@ def test_async_pubsub(client, loop):
     async def _publish(client, channel, message):
         """Publish a message and wait for the reader to receive it."""
         await client.publish(channel, message)
-        await message_received.wait()
+        await asyncio.wait_for(message_received.wait(), timeout=10)
         message_received.clear()
 
     async def _test_pubsub():

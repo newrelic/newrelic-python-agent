@@ -26,10 +26,5 @@ RUN mkdir -p ${HOME} && \
     useradd --uid ${UID} --gid ${GID} --home ${HOME} vscode && \
     chown -R ${UID}:${GID} /home/vscode
 
-# Fix pyenv installation
-RUN echo 'eval "$(pyenv init -)"' >>${HOME}/.bashrc && \
-    chown -R vscode:vscode "${PYENV_ROOT}" && \
-    chown -R vscode:vscode "${PIPX_HOME}"
-
 # Set user
 USER ${UID}:${GID}

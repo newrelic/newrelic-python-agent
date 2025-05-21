@@ -14,7 +14,6 @@
 
 # Override constants
 PLATFORM_OVERRIDE:=
-PYTHON_VERSIONS_OVERRIDE:=
 
 # Computed variables
 IMAGE_NAME:=ghcr.io/newrelic/newrelic-python-agent-ci
@@ -23,8 +22,6 @@ REPO_ROOT:=$(realpath ${MAKEFILE_DIR}../../)
 UNAME_P:=$(shell uname -p)
 PLATFORM_AUTOMATIC:=$(if $(findstring arm,${UNAME_P}),linux/arm64,linux/amd64)
 PLATFORM:=$(if ${PLATFORM_OVERRIDE},${PLATFORM_OVERRIDE},${PLATFORM_AUTOMATIC})
-PYTHON_VERSIONS_AUTOMATIC:=3.10
-PYTHON_VERSIONS:=$(if ${PYTHON_VERSIONS_OVERRIDE},${PYTHON_VERSIONS_OVERRIDE},${PYTHON_VERSIONS_AUTOMATIC})
 
 .PHONY: default
 default: test
@@ -33,8 +30,7 @@ default: test
 build:
 	@docker build ${MAKEFILE_DIR} \
 		--platform=${PLATFORM} \
-		-t ${IMAGE_NAME}:local \
-		--build-arg='PYTHON_VERSIONS=${PYTHON_VERSIONS}'
+		-t ${IMAGE_NAME}:local
 
 # Run the local tag as a container.
 .PHONY: run
@@ -62,12 +58,12 @@ run.%:
 		-e GITHUB_ACTIONS="true" \
 		${IMAGE_NAME}:$* /bin/bash
 
-# Ensure python versions are usable. Cannot be automatically used with PYTHON_VERSIONS_OVERRIDE.
+# Ensures python versions are usable.
 .PHONY: test
 test: build
 	@docker run --rm \
 		--platform=${PLATFORM} \
-		ghcr.io/newrelic/python-agent-ci:local \
+		${IMAGE_NAME}:local \
 		/bin/bash -c '\
 			python3.10 --version && \
 			touch tox.ini && tox --version && \

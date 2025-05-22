@@ -75,7 +75,7 @@ def test_cat_insertion_disabled_on_304():
     assert "X-NewRelic-App-Data" not in response.headers
 
 
-_override_settings = {"cross_application_tracing.enabled": True, "distributed_tracing.enabled": False}
+_override_settings = {"cross_application_tracer.enabled": True, "distributed_tracing.enabled": False}
 
 
 @cat_enabled

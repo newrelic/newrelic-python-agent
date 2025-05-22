@@ -868,7 +868,7 @@ _settings.slow_sql.enabled = True
 _settings.synthetics.enabled = True
 
 _settings.agent_limits.data_collector_timeout = 30.0
-_settings.agent_limits.transaction_traces_nodes = 2000
+_settings.agent_limits.transaction_traces_nodes = _environ_as_int("NEW_RELIC_TRANSACTION_TRACES_NODES", 2000)
 _settings.agent_limits.sql_query_length_maximum = 16384
 _settings.agent_limits.slow_sql_stack_trace = 30
 _settings.agent_limits.max_sql_connections = 4

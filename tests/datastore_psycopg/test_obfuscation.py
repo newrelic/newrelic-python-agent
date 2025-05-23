@@ -87,7 +87,6 @@ def any_length_explain_plan(node):
 
     sql_connections = SQLConnections()
     explain_plan = node.explain_plan(sql_connections)
-    assert explain_plan
     assert len(explain_plan) > 0
 
 

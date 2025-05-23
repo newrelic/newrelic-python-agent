@@ -179,7 +179,6 @@ def test_future_timeout_error(service_method_type, service_method_method_name, f
         request = create_request(streaming_request, count=1, timesout=True)
 
         reply = get_result(service_method_method, request, timeout=0.01)
-        assert reply
         assert reply.code() == grpc.StatusCode.DEADLINE_EXCEEDED
 
     _test_future_timeout_error()

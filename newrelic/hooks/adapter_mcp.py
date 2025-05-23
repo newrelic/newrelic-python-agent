@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.signature import bind_args
 
 

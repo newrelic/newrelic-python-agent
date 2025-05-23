@@ -113,7 +113,7 @@ def send_producer_message(topic, producer):
     return _test
 
 
-@pytest.fixture()
+@pytest.fixture
 def get_consumer_record(topic, send_producer_message, consumer):
     def _test():
         send_producer_message()

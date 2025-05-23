@@ -46,7 +46,7 @@ def cpu_data_source():
 @pytest.fixture
 def memory_data_source():
     sampler = memory_usage_data_source(settings=())["factory"](environ=())
-    yield sampler
+    return sampler
 
 
 PID = os.getpid()

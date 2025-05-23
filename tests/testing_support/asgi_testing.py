@@ -78,7 +78,7 @@ class AsgiTest:
             "http_version": "1.1",
             "method": method.upper(),
             "path": path,
-            "query_string": params and params.encode("utf-8") or b"",
+            "query_string": (params and params.encode("utf-8")) or b"",
             "raw_path": path.encode("utf-8"),
             "root_path": "",
             "scheme": "http",

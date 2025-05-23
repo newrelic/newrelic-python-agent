@@ -2859,6 +2859,12 @@ def _process_module_builtin_defaults():
     )
     _process_module_definition("logging", "newrelic.hooks.logger_logging", "instrument_logging")
 
+    _process_module_definition("autogen_agentchat.teams._group_chat._base_group_chat", "newrelic.hooks.mlmodel_autogen", "instrument_autogen_agentchat_teams__group_chat__base_group_chat")
+
+    _process_module_definition("autogen_ext.tools.mcp._base", "newrelic.hooks.mlmodel_autogen", "instrument_autogen_ext_tools_mcp__base")
+
+    _process_module_definition("autogen_agentchat.agents._assistant_agent", "newrelic.hooks.mlmodel_autogen", "instrument_autogen_agentchat_agents__assistant_agent")
+
     _process_module_definition("loguru", "newrelic.hooks.logger_loguru", "instrument_loguru")
     _process_module_definition("loguru._logger", "newrelic.hooks.logger_loguru", "instrument_loguru_logger")
 

@@ -41,7 +41,7 @@ class FakeApplication:
 
 class FakeAgent(Agent):
     def __init__(self, *args, **kwargs):
-        super(FakeAgent, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._applications = {"fake": FakeApplication()}
 
 

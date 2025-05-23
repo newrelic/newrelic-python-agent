@@ -29,7 +29,7 @@ def validate_outbound_headers(header_id="X-NewRelic-ID", header_transaction="X-N
     values = headers[header_id]
     if isinstance(values, list):
         assert len(values) == 1, headers
-        assert isinstance(values[0], type(""))
+        assert isinstance(values[0], str)
         value = values[0]
     else:
         value = values
@@ -42,7 +42,7 @@ def validate_outbound_headers(header_id="X-NewRelic-ID", header_transaction="X-N
     values = headers[header_transaction]
     if isinstance(values, list):
         assert len(values) == 1, headers
-        assert isinstance(values[0], type(""))
+        assert isinstance(values[0], str)
         value = values[0]
     else:
         value = values

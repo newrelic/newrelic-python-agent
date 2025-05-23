@@ -88,7 +88,7 @@ class FunctionNode(_FunctionNode, GenericNodeMixin):
         # Now for the children.
 
         for child in self.children:
-            for metric in child.time_metrics(stats, root, self):
+            for metric in child.time_metrics(stats, root, self):  # noqa: UP028
                 yield metric
 
     def trace_node(self, stats, root, connections):
@@ -115,7 +115,7 @@ class FunctionNode(_FunctionNode, GenericNodeMixin):
         )
 
     def span_event(self, *args, **kwargs):
-        attrs = super(FunctionNode, self).span_event(*args, **kwargs)
+        attrs = super().span_event(*args, **kwargs)
         i_attrs = attrs[0]
 
         i_attrs["name"] = f"{self.group}/{self.name}"

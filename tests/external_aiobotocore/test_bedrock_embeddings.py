@@ -362,7 +362,7 @@ def test_bedrock_embedding_error_malformed_request_body(loop, bedrock_server, se
 
     async def _test():
         model = "amazon.titan-embed-g1-text-02"
-        body = "{ Malformed Request Body".encode("utf-8")
+        body = b"{ Malformed Request Body"
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         add_custom_attribute("llm.foo", "bar")

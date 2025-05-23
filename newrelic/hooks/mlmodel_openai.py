@@ -711,7 +711,7 @@ async def wrap_base_client_process_response_async(wrapped, instance, args, kwarg
 
 class GeneratorProxy(ObjectProxy):
     def __init__(self, wrapped):
-        super(GeneratorProxy, self).__init__(wrapped)
+        super().__init__(wrapped)
 
     def __iter__(self):
         return self
@@ -734,7 +734,7 @@ class GeneratorProxy(ObjectProxy):
         return return_val
 
     def close(self):
-        return super(GeneratorProxy, self).close()
+        return super().close()
 
 
 def _record_stream_chunk(self, return_val):
@@ -807,7 +807,7 @@ def _handle_streaming_completion_error(self, transaction, exc):
 
 class AsyncGeneratorProxy(ObjectProxy):
     def __init__(self, wrapped):
-        super(AsyncGeneratorProxy, self).__init__(wrapped)
+        super().__init__(wrapped)
 
     def __aiter__(self):
         self._nr_wrapped_iter = self.__wrapped__.__aiter__()
@@ -831,7 +831,7 @@ class AsyncGeneratorProxy(ObjectProxy):
         return return_val
 
     async def aclose(self):
-        return await super(AsyncGeneratorProxy, self).aclose()
+        return await super().aclose()
 
 
 def wrap_stream_iter_events_sync(wrapped, instance, args, kwargs):

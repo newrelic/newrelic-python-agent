@@ -44,7 +44,7 @@ def newrelic_first_gen(wrapped, is_async=False):
 
 class NewRelicFirstList(list):
     def __init__(self, *args, is_async=False, **kwargs):
-        super(NewRelicFirstList, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.is_async = is_async
 
     def __iter__(self):

@@ -519,7 +519,7 @@ def test_bedrock_chat_completion_error_malformed_request_body(
     @background_task(name="test_bedrock_chat_completion")
     def _test():
         model = "amazon.titan-text-express-v1"
-        body = "{ Malformed Request Body".encode("utf-8")
+        body = b"{ Malformed Request Body"
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         add_custom_attribute("llm.foo", "bar")

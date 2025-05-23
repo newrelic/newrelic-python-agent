@@ -42,14 +42,14 @@ ServerInfo = namedtuple("ServerInfo", ("base_metric", "url"))
 
 class SimpleAiohttpApp(AioHTTPTestCase):
     def __init__(self, server_cls, middleware, *args, **kwargs):
-        super(SimpleAiohttpApp, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.server_cls = server_cls
         self.middleware = None
         if middleware:
             self.middleware = [middleware]
 
     def setUp(self):
-        super(SimpleAiohttpApp, self).setUp()
+        super().setUp()
         if hasattr(self, "asyncSetUp"):
             asyncio.get_event_loop().run_until_complete(self.asyncSetUp())
         asyncio.set_event_loop(self.loop)
@@ -58,7 +58,7 @@ class SimpleAiohttpApp(AioHTTPTestCase):
         return make_app(self.middleware)
 
     def tearDown(self):
-        super(SimpleAiohttpApp, self).tearDown()
+        super().tearDown()
         if hasattr(self, "asyncTearDown"):
             asyncio.get_event_loop().run_until_complete(self.asyncTearDown())
 

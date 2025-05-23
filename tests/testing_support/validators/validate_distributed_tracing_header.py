@@ -30,7 +30,7 @@ def validate_distributed_tracing_header(header="newrelic"):
     values = headers[header]
     if isinstance(values, list):
         assert len(values) == 1, headers
-        assert isinstance(values[0], type(""))
+        assert isinstance(values[0], str)
         value = values[0]
     else:
         value = values

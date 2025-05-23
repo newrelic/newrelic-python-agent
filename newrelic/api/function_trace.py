@@ -28,7 +28,7 @@ class FunctionTrace(TimeTrace):
         if kwargs:
             raise TypeError("Invalid keyword arguments:", kwargs)
 
-        super(FunctionTrace, self).__init__(parent=parent, source=source)
+        super().__init__(parent=parent, source=source)
 
         # Handle incorrect groupings and leading slashes. This will
         # cause an empty segment which we want to avoid. In that case

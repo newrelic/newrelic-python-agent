@@ -37,7 +37,7 @@ class BadGetStatusHandler(tornado.web.RequestHandler):
 
 class ProcessCatHeadersHandler(tornado.web.RequestHandler):
     def __init__(self, application, request, response_code=200, **kwargs):
-        super(ProcessCatHeadersHandler, self).__init__(application, request, **kwargs)
+        super().__init__(application, request, **kwargs)
         self.response_code = response_code
 
     def get(self, client_cross_process_id, txn_header, flush=None):
@@ -92,7 +92,7 @@ class NativeSimpleHandler(tornado.web.RequestHandler):
 
 class SuperSimpleHandler(SimpleHandler):
     def get(self):
-        super(SuperSimpleHandler, self).get()
+        super().get()
 
 
 class CallSimpleHandler(tornado.web.RequestHandler):
@@ -189,7 +189,7 @@ class EnsureFutureHandler(tornado.web.RequestHandler):
 
 class WebNestedHandler(WebSocketHandler):
     def on_message(self, message):
-        super(WebNestedHandler, self).on_message(message)
+        super().on_message(message)
 
 
 class CustomApplication(tornado.httputil.HTTPServerConnectionDelegate, tornado.httputil.HTTPMessageDelegate):

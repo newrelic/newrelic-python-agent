@@ -32,7 +32,8 @@ def generate_config(args):
 
     config_file = os.path.join(package_root, "newrelic.ini")
 
-    content = open(config_file, "r").read()
+    with open(config_file) as f:
+        content = f.read()
 
     if len(args) >= 1:
         content = content.replace("*** REPLACE ME ***", args[0])

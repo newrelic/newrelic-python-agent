@@ -1163,7 +1163,7 @@ def _process_module_configuration():
 
 def _module_function_glob(module, object_path):
     """Match functions and class methods in a module to file globbing syntax."""
-    if not any((c in object_path for c in ("*", "?", "["))):  # Identify globbing patterns
+    if not any(c in object_path for c in ("*", "?", "[")):  # Identify globbing patterns
         return (object_path,)  # Returned value must be iterable
     else:
         # Gather module functions

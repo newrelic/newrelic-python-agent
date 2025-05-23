@@ -36,7 +36,7 @@ def get_health_file_contents(tmp_path):
     # Grab the file we just wrote to and read its contents
     health_files = os.listdir(tmp_path)
     path_to_written_file = f"{tmp_path}/{health_files[0]}"
-    with open(path_to_written_file, "r") as f:
+    with open(path_to_written_file) as f:
         contents = f.readlines()
         return contents
 

@@ -29,7 +29,7 @@ SKIP_IF_DEVELOPER_MODE = pytest.mark.skipif(DEVELOPER_MODE, reason="Cannot conne
 class FullUriClient(HttpClient):
     def send_request(self, method="POST", path="/agent_listener/invoke_raw_method", *args, **kwargs):
         path = f"https://{self._host}{path}"
-        return super(FullUriClient, self).send_request(method, path, *args, **kwargs)
+        return super().send_request(method, path, *args, **kwargs)
 
 
 _default_settings = {

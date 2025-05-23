@@ -109,7 +109,7 @@ def test_close_while_awaiting_reconnect(mock_grpc_server, monkeypatch, batching)
         def wait(self, *args, **kwargs):
             event.set()
             # Call super wait with no arguments to block until a notify
-            return super(WaitOnWait, self).wait()
+            return super().wait()
 
     @staticmethod
     def condition(*args, **kwargs):

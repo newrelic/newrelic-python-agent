@@ -29,7 +29,7 @@ def _load_docker_test_attributes():
 
     """
     test_cases = os.path.join(DOCKER_FIXTURE, "cases.json")
-    with open(test_cases, "r") as fh:
+    with open(test_cases) as fh:
         js = fh.read()
     json_list = json.loads(js)
     docker_test_attributes = [(json_record["filename"], json_record["containerId"]) for json_record in json_list]

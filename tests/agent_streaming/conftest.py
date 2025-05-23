@@ -60,12 +60,12 @@ def mock_grpc_server(grpc_app_server):
 
 class SetEventOnWait(CONDITION_CLS):
     def __init__(self, event, *args, **kwargs):
-        super(SetEventOnWait, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self._event = event
 
     def wait(self, *args, **kwargs):
         self._event.set()
-        return super(SetEventOnWait, self).wait(*args, **kwargs)
+        return super().wait(*args, **kwargs)
 
 
 @pytest.fixture

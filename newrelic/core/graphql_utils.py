@@ -29,7 +29,7 @@ class GraphQLStatement(SQLStatement):
     """Wrap SQLStatements to allow usage with GraphQL."""
 
     def __init__(self, graphql):
-        super(GraphQLStatement, self).__init__(graphql, GraphQLStyle())
+        super().__init__(graphql, GraphQLStyle())
         # Preset unapplicable fields to empty
         self._operation = ""
         self._target = ""

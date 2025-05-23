@@ -69,7 +69,7 @@ def test_aiohttp_app_factory(nr_enabled):
                     s.connect(("127.0.0.1", PORT))
                     s.close()
                     break
-                except socket.error:
+                except OSError:
                     pass
 
                 time.sleep(0.1)

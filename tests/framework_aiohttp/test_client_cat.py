@@ -150,7 +150,7 @@ def test_outbound_cross_process_headers_exception(event_loop, mock_header_server
 class PoorResolvingConnector(aiohttp.TCPConnector):
     async def _resolve_host(self, host, port, *args, **kwargs):
         res = [{"hostname": host, "host": host, "port": 1234, "family": self._family, "proto": 0, "flags": 0}]
-        hosts = await super(PoorResolvingConnector, self)._resolve_host(host, port, *args, **kwargs)
+        hosts = await super()._resolve_host(host, port, *args, **kwargs)
         res.extend(hosts)
         return res
 

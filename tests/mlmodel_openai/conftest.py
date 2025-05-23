@@ -276,7 +276,7 @@ def bind_request_interpret_response_params(result, stream):
 def generator_proxy(openai_version):
     class GeneratorProxy(ObjectProxy):
         def __init__(self, wrapped):
-            super(GeneratorProxy, self).__init__(wrapped)
+            super().__init__(wrapped)
 
         def __iter__(self):
             return self
@@ -317,7 +317,7 @@ def generator_proxy(openai_version):
                 raise
 
         def close(self):
-            return super(GeneratorProxy, self).close()
+            return super().close()
 
     return GeneratorProxy
 

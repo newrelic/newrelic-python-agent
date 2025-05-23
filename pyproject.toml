@@ -38,7 +38,7 @@ select = [
     "W",  # pycodestyle
     "I",  # isort
     # "N",  # pep8-naming
-    # "UP",  # pyupgrade
+    "UP",  # pyupgrade
     "YTT",  # flake8-2020
     "ASYNC",  # flake8-async
     "S",  # flake8-bandit
@@ -57,13 +57,12 @@ select = [
     "ICN",  # flake8-import-conventions
     "LOG",  # flake8-logging
     "G",  # flake8-logging-format
-    # "INP",  # flake8-no-pep420
+    "INP",  # flake8-no-pep420
     "PYI",  # flake8-pyi
     "PT",  # flake8-pytest-style
     "Q",  # flake8-quotes
     "RSE",  # flake8-raise
     # "RET",  # flake8-return
-    # "SLF",  # flake8-self
     "SLOT",  # flake8-slots
     # "SIM",  # flake8-simplify
     "TID",  # flake8-tidy-imports
@@ -86,6 +85,7 @@ select = [
 # "DJ",  # flake8-django
 # "PIE",  # flake8-pie
 # "T20",  # flake8-print
+# "SLF",  # flake8-self
 # "TC",  # flake8-type-checking
 # "TD",  # flake8-todos
 # "FIX",  # flake8-fixme
@@ -109,6 +109,7 @@ ignore = [
     "E722",  # bare-except (too many to fix all at once)
     "PT012",  # pytest-raises-with-multiple-statements (too many to fix all at once)
     # Permanently disabled rules
+    "UP006",  # non-pep585-annotation (not compatible with Python 3.7 or 3.8)
     "D203",  # incorrect-blank-line-before-class
     "D213",  # multi-line-summary-second-line
     "ARG001",  # unused-argument
@@ -135,6 +136,7 @@ ignore = [
 "tests/*" = [
     # Disabled rules in tests
     "S",  # flake8-bandit (security checks are not necessary in tests)
+    "INP",  # flake8-no-pep420 (tests need not be not part of a package)
     "F401",  # unused-import
     "F811",  # redefined-while-unused (pytest fixtures trigger this)
     "E731",  # lambda-assignment (acceptable in tests)

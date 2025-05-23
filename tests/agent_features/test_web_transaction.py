@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright 2010 New Relic, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");

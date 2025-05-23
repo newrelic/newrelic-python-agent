@@ -109,7 +109,7 @@ class LoopContext:
 
 class Coroutine(ObjectProxy):
     def __init__(self, wrapped, context):
-        super(Coroutine, self).__init__(wrapped)
+        super().__init__(wrapped)
         self._nr_context = context
 
     def send(self, value):

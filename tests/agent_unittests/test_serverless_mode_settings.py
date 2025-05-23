@@ -18,25 +18,25 @@ from testing_support.validators.validate_serverless_payload import validate_serv
 from newrelic.api.application import register_application
 from newrelic.api.background_task import background_task
 
-INI_FILE_EMPTY = """
+INI_FILE_EMPTY = b"""
 [newrelic]
-""".encode("utf-8")
+"""
 
-INI_FILE_SERVERLESS_MODE = """
+INI_FILE_SERVERLESS_MODE = b"""
 [newrelic]
 serverless_mode.enabled = true
-""".encode("utf-8")
+"""
 
-INI_FILE_APDEX_T = """
+INI_FILE_APDEX_T = b"""
 [newrelic]
 apdex_t = 0.33
-""".encode("utf-8")
+"""
 
-INI_FILE_APP_NAME = """
+INI_FILE_APP_NAME = b"""
 [newrelic]
 serverless_mode.enabled = True
 app_name = a;b
-""".encode("utf-8")
+"""
 
 NON_SERVERLESS_MODE_ENV = {"NEW_RELIC_SERVERLESS_MODE_ENABLED": "false"}
 

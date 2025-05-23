@@ -88,7 +88,7 @@ def extract_code_from_callable(func):
     func_path = func_path.split(".")
     func_name = func_path[-1]  # function name is last in path
     if len(func_path) > 1:
-        class_name = ".".join((func_path[:-1]))
+        class_name = ".".join(func_path[:-1])
         namespace = f"{module_name}.{class_name}"
     else:
         namespace = module_name

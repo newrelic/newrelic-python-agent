@@ -26,7 +26,7 @@ FIXTURE = os.path.join(CURRENT_DIR, "fixtures", "labels.json")
 
 
 def _load_tests():
-    with open(FIXTURE, "r") as fh:
+    with open(FIXTURE) as fh:
         js = fh.read()
     return json.loads(js)
 

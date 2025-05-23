@@ -69,7 +69,7 @@ class DatabaseTrace(TimeTrace):
         if kwargs:
             raise TypeError("Invalid keyword arguments:", kwargs)
 
-        super(DatabaseTrace, self).__init__(parent=parent, source=source)
+        super().__init__(parent=parent, source=source)
 
         self.sql = sql
 
@@ -84,7 +84,7 @@ class DatabaseTrace(TimeTrace):
         self.database_name = database_name
 
     def __enter__(self):
-        result = super(DatabaseTrace, self).__enter__()
+        result = super().__enter__()
         if result and self.transaction:
             self.sql = self.transaction._intern_string(self.sql)
         return result

@@ -63,7 +63,7 @@ XFAIL_TESTS = [
 def load_tests():
     result = []
     path = os.path.join(JSON_DIR, "trace_context.json")
-    with open(path, "r") as fh:
+    with open(path) as fh:
         tests = json.load(fh)
 
     for test in tests:

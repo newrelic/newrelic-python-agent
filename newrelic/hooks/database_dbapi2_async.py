@@ -21,7 +21,7 @@ from newrelic.hooks.database_dbapi2 import DEFAULT
 
 class AsyncCursorWrapper(ObjectProxy):
     def __init__(self, cursor, dbapi2_module, connect_params, cursor_params):
-        super(AsyncCursorWrapper, self).__init__(cursor)
+        super().__init__(cursor)
         self._nr_dbapi2_module = dbapi2_module
         self._nr_connect_params = connect_params
         self._nr_cursor_params = cursor_params
@@ -103,7 +103,7 @@ class AsyncConnectionWrapper(ObjectProxy):
     __cursor_wrapper__ = AsyncCursorWrapper
 
     def __init__(self, connection, dbapi2_module, connect_params):
-        super(AsyncConnectionWrapper, self).__init__(connection)
+        super().__init__(connection)
         self._nr_dbapi2_module = dbapi2_module
         self._nr_connect_params = connect_params
 
@@ -142,7 +142,7 @@ class AsyncConnectionFactory(ObjectProxy):
     __connection_wrapper__ = AsyncConnectionWrapper
 
     def __init__(self, connect, dbapi2_module):
-        super(AsyncConnectionFactory, self).__init__(connect)
+        super().__init__(connect)
         self._nr_dbapi2_module = dbapi2_module
 
     async def __call__(self, *args, **kwargs):

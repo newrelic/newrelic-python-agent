@@ -15,19 +15,20 @@
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.common.object_names import callable_name
+from newrelic.common.signature import bind_args
 
 
 async def wrap_call_tool(wrapped, instance, args, kwargs):
-    tool_name = bind_call_tool(*args, **kwargs)
+    bound_args = bind_args(wrapped, args, kwargs)
+    tool_name = bound_args.get("name") or "tool"
     func_name = callable_name(wrapped)
     function_trace_name = f"{func_name}/{tool_name}"
+
     with FunctionTrace(name=function_trace_name, source=wrapped):
         return await wrapped(*args, **kwargs)
 
 
-def bind_call_tool(name, *args, **kwargs):
-    return name
-
-
 def instrument_mcp_client_session(module):
-    wrap_function_wrapper(module, "ClientSession.call_tool", wrap_call_tool)
+    if hasattr(module, "ClientSession"):
+        if hasattr(module.ClientSession, "call_tool"):
+            wrap_function_wrapper(module, "ClientSession.call_tool", wrap_call_tool)

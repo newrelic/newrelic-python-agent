@@ -63,13 +63,13 @@ class CustomTestModel(BaseDecisionTree):
         )
 
     def fit(self, X, y, sample_weight=None, check_input=True):
-        if hasattr(super(CustomTestModel, self), "_fit"):
+        if hasattr(super(), "_fit"):
             return self._fit(X, y, sample_weight=sample_weight, check_input=check_input)
         else:
-            return super(CustomTestModel, self).fit(X, y, sample_weight=sample_weight, check_input=check_input)
+            return super().fit(X, y, sample_weight=sample_weight, check_input=check_input)
 
     def predict(self, X, check_input=True):
-        return super(CustomTestModel, self).predict(X, check_input=check_input)
+        return super().predict(X, check_input=check_input)
 
 
 int_list_recorded_custom_events = [

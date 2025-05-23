@@ -209,7 +209,7 @@ class ASGIWebTransaction(WebTransaction):
         request_path = scope["path"]
         query_string = scope["query_string"]
         headers = scope["headers"] = tuple(scope["headers"])
-        super(ASGIWebTransaction, self).__init__(
+        super().__init__(
             application=application,
             name=None,
             scheme=scheme,

@@ -348,7 +348,7 @@ class HttpClient(BaseClient):
         if not self._prefix:
             url = f"{self.CONNECTION_CLS.scheme}://{self._host}{url}"
 
-        return super(HttpClient, self).log_request(fp, method, url, params, payload, headers, body, compression_time)
+        return super().log_request(fp, method, url, params, payload, headers, body, compression_time)
 
     @staticmethod
     def _compress(data, method="gzip", level=None):
@@ -442,7 +442,7 @@ class InsecureHttpClient(HttpClient):
             ca_bundle_path = None
             disable_certificate_validation = None
 
-        super(InsecureHttpClient, self).__init__(
+        super().__init__(
             host,
             port,
             proxy_scheme,
@@ -565,15 +565,13 @@ class DeveloperModeClient(SupportabilityMixin, BaseClient):
 
 class ServerlessModeClient(DeveloperModeClient):
     def __init__(self, *args, **kwargs):
-        super(ServerlessModeClient, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.payload = {}
 
     def send_request(
         self, method="POST", path="/agent_listener/invoke_raw_method", params=None, headers=None, payload=None
     ):
-        result = super(ServerlessModeClient, self).send_request(
-            method=method, path=path, params=params, headers=headers, payload=payload
-        )
+        result = super().send_request(method=method, path=path, params=params, headers=headers, payload=payload)
 
         if result[0] == 200:
             agent_method = params["method"]

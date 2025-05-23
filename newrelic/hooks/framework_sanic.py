@@ -245,7 +245,7 @@ def _nr_sanic_register_middleware_(wrapped, instance, args, kwargs):
     callable_name(middleware)
     middleware_func = middleware
     if hasattr(middleware, "func"):
-        name = callable_name(middleware.func)
+        callable_name(middleware.func)
         middleware_func = middleware.func
 
     wrapped_middleware = _nr_wrapper_middleware_(attach_to)(middleware_func)

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.admin import command, usage
+from newrelic.admin import command
 
 
 @command(
@@ -62,7 +62,6 @@ def run_python(args):
             log_message("%s = %r", name, os.environ.get(name))
 
     from newrelic import __file__ as root_directory
-    from newrelic import version
 
     root_directory = os.path.dirname(root_directory)
     boot_directory = os.path.join(root_directory, "bootstrap")

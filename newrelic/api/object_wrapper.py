@@ -12,13 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
-
 # These have been moved. They are retained here until all references to
 # them are moved at which point will mark as deprecated to ensure users
 # weren't using them directly.
-from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import ObjectWrapper, wrap_object
+from newrelic.common.object_names import callable_name  # noqa: F401
+from newrelic.common.object_wrapper import ObjectWrapper, wrap_object  # noqa: F401
 
 # From Python 3.X. In older Python versions it fails if attributes do
 # not exist and don't maintain a __wrapped__ attribute.

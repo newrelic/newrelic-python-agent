@@ -24,7 +24,7 @@ from fastmcp.client.transports import FastMCPTransport
 
 @pytest.fixture
 def fastmcp_server():
-    server = FastMCP("TestServer")
+    server = FastMCP("Test Tools")
 
     @server.tool()
     def add_exclamation(phrase):

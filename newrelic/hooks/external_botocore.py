@@ -736,7 +736,7 @@ class EventStreamWrapper(ObjectProxy):
 
 class GeneratorProxy(ObjectProxy):
     def __init__(self, wrapped):
-        super(GeneratorProxy, self).__init__(wrapped)
+        super().__init__(wrapped)
 
     def __iter__(self):
         return self
@@ -759,7 +759,7 @@ class GeneratorProxy(ObjectProxy):
         return return_val
 
     def close(self):
-        return super(GeneratorProxy, self).close()
+        return super().close()
 
 
 class AsyncEventStreamWrapper(ObjectProxy):
@@ -773,7 +773,7 @@ class AsyncEventStreamWrapper(ObjectProxy):
 
 class AsyncGeneratorProxy(ObjectProxy):
     def __init__(self, wrapped):
-        super(AsyncGeneratorProxy, self).__init__(wrapped)
+        super().__init__(wrapped)
 
     def __aiter__(self):
         return self
@@ -795,7 +795,7 @@ class AsyncGeneratorProxy(ObjectProxy):
         return return_val
 
     async def aclose(self):
-        return await super(AsyncGeneratorProxy, self).aclose()
+        return await super().aclose()
 
 
 def record_stream_chunk(self, return_val, transaction):

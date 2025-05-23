@@ -245,7 +245,7 @@ class TransactionNode(_TransactionNode):
 
         # Now for the children.
         for child in self.root.children:
-            for metric in child.time_metrics(stats, self, self):
+            for metric in child.time_metrics(stats, self, self):  # noqa: UP028
                 yield metric
 
     def apdex_metrics(self, stats):
@@ -634,5 +634,4 @@ class TransactionNode(_TransactionNode):
             )
         )
 
-        for event in self.root.span_events(settings, base_attrs, parent_guid=self.parent_span, attr_class=attr_class):
-            yield event
+        yield from self.root.span_events(settings, base_attrs, parent_guid=self.parent_span, attr_class=attr_class)

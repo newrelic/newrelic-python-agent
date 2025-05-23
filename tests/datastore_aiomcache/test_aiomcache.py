@@ -61,7 +61,7 @@ def test_bt_set_get_delete(loop):
     client = aiomcache.Client(host=MEMCACHED_HOST, port=MEMCACHED_PORT)
 
     key = f"{MEMCACHED_NAMESPACE}key".encode()
-    data = "value".encode()
+    data = b"value"
 
     loop.run_until_complete(client.set(key, data))
     value = loop.run_until_complete(client.get(key))
@@ -100,7 +100,7 @@ def test_wt_set_get_delete(loop):
     client = aiomcache.Client(host=MEMCACHED_HOST, port=MEMCACHED_PORT)
 
     key = f"{MEMCACHED_NAMESPACE}key".encode()
-    data = "value".encode()
+    data = b"value"
 
     loop.run_until_complete(client.set(key, data))
     value = loop.run_until_complete(client.get(key))

@@ -72,13 +72,13 @@ class CursorWrapper(DBAPI2CursorWrapper):
         if hasattr(query, "as_string"):
             query = query.as_string(self)
 
-        return super(CursorWrapper, self).execute(query, params, *args, **kwargs)
+        return super().execute(query, params, *args, **kwargs)
 
     def executemany(self, query, params_seq, *args, **kwargs):
         if hasattr(query, "as_string"):
             query = query.as_string(self)
 
-        return super(CursorWrapper, self).executemany(query, params_seq, *args, **kwargs)
+        return super().executemany(query, params_seq, *args, **kwargs)
 
 
 class ConnectionSaveParamsWrapper(DBAPI2ConnectionWrapper):
@@ -170,7 +170,7 @@ class ConnectionFactory(DBAPI2ConnectionFactory):
         if should_preserve_connection_args(self, *args, **kwargs):
             self.__connection_wrapper__ = ConnectionSaveParamsWrapper
 
-        return super(ConnectionFactory, self).__call__(*args, **kwargs)
+        return super().__call__(*args, **kwargs)
 
 
 # Due to our explain plan feature requiring the use of synchronous DBAPI2 compliant modules, we can't support the use
@@ -216,13 +216,13 @@ class AsyncCursorWrapper(DBAPI2AsyncCursorWrapper):
         if hasattr(query, "as_string"):
             query = query.as_string(self)
 
-        return await super(AsyncCursorWrapper, self).execute(query, params, *args, **kwargs)
+        return await super().execute(query, params, *args, **kwargs)
 
     async def executemany(self, query, params_seq, *args, **kwargs):
         if hasattr(query, "as_string"):
             query = query.as_string(self)
 
-        return await super(AsyncCursorWrapper, self).executemany(query, params_seq, *args, **kwargs)
+        return await super().executemany(query, params_seq, *args, **kwargs)
 
 
 class AsyncConnectionSaveParamsWrapper(DBAPI2AsyncConnectionWrapper):
@@ -314,7 +314,7 @@ class AsyncConnectionFactory(DBAPI2AsyncConnectionFactory):
         if should_preserve_connection_args(self, *args, **kwargs):
             self.__connection_wrapper__ = AsyncConnectionSaveParamsWrapper
 
-        return await super(AsyncConnectionFactory, self).__call__(*args, **kwargs)
+        return await super().__call__(*args, **kwargs)
 
 
 def instance_info(args, kwargs):

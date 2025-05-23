@@ -47,7 +47,7 @@ class CaplogHandler(logging.StreamHandler):
 
     def __init__(self, *args, **kwargs):
         self.records = []
-        super(CaplogHandler, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     def emit(self, record):
         self.records.append(self.format(record))

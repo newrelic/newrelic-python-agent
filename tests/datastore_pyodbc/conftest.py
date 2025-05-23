@@ -12,6 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import re
+
+import pytest
+from testing_support.db_settings import postgresql_settings
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 _default_settings = {
@@ -29,3 +33,28 @@ collector_agent_registration = collector_agent_registration_fixture(
     default_settings=_default_settings,
     linked_applications=["Python Agent Test (datastore)"],
 )
+
+DB_SETTINGS = postgresql_settings()[0]
+
+
+@pytest.fixture
+def pyodbc_driver():
+    import pyodbc
+
+    driver_name = "PostgreSQL Unicode"
+    assert driver_name in pyodbc.drivers()
+    return driver_name
+
+
+@pytest.fixture
+def connection_string(pyodbc_driver):
+    _connection_string = f"""
+    DRIVER={{{pyodbc_driver}}};
+    SERVER={DB_SETTINGS["host"]};
+    PORT={DB_SETTINGS["port"]};
+    DATABASE={DB_SETTINGS["name"]};
+    UID={DB_SETTINGS["user"]};
+    PWD={DB_SETTINGS["password"]}
+    """
+    # Remove newlines and spaces
+    return re.sub(r"\n *", "", _connection_string).strip()

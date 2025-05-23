@@ -491,7 +491,7 @@ class AgentProtocol:
 
 class ServerlessModeProtocol(AgentProtocol):
     def __init__(self, settings, host=None, client_cls=ServerlessModeClient):
-        super(ServerlessModeProtocol, self).__init__(settings, host=host, client_cls=client_cls)
+        super().__init__(settings, host=host, client_cls=client_cls)
         self._metadata = {
             "protocol_version": self.VERSION,
             "execution_environment": os.environ.get("AWS_EXECUTION_ENV", None),

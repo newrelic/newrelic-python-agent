@@ -169,7 +169,7 @@ def test_distributed_tracing_headers(topic, producer, consumer, serialize, expec
     _consume()
 
 
-@pytest.fixture()
+@pytest.fixture
 def consumer_next_raises(consumer):
     def _poll(*args, **kwargs):
         raise RuntimeError
@@ -178,11 +178,11 @@ def consumer_next_raises(consumer):
     return consumer
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def expected_broker_metrics(broker, topic):
     return [(f"MessageBroker/Kafka/Nodes/{server}/Consume/{topic}", 1) for server in broker]
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def expected_missing_broker_metrics(broker, topic):
     return [(f"MessageBroker/Kafka/Nodes/{server}/Consume/{topic}", None) for server in broker]

@@ -70,14 +70,14 @@ _base_pool_rollup_metrics = [
 # Tests
 
 
-@pytest.fixture()
+@pytest.fixture
 def client(loop):
     import valkey.asyncio
 
     return loop.run_until_complete(valkey.asyncio.Valkey(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0))
 
 
-@pytest.fixture()
+@pytest.fixture
 def client_pool(loop):
     import valkey.asyncio
 

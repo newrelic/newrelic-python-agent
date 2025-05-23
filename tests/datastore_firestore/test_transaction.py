@@ -25,7 +25,7 @@ def sample_data(collection):
         collection.add({"x": x}, f"doc{x}")
 
 
-@pytest.fixture()
+@pytest.fixture
 def exercise_transaction_commit(client, collection):
     def _exercise_transaction_commit():
         from google.cloud.firestore_v1.transaction import transactional
@@ -53,7 +53,7 @@ def exercise_transaction_commit(client, collection):
     return _exercise_transaction_commit
 
 
-@pytest.fixture()
+@pytest.fixture
 def exercise_transaction_rollback(client, collection):
     def _exercise_transaction_rollback():
         from google.cloud.firestore_v1.transaction import transactional

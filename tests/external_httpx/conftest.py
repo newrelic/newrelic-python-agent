@@ -46,14 +46,14 @@ def real_server():
         host = settings["host"]
         port = settings["port"]
 
-    yield RealHTTP2Server
+    return RealHTTP2Server
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def sync_client(httpx):
     return httpx.Client()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def async_client(httpx):
     return httpx.AsyncClient()

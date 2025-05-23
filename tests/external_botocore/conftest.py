@@ -83,9 +83,8 @@ def bedrock_server():
             yield client
     else:
         # Use real Bedrock backend and record responses
-        assert os.environ["AWS_ACCESS_KEY_ID"] and os.environ["AWS_SECRET_ACCESS_KEY"], (
-            "AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are required."
-        )
+        assert os.environ["AWS_ACCESS_KEY_ID"], "AWS_ACCESS_KEY_ID is required."
+        assert os.environ["AWS_SECRET_ACCESS_KEY"], "AWS_SECRET_ACCESS_KEY is required."
 
         # Construct real client
         client = boto3.client("bedrock-runtime", "us-east-1")

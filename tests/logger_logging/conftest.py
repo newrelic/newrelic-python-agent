@@ -53,7 +53,7 @@ class CaplogHandler(logging.StreamHandler):
         self.records.append(self.format(record))
 
 
-@pytest.fixture(scope="function", params=["instrumented_logger", "forwarding_handler"])
+@pytest.fixture(params=["instrumented_logger", "forwarding_handler"])
 def logger(request):
     _logger = logging.getLogger("my_app")
     caplog = CaplogHandler()
@@ -83,7 +83,7 @@ def logger(request):
     logging.Logger.callHandlers = instrumented
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def instrumented_logger():
     _logger = logging.getLogger("my_app")
     caplog = CaplogHandler()

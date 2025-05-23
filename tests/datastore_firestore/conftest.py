@@ -45,7 +45,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 )
 
 
-@pytest.fixture()
+@pytest.fixture
 def instance_info():
     host = gethostname() if FIRESTORE_HOST in LOCALHOST_EQUIVALENTS else FIRESTORE_HOST
     return {
@@ -64,7 +64,7 @@ def client():
     return client
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def collection(client):
     collection_ = client.collection(f"firestore_collection_{str(uuid.uuid4())}")
     yield collection_
@@ -81,10 +81,10 @@ def async_client(loop):
     return client
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def async_collection(async_client, collection):
     # Use the same collection name as the collection fixture
-    yield async_client.collection(collection.id)
+    return async_client.collection(collection.id)
 
 
 @pytest.fixture(scope="session")
@@ -99,7 +99,8 @@ def assert_trace_for_generator():
             # Iterate over generator and check trace is correct for each item.
             # Ignore linter, don't use list comprehensions or it's harder to understand the behavior.
             _trace_check.append(isinstance(current_trace(), DatastoreTrace))  # noqa: PERF401
-        assert _trace_check and all(_trace_check)  # All checks are True, and at least 1 is present.
+        assert _trace_check  # At least one check is present
+        assert all(_trace_check)  # All checks are True
         assert current_trace() is txn  # Generator trace has exited.
 
     return _assert_trace_for_generator
@@ -121,7 +122,8 @@ def assert_trace_for_async_generator(loop):
 
         loop.run_until_complete(coro())
 
-        assert _trace_check and all(_trace_check)  # All checks are True, and at least 1 is present.
+        assert _trace_check  # At least one check is present
+        assert all(_trace_check)  # All checks are True
         assert current_trace() is txn  # Generator trace has exited.
 
     return _assert_trace_for_async_generator

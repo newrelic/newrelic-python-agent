@@ -141,7 +141,7 @@ def test_base_web_transaction(use_bytes):
         transaction.process_response(200, response_headers)
 
 
-@pytest.fixture()
+@pytest.fixture
 def validate_no_garbage():
     yield
 

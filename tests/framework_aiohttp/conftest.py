@@ -78,7 +78,7 @@ class SimpleAiohttpApp(AioHTTPTestCase):
     get_client = _get_client
 
 
-@pytest.fixture()
+@pytest.fixture
 def aiohttp_app(request):
     try:
         middleware = request.getfixturevalue("middleware")

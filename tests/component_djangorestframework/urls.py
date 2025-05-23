@@ -62,7 +62,7 @@ class ViewHandleError(APIView):
     def handle_exception(self, exc):
         self.settings.EXCEPTION_HANDLER = self._exception_handler
         if self.global_exc:
-            return super(ViewHandleError, self).handle_exception(exc)
+            return super().handle_exception(exc)
         else:
             return Response([{"response": "exception was handled not global"}], status=self.status)
 

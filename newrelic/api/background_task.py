@@ -25,7 +25,7 @@ class BackgroundTask(Transaction):
     def __init__(self, application, name, group=None, source=None):
         # Initialise the common transaction base class.
 
-        super(BackgroundTask, self).__init__(application, source=source)
+        super().__init__(application, source=source)
 
         # Mark this as a background task even if disabled.
 

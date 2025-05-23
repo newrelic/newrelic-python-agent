@@ -912,7 +912,7 @@ def simple_get(extract_shortened_prompt):
         if not prompt:
             self.send_response(500)
             self.end_headers()
-            self.wfile.write("Could not parse prompt.".encode("utf-8"))
+            self.wfile.write(b"Could not parse prompt.")
             return
 
         headers, response = ({}, "")
@@ -924,7 +924,7 @@ def simple_get(extract_shortened_prompt):
         else:  # If no matches found
             self.send_response(500)
             self.end_headers()
-            self.wfile.write(("Unknown Prompt:\n%s" % prompt).encode("utf-8"))
+            self.wfile.write(f"Unknown Prompt:\n{prompt}".encode())
             return
 
         # Send response code
@@ -967,13 +967,13 @@ def MockExternalGeminiServer(simple_get):
         # calls.
 
         def __init__(self, handler=simple_get, port=None, *args, **kwargs):
-            super(_MockExternalGeminiServer, self).__init__(handler=handler, port=port, *args, **kwargs)  # noqa: B026
+            super().__init__(handler=handler, port=port, *args, **kwargs)  # noqa: B026
 
     return _MockExternalGeminiServer
 
 
 if __name__ == "__main__":
     with MockExternalGeminiServer() as server:
-        print("MockExternalGeminiServer serving on port %s" % str(server.port))
+        print(f"MockExternalGeminiServer serving on port {str(server.port)}")
         while True:
             pass  # Serve forever

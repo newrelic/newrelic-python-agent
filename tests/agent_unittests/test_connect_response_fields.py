@@ -50,13 +50,13 @@ _all_endpoints = (
 
 class CustomTestClient(DeveloperModeClient):
     def __init__(self, connect_response_fields, *args, **kwargs):
-        super(CustomTestClient, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.connect_response_fields = connect_response_fields
         self.headers = []
 
     def log_request(self, fp, method, url, params, payload, headers):
         self.headers.append(headers)
-        return super(CustomTestClient, self).log_request(fp, method, url, params, payload, headers)
+        return super().log_request(fp, method, url, params, payload, headers)
 
     def send_request(
         self, method="POST", path="/agent_listener/invoke_raw_method", params=None, headers=None, payload=None
@@ -69,7 +69,7 @@ class CustomTestClient(DeveloperModeClient):
             response_data = json_encode(payload).encode("utf-8")
             return (200, response_data)
         else:
-            return super(CustomTestClient, self).send_request(method, path, params, headers, payload)
+            return super().send_request(method, path, params, headers, payload)
 
 
 @pytest.mark.parametrize("headers_map_present", (True, False))

@@ -82,7 +82,7 @@ def extract_sqs_agent_attrs(instance, *args, **kwargs):
                 agent_attrs["cloud.region"] = m.group(1)
                 agent_attrs["cloud.account.id"] = m.group(2)
                 agent_attrs["messaging.destination.name"] = m.group(3)
-    except Exception as e:
+    except Exception:
         _logger.debug("Failed to capture AWS SQS info.", exc_info=True)
     return agent_attrs
 
@@ -117,7 +117,7 @@ def extract_kinesis_agent_attrs(instance, *args, **kwargs):
             agent_attrs["cloud.platform"] = "aws_kinesis_data_streams"
             return agent_attrs
 
-    except Exception as e:
+    except Exception:
         _logger.debug("Failed to capture AWS Kinesis info.", exc_info=True)
     return agent_attrs
 
@@ -140,7 +140,7 @@ def extract_firehose_agent_attrs(instance, *args, **kwargs):
                 agent_attrs["cloud.resource_id"] = (
                     f"arn:aws:firehose:{region}:{account_id}:deliverystream/{stream_name}"
                 )
-    except Exception as e:
+    except Exception:
         _logger.debug("Failed to capture AWS Kinesis Delivery Stream (Firehose) info.", exc_info=True)
     return agent_attrs
 
@@ -786,7 +786,7 @@ class AsyncGeneratorProxy(ObjectProxy):
         try:
             return_val = await self.__wrapped__.__anext__()
             record_stream_chunk(self, return_val, transaction)
-        except StopAsyncIteration as e:
+        except StopAsyncIteration:
             record_events_on_stop_iteration(self, transaction)
             raise
         except Exception as exc:
@@ -918,8 +918,6 @@ def handle_chat_completion_event(transaction, bedrock_attrs):
     request_id = bedrock_attrs.get("request_id", None)
     response_id = bedrock_attrs.get("response_id", None)
     model = bedrock_attrs.get("model", None)
-
-    settings = transaction.settings if transaction.settings is not None else global_settings()
 
     input_message_list = bedrock_attrs.get("input_message_list", [])
     output_message_list = bedrock_attrs.get("output_message_list", [])
@@ -1055,7 +1053,7 @@ def dynamodb_datastore_trace(
                     f"arn:{partition}:dynamodb:{region}:{account_id:012d}:table/{_target}"
                 )
 
-        except Exception as e:
+        except Exception:
             _logger.debug("Failed to capture AWS DynamoDB info.", exc_info=True)
         trace.agent_attributes.update(agent_attrs)
 

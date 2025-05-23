@@ -411,7 +411,7 @@ def test_bedrock_embedding_error_malformed_response_body(loop, bedrock_server, s
     loop.run_until_complete(_test())
 
 
-def test_embedding_models_instrumented():
+def test_embedding_models_instrumented(loop):
     import aiobotocore
 
     SUPPORTED_MODELS = [model for model, _, _, _ in MODEL_EXTRACTORS if "embed" in model]

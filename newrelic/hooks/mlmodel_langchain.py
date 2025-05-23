@@ -188,7 +188,7 @@ async def wrap_asimilarity_search(wrapped, instance, args, kwargs):
     linking_metadata = get_trace_linking_metadata()
     try:
         response = await wrapped(*args, **kwargs)
-    except Exception as exc:
+    except Exception:
         ft.notice_error(attributes={"vector_store_id": search_id})
         ft.__exit__(*sys.exc_info())
         _create_error_vectorstore_events(transaction, search_id, args, kwargs, linking_metadata, wrapped)
@@ -221,7 +221,7 @@ def wrap_similarity_search(wrapped, instance, args, kwargs):
     linking_metadata = get_trace_linking_metadata()
     try:
         response = wrapped(*args, **kwargs)
-    except Exception as exc:
+    except Exception:
         ft.notice_error(attributes={"vector_store_id": search_id})
         ft.__exit__(*sys.exc_info())
         _create_error_vectorstore_events(transaction, search_id, args, kwargs, linking_metadata, wrapped)
@@ -309,7 +309,7 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
     linking_metadata = get_trace_linking_metadata()
     try:
         return_val = wrapped(**run_args)
-    except Exception as exc:
+    except Exception:
         _record_tool_error(
             instance,
             transaction,
@@ -366,7 +366,7 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
     linking_metadata = get_trace_linking_metadata()
     try:
         return_val = await wrapped(**run_args)
-    except Exception as exc:
+    except Exception:
         _record_tool_error(
             instance,
             transaction,
@@ -561,7 +561,7 @@ async def wrap_chain_async_run(wrapped, instance, args, kwargs):
     linking_metadata = get_trace_linking_metadata()
     try:
         response = await wrapped(input=run_args["input"], config=run_args["config"], **run_args.get("kwargs", {}))
-    except Exception as exc:
+    except Exception:
         ft.notice_error(attributes={"completion_id": completion_id})
         ft.__exit__(*sys.exc_info())
         _create_error_chain_run_events(
@@ -605,7 +605,7 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
     linking_metadata = get_trace_linking_metadata()
     try:
         response = wrapped(input=run_args["input"], config=run_args["config"], **run_args.get("kwargs", {}))
-    except Exception as exc:
+    except Exception:
         ft.notice_error(attributes={"completion_id": completion_id})
         ft.__exit__(*sys.exc_info())
         _create_error_chain_run_events(
@@ -708,7 +708,7 @@ def _create_successful_chain_run_events(
         except:
             try:
                 output_message_list = [str(response)]
-            except Exception as e:
+            except Exception:
                 _logger.warning(
                     "Unable to capture response inside langchain chain instrumentation. No response message event will be captured. Report this issue to New Relic Support.\n%s",
                     traceback.format_exception(*sys.exc_info()),

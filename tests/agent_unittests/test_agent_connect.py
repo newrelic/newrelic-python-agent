@@ -80,7 +80,7 @@ def test_ml_streaming_disabled_supportability_metrics():
 @validate_internal_metrics([("Supportability/AgentControl/Health/enabled", 1)])
 def test_agent_control_health_supportability_metric(monkeypatch, tmp_path):
     # Setup expected env vars to run agent control health check
-    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_ENABLED", True)
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_ENABLED", "True")
     file_path = tmp_path.as_uri()
     monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", file_path)
 

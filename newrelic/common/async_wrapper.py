@@ -64,7 +64,7 @@ def async_generator_wrapper(wrapped, trace):
                 while True:
                     try:
                         sent = yield yielded
-                    except GeneratorExit as e:
+                    except GeneratorExit:
                         await g.aclose()
                         raise
                     except BaseException as e:

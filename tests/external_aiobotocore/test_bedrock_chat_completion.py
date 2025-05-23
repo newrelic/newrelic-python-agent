@@ -854,7 +854,7 @@ def test_bedrock_chat_completion_functions_marked_as_wrapped_for_sdk_compatibili
     assert bedrock_server._nr_wrapped
 
 
-def test_chat_models_instrumented():
+def test_chat_models_instrumented(loop):
     import aiobotocore
 
     SUPPORTED_MODELS = [model for model, _, _, _ in MODEL_EXTRACTORS if "embed" not in model]

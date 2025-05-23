@@ -527,7 +527,7 @@ def test_incomplete_async_generator_transaction_exited(event_loop):
 
         @background_task(name="test_incomplete_async_generator")
         async def _test():
-            async for _ in c:
+            async for _ in c:  # noqa: F821
                 break
 
         event_loop.run_until_complete(_test())

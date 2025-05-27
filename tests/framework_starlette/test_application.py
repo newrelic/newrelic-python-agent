@@ -47,7 +47,11 @@ else:
         ("Function/starlette.exceptions:ExceptionMiddleware.__call__", 1),
     ]
 
-MIDDLEWARE_METRICS = [("Function/_test_application:middleware_factory.<locals>.middleware", 2), ("Function/_test_application:middleware_decorator", 1), *DEFAULT_MIDDLEWARE_METRICS]
+MIDDLEWARE_METRICS = [
+    ("Function/_test_application:middleware_factory.<locals>.middleware", 2),
+    ("Function/_test_application:middleware_decorator", 1),
+    *DEFAULT_MIDDLEWARE_METRICS,
+]
 
 
 @pytest.mark.parametrize("app_name", ("no_error_handler",))

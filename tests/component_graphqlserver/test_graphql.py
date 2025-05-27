@@ -102,14 +102,26 @@ def test_query_and_mutation(target_application):
         ("GraphQL/operation/GraphQLServer/query/<anonymous>/storage", 1),
         (_view_metrics[framework], 1),
     ]
-    _test_query_unscoped_metrics = [("GraphQL/all", 1), ("GraphQL/GraphQLServer/all", 1), ("GraphQL/allWeb", 1), ("GraphQL/GraphQLServer/allWeb", 1), *_test_query_scoped_metrics]
+    _test_query_unscoped_metrics = [
+        ("GraphQL/all", 1),
+        ("GraphQL/GraphQLServer/all", 1),
+        ("GraphQL/allWeb", 1),
+        ("GraphQL/GraphQLServer/allWeb", 1),
+        *_test_query_scoped_metrics,
+    ]
 
     _test_mutation_scoped_metrics = [
         ("GraphQL/resolve/GraphQLServer/storage_add", 1),
         ("GraphQL/operation/GraphQLServer/mutation/<anonymous>/storage_add", 1),
         (_view_metrics[framework], 1),
     ]
-    _test_mutation_unscoped_metrics = [("GraphQL/all", 1), ("GraphQL/GraphQLServer/all", 1), ("GraphQL/allWeb", 1), ("GraphQL/GraphQLServer/allWeb", 1), *_test_mutation_scoped_metrics]
+    _test_mutation_unscoped_metrics = [
+        ("GraphQL/all", 1),
+        ("GraphQL/GraphQLServer/all", 1),
+        ("GraphQL/allWeb", 1),
+        ("GraphQL/GraphQLServer/allWeb", 1),
+        *_test_mutation_scoped_metrics,
+    ]
 
     _expected_mutation_operation_attributes = {
         "graphql.operation.type": "mutation",
@@ -204,7 +216,12 @@ def test_exception_in_middleware(target_application):
         (f"GraphQL/operation/GraphQLServer/query/MyQuery/{field}", 1),
         (f"GraphQL/resolve/GraphQLServer/{field}", 1),
     ]
-    _test_exception_rollup_metrics = [("Errors/all", 1), ("Errors/allWeb", 1), ("Errors/WebTransaction/GraphQL/component_graphqlserver.test_graphql:error_middleware", 1), *_test_exception_scoped_metrics]
+    _test_exception_rollup_metrics = [
+        ("Errors/all", 1),
+        ("Errors/allWeb", 1),
+        ("Errors/WebTransaction/GraphQL/component_graphqlserver.test_graphql:error_middleware", 1),
+        *_test_exception_scoped_metrics,
+    ]
 
     # Attributes
     _expected_exception_resolver_attributes = {
@@ -247,7 +264,12 @@ def test_exception_in_resolver(target_application, field):
         (f"GraphQL/operation/GraphQLServer/query/MyQuery/{field}", 1),
         (f"GraphQL/resolve/GraphQLServer/{field}", 1),
     ]
-    _test_exception_rollup_metrics = [("Errors/all", 1), ("Errors/allWeb", 1), (f"Errors/WebTransaction/GraphQL/{txn_name}", 1), *_test_exception_scoped_metrics]
+    _test_exception_rollup_metrics = [
+        ("Errors/all", 1),
+        ("Errors/allWeb", 1),
+        (f"Errors/WebTransaction/GraphQL/{txn_name}", 1),
+        *_test_exception_scoped_metrics,
+    ]
 
     # Attributes
     _expected_exception_resolver_attributes = {
@@ -302,7 +324,12 @@ def test_exception_in_validation(target_application, is_graphql_2, query, exc_cl
         exc_class = callable_name(GraphQLError)
 
     _test_exception_scoped_metrics = [("GraphQL/operation/GraphQLServer/<unknown>/<anonymous>/<unknown>", 1)]
-    _test_exception_rollup_metrics = [("Errors/all", 1), ("Errors/allWeb", 1), (f"Errors/WebTransaction/GraphQL/{txn_name}", 1), *_test_exception_scoped_metrics]
+    _test_exception_rollup_metrics = [
+        ("Errors/all", 1),
+        ("Errors/allWeb", 1),
+        (f"Errors/WebTransaction/GraphQL/{txn_name}", 1),
+        *_test_exception_scoped_metrics,
+    ]
 
     # Attributes
     _expected_exception_operation_attributes = {

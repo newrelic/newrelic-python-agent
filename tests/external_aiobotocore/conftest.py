@@ -69,7 +69,7 @@ class MotoService:
 
     _services = {}  # {name: instance}
 
-    def __init__(self, service_name, port = None, ssl = False):
+    def __init__(self, service_name, port=None, ssl=False):
         self._service_name = service_name
 
         if port:

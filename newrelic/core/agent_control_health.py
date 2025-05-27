@@ -172,11 +172,8 @@ class AgentControlHealth:
         # session. This function allows us to update to a healthy status if so based on the error type
         # Since this function is only called when we are in scenario where the agent functioned as expected, we check to
         # see if the previous status was unhealthy so we know to update it
-        if (
-            (protocol_error
-            and self.status_code in PROTOCOL_ERROR_CODES)
-            or (collector_error
-            and self.status_code == HealthStatus.FAILED_NR_CONNECTION.value)
+        if (protocol_error and self.status_code in PROTOCOL_ERROR_CODES) or (
+            collector_error and self.status_code == HealthStatus.FAILED_NR_CONNECTION.value
         ):
             self.status_code = HealthStatus.HEALTHY.value
             self.status_message = HEALTHY_STATUS_MESSAGE

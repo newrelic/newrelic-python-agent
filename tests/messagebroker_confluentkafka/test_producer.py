@@ -96,7 +96,11 @@ def test_trace_metrics(topic, send_producer_message, expected_broker_metrics):
 def test_distributed_tracing_headers(topic, send_producer_message, expected_broker_metrics):
     @validate_transaction_metrics(
         "test_producer:test_distributed_tracing_headers.<locals>.test",
-        rollup_metrics=[("Supportability/TraceContext/Create/Success", 1), ("Supportability/DistributedTrace/CreatePayload/Success", 1), *expected_broker_metrics],
+        rollup_metrics=[
+            ("Supportability/TraceContext/Create/Success", 1),
+            ("Supportability/DistributedTrace/CreatePayload/Success", 1),
+            *expected_broker_metrics,
+        ],
         background_task=True,
     )
     @background_task()
@@ -111,7 +115,11 @@ def test_distributed_tracing_headers(topic, send_producer_message, expected_brok
 def test_distributed_tracing_headers_under_terminal(topic, send_producer_message, expected_broker_metrics):
     @validate_transaction_metrics(
         "test_distributed_tracing_headers_under_terminal",
-        rollup_metrics=[("Supportability/TraceContext/Create/Success", 1), ("Supportability/DistributedTrace/CreatePayload/Success", 1), *expected_broker_metrics],
+        rollup_metrics=[
+            ("Supportability/TraceContext/Create/Success", 1),
+            ("Supportability/DistributedTrace/CreatePayload/Success", 1),
+            *expected_broker_metrics,
+        ],
         background_task=True,
     )
     @background_task(name="test_distributed_tracing_headers_under_terminal")

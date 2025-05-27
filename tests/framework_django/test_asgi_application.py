@@ -166,7 +166,12 @@ def test_asgi_html_insertion_failed(application, url):
 
 @validate_transaction_metrics(
     "views:template_tags",
-    scoped_metrics=[("Function/views:template_tags", 1), ("Template/Render/main.html", 1), ("Template/Render/results.html", 1), *scoped_metrics],
+    scoped_metrics=[
+        ("Function/views:template_tags", 1),
+        ("Template/Render/main.html", 1),
+        ("Template/Render/results.html", 1),
+        *scoped_metrics,
+    ],
     rollup_metrics=rollup_metrics,
 )
 @validate_code_level_metrics("views", "template_tags")

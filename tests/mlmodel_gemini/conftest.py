@@ -54,7 +54,7 @@ RECORDED_HEADERS = {"content-type"}
 
 
 @pytest.fixture(scope="session")
-def gemini_clients(MockExternalGeminiServer):  # noqa: F811
+def gemini_clients(MockExternalGeminiServer):
     """
     This configures the Gemini client and returns it
     """
@@ -105,7 +105,7 @@ def gemini_server(gemini_clients, wrap_httpx_client_send):
 
 
 @pytest.fixture(scope="session")
-def wrap_httpx_client_send(extract_shortened_prompt):  # noqa: F811
+def wrap_httpx_client_send(extract_shortened_prompt):
     def _wrap_httpx_client_send(wrapped, instance, args, kwargs):
         bound_args = bind_args(wrapped, args, kwargs)
         request = bound_args["request"]

@@ -96,6 +96,12 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = {
     "response.headers.contentType",
     "response.status",
     "server.address",
+    "zeebe.client.bpmnProcessId",
+    "zeebe.client.messageName",
+    "zeebe.client.correlationKey",
+    "zeebe.client.messageId",
+    "zeebe.client.resourceCount",
+    "zeebe.client.resourceFile",
 }
 
 MAX_NUM_USER_ATTRIBUTES = 128

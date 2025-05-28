@@ -4088,7 +4088,8 @@ def _process_module_builtin_defaults():
     )
     _process_module_definition("tornado.routing", "newrelic.hooks.framework_tornado", "instrument_tornado_routing")
     _process_module_definition("tornado.web", "newrelic.hooks.framework_tornado", "instrument_tornado_web")
-    _process_module_definition("pyzeebe", "newrelic.hooks.external_pyzeebe", "instrument_pyzeebe")
+    _process_module_definition("pyzeebe.client.client", "newrelic.hooks.external_pyzeebe", "instrument_pyzeebe_client_client")
+    _process_module_definition("pyzeebe.worker.job_executor", "newrelic.hooks.external_pyzeebe", "instrument_pyzeebe_worker_job_executor")
 
 
 def _process_module_entry_points():

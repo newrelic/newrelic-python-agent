@@ -26,7 +26,5 @@ class ZeebeClient:
     async def deploy_resource(self, *args, **kwargs):
         return {"deployment_key": 33333}
 
-    async def publish_message(self, name: str, correlation_key: str = "", variables: dict = None):
+    async def publish_message(self, name: str, correlation_key: str, variables: dict = None):
         return {"message_key": 56789}
-    
-

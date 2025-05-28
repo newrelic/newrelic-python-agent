@@ -32,6 +32,15 @@ sys.modules["pyzeebe.client.client"] = dummy_client
 
 from pyzeebe.client.client import ZeebeClient
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.fixtures import validate_attributes
+
+AGENT_ATTRIBUTES = [
+    "zeebe.client.bpmnProcessId",
+    "zeebe.client.messageName",
+    "zeebe.client.correlationKey",
+    "zeebe.client.resourceCount",
+    "zeebe.client.resourceFile",
+]
 
 @validate_transaction_metrics(
     "test_client_methods:function_trace",
@@ -43,7 +52,8 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
     ],
     background_task=True,
 )
-def test_client_methods_as_function_traces():
+@validate_attributes("agent", AGENT_ATTRIBUTES)
+def test_client_methods():
     @background_task(name="test_client_methods:function_trace")
     def _test():
         client = ZeebeClient()
@@ -63,21 +73,6 @@ def test_client_methods_as_function_traces():
         assert result_3["deployment_key"] == 33333
 
         # publish_message
-        result_4 = asyncio.run(client.publish_message("test_message"))
+        result_4 = asyncio.run(client.publish_message("test_message", correlation_key="12345"))
         assert result_4["message_key"] == 56789
     _test()
-
-
-# # TODO: fix failure
-# @validate_transaction_metrics(
-#     "ZeebeClient/run_process",
-#     rollup_metrics=[
-#         ("OtherTransaction/ZeebeClient/run_process", 1),
-#     ],
-#     background_task=True,
-# )
-# def test_run_process_as_background_tx():
-#     client = ZeebeClient()
-#     result = asyncio.run(client.run_process("DummyProcess"))
-#     assert hasattr(result, "process_instance_key")
-#     assert result.process_instance_key == 12345

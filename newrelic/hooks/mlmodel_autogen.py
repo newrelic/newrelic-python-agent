@@ -44,10 +44,21 @@ def wrap_on_messages_stream(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
 
+async def wrap__execute_tool_call(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return await wrapped(*args, **kwargs)
+    with FunctionTrace(name="hi", group="Llm", source=wrapped):
+        result = await wrapped(*args, **kwargs)
+
+    
+
 def instrument_autogen_agentchat_agents__assistant_agent(module):
     if hasattr(module, "AssistantAgent"):
         if hasattr(module.AssistantAgent, "on_messages_stream"):
             wrap_function_wrapper(module, "AssistantAgent.on_messages_stream", wrap_on_messages_stream)
+        if hasattr(module.AssistantAgent, "_execute_tool_call"):
+            wrap_function_wrapper(module, "AssistantAgent._execute_tool_call", wrap__execute_tool_call)
 
 
 def instrument_autogen_ext_tools_mcp__base(module):

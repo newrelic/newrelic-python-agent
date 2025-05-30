@@ -12,36 +12,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.signature import bind_args
 
 
-def wrap_run_stream(wrapped, instance, args, kwargs):
-    with FunctionTrace(name="run_stream_test", source=wrapped):
-        return wrapped(*args, **kwargs)
-
-
 async def wrap_from_server_params(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return await wrapped(*args, **kwargs)
+
     func_name = callable_name(wrapped)
     bound_args = bind_args(wrapped, args, kwargs)
     tool_name = bound_args.get("tool_name") or "tool"
     function_trace_name = f"{func_name}/{tool_name}"
-    with FunctionTrace(name=function_trace_name, source=wrapped):
+    with FunctionTrace(name=function_trace_name, group="Llm", source=wrapped):
         return await wrapped(*args, **kwargs)
 
 
 def wrap_on_messages_stream(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return wrapped(*args, **kwargs)
+
     agent_name = getattr(instance, "name", "agent") 
     func_name = callable_name(wrapped)
     function_trace_name = f"{func_name}/{agent_name}"
-    with FunctionTrace(name=function_trace_name, source=wrapped):
+    with FunctionTrace(name=function_trace_name, group="Llm", source=wrapped):
         return wrapped(*args, **kwargs)
-
-
-def instrument_autogen_agentchat_teams__group_chat__base_group_chat(module):
-    wrap_function_wrapper(module, "BaseGroupChat.run_stream", wrap_run_stream)
 
 
 def instrument_autogen_agentchat_agents__assistant_agent(module):

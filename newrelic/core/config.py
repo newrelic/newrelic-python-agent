@@ -904,6 +904,14 @@ _settings.instrumentation.kombu.consumer.enabled = _environ_as_bool(
     "NEW_RELIC_INSTRUMENTATION_KOMBU_CONSUMER_ENABLED", default=False
 )
 
+# celeryev is the monitoring queue for rabbitmq which we do not need to monitor-it just makes a lot of noise.
+_settings.instrumentation.kombu.ignored_exchanges = parse_space_separated_into_list(
+    os.environ.get("NEW_RELIC_INSTRUMENTATION_KOMBU_IGNORED_EXCHANGES", "celeryev")
+)
+_settings.instrumentation.kombu.consumer.enabled = _environ_as_bool(
+    "NEW_RELIC_INSTRUMENTATION_KOMBU_CONSUMER_ENABLED", default=False
+)
+
 _settings.event_harvest_config.harvest_limits.analytic_event_data = _environ_as_int(
     "NEW_RELIC_ANALYTICS_EVENTS_MAX_SAMPLES_STORED", DEFAULT_RESERVOIR_SIZE
 )
@@ -959,6 +967,7 @@ _settings.message_tracer.segment_parameters_enabled = True
 
 _settings.utilization.detect_aws = True
 _settings.utilization.detect_azure = True
+_settings.utilization.detect_azurefunction = True
 _settings.utilization.detect_docker = True
 _settings.utilization.detect_kubernetes = True
 _settings.utilization.detect_gcp = True

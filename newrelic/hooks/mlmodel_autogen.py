@@ -128,7 +128,8 @@ async def wrap__execute_tool_call(wrapped, instance, args, kwargs):
             tool_id, run_id, tool_name, agent_name, linking_metadata, tool_input, transaction, settings
         )
 
-        ft = FunctionTrace(name=wrapped.__name__, group="Llm/tool/Autogen")
+        func_name = callable_name(wrapped)
+        ft = FunctionTrace(name=func_name, group="Llm/tool/Autogen")
         ft.__enter__()
 
         try:

@@ -29,7 +29,7 @@ async def wrap_call_tool(wrapped, instance, args, kwargs):
     func_name = callable_name(wrapped)
     function_trace_name = f"{func_name}/{tool_name}"
 
-    with FunctionTrace(name=function_trace_name, source=wrapped):
+    with FunctionTrace(name=function_trace_name, group="Llm/tool/MCP", source=wrapped):
         return await wrapped(*args, **kwargs)
 
 

@@ -34,8 +34,8 @@ def fastmcp_server():
 
 @validate_transaction_metrics(
     "test_tools:test_tool_tracing",
-    scoped_metrics=[("Function/mcp.client.session:ClientSession.call_tool/add_exclamation", 1)],
-    rollup_metrics=[("Function/mcp.client.session:ClientSession.call_tool/add_exclamation", 1)],
+    scoped_metrics=[("Llm/tool/MCP/mcp.client.session:ClientSession.call_tool/add_exclamation", 1)],
+    rollup_metrics=[("Llm/tool/MCP/mcp.client.session:ClientSession.call_tool/add_exclamation", 1)],
     background_task=True,
 )
 @background_task()

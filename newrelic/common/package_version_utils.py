@@ -95,23 +95,33 @@ def _get_package_version(name):
             except Exception:
                 pass
 
-    # importlib was introduced into the standard library starting in Python3.8.
-    if "importlib" in sys.modules and hasattr(sys.modules["importlib"], "metadata"):
+    importlib_metadata = None
+    # importlib.metadata was introduced into the standard library starting in Python 3.8.
+    importlib_metadata = getattr(sys.modules.get("importlib", None), "metadata", None)
+    if importlib_metadata is None:
+        # importlib_metadata is a backport library installable from PyPI.
         try:
-            # In Python3.10+ packages_distribution can be checked for as well
-            if hasattr(sys.modules["importlib"].metadata, "packages_distributions"):
-                distributions = sys.modules["importlib"].metadata.packages_distributions()
+            import importlib_metadata
+        except ImportError:
+            pass
+
+    if importlib_metadata is not None:
+        try:
+            # In Python 3.10+ packages_distribution can be checked for as well.
+            if hasattr(importlib_metadata, "packages_distributions"):
+                distributions = importlib_metadata.packages_distributions()
                 distribution_name = distributions.get(name, name)
                 distribution_name = distribution_name[0] if isinstance(distribution_name, list) else distribution_name
             else:
                 distribution_name = name
 
-            version = sys.modules["importlib"].metadata.version(distribution_name)
+            version = importlib_metadata.version(distribution_name)
             if version not in NULL_VERSIONS:
                 return version
         except Exception:
             pass
 
+    # Fallback to pkg_resources, which is available in older versions of setuptools.
     if "pkg_resources" in sys.modules:
         try:
             version = sys.modules["pkg_resources"].get_distribution(name).version

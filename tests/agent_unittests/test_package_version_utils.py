@@ -103,7 +103,16 @@ def test_get_package_version_tuple(monkeypatch, attr, value, expected_value):
 
 @SKIP_IF_NOT_IMPORTLIB_METADATA
 @validate_function_called("importlib.metadata", "version")
-def test_importlib_metadata():
+def test_importlib_dot_metadata():
+    # Test for importlib.metadata from the standard library.
+    version = get_package_version("pytest")
+    assert version not in NULL_VERSIONS, version
+
+
+@SKIP_IF_IMPORTLIB_METADATA
+@validate_function_called("importlib_metadata", "version")
+def test_importlib_underscore_metadata():
+    # Test for importlib_metadata, a backport library available on PyPI.
     version = get_package_version("pytest")
     assert version not in NULL_VERSIONS, version
 
@@ -117,7 +126,9 @@ def test_mapping_import_to_distribution_packages():
 
 @SKIP_IF_IMPORTLIB_METADATA
 @validate_function_called("pkg_resources", "get_distribution")
-def test_pkg_resources_metadata():
+def test_pkg_resources_metadata(monkeypatch):
+    # Prevent importlib_metadata from being used by these tests
+    monkeypatch.setitem(sys.modules, "importlib_metadata", None)
     version = get_package_version("pytest")
     assert version not in NULL_VERSIONS, version
 

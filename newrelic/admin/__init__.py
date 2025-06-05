@@ -140,7 +140,7 @@ def load_external_plugins():
         # group kwarg was only added to importlib.metadata.entry_points in Python 3.10.
         _entry_points = entry_points(group=group)
     except TypeError:
-        # Filter with a generator expression for compatibility with older versions.
+        # Grab entire entry_points dictionary and select group from it.
         _entry_points = entry_points().get(group, ())
 
     for entrypoint in _entry_points:

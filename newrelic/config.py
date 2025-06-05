@@ -4107,7 +4107,14 @@ def _process_module_entry_points():
 
     group = "newrelic.hooks"
 
-    for entrypoint in entry_points(group=group):
+    try:
+        # group kwarg was only added to importlib.metadata.entry_points in Python 3.10.
+        _entry_points = entry_points(group=group)
+    except TypeError:
+        # Filter with a generator expression for compatibility with older versions.
+        _entry_points = entry_points().get(group, ())
+
+    for entrypoint in _entry_points:
         target = entrypoint.name
 
         if target in _module_import_hook_registry:
@@ -4180,7 +4187,14 @@ def _setup_extensions():
 
     group = "newrelic.extension"
 
-    for entrypoint in entry_points(group=group):
+    try:
+        # group kwarg was only added to importlib.metadata.entry_points in Python 3.10.
+        _entry_points = entry_points(group=group)
+    except TypeError:
+        # Filter with a generator expression for compatibility with older versions.
+        _entry_points = entry_points().get(group, ())
+
+    for entrypoint in _entry_points:
         __import__(entrypoint.module_name)
         module = sys.modules[entrypoint.module_name]
         module.initialize()

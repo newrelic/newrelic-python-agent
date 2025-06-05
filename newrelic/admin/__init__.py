@@ -136,7 +136,14 @@ def load_external_plugins():
 
     group = "newrelic.admin"
 
-    for entrypoint in entry_points(group=group):
+    try:
+        # group kwarg was only added to importlib.metadata.entry_points in Python 3.10.
+        _entry_points = entry_points(group=group)
+    except TypeError:
+        # Filter with a generator expression for compatibility with older versions.
+        _entry_points = entry_points().get(group, ())
+
+    for entrypoint in _entry_points:
         __import__(entrypoint.module_name)
 
 

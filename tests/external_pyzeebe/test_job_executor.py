@@ -12,13 +12,14 @@ from testing_support.validators.validate_custom_parameters import validate_custo
 # Set up a router with a dummy async task
 router = ZeebeTaskRouter()
 
+
 @router.task(task_type="testTask")
 async def dummy_task(x: int) -> dict:
     """
-    Simulate a task function that reads input variable 'x'
-    and adds 1.
+    Simulate a task function that reads input variable x
     """
-    return {"result": x }
+    return {"result": x}
+
 
 # @validate_transaction_metrics(
 #     "ZeebeTask/test_process/testTask",
@@ -27,20 +28,22 @@ async def dummy_task(x: int) -> dict:
 #     ],
 #     background_task=True
 # )
-@validate_custom_parameters(required_params=[
-    ("zeebe.job.key", 123),
-    ("zeebe.job.type", "testTask"),
-    ("zeebe.job.bpmnProcessId", "test_process"),
-    ("zeebe.job.processInstanceKey", 456),
-    ("zeebe.job.elementId", "service_task_123")
-])
+@validate_custom_parameters(
+    required_params=[
+        ("zeebe.job.key", 123),
+        ("zeebe.job.type", "testTask"),
+        ("zeebe.job.bpmnProcessId", "test_process"),
+        ("zeebe.job.processInstanceKey", 456),
+        ("zeebe.job.elementId", "service_task_123"),
+    ]
+)
 def test_execute_one_job():
     dummy_adapter = DummyZeebeAdapter()
 
     # Build a Job with fixed values
     job = Job(
         key=123,
-        type="testTask", # must match router.task(task_type="testTask")
+        type="testTask",  # must match router.task(task_type="testTask")
         bpmn_process_id="test_process",
         process_instance_key=456,
         process_definition_version=1,
@@ -52,7 +55,7 @@ def test_execute_one_job():
         retries=3,
         deadline=0,
         variables={"x": 33},
-        status=JobStatus.Running
+        status=JobStatus.Running,
     )
 
     # JobExecutor constructor params init

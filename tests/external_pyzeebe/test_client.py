@@ -16,7 +16,12 @@ import pytest
 import asyncio
 from pyzeebe import ZeebeClient, create_insecure_channel
 from pyzeebe.grpc_internals.zeebe_adapter import ZeebeAdapter
-from _mocks import dummy_create_process_instance, dummy_create_process_instance_with_result, dummy_deploy_resource, dummy_publish_message
+from _mocks import (
+    dummy_create_process_instance,
+    dummy_create_process_instance_with_result,
+    dummy_deploy_resource,
+    dummy_publish_message,
+)
 
 from newrelic.api.background_task import background_task
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
@@ -25,12 +30,9 @@ from testing_support.fixtures import validate_attributes
 
 client = ZeebeClient(create_insecure_channel())
 
+
 @validate_transaction_metrics(
-    "test_zeebe_client:run_process",
-    rollup_metrics=[
-        ("ZeebeClient/run_process", 1)
-    ],
-    background_task=True
+    "test_zeebe_client:run_process", rollup_metrics=[("ZeebeClient/run_process", 1)], background_task=True
 )
 @validate_attributes("agent", ["zeebe.client.bpmnProcessId"])
 def test_run_process(monkeypatch):
@@ -40,15 +42,14 @@ def test_run_process(monkeypatch):
     def _test():
         response = asyncio.run(client.run_process("test_process"))
         assert response.process_instance_key == 12345
+
     _test()
 
 
 @validate_transaction_metrics(
     "test_zeebe_client:run_process_with_result",
-    rollup_metrics=[
-        ("ZeebeClient/run_process_with_result", 1)
-    ],
-    background_task=True
+    rollup_metrics=[("ZeebeClient/run_process_with_result", 1)],
+    background_task=True,
 )
 @validate_attributes("agent", ["zeebe.client.bpmnProcessId"])
 def test_run_process_with_result(monkeypatch):
@@ -59,15 +60,12 @@ def test_run_process_with_result(monkeypatch):
         result = asyncio.run(client.run_process_with_result("test_process"))
         assert result.process_instance_key == 45678
         assert result.variables == {"result": "success"}
+
     _test()
 
 
 @validate_transaction_metrics(
-    "test_zeebe_client:deploy_resource",
-    rollup_metrics=[
-        ("ZeebeClient/deploy_resource", 1)
-    ],
-    background_task=True
+    "test_zeebe_client:deploy_resource", rollup_metrics=[("ZeebeClient/deploy_resource", 1)], background_task=True
 )
 @validate_attributes("agent", ["zeebe.client.resourceCount", "zeebe.client.resourceFile"])
 def test_deploy_resource(monkeypatch):
@@ -77,15 +75,12 @@ def test_deploy_resource(monkeypatch):
     def _test():
         result = asyncio.run(client.deploy_resource("test.bpmn"))
         assert result.deployment_key == 333333
+
     _test()
 
 
 @validate_transaction_metrics(
-    "test_zeebe_client:publish_message",
-    rollup_metrics=[
-        ("ZeebeClient/publish_message", 1)
-    ],
-    background_task=True
+    "test_zeebe_client:publish_message", rollup_metrics=[("ZeebeClient/publish_message", 1)], background_task=True
 )
 @validate_attributes("agent", ["zeebe.client.messageName", "zeebe.client.correlationKey", "zeebe.client.messageId"])
 def test_publish_message(monkeypatch):
@@ -95,4 +90,5 @@ def test_publish_message(monkeypatch):
     def _test():
         result = asyncio.run(client.publish_message(name="test_message", correlation_key="999999", message_id="abc123"))
         assert result.key == 999999
+
     _test()

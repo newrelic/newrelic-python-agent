@@ -26,6 +26,7 @@ _logger = logging.getLogger(__name__)
 
 CLIENT_ATTRIBUTES_WARNING_LOG_MSG = "Exception occurred in PyZeebe instrumentation: Failed to add client attributes."
 
+
 # Adds client method params as txn or span attributes
 def _add_client_input_attributes(method_name, txn, args, kwargs):
     try:
@@ -33,38 +34,39 @@ def _add_client_input_attributes(method_name, txn, args, kwargs):
             bpmn_id = kwargs.get("bpmn_process_id", args[0] if args else None)
             if bpmn_id:
                 txn._add_agent_attribute("zeebe.client.bpmnProcessId", bpmn_id)
-                #add_attr("zeebe.client.bpmnProcessId", bpmn_id)
+                # add_attr("zeebe.client.bpmnProcessId", bpmn_id)
         elif method_name == "publish_message":
             msg_name = kwargs.get("name", args[0] if args else None)
             if msg_name:
                 txn._add_agent_attribute("zeebe.client.messageName", msg_name)
-                #add_attr("zeebe.client.messageName", msg_name)
+                # add_attr("zeebe.client.messageName", msg_name)
             correlation_key = kwargs.get("correlation_key", args[1] if args and len(args) > 1 else None)
             if correlation_key:
                 txn._add_agent_attribute("zeebe.client.correlationKey", correlation_key)
-                #add_attr("zeebe.client.correlationKey", correlation_key)
+                # add_attr("zeebe.client.correlationKey", correlation_key)
             message_id = kwargs.get("message_id")
             if message_id and len(args) > 4:
                 message_id = args[4]
             if message_id:
                 txn._add_agent_attribute("zeebe.client.messageId", message_id)
-                #add_attr("zeebe.client.messageId", message_id)
+                # add_attr("zeebe.client.messageId", message_id)
         elif method_name == "deploy_resource":
             resources = list(args)
             if len(resources) == 1 and isinstance(resources[0], (list, tuple)):
                 resources = list(resources[0])
             if resources:
                 txn._add_agent_attribute("zeebe.client.resourceCount", len(resources))
-                #add_attr("zeebe.client.resourceCount", len(resources))
+                # add_attr("zeebe.client.resourceCount", len(resources))
                 if len(resources) == 1:
                     try:
                         txn._add_agent_attribute("zeebe.client.resourceFile", str(resources[0]))
-                        #add_attr("zeebe.client.resourceFile", str(resources[0]))
+                        # add_attr("zeebe.client.resourceFile", str(resources[0]))
                     except Exception:
                         txn._add_agent_attribute("zeebe.client.resourceFile", str(resources[0]))
-                        #add_attr("zeebe.client.resourceFile", repr(resources[0]))
+                        # add_attr("zeebe.client.resourceFile", repr(resources[0]))
     except Exception:
         _logger.warning(CLIENT_ATTRIBUTES_WARNING_LOG_MSG, exc_info=True)
+
 
 # Async wrapper that instruments router/worker annotations`
 async def _nr_wrapper_execute_one_job(wrapped, instance, args, kwargs):
@@ -73,7 +75,7 @@ async def _nr_wrapper_execute_one_job(wrapped, instance, args, kwargs):
     task_type = getattr(job, "type", None) or "UnknownType"
     txn_name = f"{process_id}/{task_type}"
 
-    with BackgroundTask(application_instance(), txn_name, group="ZeebeTask"): 
+    with BackgroundTask(application_instance(), txn_name, group="ZeebeTask"):
         if job is not None:
             if hasattr(job, "key"):
                 add_custom_attribute("zeebe.job.key", job.key)
@@ -88,6 +90,7 @@ async def _nr_wrapper_execute_one_job(wrapped, instance, args, kwargs):
 
         result = await wrapped(*args, **kwargs)
         return result
+
 
 # Async wrapper that instruments a ZeebeClient method.
 def _nr_client_wrapper(method_name):
@@ -108,34 +111,23 @@ def _nr_client_wrapper(method_name):
                 result = await wrapped(*args, **kwargs)
             finally:
                 created_txn.__exit__(None, None, None)
-            
+
             return result
 
     return wrapper
 
+
 # Instrument JobExecutor.execute_one_job to create a background transaction per job (invoked from @router.task or @worker.task annotations)
 def instrument_pyzeebe_worker_job_executor(module):
     if hasattr(module, "JobExecutor"):
-        wrap_function_wrapper(
-            module,
-            "JobExecutor.execute_one_job",
-            _nr_wrapper_execute_one_job
-        )
+        wrap_function_wrapper(module, "JobExecutor.execute_one_job", _nr_wrapper_execute_one_job)
+
 
 # Instrument ZeebeClient methods to trace client calls.
 def instrument_pyzeebe_client_client(module):
-    target_methods = (
-        "run_process",
-        "run_process_with_result",
-        "deploy_resource",
-        "publish_message",
-    )
+    target_methods = ("run_process", "run_process_with_result", "deploy_resource", "publish_message")
 
     for method_name in target_methods:
         if hasattr(module, "ZeebeClient"):
             if hasattr(module.ZeebeClient, method_name):
-                wrap_function_wrapper(
-                    module,
-                    f"ZeebeClient.{method_name}",
-                    _nr_client_wrapper(method_name)
-                )
+                wrap_function_wrapper(module, f"ZeebeClient.{method_name}", _nr_client_wrapper(method_name))

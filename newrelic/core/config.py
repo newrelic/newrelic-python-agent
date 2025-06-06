@@ -337,6 +337,14 @@ class DistributedTracingSamplerSettings(Settings):
     pass
 
 
+class DistributedTracingSamplerFullGranularitySettings(Settings):
+    pass
+
+
+class DistributedTracingSamplerPartialGranularitySettings(Settings):
+    pass
+
+
 class ServerlessModeSettings(Settings):
     pass
 
@@ -507,6 +515,8 @@ _settings.datastore_tracer.instance_reporting = DatastoreTracerInstanceReporting
 _settings.debug = DebugSettings()
 _settings.distributed_tracing = DistributedTracingSettings()
 _settings.distributed_tracing.sampler = DistributedTracingSamplerSettings()
+_settings.distributed_tracing.sampler.full_granularity = DistributedTracingSamplerFullGranularitySettings()
+_settings.distributed_tracing.sampler.partial_granularity = DistributedTracingSamplerPartialGranularitySettings()
 _settings.error_collector = ErrorCollectorSettings()
 _settings.error_collector.attributes = ErrorCollectorAttributesSettings()
 _settings.event_harvest_config = EventHarvestConfigSettings()
@@ -837,11 +847,31 @@ _settings.custom_insights_events.max_attribute_value = _environ_as_int(
 _settings.ml_insights_events.enabled = False
 
 _settings.distributed_tracing.enabled = _environ_as_bool("NEW_RELIC_DISTRIBUTED_TRACING_ENABLED", default=True)
+_settings.distributed_tracing.sampler.adaptive_sampling_target = _environ_as_int(
+    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_ADAPTIVE_SAMPLING_TARGET", default=10
+)
 _settings.distributed_tracing.sampler.remote_parent_sampled = os.environ.get(
     "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_REMOTE_PARENT_SAMPLED", "default"
 )
 _settings.distributed_tracing.sampler.remote_parent_not_sampled = os.environ.get(
     "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_REMOTE_PARENT_NOT_SAMPLED", "default"
+)
+_settings.distributed_tracing.sampler.full_granularity.enabled = _environ_as_bool("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_ENABLED", default=True)
+_settings.distributed_tracing.sampler.full_granularity.remote_parent_sampled = os.environ.get(
+    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_REMOTE_PARENT_SAMPLED", None
+)
+_settings.distributed_tracing.sampler.full_granularity.remote_parent_not_sampled = os.environ.get(
+    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_REMOTE_PARENT_NOT_SAMPLED", None
+)
+_settings.distributed_tracing.sampler.partial_granularity.enabled = _environ_as_bool("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_ENABLED", default=False)
+_settings.distributed_tracing.sampler.partial_granularity.type = os.environ.get(
+    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_TYPE", "essential"
+)
+_settings.distributed_tracing.sampler.partial_granularity.remote_parent_sampled = os.environ.get(
+    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_SAMPLED", "default"
+)
+_settings.distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled = os.environ.get(
+    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_NOT_SAMPLED", "default"
 )
 _settings.distributed_tracing.exclude_newrelic_header = False
 _settings.span_events.enabled = _environ_as_bool("NEW_RELIC_SPAN_EVENTS_ENABLED", default=True)
@@ -1369,7 +1399,22 @@ def finalize_application_settings(server_side_config=None, settings=_settings):
 
     application_settings.attribute_filter = AttributeFilter(flatten_settings(application_settings))
 
+    simplify_distributed_tracing_sampler_granularity_settings(application_settings)
+
     return application_settings
+
+
+def simplify_distributed_tracing_sampler_granularity_settings(settings):
+    # Full granularity settings may appear under:
+    # * `distributed_tracing.sampler`
+    # * `distributed_tracing.sampler.full_granularity`
+    # The `distributed_tracing.sampler.full_granularity` path takes precedence.
+    # To simplify logic in the code that uses these settings, store the values that
+    # should be used at the `distributed_tracing.sampler.full_granularity` path.
+    if not settings.distributed_tracing.sampler.full_granularity.remote_parent_sampled:
+        settings.distributed_tracing.sampler.full_granularity.remote_parent_sampled = settings.distributed_tracing.sampler.remote_parent_sampled
+    if not settings.distributed_tracing.sampler.full_granularity.remote_parent_not_sampled:
+        settings.distributed_tracing.sampler.full_granularity.remote_parent_not_sampled = settings.distributed_tracing.sampler.remote_parent_not_sampled
 
 
 def _remove_ignored_configs(server_settings):

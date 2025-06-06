@@ -62,7 +62,7 @@ def test_tool_tracing(loop, fastmcp_server):
             result = await client.call_tool("add_exclamation", {"phrase": "Python is awesome"})
 
             content = str(result[0])
-            assert "Python is awesome!" in content
+        assert "Python is awesome!" in content
 
     loop.run_until_complete(_test())
 
@@ -73,7 +73,7 @@ def run_read_resources(loop, fastmcp_server, resource_uri):
         async with Client(transport=FastMCPTransport(fastmcp_server)) as client:
             result = await client.read_resource(resource_uri)
             content = str(result[0])
-            assert "Hello, Python!" in content
+        assert "Hello, Python!" in content
 
     loop.run_until_complete(_test())
 
@@ -111,6 +111,6 @@ def test_prompt_tracing(loop, fastmcp_server):
             result = await client.get_prompt("echo_prompt", {"message": "Python is cool"})
 
             content = str(result)
-            assert "Python is cool" in content
+        assert "Python is cool" in content
 
     loop.run_until_complete(_test())

@@ -49,14 +49,14 @@ async def wrap_read_resource(wrapped, instance, args, kwargs):
 
     try:
         resource_uri = bound_args.get("uri")
-        if resource_uri and resource_uri.scheme:
-            resource_scheme = resource_uri.scheme
+        if resource_uri:
+            resource_scheme = getattr(resource_uri, "scheme", "resource")
     except Exception:
-        _logger.warning("Unable to parse resource URI scheme for MCP read_resource")
+        _logger.warning("Unable to parse resource URI scheme for MCP read_resource call")
 
     function_trace_name = f"{func_name}/{resource_scheme}"
 
-    with FunctionTrace(name=function_trace_name, group="Llm/resource/MCP"):
+    with FunctionTrace(name=function_trace_name, group="Llm/resource/MCP", source=wrapped):
         return await wrapped(*args, **kwargs)
 
 
@@ -70,7 +70,7 @@ async def wrap_get_prompt(wrapped, instance, args, kwargs):
     prompt_name = bound_args.get("name") or "prompt"
     function_trace_name = f"{func_name}/{prompt_name}"
 
-    with FunctionTrace(name=function_trace_name, group="Llm/prompt/MCP"):
+    with FunctionTrace(name=function_trace_name, group="Llm/prompt/MCP", source=wrapped):
         return await wrapped(*args, **kwargs)
 
 

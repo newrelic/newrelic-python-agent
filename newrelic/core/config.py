@@ -333,6 +333,18 @@ class DistributedTracingSettings(Settings):
     pass
 
 
+class DistributedTracingDropInprocessSpansSettings(Settings):
+    pass
+
+
+class DistributedTracingUniqueSpansSettings(Settings):
+    pass
+
+
+class DistributedTracingMinimizeAttributesSettings(Settings):
+    pass
+
+
 class DistributedTracingSamplerSettings(Settings):
     pass
 
@@ -506,6 +518,9 @@ _settings.datastore_tracer.database_name_reporting = DatastoreTracerDatabaseName
 _settings.datastore_tracer.instance_reporting = DatastoreTracerInstanceReportingSettings()
 _settings.debug = DebugSettings()
 _settings.distributed_tracing = DistributedTracingSettings()
+_settings.distributed_tracing.drop_inprocess_spans = DistributedTracingDropInprocessSpansSettings()
+_settings.distributed_tracing.unique_spans = DistributedTracingUniqueSpansSettings()
+_settings.distributed_tracing.minimize_attributes = DistributedTracingMinimizeAttributesSettings()
 _settings.distributed_tracing.sampler = DistributedTracingSamplerSettings()
 _settings.error_collector = ErrorCollectorSettings()
 _settings.error_collector.attributes = ErrorCollectorAttributesSettings()
@@ -837,6 +852,9 @@ _settings.custom_insights_events.max_attribute_value = _environ_as_int(
 _settings.ml_insights_events.enabled = False
 
 _settings.distributed_tracing.enabled = _environ_as_bool("NEW_RELIC_DISTRIBUTED_TRACING_ENABLED", default=True)
+_settings.distributed_tracing.drop_inprocess_spans.enabled = _environ_as_bool("NEW_RELIC_DISTRIBUTED_TRACING_DROP_INPROCESS_SPANS_ENABLED", default=True)
+_settings.distributed_tracing.unique_spans.enabled = _environ_as_bool("NEW_RELIC_DISTRIBUTED_TRACING_UNIQUE_SPANS_ENABLED", default=False)
+_settings.distributed_tracing.minimize_attributes.enabled = _environ_as_bool("NEW_RELIC_DISTRIBUTED_TRACING_MINIMIZE_ATTRIBUTES_ENABLED", default=True)
 _settings.distributed_tracing.sampler.remote_parent_sampled = os.environ.get(
     "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_REMOTE_PARENT_SAMPLED", "default"
 )

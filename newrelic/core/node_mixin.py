@@ -11,12 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import time
 from newrelic.core import attribute
 from newrelic.core.attribute_filter import DST_SPAN_EVENTS, DST_TRANSACTION_SEGMENTS
 
 
 class GenericNodeMixin:
+    def __init__(self, *args, **kwargs):
+        self.ids = []
+
     @property
     def processed_user_attributes(self):
         if hasattr(self, "_processed_user_attributes"):
@@ -49,14 +52,20 @@ class GenericNodeMixin:
         _params["exclusive_duration_millis"] = 1000.0 * self.exclusive
         return _params
 
-    def span_event(self, settings, base_attrs=None, parent_guid=None, attr_class=dict):
+    def span_event(self, settings, base_attrs=None, parent_guid=None, attr_class=dict, ct_exit_spans=None, ct_processing_time=None):
+        if ct_exit_spans is None:
+            ct_exit_spans = {}
         i_attrs = (base_attrs and base_attrs.copy()) or attr_class()
         i_attrs["type"] = "Span"
-        i_attrs["name"] = self.name
+        i_attrs["name"] = i_attrs.get("name") or self.name
         i_attrs["guid"] = self.guid
         i_attrs["timestamp"] = int(self.start_time * 1000)
         i_attrs["duration"] = self.duration
-        i_attrs["category"] = "generic"
+        i_attrs["category"] = i_attrs.get("category") or "generic"
+        # TODO: limit intrinsic attributes but this likely requires changes in the pipeline.
+        #if settings.distributed_tracing.minimize_attributes.enabled:
+        #    i_ct_attrs = {"type", "name", "guid", "parentId", "transaction.name", "traceId", "timestamp", "duration", "nr.entryPoint", "transactionId"}
+        #    i_attrs = {key: value for key, value in i_attrs.items() if key in i_ct_attrs}
 
         if parent_guid:
             i_attrs["parentId"] = parent_guid
@@ -64,22 +73,65 @@ class GenericNodeMixin:
         a_attrs = attribute.resolve_agent_attributes(
             self.agent_attributes, settings.attribute_filter, DST_SPAN_EVENTS, attr_class=attr_class
         )
+        u_attrs = self.processed_user_attributes
+        if settings.distributed_tracing.unique_spans.enabled:
+            # ids is the list of span guids that share this unqiue exit span.
+            u_attrs["ids"] = self.ids
 
         u_attrs = attribute.resolve_user_attributes(
-            self.processed_user_attributes, settings.attribute_filter, DST_SPAN_EVENTS, attr_class=attr_class
+            u_attrs, settings.attribute_filter, DST_SPAN_EVENTS, attr_class=attr_class
         )
 
-        # intrinsics, user attrs, agent attrs
+        start_time = time.time()
+        if settings.distributed_tracing.drop_inprocess_spans.enabled or settings.distributed_tracing.unique_spans.enabled:
+            exit_span_attrs_present = attribute.SPAN_ENTITY_RELATIONSHIP_ATTRIBUTES & set(a_attrs)
+            # If this is the entry node, always return it.
+            if i_attrs.get("nr.entryPoint"):
+                ct_processing_time[0] += (time.time() - start_time)
+                return [i_attrs, u_attrs, {}] if settings.distributed_tracing.minimize_attributes.enabled else [i_attrs, u_attrs, a_attrs]
+            # If the span is not an exit span, skip it by returning None.
+            if not exit_span_attrs_present:
+                ct_processing_time[0] += (time.time() - start_time)
+                return None
+            # If the span is an exit span but unique spans is enabled, we need to check
+            # for uniqueness before returning it.
+            if settings.distributed_tracing.unique_spans.enabled:
+                a_minimized_attrs = attr_class({key: a_attrs[key] for key in exit_span_attrs_present})
+                # Combine all the entity relationship attr values into a string to be
+                # used as the hash to check for uniqueness.
+                # TODO: use attr value name rather than str casting for infinite tracing.
+                span_attrs = "".join([str(a_minimized_attrs[key]) for key in exit_span_attrs_present])
+                new_exit_span = span_attrs not in ct_exit_spans
+                # If this is a new exit span, add it to the known ct_exit_spans and return it.
+                if new_exit_span:
+                    ct_exit_spans[span_attrs] = self.ids
+                    ct_processing_time[0] += (time.time() - start_time)
+                    return [i_attrs, u_attrs, a_minimized_attrs] if settings.distributed_tracing.minimize_attributes.enabled else [i_attrs, u_attrs, a_attrs]
+                # If this is an exit span we've already seen, add it's guid to the list
+                # of ids on the seen span and return None.
+                # For now add ids to user attributes list
+                ct_exit_spans[span_attrs].append(self.guid)
+                ct_processing_time[0] += (time.time() - start_time)
+                return None
+        elif settings.distributed_tracing.minimize_attributes.enabled:
+            # Drop all non-entity relationship attributes from the span.
+            exit_span_attrs_present = attribute.SPAN_ENTITY_RELATIONSHIP_ATTRIBUTES & set(a_attrs)
+            a_attrs = attr_class({key: a_attrs[key] for key in exit_span_attrs_present})
+        ct_processing_time[0] += (time.time() - start_time)
         return [i_attrs, u_attrs, a_attrs]
 
-    def span_events(self, settings, base_attrs=None, parent_guid=None, attr_class=dict):
-        yield self.span_event(settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class)
-
+    def span_events(self, settings, base_attrs=None, parent_guid=None, attr_class=dict, ct_exit_spans=None, ct_processing_time=None):
+        span = self.span_event(settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class, ct_exit_spans=ct_exit_spans, ct_processing_time=ct_processing_time)
+        parent_id = parent_guid
+        if span:  # span will be None if the span is an inprocess span or repeated exit span.
+            yield span
+            parent_id = self.guid
         for child in self.children:
             for event in child.span_events(  # noqa: UP028
-                settings, base_attrs=base_attrs, parent_guid=self.guid, attr_class=attr_class
+                settings, base_attrs=base_attrs, parent_guid=parent_id, attr_class=attr_class, ct_exit_spans=ct_exit_spans, ct_processing_time=ct_processing_time
             ):
-                yield event
+                if event:  # event will be None if the span is an inprocess span or repeated exit span.
+                    yield event
 
 
 class DatastoreNodeMixin(GenericNodeMixin):
@@ -108,11 +160,10 @@ class DatastoreNodeMixin(GenericNodeMixin):
         self._db_instance = db_instance_attr
         return db_instance_attr
 
-    def span_event(self, *args, **kwargs):
-        self.agent_attributes["db.instance"] = self.db_instance
-        attrs = super().span_event(*args, **kwargs)
-        i_attrs = attrs[0]
-        a_attrs = attrs[2]
+    def span_event(self, settings, base_attrs=None, parent_guid=None, attr_class=dict, *args, **kwargs):
+        a_attrs = self.agent_attributes
+        a_attrs["db.instance"] = self.db_instance
+        i_attrs = base_attrs and base_attrs.copy() or attr_class()
 
         i_attrs["category"] = "datastore"
         i_attrs["span.kind"] = "client"
@@ -141,4 +192,4 @@ class DatastoreNodeMixin(GenericNodeMixin):
         except Exception:
             pass
 
-        return attrs
+        return super().span_event(settings, i_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class, *args, **kwargs)

@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import pytest
+import grpc
+from pyzeebe import ZeebeClient, create_insecure_channel
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 _default_settings = {

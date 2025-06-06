@@ -14,65 +14,85 @@
 
 import pytest
 import asyncio
-import sys, types
-import _dummy_client as dummy_client
+from pyzeebe import ZeebeClient, create_insecure_channel
+from pyzeebe.grpc_internals.zeebe_adapter import ZeebeAdapter
+from _mocks import dummy_create_process_instance, dummy_create_process_instance_with_result, dummy_deploy_resource, dummy_publish_message
 
 from newrelic.api.background_task import background_task
-
-# Force import system to use dummy ZeebeClient
-pyzeebe_mod = types.ModuleType("pyzeebe")
-pyzeebe_client_pkg = types.ModuleType("pyzeebe.client")
-
-pyzeebe_mod.client = pyzeebe_client_pkg
-pyzeebe_client_pkg.client = dummy_client
-
-sys.modules["pyzeebe"] = pyzeebe_mod
-sys.modules["pyzeebe.client"] = pyzeebe_client_pkg
-sys.modules["pyzeebe.client.client"] = dummy_client
-
-from pyzeebe.client.client import ZeebeClient
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.fixtures import validate_attributes
 
-AGENT_ATTRIBUTES = [
-    "zeebe.client.bpmnProcessId",
-    "zeebe.client.messageName",
-    "zeebe.client.correlationKey",
-    "zeebe.client.resourceCount",
-    "zeebe.client.resourceFile",
-]
+
+client = ZeebeClient(create_insecure_channel())
 
 @validate_transaction_metrics(
-    "test_client_methods:function_trace",
+    "test_zeebe_client:run_process",
     rollup_metrics=[
-        ("ZeebeClient/run_process", 1),
-        ("ZeebeClient/run_process_with_result", 1),
-        ("ZeebeClient/deploy_resource", 1),
+        ("ZeebeClient/run_process", 1)
+    ],
+    background_task=True
+)
+@validate_attributes("agent", ["zeebe.client.bpmnProcessId"])
+def test_run_process(monkeypatch):
+    monkeypatch.setattr(ZeebeAdapter, "create_process_instance", dummy_create_process_instance)
+
+    @background_task(name="test_zeebe_client:run_process")
+    def _test():
+        response = asyncio.run(client.run_process("test_process"))
+        assert response.process_instance_key == 12345
+    _test()
+
+
+@validate_transaction_metrics(
+    "test_zeebe_client:run_process_with_result",
+    rollup_metrics=[
+        ("ZeebeClient/run_process_with_result", 1)
+    ],
+    background_task=True
+)
+@validate_attributes("agent", ["zeebe.client.bpmnProcessId"])
+def test_run_process_with_result(monkeypatch):
+    monkeypatch.setattr(ZeebeAdapter, "create_process_instance_with_result", dummy_create_process_instance_with_result)
+
+    @background_task(name="test_zeebe_client:run_process_with_result")
+    def _test():
+        result = asyncio.run(client.run_process_with_result("test_process"))
+        assert result.process_instance_key == 45678
+        assert result.variables == {"result": "success"}
+    _test()
+
+
+@validate_transaction_metrics(
+    "test_zeebe_client:deploy_resource",
+    rollup_metrics=[
+        ("ZeebeClient/deploy_resource", 1)
+    ],
+    background_task=True
+)
+@validate_attributes("agent", ["zeebe.client.resourceCount", "zeebe.client.resourceFile"])
+def test_deploy_resource(monkeypatch):
+    monkeypatch.setattr(ZeebeAdapter, "deploy_resource", dummy_deploy_resource)
+
+    @background_task(name="test_zeebe_client:deploy_resource")
+    def _test():
+        result = asyncio.run(client.deploy_resource("test.bpmn"))
+        assert result.deployment_key == 333333
+    _test()
+
+
+@validate_transaction_metrics(
+    "test_zeebe_client:publish_message",
+    rollup_metrics=[
         ("ZeebeClient/publish_message", 1)
     ],
-    background_task=True,
+    background_task=True
 )
-@validate_attributes("agent", AGENT_ATTRIBUTES)
-def test_client_methods():
-    @background_task(name="test_client_methods:function_trace")
+@validate_attributes("agent", ["zeebe.client.messageName", "zeebe.client.correlationKey", "zeebe.client.messageId"])
+def test_publish_message(monkeypatch):
+    monkeypatch.setattr(ZeebeAdapter, "publish_message", dummy_publish_message)
+
+    @background_task(name="test_zeebe_client:publish_message")
     def _test():
-        client = ZeebeClient()
-        
-        #run_process
-        result_1 = asyncio.run(client.run_process("DummyProcess"))
-        assert hasattr(result_1, "process_instance_key")
-        assert result_1.process_instance_key == 12345
-
-        #run_process_with_result
-        result_2 = asyncio.run(client.run_process_with_result("DummyProcess"))
-        assert hasattr(result_2, "process_instance_key")
-        assert result_2.process_instance_key == 45678
-
-        # deploy_resource
-        result_3 = asyncio.run(client.deploy_resource("test-workflow.bpmn"))
-        assert result_3["deployment_key"] == 33333
-
-        # publish_message
-        result_4 = asyncio.run(client.publish_message("test_message", correlation_key="12345"))
-        assert result_4["message_key"] == 56789
+        result = asyncio.run(client.publish_message(name="test_message", correlation_key="999999", message_id="abc123"))
+        assert result.key == 999999
     _test()

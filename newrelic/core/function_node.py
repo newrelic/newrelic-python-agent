@@ -114,10 +114,8 @@ class FunctionNode(_FunctionNode, GenericNodeMixin):
             start_time=start_time, end_time=end_time, name=name, params=params, children=children, label=self.label
         )
 
-    def span_event(self, *args, **kwargs):
-        attrs = super().span_event(*args, **kwargs)
-        i_attrs = attrs[0]
-
+    def span_event(self, settings, base_attrs=None, parent_guid=None, attr_class=dict, *args, **kwargs):
+        i_attrs = base_attrs and base_attrs.copy() or attr_class()
         i_attrs["name"] = f"{self.group}/{self.name}"
 
-        return attrs
+        return super().span_event(settings, base_attrs=i_attrs, parent_guid=parent_guid, attr_class=attr_class, *args, **kwargs)

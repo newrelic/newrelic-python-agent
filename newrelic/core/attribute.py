@@ -108,6 +108,23 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = {
     "zeebe.client.resourceFile",
 }
 
+SPAN_ENTITY_RELATIONSHIP_ATTRIBUTES = {
+    "cloud.account.id",
+    "cloud.platform",
+    "cloud.region",
+    "cloud.resource_id",
+    "db.instance",
+    "db.system",
+    "http.url",
+    "messaging.destination.name",
+    "messaging.system",
+    "peer.hostname",
+    "server.address",
+    "server.port",
+    "span.kind",
+}
+
+
 MAX_NUM_USER_ATTRIBUTES = 128
 MAX_ATTRIBUTE_LENGTH = 255
 MAX_NUM_ML_USER_ATTRIBUTES = 64

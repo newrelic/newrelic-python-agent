@@ -35,7 +35,7 @@ from newrelic.api.time_trace import get_linking_metadata
 from newrelic.common.encoding_utils import json_encode
 from newrelic.common.metric_utils import create_metric_identity
 from newrelic.common.object_names import parse_exc_info
-from newrelic.common.streaming_utils import StreamBuffer
+from newrelic.common.streaming_utils import StreamBuffer, get_deep_size
 from newrelic.core.attribute import (
     MAX_LOG_MESSAGE_LENGTH,
     create_agent_attributes,
@@ -445,6 +445,26 @@ class SampledDataSet:
         self.num_seen += other_data_set.num_seen - other_data_set.num_samples
 
 
+class SpanSampledDataSet(SampledDataSet):
+    def __init__(self, capacity=100):
+        super().__init__(capacity=capacity)
+        self.ct_processing_time = 0
+        self.bytes = 0
+
+    def add(self, sample, priority=None):
+        super().add(sample=sample, priority=priority)
+        _logger.debug(f"{sample[0]['name']} [{len(sample[0])}, {len(sample[1])}, {len(sample[2])}] {get_deep_size(sample)}")
+        self.bytes += get_deep_size(sample)
+
+    def reset(self):
+        super().reset()
+        self.ct_processing_time = 0
+
+    def merge(self, other_data_set, priority=None):
+        super().merge(other_data_set=other_data_set, priority=priority)
+        self.ct_processing_time += other_data_set.ct_processing_time
+
+
 class LimitedDataSet(list):
     def __init__(self, capacity=200):
         super().__init__()
@@ -528,7 +548,7 @@ class StatsEngine:
         self._error_events = SampledDataSet()
         self._custom_events = SampledDataSet()
         self._ml_events = SampledDataSet()
-        self._span_events = SampledDataSet()
+        self._span_events = SpanSampledDataSet()
         self._log_events = SampledDataSet()
         self._span_stream = None
         self.__sql_stats_table = {}
@@ -1185,11 +1205,16 @@ class StatsEngine:
 
         if settings.distributed_tracing.enabled and settings.span_events.enabled and settings.collect_span_events:
             if settings.infinite_tracing.enabled:
-                for event in transaction.span_protos(settings):
+                ct_processing_time = [0]  # Hack for getting Python to create a non mutable number.
+                for event in transaction.span_protos(settings, ct_processing_time=ct_processing_time):
                     self._span_stream.put(event)
+                self._span_stream._ct_processing_time += ct_processing_time[0]
             elif transaction.sampled:
-                for event in transaction.span_events(self.__settings):
+                ct_processing_time = [0]  # Hack for getting Python to create a non mutable number.
+                for event in transaction.span_events(self.__settings, ct_processing_time=ct_processing_time):
                     self._span_events.add(event, priority=transaction.priority)
+                self._span_events.ct_processing_time += ct_processing_time[0]
+
 
         # Merge in log events
 
@@ -1730,9 +1755,9 @@ class StatsEngine:
 
     def reset_span_events(self):
         if self.__settings is not None:
-            self._span_events = SampledDataSet(self.__settings.event_harvest_config.harvest_limits.span_event_data)
+            self._span_events = SpanSampledDataSet(self.__settings.event_harvest_config.harvest_limits.span_event_data)
         else:
-            self._span_events = SampledDataSet()
+            self._span_events = SpanSampledDataSet()
 
     def reset_log_events(self):
         if self.__settings is not None:

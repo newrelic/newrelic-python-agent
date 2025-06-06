@@ -166,6 +166,7 @@ def transaction_node(request):
         root_span_guid=None,
         trace_id="4485b89db608aece",
         loop_time=0.0,
+        partial_granularity_sampled=False,
     )
     return node
 

@@ -39,6 +39,7 @@ from newrelic.api.web_transaction import WSGIWebTransaction
 from newrelic.api.wsgi_application import wsgi_application
 from newrelic.core.attribute import Attribute
 
+# ruff: noqa: UP031
 distributed_trace_intrinsics = ["guid", "traceId", "priority", "sampled"]
 inbound_payload_intrinsics = [
     "parent.type",
@@ -419,24 +420,41 @@ def test_inbound_dt_payload_acceptance(trusted_account_key):
 
 
 @pytest.mark.parametrize(
-    "sampled,remote_parent_sampled,remote_parent_not_sampled,expected_sampled,expected_priority,expected_adaptive_sampling_algo_called",
+    "traceparent_sampled,newrelic_sampled,remote_parent_sampled_setting,remote_parent_not_sampled_setting,expected_sampled,expected_priority,expected_adaptive_sampling_algo_called",
     (
-        (True, "default", "default", None, None, True),  # Uses sampling algo.
-        (True, "always_on", "default", True, 2, False),  # Always sampled.
-        (True, "always_off", "default", False, 0, False),  # Never sampled.
-        (False, "default", "default", None, None, True),  # Uses sampling algo.
-        (False, "always_on", "default", None, None, True),  # Uses sampling alog.
-        (False, "always_off", "default", None, None, True),  # Uses sampling algo.
-        (True, "default", "always_on", None, None, True),  # Uses sampling algo.
-        (True, "default", "always_off", None, None, True),  # Uses sampling algo.
-        (False, "default", "always_on", True, 2, False),  # Always sampled.
-        (False, "default", "always_off", False, 0, False),  # Never sampled.
+        (True, None, "default", "default", None, None, True),  # Uses adaptive sampling algo.
+        (True, None, "always_on", "default", True, 2, False),  # Always sampled.
+        (True, None, "always_off", "default", False, 0, False),  # Never sampled.
+        (False, None, "default", "default", None, None, True),  # Uses adaptive sampling algo.
+        (False, None, "always_on", "default", None, None, True),  # Uses adaptive sampling alog.
+        (False, None, "always_off", "default", None, None, True),  # Uses adaptive sampling algo.
+        (True, None, "default", "always_on", None, None, True),  # Uses adaptive sampling algo.
+        (True, None, "default", "always_off", None, None, True),  # Uses adaptive sampling algo.
+        (False, None, "default", "always_on", True, 2, False),  # Always sampled.
+        (False, None, "default", "always_off", False, 0, False),  # Never sampled.
+        (True, True, "default", "default", True, 1.23456, False),  # Uses sampling decision in W3C TraceState header.
+        (True, False, "default", "default", False, 1.23456, False),  # Uses sampling decision in W3C TraceState header.
+        (False, False, "default", "default", False, 1.23456, False),  # Uses sampling decision in W3C TraceState header.
+        (True, False, "always_on", "default", True, 2, False),  # Always sampled.
+        (True, True, "always_off", "default", False, 0, False),  # Never sampled.
+        (False, False, "default", "always_on", True, 2, False),  # Always sampled.
+        (False, True, "default", "always_off", False, 0, False),  # Never sampled.
+        (None, True, "default", "default", True, 0.1234, False),  # Uses sampling and priority from newrelic header.
+        (None, True, "always_on", "default", True, 2, False),  # Always sampled.
+        (None, True, "always_off", "default", False, 0, False),  # Never sampled.
+        (None, False, "default", "default", False, 0.1234, False),  # Uses sampling and priority from newrelic header.
+        (None, False, "always_on", "default", False, 0.1234, False),  # Uses sampling and priority from newrelic header.
+        (None, True, "default", "always_on", True, 0.1234, False),  # Uses sampling and priority from newrelic header.
+        (None, False, "default", "always_on", True, 2, False),  # Always sampled.
+        (None, False, "default", "always_off", False, 0, False),  # Never sampled.
+        (None, None, "default", "default", None, None, True),  # Uses adaptive sampling algo.
     ),
 )
-def test_distributed_trace_w3cparent_sampling_decision(
-    sampled,
-    remote_parent_sampled,
-    remote_parent_not_sampled,
+def test_distributed_trace_remote_parent_sampling_decision_full_granularity(
+    traceparent_sampled,
+    newrelic_sampled,
+    remote_parent_sampled_setting,
+    remote_parent_not_sampled_setting,
     expected_sampled,
     expected_priority,
     expected_adaptive_sampling_algo_called,
@@ -450,18 +468,18 @@ def test_distributed_trace_w3cparent_sampling_decision(
     test_settings = _override_settings.copy()
     test_settings.update(
         {
-            "distributed_tracing.sampler.remote_parent_sampled": remote_parent_sampled,
-            "distributed_tracing.sampler.remote_parent_not_sampled": remote_parent_not_sampled,
+            "distributed_tracing.sampler.remote_parent_sampled": remote_parent_sampled_setting,
+            "distributed_tracing.sampler.remote_parent_not_sampled": remote_parent_not_sampled_setting,
             "span_events.enabled": True,
         }
     )
     if expected_adaptive_sampling_algo_called:
         function_called_decorator = validate_function_called(
-            "newrelic.api.transaction", "Transaction.sampling_algo_compute_sampled_and_priority"
+            "newrelic.core.adaptive_sampler", "AdaptiveSampler.compute_sampled"
         )
     else:
         function_called_decorator = validate_function_not_called(
-            "newrelic.api.transaction", "Transaction.sampling_algo_compute_sampled_and_priority"
+            "newrelic.core.adaptive_sampler", "AdaptiveSampler.compute_sampled"
         )
 
     @function_called_decorator
@@ -471,10 +489,20 @@ def test_distributed_trace_w3cparent_sampling_decision(
     def _test():
         txn = current_transaction()
 
-        headers = {
-            "traceparent": f"00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-{int(sampled):02x}",
-            "tracestate": "rojo=f06a0ba902b7,congo=t61rcWkgMzE",
-        }
+        if traceparent_sampled is not None:
+            headers = {
+                "traceparent": f"00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-{int(traceparent_sampled):02x}",
+                "newrelic": '{"v":[0,1],"d":{"ty":"Mobile","ac":"123","ap":"51424","id":"5f474d64b9cc9b2a","tr":"6e2fea0b173fdad0","pr":0.1234,"sa":true,"ti":1482959525577,"tx":"27856f70d3d314b7"}}',  # This header should be ignored.
+            }
+            if newrelic_sampled is not None:
+                headers["tracestate"] = (
+                    f"1@nr=0-0-1-2827902-0af7651916cd43dd-00f067aa0ba902b7-{int(newrelic_sampled)}-1.23456-1518469636035"
+                )
+        else:
+            headers = {
+                "newrelic": '{"v":[0,1],"d":{"ty":"Mobile","ac":"1","ap":"51424","id":"00f067aa0ba902b7","tr":"0af7651916cd43dd8448eb211c80319c","pr":0.1234,"sa":%s,"ti":1482959525577,"tx":"0af7651916cd43dd"}}'
+                % (str(newrelic_sampled).lower())
+            }
         accept_distributed_trace_headers(headers)
 
     _test()

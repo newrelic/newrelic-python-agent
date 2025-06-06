@@ -836,6 +836,9 @@ _settings.custom_insights_events.max_attribute_value = _environ_as_int(
 _settings.ml_insights_events.enabled = False
 
 _settings.distributed_tracing.enabled = _environ_as_bool("NEW_RELIC_DISTRIBUTED_TRACING_ENABLED", default=True)
+_settings.distributed_tracing.sampler.adaptive_sampling_target = _environ_as_int(
+    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_ADAPTIVE_SAMPLING_TARGET", default=10
+)
 _settings.distributed_tracing.sampler.remote_parent_sampled = os.environ.get(
     "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_REMOTE_PARENT_SAMPLED", "default"
 )

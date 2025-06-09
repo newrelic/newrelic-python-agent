@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions
+    xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:omgdc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:omgdi="http://www.omg.org/spec/DD/20100524/DI"
+    targetNamespace="http://example.com/bpmn"
+    xsi:schemaLocation="http://www.omg.org/spec/BPMN/20100524/MODEL BPMN20.xsd">
+   
+    <!-- Define the process with a unique id and name -->
+    <process id="dummyProcess" name="Dummy Process" isExecutable="true">
+        <!-- Start Event -->
+        <startEvent id="StartEvent_1" name="Start"/>
+       
+        <!-- A simple Service Task representing work -->
+        <serviceTask id="ServiceTask_1" name="Perform Work"/>
+       
+        <!-- End Event -->
+        <endEvent id="EndEvent_1" name="End"/>
+       
+        <!-- Sequence Flows connecting Start → Service Task → End -->
+        <sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="ServiceTask_1"/>
+        <sequenceFlow id="Flow_2" sourceRef="ServiceTask_1" targetRef="EndEvent_1"/>
+    </process>
+   
+    <!-- (Optional) BPMNDiagram section can be added for graphical layout, but omitted here -->
+</definitions>

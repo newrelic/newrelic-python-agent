@@ -49,8 +49,7 @@ async def wrap_read_resource(wrapped, instance, args, kwargs):
 
     try:
         resource_uri = bound_args.get("uri")
-        if resource_uri:
-            resource_scheme = getattr(resource_uri, "scheme", "resource")
+        resource_scheme = getattr(resource_uri, "scheme", "resource")
     except Exception:
         _logger.warning("Unable to parse resource URI scheme for MCP read_resource call")
 

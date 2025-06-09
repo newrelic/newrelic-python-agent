@@ -4092,21 +4092,29 @@ def _process_module_builtin_defaults():
 
 def _process_module_entry_points():
     try:
-        # Preferred after Python 3.10
-        if sys.version_info >= (3, 10):
-            from importlib.metadata import entry_points
-        # Introduced in Python 3.8
-        elif sys.version_info >= (3, 8) and sys.version_info < (3, 9):
-            from importlib_metadata import entry_points
-        # Removed in Python 3.12
-        else:
-            from pkg_resources import iter_entry_points as entry_points
+        # importlib.metadata was introduced into the standard library starting in Python 3.8.
+        from importlib.metadata import entry_points
     except ImportError:
-        return
+        try:
+            # importlib_metadata is a backport library installable from PyPI.
+            from importlib_metadata import entry_points
+        except ImportError:
+            try:
+                # Fallback to pkg_resources, which is available in older versions of setuptools.
+                from pkg_resources import iter_entry_points as entry_points
+            except ImportError:
+                return
 
     group = "newrelic.hooks"
 
-    for entrypoint in entry_points(group=group):
+    try:
+        # group kwarg was only added to importlib.metadata.entry_points in Python 3.10.
+        _entry_points = entry_points(group=group)
+    except TypeError:
+        # Grab entire entry_points dictionary and select group from it.
+        _entry_points = entry_points().get(group, ())
+
+    for entrypoint in _entry_points:
         target = entrypoint.name
 
         if target in _module_import_hook_registry:
@@ -4164,21 +4172,29 @@ def _setup_instrumentation():
 
 def _setup_extensions():
     try:
-        # Preferred after Python 3.10
-        if sys.version_info >= (3, 10):
-            from importlib.metadata import entry_points
-        # Introduced in Python 3.8
-        elif sys.version_info >= (3, 8) and sys.version_info < (3, 9):
-            from importlib_metadata import entry_points
-        # Removed in Python 3.12
-        else:
-            from pkg_resources import iter_entry_points as entry_points
+        # importlib.metadata was introduced into the standard library starting in Python 3.8.
+        from importlib.metadata import entry_points
     except ImportError:
-        return
+        try:
+            # importlib_metadata is a backport library installable from PyPI.
+            from importlib_metadata import entry_points
+        except ImportError:
+            try:
+                # Fallback to pkg_resources, which is available in older versions of setuptools.
+                from pkg_resources import iter_entry_points as entry_points
+            except ImportError:
+                return
 
     group = "newrelic.extension"
 
-    for entrypoint in entry_points(group=group):
+    try:
+        # group kwarg was only added to importlib.metadata.entry_points in Python 3.10.
+        _entry_points = entry_points(group=group)
+    except TypeError:
+        # Grab entire entry_points dictionary and select group from it.
+        _entry_points = entry_points().get(group, ())
+
+    for entrypoint in _entry_points:
         __import__(entrypoint.module_name)
         module = sys.modules[entrypoint.module_name]
         module.initialize()

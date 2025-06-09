@@ -79,7 +79,7 @@ def _check_event_attributes(expected, captured, mismatches):
     extra_keys = captured_keys - expected_keys
 
     if extra_keys:
-        mismatches.append(f"extra_keys: {str(tuple(extra_keys))}")
+        mismatches.append(f"extra_keys: {tuple(extra_keys)!s}")
         return False
 
     for key, value in expected[1].items():

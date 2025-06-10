@@ -116,6 +116,8 @@ class FunctionNode(_FunctionNode, GenericNodeMixin):
 
     def span_event(self, *args, **kwargs):
         attrs = super().span_event(*args, **kwargs)
+        if not attrs:
+            return None
         i_attrs = attrs[0]
 
         i_attrs["name"] = f"{self.group}/{self.name}"

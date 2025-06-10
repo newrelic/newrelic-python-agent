@@ -70,16 +70,38 @@ class GenericNodeMixin:
         )
 
         # intrinsics, user attrs, agent attrs
+        if settings.core_tracing.drop_inprocess_spans:
+            if not parent_guid:
+                return [i_attrs, u_attrs, a_attrs]
+            set_inprocess_attrs = set(attribute.SPAN_ENTITY_RELATIONSHIP_ATTRIBUTES)
+            set_a_attrs = set(a_attrs)
+            exit_span_attrs_present = set_inprocess_attrs & set_a_attrs
+            if not exit_span_attrs_present:
+                return None
         return [i_attrs, u_attrs, a_attrs]
 
     def span_events(self, settings, base_attrs=None, parent_guid=None, attr_class=dict):
-        yield self.span_event(settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class)
+        if settings.core_tracing.drop_inprocess_spans:
+            span = self.span_event(settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class)
+            parent_id = parent_guid
+            if span:  # span will be None if the span is an inprocess span.
+                yield span
+                parent_id = self.guid
 
-        for child in self.children:
-            for event in child.span_events(  # noqa: UP028
-                settings, base_attrs=base_attrs, parent_guid=self.guid, attr_class=attr_class
-            ):
-                yield event
+            for child in self.children:
+                for event in child.span_events(  # noqa: UP028
+                    settings, base_attrs=base_attrs, parent_guid=parent_id, attr_class=attr_class
+                ):
+                    if event:
+                        yield event
+        else:
+            yield self.span_event(settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class)
+
+            for child in self.children:
+                for event in child.span_events(  # noqa: UP028
+                    settings, base_attrs=base_attrs, parent_guid=self.guid, attr_class=attr_class
+                ):
+                    yield event
 
 
 class DatastoreNodeMixin(GenericNodeMixin):
@@ -141,4 +163,13 @@ class DatastoreNodeMixin(GenericNodeMixin):
         except Exception:
             pass
 
+        # intrinsics, user attrs, agent attrs
+        if settings.core_tracing.drop_inprocess_spans:
+            if not parent_guid:
+                return [i_attrs, u_attrs, a_attrs]
+            set_inprocess_attrs = set(attribute.SPAN_ENTITY_RELATIONSHIP_ATTRIBUTES)
+            set_a_attrs = set(a_attrs)
+            exit_span_attrs_present = set_inprocess_attrs & set_a_attrs
+            if not exit_span_attrs_present:
+                return None
         return attrs

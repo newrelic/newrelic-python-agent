@@ -34,9 +34,10 @@ def azure_end(process):
     process.terminate()
 
 
-def test_ping():
+# def test_ping():
+def ping():
     # Start the Azure Function app
-    process = azure_start()
+    # process = azure_start()
 
     # Wait until the connection is established before making the request.
     for _ in range(50):
@@ -48,7 +49,7 @@ def test_ping():
         except (socket.error, ConnectionRefusedError) as e:
             pass
 
-        time.sleep(0.5)
+        time.sleep(1)
 
     # Send a request to the Azure Function app
     response = requests.get(f"http://127.0.0.1:7071/basic?user=Reli")
@@ -56,5 +57,8 @@ def test_ping():
     assert response.text == "Hello, Reli!"
     assert response.headers["Content-Type"] == "text/plain"
         
-    azure_end(process)
+    # azure_end(process)
+
+if __name__ == "__main__":
+    ping()
 

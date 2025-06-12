@@ -27,7 +27,7 @@ app = func.FunctionApp(http_auth_level=func.AuthLevel.ANONYMOUS)
 @app.route(route="basic")
 def basic_page(req):
     # Works when running locally but not on Github Actions.
-    # assert newrelic.agent.current_transaction(), "No active transaction."
+    assert newrelic.agent.current_transaction(), "No active transaction."
 
     user = req.params.get("user")
     response = func.HttpResponse(f"Hello, {user}!", status_code=200, headers={"Content-Type": "text/plain"})

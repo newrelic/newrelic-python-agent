@@ -24,23 +24,10 @@ from newrelic.common.utilization import AZURE_RESOURCE_GROUP_NAME_RE, AZURE_RESO
 from newrelic.common.signature import bind_args
 
 
-def force_agent_activation():
-    """
-    This function is used to force the agent to activate and register
-    the application instance with the collector instead of lazy
-    registration upon the first request.
-    """
+def original_agent_instance():
     app_name = os.environ.setdefault("NEW_RELIC_APP_NAME", os.getenv("WEBSITE_SITE_NAME", ""))
-    
-    application = application_instance(app_name, activate=False)
-    if application and not application.active:
-        application.activate()
-    elif not application:
-        application = application_instance(app_name)
-        application.activate()
-    
-    return application
-    # return application_instance(app_name)
+
+    return application_instance(app_name)
 
 
 def intrinsics_populator(application, context):
@@ -79,8 +66,6 @@ def intrinsics_populator(application, context):
 # as determining if this invocation was a cold start or not.
 async def wrap_dispatcher__handle__invocation_request(wrapped, instance, args, kwargs):
 
-    force_agent_activation()
-
     # Logic to determine if this is a cold start since we are not
     # able to access the logic in the __init__ method of the Dispatcher
     # class with Python (in the Portal, this is not done in Python)
@@ -114,7 +99,7 @@ async def wrap_dispatcher__run_async_func(wrapped, instance, args, kwargs):
     func = bound_args.get("func", None)
     params = bound_args.get("args", None)
 
-    application = force_agent_activation()
+    application = original_agent_instance()
 
     http_request = None
     for value in params.values():
@@ -163,8 +148,7 @@ async def wrap_dispatcher__run_async_func(wrapped, instance, args, kwargs):
         with transaction:
             for key, value in azure_intrinsics.items():
                 transaction._add_agent_attribute(key, value)
-            response = await wrapped(*args, **kwargs)
-            return response
+            return await wrapped(*args, **kwargs)
 
     return await wrapped(*args, **kwargs)
 
@@ -178,7 +162,7 @@ def wrap_dispatcher__run_sync_func(wrapped, instance, args, kwargs):
     func = bound_args.get("func", None)
     params = bound_args.get("params", None)
     
-    application = force_agent_activation()
+    application = original_agent_instance()
 
     http_request = None
     for value in params.values():
@@ -226,11 +210,9 @@ def wrap_dispatcher__run_sync_func(wrapped, instance, args, kwargs):
         with transaction:
             for key, value in azure_intrinsics.items():
                 transaction._add_agent_attribute(key, value)
-            response = wrapped(*args, **kwargs)
-            return response
+            return wrapped(*args, **kwargs)
 
-    response = wrapped(*args, **kwargs)
-    return response
+    return wrapped(*args, **kwargs)
 
 
 def wrap_httpresponse__init__(wrapped, instance, args, kwargs):
@@ -247,9 +229,7 @@ def wrap_httpresponse__init__(wrapped, instance, args, kwargs):
     if status_code:
         transaction.process_response(status_code, headers)
 
-    response = wrapped(*args, **kwargs)
-    return response
-
+    return wrapped(*args, **kwargs)
 
 
 def instrument_azure__http(module):

@@ -597,6 +597,11 @@ class Application:
             if self._agent_control.health_check_enabled:
                 internal_metric("Supportability/AgentControl/Health/enabled", 1)
 
+            # Azure Function mode metric
+            # Note: This environment variable will be set by the Azure Functions runtime
+            if os.environ.get("FUNCTIONS_WORKER_RUNTIME", None):
+                internal_metric("Supportability/Python/AzureFunctionMode/enabled", 1)
+
         self._stats_engine.merge_custom_metrics(internal_metrics.metrics())
 
         # Update the active session in this object. This will the

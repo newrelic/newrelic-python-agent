@@ -13,10 +13,11 @@
 # limitations under the License.
 
 import newrelic.agent
+import os
 
 newrelic.agent.initialize()  # Initialize the New Relic agent
-app_name = "Python Agent Test (serverless_azure)"
-application = newrelic.agent.register_application(app_name)
+os.environ["NEW_RELIC_APP_NAME"] = app_name = "Python Agent Test (serverless_azure)"
+newrelic.agent.register_application(app_name, timeout=20.0)
 
 import azure.functions as func  # noqa: E402; pylint: disable=E0401
 

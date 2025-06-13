@@ -446,6 +446,50 @@ class SampledDataSet:
         self.num_seen += other_data_set.num_seen - other_data_set.num_samples
 
 
+class SpanSampledDataSet:
+    def __init__(self, capacity=100):
+        self.pq = []
+        self.heap = False
+        self.capacity = capacity
+        self.num_seen = 0
+        self.ft_num_seen = 0
+
+        if capacity <= 0:
+
+            def add(*args, **kwargs):
+                self.num_seen += 1
+
+            self.add = add
+
+    @property
+    def ft_samples(self):
+        return (x[-1] if is_ft(x[-1]) for x in self.pq)
+
+    def is_ft(sample):
+        # It's a FT span if it's an exit or entry span.
+        return (len(sample) > 3 and sample[3]) or not sample[0].get("parentId")
+
+    def add(self, sample, priority=None):
+        self.num_seen += 1
+        if is_ft(sample:
+            self.ft_num_seen += 1
+
+        if priority is None:
+            priority = random.random()  # noqa: S311
+
+        entry = (priority, self.num_seen, sample)
+        if self.num_seen == self.capacity:
+            self.pq.append(entry)
+            self.heap = self.heap or heapify(self.pq) or True
+        elif not self.heap:
+            self.pq.append(entry)
+        else:
+            sampled = self.should_sample(priority)
+            if not sampled:
+                return
+            heapreplace(self.pq, entry)
+
+
 class LimitedDataSet(list):
     def __init__(self, capacity=200):
         super().__init__()

@@ -463,7 +463,7 @@ class SpanSampledDataSet:
 
     @property
     def ft_samples(self):
-        return (x[-1] if is_ft(x[-1]) for x in self.pq)
+        return (x[-1] for x in self.pq if is_ft(x[-1]))
 
     def is_ft(sample):
         # It's a FT span if it's an exit or entry span.
@@ -471,7 +471,7 @@ class SpanSampledDataSet:
 
     def add(self, sample, priority=None):
         self.num_seen += 1
-        if is_ft(sample:
+        if is_ft(sample):
             self.ft_num_seen += 1
 
         if priority is None:

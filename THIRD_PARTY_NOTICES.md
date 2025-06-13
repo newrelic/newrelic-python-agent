@@ -62,3 +62,11 @@ Distributed under the following license(s):
 
 * [The BSD 2-Clause License](http://opensource.org/licenses/BSD-2-Clause)
 
+## [objsize](https://pypi.org/project/objsize)
+
+Copyright (c) 2006-2025, Liran Funaro
+All rights reserved.
+
+Distributed under the following license(s):
+
+* [The BSD 3-Clause "New" or "Revised" License](http://opensource.org/licenses/BSD-3-Clause)

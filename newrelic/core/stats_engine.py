@@ -471,7 +471,7 @@ class SpanSampledDataSet:
 
     def add(self, sample, priority=None):
         self.num_seen += 1
-        if is_ft(sample:
+        if is_ft(sample):
             self.ft_num_seen += 1
 
         if priority is None:

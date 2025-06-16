@@ -28,3 +28,16 @@ elif PROTOBUF_VERSION >= (4,):
     from newrelic.core.infinite_tracing_v4_pb2 import AttributeValue, RecordStatus, Span, SpanBatch  # noqa: F401
 else:
     from newrelic.core.infinite_tracing_v3_pb2 import AttributeValue, RecordStatus, Span, SpanBatch  # noqa: F401
+
+# To generate the pb2 file:
+#
+# 1. Install grpcio-tools
+#   * The exact version needed is hard to determine, trial and error is normally used.
+#   * The newly generated pb2 file will specify the minimum protobuf version needed, we want that to be the first version from this major version series.
+# 2. Run the command below to overwrite this file with the newly generated pb2 file.
+# 3. Rename the pb2 file to infinite_tracing_vX_pb2 where X is the protobuf major version.
+# 4. Restore this file from git.
+# 5. Update the if statements above to import the new pb2 file when using the correct protobuf version.
+# 6. Validate the generated pb2 file works with the oldest protobuf version in this major version series by importing this file.
+#
+# python -m grpc_tools.protoc --proto_path=newrelic/core --python_out=newrelic/core newrelic/core/infinite_tracing.proto

@@ -20,7 +20,9 @@ except Exception:
     PROTOBUF_VERSION = (0, 0, 0)
 
 # Import appropriate generated pb2 file for protobuf version
-if PROTOBUF_VERSION >= (5,):
+if PROTOBUF_VERSION >= (6,):
+    from newrelic.core.infinite_tracing_v6_pb2 import AttributeValue, RecordStatus, Span, SpanBatch  # noqa: F401
+elif PROTOBUF_VERSION >= (5,):
     from newrelic.core.infinite_tracing_v5_pb2 import AttributeValue, RecordStatus, Span, SpanBatch  # noqa: F401
 elif PROTOBUF_VERSION >= (4,):
     from newrelic.core.infinite_tracing_v4_pb2 import AttributeValue, RecordStatus, Span, SpanBatch  # noqa: F401

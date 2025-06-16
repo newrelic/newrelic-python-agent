@@ -31,6 +31,7 @@ import warnings
 import zlib
 from heapq import heapify, heapreplace
 
+from newrelic.packages import objsize
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 from newrelic.api.time_trace import get_linking_metadata
 from newrelic.common.encoding_utils import json_encode
@@ -446,13 +447,17 @@ class SampledDataSet:
         self.num_seen += other_data_set.num_seen - other_data_set.num_samples
 
 
-class SpanSampledDataSet:
+class SpanSampledDataSet(SampledDataSet):
     def __init__(self, capacity=100):
         self.pq = []
         self.heap = False
         self.capacity = capacity
         self.num_seen = 0
-        self.ft_num_seen = 0
+        self.ft_seen = 0
+        self.ft_sent = 0
+        self.bytes = 0
+        self.ft_bytes = 0
+        self.ct_bytes = 0
 
         if capacity <= 0:
 
@@ -465,29 +470,46 @@ class SpanSampledDataSet:
     def ft_samples(self):
         return (x[-1] for x in self.pq if is_ft(x[-1]))
 
-    def is_ft(sample):
+    def is_ft(self, sample):
         # It's a FT span if it's an exit or entry span.
         return (len(sample) > 3 and sample[3]) or not sample[0].get("parentId")
 
     def add(self, sample, priority=None):
         self.num_seen += 1
-        if is_ft(sample):
-            self.ft_num_seen += 1
+        self.bytes += objsize.get_deep_size(sample[:-1])
+        is_ft = self.is_ft(sample)
+        entity_relationship_attrs = sample[3] if len(sample) > 3 else {}
+        if is_ft:
+            self.ft_seen += 1
+            # The last index contains the set of entity synthesis attrs in the span.
+            self.ft_bytes += objsize.get_deep_size([sample[0], sample[1], sample[2]])
+
+            i_ct_attrs = {"type", "name", "guid", "parentId", "transaction.name", "traceId", "nr.entryPoint", "transactionId"}
+            i_attrs = {attr: value for attr, value in sample[0].items() if attr in sample[0]}
+            u_attrs = {}
+            a_attrs = {attr: value for attr, value in sample[2].items() if attr in entity_relationship_attrs}
+            self.ct_bytes += objsize.get_deep_size([i_attrs, u_attrs, a_attrs])
 
         if priority is None:
             priority = random.random()  # noqa: S311
 
-        entry = (priority, self.num_seen, sample)
+        entry = (priority, self.num_seen, sample[:-1])
         if self.num_seen == self.capacity:
             self.pq.append(entry)
             self.heap = self.heap or heapify(self.pq) or True
+            if is_ft:
+                self.ft_sent += 1
         elif not self.heap:
             self.pq.append(entry)
+            if is_ft:
+                self.ft_sent += 1
         else:
             sampled = self.should_sample(priority)
             if not sampled:
                 return
             heapreplace(self.pq, entry)
+            if is_ft:
+                self.ft_sent -= 1
 
 
 class LimitedDataSet(list):
@@ -573,7 +595,7 @@ class StatsEngine:
         self._error_events = SampledDataSet()
         self._custom_events = SampledDataSet()
         self._ml_events = SampledDataSet()
-        self._span_events = SampledDataSet()
+        self._span_events = SpanSampledDataSet()
         self._log_events = SampledDataSet()
         self._span_stream = None
         self.__sql_stats_table = {}
@@ -1785,9 +1807,9 @@ class StatsEngine:
 
     def reset_span_events(self):
         if self.__settings is not None:
-            self._span_events = SampledDataSet(self.__settings.event_harvest_config.harvest_limits.span_event_data)
+            self._span_events = SpanSampledDataSet(self.__settings.event_harvest_config.harvest_limits.span_event_data)
         else:
-            self._span_events = SampledDataSet()
+            self._span_events = SpanSampledDataSet()
 
     def reset_log_events(self):
         if self.__settings is not None:

@@ -15,6 +15,7 @@
 import collections
 import logging
 import threading
+from newrelic.packages import objsize
 
 try:
     from newrelic.core.infinite_tracing_pb2 import AttributeValue, SpanBatch
@@ -32,6 +33,11 @@ class StreamBuffer:
         self._shutdown = False
         self._seen = 0
         self._dropped = 0
+        self._ft_seen = 0
+        self._ft_dropped = 0
+        self._bytes = 0
+        self._ft_bytes = 0
+        self._ct_bytes = 0
         self._settings = None
 
         self.batching = batching
@@ -45,12 +51,30 @@ class StreamBuffer:
             self._shutdown = True
             self._notify.notify_all()
 
+    def is_ft(self, sample, entity_relationship_attrs):
+        # It's a FT span if it's an exit or entry span.
+        return entity_relationship_attrs or not sample.intrinsics.get("parentId")
+
     def put(self, item):
         with self._notify:
             if self._shutdown:
                 return
 
+            entity_relationship_attrs = item[1]
+            item = item[0]
             self._seen += 1
+            # The last index contains the set of entity synthesis attrs in the span.
+            self._bytes += objsize.get_deep_size([item.intrinsics, item.user_attributes, item.agent_attributes])
+            if self.is_ft(item, entity_relationship_attrs):
+                self._ft_seen += 1
+                # The last index contains the set of entity synthesis attrs in the span.
+                self._ft_bytes += objsize.get_deep_size([item.intrinsics, item.user_attributes, item.agent_attributes])
+
+                i_ct_attrs = {"type", "name", "guid", "parentId", "transaction.name", "traceId", "nr.entryPoint", "transactionId"}
+                i_attrs = {attr: value for attr, value in item.intrinsics.items() if attr in i_ct_attrs}
+                u_attrs = {}
+                a_attrs = {attr: value for attr, value in item.agent_attributes.items() if attr in entity_relationship_attrs}
+                self._ct_bytes += objsize.get_deep_size([i_attrs, u_attrs, a_attrs])
 
             # NOTE: dropped can be over-counted as the queue approaches
             # capacity while data is still being transmitted.
@@ -59,7 +83,10 @@ class StreamBuffer:
             # being measured.
             if len(self._queue) >= self._queue.maxlen:
                 self._dropped += 1
+                if self.is_ft(item, entity_relationship_attrs):
+                    self._ft_dropped += 1
 
+            # Drop last index that contains the entity relationship attrs present on the span.
             self._queue.append(item)
             self._notify.notify_all()
 
@@ -67,8 +94,12 @@ class StreamBuffer:
         with self._notify:
             seen, dropped = self._seen, self._dropped
             self._seen, self._dropped = 0, 0
+            ft_seen, ft_dropped = self._ft_seen, self._ft_dropped
+            self._ft_seen, self._ft_dropped = 0, 0
+            _bytes, ft_bytes, ct_bytes = self._bytes, self._ft_bytes, self._ct_bytes
+            self._bytes, self._ft_bytes, self._ct_bytes = 0, 0, 0
 
-        return seen, dropped
+        return seen, dropped, ft_seen, ft_dropped, _bytes, ft_bytes, ct_bytes
 
     def __bool__(self):
         return bool(self._queue)

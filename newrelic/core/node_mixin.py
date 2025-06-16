@@ -78,7 +78,11 @@ class GenericNodeMixin:
             exit_span_attrs_present = set_inprocess_attrs & set_a_attrs
             if not exit_span_attrs_present:
                 return None
-        return [i_attrs, u_attrs, a_attrs]
+
+        set_inprocess_attrs = set(attribute.SPAN_ENTITY_RELATIONSHIP_ATTRIBUTES)
+        set_a_attrs = set(a_attrs)
+        exit_span_attrs_present = set_inprocess_attrs & set_a_attrs
+        return [i_attrs, u_attrs, a_attrs, exit_span_attrs_present]
 
     def span_events(self, settings, base_attrs=None, parent_guid=None, attr_class=dict):
         if settings.core_tracing.drop_inprocess_spans:
@@ -170,6 +174,11 @@ class DatastoreNodeMixin(GenericNodeMixin):
             set_inprocess_attrs = set(attribute.SPAN_ENTITY_RELATIONSHIP_ATTRIBUTES)
             set_a_attrs = set(a_attrs)
             exit_span_attrs_present = set_inprocess_attrs & set_a_attrs
+            attrs[3] = exit_span_attrs_present
             if not exit_span_attrs_present:
                 return None
+        set_inprocess_attrs = set(attribute.SPAN_ENTITY_RELATIONSHIP_ATTRIBUTES)
+        set_a_attrs = set(a_attrs)
+        exit_span_attrs_present = set_inprocess_attrs & set_a_attrs
+        attrs[3] = exit_span_attrs_present
         return attrs

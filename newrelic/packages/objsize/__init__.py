@@ -5,7 +5,7 @@ Traversal over Python's objects subtree and calculating the total size of the su
 import warnings
 from typing import Any, Iterable, Iterator, Optional
 
-from objsize.traverse import (
+from newrelic.packages.objsize.traverse import (
     FilterFunc,
     GetReferentsFunc,
     MarkedSet,

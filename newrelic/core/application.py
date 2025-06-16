@@ -1362,11 +1362,18 @@ class Application:
                             span_stream = stats.span_stream
                             # Only merge stats as part of default harvest
                             if span_stream is not None and not flexible:
-                                spans_seen, spans_dropped = span_stream.stats()
+                                print("\n\r\n\r\n\rSending Supportability metrics for inifinte tracing\n\r\n\r\n\r")
+                                spans_seen, spans_dropped, spans_ft_seen, spans_ft_dropped, _bytes, ft_bytes, ct_bytes = span_stream.stats()
                                 spans_sent = spans_seen - spans_dropped
+                                spans_ft_sent = spans_ft_seen - spans_ft_dropped
 
                                 internal_count_metric("Supportability/InfiniteTracing/Span/Seen", spans_seen)
                                 internal_count_metric("Supportability/InfiniteTracing/Span/Sent", spans_sent)
+                                internal_count_metric("Supportability/FullTracing/Span/Seen", spans_ft_seen)
+                                internal_count_metric("Supportability/FullTracing/Span/Sent", spans_ft_sent)
+                                internal_count_metric("Supportability/InfiniteTracing/Bytes/Seen", _bytes)
+                                internal_count_metric("Supportability/FullTracing/Bytes/Seen", ft_bytes)
+                                internal_count_metric("Supportability/CoreTracing/Bytes/Seen", ct_bytes)
                         else:
                             spans = stats.span_events
                             if spans:

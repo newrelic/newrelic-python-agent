@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from testing_support.fixtures import validate_attributes
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from testing_support.fixtures import validate_attributes
 
 
 def test_invocation(send_invocation, is_async):
     transaction_name = "HttpTriggerAsync" if is_async else "HttpTriggerSync"
-    
+
     # Only the first invocation of the function will have the cold start attribute.
     sync_intrinsic_attributes = ["faas.name", "faas.trigger", "faas.invocation_id", "faas.coldStart"]
     async_intrinsic_attributes = ["faas.name", "faas.trigger", "faas.invocation_id"]

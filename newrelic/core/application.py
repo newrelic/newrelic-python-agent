@@ -1353,6 +1353,7 @@ class Application:
 
                     # Send span events
 
+                    print(f"\n\r\n\r\n\r{configuration.span_events.enabled} {configuration.collect_span_events} {configuration.distributed_tracing.enabled} {configuration.infinite_tracing.enabled} \n\r\n\r\n\r")
                     if (
                         configuration.span_events.enabled
                         and configuration.collect_span_events

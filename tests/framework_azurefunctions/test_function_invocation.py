@@ -14,14 +14,22 @@
 
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-
-# from testing_support.fixture.fixtures import validate_attributes
+from testing_support.fixtures import validate_attributes
 
 
 def test_invocation(send_invocation, is_async):
     transaction_name = "HttpTriggerAsync" if is_async else "HttpTriggerSync"
+    
+    # Only the first invocation of the function will have the cold start attribute.
+    sync_intrinsic_attributes = ["faas.name", "faas.trigger", "faas.invocation_id", "faas.coldStart"]
+    async_intrinsic_attributes = ["faas.name", "faas.trigger", "faas.invocation_id"]
+    sync_forgone_attributes = []
+    async_forgone_attributes = ["faas.coldStart"]
 
-    # @validate_attributes(“intrinsic”, [“faas.name”, “faas.trigger”, “faas.invocation_id”, “faas.coldStart”])
+    intrinsic_attributes = async_intrinsic_attributes if is_async else sync_intrinsic_attributes
+    forgone_attributes = async_forgone_attributes if is_async else sync_forgone_attributes
+
+    @validate_attributes("agent", intrinsic_attributes, forgone_attributes)
     @validate_transaction_metrics(group="AzureFunction", name=transaction_name)
     def _test_invocation():
         response = send_invocation()

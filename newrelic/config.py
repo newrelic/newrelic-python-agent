@@ -2862,6 +2862,10 @@ def _process_module_builtin_defaults():
     _process_module_definition("loguru", "newrelic.hooks.logger_loguru", "instrument_loguru")
     _process_module_definition("loguru._logger", "newrelic.hooks.logger_loguru", "instrument_loguru_logger")
 
+    _process_module_definition(
+        "autogen_ext.tools.mcp._base", "newrelic.hooks.mlmodel_autogen", "instrument_autogen_ext_tools_mcp__base"
+    )
+
     _process_module_definition("mcp.client.session", "newrelic.hooks.adapter_mcp", "instrument_mcp_client_session")
 
     _process_module_definition("structlog._base", "newrelic.hooks.logger_structlog", "instrument_structlog__base")

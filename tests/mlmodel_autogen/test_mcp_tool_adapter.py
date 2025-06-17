@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
-
-from autogen_ext.tools.mcp import SseMcpToolAdapter, SseServerParams
-from mcp import ClientSession, Tool
 from unittest.mock import AsyncMock
 
-from newrelic.api.background_task import background_task
+import pytest
+from autogen_ext.tools.mcp import SseMcpToolAdapter, SseServerParams
+from mcp import ClientSession, Tool
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+
+from newrelic.api.background_task import background_task
 
 # Test setup derived from: https://github.com/microsoft/autogen/blob/main/python/packages/autogen-ext/tests/tools/test_mcp_tools.py
 # autogen MIT license: https://github.com/microsoft/autogen/blob/main/LICENSE and

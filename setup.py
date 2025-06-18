@@ -160,7 +160,7 @@ kwargs = dict(
         "git_describe_command": "git describe --dirty --tags --long --match *.*.*",
         "write_to": "newrelic/version.txt",
     },
-    setup_requires=["setuptools_scm>=3.2,<8.1"],
+    setup_requires=["setuptools_scm>=3.2,<9"],
     description="New Relic Python Agent",
     long_description=open(readme_file).read(),
     long_description_content_type="text/markdown",

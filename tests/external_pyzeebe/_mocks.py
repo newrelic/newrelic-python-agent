@@ -1,4 +1,20 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
 from types import SimpleNamespace
+
 from pyzeebe.grpc_internals.zeebe_adapter import ZeebeAdapter
 
 # Dummy response objects with only required fields
@@ -37,17 +53,16 @@ async def dummy_create_process_instance_with_result(
 async def dummy_deploy_resource(*resource_file_path: str, tenant_id: str = None):
     """Simulate ZeebeAdapter.deploy_resource"""
     # Create dummy deployment metadata for each provided resource path
-    deployments = []
-    for path in resource_file_path:
-        deployments.append(
-            SimpleNamespace(
-                resource_name=str(path),
-                bpmn_process_id="dummy_process",
-                process_definition_key=123,
-                version=1,
-                tenant_id=tenant_id if tenant_id is not None else None,
-            )
+    deployments = [
+        SimpleNamespace(
+            resource_name=str(path),
+            bpmn_process_id="dummy_process",
+            process_definition_key=123,
+            version=1,
+            tenant_id=tenant_id if tenant_id is not None else None,
         )
+        for path in resource_file_path
+    ]
     # Create a dummy response with a list of deployments
     return SimpleNamespace(
         deployment_key=333333, deployments=deployments, tenant_id=tenant_id if tenant_id is not None else None
@@ -70,7 +85,7 @@ async def dummy_publish_message(
 
 async def dummy_complete_job(self, job_key: int, variables: dict):
     """Simulate JobExecutor.complete_job"""
-    setattr(self, "_last_complete", {"job_key": job_key, "variables": variables})
+    self._last_complete = {"job_key": job_key, "variables": variables}
     return None
 
 

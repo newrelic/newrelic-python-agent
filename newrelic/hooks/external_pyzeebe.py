@@ -16,11 +16,11 @@
 import logging
 
 from newrelic.api.application import application_instance
-from newrelic.common.object_wrapper import wrap_function_wrapper
-from newrelic.api.transaction import current_transaction, add_custom_attribute
-from newrelic.api.time_trace import add_custom_span_attribute
 from newrelic.api.background_task import BackgroundTask
 from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.time_trace import add_custom_span_attribute
+from newrelic.api.transaction import add_custom_attribute, current_transaction
+from newrelic.common.object_wrapper import wrap_function_wrapper
 
 _logger = logging.getLogger(__name__)
 
@@ -58,12 +58,8 @@ def _add_client_input_attributes(method_name, txn, args, kwargs):
                 txn._add_agent_attribute("zeebe.client.resourceCount", len(resources))
                 # add_attr("zeebe.client.resourceCount", len(resources))
                 if len(resources) == 1:
-                    try:
-                        txn._add_agent_attribute("zeebe.client.resourceFile", str(resources[0]))
-                        # add_attr("zeebe.client.resourceFile", str(resources[0]))
-                    except Exception:
-                        txn._add_agent_attribute("zeebe.client.resourceFile", str(resources[0]))
-                        # add_attr("zeebe.client.resourceFile", repr(resources[0]))
+                    txn._add_agent_attribute("zeebe.client.resourceFile", str(resources[0]))
+                    # add_attr("zeebe.client.resourceFile", str(resources[0]))
     except Exception:
         _logger.warning(CLIENT_ATTRIBUTES_WARNING_LOG_MSG, exc_info=True)
 

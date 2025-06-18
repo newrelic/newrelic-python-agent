@@ -1391,6 +1391,11 @@ class Application:
                                 spans_sampled = spans.num_samples
                                 internal_count_metric("Supportability/SpanEvent/TotalEventsSeen", spans_seen)
                                 internal_count_metric("Supportability/SpanEvent/TotalEventsSent", spans_sampled)
+                                internal_count_metric("Supportability/SpanEvent/FullTracing/TotalEventsSeen", spans.ft_seen)
+                                internal_count_metric("Supportability/SpanEvent/FullTracing/TotalEventsSent", spans.ft_sent)
+                                internal_count_metric("Supportability/DistributedTracing/Bytes/Seen", spans.bytes)
+                                internal_count_metric("Supportability/FullTracing/Bytes/Seen", spans.ft_bytes)
+                                internal_count_metric("Supportability/CoreTracing/Bytes/Seen", spans.ct_bytes)
 
                                 stats.reset_span_events()
 

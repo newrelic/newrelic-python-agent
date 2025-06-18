@@ -26,7 +26,6 @@ on:
 
 permissions:
   contents: read
-  actions: read
 
 concurrency:
   group: ${{ github.ref || github.run_id }}-${{ github.workflow }}

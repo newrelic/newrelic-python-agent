@@ -24,6 +24,9 @@ on:
   schedule:
     - cron: "0 15 * * *"
 
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.ref || github.run_id }}-${{ github.workflow }}
   cancel-in-progress: true

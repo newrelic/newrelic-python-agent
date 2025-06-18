@@ -452,6 +452,7 @@ def _process_configuration(section):
     _process_setting(section, "process_host.display_name", "get", None)
     _process_setting(section, "utilization.detect_aws", "getboolean", None)
     _process_setting(section, "utilization.detect_azure", "getboolean", None)
+    _process_setting(section, "utilization.detect_azurefunction", "getboolean", None)
     _process_setting(section, "utilization.detect_docker", "getboolean", None)
     _process_setting(section, "utilization.detect_kubernetes", "getboolean", None)
     _process_setting(section, "utilization.detect_gcp", "getboolean", None)
@@ -4091,6 +4092,14 @@ def _process_module_builtin_defaults():
     )
     _process_module_definition("tornado.routing", "newrelic.hooks.framework_tornado", "instrument_tornado_routing")
     _process_module_definition("tornado.web", "newrelic.hooks.framework_tornado", "instrument_tornado_web")
+    _process_module_definition(
+        "azure.functions._http", "newrelic.hooks.framework_azurefunctions", "instrument_azure_function__http"
+    )
+    _process_module_definition(
+        "azure_functions_worker.dispatcher",
+        "newrelic.hooks.framework_azurefunctions",
+        "instrument_azure_functions_worker_dispatcher",
+    )
 
 
 def _process_module_entry_points():

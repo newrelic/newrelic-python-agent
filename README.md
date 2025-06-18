@@ -6,6 +6,15 @@
 
 # New Relic Python Agent
 
+[![GitHub release](https://img.shields.io/github/v/release/newrelic/newrelic-python-agent?sort=semver)](https://github.com/newrelic/newrelic-python-agent/releases)
+[![image](https://img.shields.io/pypi/v/newrelic.svg)](https://pypi.python.org/pypi/newrelic)
+[![image](https://img.shields.io/pypi/pyversions/newrelic.svg)](https://pypi.python.org/pypi/newrelic)
+[![Tests](https://github.com/newrelic/newrelic-python-agent/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/newrelic/newrelic-python-agent/actions/workflows/tests.yml)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![MegaLinter](https://github.com/newrelic/newrelic-python-agent/actions/workflows/mega-linter.yml/badge.svg?branch=main)](https://github.com/newrelic/newrelic-python-agent/actions/workflows/mega-linter.yml)
+[![codecov](https://codecov.io/gh/newrelic/newrelic-python-agent/branch/main/graph/badge.svg)](https://codecov.io/gh/newrelic/newrelic-python-agent)
+[![Secured with Trivy](https://img.shields.io/badge/Trivy-secured-green)](https://github.com/aquasecurity/trivy)
+
 The `newrelic` package instruments your application for performance
 monitoring and advanced performance analytics with [New
 Relic](http://newrelic.com).

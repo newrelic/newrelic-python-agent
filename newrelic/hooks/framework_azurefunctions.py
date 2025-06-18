@@ -84,13 +84,13 @@ async def wrap_dispatcher__handle__invocation_request(wrapped, instance, args, k
         # to create attribute checks for this functionality:
         function_id = request.invocation_request.function_id
         binding_type = instance._functions.get_function(function_id).trigger_metadata["type"]
-    
+
         # For now, NR only supports HTTP triggers.
         # In the future, we will have setup logic for other
         # trigger types within this instrumentation.
         if not binding_type.startswith("http"):
             return await wrapped(*args, **kwargs)
-    
+
     except Exception:
         pass
 

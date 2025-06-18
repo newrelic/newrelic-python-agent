@@ -47,16 +47,16 @@ def intrinsics_populator(application, context):
         resource_group_name = AZURE_RESOURCE_GROUP_NAME_PARTIAL_RE.search(website_owner_name).group(1)
     else:
         resource_group_name = os.environ.get("WEBSITE_RESOURCE_GROUP", "Unknown")
-    azure_function_app_name = os.environ.get("WEBSITE_SITE_NAME", application.name)
+    azure_function_app_name = os.environ.get("WEBSITE_SITE_NAME", getattr(application, "name", "Azure Function App"))
 
-    cloud_resource_id = f"/subscriptions/{subscription_id}/resourceGroups/{resource_group_name}/providers/Microsoft.Web/sites/{azure_function_app_name}/functions/{context.function_name}"
-    faas_name = f"{azure_function_app_name}/{context.function_name}"
+    cloud_resource_id = f"/subscriptions/{subscription_id}/resourceGroups/{resource_group_name}/providers/Microsoft.Web/sites/{azure_function_app_name}/functions/{getattr(context, 'function_name', 'Unknown')}"
+    faas_name = f"{azure_function_app_name}/{getattr(context, 'function_name', 'Unknown')}"
 
     return {
         "cloud.resource_id": cloud_resource_id,
         "faas.name": faas_name,
         "faas.trigger": trigger_type,
-        "faas.invocation_id": context.invocation_id,
+        "faas.invocation_id": getattr(context, "invocation_id", "Unknown"),
     }
 
 
@@ -79,12 +79,20 @@ async def wrap_dispatcher__handle__invocation_request(wrapped, instance, args, k
     if not request:
         return await wrapped(*args, **kwargs)
 
-    # For now, NR only supports HTTP triggers
-    function_id = request.invocation_request.function_id
-
-    binding_type = instance._functions.get_function(function_id).trigger_metadata["type"]
-    if not binding_type.startswith("http"):
-        return await wrapped(*args, **kwargs)
+    try:
+        # Once other trigger types are supported, we need
+        # to create attribute checks for this functionality:
+        function_id = request.invocation_request.function_id
+        binding_type = instance._functions.get_function(function_id).trigger_metadata["type"]
+    
+        # For now, NR only supports HTTP triggers.
+        # In the future, we will have setup logic for other
+        # trigger types within this instrumentation.
+        if not binding_type.startswith("http"):
+            return await wrapped(*args, **kwargs)
+    
+    except Exception:
+        pass
 
     return await wrapped(*args, **kwargs)
 
@@ -119,13 +127,13 @@ async def wrap_dispatcher__run_async_func(wrapped, instance, args, kwargs):
     if http_request:
         transaction = WebTransaction(
             application=application,
-            name=context.function_name,
+            name=getattr(context, "function_name", "azure_function"),
             group="AzureFunction",
             scheme=scheme,
             host=host,
             port=port,
-            request_method=http_request.method,
-            request_path=http_request.url,
+            request_method=getattr(http_request, "method", None),
+            request_path=getattr(http_request, "url", None),
             query_string=query,
             headers=dict(http_request.headers),
             source=func,
@@ -185,13 +193,13 @@ def wrap_dispatcher__run_sync_func(wrapped, instance, args, kwargs):
     if http_request:
         transaction = WebTransaction(
             application=application,
-            name=context.function_name,
+            name=getattr(context, "function_name", "azure_function"),
             group="AzureFunction",
             scheme=scheme,
             host=host,
             port=port,
-            request_method=http_request.method,
-            request_path=http_request.url,
+            request_method=getattr(http_request, "method", None),
+            request_path=getattr(http_request, "url", None),
             query_string=query,
             headers=dict(http_request.headers),
             source=func,

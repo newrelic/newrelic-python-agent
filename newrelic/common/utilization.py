@@ -228,9 +228,9 @@ class AzureUtilization(CommonUtilization):
 class AzureFunctionUtilization(CommonUtilization):
     METADATA_HOST = "169.254.169.254"
     METADATA_PATH = "/metadata/instance/compute"
-    METADATA_QUERY = {"api-version": "2017-03-01"}
+    METADATA_QUERY = {"api-version": "2017-03-01"}  # noqa: RUF012
     EXPECTED_KEYS = ("faas.app_name", "cloud.region")
-    HEADERS = {"Metadata": "true"}
+    HEADERS = {"Metadata": "true"}  # noqa: RUF012
     VENDOR_NAME = "azurefunction"
 
     @staticmethod

@@ -2867,11 +2867,6 @@ def _process_module_builtin_defaults():
     _process_module_definition(
         "autogen_ext.tools.mcp._base", "newrelic.hooks.mlmodel_autogen", "instrument_autogen_ext_tools_mcp__base"
     )
-    _process_module_definition(
-        "autogen_agentchat.agents._assistant_agent",
-        "newrelic.hooks.mlmodel_autogen",
-        "instrument_autogen_agentchat_agents__assistant_agent"
-    )
 
     _process_module_definition("mcp.client.session", "newrelic.hooks.adapter_mcp", "instrument_mcp_client_session")
 

@@ -429,18 +429,10 @@ def _record_generation_success(transaction, settings, linking_metadata, completi
             response_prompt_tokens = token_usage.get("prompt_token_count")
             response_completion_tokens = token_usage.get("candidates_token_count")
             response_total_tokens = token_usage.get("total_token_count")
-            # Filter out the token usage object to only include the keys we want to report in the LLM event
-            filtered_token_usage = {
-                key: token_usage.get(key)
-                for key in ["prompt_token_count", "candidates_token_count", "total_token_count"]
-            }
-            token_usage_object = str(filtered_token_usage)
-
         else:
             response_prompt_tokens = None
             response_completion_tokens = None
             response_total_tokens = None
-            token_usage_object = None
 
         # Calculate token counts by checking if a callback is registered and if we have the necessary content to pass
         # to it. If not, then we use the token counts provided in the response object
@@ -480,7 +472,6 @@ def _record_generation_success(transaction, settings, linking_metadata, completi
             "response.usage.prompt_tokens": prompt_tokens,
             "response.usage.completion_tokens": completion_tokens,
             "response.usage.total_tokens": total_tokens,
-            "token_usage": token_usage_object,
         }
 
         llm_metadata = _get_llm_attributes(transaction)

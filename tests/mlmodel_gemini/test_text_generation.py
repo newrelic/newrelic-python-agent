@@ -53,7 +53,6 @@ text_generation_recorded_events = [
             "response.usage.prompt_tokens": 9,
             "response.usage.completion_tokens": 13,
             "response.usage.total_tokens": 22,
-            "token_usage": "{'prompt_token_count': 9, 'candidates_token_count': 13, 'total_token_count': 22}",
         },
     ),
     (

@@ -18,7 +18,7 @@ import google.genai
 import pytest
 from testing_support.fixtures import dt_enabled, override_llm_token_callback_settings, reset_core_stats_engine
 from testing_support.ml_testing_utils import (
-    add_token_count_to_events,
+    add_response_usage_token_count_to_events,
     disabled_ai_monitoring_record_content_settings,
     events_sans_content,
     llm_token_count_callback,
@@ -178,7 +178,7 @@ def test_embeddings_invalid_request_error_invalid_model(gemini_dev_client, set_t
     custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
     background_task=True,
 )
-@validate_custom_events(add_token_count_to_events(invalid_model_events))
+@validate_custom_events(add_response_usage_token_count_to_events(invalid_model_events))
 @validate_custom_event_count(count=1)
 @background_task()
 def test_embeddings_invalid_request_error_invalid_model_with_token_count(gemini_dev_client, set_trace_info):
@@ -345,7 +345,7 @@ def test_embeddings_async_invalid_request_error_invalid_model(gemini_dev_client,
     custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
     background_task=True,
 )
-@validate_custom_events(add_token_count_to_events(invalid_model_events))
+@validate_custom_events(add_response_usage_token_count_to_events(invalid_model_events))
 @validate_custom_event_count(count=1)
 @background_task()
 def test_embeddings_async_invalid_request_error_invalid_model_with_token_count(gemini_dev_client, loop, set_trace_info):

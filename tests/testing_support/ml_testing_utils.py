@@ -29,6 +29,24 @@ def llm_token_count_callback(model, content):
     return 105
 
 
+def add_response_usage_token_count_to_events(expected_events):
+    events = copy.deepcopy(expected_events)
+    for event in events:
+        if event[0]["type"] == "LlmChatCompletionSummary" and not "error" in event[1]:
+            event[1]["response.usage.prompt_tokens"] = 105
+            event[1]["response.usage.completion_tokens"] = 105
+            event[1]["response.usage.total_tokens"] = 210
+        if event[0]["type"] == "LlmChatCompletionSummary" and "error" in event[1]:
+            event[1]["response.usage.prompt_tokens"] = 105
+            event[1]["response.usage.total_tokens"] = 105
+        elif event[0]["type"] == "LlmEmbedding":
+            event[1]["response.usage.prompt_tokens"] = 105
+            event[1]["response.usage.total_tokens"] = 105
+
+    return events
+
+
+# Keeping old token count function around until all LLM instrumentations are converted to use new token count spec
 def add_token_count_to_events(expected_events):
     events = copy.deepcopy(expected_events)
     for event in events:

@@ -15,7 +15,7 @@
 import google.genai
 from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
-    add_token_count_to_events,
+    add_response_usage_token_count_to_events,
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
     events_sans_content,
@@ -43,9 +43,12 @@ text_generation_recorded_events = [
             "trace_id": "trace-id",
             "duration": None,  # Response time varies each test run
             "request.model": "gemini-2.0-flash",
-            "response.model": "gemini-2.0-flash",
             "request.temperature": 0.7,
             "request.max_tokens": 100,
+            "response.model": "gemini-2.0-flash",
+            "response.usage.prompt_tokens": 9,
+            "response.usage.completion_tokens": 13,
+            "response.usage.total_tokens": 22,
             "response.choices.finish_reason": "STOP",
             "vendor": "gemini",
             "ingest_source": "Python",
@@ -64,6 +67,7 @@ text_generation_recorded_events = [
             "role": "user",
             "completion_id": None,
             "sequence": 0,
+            "token_count": 0,
             "response.model": "gemini-2.0-flash",
             "vendor": "gemini",
             "ingest_source": "Python",
@@ -81,6 +85,7 @@ text_generation_recorded_events = [
             "role": "model",
             "completion_id": None,
             "sequence": 1,
+            "token_count": 0,
             "response.model": "gemini-2.0-flash",
             "vendor": "gemini",
             "is_response": True,
@@ -183,7 +188,7 @@ def test_gemini_text_generation_sync_no_content(gemini_dev_client, set_trace_inf
 
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
-@validate_custom_events(add_token_count_to_events(text_generation_recorded_events))
+@validate_custom_events(add_response_usage_token_count_to_events(text_generation_recorded_events))
 @validate_custom_event_count(count=3)
 @validate_transaction_metrics(
     name="test_text_generation:test_gemini_text_generation_sync_with_token_count",
@@ -324,7 +329,7 @@ def test_gemini_text_generation_async_no_content(gemini_dev_client, loop, set_tr
 
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
-@validate_custom_events(add_token_count_to_events(text_generation_recorded_events))
+@validate_custom_events(add_response_usage_token_count_to_events(text_generation_recorded_events))
 @validate_custom_event_count(count=3)
 @validate_transaction_metrics(
     name="test_text_generation:test_gemini_text_generation_async_with_token_count",

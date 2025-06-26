@@ -38,6 +38,7 @@ class StreamBuffer:
         self._bytes = 0
         self._ft_bytes = 0
         self._ct_bytes = 0
+        self.ct_processing_time = 0
         self._settings = None
 
         self.batching = batching
@@ -98,8 +99,10 @@ class StreamBuffer:
             self._ft_seen, self._ft_dropped = 0, 0
             _bytes, ft_bytes, ct_bytes = self._bytes, self._ft_bytes, self._ct_bytes
             self._bytes, self._ft_bytes, self._ct_bytes = 0, 0, 0
+            ct_processing_time = self._ct_processing_time
+            self._ct_processing_time = 0
 
-        return seen, dropped, ft_seen, ft_dropped, _bytes, ft_bytes, ct_bytes
+        return seen, dropped, ft_seen, ft_dropped, _bytes, ft_bytes, ct_byte, ct_processing_times
 
     def __bool__(self):
         return bool(self._queue)

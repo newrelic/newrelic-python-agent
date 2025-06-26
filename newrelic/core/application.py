@@ -1364,7 +1364,7 @@ class Application:
                             # Only merge stats as part of default harvest
                             if span_stream is not None and not flexible:
                                 print("\n\r\n\r\n\rSending Supportability metrics for inifinte tracing\n\r\n\r\n\r")
-                                spans_seen, spans_dropped, spans_ft_seen, spans_ft_dropped, _bytes, ft_bytes, ct_bytes = span_stream.stats()
+                                spans_seen, spans_dropped, spans_ft_seen, spans_ft_dropped, _bytes, ft_bytes, ct_bytes, ct_processing_time = span_stream.stats()
                                 spans_sent = spans_seen - spans_dropped
                                 spans_ft_sent = spans_ft_seen - spans_ft_dropped
 
@@ -1375,6 +1375,7 @@ class Application:
                                 internal_count_metric("Supportability/InfiniteTracing/Bytes/Seen", _bytes)
                                 internal_count_metric("Supportability/FullTracing/Bytes/Seen", ft_bytes)
                                 internal_count_metric("Supportability/CoreTracing/Bytes/Seen", ct_bytes)
+                                internal_count_metric("Supportability/CoreTracing/TotalTime", ct_processing_time*1000)  # Time in ms.
                         else:
                             spans = stats.span_events
                             if spans:
@@ -1396,6 +1397,7 @@ class Application:
                                 internal_count_metric("Supportability/DistributedTracing/Bytes/Seen", spans.bytes)
                                 internal_count_metric("Supportability/FullTracing/Bytes/Seen", spans.ft_bytes)
                                 internal_count_metric("Supportability/CoreTracing/Bytes/Seen", spans.ct_bytes)
+                                internal_count_metric("Supportability/SpanEvent/TotalCoreTracingTime", spans.ct_processing_time*1000)  # Time in ms.
 
                                 stats.reset_span_events()
 

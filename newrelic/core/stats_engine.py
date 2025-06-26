@@ -458,6 +458,7 @@ class SpanSampledDataSet(SampledDataSet):
         self.bytes = 0
         self.ft_bytes = 0
         self.ct_bytes = 0
+        self.ct_processing_time = 0
 
         if capacity <= 0:
 
@@ -1262,11 +1263,16 @@ class StatsEngine:
 
         if settings.distributed_tracing.enabled and settings.span_events.enabled and settings.collect_span_events:
             if settings.infinite_tracing.enabled:
-                for event in transaction.span_protos(settings):
+                ct_processing_time = 0
+                for event in transaction.span_protos(settings, ct_processing_time=ct_processing_time):
                     self._span_stream.put(event)
+                self._span_stream._ct_processing_time += ct_processing_time
             elif transaction.sampled:
-                for event in transaction.span_events(self.__settings):
+                ct_processing_time = 0
+                for event in transaction.span_events(self.__settings, ct_processing_time=ct_processing_time):
                     self._span_events.add(event, priority=transaction.priority)
+                self._span_events.ct_processing_time += ct_processing_time
+
 
         # Merge in log events
 

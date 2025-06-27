@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import asyncio
+from uuid import uuid4
 
 import pytest
 from testing_support.db_settings import valkey_settings
@@ -123,6 +124,9 @@ def test_async_pubsub(client, loop):
     messages_received = []
     message_received = asyncio.Event()
 
+    channel_1 = f"channel:{uuid4()}"
+    channel_2 = f"channel:{uuid4()}"
+
     async def reader(pubsub):
         while True:
             message = await pubsub.get_message(ignore_subscribe_messages=True)
@@ -140,13 +144,13 @@ def test_async_pubsub(client, loop):
 
     async def _test_pubsub():
         async with client.pubsub() as pubsub:
-            await pubsub.psubscribe("channel:*")
+            await pubsub.psubscribe(channel_1, channel_2)
 
             future = asyncio.create_task(reader(pubsub))
 
-            await _publish(client, "channel:1", "Hello")
-            await _publish(client, "channel:2", "World")
-            await _publish(client, "channel:1", "NOPE")
+            await _publish(client, channel_1, "Hello")
+            await _publish(client, channel_2, "World")
+            await _publish(client, channel_1, "NOPE")
 
             await future
 

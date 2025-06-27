@@ -47,6 +47,15 @@ def events_sans_content(event):
     return new_event
 
 
+def tool_events_sans_content(event):
+    new_event = copy.deepcopy(event)
+    for _event in new_event:
+        del _event[1]["input"]
+        if "output" in _event[1]:
+            del _event[1]["output"]
+    return new_event
+
+
 def events_sans_llm_metadata(expected_events):
     events = copy.deepcopy(expected_events)
     for event in events:

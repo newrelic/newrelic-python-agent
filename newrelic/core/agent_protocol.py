@@ -21,6 +21,7 @@ from newrelic.common.agent_http import ApplicationModeClient, ServerlessModeClie
 from newrelic.common.encoding_utils import json_decode, json_encode, serverless_payload_encode
 from newrelic.common.utilization import (
     AWSUtilization,
+    AzureFunctionUtilization,
     AzureUtilization,
     DockerUtilization,
     ECSUtilization,
@@ -302,7 +303,7 @@ class AgentProtocol:
 
         utilization_settings = {}
         # metadata_version corresponds to the utilization spec being used.
-        utilization_settings["metadata_version"] = 5
+        utilization_settings["metadata_version"] = 6
         utilization_settings["logical_processors"] = system_info.logical_processor_count()
         utilization_settings["total_ram_mib"] = system_info.total_physical_memory()
         utilization_settings["hostname"] = hostname
@@ -342,6 +343,8 @@ class AgentProtocol:
             vendors.append(GCPUtilization)
         if settings["utilization.detect_azure"]:
             vendors.append(AzureUtilization)
+        if settings["utilization.detect_azurefunction"]:
+            vendors.append(AzureFunctionUtilization)
 
         for vendor in vendors:
             metadata = vendor.detect()

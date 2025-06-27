@@ -54,7 +54,7 @@ def single_tool_model_client():
         [
             CreateResult(
                 finish_reason="function_calls",
-                content=[FunctionCall(id="1", arguments=json.dumps({"input": "Hello"}), name="add_exclamation")],
+                content=[FunctionCall(id="1", arguments=json.dumps({"message": "Hello"}), name="add_exclamation")],
                 usage=RequestUsage(prompt_tokens=10, completion_tokens=5),
                 cached=False,
             ),
@@ -103,13 +103,13 @@ def multi_tool_model_client():
         chat_completions=[
             CreateResult(
                 finish_reason="function_calls",
-                content=[FunctionCall(id="1", name="add_exclamation", arguments=json.dumps({"input": "Hello"}))],
+                content=[FunctionCall(id="1", name="add_exclamation", arguments=json.dumps({"message": "Hello"}))],
                 usage=RequestUsage(prompt_tokens=10, completion_tokens=5),
                 cached=False,
             ),
             CreateResult(
                 finish_reason="function_calls",
-                content=[FunctionCall(id="2", name="add_exclamation", arguments=json.dumps({"input": "Goodbye"}))],
+                content=[FunctionCall(id="2", name="add_exclamation", arguments=json.dumps({"message": "Goodbye"}))],
                 usage=RequestUsage(prompt_tokens=10, completion_tokens=5),
                 cached=False,
             ),
@@ -143,13 +143,13 @@ def multi_tool_model_client_error():
         chat_completions=[
             CreateResult(
                 finish_reason="function_calls",
-                content=[FunctionCall(id="1", name="add_exclamation", arguments=json.dumps({"input": "Hello"}))],
+                content=[FunctionCall(id="1", name="add_exclamation", arguments=json.dumps({"message": "Hello"}))],
                 usage=RequestUsage(prompt_tokens=10, completion_tokens=5),
                 cached=False,
             ),
             CreateResult(
                 finish_reason="function_calls",
-                content=[FunctionCall(id="2", name="add_exclamation", arguments=json.dumps({"input": "Goodbye"}))],
+                content=[FunctionCall(id="2", name="add_exclamation", arguments=json.dumps({"message": "Goodbye"}))],
                 usage=RequestUsage(prompt_tokens=10, completion_tokens=5),
                 cached=False,
             ),

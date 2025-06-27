@@ -47,7 +47,7 @@ tool_recorded_event = [
             "agent_name": "pirate_agent",
             "span_id": None,
             "trace_id": "trace-id",
-            "input": '{"input": "Hello"}',
+            "input": '{"message": "Hello"}',
             "vendor": "autogen",
             "ingest_source": "Python",
             "duration": None,
@@ -76,8 +76,8 @@ tool_recorded_event_error = [
 
 
 # Example tool for testing purposes
-def add_exclamation(input: str) -> str:
-    return f"{input}!"
+def add_exclamation(message: str) -> str:
+    return f"{message}!"
 
 
 @reset_core_stats_engine()
@@ -252,5 +252,19 @@ def test_run_assistant_agent_error(loop, set_trace_info, single_tool_model_clien
     async def _test():
         with pytest.raises(TypeError):
             response = await pirate_agent.run()
+
+    loop.run_until_complete(_test())
+
+
+@reset_core_stats_engine()
+@validate_custom_event_count(count=0)
+def test_run_assistant_agent_outside_txn(loop, single_tool_model_client):
+    pirate_agent = AssistantAgent(
+        name="pirate_agent", model_client=single_tool_model_client, tools=[add_exclamation], model_client_stream=True
+    )
+
+    async def _test():
+        response = await pirate_agent.run()
+        assert "Hello!" in response.messages[1].content[0].content
 
     loop.run_until_complete(_test())

@@ -86,14 +86,14 @@ def _extract_tool_output(return_val, tool_name):
         output = getattr(return_val[1], "content", None)
         return output
     except Exception:
-        _logger.warning(f"Unable to parse tool output value from {tool_name}. Omitting output from LlmTool event.")
+        _logger.warning("Unable to parse tool output value from %s. Omitting output from LlmTool event.", tool_name)
         return None
 
 
 def _construct_base_tool_event_dict(bound_args, tool_call_data, tool_id, transaction, settings):
     try:
-        input = getattr(tool_call_data, "arguments", None)
-        tool_input = str(input) if input else None
+        _input = getattr(tool_call_data, "arguments", None)
+        tool_input = str(_input) if _input else None
         run_id = getattr(tool_call_data, "id", None)
         tool_name = getattr(tool_call_data, "name", "tool")
         agent_name = bound_args.get("agent_name")
@@ -124,7 +124,7 @@ async def wrap__execute_tool_call(wrapped, instance, args, kwargs):
     if not transaction:
         return await wrapped(*args, **kwargs)
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
+    settings = transaction.settings or global_settings()
     if not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
@@ -154,9 +154,6 @@ async def wrap__execute_tool_call(wrapped, instance, args, kwargs):
         raise
 
     ft.__exit__(None, None, None)
-
-    if not return_val:
-        return return_val
 
     tool_event_dict.update({"duration": ft.duration * 1000})
 

@@ -491,11 +491,13 @@ def _record_completion_success(transaction, linking_metadata, completion_id, kwa
         else:
             response_model = kwargs.get("response.model")
             response_id = kwargs.get("id")
+            response_usage = {}
             output_message_list = []
-            finish_reason = None
+            finish_reason = kwargs.get("finish_reason")
             if "content" in kwargs:
                 output_message_list = [{"content": kwargs.get("content"), "role": kwargs.get("role")}]
-                finish_reason = kwargs.get("finish_reason")
+            if "tool_call" in finish_reason and not kwargs.get("content"):
+                output_message_list = []
         request_model = kwargs.get("model") or kwargs.get("engine")
 
         request_id = response_headers.get("x-request-id")

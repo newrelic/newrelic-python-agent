@@ -974,6 +974,6 @@ def MockExternalGeminiServer(simple_get):
 
 if __name__ == "__main__":
     with MockExternalGeminiServer() as server:
-        print(f"MockExternalGeminiServer serving on port {str(server.port)}")
+        print(f"MockExternalGeminiServer serving on port {server.port!s}")
         while True:
             pass  # Serve forever

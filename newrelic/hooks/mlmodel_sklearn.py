@@ -302,13 +302,13 @@ def create_prediction_event(transaction, class_, instance, args, kwargs, return_
         if settings and settings.machine_learning and settings.machine_learning.inference_events_value.enabled:
             event.update(
                 {
-                    f"feature.{str(final_feature_names[feature_col_index])}": value
+                    f"feature.{final_feature_names[feature_col_index]!s}": value
                     for feature_col_index, value in enumerate(prediction)
                 }
             )
             event.update(
                 {
-                    f"label.{str(label_names_list[index])}": str(value)
+                    f"label.{label_names_list[index]!s}": str(value)
                     for index, value in enumerate(labels[prediction_index])
                 }
             )

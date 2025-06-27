@@ -13,15 +13,11 @@
 # limitations under the License.
 
 import copy
-import pytest
 
+import pytest
 from autogen_agentchat.agents import AssistantAgent
 from autogen_agentchat.base import TaskResult
-
-from newrelic.api.background_task import background_task
-from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
-from newrelic.common.object_names import callable_name
-
+from testing_support.fixtures import reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
@@ -29,12 +25,15 @@ from testing_support.ml_testing_utils import (
     set_trace_info,
     tool_events_sans_content,
 )
-from testing_support.fixtures import reset_core_stats_engine, validate_attributes
 from testing_support.validators.validate_custom_event import validate_custom_event_count
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import validate_error_trace_attributes
 from testing_support.validators.validate_transaction_error_event_count import validate_transaction_error_event_count
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+
+from newrelic.api.background_task import background_task
+from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
+from newrelic.common.object_names import callable_name
 
 tool_recorded_event = [
     (

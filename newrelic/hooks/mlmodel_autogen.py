@@ -14,21 +14,17 @@
 
 
 import logging
-import json
 import sys
-import traceback
 import uuid
-
 
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import get_trace_linking_metadata
-from newrelic.common.package_version_utils import get_package_version
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
 from newrelic.core.config import global_settings
-
 
 # Check for the presence of the autogen-core, autogen-agentchat, or autogen-ext package as they should all have the
 # same version and one or multiple could be installed

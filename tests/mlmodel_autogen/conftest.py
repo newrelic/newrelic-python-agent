@@ -12,14 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
-
-from testing_support.fixture.event_loop import event_loop as loop
-from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
-
 import json
-import pytest
 
+import pytest
 from autogen_agentchat.agents import AssistantAgent
 from autogen_agentchat.base import TaskResult
 from autogen_agentchat.teams import RoundRobinGroupChat
@@ -27,11 +22,11 @@ from autogen_core import ComponentModel, FunctionCall, Image
 from autogen_core.models import CreateResult, RequestUsage
 from autogen_core.models._model_client import ModelFamily
 from autogen_ext.models.replay import ReplayChatCompletionClient
+from pydantic import BaseModel, ValidationError
+from testing_support.fixture.event_loop import event_loop as loop
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 from newrelic.common.object_names import callable_name
-
-from pydantic import BaseModel, ValidationError
-
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slowdowns.

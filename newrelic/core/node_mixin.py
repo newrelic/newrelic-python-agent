@@ -17,6 +17,9 @@ from newrelic.core.attribute_filter import DST_SPAN_EVENTS, DST_TRANSACTION_SEGM
 
 
 class GenericNodeMixin:
+    def __init__(self, *args, **kwargs):
+        self.ids = []
+
     @property
     def processed_user_attributes(self):
         if hasattr(self, "_processed_user_attributes"):
@@ -49,7 +52,9 @@ class GenericNodeMixin:
         _params["exclusive_duration_millis"] = 1000.0 * self.exclusive
         return _params
 
-    def span_event(self, settings, base_attrs=None, parent_guid=None, attr_class=dict):
+    def span_event(self, settings, base_attrs=None, parent_guid=None, attr_class=dict, ct_exit_spans=None, ct_processing_time=0):
+        if ct_exit_spans is None:
+            ct_exit_spans = {}
         i_attrs = base_attrs and base_attrs.copy() or attr_class()
         i_attrs["type"] = "Span"
         i_attrs["name"] = self.name
@@ -74,85 +79,85 @@ class GenericNodeMixin:
         exit_span_attrs_present = attribute.SPAN_ENTITY_RELATIONSHIP_ATTRIBUTES & set(a_attrs)
         if settings.core_tracing.drop_inprocess_spans or settings.core_tracing.enabled:
             if self.__class__.__name__ == "RootNode":
+                if settings.core_tracing.enabled:
+                    #i_ct_attrs = {"type", "name", "guid", "parentId", "transaction.name", "traceId", "nr.entryPoint", "transactionId"}
+                    #i_attrs = {key: value for key, value in i_attrs.items() if key in i_ct_attrs}
+                    u_attrs = {}
                 return [i_attrs, u_attrs, a_attrs, exit_span_attrs_present]
             if not exit_span_attrs_present:
                 return None
         if settings.core_tracing.enabled:
             start_time = time.time()
-            i_attrs["ids"] = []  # This is the list of span guids that share this unqiue exit span.
             parent_id = parent_guid
-            if span:  # span will be None if the span is an inprocess span.
-                span_attrs = "".join([span[2][key] for key in exit_spans])
-                new_exit_span = span_attrs not in ct_exit_spans
-                if parent_id:  # If this is not the entry span.
-                    if new_exit_span:
-                        ct_exit_spans[span_attrs] = span
-                    else:
-                        ct_exit_spans[span_attrs][0]["ids"].append(span[0]["guid"])
-                ct_processing_time += (time.time() - start_time)
-                #print(f"parent {span[0]['traceId']} {parent_id} {span[0]['name']} {new_exit_span}")
-                if not parent_id or new_exit_span:
-                    #print(f"{span}")
-                    import traceback
-                    traceback.print_stack()
-                    yield span
+            # ids is the list of span guids that share this unqiue exit span.
+            span = [i_attrs, {"ids": self.ids}, a_attrs, exit_span_attrs_present]
+            span_attrs = "".join([span[2][key] for key in exit_span_attrs_present])
+            new_exit_span = span_attrs not in ct_exit_spans
+            if new_exit_span:
+                ct_exit_spans[span_attrs] = self.ids
+            else:
+                # For now add ids to user attributes list
+                ct_exit_spans[span_attrs].append(self.guid)
+            ct_processing_time += (time.time() - start_time)
+            if new_exit_span:
+                return span
+            return None
         return [i_attrs, u_attrs, a_attrs, exit_span_attrs_present]
 
     def span_events(self, settings, base_attrs=None, parent_guid=None, attr_class=dict, ct_exit_spans=None, ct_processing_time=0):
-        if settings.core_tracing.enabled:
-            if ct_exit_spans is None:
-                ct_exit_spans = {}
-            span = self.span_event(settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class)
+        #if settings.core_tracing.enabled:
+        #    if ct_exit_spans is None:
+        #        ct_exit_spans = {}
+        #    span = self.span_event(settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class)
+        #    start_time = time.time()
+        #    parent_id = parent_guid
+        #    if span:  # span will be None if the span is an inprocess span.
+        #        span_attrs = "".join([span[2][key] for key in span[3]])
+        #        new_exit_span = span_attrs not in ct_exit_spans
+        #        if parent_id:  # If this is not the entry span.
+        #            if new_exit_span:
+        #                ct_exit_spans[span_attrs] = span
+        #            else:
+        #                ct_exit_spans[span_attrs][0]["ids"].append(span[0]["guid"])
+        #        ct_processing_time += (time.time() - start_time)
+        #        #print(f"parent {span[0]['traceId']} {parent_id} {span[0]['name']} {new_exit_span}")
+        #        if not parent_id or new_exit_span:
+        #            #print(f"{span}")
+        #            import traceback
+        #            traceback.print_stack()
+        #            yield span
+        #            parent_id = self.guid
+        #    for child in self.children:
+        #        for event in child.span_events(  # noqa: UP028
+        #            settings, base_attrs=base_attrs, parent_guid=parent_id, attr_class=attr_class, ct_exit_spans=ct_exit_spans, ct_processing_time=ct_processing_time
+        #        ):
+        #            if event:
+        #                start_time = time.time()
+        #                span_attrs = "".join([event[2][key] for key in event[3]])
+        #                new_exit_span = span_attrs not in ct_exit_spans
+        #                if new_exit_span:
+        #                    ct_exit_spans[span_attrs] = event
+        #                else:
+        #                    ct_exit_spans[span_attrs][0]["ids"].append(event[0]["guid"])
+        #                ct_processing_time += (time.time() - start_time)
+        #                #print(f"child {event[0]['traceId']} {parent_id} {event[0]['name']} {new_exit_span}")
+        #                if new_exit_span:
+        #                    #print(f"{event}")
+        #                    import traceback
+        #                    traceback.print_stack()
+        #                    yield event
+        if settings.core_tracing.drop_inprocess_spans or settings.core_tracing.enabled:
+            span = self.span_event(settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class, ct_exit_spans=ct_exit_spans, ct_processing_time=ct_processing_time)
             start_time = time.time()
             parent_id = parent_guid
-            if span:  # span will be None if the span is an inprocess span.
-                span_attrs = "".join([span[2][key] for key in span[3]])
-                new_exit_span = span_attrs not in ct_exit_spans
-                if parent_id:  # If this is not the entry span.
-                    if new_exit_span:
-                        ct_exit_spans[span_attrs] = span
-                    else:
-                        ct_exit_spans[span_attrs][0]["ids"].append(span[0]["guid"])
-                ct_processing_time += (time.time() - start_time)
-                #print(f"parent {span[0]['traceId']} {parent_id} {span[0]['name']} {new_exit_span}")
-                if not parent_id or new_exit_span:
-                    #print(f"{span}")
-                    import traceback
-                    traceback.print_stack()
-                    yield span
-                    parent_id = self.guid
-            for child in self.children:
-                for event in child.span_events(  # noqa: UP028
-                    settings, base_attrs=base_attrs, parent_guid=parent_id, attr_class=attr_class, ct_exit_spans=ct_exit_spans, ct_processing_time=ct_processing_time
-                ):
-                    if event:
-                        start_time = time.time()
-                        span_attrs = "".join([event[2][key] for key in event[3]])
-                        new_exit_span = span_attrs not in ct_exit_spans
-                        if new_exit_span:
-                            ct_exit_spans[span_attrs] = event
-                        else:
-                            ct_exit_spans[span_attrs][0]["ids"].append(event[0]["guid"])
-                        ct_processing_time += (time.time() - start_time)
-                        #print(f"child {event[0]['traceId']} {parent_id} {event[0]['name']} {new_exit_span}")
-                        if new_exit_span:
-                            #print(f"{event}")
-                            import traceback
-                            traceback.print_stack()
-                            yield event
-        elif settings.core_tracing.drop_inprocess_spans:
-            ct_exit_spans = ct_exit_spans or {}
-            span = self.span_event(settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class)
-            start_time = time.time()
-            parent_id = parent_guid
-            if span:  # span will be None if the span is an inprocess span.
+            if span:  # span will be None if the span is an inprocess span or repeated exit span.
                 yield span
                 parent_id = self.guid
             for child in self.children:
                 for event in child.span_events(  # noqa: UP028
                     settings, base_attrs=base_attrs, parent_guid=parent_id, attr_class=attr_class, ct_exit_spans=ct_exit_spans, ct_processing_time=ct_processing_time
                 ):
-                    if event:
+                    if event:  # event will be None if the span is an inprocess span or repeated exit span.
                         yield event
         else:
             yield self.span_event(settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class)

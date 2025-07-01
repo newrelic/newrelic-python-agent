@@ -633,5 +633,5 @@ class TransactionNode(_TransactionNode):
                 ("priority", self.priority),
             )
         )
-
-        yield from self.root.span_events(settings, base_attrs, parent_guid=self.parent_span, attr_class=attr_class, ct_processing_time=ct_processing_time)
+        ct_exit_spans = {}
+        yield from self.root.span_events(settings, base_attrs, parent_guid=self.parent_span, attr_class=attr_class, ct_exit_spans=ct_exit_spans, ct_processing_time=ct_processing_time)

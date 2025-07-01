@@ -1270,6 +1270,7 @@ class StatsEngine:
             elif transaction.sampled:
                 ct_processing_time = 0
                 for event in transaction.span_events(self.__settings, ct_processing_time=ct_processing_time):
+                    print(event)
                     self._span_events.add(event, priority=transaction.priority)
                 self._span_events.ct_processing_time += ct_processing_time
 

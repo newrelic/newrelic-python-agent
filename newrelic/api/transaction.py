@@ -661,7 +661,7 @@ class Transaction:
     @property
     def ct_sampled(self):
         # If DT doesn't sample it CT will.
-        if not self.sampled and settings.core_tracing.enabled:
+        if not self.sampled and self._settings.core_tracing.enabled:
             return True
         return False
 

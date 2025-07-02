@@ -453,11 +453,7 @@ class SpanSampledDataSet(SampledDataSet):
         self.heap = False
         self.capacity = capacity
         self.num_seen = 0
-        self.ft_seen = 0
-        self.ft_sent = 0
         self.bytes = 0
-        self.ft_bytes = 0
-        self.ct_bytes = 0
         self.ct_processing_time = 0
 
         if capacity <= 0:
@@ -467,29 +463,9 @@ class SpanSampledDataSet(SampledDataSet):
 
             self.add = add
 
-    @property
-    def ft_samples(self):
-        return (x[-1] for x in self.pq if is_ft(x[-1]))
-
-    def is_ft(self, sample):
-        # It's a FT span if it's an exit or entry span.
-        return (len(sample) > 3 and sample[3]) or not sample[0].get("parentId")
-
     def add(self, sample, priority=None):
         self.num_seen += 1
         self.bytes += objsize.get_deep_size(sample[:-1])
-        is_ft = self.is_ft(sample)
-        entity_relationship_attrs = sample[3] if len(sample) > 3 else {}
-        if is_ft:
-            self.ft_seen += 1
-            # The last index contains the set of entity synthesis attrs in the span.
-            self.ft_bytes += objsize.get_deep_size([sample[0], sample[1], sample[2]])
-
-            i_ct_attrs = {"type", "name", "guid", "parentId", "transaction.name", "traceId", "nr.entryPoint", "transactionId"}
-            i_attrs = {attr: value for attr, value in sample[0].items() if attr in sample[0]}
-            u_attrs = {}
-            a_attrs = {attr: value for attr, value in sample[2].items() if attr in entity_relationship_attrs}
-            self.ct_bytes += objsize.get_deep_size([i_attrs, u_attrs, a_attrs])
 
         if priority is None:
             priority = random.random()  # noqa: S311
@@ -498,12 +474,8 @@ class SpanSampledDataSet(SampledDataSet):
         if self.num_seen == self.capacity:
             self.pq.append(entry)
             self.heap = self.heap or heapify(self.pq) or True
-            if is_ft:
-                self.ft_sent += 1
         elif not self.heap:
             self.pq.append(entry)
-            if is_ft:
-                self.ft_sent += 1
         else:
             sampled = self.should_sample(priority)
             if not sampled:
@@ -1265,12 +1237,13 @@ class StatsEngine:
             if settings.infinite_tracing.enabled:
                 ct_processing_time = 0
                 for event in transaction.span_protos(settings, ct_processing_time=ct_processing_time):
+                    print(event.intrinsics["name"])
                     self._span_stream.put(event)
                 self._span_stream._ct_processing_time += ct_processing_time
             elif transaction.sampled:
                 ct_processing_time = 0
                 for event in transaction.span_events(self.__settings, ct_processing_time=ct_processing_time):
-                    print(event)
+                    print(event[0]["name"])
                     self._span_events.add(event, priority=transaction.priority)
                 self._span_events.ct_processing_time += ct_processing_time
 

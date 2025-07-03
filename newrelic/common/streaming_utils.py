@@ -15,6 +15,7 @@
 import collections
 import logging
 import threading
+from newrelic.packages import objsize
 
 try:
     from newrelic.core.infinite_tracing_pb2 import AttributeValue, SpanBatch
@@ -32,6 +33,8 @@ class StreamBuffer:
         self._shutdown = False
         self._seen = 0
         self._dropped = 0
+        self._bytes = 0
+        self._ct_processing_time = 0
         self._settings = None
 
         self.batching = batching
@@ -51,6 +54,7 @@ class StreamBuffer:
                 return
 
             self._seen += 1
+            self._bytes += objsize.get_deep_size(item)
 
             # NOTE: dropped can be over-counted as the queue approaches
             # capacity while data is still being transmitted.
@@ -67,8 +71,10 @@ class StreamBuffer:
         with self._notify:
             seen, dropped = self._seen, self._dropped
             self._seen, self._dropped = 0, 0
+            _bytes, ct_processing_time = self._bytes, self._ct_processing_time
+            self._bytes, self._ct_processing_time = 0, 0
 
-        return seen, dropped
+        return seen, dropped, _bytes, ct_processing_time
 
     def __bool__(self):
         return bool(self._queue)

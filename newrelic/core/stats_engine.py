@@ -31,6 +31,7 @@ import warnings
 import zlib
 from heapq import heapify, heapreplace
 
+from newrelic.packages import objsize
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 from newrelic.api.time_trace import get_linking_metadata
 from newrelic.common.encoding_utils import json_encode
@@ -53,6 +54,26 @@ from newrelic.core.error_collector import TracedError
 from newrelic.core.log_event_node import LogEventNode
 from newrelic.core.metric import TimeMetric
 from newrelic.core.stack_trace import exception_stack
+
+def get_deep_size(obj, seen=None):
+    """Recursively calculates the size of an object including nested lists and dicts."""
+    if seen is None:
+        seen = set()
+
+    # Avoid recursion for already seen objects (handle circular references)
+    obj_id = id(obj)
+    if obj_id in seen:
+        return 0
+    seen.add(obj_id)
+
+    size = sys.getsizeof(obj)
+
+    if isinstance(obj, dict):
+        size += sum(get_deep_size(k, seen) + get_deep_size(v, seen) for k, v in obj.items())
+    elif isinstance(obj, (list, tuple, set, frozenset)):
+        size += sum(get_deep_size(i, seen) for i in obj)
+
+    return size
 
 _logger = logging.getLogger(__name__)
 
@@ -446,6 +467,25 @@ class SampledDataSet:
         self.num_seen += other_data_set.num_seen - other_data_set.num_samples
 
 
+class SpanSampledDataSet(SampledDataSet):
+    def __init__(self, capacity=100):
+        super().__init__(capacity=capacity)
+        self.ct_processing_time = 0
+        self.bytes = 0
+
+    def add(self, sample, priority=None):
+        super().add(sample=sample, priority=priority)
+        self.bytes += get_deep_size(sample)
+
+    def reset(self):
+        super().reset()
+        self.ct_processing_time = 0
+
+    def merge(self, other_data_set, priority=None):
+        super().merge(other_data_set=other_data_set, priority=priority)
+        self.ct_processing_time += other_data_set.ct_processing_time
+
+
 class LimitedDataSet(list):
     def __init__(self, capacity=200):
         super().__init__()
@@ -529,7 +569,7 @@ class StatsEngine:
         self._error_events = SampledDataSet()
         self._custom_events = SampledDataSet()
         self._ml_events = SampledDataSet()
-        self._span_events = SampledDataSet()
+        self._span_events = SpanSampledDataSet()
         self._log_events = SampledDataSet()
         self._span_stream = None
         self.__sql_stats_table = {}
@@ -1196,11 +1236,16 @@ class StatsEngine:
 
         if settings.distributed_tracing.enabled and settings.span_events.enabled and settings.collect_span_events:
             if settings.infinite_tracing.enabled:
-                for event in transaction.span_protos(settings):
+                ct_processing_time = [0]
+                for event in transaction.span_protos(settings, ct_processing_time=ct_processing_time):
                     self._span_stream.put(event)
+                self._span_stream._ct_processing_time += ct_processing_time[0]
             elif transaction.sampled:
-                for event in transaction.span_events(self.__settings):
+                ct_processing_time = [0]
+                for event in transaction.span_events(self.__settings, ct_processing_time=ct_processing_time):
                     self._span_events.add(event, priority=transaction.priority)
+                self._span_events.ct_processing_time += ct_processing_time[0]
+
 
         # Merge in log events
 
@@ -1741,9 +1786,9 @@ class StatsEngine:
 
     def reset_span_events(self):
         if self.__settings is not None:
-            self._span_events = SampledDataSet(self.__settings.event_harvest_config.harvest_limits.span_event_data)
+            self._span_events = SpanSampledDataSet(self.__settings.event_harvest_config.harvest_limits.span_event_data)
         else:
-            self._span_events = SampledDataSet()
+            self._span_events = SpanSampledDataSet()
 
     def reset_log_events(self):
         if self.__settings is not None:

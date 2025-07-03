@@ -63,12 +63,9 @@ class StreamBuffer:
             # being measured.
             if len(self._queue) >= self._queue.maxlen:
                 self._dropped += 1
-                print(f"dropped: {self._dropped}")
 
             self._queue.append(item)
             self._notify.notify_all()
-            print(f"seen: {self._seen}")
-            print(f"bytes: {self._bytes}")
 
     def stats(self):
         with self._notify:

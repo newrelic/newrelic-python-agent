@@ -1384,9 +1384,13 @@ class Application:
                                 spans_seen = spans.num_seen
                                 spans_sampled = spans.num_samples
                                 internal_count_metric("Supportability/SpanEvent/TotalEventsSeen", spans_seen)
+                                print(f"Supportability/SpanEvent/TotalEventsSeen: {spans_seen}")
                                 internal_count_metric("Supportability/SpanEvent/TotalEventsSent", spans_sampled)
+                                print(f"Supportability/SpanEvent/TotalEventsSent: {spans_sampled}")
                                 internal_count_metric("Supportability/DistributedTracing/Bytes/Seen", spans.bytes)
+                                print(f"Supportability/DistributedTracing/Bytes/Seen: {spans.bytes}")
                                 internal_count_metric("Supportability/SpanEvent/TotalCoreTracingTime", spans.ct_processing_time*1000)  # Time in ms.
+                                print(f"Supportability/SpanEvent/TotalCoreTracingTime: {spans.ct_processing_time*1000}")  # Time in ms.
 
                                 stats.reset_span_events()
 

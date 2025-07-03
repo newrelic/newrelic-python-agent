@@ -62,9 +62,10 @@ class GenericNodeMixin:
         i_attrs["timestamp"] = int(self.start_time * 1000)
         i_attrs["duration"] = self.duration
         i_attrs["category"] = "generic"
+        # TODO: limit intrinsic attributes but this likely requires changes in the pipeline.
         #if settings.core_tracing.enabled:
-            #i_ct_attrs = {"type", "name", "guid", "parentId", "transaction.name", "traceId", "nr.entryPoint", "transactionId"}
-            #i_attrs = {key: value for key, value in i_attrs.items() if key in i_ct_attrs}
+        #    i_ct_attrs = {"type", "name", "guid", "parentId", "transaction.name", "traceId", "timestamp", "duration", "nr.entryPoint", "transactionId"}
+        #    i_attrs = {key: value for key, value in i_attrs.items() if key in i_ct_attrs}
 
         if parent_guid:
             i_attrs["parentId"] = parent_guid
@@ -81,32 +82,40 @@ class GenericNodeMixin:
             u_attrs, settings.attribute_filter, DST_SPAN_EVENTS, attr_class=attr_class
         )
 
+        start_time = time.time()
         if settings.core_tracing.drop_inprocess_spans or settings.core_tracing.enabled:
             exit_span_attrs_present = attribute.SPAN_ENTITY_RELATIONSHIP_ATTRIBUTES & set(a_attrs)
             if self.__class__.__name__ == "RootNode":
-                return [i_attrs, u_attrs, a_attrs]
+                if settings.core_tracing.enabled:
+                    ct_processing_time[0] += (time.time() - start_time)
+                    return [i_attrs, {}, {}]
+                else:
+                    ct_processing_time[0] += (time.time() - start_time)
+                    return [i_attrs, u_attrs, a_attrs]
             if not exit_span_attrs_present:
+                ct_processing_time[0] += (time.time() - start_time)
                 return None
-        if settings.core_tracing.enabled:
-            start_time = time.time()
-            # TODO: use attr value name rather than str casting.
-            span_attrs = "".join([str(a_attrs[key]) for key in exit_span_attrs_present])
-            new_exit_span = span_attrs not in ct_exit_spans
-            if new_exit_span:
-                ct_exit_spans[span_attrs] = self.ids
-            else:
-                # For now add ids to user attributes list
-                ct_exit_spans[span_attrs].append(self.guid)
-            ct_processing_time += (time.time() - start_time)
-            if new_exit_span:
-                return [i_attrs, u_attrs, a_attrs]
-            return None
+            if settings.core_tracing.enabled:
+                a_attrs = attr_class({key: a_attrs[key] for key in exit_span_attrs_present})
+                # TODO: use attr value name rather than str casting.
+                span_attrs = "".join([str(a_attrs[key]) for key in exit_span_attrs_present])
+                new_exit_span = span_attrs not in ct_exit_spans
+                if new_exit_span:
+                    ct_exit_spans[span_attrs] = self.ids
+                else:
+                    # For now add ids to user attributes list
+                    ct_exit_spans[span_attrs].append(self.guid)
+                if new_exit_span:
+                    ct_processing_time[0] += (time.time() - start_time)
+                    return [i_attrs, u_attrs, a_attrs]
+                ct_processing_time[0] += (time.time() - start_time)
+                return None
+        ct_processing_time[0] += (time.time() - start_time)
         return [i_attrs, u_attrs, a_attrs]
 
-    def span_events(self, settings, base_attrs=None, parent_guid=None, attr_class=dict, ct_exit_spans=None, ct_processing_time=0):
+    def span_events(self, settings, base_attrs=None, parent_guid=None, attr_class=dict, ct_exit_spans=None, ct_processing_time=None):
         if settings.core_tracing.drop_inprocess_spans or settings.core_tracing.enabled:
             span = self.span_event(settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class, ct_exit_spans=ct_exit_spans, ct_processing_time=ct_processing_time)
-            start_time = time.time()
             parent_id = parent_guid
             if span:  # span will be None if the span is an inprocess span or repeated exit span.
                 yield span
@@ -118,11 +127,12 @@ class GenericNodeMixin:
                     if event:  # event will be None if the span is an inprocess span or repeated exit span.
                         yield event
         else:
-            yield self.span_event(settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class)
+            span = self.span_event(settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class, ct_processing_time=ct_processing_time)
+            yield span
 
             for child in self.children:
                 for event in child.span_events(  # noqa: UP028
-                    settings, base_attrs=base_attrs, parent_guid=self.guid, attr_class=attr_class
+                    settings, base_attrs=base_attrs, parent_guid=self.guid, attr_class=attr_class, ct_processing_time=ct_processing_time
                 ):
                     yield event
 

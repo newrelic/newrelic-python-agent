@@ -55,6 +55,26 @@ from newrelic.core.log_event_node import LogEventNode
 from newrelic.core.metric import TimeMetric
 from newrelic.core.stack_trace import exception_stack
 
+def get_deep_size(obj, seen=None):
+    """Recursively calculates the size of an object including nested lists and dicts."""
+    if seen is None:
+        seen = set()
+
+    # Avoid recursion for already seen objects (handle circular references)
+    obj_id = id(obj)
+    if obj_id in seen:
+        return 0
+    seen.add(obj_id)
+
+    size = sys.getsizeof(obj)
+
+    if isinstance(obj, dict):
+        size += sum(get_deep_size(k, seen) + get_deep_size(v, seen) for k, v in obj.items())
+    elif isinstance(obj, (list, tuple, set, frozenset)):
+        size += sum(get_deep_size(i, seen) for i in obj)
+
+    return size
+
 _logger = logging.getLogger(__name__)
 
 EVENT_HARVEST_METHODS = {
@@ -449,40 +469,21 @@ class SampledDataSet:
 
 class SpanSampledDataSet(SampledDataSet):
     def __init__(self, capacity=100):
-        self.pq = []
-        self.heap = False
-        self.capacity = capacity
-        self.num_seen = 0
-        self.bytes = 0
+        super().__init__(capacity=capacity)
         self.ct_processing_time = 0
-
-        if capacity <= 0:
-
-            def add(*args, **kwargs):
-                self.num_seen += 1
-
-            self.add = add
+        self.bytes = 0
 
     def add(self, sample, priority=None):
-        self.num_seen += 1
-        self.bytes += objsize.get_deep_size(sample[:-1])
+        super().add(sample=sample, priority=priority)
+        self.bytes += get_deep_size(sample)
 
-        if priority is None:
-            priority = random.random()  # noqa: S311
+    def reset(self):
+        super().reset()
+        self.ct_processing_time = 0
 
-        entry = (priority, self.num_seen, sample[:-1])
-        if self.num_seen == self.capacity:
-            self.pq.append(entry)
-            self.heap = self.heap or heapify(self.pq) or True
-        elif not self.heap:
-            self.pq.append(entry)
-        else:
-            sampled = self.should_sample(priority)
-            if not sampled:
-                return
-            heapreplace(self.pq, entry)
-            if is_ft:
-                self.ft_sent -= 1
+    def merge(self, other_data_set, priority=None):
+        super().merge(other_data_set=other_data_set, priority=priority)
+        self.ct_processing_time += other_data_set.ct_processing_time
 
 
 class LimitedDataSet(list):
@@ -1235,17 +1236,15 @@ class StatsEngine:
 
         if settings.distributed_tracing.enabled and settings.span_events.enabled and settings.collect_span_events:
             if settings.infinite_tracing.enabled:
-                ct_processing_time = 0
+                ct_processing_time = [0]
                 for event in transaction.span_protos(settings, ct_processing_time=ct_processing_time):
-                    print(event.intrinsics["name"])
                     self._span_stream.put(event)
-                self._span_stream._ct_processing_time += ct_processing_time
+                self._span_stream._ct_processing_time += ct_processing_time[0]
             elif transaction.sampled:
-                ct_processing_time = 0
+                ct_processing_time = [0]
                 for event in transaction.span_events(self.__settings, ct_processing_time=ct_processing_time):
-                    print(event[0]["name"])
                     self._span_events.add(event, priority=transaction.priority)
-                self._span_events.ct_processing_time += ct_processing_time
+                self._span_events.ct_processing_time += ct_processing_time[0]
 
 
         # Merge in log events

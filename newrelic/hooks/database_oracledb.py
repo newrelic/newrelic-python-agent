@@ -13,10 +13,9 @@
 # limitations under the License.
 
 from newrelic.api.database_trace import register_database_client
-from newrelic.common.object_wrapper import ObjectProxy, wrap_object
+from newrelic.common.object_wrapper import wrap_object
 from newrelic.hooks.database_dbapi2 import ConnectionFactory
 from newrelic.hooks.database_dbapi2_async import AsyncConnectionFactory
-
 
 
 def instance_info(args, kwargs):

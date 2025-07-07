@@ -120,8 +120,8 @@ def oracledb_settings():
             "password": "oracle",
             "host": host,
             "port": 8080 + instance_num,
-            "table_name": f"oracle_table_{identifier}",
-            "procedure_name": f"postgres_procedure_{identifier}",
+            "table_name": f"oracledb_table_{identifier}",
+            "procedure_name": f"oracledb_procedure_{identifier}",
         }
         for instance_num in range(instances)
     ]

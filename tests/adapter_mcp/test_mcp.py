@@ -61,7 +61,7 @@ def test_tool_tracing(loop, fastmcp_server):
             # Call the MCP tool, so we can validate the trace naming is correct.
             result = await client.call_tool("add_exclamation", {"phrase": "Python is awesome"})
 
-            content = str(result[0])
+            content = str(result.content[0])
         assert "Python is awesome!" in content
 
     loop.run_until_complete(_test())

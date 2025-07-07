@@ -119,7 +119,7 @@ def instance_info(args, kwargs):
         getattr(params_from_kwarg, "port", None)
         or kwargs.get("port", None)
         or getattr(params_from_dsn, "port", None)
-        or "unknown"
+        or "1521"
     )
     service_name = (
         getattr(params_from_kwarg, "service_name", None)

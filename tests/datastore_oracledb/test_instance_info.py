@@ -21,6 +21,7 @@ _instance_info_tests = [
     pytest.param(
         {"host": "localhost", "port": 8080, "service_name": "FREEPDB1"}, ("localhost", "8080", "FREEPDB1"), id="kwargs"
     ),
+    pytest.param({"host": "localhost"}, ("localhost", "1521", "unknown"), id="kwargs_host_only"),
     pytest.param(
         {"params": oracledb.ConnectParams(host="localhost", port=8080, service_name="FREEPDB1")},
         ("localhost", "8080", "FREEPDB1"),
@@ -29,12 +30,11 @@ _instance_info_tests = [
     pytest.param({"dsn": "user/password@localhost:8080/FREEPDB1"}, ("localhost", "8080", "FREEPDB1"), id="full_dsn"),
     pytest.param({"dsn": "localhost:8080/FREEPDB1"}, ("localhost", "8080", "FREEPDB1"), id="connect_string"),
     pytest.param({"dsn": "localhost:8080/"}, ("localhost", "8080", "unknown"), id="connect_string_no_service_name"),
-    pytest.param(
-        {"dsn": "localhost/"}, ("localhost", "1521", "unknown"), id="connect_string_host_only"
-    ),  # This will use the default port
+    # These 2 will use the default port
+    pytest.param({"dsn": "localhost/"}, ("localhost", "1521", "unknown"), id="connect_string_host_only"),
     pytest.param(
         {"dsn": "user/password@localhost/"}, ("localhost", "1521", "unknown"), id="dsn_credentials_and_host_only"
-    ),  # This will use the default port
+    ),
 ]
 
 

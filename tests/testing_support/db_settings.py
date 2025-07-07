@@ -122,6 +122,7 @@ def oracledb_settings():
             "port": 8080 + instance_num,
             "table_name": f"oracledb_table_{identifier}",
             "procedure_name": f"oracledb_procedure_{identifier}",
+            "service_name": "FREEPDB1",
         }
         for instance_num in range(instances)
     ]

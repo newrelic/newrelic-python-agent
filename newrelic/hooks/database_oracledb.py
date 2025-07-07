@@ -60,11 +60,54 @@ class AsyncConnectionFactory(DBAPI2AsyncConnectionFactory):
 
 
 def instance_info(args, kwargs):
-    pass
+    from oracledb import ConnectParams
+
+    dsn = args[0] if args else None
+
+    host = None
+    port = None
+    service_name = None
+
+    params_from_kwarg = kwargs.pop("params", None)
+
+    params_from_dsn = None
+    if dsn:
+        try:
+            params_from_dsn = ConnectParams()
+            if "@" in dsn:
+                _, _, connect_string = params_from_dsn.parse_dsn_with_credentials(dsn)
+            else:
+                connect_string = dsn
+            params_from_dsn.parse_connect_string(connect_string)
+        except Exception:
+            params_from_dsn = None
+
+    host = (
+        getattr(params_from_kwarg, "host", None)
+        or kwargs.get("host", None)
+        or getattr(params_from_dsn, "host", None)
+        or "unknown"
+    )
+    port = str(
+        getattr(params_from_kwarg, "port", None)
+        or kwargs.get("port", None)
+        or getattr(params_from_dsn, "port", None)
+        or "unknown"
+    )
+    service_name = (
+        getattr(params_from_kwarg, "service_name", None)
+        or kwargs.get("service_name", None)
+        or getattr(params_from_dsn, "service_name", None)
+        or "unknown"
+    )
+
+    return host, port, service_name
 
 
 def instrument_oracledb(module):
-    register_database_client(module, database_product="Oracle", quoting_style="single+oracle")
+    register_database_client(
+        module, database_product="Oracle", quoting_style="single+oracle", instance_info=instance_info
+    )
 
     wrap_object(module, "connect", ConnectionFactory, (module,))
     wrap_object(module, "connect_async", AsyncConnectionFactory, (module,))

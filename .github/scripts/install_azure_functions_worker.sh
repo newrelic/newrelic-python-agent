@@ -33,14 +33,15 @@ INVOKE="${BUILD_DIR}/.venv/bin/invoke"
 ${PIP} install pip-tools build invoke
 
 # Install proto build dependencies
-$(cd ${BUILD_DIR} && ${PIPCOMPILE} >${BUILD_DIR}/requirements.txt)
+$( cd ${BUILD_DIR}/workers/ && ${PIPCOMPILE} -o ${BUILD_DIR}/requirements.txt )
 ${PIP} install -r ${BUILD_DIR}/requirements.txt
 
-# Build proto files into pb2 files
-cd ${BUILD_DIR}/tests && ${INVOKE} -c test_setup build-protos
+# Build proto files into pb2 files (invoke handles fixing include paths for the protos)
+cd ${BUILD_DIR}/workers/tests && ${INVOKE} -c test_setup build-protos
 
 # Build and install the package into the original environment (not the build venv)
-pip install ${BUILD_DIR}
+# Do NOT use ${PIP} from the venv
+pip install ${BUILD_DIR}/workers/
 
 # Clean up and return to the original directory
 rm -rf ${BUILD_DIR}

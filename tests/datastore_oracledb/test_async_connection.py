@@ -28,37 +28,37 @@ HOST = instance_hostname(DB_SETTINGS["host"])
 PORT = DB_SETTINGS["port"]
 
 
-def execute_db_calls_with_cursor(cursor):
-    cursor.execute(f"""drop table if exists {TABLE_NAME}""")
+async def execute_db_calls_with_cursor(cursor):
+    await cursor.execute(f"""drop table if exists {TABLE_NAME}""")
 
-    cursor.execute(f"create table {TABLE_NAME} (a INT, b BINARY_FLOAT, c VARCHAR2(10) )")
+    await cursor.execute(f"create table {TABLE_NAME} (a INT, b BINARY_FLOAT, c VARCHAR2(10) )")
 
-    cursor.executemany(
+    await cursor.executemany(
         f"insert into {TABLE_NAME} values (:1, :2, :3)", [(1, 1.0, "1.0"), (2, 2.2, "2.2"), (3, 3.3, "3.3")]
     )
 
-    cursor.execute(f"""select * from {TABLE_NAME}""")
+    await cursor.execute(f"""select * from {TABLE_NAME}""")
 
-    for _row in cursor:
+    async for _row in cursor:
         pass
 
-    cursor.execute(f"update {TABLE_NAME} set a=:1, b=:2, c=:3 where a=:4", (4, 4.0, "4.0", 1))
+    await cursor.execute(f"update {TABLE_NAME} set a=:1, b=:2, c=:3 where a=:4", (4, 4.0, "4.0", 1))
 
-    cursor.execute(f"""delete from {TABLE_NAME} where a=2""")
+    await cursor.execute(f"""delete from {TABLE_NAME} where a=2""")
 
-    cursor.execute(f"""drop procedure if exists {PROCEDURE_NAME}""")
-    cursor.execute(
+    await cursor.execute(f"""drop procedure if exists {PROCEDURE_NAME}""")
+    await cursor.execute(
         f"""CREATE PROCEDURE {PROCEDURE_NAME} (hello OUT VARCHAR2) AS
                 BEGIN
                     hello := 'Hello World!';
                 END;
         """
     )
-    cursor.callproc(PROCEDURE_NAME, [cursor.var(str)])  # Must specify a container for the OUT parameter
+    await cursor.callproc(PROCEDURE_NAME, [cursor.var(str)])  # Must specify a container for the OUT parameter
 
 
-_test_execute_via_cursor_scoped_metrics = [
-    ("Function/oracledb.connection:connect", 1),
+_test_execute_scoped_metrics = [
+    ("Function/oracledb.connection:connect_async", 1),
     (f"Datastore/statement/Oracle/{TABLE_NAME}/select", 1),
     (f"Datastore/statement/Oracle/{TABLE_NAME}/insert", 1),
     (f"Datastore/statement/Oracle/{TABLE_NAME}/update", 1),
@@ -70,7 +70,7 @@ _test_execute_via_cursor_scoped_metrics = [
     ("Datastore/operation/Oracle/rollback", 1),
 ]
 
-_test_execute_via_cursor_rollup_metrics = [
+_test_execute_rollup_metrics = [
     ("Datastore/all", 13),
     ("Datastore/allOther", 13),
     ("Datastore/Oracle/all", 13),
@@ -94,22 +94,60 @@ _test_execute_via_cursor_rollup_metrics = [
 
 
 @validate_transaction_metrics(
-    "test_database:test_execute_via_cursor",
-    scoped_metrics=_test_execute_via_cursor_scoped_metrics,
-    rollup_metrics=_test_execute_via_cursor_rollup_metrics,
+    "test_async_connection:test_execute_via_async_connection_aenter",
+    scoped_metrics=_test_execute_scoped_metrics,
+    rollup_metrics=_test_execute_rollup_metrics,
     background_task=True,
 )
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
-def test_execute_via_cursor():
-    connection = oracledb.connect(
-        user=DB_SETTINGS["user"], password=DB_SETTINGS["password"], host=DB_SETTINGS["host"], port=DB_SETTINGS["port"]
-    )
+def test_execute_via_async_connection_aenter(loop):
+    async def _test():
+        connection = oracledb.connect_async(
+            user=DB_SETTINGS["user"],
+            password=DB_SETTINGS["password"],
+            host=DB_SETTINGS["host"],
+            port=DB_SETTINGS["port"],
+            service_name=DB_SETTINGS["service_name"],
+        )
 
-    with connection:
-        with connection.cursor() as cursor:
-            execute_db_calls_with_cursor(cursor)
+        # Use async with and don't await connection directly
+        async with connection:
+            async with connection.cursor() as cursor:
+                await execute_db_calls_with_cursor(cursor)
 
-        connection.commit()
-        connection.rollback()
-        connection.commit()
+            await connection.commit()
+            await connection.rollback()
+            await connection.commit()
+
+    loop.run_until_complete(_test())
+
+
+@validate_transaction_metrics(
+    "test_async_connection:test_execute_via_async_connection_await",
+    scoped_metrics=_test_execute_scoped_metrics,
+    rollup_metrics=_test_execute_rollup_metrics,
+    background_task=True,
+)
+@validate_database_trace_inputs(sql_parameters_type=tuple)
+@background_task()
+def test_execute_via_async_connection_await(loop):
+    async def _test():
+        connection = oracledb.connect_async(
+            user=DB_SETTINGS["user"],
+            password=DB_SETTINGS["password"],
+            host=DB_SETTINGS["host"],
+            port=DB_SETTINGS["port"],
+            service_name=DB_SETTINGS["service_name"],
+        )
+
+        # Await connection instead of using async with
+        connection = await connection
+        async with connection.cursor() as cursor:
+            await execute_db_calls_with_cursor(cursor)
+
+            await connection.commit()
+            await connection.rollback()
+            await connection.commit()
+
+    loop.run_until_complete(_test())

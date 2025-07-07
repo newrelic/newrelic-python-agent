@@ -17,7 +17,6 @@ from newrelic.common.object_wrapper import wrap_object
 from newrelic.hooks.database_dbapi2 import ConnectionFactory as DBAPI2ConnectionFactory
 from newrelic.hooks.database_dbapi2 import ConnectionWrapper as DBAPI2ConnectionWrapper
 from newrelic.hooks.database_dbapi2 import CursorWrapper as DBAPI2CursorWrapper
-from newrelic.hooks.database_dbapi2_async import AsyncConnectionFactory
 from newrelic.hooks.database_dbapi2_async import AsyncConnectionFactory as DBAPI2AsyncConnectionFactory
 from newrelic.hooks.database_dbapi2_async import AsyncConnectionWrapper as DBAPI2AsyncConnectionWrapper
 from newrelic.hooks.database_dbapi2_async import AsyncCursorWrapper as DBAPI2AsyncCursorWrapper
@@ -54,9 +53,37 @@ class AsyncConnectionWrapper(DBAPI2AsyncConnectionWrapper):
         await self.__wrapped__.__aenter__()
         return self
 
+    def __await__(self):
+        # Handle bidirectional generator protocol using code from generator_wrapper
+        g = self.__wrapped__.__await__()
+        try:
+            yielded = g.send(None)
+            while True:
+                try:
+                    sent = yield yielded
+                except GeneratorExit:
+                    g.close()
+                    raise
+                except BaseException as e:
+                    yielded = g.throw(e)
+                else:
+                    yielded = g.send(sent)
+        except StopIteration as e:
+            # Catch the StopIteration and return the wrapped connection instead of the unwrapped.
+            if e.value is self.__wrapped__:
+                connection = self
+            else:
+                connection = e.value
+
+            # Return here instead of raising StopIteration to properly follow generator protocol
+            return connection
+
 
 class AsyncConnectionFactory(DBAPI2AsyncConnectionFactory):
     __connection_wrapper__ = AsyncConnectionWrapper
+
+    # Use the synchronous __call__ method as connection_async() is synchronous in oracledb.
+    __call__ = DBAPI2ConnectionFactory.__call__
 
 
 def instance_info(args, kwargs):

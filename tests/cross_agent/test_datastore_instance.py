@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import json
-import os
+from pathlib import Path
 
 import pytest
 
@@ -23,8 +23,7 @@ from newrelic.api.transaction import current_transaction
 from newrelic.core.database_node import DatabaseNode
 from newrelic.core.stats_engine import StatsEngine
 
-CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
-FIXTURE = os.path.join(CURRENT_DIR, "fixtures", "datastores", "datastore_instances.json")
+FIXTURE = Path(__file__).parent / "fixtures" / "datastores" / "datastore_instances.json"
 
 _parameters_list = [
     "name",
@@ -41,7 +40,7 @@ _parameters = ",".join(_parameters_list)
 
 
 def _load_tests():
-    with open(FIXTURE) as fh:
+    with FIXTURE.open() as fh:
         js = fh.read()
     return json.loads(js)
 

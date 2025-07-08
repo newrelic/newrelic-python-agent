@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 import uuid
+from pathlib import Path
 
 import boto3
 import botocore
@@ -77,6 +77,6 @@ def test_s3_context_propagation():
     assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     # Upload file
-    test_file = os.path.join(os.path.dirname(__file__), "_test_file.txt")
+    test_file = Path(__file__).parent / "_test_file.txt"
     client.upload_file(Filename=test_file, Bucket=TEST_BUCKET, Key="_test_file.txt")
     # No return value to check for this function currently

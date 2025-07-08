@@ -17,6 +17,7 @@ import os
 import sys
 import tempfile
 from importlib import reload
+from pathlib import Path
 
 import pytest
 
@@ -32,12 +33,11 @@ from newrelic.core.agent_protocol import AgentProtocol
 
 INITIAL_ENV = os.environ
 
-CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
-FIXTURE = os.path.normpath(os.path.join(CURRENT_DIR, "fixtures", "utilization", "utilization_json.json"))
+FIXTURE = Path(__file__).parent / "fixtures" / "utilization" / "utilization_json.json"
 
 
 def _load_tests():
-    with open(FIXTURE) as fh:
+    with FIXTURE.open() as fh:
         js = fh.read()
     return json.loads(js)
 

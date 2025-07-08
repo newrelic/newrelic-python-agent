@@ -31,6 +31,7 @@ def run_program(args):
     import os
     import sys
     import time
+    from pathlib import Path
 
     if len(args) == 0:
         usage("run-program")
@@ -46,7 +47,7 @@ def run_program(args):
 
     log_message("New Relic Admin Script (%s)", __file__)
 
-    log_message("working_directory = %r", os.getcwd())
+    log_message("working_directory = %r", str(Path.cwd()))
     log_message("current_command = %r", sys.argv)
 
     log_message("sys.prefix = %r", os.path.normpath(sys.prefix))
@@ -67,10 +68,13 @@ def run_program(args):
                 continue
             log_message("%s = %r", name, os.environ.get(name))
 
-    from newrelic import __file__ as root_directory
+    import newrelic
 
-    root_directory = os.path.dirname(root_directory)
-    boot_directory = os.path.join(root_directory, "bootstrap")
+    root_directory = Path(newrelic.__file__).parent
+    boot_directory = root_directory / "bootstrap"
+
+    root_directory = str(root_directory)
+    boot_directory = str(boot_directory)
 
     log_message("root_directory = %r", root_directory)
     log_message("boot_directory = %r", boot_directory)
@@ -94,17 +98,17 @@ def run_program(args):
     # be found in current working directory even though '.'
     # not in PATH.
 
-    program_exe_path = args[0]
+    program_exe_path = Path(args[0])
 
-    if not os.path.dirname(program_exe_path):
+    if not program_exe_path.parent:
         program_search_path = os.environ.get("PATH", "").split(os.path.pathsep)
         for path in program_search_path:
-            path = os.path.join(path, program_exe_path)
-            if os.path.exists(path) and os.access(path, os.X_OK):
+            path = Path(path) / program_exe_path
+            if path.exists() and os.access(path, os.X_OK):
                 program_exe_path = path
                 break
 
-    log_message("program_exe_path = %r", program_exe_path)
-    log_message("execl_arguments = %r", [program_exe_path] + args)
+    log_message("program_exe_path = %r", str(program_exe_path))
+    log_message("execl_arguments = %r", [program_exe_path, *args])
 
     os.execl(program_exe_path, *args)  # noqa: S606

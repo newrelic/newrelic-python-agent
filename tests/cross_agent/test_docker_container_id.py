@@ -13,14 +13,13 @@
 # limitations under the License.
 
 import json
-import os
+from pathlib import Path
 
 import pytest
 
 import newrelic.common.utilization as u
 
-CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
-DOCKER_FIXTURE = os.path.join(CURRENT_DIR, "fixtures", "docker_container_id")
+DOCKER_FIXTURE = Path(__file__).parent / "fixtures" / "docker_container_id"
 
 
 def _load_docker_test_attributes():
@@ -28,8 +27,8 @@ def _load_docker_test_attributes():
     [(<filename>, <containerId>), ...]
 
     """
-    test_cases = os.path.join(DOCKER_FIXTURE, "cases.json")
-    with open(test_cases) as fh:
+    test_cases = DOCKER_FIXTURE / "cases.json"
+    with test_cases.open() as fh:
         js = fh.read()
     json_list = json.loads(js)
     docker_test_attributes = [(json_record["filename"], json_record["containerId"]) for json_record in json_list]
@@ -49,8 +48,8 @@ def mock_open(mock_file):
 
 @pytest.mark.parametrize("filename, containerId", _load_docker_test_attributes())
 def test_docker_container_id_v1(monkeypatch, filename, containerId):
-    path = os.path.join(DOCKER_FIXTURE, filename)
-    with open(path, "rb") as f:
+    path = DOCKER_FIXTURE / filename
+    with path.open("rb") as f:
         monkeypatch.setattr(u, "open", mock_open(f), raising=False)
         if containerId is not None:
             assert u.DockerUtilization.detect() == {"id": containerId}

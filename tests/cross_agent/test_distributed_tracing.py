@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import json
-import os
+from pathlib import Path
 
 import pytest
 import webtest
@@ -28,8 +28,7 @@ from newrelic.api.wsgi_application import wsgi_application
 from newrelic.common.encoding_utils import DistributedTracePayload
 from newrelic.common.object_wrapper import transient_function_wrapper
 
-CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
-JSON_DIR = os.path.normpath(os.path.join(CURRENT_DIR, "fixtures", "distributed_tracing"))
+FIXTURE = Path(__file__).parent / "fixtures" / "distributed_tracing" / "distributed_tracing.json"
 
 _parameters_list = [
     "account_id",
@@ -53,8 +52,7 @@ _parameters = ",".join(_parameters_list)
 
 def load_tests():
     result = []
-    path = os.path.join(JSON_DIR, "distributed_tracing.json")
-    with open(path) as fh:
+    with FIXTURE.open() as fh:
         tests = json.load(fh)
 
     for test in tests:

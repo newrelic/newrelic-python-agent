@@ -26,6 +26,7 @@ def license_key(args):
     import logging
     import os
     import sys
+    from pathlib import Path
 
     if len(args) == 0:
         usage("license-key")
@@ -37,12 +38,12 @@ def license_key(args):
     if len(args) >= 2:
         log_file = args[1]
     else:
-        log_file = "/tmp/python-agent-test.log"
+        log_file = Path("/tmp/python-agent-test.log")
 
     log_level = logging.DEBUG
 
     try:
-        os.unlink(log_file)
+        log_file.unlink()
     except Exception:
         pass
 

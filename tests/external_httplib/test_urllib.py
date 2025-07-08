@@ -118,9 +118,9 @@ _test_urlopener_file_request_rollup_metrics = [
 )
 @background_task()
 def test_urlopener_file_request():
-    filename = os.path.join("file://", __file__)
+    file_uri = f"file://{__file__}"
     opener = urllib.URLopener()
-    opener.open(filename)
+    opener.open(file_uri)
 
 
 @background_task()

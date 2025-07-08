@@ -18,18 +18,18 @@ import os
 import sys
 import tempfile
 from importlib import reload
+from pathlib import Path
 
 import pytest
 
-CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
-FIXTURE = os.path.normpath(os.path.join(CURRENT_DIR, "fixtures", "collector_hostname.json"))
+FIXTURE = Path(__file__).parent / "fixtures" / "collector_hostname.json"
 
 _parameters_list = ["config_file_key", "config_override_host", "env_key", "env_override_host", "hostname"]
 _parameters = ",".join(_parameters_list)
 
 
 def _load_tests():
-    with open(FIXTURE) as fh:
+    with FIXTURE.open() as fh:
         js = fh.read()
     return json.loads(js)
 

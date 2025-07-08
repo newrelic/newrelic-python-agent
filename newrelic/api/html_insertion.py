@@ -78,7 +78,7 @@ def insert_html_snippet(data, html_to_be_inserted, search_limit=64 * 1024):
     xua_meta = _xua_meta_re.search(data)
     charset_meta = _charset_meta_re.search(data)
 
-    index = max(xua_meta and xua_meta.end() or 0, charset_meta and charset_meta.end() or 0)
+    index = max((xua_meta and xua_meta.end()) or 0, (charset_meta and charset_meta.end()) or 0)
 
     if index:
         return insert_at_index(index)

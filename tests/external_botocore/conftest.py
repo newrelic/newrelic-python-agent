@@ -16,6 +16,7 @@ import io
 import json
 import os
 import re
+from pathlib import Path
 
 import pytest
 from _mock_external_bedrock_server import MockExternalBedrockServer, extract_shortened_prompt
@@ -50,7 +51,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 
 
 # Bedrock Fixtures
-BEDROCK_AUDIT_LOG_FILE = os.path.join(os.path.realpath(os.path.dirname(__file__)), "bedrock_audit.log")
+BEDROCK_AUDIT_LOG_FILE = Path(__file__).parent / "bedrock_audit.log"
 BEDROCK_AUDIT_LOG_CONTENTS = {}
 
 
@@ -98,7 +99,7 @@ def bedrock_server():
 
         # Write responses to audit log
         bedrock_audit_log_contents = dict(sorted(BEDROCK_AUDIT_LOG_CONTENTS.items(), key=lambda i: (i[1][1], i[0])))
-        with open(BEDROCK_AUDIT_LOG_FILE, "w") as audit_log_fp:
+        with BEDROCK_AUDIT_LOG_FILE.open("w") as audit_log_fp:
             json.dump(bedrock_audit_log_contents, fp=audit_log_fp, indent=4)
 
 

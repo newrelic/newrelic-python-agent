@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
+from pathlib import Path
 
 import django
 
-BASE_DIR = os.path.dirname(__file__)
+BASE_DIR = Path(__file__).parent
 DEBUG = True
 
 django_version = django.VERSION
@@ -43,7 +43,7 @@ else:
 
 ROOT_URLCONF = "urls"
 
-TEMPLATE_DIRS = [os.path.join(BASE_DIR, "templates")]
+TEMPLATE_DIRS = [BASE_DIR / "templates"]
 
 # For Django 1.10 compatibility because TEMPLATE_DIRS is deprecated
 TEMPLATES = [{"BACKEND": "django.template.backends.django.DjangoTemplates", "DIRS": TEMPLATE_DIRS}]

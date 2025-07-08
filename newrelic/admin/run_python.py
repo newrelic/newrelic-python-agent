@@ -31,6 +31,7 @@ def run_python(args):
     import os
     import sys
     import time
+    from pathlib import Path
 
     startup_debug = os.environ.get("NEW_RELIC_STARTUP_DEBUG", "off").lower() in ("on", "true", "1")
 
@@ -42,7 +43,7 @@ def run_python(args):
 
     log_message("New Relic Admin Script (%s)", __file__)
 
-    log_message("working_directory = %r", os.getcwd())
+    log_message("working_directory = %r", str(Path.cwd()))
     log_message("current_command = %r", sys.argv)
 
     log_message("sys.prefix = %r", os.path.normpath(sys.prefix))
@@ -61,10 +62,13 @@ def run_python(args):
         if name.startswith("NEW_RELIC_") or name.startswith("PYTHON"):
             log_message("%s = %r", name, os.environ.get(name))
 
-    from newrelic import __file__ as root_directory
+    import newrelic
 
-    root_directory = os.path.dirname(root_directory)
-    boot_directory = os.path.join(root_directory, "bootstrap")
+    root_directory = Path(newrelic.__file__).parent
+    boot_directory = root_directory / "bootstrap"
+
+    root_directory = str(root_directory)
+    boot_directory = str(boot_directory)
 
     log_message("root_directory = %r", root_directory)
     log_message("boot_directory = %r", boot_directory)
@@ -91,17 +95,17 @@ def run_python(args):
     # this script in preference to that used to execute this
     # script.
 
-    bin_directory = os.path.dirname(sys.argv[0])
+    bin_directory = Path(sys.argv[0]).parent
 
     if bin_directory:
-        python_exe = os.path.basename(sys.executable)
-        python_exe_path = os.path.join(bin_directory, python_exe)
-        if not os.path.exists(python_exe_path) or not os.access(python_exe_path, os.X_OK):
+        python_exe = Path(sys.executable).name
+        python_exe_path = bin_directory / python_exe
+        if not python_exe_path.exists() or not os.access(python_exe_path, os.X_OK):
             python_exe_path = sys.executable
     else:
         python_exe_path = sys.executable
 
-    log_message("python_exe_path = %r", python_exe_path)
-    log_message("execl_arguments = %r", [python_exe_path, python_exe_path] + args)
+    log_message("python_exe_path = %r", str(python_exe_path))
+    log_message("execl_arguments = %r", [python_exe_path, python_exe_path, *args])
 
     os.execl(python_exe_path, python_exe_path, *args)  # noqa: S606

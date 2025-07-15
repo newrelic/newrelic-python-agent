@@ -194,7 +194,6 @@ def wrap_consumer_recieve_callback(wrapped, instance, args, kwargs):
                 source=wrapped,
             )
             created_transaction.__enter__()
-            created_transaction.destination_name = destination_name
 
             # Obtain consumer client_id to send up as agent attribute
             if hasattr(message, "channel") and hasattr(message.channel, "channel_id"):
@@ -242,6 +241,7 @@ def wrap_serialize(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     exchange = "Unknown"
+    breakpoint()
     if isinstance(transaction, MessageTransaction):
         exchange = transaction.destination_name
     else:

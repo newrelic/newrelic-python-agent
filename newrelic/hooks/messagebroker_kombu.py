@@ -241,7 +241,6 @@ def wrap_serialize(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     exchange = "Unknown"
-    breakpoint()
     if isinstance(transaction, MessageTransaction):
         exchange = transaction.destination_name
     else:

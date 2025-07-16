@@ -44,7 +44,7 @@ pip install newrelic
 Start](https://docs.newrelic.com/docs/agents/python-agent/getting-started/python-agent-quick-start).)
 
 1. Generate the agent configuration file with your [license
-    key](https://docs.newrelic.com/docs/accounts-partnerships/accounts/account-setup/license-key).
+    key](https://docs.newrelic.com/docs/apis/intro-apis/new-relic-api-keys/).
 
     ```bash
     newrelic-admin generate-config $YOUR_LICENSE_KEY newrelic.ini

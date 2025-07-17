@@ -184,6 +184,9 @@ class AWSUtilization(CommonUtilization):
         try:
             authToken = cls.fetchAuthToken()
             if authToken is None:
+                metadata = os.environ.get("NEW_RELIC_AWS_METADATA", None)
+                if metadata:
+                    return metadata.encode("utf-8")
                 return
             cls.HEADERS = {"X-aws-ec2-metadata-token": authToken}
             with cls.CLIENT_CLS(cls.METADATA_HOST, timeout=cls.FETCH_TIMEOUT) as client:
@@ -192,6 +195,8 @@ class AWSUtilization(CommonUtilization):
                 )
             if not 200 <= resp[0] < 300:
                 raise ValueError(resp[0])
+            # Cache this for forced agent restarts within the same environment
+            os.environ["NEW_RELIC_AWS_METADATA"] = resp[1].decode("utf-8")
             return resp[1]
         except Exception as e:
             _logger.debug(

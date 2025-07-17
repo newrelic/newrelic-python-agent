@@ -1759,6 +1759,7 @@ class Application:
 
         else:
             self._agent_shutdown = True
+            os.environ.pop("NEW_RELIC_AWS_METADATA", None)
 
     def process_agent_commands(self):
         """Fetches agents commands from data collector and process them."""

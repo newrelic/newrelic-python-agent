@@ -183,7 +183,8 @@ def test_utilization_settings(test, monkeypatch):
                 "MEMORY_LIMIT": test.get("input_pcf_mem_limit"),
             }
         )
-
+    # Reset cached metadata
+    os.environ.pop("NEW_RELIC_AWS_METADATA", None)
     for key, val in env.items():
         monkeypatch.setenv(key, str(val))
 

@@ -100,6 +100,35 @@ def mssql_settings():
     return settings
 
 
+def oracledb_settings():
+    """Return a list of dict of settings for connecting to oracledb.
+
+    Will return the correct settings, depending on which of the environments it
+    is running in. It attempts to set variables in the following order, where
+    later environments override earlier ones.
+
+        1. Local
+        2. Github Actions
+    """
+
+    host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "localhost"
+    instances = 2
+    identifier = str(os.getpid())
+    settings = [
+        {
+            "user": "SYSTEM",
+            "password": "oracle",
+            "host": host,
+            "port": 8080 + instance_num,
+            "table_name": f"oracledb_table_{identifier}",
+            "procedure_name": f"oracledb_procedure_{identifier}",
+            "service_name": "FREEPDB1",
+        }
+        for instance_num in range(instances)
+    ]
+    return settings
+
+
 def redis_settings():
     """Return a list of dict of settings for connecting to redis.
 

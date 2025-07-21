@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-import pwd
+import getpass
 
 from newrelic.admin import command, usage
 from newrelic.common import agent_http, encoding_utils
@@ -79,7 +78,7 @@ def record_deploy(
         path = f"/v2/applications/{app_id}/deployments.json"
 
         if user is None:
-            user = pwd.getpwuid(os.getuid()).pw_gecos
+            user = getpass.getuser()
 
         deployment = {}
         deployment["revision"] = revision

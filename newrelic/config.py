@@ -2878,6 +2878,8 @@ def _process_module_builtin_defaults():
 
     _process_module_definition("cx_Oracle", "newrelic.hooks.database_cx_oracle", "instrument_cx_oracle")
 
+    _process_module_definition("oracledb", "newrelic.hooks.database_oracledb", "instrument_oracledb")
+
     _process_module_definition("ibm_db_dbi", "newrelic.hooks.database_ibm_db_dbi", "instrument_ibm_db_dbi")
 
     _process_module_definition("mysql.connector", "newrelic.hooks.database_mysql", "instrument_mysql_connector")

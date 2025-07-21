@@ -34,6 +34,7 @@ HEXDIGLC_RE = re.compile("^[0-9a-f]+$")
 DELIMITER_FORMAT_RE = re.compile("[ \t]*,[ \t]*")
 PARENT_TYPE = {"0": "App", "1": "Browser", "2": "Mobile"}
 BASE64_DECODE_STR = getattr(base64, "decodestring", None)
+FLAG_SAMPLED = 1
 
 
 # Functions for encoding/decoding JSON. These wrappers are used in order
@@ -455,7 +456,10 @@ class W3CTraceParent(dict):
         if parent_id == "0" * 16 or trace_id == "0" * 32:
             return None
 
-        return cls(tr=trace_id, id=parent_id)
+        # Sampled flag
+        sa = bool(int(fields[3], 2) & FLAG_SAMPLED)
+
+        return cls(tr=trace_id, id=parent_id, sa=sa)
 
 
 class W3CTraceState(OrderedDict):

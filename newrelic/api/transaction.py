@@ -286,6 +286,7 @@ class Transaction:
         self.tracestate = ""
         self._priority = None
         self._sampled = None
+        self._traceparent_sampled = None
 
         self._distributed_trace_state = 0
 
@@ -1004,15 +1005,31 @@ class Transaction:
     def user_attributes(self):
         return create_attributes(self._custom_params, DST_ALL, self.attribute_filter)
 
-    def _compute_sampled_and_priority(self):
+    def sampling_algo_compute_sampled_and_priority(self):
         if self._priority is None:
-            # truncate priority field to 6 digits past the decimal
+            # Truncate priority field to 6 digits past the decimal.
             self._priority = float(f"{random.random():.6f}")  # noqa: S311
-
         if self._sampled is None:
             self._sampled = self._application.compute_sampled()
             if self._sampled:
                 self._priority += 1
+
+    def _compute_sampled_and_priority(self):
+        if self._traceparent_sampled is None:
+            config = "default"  # Use sampling algo.
+        elif self._traceparent_sampled:
+            config = self.settings.distributed_tracing.sampler.remote_parent_sampled
+        else:  # self._traceparent_sampled is False.
+            config = self.settings.distributed_tracing.sampler.remote_parent_not_sampled
+
+        if config == 'always_on':
+            self._sampled = True
+            self._priority = 2.0
+        elif config == 'always_off':
+            self._sampled = False
+            self._priority = 0
+        else:
+            self.sampling_algo_compute_sampled_and_priority()
 
     def _freeze_path(self):
         if self._frozen_path is None:
@@ -1348,6 +1365,7 @@ class Transaction:
                     else:
                         self._record_supportability("Supportability/TraceContext/TraceState/NoNrEntry")
 
+            self._traceparent_sampled = data.get("sa")
             self._accept_distributed_trace_data(data, transport_type)
             self._record_supportability("Supportability/TraceContext/Accept/Success")
             return True

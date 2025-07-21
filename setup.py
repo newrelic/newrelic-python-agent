@@ -48,6 +48,7 @@ else:
     raise RuntimeError(error_msg)
 
 with_setuptools = False
+is_windows = sys.platform == "win32"
 
 try:
     from setuptools import setup
@@ -87,7 +88,7 @@ if not script_directory:
 
 readme_file = os.path.join(script_directory, "README.md")
 
-if sys.platform == "win32" and python_version > (2, 6):
+if is_windows:
     build_ext_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError, IOError)
 else:
     build_ext_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError)
@@ -199,8 +200,13 @@ def run_setup(with_extensions):
         if with_extensions:
             kwargs_tmp["ext_modules"] = [
                 Extension("newrelic.packages.wrapt._wrappers", ["newrelic/packages/wrapt/_wrappers.c"]),
-                Extension("newrelic.core._thread_utilization", ["newrelic/core/_thread_utilization.c"]),
             ]
+            if not is_windows:
+                # This extension is only supported on POSIX platforms.
+                kwargs_tmp["ext_modules"].append(
+                    Extension("newrelic.core._thread_utilization", ["newrelic/core/_thread_utilization.c"])
+                )
+
             kwargs_tmp["cmdclass"] = dict(build_ext=optional_build_ext)
 
         setup(**kwargs_tmp)

@@ -19,6 +19,9 @@ on:
     types:
       - published
 
+permissions:
+  contents: read
+
 jobs:
   build-linux-py3-legacy:
     runs-on: ubuntu-24.04
@@ -110,18 +113,22 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # 5.6.0
+        with:
+          python-version: "3.12"
+
       - name: Install Dependencies
         run: |
           pip install -U pip
-          pip install -U setuptools packaging
+          pip install -U build
 
       - name: Build Source Package
         run: |
-          python setup.py sdist
+          python -m build --sdist
 
       - name: Prepare MD5 Hash File
         run: |
-          tarball="$(python setup.py --fullname).tar.gz"
+          tarball="$(basename ./dist/*.tar.gz)"
           md5_file="${tarball}.md5"
           openssl md5 -binary "dist/${tarball}" | xxd -p | tr -d '\n' > "dist/${md5_file}"
 
@@ -135,8 +142,13 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  deploy:
+  publish:
     runs-on: ubuntu-24.04
+    environment: pypi
+    permissions:
+      contents: read
+      id-token: write # IMPORTANT: this permission is mandatory for trusted publishing
+      attestations: write
 
     needs:
       - build-linux-py3-legacy
@@ -144,49 +156,32 @@ jobs:
       - build-sdist
 
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # 4.2.2
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # 4.3.0
         with:
-          persist-credentials: false
-          fetch-depth: 0
-
-      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # 5.6.0
-        with:
-          python-version: "3.x"
-          architecture: x64
-
-      - name: Install Dependencies
-        run: |
-          pip install -U pip
-          pip install -U wheel setuptools packaging twine
-
-      - name: Download Artifacts
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # 4.3.0@95815c38cf2ff2164869cbab79da8d1f422bc89e # 4.3.0
-        with:
-          path: ./artifacts/
-
-      - name: Unpack Artifacts
-        run: |
-          mkdir -p dist/
-          mv artifacts/**/*{.whl,.tar.gz,.tar.gz.md5} dist/
+          path: ./dist/
+          merge-multiple: true
 
       - name: Upload Package to S3
         run: |
-          tarball="$(python setup.py --fullname).tar.gz"
+          tarball="$(basename ./dist/*.tar.gz)"
           md5_file="${tarball}.md5"
           aws s3 cp "dist/${md5_file}" "${S3_DST}/${md5_file}"
           aws s3 cp "dist/${tarball}" "${S3_DST}/${tarball}"
+          rm "dist/${md5_file}"
         env:
           S3_DST: s3://nr-downloads-main/python_agent/release
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: us-west-2
 
-      - name: Upload Package to PyPI
-        run: |
-          twine upload --non-interactive dist/*.tar.gz dist/*.whl
-        env:
-          TWINE_USERNAME: __token__
-          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+      - name: Upload Package
+        uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc # 1.12.4
+
+      - name: Attest
+        uses: actions/attest-build-provenance@db473fddc028af60658334401dc6fa3ffd8669fd # 2.3.0
+        id: attest
+        with:
+          subject-path: ./dist/*
 
       - name: Wait for release to be available
         id: wait

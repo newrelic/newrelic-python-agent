@@ -184,16 +184,25 @@ jobs:
   publish:
     name: Publish
     runs-on: ubuntu-24.04
-    environment: pypi
     permissions:
       contents: read
       id-token: write # IMPORTANT: this permission is mandatory for trusted publishing
       attestations: write
-
     needs:
       - build-wheels-legacy
       - build-wheels
       - build-sdist
+
+    strategy:
+      matrix:
+        pypi-instance:
+          - pypi
+          # Valid values for deployment are:
+          # - "pypi" for production
+          # - "testpypi" for testing
+          # - "build-only" to skip publishing and only test builds.
+
+    environment: ${{ matrix.pypi-instance }}
 
     steps:
       - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # 5.0.0
@@ -202,6 +211,7 @@ jobs:
           merge-multiple: true
 
       - name: Upload Package to S3
+        if: matrix.pypi-instance == 'pypi'
         run: |
           tarball="$(basename ./dist/*.tar.gz)"
           md5_file="${tarball}.md5"
@@ -214,8 +224,15 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: us-west-2
 
-      - name: Upload Package
+      - name: Upload Package to PyPI
+        if: matrix.pypi-instance == 'pypi'
         uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc # 1.12.4
+
+      - name: Upload Package to TestPyPI
+        if: matrix.pypi-instance == 'testpypi'
+        uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc # 1.12.4
+        with:
+          repository-url: https://test.pypi.org/legacy/
 
       - name: Attest
         uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # 2.4.0
@@ -224,11 +241,13 @@ jobs:
           subject-path: ./dist/*
 
       - name: Wait for release to be available
+        if: matrix.pypi-instance == 'pypi'
         id: wait
         run: |
           sleep 60
 
       - name: Create release tags for Lambda and K8s Init Containers
+        if: matrix.pypi-instance == 'pypi'
         run: |
           RELEASE_TITLE="New Relic Python Agent ${GITHUB_REF_NAME}.0"
           RELEASE_TAG="${GITHUB_REF_NAME}.0_python"

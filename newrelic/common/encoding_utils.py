@@ -455,7 +455,10 @@ class W3CTraceParent(dict):
         if parent_id == "0" * 16 or trace_id == "0" * 32:
             return None
 
-        return cls(tr=trace_id, id=parent_id)
+        # Sampled flag
+        sa = bool(int(fields[3], 2))
+
+        return cls(tr=trace_id, id=parent_id, sa=sa)
 
 
 class W3CTraceState(OrderedDict):

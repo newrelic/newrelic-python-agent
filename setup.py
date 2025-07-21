@@ -191,16 +191,6 @@ else:
     kwargs["scripts"] = ["scripts/newrelic-admin"]
 
 
-def with_librt():
-    try:
-        if sys.platform.startswith("linux"):
-            import ctypes.util
-
-            return ctypes.util.find_library("rt")
-    except Exception:
-        pass
-
-
 def run_setup(with_extensions):
     def _run_setup():
         # Create a local copy of kwargs, if there is no c compiler run_setup
@@ -209,15 +199,8 @@ def run_setup(with_extensions):
         kwargs_tmp = dict(kwargs)
 
         if with_extensions:
-            monotonic_libraries = []
-            if with_librt():
-                monotonic_libraries = ["rt"]
-
             kwargs_tmp["ext_modules"] = [
                 Extension("newrelic.packages.wrapt._wrappers", ["newrelic/packages/wrapt/_wrappers.c"]),
-                Extension(
-                    "newrelic.common._monotonic", ["newrelic/common/_monotonic.c"], libraries=monotonic_libraries
-                ),
                 Extension("newrelic.core._thread_utilization", ["newrelic/core/_thread_utilization.c"]),
             ]
             kwargs_tmp["cmdclass"] = dict(build_ext=optional_build_ext)

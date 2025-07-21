@@ -136,5 +136,8 @@ def instrument_oracledb(module):
         module, database_product="Oracle", quoting_style="single+oracle", instance_info=instance_info
     )
 
-    wrap_object(module, "connect", ConnectionFactory, (module,))
-    wrap_object(module, "connect_async", AsyncConnectionFactory, (module,))
+    if hasattr(module, "connect"):
+        wrap_object(module, "connect", ConnectionFactory, (module,))
+
+    if hasattr(module, "connect_async"):
+        wrap_object(module, "connect_async", AsyncConnectionFactory, (module,))

@@ -13,12 +13,18 @@
 # limitations under the License.
 
 import oracledb
+import pytest
 from testing_support.db_settings import oracledb_settings
 from testing_support.util import instance_hostname
 from testing_support.validators.validate_database_trace_inputs import validate_database_trace_inputs
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
+from newrelic.common.package_version_utils import get_package_version_tuple
+
+ORACLEDB_VERSION = get_package_version_tuple("oracledb")
+if ORACLEDB_VERSION < (2,):
+    pytest.skip(reason="OracleDB version does not contain async APIs.", allow_module_level=True)
 
 DB_SETTINGS = oracledb_settings()[0]
 TABLE_NAME = DB_SETTINGS["table_name"]

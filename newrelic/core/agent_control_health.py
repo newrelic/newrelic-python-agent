@@ -15,12 +15,14 @@
 import logging
 import os
 import sched
+import sys
 import threading
 import time
 import uuid
 from enum import IntEnum
 from pathlib import Path
 from urllib.parse import urlparse
+from urllib.request import url2pathname
 
 from newrelic.core.config import _environ_as_bool, _environ_as_int
 
@@ -66,43 +68,6 @@ LICENSE_KEY_ERROR_CODES = frozenset([HealthStatus.INVALID_LICENSE.value, HealthS
 NR_CONNECTION_ERROR_CODES = frozenset([HealthStatus.FAILED_NR_CONNECTION.value, HealthStatus.FORCED_DISCONNECT.value])
 
 
-def is_valid_file_delivery_location(file_uri):
-    # Verify whether file directory provided to agent via env var is a valid file URI to determine whether health
-    # check should run
-    try:
-        parsed_uri = urlparse(file_uri)
-        if not parsed_uri.scheme or not parsed_uri.path:
-            _logger.warning(
-                "Configured Agent Control health delivery location is not a complete file URI. Health check will not be "
-                "enabled. "
-            )
-            return False
-
-        if parsed_uri.scheme != "file":
-            _logger.warning(
-                "Configured Agent Control health delivery location does not have a valid scheme. Health check will not be "
-                "enabled."
-            )
-            return False
-
-        path = Path(parsed_uri.path)
-
-        # Check if the path exists
-        if not path.exists():
-            _logger.warning(
-                "Configured Agent Control health delivery location does not exist. Health check will not be enabled."
-            )
-            return False
-
-        return True
-
-    except Exception:
-        _logger.warning(
-            "Configured Agent Control health delivery location is not valid. Health check will not be enabled."
-        )
-        return False
-
-
 class AgentControlHealth:
     _instance_lock = threading.Lock()
     _instance = None
@@ -127,6 +92,7 @@ class AgentControlHealth:
         self.status_message = HEALTHY_STATUS_MESSAGE
         self.start_time_unix_nano = None
         self.pid_file_id_map = {}
+        self._health_delivery_location_cache = {}
 
     @property
     def health_check_enabled(self):
@@ -135,16 +101,87 @@ class AgentControlHealth:
         if not agent_control_enabled:
             return False
 
-        return is_valid_file_delivery_location(self.health_delivery_location)
+        return self.health_delivery_location_is_valid
 
     @property
     def health_delivery_location(self):
-        # Set a default file path if env var is not set or set to an empty string
-        health_file_location = (
+        file_uri = (
             os.environ.get("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", "") or "file:///newrelic/apm/health"
         )
 
-        return health_file_location
+        # Return from cache if already parsed
+        if file_uri in self._health_delivery_location_cache:
+            return self._health_delivery_location_cache[file_uri]
+
+        # Parse and add to cache
+        path = self.parse_health_delivery_location(file_uri)
+        if path is not None:
+            self._health_delivery_location_cache[file_uri] = path
+
+        return path
+
+    @property
+    def health_delivery_location_is_valid(self):
+        # Verify whether file directory provided to agent via env var is a valid file URI to determine whether health
+        # check should run
+        try:
+            path = self.health_delivery_location
+            if path is None:
+                # Warning already logged in parse_health_delivery_location()
+                return False
+
+            # Check if the path exists
+            if not path.exists():
+                _logger.warning(
+                    "Configured Agent Control health delivery location does not exist. Health check will not be enabled."
+                )
+                return False
+
+            return True
+
+        except Exception:
+            _logger.warning(
+                "Configured Agent Control health delivery location is not valid. Health check will not be enabled."
+            )
+            return False
+
+    @classmethod
+    def parse_health_delivery_location(cls, file_uri):
+        """Parse the health delivery location and return it as a Path object."""
+
+        # No built in method to correctly parse file URI to a path on Python < 3.13.
+        # In the future, Path.from_uri() can be used directly.
+
+        # For now, parse with urllib.parse.urlparse and convert to a Path object.
+        parsed_uri = urlparse(file_uri)
+
+        # Ensure URI has at least a scheme and path
+        if not parsed_uri.scheme or not parsed_uri.path:
+            _logger.warning(
+                "Configured Agent Control health delivery location is not a complete file URI. Health check will not be enabled."
+            )
+            return None
+
+        # Ensure URI has a file scheme
+        if parsed_uri.scheme != "file":
+            _logger.warning(
+                "Configured Agent Control health delivery location does not have a valid scheme. Health check will not be enabled."
+            )
+            return None
+
+        # Handle Windows systems carefully due to inconsistent path handling
+        if sys.platform == "win32":
+            if parsed_uri.netloc:
+                # Matching behavior of pip where netloc is prepended with a double backslash
+                # https://github.com/pypa/pip/blob/022248f6484fe87dc0ef5aec3437f4c7971fd14b/pip/download.py#L442
+                urlpathname = url2pathname(rf"\\\\{parsed_uri.netloc}{parsed_uri.path}")
+                return Path(urlpathname)
+            else:
+                # If there's no netloc, we use url2pathname to fix leading slashes
+                return Path(url2pathname(parsed_uri.path))
+        else:
+            # On non-Windows systems we can use the parsed path directly
+            return Path(parsed_uri.path)
 
     @property
     def is_healthy(self):
@@ -185,13 +222,16 @@ class AgentControlHealth:
         status_time_unix_nano = time.time_ns()
 
         try:
-            file_path = urlparse(self.health_delivery_location).path
-            file_id = self.get_file_id()
-            file_name = f"health-{file_id}.yml"
-            full_path = Path(file_path) / file_name
-            is_healthy = self.is_healthy
+            health_dir_path = self.health_delivery_location
+            if health_dir_path is None:
+                # Allow except block to handle logging a warning
+                raise ValueError("Health delivery location is not valid.")
 
-            with full_path.open("w") as f:
+            file_id = self.get_file_id()
+            health_file_path = health_dir_path / f"health-{file_id}.yml"
+            is_healthy = self.is_healthy  # Cache property value to avoid multiple calls
+
+            with health_file_path.open("w") as f:
                 f.write(f"healthy: {is_healthy}\n")
                 f.write(f"status: {self.status_message}\n")
                 f.write(f"start_time_unix_nano: {self.start_time_unix_nano}\n")

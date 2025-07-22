@@ -1,0 +1,105 @@
+[
+  {
+    "testname": "auth token fails, no cached data",
+    "auth_token_cls": "no_token",
+    "uri": {
+      "http://169.254.169.254/latest/dynamic/instance-identity/document": {
+        "response": {
+          "instanceId": null,      
+          "instanceType": null,        
+          "availabilityZone": null
+        },
+        "timeout": false
+      }
+    },
+    "expected_vendors_hash": null,
+    "expected_metrics": {
+      "Supportability/utilization/aws/error": {
+        "call_count": 0
+      }
+    }
+  },
+  {
+    "testname": "auth token succeeds, but utilization data is not valid, no cached data",
+    "auth_token_cls": "fake_token",
+    "uri": {
+      "http://169.254.169.254/latest/dynamic/instance-identity/document": {
+        "response": {
+          "instanceId": "i-test.19characters",
+          "instanceType": null,          
+          "availabilityZone": "us-west-2b"
+        },
+        "timeout": false
+      }
+    },
+    "expected_vendors_hash": null,
+    "expected_metrics": {
+      "Supportability/utilization/aws/error": {
+        "call_count": 1
+      }
+    }
+  },
+  {
+    "testname": "auth token succeeds, utilization data is valid, data is cached (part 1)",
+    "auth_token_cls": "fake_token",
+    "uri": {
+      "http://169.254.169.254/latest/dynamic/instance-identity/document": {
+        "response": {
+          "instanceId": "i-test.19characters",
+          "instanceType": "test.type",          
+          "availabilityZone": "us-west-2b"
+        },
+        "timeout": false
+      }
+    },
+    "expected_vendors_hash": {
+      "aws": {
+        "instanceId": "i-test.19characters",
+        "instanceType": "test.type",
+        "availabilityZone": "us-west-2b"
+      }
+    }
+  },
+  {
+    "testname": "auth token fails, but cached data exists, return cached data",
+    "auth_token_cls": "no_token",
+    "uri": {
+      "http://169.254.169.254/latest/dynamic/instance-identity/document": {
+        "response": {
+          "instanceId": null,      
+          "instanceType": null,        
+          "availabilityZone": null
+        },
+        "timeout": false
+      }
+    },
+    "expected_vendors_hash": {
+      "aws": {
+        "instanceId": "i-test.19characters",
+        "instanceType": "test.type",
+        "availabilityZone": "us-west-2b"
+      }
+    }
+  },
+  {
+    "testname": "auth token succeeds, utilization data is valid, data is cached (part 2)",
+    "auth_token_cls": "fake_token",
+    "uri": {
+      "http://169.254.169.254/latest/dynamic/instance-identity/document": {
+        "response": {
+          "instanceId": "i-test.19characters",
+          "instanceType": "test.type",          
+          "availabilityZone": "us-east-2b"
+        },
+        "timeout": false
+      }
+    },
+    "expected_vendors_hash": {
+      "aws": {
+        "instanceId": "i-test.19characters",
+        "instanceType": "test.type",
+        "availabilityZone": "us-east-2b"
+      }
+    }
+  }
+]

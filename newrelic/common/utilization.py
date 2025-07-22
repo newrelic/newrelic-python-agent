@@ -197,7 +197,10 @@ class AWSUtilization(CommonUtilization):
             # Cache this for forced agent restarts within the same 
             # environment if return value is valid.
             try:
-                availabilityZone, instanceId, instanceType = resp[1].decode("utf-8").strip()
+                response_dict = json.loads(resp[1].decode("utf-8"))
+                availabilityZone = response_dict.get("availabilityZone", None)
+                instanceId = response_dict.get("instanceId", None)
+                instanceType = response_dict.get("instanceType", None)
                 if all((availabilityZone, instanceId, instanceType)):
                     # Cache the utilization data for reuse
                     cls._utilization_data = resp[1]

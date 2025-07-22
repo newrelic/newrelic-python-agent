@@ -27,7 +27,6 @@ from newrelic.api.background_task import BackgroundTask
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.message_trace import MessageTrace
 from newrelic.api.pre_function import wrap_pre_function
-from newrelic.api.post_function import wrap_post_function
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import FunctionWrapper, _NRBoundFunctionWrapper, wrap_function_wrapper
 from newrelic.common.signature import bind_args
@@ -62,6 +61,84 @@ def task_info(instance, *args, **kwargs):
             pass
 
     return task_name, task_source
+
+
+def wrap_task_call(wrapped, instance, args, kwargs):
+    transaction = current_transaction(active_only=False)
+
+    # Grab task name and source
+    _name, _source = task_info(wrapped, *args, **kwargs)
+
+    # A Celery Task can be called either outside of a transaction, or
+    # within the context of an existing transaction. There are 3
+    # possibilities we need to handle:
+    #
+    #   1. In an inactive transaction
+    #
+    #      If the end_of_transaction() or ignore_transaction() API calls
+    #      have been invoked, this task may be called in the context
+    #      of an inactive transaction. In this case, don't wrap the task
+    #      in any way. Just run the original function.
+    #
+    #   2. In an active transaction
+    #
+    #      Run the original function inside a FunctionTrace.
+    #
+    #   3. Outside of a transaction
+    #
+    #      This is the typical case for a celery Task. Since it's not
+    #      running inside of an existing transaction, we want to create
+    #      a new background transaction for it.
+
+    if transaction and (transaction.ignore_transaction or transaction.stopped):
+        return wrapped(*args, **kwargs)
+
+    elif transaction:
+        with FunctionTrace(_name, source=_source):
+            return wrapped(*args, **kwargs)
+
+    else:
+        with BackgroundTask(application_instance(), _name, "Celery", source=_source) as transaction:
+            # Attempt to grab distributed tracing headers
+            try:
+                # Headers on earlier versions of Celery may end up as attributes
+                # on the request context instead of as custom headers. Handler this
+                # by defaulting to using vars() if headers is not available
+                # print(f"wrapped.request: {wrapped.request}")
+                request = wrapped.request
+                headers = getattr(request, "headers", None) or vars(request)
+
+                settings = transaction.settings
+                if headers is not None and settings is not None:
+                    if settings.distributed_tracing.enabled:
+                        transaction.accept_distributed_trace_headers(headers, transport_type="AMQP")
+                    elif transaction.settings.cross_application_tracer.enabled:
+                        transaction._process_incoming_cat_headers(
+                            headers.get(MessageTrace.cat_id_key, None),
+                            headers.get(MessageTrace.cat_transaction_key, None),
+                        )
+            except Exception:
+                pass
+
+            return wrapped(*args, **kwargs) 
+
+
+def wrap_build_tracer(wrapped, instance, args, kwargs):
+    class TaskWrapper(FunctionWrapper):
+        def run(self, *args, **kwargs):
+            return self.__call__(*args, **kwargs)
+        
+    try:
+        bound_args = bind_args(wrapped, args, kwargs)
+        task = bound_args.get("task", None)
+
+        task = TaskWrapper(task, wrap_task_call)
+        bound_args["task"] = task
+            
+        return wrapped(**bound_args)
+    except:
+        # If we can't bind the args, we just call the wrapped function
+        return wrapped(*args, **kwargs)
 
 
 def CeleryTaskWrapper(wrapped):
@@ -158,8 +235,12 @@ def CeleryTaskWrapper(wrapped):
     wrapped_task.__module__ = CeleryTaskWrapper.__module__
 
     return wrapped_task
+            
 
-
+# This will not work with the current version of Celery
+# This only gets called during the async execution of a task
+# and the task is wrapped later in the process to accomodate
+# custom task classes.
 def wrap_Celery_send_task(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
@@ -201,98 +282,6 @@ def wrap_worker_optimizations(wrapped, instance, args, kwargs):
     return result
 
 
-def wrap_task_trace_wrapper(wrapped, instance, args, kwargs):
-    bound_args = bind_args(wrapped, args, kwargs)
-    task_name = bound_args.get("task", None)
-    localized_args = bound_args.get("_loc", None) or wrapped.__globals__['_localized']
-    try:
-        tasks, accept, hostname = localized_args if localized_args else (None, None, None)
-        task_function = tasks.get(task_name, None)
-        tasks[task_name] = task_function
-        bound_args["_loc"] = (tasks, accept, hostname)
-        transaction = current_transaction(active_only=False)
-
-        # Grab task name and source
-        _name = task_name
-        _source = task_function
-
-        # A Celery Task can be called either outside of a transaction, or
-        # within the context of an existing transaction. There are 3
-        # possibilities we need to handle:
-        #
-        #   1. In an inactive transaction
-        #
-        #      If the end_of_transaction() or ignore_transaction() API calls
-        #      have been invoked, this task may be called in the context
-        #      of an inactive transaction. In this case, don't wrap the task
-        #      in any way. Just run the original function.
-        #
-        #   2. In an active transaction
-        #
-        #      Run the original function inside a FunctionTrace.
-        #
-        #   3. Outside of a transaction
-        #
-        #      This is the typical case for a celery Task. Since it's not
-        #      running inside of an existing transaction, we want to create
-        #      a new background transaction for it.
-
-        if transaction and (transaction.ignore_transaction or transaction.stopped):
-            return wrapped(*args, **kwargs)
-
-        elif transaction:
-            with FunctionTrace(_name, source=_source):
-                return wrapped(*args, **kwargs)
-
-        else:
-            with BackgroundTask(application_instance(), _name, "Celery", source=_source) as transaction:
-                # Attempt to grab distributed tracing headers
-                try:
-                    # Headers on earlier versions of Celery may end up as attributes
-                    # on the request context instead of as custom headers. Handler this
-                    # by defaulting to using vars() if headers is not available
-                    
-                    request = task_function.request
-                    headers = getattr(request, "headers", None) or vars(request)
-
-                    settings = transaction.settings
-                    if headers is not None and settings is not None:
-                        if settings.distributed_tracing.enabled:
-                            transaction.accept_distributed_trace_headers(headers, transport_type="AMQP")
-                        elif transaction.settings.cross_application_tracer.enabled:
-                            transaction._process_incoming_cat_headers(
-                                headers.get(MessageTrace.cat_id_key, None),
-                                headers.get(MessageTrace.cat_transaction_key, None),
-                            )
-                except Exception:
-                    pass
-
-                return wrapped(*args, **kwargs)
-            
-    except Exception as e:
-        return wrapped(*args, **kwargs)
-
-
-def wrap_request_wrapper(wrapped, instance, args, kwargs):
-    try:
-        result = wrapped(*args, **kwargs)
-        ready, request = result
-        job, i, task_tracer_function, _args, _kwargs = request
-        task_tracer_function = FunctionWrapper(task_tracer_function, wrap_task_trace_wrapper)
-        request = (job, i, task_tracer_function, _args, _kwargs)
-        result = (ready, request)
-    except Exception as e:
-        return wrapped(*args, **kwargs)
-
-    return result   
-
-
-def wrap_protected_receive_wrapper(wrapped, instance, args, kwargs):
-    receive_function = wrapped(*args, **kwargs)
-    wrapped_receive_function = FunctionWrapper(receive_function, wrap_request_wrapper)
-    return wrapped_receive_function
-
-
 def instrument_celery_local(module):
     if hasattr(module, "Proxy"):
         # This is used in the case where the function is 
@@ -331,13 +320,6 @@ def instrument_celery_worker(module):
             return _process_destructor(*args, **kwargs)
 
         module.process_destructor = process_destructor
-        
-
-def instrument_billiard_process(module):
-    def force_application_activation(*args, **kwargs):
-        application_instance().activate()
-
-        wrap_pre_function(module, "Process.run", force_application_activation)
 
 
 def instrument_celery_loaders_base(module):
@@ -351,16 +333,9 @@ def instrument_billiard_pool(module):
     def force_agent_shutdown(*args, **kwargs):
         shutdown_agent()
 
-    if hasattr(module, "Worker") and hasattr(module.Worker, "_make_protected_receive"):
-        # `_make_protected_receive` returns the `receive` function
-        # `receive` returns a tuple of (`ready`, `request`)
-        # where `request` is a tuple of (job, i, task_tracer_function, _args, _kwargs)
-        # and `task_tracer_function` is a function that executes the task
-        wrap_function_wrapper(module, "Worker._make_protected_receive", wrap_protected_receive_wrapper)
     if hasattr(module, "Worker") and hasattr(module.Worker, "_do_exit"):
         wrap_pre_function(module, "Worker._do_exit", force_agent_shutdown)
     
-
 
 def instrument_celery_app_trace(module):
     # Uses same wrapper for setup and reset worker optimizations to prevent patching and unpatching from removing wrappers
@@ -369,4 +344,7 @@ def instrument_celery_app_trace(module):
 
     if hasattr(module, "reset_worker_optimizations"):
         wrap_function_wrapper(module, "reset_worker_optimizations", wrap_worker_optimizations)
+
+    if hasattr(module, "build_tracer"):
+        wrap_function_wrapper(module, "build_tracer", wrap_build_tracer)
 

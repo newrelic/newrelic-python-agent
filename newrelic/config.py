@@ -4013,17 +4013,8 @@ def _process_module_builtin_defaults():
     # _process_module_definition("celery.app.task", "newrelic.hooks.application_celery", "instrument_celery_app_task")
     _process_module_definition("celery.app.trace", "newrelic.hooks.application_celery", "instrument_celery_app_trace")
     _process_module_definition("celery.worker", "newrelic.hooks.application_celery", "instrument_celery_worker")
-    # _process_module_definition(
-    #     "celery.concurrency.processes", "newrelic.hooks.application_celery", "instrument_celery_worker"
-    # )
     _process_module_definition(
         "celery.concurrency.prefork", "newrelic.hooks.application_celery", "instrument_celery_worker"
-    )
-    # _process_module_definition(
-    #     "celery.concurrency.asynpool", "newrelic.hooks.application_celery", "instrument_celery_worker"
-    # )
-    _process_module_definition(
-        "billiard.process", "newrelic.hooks.application_celery", "instrument_billiard_process"
     )
 
     _process_module_definition("billiard.pool", "newrelic.hooks.application_celery", "instrument_billiard_pool")

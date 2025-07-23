@@ -28,13 +28,16 @@ _parameters_list = ["testname", "auth_token_cls", "uri", "expected_vendors_hash"
 
 _parameters = ",".join(_parameters_list)
 
+
 @classmethod
 def fake_token(cls):
     return "FakeToken"
 
+
 @classmethod
 def no_token(cls):
     return None
+
 
 def _load_tests():
     with open(FIXTURE) as fh:
@@ -44,6 +47,7 @@ def _load_tests():
 
 def _parametrize_test(test):
     return tuple([test.get(f, None) for f in _parameters_list])
+
 
 # Load the tests from the JSON fixture
 _aws_tests = [_parametrize_test(t) for t in _load_tests()]
@@ -59,7 +63,6 @@ _aws_tests = [_parametrize_test(t) for t in _load_tests()]
 
 @pytest.mark.parametrize(_parameters, _aws_tests)
 def test_aws_utilization_caching(monkeypatch, testname, auth_token_cls, uri, expected_vendors_hash, expected_metrics):
-
     def _get_mock_return_value(api_result):
         if api_result["timeout"]:
             return 0, None

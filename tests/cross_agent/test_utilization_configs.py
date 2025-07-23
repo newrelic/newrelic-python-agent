@@ -27,7 +27,7 @@ from testing_support.mock_http_client import create_client_cls
 import newrelic.core.config
 from newrelic.common.object_wrapper import function_wrapper
 from newrelic.common.system_info import BootIdUtilization
-from newrelic.common.utilization import CommonUtilization, AWSUtilization
+from newrelic.common.utilization import AWSUtilization, CommonUtilization
 from newrelic.core.agent_protocol import AgentProtocol
 
 INITIAL_ENV = os.environ

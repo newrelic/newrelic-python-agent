@@ -194,7 +194,7 @@ class AWSUtilization(CommonUtilization):
                 )
             if not 200 <= resp[0] < 300:
                 raise ValueError(resp[0])
-            # Cache this for forced agent restarts within the same 
+            # Cache this for forced agent restarts within the same
             # environment if return value is valid.
             try:
                 response_dict = json.loads(resp[1].decode("utf-8"))

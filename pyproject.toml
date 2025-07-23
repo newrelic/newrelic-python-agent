@@ -33,49 +33,49 @@ pep8-naming.extend-ignore-names = ["X", "y"]
 
 select = [
     # Enabled linters and rules
-    "E",  # pycodestyle
-    "F",  # Pyflakes
-    "W",  # pycodestyle
-    "I",  # isort
-    # "N",  # pep8-naming
-    "UP",  # pyupgrade
-    "YTT",  # flake8-2020
-    "ASYNC",  # flake8-async
-    "S",  # flake8-bandit
-    # "BLE",  # flake8-blind-except
-    # "FBT",  # flake8-boolean-trap
-    "B",  # flake8-bugbear
     "A",  # flake8-builtins
-    "COM",  # flake8-commas
+    "ASYNC",  # flake8-async
+    "B",  # flake8-bugbear
     "C4",  # flake8-comprehensions
+    "COM",  # flake8-commas
     "DTZ",  # flake8-datetimez
-    "T10",  # flake8-debugger
-    # "EM",  # flake8-errmsg
+    "E",  # pycodestyle
     "EXE",  # flake8-executable
+    "F",  # Pyflakes
     "FA",  # flake8-future-annotations
-    "ISC",  # flake8-implicit-str-concat
-    "ICN",  # flake8-import-conventions
-    "LOG",  # flake8-logging
+    "FLY",  # flynt
+    "FURB",  # refurb
     "G",  # flake8-logging-format
+    "I",  # isort
+    "ICN",  # flake8-import-conventions
     "INP",  # flake8-no-pep420
-    "PYI",  # flake8-pyi
-    "PT",  # flake8-pytest-style
-    "Q",  # flake8-quotes
-    "RSE",  # flake8-raise
-    # "RET",  # flake8-return
-    "SLOT",  # flake8-slots
-    # "SIM",  # flake8-simplify
-    "TID",  # flake8-tidy-imports
     "INT",  # flake8-gettext
-    # "ARG",  # flake8-unused-arguments
-    "PTH",  # flake8-use-pathlib
+    "ISC",  # flake8-implicit-str-concat
+    "LOG",  # flake8-logging
+    "PERF",  # Perflint
     "PGH",  # pygrep-hooks
     "PL",  # Pylint
-    # "TRY",  # tryceratops
-    "FLY",  # flynt
-    "PERF",  # Perflint
-    "FURB",  # refurb
+    "PT",  # flake8-pytest-style
+    "PTH",  # flake8-use-pathlib
+    "PYI",  # flake8-pyi
+    "Q",  # flake8-quotes
+    "RSE",  # flake8-raise
+    "S",  # flake8-bandit
+    "SLOT",  # flake8-slots
+    "T10",  # flake8-debugger
+    "TID",  # flake8-tidy-imports
+    "UP",  # pyupgrade
+    "W",  # pycodestyle
+    "YTT",  # flake8-2020
+    # "ARG",  # flake8-unused-arguments
+    # "BLE",  # flake8-blind-except
+    # "EM",  # flake8-errmsg
+    # "FBT",  # flake8-boolean-trap
+    # "N",  # pep8-naming
+    # "RET",  # flake8-return
     # "RUF",  # Ruff-specific rules
+    # "SIM",  # flake8-simplify
+    # "TRY",  # tryceratops
 ]
 
 # Disabled Linters

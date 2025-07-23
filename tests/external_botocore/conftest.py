@@ -219,7 +219,6 @@ def wrap_botocore_endpoint_Endpoint__do_get_response_converse(wrapped, instance,
 
     # Send request
     result = wrapped(*args, **kwargs)
-
     # Unpack response
     success, exception = result
     response = (success or exception)[0]
@@ -246,7 +245,6 @@ def wrap_botocore_endpoint_Endpoint__do_get_response_converse(wrapped, instance,
         # Clean up data
         response_content = response.content
         data = json.loads(response_content.decode("utf-8"))
-        result[0][1]["body"] = StreamingBody(io.BytesIO(response_content), len(response_content))
         BEDROCK_CONVERSE_AUDIT_LOG_CONTENTS[prompt] = headers, status_code, data  # Append response data to audit log
 
     return result

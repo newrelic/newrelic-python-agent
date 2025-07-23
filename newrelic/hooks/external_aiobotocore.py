@@ -113,7 +113,17 @@ async def wrap_client__make_api_call(wrapped, instance, args, kwargs):
         response = await wrapped(*args, **kwargs)
     except Exception as exc:
         handle_bedrock_exception(
-            exc, is_embedding, model, span_id, trace_id, request_extractor, request_body, ft, transaction
+            exc,
+            is_embedding,
+            model,
+            span_id,
+            trace_id,
+            request_extractor,
+            request_body,
+            ft,
+            transaction,
+            kwargs,
+            is_converse=False,
         )
         raise
 

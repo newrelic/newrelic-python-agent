@@ -28,7 +28,7 @@ from testing_support.mock_http_client import create_client_cls
 import newrelic.core.config
 from newrelic.common.object_wrapper import function_wrapper
 from newrelic.common.system_info import BootIdUtilization
-from newrelic.common.utilization import CommonUtilization
+from newrelic.common.utilization import AWSUtilization, CommonUtilization
 from newrelic.core.agent_protocol import AgentProtocol
 
 INITIAL_ENV = os.environ
@@ -186,6 +186,8 @@ def test_utilization_settings(test, monkeypatch):
 
     for key, val in env.items():
         monkeypatch.setenv(key, str(val))
+
+    AWSUtilization._utilization_data = None  # reset cached data before test
 
     @patch_boot_id_file(test)
     @patch_system_info(test, monkeypatch)

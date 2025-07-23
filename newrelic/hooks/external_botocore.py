@@ -163,6 +163,8 @@ def extract(argument_names, default=None):
 
 
 def bedrock_error_attributes(exception, bedrock_attrs):
+    # In some cases, such as a botocore.exceptions.ParamValidationError, the exception may not have a response attr
+    # We still want to record the error, so we add `error: True` to bedrock_attrs immediately
     response = getattr(exception, "response", None)
     if not response:
         return bedrock_attrs
@@ -534,10 +536,23 @@ MODEL_EXTRACTORS = [  # Order is important here, avoiding dictionaries
 
 
 def handle_bedrock_exception(
-    exc, is_embedding, model, span_id, trace_id, request_extractor, request_body, ft, transaction
+    exc, is_embedding, model, span_id, trace_id, request_extractor, request_body, ft, transaction, kwargs, is_converse
 ):
     try:
         bedrock_attrs = {"model": model, "span_id": span_id, "trace_id": trace_id}
+        if is_converse:
+            try:
+                input_message_list = [
+                    {"role": "user", "content": result["text"]} for result in kwargs["messages"][-1].get("content", [])
+                ]
+                if "system" in kwargs.keys():
+                    input_message_list.append({"role": "system", "content": kwargs.get("system")[0].get("text")})
+            except Exception:
+                input_message_list = []
+
+            bedrock_attrs["input_message_list"] = input_message_list
+            bedrock_attrs["request.max_tokens"] = kwargs.get("inferenceConfig", {}).get("maxTokens", None)
+            bedrock_attrs["request.temperature"] = kwargs.get("inferenceConfig", {}).get("temperature", None)
         try:
             request_extractor(request_body, bedrock_attrs)
         except json.decoder.JSONDecodeError:
@@ -546,6 +561,7 @@ def handle_bedrock_exception(
             _logger.warning(REQUEST_EXTACTOR_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
         error_attributes = bedrock_error_attributes(exc, bedrock_attrs)
+
         notice_error_attributes = {
             "http.statusCode": error_attributes.get("http.statusCode"),
             "error.message": error_attributes.get("error.message"),
@@ -669,7 +685,17 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
             response = wrapped(*args, **kwargs)
         except Exception as exc:
             handle_bedrock_exception(
-                exc, is_embedding, model, span_id, trace_id, request_extractor, request_body, ft, transaction
+                exc,
+                is_embedding,
+                model,
+                span_id,
+                trace_id,
+                request_extractor,
+                request_body,
+                ft,
+                transaction,
+                kwargs,
+                is_converse=False,
             )
             raise
 
@@ -723,6 +749,113 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
         return response
 
     return _wrap_bedrock_runtime_invoke_model
+
+
+def wrap_bedrock_runtime_converse(response_streaming=False):
+    @function_wrapper
+    def _wrap_bedrock_runtime_converse(wrapped, instance, args, kwargs):
+        # Wrapped function only takes keyword arguments, no need for binding
+        transaction = current_transaction()
+        if not transaction:
+            return wrapped(*args, **kwargs)
+
+        settings = transaction.settings or global_settings
+        if not settings.ai_monitoring.enabled:
+            return wrapped(*args, **kwargs)
+
+        transaction.add_ml_model_info("Bedrock", BOTOCORE_VERSION)
+        transaction._add_agent_attribute("llm", True)
+
+        model = kwargs.get("modelId")
+        if not model:
+            return wrapped(*args, **kwargs)
+
+        # Extractors are not needed for Converse API since the request and response formats are consistent across models
+        request_extractor = response_extractor = stream_extractor = NULL_EXTRACTOR
+
+        function_name = wrapped.__name__
+        # Function trace may not be exited in this function in the case of streaming, so start manually
+        ft = FunctionTrace(name=function_name, group="Llm/completion/Bedrock")
+        ft.__enter__()
+
+        # Get trace information
+        available_metadata = get_trace_linking_metadata()
+        span_id = available_metadata.get("span.id")
+        trace_id = available_metadata.get("trace.id")
+
+        # Store data on instance to pass context to async instrumentation in aiobotocore
+        instance._nr_trace_id = trace_id
+        instance._nr_span_id = span_id
+        instance._nr_request_extractor = request_extractor
+        instance._nr_response_extractor = response_extractor
+        instance._nr_stream_extractor = stream_extractor
+        instance._nr_txn = transaction
+        instance._nr_ft = ft
+        instance._nr_response_streaming = response_streaming
+        instance._nr_settings = settings
+
+        # Add a bedrock flag to instance so we can determine when make_api_call instrumentation is hit from non-Bedrock paths and bypass it if so
+        instance._nr_is_bedrock = True
+
+        try:
+            # For aioboto3 clients, this will call make_api_call instrumentation in external_aiobotocore
+            response = wrapped(*args, **kwargs)
+        except Exception as exc:
+            handle_bedrock_exception(
+                exc, False, model, span_id, trace_id, request_extractor, {}, ft, transaction, kwargs, is_converse=True
+            )
+            raise
+
+        if not response or response_streaming and not settings.ai_monitoring.streaming.enabled:
+            ft.__exit__(None, None, None)
+            return response
+
+        # Let the instrumentation of make_api_call in the aioboto3 client handle it if we have an async case
+        if inspect.iscoroutine(response):
+            return response
+
+        response_headers = response.get("ResponseMetadata", {}).get("HTTPHeaders") or {}
+        input_message_list = []
+        # If a system message is supplied, it is under its own key in kwargs rather than with the other input messages
+        if "system" in kwargs.keys():
+            input_message_list.extend(
+                {"role": "system", "content": result["text"]} for result in kwargs.get("system", [])
+            )
+
+        # kwargs["messages"] can hold multiple requests and responses to maintain conversation history
+        # We grab the last message (the newest request) in the list each time, so we don't duplicate recorded data
+        input_message_list.extend(
+            [{"role": "user", "content": result["text"]} for result in kwargs["messages"][-1].get("content", [])]
+        )
+
+        output_message_list = [
+            {"role": "assistant", "content": result["text"]}
+            for result in response.get("output").get("message").get("content", [])
+        ]
+
+        bedrock_attrs = {
+            "request_id": response_headers.get("x-amzn-requestid"),
+            "model": model,
+            "span_id": span_id,
+            "trace_id": trace_id,
+            "response.choices.finish_reason": response.get("stopReason"),
+            "output_message_list": output_message_list,
+            "request.max_tokens": kwargs.get("inferenceConfig", {}).get("maxTokens", None),
+            "request.temperature": kwargs.get("inferenceConfig", {}).get("temperature", None),
+            "input_message_list": input_message_list,
+        }
+
+        try:
+            ft.__exit__(None, None, None)
+            bedrock_attrs["duration"] = ft.duration * 1000
+            run_bedrock_response_extractor(response_extractor, {}, bedrock_attrs, False, transaction)
+
+        except Exception:
+            _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
+
+        return response
+
+    return _wrap_bedrock_runtime_converse
 
 
 class EventStreamWrapper(ObjectProxy):
@@ -905,7 +1038,6 @@ def handle_embedding_event(transaction, bedrock_attrs):
 
 def handle_chat_completion_event(transaction, bedrock_attrs):
     chat_completion_id = str(uuid.uuid4())
-
     # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
     custom_attrs_dict = transaction._custom_params
     llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
@@ -944,7 +1076,6 @@ def handle_chat_completion_event(transaction, bedrock_attrs):
     }
     chat_completion_summary_dict.update(llm_metadata_dict)
     chat_completion_summary_dict = {k: v for k, v in chat_completion_summary_dict.items() if v is not None}
-
     transaction.record_custom_event("LlmChatCompletionSummary", chat_completion_summary_dict)
 
     create_chat_completion_message_event(
@@ -1390,6 +1521,7 @@ CUSTOM_TRACE_POINTS = {
     ("bedrock-runtime", "invoke_model_with_response_stream"): wrap_bedrock_runtime_invoke_model(
         response_streaming=True
     ),
+    ("bedrock-runtime", "converse"): wrap_bedrock_runtime_converse(response_streaming=False),
 }
 
 
@@ -1399,8 +1531,8 @@ def bind__create_api_method(py_operation_name, operation_name, service_model, *a
 
 def _nr_clientcreator__create_api_method_(wrapped, instance, args, kwargs):
     (py_operation_name, service_model) = bind__create_api_method(*args, **kwargs)
-
     service_name = service_model.service_name.lower()
+
     tracer = CUSTOM_TRACE_POINTS.get((service_name, py_operation_name))
 
     wrapped = wrapped(*args, **kwargs)

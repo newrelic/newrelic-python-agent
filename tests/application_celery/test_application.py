@@ -24,11 +24,9 @@ from newrelic.api.transaction import end_of_transaction, ignore_transaction
 @validate_transaction_metrics(
     name="test_application:test_celery_task_as_function_trace",
     scoped_metrics=[("Function/_target_application.add", 1)],
-    # scoped_metrics=[("Function/_target_application.add", 2)],
     background_task=True,
 )
 @validate_code_level_metrics("_target_application", "add")
-# @validate_code_level_metrics("_target_application", "add", count=2)
 @background_task()
 def test_celery_task_as_function_trace():
     """

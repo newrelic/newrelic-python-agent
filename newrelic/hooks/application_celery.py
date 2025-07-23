@@ -264,51 +264,6 @@ def CeleryTaskWrapper(wrapped):
     wrapped_task.__module__ = CeleryTaskWrapper.__module__
 
     return wrapped_task
-            
-
-# # This will not work with the current version of Celery
-# # This only gets called during the async execution of a task
-# # and the task is wrapped later in the process to accomodate
-# # custom task classes.
-# def wrap_Celery_send_task(wrapped, instance, args, kwargs):
-#     transaction = current_transaction()
-#     if not transaction:
-#         return wrapped(*args, **kwargs)
-
-#     # Merge distributed tracing headers into outgoing task headers
-#     try:
-#         dt_headers = MessageTrace.generate_request_headers(transaction)
-#         original_headers = kwargs.get("headers", None)
-#         if dt_headers:
-#             if not original_headers:
-#                 kwargs["headers"] = dict(dt_headers)
-#             else:
-#                 kwargs["headers"] = dt_headers = dict(dt_headers)
-#                 dt_headers.update(dict(original_headers))
-#     except Exception:
-#         pass
-
-#     return wrapped(*args, **kwargs)
-
-
-def wrap_worker_optimizations(wrapped, instance, args, kwargs):
-    # Attempt to uninstrument BaseTask before stack protection is installed or uninstalled
-    try:
-        from celery.app.task import BaseTask
-
-        if isinstance(BaseTask.__call__, _NRBoundFunctionWrapper):
-            BaseTask.__call__ = BaseTask.__call__.__wrapped__
-    except Exception:
-        BaseTask = None
-
-    # Allow metaprogramming to run
-    result = wrapped(*args, **kwargs)
-
-    # Rewrap finalized BaseTask
-    if BaseTask:  # Ensure imports succeeded
-        BaseTask.__call__ = CeleryTaskWrapper(BaseTask.__call__)
-
-    return result
 
 
 def instrument_celery_local(module):
@@ -317,11 +272,6 @@ def instrument_celery_local(module):
         # called directly on the Proxy object (rather than 
         # using "delay" or "apply_async")
         module.Proxy.__call__ = CeleryTaskWrapper(module.Proxy.__call__)
-
-
-# def instrument_celery_app_base(module):
-#     if hasattr(module, "Celery") and hasattr(module.Celery, "send_task"):
-#         wrap_function_wrapper(module, "Celery.send_task", wrap_Celery_send_task)
 
 
 def instrument_celery_worker(module):
@@ -367,13 +317,6 @@ def instrument_billiard_pool(module):
     
 
 def instrument_celery_app_trace(module):
-    # Uses same wrapper for setup and reset worker optimizations to prevent patching and unpatching from removing wrappers
-    if hasattr(module, "setup_worker_optimizations"):
-        wrap_function_wrapper(module, "setup_worker_optimizations", wrap_worker_optimizations)
-
-    if hasattr(module, "reset_worker_optimizations"):
-        wrap_function_wrapper(module, "reset_worker_optimizations", wrap_worker_optimizations)
-
     if hasattr(module, "build_tracer"):
         wrap_function_wrapper(module, "build_tracer", wrap_build_tracer)
         

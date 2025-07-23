@@ -95,10 +95,6 @@ def wrap_task_call(wrapped, instance, args, kwargs):
 
     elif transaction:
         with FunctionTrace(_name, source=_source):
-            # Do we accept distributed tracing headers here?
-            # request = wrapped.request
-            # headers = getattr(request, "headers", None) or vars(request)
-            # transaction.accept_distributed_trace_headers(headers, transport_type="AMQP")
             return wrapped(*args, **kwargs)
 
     else:
@@ -117,17 +113,12 @@ def wrap_task_call(wrapped, instance, args, kwargs):
                         if not transaction.accept_distributed_trace_headers(headers, transport_type="AMQP"):
                             try:
                                 dt_headers = MessageTrace.generate_request_headers(transaction)
-                                # original_headers = kwargs.get("headers", None)
                                 if dt_headers:
                                     if not headers:
                                         wrapped.request.headers = dict(dt_headers)
-                                        # kwargs["headers"] = dict(dt_headers)
                                     else:
                                         headers.update(dict(dt_headers))
                                         wrapped.request.headers = headers
-                                        # wrapped.request.headers.update(dict(dt_headers))
-                                        # kwargs["headers"] = dt_headers = dict(dt_headers)
-                                        # dt_headers.update(dict(headers))
                             except Exception:
                                 pass
                     elif transaction.settings.cross_application_tracer.enabled:

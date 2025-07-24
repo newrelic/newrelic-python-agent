@@ -45,7 +45,8 @@ log_message("New Relic Bootstrap (%s)", __file__)
 
 log_message("working_directory = %r", str(Path.cwd()))
 
-log_message("sys.prefix = %r", os.path.normpath(sys.prefix))
+sys_prefix = str(Path(sys.prefix).resolve())
+log_message("sys.prefix = %r", sys_prefix)
 
 try:
     log_message("sys.real_prefix = %r", sys.real_prefix)
@@ -100,7 +101,7 @@ else:
 # which was run and only continue if we are.
 
 expected_python_prefix = os.environ.get("NEW_RELIC_PYTHON_PREFIX")
-actual_python_prefix = os.path.realpath(os.path.normpath(sys.prefix))
+actual_python_prefix = sys_prefix
 
 expected_python_version = os.environ.get("NEW_RELIC_PYTHON_VERSION")
 actual_python_version = ".".join(map(str, sys.version_info[:2]))

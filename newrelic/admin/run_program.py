@@ -50,7 +50,8 @@ def run_program(args):
     log_message("working_directory = %r", str(Path.cwd()))
     log_message("current_command = %r", sys.argv)
 
-    log_message("sys.prefix = %r", os.path.normpath(sys.prefix))
+    sys_prefix = str(Path(sys.prefix).resolve())
+    log_message("sys.prefix = %r", sys_prefix)
 
     try:
         log_message("sys.real_prefix = %r", sys.real_prefix)
@@ -90,7 +91,7 @@ def run_program(args):
 
     os.environ["NEW_RELIC_ADMIN_COMMAND"] = repr(sys.argv)
 
-    os.environ["NEW_RELIC_PYTHON_PREFIX"] = os.path.realpath(os.path.normpath(sys.prefix))
+    os.environ["NEW_RELIC_PYTHON_PREFIX"] = sys_prefix
     os.environ["NEW_RELIC_PYTHON_VERSION"] = ".".join(map(str, sys.version_info[:2]))
 
     # If not an absolute or relative path, then we need to

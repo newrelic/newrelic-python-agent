@@ -29,14 +29,14 @@ def _load_docker_test_attributes():
     """
     test_cases = DOCKER_FIXTURE / "cases.json"
     with test_cases.open() as fh:
-        js = fh.read()
-    json_list = json.loads(js)
+        json_list = json.load(fh)
     docker_test_attributes = [(json_record["filename"], json_record["containerId"]) for json_record in json_list]
     return docker_test_attributes
 
 
 def mock_open(mock_file):
-    def _mock_open(filename, mode):
+    def _mock_open(path, mode):
+        filename = str(path)
         if filename == "/proc/self/cgroup":
             raise FileNotFoundError
         elif filename == "/proc/self/mountinfo":
@@ -50,7 +50,7 @@ def mock_open(mock_file):
 def test_docker_container_id_v2(monkeypatch, filename, containerId):
     path = DOCKER_FIXTURE / filename
     with path.open("rb") as f:
-        monkeypatch.setattr(u, "open", mock_open(f), raising=False)
+        monkeypatch.setattr(Path, "open", mock_open(f), raising=False)
         if containerId is not None:
             assert u.DockerUtilization.detect() == {"id": containerId}
         else:

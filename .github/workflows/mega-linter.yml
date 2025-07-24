@@ -22,6 +22,9 @@ on:
   # push: # Comment this line to trigger action only on pull-requests (not recommended if you don't pay for GH Actions)
   pull_request:
 
+permissions:
+  contents: read
+
 env: # Comment env block if you don't want to apply fixes
   # Apply linter fixes configuration
   APPLY_FIXES: all # When active, APPLY_FIXES must also be defined as environment variable (in github/workflows/mega-linter.yml or other CI tool)
@@ -42,7 +45,6 @@ jobs:
       contents: write
       issues: write
       pull-requests: write
-      statuses: write
     steps:
       # Git Checkout
       - name: Checkout Code
@@ -62,7 +64,6 @@ jobs:
           VALIDATE_ALL_CODEBASE: "true"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # ADD YOUR CUSTOM ENV VARIABLES HERE OR DEFINE THEM IN A FILE .mega-linter.yml AT THE ROOT OF YOUR REPOSITORY
-          GITHUB_STATUS_REPORTER: "true"
           GITHUB_COMMENT_REPORTER: "true"
           PYTHON_RUFF_ARGUMENTS: --config pyproject.toml --config 'output-format="github"'
           PYTHON_RUFF_FORMAT_ARGUMENTS: --config pyproject.toml --config 'output-format="github"'

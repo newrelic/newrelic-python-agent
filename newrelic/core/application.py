@@ -508,8 +508,8 @@ class Application:
             else:
                 sampling_target_period = configuration.sampling_target_period_in_seconds
             sampling_target = configuration.sampling_target
-            # If CT is enabled double the transaction reservoir size.
-            if configuration.core_tracing.enabled:
+            # If span reduction is enabled double the transaction reservoir size.
+            if configuration.distributed_tracing.drop_inprocess_spans.enabled or configuration.distributed_tracing.unique_spans.enabled:
                 sampling_target = configuration.sampling_target*2
             self.adaptive_sampler = AdaptiveSampler(sampling_target, sampling_target_period)
 

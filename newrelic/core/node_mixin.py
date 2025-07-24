@@ -63,7 +63,7 @@ class GenericNodeMixin:
         i_attrs["duration"] = self.duration
         i_attrs["category"] = "generic"
         # TODO: limit intrinsic attributes but this likely requires changes in the pipeline.
-        #if settings.core_tracing.enabled:
+        #if settings.distributed_tracing.minimize_attributes.enabled:
         #    i_ct_attrs = {"type", "name", "guid", "parentId", "transaction.name", "traceId", "timestamp", "duration", "nr.entryPoint", "transactionId"}
         #    i_attrs = {key: value for key, value in i_attrs.items() if key in i_ct_attrs}
 
@@ -74,38 +74,49 @@ class GenericNodeMixin:
             self.agent_attributes, settings.attribute_filter, DST_SPAN_EVENTS, attr_class=attr_class
         )
         u_attrs = self.processed_user_attributes
-        if settings.core_tracing.enabled:
+        if settings.distributed_tracing.unique_spans.enabled:
             # ids is the list of span guids that share this unqiue exit span.
-            u_attrs = {"ids": self.ids}
+            u_attrs["ids"] = self.ids
 
         u_attrs = attribute.resolve_user_attributes(
             u_attrs, settings.attribute_filter, DST_SPAN_EVENTS, attr_class=attr_class
         )
 
         start_time = time.time()
-        if settings.core_tracing.drop_inprocess_spans or settings.core_tracing.enabled:
+        if settings.distributed_tracing.drop_inprocess_spans.enabled or settings.distributed_tracing.unique_spans.enabled:
             exit_span_attrs_present = attribute.SPAN_ENTITY_RELATIONSHIP_ATTRIBUTES & set(a_attrs)
+            # If this is the entry node, always return it.
             if self.__class__.__name__ == "RootNode":
                 ct_processing_time[0] += (time.time() - start_time)
-                return [i_attrs, {}, {}] if settings.core_tracing.enabled else [i_attrs, u_attrs, a_attrs]
+                return [i_attrs, u_attrs, {}] if settings.distributed_tracing.minimize_attributes.enabled else [i_attrs, u_attrs, a_attrs]
+            # If the span is not an exit span, skip it by returning None.
             if not exit_span_attrs_present:
                 ct_processing_time[0] += (time.time() - start_time)
                 return None
-            if settings.core_tracing.enabled:
-                a_attrs = attr_class({key: a_attrs[key] for key in exit_span_attrs_present})
-                # TODO: use attr value name rather than str casting.
-                span_attrs = "".join([str(a_attrs[key]) for key in exit_span_attrs_present])
+            # If the span is an exit span but unique spans is enabled, we need to check
+            # for uniqueness before returning it.
+            if settings.distributed_tracing.unique_spans.enabled:
+                a_minimized_attrs = attr_class({key: a_attrs[key] for key in exit_span_attrs_present})
+                # Combine all the entity relationship attr values into a string to be
+                # used as the hash to check for uniqueness.
+                # TODO: use attr value name rather than str casting for infinite tracing.
+                span_attrs = "".join([str(a_minimized_attrs[key]) for key in exit_span_attrs_present])
                 new_exit_span = span_attrs not in ct_exit_spans
+                # If this is a new exit span, add it to the known ct_exit_spans and return it.
                 if new_exit_span:
                     ct_exit_spans[span_attrs] = self.ids
-                else:
-                    # For now add ids to user attributes list
-                    ct_exit_spans[span_attrs].append(self.guid)
-                if new_exit_span:
                     ct_processing_time[0] += (time.time() - start_time)
-                    return [i_attrs, u_attrs, a_attrs]
+                    return [i_attrs, u_attrs, a_minimized_attrs] if settings.distributed_tracing.minimize_attributes.enabled else [i_attrs, u_attrs, a_attrs]
+                # If this is an exit span we've already seen, add it's guid to the list
+                # of ids on the seen span and return None.
+                # For now add ids to user attributes list
+                ct_exit_spans[span_attrs].append(self.guid)
                 ct_processing_time[0] += (time.time() - start_time)
                 return None
+        elif settings.distributed_tracing.minimize_attributes.enabled:
+            # Drop all non-entity relationship attributes from the span.
+            exit_span_attrs_present = attribute.SPAN_ENTITY_RELATIONSHIP_ATTRIBUTES & set(a_attrs)
+            a_attrs = attr_class({key: a_attrs[key] for key in exit_span_attrs_present})
         ct_processing_time[0] += (time.time() - start_time)
         return [i_attrs, u_attrs, a_attrs]
 

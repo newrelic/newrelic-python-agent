@@ -184,7 +184,7 @@ class EnsureFutureHandler(tornado.web.RequestHandler):
             with FunctionTrace(name="trace", terminal=True):
                 await tornado.gen.sleep(0)
 
-        asyncio.ensure_future(coro_trace())
+        asyncio.ensure_future(coro_trace())  # noqa: RUF006
 
 
 class WebNestedHandler(WebSocketHandler):

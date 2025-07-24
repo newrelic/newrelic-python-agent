@@ -45,7 +45,6 @@ jobs:
       contents: write
       issues: write
       pull-requests: write
-      statuses: write
     steps:
       # Git Checkout
       - name: Checkout Code
@@ -65,7 +64,6 @@ jobs:
           VALIDATE_ALL_CODEBASE: "true"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # ADD YOUR CUSTOM ENV VARIABLES HERE OR DEFINE THEM IN A FILE .mega-linter.yml AT THE ROOT OF YOUR REPOSITORY
-          GITHUB_STATUS_REPORTER: "true"
           GITHUB_COMMENT_REPORTER: "true"
           PYTHON_RUFF_ARGUMENTS: --config pyproject.toml --config 'output-format="github"'
           PYTHON_RUFF_FORMAT_ARGUMENTS: --config pyproject.toml --config 'output-format="github"'

@@ -20,6 +20,7 @@ import subprocess
 import sys
 import threading
 import time
+from pathlib import Path
 from queue import Queue
 
 import pytest
@@ -92,18 +93,18 @@ def initialize_agent(app_name=None, default_settings=None):
     env_directory = os.environ.get("TOX_ENV_DIR", None)
 
     if env_directory is not None:
-        log_directory = os.path.join(env_directory, "log")
+        log_directory = Path(env_directory) / "log"
     else:
-        log_directory = "."
+        log_directory = Path.cwd()
 
-    log_file = os.path.join(log_directory, "python-agent-test.log")
+    log_file = log_directory / "python-agent-test.log"
     if "GITHUB_ACTIONS" in os.environ:
         log_level = logging.DEBUG
     else:
         log_level = logging.INFO
 
     try:
-        os.unlink(log_file)
+        log_file.unlink()
     except OSError:
         pass
 
@@ -227,7 +228,7 @@ def collector_agent_registration_fixture(
             api_host = "staging-api.newrelic.com"
 
         if not use_fake_collector and not use_developer_mode:
-            description = os.path.basename(os.path.normpath(sys.prefix))
+            description = Path(sys.prefix).resolve().name
             try:
                 _logger.debug("Record deployment marker host: %s", api_host)
                 record_deploy(

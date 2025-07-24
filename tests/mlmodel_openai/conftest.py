@@ -14,6 +14,7 @@
 
 import json
 import os
+from pathlib import Path
 
 import pytest
 from _mock_external_openai_server import (
@@ -72,7 +73,7 @@ else:
     ]
 
 
-OPENAI_AUDIT_LOG_FILE = os.path.join(os.path.realpath(os.path.dirname(__file__)), "openai_audit.log")
+OPENAI_AUDIT_LOG_FILE = Path(__file__).parent / "openai_audit.log"
 OPENAI_AUDIT_LOG_CONTENTS = {}
 # Intercept outgoing requests and log to file for mocking
 RECORDED_HEADERS = {"x-request-id", "content-type"}
@@ -163,7 +164,7 @@ def openai_server(
             wrap_function_wrapper("openai._streaming", "Stream._iter_events", wrap_stream_iter_events)
             yield  # Run tests
         # Write responses to audit log
-        with open(OPENAI_AUDIT_LOG_FILE, "w") as audit_log_fp:
+        with OPENAI_AUDIT_LOG_FILE.open("w") as audit_log_fp:
             json.dump(OPENAI_AUDIT_LOG_CONTENTS, fp=audit_log_fp, indent=4)
     else:
         # We are mocking openai responses so we don't need to do anything in this case.

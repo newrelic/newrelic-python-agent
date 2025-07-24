@@ -14,7 +14,6 @@
 
 import base64
 import json
-import os.path
 import ssl
 import zlib
 from http.server import BaseHTTPRequestHandler, HTTPServer

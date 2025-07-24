@@ -16,6 +16,7 @@ import os
 import sys
 import time
 import zlib
+from pathlib import Path
 from pprint import pprint
 
 from newrelic import version
@@ -264,7 +265,7 @@ class HttpClient(BaseClient):
                     internal_metric("Supportability/Python/Certificate/BundleRequired", 1)
 
             if ca_bundle_path:
-                if os.path.isdir(ca_bundle_path):
+                if Path(ca_bundle_path).is_dir():
                     connection_kwargs["ca_cert_dir"] = ca_bundle_path
                 else:
                     connection_kwargs["ca_certs"] = ca_bundle_path

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from pathlib import Path
+
 import pytest
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 from testing_support.mock_external_http_server import MockExternalHTTPServer
@@ -41,7 +43,7 @@ def create_handler(response):
 
 @pytest.fixture(scope="session")
 def server():
-    with open("packages.xml", "rb") as f:
+    with Path("packages.xml").open("rb") as f:
         response = f.read()
 
     handler = create_handler(response)

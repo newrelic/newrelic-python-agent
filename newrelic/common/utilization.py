@@ -18,6 +18,7 @@ import os
 import re
 import socket
 import string
+from pathlib import Path
 
 from newrelic.common.agent_http import InsecureHttpClient
 from newrelic.common.encoding_utils import json_decode
@@ -324,7 +325,7 @@ class DockerUtilization(CommonUtilization):
     def fetch(cls):
         # Try to read from cgroups
         try:
-            with open(cls.METADATA_FILE_CGROUPS_V1, "rb") as f:
+            with Path(cls.METADATA_FILE_CGROUPS_V1).open("rb") as f:
                 for line in f:
                     stripped = line.decode("utf-8").strip()
                     cgroup = stripped.split(":")
@@ -343,7 +344,7 @@ class DockerUtilization(CommonUtilization):
 
         # Fallback to reading from mountinfo
         try:
-            with open(cls.METADATA_FILE_CGROUPS_V2, "rb") as f:
+            with Path(cls.METADATA_FILE_CGROUPS_V2).open("rb") as f:
                 for line in f:
                     stripped = line.decode("utf-8").strip()
                     match = cls.METADATA_RE_CGROUPS_V2.match(stripped)

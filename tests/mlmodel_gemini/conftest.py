@@ -14,6 +14,7 @@
 
 import json
 import os
+from pathlib import Path
 
 import google.genai
 import pytest
@@ -46,7 +47,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 )
 
 
-GEMINI_AUDIT_LOG_FILE = os.path.join(os.path.realpath(os.path.dirname(__file__)), "gemini_audit.log")
+GEMINI_AUDIT_LOG_FILE = Path(__file__).parent / "gemini_audit.log"
 GEMINI_AUDIT_LOG_CONTENTS = {}
 # Intercept outgoing requests and log to file for mocking
 RECORDED_HEADERS = {"content-type"}
@@ -96,7 +97,7 @@ def gemini_server(gemini_clients, wrap_httpx_client_send):
         wrap_function_wrapper("httpx._client", "Client.send", wrap_httpx_client_send)
         yield  # Run tests
         # Write responses to audit log
-        with open(GEMINI_AUDIT_LOG_FILE, "w") as audit_log_fp:
+        with GEMINI_AUDIT_LOG_FILE.open("w") as audit_log_fp:
             json.dump(GEMINI_AUDIT_LOG_CONTENTS, fp=audit_log_fp, indent=4)
     else:
         # We are mocking responses so we don't need to do anything in this case.

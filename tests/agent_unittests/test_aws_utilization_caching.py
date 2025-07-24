@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import json
-import os
+from pathlib import Path
 
 import pytest
 from testing_support.mock_http_client import create_client_cls
@@ -21,8 +21,7 @@ from testing_support.validators.validate_internal_metrics import validate_intern
 
 from newrelic.common.utilization import AWSUtilization
 
-CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
-FIXTURE = os.path.normpath(os.path.join(CURRENT_DIR, "aws.json"))
+FIXTURE = Path(__file__).parent / "aws.json"
 
 _parameters_list = ["testname", "auth_token_cls", "uri", "expected_vendors_hash", "expected_metrics"]
 
@@ -40,7 +39,7 @@ def no_token(cls):
 
 
 def _load_tests():
-    with open(FIXTURE) as fh:
+    with FIXTURE.open() as fh:
         js = fh.read()
     return json.loads(js)
 

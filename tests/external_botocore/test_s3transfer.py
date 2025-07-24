@@ -78,5 +78,5 @@ def test_s3_context_propagation():
 
     # Upload file
     test_file = Path(__file__).parent / "_test_file.txt"
-    client.upload_file(Filename=test_file, Bucket=TEST_BUCKET, Key="_test_file.txt")
+    client.upload_file(Filename=str(test_file), Bucket=TEST_BUCKET, Key="_test_file.txt")
     # No return value to check for this function currently

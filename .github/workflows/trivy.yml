@@ -21,6 +21,9 @@ concurrency:
   group: ${{ github.ref || github.run_id }}-${{ github.workflow }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   # Upload Trivy data
   trivy:

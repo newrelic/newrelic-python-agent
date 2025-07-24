@@ -83,9 +83,9 @@ def run_program(args):
     python_path = boot_directory
 
     if "PYTHONPATH" in os.environ:
-        path = os.environ["PYTHONPATH"].split(os.path.pathsep)
+        path = os.environ["PYTHONPATH"].split(os.pathsep)
         if boot_directory not in path:
-            python_path = f"{boot_directory}{os.path.pathsep}{os.environ['PYTHONPATH']}"
+            python_path = f"{boot_directory}{os.pathsep}{os.environ['PYTHONPATH']}"
 
     os.environ["PYTHONPATH"] = python_path
 
@@ -102,7 +102,7 @@ def run_program(args):
     program_exe_path = Path(args[0])
 
     if not program_exe_path.parent:
-        program_search_path = os.environ.get("PATH", "").split(os.path.pathsep)
+        program_search_path = os.environ.get("PATH", "").split(os.pathsep)
         for path in program_search_path:
             path = Path(path) / program_exe_path
             if path.exists() and os.access(path, os.X_OK):

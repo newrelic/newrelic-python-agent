@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import shutil
 import sys
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -23,17 +21,17 @@ from newrelic.core import agent
 
 
 @pytest.mark.parametrize("content", [{}, {"opt": [1, 2, 3]}])
-def test_check_environment_failing(content):
-    temp_dir = Path(tempfile.mkdtemp())
+def test_check_environment_failing(tmp_path, content):
+    tmp_path = Path(tmp_path)
 
     try:
-        uwsgi_dir = temp_dir / "uwsgi"
+        uwsgi_dir = tmp_path / "uwsgi"
         init_file = uwsgi_dir / "__init__.py"
         uwsgi_dir.mkdir(parents=True)
         with init_file.open("w") as f:
             f.writelines(f"{key} = {value}" for key, value in content.items())
 
-        sys.path.insert(0, temp_dir)
+        sys.path.insert(0, str(tmp_path))
         import uwsgi
 
         for key, value in content.items():
@@ -41,6 +39,5 @@ def test_check_environment_failing(content):
 
         agent.check_environment()
     finally:
-        shutil.rmtree(temp_dir)
-        sys.path.remove(temp_dir)
+        sys.path.remove(str(tmp_path))
         del sys.modules["uwsgi"]

@@ -20,7 +20,7 @@ from _mocks import (
 )
 from pyzeebe import ZeebeClient, create_insecure_channel
 from pyzeebe.grpc_internals.zeebe_adapter import ZeebeAdapter
-from testing_support.fixtures import validate_attributes
+from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
@@ -31,7 +31,7 @@ client = ZeebeClient(create_insecure_channel())
 @validate_transaction_metrics(
     "test_zeebe_client:run_process", rollup_metrics=[("ZeebeClient/run_process", 1)], background_task=True
 )
-@validate_attributes("agent", ["zeebe.client.bpmnProcessId"])
+@validate_span_events(exact_agents={"zeebe.client.bpmnProcessId": "test_process"}, count=1)
 def test_run_process(monkeypatch, loop):
     monkeypatch.setattr(ZeebeAdapter, "create_process_instance", dummy_create_process_instance)
 
@@ -48,7 +48,7 @@ def test_run_process(monkeypatch, loop):
     rollup_metrics=[("ZeebeClient/run_process_with_result", 1)],
     background_task=True,
 )
-@validate_attributes("agent", ["zeebe.client.bpmnProcessId"])
+@validate_span_events(exact_agents={"zeebe.client.bpmnProcessId": "test_process"}, count=1)
 def test_run_process_with_result(monkeypatch, loop):
     monkeypatch.setattr(ZeebeAdapter, "create_process_instance_with_result", dummy_create_process_instance_with_result)
 
@@ -64,7 +64,7 @@ def test_run_process_with_result(monkeypatch, loop):
 @validate_transaction_metrics(
     "test_zeebe_client:deploy_resource", rollup_metrics=[("ZeebeClient/deploy_resource", 1)], background_task=True
 )
-@validate_attributes("agent", ["zeebe.client.resourceCount", "zeebe.client.resourceFile"])
+@validate_span_events(exact_agents={"zeebe.client.resourceCount": 1, "zeebe.client.resourceFile": "test.bpmn"}, count=1)
 def test_deploy_resource(monkeypatch, loop):
     monkeypatch.setattr(ZeebeAdapter, "deploy_resource", dummy_deploy_resource)
 
@@ -79,7 +79,7 @@ def test_deploy_resource(monkeypatch, loop):
 @validate_transaction_metrics(
     "test_zeebe_client:publish_message", rollup_metrics=[("ZeebeClient/publish_message", 1)], background_task=True
 )
-@validate_attributes("agent", ["zeebe.client.messageName", "zeebe.client.correlationKey", "zeebe.client.messageId"])
+@validate_span_events(exact_agents={"zeebe.client.messageName": "test_message", "zeebe.client.correlationKey": "999999", "zeebe.client.messageId": "abc123"}, count=1)
 def test_publish_message(monkeypatch, loop):
     monkeypatch.setattr(ZeebeAdapter, "publish_message", dummy_publish_message)
 

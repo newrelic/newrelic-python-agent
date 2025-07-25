@@ -33,7 +33,7 @@ async def dummy_task(x: int) -> dict:
     return {"result": x}
 
 
-@validate_transaction_metrics(name="test_process/testTask", group="ZeebeTask", scoped_metrics=[], background_task=True)
+@validate_transaction_metrics(group="ZeebeTask", name="test_process/testTask")
 @validate_custom_parameters(
     required_params=[
         ("zeebe.job.key", 123),

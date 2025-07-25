@@ -320,6 +320,10 @@ class SpanEventAttributesSettings(Settings):
     pass
 
 
+class DjangoMiddlewareSettings(Settings):
+    pass
+
+
 class DistributedTracingSettings(Settings):
     pass
 
@@ -514,6 +518,7 @@ _settings.serverless_mode = ServerlessModeSettings()
 _settings.slow_sql = SlowSqlSettings()
 _settings.span_events = SpanEventSettings()
 _settings.span_events.attributes = SpanEventAttributesSettings()
+_settings.django_middleware = DjangoMiddlewareSettings()
 _settings.strip_exception_messages = StripExceptionMessageSettings()
 _settings.synthetics = SyntheticsSettings()
 _settings.thread_profiler = ThreadProfilerSettings()
@@ -641,6 +646,17 @@ def _parse_attributes(s):
             valid.append(item)
         else:
             _logger.warning("Improperly formatted attribute: %r", item)
+    return valid
+
+
+# Called from newrelic.config.py to parse django_middleware lists
+def _parse_django_middleware(s):
+    valid = []
+    for item in s.split():
+        if "*" not in item[:-1] and len(item.encode("utf-8")) < 256:
+            valid.append(item)
+        else:
+            _logger.warning("Improperly formatted middleware: %r", item)
     return valid
 
 
@@ -819,6 +835,9 @@ _settings.span_events.enabled = _environ_as_bool("NEW_RELIC_SPAN_EVENTS_ENABLED"
 _settings.span_events.attributes.enabled = True
 _settings.span_events.attributes.exclude = []
 _settings.span_events.attributes.include = []
+
+_settings.django_middleware.enabled = True
+_settings.django_middleware.exclude = []
 
 _settings.transaction_segments.attributes.enabled = True
 _settings.transaction_segments.attributes.exclude = []

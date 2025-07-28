@@ -16,6 +16,7 @@ import logging
 import os
 import ssl
 import tempfile
+from pathlib import Path
 
 import pytest
 from testing_support.http_client_recorder import HttpClientRecorder
@@ -521,7 +522,7 @@ def test_audit_logging():
     protocol = AgentProtocol(settings, client_cls=HttpClientRecorder)
     protocol.send("preconnect")
 
-    with open(f.name) as f:
+    with Path(f.name).open() as f:
         audit_log_contents = f.read()
 
     assert audit_log_contents.startswith("*\n")

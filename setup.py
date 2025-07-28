@@ -15,6 +15,8 @@
 import os
 import sys
 
+from pathlib import Path
+
 python_version = sys.version_info[:2]
 
 if python_version >= (3, 7):
@@ -81,11 +83,13 @@ def newrelic_agent_next_version(version):
         return version.format_next_version(newrelic_agent_guess_next_version, fmt="{guessed}")
 
 
-script_directory = os.path.dirname(__file__)
+script_directory = Path(__file__).parent
 if not script_directory:
-    script_directory = os.getcwd()
+    script_directory = Path(os.getcwd())
 
-readme_file = os.path.join(script_directory, "README.md")
+readme_file = script_directory / "README.md"
+with readme_file.open() as f:
+    readme_file_contents = f.read()
 
 if sys.platform == "win32" and python_version > (2, 6):
     build_ext_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError, IOError)
@@ -162,7 +166,7 @@ kwargs = dict(
     },
     setup_requires=["setuptools_scm>=3.2,<9"],
     description="New Relic Python Agent",
-    long_description=open(readme_file).read(),
+    long_description=readme_file_contents,
     long_description_content_type="text/markdown",
     url="https://docs.newrelic.com/docs/apm/agents/python-agent/",
     project_urls={"Source": "https://github.com/newrelic/newrelic-python-agent"},

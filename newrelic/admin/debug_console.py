@@ -25,6 +25,7 @@ from newrelic.admin import command, usage
 )
 def debug_console(args):
     import sys
+    from pathlib import Path
 
     if len(args) == 0:
         usage("debug-console")
@@ -36,7 +37,7 @@ def debug_console(args):
     log_object = None
 
     if len(args) >= 2:
-        log_object = open(args[1], "w")
+        log_object = Path(args[1]).open("w")
 
     shell = ClientShell(config_file, log=log_object)
     shell.cmdloop()

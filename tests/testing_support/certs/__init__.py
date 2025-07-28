@@ -12,6 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
+from pathlib import Path
 
-CERT_PATH = os.path.join(os.path.dirname(__file__), "cert.pem")
+CERT_PATH = Path(__file__).parent / "cert.pem"

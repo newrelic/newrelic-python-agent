@@ -20,6 +20,7 @@ import sys
 import threading
 import time
 import traceback
+from pathlib import Path
 
 import newrelic.api.application
 import newrelic.api.background_task
@@ -937,7 +938,7 @@ def _load_configuration(config_file=None, environment=None, ignore_errors=True, 
                 raise newrelic.api.exceptions.ConfigurationError(
                     "TOML configuration file can only be used if tomllib is available (Python 3.11+)."
                 ) from exc
-            with open(config_file, "rb") as f:
+            with Path(config_file).open("rb") as f:
                 content = tomllib.load(f)
                 newrelic_section = content.get("tool", {}).get("newrelic")
                 if not newrelic_section:

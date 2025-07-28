@@ -11,10 +11,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import os
 import re
 import threading
 import time
+from pathlib import Path
 
 import pytest
 from testing_support.fixtures import initialize_agent
@@ -34,9 +34,8 @@ from newrelic.network.exceptions import DiscardDataForRequest
 
 def get_health_file_contents(tmp_path):
     # Grab the file we just wrote to and read its contents
-    health_files = os.listdir(tmp_path)
-    path_to_written_file = f"{tmp_path}/{health_files[0]}"
-    with open(path_to_written_file) as f:
+    health_file = list(Path(tmp_path).iterdir())[0]
+    with health_file.open() as f:
         contents = f.readlines()
         return contents
 

@@ -13,13 +13,11 @@
 # limitations under the License.
 
 import json
-import os
+from pathlib import Path
 
 import pytest
-from testing_support.fixtures import override_application_settings
 
 from newrelic.core import attribute_filter as af
-from newrelic.core.config import Settings, global_settings
 
 
 def _default_settings():
@@ -42,12 +40,11 @@ def _default_settings():
     }
 
 
-CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
-FIXTURE = os.path.join(CURRENT_DIR, "fixtures", "attribute_configuration.json")
+FIXTURE = Path(__file__).parent / "fixtures" / "attribute_configuration.json"
 
 
 def _load_tests():
-    with open(FIXTURE) as fh:
+    with FIXTURE.open() as fh:
         js = fh.read()
     return json.loads(js)
 

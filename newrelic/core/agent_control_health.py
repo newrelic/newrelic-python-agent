@@ -188,10 +188,10 @@ class AgentControlHealth:
             file_path = urlparse(self.health_delivery_location).path
             file_id = self.get_file_id()
             file_name = f"health-{file_id}.yml"
-            full_path = os.path.join(file_path, file_name)
+            full_path = Path(file_path) / file_name
             is_healthy = self.is_healthy
 
-            with open(full_path, "w") as f:
+            with full_path.open("w") as f:
                 f.write(f"healthy: {is_healthy}\n")
                 f.write(f"status: {self.status_message}\n")
                 f.write(f"start_time_unix_nano: {self.start_time_unix_nano}\n")

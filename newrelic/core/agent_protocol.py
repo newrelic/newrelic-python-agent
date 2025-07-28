@@ -14,6 +14,7 @@
 
 import logging
 import os
+from pathlib import Path
 
 from newrelic import version
 from newrelic.common import system_info
@@ -154,7 +155,7 @@ class AgentProtocol:
 
     def __init__(self, settings, host=None, client_cls=ApplicationModeClient):
         if settings.audit_log_file:
-            audit_log_fp = open(settings.audit_log_file, "a")
+            audit_log_fp = Path(settings.audit_log_file).open("a")
         else:
             audit_log_fp = None
 
@@ -531,7 +532,7 @@ class ServerlessModeProtocol(AgentProtocol):
 class OtlpProtocol(AgentProtocol):
     def __init__(self, settings, host=None, client_cls=ApplicationModeClient):
         if settings.audit_log_file:
-            audit_log_fp = open(settings.audit_log_file, "a")
+            audit_log_fp = Path(settings.audit_log_file).open("a")
         else:
             audit_log_fp = None
 

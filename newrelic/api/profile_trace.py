@@ -15,14 +15,15 @@
 import functools
 import os
 import sys
+from pathlib import Path
 
-from newrelic import __file__ as AGENT_PACKAGE_FILE
+import newrelic
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import current_trace
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 
-AGENT_PACKAGE_DIRECTORY = f"{os.path.dirname(AGENT_PACKAGE_FILE)}/"
+AGENT_PACKAGE_DIRECTORY = str(Path(newrelic.__file__).parent) + os.sep
 
 
 class ProfileTrace:

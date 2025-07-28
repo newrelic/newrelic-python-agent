@@ -16,11 +16,11 @@ import json
 import multiprocessing
 import os
 import sys
-import tempfile
 from importlib import reload
 from pathlib import Path
 
 import pytest
+from testing_support.util import NamedTemporaryFile
 
 FIXTURE = Path(__file__).parent / "fixtures" / "collector_hostname.json"
 
@@ -70,11 +70,12 @@ def _test_collector_hostname(
         reload(core_config)
         reload(config)
 
-        ini_file = tempfile.NamedTemporaryFile()
-        ini_file.write(ini_contents.encode("utf-8"))
-        ini_file.seek(0)
+        with NamedTemporaryFile() as ini_file:
+            ini_file.write(ini_contents.encode("utf-8"))
+            ini_file.seek(0)
 
-        config.initialize(ini_file.name)
+            config.initialize(ini_file.name)
+
         settings = core_config.global_settings()
         assert settings.host == hostname
 

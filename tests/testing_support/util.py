@@ -14,8 +14,11 @@
 
 import re
 import socket
+import sys
+import tempfile
 import time
 from functools import wraps
+from pathlib import Path
 
 
 def _to_int(version_str):
@@ -83,3 +86,26 @@ def retry(attempts=5, wait=5):
         return wrapper
 
     return decorator
+
+
+def NamedTemporaryFile(*args, **kwargs):
+    """A wrapper around tempfile.NamedTemporaryFile that fixes issues with file flags on Windows."""
+    if sys.platform == "win32":
+        # Set delete=False to prevent file flags being set incorrectly on Windows.
+        kwargs["delete"] = False
+
+    # Create the temporary file
+    temp_file = tempfile.NamedTemporaryFile(*args, **kwargs)
+    temp_file.path = Path(temp_file.name)  # Add path attribute for convenience
+
+    # Patch the __exit__ method to manually remove the file on exit
+    original_exit = temp_file.__exit__
+
+    def remove_on_exit(*args, **kwargs):
+        original_exit(*args, **kwargs)
+        # Clean up the file manually
+        temp_file.path.unlink(missing_ok=True)
+
+    temp_file.__exit__ = remove_on_exit
+
+    return temp_file

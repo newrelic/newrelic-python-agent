@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import re
+import sys
 import threading
 import time
 from pathlib import Path
 
 import pytest
-import sys
 from testing_support.fixtures import initialize_agent
 from testing_support.http_client_recorder import HttpClientRecorder
 

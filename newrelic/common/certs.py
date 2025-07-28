@@ -14,8 +14,8 @@
 
 """This module returns the CA certificate bundle included with the agent."""
 
-import os
+from pathlib import Path
 
 
 def where():
-    return os.path.join(os.path.dirname(__file__), "cacert.pem")
+    return Path(__file__).parent / "cacert.pem"

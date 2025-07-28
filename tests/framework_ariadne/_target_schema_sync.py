@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
+from pathlib import Path
 
 import webtest
 from ariadne import MutationType, QueryType, UnionType, load_schema_from_path, make_executable_schema
@@ -30,7 +30,7 @@ elif ariadne_version_tuple >= (0, 16):
     from ariadne.asgi.graphql import GraphQL as GraphQLASGI
 
 
-schema_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "schema.graphql")
+schema_file = Path(__file__).parent / "schema.graphql"
 type_defs = load_schema_from_path(schema_file)
 
 storage = []

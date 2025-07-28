@@ -13,14 +13,13 @@
 # limitations under the License.
 
 import json
-import os
+from pathlib import Path
 
 import pytest
 
 import newrelic.common.utilization as u
 
-CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
-DOCKER_FIXTURE = os.path.join(CURRENT_DIR, "fixtures", "docker_container_id")
+DOCKER_FIXTURE = Path(__file__).parent / "fixtures" / "docker_container_id"
 
 
 def _load_docker_test_attributes():
@@ -28,16 +27,16 @@ def _load_docker_test_attributes():
     [(<filename>, <containerId>), ...]
 
     """
-    test_cases = os.path.join(DOCKER_FIXTURE, "cases.json")
-    with open(test_cases) as fh:
-        js = fh.read()
-    json_list = json.loads(js)
+    test_cases = DOCKER_FIXTURE / "cases.json"
+    with test_cases.open() as fh:
+        json_list = json.load(fh)
     docker_test_attributes = [(json_record["filename"], json_record["containerId"]) for json_record in json_list]
     return docker_test_attributes
 
 
 def mock_open(mock_file):
-    def _mock_open(filename, mode):
+    def _mock_open(path, mode):
+        filename = str(path)
         if filename == "/proc/self/mountinfo":
             raise FileNotFoundError
         elif filename == "/proc/self/cgroup":
@@ -49,9 +48,9 @@ def mock_open(mock_file):
 
 @pytest.mark.parametrize("filename, containerId", _load_docker_test_attributes())
 def test_docker_container_id_v1(monkeypatch, filename, containerId):
-    path = os.path.join(DOCKER_FIXTURE, filename)
-    with open(path, "rb") as f:
-        monkeypatch.setattr(u, "open", mock_open(f), raising=False)
+    path = DOCKER_FIXTURE / filename
+    with path.open("rb") as f:
+        monkeypatch.setattr(Path, "open", mock_open(f), raising=False)
         if containerId is not None:
             assert u.DockerUtilization.detect() == {"id": containerId}
         else:

@@ -17,11 +17,11 @@ import copy
 import logging
 import pathlib
 import sys
-import tempfile
 import urllib.parse as urlparse
 
 import pytest
 from testing_support.fixtures import override_generic_settings
+from testing_support.util import NamedTemporaryFile
 
 from newrelic.api.exceptions import ConfigurationError
 from newrelic.common.object_names import callable_name
@@ -637,7 +637,7 @@ app_name = Python Agent Test (agent_features)
 def test_initialize_raises_if_config_does_not_match_previous():
     error_message = "Configuration has already been done against differing configuration file or environment.*"
     with pytest.raises(ConfigurationError, match=error_message):
-        with tempfile.NamedTemporaryFile() as f:
+        with NamedTemporaryFile() as f:
             f.write(newrelic_ini_contents)
             f.seek(0)
 
@@ -646,7 +646,7 @@ def test_initialize_raises_if_config_does_not_match_previous():
 
 def test_initialize_via_config_file():
     _reset_configuration_done()
-    with tempfile.NamedTemporaryFile() as f:
+    with NamedTemporaryFile() as f:
         f.write(newrelic_ini_contents)
         f.seek(0)
 
@@ -667,7 +667,7 @@ def test_initialize_config_file_does_not_exist():
 
 def test_initialize_environment():
     _reset_configuration_done()
-    with tempfile.NamedTemporaryFile() as f:
+    with NamedTemporaryFile() as f:
         f.write(newrelic_ini_contents)
         f.seek(0)
 
@@ -676,7 +676,7 @@ def test_initialize_environment():
 
 def test_initialize_log_level():
     _reset_configuration_done()
-    with tempfile.NamedTemporaryFile() as f:
+    with NamedTemporaryFile() as f:
         f.write(newrelic_ini_contents)
         f.seek(0)
 
@@ -685,7 +685,7 @@ def test_initialize_log_level():
 
 def test_initialize_log_file():
     _reset_configuration_done()
-    with tempfile.NamedTemporaryFile() as f:
+    with NamedTemporaryFile() as f:
         f.write(newrelic_ini_contents)
         f.seek(0)
 
@@ -700,7 +700,7 @@ def test_initialize_config_file_feature_flag(feature_flag, expect_warning, logge
     apply_config_setting(settings, "feature_flag", feature_flag)
     _reset_configuration_done()
 
-    with tempfile.NamedTemporaryFile() as f:
+    with NamedTemporaryFile() as f:
         f.write(newrelic_ini_contents)
         f.seek(0)
 
@@ -759,7 +759,7 @@ def test_initialize_config_file_with_traces(setting_name, setting_value, expect_
     apply_config_setting(settings, setting_name, setting_value)
     _reset_configuration_done()
 
-    with tempfile.NamedTemporaryFile() as f:
+    with NamedTemporaryFile() as f:
         f.write(newrelic_ini_contents)
         f.seek(0)
 
@@ -951,7 +951,7 @@ def test_initialize_developer_mode(section, expect_error, logger):
     _reset_instrumentation_done()
     _reset_config_parser()
 
-    with tempfile.NamedTemporaryFile() as f:
+    with NamedTemporaryFile() as f:
         f.write(newrelic_ini_contents)
         f.write(section)
         f.seek(0)
@@ -1019,7 +1019,7 @@ def test_toml_parse_development():
     _reset_config_parser()
     _reset_instrumentation_done()
 
-    with tempfile.NamedTemporaryFile(suffix=".toml") as f:
+    with NamedTemporaryFile(suffix=".toml") as f:
         f.write(newrelic_toml_contents)
         f.seek(0)
 
@@ -1041,7 +1041,7 @@ def test_toml_parse_production():
     _reset_config_parser()
     _reset_instrumentation_done()
 
-    with tempfile.NamedTemporaryFile(suffix=".toml") as f:
+    with NamedTemporaryFile(suffix=".toml") as f:
         f.write(newrelic_toml_contents)
         f.seek(0)
 
@@ -1061,7 +1061,7 @@ def test_config_file_path_types_ini(pathtype):
     _reset_config_parser()
     _reset_instrumentation_done()
 
-    with tempfile.NamedTemporaryFile(suffix=".ini") as f:
+    with NamedTemporaryFile(suffix=".ini") as f:
         f.write(newrelic_ini_contents)
         f.seek(0)
 
@@ -1081,7 +1081,7 @@ def test_config_file_path_types_toml(pathtype):
     _reset_config_parser()
     _reset_instrumentation_done()
 
-    with tempfile.NamedTemporaryFile(suffix=".toml") as f:
+    with NamedTemporaryFile(suffix=".toml") as f:
         f.write(newrelic_toml_contents)
         f.seek(0)
 

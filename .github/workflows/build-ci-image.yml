@@ -17,6 +17,9 @@ name: Build CI Image
 on:
   workflow_dispatch: # Allow manual trigger
 
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.ref || github.run_id }}
   cancel-in-progress: true
@@ -24,6 +27,10 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-24.04
+
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # 4.2.2

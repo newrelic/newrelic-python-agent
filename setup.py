@@ -84,8 +84,6 @@ def newrelic_agent_next_version(version):
 
 
 script_directory = Path(__file__).parent
-if not script_directory:
-    script_directory = Path(os.getcwd())
 
 readme_file = script_directory / "README.md"
 with readme_file.open() as f:

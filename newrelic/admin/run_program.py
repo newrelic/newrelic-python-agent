@@ -99,17 +99,18 @@ def run_program(args):
     # be found in current working directory even though '.'
     # not in PATH.
 
-    program_exe_path = Path(args[0])
+    program_exe_path = args[0]
 
-    if not program_exe_path.parent:
+    # Don't use path.parent, as it can't distinguish between ./ and no parent.
+    if not os.path.dirname(program_exe_path):  # noqa: PTH120
         program_search_path = os.environ.get("PATH", "").split(os.pathsep)
         for path in program_search_path:
             path = Path(path) / program_exe_path
             if path.exists() and os.access(path, os.X_OK):
-                program_exe_path = path
+                program_exe_path = str(path)  # Convert to str to match other code path
                 break
 
-    log_message("program_exe_path = %r", str(program_exe_path))
+    log_message("program_exe_path = %r", program_exe_path)
     log_message("execl_arguments = %r", [program_exe_path, *args])
 
     os.execl(program_exe_path, *args)  # noqa: S606

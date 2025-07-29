@@ -192,4 +192,4 @@ class DatastoreNodeMixin(GenericNodeMixin):
         except Exception:
             pass
 
-        return super().span_event(settings, i_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class, *args, **kwargs)
+        return super().span_event(settings, base_attrs=i_attrs, parent_guid=parent_guid, attr_class=attr_class, *args, **kwargs)

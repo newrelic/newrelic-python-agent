@@ -623,7 +623,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
 
         # Determine extractor by model type
         for extractor_name, request_extractor, response_extractor, stream_extractor in MODEL_EXTRACTORS:  # noqa: B007
-            if model.startswith(extractor_name):
+            if extractor_name in model:
                 break
         else:
             # Model was not found in extractor list

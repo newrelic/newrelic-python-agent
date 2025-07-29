@@ -28,6 +28,7 @@ import re
 import types
 import zlib
 from collections import OrderedDict
+from pathlib import Path
 
 HEXDIGLC_RE = re.compile("^[0-9a-f]+$")
 DELIMITER_FORMAT_RE = re.compile("[ \t]*,[ \t]*")
@@ -70,6 +71,8 @@ def json_encode(obj, **kwargs):
             return list(o)
         elif hasattr(o, "__iter__"):
             return list(iter(o))
+        elif isinstance(o, Path):
+            return str(o)
         raise TypeError(repr(o) + " is not JSON serializable")
 
     _kwargs["default"] = _encode

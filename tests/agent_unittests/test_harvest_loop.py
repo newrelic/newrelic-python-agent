@@ -15,6 +15,7 @@
 import random
 import tempfile
 import time
+from pathlib import Path
 
 import pytest
 from testing_support.fixtures import failing_endpoint, function_not_called, override_generic_settings
@@ -295,7 +296,7 @@ def test_application_harvest():
     assert endpoints_called[-2] == "metric_data"
 
     # verify audit log is not empty
-    with open(settings.audit_log_file, "rb") as f:
+    with Path(settings.audit_log_file).open("rb") as f:
         assert f.read()
 
 
@@ -314,7 +315,7 @@ def test_serverless_application_harvest():
     app.harvest()
 
     # verify audit log is not empty
-    with open(settings.audit_log_file, "rb") as f:
+    with Path(settings.audit_log_file).open("rb") as f:
         assert f.read()
 
 

@@ -141,6 +141,7 @@ def validate_config(args):
     import os
     import sys
     import time
+    from pathlib import Path
 
     if len(args) == 0:
         usage("validate-config")
@@ -154,12 +155,12 @@ def validate_config(args):
     if len(args) >= 2:
         log_file = args[1]
     else:
-        log_file = "/tmp/python-agent-test.log"
+        log_file = Path("/tmp/python-agent-test.log")
 
     log_level = logging.DEBUG
 
     try:
-        os.unlink(log_file)
+        log_file.unlink()
     except Exception:
         pass
 

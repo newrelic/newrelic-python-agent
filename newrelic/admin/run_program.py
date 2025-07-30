@@ -31,6 +31,7 @@ def run_program(args):
     import os
     import sys
     import time
+    from pathlib import Path
 
     if len(args) == 0:
         usage("run-program")
@@ -46,10 +47,11 @@ def run_program(args):
 
     log_message("New Relic Admin Script (%s)", __file__)
 
-    log_message("working_directory = %r", os.getcwd())
+    log_message("working_directory = %r", str(Path.cwd()))
     log_message("current_command = %r", sys.argv)
 
-    log_message("sys.prefix = %r", os.path.normpath(sys.prefix))
+    sys_prefix = str(Path(sys.prefix).resolve())
+    log_message("sys.prefix = %r", sys_prefix)
 
     try:
         log_message("sys.real_prefix = %r", sys.real_prefix)
@@ -67,10 +69,13 @@ def run_program(args):
                 continue
             log_message("%s = %r", name, os.environ.get(name))
 
-    from newrelic import __file__ as root_directory
+    import newrelic
 
-    root_directory = os.path.dirname(root_directory)
-    boot_directory = os.path.join(root_directory, "bootstrap")
+    root_directory = Path(newrelic.__file__).parent
+    boot_directory = root_directory / "bootstrap"
+
+    root_directory = str(root_directory)
+    boot_directory = str(boot_directory)
 
     log_message("root_directory = %r", root_directory)
     log_message("boot_directory = %r", boot_directory)
@@ -78,15 +83,15 @@ def run_program(args):
     python_path = boot_directory
 
     if "PYTHONPATH" in os.environ:
-        path = os.environ["PYTHONPATH"].split(os.path.pathsep)
+        path = os.environ["PYTHONPATH"].split(os.pathsep)
         if boot_directory not in path:
-            python_path = f"{boot_directory}{os.path.pathsep}{os.environ['PYTHONPATH']}"
+            python_path = f"{boot_directory}{os.pathsep}{os.environ['PYTHONPATH']}"
 
     os.environ["PYTHONPATH"] = python_path
 
     os.environ["NEW_RELIC_ADMIN_COMMAND"] = repr(sys.argv)
 
-    os.environ["NEW_RELIC_PYTHON_PREFIX"] = os.path.realpath(os.path.normpath(sys.prefix))
+    os.environ["NEW_RELIC_PYTHON_PREFIX"] = sys_prefix
     os.environ["NEW_RELIC_PYTHON_VERSION"] = ".".join(map(str, sys.version_info[:2]))
 
     # If not an absolute or relative path, then we need to
@@ -96,15 +101,16 @@ def run_program(args):
 
     program_exe_path = args[0]
 
-    if not os.path.dirname(program_exe_path):
-        program_search_path = os.environ.get("PATH", "").split(os.path.pathsep)
+    # Don't use path.parent, as it can't distinguish between ./ and no parent.
+    if not os.path.dirname(program_exe_path):  # noqa: PTH120
+        program_search_path = os.environ.get("PATH", "").split(os.pathsep)
         for path in program_search_path:
-            path = os.path.join(path, program_exe_path)
-            if os.path.exists(path) and os.access(path, os.X_OK):
-                program_exe_path = path
+            path = Path(path) / program_exe_path
+            if path.exists() and os.access(path, os.X_OK):
+                program_exe_path = str(path)  # Convert to str to match other code path
                 break
 
     log_message("program_exe_path = %r", program_exe_path)
-    log_message("execl_arguments = %r", [program_exe_path] + args)
+    log_message("execl_arguments = %r", [program_exe_path, *args])
 
     os.execl(program_exe_path, *args)  # noqa: S606

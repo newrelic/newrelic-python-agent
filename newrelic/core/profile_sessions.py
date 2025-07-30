@@ -19,6 +19,7 @@ import threading
 import time
 import zlib
 from collections import defaultdict, deque
+from pathlib import Path
 from sys import intern
 
 import newrelic
@@ -28,7 +29,7 @@ from newrelic.core.trace_cache import trace_cache
 
 _logger = logging.getLogger(__name__)
 
-AGENT_PACKAGE_DIRECTORY = os.path.dirname(newrelic.__file__) + os.sep
+AGENT_PACKAGE_DIRECTORY = str(Path(newrelic.__file__).parent) + os.sep
 
 
 class SessionState:

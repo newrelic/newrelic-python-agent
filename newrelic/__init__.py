@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os.path
+from pathlib import Path
 
-THIS_DIR = os.path.dirname(__file__)
+VERSION_FILE = Path(__file__).parent / "version.txt"
 
 try:
-    with open(os.path.join(THIS_DIR, "version.txt")) as f:
+    with VERSION_FILE.open() as f:
         version = f.read()
-except:
+except Exception:
     version = "0.0.0"
 
 version_info = list(map(int, version.split(".")))

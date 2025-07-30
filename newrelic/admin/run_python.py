@@ -96,15 +96,17 @@ def run_python(args):
     # this script in preference to that used to execute this
     # script.
 
-    bin_directory = Path(sys.argv[0]).parent
+    argv_executable = sys.argv[0]
 
+    # Don't use path.parent, as it can't distinguish between ./ and no parent.
+    bin_directory = os.path.dirname(argv_executable)  # noqa: PTH120
     if bin_directory:
         python_exe = Path(sys.executable).name
-        python_exe_path = bin_directory / python_exe
+        python_exe_path = Path(bin_directory) / python_exe
         if not python_exe_path.exists() or not os.access(python_exe_path, os.X_OK):
-            python_exe_path = sys.executable
+            python_exe_path = Path(sys.executable)
     else:
-        python_exe_path = sys.executable
+        python_exe_path = Path(sys.executable)
 
     log_message("python_exe_path = %r", str(python_exe_path))
     log_message("execl_arguments = %r", [python_exe_path, python_exe_path, *args])

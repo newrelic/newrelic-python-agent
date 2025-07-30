@@ -20,7 +20,7 @@ import threading
 import moto.server
 import pytest
 import werkzeug.serving
-from external_botocore._mock_external_bedrock_server import MockExternalBedrockServer
+from external_botocore._mock_external_bedrock_server_invoke_model import MockExternalBedrockServer
 from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 

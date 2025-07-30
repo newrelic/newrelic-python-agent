@@ -42,7 +42,8 @@ def test_celery_task_distributed_tracing_inside_background_task(dt_enabled):
         ],
         background_task=True,
     )
-    @validate_transaction_count(2)  # One for the background task, one for the Celery task.  Runs in different processes.
+    @validate_transaction_count(2)
+    # One for the background task, one for the Celery task.  Runs in different processes.
     @background_task()
     def _test():
         result = add.apply_async((1, 2))
@@ -50,8 +51,8 @@ def test_celery_task_distributed_tracing_inside_background_task(dt_enabled):
         assert result == 3
 
     _test()
-    
-    
+
+
 @pytest.mark.parametrize("dt_enabled", [True, False])
 def test_celery_task_distributed_tracing_outside_background_task(dt_enabled):
     @override_application_settings({"distributed_tracing.enabled": dt_enabled})
@@ -71,10 +72,10 @@ def test_celery_task_distributed_tracing_outside_background_task(dt_enabled):
         assert result == 3
 
     _test()
-    
 
-# In this case, the background task creating the transaction 
-# has not generated a distributed trace header, so the Celery 
+
+# In this case, the background task creating the transaction
+# has not generated a distributed trace header, so the Celery
 # task will not have a distributed trace header to accept.
 @pytest.mark.parametrize("dt_enabled", [True, False])
 def test_celery_task_distributed_tracing_inside_background_task_apply(dt_enabled):
@@ -91,8 +92,8 @@ def test_celery_task_distributed_tracing_inside_background_task_apply(dt_enabled
         assert result == 3
 
     _test()
-    
-    
+
+
 @pytest.mark.parametrize("dt_enabled", [True, False])
 def test_celery_task_distributed_tracing_outside_background_task_apply(dt_enabled):
     @override_application_settings({"distributed_tracing.enabled": dt_enabled})

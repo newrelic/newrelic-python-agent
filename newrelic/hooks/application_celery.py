@@ -28,12 +28,13 @@ from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.message_trace import MessageTrace
 from newrelic.api.pre_function import wrap_pre_function
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import FunctionWrapper, _NRBoundFunctionWrapper, wrap_function_wrapper
+from newrelic.common.object_wrapper import FunctionWrapper, wrap_function_wrapper
 from newrelic.common.signature import bind_args
 from newrelic.core.agent import shutdown_agent
 
 UNKNOWN_TASK_NAME = "<Unknown Task>"
 MAPPING_TASK_NAMES = {"celery.starmap", "celery.map"}
+
 
 def task_info(instance, *args, **kwargs):
     # Grab the current task, which can be located in either place
@@ -129,14 +130,14 @@ def wrap_task_call(wrapped, instance, args, kwargs):
             except Exception:
                 pass
 
-            return wrapped(*args, **kwargs) 
+            return wrapped(*args, **kwargs)
 
 
 def wrap_build_tracer(wrapped, instance, args, kwargs):
     class TaskWrapper(FunctionWrapper):
         def run(self, *args, **kwargs):
             return self.__call__(*args, **kwargs)
-        
+
     try:
         bound_args = bind_args(wrapped, args, kwargs)
         task = bound_args.get("task", None)
@@ -144,7 +145,7 @@ def wrap_build_tracer(wrapped, instance, args, kwargs):
         task = TaskWrapper(task, wrap_task_call)
         task.__module__ = wrapped.__module__  # Ensure module is set for monkeypatching detection
         bound_args["task"] = task
-            
+
         return wrapped(**bound_args)
     except:
         # If we can't bind the args, we just call the wrapped function
@@ -259,15 +260,15 @@ def CeleryTaskWrapper(wrapped):
 
 def instrument_celery_local(module):
     if hasattr(module, "Proxy"):
-        # This is used in the case where the function is 
-        # called directly on the Proxy object (rather than 
+        # This is used in the case where the function is
+        # called directly on the Proxy object (rather than
         # using "delay" or "apply_async")
         module.Proxy.__call__ = CeleryTaskWrapper(module.Proxy.__call__)
 
 
 def instrument_celery_worker(module):
     if hasattr(module, "process_initializer"):
-        # We try and force activation of the agent before 
+        # We try and force activation of the agent before
         # the worker process starts.
         _process_initializer = module.process_initializer
 
@@ -277,8 +278,7 @@ def instrument_celery_worker(module):
             return _process_initializer(*args, **kwargs)
 
         module.process_initializer = process_initializer
-        
-    
+
     if hasattr(module, "process_destructor"):
         # We try and force shutdown of the agent before
         # the worker process exits.
@@ -305,10 +305,8 @@ def instrument_billiard_pool(module):
 
     if hasattr(module, "Worker") and hasattr(module.Worker, "_do_exit"):
         wrap_pre_function(module, "Worker._do_exit", force_agent_shutdown)
-    
+
 
 def instrument_celery_app_trace(module):
     if hasattr(module, "build_tracer"):
         wrap_function_wrapper(module, "build_tracer", wrap_build_tracer)
-        
-

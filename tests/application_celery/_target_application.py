@@ -25,12 +25,14 @@ app = Celery(
     broker_heartbeat=0,
 )
 
+
 class CustomCeleryTaskWithSuper(Task):
     def __call__(self, *args, **kwargs):
         transaction = current_transaction()
         if transaction:
             transaction.add_custom_attribute("custom_task_attribute", "Called with super")
         return super().__call__(*args, **kwargs)
+
 
 class CustomCeleryTaskWithRun(Task):
     def __call__(self, *args, **kwargs):

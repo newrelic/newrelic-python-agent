@@ -169,7 +169,6 @@ jobs:
           echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
-          GITHUB_JOB: ${{ github.job }}
 
       - name: Test
         run: |
@@ -221,7 +220,6 @@ jobs:
           echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
-          GITHUB_JOB: ${{ github.job }}
 
       - name: Test
         run: |
@@ -287,7 +285,6 @@ jobs:
           echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
-          GITHUB_JOB: ${{ github.job }}
 
       - name: Test
         run: |
@@ -354,7 +351,6 @@ jobs:
           echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
-          GITHUB_JOB: ${{ github.job }}
 
       - name: Test
         run: |
@@ -421,7 +417,6 @@ jobs:
           echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
-          GITHUB_JOB: ${{ github.job }}
 
       - name: Test
         run: |
@@ -491,7 +486,6 @@ jobs:
           echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
-          GITHUB_JOB: ${{ github.job }}
 
       - name: Test
         run: |
@@ -561,7 +555,6 @@ jobs:
           echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
-          GITHUB_JOB: ${{ github.job }}
 
       - name: Test
         run: |
@@ -667,7 +660,6 @@ jobs:
           echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
-          GITHUB_JOB: ${{ github.job }}
 
       - name: Test
         run: |
@@ -732,7 +724,6 @@ jobs:
           echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
-          GITHUB_JOB: ${{ github.job }}
 
       - name: Test
         run: |
@@ -799,7 +790,6 @@ jobs:
           echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
-          GITHUB_JOB: ${{ github.job }}
 
       - name: Test
         run: |
@@ -867,7 +857,6 @@ jobs:
           echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
-          GITHUB_JOB: ${{ github.job }}
 
       - name: Test
         run: |
@@ -932,7 +921,6 @@ jobs:
           echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
-          GITHUB_JOB: ${{ github.job }}
 
       - name: Test
         run: |
@@ -998,7 +986,6 @@ jobs:
           echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
-          GITHUB_JOB: ${{ github.job }}
 
       - name: Test
         run: |
@@ -1075,7 +1062,6 @@ jobs:
           echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
-          GITHUB_JOB: ${{ github.job }}
 
       - name: Test
         run: |
@@ -1140,7 +1126,6 @@ jobs:
           echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
-          GITHUB_JOB: ${{ github.job }}
 
       - name: Test
         run: |
@@ -1205,7 +1190,6 @@ jobs:
           echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
-          GITHUB_JOB: ${{ github.job }}
 
       - name: Test
         run: |
@@ -1275,7 +1259,6 @@ jobs:
           echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
-          GITHUB_JOB: ${{ github.job }}
 
       - name: Test
         run: |
@@ -1342,7 +1325,6 @@ jobs:
           echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
-          GITHUB_JOB: ${{ github.job }}
 
       - name: Test
         run: |
@@ -1410,7 +1392,6 @@ jobs:
           echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
-          GITHUB_JOB: ${{ github.job }}
 
       - name: Test
         run: |
@@ -1482,7 +1463,6 @@ jobs:
           echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
-          GITHUB_JOB: ${{ github.job }}
 
       - name: Test
         run: |
@@ -1547,7 +1527,6 @@ jobs:
           echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
-          GITHUB_JOB: ${{ github.job }}
 
       - name: Test
         run: |
@@ -1614,7 +1593,6 @@ jobs:
           echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
-          GITHUB_JOB: ${{ github.job }}
 
       - name: Test
         run: |

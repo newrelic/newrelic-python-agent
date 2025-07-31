@@ -68,7 +68,7 @@ def server():
 
 def load_tests():
     result = []
-    with FIXTURE.open() as fh:
+    with FIXTURE.open(encoding="utf-8") as fh:
         tests = json.load(fh)
 
     for test in tests:

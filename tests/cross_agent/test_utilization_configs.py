@@ -37,7 +37,7 @@ FIXTURE = Path(__file__).parent / "fixtures" / "utilization" / "utilization_json
 
 
 def _load_tests():
-    with FIXTURE.open() as fh:
+    with FIXTURE.open(encoding="utf-8") as fh:
         js = fh.read()
     return json.loads(js)
 

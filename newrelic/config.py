@@ -1197,8 +1197,9 @@ def _module_function_glob(module, object_path):
         # Globbing must be done using fnmatch.fnmatchcase as
         # fnmatch.filter and fnmatch.fnmatch use os.path.normcase
         # which cause case insensitivity issues on Windows.
-    
+
         return [func for func in available_functions if fnmatch.fnmatchcase(func, object_path)]
+
 
 # Setup wsgi application wrapper defined in configuration file.
 

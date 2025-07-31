@@ -25,7 +25,7 @@ GITHUB_JOB = os.environ["GITHUB_JOB"]
 def main(stdin):
     environments = [env.rstrip() for env in stdin]
     filtered_envs = [env for env in environments if env.startswith(GITHUB_JOB + "-")]
-    grouped_envs = environments[GROUP_NUMBER::TOTAL_GROUPS]
+    grouped_envs = filtered_envs[GROUP_NUMBER::TOTAL_GROUPS]
     joined_envs = ",".join(grouped_envs)
 
     # If not environments are found, raise an error with helpful information.

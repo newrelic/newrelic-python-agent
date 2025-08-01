@@ -13,31 +13,14 @@
 # limitations under the License.
 
 import celery
-import pytest
-from _target_application import add, tsum
+from _target_application import add, add_with_run, add_with_super, tsum
 from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
+from testing_support.validators.validate_custom_parameters import validate_custom_parameters
 from testing_support.validators.validate_transaction_count import validate_transaction_count
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
-FORGONE_TASK_METRICS = [("Function/_target_application.add", None), ("Function/_target_application.tsum", None)]
 
-
-@pytest.fixture(scope="module", autouse=True, params=[False, True], ids=["unpatched", "patched"])
-def with_worker_optimizations(request, celery_worker_available):
-    if request.param:
-        celery.app.trace.setup_worker_optimizations(celery_worker_available.app)
-
-    yield request.param
-    celery.app.trace.reset_worker_optimizations()
-
-
-@validate_transaction_metrics(
-    name="_target_application.add",
-    group="Celery",
-    scoped_metrics=FORGONE_TASK_METRICS,
-    rollup_metrics=FORGONE_TASK_METRICS,
-    background_task=True,
-)
+@validate_transaction_metrics(name="_target_application.add", group="Celery", background_task=True)
 @validate_code_level_metrics("_target_application", "add")
 @validate_transaction_count(1)
 def test_celery_task_call():
@@ -48,13 +31,7 @@ def test_celery_task_call():
     assert result == 7
 
 
-@validate_transaction_metrics(
-    name="_target_application.add",
-    group="Celery",
-    scoped_metrics=FORGONE_TASK_METRICS,
-    rollup_metrics=FORGONE_TASK_METRICS,
-    background_task=True,
-)
+@validate_transaction_metrics(name="_target_application.add", group="Celery", background_task=True)
 @validate_code_level_metrics("_target_application", "add")
 @validate_transaction_count(1)
 def test_celery_task_apply():
@@ -66,13 +43,7 @@ def test_celery_task_apply():
     assert result == 7
 
 
-@validate_transaction_metrics(
-    name="_target_application.add",
-    group="Celery",
-    scoped_metrics=FORGONE_TASK_METRICS,
-    rollup_metrics=FORGONE_TASK_METRICS,
-    background_task=True,
-)
+@validate_transaction_metrics(name="_target_application.add", group="Celery", background_task=True)
 @validate_code_level_metrics("_target_application", "add")
 @validate_transaction_count(1)
 def test_celery_task_delay():
@@ -84,13 +55,7 @@ def test_celery_task_delay():
     assert result == 7
 
 
-@validate_transaction_metrics(
-    name="_target_application.add",
-    group="Celery",
-    scoped_metrics=FORGONE_TASK_METRICS,
-    rollup_metrics=FORGONE_TASK_METRICS,
-    background_task=True,
-)
+@validate_transaction_metrics(name="_target_application.add", group="Celery", background_task=True)
 @validate_code_level_metrics("_target_application", "add")
 @validate_transaction_count(1)
 def test_celery_task_apply_async():
@@ -102,13 +67,7 @@ def test_celery_task_apply_async():
     assert result == 7
 
 
-@validate_transaction_metrics(
-    name="_target_application.add",
-    group="Celery",
-    scoped_metrics=FORGONE_TASK_METRICS,
-    rollup_metrics=FORGONE_TASK_METRICS,
-    background_task=True,
-)
+@validate_transaction_metrics(name="_target_application.add", group="Celery", background_task=True)
 @validate_code_level_metrics("_target_application", "add")
 @validate_transaction_count(1)
 def test_celery_app_send_task(celery_session_app):
@@ -120,13 +79,7 @@ def test_celery_app_send_task(celery_session_app):
     assert result == 7
 
 
-@validate_transaction_metrics(
-    name="_target_application.add",
-    group="Celery",
-    scoped_metrics=FORGONE_TASK_METRICS,
-    rollup_metrics=FORGONE_TASK_METRICS,
-    background_task=True,
-)
+@validate_transaction_metrics(name="_target_application.add", group="Celery", background_task=True)
 @validate_code_level_metrics("_target_application", "add")
 @validate_transaction_count(1)
 def test_celery_task_signature():
@@ -138,21 +91,8 @@ def test_celery_task_signature():
     assert result == 7
 
 
-@validate_transaction_metrics(
-    name="_target_application.add",
-    group="Celery",
-    scoped_metrics=FORGONE_TASK_METRICS,
-    rollup_metrics=FORGONE_TASK_METRICS,
-    background_task=True,
-)
-@validate_transaction_metrics(
-    name="_target_application.add",
-    group="Celery",
-    scoped_metrics=FORGONE_TASK_METRICS,
-    rollup_metrics=FORGONE_TASK_METRICS,
-    background_task=True,
-    index=-2,
-)
+@validate_transaction_metrics(name="_target_application.add", group="Celery", background_task=True)
+@validate_transaction_metrics(name="_target_application.add", group="Celery", background_task=True, index=-2)
 @validate_code_level_metrics("_target_application", "add")
 @validate_code_level_metrics("_target_application", "add", index=-2)
 @validate_transaction_count(2)
@@ -165,21 +105,8 @@ def test_celery_task_link():
     assert result == 7  # Linked task result won't be returned
 
 
-@validate_transaction_metrics(
-    name="_target_application.add",
-    group="Celery",
-    scoped_metrics=FORGONE_TASK_METRICS,
-    rollup_metrics=FORGONE_TASK_METRICS,
-    background_task=True,
-)
-@validate_transaction_metrics(
-    name="_target_application.add",
-    group="Celery",
-    scoped_metrics=FORGONE_TASK_METRICS,
-    rollup_metrics=FORGONE_TASK_METRICS,
-    background_task=True,
-    index=-2,
-)
+@validate_transaction_metrics(name="_target_application.add", group="Celery", background_task=True)
+@validate_transaction_metrics(name="_target_application.add", group="Celery", background_task=True, index=-2)
 @validate_code_level_metrics("_target_application", "add")
 @validate_code_level_metrics("_target_application", "add", index=-2)
 @validate_transaction_count(2)
@@ -193,21 +120,8 @@ def test_celery_chain():
     assert result == 12
 
 
-@validate_transaction_metrics(
-    name="_target_application.add",
-    group="Celery",
-    scoped_metrics=FORGONE_TASK_METRICS,
-    rollup_metrics=FORGONE_TASK_METRICS,
-    background_task=True,
-)
-@validate_transaction_metrics(
-    name="_target_application.add",
-    group="Celery",
-    scoped_metrics=FORGONE_TASK_METRICS,
-    rollup_metrics=FORGONE_TASK_METRICS,
-    background_task=True,
-    index=-2,
-)
+@validate_transaction_metrics(name="_target_application.add", group="Celery", background_task=True)
+@validate_transaction_metrics(name="_target_application.add", group="Celery", background_task=True, index=-2)
 @validate_code_level_metrics("_target_application", "add")
 @validate_code_level_metrics("_target_application", "add", index=-2)
 @validate_transaction_count(2)
@@ -220,29 +134,9 @@ def test_celery_group():
     assert result == [7, 3]
 
 
-@validate_transaction_metrics(
-    name="_target_application.tsum",
-    group="Celery",
-    scoped_metrics=FORGONE_TASK_METRICS,
-    rollup_metrics=FORGONE_TASK_METRICS,
-    background_task=True,
-)
-@validate_transaction_metrics(
-    name="_target_application.add",
-    group="Celery",
-    scoped_metrics=FORGONE_TASK_METRICS,
-    rollup_metrics=FORGONE_TASK_METRICS,
-    background_task=True,
-    index=-2,
-)
-@validate_transaction_metrics(
-    name="_target_application.add",
-    group="Celery",
-    scoped_metrics=FORGONE_TASK_METRICS,
-    rollup_metrics=FORGONE_TASK_METRICS,
-    background_task=True,
-    index=-3,
-)
+@validate_transaction_metrics(name="_target_application.tsum", group="Celery", background_task=True)
+@validate_transaction_metrics(name="_target_application.add", group="Celery", background_task=True, index=-2)
+@validate_transaction_metrics(name="_target_application.add", group="Celery", background_task=True, index=-3)
 @validate_code_level_metrics("_target_application", "tsum")
 @validate_code_level_metrics("_target_application", "add", index=-2)
 @validate_code_level_metrics("_target_application", "add", index=-3)
@@ -256,14 +150,8 @@ def test_celery_chord():
     assert result == 10
 
 
-@validate_transaction_metrics(
-    name="celery.map/_target_application.tsum",
-    group="Celery",
-    scoped_metrics=[("Function/_target_application.tsum", 2)],
-    rollup_metrics=[("Function/_target_application.tsum", 2)],
-    background_task=True,
-)
-@validate_code_level_metrics("_target_application", "tsum", count=3)
+@validate_transaction_metrics(name="celery.map/_target_application.tsum", group="Celery", background_task=True)
+@validate_code_level_metrics("_target_application", "tsum", count=1)
 @validate_transaction_count(1)
 def test_celery_task_map():
     """
@@ -274,14 +162,8 @@ def test_celery_task_map():
     assert result == [7, 3]
 
 
-@validate_transaction_metrics(
-    name="celery.starmap/_target_application.add",
-    group="Celery",
-    scoped_metrics=[("Function/_target_application.add", 2)],
-    rollup_metrics=[("Function/_target_application.add", 2)],
-    background_task=True,
-)
-@validate_code_level_metrics("_target_application", "add", count=3)
+@validate_transaction_metrics(name="celery.starmap/_target_application.add", group="Celery", background_task=True)
+@validate_code_level_metrics("_target_application", "add", count=1)
 @validate_transaction_count(1)
 def test_celery_task_starmap():
     """
@@ -292,23 +174,12 @@ def test_celery_task_starmap():
     assert result == [7, 3]
 
 
+@validate_transaction_metrics(name="celery.starmap/_target_application.add", group="Celery", background_task=True)
 @validate_transaction_metrics(
-    name="celery.starmap/_target_application.add",
-    group="Celery",
-    scoped_metrics=[("Function/_target_application.add", 1)],
-    rollup_metrics=[("Function/_target_application.add", 1)],
-    background_task=True,
+    name="celery.starmap/_target_application.add", group="Celery", background_task=True, index=-2
 )
-@validate_transaction_metrics(
-    name="celery.starmap/_target_application.add",
-    group="Celery",
-    scoped_metrics=[("Function/_target_application.add", 1)],
-    rollup_metrics=[("Function/_target_application.add", 1)],
-    background_task=True,
-    index=-2,
-)
-@validate_code_level_metrics("_target_application", "add", count=2)
-@validate_code_level_metrics("_target_application", "add", count=2, index=-2)
+@validate_code_level_metrics("_target_application", "add", count=1)
+@validate_code_level_metrics("_target_application", "add", count=1, index=-2)
 @validate_transaction_count(2)
 def test_celery_task_chunks():
     """
@@ -317,3 +188,105 @@ def test_celery_task_chunks():
     result = add.chunks([(3, 4), (1, 2)], n=1).apply_async()
     result = result.get()
     assert result == [[7], [3]]
+
+
+@validate_custom_parameters(required_params=[("custom_task_attribute", "Called with super")])
+@validate_transaction_metrics(name="_target_application.add_with_super", group="Celery", background_task=True)
+@validate_code_level_metrics("_target_application", "add_with_super")
+@validate_transaction_count(1)
+def test_celery_task_call_custom_super():
+    """
+    Executes task in local process and returns the result directly.
+    """
+    result = add_with_super(3, 4)
+    assert result == 7
+
+
+@validate_custom_parameters(required_params=[("custom_task_attribute", "Called with super")])
+@validate_transaction_metrics(name="_target_application.add_with_super", group="Celery", background_task=True)
+@validate_code_level_metrics("_target_application", "add_with_super")
+@validate_transaction_count(1)
+def test_celery_task_apply_custom_super():
+    """
+    Executes task in local process and returns an EagerResult.
+    """
+    result = add_with_super.apply((3, 4))
+    result = result.get()
+    assert result == 7
+
+
+@validate_custom_parameters(required_params=[("custom_task_attribute", "Called with super")])
+@validate_transaction_metrics(name="_target_application.add_with_super", group="Celery", background_task=True)
+@validate_code_level_metrics("_target_application", "add_with_super")
+@validate_transaction_count(1)
+def test_celery_task_delay_custom_super():
+    """
+    Executes task on worker process and returns an AsyncResult.
+    """
+    result = add_with_super.delay(3, 4)
+    result = result.get()
+    assert result == 7
+
+
+@validate_custom_parameters(required_params=[("custom_task_attribute", "Called with super")])
+@validate_transaction_metrics(name="_target_application.add_with_super", group="Celery", background_task=True)
+@validate_code_level_metrics("_target_application", "add_with_super")
+@validate_transaction_count(1)
+def test_celery_task_apply_async_custom_super():
+    """
+    Executes task on worker process and returns an AsyncResult.
+    """
+    result = add_with_super.apply_async((3, 4))
+    result = result.get()
+    assert result == 7
+
+
+@validate_custom_parameters(required_params=[("custom_task_attribute", "Called with run")])
+@validate_transaction_metrics(name="_target_application.add_with_run", group="Celery", background_task=True)
+@validate_code_level_metrics("_target_application", "add_with_run")
+@validate_transaction_count(1)
+def test_celery_task_call_custom_run():
+    """
+    Executes task in local process and returns the result directly.
+    """
+    result = add_with_run(3, 4)
+    assert result == 7
+
+
+@validate_custom_parameters(required_params=[("custom_task_attribute", "Called with run")])
+@validate_transaction_metrics(name="_target_application.add_with_run", group="Celery", background_task=True)
+@validate_code_level_metrics("_target_application", "add_with_run")
+@validate_transaction_count(1)
+def test_celery_task_apply_custom_run():
+    """
+    Executes task in local process and returns an EagerResult.
+    """
+    result = add_with_run.apply((3, 4))
+    result = result.get()
+    assert result == 7
+
+
+@validate_custom_parameters(required_params=[("custom_task_attribute", "Called with run")])
+@validate_transaction_metrics(name="_target_application.add_with_run", group="Celery", background_task=True)
+@validate_code_level_metrics("_target_application", "add_with_run")
+@validate_transaction_count(1)
+def test_celery_task_delay_custom_run():
+    """
+    Executes task on worker process and returns an AsyncResult.
+    """
+    result = add_with_run.delay(3, 4)
+    result = result.get()
+    assert result == 7
+
+
+@validate_custom_parameters(required_params=[("custom_task_attribute", "Called with run")])
+@validate_transaction_metrics(name="_target_application.add_with_run", group="Celery", background_task=True)
+@validate_code_level_metrics("_target_application", "add_with_run")
+@validate_transaction_count(1)
+def test_celery_task_apply_async_custom_run():
+    """
+    Executes task on worker process and returns an AsyncResult.
+    """
+    result = add_with_run.apply_async((3, 4))
+    result = result.get()
+    assert result == 7

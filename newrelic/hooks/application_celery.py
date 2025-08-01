@@ -103,7 +103,7 @@ def wrap_task_call(wrapped, instance, args, kwargs):
             # Attempt to grab distributed tracing headers
             try:
                 # Headers on earlier versions of Celery may end up as attributes
-                # on the request context instead of as custom headers. Handler this
+                # on the request context instead of as custom headers. Handle this
                 # by defaulting to using vars() if headers is not available
                 request = wrapped.request
                 headers = getattr(request, "headers", None) or vars(request)
@@ -192,7 +192,7 @@ def CeleryTaskWrapper(wrapped):
                 # Attempt to grab distributed tracing headers
                 try:
                     # Headers on earlier versions of Celery may end up as attributes
-                    # on the request context instead of as custom headers. Handler this
+                    # on the request context instead of as custom headers. Handle this
                     # by defaulting to using vars() if headers is not available
                     request = instance.request
                     headers = getattr(request, "headers", None) or vars(request)

@@ -19,6 +19,8 @@ from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.signature import bind_args
+from newrelic.core.config import global_settings
+
 
 _logger = logging.getLogger(__name__)
 
@@ -26,6 +28,10 @@ _logger = logging.getLogger(__name__)
 async def wrap_call_tool(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
+        return await wrapped(*args, **kwargs)
+
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    if not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
     func_name = callable_name(wrapped)
@@ -37,9 +43,27 @@ async def wrap_call_tool(wrapped, instance, args, kwargs):
         return await wrapped(*args, **kwargs)
 
 
+async def wrap_call_tool1(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return await wrapped(*args, **kwargs)
+
+    func_name = callable_name(wrapped)
+    bound_args = bind_args(wrapped, args, kwargs)
+    tool_name = bound_args.get("name") or "tool"
+    function_trace_name = f"{func_name}/{tool_name}"
+
+    with FunctionTrace(name=function_trace_name, group="Llm/tool/MCPPPPP", source=wrapped):
+        return await wrapped(*args, **kwargs)
+
+
 async def wrap_read_resource(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
+        return await wrapped(*args, **kwargs)
+
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    if not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
     func_name = callable_name(wrapped)
@@ -64,12 +88,37 @@ async def wrap_get_prompt(wrapped, instance, args, kwargs):
     if not transaction:
         return await wrapped(*args, **kwargs)
 
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    if not settings.ai_monitoring.enabled:
+        return await wrapped(*args, **kwargs)
+
     func_name = callable_name(wrapped)
     bound_args = bind_args(wrapped, args, kwargs)
     prompt_name = bound_args.get("name") or "prompt"
     function_trace_name = f"{func_name}/{prompt_name}"
 
     with FunctionTrace(name=function_trace_name, group="Llm/prompt/MCP", source=wrapped):
+        return await wrapped(*args, **kwargs)
+
+
+async def wrap_call_fn_with_arg_validation(wrapped, instance, args, kwargs):
+    with FunctionTrace(name="call_fn_with_arg_validation", group="Llm/argssss/MCP", source=wrapped):
+        return await wrapped(*args, **kwargs)
+
+
+async def wrap_run(wrapped, instance, args, kwargs):
+    with FunctionTrace(name="call_fn_with_arg_validation", group="Llm/MCP/base/tool/run", source=wrapped):
+        return await wrapped(*args, **kwargs)
+
+
+async def wrap_tool_manager(wrapped, instance, args, kwargs):
+    with FunctionTrace(name="call_tool", group="Llm/MCP/tool_manager", source=wrapped):
+        return await wrapped(*args, **kwargs)
+
+
+async def wrap__handle_request(wrapped, instance, args, kwargs):
+    func_name = callable_name(wrapped)
+    with FunctionTrace(name="func_name", group="Llm/MCP/handle_request", source=wrapped):
         return await wrapped(*args, **kwargs)
 
 
@@ -81,3 +130,33 @@ def instrument_mcp_client_session(module):
             wrap_function_wrapper(module, "ClientSession.read_resource", wrap_read_resource)
         if hasattr(module.ClientSession, "get_prompt"):
             wrap_function_wrapper(module, "ClientSession.get_prompt", wrap_get_prompt)
+
+
+def instrument_mcp_server_fastmcp_server(module):
+    if hasattr(module, "FastMCP"):
+        if hasattr(module.FastMCP, "call_tool"):
+            wrap_function_wrapper(module, "FastMCP.call_tool", wrap_call_tool1)
+
+
+def instrument_mcp_server_lowlevel_server(module):
+    wrap_function_wrapper(module, "Server._handle_request", wrap__handle_request)
+
+
+def instrument_mcp_server_fastmcp_utilities_func_metadata(module):
+    pass
+    # if hasattr(module, "FuncMetadata"):
+    #     if hasattr(module.FuncMetadata, "call_fn_with_arg_validation"):
+    #         wrap_function_wrapper(module, "FuncMetadata.call_fn_with_arg_validation", wrap_call_fn_with_arg_validation)
+
+
+def instrument_mcp_server_fastmcp_tools_base(module):
+    pass
+    # if hasattr(module, "Tool"):
+    #     if hasattr(module.Tool, "run"):
+    #         wrap_function_wrapper(module, "Tool.run", wrap_run)
+
+
+def instrument_mcp_server_fastmcp_tools_tool_manager(module):
+    if hasattr(module, "ToolManager"):
+        if hasattr(module.ToolManager, "call_tool"):
+            wrap_function_wrapper(module, "ToolManager.call_tool", wrap_call_tool)

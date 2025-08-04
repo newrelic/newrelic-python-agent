@@ -28,7 +28,7 @@ def _load_docker_test_attributes():
 
     """
     test_cases = DOCKER_FIXTURE / "cases.json"
-    with test_cases.open() as fh:
+    with test_cases.open(encoding="utf-8") as fh:
         json_list = json.load(fh)
     docker_test_attributes = [(json_record["filename"], json_record["containerId"]) for json_record in json_list]
     return docker_test_attributes

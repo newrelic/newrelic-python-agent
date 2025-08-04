@@ -104,7 +104,8 @@ def NamedTemporaryFile(*args, **kwargs):
     def remove_on_exit(*args, **kwargs):
         original_exit(*args, **kwargs)
         # Clean up the file manually
-        temp_file.path.unlink(missing_ok=True)
+        if temp_file.path.exists():
+            temp_file.path.unlink()
 
     temp_file.__exit__ = remove_on_exit
 

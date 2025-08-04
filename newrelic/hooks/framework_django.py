@@ -18,7 +18,7 @@ import sys
 import threading
 import warnings
 
-from newrelic.api.application import register_application
+from newrelic.api.application import register_application, application_settings
 from newrelic.api.background_task import BackgroundTaskWrapper
 from newrelic.api.error_trace import wrap_error_trace
 from newrelic.api.function_trace import FunctionTrace, FunctionTraceWrapper, wrap_function_trace
@@ -39,18 +39,18 @@ from newrelic.common.object_wrapper import (
 from newrelic.config import extra_settings
 from newrelic.core.config import global_settings
 
-# These middleware are not useful to wrap as they don't do anything particularly
-# interesting that could cause performance issues.
-MIDDLEWARE_DENY_WRAP = frozenset(
-    {
-        "django.middleware.csrf:CsrfViewMiddleware",
-        "django.middleware.clickjacking:XFrameOptionsMiddleware",
-        "django.contrib.messages.middleware:MessageMiddleware",
-        "django.middleware.csrf:CsrfViewMiddleware",
-        "django.middleware.common:CommonMiddleware",
-        "django.middleware.security:SecurityMiddleware",
-    }
-)
+# # These middleware are not useful to wrap as they don't do anything particularly
+# # interesting that could cause performance issues.
+# MIDDLEWARE_DENY_WRAP = frozenset(
+#     {
+#         "django.middleware.csrf:CsrfViewMiddleware",
+#         "django.middleware.clickjacking:XFrameOptionsMiddleware",
+#         "django.contrib.messages.middleware:MessageMiddleware",
+#         "django.middleware.csrf:CsrfViewMiddleware",
+#         "django.middleware.common:CommonMiddleware",
+#         "django.middleware.security:SecurityMiddleware",
+#     }
+# )
 
 _logger = logging.getLogger(__name__)
 
@@ -157,7 +157,6 @@ def should_add_browser_timing(response, transaction):
 # Response middleware for automatically inserting RUM header into HTML response returned by application
 
 
-
 def browser_timing_insertion(response, transaction):
     # No point continuing if header is empty. This can occur if RUM is not enabled within the UI. We don't want to
     # generate the header just yet as we want to do that as late as possible so that application server time in header
@@ -188,7 +187,6 @@ def browser_timing_insertion(response, transaction):
 
 # Template tag functions for manually inserting RUM header into HTML response. A template tag library for 'newrelic'
 # will be automatically inserted into set of tag libraries when performing step to instrument the middleware.
-
 
 
 def newrelic_browser_timing_header():
@@ -1105,11 +1103,108 @@ def _nr_wrap_converted_middleware_(middleware, name):
     return _wrapper(middleware)
 
 
+# For faster logic, could we cache the callable_names to
+# avoid this logic for multiple calls to the same middleware?
+# Also, is that even a scenario we need to worry about?
 def is_denied_middleware(callable_name):
-    for middleware in MIDDLEWARE_DENY_WRAP:
-        if middleware in callable_name:
+    # breakpoint()
+    settings = application_settings() or global_settings()
+
+    # Return True (skip wrapping) if:
+    # 1. middleware wrapping is disabled or
+    # 2. the callable name is in the exclude list
+    if (
+        not settings.instrumentation.django_middleware.enabled
+        or (callable_name in settings.instrumentation.django_middleware.exclude)
+    ):
+        return True
+
+    # Return False (wrap) if:
+    # 1. If the callable name is in the include list, wrap this.
+    # If we have made it to this point in the logic, that means
+    # that the callable name is not explicitly in the exclude
+    # list and, whether it is in the exclude list as a wildcard
+    # or not, the list of middleware to include explicitly takes
+    # precedence over the exclude list's wildcards.
+    # 2. enabled=True and len(exclude)==0
+    # This scenario is redundant logic, but we utilize it to 
+    # speed up the logic for the common case where
+    # the user has not specified any include or exclude lists.
+    if ((callable_name in settings.instrumentation.django_middleware.include)
+        or (settings.instrumentation.django_middleware.enabled
+        and len(settings.instrumentation.django_middleware.exclude) == 0)):
+        return False
+
+    # =========================================================
+    # Wildcard logic for include and exclude lists:
+    # =========================================================
+    # Returns False if an entry in the include wildcard is more
+    # specific than exclude wildcard.  Otherwise, it will iterate
+    # through the entire include list and return True if no more
+    # specific include (than exclude) is found.
+    def include_logic(callable_name, exclude_middleware_name):
+        """
+        We iterate through the entire include and exclude lists to
+        ensure that the user has not included overlapping wildcards
+        that would potentially be less specific than the exclude in
+        one case and more specific than the exclude in another case.
+
+        e.g.:
+        exclude = middleware.*, middleware.parameters.bar*
+        include = middleware.parameters.*
+
+        Where `middleware.*` is less specific than `middleware.parameters.*`
+        but `middleware.parameters.bar*` is more specific than `middleware.parameters.*`
+
+        In this case, we want to make sure to exclude any middleware that
+        matches the `middleware.parameters.bar*` pattern, but include any
+        other middleware that matches the `middleware.parameters.*` pattern.
+        """
+        if len(settings.instrumentation.django_middleware.include) == 0:
             return True
-    return False
+        for include_middleware in settings.instrumentation.django_middleware.include:
+            if include_middleware.endswith("*"):
+                include_middleware_name = include_middleware.rstrip("*")
+                if callable_name.startswith(include_middleware_name):
+                    # Count number of dots in the include and exclude 
+                    # middleware names to determine specificity.
+                    exclude_dots = exclude_middleware_name.count(".")
+                    include_dots = include_middleware_name.count(".")
+                    if include_dots > exclude_dots:
+                        # Include this middleware--include is more specific and takes precedence
+                        return False
+                    elif include_dots == exclude_dots:
+                        # Count number of characters after the last dot
+                        exclude_post_dot_char_count = len(exclude_middleware_name) - exclude_middleware_name.rfind(".")
+                        include_post_dot_char_count = len(include_middleware_name) - include_middleware_name.rfind(".")
+                        if include_post_dot_char_count > exclude_post_dot_char_count:
+                            # Include this middleware--include is more specific and takes precedence
+                            return False
+                        else:
+                            # Exclude wildcard has the same or greater specificity than the include wildcard
+                            # Expect to exclude this middleware--so far, exclude is more specific and takes precedence
+                            continue
+                    else:
+                        # Expect to exclude this middleware--so far, exclude is more specific and takes precedence
+                        pass
+                        
+        # if we have made it to this point, there is no include middleware that is
+        # more specific than the exclude middleware, so we can safely return True
+        return True
+
+    # Check if the callable name matches any of the excluded middleware patterns.
+    # If middleware name ends with '*', it is a wildcard
+    deny = False
+    for exclude_middleware in settings.instrumentation.django_middleware.exclude:
+        if exclude_middleware.endswith("*"):
+            name = exclude_middleware.rstrip("*")
+            if callable_name.startswith(name):
+                if not include_logic(callable_name, name):
+                    return False
+                else:
+                    deny |= include_logic(callable_name, name)
+
+    return deny    # If we have made it to this point, then the callable name is not in the exclude list
 
 
 def _nr_wrapper_convert_exception_to_response_(wrapped, instance, args, kwargs):

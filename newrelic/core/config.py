@@ -320,7 +320,7 @@ class SpanEventAttributesSettings(Settings):
     pass
 
 
-class DjangoMiddlewareSettings(Settings):
+class InstrumentationDjangoMiddlewareSettings(Settings):
     pass
 
 
@@ -511,6 +511,7 @@ _settings.instrumentation.graphql = InstrumentationGraphQLSettings()
 _settings.instrumentation.kombu = InstrumentationKombuSettings()
 _settings.instrumentation.kombu.ignored_exchanges = InstrumentationKombuIgnoredExchangesSettings()
 _settings.instrumentation.kombu.consumer = InstrumentationKombuConsumerSettings()
+_settings.instrumentation.django_middleware = InstrumentationDjangoMiddlewareSettings()
 _settings.message_tracer = MessageTracerSettings()
 _settings.process_host = ProcessHostSettings()
 _settings.rum = RumSettings()
@@ -518,7 +519,6 @@ _settings.serverless_mode = ServerlessModeSettings()
 _settings.slow_sql = SlowSqlSettings()
 _settings.span_events = SpanEventSettings()
 _settings.span_events.attributes = SpanEventAttributesSettings()
-_settings.django_middleware = DjangoMiddlewareSettings()
 _settings.strip_exception_messages = StripExceptionMessageSettings()
 _settings.synthetics = SyntheticsSettings()
 _settings.thread_profiler = ThreadProfilerSettings()
@@ -652,6 +652,7 @@ def _parse_attributes(s):
 # Called from newrelic.config.py to parse django_middleware lists
 def _parse_django_middleware(s):
     valid = []
+    # breakpoint()
     for item in s.split():
         if "*" not in item[:-1] and len(item.encode("utf-8")) < 256:
             valid.append(item)
@@ -836,9 +837,6 @@ _settings.span_events.attributes.enabled = True
 _settings.span_events.attributes.exclude = []
 _settings.span_events.attributes.include = []
 
-_settings.django_middleware.enabled = True
-_settings.django_middleware.exclude = []
-
 _settings.transaction_segments.attributes.enabled = True
 _settings.transaction_segments.attributes.exclude = []
 _settings.transaction_segments.attributes.include = []
@@ -922,6 +920,10 @@ _settings.instrumentation.kombu.ignored_exchanges = parse_space_separated_into_l
 _settings.instrumentation.kombu.consumer.enabled = _environ_as_bool(
     "NEW_RELIC_INSTRUMENTATION_KOMBU_CONSUMER_ENABLED", default=False
 )
+
+_settings.instrumentation.django_middleware.enabled = _environ_as_bool("NEW_RELIC_INSTRUMENTATION_DJANGO_MIDDLEWARE_ENABLED", default=True)
+_settings.instrumentation.django_middleware.exclude = []
+_settings.instrumentation.django_middleware.include = []
 
 _settings.event_harvest_config.harvest_limits.analytic_event_data = _environ_as_int(
     "NEW_RELIC_ANALYTICS_EVENTS_MAX_SAMPLES_STORED", DEFAULT_RESERVOIR_SIZE

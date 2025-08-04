@@ -13,12 +13,13 @@
 # limitations under the License.
 
 import os
-
 import django
 from testing_support.fixtures import (
     override_application_settings,
     override_generic_settings,
     override_ignore_status_codes,
+    collector_agent_registration_fixture,
+    collector_available_fixture,
 )
 from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
@@ -29,6 +30,22 @@ from newrelic.hooks.framework_django import django_settings
 DJANGO_VERSION = tuple(map(int, django.get_version().split(".")[:2]))
 DJANGO_SETTINGS_MODULE = os.environ.get("DJANGO_SETTINGS_MODULE", None)
 
+# TODO: Remove Django testing for versions 5+ years old.
+
+_default_settings = {
+    "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
+    "transaction_tracer.explain_threshold": 0.0,
+    "transaction_tracer.transaction_threshold": 0.0,
+    "transaction_tracer.stack_trace_threshold": 0.0,
+    "debug.log_data_collector_payloads": True,
+    "debug.record_transaction_failure": True,
+    "debug.log_autorum_middleware": True,
+    "feature_flag": {"django.instrumentation.inclusion-tags.r1"},
+}
+
+collector_agent_registration = collector_agent_registration_fixture(
+    app_name="Python Agent Test (framework_django)", default_settings=_default_settings, scope="module"
+)
 
 def target_application():
     from _target_application import _target_application
@@ -40,27 +57,27 @@ def target_application():
 # MIDDLEWARE defined in the version-specific Django settings.py file.
 
 _test_django_pre_1_10_middleware_scoped_metrics = [
-    (("Function/django.middleware.common:CommonMiddleware.process_request"), None),
+    (("Function/django.middleware.common:CommonMiddleware.process_request"), 1),
     (("Function/django.contrib.sessions.middleware:SessionMiddleware.process_request"), 1),
     (("Function/django.contrib.auth.middleware:AuthenticationMiddleware.process_request"), 1),
-    (("Function/django.contrib.messages.middleware:MessageMiddleware.process_request"), None),
-    (("Function/django.middleware.csrf:CsrfViewMiddleware.process_view"), None),
-    (("Function/django.contrib.messages.middleware:MessageMiddleware.process_response"), None),
-    (("Function/django.middleware.csrf:CsrfViewMiddleware.process_response"), None),
+    (("Function/django.contrib.messages.middleware:MessageMiddleware.process_request"), 1),
+    (("Function/django.middleware.csrf:CsrfViewMiddleware.process_view"), 1),
+    (("Function/django.contrib.messages.middleware:MessageMiddleware.process_response"), 1),
+    (("Function/django.middleware.csrf:CsrfViewMiddleware.process_response"), 1),
     (("Function/django.contrib.sessions.middleware:SessionMiddleware.process_response"), 1),
-    (("Function/django.middleware.common:CommonMiddleware.process_response"), None),
+    (("Function/django.middleware.common:CommonMiddleware.process_response"), 1),
     (("Function/django.middleware.gzip:GZipMiddleware.process_response"), 1),
     (("Function/newrelic.hooks.framework_django:browser_timing_insertion"), 1),
 ]
 
 _test_django_post_1_10_middleware_scoped_metrics = [
-    ("Function/django.middleware.security:SecurityMiddleware", None),
+    ("Function/django.middleware.security:SecurityMiddleware", 1),
     ("Function/django.contrib.sessions.middleware:SessionMiddleware", 1),
-    ("Function/django.middleware.common:CommonMiddleware", None),
-    ("Function/django.middleware.csrf:CsrfViewMiddleware", None),
+    ("Function/django.middleware.common:CommonMiddleware", 1),
+    ("Function/django.middleware.csrf:CsrfViewMiddleware", 1),
     ("Function/django.contrib.auth.middleware:AuthenticationMiddleware", 1),
-    ("Function/django.contrib.messages.middleware:MessageMiddleware", None),
-    ("Function/django.middleware.clickjacking:XFrameOptionsMiddleware", None),
+    ("Function/django.contrib.messages.middleware:MessageMiddleware", 1),
+    ("Function/django.middleware.clickjacking:XFrameOptionsMiddleware", 1),
     ("Function/django.middleware.gzip:GZipMiddleware", 1),
 ]
 

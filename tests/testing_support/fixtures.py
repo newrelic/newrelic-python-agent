@@ -37,7 +37,7 @@ from newrelic.common.object_wrapper import (
     wrap_function_wrapper,
 )
 from newrelic.config import initialize
-from newrelic.core.agent import shutdown_agent
+from newrelic.core.agent import shutdown_agent, agent_instance
 from newrelic.core.attribute import create_attributes
 from newrelic.core.attribute_filter import DST_ERROR_COLLECTOR, DST_TRANSACTION_TRACER, AttributeFilter
 from newrelic.core.config import apply_config_setting, flatten_settings, global_settings
@@ -181,12 +181,12 @@ def capture_harvest_errors():
 
 
 def collector_agent_registration_fixture(
-    app_name=None, default_settings=None, linked_applications=None, should_initialize_agent=True
+    app_name=None, default_settings=None, linked_applications=None, should_initialize_agent=True, scope="session"
 ):
     default_settings = default_settings or {}
     linked_applications = linked_applications or []
 
-    @pytest.fixture(scope="session")
+    @pytest.fixture(scope=scope)
     def _collector_agent_registration_fixture(request):
         if should_initialize_agent:
             initialize_agent(app_name=app_name, default_settings=default_settings)
@@ -215,6 +215,7 @@ def collector_agent_registration_fixture(
         # Force registration of the application.
 
         application = register_application()
+        # breakpoint()
 
         # Attempt to record deployment marker for test. It's ok
         # if the deployment marker does not record successfully.
@@ -250,12 +251,15 @@ def collector_agent_registration_fixture(
         yield application
 
         shutdown_agent()
+        breakpoint()
+        agent_instance()._applications[application.name] = {}
 
     return _collector_agent_registration_fixture
 
 
 @pytest.fixture
 def collector_available_fixture(request, collector_agent_registration):
+    # breakpoint()
     application = application_instance()
     active = application.active
     assert active

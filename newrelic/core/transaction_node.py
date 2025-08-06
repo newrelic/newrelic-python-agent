@@ -620,11 +620,11 @@ class TransactionNode(_TransactionNode):
 
         return intrinsics
 
-    def span_protos(self, settings):
-        for i_attrs, u_attrs, a_attrs in self.span_events(settings, attr_class=SpanProtoAttrs):
-            yield Span(trace_id=self.trace_id, intrinsics=i_attrs, user_attributes=u_attrs, agent_attributes=a_attrs)
+    def span_protos(self, settings, ct_processing_time=None):
+        for span in self.span_events(settings, attr_class=SpanProtoAttrs, ct_processing_time=ct_processing_time):
+            yield Span(trace_id=self.trace_id, intrinsics=span[0], user_attributes=span[1], agent_attributes=span[2])
 
-    def span_events(self, settings, attr_class=dict):
+    def span_events(self, settings, attr_class=dict, ct_processing_time=None):
         base_attrs = attr_class(
             (
                 ("transactionId", self.guid),
@@ -633,5 +633,5 @@ class TransactionNode(_TransactionNode):
                 ("priority", self.priority),
             )
         )
-
-        yield from self.root.span_events(settings, base_attrs, parent_guid=self.parent_span, attr_class=attr_class)
+        ct_exit_spans = {}
+        yield from self.root.span_events(settings, base_attrs, parent_guid=self.parent_span, attr_class=attr_class, ct_exit_spans=ct_exit_spans, ct_processing_time=ct_processing_time)

@@ -15,6 +15,7 @@
 import collections
 import logging
 import threading
+import sys
 
 try:
     from newrelic.core.infinite_tracing_pb2 import AttributeValue, SpanBatch
@@ -25,6 +26,67 @@ except:
 _logger = logging.getLogger(__name__)
 
 
+def get_deep_size(obj, seen=None):
+    """Recursively calculates the size of an object including nested lists and dicts."""
+    if seen is None:
+        seen = set()
+        size = -8*3  # Subtract 8 for each of the 3 attribute lists as those don't count.
+    else:
+        size = 0
+
+    # Avoid recursion for already seen objects (handle circular references)
+    obj_id = id(obj)
+    if obj_id in seen:
+        return 0
+    seen.add(obj_id)
+
+    if isinstance(obj, str):
+        size += len(obj)
+        return size
+    elif isinstance(obj, float) or isinstance(obj, int):
+        size += 8
+        return size
+    elif isinstance(obj, bool):
+        size += 1
+        return size
+    elif isinstance(obj, dict):
+        size += sum(get_deep_size(k, seen) + get_deep_size(v, seen) for k, v in obj.items())
+    elif isinstance(obj, (list, tuple, set, frozenset)):
+        size += 8 + sum(get_deep_size(i, seen) for i in obj)
+    else:
+        size += 8
+
+    return size
+
+
+def get_deep_size_protobuf(obj):
+    """Recursively calculates the size of an object including nested lists and dicts."""
+    size = 0
+    if hasattr(obj, "string_value"):
+        size += len(obj.string_value)
+        return size
+    elif hasattr(obj, "double_value"):
+        size += 8
+        return size
+    elif hasattr(obj, "int_value"):
+        size += 8
+        return size
+    elif hasattr(obj, "bool_value"):
+        size += 1
+        return size
+
+    if hasattr(obj, "agent_attributes"):
+        size += sum(len(k) + get_deep_size_protobuf(v) for k, v in obj.agent_attributes.items())
+    if hasattr(obj, "user_attributes"):
+        size += sum(len(k) + get_deep_size_protobuf(v) for k, v in obj.user_attributes.items())
+    if hasattr(obj, "intrinsics"):
+        size += sum(len(k) + get_deep_size_protobuf(v) for k, v in obj.intrinsics.items())
+    else:
+        size += 8
+
+    return size
+
+
 class StreamBuffer:
     def __init__(self, maxlen, batching=False):
         self._queue = collections.deque(maxlen=maxlen)
@@ -32,6 +94,8 @@ class StreamBuffer:
         self._shutdown = False
         self._seen = 0
         self._dropped = 0
+        self._bytes = 0
+        self._ct_processing_time = 0
         self._settings = None
 
         self.batching = batching
@@ -51,6 +115,8 @@ class StreamBuffer:
                 return
 
             self._seen += 1
+            _logger.debug(f"{item.intrinsics['name']} [{len(item.intrinsics)}, {len(item.user_attributes)}, {len(item.agent_attributes)}] {get_deep_size_protobuf(item)}")
+            self._bytes += get_deep_size_protobuf(item)
 
             # NOTE: dropped can be over-counted as the queue approaches
             # capacity while data is still being transmitted.
@@ -67,8 +133,10 @@ class StreamBuffer:
         with self._notify:
             seen, dropped = self._seen, self._dropped
             self._seen, self._dropped = 0, 0
+            _bytes, ct_processing_time = self._bytes, self._ct_processing_time
+            self._bytes, self._ct_processing_time = 0, 0
 
-        return seen, dropped
+        return seen, dropped, _bytes, ct_processing_time
 
     def __bool__(self):
         return bool(self._queue)

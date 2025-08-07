@@ -1194,10 +1194,11 @@ def _module_function_glob(module, object_path):
             # Skip adding all class methods on failure
             pass
 
-        # Under the hood uses fnmatch, which uses os.path.normcase
-        # On windows this would cause issues with case insensitivity,
-        # but on all other operating systems there should be no issues.
-        return fnmatch.filter(available_functions, object_path)
+        # Globbing must be done using fnmatch.fnmatchcase as
+        # fnmatch.filter and fnmatch.fnmatch use os.path.normcase
+        # which cause case insensitivity issues on Windows.
+
+        return [func for func in available_functions if fnmatch.fnmatchcase(func, object_path)]
 
 
 # Setup wsgi application wrapper defined in configuration file.

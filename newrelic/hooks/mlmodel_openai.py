@@ -442,6 +442,7 @@ def _handle_completion_success(transaction, linking_metadata, completion_id, kwa
             # The function trace will be exited when in the final iteration of the response
             # generator.
             return_val._nr_ft = ft
+            return_val._nr_metadata = linking_metadata
             return_val._nr_openai_attrs = getattr(return_val, "_nr_openai_attrs", {})
             return_val._nr_openai_attrs["messages"] = kwargs.get("messages", [])
             return_val._nr_openai_attrs["temperature"] = kwargs.get("temperature")
@@ -492,10 +493,11 @@ def _record_completion_success(transaction, linking_metadata, completion_id, kwa
             response_model = kwargs.get("response.model")
             response_id = kwargs.get("id")
             output_message_list = []
-            finish_reason = None
+            finish_reason = kwargs.get("finish_reason")
             if "content" in kwargs:
                 output_message_list = [{"content": kwargs.get("content"), "role": kwargs.get("role")}]
-                finish_reason = kwargs.get("finish_reason")
+            if "tool_call" in finish_reason and not kwargs.get("content"):
+                output_message_list = []
         request_model = kwargs.get("model") or kwargs.get("engine")
 
         request_id = response_headers.get("x-request-id")
@@ -765,7 +767,7 @@ def _record_stream_chunk(self, return_val):
 
 def _record_events_on_stop_iteration(self, transaction):
     if hasattr(self, "_nr_ft"):
-        linking_metadata = get_trace_linking_metadata()
+        linking_metadata = self._nr_metadata or get_trace_linking_metadata()
         self._nr_ft.__exit__(None, None, None)
         try:
             openai_attrs = getattr(self, "_nr_openai_attrs", {})
@@ -872,6 +874,8 @@ def set_attrs_on_generator_proxy(proxy, instance):
         proxy._nr_response_headers = instance._nr_response_headers
     if hasattr(instance, "_nr_openai_attrs"):
         proxy._nr_openai_attrs = instance._nr_openai_attrs
+    if hasattr(instance, "_nr_metadata"):
+        proxy._nr_metadata = instance._nr_metadata
 
 
 def wrap_engine_api_resource_create_sync(wrapped, instance, args, kwargs):

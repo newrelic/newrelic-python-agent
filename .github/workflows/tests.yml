@@ -175,7 +175,7 @@ jobs:
           tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
         env:
           TOX_PARALLEL_NO_SPINNER: 1
-          PY_COLORS: 0
+          FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
@@ -226,7 +226,7 @@ jobs:
           tox -vv -e ${{ steps.get-envs.outputs.envs }}
         env:
           TOX_PARALLEL_NO_SPINNER: 1
-          PY_COLORS: 0
+          FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
@@ -291,7 +291,7 @@ jobs:
           tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
         env:
           TOX_PARALLEL_NO_SPINNER: 1
-          PY_COLORS: 0
+          FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
@@ -357,7 +357,7 @@ jobs:
           tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
         env:
           TOX_PARALLEL_NO_SPINNER: 1
-          PY_COLORS: 0
+          FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
@@ -423,7 +423,7 @@ jobs:
           tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
         env:
           TOX_PARALLEL_NO_SPINNER: 1
-          PY_COLORS: 0
+          FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
@@ -492,7 +492,7 @@ jobs:
           tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
         env:
           TOX_PARALLEL_NO_SPINNER: 1
-          PY_COLORS: 0
+          FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
@@ -561,7 +561,7 @@ jobs:
           tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
         env:
           TOX_PARALLEL_NO_SPINNER: 1
-          PY_COLORS: 0
+          FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
@@ -666,7 +666,7 @@ jobs:
           tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
         env:
           TOX_PARALLEL_NO_SPINNER: 1
-          PY_COLORS: 0
+          FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
@@ -730,7 +730,7 @@ jobs:
           tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
         env:
           TOX_PARALLEL_NO_SPINNER: 1
-          PY_COLORS: 0
+          FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
@@ -796,7 +796,7 @@ jobs:
           tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
         env:
           TOX_PARALLEL_NO_SPINNER: 1
-          PY_COLORS: 0
+          FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
@@ -863,7 +863,7 @@ jobs:
           tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
         env:
           TOX_PARALLEL_NO_SPINNER: 1
-          PY_COLORS: 0
+          FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
@@ -927,7 +927,7 @@ jobs:
           tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
         env:
           TOX_PARALLEL_NO_SPINNER: 1
-          PY_COLORS: 0
+          FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
@@ -992,7 +992,7 @@ jobs:
           tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
         env:
           TOX_PARALLEL_NO_SPINNER: 1
-          PY_COLORS: 0
+          FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
@@ -1068,7 +1068,7 @@ jobs:
           tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
         env:
           TOX_PARALLEL_NO_SPINNER: 1
-          PY_COLORS: 0
+          FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
@@ -1132,7 +1132,7 @@ jobs:
           tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
         env:
           TOX_PARALLEL_NO_SPINNER: 1
-          PY_COLORS: 0
+          FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
@@ -1196,7 +1196,7 @@ jobs:
           tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
         env:
           TOX_PARALLEL_NO_SPINNER: 1
-          PY_COLORS: 0
+          FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
@@ -1265,7 +1265,7 @@ jobs:
           tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
         env:
           TOX_PARALLEL_NO_SPINNER: 1
-          PY_COLORS: 0
+          FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
@@ -1331,7 +1331,7 @@ jobs:
           tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
         env:
           TOX_PARALLEL_NO_SPINNER: 1
-          PY_COLORS: 0
+          FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
@@ -1398,7 +1398,7 @@ jobs:
           tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
         env:
           TOX_PARALLEL_NO_SPINNER: 1
-          PY_COLORS: 0
+          FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
@@ -1469,7 +1469,7 @@ jobs:
           tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
         env:
           TOX_PARALLEL_NO_SPINNER: 1
-          PY_COLORS: 0
+          FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
@@ -1599,7 +1599,7 @@ jobs:
           tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
         env:
           TOX_PARALLEL_NO_SPINNER: 1
-          PY_COLORS: 0
+          FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2

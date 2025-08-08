@@ -529,14 +529,14 @@ def test_celery_task_different_processes():
 def test_celery_task_in_transaction_different_processes():
     """
     This test demonstrates the limitations of the agent with regards
-    to multiprocessing, namely when it involves transactions in a main 
+    to multiprocessing, namely when it involves transactions in a main
     process and worker processes.
-    
-    Two tasks are executed, one in the main process and one in a worker 
-    process.  A transaction (background task) is created in the context 
-    of the main process.  The worker process will not be aware of this 
+
+    Two tasks are executed, one in the main process and one in a worker
+    process.  A transaction (background task) is created in the context
+    of the main process.  The worker process will not be aware of this
     transaction.
-    
+
     The result is two transactions:
     1. Main process: Background task transaction with `add` task as a trace
     2. Worker process: `add_with_run` transaction with no additional traces

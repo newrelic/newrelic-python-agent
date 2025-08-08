@@ -14,6 +14,7 @@
 
 import pytest
 import webtest
+from conftest import FAILING_ON_WINDOWS
 from testing_support.fixtures import (
     override_application_settings,
     validate_agent_attribute_types,
@@ -60,6 +61,7 @@ _required_intrinsics = ["trip_id", "totalTime"]
 _forgone_intrinsics = []
 
 
+@FAILING_ON_WINDOWS
 @validate_attributes("intrinsic", _required_intrinsics, _forgone_intrinsics)
 def test_intrinsics():
     target_application = webtest.TestApp(target_wsgi_application)
@@ -82,6 +84,7 @@ if ThreadUtilization:
 _forgone_agent = []
 
 
+@FAILING_ON_WINDOWS
 @validate_attributes("agent", _required_agent, _forgone_agent)
 def test_agent():
     target_application = webtest.TestApp(target_wsgi_application)

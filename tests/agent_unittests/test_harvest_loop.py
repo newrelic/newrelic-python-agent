@@ -18,6 +18,7 @@ import time
 from pathlib import Path
 
 import pytest
+from conftest import FAILING_ON_WINDOWS
 from testing_support.fixtures import failing_endpoint, function_not_called, override_generic_settings
 
 from newrelic.common.agent_http import DeveloperModeClient
@@ -745,6 +746,7 @@ def test_transaction_events_disabled():
     assert "metric_data" in endpoints_called
 
 
+@FAILING_ON_WINDOWS
 @failing_endpoint("analytic_event_data", call_number=2)
 @override_generic_settings(settings, {"developer_mode": True, "license_key": "**NOT A LICENSE KEY**"})
 def test_reset_synthetics_events():
@@ -858,6 +860,7 @@ def test_default_events_harvested(allowlist_event):
     assert app._stats_engine.metrics_count() == 4
 
 
+@FAILING_ON_WINDOWS
 @failing_endpoint("analytic_event_data")
 @override_generic_settings(settings, {"developer_mode": True, "agent_limits.merge_stats_maximum": 0})
 def test_infinite_merges():

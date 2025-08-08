@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
 from pathlib import Path
 
 import pytest
@@ -64,19 +65,25 @@ def _generator():
     yield from range(1, 4)
 
 
+JSON_ENCODE_TESTS = [
+    (10, "10"),
+    (10.0, "10.0"),
+    ("my_string", '"my_string"'),
+    (b"my_bytes", '"my_bytes"'),
+    ({"id": 1, "name": "test", "NoneType": None}, '{"id":1,"name":"test","NoneType":null}'),
+    (_generator(), "[1,2,3]"),
+    (tuple(range(4, 7)), "[4,5,6]"),
+]
+
+# Add a Path object test that's platform dependent
+if sys.platform == "win32":
+    JSON_ENCODE_TESTS.append((Path("test\\path\\file.txt"), '"test\\\\path\\\\file.txt"'))
+else:
+    JSON_ENCODE_TESTS.append((Path("test/path/file.txt"), '"test/path/file.txt"'))
+
+
 @pytest.mark.parametrize(
-    "input_,expected",
-    [
-        (10, "10"),
-        (10.0, "10.0"),
-        ("my_string", '"my_string"'),
-        (b"my_bytes", '"my_bytes"'),
-        ({"id": 1, "name": "test", "NoneType": None}, '{"id":1,"name":"test","NoneType":null}'),
-        (_generator(), "[1,2,3]"),
-        (tuple(range(4, 7)), "[4,5,6]"),
-        (Path("test/path/file.txt"), '"test/path/file.txt"'),
-    ],
-    ids=["int", "float", "str", "bytes", "dict", "generator", "iterable", "Path"],
+    "input_,expected", JSON_ENCODE_TESTS, ids=["int", "float", "str", "bytes", "dict", "generator", "iterable", "Path"]
 )
 def test_json_encode(input_, expected):
     output = json_encode(input_)

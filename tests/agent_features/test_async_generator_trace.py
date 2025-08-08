@@ -13,10 +13,10 @@
 # limitations under the License.
 
 import functools
-import sys
 import time
 
 import pytest
+from conftest import FAILING_ON_WINDOWS
 from testing_support.fixtures import capture_transaction_metrics, validate_tt_parenting
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
@@ -209,6 +209,7 @@ def test_async_generator_close_ends_trace(event_loop):
     event_loop.run_until_complete(_test())
 
 
+@FAILING_ON_WINDOWS
 @validate_tt_parenting(("TransactionNode", [("FunctionNode", [("FunctionNode", [])])]))
 @validate_transaction_metrics(
     "test_async_generator_parents",

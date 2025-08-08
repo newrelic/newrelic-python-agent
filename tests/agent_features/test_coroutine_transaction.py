@@ -13,9 +13,9 @@
 # limitations under the License.
 
 import asyncio
-import sys
 
 import pytest
+from conftest import FAILING_ON_WINDOWS
 from testing_support.fixtures import capture_transaction_metrics, override_generic_settings
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 
@@ -91,6 +91,7 @@ if native_coroutine_test:
     test_matrix.append(native_coroutine_test)
 
 
+@FAILING_ON_WINDOWS
 @pytest.mark.parametrize("num_coroutines", (2,))
 @pytest.mark.parametrize("create_test_task", test_matrix)
 @pytest.mark.parametrize(

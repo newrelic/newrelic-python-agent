@@ -16,6 +16,7 @@ import json
 from pathlib import Path
 
 import pytest
+from conftest import FAILING_ON_WINDOWS
 
 import newrelic.common.utilization as u
 
@@ -46,6 +47,7 @@ def mock_open(mock_file):
     return _mock_open
 
 
+@FAILING_ON_WINDOWS
 @pytest.mark.parametrize("filename, containerId", _load_docker_test_attributes())
 def test_docker_container_id_v1(monkeypatch, filename, containerId):
     path = DOCKER_FIXTURE / filename

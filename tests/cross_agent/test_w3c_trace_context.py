@@ -215,10 +215,10 @@ def test_trace_context(
         ".web_transaction": web_transaction,
         ".raises_exception": raises_exception,
         ".transport_type": transport_type,
-        ".outbound_calls": outbound_payloads and len(outbound_payloads) or 0,
+        ".outbound_calls": (outbound_payloads and len(outbound_payloads)) or 0,
     }
 
-    inbound_headers = inbound_headers and inbound_headers[0] or None
+    inbound_headers = (inbound_headers and inbound_headers[0]) or None
     if transport_type != "HTTP":
         extra_environ[".inbound_headers"] = inbound_headers
         inbound_headers = None

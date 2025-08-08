@@ -64,26 +64,6 @@ def task_info(instance, *args, **kwargs):
     return task_name, task_source
 
 
-# def create_DT_headers_and_attach(wrapped, transaction):
-#     try:
-#         request = wrapped and wrapped.request_stack and wrapped.request_stack.top
-#         original_headers = getattr(request, "headers", None) or vars(request)
-#         dt_headers = MessageTrace.generate_request_headers(transaction)
-#         if dt_headers:
-#             if not original_headers:
-#                 wrapped.request.headers = dict(dt_headers)
-#             else:
-#                 dt_headers.update(original_headers)
-#                 wrapped.request.headers = dt_headers = dict(dt_headers)
-#                 # original_headers.update(dict(dt_headers))
-#                 # wrapped.request.headers = original_headers
-
-#     except Exception:
-#         pass
-
-#     return wrapped
-
-
 def wrap_task_call(wrapped, instance, args, kwargs):
     transaction = current_transaction(active_only=False)
 

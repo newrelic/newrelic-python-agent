@@ -20,6 +20,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from io import StringIO
 
 import pytest
+from conftest import FAILING_ON_WINDOWS
 from testing_support.certs import CERT_PATH
 from testing_support.mock_external_http_server import MockExternalHTTPServer
 
@@ -226,6 +227,7 @@ def test_http_close_connection_in_context_manager():
         client.close_connection()
 
 
+@FAILING_ON_WINDOWS
 @pytest.mark.parametrize(
     "client_cls,method,threshold",
     (

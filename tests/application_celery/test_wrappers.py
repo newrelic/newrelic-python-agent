@@ -12,10 +12,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from _target_application import add
+from _target_application import add, add_with_super
+from celery.app.trace import setup_worker_optimizations, reset_worker_optimizations
 
 from newrelic.common.object_wrapper import _NRBoundFunctionWrapper
 
+def test_worker_optimizations_preserve_instrumentation(celery_worker_available):
+    """
+    Tests that worker optimizations do not remove New Relic instrumentation.
+    
+    Previously, New Relic was applying instrumentation hooks to `Task`/`BaseTask`.
+    Setting up and resetting worker optimizations were removing the instrumentation
+    so, instrumentation was created to remove the instrumentation, run the worker
+    optimizations, and then reapply the instrumentation.
+
+    The purpose of the worker optimizations is to circumvent an issue where a
+    custom task class defines `__call__` and also calls `super().__call__`.
+
+    We can ensure that the instrumentation is preserved for the `add_with_super` task.
+    """
+    is_instrumented = lambda: isinstance(add_with_super.__call__, _NRBoundFunctionWrapper)
+
+    reset_worker_optimizations()
+    assert is_instrumented(), "Instrumentation not initially applied."
+
+    setup_worker_optimizations(celery_worker_available.app)
+    assert is_instrumented(), "setup_worker_optimizations removed instrumentation."
+
+    reset_worker_optimizations()
+    assert is_instrumented(), "reset_worker_optimizations removed instrumentation."
+    
 
 def test_task_wrapping_detection():
     """

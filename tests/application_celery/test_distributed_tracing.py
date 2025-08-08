@@ -19,10 +19,11 @@ from testing_support.validators.validate_transaction_count import validate_trans
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
+from newrelic.api.transaction import insert_distributed_trace_headers
 
 
 @pytest.mark.parametrize("dt_enabled", [True, False])
-def test_celery_task_distributed_tracing_inside_background_task(dt_enabled):
+def test_DT_inside_transaction_delay(dt_enabled):
     @override_application_settings({"distributed_tracing.enabled": dt_enabled})
     @validate_transaction_metrics(
         name="_target_application.add",
@@ -35,7 +36,7 @@ def test_celery_task_distributed_tracing_inside_background_task(dt_enabled):
         index=-2,
     )
     @validate_transaction_metrics(
-        name="test_distributed_tracing:test_celery_task_distributed_tracing_inside_background_task.<locals>._test",
+        name="test_distributed_tracing:test_DT_inside_transaction_delay.<locals>._test",
         rollup_metrics=[
             ("Supportability/TraceContext/Create/Success", 1 if dt_enabled else None),
             ("Supportability/DistributedTrace/CreatePayload/Success", 1 if dt_enabled else None),
@@ -46,7 +47,7 @@ def test_celery_task_distributed_tracing_inside_background_task(dt_enabled):
     # One for the background task, one for the Celery task.  Runs in different processes.
     @background_task()
     def _test():
-        result = add.apply_async((1, 2))
+        result = add.delay(1, 2)
         result = result.get()
         assert result == 3
 
@@ -54,7 +55,7 @@ def test_celery_task_distributed_tracing_inside_background_task(dt_enabled):
 
 
 @pytest.mark.parametrize("dt_enabled", [True, False])
-def test_celery_task_distributed_tracing_outside_background_task(dt_enabled):
+def test_DT_outside_transaction_delay(dt_enabled):
     @override_application_settings({"distributed_tracing.enabled": dt_enabled})
     @validate_transaction_metrics(
         name="_target_application.add",
@@ -67,21 +68,23 @@ def test_celery_task_distributed_tracing_outside_background_task(dt_enabled):
     )
     @validate_transaction_count(1)
     def _test():
-        result = add.apply_async((1, 2))
+        result = add.delay(1, 2)
         result = result.get()
         assert result == 3
 
     _test()
 
-
-# In this case, the background task creating the transaction
-# has not generated a distributed trace header, so the Celery
-# task will not have a distributed trace header to accept.
 @pytest.mark.parametrize("dt_enabled", [True, False])
-def test_celery_task_distributed_tracing_inside_background_task_apply(dt_enabled):
+def test_DT_inside_transaction_apply(dt_enabled):
     @override_application_settings({"distributed_tracing.enabled": dt_enabled})
     @validate_transaction_metrics(
-        name="test_distributed_tracing:test_celery_task_distributed_tracing_inside_background_task_apply.<locals>._test",
+        name="test_distributed_tracing:test_DT_inside_transaction_apply.<locals>._test",
+        rollup_metrics=[
+            ("Function/_target_application.add", 1),
+        ],
+        scoped_metrics=[
+            ("Function/_target_application.add", 1),
+        ],
         background_task=True,
     )
     @validate_transaction_count(1)  # In the same process, so only one transaction
@@ -95,7 +98,34 @@ def test_celery_task_distributed_tracing_inside_background_task_apply(dt_enabled
 
 
 @pytest.mark.parametrize("dt_enabled", [True, False])
-def test_celery_task_distributed_tracing_outside_background_task_apply(dt_enabled):
+def test_DT_inside_transaction_apply_with_added_headers(dt_enabled):
+    @override_application_settings({"distributed_tracing.enabled": dt_enabled})
+    @validate_transaction_metrics(
+        name="test_distributed_tracing:test_DT_inside_transaction_apply_with_added_headers.<locals>._test",
+        rollup_metrics=[
+            ("Function/_target_application.add", 1),
+            ("Supportability/TraceContext/Create/Success", 1 if dt_enabled else None),
+            ("Supportability/DistributedTrace/CreatePayload/Success", 1 if dt_enabled else None),
+        ],
+        scoped_metrics=[
+            ("Function/_target_application.add", 1),
+        ],
+        background_task=True,
+    )
+    @validate_transaction_count(1)  # In the same process, so only one transaction
+    @background_task()
+    def _test():
+        headers = []
+        insert_distributed_trace_headers(headers)
+        result = add.apply((1, 2), headers=headers)
+        result = result.get()
+        assert result == 3
+
+    _test()
+
+
+@pytest.mark.parametrize("dt_enabled", [True, False])
+def test_DT_outside_transaction_apply(dt_enabled):
     @override_application_settings({"distributed_tracing.enabled": dt_enabled})
     @validate_transaction_metrics(
         name="_target_application.add",
@@ -110,6 +140,44 @@ def test_celery_task_distributed_tracing_outside_background_task_apply(dt_enable
     def _test():
         result = add.apply((1, 2))
         result = result.get()
+        assert result == 3
+
+    _test()
+
+
+@pytest.mark.parametrize("dt_enabled", [True, False])
+def test_DT_inside_transaction__call__(dt_enabled):
+    @override_application_settings({"distributed_tracing.enabled": dt_enabled})
+    @validate_transaction_metrics(
+        name="test_distributed_tracing:test_DT_inside_transaction__call__.<locals>._test",
+        rollup_metrics=[
+            ("Function/_target_application.add", 1),
+        ],
+        scoped_metrics=[
+            ("Function/_target_application.add", 1),
+        ],
+        background_task=True,
+    )
+    @validate_transaction_count(1)  # In the same process, so only one transaction
+    @background_task()
+    def _test():
+        result = add(1, 2)
+        assert result == 3
+
+    _test()
+    
+    
+@pytest.mark.parametrize("dt_enabled", [True, False])
+def test_DT_outside_transaction__call__(dt_enabled):
+    @override_application_settings({"distributed_tracing.enabled": dt_enabled})
+    @validate_transaction_metrics(
+        name="_target_application.add",
+        group="Celery",
+        background_task=True,
+    )
+    @validate_transaction_count(1)  # In the same process, so only one transaction
+    def _test():
+        result = add(1, 2)
         assert result == 3
 
     _test()

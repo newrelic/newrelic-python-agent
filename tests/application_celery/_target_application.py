@@ -26,34 +26,8 @@ app = Celery(
 )
 
 
-class CustomCeleryTaskWithSuper(Task):
-    def __call__(self, *args, **kwargs):
-        transaction = current_transaction()
-        if transaction:
-            transaction.add_custom_attribute("custom_task_attribute", "Called with super")
-        return super().__call__(*args, **kwargs)
-
-
-class CustomCeleryTaskWithRun(Task):
-    def __call__(self, *args, **kwargs):
-        transaction = current_transaction()
-        if transaction:
-            transaction.add_custom_attribute("custom_task_attribute", "Called with run")
-        return self.run(*args, **kwargs)
-
-
 @app.task
 def add(x, y):
-    return x + y
-
-
-@app.task(base=CustomCeleryTaskWithSuper)
-def add_with_super(x, y):
-    return x + y
-
-
-@app.task(base=CustomCeleryTaskWithRun)
-def add_with_run(x, y):
     return x + y
 
 
@@ -69,4 +43,29 @@ def nested_add(x, y):
 
 @shared_task
 def shared_task_add(x, y):
+    return x + y
+
+
+class CustomCeleryTaskWithSuper(Task):
+    def __call__(self, *args, **kwargs):
+        transaction = current_transaction()
+        if transaction:
+            transaction.add_custom_attribute("custom_task_attribute", "Called with super")
+        return super().__call__(*args, **kwargs)
+
+class CustomCeleryTaskWithRun(Task):
+    def __call__(self, *args, **kwargs):
+        transaction = current_transaction()
+        if transaction:
+            transaction.add_custom_attribute("custom_task_attribute", "Called with run")
+        return self.run(*args, **kwargs)
+
+
+@app.task(base=CustomCeleryTaskWithSuper)
+def add_with_super(x, y):
+    return x + y
+
+
+@app.task(base=CustomCeleryTaskWithRun)
+def add_with_run(x, y):
     return x + y

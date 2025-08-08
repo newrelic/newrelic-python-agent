@@ -64,6 +64,26 @@ def task_info(instance, *args, **kwargs):
     return task_name, task_source
 
 
+# def create_DT_headers_and_attach(wrapped, transaction):
+#     try:
+#         request = wrapped and wrapped.request_stack and wrapped.request_stack.top
+#         original_headers = getattr(request, "headers", None) or vars(request)
+#         dt_headers = MessageTrace.generate_request_headers(transaction)
+#         if dt_headers:
+#             if not original_headers:
+#                 wrapped.request.headers = dict(dt_headers)
+#             else:
+#                 dt_headers.update(original_headers)
+#                 wrapped.request.headers = dt_headers = dict(dt_headers)
+#                 # original_headers.update(dict(dt_headers))
+#                 # wrapped.request.headers = original_headers
+
+#     except Exception:
+#         pass
+
+#     return wrapped
+
+
 def wrap_task_call(wrapped, instance, args, kwargs):
     transaction = current_transaction(active_only=False)
 
@@ -104,22 +124,23 @@ def wrap_task_call(wrapped, instance, args, kwargs):
             try:
                 # Headers on earlier versions of Celery may end up as attributes
                 # on the request context instead of as custom headers. Handle this
-                # by defaulting to using vars() if headers is not available
-                request = wrapped.request
+                # by defaulting to using `vars()` if headers is not available
+
+                # If there is no request, the request property will return
+                # a new instance of `celery.Context()` instead of `None`, so
+                # this will be handled by accessing the request_stack directly.
+                request = wrapped and wrapped.request_stack and wrapped.request_stack.top
                 headers = getattr(request, "headers", None) or vars(request)
 
                 settings = transaction.settings
                 if headers is not None and settings is not None:
                     if settings.distributed_tracing.enabled:
+                        # Generate DT headers if they do not already exist in the incoming request
                         if not transaction.accept_distributed_trace_headers(headers, transport_type="AMQP"):
                             try:
                                 dt_headers = MessageTrace.generate_request_headers(transaction)
                                 if dt_headers:
-                                    if not headers:
-                                        wrapped.request.headers = dict(dt_headers)
-                                    else:
-                                        headers.update(dict(dt_headers))
-                                        wrapped.request.headers = headers
+                                    headers.update(dict(dt_headers))
                             except Exception:
                                 pass
                     elif transaction.settings.cross_application_tracer.enabled:
@@ -143,7 +164,6 @@ def wrap_build_tracer(wrapped, instance, args, kwargs):
         task = bound_args.get("task", None)
 
         task = TaskWrapper(task, wrap_task_call)
-        task.__module__ = wrapped.__module__  # Ensure module is set for monkeypatching detection
         bound_args["task"] = task
 
         return wrapped(**bound_args)
@@ -193,22 +213,23 @@ def CeleryTaskWrapper(wrapped):
                 try:
                     # Headers on earlier versions of Celery may end up as attributes
                     # on the request context instead of as custom headers. Handle this
-                    # by defaulting to using vars() if headers is not available
-                    request = instance.request
+                    # by defaulting to using `vars()` if headers is not available
+
+                    # If there is no request, the request property will return
+                    # a new instance of `celery.Context()` instead of `None`, so
+                    # this will be handled by accessing the request_stack directly.
+                    request = instance and instance.request_stack and instance.request_stack.top
                     headers = getattr(request, "headers", None) or vars(request)
 
                     settings = transaction.settings
                     if headers is not None and settings is not None:
                         if settings.distributed_tracing.enabled:
+                            # Generate DT headers if they do not already exist in the incoming request
                             if not transaction.accept_distributed_trace_headers(headers, transport_type="AMQP"):
                                 try:
                                     dt_headers = MessageTrace.generate_request_headers(transaction)
                                     if dt_headers:
-                                        if not headers:
-                                            instance.request.headers = dict(dt_headers)
-                                        else:
-                                            headers.update(dict(dt_headers))
-                                            instance.request.headers = headers
+                                        headers.update(dict(dt_headers))
                                 except Exception:
                                     pass
                         elif transaction.settings.cross_application_tracer.enabled:
@@ -238,7 +259,7 @@ def CeleryTaskWrapper(wrapped):
     # Celery has included a monkey-patching provision which did not perform this
     # optimization on functions that were monkey-patched. Unfortunately, our
     # wrappers are too transparent for celery to detect that they've even been
-    # monky-patched. To circumvent this, we set the __module__ of our wrapped task
+    # monkey-patched. To circumvent this, we set the __module__ of our wrapped task
     # to this file which causes celery to properly detect that it has been patched.
     #
     # For versions of celery 2.5.3 to 2.5.5
@@ -252,7 +273,6 @@ def CeleryTaskWrapper(wrapped):
             return self.__call__(*args, **kwargs)
 
     wrapped_task = TaskWrapper(wrapped, wrapper)
-    # Reset __module__ to be less transparent so celery detects our monkey-patching
     wrapped_task.__module__ = CeleryTaskWrapper.__module__
 
     return wrapped_task
@@ -262,7 +282,7 @@ def instrument_celery_local(module):
     if hasattr(module, "Proxy"):
         # This is used in the case where the function is
         # called directly on the Proxy object (rather than
-        # using "delay" or "apply_async")
+        # using `delay` or `apply_async`)
         module.Proxy.__call__ = CeleryTaskWrapper(module.Proxy.__call__)
 
 

@@ -20,7 +20,7 @@ from newrelic.common.object_wrapper import _NRBoundFunctionWrapper
 def test_worker_optimizations_preserve_instrumentation(celery_worker_available):
     """
     Tests that worker optimizations do not remove New Relic instrumentation.
-    
+
     Previously, New Relic was applying instrumentation hooks to `Task`/`BaseTask`.
     Setting up and resetting worker optimizations were removing the instrumentation
     so, instrumentation was created to remove the instrumentation, run the worker

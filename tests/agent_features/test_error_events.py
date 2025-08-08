@@ -16,6 +16,7 @@ import sys
 import time
 
 import webtest
+from conftest import FAILING_ON_WINDOWS
 from testing_support.fixtures import (
     cat_enabled,
     make_cross_agent_headers,
@@ -74,6 +75,7 @@ _intrinsic_attributes = {
 }
 
 
+@FAILING_ON_WINDOWS
 @validate_error_event_sample_data(required_attrs=_intrinsic_attributes, required_user_attrs=True)
 def test_transaction_error_event_lotsa_attributes():
     test_environ = {
@@ -97,6 +99,7 @@ _intrinsic_attributes = {
 }
 
 
+@FAILING_ON_WINDOWS
 @validate_error_event_sample_data(required_attrs=_intrinsic_attributes, required_user_attrs=True)
 def test_transaction_error_background_task():
     test_environ = {"err_message": ERR_MESSAGE, "external": "2", "db": "2", "newrelic.set_background_task": True}

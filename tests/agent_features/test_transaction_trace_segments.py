@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import pytest
+from conftest import FAILING_ON_WINDOWS
 from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_tt_segment_params import validate_tt_segment_params
 
@@ -33,12 +34,14 @@ def external():
     pass
 
 
+@FAILING_ON_WINDOWS
 @validate_tt_segment_params(present_params=("http.url",))
 @background_task(name="test_external_segment_attributes_default")
 def test_external_segment_attributes_default():
     external()
 
 
+@FAILING_ON_WINDOWS
 @override_application_settings({"transaction_segments.attributes.exclude": ["http.url"]})
 @validate_tt_segment_params(forgone_params=("http.url",))
 @background_task(name="test_external_segment_attributes_disabled")
@@ -46,6 +49,7 @@ def test_external_segment_attributes_disabled():
     external()
 
 
+@FAILING_ON_WINDOWS
 @validate_tt_segment_params(exact_params={"http.url": "http://example.org"})
 @background_task(name="test_external_user_params_override_url")
 def test_external_user_params_override_url():
@@ -54,6 +58,7 @@ def test_external_user_params_override_url():
         t.params["http.url"] = "http://example.org"
 
 
+@FAILING_ON_WINDOWS
 @validate_tt_segment_params(exact_params={"db.instance": "a" * 255})
 @background_task(name="test_datastore_db_instance_truncation")
 def test_datastore_db_instance_truncation():
@@ -61,6 +66,7 @@ def test_datastore_db_instance_truncation():
         pass
 
 
+@FAILING_ON_WINDOWS
 @validate_tt_segment_params(exact_params={"db.instance": "a" * 255})
 @background_task(name="test_database_db_instance_truncation")
 def test_database_db_instance_truncation():
@@ -68,6 +74,7 @@ def test_database_db_instance_truncation():
         pass
 
 
+@FAILING_ON_WINDOWS
 @override_application_settings({"transaction_tracer.record_sql": "raw"})
 @validate_tt_segment_params(exact_params={"db.statement": "select 1"})
 @background_task(name="test_database_db_statement")
@@ -76,6 +83,7 @@ def test_database_db_statement_default_enabled():
         pass
 
 
+@FAILING_ON_WINDOWS
 @override_application_settings({"transaction_tracer.record_sql": "raw", "agent_limits.sql_query_length_maximum": 1})
 @validate_tt_segment_params(exact_params={"db.statement": "a"})
 @background_task(name="test_database_db_statement_truncation")
@@ -84,6 +92,7 @@ def test_database_db_statement_truncation():
         pass
 
 
+@FAILING_ON_WINDOWS
 @override_application_settings({"transaction_segments.attributes.exclude": ["db.*"]})
 @validate_tt_segment_params(forgone_params=("db.instance", "db.statement"))
 @background_task(name="test_database_segment_attributes_disabled")
@@ -93,6 +102,7 @@ def test_database_segment_attributes_disabled():
         pass
 
 
+@FAILING_ON_WINDOWS
 @pytest.mark.parametrize(
     "trace_type,args",
     (

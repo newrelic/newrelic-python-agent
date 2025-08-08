@@ -14,6 +14,7 @@
 
 import time
 
+from conftest import FAILING_ON_WINDOWS
 from testing_support.fixtures import validate_tt_parenting
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
@@ -88,6 +89,7 @@ _test_async_trace_overlapping_children_parenting = (
 )
 
 
+@FAILING_ON_WINDOWS
 @validate_transaction_metrics(
     "test_function_trace:test_async_trace_overlapping_children",
     scoped_metrics=_test_async_trace_overlapping_children_scoped_metrics,

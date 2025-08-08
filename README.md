@@ -40,8 +40,7 @@ This package can be installed via pip:
 pip install newrelic
 ```
 
-(These instructions can also be found online: [Python Agent Quick
-Start](https://docs.newrelic.com/docs/agents/python-agent/getting-started/python-agent-quick-start).)
+(These instructions can also be found online: [Python Agent Installation Guide](https://docs.newrelic.com/install/python/).)
 
 1. Generate the agent configuration file with your [license
     key](https://docs.newrelic.com/docs/apis/intro-apis/new-relic-api-keys/).

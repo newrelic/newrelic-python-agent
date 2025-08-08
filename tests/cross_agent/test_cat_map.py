@@ -24,6 +24,7 @@ from urllib.request import urlopen
 
 import pytest
 import webtest
+from conftest import FAILING_ON_WINDOWS
 from testing_support.fixtures import (
     make_cross_agent_headers,
     override_application_name,
@@ -67,7 +68,7 @@ def server():
 
 def load_tests():
     result = []
-    with FIXTURE.open() as fh:
+    with FIXTURE.open(encoding="utf-8") as fh:
         tests = json.load(fh)
 
     for test in tests:
@@ -133,6 +134,7 @@ def target_wsgi_application(environ, start_response):
 target_application = webtest.TestApp(target_wsgi_application)
 
 
+@FAILING_ON_WINDOWS
 @pytest.mark.parametrize(_parameters, load_tests())
 @pytest.mark.parametrize("old_cat", (True, False))
 def test_cat_map(

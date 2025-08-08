@@ -15,7 +15,6 @@
 import json
 import os
 import sys
-import tempfile
 from importlib import reload
 from pathlib import Path
 
@@ -24,6 +23,7 @@ import pytest
 # NOTE: the test_utilization_settings_from_env_vars test mocks several of the
 # methods in newrelic.core.data_collector and does not put them back!
 from testing_support.mock_http_client import create_client_cls
+from testing_support.util import NamedTemporaryFile
 
 import newrelic.core.config
 from newrelic.common.object_wrapper import function_wrapper
@@ -37,7 +37,7 @@ FIXTURE = Path(__file__).parent / "fixtures" / "utilization" / "utilization_json
 
 
 def _load_tests():
-    with FIXTURE.open() as fh:
+    with FIXTURE.open(encoding="utf-8") as fh:
         js = fh.read()
     return json.loads(js)
 
@@ -132,19 +132,19 @@ def patch_boot_id_file(test):
         boot_id_file = None
         initial_sys_platform = sys.platform
 
-        if test.get("input_boot_id"):
-            boot_id_file = tempfile.NamedTemporaryFile()
-            boot_id_file.write(test.get("input_boot_id"))
-            boot_id_file.seek(0)
-            BootIdUtilization.METADATA_URL = boot_id_file.name
-            sys.platform = "linux-mock-testing"  # ensure boot_id is gathered
-        else:
-            # do not gather boot_id at all, this will ensure there is nothing
-            # extra in the gathered utilizations data
-            sys.platform = "not-linux"
-
         try:
-            return wrapped(*args, **kwargs)
+            if test.get("input_boot_id"):
+                with NamedTemporaryFile() as boot_id_file:
+                    boot_id_file.write(test.get("input_boot_id"))
+                    boot_id_file.seek(0)
+                    BootIdUtilization.METADATA_URL = boot_id_file.name
+                    sys.platform = "linux-mock-testing"  # ensure boot_id is gathered
+                    return wrapped(*args, **kwargs)
+            else:
+                # do not gather boot_id at all, this will ensure there is nothing
+                # extra in the gathered utilizations data
+                sys.platform = "not-linux"
+                return wrapped(*args, **kwargs)
         finally:
             del boot_id_file  # close and thus delete the tempfile
             sys.platform = initial_sys_platform

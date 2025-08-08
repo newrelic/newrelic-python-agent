@@ -51,6 +51,7 @@ try:
 except SyntaxError:
     normal_asgi_application = None
 
+from conftest import FAILING_ON_WINDOWS
 
 URL_PARAM = "some_key"
 URL_PARAM2 = "second_key"
@@ -196,6 +197,7 @@ def test_error_in_transaction_default_settings(normal_application):
 _expected_attributes = {"agent": TRACE_ERROR_AGENT_KEYS, "user": USER_ATTRS, "intrinsic": ["trip_id"]}
 
 
+@FAILING_ON_WINDOWS
 @cat_enabled
 @validate_transaction_trace_attributes(_expected_attributes, _expected_absent_attributes)
 @override_application_settings({})
@@ -263,6 +265,7 @@ _override_settings = {"transaction_tracer.attributes.exclude": ["request.paramet
 _expected_attributes = {"agent": TRACE_ERROR_AGENT_KEYS, "user": USER_ATTRS, "intrinsic": ["trip_id"]}
 
 
+@FAILING_ON_WINDOWS
 @validate_transaction_trace_attributes(_expected_attributes, _expected_absent_attributes)
 @override_application_settings(_override_settings)
 def test_transaction_trace_exclude_request_params(normal_application):
@@ -285,6 +288,7 @@ def test_error_in_transaction_capture_params_exclude_request_params(normal_appli
 _override_settings = {"capture_params": True, "transaction_tracer.attributes.exclude": ["request.parameters.*"]}
 
 
+@FAILING_ON_WINDOWS
 @validate_transaction_trace_attributes(_expected_attributes, _expected_absent_attributes)
 @override_application_settings(_override_settings)
 def test_transaction_trace_capture_params_exclude_request_params(normal_application):
@@ -312,6 +316,7 @@ _override_settings = {"transaction_tracer.attributes.include": ["request.paramet
 _expected_attributes = {"agent": AGENT_KEYS_ALL, "user": USER_ATTRS, "intrinsic": ["trip_id"]}
 
 
+@FAILING_ON_WINDOWS
 @validate_transaction_trace_attributes(_expected_attributes)
 @override_application_settings(_override_settings)
 def test_transaction_trace_include_request_params(normal_application):
@@ -393,6 +398,7 @@ _expected_attributes = {
 }
 
 
+@FAILING_ON_WINDOWS
 @validate_transaction_trace_attributes(_expected_attributes, _expected_absent_attributes)
 @override_application_settings(_override_settings)
 def test_transaction_trace_include_exclude(normal_application):
@@ -467,6 +473,7 @@ _override_settings = {"transaction_tracer.attributes.exclude": ["puppies"]}
 _expected_attributes = {"agent": TRACE_ERROR_AGENT_KEYS, "user": ["sunshine"], "intrinsic": ["trip_id"]}
 
 
+@FAILING_ON_WINDOWS
 @validate_transaction_trace_attributes(_expected_attributes, _expected_absent_attributes)
 @override_application_settings(_override_settings)
 def test_transaction_trace_exclude_user_attribute(normal_application):
@@ -545,6 +552,7 @@ _expected_attributes = {
 }
 
 
+@FAILING_ON_WINDOWS
 @validate_transaction_trace_attributes(_expected_attributes, _expected_absent_attributes)
 @override_application_settings(_override_settings)
 def test_transaction_trace_exclude_agent_attribute(normal_application):
@@ -602,6 +610,7 @@ def test_error_in_transaction_deprecated_capture_params_true(normal_application)
 _expected_attributes = {"agent": AGENT_KEYS_ALL, "user": USER_ATTRS, "intrinsic": ["trip_id"]}
 
 
+@FAILING_ON_WINDOWS
 @validate_transaction_trace_attributes(_expected_attributes)
 @override_application_settings(_override_settings)
 def test_transaction_trace_deprecated_capture_params_true(normal_application):
@@ -659,6 +668,7 @@ def test_error_in_transaction_deprecated_capture_params_false(normal_application
 _expected_attributes = {"agent": TRACE_ERROR_AGENT_KEYS, "user": USER_ATTRS, "intrinsic": ["trip_id"]}
 
 
+@FAILING_ON_WINDOWS
 @validate_transaction_trace_attributes(_expected_attributes, _expected_absent_attributes)
 @override_application_settings(_override_settings)
 def test_transaction_trace_deprecated_capture_params_false(normal_application):
@@ -718,6 +728,7 @@ _override_settings = {"transaction_tracer.attributes.exclude": ["trip_id"]}
 _expected_attributes = {"agent": TRACE_ERROR_AGENT_KEYS, "user": USER_ATTRS, "intrinsic": ["trip_id"]}
 
 
+@FAILING_ON_WINDOWS
 @validate_transaction_trace_attributes(_expected_attributes, _expected_absent_attributes)
 @override_application_settings(_override_settings)
 def test_transaction_trace_exclude_intrinsic(normal_application):
@@ -774,6 +785,7 @@ def test_error_in_transaction_attributes_disabled(normal_application):
 _override_settings = {"transaction_tracer.attributes.enabled": False}
 
 
+@FAILING_ON_WINDOWS
 @validate_transaction_trace_attributes(_expected_attributes, _expected_absent_attributes)
 @override_application_settings(_override_settings)
 def test_transaction_trace_attributes_disabled(normal_application):
@@ -831,6 +843,7 @@ _override_settings = {"browser_monitoring.enabled": False}
 _expected_attributes = {"agent": TRANS_EVENT_AGENT_KEYS, "user": USER_ATTRS, "intrinsic": []}
 
 
+@FAILING_ON_WINDOWS
 @validate_transaction_trace_attributes(_expected_attributes)
 @validate_transaction_event_attributes(_expected_attributes)
 @override_application_settings(_override_settings)

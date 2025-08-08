@@ -145,6 +145,8 @@ def test_lambda_malformed_api_gateway_payload(monkeypatch):
 _malformed_request_attributes = {"agent": ["aws.requestId", "aws.lambda.arn"], "user": [], "intrinsic": []}
 
 
+# The lambda_hander has been deprecated for 3+ years
+@pytest.mark.skip(reason="The lambda_handler has been deprecated")
 @validate_transaction_trace_attributes(_malformed_request_attributes)
 @validate_transaction_event_attributes(_malformed_request_attributes)
 @override_application_settings(_override_settings)

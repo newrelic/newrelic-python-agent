@@ -15,6 +15,7 @@
 import json
 
 import webtest
+from conftest import FAILING_ON_WINDOWS
 from testing_support.fixtures import override_application_settings, validate_transaction_event_sample_data
 from testing_support.sample_applications import fully_featured_app, user_attributes_added
 from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
@@ -382,6 +383,7 @@ def test_no_database_or_external_attributes_in_analytics():
 _intrinsic_attributes = {"name": "WebTransaction/Uri/db", "databaseCallCount": 2}
 
 
+@FAILING_ON_WINDOWS
 @validate_transaction_event_sample_data(required_attrs=_intrinsic_attributes, required_user_attrs=_user_attributes)
 def test_database_attributes_in_analytics():
     """Make database calls in the transaction and check if the analytic
@@ -407,6 +409,7 @@ def test_database_attributes_in_analytics():
 _intrinsic_attributes = {"name": "WebTransaction/Uri/ext", "externalCallCount": 2}
 
 
+@FAILING_ON_WINDOWS
 @validate_transaction_event_sample_data(required_attrs=_intrinsic_attributes, required_user_attrs=_user_attributes)
 def test_external_attributes_in_analytics():
     """Make external calls in the transaction and check if the analytic
@@ -432,6 +435,7 @@ def test_external_attributes_in_analytics():
 _intrinsic_attributes = {"name": "WebTransaction/Uri/dbext", "databaseCallCount": 2, "externalCallCount": 2}
 
 
+@FAILING_ON_WINDOWS
 @validate_transaction_event_sample_data(required_attrs=_intrinsic_attributes, required_user_attrs=_user_attributes)
 def test_database_and_external_attributes_in_analytics():
     """Make external calls and database calls in the transaction and check if

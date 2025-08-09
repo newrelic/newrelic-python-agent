@@ -16,7 +16,6 @@ import os
 
 import django
 import pytest
-from testing_support.asgi_testing import AsgiTest
 from testing_support.fixtures import (
     override_application_settings,
     override_generic_settings,
@@ -25,14 +24,34 @@ from testing_support.fixtures import (
 from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_transaction_count import validate_transaction_count
 
 from newrelic.common.encoding_utils import gzip_decompress
 from newrelic.core.config import global_settings
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 DJANGO_VERSION = tuple(map(int, django.get_version().split(".")[:2]))
 
 if DJANGO_VERSION[0] < 3:
     pytest.skip("support for asgi added in django 3", allow_module_level=True)
+
+# Import this here so it is not run if Django is less than 3.0.
+from testing_support.asgi_testing import AsgiTest  # noqa: E402
+
+_default_settings = {
+    "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
+    "transaction_tracer.explain_threshold": 0.0,
+    "transaction_tracer.transaction_threshold": 0.0,
+    "transaction_tracer.stack_trace_threshold": 0.0,
+    "debug.log_data_collector_payloads": True,
+    "debug.record_transaction_failure": True,
+    "debug.log_autorum_middleware": True,
+}
+
+collector_agent_registration = collector_agent_registration_fixture(
+    app_name="Python Agent Test (framework_django)", default_settings=_default_settings, scope="module"
+)
+
 
 scoped_metrics = [
     ("Function/django.contrib.sessions.middleware:SessionMiddleware", 1),
@@ -180,6 +199,7 @@ def test_asgi_template_render(application):
     assert response.status == 200
 
 
+@validate_transaction_count(0)
 @override_generic_settings(global_settings(), {"enabled": False})
 def test_asgi_nr_disabled(application):
     response = application.get("/")

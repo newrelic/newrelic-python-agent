@@ -215,7 +215,6 @@ def collector_agent_registration_fixture(
         # Force registration of the application.
 
         application = register_application()
-        # breakpoint()
 
         # Attempt to record deployment marker for test. It's ok
         # if the deployment marker does not record successfully.
@@ -251,7 +250,6 @@ def collector_agent_registration_fixture(
         yield application
 
         shutdown_agent()
-        breakpoint()
         agent_instance()._applications[application.name] = {}
 
     return _collector_agent_registration_fixture
@@ -259,7 +257,6 @@ def collector_agent_registration_fixture(
 
 @pytest.fixture
 def collector_available_fixture(request, collector_agent_registration):
-    # breakpoint()
     application = application_instance()
     active = application.active
     assert active

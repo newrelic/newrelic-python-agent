@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# NOTE: In this case, the collector_agent_registration is set for each module, rather than per session
+
+
 # from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 # _default_settings = {

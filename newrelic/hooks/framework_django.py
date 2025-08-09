@@ -1107,7 +1107,6 @@ def _nr_wrap_converted_middleware_(middleware, name):
 # avoid this logic for multiple calls to the same middleware?
 # Also, is that even a scenario we need to worry about?
 def is_denied_middleware(callable_name):
-    # breakpoint()
     settings = application_settings() or global_settings()
 
     # Return True (skip wrapping) if:
@@ -1204,7 +1203,7 @@ def is_denied_middleware(callable_name):
                 else:
                     deny |= include_logic(callable_name, name)
 
-    return deny    # If we have made it to this point, then the callable name is not in the exclude list
+    return deny
 
 
 def _nr_wrapper_convert_exception_to_response_(wrapped, instance, args, kwargs):

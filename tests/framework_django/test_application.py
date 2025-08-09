@@ -30,8 +30,6 @@ from newrelic.hooks.framework_django import django_settings
 DJANGO_VERSION = tuple(map(int, django.get_version().split(".")[:2]))
 DJANGO_SETTINGS_MODULE = os.environ.get("DJANGO_SETTINGS_MODULE", None)
 
-# TODO: Remove Django testing for versions 5+ years old.
-
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
     "transaction_tracer.explain_threshold": 0.0,
@@ -40,7 +38,6 @@ _default_settings = {
     "debug.log_data_collector_payloads": True,
     "debug.record_transaction_failure": True,
     "debug.log_autorum_middleware": True,
-    "feature_flag": {"django.instrumentation.inclusion-tags.r1"},
 }
 
 collector_agent_registration = collector_agent_registration_fixture(

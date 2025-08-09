@@ -39,19 +39,6 @@ from newrelic.common.object_wrapper import (
 from newrelic.config import extra_settings
 from newrelic.core.config import global_settings
 
-# # These middleware are not useful to wrap as they don't do anything particularly
-# # interesting that could cause performance issues.
-# MIDDLEWARE_DENY_WRAP = frozenset(
-#     {
-#         "django.middleware.csrf:CsrfViewMiddleware",
-#         "django.middleware.clickjacking:XFrameOptionsMiddleware",
-#         "django.contrib.messages.middleware:MessageMiddleware",
-#         "django.middleware.csrf:CsrfViewMiddleware",
-#         "django.middleware.common:CommonMiddleware",
-#         "django.middleware.security:SecurityMiddleware",
-#     }
-# )
-
 _logger = logging.getLogger(__name__)
 
 _boolean_states = {

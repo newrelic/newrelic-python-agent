@@ -12,23 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# NOTE: In this case, the collector_agent_registration is set for each module, rather than per session
+import pytest
+from newrelic.core.agent import agent_instance
+from newrelic.api.application import application_instance
 
-
-# from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
-
-# _default_settings = {
-#     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
-#     "transaction_tracer.explain_threshold": 0.0,
-#     "transaction_tracer.transaction_threshold": 0.0,
-#     "transaction_tracer.stack_trace_threshold": 0.0,
-#     "debug.log_data_collector_payloads": True,
-#     "debug.record_transaction_failure": True,
-#     "debug.log_autorum_middleware": True,
-#     "feature_flag": {"django.instrumentation.inclusion-tags.r1"},
-#     # "instrumentation.django_middleware.enabled": False,
-# }
-
-# collector_agent_registration = collector_agent_registration_fixture(
-#     app_name="Python Agent Test (framework_django)", default_settings=_default_settings
-# )
+# Even though `django_collector_agent_registration_fixture()` also 
+# has the application deletion during the breakdown of the fixture, 
+# and `django_collector_agent_registration_fixture()` is scoped to
+# "function", not all modules are using this.  Some are using
+# `collector_agent_registration_fixture()` scoped to "module".
+# Therefore, for those instances, we need to make sure that the
+# application is removed from the agent.
+@pytest.fixture(scope="module", autouse=True)
+def remove_application_from_agent():
+    yield
+    application = application_instance()
+    if application and application.name and (application.name in agent_instance()._applications):
+        del agent_instance()._applications[application.name]

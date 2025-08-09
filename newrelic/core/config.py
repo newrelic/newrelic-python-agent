@@ -652,7 +652,6 @@ def _parse_attributes(s):
 # Called from newrelic.config.py to parse django_middleware lists
 def _parse_django_middleware(s):
     valid = []
-    # breakpoint()
     for item in s.split():
         if "*" not in item[:-1] and len(item.encode("utf-8")) < 256:
             valid.append(item)

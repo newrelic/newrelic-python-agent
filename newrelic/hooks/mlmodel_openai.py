@@ -496,6 +496,9 @@ def _record_completion_success(transaction, linking_metadata, completion_id, kwa
             finish_reason = kwargs.get("finish_reason")
             if "content" in kwargs:
                 output_message_list = [{"content": kwargs.get("content"), "role": kwargs.get("role")}]
+            # When tools are involved, the content key may hold an empty string which we do not want to report
+            # In this case, the content we are interested in capturing will already be covered in the input_message_list
+            # We empty out the output_message_list so that we do not report an empty message
             if "tool_call" in finish_reason and not kwargs.get("content"):
                 output_message_list = []
         request_model = kwargs.get("model") or kwargs.get("engine")
@@ -767,6 +770,9 @@ def _record_stream_chunk(self, return_val):
 
 def _record_events_on_stop_iteration(self, transaction):
     if hasattr(self, "_nr_ft"):
+        # We first check for our saved linking metadata before making a new call to get_trace_linking_metadata
+        # Directly calling get_trace_linking_metadata() causes the incorrect span ID to be captured and associated with the LLM call
+        # This leads to incorrect linking of the LLM call in the UI
         linking_metadata = self._nr_metadata or get_trace_linking_metadata()
         self._nr_ft.__exit__(None, None, None)
         try:

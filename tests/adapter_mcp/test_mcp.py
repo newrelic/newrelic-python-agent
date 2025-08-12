@@ -17,6 +17,8 @@ from fastmcp.client import Client
 from fastmcp.client.transports import FastMCPTransport
 from fastmcp.server.server import FastMCP
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.fixtures import function_not_called
+from testing_support.ml_testing_utils import disabled_ai_monitoring_settings
 
 from newrelic.api.background_task import background_task
 
@@ -60,7 +62,6 @@ def test_tool_tracing(loop, fastmcp_server):
         async with Client(transport=FastMCPTransport(fastmcp_server)) as client:
             # Call the MCP tool, so we can validate the trace naming is correct.
             result = await client.call_tool("add_exclamation", {"phrase": "Python is awesome"})
-
             content = str(result.content[0])
         assert "Python is awesome!" in content
 
@@ -106,6 +107,41 @@ def test_resource_tracing(loop, fastmcp_server, resource_uri):
 )
 @background_task()
 def test_prompt_tracing(loop, fastmcp_server):
+    async def _test():
+        async with Client(transport=FastMCPTransport(fastmcp_server)) as client:
+            result = await client.get_prompt("echo_prompt", {"message": "Python is cool"})
+
+            content = str(result)
+        assert "Python is cool" in content
+
+    loop.run_until_complete(_test())
+
+
+@disabled_ai_monitoring_settings
+@function_not_called("newrelic.api.function_trace", "FunctionTrace.__enter__")
+@background_task()
+def test_tool_tracing_aim_disabled(loop, fastmcp_server):
+    async def _test():
+        async with Client(transport=FastMCPTransport(fastmcp_server)) as client:
+            # Call the MCP tool, so we can validate the trace naming is correct.
+            result = await client.call_tool("add_exclamation", {"phrase": "Python is awesome"})
+            content = str(result.content[0])
+        assert "Python is awesome!" in content
+
+    loop.run_until_complete(_test())
+
+
+@disabled_ai_monitoring_settings
+@function_not_called("newrelic.api.function_trace", "FunctionTrace.__enter__")
+@background_task()
+def test_resource_tracing_aim_disabled(loop, fastmcp_server):
+    run_read_resources(loop, fastmcp_server, "greeting://Python")
+
+
+@disabled_ai_monitoring_settings
+@function_not_called("newrelic.api.function_trace", "FunctionTrace.__enter__")
+@background_task()
+def test_prompt_tracing_aim_disabled(loop, fastmcp_server):
     async def _test():
         async with Client(transport=FastMCPTransport(fastmcp_server)) as client:
             result = await client.get_prompt("echo_prompt", {"message": "Python is cool"})

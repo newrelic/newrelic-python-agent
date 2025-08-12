@@ -123,6 +123,7 @@ def wrap_execute_operation(wrapped, instance, args, kwargs):
                 ignore_transaction()
 
         fragments = execution_context.fragments
+        breakpoint()
         trace.deepest_path = ".".join(traverse_deepest_unique_path(fields, fragments)) or ""
 
     transaction.set_transaction_name(callable_name(wrapped), "GraphQL", priority=11)
@@ -187,7 +188,7 @@ def traverse_deepest_unique_path(fields, fragments):
 
         if is_named_fragment(field):
             name = get_node_value(field.type_condition, "name")
-            if name:
+            if name and len(deepest_path) > 0:
                 deepest_path.append(f"{deepest_path.pop()}<{name}>")
 
         elif is_fragment(field):
@@ -203,7 +204,9 @@ def traverse_deepest_unique_path(fields, fragments):
                 return deepest_path
             else:
                 fragment_field_name = get_node_value(fragment_selection_set[0], "name")
-                deepest_path.append(fragment_field_name)
+                if fragment_field_name:
+                    # If get_node_value returns None, the join function upstream will fail
+                    deepest_path.append(fragment_field_name)
 
         else:
             if field_name:

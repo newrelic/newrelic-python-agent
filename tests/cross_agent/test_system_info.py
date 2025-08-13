@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
+from pathlib import Path
 
 import pytest
 
@@ -67,9 +67,7 @@ def test_physical_memory_used():
     ],
 )
 def test_linux_physical_processor_count(filename, expected):
-    here = os.path.dirname(__file__)
-    path = os.path.join(here, "fixtures", "proc_cpuinfo", filename)
-
+    path = Path(__file__).parent / "fixtures" / "proc_cpuinfo" / filename
     result = _linux_physical_processor_count(path)
     assert result == expected
 
@@ -79,8 +77,6 @@ def test_linux_physical_processor_count(filename, expected):
     [("meminfo_4096MB.txt", 4194304 / 1024.0), ("malformed-file", None), ("non-existant-file.txt", None)],
 )
 def test_linux_total_physical_memory(filename, expected):
-    here = os.path.dirname(__file__)
-    path = os.path.join(here, "fixtures", "proc_meminfo", filename)
-
+    path = Path(__file__).parent / "fixtures" / "proc_meminfo" / filename
     value = _linux_total_physical_memory(path)
     assert value == expected

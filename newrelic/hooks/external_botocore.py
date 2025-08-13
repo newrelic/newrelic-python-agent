@@ -42,7 +42,7 @@ BOTOCORE_VERSION = get_package_version("botocore")
 _logger = logging.getLogger(__name__)
 
 EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE = "Exception occurred in botocore instrumentation for AWS Bedrock: While reporting an exception in botocore, another exception occurred. Report this issue to New Relic Support.\n%s"
-REQUEST_EXTACTOR_FAILURE_LOG_MESSAGE = "Exception occurred in botocore instrumentation for AWS Bedrock: Failed to extract request information. Report this issue to New Relic Support.\n%s"
+REQUEST_EXTRACTOR_FAILURE_LOG_MESSAGE = "Exception occurred in botocore instrumentation for AWS Bedrock: Failed to extract request information. Report this issue to New Relic Support.\n%s"
 RESPONSE_EXTRACTOR_FAILURE_LOG_MESSAGE = "Exception occurred in botocore instrumentation for AWS Bedrock: Failed to extract response information. If the issue persists, report this issue to New Relic support.\n%s"
 RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE = "Exception occurred in botocore instrumentation for AWS Bedrock: Failed to report response data. Report this issue to New Relic Support.\n%s"
 EMBEDDING_STREAMING_UNSUPPORTED_LOG_MESSAGE = "Response streaming with embedding models is unsupported in botocore instrumentation for AWS Bedrock. If this feature is now supported by AWS and botocore, report this issue to New Relic Support."
@@ -137,9 +137,9 @@ def extract_firehose_agent_attrs(instance, *args, **kwargs):
                 region = instance._client_config.region_name
             if account_id and region:
                 agent_attrs["cloud.platform"] = "aws_kinesis_delivery_streams"
-                agent_attrs["cloud.resource_id"] = (
-                    f"arn:aws:firehose:{region}:{account_id}:deliverystream/{stream_name}"
-                )
+                agent_attrs[
+                    "cloud.resource_id"
+                ] = f"arn:aws:firehose:{region}:{account_id}:deliverystream/{stream_name}"
     except Exception:
         _logger.debug("Failed to capture AWS Kinesis Delivery Stream (Firehose) info.", exc_info=True)
     return agent_attrs
@@ -553,6 +553,7 @@ def handle_bedrock_exception(
             bedrock_attrs["input_message_list"] = input_message_list
             bedrock_attrs["request.max_tokens"] = kwargs.get("inferenceConfig", {}).get("maxTokens", None)
             bedrock_attrs["request.temperature"] = kwargs.get("inferenceConfig", {}).get("temperature", None)
+
         try:
             request_extractor(request_body, bedrock_attrs)
         except json.decoder.JSONDecodeError:
@@ -676,6 +677,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
         instance._nr_ft = ft
         instance._nr_response_streaming = response_streaming
         instance._nr_settings = settings
+        instance._nr_is_converse = False
 
         # Add a bedrock flag to instance so we can determine when make_api_call instrumentation is hit from non-Bedrock paths and bypass it if so
         instance._nr_is_bedrock = True
@@ -793,6 +795,7 @@ def wrap_bedrock_runtime_converse(response_streaming=False):
         instance._nr_ft = ft
         instance._nr_response_streaming = response_streaming
         instance._nr_settings = settings
+        instance._nr_is_converse = True
 
         # Add a bedrock flag to instance so we can determine when make_api_call instrumentation is hit from non-Bedrock paths and bypass it if so
         instance._nr_is_bedrock = True
@@ -815,35 +818,7 @@ def wrap_bedrock_runtime_converse(response_streaming=False):
             return response
 
         response_headers = response.get("ResponseMetadata", {}).get("HTTPHeaders") or {}
-        input_message_list = []
-        # If a system message is supplied, it is under its own key in kwargs rather than with the other input messages
-        if "system" in kwargs.keys():
-            input_message_list.extend(
-                {"role": "system", "content": result["text"]} for result in kwargs.get("system", [])
-            )
-
-        # kwargs["messages"] can hold multiple requests and responses to maintain conversation history
-        # We grab the last message (the newest request) in the list each time, so we don't duplicate recorded data
-        input_message_list.extend(
-            [{"role": "user", "content": result["text"]} for result in kwargs["messages"][-1].get("content", [])]
-        )
-
-        output_message_list = [
-            {"role": "assistant", "content": result["text"]}
-            for result in response.get("output").get("message").get("content", [])
-        ]
-
-        bedrock_attrs = {
-            "request_id": response_headers.get("x-amzn-requestid"),
-            "model": model,
-            "span_id": span_id,
-            "trace_id": trace_id,
-            "response.choices.finish_reason": response.get("stopReason"),
-            "output_message_list": output_message_list,
-            "request.max_tokens": kwargs.get("inferenceConfig", {}).get("maxTokens", None),
-            "request.temperature": kwargs.get("inferenceConfig", {}).get("temperature", None),
-            "input_message_list": input_message_list,
-        }
+        bedrock_attrs = extract_bedrock_converse_attrs(kwargs, response, response_headers, model, span_id, trace_id)
 
         try:
             ft.__exit__(None, None, None)
@@ -856,6 +831,37 @@ def wrap_bedrock_runtime_converse(response_streaming=False):
         return response
 
     return _wrap_bedrock_runtime_converse
+
+
+def extract_bedrock_converse_attrs(kwargs, response, response_headers, model, span_id, trace_id):
+    input_message_list = []
+    # If a system message is supplied, it is under its own key in kwargs rather than with the other input messages
+    if "system" in kwargs.keys():
+        input_message_list.extend({"role": "system", "content": result["text"]} for result in kwargs.get("system", []))
+
+    # kwargs["messages"] can hold multiple requests and responses to maintain conversation history
+    # We grab the last message (the newest request) in the list each time, so we don't duplicate recorded data
+    input_message_list.extend(
+        [{"role": "user", "content": result["text"]} for result in kwargs["messages"][-1].get("content", [])]
+    )
+
+    output_message_list = [
+        {"role": "assistant", "content": result["text"]}
+        for result in response.get("output").get("message").get("content", [])
+    ]
+
+    bedrock_attrs = {
+        "request_id": response_headers.get("x-amzn-requestid"),
+        "model": model,
+        "span_id": span_id,
+        "trace_id": trace_id,
+        "response.choices.finish_reason": response.get("stopReason"),
+        "output_message_list": output_message_list,
+        "request.max_tokens": kwargs.get("inferenceConfig", {}).get("maxTokens", None),
+        "request.temperature": kwargs.get("inferenceConfig", {}).get("temperature", None),
+        "input_message_list": input_message_list,
+    }
+    return bedrock_attrs
 
 
 class EventStreamWrapper(ObjectProxy):
@@ -1180,9 +1186,9 @@ def dynamodb_datastore_trace(
                     partition = "aws-us-gov"
 
             if partition and region and account_id and _target:
-                agent_attrs["cloud.resource_id"] = (
-                    f"arn:{partition}:dynamodb:{region}:{account_id:012d}:table/{_target}"
-                )
+                agent_attrs[
+                    "cloud.resource_id"
+                ] = f"arn:{partition}:dynamodb:{region}:{account_id:012d}:table/{_target}"
 
         except Exception:
             _logger.debug("Failed to capture AWS DynamoDB info.", exc_info=True)

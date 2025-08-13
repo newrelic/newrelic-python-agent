@@ -90,10 +90,7 @@ readme_file = script_directory / "README.md"
 with readme_file.open() as f:
     readme_file_contents = f.read()
 
-if is_windows:
-    build_ext_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError, IOError)
-else:
-    build_ext_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError)
+build_ext_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError, OSError)
 
 
 class BuildExtFailed(Exception):

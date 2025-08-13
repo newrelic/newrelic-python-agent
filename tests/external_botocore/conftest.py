@@ -55,9 +55,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 BEDROCK_AUDIT_LOG_FILE = Path(__file__).parent / "bedrock_audit.log"
 BEDROCK_AUDIT_LOG_CONTENTS = {}
 
-BEDROCK_CONVERSE_AUDIT_LOG_FILE = os.path.join(
-    os.path.realpath(os.path.dirname(__file__)), "bedrock_audit_converse.log"
-)
+BEDROCK_CONVERSE_AUDIT_LOG_FILE = Path(__file__).parent / "bedrock_audit_converse.log"
 BEDROCK_CONVERSE_AUDIT_LOG_CONTENTS = {}
 
 

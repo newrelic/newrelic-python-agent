@@ -28,6 +28,7 @@ import re
 import types
 import zlib
 from collections import OrderedDict
+from pathlib import Path
 
 HEXDIGLC_RE = re.compile("^[0-9a-f]+$")
 DELIMITER_FORMAT_RE = re.compile("[ \t]*,[ \t]*")
@@ -66,6 +67,8 @@ def json_encode(obj, **kwargs):
     def _encode(o):
         if isinstance(o, bytes):
             return o.decode("latin-1")
+        elif isinstance(o, Path):
+            return str(o)
         elif isinstance(o, types.GeneratorType):
             return list(o)
         elif hasattr(o, "__iter__"):

@@ -559,7 +559,7 @@ def handle_bedrock_exception(
         except json.decoder.JSONDecodeError:
             pass
         except Exception:
-            _logger.warning(REQUEST_EXTACTOR_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
+            _logger.warning(REQUEST_EXTRACTOR_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
         error_attributes = bedrock_error_attributes(exc, bedrock_attrs)
 
@@ -607,7 +607,7 @@ def run_bedrock_request_extractor(request_extractor, request_body, bedrock_attrs
     except json.decoder.JSONDecodeError:
         pass
     except Exception:
-        _logger.warning(REQUEST_EXTACTOR_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
+        _logger.warning(REQUEST_EXTRACTOR_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
 
 def wrap_bedrock_runtime_invoke_model(response_streaming=False):

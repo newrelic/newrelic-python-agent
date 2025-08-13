@@ -29,11 +29,11 @@ default_install_hook_types:
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: v0.11.5
+    rev: v0.12.5
     hooks:
       # Run the linter.
-      - id: ruff
-        args: [--fix]
+      - id: ruff-check
+        args: [--fix, --exit-non-zero-on-fix]
         stages: [pre-push]
       # Run the formatter.
       - id: ruff-format

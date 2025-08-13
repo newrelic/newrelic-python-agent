@@ -18,6 +18,7 @@ import os
 import re
 import socket
 import string
+from pathlib import Path
 
 from newrelic.common.agent_http import InsecureHttpClient
 from newrelic.common.encoding_utils import json_decode
@@ -162,6 +163,7 @@ class AWSUtilization(CommonUtilization):
     METADATA_TOKEN_PATH = "/latest/api/token"  # noqa: S105
     HEADERS = {"X-aws-ec2-metadata-token-ttl-seconds": "21600"}
     VENDOR_NAME = "aws"
+    _utilization_data = None
 
     @classmethod
     def fetchAuthToken(cls):
@@ -184,7 +186,8 @@ class AWSUtilization(CommonUtilization):
         try:
             authToken = cls.fetchAuthToken()
             if authToken is None:
-                return
+                metadata = cls._utilization_data
+                return metadata
             cls.HEADERS = {"X-aws-ec2-metadata-token": authToken}
             with cls.CLIENT_CLS(cls.METADATA_HOST, timeout=cls.FETCH_TIMEOUT) as client:
                 resp = client.send_request(
@@ -192,6 +195,19 @@ class AWSUtilization(CommonUtilization):
                 )
             if not 200 <= resp[0] < 300:
                 raise ValueError(resp[0])
+            # Cache this for forced agent restarts within the same
+            # environment if return value is valid.
+            try:
+                response_dict = json.loads(resp[1].decode("utf-8"))
+                availabilityZone = response_dict.get("availabilityZone", None)
+                instanceId = response_dict.get("instanceId", None)
+                instanceType = response_dict.get("instanceType", None)
+                if all((availabilityZone, instanceId, instanceType)):
+                    # Cache the utilization data for reuse
+                    cls._utilization_data = resp[1]
+            except:
+                # Exits without caching if the response is not valid
+                pass
             return resp[1]
         except Exception as e:
             _logger.debug(
@@ -309,7 +325,7 @@ class DockerUtilization(CommonUtilization):
     def fetch(cls):
         # Try to read from cgroups
         try:
-            with open(cls.METADATA_FILE_CGROUPS_V1, "rb") as f:
+            with Path(cls.METADATA_FILE_CGROUPS_V1).open("rb") as f:
                 for line in f:
                     stripped = line.decode("utf-8").strip()
                     cgroup = stripped.split(":")
@@ -328,7 +344,7 @@ class DockerUtilization(CommonUtilization):
 
         # Fallback to reading from mountinfo
         try:
-            with open(cls.METADATA_FILE_CGROUPS_V2, "rb") as f:
+            with Path(cls.METADATA_FILE_CGROUPS_V2).open("rb") as f:
                 for line in f:
                     stripped = line.decode("utf-8").strip()
                     match = cls.METADATA_RE_CGROUPS_V2.match(stripped)

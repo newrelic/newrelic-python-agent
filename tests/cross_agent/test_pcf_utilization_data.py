@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import json
-import os
+from pathlib import Path
 
 import pytest
 from testing_support.fixtures import Environ
@@ -21,8 +21,7 @@ from testing_support.validators.validate_internal_metrics import validate_intern
 
 from newrelic.common.utilization import PCFUtilization
 
-CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
-FIXTURE = os.path.normpath(os.path.join(CURRENT_DIR, "fixtures", "utilization_vendor_specific", "pcf.json"))
+FIXTURE = Path(__file__).parent / "fixtures" / "utilization_vendor_specific" / "pcf.json"
 
 _parameters_list = ["testname", "env_vars", "expected_vendors_hash", "expected_metrics"]
 
@@ -30,7 +29,7 @@ _parameters = ",".join(_parameters_list)
 
 
 def _load_tests():
-    with open(FIXTURE) as fh:
+    with FIXTURE.open() as fh:
         js = fh.read()
     return json.loads(js)
 

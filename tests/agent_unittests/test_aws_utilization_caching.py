@@ -19,13 +19,23 @@ import pytest
 from testing_support.mock_http_client import create_client_cls
 from testing_support.validators.validate_internal_metrics import validate_internal_metrics
 
-from newrelic.common.utilization import GCPUtilization
+from newrelic.common.utilization import AWSUtilization
 
-FIXTURE = Path(__file__).parent / "fixtures" / "utilization_vendor_specific" / "gcp.json"
+FIXTURE = Path(__file__).parent / "aws.json"
 
-_parameters_list = ["testname", "uri", "expected_vendors_hash", "expected_metrics"]
+_parameters_list = ["testname", "auth_token_cls", "uri", "expected_vendors_hash", "expected_metrics"]
 
 _parameters = ",".join(_parameters_list)
+
+
+@classmethod
+def fake_token(cls):
+    return "FakeToken"
+
+
+@classmethod
+def no_token(cls):
+    return None
 
 
 def _load_tests():
@@ -38,13 +48,20 @@ def _parametrize_test(test):
     return tuple([test.get(f, None) for f in _parameters_list])
 
 
-_gcp_tests = [_parametrize_test(t) for t in _load_tests()]
+# Load the tests from the JSON fixture
+_aws_tests = [_parametrize_test(t) for t in _load_tests()]
 
 
-@pytest.mark.parametrize(_parameters, _gcp_tests)
-def test_gcp(monkeypatch, testname, uri, expected_vendors_hash, expected_metrics):
-    # Generate mock responses for HttpClient
+# Order of tests:
+# 1. auth token fails, no cached data
+# 2. Auth token succeeds, but utilization data is invalid, no cached data
+# 3. Auth token succeeds, utilization data is valid, data is cached (check both cache and returned value)
+# 4. Auth token fails, but cached data is valid, return cached data
+# 5. Auth token succeeds, utilization data is valid, data is cached (check both cache and returned value)
 
+
+@pytest.mark.parametrize(_parameters, _aws_tests)
+def test_aws_utilization_caching(monkeypatch, testname, auth_token_cls, uri, expected_vendors_hash, expected_metrics):
     def _get_mock_return_value(api_result):
         if api_result["timeout"]:
             return 0, None
@@ -57,7 +74,8 @@ def test_gcp(monkeypatch, testname, uri, expected_vendors_hash, expected_metrics
 
     client_cls = create_client_cls(status, data, url)
 
-    monkeypatch.setattr(GCPUtilization, "CLIENT_CLS", client_cls)
+    monkeypatch.setattr(AWSUtilization, "CLIENT_CLS", client_cls)
+    monkeypatch.setattr(AWSUtilization, "fetchAuthToken", fake_token if auth_token_cls == "fake_token" else no_token)
 
     metrics = []
     if expected_metrics:
@@ -66,16 +84,19 @@ def test_gcp(monkeypatch, testname, uri, expected_vendors_hash, expected_metrics
     # Define function that actually runs the test
 
     @validate_internal_metrics(metrics=metrics)
-    def _test_gcp_data():
-        data = GCPUtilization.detect()
+    def _test_aws_data():
+        data = AWSUtilization.detect()
 
         if data:
-            gcp_vendor_hash = {"gcp": data}
+            aws_vendor_hash = {"aws": data}
         else:
-            gcp_vendor_hash = None
+            aws_vendor_hash = None
 
-        assert gcp_vendor_hash == expected_vendors_hash
+        assert aws_vendor_hash == expected_vendors_hash
+        if expected_vendors_hash is not None:
+            # Check that the cached data is set to the most recent valid data
+            assert json.loads(AWSUtilization._utilization_data.decode("utf-8")) == data
 
-    _test_gcp_data()
+    _test_aws_data()
 
     assert not client_cls.FAIL

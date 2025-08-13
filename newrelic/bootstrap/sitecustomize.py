@@ -16,6 +16,7 @@ import os
 import sys
 import time
 from importlib.machinery import PathFinder
+from pathlib import Path
 
 # Define some debug logging routines to help sort out things when this
 # all doesn't work as expected.
@@ -42,9 +43,10 @@ def del_sys_path_entry(path):
 
 log_message("New Relic Bootstrap (%s)", __file__)
 
-log_message("working_directory = %r", os.getcwd())
+log_message("working_directory = %r", str(Path.cwd()))
 
-log_message("sys.prefix = %r", os.path.normpath(sys.prefix))
+sys_prefix = str(Path(sys.prefix).resolve())
+log_message("sys.prefix = %r", sys_prefix)
 
 try:
     log_message("sys.real_prefix = %r", sys.real_prefix)
@@ -74,7 +76,7 @@ for name in sorted(os.environ.keys()):
 # imp module to find the module, excluding the bootstrap directory from
 # the search, and then load what was found.
 
-boot_directory = os.path.dirname(__file__)
+boot_directory = str(Path(__file__).parent)
 log_message("boot_directory = %r", boot_directory)
 
 del_sys_path_entry(boot_directory)
@@ -99,7 +101,7 @@ else:
 # which was run and only continue if we are.
 
 expected_python_prefix = os.environ.get("NEW_RELIC_PYTHON_PREFIX")
-actual_python_prefix = os.path.realpath(os.path.normpath(sys.prefix))
+actual_python_prefix = sys_prefix
 
 expected_python_version = os.environ.get("NEW_RELIC_PYTHON_VERSION")
 actual_python_version = ".".join(map(str, sys.version_info[:2]))
@@ -160,7 +162,7 @@ if k8s_operator_enabled or azure_operator_enabled or (python_prefix_matches and 
             # 'newrelic' module to reduce chance that will cause any issues.
             # If it is a buildout created script, it will replace the whole
             # sys.path again later anyway.
-            root_directory = os.path.dirname(os.path.dirname(boot_directory))
+            root_directory = str(Path(boot_directory).parent.parent)
             log_message("root_directory = %r", root_directory)
 
             new_relic_path = root_directory

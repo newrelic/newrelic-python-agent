@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
+from pathlib import Path
 
 import django
 
-BASE_DIR = os.path.dirname(__file__)
+BASE_DIR = Path(__file__).parent
 DEBUG = True
 
 django_version = django.VERSION

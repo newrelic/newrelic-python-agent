@@ -13,9 +13,9 @@
 # limitations under the License.
 
 import os
-import random
 import socket
 import time
+from pathlib import Path
 
 import pytest
 from testing_support.fixtures import TerminatingPopen
@@ -30,8 +30,8 @@ from testing_support.util import get_open_port
 
 @pytest.mark.parametrize("nr_enabled", [True, False])
 def test_gunicorn_gaiohttp_worker(nr_enabled):
-    nr_admin = os.path.join(os.environ["TOX_ENV_DIR"], "bin", "newrelic-admin")
-    gunicorn = os.path.join(os.environ["TOX_ENV_DIR"], "bin", "gunicorn")
+    nr_admin = Path(os.environ["TOX_ENV_DIR"]) / "bin" / "newrelic-admin"
+    gunicorn = Path(os.environ["TOX_ENV_DIR"]) / "bin" / "gunicorn"
 
     # Restart the server if it dies during testing
     for _ in range(5):

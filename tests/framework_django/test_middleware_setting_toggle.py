@@ -73,7 +73,7 @@ def middleware_rollup_metrics(request, settings_and_metrics):
     return middleware_scoped_metrics + [(f"Python/Framework/Django/{django.get_version()}", 1)]
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def application():
     from django.core.asgi import get_asgi_application
 

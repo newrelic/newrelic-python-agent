@@ -21,6 +21,7 @@ import sys
 import threading
 import time
 from queue import Queue
+from pathlib import Path
 
 import pytest
 
@@ -302,7 +303,7 @@ def django_collector_agent_registration_fixture(
             api_host = "staging-api.newrelic.com"
 
         if not use_fake_collector and not use_developer_mode:
-            description = os.path.basename(os.path.normpath(sys.prefix))
+            description = Path(os.path.normpath(sys.prefix)).name
             try:
                 _logger.debug("Record deployment marker host: %s", api_host)
                 record_deploy(

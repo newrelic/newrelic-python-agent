@@ -58,16 +58,16 @@ _scoped_metrics = [
     ("Python/WSGI/Application", 1),
     ("Python/WSGI/Response", 1),
     ("Python/WSGI/Finalize", 1),
-    (f"Function/django.middleware.common:CommonMiddleware{process_request_method}", None),
+    (f"Function/django.middleware.common:CommonMiddleware{process_request_method}", 1),
     (f"Function/django.contrib.sessions.middleware:SessionMiddleware{process_request_method}", 1),
     (f"Function/django.contrib.auth.middleware:AuthenticationMiddleware{process_request_method}", 1),
-    (f"Function/django.contrib.messages.middleware:MessageMiddleware{process_request_method}", None),
+    (f"Function/django.contrib.messages.middleware:MessageMiddleware{process_request_method}", 1),
     (f"Function/{url_module_path}:{url_resolver_cls}.resolve", 1),
-    (f"Function/django.middleware.csrf:CsrfViewMiddleware{process_view_method}", None),
-    (f"Function/django.contrib.messages.middleware:MessageMiddleware{process_response_method}", None),
-    (f"Function/django.middleware.csrf:CsrfViewMiddleware{process_response_method}", None),
+    (f"Function/django.middleware.csrf:CsrfViewMiddleware{process_view_method}", 1),
+    (f"Function/django.contrib.messages.middleware:MessageMiddleware{process_response_method}", 1),
+    (f"Function/django.middleware.csrf:CsrfViewMiddleware{process_response_method}", 1),
     (f"Function/django.contrib.sessions.middleware:SessionMiddleware{process_response_method}", 1),
-    (f"Function/django.middleware.common:CommonMiddleware{process_response_method}", None),
+    (f"Function/django.middleware.common:CommonMiddleware{process_response_method}", 1),
 ]
 
 _test_application_index_scoped_metrics = list(_scoped_metrics)

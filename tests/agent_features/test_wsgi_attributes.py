@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import webtest
-from conftest import FAILING_ON_WINDOWS
 from testing_support.fixtures import dt_enabled, override_application_settings
 from testing_support.sample_applications import fully_featured_app
 from testing_support.validators.validate_error_event_attributes import validate_error_event_attributes
@@ -38,7 +37,6 @@ required_attributes = {"agent": WSGI_ATTRIBUTES, "intrinsic": {}, "user": {}}
 app = webtest.TestApp(fully_featured_app)
 
 
-@FAILING_ON_WINDOWS
 @validate_transaction_event_attributes(required_attributes)
 @validate_error_event_attributes(required_attributes)
 @validate_transaction_error_trace_attributes(required_attributes)

@@ -14,7 +14,6 @@
 
 import pytest
 import webtest
-from conftest import FAILING_ON_WINDOWS
 from testing_support.external_fixtures import validate_synthetics_external_trace_header
 from testing_support.fixtures import cat_enabled, make_synthetics_headers, override_application_settings
 from testing_support.validators.validate_synthetics_event import validate_synthetics_event
@@ -196,7 +195,6 @@ def test_valid_synthetics_in_transaction_trace():
     response = target_application.get("/", headers=headers)
 
 
-@FAILING_ON_WINDOWS
 @validate_synthetics_transaction_trace([], _test_valid_synthetics_tt_required, should_exist=False)
 @override_application_settings(_override_settings)
 def test_no_synthetics_in_transaction_trace():

@@ -17,7 +17,6 @@ import time
 
 import pytest
 import webtest
-from conftest import FAILING_ON_WINDOWS
 from testing_support.fixtures import (
     override_application_settings,
     override_generic_settings,
@@ -706,7 +705,6 @@ def test_http_referrer_url_is_sanitized_in_hsm():
     target_application.get("/", extra_environ=environ)
 
 
-@FAILING_ON_WINDOWS
 @pytest.mark.parametrize("hsm_enabled", [True, False])
 def test_function_trace_params_dropped_in_hsm(hsm_enabled):
     @background_task()
@@ -724,7 +722,6 @@ def test_function_trace_params_dropped_in_hsm(hsm_enabled):
     _test()
 
 
-@FAILING_ON_WINDOWS
 @pytest.mark.parametrize("hsm_enabled", [True, False])
 def test_message_trace_params_dropped_in_hsm(hsm_enabled):
     @background_task()

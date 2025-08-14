@@ -15,7 +15,6 @@
 import sys
 
 import pytest
-from conftest import FAILING_ON_WINDOWS
 from testing_support.fixtures import dt_enabled, function_not_called, override_application_settings
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
@@ -466,7 +465,6 @@ class FakeTrace:
         pass
 
 
-@FAILING_ON_WINDOWS
 @pytest.mark.parametrize(
     "trace_type,args",
     (

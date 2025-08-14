@@ -14,7 +14,6 @@
 
 import pytest
 import webtest
-from conftest import FAILING_ON_WINDOWS
 from testing_support.fixtures import override_application_settings
 from testing_support.sample_applications import simple_app, simple_custom_event_app, simple_exceptional_app
 from testing_support.validators.validate_custom_event_collector_json import validate_custom_event_collector_json
@@ -47,13 +46,11 @@ def test_error_event_json():
         pass
 
 
-@FAILING_ON_WINDOWS
 @validate_tt_collector_json()
 def test_transaction_trace_json():
     normal_application.get("/")
 
 
-@FAILING_ON_WINDOWS
 @validate_tt_collector_json(exclude_request_uri=True)
 @override_application_settings({"attributes.exclude": {"request.uri"}})
 def test_transaction_trace_json_no_request_uri():

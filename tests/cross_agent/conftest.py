@@ -31,5 +31,4 @@ collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (cross_agent_tests)", default_settings=_default_settings
 )
 
-
-FAILING_ON_WINDOWS = pytest.mark.xfail(sys.platform == "win32", reason="TODO: Fix this test on Windows")
+SKIP_ON_WINDOWS = pytest.mark.xfail(sys.platform == "win32", reason="This feature is not supported on Windows")

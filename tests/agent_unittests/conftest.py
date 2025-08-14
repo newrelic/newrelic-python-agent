@@ -57,7 +57,7 @@ def global_settings(request, monkeypatch):
     if "env" in request.fixturenames:
         env = request.getfixturevalue("env")
         for k, v in env.items():
-            monkeypatch.setenv(k, v)
+            monkeypatch.setenv(k, str(v))
 
     import newrelic.core.config as core_config
     from newrelic import config

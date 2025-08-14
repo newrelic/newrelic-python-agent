@@ -19,7 +19,6 @@ import sys
 import time
 
 import pytest
-from conftest import FAILING_ON_WINDOWS
 from testing_support.fixtures import capture_transaction_metrics, validate_tt_parenting
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
@@ -76,7 +75,6 @@ def test_coroutine_timing(trace, metric):
     assert full_metrics[metric_key].total_call_time >= 0.2
 
 
-@FAILING_ON_WINDOWS
 @validate_tt_parenting(("TransactionNode", [("FunctionNode", [("FunctionNode", []), ("FunctionNode", [])])]))
 @validate_transaction_metrics(
     "test_coroutine_siblings",
@@ -248,7 +246,6 @@ def test_coroutine_close_ends_trace():
     gen.close()
 
 
-@FAILING_ON_WINDOWS
 @validate_tt_parenting(("TransactionNode", [("FunctionNode", [("FunctionNode", [])])]))
 @validate_transaction_metrics(
     "test_coroutine_parents",

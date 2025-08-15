@@ -20,6 +20,7 @@ from testing_support.validators.validate_transaction_errors import validate_tran
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
+from newrelic.api.transaction import current_transaction
 
 # Settings
 
@@ -160,9 +161,6 @@ def _exercise_es_v8(es):
 _exercise_es = _exercise_es_v8 if IS_V8_OR_ABOVE else _exercise_es_v7
 
 
-# Test
-
-
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(
     "test_elasticsearch:test_elasticsearch_operation_disabled",
@@ -186,6 +184,21 @@ def test_elasticsearch_operation_disabled(client):
 @override_application_settings(_enable_instance_settings)
 @background_task()
 def test_elasticsearch_operation_enabled(client):
+    _exercise_es(client)
+
+
+@validate_transaction_errors(errors=[])
+@validate_transaction_metrics(
+    "test_elasticsearch:test_elasticsearch_operation_enabled",
+    scoped_metrics=_enable_scoped_metrics,
+    rollup_metrics=_enable_rollup_metrics,
+    background_task=True,
+)
+@override_application_settings(_enable_instance_settings)
+@background_task()
+def test_elasticsearch_operation_enabled_empty_transaction_settings(client):
+    transaction = current_transaction()
+    transaction._settings = None
     _exercise_es(client)
 
 

@@ -185,6 +185,7 @@ def wrap_async_elasticsearch_client_method(module, class_name, method_name, arg_
             result = await wrapped(*args, **kwargs)
 
             settings = trace.settings or global_settings()
+            raise Exception("target")
             tracer_settings = settings.datastore_tracer
 
             if tracer_settings.instance_reporting.enabled:

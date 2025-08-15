@@ -651,6 +651,7 @@ class Transaction:
         # If we don't, when processing the samples, addition of
         # new samples can cause an error.
 
+        breakpoint()
         if not self.ignore_transaction:
             self._application.record_transaction(node)
 

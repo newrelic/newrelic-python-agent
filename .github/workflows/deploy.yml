@@ -23,14 +23,20 @@ permissions:
   contents: read
 
 jobs:
-  build-linux-py3-legacy:
-    runs-on: ubuntu-24.04
-    strategy:
+  build-wheels-legacy:
+    strategy:   
       fail-fast: false
       matrix:
-        wheel:
-          - cp37-manylinux
-          - cp37-musllinux
+        include:
+            # Linux glibc
+            - wheel: cp37-manylinux
+              os: ubuntu-24.04
+            # Linux musllibc
+            - wheel: cp37-musllinux
+              os: ubuntu-24.04
+
+    name: Build wheels for ${{ matrix.wheel }}
+    runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
@@ -39,17 +45,20 @@ jobs:
           fetch-depth: 0
 
       - name: Setup QEMU
+        if: runner.os == 'Linux'
         uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # 3.6.0
+        with:
+          platforms: arm64
 
       - name: Build Wheels
         uses: pypa/cibuildwheel@8d945475ac4b1aac4ae08b2fd27db9917158b6ce # 2.17.0
         env:
-          CIBW_PLATFORM: linux
+          CIBW_PLATFORM: auto
           CIBW_BUILD: "${{ matrix.wheel }}*"
           CIBW_ARCHS_LINUX: x86_64 aarch64
-          CIBW_ENVIRONMENT: "LD_LIBRARY_PATH=/opt/rh/devtoolset-8/root/usr/lib64:/opt/rh/devtoolset-8/root/usr/lib:/opt/rh/devtoolset-8/root/usr/lib64/dyninst:/opt/rh/devtoolset-8/root/usr/lib/dyninst:/usr/local/lib64:/usr/local/lib"
+          CIBW_ENVIRONMENT_LINUX: "LD_LIBRARY_PATH=/opt/rh/devtoolset-8/root/usr/lib64:/opt/rh/devtoolset-8/root/usr/lib:/opt/rh/devtoolset-8/root/usr/lib64/dyninst:/opt/rh/devtoolset-8/root/usr/lib/dyninst:/usr/local/lib64:/usr/local/lib"
           CIBW_TEST_REQUIRES: pytest
-          CIBW_TEST_COMMAND: "PYTHONPATH={project}/tests pytest {project}/tests/agent_unittests -vx"
+          CIBW_TEST_COMMAND_LINUX: "export PYTHONPATH={project}/tests; pytest {project}/tests/agent_unittests -vx"
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
@@ -59,24 +68,43 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  build-linux-py3:
-    runs-on: ubuntu-24.04
+  build-wheels:
     strategy:
       fail-fast: false
       matrix:
-        wheel:
-          - cp38-manylinux
-          - cp38-musllinux
-          - cp39-manylinux
-          - cp39-musllinux
-          - cp310-manylinux
-          - cp310-musllinux
-          - cp311-manylinux
-          - cp311-musllinux
-          - cp312-manylinux
-          - cp312-musllinux
-          - cp313-manylinux
-          - cp313-musllinux
+        include:
+            # Linux glibc
+            - wheel: cp38-manylinux
+              os: ubuntu-24.04
+            - wheel: cp39-manylinux
+              os: ubuntu-24.04
+            - wheel: cp310-manylinux
+              os: ubuntu-24.04
+            - wheel: cp311-manylinux
+              os: ubuntu-24.04
+            - wheel: cp312-manylinux
+              os: ubuntu-24.04
+            - wheel: cp313-manylinux
+              os: ubuntu-24.04
+            # Linux musllibc
+            - wheel: cp38-musllinux
+              os: ubuntu-24.04
+            - wheel: cp39-musllinux
+              os: ubuntu-24.04
+            - wheel: cp310-musllinux
+              os: ubuntu-24.04
+            - wheel: cp311-musllinux
+              os: ubuntu-24.04
+            - wheel: cp312-musllinux
+              os: ubuntu-24.04
+            - wheel: cp313-musllinux
+              os: ubuntu-24.04
+            # Windows
+            - wheel: cp313-win
+              os: windows-2025
+
+    name: Build wheels for ${{ matrix.wheel }}
+    runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
@@ -85,17 +113,26 @@ jobs:
           fetch-depth: 0
 
       - name: Setup QEMU
+        if: runner.os == 'Linux'
         uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # 3.6.0
+        with:
+          platforms: arm64
 
       - name: Build Wheels
         uses: pypa/cibuildwheel@faf86a6ed7efa889faf6996aa23820831055001a # 2.23.3
         env:
-          CIBW_PLATFORM: linux
+          CIBW_PLATFORM: auto
           CIBW_BUILD: "${{ matrix.wheel }}*"
           CIBW_ARCHS_LINUX: x86_64 aarch64
-          CIBW_ENVIRONMENT: "LD_LIBRARY_PATH=/opt/rh/devtoolset-8/root/usr/lib64:/opt/rh/devtoolset-8/root/usr/lib:/opt/rh/devtoolset-8/root/usr/lib64/dyninst:/opt/rh/devtoolset-8/root/usr/lib/dyninst:/usr/local/lib64:/usr/local/lib"
+          CIBW_ARCHS_MACOS: native
+          CIBW_ARCHS_WINDOWS: AMD64 ARM64
+          CIBW_ENVIRONMENT_LINUX: "LD_LIBRARY_PATH=/opt/rh/devtoolset-8/root/usr/lib64:/opt/rh/devtoolset-8/root/usr/lib:/opt/rh/devtoolset-8/root/usr/lib64/dyninst:/opt/rh/devtoolset-8/root/usr/lib/dyninst:/usr/local/lib64:/usr/local/lib"
           CIBW_TEST_REQUIRES: pytest
-          CIBW_TEST_COMMAND: "PYTHONPATH={project}/tests pytest {project}/tests/agent_unittests -vx"
+          CIBW_TEST_COMMAND_LINUX: "export PYTHONPATH={project}/tests; pytest {project}/tests/agent_unittests -vx"
+          CIBW_TEST_COMMAND_MACOS: "export PYTHONPATH={project}/tests; pytest {project}/tests/agent_unittests -vx"
+          CIBW_TEST_COMMAND_WINDOWS: "set PYTHONPATH={project}/tests; pytest {project}/tests/agent_unittests -vx"
+          # Windows ARM64 tests won't run when using cross compilation. Skip unless we can move to a native windows-arm runner.
+          CIBW_TEST_SKIP: "*-win_arm64"
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
@@ -106,7 +143,9 @@ jobs:
           retention-days: 1
 
   build-sdist:
+    name: Build sdist
     runs-on: ubuntu-24.04
+
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
         with:
@@ -143,6 +182,7 @@ jobs:
           retention-days: 1
 
   publish:
+    name: Publish
     runs-on: ubuntu-24.04
     environment: pypi
     permissions:
@@ -151,8 +191,8 @@ jobs:
       attestations: write
 
     needs:
-      - build-linux-py3-legacy
-      - build-linux-py3
+      - build-wheels-legacy
+      - build-wheels
       - build-sdist
 
     steps:

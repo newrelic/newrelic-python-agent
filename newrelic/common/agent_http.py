@@ -283,7 +283,7 @@ class HttpClient(BaseClient):
             else:
                 self._host = proxy.host
                 self._port = proxy.port or 443
-                self._prefix = f"{self.PREFIX_SCHEME + host}:{str(port)}"
+                self._prefix = f"{self.PREFIX_SCHEME + host}:{port!s}"
                 urlopen_kwargs["assert_same_host"] = False
                 if proxy_headers:
                     self._headers.update(proxy_headers)
@@ -501,7 +501,7 @@ class ApplicationModeClient(SupportabilityMixin, HttpClient):
 
 
 class DeveloperModeClient(SupportabilityMixin, BaseClient):
-    RESPONSES = {
+    RESPONSES = {  # noqa: RUF012
         "preconnect": {"redirect_host": "fake-collector.newrelic.com"},
         "agent_settings": [],
         "connect": {

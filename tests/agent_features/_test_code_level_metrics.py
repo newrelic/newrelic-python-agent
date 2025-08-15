@@ -72,5 +72,5 @@ CLASS_INSTANCE_CALLABLE = ExerciseClassCallable()
 TYPE_CONSTRUCTOR_CLASS_INSTANCE = ExerciseTypeConstructor()
 TYPE_CONSTRUCTOR_CALLABLE_CLASS_INSTANCE = ExerciseTypeConstructorCallable()
 
-exercise_lambda = lambda: None  # noqa: E731
+exercise_lambda = lambda: None
 exercise_partial = functools.partial(exercise_function)

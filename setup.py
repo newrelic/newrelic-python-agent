@@ -50,6 +50,7 @@ else:
     raise RuntimeError(error_msg)
 
 with_setuptools = False
+is_windows = sys.platform == "win32"
 
 try:
     from setuptools import setup
@@ -89,10 +90,7 @@ readme_file = script_directory / "README.md"
 with readme_file.open() as f:
     readme_file_contents = f.read()
 
-if sys.platform == "win32" and python_version > (2, 6):
-    build_ext_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError, IOError)
-else:
-    build_ext_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError)
+build_ext_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError, OSError)
 
 
 class BuildExtFailed(Exception):
@@ -209,17 +207,24 @@ def run_setup(with_extensions):
         kwargs_tmp = dict(kwargs)
 
         if with_extensions:
-            monotonic_libraries = []
-            if with_librt():
-                monotonic_libraries = ["rt"]
-
             kwargs_tmp["ext_modules"] = [
                 Extension("newrelic.packages.wrapt._wrappers", ["newrelic/packages/wrapt/_wrappers.c"]),
-                Extension(
-                    "newrelic.common._monotonic", ["newrelic/common/_monotonic.c"], libraries=monotonic_libraries
-                ),
-                Extension("newrelic.core._thread_utilization", ["newrelic/core/_thread_utilization.c"]),
             ]
+            if not is_windows:
+                # These extensions are only supported on POSIX platforms.
+                monotonic_libraries = []
+                if with_librt():
+                    monotonic_libraries = ["rt"]
+
+                kwargs_tmp["ext_modules"].append(
+                    Extension(
+                        "newrelic.common._monotonic", ["newrelic/common/_monotonic.c"], libraries=monotonic_libraries
+                    )
+                )
+                kwargs_tmp["ext_modules"].append(
+                    Extension("newrelic.core._thread_utilization", ["newrelic/core/_thread_utilization.c"])
+                )
+
             kwargs_tmp["cmdclass"] = dict(build_ext=optional_build_ext)
 
         setup(**kwargs_tmp)

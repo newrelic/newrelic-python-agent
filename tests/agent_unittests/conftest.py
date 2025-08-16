@@ -13,12 +13,12 @@
 # limitations under the License.
 
 import sys
-import tempfile
 from importlib import reload
 
 import pytest
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 from testing_support.fixtures import newrelic_caplog as caplog
+from testing_support.util import NamedTemporaryFile
 
 from newrelic.core.agent import agent_instance
 
@@ -33,6 +33,9 @@ _default_settings = {
 collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (agent_unittests)", default_settings=_default_settings
 )
+
+
+FAILING_ON_WINDOWS = pytest.mark.xfail(sys.platform == "win32", reason="TODO: Fix this test on Windows")
 
 
 class FakeProtos:
@@ -54,7 +57,7 @@ def global_settings(request, monkeypatch):
     if "env" in request.fixturenames:
         env = request.getfixturevalue("env")
         for k, v in env.items():
-            monkeypatch.setenv(k, v)
+            monkeypatch.setenv(k, str(v))
 
     import newrelic.core.config as core_config
     from newrelic import config
@@ -69,7 +72,7 @@ def global_settings(request, monkeypatch):
     reload(core_config)
     reload(config)
 
-    with tempfile.NamedTemporaryFile() as ini_file:
+    with NamedTemporaryFile() as ini_file:
         ini_file.write(ini_contents)
         ini_file.seek(0)
 

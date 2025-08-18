@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from celery import chain, group, chord
-from _target_application import add, tsum, add_with_super, add_with_run
+from _target_application import add, add_with_run, add_with_super, tsum
+from celery import chain, chord, group
 from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 from testing_support.validators.validate_custom_parameters import validate_custom_parameters
 from testing_support.validators.validate_transaction_count import validate_transaction_count
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from testing_support.validators.validate_custom_parameters import validate_custom_parameters
+
 from newrelic.api.background_task import background_task
 
 
@@ -311,9 +311,7 @@ def test_celery_task_chunks():
     assert result == [[7], [3]]
 
 
-@validate_custom_parameters(
-    required_params=[("custom_task_attribute", "Called with super")],
-)
+@validate_custom_parameters(required_params=[("custom_task_attribute", "Called with super")])
 @validate_transaction_metrics(
     name="_target_application.add_with_super",
     group="Celery",
@@ -331,9 +329,7 @@ def test_celery_task_call_custom_super():
     assert result == 7
 
 
-@validate_custom_parameters(
-    required_params=[("custom_task_attribute", "Called with super")],
-)
+@validate_custom_parameters(required_params=[("custom_task_attribute", "Called with super")])
 @validate_transaction_metrics(
     name="_target_application.add_with_super",
     group="Celery",
@@ -352,9 +348,7 @@ def test_celery_task_apply_custom_super():
     assert result == 7
 
 
-@validate_custom_parameters(
-    required_params=[("custom_task_attribute", "Called with super")],
-)
+@validate_custom_parameters(required_params=[("custom_task_attribute", "Called with super")])
 @validate_transaction_metrics(
     name="_target_application.add_with_super",
     group="Celery",
@@ -373,9 +367,7 @@ def test_celery_task_delay_custom_super():
     assert result == 7
 
 
-@validate_custom_parameters(
-    required_params=[("custom_task_attribute", "Called with super")],
-)
+@validate_custom_parameters(required_params=[("custom_task_attribute", "Called with super")])
 @validate_transaction_metrics(
     name="_target_application.add_with_super",
     group="Celery",
@@ -394,9 +386,7 @@ def test_celery_task_apply_async_custom_super():
     assert result == 7
 
 
-@validate_custom_parameters(
-    required_params=[("custom_task_attribute", "Called with run")],
-)
+@validate_custom_parameters(required_params=[("custom_task_attribute", "Called with run")])
 @validate_transaction_metrics(
     name="_target_application.add_with_run",
     group="Celery",
@@ -414,9 +404,7 @@ def test_celery_task_call_custom_run():
     assert result == 7
 
 
-@validate_custom_parameters(
-    required_params=[("custom_task_attribute", "Called with run")],
-)
+@validate_custom_parameters(required_params=[("custom_task_attribute", "Called with run")])
 @validate_transaction_metrics(
     name="_target_application.add_with_run",
     group="Celery",
@@ -435,9 +423,7 @@ def test_celery_task_apply_custom_run():
     assert result == 7
 
 
-@validate_custom_parameters(
-    required_params=[("custom_task_attribute", "Called with run")],
-)
+@validate_custom_parameters(required_params=[("custom_task_attribute", "Called with run")])
 @validate_transaction_metrics(
     name="_target_application.add_with_run",
     group="Celery",
@@ -456,9 +442,7 @@ def test_celery_task_delay_custom_run():
     assert result == 7
 
 
-@validate_custom_parameters(
-    required_params=[("custom_task_attribute", "Called with run")],
-)
+@validate_custom_parameters(required_params=[("custom_task_attribute", "Called with run")])
 @validate_transaction_metrics(
     name="_target_application.add_with_run",
     group="Celery",
@@ -502,7 +486,7 @@ def test_celery_task_different_processes():
     result = add_with_run.delay(3, 4)
     result = result.get()
     assert result == 7
-    
+
     result = add.apply((3, 4))
     result = result.get()
     assert result == 7
@@ -544,8 +528,7 @@ def test_celery_task_in_transaction_different_processes():
     result = add_with_run.delay(3, 4)
     result = result.get()
     assert result == 7
-    
+
     result = add.apply((3, 4))
     result = result.get()
     assert result == 7
-

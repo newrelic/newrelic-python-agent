@@ -63,8 +63,10 @@ def task_info(instance, *args, **kwargs):
 
     return task_name, task_source
 
+
 # =============
 # Celery instrumentation for direct task calls (__call__ or run)
+
 
 def CeleryTaskWrapper(wrapped):
     def wrapper(wrapped, instance, args, kwargs):
@@ -180,10 +182,12 @@ def instrument_celery_local(module):
         # using `delay` or `apply_async`)
         module.Proxy.__call__ = CeleryTaskWrapper(module.Proxy.__call__)
 
+
 # =============
 
 # =============
 # Celery Instrumentation for delay/apply_async/apply:
+
 
 def wrap_task_call(wrapped, instance, args, kwargs):
     transaction = current_transaction(active_only=False)

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import pytest
-from celery.app.trace import setup_worker_optimizations, reset_worker_optimizations
+from celery.app.trace import reset_worker_optimizations, setup_worker_optimizations
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 _default_settings = {
@@ -28,6 +28,7 @@ _default_settings = {
 collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (application_celery)", default_settings=_default_settings
 )
+
 
 @pytest.fixture(scope="session")
 def celery_config():

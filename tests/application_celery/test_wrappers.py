@@ -13,9 +13,10 @@
 # limitations under the License.
 
 from _target_application import add, add_with_super
-from celery.app.trace import setup_worker_optimizations, reset_worker_optimizations
+from celery.app.trace import reset_worker_optimizations, setup_worker_optimizations
 
 from newrelic.common.object_wrapper import _NRBoundFunctionWrapper
+
 
 def test_worker_optimizations_preserve_instrumentation(celery_worker_available):
     """
@@ -41,7 +42,7 @@ def test_worker_optimizations_preserve_instrumentation(celery_worker_available):
 
     reset_worker_optimizations()
     assert is_instrumented(), "reset_worker_optimizations removed instrumentation."
-    
+
 
 def test_task_wrapping_detection():
     """

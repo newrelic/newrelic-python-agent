@@ -74,17 +74,14 @@ def test_DT_outside_transaction_delay(dt_enabled):
 
     _test()
 
+
 @pytest.mark.parametrize("dt_enabled", [True, False])
 def test_DT_inside_transaction_apply(dt_enabled):
     @override_application_settings({"distributed_tracing.enabled": dt_enabled})
     @validate_transaction_metrics(
         name="test_distributed_tracing:test_DT_inside_transaction_apply.<locals>._test",
-        rollup_metrics=[
-            ("Function/_target_application.add", 1),
-        ],
-        scoped_metrics=[
-            ("Function/_target_application.add", 1),
-        ],
+        rollup_metrics=[("Function/_target_application.add", 1)],
+        scoped_metrics=[("Function/_target_application.add", 1)],
         background_task=True,
     )
     @validate_transaction_count(1)  # In the same process, so only one transaction
@@ -107,9 +104,7 @@ def test_DT_inside_transaction_apply_with_added_headers(dt_enabled):
             ("Supportability/TraceContext/Create/Success", 1 if dt_enabled else None),
             ("Supportability/DistributedTrace/CreatePayload/Success", 1 if dt_enabled else None),
         ],
-        scoped_metrics=[
-            ("Function/_target_application.add", 1),
-        ],
+        scoped_metrics=[("Function/_target_application.add", 1)],
         background_task=True,
     )
     @validate_transaction_count(1)  # In the same process, so only one transaction
@@ -150,12 +145,8 @@ def test_DT_inside_transaction__call__(dt_enabled):
     @override_application_settings({"distributed_tracing.enabled": dt_enabled})
     @validate_transaction_metrics(
         name="test_distributed_tracing:test_DT_inside_transaction__call__.<locals>._test",
-        rollup_metrics=[
-            ("Function/_target_application.add", 1),
-        ],
-        scoped_metrics=[
-            ("Function/_target_application.add", 1),
-        ],
+        rollup_metrics=[("Function/_target_application.add", 1)],
+        scoped_metrics=[("Function/_target_application.add", 1)],
         background_task=True,
     )
     @validate_transaction_count(1)  # In the same process, so only one transaction
@@ -165,16 +156,12 @@ def test_DT_inside_transaction__call__(dt_enabled):
         assert result == 3
 
     _test()
-    
-    
+
+
 @pytest.mark.parametrize("dt_enabled", [True, False])
 def test_DT_outside_transaction__call__(dt_enabled):
     @override_application_settings({"distributed_tracing.enabled": dt_enabled})
-    @validate_transaction_metrics(
-        name="_target_application.add",
-        group="Celery",
-        background_task=True,
-    )
+    @validate_transaction_metrics(name="_target_application.add", group="Celery", background_task=True)
     @validate_transaction_count(1)  # In the same process, so only one transaction
     def _test():
         result = add(1, 2)

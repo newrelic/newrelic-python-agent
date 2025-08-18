@@ -53,6 +53,7 @@ class CustomCeleryTaskWithSuper(Task):
             transaction.add_custom_attribute("custom_task_attribute", "Called with super")
         return super().__call__(*args, **kwargs)
 
+
 class CustomCeleryTaskWithRun(Task):
     def __call__(self, *args, **kwargs):
         transaction = current_transaction()

@@ -19,11 +19,11 @@ from pathlib import Path
 
 python_version = sys.version_info[:2]
 
-if python_version >= (3, 7):
+if python_version >= (3, 8):
     pass
 else:
     error_msg = (
-        "The New Relic Python agent only supports Python 3.7+. We recommend upgrading to a newer version of Python."
+        "The New Relic Python agent only supports Python 3.8+. We recommend upgrading to a newer version of Python."
     )
 
     try:
@@ -35,6 +35,7 @@ else:
             (3, 4): "4.20.0.120",
             (3, 5): "5.24.0.153",
             (3, 6): "7.16.0.178",
+            (3, 7): "10.16.0",
         }
         last_supported_version = last_supported_version_lookup.get(python_version, None)
 

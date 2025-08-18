@@ -18,7 +18,7 @@ import sys
 import threading
 import warnings
 
-from newrelic.api.application import register_application, application_settings
+from newrelic.api.application import application_settings, register_application
 from newrelic.api.background_task import BackgroundTaskWrapper
 from newrelic.api.error_trace import wrap_error_trace
 from newrelic.api.function_trace import FunctionTrace, FunctionTraceWrapper, wrap_function_trace
@@ -1099,9 +1099,8 @@ def is_denied_middleware(callable_name):
     # Return True (skip wrapping) if:
     # 1. middleware wrapping is disabled or
     # 2. the callable name is in the exclude list
-    if (
-        not settings.instrumentation.django_middleware.enabled
-        or (callable_name in settings.instrumentation.django_middleware.exclude)
+    if not settings.instrumentation.django_middleware.enabled or (
+        callable_name in settings.instrumentation.django_middleware.exclude
     ):
         return True
 
@@ -1113,12 +1112,13 @@ def is_denied_middleware(callable_name):
     # or not, the list of middleware to include explicitly takes
     # precedence over the exclude list's wildcards.
     # 2. enabled=True and len(exclude)==0
-    # This scenario is redundant logic, but we utilize it to 
+    # This scenario is redundant logic, but we utilize it to
     # speed up the logic for the common case where
     # the user has not specified any include or exclude lists.
-    if ((callable_name in settings.instrumentation.django_middleware.include)
-        or (settings.instrumentation.django_middleware.enabled
-        and len(settings.instrumentation.django_middleware.exclude) == 0)):
+    if (callable_name in settings.instrumentation.django_middleware.include) or (
+        settings.instrumentation.django_middleware.enabled
+        and len(settings.instrumentation.django_middleware.exclude) == 0
+    ):
         return False
 
     # =========================================================
@@ -1152,7 +1152,7 @@ def is_denied_middleware(callable_name):
             if include_middleware.endswith("*"):
                 include_middleware_name = include_middleware.rstrip("*")
                 if callable_name.startswith(include_middleware_name):
-                    # Count number of dots in the include and exclude 
+                    # Count number of dots in the include and exclude
                     # middleware names to determine specificity.
                     exclude_dots = exclude_middleware_name.count(".")
                     include_dots = include_middleware_name.count(".")
@@ -1173,7 +1173,7 @@ def is_denied_middleware(callable_name):
                     else:
                         # Expect to exclude this middleware--so far, exclude is more specific and takes precedence
                         pass
-                        
+
         # if we have made it to this point, there is no include middleware that is
         # more specific than the exclude middleware, so we can safely return True
         return True

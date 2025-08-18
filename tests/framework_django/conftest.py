@@ -13,11 +13,13 @@
 # limitations under the License.
 
 import pytest
-from newrelic.core.agent import agent_instance
-from newrelic.api.application import application_instance
 
-# Even though `django_collector_agent_registration_fixture()` also 
-# has the application deletion during the breakdown of the fixture, 
+from newrelic.api.application import application_instance
+from newrelic.core.agent import agent_instance
+
+
+# Even though `django_collector_agent_registration_fixture()` also
+# has the application deletion during the breakdown of the fixture,
 # and `django_collector_agent_registration_fixture()` is scoped to
 # "function", not all modules are using this.  Some are using
 # `collector_agent_registration_fixture()` scoped to "module".

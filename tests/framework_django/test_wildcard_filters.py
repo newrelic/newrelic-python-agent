@@ -16,10 +16,10 @@ import os
 
 import django
 import pytest
-from testing_support.fixtures import django_collector_agent_registration_fixture, collector_available_fixture
+from testing_support.fixtures import collector_available_fixture, django_collector_agent_registration_fixture
 from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.validators.validate_transaction_count import validate_transaction_count
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 DJANGO_VERSION = tuple(map(int, django.get_version().split(".")[:2]))
 
@@ -73,22 +73,20 @@ scoped_metrics_wildcard_exclude_wildcard_include = [
 ]
 
 
-@pytest.fixture(params=[
-                    (wildcard_exclude_specific_include_settings, scoped_metrics_wildcard_exclude_specific_include),
-                    (wildcard_exclude_wildcard_include_settings, scoped_metrics_wildcard_exclude_wildcard_include),
-                    ],
-                ids=[
-                    "wildcard_exclude_specific_include", 
-                    "wildcard_exclude_wildcard_include",
-                    ]
-                )
+@pytest.fixture(
+    params=[
+        (wildcard_exclude_specific_include_settings, scoped_metrics_wildcard_exclude_specific_include),
+        (wildcard_exclude_wildcard_include_settings, scoped_metrics_wildcard_exclude_wildcard_include),
+    ],
+    ids=["wildcard_exclude_specific_include", "wildcard_exclude_wildcard_include"],
+)
 def settings_and_metrics(request):
     exclude_include_override_settings, middleware_scoped_metrics = request.param
     exclude_settings, include_settings = exclude_include_override_settings
-    
+
     _default_settings["instrumentation.django_middleware.exclude"] = exclude_settings
     _default_settings["instrumentation.django_middleware.include"] = include_settings
-    
+
     return _default_settings, middleware_scoped_metrics
 
 
@@ -126,9 +124,7 @@ collector_agent_registration = django_collector_agent_registration_fixture(
 def test_wildcard_filters(application, middleware_scoped_metrics, middleware_rollup_metrics):
     @validate_transaction_count(1)
     @validate_transaction_metrics(
-        "views:index",
-        scoped_metrics=middleware_scoped_metrics,
-        rollup_metrics=middleware_rollup_metrics,
+        "views:index", scoped_metrics=middleware_scoped_metrics, rollup_metrics=middleware_rollup_metrics
     )
     @validate_code_level_metrics("views", "index")
     def _test():

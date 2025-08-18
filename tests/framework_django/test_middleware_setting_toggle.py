@@ -16,7 +16,7 @@ import os
 
 import django
 import pytest
-from testing_support.fixtures import django_collector_agent_registration_fixture, collector_available_fixture
+from testing_support.fixtures import collector_available_fixture, django_collector_agent_registration_fixture
 from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
@@ -37,6 +37,7 @@ _default_settings = {
     "debug.record_transaction_failure": True,
     "debug.log_autorum_middleware": True,
 }
+
 
 @pytest.fixture(params=[False, True])
 def settings_and_metrics(request):

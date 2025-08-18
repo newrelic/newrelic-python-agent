@@ -13,13 +13,14 @@
 # limitations under the License.
 
 import os
+
 import django
 from testing_support.fixtures import (
+    collector_agent_registration_fixture,
+    collector_available_fixture,
     override_application_settings,
     override_generic_settings,
     override_ignore_status_codes,
-    collector_agent_registration_fixture,
-    collector_available_fixture,
 )
 from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
@@ -43,6 +44,7 @@ _default_settings = {
 collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (framework_django)", default_settings=_default_settings, scope="module"
 )
+
 
 def target_application():
     from _target_application import _target_application

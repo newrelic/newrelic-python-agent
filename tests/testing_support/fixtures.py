@@ -22,7 +22,6 @@ import threading
 import time
 from pathlib import Path
 from queue import Queue
-from pathlib import Path
 
 import pytest
 
@@ -39,7 +38,7 @@ from newrelic.common.object_wrapper import (
     wrap_function_wrapper,
 )
 from newrelic.config import initialize
-from newrelic.core.agent import shutdown_agent, agent_instance
+from newrelic.core.agent import agent_instance, shutdown_agent
 from newrelic.core.attribute import create_attributes
 from newrelic.core.attribute_filter import DST_ERROR_COLLECTOR, DST_TRANSACTION_TRACER, AttributeFilter
 from newrelic.core.config import apply_config_setting, flatten_settings, global_settings

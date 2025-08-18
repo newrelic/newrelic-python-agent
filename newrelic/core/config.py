@@ -920,7 +920,9 @@ _settings.instrumentation.kombu.consumer.enabled = _environ_as_bool(
     "NEW_RELIC_INSTRUMENTATION_KOMBU_CONSUMER_ENABLED", default=False
 )
 
-_settings.instrumentation.django_middleware.enabled = _environ_as_bool("NEW_RELIC_INSTRUMENTATION_DJANGO_MIDDLEWARE_ENABLED", default=True)
+_settings.instrumentation.django_middleware.enabled = _environ_as_bool(
+    "NEW_RELIC_INSTRUMENTATION_DJANGO_MIDDLEWARE_ENABLED", default=True
+)
 _settings.instrumentation.django_middleware.exclude = []
 _settings.instrumentation.django_middleware.include = []
 

@@ -15,7 +15,7 @@
 [tool.ruff]
 output-format = "grouped"
 line-length = 120
-target-version = "py37"
+target-version = "py38"
 force-exclude = true  # Fixes issue with megalinter config preventing exclusion of files
 extend-exclude = [
     "newrelic/packages/",
@@ -110,7 +110,7 @@ ignore = [
     "PT012",  # pytest-raises-with-multiple-statements (too many to fix all at once)
     # Permanently disabled rules
     "PLC0415",  # import-outside-top-level (intentionally used frequently)
-    "UP006",  # non-pep585-annotation (not compatible with Python 3.7 or 3.8)
+    "UP006",  # non-pep585-annotation (not compatible with Python 3.8)
     "D203",  # incorrect-blank-line-before-class
     "D213",  # multi-line-summary-second-line
     "ARG001",  # unused-argument

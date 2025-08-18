@@ -138,7 +138,6 @@ packages = [
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "License :: OSI Approved :: Apache Software License",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
@@ -172,7 +171,7 @@ kwargs = {
     "zip_safe": False,
     "classifiers": classifiers,
     "packages": packages,
-    "python_requires": ">=3.7",
+    "python_requires": ">=3.8",
     "package_data": {
         "newrelic": [
             "newrelic.ini",

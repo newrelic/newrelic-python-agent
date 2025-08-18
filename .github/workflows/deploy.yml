@@ -23,42 +23,6 @@ permissions:
   contents: read
 
 jobs:
-  build-linux-py3-legacy:
-    runs-on: ubuntu-24.04
-    strategy:
-      fail-fast: false
-      matrix:
-        wheel:
-          - cp37-manylinux
-          - cp37-musllinux
-
-    steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
-        with:
-          persist-credentials: false
-          fetch-depth: 0
-
-      - name: Setup QEMU
-        uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # 3.6.0
-
-      - name: Build Wheels
-        uses: pypa/cibuildwheel@8d945475ac4b1aac4ae08b2fd27db9917158b6ce # 2.17.0
-        env:
-          CIBW_PLATFORM: linux
-          CIBW_BUILD: "${{ matrix.wheel }}*"
-          CIBW_ARCHS_LINUX: x86_64 aarch64
-          CIBW_ENVIRONMENT: "LD_LIBRARY_PATH=/opt/rh/devtoolset-8/root/usr/lib64:/opt/rh/devtoolset-8/root/usr/lib:/opt/rh/devtoolset-8/root/usr/lib64/dyninst:/opt/rh/devtoolset-8/root/usr/lib/dyninst:/usr/local/lib64:/usr/local/lib"
-          CIBW_TEST_REQUIRES: pytest
-          CIBW_TEST_COMMAND: "PYTHONPATH={project}/tests pytest {project}/tests/agent_unittests -vx"
-
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
-        with:
-          name: ${{ github.job }}-${{ matrix.wheel }}
-          path: ./wheelhouse/*.whl
-          if-no-files-found: error
-          retention-days: 1
-
   build-linux-py3:
     runs-on: ubuntu-24.04
     strategy:
@@ -151,7 +115,6 @@ jobs:
       attestations: write
 
     needs:
-      - build-linux-py3-legacy
       - build-linux-py3
       - build-sdist
 

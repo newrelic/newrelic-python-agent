@@ -664,16 +664,17 @@ class WSGIWebTransaction(WebTransaction):
 
         self._request_uri = request_uri
 
-        try:
-            # Need to make sure we drop off any query string
-            # arguments on the path if we have to fallback
-            # to using the original REQUEST_URI. Can't use
-            # attribute access on result as only support for
-            # Python 2.5+.
-            self._request_uri = urlparse.urlparse(self._request_uri)[2]
-        except:
-            # If `self._request_uri == None` or is invalid, set to `None`
-            self._request_uri = None
+        if self._request_uri is not None:
+            try:
+                # Need to make sure we drop off any query string
+                # arguments on the path if we have to fallback
+                # to using the original REQUEST_URI. Can't use
+                # attribute access on result as only support for
+                # Python 2.5+.
+                self._request_uri = urlparse.urlparse(self._request_uri)[2]
+            except:
+                # If `self._request_uri` is invalid, set to `None`
+                self._request_uri = None
 
         if script_name is not None or path_info is not None:
             if path_info is None:

@@ -19,7 +19,6 @@ target-version = "py37"
 force-exclude = true  # Fixes issue with megalinter config preventing exclusion of files
 extend-exclude = [
     "newrelic/packages/",
-    "setup.py",
     "newrelic/core/infinite_tracing_*_pb2.py",
 ]
 namespace-packages = ["testing_support"]
@@ -135,6 +134,13 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
+"setup.py" = [
+    # Disabled rules in setup.py
+    # setup.py needs to not immediately crash on Python 2 to log error messages
+    "UP032",  # f-string (Python 3+ syntax)
+    "B904",  # raise-without-from-inside-except (Python 3+ syntax)
+    "E402",  # module-import-not-at-top-of-file (intentional)
+]
 "tests/*" = [
     # Disabled rules in tests
     "S",  # flake8-bandit (security checks are not necessary in tests)

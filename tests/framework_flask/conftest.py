@@ -15,12 +15,11 @@
 import platform
 
 import pytest
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 from newrelic.common.package_version_utils import get_package_version_tuple
 
 FLASK_VERSION = get_package_version_tuple("flask")
-
-from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.

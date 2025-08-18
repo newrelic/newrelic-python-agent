@@ -87,12 +87,7 @@ def test_basehttp_style_middleware(target_application, route):
     # The bug was fixed in version 0.21.0 but re-occured in 0.23.1.
     # The bug was also not present on 0.20.1 to 0.23.1 if using Python 3.7.
     # The bug was fixed again in version 0.29.0
-    BUG_COMPLETELY_FIXED = any(
-        (
-            (0, 20, 1) <= starlette_version < (0, 23, 1),
-            starlette_version >= (0, 29, 0),
-        )
-    )
+    BUG_COMPLETELY_FIXED = any(((0, 20, 1) <= starlette_version < (0, 23, 1), starlette_version >= (0, 29, 0)))
     BUG_PARTIALLY_FIXED = any(
         ((0, 20, 1) <= starlette_version < (0, 21, 0), (0, 23, 1) <= starlette_version < (0, 29, 0))
     )

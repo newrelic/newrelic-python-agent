@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import pytest
+from celery.app.trace import reset_worker_optimizations, setup_worker_optimizations
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 _default_settings = {
@@ -43,3 +45,12 @@ def celery_worker_parameters():
 @pytest.fixture(scope="session", autouse=True)
 def celery_worker_available(celery_session_worker):
     return celery_session_worker
+
+
+@pytest.fixture(scope="session", autouse=True, params=[False, True], ids=["unpatched", "patched"])
+def with_worker_optimizations(request, celery_worker_available):
+    if request.param:
+        setup_worker_optimizations(celery_worker_available.app)
+
+    yield request.param
+    reset_worker_optimizations()

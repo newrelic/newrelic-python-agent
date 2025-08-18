@@ -12,8 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from celery import Celery, shared_task
-from testing_support.validators.validate_distributed_trace_accepted import validate_distributed_trace_accepted
+from celery import Celery, Task, shared_task
 
 from newrelic.api.transaction import current_transaction
 
@@ -47,11 +46,27 @@ def shared_task_add(x, y):
     return x + y
 
 
-@app.task
-@validate_distributed_trace_accepted(transport_type="AMQP")
-def assert_dt():
-    # Basic checks for DT delegated to task
-    txn = current_transaction()
-    assert txn, "No transaction active."
-    assert txn.name == "_target_application.assert_dt", f"Transaction name does not match: {txn.name}"
-    return 1
+class CustomCeleryTaskWithSuper(Task):
+    def __call__(self, *args, **kwargs):
+        transaction = current_transaction()
+        if transaction:
+            transaction.add_custom_attribute("custom_task_attribute", "Called with super")
+        return super().__call__(*args, **kwargs)
+
+
+class CustomCeleryTaskWithRun(Task):
+    def __call__(self, *args, **kwargs):
+        transaction = current_transaction()
+        if transaction:
+            transaction.add_custom_attribute("custom_task_attribute", "Called with run")
+        return self.run(*args, **kwargs)
+
+
+@app.task(base=CustomCeleryTaskWithSuper)
+def add_with_super(x, y):
+    return x + y
+
+
+@app.task(base=CustomCeleryTaskWithRun)
+def add_with_run(x, y):
+    return x + y

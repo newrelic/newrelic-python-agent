@@ -114,10 +114,10 @@ jobs:
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
 
-# ==============================
-# Integration Test Suite Runners
-# (run in the CI container)
-# ==============================
+  # ==============================
+  # Integration Test Suite Runners
+  # (run in the CI container)
+  # ==============================
 
   linux:
     env:
@@ -1550,10 +1550,10 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-# =============================================
-# OS Specific Core Test Suite Runners
-# (runs directly on the OS, not in a container)
-# =============================================
+  # =============================================
+  # OS Specific Core Test Suite Runners
+  # (runs directly on the OS, not in a container)
+  # =============================================
 
   linux_arm64:
     env:

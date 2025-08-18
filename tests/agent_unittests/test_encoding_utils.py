@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from pathlib import Path
+
 import pytest
 
-from newrelic.common.encoding_utils import camel_case, snake_case
+from newrelic.common.encoding_utils import camel_case, json_encode, snake_case
 
 
 @pytest.mark.parametrize(
@@ -54,4 +56,28 @@ def test_camel_case(input_, expected, upper):
 )
 def test_snake_case(input_, expected):
     output = snake_case(input_)
+    assert output == expected
+
+
+def _generator():
+    # range() itself is not a generator
+    yield from range(1, 4)
+
+
+@pytest.mark.parametrize(
+    "input_,expected",
+    [
+        (10, "10"),
+        (10.0, "10.0"),
+        ("my_string", '"my_string"'),
+        (b"my_bytes", '"my_bytes"'),
+        ({"id": 1, "name": "test", "NoneType": None}, '{"id":1,"name":"test","NoneType":null}'),
+        (_generator(), "[1,2,3]"),
+        (tuple(range(4, 7)), "[4,5,6]"),
+        (Path("test/path/file.txt"), '"test/path/file.txt"'),
+    ],
+    ids=["int", "float", "str", "bytes", "dict", "generator", "iterable", "Path"],
+)
+def test_json_encode(input_, expected):
+    output = json_encode(input_)
     assert output == expected

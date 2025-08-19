@@ -19,6 +19,7 @@ from newrelic.api.transaction import current_transaction
 from newrelic.common.async_wrapper import async_wrapper as get_async_wrapper
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.core.graphql_node import GraphQLOperationNode, GraphQLResolverNode
+from newrelic.core.config import global_settings
 
 
 class GraphQLOperationTrace(TimeTrace):
@@ -49,7 +50,7 @@ class GraphQLOperationTrace(TimeTrace):
         transaction = current_transaction(active_only=False)
 
         # Record SQL settings
-        settings = transaction.settings
+        settings = transaction.settings or global_settings()
         tt = settings.transaction_tracer
         self.graphql_format = tt.record_sql
 

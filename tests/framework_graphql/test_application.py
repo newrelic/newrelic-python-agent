@@ -24,6 +24,7 @@ from framework_graphql.test_application_async import error_middleware_async, exa
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
 from newrelic.common.package_version_utils import get_package_version
+from newrelic.api.transaction import current_transaction
 
 graphql_version = get_package_version("graphql-core")
 
@@ -106,6 +107,29 @@ def test_basic(target_application):
     def _test():
         response = target_application("{ hello }")
         assert response["hello"] == "Hello!"
+
+    _test()
+
+
+def test_transaction_empty_settings(target_application):
+    framework, version, target_application, is_bg, schema_type, extra_spans = target_application
+
+    @validate_transaction_metrics(
+        "query/<anonymous>/hello",
+        "GraphQL",
+        rollup_metrics=_graphql_base_rollup_metrics(framework, version, True),
+        background_task=True,
+    )
+    @background_task()
+    def _test():
+        transaction = current_transaction()
+        settings = transaction._settings
+        transaction._settings = None
+
+        response = target_application("{ hello }")
+        assert response["hello"] == "Hello!"
+
+        transaction._settings = settings
 
     _test()
 

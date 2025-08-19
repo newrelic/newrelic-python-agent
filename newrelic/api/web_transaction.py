@@ -665,6 +665,12 @@ class WSGIWebTransaction(WebTransaction):
         self._request_uri = request_uri
 
         if self._request_uri is not None:
+            # This try/except logic is to handle cases where
+            # `REQUEST_URI` is malformed or contains invalid
+            # characters.  This can happen at this point if
+            # a malformed request is passed in and for versions
+            # of `urllib` in the Python standard library older
+            # than what has been released Jan 31, 2025.
             try:
                 # Need to make sure we drop off any query string
                 # arguments on the path if we have to fallback

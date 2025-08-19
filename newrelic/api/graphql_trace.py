@@ -18,8 +18,8 @@ from newrelic.api.time_trace import TimeTrace, current_trace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.async_wrapper import async_wrapper as get_async_wrapper
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
-from newrelic.core.graphql_node import GraphQLOperationNode, GraphQLResolverNode
 from newrelic.core.config import global_settings
+from newrelic.core.graphql_node import GraphQLOperationNode, GraphQLResolverNode
 
 
 class GraphQLOperationTrace(TimeTrace):

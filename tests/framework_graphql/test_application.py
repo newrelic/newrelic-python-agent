@@ -22,9 +22,9 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
 
 from framework_graphql.test_application_async import error_middleware_async, example_middleware_async
 from newrelic.api.background_task import background_task
+from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.package_version_utils import get_package_version
-from newrelic.api.transaction import current_transaction
 
 graphql_version = get_package_version("graphql-core")
 

@@ -19,6 +19,8 @@ from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.signature import bind_args
+from newrelic.core.config import global_settings
+
 
 _logger = logging.getLogger(__name__)
 
@@ -26,6 +28,10 @@ _logger = logging.getLogger(__name__)
 async def wrap_call_tool(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
+        return await wrapped(*args, **kwargs)
+
+    settings = transaction.settings or global_settings()
+    if not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
     func_name = callable_name(wrapped)
@@ -40,6 +46,10 @@ async def wrap_call_tool(wrapped, instance, args, kwargs):
 async def wrap_read_resource(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
+        return await wrapped(*args, **kwargs)
+
+    settings = transaction.settings or global_settings()
+    if not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
     func_name = callable_name(wrapped)
@@ -62,6 +72,10 @@ async def wrap_read_resource(wrapped, instance, args, kwargs):
 async def wrap_get_prompt(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
+        return await wrapped(*args, **kwargs)
+
+    settings = transaction.settings or global_settings()
+    if not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
     func_name = callable_name(wrapped)

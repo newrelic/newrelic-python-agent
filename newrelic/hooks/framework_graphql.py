@@ -123,7 +123,6 @@ def wrap_execute_operation(wrapped, instance, args, kwargs):
                 ignore_transaction()
 
         fragments = execution_context.fragments
-        breakpoint()
         trace.deepest_path = ".".join(traverse_deepest_unique_path(fields, fragments)) or ""
 
     transaction.set_transaction_name(callable_name(wrapped), "GraphQL", priority=11)

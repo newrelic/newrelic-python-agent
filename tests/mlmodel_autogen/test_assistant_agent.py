@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import copy
 
 import pytest
+
 from autogen_agentchat.agents import AssistantAgent
 from autogen_agentchat.base import TaskResult
 from testing_support.fixtures import reset_core_stats_engine, validate_attributes
@@ -34,6 +34,10 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
 from newrelic.api.background_task import background_task
 from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 from newrelic.common.object_names import callable_name
+from newrelic.common.package_version_utils import get_package_version_tuple
+
+
+AUTOGEN_VERSION = get_package_version_tuple("autogen-agentchat")
 
 tool_recorded_event = [
     (
@@ -74,25 +78,49 @@ tool_recorded_event_error = [
 ]
 
 
+agent_recorded_event = [
+    (
+        {"type": "LlmAgent"},
+        {
+            "id": None,
+            "name": "pirate_agent",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "vendor": "autogen",
+            "ingest_source": "Python",
+            "duration": None,
+        },
+    )
+]
+
+
 # Example tool for testing purposes
 def add_exclamation(message: str) -> str:
     return f"{message}!"
 
 
 @reset_core_stats_engine()
-@validate_custom_events(events_with_context_attrs(tool_recorded_event))
-@validate_custom_event_count(count=1)
+@validate_custom_events(
+    events_with_context_attrs(tool_recorded_event) + events_with_context_attrs(agent_recorded_event)
+)
+@validate_custom_event_count(count=2)
 @validate_transaction_metrics(
     "test_assistant_agent:test_run_assistant_agent",
     scoped_metrics=[
-        ("Llm/autogen_agentchat.agents._assistant_agent:AssistantAgent.on_messages_stream/pirate_agent", 1),
+        (
+            "Llm/agent/Autogen/autogen_agentchat.agents._assistant_agent:AssistantAgent.on_messages_stream/pirate_agent",
+            1,
+        ),
         (
             "Llm/tool/Autogen/autogen_agentchat.agents._assistant_agent:AssistantAgent._execute_tool_call/add_exclamation",
             1,
         ),
     ],
     rollup_metrics=[
-        ("Llm/autogen_agentchat.agents._assistant_agent:AssistantAgent.on_messages_stream/pirate_agent", 1),
+        (
+            "Llm/agent/Autogen/autogen_agentchat.agents._assistant_agent:AssistantAgent.on_messages_stream/pirate_agent",
+            1,
+        ),
         (
             "Llm/tool/Autogen/autogen_agentchat.agents._assistant_agent:AssistantAgent._execute_tool_call/add_exclamation",
             1,
@@ -117,19 +145,25 @@ def test_run_assistant_agent(loop, set_trace_info, single_tool_model_client):
 
 
 @reset_core_stats_engine()
-@validate_custom_events(tool_recorded_event)
-@validate_custom_event_count(count=1)
+@validate_custom_events(tool_recorded_event + agent_recorded_event)
+@validate_custom_event_count(count=2)
 @validate_transaction_metrics(
     "test_assistant_agent:test_run_stream_assistant_agent",
     scoped_metrics=[
-        ("Llm/autogen_agentchat.agents._assistant_agent:AssistantAgent.on_messages_stream/pirate_agent", 1),
+        (
+            "Llm/agent/Autogen/autogen_agentchat.agents._assistant_agent:AssistantAgent.on_messages_stream/pirate_agent",
+            1,
+        ),
         (
             "Llm/tool/Autogen/autogen_agentchat.agents._assistant_agent:AssistantAgent._execute_tool_call/add_exclamation",
             1,
         ),
     ],
     rollup_metrics=[
-        ("Llm/autogen_agentchat.agents._assistant_agent:AssistantAgent.on_messages_stream/pirate_agent", 1),
+        (
+            "Llm/agent/Autogen/autogen_agentchat.agents._assistant_agent:AssistantAgent.on_messages_stream/pirate_agent",
+            1,
+        ),
         (
             "Llm/tool/Autogen/autogen_agentchat.agents._assistant_agent:AssistantAgent._execute_tool_call/add_exclamation",
             1,
@@ -162,19 +196,25 @@ def test_run_stream_assistant_agent(loop, set_trace_info, single_tool_model_clie
 
 @reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
-@validate_custom_events(tool_events_sans_content(tool_recorded_event))
-@validate_custom_event_count(count=1)
+@validate_custom_events(tool_events_sans_content(tool_recorded_event) + agent_recorded_event)
+@validate_custom_event_count(count=2)
 @validate_transaction_metrics(
     "test_assistant_agent:test_run_assistant_agent_no_content",
     scoped_metrics=[
-        ("Llm/autogen_agentchat.agents._assistant_agent:AssistantAgent.on_messages_stream/pirate_agent", 1),
+        (
+            "Llm/agent/Autogen/autogen_agentchat.agents._assistant_agent:AssistantAgent.on_messages_stream/pirate_agent",
+            1,
+        ),
         (
             "Llm/tool/Autogen/autogen_agentchat.agents._assistant_agent:AssistantAgent._execute_tool_call/add_exclamation",
             1,
         ),
     ],
     rollup_metrics=[
-        ("Llm/autogen_agentchat.agents._assistant_agent:AssistantAgent.on_messages_stream/pirate_agent", 1),
+        (
+            "Llm/agent/Autogen/autogen_agentchat.agents._assistant_agent:AssistantAgent.on_messages_stream/pirate_agent",
+            1,
+        ),
         (
             "Llm/tool/Autogen/autogen_agentchat.agents._assistant_agent:AssistantAgent._execute_tool_call/add_exclamation",
             1,
@@ -214,22 +254,35 @@ def test_run_assistant_agent_disabled_ai_monitoring_events(loop, set_trace_info,
     loop.run_until_complete(_test())
 
 
+SKIP_IF_AUTOGEN_062 = pytest.mark.skipif(
+    AUTOGEN_VERSION > (0, 6, 1),
+    reason="Forcing invalid tool call arguments causes a hang on autogen versions above 0.6.1",
+)
+
+
+@SKIP_IF_AUTOGEN_062
 @reset_core_stats_engine()
 @validate_transaction_error_event_count(1)
 @validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
 @validate_custom_events(tool_recorded_event_error)
-@validate_custom_event_count(count=1)
+@validate_custom_event_count(count=2)
 @validate_transaction_metrics(
     "test_assistant_agent:test_run_assistant_agent_error",
     scoped_metrics=[
-        ("Llm/autogen_agentchat.agents._assistant_agent:AssistantAgent.on_messages_stream/pirate_agent", 1),
+        (
+            "Llm/agent/Autogen/autogen_agentchat.agents._assistant_agent:AssistantAgent.on_messages_stream/pirate_agent",
+            1,
+        ),
         (
             "Llm/tool/Autogen/autogen_agentchat.agents._assistant_agent:AssistantAgent._execute_tool_call/add_exclamation",
             1,
         ),
     ],
     rollup_metrics=[
-        ("Llm/autogen_agentchat.agents._assistant_agent:AssistantAgent.on_messages_stream/pirate_agent", 1),
+        (
+            "Llm/agent/Autogen/autogen_agentchat.agents._assistant_agent:AssistantAgent.on_messages_stream/pirate_agent",
+            1,
+        ),
         (
             "Llm/tool/Autogen/autogen_agentchat.agents._assistant_agent:AssistantAgent._execute_tool_call/add_exclamation",
             1,
@@ -250,7 +303,7 @@ def test_run_assistant_agent_error(loop, set_trace_info, single_tool_model_clien
 
     async def _test():
         with pytest.raises(TypeError):
-            response = await pirate_agent.run()
+            await pirate_agent.run()
 
     loop.run_until_complete(_test())
 

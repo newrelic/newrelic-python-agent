@@ -59,11 +59,39 @@ def wrap_on_messages_stream(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
+    settings = transaction.settings or global_settings()
+    if not settings.ai_monitoring.enabled:
+        return wrapped(*args, **kwargs)
+
+    # Framework metric also used for entity tagging in the UI
+    transaction.add_ml_model_info("Autogen", AUTOGEN_VERSION)
+    transaction._add_agent_attribute("llm", True)
+
     agent_name = getattr(instance, "name", "agent")
+    agent_id = str(uuid.uuid4())
+    agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
     func_name = callable_name(wrapped)
     function_trace_name = f"{func_name}/{agent_name}"
-    with FunctionTrace(name=function_trace_name, group="Llm", source=wrapped):
-        return wrapped(*args, **kwargs)
+
+    ft = FunctionTrace(name=function_trace_name, group="Llm/agent/Autogen")
+    ft.__enter__()
+
+    try:
+        return_val = wrapped(*args, **kwargs)
+    except Exception:
+        ft.notice_error(attributes={"agent_id": agent_id})
+        ft.__exit__(*sys.exc_info())
+        # If we hit an exception, append the error attribute and duration from the exited function trace
+        agent_event_dict.update({"duration": ft.duration * 1000, "error": True})
+        transaction.record_custom_event("LlmAgent", agent_event_dict)
+        raise
+
+    ft.__exit__(None, None, None)
+    agent_event_dict.update({"duration": ft.duration * 1000})
+
+    transaction.record_custom_event("LlmAgent", agent_event_dict)
+
+    return return_val
 
 
 def _get_llm_metadata(transaction):
@@ -115,6 +143,26 @@ def _construct_base_tool_event_dict(bound_args, tool_call_data, tool_id, transac
     return tool_event_dict
 
 
+def _construct_base_agent_event_dict(agent_name, agent_id, transaction):
+    try:
+        linking_metadata = get_trace_linking_metadata()
+
+        agent_event_dict = {
+            "id": agent_id,
+            "name": agent_name,
+            "span_id": linking_metadata.get("span.id"),
+            "trace_id": linking_metadata.get("trace.id"),
+            "vendor": "autogen",
+            "ingest_source": "Python",
+        }
+        agent_event_dict.update(_get_llm_metadata(transaction))
+    except Exception:
+        agent_event_dict = {}
+        _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
+
+    return agent_event_dict
+
+
 async def wrap__execute_tool_call(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
@@ -150,7 +198,6 @@ async def wrap__execute_tool_call(wrapped, instance, args, kwargs):
         raise
 
     ft.__exit__(None, None, None)
-
     tool_event_dict.update({"duration": ft.duration * 1000})
 
     # If the tool was executed successfully, we can grab the tool output from the result

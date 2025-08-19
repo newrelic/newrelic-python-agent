@@ -13,20 +13,13 @@
 # limitations under the License.
 
 import json
-
 import pytest
-from autogen_agentchat.agents import AssistantAgent
-from autogen_agentchat.base import TaskResult
-from autogen_agentchat.teams import RoundRobinGroupChat
-from autogen_core import ComponentModel, FunctionCall, Image
+
+from autogen_core import FunctionCall
 from autogen_core.models import CreateResult, RequestUsage
-from autogen_core.models._model_client import ModelFamily
 from autogen_ext.models.replay import ReplayChatCompletionClient
-from pydantic import BaseModel, ValidationError
 from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
-
-from newrelic.common.object_names import callable_name
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slowdowns.
@@ -104,13 +97,13 @@ def multi_tool_model_client():
             ),
             CreateResult(
                 finish_reason="function_calls",
-                content=[FunctionCall(id="2", name="add_exclamation", arguments=json.dumps({"message": "Goodbye"}))],
+                content=[FunctionCall(id="3", name="compute_sum", arguments=json.dumps({"a": 5, "b": 3}))],
                 usage=RequestUsage(prompt_tokens=10, completion_tokens=5),
                 cached=False,
             ),
             CreateResult(
                 finish_reason="function_calls",
-                content=[FunctionCall(id="3", name="compute_sum", arguments=json.dumps({"a": 5, "b": 3}))],
+                content=[FunctionCall(id="2", name="add_exclamation", arguments=json.dumps({"message": "Goodbye"}))],
                 usage=RequestUsage(prompt_tokens=10, completion_tokens=5),
                 cached=False,
             ),

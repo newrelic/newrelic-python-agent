@@ -744,7 +744,7 @@ def extract_shortened_prompt(openai_version):
 
 
 def get_openai_version():
-    # Import OpenAI so that get package version can catpure the version from the
+    # Import OpenAI so that get_package_version() can capture the version from the
     # system module. OpenAI does not have a package version in v0.
     import openai
 

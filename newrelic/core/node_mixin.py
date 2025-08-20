@@ -89,6 +89,10 @@ class GenericNodeMixin:
             if i_attrs.get("nr.entryPoint"):
                 ct_processing_time[0] += (time.time() - start_time)
                 return [i_attrs, u_attrs, {}] if settings.distributed_tracing.minimize_attributes.enabled else [i_attrs, u_attrs, a_attrs]
+            # If this is the an LLM node, always return it.
+            if a_attrs.get("llm"):
+                ct_processing_time[0] += (time.time() - start_time)
+                return [i_attrs, u_attrs, {"llm": True}] if settings.distributed_tracing.minimize_attributes.enabled else [i_attrs, u_attrs, a_attrs]
             # If the span is not an exit span, skip it by returning None.
             if not exit_span_attrs_present:
                 ct_processing_time[0] += (time.time() - start_time)
@@ -104,13 +108,15 @@ class GenericNodeMixin:
                 new_exit_span = span_attrs not in ct_exit_spans
                 # If this is a new exit span, add it to the known ct_exit_spans and return it.
                 if new_exit_span:
-                    ct_exit_spans[span_attrs] = self.ids
+                    ct_exit_spans[span_attrs] = [self.ids, i_attrs]
                     ct_processing_time[0] += (time.time() - start_time)
                     return [i_attrs, u_attrs, a_minimized_attrs] if settings.distributed_tracing.minimize_attributes.enabled else [i_attrs, u_attrs, a_attrs]
                 # If this is an exit span we've already seen, add it's guid to the list
                 # of ids on the seen span and return None.
                 # For now add ids to user attributes list
-                ct_exit_spans[span_attrs].append(self.guid)
+                ct_exit_spans[span_attrs][0].append(self.guid)
+                ct_exit_spans[span_attrs][1]["duration"] += self.duration
+
                 ct_processing_time[0] += (time.time() - start_time)
                 return None
         elif settings.distributed_tracing.minimize_attributes.enabled:
@@ -125,7 +131,9 @@ class GenericNodeMixin:
         parent_id = parent_guid
         if span:  # span will be None if the span is an inprocess span or repeated exit span.
             yield span
-            parent_id = self.guid
+            # Compressed spans are always reparented onto the entry span.
+            if not settings.distributed_tracing.unique_spans.enabled or span[0].get("nr.entryPoint"):
+                parent_id = self.guid
         for child in self.children:
             for event in child.span_events(  # noqa: UP028
                 settings, base_attrs=base_attrs, parent_guid=parent_id, attr_class=attr_class, ct_exit_spans=ct_exit_spans, ct_processing_time=ct_processing_time

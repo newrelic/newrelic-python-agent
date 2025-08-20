@@ -24,16 +24,16 @@ permissions:
 
 jobs:
   build-wheels-legacy:
-    strategy:   
+    strategy:
       fail-fast: false
       matrix:
         include:
-            # Linux glibc
-            - wheel: cp37-manylinux
-              os: ubuntu-24.04
-            # Linux musllibc
-            - wheel: cp37-musllinux
-              os: ubuntu-24.04
+          # Linux glibc
+          - wheel: cp37-manylinux
+            os: ubuntu-24.04
+          # Linux musllibc
+          - wheel: cp37-musllinux
+            os: ubuntu-24.04
 
     name: Build wheels for ${{ matrix.wheel }}
     runs-on: ${{ matrix.os }}
@@ -73,35 +73,35 @@ jobs:
       fail-fast: false
       matrix:
         include:
-            # Linux glibc
-            - wheel: cp38-manylinux
-              os: ubuntu-24.04
-            - wheel: cp39-manylinux
-              os: ubuntu-24.04
-            - wheel: cp310-manylinux
-              os: ubuntu-24.04
-            - wheel: cp311-manylinux
-              os: ubuntu-24.04
-            - wheel: cp312-manylinux
-              os: ubuntu-24.04
-            - wheel: cp313-manylinux
-              os: ubuntu-24.04
-            # Linux musllibc
-            - wheel: cp38-musllinux
-              os: ubuntu-24.04
-            - wheel: cp39-musllinux
-              os: ubuntu-24.04
-            - wheel: cp310-musllinux
-              os: ubuntu-24.04
-            - wheel: cp311-musllinux
-              os: ubuntu-24.04
-            - wheel: cp312-musllinux
-              os: ubuntu-24.04
-            - wheel: cp313-musllinux
-              os: ubuntu-24.04
-            # Windows
-            - wheel: cp313-win
-              os: windows-2025
+          # Linux glibc
+          - wheel: cp38-manylinux
+            os: ubuntu-24.04
+          - wheel: cp39-manylinux
+            os: ubuntu-24.04
+          - wheel: cp310-manylinux
+            os: ubuntu-24.04
+          - wheel: cp311-manylinux
+            os: ubuntu-24.04
+          - wheel: cp312-manylinux
+            os: ubuntu-24.04
+          - wheel: cp313-manylinux
+            os: ubuntu-24.04
+          # Linux musllibc
+          - wheel: cp38-musllinux
+            os: ubuntu-24.04
+          - wheel: cp39-musllinux
+            os: ubuntu-24.04
+          - wheel: cp310-musllinux
+            os: ubuntu-24.04
+          - wheel: cp311-musllinux
+            os: ubuntu-24.04
+          - wheel: cp312-musllinux
+            os: ubuntu-24.04
+          - wheel: cp313-musllinux
+            os: ubuntu-24.04
+          # Windows
+          - wheel: cp313-win
+            os: windows-2025
 
     name: Build wheels for ${{ matrix.wheel }}
     runs-on: ${{ matrix.os }}

@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
 
+import pytest
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 _default_settings = {
@@ -28,3 +30,5 @@ _default_settings = {
 collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (cross_agent_tests)", default_settings=_default_settings
 )
+
+SKIP_ON_WINDOWS = pytest.mark.xfail(sys.platform == "win32", reason="This feature is not supported on Windows")

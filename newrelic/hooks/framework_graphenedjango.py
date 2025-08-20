@@ -65,16 +65,17 @@ def wrap_GraphQLView_execute_graphql_request(wrapped, instance, args, kwargs):
     except TypeError:
         return wrapped(*args, **kwargs)
 
-    transaction.set_transaction_name(callable_name(wrapped), "GrapheneDjango", priority=10)
+    transaction.set_transaction_name(callable_name(wrapped), "GraphQL", priority=12)
 
     trace = GraphQLOperationTrace()
 
     trace.statement = graphql_statement(query)
+    trace.product = "GrapheneDjango"
 
     # Handle Schemas created from frameworks
     if hasattr(schema, "_nr_framework"):
         framework = schema._nr_framework
-        trace.product = framework[0]
+        # trace.product = framework[0]
         transaction.add_framework_info(name=framework[0], version=framework[1])
 
     # Trace must be manually started and stopped to ensure it exists prior to and during the entire duration of the query.
@@ -88,6 +89,7 @@ def wrap_GraphQLView_execute_graphql_request(wrapped, instance, args, kwargs):
         trace.__exit__(*sys.exc_info())
         raise
     else:
+        trace.set_transaction_name(priority=14)
         if isawaitable(result):
             # Asynchronous implementations
             # Return a coroutine that handles closing the operation trace

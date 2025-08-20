@@ -1018,8 +1018,10 @@ class Transaction:
         if self._traceparent_sampled is None:
             config = "default"  # Use sampling algo.
         elif self._traceparent_sampled:
+            setting_path = "distributed_tracing.sampler.remote_parent_sampled"
             config = self.settings.distributed_tracing.sampler.remote_parent_sampled
         else:  # self._traceparent_sampled is False.
+            setting_path = "distributed_tracing.sampler.remote_parent_not_sampled"
             config = self.settings.distributed_tracing.sampler.remote_parent_not_sampled
 
         if config == 'always_on':
@@ -1029,6 +1031,8 @@ class Transaction:
             self._sampled = False
             self._priority = 0
         else:
+            if config != 'default':
+                _logger.warning(f"{setting_path}={config} is not a recognized value. Using 'default' instead.")
             self.sampling_algo_compute_sampled_and_priority()
 
     def _freeze_path(self):

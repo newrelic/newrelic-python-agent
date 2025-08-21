@@ -30,27 +30,19 @@ TEMPLATE_LOADERS = ("django.template.loaders.filesystem.Loader", "django.templat
 middleware = (
     "django.middleware.common.CommonMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
-    # "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.gzip.GZipMiddleware",
-    # "middleware.ExceptionTo410Middleware",
 )
 
 MIDDLEWARE = middleware
 
 ROOT_URLCONF = "urls"
 
-# TEMPLATE_DIRS = [BASE_DIR / "templates"]
-
-# For Django 1.10 compatibility because TEMPLATE_DIRS is deprecated
-# TEMPLATES = [{"BACKEND": "django.template.backends.django.DjangoTemplates", "DIRS": TEMPLATE_DIRS}]
-
 TEMPLATES = [{"BACKEND": "django.template.backends.django.DjangoTemplates"}]
 
 WSGI_APPLICATION = "wsgi.application"
 
-# INSTALLED_APPS = ("django.contrib.auth", "django.contrib.contenttypes", "dummy_app", "newrelic.extras.framework_django")
 INSTALLED_APPS = ("django.contrib.auth", "django.contrib.contenttypes", "dummy_app", "graphene_django")
 
 GRAPHENE = {

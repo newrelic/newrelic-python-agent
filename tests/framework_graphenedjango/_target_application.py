@@ -13,10 +13,9 @@
 # limitations under the License.
 
 
-# import pytest
 import webtest
+
 from wsgi import application
-# from ._target_schema_sync import target_schema as schema_sync
 
 _target_application = webtest.TestApp(application)
 

@@ -29,9 +29,9 @@ collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (framework_graphene-django)", default_settings=_default_settings
 )
 
-@pytest.fixture(scope="session")
-def app():
-    from _target_application import _target_application
 
-    return _target_application
+@pytest.fixture(scope="session")
+def wsgi_app():
+    from _target_application import _target_application as wsgi_application
+    return wsgi_application
 

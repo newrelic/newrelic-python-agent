@@ -15,28 +15,21 @@
 import pytest
 
 from newrelic.common.package_version_utils import get_package_version
-
-# from testing_support.fixtures import dt_enabled
-# from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 
 GRAPHENE_DJANGO_VERSION = get_package_version("graphene-django")
+GRAPHQL_VERSION = get_package_version("graphql-core")
 
 
-def _graphql_base_rollup_metrics(framework, version, background_task=True):
-    graphql_version = get_package_version("graphql-core")
-
-    metrics = [(f"Python/Framework/GraphQL/{graphql_version}", 1), ("GraphQL/all", 1), (f"GraphQL/{framework}/all", 1)]
-    if background_task:
-        metrics.extend([("GraphQL/allOther", 1), (f"GraphQL/{framework}/allOther", 1)])
-    else:
-        metrics.extend([("GraphQL/allWeb", 1), (f"GraphQL/{framework}/allWeb", 1)])
-
-    if framework != "GraphQL":
-        metrics.append((f"Python/Framework/{framework}/{version}", 1))
-
-    return metrics
+_graphql_base_rollup_metrics = [
+    (f"Python/Framework/GraphQL/{GRAPHQL_VERSION}", 1), 
+    ("GraphQL/all", 1), 
+    (f"GraphQL/GrapheneDjango/all", 1),
+    ("GraphQL/allWeb", 1),
+    (f"GraphQL/GrapheneDjango/allWeb", 1),
+    (f"Python/Framework/GrapheneDjango/{GRAPHENE_DJANGO_VERSION}", 1)
+]
 
 
 _test_queries = [
@@ -96,9 +89,8 @@ _test_queries = [
     ),
 ]
 
-# TODO: Add background task parameterization?
 @pytest.mark.parametrize("query,expected_path,result", _test_queries)
-def test_application_query(app, query, expected_path, result):
+def test_wsgi_application_query(wsgi_app, query, expected_path, result):
     field_metrics = [
         (f"GraphQL/operation/GrapheneDjango/query/<anonymous>{'/' if expected_path=='' else expected_path}", 1),
     ]
@@ -108,17 +100,17 @@ def test_application_query(app, query, expected_path, result):
         transaction_name,
         "GraphQL",
         scoped_metrics=field_metrics,
-        rollup_metrics=field_metrics + _graphql_base_rollup_metrics("GrapheneDjango", GRAPHENE_DJANGO_VERSION, False),
+        rollup_metrics=field_metrics + _graphql_base_rollup_metrics,
     )
     def _test():
         request_body = {"query": query}
-        response = app.post_json("/graphql", request_body)
+        response = wsgi_app.post_json("/graphql", request_body)
         assert response.json == result
 
     _test()
 
 
-def test_application_mutate(app):
+def test_wsgi_application_mutate(wsgi_app):
     _test_mutation_scoped_metrics = [
         ("GraphQL/resolve/GrapheneDjango/storage_add", 1),
         ("GraphQL/operation/GrapheneDjango/mutation/<anonymous>/storage_add.string", 1),
@@ -128,16 +120,13 @@ def test_application_mutate(app):
         "mutation/<anonymous>/storage_add.string",
         "GraphQL",
         scoped_metrics=_test_mutation_scoped_metrics,
-        rollup_metrics=_test_mutation_scoped_metrics + _graphql_base_rollup_metrics("GrapheneDjango", GRAPHENE_DJANGO_VERSION, False),
+        rollup_metrics=_test_mutation_scoped_metrics + _graphql_base_rollup_metrics,
     )
-    # @conditional_decorator(background_task(), is_bg)
     def _test():
         query = 'mutation { storage_add(string: "abc") { string } }'
         request_body = {"query": query}
-        response = app.post_json("/graphql", request_body)
+        response = wsgi_app.post_json("/graphql", request_body)
         assert response.json == {'data': {'storage_add': {'string': 'abc'}}}
 
     _test()
     
-
-# TODO: Create async tests (with async target schema)

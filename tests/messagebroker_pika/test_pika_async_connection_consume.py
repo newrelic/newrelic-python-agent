@@ -24,7 +24,7 @@ from testing_support.db_settings import rabbitmq_settings
 from testing_support.fixtures import (
     capture_transaction_metrics,
     dt_enabled,
-    function_not_called,
+    validate_function_not_called,
     override_application_settings,
 )
 from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
@@ -364,7 +364,7 @@ def test_async_connection_basic_consume_two_exchanges(producer, producer_2, Conn
 
 
 # This should not create a transaction
-@function_not_called("newrelic.core.stats_engine", "StatsEngine.record_transaction")
+@validate_function_not_called("newrelic.core.stats_engine", "StatsEngine.record_transaction")
 @override_application_settings({"debug.record_transaction_failure": True})
 def test_tornado_connection_basic_consume_outside_transaction(producer):
     def on_message(channel, method_frame, header_frame, body):

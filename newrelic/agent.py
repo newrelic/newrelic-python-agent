@@ -58,19 +58,9 @@ from newrelic.core.agent import shutdown_agent as __shutdown_agent
 from newrelic.core.config import global_settings as __global_settings
 from newrelic.samplers.decorators import data_source_factory as __data_source_factory
 from newrelic.samplers.decorators import data_source_generator as __data_source_generator
-
-try:
-    from newrelic.api.asgi_application import ASGIApplicationWrapper as __ASGIApplicationWrapper
-    from newrelic.api.asgi_application import asgi_application as __asgi_application
-    from newrelic.api.asgi_application import wrap_asgi_application as __wrap_asgi_application
-except SyntaxError:
-
-    def __asgi_application(*args, **kwargs):
-        pass
-
-    __ASGIApplicationWrapper = __asgi_application
-    __wrap_asgi_application = __asgi_application
-
+from newrelic.api.asgi_application import ASGIApplicationWrapper as __ASGIApplicationWrapper
+from newrelic.api.asgi_application import asgi_application as __asgi_application
+from newrelic.api.asgi_application import wrap_asgi_application as __wrap_asgi_application
 from newrelic.api.background_task import BackgroundTask as __BackgroundTask
 from newrelic.api.background_task import BackgroundTaskWrapper as __BackgroundTaskWrapper
 from newrelic.api.background_task import background_task as __background_task

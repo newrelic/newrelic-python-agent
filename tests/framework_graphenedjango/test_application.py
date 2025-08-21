@@ -14,6 +14,8 @@
 
 import pytest
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_span_events import validate_span_events
+from testing_support.fixtures import dt_enabled
 
 from newrelic.common.package_version_utils import get_package_version
 
@@ -31,6 +33,7 @@ _graphql_base_rollup_metrics = [
 ]
 
 
+# Query, Expected deepest unique path, Result
 _test_queries = [
     ("{ hello }", "/hello", {"data": {"hello": "Hello!"}}),  # Basic query
     (
@@ -112,17 +115,13 @@ _test_queries = [
 
 
 @pytest.mark.parametrize("query,expected_path,result", _test_queries)
-def test_wsgi_application_query(wsgi_app, query, expected_path, result):
-    field_metrics = [
-        (f"GraphQL/operation/GrapheneDjango/query/<anonymous>{'/' if expected_path == '' else expected_path}", 1)
-    ]
+def test_query(wsgi_app, query, expected_path, result):
     transaction_name = f"query/<anonymous>{expected_path}"
 
     @validate_transaction_metrics(
         transaction_name,
         "GraphQL",
-        scoped_metrics=field_metrics,
-        rollup_metrics=field_metrics + _graphql_base_rollup_metrics,
+        rollup_metrics=_graphql_base_rollup_metrics,
     )
     def _test():
         request_body = {"query": query}
@@ -132,7 +131,66 @@ def test_wsgi_application_query(wsgi_app, query, expected_path, result):
     _test()
 
 
-def test_wsgi_application_mutate(wsgi_app):
+@dt_enabled
+def test_operation_metrics_and_attrs(wsgi_app):
+    operation_metrics = [
+        (f"GraphQL/operation/GrapheneDjango/query/MyQuery/library", 1)
+    ]
+
+    @validate_span_events(
+        exact_agents={
+            "graphql.operation.type": "query",
+            "graphql.operation.name": "MyQuery",
+            "graphql.operation.query": "query MyQuery { library(index: ?) { branch, book { id, name } } }"
+        }
+    )
+    @validate_transaction_metrics(
+        "query/MyQuery/library",
+        "GraphQL",
+        scoped_metrics=operation_metrics,
+        rollup_metrics=operation_metrics + _graphql_base_rollup_metrics,
+    )
+    def _test():
+        request_body = {"query": "query MyQuery { library(index: 0) { branch, book { id, name } } }"}
+        response = wsgi_app.post_json("/graphql", request_body)
+        assert response.json
+
+    _test()
+
+
+@dt_enabled
+def test_field_resolver_metrics_and_attrs(wsgi_app):
+    field_resolver_metrics = [
+        ("Function/_target_schema_sync:resolve_library", 1),
+        ("GraphQL/resolve/GrapheneDjango/library", 1),
+        ("GraphQL/resolve/GrapheneDjango/branch", 1),
+        ("GraphQL/resolve/GrapheneDjango/id", 1),
+        ("GraphQL/resolve/GrapheneDjango/book", 1),
+    ]
+
+    @validate_span_events(
+        exact_agents={
+            "graphql.field.name": "library",
+            "graphql.field.parentType": "Query",
+            "graphql.field.path": "library",
+            "graphql.field.returnType": "Library",
+        }
+    )
+    @validate_transaction_metrics(
+        "query/MyQuery/library",
+        "GraphQL",
+        scoped_metrics=field_resolver_metrics,
+        rollup_metrics=field_resolver_metrics + _graphql_base_rollup_metrics,
+    )
+    def _test():
+        request_body = {"query": "query MyQuery { library(index: 0) { branch, book { id, name } } }"}
+        response = wsgi_app.post_json("/graphql", request_body)
+        assert response.json
+
+    _test()
+
+
+def test_mutate(wsgi_app):
     _test_mutation_scoped_metrics = [
         ("GraphQL/resolve/GrapheneDjango/storage_add", 1),
         ("GraphQL/operation/GrapheneDjango/mutation/<anonymous>/storage_add.string", 1),

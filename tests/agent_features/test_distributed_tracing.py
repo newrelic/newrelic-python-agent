@@ -21,8 +21,9 @@ from testing_support.fixtures import override_application_settings, validate_att
 from testing_support.validators.validate_error_event_attributes import validate_error_event_attributes
 from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_function_not_called import validate_function_not_called
+from testing_support.validators.validate_function_called import validate_function_called
 
-from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import BackgroundTask, background_task
 from newrelic.api.external_trace import ExternalTrace
@@ -428,14 +429,12 @@ def test_inbound_dt_payload_acceptance(trusted_account_key):
         (False, 'default', 'always_off', False, 0, False),  # Never sampled.
     )
 )
-def test_distributed_trace_w3cparent_sampling_decision(sampled, remote_parent_sampled, remote_parent_not_sampled, expected_sampled, expected_priority, expected_adaptive_sampling_algo_called, wrap_sampling_algo_compute_sampled_and_priority):
+def test_distributed_trace_w3cparent_sampling_decision(sampled, remote_parent_sampled, remote_parent_not_sampled, expected_sampled, expected_priority, expected_adaptive_sampling_algo_called):
     required_intrinsics = []
     if expected_sampled is not None:
         required_intrinsics.append(Attribute(name="sampled", value=expected_sampled, destinations=0b110))
     if expected_priority is not None:
         required_intrinsics.append(Attribute(name="priority", value=expected_priority, destinations=0b110))
-
-    wrap_function_wrapper("newrelic.api.transaction", "Transaction.sampling_algo_compute_sampled_and_priority", wrap_sampling_algo_compute_sampled_and_priority)
 
     test_settings = _override_settings.copy()
     test_settings.update({
@@ -443,7 +442,11 @@ def test_distributed_trace_w3cparent_sampling_decision(sampled, remote_parent_sa
         "distributed_tracing.sampler.remote_parent_not_sampled": remote_parent_not_sampled,
         "span_events.enabled": True,
     })
-
+    if expected_adaptive_sampling_algo_called:
+        function_called_decorator = validate_function_called("newrelic.api.transaction", "Transaction.sampling_algo_compute_sampled_and_priority")
+    else:
+        function_called_decorator = validate_function_not_called("newrelic.api.transaction", "Transaction.sampling_algo_compute_sampled_and_priority")
+    @function_called_decorator
     @override_application_settings(test_settings)
     @validate_attributes_complete("intrinsic", required_intrinsics)
     @background_task(name="test_distributed_trace_attributes")
@@ -457,19 +460,3 @@ def test_distributed_trace_w3cparent_sampling_decision(sampled, remote_parent_sa
         accept_distributed_trace_headers(headers)
 
     _test()
-
-    assert was_called  == expected_adaptive_sampling_algo_called
-
-
-@pytest.fixture
-def wrap_sampling_algo_compute_sampled_and_priority():
-    global was_called
-    was_called = False
-
-    def _wrap_sampling_algo_compute_sampled_and_priority(wrapped, instance, args, kwargs):
-        global was_called
-        was_called = True
-        return wrapped(*args, **kwargs)
-
-    return _wrap_sampling_algo_compute_sampled_and_priority
-

@@ -12,25 +12,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
 import json
+import sys
 from inspect import isawaitable
 
-from newrelic.common.signature import bind_args
 from newrelic.api.error_trace import ErrorTrace
 from newrelic.api.graphql_trace import GraphQLOperationTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
+from newrelic.common.signature import bind_args
 from newrelic.core.graphql_utils import graphql_statement
-from newrelic.hooks.framework_graphql_py3 import (
-    nr_coro_graphql_impl_wrapper,
-)
-from newrelic.hooks.framework_graphql import (
-    ignore_graphql_duplicate_exception,
-    GRAPHQL_VERSION
-)
+from newrelic.hooks.framework_graphql import GRAPHQL_VERSION, ignore_graphql_duplicate_exception
+from newrelic.hooks.framework_graphql_py3 import nr_coro_graphql_impl_wrapper
 
 GRAPHENE_DJANGO_VERSION = get_package_version("graphene_django")
 graphene_django_version_tuple = tuple(map(int, GRAPHENE_DJANGO_VERSION.split(".")))
@@ -45,7 +40,7 @@ def wrap_GraphQLView_get_response(wrapped, instance, args, kwargs):
     string_response, status_code = wrapped(*args, **kwargs)
     response = json.loads(string_response)
     transaction.process_response(status_code, response)
-    
+
     return string_response, status_code
 
 
@@ -75,7 +70,6 @@ def wrap_GraphQLView_execute_graphql_request(wrapped, instance, args, kwargs):
     # Handle Schemas created from frameworks
     if hasattr(schema, "_nr_framework"):
         framework = schema._nr_framework
-        # trace.product = framework[0]
         transaction.add_framework_info(name=framework[0], version=framework[1])
 
     # Trace must be manually started and stopped to ensure it exists prior to and during the entire duration of the query.
@@ -106,4 +100,3 @@ def instrument_graphene_django_views(module):
 
     if hasattr(module, "GraphQLView") and hasattr(module.GraphQLView, "get_response"):
         wrap_function_wrapper(module, "GraphQLView.get_response", wrap_GraphQLView_get_response)
-        

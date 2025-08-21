@@ -12,28 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from dummy_app.models import AuthorModel, BookModel, LibraryModel, MagazineModel
 from graphene import Field, Int, List, NonNull, ObjectType, Schema, String, Union
 from graphene import Mutation as GrapheneMutation
 from graphene_django import DjangoObjectType
 
-from dummy_app.models import AuthorModel, BookModel, MagazineModel, LibraryModel
 
 class Author(DjangoObjectType):
     class Meta:
         model = AuthorModel
-        fields = '__all__'
+        fields = "__all__"
 
 
 class Book(DjangoObjectType):
     class Meta:
         model = BookModel
-        fields = '__all__'
+        fields = "__all__"
 
 
 class Magazine(DjangoObjectType):
     class Meta:
         model = MagazineModel
-        fields = '__all__'
+        fields = "__all__"
 
 
 class Item(Union):
@@ -44,7 +44,7 @@ class Item(Union):
 class Library(DjangoObjectType):
     class Meta:
         model = LibraryModel
-        fields = '__all__'
+        fields = "__all__"
 
 
 Storage = List(String)

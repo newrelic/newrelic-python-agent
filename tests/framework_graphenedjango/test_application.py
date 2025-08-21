@@ -13,22 +13,21 @@
 # limitations under the License.
 
 import pytest
-
-from newrelic.common.package_version_utils import get_package_version
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
+from newrelic.common.package_version_utils import get_package_version
 
 GRAPHENE_DJANGO_VERSION = get_package_version("graphene-django")
 GRAPHQL_VERSION = get_package_version("graphql-core")
 
 
 _graphql_base_rollup_metrics = [
-    (f"Python/Framework/GraphQL/{GRAPHQL_VERSION}", 1), 
-    ("GraphQL/all", 1), 
-    (f"GraphQL/GrapheneDjango/all", 1),
+    (f"Python/Framework/GraphQL/{GRAPHQL_VERSION}", 1),
+    ("GraphQL/all", 1),
+    ("GraphQL/GrapheneDjango/all", 1),
     ("GraphQL/allWeb", 1),
-    (f"GraphQL/GrapheneDjango/allWeb", 1),
-    (f"Python/Framework/GrapheneDjango/{GRAPHENE_DJANGO_VERSION}", 1)
+    ("GraphQL/GrapheneDjango/allWeb", 1),
+    (f"Python/Framework/GrapheneDjango/{GRAPHENE_DJANGO_VERSION}", 1),
 ]
 
 
@@ -69,8 +68,23 @@ _test_queries = [
         {"data": {"library": {"book": [{"name": "Python Agent: The Book"}, {"name": "[Redacted]"}]}}},
     ),  # Filtering
     ('{ TestEcho: echo(echo: "test") }', "/echo", {"data": {"TestEcho": "test"}}),  # Aliases
-    ('{ search(contains: "A") { __typename ... on Book { name } } }', "/search<Book>.name", {'data': {'search': [{'__typename': 'Book', 'name': 'Python Agent: The Book'}, {'__typename': 'Book', 'name': "Ollies for O11y: A Sk8er's Guide to Observability"}]}}),  # InlineFragment
-    ('{ hello echo(echo: "test") }', "", {"data": {"hello": "Hello!", "echo": "test"}}),  # Multiple root selections. (need to decide on final behavior)
+    (
+        '{ search(contains: "A") { __typename ... on Book { name } } }',
+        "/search<Book>.name",
+        {
+            "data": {
+                "search": [
+                    {"__typename": "Book", "name": "Python Agent: The Book"},
+                    {"__typename": "Book", "name": "Ollies for O11y: A Sk8er's Guide to Observability"},
+                ]
+            }
+        },
+    ),  # InlineFragment
+    (
+        '{ hello echo(echo: "test") }',
+        "",
+        {"data": {"hello": "Hello!", "echo": "test"}},
+    ),  # Multiple root selections. (need to decide on final behavior)
     # FragmentSpread
     (
         "{ library(index: 0) { book { ...MyFragment } } } fragment MyFragment on Book { name }",  # Fragment filtering
@@ -85,14 +99,22 @@ _test_queries = [
     (
         "{ library(index: 0) { book { ...MyFragment } magazine { ...MagFragment } } } fragment MyFragment on Book { author { first_name } } fragment MagFragment on Magazine { name }",
         "/library",
-        {'data': {'library': {'book': [{'author': {'first_name': 'New'}}, {'author': {'first_name': 'Leslie'}}], 'magazine': [{'name': 'Reli Updates Weekly'}, {'name': 'Node Weekly'}]}}},
+        {
+            "data": {
+                "library": {
+                    "book": [{"author": {"first_name": "New"}}, {"author": {"first_name": "Leslie"}}],
+                    "magazine": [{"name": "Reli Updates Weekly"}, {"name": "Node Weekly"}],
+                }
+            }
+        },
     ),
 ]
+
 
 @pytest.mark.parametrize("query,expected_path,result", _test_queries)
 def test_wsgi_application_query(wsgi_app, query, expected_path, result):
     field_metrics = [
-        (f"GraphQL/operation/GrapheneDjango/query/<anonymous>{'/' if expected_path=='' else expected_path}", 1),
+        (f"GraphQL/operation/GrapheneDjango/query/<anonymous>{'/' if expected_path == '' else expected_path}", 1)
     ]
     transaction_name = f"query/<anonymous>{expected_path}"
 
@@ -126,7 +148,6 @@ def test_wsgi_application_mutate(wsgi_app):
         query = 'mutation { storage_add(string: "abc") { string } }'
         request_body = {"query": query}
         response = wsgi_app.post_json("/graphql", request_body)
-        assert response.json == {'data': {'storage_add': {'string': 'abc'}}}
+        assert response.json == {"data": {"storage_add": {"string": "abc"}}}
 
     _test()
-    

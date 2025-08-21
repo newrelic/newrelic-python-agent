@@ -33,5 +33,5 @@ collector_agent_registration = collector_agent_registration_fixture(
 @pytest.fixture(scope="session")
 def wsgi_app():
     from _target_application import _target_application as wsgi_application
-    return wsgi_application
 
+    return wsgi_application

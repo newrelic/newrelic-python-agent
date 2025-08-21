@@ -45,6 +45,4 @@ WSGI_APPLICATION = "wsgi.application"
 
 INSTALLED_APPS = ("django.contrib.auth", "django.contrib.contenttypes", "dummy_app", "graphene_django")
 
-GRAPHENE = {
-    "SCHEMA": "_target_schema_sync.target_schema"
-}
+GRAPHENE = {"SCHEMA": "_target_schema_sync.target_schema"}

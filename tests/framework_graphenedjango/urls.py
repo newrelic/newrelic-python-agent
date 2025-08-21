@@ -15,11 +15,8 @@
 from django.urls import path
 from graphene_django.views import GraphQLView
 
-
 # When New Relic supports async schemas/asgi for graphene-django,
 # we can add the schema as an argument like so:
 # path("graphql", GraphQLView.as_view(graphiql=False, schema=schema), name="graphql_sync")
 # and remove the global schema declaration in settings.py under "GRAPHENE"
-urlpatterns = [
-    path("graphql", GraphQLView.as_view(graphiql=False), name="graphql_sync"),
-]
+urlpatterns = [path("graphql", GraphQLView.as_view(graphiql=False), name="graphql_sync")]

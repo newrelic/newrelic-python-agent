@@ -15,7 +15,8 @@
 import time
 
 import pytest
-from testing_support.fixtures import function_not_called, override_application_settings, reset_core_stats_engine
+from testing_support.fixtures import override_application_settings, reset_core_stats_engine
+from testing_support.validators.validate_function_not_called import validate_function_not_called
 from testing_support.validators.validate_custom_event import (
     validate_custom_event_count,
     validate_custom_event_in_application_stats_engine,
@@ -214,14 +215,14 @@ def test_custom_event_settings_check_custom_insights_enabled():
 
 
 @override_application_settings({"custom_insights_events.enabled": False})
-@function_not_called("newrelic.api.transaction", "create_custom_event")
+@validate_function_not_called("newrelic.api.transaction", "create_custom_event")
 @background_task()
 def test_transaction_create_custom_event_not_called():
     record_custom_event("FooEvent", _user_params)
 
 
 @override_application_settings({"custom_insights_events.enabled": False})
-@function_not_called("newrelic.core.application", "create_custom_event")
+@validate_function_not_called("newrelic.core.application", "create_custom_event")
 @background_task()
 def test_application_create_custom_event_not_called():
     app = application()

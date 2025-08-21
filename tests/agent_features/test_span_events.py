@@ -15,7 +15,8 @@
 import sys
 
 import pytest
-from testing_support.fixtures import dt_enabled, function_not_called, override_application_settings
+from testing_support.fixtures import dt_enabled, override_application_settings
+from testing_support.validators.validate_function_not_called import validate_function_not_called
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
@@ -415,7 +416,7 @@ def test_collect_span_events_override(collect_span_events, span_events_enabled):
             pass
 
     if not spans_expected:
-        _test = function_not_called("newrelic.core.attribute", "resolve_agent_attributes")(_test)
+        _test = validate_function_not_called("newrelic.core.attribute", "resolve_agent_attributes")(_test)
 
     _test()
 

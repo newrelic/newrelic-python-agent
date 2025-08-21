@@ -13,7 +13,8 @@
 # limitations under the License.
 
 import pytest
-from testing_support.fixtures import function_not_called, override_generic_settings
+from testing_support.validators.validate_function_not_called import validate_function_not_called
+from testing_support.fixtures import override_generic_settings
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.application import application_instance as application
@@ -128,7 +129,7 @@ def test_context_propagation(event_loop, schedule, set_loop):
 
 
 @override_generic_settings(global_settings(), {"enabled": False})
-@function_not_called("newrelic.core.stats_engine", "StatsEngine.record_transaction")
+@validate_function_not_called("newrelic.core.stats_engine", "StatsEngine.record_transaction")
 def test_nr_disabled(event_loop):
     import asyncio
 

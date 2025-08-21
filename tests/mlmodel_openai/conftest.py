@@ -80,7 +80,7 @@ RECORDED_HEADERS = {"x-request-id", "content-type"}
 
 
 @pytest.fixture(scope="session")
-def openai_clients(openai_version, MockExternalOpenAIServer):  # noqa: F811
+def openai_clients(openai_version, MockExternalOpenAIServer):
     """
     This configures the openai client and returns it for openai v1 and only configures
     openai for v0 since there is no client.
@@ -129,7 +129,7 @@ def async_openai_client(openai_clients):
 
 @pytest.fixture(autouse=True, scope="session")
 def openai_server(
-    openai_version,  # noqa: F811
+    openai_version,
     openai_clients,
     wrap_openai_api_requestor_request,
     wrap_openai_api_requestor_interpret_response,
@@ -172,7 +172,7 @@ def openai_server(
 
 
 @pytest.fixture(scope="session")
-def wrap_httpx_client_send(extract_shortened_prompt):  # noqa: F811
+def wrap_httpx_client_send(extract_shortened_prompt):
     def _wrap_httpx_client_send(wrapped, instance, args, kwargs):
         bound_args = bind_args(wrapped, args, kwargs)
         stream = bound_args.get("stream", False)
@@ -233,7 +233,7 @@ def wrap_openai_api_requestor_interpret_response():
 
 
 @pytest.fixture(scope="session")
-def wrap_openai_api_requestor_request(extract_shortened_prompt):  # noqa: F811
+def wrap_openai_api_requestor_request(extract_shortened_prompt):
     def _wrap_openai_api_requestor_request(wrapped, instance, args, kwargs):
         params = bind_request_params(*args, **kwargs)
         if not params:

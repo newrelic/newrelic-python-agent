@@ -19,7 +19,7 @@ import newrelic.api.wsgi_application
 def instrument_cheroot_wsgiserver(module):
     def wrap_wsgi_application_entry_point(server, bind_addr, wsgi_app, *args, **kwargs):
         application = newrelic.api.wsgi_application.WSGIApplicationWrapper(wsgi_app)
-        args = [server, bind_addr, application] + list(args)
+        args = [server, bind_addr, application, *args]
         return (args, kwargs)
 
     newrelic.api.in_function.wrap_in_function(module, "Server.__init__", wrap_wsgi_application_entry_point)

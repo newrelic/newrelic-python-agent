@@ -19,7 +19,7 @@ from ._target_schema_sync import target_schema as target_schema_sync
 
 
 def check_response(query, response):
-    if isinstance(query, str) and "error" not in query or isinstance(query, Source) and "error" not in query.body:
+    if (isinstance(query, str) and "error" not in query) or (isinstance(query, Source) and "error" not in query.body):
         assert not response.errors, response.errors
         assert response.data
     else:

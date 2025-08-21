@@ -161,7 +161,7 @@ class AWSUtilization(CommonUtilization):
     METADATA_HOST = "169.254.169.254"
     METADATA_PATH = "/latest/dynamic/instance-identity/document"
     METADATA_TOKEN_PATH = "/latest/api/token"  # noqa: S105
-    HEADERS = {"X-aws-ec2-metadata-token-ttl-seconds": "21600"}
+    HEADERS = {"X-aws-ec2-metadata-token-ttl-seconds": "21600"}  # noqa: RUF012
     VENDOR_NAME = "aws"
     _utilization_data = None
 
@@ -219,18 +219,18 @@ class AWSUtilization(CommonUtilization):
 class AzureUtilization(CommonUtilization):
     METADATA_HOST = "169.254.169.254"
     METADATA_PATH = "/metadata/instance/compute"
-    METADATA_QUERY = {"api-version": "2017-03-01"}
+    METADATA_QUERY = {"api-version": "2017-03-01"}  # noqa: RUF012
     EXPECTED_KEYS = ("location", "name", "vmId", "vmSize")
-    HEADERS = {"Metadata": "true"}
+    HEADERS = {"Metadata": "true"}  # noqa: RUF012
     VENDOR_NAME = "azure"
 
 
 class AzureFunctionUtilization(CommonUtilization):
     METADATA_HOST = "169.254.169.254"
     METADATA_PATH = "/metadata/instance/compute"
-    METADATA_QUERY = {"api-version": "2017-03-01"}
+    METADATA_QUERY = {"api-version": "2017-03-01"}  # noqa: RUF012
     EXPECTED_KEYS = ("faas.app_name", "cloud.region")
-    HEADERS = {"Metadata": "true"}
+    HEADERS = {"Metadata": "true"}  # noqa: RUF012
     VENDOR_NAME = "azurefunction"
 
     @staticmethod
@@ -264,10 +264,10 @@ class AzureFunctionUtilization(CommonUtilization):
 
 class GCPUtilization(CommonUtilization):
     EXPECTED_KEYS = ("id", "machineType", "name", "zone")
-    HEADERS = {"Metadata-Flavor": "Google"}
+    HEADERS = {"Metadata-Flavor": "Google"}  # noqa: RUF012
     METADATA_HOST = "metadata.google.internal"
     METADATA_PATH = "/computeMetadata/v1/instance/"
-    METADATA_QUERY = {"recursive": "true"}
+    METADATA_QUERY = {"recursive": "true"}  # noqa: RUF012
     VENDOR_NAME = "gcp"
 
     @classmethod

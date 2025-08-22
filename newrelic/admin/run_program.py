@@ -15,6 +15,49 @@
 from newrelic.admin import command, usage
 
 
+def _resolve_program_path(program):
+    import os
+    import sys
+    from pathlib import Path
+
+    # If the program path contains a parent directory, then we never have to search PATH.
+    # Don't use pathlib.Path.parent to check this, as it can't distinguish between ./ and no parent.
+    if os.path.dirname(program):  # noqa: PTH120
+        return program
+
+    # Split PATH into a list of directories to search for the program.
+    program = Path(program)
+    program_search_path = os.environ.get("PATH", "").split(os.pathsep)
+
+    if sys.platform != "win32":
+        # POSIX systems simply search each entry in the PATH in order.
+        for path_entry in program_search_path:
+            path = Path(path_entry) / program
+            if path.exists() and os.access(path, os.X_OK):
+                return path
+    else:
+        # Windows systems search the current directory, followed by each entry in the PATH in order.
+        # In each directory, it will search for a program name with each of the
+        # executable extensions in PATHEXT in order. If the program name was specified with
+        # one of the executable extensions, it will search for that first before trying to append
+        # extensions to what was specified by the user.
+
+        # Split PATHEXT into a list of file extensions to append to the program when searching. (eg. [".exe", ".bat"])
+        program_ext_search_list = [ext.lower() for ext in os.environ.get("PATHEXT", "").split(os.pathsep)]
+
+        # If the program already has a valid executable extension, then we should first search for it as is.
+        if program.suffix.lower() in program_ext_search_list:
+            program_ext_search_list.insert(0, "")
+
+        for path_entry in program_search_path:
+            for ext in program_ext_search_list:
+                # Must be careful not to delete existing suffix
+                path = Path(path_entry) / program.with_suffix(program.suffix + ext)
+                if path.exists() and os.access(path, os.X_OK):
+                    return path
+
+    return program  # Failsafe, if not found let os.execl() handle the error
+
 @command(
     "run-program",
     "...",
@@ -94,23 +137,11 @@ def run_program(args):
     os.environ["NEW_RELIC_PYTHON_PREFIX"] = sys_prefix
     os.environ["NEW_RELIC_PYTHON_VERSION"] = ".".join(map(str, sys.version_info[:2]))
 
-    # If not an absolute or relative path, then we need to
-    # see if program can be found in PATH. Note that can
-    # be found in current working directory even though '.'
-    # not in PATH.
-
-    program_exe_path = args[0]
-
-    # Don't use path.parent, as it can't distinguish between ./ and no parent.
-    if not os.path.dirname(program_exe_path):  # noqa: PTH120
-        program_search_path = os.environ.get("PATH", "").split(os.pathsep)
-        for path in program_search_path:
-            path = Path(path) / program_exe_path
-            if path.exists() and os.access(path, os.X_OK):
-                program_exe_path = str(path)  # Convert to str to match other code path
-                break
+    # Convert output to str for cleaner logging
+    program_exe_path = str(_resolve_program_path(args[0]))
 
     log_message("program_exe_path = %r", program_exe_path)
     log_message("execl_arguments = %r", [program_exe_path, *args])
 
+    # args already contains program_exe_path as first element, no need to repeat it again
     os.execl(program_exe_path, *args)  # noqa: S606

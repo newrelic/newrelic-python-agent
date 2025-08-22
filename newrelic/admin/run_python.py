@@ -108,7 +108,9 @@ def run_python(args):
     else:
         python_exe_path = Path(sys.executable)
 
-    log_message("python_exe_path = %r", str(python_exe_path))
-    log_message("execl_arguments = %r", [python_exe_path, python_exe_path, *args])
+    python_exe_path = str(python_exe_path)  # Convert to str for os.exec
 
-    os.execl(python_exe_path, python_exe_path, *args)  # noqa: S606
+    log_message("python_exe_path = %r", str(python_exe_path))
+    log_message("execlp_arguments = %r", [python_exe_path, python_exe_path, *args])
+
+    os.execlp(python_exe_path, python_exe_path, *args)  # noqa: S606

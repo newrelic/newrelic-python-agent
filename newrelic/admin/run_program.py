@@ -107,10 +107,11 @@ def run_program(args):
         for path in program_search_path:
             path = Path(path) / program_exe_path
             if path.exists() and os.access(path, os.X_OK):
-                program_exe_path = str(path)  # Convert to str to match other code path
+                program_exe_path = str(path)  # Convert to str to match type of other code path
                 break
 
     log_message("program_exe_path = %r", program_exe_path)
-    log_message("execl_arguments = %r", [program_exe_path, *args])
+    log_message("execlp_arguments = %r", [program_exe_path, *args])
 
-    os.execl(program_exe_path, *args)  # noqa: S606
+    # args already contains program_exe_path as first element, no need to repeat it again
+    os.execlp(program_exe_path, *args)  # noqa: S606

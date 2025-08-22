@@ -15,6 +15,7 @@
 import base64
 import json
 import ssl
+import sys
 import zlib
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from io import StringIO
@@ -319,14 +320,17 @@ def test_cert_path(server):
         status, data = client.send_request()
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="This test is not valid for Windows")
 @pytest.mark.parametrize("system_certs_available", (True, False))
 def test_default_cert_path(monkeypatch, system_certs_available):
     if system_certs_available:
         cert_file = "foo"
         ca_path = "/usr/certs"
+        system_certs = [{"issuer": "Test CA"}]  # Poorly faked certs
     else:
         cert_file = None
         ca_path = None
+        system_certs = []
 
     class DefaultVerifyPaths:
         cafile = cert_file
@@ -335,7 +339,13 @@ def test_default_cert_path(monkeypatch, system_certs_available):
         def __init__(self, *args, **kwargs):
             pass
 
-    monkeypatch.setattr(ssl, "DefaultVerifyPaths", DefaultVerifyPaths)
+    def get_ca_certs(purpose=None):
+        return system_certs
+
+    monkeypatch.setattr(ssl, "DefaultVerifyPaths", DefaultVerifyPaths)  # Bypass OpenSSL default certs
+    if sys.platform == "win32":
+        monkeypatch.setattr(ssl.SSLContext, "get_ca_certs", get_ca_certs)  # Bypass Windows default certs
+
     internal_metrics = CustomMetrics()
     with InternalTraceContext(internal_metrics):
         client = HttpClient("localhost", ca_bundle_path=None)

@@ -113,4 +113,4 @@ def run_program(args):
     log_message("program_exe_path = %r", program_exe_path)
     log_message("execl_arguments = %r", [program_exe_path, *args])
 
-    os.execl(program_exe_path, *args)  # noqa: S606
+    os.execlp(program_exe_path, *args)  # noqa: S606

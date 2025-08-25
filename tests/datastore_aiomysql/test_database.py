@@ -93,8 +93,8 @@ ROLLUP_METRICS = [
 
 @validate_transaction_metrics(
     "test_database:test_execute_via_connection",
-    scoped_metrics=list(SCOPED_METRICS) + [("Function/aiomysql.connection:connect", 1)],
-    rollup_metrics=list(ROLLUP_METRICS) + [("Function/aiomysql.connection:connect", 1)],
+    scoped_metrics=[*list(SCOPED_METRICS), ("Function/aiomysql.connection:connect", 1)],
+    rollup_metrics=[*list(ROLLUP_METRICS), ("Function/aiomysql.connection:connect", 1)],
     background_task=True,
 )
 @validate_database_trace_inputs(sql_parameters_type=tuple)
@@ -122,8 +122,8 @@ def test_execute_via_connection(loop):
 
 @validate_transaction_metrics(
     "test_database:test_execute_via_pool",
-    scoped_metrics=list(SCOPED_METRICS) + [("Function/aiomysql.pool:Pool._acquire", 1)],
-    rollup_metrics=list(ROLLUP_METRICS) + [("Function/aiomysql.pool:Pool._acquire", 1)],
+    scoped_metrics=[*list(SCOPED_METRICS), ("Function/aiomysql.pool:Pool._acquire", 1)],
+    rollup_metrics=[*list(ROLLUP_METRICS), ("Function/aiomysql.pool:Pool._acquire", 1)],
     background_task=True,
 )
 @validate_database_trace_inputs(sql_parameters_type=tuple)

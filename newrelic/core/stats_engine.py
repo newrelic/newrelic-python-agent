@@ -92,7 +92,7 @@ class ApdexStats(list):
         self[1] += other[1]
         self[2] += other[2]
 
-        self[3] = (self[0] or self[1] or self[2]) and min(self[3], other[3]) or other[3]
+        self[3] = ((self[0] or self[1] or self[2]) and min(self[3], other[3])) or other[3]
         self[4] = max(self[4], other[3])
 
     def merge_apdex_metric(self, metric):
@@ -102,7 +102,7 @@ class ApdexStats(list):
         self[1] += metric.tolerating
         self[2] += metric.frustrating
 
-        self[3] = (self[0] or self[1] or self[2]) and min(self[3], metric.apdex_t) or metric.apdex_t
+        self[3] = ((self[0] or self[1] or self[2]) and min(self[3], metric.apdex_t)) or metric.apdex_t
         self[4] = max(self[4], metric.apdex_t)
 
 
@@ -140,7 +140,7 @@ class TimeStats(list):
 
         self[1] += other[1]
         self[2] += other[2]
-        self[3] = self[0] and min(self[3], other[3]) or other[3]
+        self[3] = (self[0] and min(self[3], other[3])) or other[3]
         self[4] = max(self[4], other[4])
         self[5] += other[5]
 
@@ -157,7 +157,7 @@ class TimeStats(list):
 
         self[1] += duration
         self[2] += exclusive
-        self[3] = self[0] and min(self[3], duration) or duration
+        self[3] = (self[0] and min(self[3], duration)) or duration
         self[4] = max(self[4], duration)
         self[5] += duration**2
 
@@ -321,7 +321,7 @@ class DimensionalMetrics:
         return str(self.__stats_table)
 
     def __repr__(self):
-        return f"{__class__.__name__}({repr(self.__stats_table)})"
+        return f"{__class__.__name__}({self.__stats_table!r})"
 
     def items(self):
         return self.metrics()
@@ -341,7 +341,7 @@ class SlowSqlStats(list):
         """Merge data from another instance of this object."""
 
         self[1] += other[1]
-        self[2] = self[0] and min(self[2], other[2]) or other[2]
+        self[2] = (self[0] and min(self[2], other[2])) or other[2]
         self[3] = max(self[3], other[3])
 
         if self[3] == other[3]:
@@ -358,7 +358,7 @@ class SlowSqlStats(list):
         duration = node.duration
 
         self[1] += duration
-        self[2] = self[0] and min(self[2], duration) or duration
+        self[2] = (self[0] and min(self[2], duration)) or duration
         self[3] = max(self[3], duration)
 
         if self[3] == duration:
@@ -853,7 +853,7 @@ class StatsEngine:
                         _, error_group_name = process_user_attribute("error.group.name", error_group_name_raw)
                         if error_group_name is None or not isinstance(error_group_name, str):
                             raise ValueError(
-                                f"Invalid attribute value for error.group.name. Expected string, got: {repr(error_group_name_raw)}"
+                                f"Invalid attribute value for error.group.name. Expected string, got: {error_group_name_raw!r}"
                             )
                         else:
                             agent_attributes["error.group.name"] = error_group_name

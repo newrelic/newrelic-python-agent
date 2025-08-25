@@ -49,7 +49,7 @@ def test_register_json(loop, connection):
 @background_task()
 def test_register_range(loop, connection):
     async def test():
-        type_name = f"floatrange_{str(os.getpid())}"
+        type_name = f"floatrange_{os.getpid()!s}"
 
         create_sql = f"CREATE TYPE {type_name} AS RANGE (subtype = float8,subtype_diff = float8mi)"
 

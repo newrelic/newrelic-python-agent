@@ -215,7 +215,7 @@ def mongodb_settings():
     host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "127.0.0.1"
     instances = 2
     settings = [
-        {"host": host, "port": 8080 + instance_num, "collection": f"mongodb_collection_{str(os.getpid())}"}
+        {"host": host, "port": 8080 + instance_num, "collection": f"mongodb_collection_{os.getpid()!s}"}
         for instance_num in range(instances)
     ]
     return settings

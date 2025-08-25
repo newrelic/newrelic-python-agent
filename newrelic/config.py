@@ -50,7 +50,7 @@ from newrelic.core.agent_control_health import (
 )
 from newrelic.core.config import Settings, apply_config_setting, default_host, fetch_config_setting
 
-__all__ = ["initialize", "filter_app_factory"]
+__all__ = ["filter_app_factory", "initialize"]
 
 _logger = logging.getLogger(__name__)
 

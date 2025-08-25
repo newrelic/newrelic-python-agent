@@ -264,7 +264,8 @@ def test_exception_in_middleware(target_application, middleware):
         ("Errors/all", 1),
         (f"Errors/all{'Other' if is_bg else 'Web'}", 1),
         (f"Errors/{'Other' if is_bg else 'Web'}Transaction/GraphQL/{name}", 1),
-    ] + _test_exception_scoped_metrics
+        *_test_exception_scoped_metrics,
+    ]
 
     # Attributes
     _expected_exception_resolver_attributes = {
@@ -313,7 +314,8 @@ def test_exception_in_resolver(target_application, field):
         ("Errors/all", 1),
         (f"Errors/all{'Other' if is_bg else 'Web'}", 1),
         (f"Errors/{'Other' if is_bg else 'Web'}Transaction/GraphQL/{txn_name}", 1),
-    ] + _test_exception_scoped_metrics
+        *_test_exception_scoped_metrics,
+    ]
 
     # Attributes
     _expected_exception_resolver_attributes = {
@@ -371,7 +373,8 @@ def test_exception_in_validation(target_application, query, exc_class):
         ("Errors/all", 1),
         (f"Errors/all{'Other' if is_bg else 'Web'}", 1),
         (f"Errors/{'Other' if is_bg else 'Web'}Transaction/GraphQL/{txn_name}", 1),
-    ] + _test_exception_scoped_metrics
+        *_test_exception_scoped_metrics,
+    ]
 
     # Attributes
     _expected_exception_operation_attributes = {

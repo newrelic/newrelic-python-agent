@@ -29,7 +29,7 @@ async def index(request):
 
 async def hang(request):
     while True:  # noqa: ASYNC110
-        await asyncio.sleep(0)  # noqa: ASYNC110
+        await asyncio.sleep(0)
 
 
 async def error(request):

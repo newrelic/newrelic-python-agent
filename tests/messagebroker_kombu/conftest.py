@@ -21,7 +21,7 @@ import pytest
 from amqp.exceptions import NotFound
 from kombu import messaging, serialization
 from testing_support.db_settings import rabbitmq_settings
-from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 from testing_support.validators.validate_distributed_trace_accepted import validate_distributed_trace_accepted
 
 from newrelic.api.transaction import current_transaction

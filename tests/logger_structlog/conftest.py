@@ -54,7 +54,7 @@ def StructLogCapLog():
         fatal = failure = err = error = critical = exception = msg
 
         def __repr__(self):
-            return f"<StructLogCapLog {str(id(self))}>"
+            return f"<StructLogCapLog {id(self)!s}>"
 
         __str__ = __repr__
 

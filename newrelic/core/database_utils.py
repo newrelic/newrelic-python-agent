@@ -272,7 +272,7 @@ def _uncomment_sql(sql):
 
 def _parse_default(sql, regex):
     match = regex.search(sql)
-    return match and _extract_identifier(match.group(1)) or ""
+    return (match and _extract_identifier(match.group(1))) or ""
 
 
 _parse_identifier_1_p = r'"((?:[^"]|"")+)"(?:\."((?:[^"]|"")+)")?'
@@ -290,7 +290,7 @@ _parse_from_re = re.compile(_parse_from_p, re.IGNORECASE)
 
 
 def _join_identifier(m):
-    return m and ".".join([s for s in m.groups()[1:] if s]).lower() or ""
+    return (m and ".".join([s for s in m.groups()[1:] if s]).lower()) or ""
 
 
 def _parse_select(sql):
@@ -415,14 +415,14 @@ _parse_operation_re = re.compile(_parse_operation_p)
 
 def _parse_operation(sql):
     match = _parse_operation_re.search(sql)
-    operation = match and match.group(1).lower() or ""
+    operation = (match and match.group(1).lower()) or ""
     return operation if operation in _operation_table else ""
 
 
 def _parse_target(sql, operation):
     sql = sql.rstrip(";")
     parse = _operation_table.get(operation, None)
-    return parse and parse(sql) or ""
+    return (parse and parse(sql)) or ""
 
 
 # For explain plan obfuscation, the regular expression for matching the

@@ -320,7 +320,6 @@ def test_cert_path(server):
         status, data = client.send_request()
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="This test is not valid for Windows")
 @pytest.mark.parametrize("system_certs_available", (True, False))
 def test_default_cert_path(monkeypatch, system_certs_available):
     if system_certs_available:

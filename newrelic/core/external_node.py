@@ -89,7 +89,7 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
         if (scheme, port) in (("http", 80), ("https", 443)):
             port = None
 
-        netloc = port and (f"{hostname}:{port}") or hostname
+        netloc = (port and (f"{hostname}:{port}")) or hostname
         return netloc
 
     def time_metrics(self, stats, root, parent):

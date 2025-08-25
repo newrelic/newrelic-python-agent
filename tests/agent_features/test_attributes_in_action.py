@@ -360,13 +360,13 @@ _override_settings = {
 }
 
 _expected_attributes = {
-    "agent": TRACE_ERROR_AGENT_KEYS + [f"request.parameters.{URL_PARAM}"],
+    "agent": [*TRACE_ERROR_AGENT_KEYS, f"request.parameters.{URL_PARAM}"],
     "user": ERROR_USER_ATTRS,
     "intrinsic": ["trip_id"],
 }
 
 _expected_attributes_event = {
-    "agent": TRACE_ERROR_AGENT_KEYS + [f"request.parameters.{URL_PARAM}"],
+    "agent": [*TRACE_ERROR_AGENT_KEYS, f"request.parameters.{URL_PARAM}"],
     "user": ERROR_USER_ATTRS,
     "intrinsic": ERROR_EVENT_INTRINSICS,
 }
@@ -387,7 +387,7 @@ _override_settings = {
 }
 
 _expected_attributes = {
-    "agent": TRACE_ERROR_AGENT_KEYS + [f"request.parameters.{URL_PARAM}"],
+    "agent": [*TRACE_ERROR_AGENT_KEYS, f"request.parameters.{URL_PARAM}"],
     "user": USER_ATTRS,
     "intrinsic": ["trip_id"],
 }
@@ -405,7 +405,7 @@ _override_settings = {
 }
 
 _expected_attributes = {
-    "agent": TRANS_EVENT_AGENT_KEYS + [f"request.parameters.{URL_PARAM}"],
+    "agent": [*TRANS_EVENT_AGENT_KEYS, f"request.parameters.{URL_PARAM}"],
     "user": USER_ATTRS,
     "intrinsic": TRANS_EVENT_INTRINSICS,
 }
@@ -431,7 +431,7 @@ _expected_attributes = {
     "intrinsic": BROWSER_INTRINSIC_KEYS,
 }
 
-_expected_absent_attributes = {"agent": ABSENT_BROWSER_KEYS + [f"request.parameters.{URL_PARAM2}"], "user": []}
+_expected_absent_attributes = {"agent": [*ABSENT_BROWSER_KEYS, f"request.parameters.{URL_PARAM2}"], "user": []}
 
 
 @validate_browser_attributes(_expected_attributes, _expected_absent_attributes)
@@ -528,7 +528,7 @@ _expected_attributes_event = {
     "intrinsic": ERROR_EVENT_INTRINSICS,
 }
 
-_expected_absent_attributes = {"agent": ["request.method", "request.uri"] + REQ_PARAMS, "user": [], "intrinsic": []}
+_expected_absent_attributes = {"agent": ["request.method", "request.uri", *REQ_PARAMS], "user": [], "intrinsic": []}
 
 
 @validate_error_event_attributes(_expected_attributes_event, _expected_absent_attributes)
@@ -557,7 +557,7 @@ _expected_attributes = {
     "intrinsic": TRANS_EVENT_INTRINSICS,
 }
 
-_expected_absent_attributes = {"agent": ["request.method", "request.uri"] + REQ_PARAMS, "user": [], "intrinsic": []}
+_expected_absent_attributes = {"agent": ["request.method", "request.uri", *REQ_PARAMS], "user": [], "intrinsic": []}
 
 
 @validate_transaction_event_attributes(_expected_attributes, _expected_absent_attributes)
@@ -570,7 +570,7 @@ _override_settings = {"attributes.exclude": ["request.*"], "attributes.include":
 
 _expected_agent_attributes = ["response.status", "request.headers.contentType", "request.headers.contentLength"]
 
-_expected_absent_agent_attributes = ["request.method", "request.uri"] + REQ_PARAMS
+_expected_absent_agent_attributes = ["request.method", "request.uri", *REQ_PARAMS]
 
 
 @override_application_settings(_override_settings)
@@ -612,7 +612,7 @@ def test_transaction_trace_deprecated_capture_params_true(normal_application):
 
 _expected_attributes = {"agent": TRANS_EVENT_AGENT_KEYS, "user": USER_ATTRS, "intrinsic": TRANS_EVENT_INTRINSICS}
 
-_expected_absent_attributes = {"agent": ["wsgi.output.seconds"] + REQ_PARAMS, "user": [], "intrinsic": []}
+_expected_absent_attributes = {"agent": ["wsgi.output.seconds", *REQ_PARAMS], "user": [], "intrinsic": []}
 
 
 @validate_transaction_event_attributes(_expected_attributes, _expected_absent_attributes)
@@ -669,7 +669,7 @@ def test_transaction_trace_deprecated_capture_params_false(normal_application):
 
 _expected_attributes = {"agent": TRANS_EVENT_AGENT_KEYS, "user": USER_ATTRS, "intrinsic": TRANS_EVENT_INTRINSICS}
 
-_expected_absent_attributes = {"agent": ["wsgi.output.seconds"] + REQ_PARAMS, "user": [], "intrinsic": []}
+_expected_absent_attributes = {"agent": ["wsgi.output.seconds", *REQ_PARAMS], "user": [], "intrinsic": []}
 
 
 @validate_transaction_event_attributes(_expected_attributes, _expected_absent_attributes)
@@ -728,7 +728,7 @@ _override_settings = {"transaction_events.attributes.exclude": ["name", "duratio
 
 _expected_attributes = {"agent": TRANS_EVENT_AGENT_KEYS, "user": USER_ATTRS, "intrinsic": TRANS_EVENT_INTRINSICS}
 
-_expected_absent_attributes = {"agent": ["wsgi.output.seconds"] + REQ_PARAMS, "user": [], "intrinsic": []}
+_expected_absent_attributes = {"agent": ["wsgi.output.seconds", *REQ_PARAMS], "user": [], "intrinsic": []}
 
 
 @validate_transaction_event_attributes(_expected_attributes, _expected_absent_attributes)

@@ -29,7 +29,7 @@ def feedparser():
 
 @pytest.mark.parametrize("url", ("http://localhost", "feed:http://localhost", "feed://localhost"))
 def test_feedparser_external(feedparser, server, url):
-    url = f"{url}:{str(server.port)}"
+    url = f"{url}:{server.port!s}"
 
     @validate_transaction_metrics(
         "test_feedparser_external",
@@ -66,6 +66,6 @@ def test_feedparser_file(feedparser, stream, server):
 @pytest.mark.parametrize("url", ("http://localhost", "packages.xml"))
 def test_feedparser_no_transaction(feedparser, server, url):
     if url.startswith("http://"):
-        url = f"{url}:{str(server.port)}"
+        url = f"{url}:{server.port!s}"
     feed = feedparser.parse(url)
     assert feed["feed"]["link"] == "https://pypi.org/"

@@ -144,7 +144,8 @@ def test_distributed_trace_attributes(span_events, accept_payload):
         _forgone_error_attributes = {"intrinsic": _forgone_error_intrinsics, "agent": [], "user": []}
     else:
         _required_intrinsics = distributed_trace_intrinsics
-        _forgone_txn_intrinsics = _forgone_error_intrinsics = inbound_payload_intrinsics + [
+        _forgone_txn_intrinsics = _forgone_error_intrinsics = [
+            *inbound_payload_intrinsics,
             "grandparentId",
             "parentId",
             "parentSpanId",
@@ -196,7 +197,7 @@ def test_distributed_trace_attributes(span_events, accept_payload):
     _test()
 
 
-_forgone_attributes = {"agent": [], "user": [], "intrinsic": (inbound_payload_intrinsics + ["grandparentId"])}
+_forgone_attributes = {"agent": [], "user": [], "intrinsic": ([*inbound_payload_intrinsics, "grandparentId"])}
 
 
 @override_application_settings(_override_settings)

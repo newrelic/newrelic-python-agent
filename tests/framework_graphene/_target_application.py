@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from framework_graphene.test_application import GRAPHENE_VERSION
 
 from ._target_schema_async import target_schema as target_schema_async
 from ._target_schema_sync import target_schema as target_schema_sync

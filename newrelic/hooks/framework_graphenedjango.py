@@ -60,7 +60,7 @@ def wrap_GraphQLView_execute_graphql_request(wrapped, instance, args, kwargs):
     except TypeError:
         return wrapped(*args, **kwargs)
 
-    transaction.set_transaction_name(callable_name(wrapped), "GraphQL", priority=12)
+    transaction.set_transaction_name(callable_name(wrapped), "GraphQL", priority=11)
 
     trace = GraphQLOperationTrace()
 

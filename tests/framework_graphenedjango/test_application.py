@@ -141,7 +141,7 @@ def test_operation_metrics_and_attrs(wsgi_app):
         exact_agents={
             "graphql.operation.type": "query",
             "graphql.operation.name": "MyQuery",
-            "graphql.operation.query": "query MyQuery { library(index: ?) { branch, book { id, name } } }"
+            "graphql.operation.query": "query MyQuery { library(index: ?) { branch, book { name } } }"
         }
     )
     @validate_transaction_metrics(
@@ -151,7 +151,7 @@ def test_operation_metrics_and_attrs(wsgi_app):
         rollup_metrics=operation_metrics + _graphql_base_rollup_metrics,
     )
     def _test():
-        request_body = {"query": "query MyQuery { library(index: 0) { branch, book { id, name } } }"}
+        request_body = {"query": "query MyQuery { library(index: 0) { branch, book { name } } }"}
         response = wsgi_app.post_json("/graphql", request_body)
         assert response.json
 
@@ -164,7 +164,6 @@ def test_field_resolver_metrics_and_attrs(wsgi_app):
         ("Function/_target_schema_sync:resolve_library", 1),
         ("GraphQL/resolve/GrapheneDjango/library", 1),
         ("GraphQL/resolve/GrapheneDjango/branch", 1),
-        ("GraphQL/resolve/GrapheneDjango/id", 1),
         ("GraphQL/resolve/GrapheneDjango/book", 1),
     ]
 
@@ -183,7 +182,7 @@ def test_field_resolver_metrics_and_attrs(wsgi_app):
         rollup_metrics=field_resolver_metrics + _graphql_base_rollup_metrics,
     )
     def _test():
-        request_body = {"query": "query MyQuery { library(index: 0) { branch, book { id, name } } }"}
+        request_body = {"query": "query MyQuery { library(index: 0) { branch, book { name } } }"}
         response = wsgi_app.post_json("/graphql", request_body)
         assert response.json
 

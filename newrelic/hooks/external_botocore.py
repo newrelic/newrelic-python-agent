@@ -17,7 +17,6 @@ import json
 import logging
 import re
 import sys
-import traceback
 import uuid
 from io import BytesIO
 
@@ -41,10 +40,10 @@ BOTOCORE_VERSION = get_package_version("botocore")
 
 _logger = logging.getLogger(__name__)
 
-EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE = "Exception occurred in botocore instrumentation for AWS Bedrock: While reporting an exception in botocore, another exception occurred. Report this issue to New Relic Support.\n%s"
-REQUEST_EXTRACTOR_FAILURE_LOG_MESSAGE = "Exception occurred in botocore instrumentation for AWS Bedrock: Failed to extract request information. Report this issue to New Relic Support.\n%s"
-RESPONSE_EXTRACTOR_FAILURE_LOG_MESSAGE = "Exception occurred in botocore instrumentation for AWS Bedrock: Failed to extract response information. If the issue persists, report this issue to New Relic support.\n%s"
-RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE = "Exception occurred in botocore instrumentation for AWS Bedrock: Failed to report response data. Report this issue to New Relic Support.\n%s"
+EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE = "Exception occurred in botocore instrumentation for AWS Bedrock: While reporting an exception in botocore, another exception occurred. Report this issue to New Relic Support.\n"
+REQUEST_EXTRACTOR_FAILURE_LOG_MESSAGE = "Exception occurred in botocore instrumentation for AWS Bedrock: Failed to extract request information. Report this issue to New Relic Support.\n"
+RESPONSE_EXTRACTOR_FAILURE_LOG_MESSAGE = "Exception occurred in botocore instrumentation for AWS Bedrock: Failed to extract response information. If the issue persists, report this issue to New Relic support.\n"
+RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE = "Exception occurred in botocore instrumentation for AWS Bedrock: Failed to report response data. Report this issue to New Relic Support.\n"
 EMBEDDING_STREAMING_UNSUPPORTED_LOG_MESSAGE = "Response streaming with embedding models is unsupported in botocore instrumentation for AWS Bedrock. If this feature is now supported by AWS and botocore, report this issue to New Relic Support."
 
 UNSUPPORTED_MODEL_WARNING_SENT = False
@@ -137,9 +136,9 @@ def extract_firehose_agent_attrs(instance, *args, **kwargs):
                 region = instance._client_config.region_name
             if account_id and region:
                 agent_attrs["cloud.platform"] = "aws_kinesis_delivery_streams"
-                agent_attrs[
-                    "cloud.resource_id"
-                ] = f"arn:aws:firehose:{region}:{account_id}:deliverystream/{stream_name}"
+                agent_attrs["cloud.resource_id"] = (
+                    f"arn:aws:firehose:{region}:{account_id}:deliverystream/{stream_name}"
+                )
     except Exception:
         _logger.debug("Failed to capture AWS Kinesis Delivery Stream (Firehose) info.", exc_info=True)
     return agent_attrs
@@ -559,7 +558,7 @@ def handle_bedrock_exception(
         except json.decoder.JSONDecodeError:
             pass
         except Exception:
-            _logger.warning(REQUEST_EXTRACTOR_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
+            _logger.warning(REQUEST_EXTRACTOR_FAILURE_LOG_MESSAGE, exc_info=True)
 
         error_attributes = bedrock_error_attributes(exc, bedrock_attrs)
 
@@ -585,7 +584,7 @@ def handle_bedrock_exception(
         else:
             handle_chat_completion_event(transaction, error_attributes)
     except Exception:
-        _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
+        _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE, exc_info=True)
 
 
 def run_bedrock_response_extractor(response_extractor, response_body, bedrock_attrs, is_embedding, transaction):
@@ -593,7 +592,7 @@ def run_bedrock_response_extractor(response_extractor, response_body, bedrock_at
     try:
         response_extractor(response_body, bedrock_attrs)
     except Exception:
-        _logger.warning(RESPONSE_EXTRACTOR_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
+        _logger.warning(RESPONSE_EXTRACTOR_FAILURE_LOG_MESSAGE, exc_info=True)
 
     if is_embedding:
         handle_embedding_event(transaction, bedrock_attrs)
@@ -607,7 +606,7 @@ def run_bedrock_request_extractor(request_extractor, request_body, bedrock_attrs
     except json.decoder.JSONDecodeError:
         pass
     except Exception:
-        _logger.warning(REQUEST_EXTRACTOR_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
+        _logger.warning(REQUEST_EXTRACTOR_FAILURE_LOG_MESSAGE, exc_info=True)
 
 
 def wrap_bedrock_runtime_invoke_model(response_streaming=False):
@@ -677,7 +676,6 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
         instance._nr_ft = ft
         instance._nr_response_streaming = response_streaming
         instance._nr_settings = settings
-        instance._nr_is_converse = False
 
         # Add a bedrock flag to instance so we can determine when make_api_call instrumentation is hit from non-Bedrock paths and bypass it if so
         instance._nr_is_bedrock = True
@@ -746,7 +744,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
             run_bedrock_response_extractor(response_extractor, response_body, bedrock_attrs, is_embedding, transaction)
 
         except Exception:
-            _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
+            _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE, exc_info=True)
 
         return response
 
@@ -826,7 +824,7 @@ def wrap_bedrock_runtime_converse(response_streaming=False):
             run_bedrock_response_extractor(response_extractor, {}, bedrock_attrs, False, transaction)
 
         except Exception:
-            _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
+            _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE, exc_info=True)
 
         return response
 
@@ -948,7 +946,7 @@ def record_stream_chunk(self, return_val, transaction):
             if _type == "content_block_stop":
                 record_events_on_stop_iteration(self, transaction)
         except Exception:
-            _logger.warning(RESPONSE_EXTRACTOR_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
+            _logger.warning(RESPONSE_EXTRACTOR_FAILURE_LOG_MESSAGE, exc_info=True)
 
 
 def record_events_on_stop_iteration(self, transaction):
@@ -964,7 +962,7 @@ def record_events_on_stop_iteration(self, transaction):
             bedrock_attrs["duration"] = self._nr_ft.duration * 1000
             handle_chat_completion_event(transaction, bedrock_attrs)
         except Exception:
-            _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
+            _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE, exc_info=True)
 
         # Clear cached data as this can be very large.
         self._nr_bedrock_attrs.clear()
@@ -998,7 +996,7 @@ def record_error(self, transaction, exc):
             # Clear cached data as this can be very large.
             error_attributes.clear()
         except Exception:
-            _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
+            _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE, exc_info=True)
 
 
 def handle_embedding_event(transaction, bedrock_attrs):
@@ -1186,9 +1184,9 @@ def dynamodb_datastore_trace(
                     partition = "aws-us-gov"
 
             if partition and region and account_id and _target:
-                agent_attrs[
-                    "cloud.resource_id"
-                ] = f"arn:{partition}:dynamodb:{region}:{account_id:012d}:table/{_target}"
+                agent_attrs["cloud.resource_id"] = (
+                    f"arn:{partition}:dynamodb:{region}:{account_id:012d}:table/{_target}"
+                )
 
         except Exception:
             _logger.debug("Failed to capture AWS DynamoDB info.", exc_info=True)

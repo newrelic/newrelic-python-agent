@@ -25,7 +25,6 @@ from botocore.response import StreamingBody
 from testing_support.fixtures import (
     collector_agent_registration_fixture,
     collector_available_fixture,
-    override_application_settings,
 )
 
 from newrelic.common.object_wrapper import wrap_function_wrapper
@@ -103,7 +102,7 @@ def bedrock_server():
 
         # Write responses to audit log
         bedrock_audit_log_contents = dict(sorted(BEDROCK_AUDIT_LOG_CONTENTS.items(), key=lambda i: (i[1][1], i[0])))
-        with BEDROCK_AUDIT_LOG_FILE.open("w") as audit_log_fp:
+        with BEDROCK_AUDIT_LOG_FILE.open("w", encoding="utf-8") as audit_log_fp:
             json.dump(bedrock_audit_log_contents, fp=audit_log_fp, indent=4)
 
 
@@ -155,7 +154,7 @@ def bedrock_converse_server():
         bedrock_audit_log_contents = dict(
             sorted(BEDROCK_CONVERSE_AUDIT_LOG_CONTENTS.items(), key=lambda i: (i[1][1], i[0]))
         )
-        with open(BEDROCK_CONVERSE_AUDIT_LOG_FILE, "w") as audit_log_fp:
+        with BEDROCK_CONVERSE_AUDIT_LOG_FILE.open("w", encoding="utf-8") as audit_log_fp:
             json.dump(bedrock_audit_log_contents, fp=audit_log_fp, indent=4)
 
 

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+import ssl
 import sys
 import time
 import zlib
@@ -258,11 +259,28 @@ class HttpClient(BaseClient):
             if not ca_bundle_path:
                 verify_path = get_default_verify_paths()
 
-                # If there is no resolved cafile, assume the bundled certs are
-                # required and report this condition as a supportability metric.
                 if not verify_path.cafile and not verify_path.capath:
-                    ca_bundle_path = certs.where()
-                    internal_metric("Supportability/Python/Certificate/BundleRequired", 1)
+                    if sys.platform != "win32":
+                        # If there is no resolved cafile on POSIX platforms, assume the bundled certs
+                        # are required and report this condition as a supportability metric.
+                        ca_bundle_path = certs.where()
+                        internal_metric("Supportability/Python/Certificate/BundleRequired", 1)
+                    else:
+                        # If there is no resolved cafile on Windows, attempt to load the default certs.
+                        try:
+                            _context = ssl.SSLContext()
+                            _context.load_default_certs()
+                            system_certs = _context.get_ca_certs()
+                        except Exception:
+                            system_certs = None
+
+                        # If we still can't find any certs after loading the default ones,
+                        # then assume the bundled certs are required. If we do find them,
+                        # we don't have to do anything. We let urllib3 handle loading the
+                        # default certs from Windows.
+                        if not system_certs:
+                            ca_bundle_path = certs.where()
+                            internal_metric("Supportability/Python/Certificate/BundleRequired", 1)
 
             if ca_bundle_path:
                 if Path(ca_bundle_path).is_dir():

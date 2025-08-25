@@ -45,7 +45,6 @@ def settings_and_metrics(request):
     middleware_scoped_metrics = [
         ("Function/django.contrib.sessions.middleware:SessionMiddleware", 1 if collect_middleware else None),
         ("Function/django.middleware.common:CommonMiddleware", 1 if collect_middleware else None),
-        ("Function/django.middleware.csrf:CsrfViewMiddleware", 1 if collect_middleware else None),
         ("Function/django.contrib.auth.middleware:AuthenticationMiddleware", 1 if collect_middleware else None),
         ("Function/django.contrib.messages.middleware:MessageMiddleware", 1 if collect_middleware else None),
         ("Function/django.middleware.gzip:GZipMiddleware", 1 if collect_middleware else None),

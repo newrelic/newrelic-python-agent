@@ -21,7 +21,7 @@ def instrument_waitress_server(module):
     def wrap_wsgi_application_entry_point(server, application, *args, **kwargs):
         dispatcher_details = ("Waitress", get_package_version("waitress"))
         application = WSGIApplicationWrapper(application, dispatcher=dispatcher_details)
-        args = [server, application] + list(args)
+        args = [server, application, *args]
         return (args, kwargs)
 
     wrap_in_function(module, "WSGIServer.__init__", wrap_wsgi_application_entry_point)

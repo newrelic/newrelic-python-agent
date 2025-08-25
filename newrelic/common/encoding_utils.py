@@ -486,7 +486,7 @@ class NrTraceState(dict):
         if pr:
             pr = f"{pr:.6f}".rstrip("0").rstrip(".")
 
-        payload = f"0-0-{self['ac']}-{self['ap']}-{self.get('id', '')}-{self.get('tx', '')}-{'1' if self.get('sa') else '0'}-{pr}-{str(self['ti'])}"
+        payload = f"0-0-{self['ac']}-{self['ap']}-{self.get('id', '')}-{self.get('tx', '')}-{'1' if self.get('sa') else '0'}-{pr}-{self['ti']!s}"
         return f"{self.get('tk', self['ac'])}@nr={payload}"
 
     @classmethod

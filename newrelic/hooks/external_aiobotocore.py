@@ -117,7 +117,7 @@ async def wrap_client__make_api_call(wrapped, instance, args, kwargs):
         )
         raise
 
-    if not response or response_streaming and not settings.ai_monitoring.streaming.enabled:
+    if not response or (response_streaming and not settings.ai_monitoring.streaming.enabled):
         if ft:
             ft.__exit__(None, None, None)
         return response

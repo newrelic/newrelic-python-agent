@@ -60,6 +60,7 @@ select = [
     "PYI",  # flake8-pyi
     "Q",  # flake8-quotes
     "RSE",  # flake8-raise
+    "RUF",  # Ruff-specific rules
     "S",  # flake8-bandit
     "SLOT",  # flake8-slots
     "T10",  # flake8-debugger
@@ -73,7 +74,6 @@ select = [
     # "FBT",  # flake8-boolean-trap
     # "N",  # pep8-naming
     # "RET",  # flake8-return
-    # "RUF",  # Ruff-specific rules
     # "SIM",  # flake8-simplify
     # "TRY",  # tryceratops
 ]
@@ -94,6 +94,7 @@ select = [
 # "NPY",  # NumPy-specific rules
 # "FAST",  # FastAPI
 # "AIR",  # Airflow
+# "SLF",  # flake8-self (only scans for private member access, which is intentional)
 
 # Preview linters (disabled)
 # "CPY",  # flake8-copyright
@@ -141,7 +142,11 @@ ignore = [
     "F401",  # unused-import
     "F811",  # redefined-while-unused (pytest fixtures trigger this)
     "F841",  # unused-variable (intentional in tests to document what an unused output is)
+    "RUF012",  # mutable-class-default
+    "RUF015",  # unnecessary-iterable-allocation-for-first-element (more readable in tests)
     "E731",  # lambda-assignment (acceptable in tests)
+    "RUF012",  # mutable-class-default
+    "RUF015",  # unnecessary-iterable-allocation-for-first-element (more readable in tests)
     "PLR2004",  # magic-value-comparison (comparing to constant values)
     "ASYNC251",  # blocking-sleep-in-async-function (acceptable in tests)
     "B904",  # raise-without-from-inside-except (not necessary in tests)

@@ -52,7 +52,7 @@ _disable_instance_settings = {"datastore_tracer.instance_reporting.enabled": Fal
 
 # Metrics
 
-_base_scoped_metrics = CONNECT_METRICS + [("Datastore/statement/Postgres/pg_settings/select", 2)]
+_base_scoped_metrics = [*CONNECT_METRICS, ("Datastore/statement/Postgres/pg_settings/select", 2)]
 
 _base_rollup_metrics = [
     ("Datastore/all", TOTAL_COUNT),

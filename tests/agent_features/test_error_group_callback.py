@@ -234,7 +234,7 @@ def test_error_group_name_callback_attributes(transaction_decorator):
             notice_error(application=app, attributes={"notice_error_attribute": 1})
 
         assert not callback_errors, (
-            f"Callback inputs failed to validate.\nerror: {traceback.format_exception(*callback_errors[0])}\ndata: {str(_data[0])}"
+            f"Callback inputs failed to validate.\nerror: {traceback.format_exception(*callback_errors[0])}\ndata: {_data[0]!s}"
         )
 
     if transaction_decorator is not None:

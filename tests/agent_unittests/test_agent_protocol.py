@@ -376,6 +376,12 @@ def test_connect(
     with_aws, with_ecs, with_pcf, with_gcp, with_azure, with_azurefunction, with_docker, with_kubernetes, with_ip
 ):
     global AWS, AZURE, AZUREFUNCTION, GCP, PCF, DOCKER, KUBERNETES, IP_ADDRESS
+
+    if sys.platform == "win32":
+        # Docker utilization is not supported on Windows.
+        # Override the test matrix to always be False.
+        with_docker = False
+
     if not with_aws:
         AWS = Exception
     if not with_pcf:

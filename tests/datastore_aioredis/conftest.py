@@ -75,4 +75,4 @@ def client(request, loop):
 
 @pytest.fixture(scope="session")
 def key():
-    return f"AIOREDIS-TEST-{str(os.getpid())}"
+    return f"AIOREDIS-TEST-{os.getpid()!s}"

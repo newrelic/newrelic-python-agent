@@ -364,7 +364,7 @@ def test_notice_error_strip_message_not_in_allowlist_outside_transaction():
 def _raise_errors(num_errors, application=None):
     for i in range(num_errors):
         try:
-            raise RuntimeError(f"error{str(i)}")
+            raise RuntimeError(f"error{i!s}")
         except RuntimeError:
             notice_error(application=application)
 

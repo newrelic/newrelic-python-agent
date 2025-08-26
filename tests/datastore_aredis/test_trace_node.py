@@ -80,26 +80,26 @@ async def _exercise_db():
 @override_application_settings(_enable_instance_settings)
 @validate_tt_collector_json(datastore_params=_enabled_required, datastore_forgone_params=_enabled_forgone)
 @background_task()
-def test_trace_node_datastore_params_enable_instance(loop):  # noqa: F811
+def test_trace_node_datastore_params_enable_instance(loop):
     loop.run_until_complete(_exercise_db())
 
 
 @override_application_settings(_disable_instance_settings)
 @validate_tt_collector_json(datastore_params=_disabled_required, datastore_forgone_params=_disabled_forgone)
 @background_task()
-def test_trace_node_datastore_params_disable_instance(loop):  # noqa: F811
+def test_trace_node_datastore_params_disable_instance(loop):
     loop.run_until_complete(_exercise_db())
 
 
 @override_application_settings(_instance_only_settings)
 @validate_tt_collector_json(datastore_params=_instance_only_required, datastore_forgone_params=_instance_only_forgone)
 @background_task()
-def test_trace_node_datastore_params_instance_only(loop):  # noqa: F811
+def test_trace_node_datastore_params_instance_only(loop):
     loop.run_until_complete(_exercise_db())
 
 
 @override_application_settings(_database_only_settings)
 @validate_tt_collector_json(datastore_params=_database_only_required, datastore_forgone_params=_database_only_forgone)
 @background_task()
-def test_trace_node_datastore_params_database_only(loop):  # noqa: F811
+def test_trace_node_datastore_params_database_only(loop):
     loop.run_until_complete(_exercise_db())

@@ -547,7 +547,12 @@ def test_ca_bundle_path(monkeypatch, ca_bundle_path):
         def __init__(self, *args, **kwargs):
             pass
 
-    monkeypatch.setattr(ssl, "DefaultVerifyPaths", DefaultVerifyPaths)
+    def get_ca_certs(purpose=None):
+        return []
+
+    monkeypatch.setattr(ssl, "DefaultVerifyPaths", DefaultVerifyPaths)  # Bypass OpenSSL default certs
+    if sys.platform == "win32":
+        monkeypatch.setattr(ssl.SSLContext, "get_ca_certs", get_ca_certs)  # Bypass Windows default certs
 
     settings = finalize_application_settings({"ca_bundle_path": ca_bundle_path})
     protocol = AgentProtocol(settings)

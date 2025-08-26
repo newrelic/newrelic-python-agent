@@ -320,6 +320,10 @@ class SpanEventAttributesSettings(Settings):
     pass
 
 
+class InstrumentationMiddlewareSettings(Settings):
+    pass
+
+
 class InstrumentationDjangoMiddlewareSettings(Settings):
     pass
 
@@ -511,6 +515,7 @@ _settings.instrumentation.graphql = InstrumentationGraphQLSettings()
 _settings.instrumentation.kombu = InstrumentationKombuSettings()
 _settings.instrumentation.kombu.ignored_exchanges = InstrumentationKombuIgnoredExchangesSettings()
 _settings.instrumentation.kombu.consumer = InstrumentationKombuConsumerSettings()
+_settings.instrumentation.middleware = InstrumentationMiddlewareSettings()
 _settings.instrumentation.middleware.django = InstrumentationDjangoMiddlewareSettings()
 _settings.message_tracer = MessageTracerSettings()
 _settings.process_host = ProcessHostSettings()

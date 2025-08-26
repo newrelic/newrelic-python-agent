@@ -58,6 +58,7 @@ def _resolve_program_path(program):
 
     return program  # Failsafe, if not found let os.execl() handle the error
 
+
 @command(
     "run-program",
     "...",

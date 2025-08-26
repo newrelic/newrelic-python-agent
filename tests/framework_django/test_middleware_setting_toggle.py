@@ -51,7 +51,7 @@ def settings_and_metrics(request):
         ("Function/middleware:ExceptionTo410Middleware", 1 if collect_middleware else None),
         ("Function/django.urls.resolvers:URLResolver.resolve", "present"),
     ]
-    _default_settings["instrumentation.django_middleware.enabled"] = collect_middleware
+    _default_settings["instrumentation.middleware.django.enabled"] = collect_middleware
     return _default_settings, middleware_scoped_metrics
 
 

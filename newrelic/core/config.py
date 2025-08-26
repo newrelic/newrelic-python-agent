@@ -511,7 +511,7 @@ _settings.instrumentation.graphql = InstrumentationGraphQLSettings()
 _settings.instrumentation.kombu = InstrumentationKombuSettings()
 _settings.instrumentation.kombu.ignored_exchanges = InstrumentationKombuIgnoredExchangesSettings()
 _settings.instrumentation.kombu.consumer = InstrumentationKombuConsumerSettings()
-_settings.instrumentation.django_middleware = InstrumentationDjangoMiddlewareSettings()
+_settings.instrumentation.middleware.django = InstrumentationDjangoMiddlewareSettings()
 _settings.message_tracer = MessageTracerSettings()
 _settings.process_host = ProcessHostSettings()
 _settings.rum = RumSettings()
@@ -639,24 +639,17 @@ def _parse_status_codes(value, target):
     return target
 
 
-def _parse_attributes(s):
+# Called from newrelic.config.py to parse
+# attributes and django middleware lists
+def _parse_attributes(s, middleware=False):
     valid = []
     for item in s.split():
         if "*" not in item[:-1] and len(item.encode("utf-8")) < 256:
             valid.append(item)
+        elif middleware:
+            _logger.warning("Improperly formatted middleware: %r", item)
         else:
             _logger.warning("Improperly formatted attribute: %r", item)
-    return valid
-
-
-# Called from newrelic.config.py to parse django_middleware lists
-def _parse_django_middleware(s):
-    valid = []
-    for item in s.split():
-        if "*" not in item[:-1] and len(item.encode("utf-8")) < 256:
-            valid.append(item)
-        else:
-            _logger.warning("Improperly formatted middleware: %r", item)
     return valid
 
 
@@ -920,11 +913,11 @@ _settings.instrumentation.kombu.consumer.enabled = _environ_as_bool(
     "NEW_RELIC_INSTRUMENTATION_KOMBU_CONSUMER_ENABLED", default=False
 )
 
-_settings.instrumentation.django_middleware.enabled = _environ_as_bool(
+_settings.instrumentation.middleware.django.enabled = _environ_as_bool(
     "NEW_RELIC_INSTRUMENTATION_DJANGO_MIDDLEWARE_ENABLED", default=True
 )
-_settings.instrumentation.django_middleware.exclude = []
-_settings.instrumentation.django_middleware.include = []
+_settings.instrumentation.middleware.django.exclude = []
+_settings.instrumentation.middleware.django.include = []
 
 _settings.event_harvest_config.harvest_limits.analytic_event_data = _environ_as_int(
     "NEW_RELIC_ANALYTICS_EVENTS_MAX_SAMPLES_STORED", DEFAULT_RESERVOIR_SIZE

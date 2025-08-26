@@ -42,7 +42,7 @@ _default_settings = {
     "debug.log_data_collector_payloads": True,
     "debug.record_transaction_failure": True,
     "debug.log_autorum_middleware": True,
-    "instrumentation.django_middleware.enabled": True,
+    "instrumentation.middleware.django.enabled": True,
 }
 
 
@@ -95,21 +95,21 @@ def reset_agent_config(ini_contents, env_dict):
 
 INI_FILE_WILDCARD_EXCLUDE_SPECIFIC_INCLUDE = b"""
 [newrelic]
-instrumentation.django_middleware.exclude = django.middleware.* django.contrib.messages.middleware:MessageMiddleware
-instrumentation.django_middleware.include = django.middleware.csrf:CsrfViewMiddleware
+instrumentation.middleware.django.exclude = django.middleware.* django.contrib.messages.middleware:MessageMiddleware
+instrumentation.middleware.django.include = django.middleware.csrf:CsrfViewMiddleware
 """
 
 INI_FILE_WILDCARD_EXCLUDE_WILDCARD_INCLUDE = b"""
 [newrelic]
-instrumentation.django_middleware.exclude = django.middleware.c*
-instrumentation.django_middleware.include = django.middleware.* django.middleware.co* django.contrib.messages.middleware:MessageMiddleware
+instrumentation.middleware.django.exclude = django.middleware.c*
+instrumentation.middleware.django.include = django.middleware.* django.middleware.co* django.contrib.messages.middleware:MessageMiddleware
 """
 
 INI_FILE_MIDDLEWARE_DISABLED = b"""
 [newrelic]
-instrumentation.django_middleware.enabled = False
-instrumentation.django_middleware.exclude = django.middleware.c*
-instrumentation.django_middleware.include = django.middleware.* django.middleware.co* django.contrib.messages.middleware:MessageMiddleware
+instrumentation.middleware.django.enabled = False
+instrumentation.middleware.django.exclude = django.middleware.c*
+instrumentation.middleware.django.include = django.middleware.* django.middleware.co* django.contrib.messages.middleware:MessageMiddleware
 """
 
 
@@ -118,12 +118,12 @@ def test_config_settings(application):
     settings = global_settings()
     response = application.get("/")
     assert response.status == 200
-    assert settings.instrumentation.django_middleware.enabled  # `True` is default setting
-    assert settings.instrumentation.django_middleware.exclude == [
+    assert settings.instrumentation.middleware.django.enabled  # `True` is default setting
+    assert settings.instrumentation.middleware.django.exclude == [
         "django.middleware.*",
         "django.contrib.messages.middleware:MessageMiddleware",
     ]
-    assert settings.instrumentation.django_middleware.include == ["django.middleware.csrf:CsrfViewMiddleware"]
+    assert settings.instrumentation.middleware.django.include == ["django.middleware.csrf:CsrfViewMiddleware"]
 
 
 @reset_agent_config(
@@ -138,9 +138,9 @@ def test_override_config_settings(application):
     settings = global_settings()
     response = application.get("/")
     assert response.status == 200
-    assert not settings.instrumentation.django_middleware.enabled
-    assert settings.instrumentation.django_middleware.exclude == ["django.middleware.c*"]
-    assert settings.instrumentation.django_middleware.include == [
+    assert not settings.instrumentation.middleware.django.enabled
+    assert settings.instrumentation.middleware.django.exclude == ["django.middleware.c*"]
+    assert settings.instrumentation.middleware.django.include == [
         "django.middleware.*",
         "django.middleware.co*",
         "django.contrib.messages.middleware:MessageMiddleware",
@@ -156,9 +156,9 @@ def test_disabled_middleware_settings(application):
     settings = global_settings()
     response = application.get("/")
     assert response.status == 200
-    assert not settings.instrumentation.django_middleware.enabled
-    assert settings.instrumentation.django_middleware.exclude == ["django.middleware.c*"]
-    assert settings.instrumentation.django_middleware.include == [
+    assert not settings.instrumentation.middleware.django.enabled
+    assert settings.instrumentation.middleware.django.exclude == ["django.middleware.c*"]
+    assert settings.instrumentation.middleware.django.include == [
         "django.middleware.*",
         "django.middleware.co*",
         "django.contrib.messages.middleware:MessageMiddleware",

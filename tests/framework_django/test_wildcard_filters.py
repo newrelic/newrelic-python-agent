@@ -37,7 +37,7 @@ _default_settings = {
     "debug.log_data_collector_payloads": True,
     "debug.record_transaction_failure": True,
     "debug.log_autorum_middleware": True,
-    "instrumentation.django_middleware.enabled": True,
+    "instrumentation.middleware.django.enabled": True,
 }
 
 wildcard_exclude_specific_include_settings = (
@@ -84,8 +84,8 @@ def settings_and_metrics(request):
     exclude_include_override_settings, middleware_scoped_metrics = request.param
     exclude_settings, include_settings = exclude_include_override_settings
 
-    _default_settings["instrumentation.django_middleware.exclude"] = exclude_settings
-    _default_settings["instrumentation.django_middleware.include"] = include_settings
+    _default_settings["instrumentation.middleware.django.exclude"] = exclude_settings
+    _default_settings["instrumentation.middleware.django.include"] = include_settings
 
     return _default_settings, middleware_scoped_metrics
 

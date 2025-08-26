@@ -1099,8 +1099,8 @@ def is_denied_middleware(callable_name):
     # Return True (skip wrapping) if:
     # 1. middleware wrapping is disabled or
     # 2. the callable name is in the exclude list
-    if not settings.instrumentation.django_middleware.enabled or (
-        callable_name in settings.instrumentation.django_middleware.exclude
+    if not settings.instrumentation.middleware.django.enabled or (
+        callable_name in settings.instrumentation.middleware.django.exclude
     ):
         return True
 
@@ -1115,9 +1115,9 @@ def is_denied_middleware(callable_name):
     # This scenario is redundant logic, but we utilize it to
     # speed up the logic for the common case where
     # the user has not specified any include or exclude lists.
-    if (callable_name in settings.instrumentation.django_middleware.include) or (
-        settings.instrumentation.django_middleware.enabled
-        and len(settings.instrumentation.django_middleware.exclude) == 0
+    if (callable_name in settings.instrumentation.middleware.django.include) or (
+        settings.instrumentation.middleware.django.enabled
+        and len(settings.instrumentation.middleware.django.exclude) == 0
     ):
         return False
 
@@ -1146,9 +1146,9 @@ def is_denied_middleware(callable_name):
         matches the `middleware.parameters.bar*` pattern, but include any
         other middleware that matches the `middleware.parameters.*` pattern.
         """
-        if len(settings.instrumentation.django_middleware.include) == 0:
+        if len(settings.instrumentation.middleware.django.include) == 0:
             return True
-        for include_middleware in settings.instrumentation.django_middleware.include:
+        for include_middleware in settings.instrumentation.middleware.django.include:
             if include_middleware.endswith("*"):
                 include_middleware_name = include_middleware.rstrip("*")
                 if callable_name.startswith(include_middleware_name):
@@ -1181,14 +1181,15 @@ def is_denied_middleware(callable_name):
     # Check if the callable name matches any of the excluded middleware patterns.
     # If middleware name ends with '*', it is a wildcard
     deny = False
-    for exclude_middleware in settings.instrumentation.django_middleware.exclude:
+    for exclude_middleware in settings.instrumentation.middleware.django.exclude:
         if exclude_middleware.endswith("*"):
             name = exclude_middleware.rstrip("*")
             if callable_name.startswith(name):
-                if not include_logic(callable_name, name):
+                include = include_logic(callable_name, name)
+                if not include:
                     return False
                 else:
-                    deny |= include_logic(callable_name, name)
+                    deny |= include
 
     return deny
 

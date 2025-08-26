@@ -665,13 +665,22 @@ class WSGIWebTransaction(WebTransaction):
         self._request_uri = request_uri
 
         if self._request_uri is not None:
-            # Need to make sure we drop off any query string
-            # arguments on the path if we have to fallback
-            # to using the original REQUEST_URI. Can't use
-            # attribute access on result as only support for
-            # Python 2.5+.
-
-            self._request_uri = urlparse.urlparse(self._request_uri)[2]
+            # This try/except logic is to handle cases where
+            # `REQUEST_URI` is malformed or contains invalid
+            # characters.  This can happen at this point if
+            # a malformed request is passed in and for versions
+            # of `urllib` in the Python standard library older
+            # than what has been released Jan 31, 2025.
+            try:
+                # Need to make sure we drop off any query string
+                # arguments on the path if we have to fallback
+                # to using the original REQUEST_URI. Can't use
+                # attribute access on result as only support for
+                # Python 2.5+.
+                self._request_uri = urlparse.urlparse(self._request_uri)[2]
+            except:
+                # If `self._request_uri` is invalid, set to `None`
+                self._request_uri = None
 
         if script_name is not None or path_info is not None:
             if path_info is None:

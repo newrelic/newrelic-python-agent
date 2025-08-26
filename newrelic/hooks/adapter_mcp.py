@@ -21,7 +21,6 @@ from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.signature import bind_args
 from newrelic.core.config import global_settings
 
-
 _logger = logging.getLogger(__name__)
 
 

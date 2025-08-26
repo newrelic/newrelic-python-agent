@@ -50,7 +50,7 @@ _logger = logging.getLogger(__name__)
 class AgentProtocol:
     VERSION = 17
 
-    STATUS_CODE_RESPONSE = {
+    STATUS_CODE_RESPONSE = {  # noqa: RUF012
         400: DiscardDataForRequest,
         401: ForceAgentRestart,
         403: DiscardDataForRequest,
@@ -70,7 +70,7 @@ class AgentProtocol:
         500: RetryDataForRequest,
         503: RetryDataForRequest,
     }
-    LOG_MESSAGES = {
+    LOG_MESSAGES = {  # noqa: RUF012
         401: (
             logging.ERROR,
             (
@@ -147,7 +147,7 @@ class AgentProtocol:
         "ai_monitoring.enabled",
     )
 
-    LOGGER_FUNC_MAPPING = {
+    LOGGER_FUNC_MAPPING = {  # noqa: RUF012
         "ERROR": _logger.error,
         "WARN": _logger.warning,
         "INFO": _logger.info,
@@ -285,7 +285,7 @@ class AgentProtocol:
     @staticmethod
     def _connect_payload(app_name, linked_applications, environment, settings):
         settings = global_settings_dump(settings)
-        app_names = [app_name] + linked_applications
+        app_names = [app_name, *linked_applications]
 
         hostname = system_info.gethostname(
             settings["heroku.use_dyno_names"], settings["heroku.dyno_name_prefixes_to_shorten"]

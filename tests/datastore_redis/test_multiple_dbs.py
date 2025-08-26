@@ -72,7 +72,7 @@ if len(DB_MULTIPLE_SETTINGS) > 1:
     instance_metric_name_1 = f"Datastore/instance/Redis/{host_1}/{port_1}"
     instance_metric_name_2 = f"Datastore/instance/Redis/{host_2}/{port_2}"
 
-    instance_metric_name_1_count = 2 if REDIS_PY_VERSION >= (5, 0) else 2
+    instance_metric_name_1_count = 2
     instance_metric_name_2_count = 3 if REDIS_PY_VERSION >= (5, 0) else 1
 
     _enable_rollup_metrics = _base_rollup_metrics.extend(

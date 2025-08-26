@@ -759,6 +759,6 @@ def openai_version():
 if __name__ == "__main__":
     _MockExternalOpenAIServer = MockExternalOpenAIServer()
     with MockExternalOpenAIServer() as server:
-        print(f"MockExternalOpenAIServer serving on port {str(server.port)}")
+        print(f"MockExternalOpenAIServer serving on port {server.port!s}")
         while True:
             pass  # Serve forever

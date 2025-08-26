@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import azure.functions  # noqa: E402; pylint: disable=E0401
+import azure.functions
 
 app = azure.functions.FunctionApp(http_auth_level=azure.functions.AuthLevel.ANONYMOUS)
 

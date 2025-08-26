@@ -22,7 +22,7 @@ from newrelic.api.background_task import background_task
     [
         {  # Fixed attributes
             "message": "context_attrs: arg1",
-            "context.file": f"(name='test_attributes.py', path='{str(__file__)}')",
+            "context.file": f"(name='test_attributes.py', path='{__file__!s}')",
             "context.function": "test_loguru_default_context_attributes",
             "context.extra.bound_attr": 1,
             "context.extra.contextual_attr": 2,

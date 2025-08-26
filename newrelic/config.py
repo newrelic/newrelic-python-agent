@@ -22,8 +22,6 @@ import time
 import traceback
 from pathlib import Path
 
-from django import middleware
-
 import newrelic.api.application
 import newrelic.api.background_task
 import newrelic.api.database_trace

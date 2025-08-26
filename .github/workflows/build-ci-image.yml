@@ -16,6 +16,8 @@ name: Build CI Image
 
 on:
   workflow_dispatch: # Allow manual trigger
+  schedule:
+    - cron: "15 16 * * 0"  # At 16:15 UTC on Sunday
 
 permissions:
   contents: read

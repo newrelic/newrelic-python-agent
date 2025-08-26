@@ -103,7 +103,7 @@ async def wrap_client__make_api_call(wrapped, instance, args, kwargs):
 
     try:
         bedrock_args = args[1] if len(args) >= 2 else {}
-        model = bedrock_args.get("modelId")  # This will return None if it's not in there already
+        model = bedrock_args.get("modelId")
         is_embedding = "embed" in model if model else False
 
         request_body = {} if is_converse else bedrock_args.get("body")

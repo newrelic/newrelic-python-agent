@@ -15,21 +15,16 @@
 import os
 import tempfile
 from importlib import reload
+
 import django
 import pytest
-
-from testing_support.fixtures import Environ
+from testing_support.fixtures import Environ, collector_available_fixture, django_collector_agent_registration_fixture
 
 import newrelic.config
 import newrelic.core.config
 from newrelic.common.object_wrapper import function_wrapper
 from newrelic.config import initialize
-
-from testing_support.fixtures import collector_available_fixture, django_collector_agent_registration_fixture
-
-from newrelic.core.config import (
-    global_settings,
-)
+from newrelic.core.config import global_settings
 
 DJANGO_VERSION = tuple(map(int, django.get_version().split(".")[:2]))
 
@@ -50,6 +45,7 @@ _default_settings = {
     "instrumentation.django_middleware.enabled": True,
 }
 
+
 @pytest.fixture
 def application():
     from django.core.asgi import get_asgi_application
@@ -66,6 +62,7 @@ def settings_fixture():
 collector_agent_registration = django_collector_agent_registration_fixture(
     app_name="Python Agent Test (framework_django)", scope="function"
 )
+
 
 def reset_agent_config(ini_contents, env_dict):
     @function_wrapper
@@ -121,12 +118,17 @@ def test_config_settings(application):
     settings = global_settings()
     response = application.get("/")
     assert response.status == 200
-    assert settings.instrumentation.django_middleware.enabled == True   # default setting
-    assert settings.instrumentation.django_middleware.exclude == ["django.middleware.*", "django.contrib.messages.middleware:MessageMiddleware"]
+    assert settings.instrumentation.django_middleware.enabled  # `True` is default setting
+    assert settings.instrumentation.django_middleware.exclude == [
+        "django.middleware.*",
+        "django.contrib.messages.middleware:MessageMiddleware",
+    ]
     assert settings.instrumentation.django_middleware.include == ["django.middleware.csrf:CsrfViewMiddleware"]
 
 
-@reset_agent_config(INI_FILE_WILDCARD_EXCLUDE_WILDCARD_INCLUDE, {"NEW_RELIC_INSTRUMENTATION_DJANGO_MIDDLEWARE_ENABLED": False})
+@reset_agent_config(
+    INI_FILE_WILDCARD_EXCLUDE_WILDCARD_INCLUDE, {"NEW_RELIC_INSTRUMENTATION_DJANGO_MIDDLEWARE_ENABLED": False}
+)
 def test_override_config_settings(application):
     """
     Test the priority of include/exclude settings.
@@ -136,9 +138,13 @@ def test_override_config_settings(application):
     settings = global_settings()
     response = application.get("/")
     assert response.status == 200
-    assert settings.instrumentation.django_middleware.enabled == False
+    assert not settings.instrumentation.django_middleware.enabled
     assert settings.instrumentation.django_middleware.exclude == ["django.middleware.c*"]
-    assert settings.instrumentation.django_middleware.include == ["django.middleware.*", "django.middleware.co*", "django.contrib.messages.middleware:MessageMiddleware"]
+    assert settings.instrumentation.django_middleware.include == [
+        "django.middleware.*",
+        "django.middleware.co*",
+        "django.contrib.messages.middleware:MessageMiddleware",
+    ]
 
 
 @reset_agent_config(INI_FILE_MIDDLEWARE_DISABLED, {"NEW_RELIC_INSTRUMENTATION_DJANGO_MIDDLEWARE_ENABLED": True})
@@ -150,7 +156,10 @@ def test_disabled_middleware_settings(application):
     settings = global_settings()
     response = application.get("/")
     assert response.status == 200
-    assert settings.instrumentation.django_middleware.enabled == False
+    assert not settings.instrumentation.django_middleware.enabled
     assert settings.instrumentation.django_middleware.exclude == ["django.middleware.c*"]
-    assert settings.instrumentation.django_middleware.include == ["django.middleware.*", "django.middleware.co*", "django.contrib.messages.middleware:MessageMiddleware"]
-    
+    assert settings.instrumentation.django_middleware.include == [
+        "django.middleware.*",
+        "django.middleware.co*",
+        "django.contrib.messages.middleware:MessageMiddleware",
+    ]

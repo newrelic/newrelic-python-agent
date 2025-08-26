@@ -99,13 +99,13 @@ def settings_fixture(request, settings_and_metrics):
 @pytest.fixture
 def middleware_scoped_metrics(request, settings_and_metrics):
     _, middleware_scoped_metrics = settings_and_metrics
-    return middleware_scoped_metrics + [("Function/views:index", 1)]
+    return [("Function/views:index", 1), *middleware_scoped_metrics]
 
 
 @pytest.fixture
 def middleware_rollup_metrics(request, settings_and_metrics):
     _, middleware_scoped_metrics = settings_and_metrics
-    return middleware_scoped_metrics + [(f"Python/Framework/Django/{django.get_version()}", 1)]
+    return [(f"Python/Framework/Django/{django.get_version()}", 1), *middleware_scoped_metrics]
 
 
 @pytest.fixture

@@ -168,7 +168,7 @@ def test_http_no_payload(server, method):
         status, data = client.send_request(method=method, headers={"foo": "bar"})
 
     assert status == 200
-    request_line, headers, payload = decode_payload(data)
+    request_line, headers, _payload = decode_payload(data)
 
     # Verify connection has been closed
     assert client._connection_attr is None
@@ -271,7 +271,7 @@ def test_http_payload_compression(server, client_cls, method, threshold):
             status, data = client.send_request(payload=payload, params={"method": "method2"})
 
     assert status == 200
-    request_line, headers, sent_payload = decode_payload(data)
+    _request_line, headers, sent_payload = decode_payload(data)
     payload_byte_len = len(sent_payload)
     internal_metrics = dict(internal_metrics.metrics())
     if client_cls is ApplicationModeClient:
@@ -377,7 +377,7 @@ def test_ssl_via_ssl_proxy(server, auth):
         status, data = client.send_request()
 
     assert status == 200
-    request_line, headers, payload = decode_payload(data)
+    request_line, headers, _payload = decode_payload(data)
     assert request_line.startswith("POST https://localhost:1/agent_listener/invoke_raw_method ")
 
     proxy_auth = None
@@ -409,7 +409,7 @@ def test_non_ssl_via_ssl_proxy(server):
         status, data = client.send_request()
 
     assert status == 200
-    request_line, headers, payload = decode_payload(data)
+    request_line, _headers, _payload = decode_payload(data)
     assert request_line.startswith("POST http://localhost:1/agent_listener/invoke_raw_method ")
 
     assert server.httpd.connect_host is None
@@ -422,7 +422,7 @@ def test_non_ssl_via_non_ssl_proxy(insecure_server):
         status, data = client.send_request()
 
     assert status == 200
-    request_line, headers, payload = decode_payload(data)
+    request_line, _headers, _payload = decode_payload(data)
     assert request_line.startswith("POST http://localhost:1/agent_listener/invoke_raw_method ")
 
     assert insecure_server.httpd.connect_host is None

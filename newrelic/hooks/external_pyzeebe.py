@@ -23,39 +23,47 @@ from newrelic.common.object_wrapper import wrap_function_wrapper
 
 _logger = logging.getLogger(__name__)
 
-CLIENT_ATTRIBUTES_WARNING_LOG_MSG = "Exception occurred in PyZeebe instrumentation: Failed to add client attributes."
+CLIENT_ATTRIBUTES_DEPLOY_RESOURCE_LOG_MSG = "Exception occurred in PyZeebe instrumentation: Failed to extract resource count/file for method `deploy_resource`. Report this issue to New Relic support."
 
 
 # Adds client method params as txn or span attributes
 def _add_client_input_attributes(method_name, trace, args, kwargs):
-    try:
-        if method_name in ("run_process", "run_process_with_result"):
-            bpmn_id = kwargs.get("bpmn_process_id", args[0] if args else None)
-            if bpmn_id:
-                trace._add_agent_attribute("zeebe.client.bpmnProcessId", bpmn_id)
-        elif method_name == "publish_message":
-            msg_name = kwargs.get("name", args[0] if args else None)
-            if msg_name:
-                trace._add_agent_attribute("zeebe.client.messageName", msg_name)
-            correlation_key = kwargs.get("correlation_key", args[1] if args and len(args) > 1 else None)
-            if correlation_key:
-                trace._add_agent_attribute("zeebe.client.correlationKey", correlation_key)
-            message_id = kwargs.get("message_id")
-            if message_id and len(args) > 4:
-                message_id = args[4]
-            if message_id:
-                trace._add_agent_attribute("zeebe.client.messageId", message_id)
-        elif method_name == "deploy_resource":
+    bpmn_id = extract_agent_attribute_from_methods(args, kwargs, method_name, ("run_process", "run_process_with_result"), "bpmn_process_id", 0)
+    if bpmn_id:
+        trace._add_agent_attribute("zeebe.client.bpmnProcessId", bpmn_id)
+
+    msg_name = extract_agent_attribute_from_methods(args, kwargs, method_name, ("publish_message"), "name", 0)
+    if msg_name:
+        trace._add_agent_attribute("zeebe.client.messageName", msg_name)
+
+    correlation_key = extract_agent_attribute_from_methods(args, kwargs, method_name, ("publish_message"), "correlation_key", 1)
+    if correlation_key:
+        trace._add_agent_attribute("zeebe.client.correlationKey", correlation_key)
+    
+    message_id = extract_agent_attribute_from_methods(args, kwargs, method_name, ("publish_message"), "message_id", 4)
+    if message_id:
+        trace._add_agent_attribute("zeebe.client.messageId", message_id)
+    
+    try: 
+        if method_name == "deploy_resource":
             resources = list(args)
-            if len(resources) == 1 and isinstance(resources[0], (list, tuple)):
-                resources = list(resources[0])
             if resources:
                 trace._add_agent_attribute("zeebe.client.resourceCount", len(resources))
                 if len(resources) == 1:
                     trace._add_agent_attribute("zeebe.client.resourceFile", str(resources[0]))
     except Exception:
-        _logger.warning(CLIENT_ATTRIBUTES_WARNING_LOG_MSG, exc_info=True)
+        _logger.warning(CLIENT_ATTRIBUTES_DEPLOY_RESOURCE_LOG_MSG, exc_info=True)
 
+
+def extract_agent_attribute_from_methods(args, kwargs, method_name, methods, param, index):
+    try:
+        if method_name in methods:
+            value = kwargs.get(param)
+            if not value and args and len(args) > index:
+                value = args[index]
+            return value
+    except Exception:
+        _logger.warning(f"Exception occurred in PyZeebe instrumentation: failed to extract {param} from {method_name}. Report this issue to New Relic support.", exc_info=True)
 
 # Async wrapper that instruments router/worker annotations`
 async def _nr_wrapper_execute_one_job(wrapped, instance, args, kwargs):
@@ -82,17 +90,16 @@ async def _nr_wrapper_execute_one_job(wrapped, instance, args, kwargs):
 
 # Async wrapper that instruments a ZeebeClient method.
 def _nr_client_wrapper(method_name):
-    async def wrapper(wrapped, instance, args, kwargs):
+    async def _client_wrapper(wrapped, instance, args, kwargs):
         txn = current_transaction()
-        if txn:
-            # add_fn = add_custom_span_attribute
-            with FunctionTrace(name=method_name, group="ZeebeClient") as trace:
-                _add_client_input_attributes(method_name, trace, args, kwargs)
-                return await wrapped(*args, **kwargs)
-        else:
-            return wrapped(*args, **kwargs)
+        if not txn:
+            return await wrapped(*args, **kwargs)
 
-    return wrapper
+        with FunctionTrace(name=method_name, group="ZeebeClient") as trace:
+            _add_client_input_attributes(method_name, trace, args, kwargs)
+            return await wrapped(*args, **kwargs)
+
+    return _client_wrapper
 
 
 # Instrument JobExecutor.execute_one_job to create a background transaction per job (invoked from @router.task or @worker.task annotations)

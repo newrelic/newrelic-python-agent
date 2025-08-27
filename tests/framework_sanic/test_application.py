@@ -17,11 +17,11 @@ from collections import deque
 import pytest
 import sanic
 from testing_support.fixtures import (
-    validate_function_not_called,
     override_application_settings,
     override_generic_settings,
     override_ignore_status_codes,
 )
+from testing_support.validators.validate_function_not_called import validate_function_not_called
 from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes

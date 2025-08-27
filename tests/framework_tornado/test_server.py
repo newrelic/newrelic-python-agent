@@ -14,11 +14,11 @@
 
 import pytest
 from testing_support.fixtures import (
-    validate_function_not_called,
     override_application_settings,
     override_generic_settings,
     override_ignore_status_codes,
 )
+from testing_support.validators.validate_function_not_called import validate_function_not_called
 from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 from testing_support.validators.validate_transaction_count import validate_transaction_count
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors

@@ -35,9 +35,6 @@ collector_agent_registration = collector_agent_registration_fixture(
 )
 
 
-FAILING_ON_WINDOWS = pytest.mark.xfail(sys.platform == "win32", reason="TODO: Fix this test on Windows")
-
-
 class FakeProtos:
     Span = object()
     SpanBatch = object()

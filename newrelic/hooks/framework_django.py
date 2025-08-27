@@ -1191,7 +1191,7 @@ def is_denied_middleware(callable_name):
                 else:
                     deny |= include
 
-    # If we have made it to this point, there are contents within 
+    # If we have made it to this point, there are contents within
     # the exclude list and those contents act as a no-op with
     # respect to the specific middleware being evaluated
     return deny

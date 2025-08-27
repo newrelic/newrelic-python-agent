@@ -217,7 +217,7 @@ scoped_metrics_case_sensitive_and_incomplete_names_settings = [
     ("Function/django.contrib.auth.middleware:AuthenticationMiddleware", 1),
     ("Function/django.contrib.messages.middleware:MessageMiddleware", 1),
     ("Function/django.middleware.gzip:GZipMiddleware", None),  # Explicit exclude
-    ("Function/middleware:ExceptionTo410Middleware", 1),    # Still included (incomplete name does not capture this)
+    ("Function/middleware:ExceptionTo410Middleware", 1),  # Still included (incomplete name does not capture this)
     ("Function/django.urls.resolvers:URLResolver.resolve", "present"),
 ]
 
@@ -229,8 +229,14 @@ scoped_metrics_case_sensitive_and_incomplete_names_settings = [
         (specific_exclude_specific_include_settings, scoped_metrics_specific_exclude_specific_include_settings),
         (specific_exclude_no_include_settings, scoped_metrics_specific_exclude_no_include_settings),
         (no_exclude_specific_include_settings, scoped_metrics_no_exclude_specific_include_settings),
-        (no_dots_wildcard_exclude_specific_include_settings, scoped_metrics_no_dots_wildcard_exclude_specific_include_settings),
-        (specific_dots_exclude_wildcard_no_dots_include_settings, scoped_metrics_specific_dots_exclude_wildcard_no_dots_include_settings),
+        (
+            no_dots_wildcard_exclude_specific_include_settings,
+            scoped_metrics_no_dots_wildcard_exclude_specific_include_settings,
+        ),
+        (
+            specific_dots_exclude_wildcard_no_dots_include_settings,
+            scoped_metrics_specific_dots_exclude_wildcard_no_dots_include_settings,
+        ),
         (no_dots_exclude_specific_dots_include_settings, scoped_metrics_no_dots_exclude_specific_dots_include_settings),
         (case_sensitive_and_incomplete_names_settings, scoped_metrics_case_sensitive_and_incomplete_names_settings),
     ],

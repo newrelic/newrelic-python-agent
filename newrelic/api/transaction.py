@@ -1032,7 +1032,7 @@ class Transaction:
             self._priority = 0
         else:
             if config != 'default':
-                _logger.warning(f"{setting_path}={config} is not a recognized value. Using 'default' instead.")
+                _logger.warning("%s=%s is not a recognized value. Using 'default' instead.", setting_path, config)
             self.sampling_algo_compute_sampled_and_priority()
 
     def _freeze_path(self):

@@ -1104,8 +1104,8 @@ def is_denied_middleware(callable_name):
     ):
         return True
 
-    # Return False (wrap) if:
-    # 1. If the callable name is in the include list, wrap this.
+    # Return False (middleware will be wrapped) if:
+    # 1. If the callable name is in the include list.
     # If we have made it to this point in the logic, that means
     # that the callable name is not explicitly in the exclude
     # list and, whether it is in the exclude list as a wildcard
@@ -1191,6 +1191,9 @@ def is_denied_middleware(callable_name):
                 else:
                     deny |= include
 
+    # If we have made it to this point, there are contents within 
+    # the exclude list and those contents act as a no-op with
+    # respect to the specific middleware being evaluated
     return deny
 
 

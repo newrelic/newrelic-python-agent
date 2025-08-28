@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import functools
 import sys
 from inspect import isawaitable
-import functools
 
 from newrelic.api.error_trace import ErrorTrace
 from newrelic.api.graphql_trace import GraphQLOperationTrace

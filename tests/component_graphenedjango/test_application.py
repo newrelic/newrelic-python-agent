@@ -138,6 +138,13 @@ def test_operation_metrics_and_attrs(wsgi_app):
             "graphql.operation.query": "query MyQuery { library(index: ?) { branch, book { name } } }",
         }
     )
+    @validate_span_events(
+        exact_agents={
+            "response.status": "200",
+            "response.headers.contentLength": 108,
+            "response.headers.contentType": "application/json",
+        }
+    )
     @validate_transaction_metrics(
         "query/MyQuery/library",
         "GraphQL",
@@ -167,6 +174,13 @@ def test_field_resolver_metrics_and_attrs(wsgi_app):
             "graphql.field.parentType": "Query",
             "graphql.field.path": "library",
             "graphql.field.returnType": "Library",
+        }
+    )
+    @validate_span_events(
+        exact_agents={
+            "response.status": "200",
+            "response.headers.contentLength": 108,
+            "response.headers.contentType": "application/json",
         }
     )
     @validate_transaction_metrics(

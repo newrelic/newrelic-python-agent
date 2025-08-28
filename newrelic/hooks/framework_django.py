@@ -1146,8 +1146,6 @@ def is_denied_middleware(callable_name):
         matches the `middleware.parameters.bar*` pattern, but include any
         other middleware that matches the `middleware.parameters.*` pattern.
         """
-        if len(settings.instrumentation.middleware.django.include) == 0:
-            return True
         for include_middleware in settings.instrumentation.middleware.django.include:
             if include_middleware.endswith("*"):
                 include_middleware_name = include_middleware.rstrip("*")

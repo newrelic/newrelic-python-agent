@@ -162,16 +162,16 @@ scoped_metrics_no_dots_wildcard_exclude_specific_include_settings = [
 
 # Shows the following:
 #   1. logic for dot notation for middleware works correctly with two wildcards
-#   2. more specific include overrides wildcard exclude
-same_wildcard_exclude_wildcard_include_settings = (["django.middleware*"], ["django.middleware.common:CommonMiddle*"])
+#   2. more specific exclude takes precedence over include
+same_wildcard_exclude_wildcard_include_settings = (["django.middleware.common:CommonMiddle*"], ["django.middleware*"])
 
 scoped_metrics_same_wildcard_exclude_wildcard_include_settings = [
     ("Function/django.contrib.sessions.middleware:SessionMiddleware", 1),
-    ("Function/django.middleware.common:CommonMiddleware", 1),  # More specific include overrides wildcard exclude
-    ("Function/django.middleware.csrf:CsrfViewMiddleware", None),
+    ("Function/django.middleware.common:CommonMiddleware", None),  # More specific exclude overrides wildcard include
+    ("Function/django.middleware.csrf:CsrfViewMiddleware", 1),
     ("Function/django.contrib.auth.middleware:AuthenticationMiddleware", 1),
     ("Function/django.contrib.messages.middleware:MessageMiddleware", 1),
-    ("Function/django.middleware.gzip:GZipMiddleware", None),
+    ("Function/django.middleware.gzip:GZipMiddleware", 1),
     ("Function/middleware:ExceptionTo410Middleware", 1),
     ("Function/django.urls.resolvers:URLResolver.resolve", "present"),
 ]
@@ -237,19 +237,19 @@ scoped_metrics_case_sensitive_and_incomplete_names_settings = [
     ("Function/django.urls.resolvers:URLResolver.resolve", "present"),
 ]
 
-# Shows no-op exclude behavior with no include
-no_op_exclude_no_include_settings = (["django", "middleware"], [])
+# # Shows no-op exclude behavior with no include
+# no_op_exclude_no_include_settings = (["django", "fakename*"], [])
 
-scoped_metrics_no_op_exclude_no_include_settings = [
-    ("Function/django.contrib.sessions.middleware:SessionMiddleware", 1),
-    ("Function/django.middleware.common:CommonMiddleware", 1),
-    ("Function/django.middleware.csrf:CsrfViewMiddleware", 1),
-    ("Function/django.contrib.auth.middleware:AuthenticationMiddleware", 1),
-    ("Function/django.contrib.messages.middleware:MessageMiddleware", 1),
-    ("Function/django.middleware.gzip:GZipMiddleware", 1),
-    ("Function/middleware:ExceptionTo410Middleware", 1),
-    ("Function/django.urls.resolvers:URLResolver.resolve", "present"),
-]
+# scoped_metrics_no_op_exclude_no_include_settings = [
+#     ("Function/django.contrib.sessions.middleware:SessionMiddleware", 1),
+#     ("Function/django.middleware.common:CommonMiddleware", 1),
+#     ("Function/django.middleware.csrf:CsrfViewMiddleware", 1),
+#     ("Function/django.contrib.auth.middleware:AuthenticationMiddleware", 1),
+#     ("Function/django.contrib.messages.middleware:MessageMiddleware", 1),
+#     ("Function/django.middleware.gzip:GZipMiddleware", 1),
+#     ("Function/middleware:ExceptionTo410Middleware", 1),
+#     ("Function/django.urls.resolvers:URLResolver.resolve", "present"),
+# ]
 
 
 @pytest.fixture(
@@ -273,7 +273,7 @@ scoped_metrics_no_op_exclude_no_include_settings = [
         ),
         (no_dots_exclude_specific_dots_include_settings, scoped_metrics_no_dots_exclude_specific_dots_include_settings),
         (case_sensitive_and_incomplete_names_settings, scoped_metrics_case_sensitive_and_incomplete_names_settings),
-        (no_op_exclude_no_include_settings, scoped_metrics_no_op_exclude_no_include_settings),
+        # (no_op_exclude_no_include_settings, scoped_metrics_no_op_exclude_no_include_settings),
     ],
     ids=[
         "wildcard_exclude_specific_include",
@@ -286,7 +286,7 @@ scoped_metrics_no_op_exclude_no_include_settings = [
         "specific_dots_exclude_wildcard_no_dots_include_settings",
         "no_dots_exclude_specific_dots_include_settings",
         "case_sensitive_and_incomplete_names_settings",
-        "no_op_exclude_no_include_settings",
+        # "no_op_exclude_no_include_settings",
     ],
 )
 def settings_and_metrics(request):

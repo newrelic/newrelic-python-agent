@@ -752,7 +752,7 @@ jobs:
     timeout-minutes: 30
     services:
       solr:
-        image: bitnamilegacy/solr
+        image: bitnami/solr:8.8.2
         env:
           SOLR_CORE: collection
         ports:

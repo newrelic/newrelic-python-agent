@@ -15,8 +15,9 @@
 import django
 import pytest
 import webtest
-from testing_support.fixtures import function_not_called, override_generic_settings
+from testing_support.fixtures import override_generic_settings
 from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
+from testing_support.validators.validate_function_not_called import validate_function_not_called
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
@@ -164,7 +165,7 @@ def test_application_view_agent_disabled(target_application):
     settings = global_settings()
 
     @override_generic_settings(settings, {"enabled": False})
-    @function_not_called("newrelic.core.stats_engine", "StatsEngine.record_transaction")
+    @validate_function_not_called("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     def _test():
         response = target_application.get("/view/")
         assert response.status_int == 200

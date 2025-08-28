@@ -18,7 +18,8 @@ import time
 from pathlib import Path
 
 import pytest
-from testing_support.fixtures import failing_endpoint, function_not_called, override_generic_settings
+from testing_support.fixtures import failing_endpoint, override_generic_settings
+from testing_support.validators.validate_function_not_called import validate_function_not_called
 
 from newrelic.common.agent_http import DeveloperModeClient
 from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
@@ -646,7 +647,7 @@ def test_serverless_mode_adaptive_sampling(time_to_next_reset, computed_count, c
     assert app.adaptive_sampler.computed_count_last == computed_count_last
 
 
-@function_not_called("newrelic.core.adaptive_sampler", "AdaptiveSampler._reset")
+@validate_function_not_called("newrelic.core.adaptive_sampler", "AdaptiveSampler._reset")
 @override_generic_settings(settings, {"developer_mode": True})
 def test_compute_sampled_no_reset():
     app = Application("Python Agent Test (Harvest Loop)")

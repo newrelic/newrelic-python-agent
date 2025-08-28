@@ -400,6 +400,8 @@ def _process_configuration(section):
     _process_setting(section, "ml_insights_events.enabled", "getboolean", None)
     _process_setting(section, "distributed_tracing.enabled", "getboolean", None)
     _process_setting(section, "distributed_tracing.exclude_newrelic_header", "getboolean", None)
+    _process_setting(section, "distributed_tracing.sampler.remote_parent_sampled", "get", None)
+    _process_setting(section, "distributed_tracing.sampler.remote_parent_not_sampled", "get", None)
     _process_setting(section, "span_events.enabled", "getboolean", None)
     _process_setting(section, "span_events.max_samples_stored", "getint", None)
     _process_setting(section, "span_events.attributes.enabled", "getboolean", None)

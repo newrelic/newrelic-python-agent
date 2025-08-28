@@ -17,12 +17,12 @@ from collections import deque
 import pytest
 import sanic
 from testing_support.fixtures import (
-    function_not_called,
     override_application_settings,
     override_generic_settings,
     override_ignore_status_codes,
 )
 from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
+from testing_support.validators.validate_function_not_called import validate_function_not_called
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
@@ -60,7 +60,7 @@ def test_simple_request(app):
     assert response.status == 200
 
 
-@function_not_called("newrelic.core.stats_engine", "StatsEngine.record_transaction")
+@validate_function_not_called("newrelic.core.stats_engine", "StatsEngine.record_transaction")
 def test_websocket(app):
     headers = {"upgrade": "WebSocket"}
     response = app.fetch("get", "/", headers=headers)
@@ -214,7 +214,7 @@ def test_errors_in_error_handlers(nr_enabled, app, url, metric_name, metrics, er
         _test = validate_transaction_errors(errors=errors)(_test)
         _test = validate_transaction_metrics(metric_name, scoped_metrics=metrics, rollup_metrics=metrics)(_test)
     else:
-        _test = function_not_called("newrelic.core.stats_engine", "StatsEngine.record_transaction")(_test)
+        _test = validate_function_not_called("newrelic.core.stats_engine", "StatsEngine.record_transaction")(_test)
 
     _test()
 
@@ -222,7 +222,7 @@ def test_errors_in_error_handlers(nr_enabled, app, url, metric_name, metrics, er
 def test_no_transaction_when_nr_disabled(app):
     settings = global_settings()
 
-    @function_not_called("newrelic.core.stats_engine", "StatsEngine.record_transaction")
+    @validate_function_not_called("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     @override_generic_settings(settings, {"enabled": False})
     def _test():
         app.fetch("GET", "/")

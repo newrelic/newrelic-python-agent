@@ -14,12 +14,12 @@
 
 import pytest
 from testing_support.fixtures import (
-    function_not_called,
     override_application_settings,
     override_generic_settings,
     override_ignore_status_codes,
 )
 from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
+from testing_support.validators.validate_function_not_called import validate_function_not_called
 from testing_support.validators.validate_transaction_count import validate_transaction_count
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
@@ -166,7 +166,7 @@ def test_not_found(app):
 
 
 @override_generic_settings(global_settings(), {"enabled": False})
-@function_not_called("newrelic.core.stats_engine", "StatsEngine.record_transaction")
+@validate_function_not_called("newrelic.core.stats_engine", "StatsEngine.record_transaction")
 def test_nr_disabled(app):
     response = app.fetch("/simple")
     assert response.code == 200
@@ -199,7 +199,7 @@ def test_web_socket(uri, name, app):
         def connect():
             return app.io_loop.run_sync(_connect)
 
-        @function_not_called("newrelic.core.stats_engine", "StatsEngine.record_transaction")
+        @validate_function_not_called("newrelic.core.stats_engine", "StatsEngine.record_transaction")
         def call(call):
             async def _call():
                 await conn.write_message("test")

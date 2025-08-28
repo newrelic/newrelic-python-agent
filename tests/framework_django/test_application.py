@@ -16,6 +16,8 @@ import os
 
 import django
 from testing_support.fixtures import (
+    collector_agent_registration_fixture,
+    collector_available_fixture,
     override_application_settings,
     override_generic_settings,
     override_ignore_status_codes,
@@ -28,6 +30,20 @@ from newrelic.hooks.framework_django import django_settings
 
 DJANGO_VERSION = tuple(map(int, django.get_version().split(".")[:2]))
 DJANGO_SETTINGS_MODULE = os.environ.get("DJANGO_SETTINGS_MODULE", None)
+
+_default_settings = {
+    "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
+    "transaction_tracer.explain_threshold": 0.0,
+    "transaction_tracer.transaction_threshold": 0.0,
+    "transaction_tracer.stack_trace_threshold": 0.0,
+    "debug.log_data_collector_payloads": True,
+    "debug.record_transaction_failure": True,
+    "debug.log_autorum_middleware": True,
+}
+
+collector_agent_registration = collector_agent_registration_fixture(
+    app_name="Python Agent Test (framework_django)", default_settings=_default_settings, scope="module"
+)
 
 
 def target_application():

@@ -18,7 +18,7 @@ import sys
 import threading
 import warnings
 
-from newrelic.api.application import register_application
+from newrelic.api.application import application_settings, register_application
 from newrelic.api.background_task import BackgroundTaskWrapper
 from newrelic.api.error_trace import wrap_error_trace
 from newrelic.api.function_trace import FunctionTrace, FunctionTraceWrapper, wrap_function_trace
@@ -238,77 +238,12 @@ def wrap_leading_middleware(middleware):
         return FunctionWrapper(wrapped, wrapper)
 
     for wrapped in middleware:
-        yield wrapper(wrapped)
+        do_not_wrap = is_denied_middleware(callable_name(wrapped))
 
-
-# Because this is not being used in any version of Django that is
-# within New Relic's support window, no tests will be added
-# for this.  However, value exists to keeping backwards compatible
-# functionality, so instead of removing this instrumentation, this
-# will be excluded from the coverage analysis.
-def wrap_view_middleware(middleware):  # pragma: no cover
-    # This is no longer being used. The changes to strip the
-    # wrapper from the view handler when passed into the function
-    # urlresolvers.reverse() solves most of the problems. To back
-    # that up, the object wrapper now proxies various special
-    # methods so that comparisons like '==' will work. The object
-    # wrapper can even be used as a standin for the wrapped object
-    # when used as a key in a dictionary and will correctly match
-    # the original wrapped object.
-
-    # Wrapper to be applied to view middleware. Records the time
-    # spent in the middleware as separate function node and also
-    # attempts to name the web transaction after the name of the
-    # middleware with success being determined by the priority.
-    # This wrapper is special in that it must strip the wrapper
-    # from the view handler when being passed to the view
-    # middleware to avoid issues where middleware wants to do
-    # comparisons between the passed middleware and some other
-    # value. It is believed that the view handler should never
-    # actually be called from the view middleware so not an
-    # issue that no longer wrapped at this point.
-
-    def wrapper(wrapped):
-        # The middleware if a class method would already be
-        # bound at this point, so is safe to determine the name
-        # when it is being wrapped rather than on each
-        # invocation.
-
-        name = callable_name(wrapped)
-
-        def wrapper(wrapped, instance, args, kwargs):
-            transaction = current_transaction()
-
-            def _wrapped(request, view_func, view_args, view_kwargs):
-                # This strips the view handler wrapper before call.
-
-                if hasattr(view_func, "_nr_last_object"):
-                    view_func = view_func._nr_last_object
-
-                return wrapped(request, view_func, view_args, view_kwargs)
-
-            if transaction is None:
-                return _wrapped(*args, **kwargs)
-
-            before = (transaction.name, transaction.group)
-
-            with FunctionTrace(name=name, source=wrapped):
-                try:
-                    return _wrapped(*args, **kwargs)
-
-                finally:
-                    # We want to name the transaction after this
-                    # middleware but only if the transaction wasn't
-                    # named from within the middleware itself explicitly.
-
-                    after = (transaction.name, transaction.group)
-                    if before == after:
-                        transaction.set_transaction_name(name, priority=2)
-
-        return FunctionWrapper(wrapped, wrapper)
-
-    for wrapped in middleware:
-        yield wrapper(wrapped)
+        if do_not_wrap:
+            yield wrapped
+        else:
+            yield wrapper(wrapped)
 
 
 def wrap_trailing_middleware(middleware):
@@ -323,7 +258,13 @@ def wrap_trailing_middleware(middleware):
     # invocation.
 
     for wrapped in middleware:
-        yield FunctionTraceWrapper(wrapped, name=callable_name(wrapped))
+        name = callable_name(wrapped)
+        do_not_wrap = is_denied_middleware(name)
+
+        if do_not_wrap:
+            yield wrapped
+        else:
+            yield FunctionTraceWrapper(wrapped, name=name)
 
 
 def insert_and_wrap_middleware(handler, *args, **kwargs):
@@ -1149,6 +1090,111 @@ def _nr_wrap_converted_middleware_(middleware, name):
     return _wrapper(middleware)
 
 
+# For faster logic, could we cache the callable_names to
+# avoid this logic for multiple calls to the same middleware?
+# Also, is that even a scenario we need to worry about?
+def is_denied_middleware(callable_name):
+    settings = application_settings() or global_settings()
+
+    # Return True (skip wrapping) if:
+    # 1. middleware wrapping is disabled or
+    # 2. the callable name is in the exclude list
+    if not settings.instrumentation.middleware.django.enabled or (
+        callable_name in settings.instrumentation.middleware.django.exclude
+    ):
+        return True
+
+    # Return False (middleware will be wrapped) if:
+    # 1. If the callable name is in the include list.
+    # If we have made it to this point in the logic, that means
+    # that the callable name is not explicitly in the exclude
+    # list and, whether it is in the exclude list as a wildcard
+    # or not, the list of middleware to include explicitly takes
+    # precedence over the exclude list's wildcards.
+    # 2. enabled=True and len(exclude)==0
+    # This scenario is redundant logic, but we utilize it to
+    # speed up the logic for the common case where
+    # the user has not specified any include or exclude lists.
+    if (callable_name in settings.instrumentation.middleware.django.include) or (
+        settings.instrumentation.middleware.django.enabled
+        and len(settings.instrumentation.middleware.django.exclude) == 0
+    ):
+        return False
+
+    # =========================================================
+    # Wildcard logic for include and exclude lists:
+    # =========================================================
+    # Returns False if an entry in the include wildcard is more
+    # specific than exclude wildcard.  Otherwise, it will iterate
+    # through the entire include list and return True if no more
+    # specific include (than exclude) is found.
+    def include_logic(callable_name, exclude_middleware_name):
+        """
+        We iterate through the entire include and exclude lists to
+        ensure that the user has not included overlapping wildcards
+        that would potentially be less specific than the exclude in
+        one case and more specific than the exclude in another case.
+
+        e.g.:
+        exclude = middleware.*, middleware.parameters.bar*
+        include = middleware.parameters.*
+
+        Where `middleware.*` is less specific than `middleware.parameters.*`
+        but `middleware.parameters.bar*` is more specific than `middleware.parameters.*`
+
+        In this case, we want to make sure to exclude any middleware that
+        matches the `middleware.parameters.bar*` pattern, but include any
+        other middleware that matches the `middleware.parameters.*` pattern.
+        """
+        for include_middleware in settings.instrumentation.middleware.django.include:
+            if include_middleware.endswith("*"):
+                include_middleware_name = include_middleware.rstrip("*")
+                if callable_name.startswith(include_middleware_name):
+                    # Count number of dots in the include and exclude
+                    # middleware names to determine specificity.
+                    exclude_dots = exclude_middleware_name.count(".")
+                    include_dots = include_middleware_name.count(".")
+                    if include_dots > exclude_dots:
+                        # Include this middleware--include is more specific and takes precedence
+                        return False
+                    elif include_dots == exclude_dots:
+                        # Count number of characters after the last dot
+                        exclude_post_dot_char_count = len(exclude_middleware_name) - exclude_middleware_name.rfind(".")
+                        include_post_dot_char_count = len(include_middleware_name) - include_middleware_name.rfind(".")
+                        if include_post_dot_char_count > exclude_post_dot_char_count:
+                            # Include this middleware--include is more specific and takes precedence
+                            return False
+                        else:
+                            # Exclude wildcard has the same or greater specificity than the include wildcard
+                            # Expect to exclude this middleware--so far, exclude is more specific and takes precedence
+                            continue
+                    else:
+                        # Expect to exclude this middleware--so far, exclude is more specific and takes precedence
+                        pass
+
+        # if we have made it to this point, there is no include middleware that is
+        # more specific than the exclude middleware, so we can safely return True
+        return True
+
+    # Check if the callable name matches any of the excluded middleware patterns.
+    # If middleware name ends with '*', it is a wildcard
+    deny = False
+    for exclude_middleware in settings.instrumentation.middleware.django.exclude:
+        if exclude_middleware.endswith("*"):
+            name = exclude_middleware.rstrip("*")
+            if callable_name.startswith(name):
+                include = include_logic(callable_name, name)
+                if not include:
+                    return False
+                else:
+                    deny |= include
+
+    # If we have made it to this point, there are contents within
+    # the exclude list and those contents act as a no-op with
+    # respect to the specific middleware being evaluated
+    return deny
+
+
 def _nr_wrapper_convert_exception_to_response_(wrapped, instance, args, kwargs):
     def _bind_params(original_middleware, *args, **kwargs):
         return original_middleware
@@ -1156,10 +1202,14 @@ def _nr_wrapper_convert_exception_to_response_(wrapped, instance, args, kwargs):
     original_middleware = _bind_params(*args, **kwargs)
     converted_middleware = wrapped(*args, **kwargs)
     name = callable_name(original_middleware)
+    do_not_wrap = is_denied_middleware(name)
 
-    if is_coroutine_function(converted_middleware) or is_asyncio_coroutine(converted_middleware):
-        return _nr_wrap_converted_middleware_async_(converted_middleware, name)
-    return _nr_wrap_converted_middleware_(converted_middleware, name)
+    if do_not_wrap:
+        return converted_middleware
+    else:
+        if is_coroutine_function(converted_middleware) or is_asyncio_coroutine(converted_middleware):
+            return _nr_wrap_converted_middleware_async_(converted_middleware, name)
+        return _nr_wrap_converted_middleware_(converted_middleware, name)
 
 
 def instrument_django_core_handlers_exception(module):

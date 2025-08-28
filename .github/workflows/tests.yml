@@ -1022,7 +1022,7 @@ jobs:
           - 2181:2181
 
       kafka:
-        image: bitnami/kafka:3.6.1
+        image: bitnamilegacy/kafka:3.3.2
         ports:
           - 8080:8080
           - 8082:8082

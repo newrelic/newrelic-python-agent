@@ -1014,7 +1014,7 @@ jobs:
     timeout-minutes: 30
     services:
       zookeeper:
-        image: bitnamilegacy/zookeeper
+        image: bitnami/zookeeper:3.9.1
         env:
           ALLOW_ANONYMOUS_LOGIN: yes
 
@@ -1022,7 +1022,7 @@ jobs:
           - 2181:2181
 
       kafka:
-        image: bitnamilegacy/kafka
+        image: bitnamilegacy/kafka:3.3.2
         ports:
           - 8080:8080
           - 8082:8082

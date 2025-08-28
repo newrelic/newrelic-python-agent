@@ -752,7 +752,7 @@ jobs:
     timeout-minutes: 30
     services:
       solr:
-        image: bitnami/solr:8.8.2
+        image: bitnamilegacy/solr
         env:
           SOLR_CORE: collection
         ports:
@@ -1014,7 +1014,7 @@ jobs:
     timeout-minutes: 30
     services:
       zookeeper:
-        image: bitnami/zookeeper:3.9.1
+        image: bitnamilegacy/zookeeper
         env:
           ALLOW_ANONYMOUS_LOGIN: yes
 
@@ -1022,7 +1022,7 @@ jobs:
           - 2181:2181
 
       kafka:
-        image: bitnami/kafka:3.6.1
+        image: bitnamilegacy/kafka
         ports:
           - 8080:8080
           - 8082:8082

@@ -323,8 +323,10 @@ class SpanEventAttributesSettings(Settings):
 class DistributedTracingSettings(Settings):
     pass
 
+
 class DistributedTracingSamplerSettings(Settings):
     pass
+
 
 class ServerlessModeSettings(Settings):
     pass
@@ -817,8 +819,12 @@ _settings.custom_insights_events.max_attribute_value = _environ_as_int(
 _settings.ml_insights_events.enabled = False
 
 _settings.distributed_tracing.enabled = _environ_as_bool("NEW_RELIC_DISTRIBUTED_TRACING_ENABLED", default=True)
-_settings.distributed_tracing.sampler.remote_parent_sampled = os.environ.get("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_REMOTE_PARENT_SAMPLED", 'default')
-_settings.distributed_tracing.sampler.remote_parent_not_sampled = os.environ.get("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_REMOTE_PARENT_NOT_SAMPLED", 'default')
+_settings.distributed_tracing.sampler.remote_parent_sampled = os.environ.get(
+    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_REMOTE_PARENT_SAMPLED", "default"
+)
+_settings.distributed_tracing.sampler.remote_parent_not_sampled = os.environ.get(
+    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_REMOTE_PARENT_NOT_SAMPLED", "default"
+)
 _settings.distributed_tracing.exclude_newrelic_header = False
 _settings.span_events.enabled = _environ_as_bool("NEW_RELIC_SPAN_EVENTS_ENABLED", default=True)
 _settings.span_events.attributes.enabled = True

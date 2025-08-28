@@ -1024,14 +1024,14 @@ class Transaction:
             setting_path = "distributed_tracing.sampler.remote_parent_not_sampled"
             config = self.settings.distributed_tracing.sampler.remote_parent_not_sampled
 
-        if config == 'always_on':
+        if config == "always_on":
             self._sampled = True
             self._priority = 2.0
-        elif config == 'always_off':
+        elif config == "always_off":
             self._sampled = False
             self._priority = 0
         else:
-            if config != 'default':
+            if config != "default":
                 _logger.warning("%s=%s is not a recognized value. Using 'default' instead.", setting_path, config)
             self.sampling_algo_compute_sampled_and_priority()
 

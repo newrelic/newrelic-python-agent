@@ -24,8 +24,8 @@ from testing_support.db_settings import rabbitmq_settings
 from testing_support.fixtures import (
     capture_transaction_metrics,
     dt_enabled,
-    validate_function_not_called,
     override_application_settings,
+    validate_function_not_called,
 )
 from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 from testing_support.validators.validate_span_events import validate_span_events

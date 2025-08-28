@@ -16,12 +16,12 @@ import time
 
 import pytest
 from testing_support.fixtures import override_application_settings, reset_core_stats_engine
-from testing_support.validators.validate_function_not_called import validate_function_not_called
 from testing_support.validators.validate_custom_event import (
     validate_custom_event_count,
     validate_custom_event_in_application_stats_engine,
 )
 from testing_support.validators.validate_custom_events import validate_custom_events
+from testing_support.validators.validate_function_not_called import validate_function_not_called
 
 from newrelic.api.application import application_instance as application
 from newrelic.api.background_task import background_task

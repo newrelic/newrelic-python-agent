@@ -37,5 +37,3 @@ def validate_function_not_called(module, name):
         return result
 
     return wrapper
-
-

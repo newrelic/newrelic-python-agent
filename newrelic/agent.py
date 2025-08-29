@@ -33,7 +33,6 @@ from newrelic.api.transaction import current_trace_id as __current_trace_id
 from newrelic.api.transaction import current_transaction as __current_transaction
 from newrelic.api.transaction import disable_browser_autorum as __disable_browser_autorum
 from newrelic.api.transaction import end_of_transaction as __end_of_transaction
-from newrelic.api.transaction import get_browser_timing_footer as __get_browser_timing_footer
 from newrelic.api.transaction import get_browser_timing_header as __get_browser_timing_header
 from newrelic.api.transaction import ignore_transaction as __ignore_transaction
 from newrelic.api.transaction import insert_distributed_trace_headers as __insert_distributed_trace_headers
@@ -182,7 +181,6 @@ add_framework_info = __wrap_api_call(__add_framework_info, "add_framework_info")
 record_exception = __wrap_api_call(__record_exception, "record_exception")
 notice_error = __wrap_api_call(__notice_error, "notice_error")
 get_browser_timing_header = __wrap_api_call(__get_browser_timing_header, "get_browser_timing_header")
-get_browser_timing_footer = __wrap_api_call(__get_browser_timing_footer, "get_browser_timing_footer")
 disable_browser_autorum = __wrap_api_call(__disable_browser_autorum, "disable_browser_autorum")
 suppress_transaction_trace = __wrap_api_call(__suppress_transaction_trace, "suppress_transaction_trace")
 record_custom_metric = __wrap_api_call(__record_custom_metric, "record_custom_metric")

@@ -25,8 +25,6 @@ from newrelic.api.transaction import accept_distributed_trace_headers as __accep
 from newrelic.api.transaction import accept_distributed_trace_payload as __accept_distributed_trace_payload
 from newrelic.api.transaction import add_custom_attribute as __add_custom_attribute
 from newrelic.api.transaction import add_custom_attributes as __add_custom_attributes
-from newrelic.api.transaction import add_custom_parameter as __add_custom_parameter
-from newrelic.api.transaction import add_custom_parameters as __add_custom_parameters
 from newrelic.api.transaction import add_framework_info as __add_framework_info
 from newrelic.api.transaction import capture_request_params as __capture_request_params
 from newrelic.api.transaction import create_distributed_trace_payload as __create_distributed_trace_payload
@@ -178,8 +176,6 @@ set_background_task = __wrap_api_call(__set_background_task, "set_background_tas
 ignore_transaction = __wrap_api_call(__ignore_transaction, "ignore_transaction")
 suppress_apdex_metric = __wrap_api_call(__suppress_apdex_metric, "suppress_apdex_metric")
 capture_request_params = __wrap_api_call(__capture_request_params, "capture_request_params")
-add_custom_parameter = __wrap_api_call(__add_custom_parameter, "add_custom_parameter")
-add_custom_parameters = __wrap_api_call(__add_custom_parameters, "add_custom_parameters")
 add_custom_attribute = __wrap_api_call(__add_custom_attribute, "add_custom_attribute")
 add_custom_attributes = __wrap_api_call(__add_custom_attributes, "add_custom_attributes")
 add_framework_info = __wrap_api_call(__add_framework_info, "add_framework_info")

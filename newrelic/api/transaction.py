@@ -1788,28 +1788,6 @@ class Transaction:
 
         return result
 
-    # This function has been deprecated (and will be removed eventually)
-    # and therefore does not need to be included in coverage analysis
-    def add_custom_parameter(self, name, value):  # pragma: no cover
-        # Deprecation warning
-        warnings.warn(
-            ("The add_custom_parameter API has been deprecated. Please use the add_custom_attribute API."),
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self.add_custom_attribute(name, value)
-
-    # This function has been deprecated (and will be removed eventually)
-    # and therefore does not need to be included in coverage analysis
-    def add_custom_parameters(self, items):  # pragma: no cover
-        # Deprecation warning
-        warnings.warn(
-            ("The add_custom_parameters API has been deprecated. Please use the add_custom_attributes API."),
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self.add_custom_attributes(items)
-
     def add_framework_info(self, name, version=None):
         if name:
             self._frameworks.add((name, version))
@@ -1908,30 +1886,6 @@ def add_custom_attributes(items):
         return transaction.add_custom_attributes(items)
     else:
         return False
-
-
-# This function has been deprecated (and will be removed eventually)
-# and therefore does not need to be included in coverage analysis
-def add_custom_parameter(key, value):  # pragma: no cover
-    # Deprecation warning
-    warnings.warn(
-        ("The add_custom_parameter API has been deprecated. Please use the add_custom_attribute API."),
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    return add_custom_attribute(key, value)
-
-
-# This function has been deprecated (and will be removed eventually)
-# and therefore does not need to be included in coverage analysis
-def add_custom_parameters(items):  # pragma: no cover
-    # Deprecation warning
-    warnings.warn(
-        ("The add_custom_parameters API has been deprecated. Please use the add_custom_attributes API."),
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    return add_custom_attributes(items)
 
 
 def set_user_id(user_id):

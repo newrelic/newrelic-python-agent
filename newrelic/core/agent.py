@@ -121,8 +121,8 @@ class Agent:
 
     _instance_lock = threading.Lock()
     _instance = None
-    _startup_callables = []
-    _registration_callables = {}
+    _startup_callables = []  # noqa: RUF012
+    _registration_callables = {}  # noqa: RUF012
 
     @staticmethod
     def run_on_startup(callable):  # noqa: A002
@@ -781,7 +781,7 @@ def shutdown_agent(timeout=None):
 
 def register_data_source(source, application=None, name=None, settings=None, **properties):
     agent = agent_instance()
-    agent.register_data_source(source, application and application.name or None, name, settings, **properties)
+    agent.register_data_source(source, (application and application.name) or None, name, settings, **properties)
 
 
 def _remove_thread_utilization():

@@ -80,6 +80,6 @@ def instrument_piston_doc(module):
     def in_HandlerMethod_init(self, method, *args, **kwargs):
         if isinstance(method, MethodWrapper):
             method = method._nr_wrapped
-        return ((self, method) + args, kwargs)
+        return ((self, method, *args), kwargs)
 
     newrelic.api.in_function.wrap_in_function(module, "HandlerMethod.__init__", in_HandlerMethod_init)

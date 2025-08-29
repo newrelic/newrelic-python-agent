@@ -99,7 +99,7 @@ class TraceCache(MutableMapping):
         self._cache = weakref.WeakValueDictionary()
 
     def __repr__(self):
-        return f"<{self.__class__.__name__} object at 0x{id(self):x} {str(dict(self.items()))}>"
+        return f"<{self.__class__.__name__} object at 0x{id(self):x} {dict(self.items())!s}>"
 
     def current_thread_id(self):
         """Returns the thread ID for the caller.

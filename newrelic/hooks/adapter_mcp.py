@@ -94,3 +94,9 @@ def instrument_mcp_client_session(module):
             wrap_function_wrapper(module, "ClientSession.read_resource", wrap_read_resource)
         if hasattr(module.ClientSession, "get_prompt"):
             wrap_function_wrapper(module, "ClientSession.get_prompt", wrap_get_prompt)
+
+
+def instrument_mcp_server_fastmcp_tools_tool_manager(module):
+    if hasattr(module, "ToolManager"):
+        if hasattr(module.ToolManager, "call_tool"):
+            wrap_function_wrapper(module, "ToolManager.call_tool", wrap_call_tool)

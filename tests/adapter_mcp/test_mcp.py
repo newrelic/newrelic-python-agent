@@ -16,8 +16,9 @@ import pytest
 from fastmcp.client import Client
 from fastmcp.client.transports import FastMCPTransport
 from fastmcp.server.server import FastMCP
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from mcp.server.fastmcp.tools import ToolManager
 
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from newrelic.api.background_task import background_task
 
 
@@ -49,13 +50,13 @@ def fastmcp_server():
 
 
 @validate_transaction_metrics(
-    "test_mcp:test_tool_tracing",
+    "test_mcp:test_tool_tracing_via_client_session",
     scoped_metrics=[("Llm/tool/MCP/mcp.client.session:ClientSession.call_tool/add_exclamation", 1)],
     rollup_metrics=[("Llm/tool/MCP/mcp.client.session:ClientSession.call_tool/add_exclamation", 1)],
     background_task=True,
 )
 @background_task()
-def test_tool_tracing(loop, fastmcp_server):
+def test_tool_tracing_via_client_session(loop, fastmcp_server):
     async def _test():
         async with Client(transport=FastMCPTransport(fastmcp_server)) as client:
             # Call the MCP tool, so we can validate the trace naming is correct.
@@ -63,6 +64,26 @@ def test_tool_tracing(loop, fastmcp_server):
 
             content = str(result.content[0])
         assert "Python is awesome!" in content
+
+    loop.run_until_complete(_test())
+
+
+@validate_transaction_metrics(
+    "test_mcp:test_tool_tracing_via_tool_manager",
+    scoped_metrics=[("Llm/tool/MCP/mcp.server.fastmcp.tools.tool_manager:ToolManager.call_tool/add_exclamation", 1)],
+    rollup_metrics=[("Llm/tool/MCP/mcp.server.fastmcp.tools.tool_manager:ToolManager.call_tool/add_exclamation", 1)],
+    background_task=True,
+)
+@background_task()
+def test_tool_tracing_via_tool_manager(loop):
+    async def _test():
+        def add_exclamation(phrase):
+            return f"{phrase}!"
+
+        manager = ToolManager()
+        manager.add_tool(add_exclamation)
+        result = await manager.call_tool("add_exclamation", {"phrase": "Python is awesome"})
+        assert result == "Python is awesome!"
 
     loop.run_until_complete(_test())
 

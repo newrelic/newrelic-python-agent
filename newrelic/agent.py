@@ -20,7 +20,6 @@ from newrelic.api.time_trace import add_custom_span_attribute as __add_custom_sp
 from newrelic.api.time_trace import current_trace as __current_trace
 from newrelic.api.time_trace import get_linking_metadata as __get_linking_metadata
 from newrelic.api.time_trace import notice_error as __notice_error
-from newrelic.api.time_trace import record_exception as __record_exception
 from newrelic.api.transaction import accept_distributed_trace_headers as __accept_distributed_trace_headers
 from newrelic.api.transaction import accept_distributed_trace_payload as __accept_distributed_trace_payload
 from newrelic.api.transaction import add_custom_attribute as __add_custom_attribute
@@ -178,7 +177,6 @@ capture_request_params = __wrap_api_call(__capture_request_params, "capture_requ
 add_custom_attribute = __wrap_api_call(__add_custom_attribute, "add_custom_attribute")
 add_custom_attributes = __wrap_api_call(__add_custom_attributes, "add_custom_attributes")
 add_framework_info = __wrap_api_call(__add_framework_info, "add_framework_info")
-record_exception = __wrap_api_call(__record_exception, "record_exception")
 notice_error = __wrap_api_call(__notice_error, "notice_error")
 get_browser_timing_header = __wrap_api_call(__get_browser_timing_header, "get_browser_timing_header")
 disable_browser_autorum = __wrap_api_call(__disable_browser_autorum, "disable_browser_autorum")

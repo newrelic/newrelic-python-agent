@@ -449,16 +449,6 @@ class TimeTrace:
                 settings, fullname, message, is_expected, error_group_name, custom_params, self.guid, tb, source=source
             )
 
-    def record_exception(self, exc_info=None, params=None, ignore_errors=None):
-        # Deprecation Warning
-        warnings.warn(
-            ("The record_exception function is deprecated. Please use the new api named notice_error instead."),
-            DeprecationWarning,
-            stacklevel=2,
-        )
-
-        self.notice_error(error=exc_info, attributes=params, ignore=ignore_errors)
-
     def _add_agent_attribute(self, key, value):
         self.agent_attributes[key] = value
 
@@ -515,7 +505,7 @@ class TimeTrace:
         exc_data = self.exc_data
         self.exc_data = (None, None, None)
 
-        # Observe errors on the span only if record_exception hasn't been
+        # Observe errors on the span only if notice_error hasn't been
         # called already
         if exc_data[0] and "error.class" not in self.agent_attributes:
             self._observe_exception(exc_data)
@@ -694,17 +684,6 @@ def get_linking_metadata(application=None):
     if trace:
         metadata.update(trace._get_trace_linking_metadata())
     return metadata
-
-
-def record_exception(exc=None, value=None, tb=None, params=None, ignore_errors=None, application=None):
-    # Deprecation Warning
-    warnings.warn(
-        ("The record_exception function is deprecated. Please use the new api named notice_error instead."),
-        DeprecationWarning,
-        stacklevel=2,
-    )
-
-    notice_error(error=(exc, value, tb), attributes=params, ignore=ignore_errors, application=application)
 
 
 def notice_error(error=None, attributes=None, expected=None, ignore=None, status_code=None, application=None):

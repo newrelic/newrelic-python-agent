@@ -363,21 +363,27 @@ def test_strip_proxy_details(settings):
     assert proxy_host == expected_proxy_host
 
 
-def test_delete_setting():
-    d = {"transaction_tracer.capture_attributes": True}
-    settings = apply_server_side_settings(d)
-    assert "capture_attributes" in settings.transaction_tracer
+# TODO: Reenable once newly deprecated settings have been
+# been put into the `deprecated_settings_map`
+# def test_delete_setting():
+#     """This test applies to a deprecated setting
+#     """
+#     d = {"transaction_tracer.explain_enabled": True}
+#     settings = apply_server_side_settings(d)
+#     assert "explain_enabled" in settings.transaction_tracer
 
-    delete_setting(settings, "transaction_tracer.capture_attributes")
-    assert "capture_attributes" not in settings.transaction_tracer
+#     delete_setting(settings, "transaction_tracer.explain_enabled")
+#     assert "explain_enabled" not in settings.transaction_tracer
 
 
-def test_delete_setting_absent():
-    settings = apply_server_side_settings()
-    assert "capture_attributes" not in settings.transaction_tracer
+# def test_delete_setting_absent():
+#     """This test applies to a deprecated setting
+#     """
+#     settings = apply_server_side_settings()
+#     assert "explain_enabled" not in settings.transaction_tracer
 
-    delete_setting(settings, "transaction_tracer.capture_attributes")
-    assert "capture_attributes" not in settings.transaction_tracer
+#     delete_setting(settings, "transaction_tracer.explain_enabled")
+#     assert "explain_enabled" not in settings.transaction_tracer
 
 
 def test_delete_setting_parent():
@@ -406,14 +412,6 @@ translate_settings_tests = [
     (
         TSetting("strip_exception_messages.whitelist", ["non-default-value"], []),
         TSetting("strip_exception_messages.allowlist", [], []),
-    ),
-    (
-        TSetting("transaction_tracer.capture_attributes", True, True),
-        TSetting("transaction_tracer.attributes.enabled", False, True),
-    ),
-    (
-        TSetting("transaction_tracer.capture_attributes", False, True),
-        TSetting("transaction_tracer.attributes.enabled", True, True),
     ),
     (
         TSetting("error_collector.capture_attributes", True, True),

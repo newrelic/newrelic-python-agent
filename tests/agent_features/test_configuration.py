@@ -414,14 +414,6 @@ translate_settings_tests = [
         TSetting("strip_exception_messages.allowlist", [], []),
     ),
     (
-        TSetting("browser_monitoring.capture_attributes", False, False),
-        TSetting("browser_monitoring.attributes.enabled", True, False),
-    ),
-    (
-        TSetting("browser_monitoring.capture_attributes", True, False),
-        TSetting("browser_monitoring.attributes.enabled", False, False),
-    ),
-    (
         TSetting("analytics_events.capture_attributes", True, True),
         TSetting("transaction_events.attributes.enabled", False, True),
     ),

@@ -668,7 +668,6 @@ def translate_deprecated_settings(settings, cached_settings):
     cached = dict(cached_settings)
 
     deprecated_settings_map = [
-        ("analytics_events.enabled", "transaction_events.enabled"),
         ("analytics_events.max_samples_stored", "event_harvest_config.harvest_limits.analytic_event_data"),
         ("transaction_events.max_samples_stored", "event_harvest_config.harvest_limits.analytic_event_data"),
         ("span_events.max_samples_stored", "event_harvest_config.harvest_limits.span_event_data"),

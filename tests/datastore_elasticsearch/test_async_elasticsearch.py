@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from conftest import ES_SETTINGS, IS_V8_OR_ABOVE
+from conftest import ES_SETTINGS, IS_V8_OR_ABOVE, RUN_IF_V8_OR_ABOVE
 from elasticsearch._async import client
 from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import override_application_settings
@@ -197,6 +197,7 @@ def test_async_elasticsearch_no_transaction(async_client, loop):
     loop.run_until_complete(_exercise_es(async_client))
 
 
+@RUN_IF_V8_OR_ABOVE
 @background_task()
 def test_async_elasticsearch_options_no_crash(async_client, loop):
     """Test that the options method on the async client doesn't cause a crash when run with the agent"""

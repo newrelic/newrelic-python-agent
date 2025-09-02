@@ -135,8 +135,8 @@ def test_inbound_dt_payload_acceptance(serverless_application, trusted_account_k
                 "tx": "8703ff3d88eefe9d",
             },
         }
-
-        result = transaction.accept_distributed_trace_payload(payload)
+        headers = {"newrelic": payload}
+        result = transaction.accept_distributed_trace_headers(headers)
         assert result
 
     _test_inbound_dt_payload_acceptance()

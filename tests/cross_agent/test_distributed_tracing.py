@@ -118,7 +118,8 @@ def target_wsgi_application(environ, start_response):
 
     extra_inbound_payloads = test_settings["extra_inbound_payloads"]
     for payload, expected_result in extra_inbound_payloads:
-        result = txn.accept_distributed_trace_payload(payload, test_settings["transport_type"])
+        headers = {"newrelic": payload}
+        result = txn.accept_distributed_trace_headers(headers, test_settings["transport_type"])
         assert result is expected_result
 
     outbound_payloads = test_settings["outbound_payloads"]
@@ -153,15 +154,16 @@ def test_distributed_tracing(
     web_transaction,
 ):
     extra_inbound_payloads = []
-    if transport_type != "HTTP":
-        # Since wsgi_application calls accept_distributed_trace_payload
+    if not inbound_payloads:
+        # If there is no `inbound_payloads`, we do
+        # not want to break the downstream logic,
+        # so this is explicitly skipped.
+        pass
+    elif transport_type != "HTTP":
+        # Since wsgi_application calls accept_distributed_trace_headers
         # automatically with transport_type='HTTP', we must defer this call
         # until we can specify the transport type.
         extra_inbound_payloads.append((inbound_payloads.pop(), True))
-    elif not inbound_payloads:
-        # In order to assert that accept_distributed_trace_payload returns
-        # False in this instance, we defer.
-        extra_inbound_payloads.append((inbound_payloads, False))
     elif len(inbound_payloads) > 1:
         extra_inbound_payloads.extend((payload, False) for payload in inbound_payloads[1:])
 

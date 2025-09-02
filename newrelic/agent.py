@@ -21,7 +21,6 @@ from newrelic.api.time_trace import current_trace as __current_trace
 from newrelic.api.time_trace import get_linking_metadata as __get_linking_metadata
 from newrelic.api.time_trace import notice_error as __notice_error
 from newrelic.api.transaction import accept_distributed_trace_headers as __accept_distributed_trace_headers
-from newrelic.api.transaction import accept_distributed_trace_payload as __accept_distributed_trace_payload
 from newrelic.api.transaction import add_custom_attribute as __add_custom_attribute
 from newrelic.api.transaction import add_custom_attributes as __add_custom_attributes
 from newrelic.api.transaction import add_framework_info as __add_framework_info
@@ -187,9 +186,6 @@ record_custom_event = __wrap_api_call(__record_custom_event, "record_custom_even
 record_log_event = __wrap_api_call(__record_log_event, "record_log_event")
 record_ml_event = __wrap_api_call(__record_ml_event, "record_ml_event")
 WithLlmCustomAttributes = __wrap_api_call(__WithLlmCustomAttributes, "WithLlmCustomAttributes")
-accept_distributed_trace_payload = __wrap_api_call(
-    __accept_distributed_trace_payload, "accept_distributed_trace_payload"
-)
 create_distributed_trace_payload = __wrap_api_call(
     __create_distributed_trace_payload, "create_distributed_trace_payload"
 )

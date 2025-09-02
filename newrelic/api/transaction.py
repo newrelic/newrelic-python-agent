@@ -1242,18 +1242,6 @@ class Transaction:
             self._record_supportability("Supportability/DistributedTrace/AcceptPayload/Exception")
             return False
 
-    def accept_distributed_trace_payload(self, *args, **kwargs):
-        warnings.warn(
-            (
-                "The accept_distributed_trace_payload API has been deprecated. "
-                "Please use the accept_distributed_trace_headers API."
-            ),
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        if not self._can_accept_distributed_trace_headers():
-            return False
-        return self._accept_distributed_trace_payload(*args, **kwargs)
 
     def _accept_distributed_trace_data(self, data, transport_type):
         if transport_type not in DISTRIBUTED_TRACE_TRANSPORT_TYPES:
@@ -1352,8 +1340,11 @@ class Transaction:
             self._record_supportability("Supportability/TraceContext/Accept/Success")
             return True
         elif distributed_header:
-            distributed_header = ensure_str(distributed_header)
             return self._accept_distributed_trace_payload(distributed_header, transport_type)
+        else:
+            # Do not return anything, but still generate supportability
+            # metric for the lack of payload/distributed_header
+            self._accept_distributed_trace_payload(distributed_header, transport_type)
 
     def _process_incoming_cat_headers(self, encoded_cross_process_id, encoded_txn_header):
         settings = self._settings
@@ -2075,13 +2066,6 @@ def record_log_event(message, level=None, timestamp=None, attributes=None, appli
                 )
     elif application.enabled:
         application.record_log_event(message, level, timestamp, attributes=attributes, priority=priority)
-
-
-def accept_distributed_trace_payload(payload, transport_type="HTTP"):
-    transaction = current_transaction()
-    if transaction:
-        return transaction.accept_distributed_trace_payload(payload, transport_type)
-    return False
 
 
 def accept_distributed_trace_headers(headers, transport_type="HTTP"):

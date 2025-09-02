@@ -12,9 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import newrelic.api.in_function
 import newrelic.api.wsgi_application
-
+from newrelic.common.object_wrapper import wrap_in_function
 
 def instrument_cheroot_wsgiserver(module):
     def wrap_wsgi_application_entry_point(server, bind_addr, wsgi_app, *args, **kwargs):
@@ -22,4 +21,4 @@ def instrument_cheroot_wsgiserver(module):
         args = [server, bind_addr, application, *args]
         return (args, kwargs)
 
-    newrelic.api.in_function.wrap_in_function(module, "Server.__init__", wrap_wsgi_application_entry_point)
+    wrap_in_function(module, "Server.__init__", wrap_wsgi_application_entry_point)

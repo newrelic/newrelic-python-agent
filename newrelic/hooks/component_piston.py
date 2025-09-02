@@ -14,11 +14,10 @@
 
 
 import newrelic.api.function_trace
-import newrelic.api.in_function
 import newrelic.api.transaction
 import newrelic.common.object_wrapper
 from newrelic.common.object_names import callable_name
-
+from newrelic.common.object_wrapper import wrap_in_function
 
 class MethodWrapper:
     def __init__(self, wrapped, priority=None):
@@ -82,4 +81,4 @@ def instrument_piston_doc(module):
             method = method._nr_wrapped
         return ((self, method, *args), kwargs)
 
-    newrelic.api.in_function.wrap_in_function(module, "HandlerMethod.__init__", in_HandlerMethod_init)
+    wrap_in_function(module, "HandlerMethod.__init__", in_HandlerMethod_init)

@@ -125,7 +125,6 @@ from newrelic.common.object_wrapper import CallableObjectProxy as __CallableObje
 from newrelic.common.object_wrapper import FunctionWrapper as __FunctionWrapper
 from newrelic.common.object_wrapper import InFunctionWrapper as __InFunctionWrapper
 from newrelic.common.object_wrapper import ObjectProxy as __ObjectProxy
-from newrelic.common.object_wrapper import ObjectWrapper as __ObjectWrapper
 from newrelic.common.object_wrapper import OutFunctionWrapper as __OutFunctionWrapper
 from newrelic.common.object_wrapper import PostFunctionWrapper as __PostFunctionWrapper
 from newrelic.common.object_wrapper import PreFunctionWrapper as __PreFunctionWrapper
@@ -255,7 +254,6 @@ FunctionWrapper = __wrap_api_call(__FunctionWrapper, "FunctionWrapper")
 function_wrapper = __wrap_api_call(__function_wrapper, "function_wrapper")
 wrap_function_wrapper = __wrap_api_call(__wrap_function_wrapper, "wrap_function_wrapper")
 patch_function_wrapper = __wrap_api_call(__patch_function_wrapper, "patch_function_wrapper")
-ObjectWrapper = __wrap_api_call(__ObjectWrapper, "ObjectWrapper")
 pre_function = __wrap_api_call(__pre_function, "pre_function")
 PreFunctionWrapper = __wrap_api_call(__PreFunctionWrapper, "PreFunctionWrapper")
 wrap_pre_function = __wrap_api_call(__wrap_pre_function, "wrap_pre_function")

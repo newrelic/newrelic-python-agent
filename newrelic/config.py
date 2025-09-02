@@ -668,7 +668,6 @@ def translate_deprecated_settings(settings, cached_settings):
     cached = dict(cached_settings)
 
     deprecated_settings_map = [
-        ("error_collector.capture_attributes", "error_collector.attributes.enabled"),
         ("browser_monitoring.capture_attributes", "browser_monitoring.attributes.enabled"),
         ("analytics_events.capture_attributes", "transaction_events.attributes.enabled"),
         ("analytics_events.enabled", "transaction_events.enabled"),

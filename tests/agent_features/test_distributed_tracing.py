@@ -28,7 +28,7 @@ from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import (
     accept_distributed_trace_headers,
-    create_distributed_trace_payload,
+    insert_distributed_trace_headers,
     current_span_id,
     current_trace_id,
     current_transaction,
@@ -184,8 +184,10 @@ def test_distributed_trace_attributes(span_events, accept_payload):
             result = accept_distributed_trace_headers(headers)
             assert result
         else:
-            create_distributed_trace_payload()
-
+            headers = []
+            insert_distributed_trace_headers(headers)
+            assert headers
+            
         try:
             raise ValueError("cookies")
         except ValueError:

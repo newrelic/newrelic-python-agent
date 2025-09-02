@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import json
+import base64
 from pathlib import Path
 
 import pytest
@@ -125,7 +126,13 @@ def target_wsgi_application(environ, start_response):
     outbound_payloads = test_settings["outbound_payloads"]
     if outbound_payloads:
         for payload_assertions in outbound_payloads:
-            payload = txn._create_distributed_trace_payload()
+            headers = []
+            txn.insert_distributed_trace_headers(headers)
+            # To revert to the dict format of the payload, use this:
+            payload = json.loads(base64.b64decode([value for key, value in headers if key=="newrelic"][0]).decode("utf-8"))
+            payload_version = payload.get("v")
+            if payload_version and isinstance(payload_version, list):
+                payload["v"] = tuple(payload_version)
             assert_payload(payload, payload_assertions, test_settings["major_version"], test_settings["minor_version"])
 
     start_response(status, response_headers)

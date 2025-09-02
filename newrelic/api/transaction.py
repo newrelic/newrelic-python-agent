@@ -1104,29 +1104,6 @@ class Transaction:
 
         return data
 
-    def _create_distributed_trace_payload(self):
-        try:
-            data = self._create_distributed_trace_data()
-            if data is None:
-                return
-            payload = DistributedTracePayload(v=DistributedTracePayload.version, d=data)
-        except:
-            self._record_supportability("Supportability/DistributedTrace/CreatePayload/Exception")
-        else:
-            self._record_supportability("Supportability/DistributedTrace/CreatePayload/Success")
-            return payload
-
-    def create_distributed_trace_payload(self):
-        warnings.warn(
-            (
-                "The create_distributed_trace_payload API has been deprecated. "
-                "Please use the insert_distributed_trace_headers API."
-            ),
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self._create_distributed_trace_payload()
-
     def _generate_distributed_trace_headers(self, data=None):
         try:
             data = data or self._create_distributed_trace_data()
@@ -2072,12 +2049,6 @@ def accept_distributed_trace_headers(headers, transport_type="HTTP"):
     transaction = current_transaction()
     if transaction:
         return transaction.accept_distributed_trace_headers(headers, transport_type)
-
-
-def create_distributed_trace_payload():
-    transaction = current_transaction()
-    if transaction:
-        return transaction.create_distributed_trace_payload()
 
 
 def insert_distributed_trace_headers(headers):

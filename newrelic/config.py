@@ -374,7 +374,6 @@ def _process_configuration(section):
     _process_setting(section, "error_collector.capture_events", "getboolean", None)
     _process_setting(section, "error_collector.max_event_samples_stored", "getint", None)
     _process_setting(section, "error_collector.capture_source", "getboolean", None)
-    _process_setting(section, "error_collector.ignore_errors", "get", _map_split_strings)
     _process_setting(section, "error_collector.ignore_classes", "get", _map_split_strings)
     _process_setting(section, "error_collector.ignore_status_codes", "get", _merge_ignore_status_codes)
     _process_setting(section, "error_collector.expected_classes", "get", _map_split_strings)
@@ -674,7 +673,6 @@ def translate_deprecated_settings(settings, cached_settings):
         ("error_collector.max_event_samples_stored", "event_harvest_config.harvest_limits.error_event_data"),
         ("custom_insights_events.max_samples_stored", "event_harvest_config.harvest_limits.custom_event_data"),
         ("application_logging.forwarding.max_samples_stored", "event_harvest_config.harvest_limits.log_event_data"),
-        ("error_collector.ignore_errors", "error_collector.ignore_classes"),
         ("strip_exception_messages.whitelist", "strip_exception_messages.allowlist"),
     ]
 

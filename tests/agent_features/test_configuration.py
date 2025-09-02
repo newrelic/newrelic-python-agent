@@ -461,14 +461,6 @@ translate_settings_tests = [
         TSetting("application_logging.forwarding.max_samples_stored", 99999, 10000),
         TSetting("event_harvest_config.harvest_limits.log_event_data", 10000, 10000),
     ),
-    (
-        TSetting("error_collector.ignore_errors", [], []),
-        TSetting("error_collector.ignore_classes", callable_name(ValueError), []),
-    ),
-    (
-        TSetting("error_collector.ignore_errors", callable_name(ValueError), []),
-        TSetting("error_collector.ignore_classes", [], []),
-    ),
 ]
 
 

@@ -2701,6 +2701,10 @@ def _process_module_builtin_defaults():
         "graphene.types.schema", "newrelic.hooks.framework_graphene", "instrument_graphene_types_schema"
     )
 
+    _process_module_definition(
+        "graphene_django.views", "newrelic.hooks.component_graphenedjango", "instrument_graphene_django_views"
+    )
+
     _process_module_definition("graphql.graphql", "newrelic.hooks.framework_graphql", "instrument_graphql")
     _process_module_definition(
         "graphql.execution.execute", "newrelic.hooks.framework_graphql", "instrument_graphql_execute"

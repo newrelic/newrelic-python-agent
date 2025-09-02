@@ -331,7 +331,6 @@ def _process_configuration(section):
     _process_setting(section, "port", "getint", None)
     _process_setting(section, "otlp_host", "get", None)
     _process_setting(section, "otlp_port", "getint", None)
-    _process_setting(section, "ssl", "getboolean", None)
     _process_setting(section, "proxy_scheme", "get", None)
     _process_setting(section, "proxy_host", "get", None)
     _process_setting(section, "proxy_port", "getint", None)
@@ -745,10 +744,6 @@ def translate_deprecated_settings(settings, cached_settings):
             "configuration. For further details on distributed tracing, please refer to our documentation: "
             "https://docs.newrelic.com/docs/distributed-tracing/concepts/distributed-tracing-planning-guide/#changes."
         )
-
-    if not settings.ssl:
-        settings.ssl = True
-        _logger.info("Ignoring deprecated setting: ssl. Enabling ssl is now mandatory. Setting ssl=true.")
 
     if settings.agent_limits.merge_stats_maximum is not None:
         _logger.info(

@@ -711,8 +711,6 @@ else:
 _settings.license_key = os.environ.get("NEW_RELIC_LICENSE_KEY", None)
 _settings.api_key = os.environ.get("NEW_RELIC_API_KEY", None)
 
-_settings.ssl = _environ_as_bool("NEW_RELIC_SSL", True)
-
 _settings.host = os.environ.get("NEW_RELIC_HOST")
 _settings.otlp_host = os.environ.get("NEW_RELIC_OTLP_HOST")
 _settings.port = int(os.environ.get("NEW_RELIC_PORT", "0"))

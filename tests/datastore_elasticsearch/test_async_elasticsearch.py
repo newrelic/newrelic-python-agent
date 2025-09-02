@@ -195,3 +195,19 @@ def test_async_elasticsearch_operation_enabled(async_client, loop):
 
 def test_async_elasticsearch_no_transaction(async_client, loop):
     loop.run_until_complete(_exercise_es(async_client))
+
+
+@background_task()
+def test_async_elasticsearch_options_no_crash(async_client, loop):
+    """Test that the options method on the async client doesn't cause a crash when run with the agent"""
+
+    async def _test():
+        client_with_auth = async_client.options(basic_auth=('username', 'password'))
+        assert client_with_auth is not None
+        assert client_with_auth != async_client
+
+        # If options was instrumented, this would cause a crash since the first call would return an unexpected coroutine
+        client_chained = async_client.options(basic_auth=('user', 'pass')).options(request_timeout=60)
+        assert client_chained is not None
+
+    loop.run_until_complete(_test())

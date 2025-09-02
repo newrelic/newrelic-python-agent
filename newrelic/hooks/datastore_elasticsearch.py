@@ -267,7 +267,6 @@ _elasticsearch_client_methods_v8 = (
     ("msearch_template", _extract_args_search_templates_index),
     ("mtermvectors", _extract_args_index),
     ("open_point_in_time", _extract_args_index),
-    ("options", None),
     ("ping", None),
     ("put_script", None),
     ("rank_eval", _extract_args_requests_index),

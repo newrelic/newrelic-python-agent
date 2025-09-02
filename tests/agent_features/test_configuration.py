@@ -406,14 +406,6 @@ TSetting = collections.namedtuple("TSetting", ["name", "value", "default"])
 
 translate_settings_tests = [
     (
-        TSetting("strip_exception_messages.whitelist", [], []),
-        TSetting("strip_exception_messages.allowlist", ["non-default-value"], []),
-    ),
-    (
-        TSetting("strip_exception_messages.whitelist", ["non-default-value"], []),
-        TSetting("strip_exception_messages.allowlist", [], []),
-    ),
-    (
         TSetting("analytics_events.max_samples_stored", 1200, 1200),
         TSetting("event_harvest_config.harvest_limits.analytic_event_data", 9999, 1200),
     ),

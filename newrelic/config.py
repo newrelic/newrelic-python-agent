@@ -673,7 +673,6 @@ def translate_deprecated_settings(settings, cached_settings):
         ("error_collector.max_event_samples_stored", "event_harvest_config.harvest_limits.error_event_data"),
         ("custom_insights_events.max_samples_stored", "event_harvest_config.harvest_limits.custom_event_data"),
         ("application_logging.forwarding.max_samples_stored", "event_harvest_config.harvest_limits.log_event_data"),
-        ("strip_exception_messages.whitelist", "strip_exception_messages.allowlist"),
     ]
 
     for old_key, new_key in deprecated_settings_map:

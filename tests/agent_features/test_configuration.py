@@ -413,14 +413,6 @@ translate_settings_tests = [
         TSetting("strip_exception_messages.whitelist", ["non-default-value"], []),
         TSetting("strip_exception_messages.allowlist", [], []),
     ),
-    (
-        TSetting("analytics_events.capture_attributes", True, True),
-        TSetting("transaction_events.attributes.enabled", False, True),
-    ),
-    (
-        TSetting("analytics_events.capture_attributes", False, True),
-        TSetting("transaction_events.attributes.enabled", True, True),
-    ),
     (TSetting("analytics_events.enabled", True, True), TSetting("transaction_events.enabled", False, True)),
     (TSetting("analytics_events.enabled", False, True), TSetting("transaction_events.enabled", True, True)),
     (

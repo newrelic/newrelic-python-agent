@@ -181,7 +181,9 @@ jobs:
         uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # 2.4.0
         id: attest
         with:
-          subject-path: ./dist/*
+          subject-path: |
+            ./dist/*.whl
+            ./dist/*.tar.gz
 
       - name: Wait for release to be available
         id: wait

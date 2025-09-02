@@ -95,8 +95,6 @@ from newrelic.api.generator_trace import generator_trace as __generator_trace
 from newrelic.api.generator_trace import wrap_generator_trace as __wrap_generator_trace
 from newrelic.api.html_insertion import insert_html_snippet as __insert_html_snippet
 from newrelic.api.html_insertion import verify_body_exists as __verify_body_exists
-from newrelic.api.lambda_handler import LambdaHandlerWrapper as __LambdaHandlerWrapper
-from newrelic.api.lambda_handler import lambda_handler as __lambda_handler
 from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes as __WithLlmCustomAttributes
 from newrelic.api.message_trace import MessageTrace as __MessageTrace
 from newrelic.api.message_trace import MessageTraceWrapper as __MessageTraceWrapper
@@ -207,8 +205,6 @@ background_task = __wrap_api_call(__background_task, "background_task")
 BackgroundTask = __wrap_api_call(__BackgroundTask, "BackgroundTask")
 BackgroundTaskWrapper = __wrap_api_call(__BackgroundTaskWrapper, "BackgroundTaskWrapper")
 wrap_background_task = __wrap_api_call(__wrap_background_task, "wrap_background_task")
-LambdaHandlerWrapper = __wrap_api_call(__LambdaHandlerWrapper, "LambdaHandlerWrapper")
-lambda_handler = __wrap_api_call(__lambda_handler, "lambda_handler")
 NewRelicContextFormatter = __wrap_api_call(__NewRelicContextFormatter, "NewRelicContextFormatter")
 transaction_name = __wrap_api_call(__transaction_name, "transaction_name")
 TransactionNameWrapper = __wrap_api_call(__TransactionNameWrapper, "TransactionNameWrapper")

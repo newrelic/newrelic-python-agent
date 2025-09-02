@@ -38,7 +38,7 @@ from newrelic.common.object_wrapper import (
     wrap_function_wrapper,
 )
 from newrelic.config import initialize
-from newrelic.core.agent import shutdown_agent
+from newrelic.core.agent import agent_instance, shutdown_agent
 from newrelic.core.attribute import create_attributes
 from newrelic.core.attribute_filter import DST_ERROR_COLLECTOR, DST_TRANSACTION_TRACER, AttributeFilter
 from newrelic.core.config import apply_config_setting, flatten_settings, global_settings
@@ -182,12 +182,12 @@ def capture_harvest_errors():
 
 
 def collector_agent_registration_fixture(
-    app_name=None, default_settings=None, linked_applications=None, should_initialize_agent=True
+    app_name=None, default_settings=None, linked_applications=None, should_initialize_agent=True, scope="session"
 ):
     default_settings = default_settings or {}
     linked_applications = linked_applications or []
 
-    @pytest.fixture(scope="session")
+    @pytest.fixture(scope=scope)
     def _collector_agent_registration_fixture(request):
         if should_initialize_agent:
             initialize_agent(app_name=app_name, default_settings=default_settings)
@@ -251,6 +251,82 @@ def collector_agent_registration_fixture(
         yield application
 
         shutdown_agent()
+
+    return _collector_agent_registration_fixture
+
+
+def django_collector_agent_registration_fixture(
+    app_name=None, linked_applications=None, should_initialize_agent=True, scope="session"
+):
+    # To use this, make sure a fixture called settings_fixture
+    # is defined within the scope of the test
+    linked_applications = linked_applications or []
+
+    @pytest.fixture(scope=scope)
+    def _collector_agent_registration_fixture(request, settings_fixture):
+        if should_initialize_agent:
+            initialize_agent(app_name=app_name, default_settings=settings_fixture)
+
+        settings = global_settings()
+
+        # Determine if should be using an internal fake local
+        # collector for the test.
+
+        use_fake_collector = _environ_as_bool("NEW_RELIC_FAKE_COLLECTOR", False)
+        use_developer_mode = _environ_as_bool("NEW_RELIC_DEVELOPER_MODE", use_fake_collector)
+
+        # Catch exceptions in the harvest thread and reraise them in the main
+        # thread. This way the tests will reveal any unhandled exceptions in
+        # either of the two agent threads.
+
+        capture_harvest_errors()
+
+        # Associate linked applications.
+
+        application = application_instance()
+
+        for name in linked_applications:
+            application.link_to_application(name)
+
+        # Force registration of the application.
+
+        application = register_application()
+
+        # Attempt to record deployment marker for test. It's ok
+        # if the deployment marker does not record successfully.
+
+        api_host = settings.host
+
+        if api_host is None:
+            api_host = "api.newrelic.com"
+        elif api_host == "staging-collector.newrelic.com":
+            api_host = "staging-api.newrelic.com"
+
+        if not use_fake_collector and not use_developer_mode:
+            description = Path(os.path.normpath(sys.prefix)).name
+            try:
+                _logger.debug("Record deployment marker host: %s", api_host)
+                record_deploy(
+                    host=api_host,
+                    api_key=settings.api_key,
+                    app_name=settings.app_name,
+                    description=description,
+                    port=settings.port or 443,
+                    proxy_scheme=settings.proxy_scheme,
+                    proxy_host=settings.proxy_host,
+                    proxy_user=settings.proxy_user,
+                    proxy_pass=settings.proxy_pass,
+                    timeout=settings.agent_limits.data_collector_timeout,
+                    ca_bundle_path=settings.ca_bundle_path,
+                    disable_certificate_validation=settings.debug.disable_certificate_validation,
+                )
+            except Exception:
+                _logger.exception("Unable to record deployment marker.")
+
+        yield application
+
+        shutdown_agent()
+        del agent_instance()._applications[application.name]
 
     return _collector_agent_registration_fixture
 

@@ -752,7 +752,7 @@ jobs:
     timeout-minutes: 30
     services:
       solr:
-        image: bitnami/solr:8.8.2
+        image: bitnamilegacy/solr:8.8.2
         env:
           SOLR_CORE: collection
         ports:
@@ -1014,7 +1014,7 @@ jobs:
     timeout-minutes: 30
     services:
       zookeeper:
-        image: bitnami/zookeeper:3.9.1
+        image: bitnamilegacy/zookeeper:3.9.1
         env:
           ALLOW_ANONYMOUS_LOGIN: yes
 

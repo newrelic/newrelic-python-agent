@@ -754,7 +754,6 @@ _settings.apdex_t = _environ_as_float("NEW_RELIC_APDEX_T", 0.5)
 _settings.web_transactions_apdex = {}
 
 _settings.capture_params = None
-_settings.ignored_params = []
 
 _settings.capture_environ = True
 _settings.include_environ = [

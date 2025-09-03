@@ -342,7 +342,6 @@ def _process_configuration(section):
     _process_setting(section, "developer_mode", "getboolean", None)
     _process_setting(section, "high_security", "getboolean", None)
     _process_setting(section, "capture_params", "getboolean", None)
-    _process_setting(section, "ignored_params", "get", _map_split_strings)
     _process_setting(section, "capture_environ", "getboolean", None)
     _process_setting(section, "include_environ", "get", _map_split_strings)
     _process_setting(section, "max_stack_trace_lines", "getint", None)
@@ -685,40 +684,6 @@ def translate_deprecated_settings(settings, cached_settings):
 
             delete_setting(settings, old_key)
 
-    # The 'ignored_params' setting is more complicated than the above
-    # deprecated settings, so it gets handled separately.
-
-    if "ignored_params" in cached:
-        _logger.info(
-            "Deprecated setting found: ignored_params. Please use "
-            "new setting: attributes.exclude. For the new setting, an "
-            "ignored parameter should be prefaced with "
-            '"request.parameters.". For example, ignoring a parameter '
-            'named "foo" should be added added to attributes.exclude as '
-            '"request.parameters.foo."'
-        )
-
-        # Don't merge 'ignored_params' settings. If user set
-        # 'attributes.exclude' setting, only use those values,
-        # and ignore 'ignored_params' settings.
-
-        if "attributes.exclude" in cached:
-            _logger.info("Ignoring deprecated setting: ignored_params. Using new setting: attributes.exclude.")
-
-        else:
-            ignored_params = fetch_config_setting(settings, "ignored_params")
-
-            for p in ignored_params:
-                attr_value = f"request.parameters.{p}"
-                excluded_attrs = fetch_config_setting(settings, "attributes.exclude")
-
-                if attr_value not in excluded_attrs:
-                    settings.attributes.exclude.append(attr_value)
-                    _logger.info(
-                        "Applying value of deprecated setting ignored_params to attributes.exclude: %r.", attr_value
-                    )
-
-        delete_setting(settings, "ignored_params")
 
     # The 'capture_params' setting is deprecated, but since it affects
     # attribute filter default destinations, it is not translated here. We

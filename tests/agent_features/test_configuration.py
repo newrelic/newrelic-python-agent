@@ -523,46 +523,6 @@ def test_translate_deprecated_setting_without_old_setting(old, new):
     assert fetch_config_setting(result, new.name) == new.value
 
 
-def test_translate_deprecated_ignored_params_without_new_setting():
-    ignored_params = ["foo", "bar"]
-    settings = apply_server_side_settings()
-    apply_config_setting(settings, "ignored_params", ignored_params)
-
-    assert "foo" in settings.ignored_params
-    assert "bar" in settings.ignored_params
-    assert len(settings.attributes.exclude) == 0
-
-    cached = [("ignored_params", ignored_params)]
-    result = translate_deprecated_settings(settings, cached)
-
-    assert result is settings
-    assert "request.parameters.foo" in result.attributes.exclude
-    assert "request.parameters.bar" in result.attributes.exclude
-    assert "ignored_params" not in result
-
-
-def test_translate_deprecated_ignored_params_with_new_setting():
-    ignored_params = ["foo", "bar"]
-    attr_exclude = ["request.parameters.foo"]
-    settings = apply_server_side_settings()
-    apply_config_setting(settings, "ignored_params", ignored_params)
-    apply_config_setting(settings, "attributes.exclude", attr_exclude)
-
-    assert "foo" in settings.ignored_params
-    assert "bar" in settings.ignored_params
-    assert "request.parameters.foo" in settings.attributes.exclude
-
-    cached = [("ignored_params", ignored_params), ("attributes.exclude", attr_exclude)]
-    result = translate_deprecated_settings(settings, cached)
-
-    # ignored_params are not merged!
-
-    assert result is settings
-    assert "request.parameters.foo" in result.attributes.exclude
-    assert "request.parameters.bar" not in result.attributes.exclude
-    assert "ignored_params" not in result
-
-
 @pytest.mark.parametrize(
     "name,expected_value",
     (

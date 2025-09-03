@@ -19,6 +19,7 @@ from newrelic.api.wsgi_application import WSGIApplicationWrapper
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_in_function, wrap_out_function, wrap_pre_function
 
+
 def transaction_name_delegate(*args, **kwargs):
     transaction = newrelic.api.transaction.current_transaction()
     if transaction:

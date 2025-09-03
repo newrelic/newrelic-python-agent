@@ -13,8 +13,8 @@
 # limitations under the License.
 
 from newrelic.api.wsgi_application import WSGIApplicationWrapper
-from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.object_wrapper import wrap_in_function
+from newrelic.common.package_version_utils import get_package_version
 
 
 def instrument_waitress_server(module):

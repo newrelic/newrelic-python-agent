@@ -18,7 +18,6 @@ import random
 import sys
 import time
 import traceback
-import warnings
 
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 from newrelic.common.object_names import parse_exc_info

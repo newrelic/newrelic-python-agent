@@ -25,7 +25,6 @@ import sys
 import threading
 import time
 import traceback
-import warnings
 
 import newrelic
 import newrelic.core.application

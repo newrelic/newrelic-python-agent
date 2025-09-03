@@ -19,6 +19,7 @@ import newrelic.common.object_wrapper
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_in_function
 
+
 class MethodWrapper:
     def __init__(self, wrapped, priority=None):
         self._nr_name = callable_name(wrapped)

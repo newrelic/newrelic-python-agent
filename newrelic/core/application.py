@@ -20,7 +20,6 @@ import sys
 import threading
 import time
 import traceback
-import warnings
 from functools import partial
 
 from newrelic.common.object_names import callable_name

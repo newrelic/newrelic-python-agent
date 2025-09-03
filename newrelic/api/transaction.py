@@ -19,7 +19,6 @@ import re
 import sys
 import threading
 import time
-import warnings
 import weakref
 from collections import OrderedDict
 
@@ -1218,7 +1217,6 @@ class Transaction:
         except:
             self._record_supportability("Supportability/DistributedTrace/AcceptPayload/Exception")
             return False
-
 
     def _accept_distributed_trace_data(self, data, transport_type):
         if transport_type not in DISTRIBUTED_TRACE_TRANSPORT_TYPES:

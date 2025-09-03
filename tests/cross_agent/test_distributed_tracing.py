@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 import base64
+import json
 from pathlib import Path
 
 import pytest
@@ -129,7 +129,9 @@ def target_wsgi_application(environ, start_response):
             headers = []
             txn.insert_distributed_trace_headers(headers)
             # To revert to the dict format of the payload, use this:
-            payload = json.loads(base64.b64decode([value for key, value in headers if key=="newrelic"][0]).decode("utf-8"))
+            payload = json.loads(
+                base64.b64decode([value for key, value in headers if key == "newrelic"][0]).decode("utf-8")
+            )
             payload_version = payload.get("v")
             if payload_version and isinstance(payload_version, list):
                 payload["v"] = tuple(payload_version)

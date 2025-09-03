@@ -44,7 +44,6 @@ class ErrorTrace:
 
 
 def ErrorTraceWrapper(wrapped, ignore=None, expected=None, status_code=None):
-
     def wrapper(wrapped, instance, args, kwargs):
         parent = current_trace()
 
@@ -58,12 +57,8 @@ def ErrorTraceWrapper(wrapped, ignore=None, expected=None, status_code=None):
 
 
 def error_trace(ignore=None, expected=None, status_code=None):
-
-    return functools.partial(
-        ErrorTraceWrapper, ignore=ignore, expected=expected, status_code=status_code
-    )
+    return functools.partial(ErrorTraceWrapper, ignore=ignore, expected=expected, status_code=status_code)
 
 
 def wrap_error_trace(module, object_path, ignore=None, expected=None, status_code=None):
-
     wrap_object(module, object_path, ErrorTraceWrapper, (ignore, expected, status_code))

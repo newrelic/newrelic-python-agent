@@ -27,7 +27,6 @@ import random
 import sys
 import time
 import traceback
-import warnings
 import zlib
 from heapq import heapify, heapreplace
 

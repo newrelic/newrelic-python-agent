@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import threading
-import warnings
 
 import newrelic.api.import_hook
 import newrelic.core.agent

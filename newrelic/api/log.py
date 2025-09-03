@@ -21,7 +21,6 @@ from newrelic.api.time_trace import get_linking_metadata
 from newrelic.api.transaction import current_transaction, record_log_event
 from newrelic.common.encoding_utils import json_encode
 from newrelic.common.object_names import parse_exc_info
-from newrelic.core.attribute import truncate
 from newrelic.core.config import global_settings, is_expected_error
 
 
@@ -183,4 +182,3 @@ class NewRelicLogForwardingHandler(logging.Handler):
     def filter_record_attributes(cls, record):
         record_attrs = vars(record)
         return {k: record_attrs[k] for k in record_attrs if k not in cls.IGNORED_LOG_RECORD_KEYS}
-

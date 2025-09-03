@@ -60,7 +60,7 @@ def extract_agent_attribute_from_methods(args, kwargs, method_name, methods, par
                 value = args[index]
             return value
     except Exception:
-        _logger.warning(f"Exception occurred in PyZeebe instrumentation: failed to extract {param} from {method_name}. Report this issue to New Relic support.", exc_info=True)
+        _logger.warning("Exception occurred in PyZeebe instrumentation: failed to extract %s from %s. Report this issue to New Relic support.", param, method_name, exc_info=True)
 
 # Async wrapper that instruments router/worker annotations`
 async def _nr_wrapper_execute_one_job(wrapped, instance, args, kwargs):

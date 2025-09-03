@@ -419,7 +419,6 @@ def _process_configuration(section):
     _process_setting(section, "agent_limits.sql_explain_plans", "getint", None)
     _process_setting(section, "agent_limits.sql_explain_plans_per_harvest", "getint", None)
     _process_setting(section, "agent_limits.slow_sql_data", "getint", None)
-    _process_setting(section, "agent_limits.merge_stats_maximum", "getint", None)
     _process_setting(section, "agent_limits.errors_per_transaction", "getint", None)
     _process_setting(section, "agent_limits.errors_per_harvest", "getint", None)
     _process_setting(section, "agent_limits.slow_transaction_dry_harvests", "getint", None)
@@ -743,13 +742,6 @@ def translate_deprecated_settings(settings, cached_settings):
             "(CAT) with the newer Distributed Tracing by setting 'distributed_tracing.enabled' to True in your agent "
             "configuration. For further details on distributed tracing, please refer to our documentation: "
             "https://docs.newrelic.com/docs/distributed-tracing/concepts/distributed-tracing-planning-guide/#changes."
-        )
-
-    if settings.agent_limits.merge_stats_maximum is not None:
-        _logger.info(
-            "Ignoring deprecated setting: "
-            "agent_limits.merge_stats_maximum. The agent will now respect "
-            "server-side commands."
         )
 
     return settings

@@ -1,0 +1,146 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+from dummy_app.models import AuthorModel, BookModel, LibraryModel, MagazineModel
+from graphene import Field, Int, List, NonNull, ObjectType, Schema, String, Union
+from graphene import Mutation as GrapheneMutation
+from graphene_django import DjangoObjectType
+
+
+class Author(DjangoObjectType):
+    class Meta:
+        model = AuthorModel
+        fields = "__all__"
+
+
+class Book(DjangoObjectType):
+    class Meta:
+        model = BookModel
+        fields = "__all__"
+
+
+class Magazine(DjangoObjectType):
+    class Meta:
+        model = MagazineModel
+        fields = "__all__"
+
+
+class Item(Union):
+    class Meta:
+        types = (Book, Magazine)
+
+
+class Library(DjangoObjectType):
+    class Meta:
+        model = LibraryModel
+        fields = "__all__"
+
+
+Storage = List(String)
+
+
+authors = [
+    Author(first_name="New", last_name="Relic"),
+    Author(first_name="Bob", last_name="Smith"),
+    Author(first_name="Leslie", last_name="Jones"),
+]
+
+books = [
+    Book(id=1, name="Python Agent: The Book", isbn="a-fake-isbn", author=authors[0], branch="riverside"),
+    Book(
+        id=2,
+        name="Ollies for O11y: A Sk8er's Guide to Observability",
+        isbn="a-second-fake-isbn",
+        author=authors[1],
+        branch="downtown",
+    ),
+    Book(id=3, name="[Redacted]", isbn="a-third-fake-isbn", author=authors[2], branch="riverside"),
+]
+
+magazines = [
+    Magazine(id=1, name="Reli Updates Weekly", issue=1, branch="riverside"),
+    Magazine(id=2, name="Reli Updates Weekly", issue=2, branch="downtown"),
+    Magazine(id=3, name="Node Weekly", issue=1, branch="riverside"),
+]
+
+
+libraries = ["riverside", "downtown"]
+libraries = [
+    Library(
+        id=i + 1,
+        branch=branch,
+        magazine=[m for m in magazines if m.branch == branch],
+        book=[b for b in books if b.branch == branch],
+    )
+    for i, branch in enumerate(libraries)
+]
+
+storage = []
+
+
+def resolve_library(self, info, index):
+    return libraries[index]
+
+
+def resolve_storage(self, info):
+    return [storage.pop()]
+
+
+def resolve_search(self, info, contains):
+    search_books = [b for b in books if contains in b.name]
+    search_magazines = [m for m in magazines if contains in m.name]
+    return search_books + search_magazines
+
+
+def resolve_hello(self, info):
+    return "Hello!"
+
+
+def resolve_echo(self, info, echo):
+    return echo
+
+
+def resolve_error(self, info):
+    raise RuntimeError("Runtime Error!")
+
+
+def resolve_storage_add(self, info, string):
+    storage.append(string)
+    return StorageAdd(string=string)
+
+
+class StorageAdd(GrapheneMutation):
+    class Arguments:
+        string = String(required=True)
+
+    string = String()
+    mutate = resolve_storage_add
+
+
+class Query(ObjectType):
+    library = Field(Library, index=Int(required=True), resolver=resolve_library)
+    hello = String(resolver=resolve_hello)
+    search = Field(List(Item), contains=String(required=True), resolver=resolve_search)
+    echo = Field(String, echo=String(required=True), resolver=resolve_echo)
+    storage = Field(Storage, resolver=resolve_storage)
+    error = String(resolver=resolve_error)
+    error_non_null = Field(NonNull(String), resolver=resolve_error)
+    error_middleware = String(resolver=resolve_hello)
+
+
+class Mutation(ObjectType):
+    storage_add = StorageAdd.Field()
+
+
+target_schema = Schema(query=Query, mutation=Mutation, auto_camelcase=False)

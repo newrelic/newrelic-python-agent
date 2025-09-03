@@ -209,9 +209,10 @@ def run_setup(with_extensions):
         if with_extensions:
             kwargs_tmp["ext_modules"] = [
                 Extension("newrelic.packages.wrapt._wrappers", ["newrelic/packages/wrapt/_wrappers.c"]),
+                Extension("newrelic.core._thread_utilization", ["newrelic/core/_thread_utilization.c"]),
             ]
             if not is_windows:
-                # These extensions are only supported on POSIX platforms.
+                # This extension is only supported on POSIX platforms.
                 monotonic_libraries = []
                 if with_librt():
                     monotonic_libraries = ["rt"]
@@ -220,9 +221,6 @@ def run_setup(with_extensions):
                     Extension(
                         "newrelic.common._monotonic", ["newrelic/common/_monotonic.c"], libraries=monotonic_libraries
                     )
-                )
-                kwargs_tmp["ext_modules"].append(
-                    Extension("newrelic.core._thread_utilization", ["newrelic/core/_thread_utilization.c"])
                 )
 
             kwargs_tmp["cmdclass"] = dict(build_ext=optional_build_ext)

@@ -40,6 +40,7 @@ jobs:
             runner: ubuntu-24.04-arm
 
     runs-on: ${{ matrix.runner }}
+    name: Docker Build ${{ matrix.platform }}
 
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
@@ -110,6 +111,8 @@ jobs:
     if: github.event_name != 'pull_request'
     needs:
       - build
+
+    name: Docker Merge Image
 
     steps:
       - name: Download Digests

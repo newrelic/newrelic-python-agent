@@ -76,7 +76,7 @@ class GenericNodeMixin:
         u_attrs = self.processed_user_attributes
         if settings.distributed_tracing.unique_spans.enabled:
             # ids is the list of span guids that share this unqiue exit span.
-            u_attrs["ids"] = self.ids
+            u_attrs["nr.ids"] = self.ids
 
         u_attrs = attribute.resolve_user_attributes(
             u_attrs, settings.attribute_filter, DST_SPAN_EVENTS, attr_class=attr_class

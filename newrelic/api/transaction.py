@@ -19,7 +19,6 @@ import re
 import sys
 import threading
 import time
-import warnings
 import weakref
 from collections import OrderedDict
 
@@ -1104,29 +1103,6 @@ class Transaction:
 
         return data
 
-    def _create_distributed_trace_payload(self):
-        try:
-            data = self._create_distributed_trace_data()
-            if data is None:
-                return
-            payload = DistributedTracePayload(v=DistributedTracePayload.version, d=data)
-        except:
-            self._record_supportability("Supportability/DistributedTrace/CreatePayload/Exception")
-        else:
-            self._record_supportability("Supportability/DistributedTrace/CreatePayload/Success")
-            return payload
-
-    def create_distributed_trace_payload(self):
-        warnings.warn(
-            (
-                "The create_distributed_trace_payload API has been deprecated. "
-                "Please use the insert_distributed_trace_headers API."
-            ),
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self._create_distributed_trace_payload()
-
     def _generate_distributed_trace_headers(self, data=None):
         try:
             data = data or self._create_distributed_trace_data()
@@ -1242,19 +1218,6 @@ class Transaction:
             self._record_supportability("Supportability/DistributedTrace/AcceptPayload/Exception")
             return False
 
-    def accept_distributed_trace_payload(self, *args, **kwargs):
-        warnings.warn(
-            (
-                "The accept_distributed_trace_payload API has been deprecated. "
-                "Please use the accept_distributed_trace_headers API."
-            ),
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        if not self._can_accept_distributed_trace_headers():
-            return False
-        return self._accept_distributed_trace_payload(*args, **kwargs)
-
     def _accept_distributed_trace_data(self, data, transport_type):
         if transport_type not in DISTRIBUTED_TRACE_TRANSPORT_TYPES:
             transport_type = "Unknown"
@@ -1352,8 +1315,11 @@ class Transaction:
             self._record_supportability("Supportability/TraceContext/Accept/Success")
             return True
         elif distributed_header:
-            distributed_header = ensure_str(distributed_header)
             return self._accept_distributed_trace_payload(distributed_header, transport_type)
+        else:
+            # Do not return anything, but still generate supportability
+            # metric for the lack of payload/distributed_header
+            self._accept_distributed_trace_payload(distributed_header, transport_type)
 
     def _process_incoming_cat_headers(self, encoded_cross_process_id, encoded_txn_header):
         settings = self._settings
@@ -1599,18 +1565,6 @@ class Transaction:
 
         self._log_events.add(event, priority=priority)
 
-    # This function has been deprecated (and will be removed eventually)
-    # and therefore does not need to be included in coverage analysis
-    def record_exception(self, exc=None, value=None, tb=None, params=None, ignore_errors=None):  # pragma: no cover
-        # Deprecation Warning
-        warnings.warn(
-            ("The record_exception function is deprecated. Please use the new api named notice_error instead."),
-            DeprecationWarning,
-            stacklevel=2,
-        )
-
-        self.notice_error(error=(exc, value, tb), attributes=params, ignore=ignore_errors)
-
     def notice_error(self, error=None, attributes=None, expected=None, ignore=None, status_code=None):
         settings = self._settings
 
@@ -1788,28 +1742,6 @@ class Transaction:
 
         return result
 
-    # This function has been deprecated (and will be removed eventually)
-    # and therefore does not need to be included in coverage analysis
-    def add_custom_parameter(self, name, value):  # pragma: no cover
-        # Deprecation warning
-        warnings.warn(
-            ("The add_custom_parameter API has been deprecated. Please use the add_custom_attribute API."),
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self.add_custom_attribute(name, value)
-
-    # This function has been deprecated (and will be removed eventually)
-    # and therefore does not need to be included in coverage analysis
-    def add_custom_parameters(self, items):  # pragma: no cover
-        # Deprecation warning
-        warnings.warn(
-            ("The add_custom_parameters API has been deprecated. Please use the add_custom_attributes API."),
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return self.add_custom_attributes(items)
-
     def add_framework_info(self, name, version=None):
         if name:
             self._frameworks.add((name, version))
@@ -1910,30 +1842,6 @@ def add_custom_attributes(items):
         return False
 
 
-# This function has been deprecated (and will be removed eventually)
-# and therefore does not need to be included in coverage analysis
-def add_custom_parameter(key, value):  # pragma: no cover
-    # Deprecation warning
-    warnings.warn(
-        ("The add_custom_parameter API has been deprecated. Please use the add_custom_attribute API."),
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    return add_custom_attribute(key, value)
-
-
-# This function has been deprecated (and will be removed eventually)
-# and therefore does not need to be included in coverage analysis
-def add_custom_parameters(items):  # pragma: no cover
-    # Deprecation warning
-    warnings.warn(
-        ("The add_custom_parameters API has been deprecated. Please use the add_custom_attributes API."),
-        DeprecationWarning,
-        stacklevel=2,
-    )
-    return add_custom_attributes(items)
-
-
 def set_user_id(user_id):
     transaction = current_transaction()
 
@@ -1959,15 +1867,6 @@ def get_browser_timing_header(nonce=None):
     transaction = current_transaction()
     if transaction and hasattr(transaction, "browser_timing_header"):
         return transaction.browser_timing_header(nonce)
-    return ""
-
-
-def get_browser_timing_footer(nonce=None):
-    warnings.warn(
-        "The get_browser_timing_footer function is deprecated. Please migrate to only using the get_browser_timing_header API instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
     return ""
 
 
@@ -2144,23 +2043,10 @@ def record_log_event(message, level=None, timestamp=None, attributes=None, appli
         application.record_log_event(message, level, timestamp, attributes=attributes, priority=priority)
 
 
-def accept_distributed_trace_payload(payload, transport_type="HTTP"):
-    transaction = current_transaction()
-    if transaction:
-        return transaction.accept_distributed_trace_payload(payload, transport_type)
-    return False
-
-
 def accept_distributed_trace_headers(headers, transport_type="HTTP"):
     transaction = current_transaction()
     if transaction:
         return transaction.accept_distributed_trace_headers(headers, transport_type)
-
-
-def create_distributed_trace_payload():
-    transaction = current_transaction()
-    if transaction:
-        return transaction.create_distributed_trace_payload()
 
 
 def insert_distributed_trace_headers(headers):

@@ -108,7 +108,7 @@ jobs:
           coverage xml
 
       - name: Upload Coverage to Codecov
-        uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24 # 5.4.3
+        uses: codecov/codecov-action@fdcc8476540edceab3de004e990f80d881c6cc00 # 5.5.0
         with:
           files: coverage.xml
           fail_ci_if_error: true
@@ -764,7 +764,7 @@ jobs:
     timeout-minutes: 30
     services:
       solr:
-        image: bitnami/solr:8.8.2
+        image: bitnamilegacy/solr:8.8.2
         env:
           SOLR_CORE: collection
         ports:
@@ -1026,7 +1026,7 @@ jobs:
     timeout-minutes: 30
     services:
       zookeeper:
-        image: bitnami/zookeeper:3.9.1
+        image: bitnamilegacy/zookeeper:3.9.1
         env:
           ALLOW_ANONYMOUS_LOGIN: yes
 
@@ -1034,7 +1034,7 @@ jobs:
           - 2181:2181
 
       kafka:
-        image: bitnami/kafka:3.6.1
+        image: bitnamilegacy/kafka:3.3.2
         ports:
           - 8080:8080
           - 8082:8082

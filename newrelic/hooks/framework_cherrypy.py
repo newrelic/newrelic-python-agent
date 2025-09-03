@@ -88,7 +88,7 @@ class ResourceProxy(ObjectProxy):
         # method will always be upper case. Wrap the method when
         # returned with the handler wrapper.
 
-        attr = super(ResourceProxy, self).__getattr__(name)
+        attr = super().__getattr__(name)
         return handler_wrapper(attr) if name.isupper() else attr
 
 

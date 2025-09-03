@@ -89,7 +89,7 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
         if (scheme, port) in (("http", 80), ("https", 443)):
             port = None
 
-        netloc = port and (f"{hostname}:{port}") or hostname
+        netloc = (port and (f"{hostname}:{port}")) or hostname
         return netloc
 
     def time_metrics(self, stats, root, parent):
@@ -171,7 +171,7 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
 
     def span_event(self, *args, **kwargs):
         self.agent_attributes["http.url"] = self.http_url
-        attrs = super(ExternalNode, self).span_event(*args, **kwargs)
+        attrs = super().span_event(*args, **kwargs)
         i_attrs = attrs[0]
 
         i_attrs["category"] = "http"

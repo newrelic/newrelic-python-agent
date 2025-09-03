@@ -20,16 +20,14 @@ This will generate the necessary code to instrument the new vectorstore classes 
 copy of the newrelic-python-agent repository.
 """
 
-import os
+from pathlib import Path
 from textwrap import dedent
 
 from langchain_community import vectorstores
 
 from newrelic.hooks.mlmodel_langchain import VECTORSTORE_CLASSES
 
-dir_path = os.path.dirname(os.path.realpath(__file__))
-test_dir = os.path.abspath(os.path.join(dir_path, os.pardir))
-REPO_PATH = os.path.abspath(os.path.join(test_dir, os.pardir))
+REPO_PATH = Path(__file__).resolve().parent.parent.parent
 
 
 def add_to_config(directory, instrumented_class=None):
@@ -37,7 +35,8 @@ def add_to_config(directory, instrumented_class=None):
     if instrumented_class:
         return
 
-    with open(f"{REPO_PATH}/newrelic/config.py", "r+") as file:
+    config_path = REPO_PATH / "newrelic" / "config.py"
+    with config_path.open("r+") as file:
         text = file.read()
         text = text.replace(
             "VectorStores with similarity_search method",
@@ -58,7 +57,8 @@ def add_to_config(directory, instrumented_class=None):
 
 
 def add_to_hooks(class_name, directory, instrumented_class=None):
-    with open(f"{REPO_PATH}/newrelic/hooks/mlmodel_langchain.py", "r+") as file:
+    langchain_path = REPO_PATH / "newrelic" / "hooks" / "mlmodel_langchain.py"
+    with langchain_path.open("r+") as file:
         text = file.read()
 
         # The directory does not exist yet.  Add the new directory and class name to the beginning of the dictionary

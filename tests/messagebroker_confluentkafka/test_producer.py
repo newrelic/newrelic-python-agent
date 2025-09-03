@@ -83,7 +83,7 @@ def test_trace_metrics(topic, send_producer_message, expected_broker_metrics):
         "test_producer:test_trace_metrics.<locals>.test",
         scoped_metrics=scoped_metrics,
         rollup_metrics=unscoped_metrics,
-        custom_metrics=[(f"Python/MessageBroker/Confluent-Kafka/{version}", 1)] + expected_broker_metrics,
+        custom_metrics=[(f"Python/MessageBroker/Confluent-Kafka/{version}", 1), *expected_broker_metrics],
         background_task=True,
     )
     @background_task()
@@ -99,8 +99,8 @@ def test_distributed_tracing_headers(topic, send_producer_message, expected_brok
         rollup_metrics=[
             ("Supportability/TraceContext/Create/Success", 1),
             ("Supportability/DistributedTrace/CreatePayload/Success", 1),
-        ]
-        + expected_broker_metrics,
+            *expected_broker_metrics,
+        ],
         background_task=True,
     )
     @background_task()
@@ -118,8 +118,8 @@ def test_distributed_tracing_headers_under_terminal(topic, send_producer_message
         rollup_metrics=[
             ("Supportability/TraceContext/Create/Success", 1),
             ("Supportability/DistributedTrace/CreatePayload/Success", 1),
-        ]
-        + expected_broker_metrics,
+            *expected_broker_metrics,
+        ],
         background_task=True,
     )
     @background_task(name="test_distributed_tracing_headers_under_terminal")
@@ -147,6 +147,6 @@ def test_producer_errors(topic, producer, monkeypatch):
     test()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def expected_broker_metrics(broker, topic):
     return [(f"MessageBroker/Kafka/Nodes/{server}/Produce/{topic}", 1) for server in broker.split(",")]

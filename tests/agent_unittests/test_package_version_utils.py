@@ -41,16 +41,16 @@ SKIP_IF_IMPORTLIB_METADATA = pytest.mark.skipif(
 SKIP_IF_NOT_PY310_PLUS = pytest.mark.skipif(not IS_PY310_PLUS, reason="These features were added in 3.10+")
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture(autouse=True)
 def patched_pytest_module(monkeypatch):
     for attr in VERSION_ATTRS:
         if hasattr(pytest, attr):
             monkeypatch.delattr(pytest, attr)
 
-    yield pytest
+    return pytest
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture(autouse=True)
 def cleared_package_version_cache():
     """Ensure cache is empty before every test to exercise code paths."""
     _get_package_version.cache_clear()
@@ -103,7 +103,16 @@ def test_get_package_version_tuple(monkeypatch, attr, value, expected_value):
 
 @SKIP_IF_NOT_IMPORTLIB_METADATA
 @validate_function_called("importlib.metadata", "version")
-def test_importlib_metadata():
+def test_importlib_dot_metadata():
+    # Test for importlib.metadata from the standard library.
+    version = get_package_version("pytest")
+    assert version not in NULL_VERSIONS, version
+
+
+@SKIP_IF_IMPORTLIB_METADATA
+@validate_function_called("importlib_metadata", "version")
+def test_importlib_underscore_metadata():
+    # Test for importlib_metadata, a backport library available on PyPI.
     version = get_package_version("pytest")
     assert version not in NULL_VERSIONS, version
 
@@ -117,7 +126,9 @@ def test_mapping_import_to_distribution_packages():
 
 @SKIP_IF_IMPORTLIB_METADATA
 @validate_function_called("pkg_resources", "get_distribution")
-def test_pkg_resources_metadata():
+def test_pkg_resources_metadata(monkeypatch):
+    # Prevent importlib_metadata from being used by these tests
+    monkeypatch.setitem(sys.modules, "importlib_metadata", None)
     version = get_package_version("pytest")
     assert version not in NULL_VERSIONS, version
 
@@ -163,7 +174,8 @@ def test_version_as_class_property(monkeypatch):
     monkeypatch.setattr(pytest, "version", FakeModule.version, raising=False)
 
     version = get_package_version("pytest")
-    assert version not in NULL_VERSIONS and isinstance(version, str), version
+    assert version not in NULL_VERSIONS, version
+    assert isinstance(version, str), version
 
 
 # This test checks to see if the version is a property of the class
@@ -181,4 +193,5 @@ def test_version_as_class_property_and_version_tuple(monkeypatch):
     monkeypatch.setattr(pytest, "version_tuple", (1, 2, 3), raising=False)
 
     version = get_package_version("pytest")
-    assert version not in NULL_VERSIONS and isinstance(version, str), version
+    assert version not in NULL_VERSIONS, version
+    assert isinstance(version, str), version

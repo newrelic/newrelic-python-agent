@@ -24,6 +24,7 @@ import socket
 import subprocess
 import sys
 import threading
+from pathlib import Path
 from subprocess import check_output as _execute_program
 
 from newrelic.common.utilization import CommonUtilization
@@ -74,7 +75,7 @@ def logical_processor_count():
     # looking at the devices corresponding to the available CPUs.
 
     try:
-        pseudoDevices = os.listdir("/devices/pseudo/")
+        pseudoDevices = Path("/devices/pseudo/").iterdir()
         expr = re.compile("^cpuid@[0-9]+$")
 
         res = 0
@@ -106,13 +107,13 @@ def _linux_physical_processor_count(filename=None):
     # provide the total number of cores for that physical processor.
     # The 'cpu cores' field is duplicated, so only remember the last
 
-    filename = filename or "/proc/cpuinfo"
+    filename = Path(filename or "/proc/cpuinfo")
 
     processors = 0
     physical_processors = {}
 
     try:
-        with open(filename, "r") as fp:
+        with filename.open() as fp:
             processor_id = None
             cores = None
 
@@ -205,13 +206,13 @@ def _linux_total_physical_memory(filename=None):
     # units is given in the file, it is always in kilobytes so we do not
     # need to accommodate any other unit types beside 'kB'.
 
-    filename = filename or "/proc/meminfo"
+    filename = Path(filename or "/proc/meminfo")
 
     try:
         parser = re.compile(r"^(?P<key>\S*):\s*(?P<value>\d*)\s*kB")
 
-        with open(filename, "r") as fp:
-            for line in fp.readlines():  # noqa: FURB129 # Read all lines at once
+        with filename.open() as fp:
+            for line in fp.readlines():  # Read all lines at once
                 match = parser.match(line)
                 if not match:
                     continue
@@ -271,10 +272,10 @@ def _linux_physical_memory_used(filename=None):
     #              data       data + stack
     #              dt         dirty pages (unused in Linux 2.6)
 
-    filename = filename or f"/proc/{os.getpid()}/statm"
+    filename = Path(filename or f"/proc/{os.getpid()}/statm")
 
     try:
-        with open(filename, "r") as fp:
+        with filename.open() as fp:
             rss_pages = float(fp.read().split()[1])
             memory_bytes = rss_pages * resource.getpagesize()
             return memory_bytes / (1024 * 1024)
@@ -406,7 +407,7 @@ class BootIdUtilization(CommonUtilization):
             return
 
         try:
-            with open(cls.METADATA_URL, "rb") as f:
+            with Path(cls.METADATA_URL).open("rb") as f:
                 return f.readline().decode("ascii")
         except:
             # There are all sorts of exceptions that can occur here

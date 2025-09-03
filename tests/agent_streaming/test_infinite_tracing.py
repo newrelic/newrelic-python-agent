@@ -31,7 +31,7 @@ settings = global_settings()
 CONDITION_CLS = type(threading.Condition())
 
 
-@pytest.fixture()
+@pytest.fixture
 def app():
     app = Application("Python Agent Test (Infinite Tracing)")
     yield app
@@ -72,11 +72,11 @@ def test_infinite_tracing_span_streaming(mock_grpc_server, status_code, metrics,
     class TerminateOnWait(CONDITION_CLS):
         def notify_all(self, *args, **kwargs):
             event.set()
-            return super(TerminateOnWait, self).notify_all(*args, **kwargs)
+            return super().notify_all(*args, **kwargs)
 
         def wait(self, *args, **kwargs):
             event.set()
-            return super(TerminateOnWait, self).wait(*args, **kwargs)
+            return super().wait(*args, **kwargs)
 
     @staticmethod
     def condition(*args, **kwargs):
@@ -200,7 +200,7 @@ def test_disconnect_on_UNIMPLEMENTED(mock_grpc_server, monkeypatch, app, batchin
     class WaitOnNotify(CONDITION_CLS):
         def notify_all(self, *args, **kwargs):
             event.set()
-            return super(WaitOnNotify, self).notify_all(*args, **kwargs)
+            return super().notify_all(*args, **kwargs)
 
     @staticmethod
     def condition(*args, **kwargs):
@@ -266,12 +266,12 @@ def test_no_delay_on_ok(mock_grpc_server, monkeypatch, app, batching):
 
     class SetFlagOnWait(CONDITION_CLS):
         def __init__(self, event, *args, **kwargs):
-            super(SetFlagOnWait, self).__init__(*args, **kwargs)
+            super().__init__(*args, **kwargs)
             self.event = event
 
         def wait(self, *args, **kwargs):
             self.event.set()
-            return super(SetFlagOnWait, self).wait(*args, **kwargs)
+            return super().wait(*args, **kwargs)
 
     @staticmethod
     def condition(*args, **kwargs):
@@ -408,7 +408,7 @@ def test_span_supportability_metrics(mock_grpc_server, monkeypatch, app, dropped
     class WaitOnWait(CONDITION_CLS):
         def wait(self, *args, **kwargs):
             wait_event.set()
-            ret = super(WaitOnWait, self).wait(*args, **kwargs)
+            ret = super().wait(*args, **kwargs)
             assert continue_event.wait(timeout=5)
             return ret
 

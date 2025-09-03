@@ -21,7 +21,7 @@ import pytest
 from amqp.exceptions import NotFound
 from kombu import messaging, serialization
 from testing_support.db_settings import rabbitmq_settings
-from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture  # noqa: F401
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 from testing_support.validators.validate_distributed_trace_accepted import validate_distributed_trace_accepted
 
 from newrelic.api.transaction import current_transaction
@@ -66,7 +66,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 )
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def producer(producer_connection, queue):
     # Purge the queue.
     try:
@@ -77,10 +77,10 @@ def producer(producer_connection, queue):
 
     producer = producer_connection.Producer(serializer="json")
 
-    yield producer
+    return producer
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def consumer(producer, consumer_connection, queue, consume):
     # According to the docs:
     #   Note that a Consumer does not need the serialization method specified. They can
@@ -91,14 +91,14 @@ def consumer(producer, consumer_connection, queue, consume):
         yield con
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def consumer_callback_error(producer, consumer_connection, queue, consume_error):
     consumer = consumer_connection.Consumer(queue, callbacks=[consume_error])
     with consumer as con:
         yield con
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def consumer_validate_dt(producer, consumer_connection, queue, consume_validate_dt):
     consumer = consumer_connection.Consumer(queue, callbacks=[consume_validate_dt])
     with consumer as con:

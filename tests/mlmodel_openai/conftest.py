@@ -14,6 +14,7 @@
 
 import json
 import os
+from pathlib import Path
 
 import pytest
 from _mock_external_openai_server import (
@@ -72,14 +73,14 @@ else:
     ]
 
 
-OPENAI_AUDIT_LOG_FILE = os.path.join(os.path.realpath(os.path.dirname(__file__)), "openai_audit.log")
+OPENAI_AUDIT_LOG_FILE = Path(__file__).parent / "openai_audit.log"
 OPENAI_AUDIT_LOG_CONTENTS = {}
 # Intercept outgoing requests and log to file for mocking
 RECORDED_HEADERS = {"x-request-id", "content-type"}
 
 
 @pytest.fixture(scope="session")
-def openai_clients(openai_version, MockExternalOpenAIServer):  # noqa: F811
+def openai_clients(openai_version, MockExternalOpenAIServer):
     """
     This configures the openai client and returns it for openai v1 and only configures
     openai for v0 since there is no client.
@@ -128,7 +129,7 @@ def async_openai_client(openai_clients):
 
 @pytest.fixture(autouse=True, scope="session")
 def openai_server(
-    openai_version,  # noqa: F811
+    openai_version,
     openai_clients,
     wrap_openai_api_requestor_request,
     wrap_openai_api_requestor_interpret_response,
@@ -163,7 +164,7 @@ def openai_server(
             wrap_function_wrapper("openai._streaming", "Stream._iter_events", wrap_stream_iter_events)
             yield  # Run tests
         # Write responses to audit log
-        with open(OPENAI_AUDIT_LOG_FILE, "w") as audit_log_fp:
+        with OPENAI_AUDIT_LOG_FILE.open("w") as audit_log_fp:
             json.dump(OPENAI_AUDIT_LOG_CONTENTS, fp=audit_log_fp, indent=4)
     else:
         # We are mocking openai responses so we don't need to do anything in this case.
@@ -171,7 +172,7 @@ def openai_server(
 
 
 @pytest.fixture(scope="session")
-def wrap_httpx_client_send(extract_shortened_prompt):  # noqa: F811
+def wrap_httpx_client_send(extract_shortened_prompt):
     def _wrap_httpx_client_send(wrapped, instance, args, kwargs):
         bound_args = bind_args(wrapped, args, kwargs)
         stream = bound_args.get("stream", False)
@@ -232,7 +233,7 @@ def wrap_openai_api_requestor_interpret_response():
 
 
 @pytest.fixture(scope="session")
-def wrap_openai_api_requestor_request(extract_shortened_prompt):  # noqa: F811
+def wrap_openai_api_requestor_request(extract_shortened_prompt):
     def _wrap_openai_api_requestor_request(wrapped, instance, args, kwargs):
         params = bind_request_params(*args, **kwargs)
         if not params:
@@ -276,7 +277,7 @@ def bind_request_interpret_response_params(result, stream):
 def generator_proxy(openai_version):
     class GeneratorProxy(ObjectProxy):
         def __init__(self, wrapped):
-            super(GeneratorProxy, self).__init__(wrapped)
+            super().__init__(wrapped)
 
         def __iter__(self):
             return self
@@ -317,7 +318,7 @@ def generator_proxy(openai_version):
                 raise
 
         def close(self):
-            return super(GeneratorProxy, self).close()
+            return super().close()
 
     return GeneratorProxy
 

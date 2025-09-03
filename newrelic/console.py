@@ -30,6 +30,7 @@ import time
 import traceback
 from collections import OrderedDict
 from inspect import signature
+from pathlib import Path
 
 from newrelic.common.object_wrapper import ObjectProxy
 from newrelic.core.agent import agent_instance
@@ -366,8 +367,6 @@ class ConsoleShell(cmd.Cmd):
         interactive Python interpreter. Invoke 'exit()' or 'quit()' to
         escape the interpreter session."""
 
-        enabled = False
-
         _settings = global_settings()
 
         if not _settings.console.allow_interpreter_cmd:
@@ -425,7 +424,7 @@ class ConnectionManager:
         self.__listener_socket = listener_socket
         self.__console_initialized = False
 
-        if not os.path.isabs(self.__listener_socket):
+        if not Path(self.__listener_socket).is_absolute():
             host, port = self.__listener_socket.split(":")
             port = int(port)
             self.__listener_socket = (host, port)
@@ -437,7 +436,7 @@ class ConnectionManager:
 
     def __socket_cleanup(self, path):
         try:
-            os.unlink(path)
+            Path(path).unlink()
         except Exception:
             pass
 
@@ -448,7 +447,7 @@ class ConnectionManager:
             listener.bind(self.__listener_socket)
         else:
             try:
-                os.unlink(self.__listener_socket)
+                Path(self.__listener_socket).unlink()
             except Exception:
                 pass
 
@@ -456,7 +455,7 @@ class ConnectionManager:
             listener.bind(self.__listener_socket)
 
             atexit.register(self.__socket_cleanup, self.__listener_socket)
-            os.chmod(self.__listener_socket, 0o600)
+            Path(self.__listener_socket).chmod(0o600)
 
         listener.listen(5)
 
@@ -511,8 +510,8 @@ class ClientShell(cmd.Cmd):
 
         listener_socket = self.__config_object.get("newrelic", "console.listener_socket") % {"pid": "*"}
 
-        if os.path.isabs(listener_socket):
-            self.__servers = [(socket.AF_UNIX, path) for path in sorted(glob.glob(listener_socket))]
+        if Path(listener_socket).is_absolute():
+            self.__servers = [(socket.AF_UNIX, path) for path in sorted(glob.glob(listener_socket))]  # noqa: PTH207
         else:
             host, port = listener_socket.split(":")
             port = int(port)

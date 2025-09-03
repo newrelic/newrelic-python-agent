@@ -96,7 +96,7 @@ def is_valid_file_delivery_location(file_uri):
 
         return True
 
-    except Exception as e:
+    except Exception:
         _logger.warning(
             "Configured Agent Control health delivery location is not valid. Health check will not be enabled."
         )
@@ -172,11 +172,8 @@ class AgentControlHealth:
         # session. This function allows us to update to a healthy status if so based on the error type
         # Since this function is only called when we are in scenario where the agent functioned as expected, we check to
         # see if the previous status was unhealthy so we know to update it
-        if (
-            protocol_error
-            and self.status_code in PROTOCOL_ERROR_CODES
-            or collector_error
-            and self.status_code == HealthStatus.FAILED_NR_CONNECTION.value
+        if (protocol_error and self.status_code in PROTOCOL_ERROR_CODES) or (
+            collector_error and self.status_code == HealthStatus.FAILED_NR_CONNECTION.value
         ):
             self.status_code = HealthStatus.HEALTHY.value
             self.status_message = HEALTHY_STATUS_MESSAGE
@@ -188,10 +185,10 @@ class AgentControlHealth:
             file_path = urlparse(self.health_delivery_location).path
             file_id = self.get_file_id()
             file_name = f"health-{file_id}.yml"
-            full_path = os.path.join(file_path, file_name)
+            full_path = Path(file_path) / file_name
             is_healthy = self.is_healthy
 
-            with open(full_path, "w") as f:
+            with full_path.open("w") as f:
                 f.write(f"healthy: {is_healthy}\n")
                 f.write(f"status: {self.status_message}\n")
                 f.write(f"start_time_unix_nano: {self.start_time_unix_nano}\n")

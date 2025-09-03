@@ -16,6 +16,7 @@ import os
 import sys
 import time
 import zlib
+from pathlib import Path
 from pprint import pprint
 
 from newrelic import version
@@ -264,7 +265,7 @@ class HttpClient(BaseClient):
                     internal_metric("Supportability/Python/Certificate/BundleRequired", 1)
 
             if ca_bundle_path:
-                if os.path.isdir(ca_bundle_path):
+                if Path(ca_bundle_path).is_dir():
                     connection_kwargs["ca_cert_dir"] = ca_bundle_path
                 else:
                     connection_kwargs["ca_certs"] = ca_bundle_path
@@ -282,7 +283,7 @@ class HttpClient(BaseClient):
             else:
                 self._host = proxy.host
                 self._port = proxy.port or 443
-                self._prefix = f"{self.PREFIX_SCHEME + host}:{str(port)}"
+                self._prefix = f"{self.PREFIX_SCHEME + host}:{port!s}"
                 urlopen_kwargs["assert_same_host"] = False
                 if proxy_headers:
                     self._headers.update(proxy_headers)
@@ -348,7 +349,7 @@ class HttpClient(BaseClient):
         if not self._prefix:
             url = f"{self.CONNECTION_CLS.scheme}://{self._host}{url}"
 
-        return super(HttpClient, self).log_request(fp, method, url, params, payload, headers, body, compression_time)
+        return super().log_request(fp, method, url, params, payload, headers, body, compression_time)
 
     @staticmethod
     def _compress(data, method="gzip", level=None):
@@ -442,7 +443,7 @@ class InsecureHttpClient(HttpClient):
             ca_bundle_path = None
             disable_certificate_validation = None
 
-        super(InsecureHttpClient, self).__init__(
+        super().__init__(
             host,
             port,
             proxy_scheme,
@@ -500,7 +501,7 @@ class ApplicationModeClient(SupportabilityMixin, HttpClient):
 
 
 class DeveloperModeClient(SupportabilityMixin, BaseClient):
-    RESPONSES = {
+    RESPONSES = {  # noqa: RUF012
         "preconnect": {"redirect_host": "fake-collector.newrelic.com"},
         "agent_settings": [],
         "connect": {
@@ -565,15 +566,13 @@ class DeveloperModeClient(SupportabilityMixin, BaseClient):
 
 class ServerlessModeClient(DeveloperModeClient):
     def __init__(self, *args, **kwargs):
-        super(ServerlessModeClient, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.payload = {}
 
     def send_request(
         self, method="POST", path="/agent_listener/invoke_raw_method", params=None, headers=None, payload=None
     ):
-        result = super(ServerlessModeClient, self).send_request(
-            method=method, path=path, params=params, headers=headers, payload=payload
-        )
+        result = super().send_request(method=method, path=path, params=params, headers=headers, payload=payload)
 
         if result[0] == 200:
             agent_method = params["method"]

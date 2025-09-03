@@ -20,6 +20,7 @@ import sys
 import threading
 import time
 import traceback
+from pathlib import Path
 
 import newrelic.api.application
 import newrelic.api.background_task
@@ -49,7 +50,7 @@ from newrelic.core.agent_control_health import (
 )
 from newrelic.core.config import Settings, apply_config_setting, default_host, fetch_config_setting
 
-__all__ = ["initialize", "filter_app_factory"]
+__all__ = ["filter_app_factory", "initialize"]
 
 _logger = logging.getLogger(__name__)
 
@@ -212,6 +213,10 @@ def _map_strip_exception_messages_allowlist(s):
 
 def _map_inc_excl_attributes(s):
     return newrelic.core.config._parse_attributes(s)
+
+
+def _map_inc_excl_middleware(s):
+    return newrelic.core.config._parse_attributes(s, middleware=True)
 
 
 def _map_case_insensitive_excl_labels(s):
@@ -452,6 +457,7 @@ def _process_configuration(section):
     _process_setting(section, "process_host.display_name", "get", None)
     _process_setting(section, "utilization.detect_aws", "getboolean", None)
     _process_setting(section, "utilization.detect_azure", "getboolean", None)
+    _process_setting(section, "utilization.detect_azurefunction", "getboolean", None)
     _process_setting(section, "utilization.detect_docker", "getboolean", None)
     _process_setting(section, "utilization.detect_kubernetes", "getboolean", None)
     _process_setting(section, "utilization.detect_gcp", "getboolean", None)
@@ -508,6 +514,9 @@ def _process_configuration(section):
         section, "instrumentation.kombu.ignored_exchanges", "get", newrelic.core.config.parse_space_separated_into_list
     )
     _process_setting(section, "instrumentation.kombu.consumer.enabled", "getboolean", None)
+    _process_setting(section, "instrumentation.middleware.django.enabled", "getboolean", None)
+    _process_setting(section, "instrumentation.middleware.django.exclude", "get", _map_inc_excl_middleware)
+    _process_setting(section, "instrumentation.middleware.django.include", "get", _map_inc_excl_middleware)
 
 
 # Loading of configuration from specified file and for specified
@@ -936,7 +945,7 @@ def _load_configuration(config_file=None, environment=None, ignore_errors=True, 
                 raise newrelic.api.exceptions.ConfigurationError(
                     "TOML configuration file can only be used if tomllib is available (Python 3.11+)."
                 ) from exc
-            with open(config_file, "rb") as f:
+            with Path(config_file).open("rb") as f:
                 content = tomllib.load(f)
                 newrelic_section = content.get("tool", {}).get("newrelic")
                 if not newrelic_section:
@@ -1163,7 +1172,7 @@ def _process_module_configuration():
 
 def _module_function_glob(module, object_path):
     """Match functions and class methods in a module to file globbing syntax."""
-    if not any((c in object_path for c in ("*", "?", "["))):  # Identify globbing patterns
+    if not any(c in object_path for c in ("*", "?", "[")):  # Identify globbing patterns
         return (object_path,)  # Returned value must be iterable
     else:
         # Gather module functions
@@ -2698,6 +2707,10 @@ def _process_module_builtin_defaults():
         "graphene.types.schema", "newrelic.hooks.framework_graphene", "instrument_graphene_types_schema"
     )
 
+    _process_module_definition(
+        "graphene_django.views", "newrelic.hooks.component_graphenedjango", "instrument_graphene_django_views"
+    )
+
     _process_module_definition("graphql.graphql", "newrelic.hooks.framework_graphql", "instrument_graphql")
     _process_module_definition(
         "graphql.execution.execute", "newrelic.hooks.framework_graphql", "instrument_graphql_execute"
@@ -2861,6 +2874,9 @@ def _process_module_builtin_defaults():
 
     _process_module_definition("loguru", "newrelic.hooks.logger_loguru", "instrument_loguru")
     _process_module_definition("loguru._logger", "newrelic.hooks.logger_loguru", "instrument_loguru_logger")
+
+    _process_module_definition("mcp.client.session", "newrelic.hooks.adapter_mcp", "instrument_mcp_client_session")
+
     _process_module_definition("structlog._base", "newrelic.hooks.logger_structlog", "instrument_structlog__base")
     _process_module_definition("structlog._frames", "newrelic.hooks.logger_structlog", "instrument_structlog__frames")
     _process_module_definition("paste.httpserver", "newrelic.hooks.adapter_paste", "instrument_paste_httpserver")
@@ -2873,6 +2889,8 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition("cx_Oracle", "newrelic.hooks.database_cx_oracle", "instrument_cx_oracle")
+
+    _process_module_definition("oracledb", "newrelic.hooks.database_oracledb", "instrument_oracledb")
 
     _process_module_definition("ibm_db_dbi", "newrelic.hooks.database_ibm_db_dbi", "instrument_ibm_db_dbi")
 
@@ -4003,18 +4021,13 @@ def _process_module_builtin_defaults():
         "instrument_rest_framework_decorators",
     )
 
-    _process_module_definition("celery.task.base", "newrelic.hooks.application_celery", "instrument_celery_app_task")
-    _process_module_definition("celery.app.task", "newrelic.hooks.application_celery", "instrument_celery_app_task")
+    _process_module_definition("celery.local", "newrelic.hooks.application_celery", "instrument_celery_local")
     _process_module_definition("celery.app.trace", "newrelic.hooks.application_celery", "instrument_celery_app_trace")
     _process_module_definition("celery.worker", "newrelic.hooks.application_celery", "instrument_celery_worker")
-    _process_module_definition(
-        "celery.concurrency.processes", "newrelic.hooks.application_celery", "instrument_celery_worker"
-    )
     _process_module_definition(
         "celery.concurrency.prefork", "newrelic.hooks.application_celery", "instrument_celery_worker"
     )
 
-    _process_module_definition("celery.app.base", "newrelic.hooks.application_celery", "instrument_celery_app_base")
     _process_module_definition("billiard.pool", "newrelic.hooks.application_celery", "instrument_billiard_pool")
 
     _process_module_definition("flup.server.cgi", "newrelic.hooks.adapter_flup", "instrument_flup_server_cgi")
@@ -4088,27 +4101,43 @@ def _process_module_builtin_defaults():
     )
     _process_module_definition("tornado.routing", "newrelic.hooks.framework_tornado", "instrument_tornado_routing")
     _process_module_definition("tornado.web", "newrelic.hooks.framework_tornado", "instrument_tornado_web")
+    _process_module_definition(
+        "azure.functions._http", "newrelic.hooks.framework_azurefunctions", "instrument_azure_function__http"
+    )
+    _process_module_definition(
+        "azure_functions_worker.dispatcher",
+        "newrelic.hooks.framework_azurefunctions",
+        "instrument_azure_functions_worker_dispatcher",
+    )
     _process_module_definition("pyzeebe.client.client", "newrelic.hooks.external_pyzeebe", "instrument_pyzeebe_client_client")
     _process_module_definition("pyzeebe.worker.job_executor", "newrelic.hooks.external_pyzeebe", "instrument_pyzeebe_worker_job_executor")
 
 
 def _process_module_entry_points():
     try:
-        # Preferred after Python 3.10
-        if sys.version_info >= (3, 10):
-            from importlib.metadata import entry_points
-        # Introduced in Python 3.8
-        elif sys.version_info >= (3, 8) and sys.version_info < (3, 9):
-            from importlib_metadata import entry_points
-        # Removed in Python 3.12
-        else:
-            from pkg_resources import iter_entry_points as entry_points
+        # importlib.metadata was introduced into the standard library starting in Python 3.8.
+        from importlib.metadata import entry_points
     except ImportError:
-        return
+        try:
+            # importlib_metadata is a backport library installable from PyPI.
+            from importlib_metadata import entry_points
+        except ImportError:
+            try:
+                # Fallback to pkg_resources, which is available in older versions of setuptools.
+                from pkg_resources import iter_entry_points as entry_points
+            except ImportError:
+                return
 
     group = "newrelic.hooks"
 
-    for entrypoint in entry_points(group=group):
+    try:
+        # group kwarg was only added to importlib.metadata.entry_points in Python 3.10.
+        _entry_points = entry_points(group=group)
+    except TypeError:
+        # Grab entire entry_points dictionary and select group from it.
+        _entry_points = entry_points().get(group, ())
+
+    for entrypoint in _entry_points:
         target = entrypoint.name
 
         if target in _module_import_hook_registry:
@@ -4166,21 +4195,29 @@ def _setup_instrumentation():
 
 def _setup_extensions():
     try:
-        # Preferred after Python 3.10
-        if sys.version_info >= (3, 10):
-            from importlib.metadata import entry_points
-        # Introduced in Python 3.8
-        elif sys.version_info >= (3, 8) and sys.version_info < (3, 9):
-            from importlib_metadata import entry_points
-        # Removed in Python 3.12
-        else:
-            from pkg_resources import iter_entry_points as entry_points
+        # importlib.metadata was introduced into the standard library starting in Python 3.8.
+        from importlib.metadata import entry_points
     except ImportError:
-        return
+        try:
+            # importlib_metadata is a backport library installable from PyPI.
+            from importlib_metadata import entry_points
+        except ImportError:
+            try:
+                # Fallback to pkg_resources, which is available in older versions of setuptools.
+                from pkg_resources import iter_entry_points as entry_points
+            except ImportError:
+                return
 
     group = "newrelic.extension"
 
-    for entrypoint in entry_points(group=group):
+    try:
+        # group kwarg was only added to importlib.metadata.entry_points in Python 3.10.
+        _entry_points = entry_points(group=group)
+    except TypeError:
+        # Grab entire entry_points dictionary and select group from it.
+        _entry_points = entry_points().get(group, ())
+
+    for entrypoint in _entry_points:
         __import__(entrypoint.module_name)
         module = sys.modules[entrypoint.module_name]
         module.initialize()

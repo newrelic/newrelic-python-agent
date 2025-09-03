@@ -20,7 +20,7 @@ from testing_support.validators.validate_tt_collector_json import validate_tt_co
 from newrelic.api.background_task import background_task
 
 
-@pytest.fixture()
+@pytest.fixture
 def exercise_collections(collection):
     def _exercise_collections():
         collection.document("DoesNotExist")

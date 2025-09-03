@@ -16,13 +16,15 @@ import os
 
 import django
 import pytest
-from testing_support.asgi_testing import AsgiTest
 from testing_support.fixtures import (
+    collector_agent_registration_fixture,
+    collector_available_fixture,
     override_application_settings,
     override_generic_settings,
     override_ignore_status_codes,
 )
 from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
+from testing_support.validators.validate_transaction_count import validate_transaction_count
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
@@ -33,6 +35,24 @@ DJANGO_VERSION = tuple(map(int, django.get_version().split(".")[:2]))
 
 if DJANGO_VERSION[0] < 3:
     pytest.skip("support for asgi added in django 3", allow_module_level=True)
+
+# Import this here so it is not run if Django is less than 3.0.
+from testing_support.asgi_testing import AsgiTest  # noqa: E402
+
+_default_settings = {
+    "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
+    "transaction_tracer.explain_threshold": 0.0,
+    "transaction_tracer.transaction_threshold": 0.0,
+    "transaction_tracer.stack_trace_threshold": 0.0,
+    "debug.log_data_collector_payloads": True,
+    "debug.record_transaction_failure": True,
+    "debug.log_autorum_middleware": True,
+}
+
+collector_agent_registration = collector_agent_registration_fixture(
+    app_name="Python Agent Test (framework_django)", default_settings=_default_settings, scope="module"
+)
+
 
 scoped_metrics = [
     ("Function/django.contrib.sessions.middleware:SessionMiddleware", 1),
@@ -45,7 +65,7 @@ scoped_metrics = [
     ("Function/django.urls.resolvers:URLResolver.resolve", "present"),
 ]
 
-rollup_metrics = scoped_metrics + [(f"Python/Framework/Django/{django.get_version()}", 1)]
+rollup_metrics = [*scoped_metrics, (f"Python/Framework/Django/{django.get_version()}", 1)]
 
 
 @pytest.fixture
@@ -57,7 +77,7 @@ def application():
 
 
 @validate_transaction_metrics(
-    "views:index", scoped_metrics=[("Function/views:index", 1)] + scoped_metrics, rollup_metrics=rollup_metrics
+    "views:index", scoped_metrics=[("Function/views:index", 1), *scoped_metrics], rollup_metrics=rollup_metrics
 )
 @validate_code_level_metrics("views", "index")
 def test_asgi_index(application):
@@ -66,7 +86,7 @@ def test_asgi_index(application):
 
 
 @validate_transaction_metrics(
-    "views:exception", scoped_metrics=[("Function/views:exception", 1)] + scoped_metrics, rollup_metrics=rollup_metrics
+    "views:exception", scoped_metrics=[("Function/views:exception", 1), *scoped_metrics], rollup_metrics=rollup_metrics
 )
 @validate_code_level_metrics("views", "exception")
 def test_asgi_exception(application):
@@ -78,7 +98,7 @@ def test_asgi_exception(application):
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(
     "views:middleware_410",
-    scoped_metrics=[("Function/views:middleware_410", 1)] + scoped_metrics,
+    scoped_metrics=[("Function/views:middleware_410", 1), *scoped_metrics],
     rollup_metrics=rollup_metrics,
 )
 @validate_code_level_metrics("views", "middleware_410")
@@ -91,7 +111,7 @@ def test_asgi_middleware_ignore_status_codes(application):
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(
     "views:permission_denied",
-    scoped_metrics=[("Function/views:permission_denied", 1)] + scoped_metrics,
+    scoped_metrics=[("Function/views:permission_denied", 1), *scoped_metrics],
     rollup_metrics=rollup_metrics,
 )
 @validate_code_level_metrics("views", "permission_denied")
@@ -107,7 +127,7 @@ def test_asgi_class_based_view(application, url, view_name):
 
     @validate_transaction_errors(errors=[])
     @validate_transaction_metrics(
-        view_name, scoped_metrics=[(f"Function/{view_name}", 1)] + scoped_metrics, rollup_metrics=rollup_metrics
+        view_name, scoped_metrics=[(f"Function/{view_name}", 1), *scoped_metrics], rollup_metrics=rollup_metrics
     )
     @validate_code_level_metrics(namespace, func)
     def _test():
@@ -170,8 +190,8 @@ def test_asgi_html_insertion_failed(application, url):
         ("Function/views:template_tags", 1),
         ("Template/Render/main.html", 1),
         ("Template/Render/results.html", 1),
-    ]
-    + scoped_metrics,
+        *scoped_metrics,
+    ],
     rollup_metrics=rollup_metrics,
 )
 @validate_code_level_metrics("views", "template_tags")
@@ -180,6 +200,7 @@ def test_asgi_template_render(application):
     assert response.status == 200
 
 
+@validate_transaction_count(0)
 @override_generic_settings(global_settings(), {"enabled": False})
 def test_asgi_nr_disabled(application):
     response = application.get("/")

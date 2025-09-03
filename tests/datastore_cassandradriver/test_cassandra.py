@@ -29,7 +29,7 @@ FULL_TABLE_NAME = f"{KEYSPACE}.{TABLE_NAME}"  # Fully qualified table name with 
 REPLICATION_STRATEGY = "{ 'class' : 'SimpleStrategy', 'replication_factor' : 1 }"
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def exercise(cluster):
     def _exercise(is_async=False):
         with cluster.connect() as session:

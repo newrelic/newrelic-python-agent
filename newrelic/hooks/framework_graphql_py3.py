@@ -15,7 +15,6 @@ import functools
 import sys
 
 from newrelic.api.error_trace import ErrorTrace
-from newrelic.api.function_trace import FunctionTrace
 
 
 def nr_coro_execute_name_wrapper(wrapped, result, set_name):

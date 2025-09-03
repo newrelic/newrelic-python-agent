@@ -139,7 +139,7 @@ class TestApplication:
         return request(self.app, method, url, headers)
 
 
-@pytest.fixture()
+@pytest.fixture
 def app():
     from _target_application import app
 

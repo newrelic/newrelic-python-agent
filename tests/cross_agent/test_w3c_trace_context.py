@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import json
-import os
+from pathlib import Path
 
 import pytest
 import webtest
@@ -31,8 +31,8 @@ from newrelic.api.wsgi_application import wsgi_application
 from newrelic.common.encoding_utils import W3CTraceState
 from newrelic.common.object_wrapper import transient_function_wrapper
 
-CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
-JSON_DIR = os.path.normpath(os.path.join(CURRENT_DIR, "fixtures", "distributed_tracing"))
+FIXTURE = Path(__file__).parent / "fixtures" / "distributed_tracing" / "trace_context.json"
+
 
 _parameters_list = (
     "test_name",
@@ -62,8 +62,7 @@ XFAIL_TESTS = [
 
 def load_tests():
     result = []
-    path = os.path.join(JSON_DIR, "trace_context.json")
-    with open(path, "r") as fh:
+    with FIXTURE.open() as fh:
         tests = json.load(fh)
 
     for test in tests:
@@ -216,10 +215,10 @@ def test_trace_context(
         ".web_transaction": web_transaction,
         ".raises_exception": raises_exception,
         ".transport_type": transport_type,
-        ".outbound_calls": outbound_payloads and len(outbound_payloads) or 0,
+        ".outbound_calls": (outbound_payloads and len(outbound_payloads)) or 0,
     }
 
-    inbound_headers = inbound_headers and inbound_headers[0] or None
+    inbound_headers = (inbound_headers and inbound_headers[0]) or None
     if transport_type != "HTTP":
         extra_environ[".inbound_headers"] = inbound_headers
         inbound_headers = None

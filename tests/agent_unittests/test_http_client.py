@@ -14,7 +14,6 @@
 
 import base64
 import json
-import os.path
 import ssl
 import zlib
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -90,7 +89,7 @@ class InsecureServer(MockExternalHTTPServer):
 
 class SecureServer(InsecureServer):
     def __init__(self, *args, **kwargs):
-        super(SecureServer, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         try:
             self.context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
             self.context.load_cert_chain(certfile=CERT_PATH, keyfile=CERT_PATH)

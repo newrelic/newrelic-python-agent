@@ -12,14 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import pytest
-from testing_support.db_settings import postgresql_settings
+from conftest import DB_SETTINGS
 from testing_support.util import instance_hostname
 from testing_support.validators.validate_database_trace_inputs import validate_database_trace_inputs
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
-
-DB_SETTINGS = postgresql_settings()[0]
 
 
 @validate_transaction_metrics(
@@ -35,20 +33,10 @@ DB_SETTINGS = postgresql_settings()[0]
 )
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
-def test_execute_via_cursor(pyodbc_driver):
+def test_execute_via_cursor(connection_string):
     import pyodbc
 
-    with pyodbc.connect(
-        "DRIVER={%s};SERVER=%s;PORT=%s;DATABASE=%s;UID=%s;PWD=%s"
-        % (
-            pyodbc_driver,
-            DB_SETTINGS["host"],
-            DB_SETTINGS["port"],
-            DB_SETTINGS["name"],
-            DB_SETTINGS["user"],
-            DB_SETTINGS["password"],
-        )
-    ) as connection:
+    with pyodbc.connect(connection_string) as connection:
         cursor = connection.cursor()
         cursor.execute(f"""drop table if exists {DB_SETTINGS["table_name"]}""")
         cursor.execute(f"create table {DB_SETTINGS['table_name']} (a integer, b real, c text)")
@@ -83,28 +71,9 @@ def test_execute_via_cursor(pyodbc_driver):
 )
 @validate_database_trace_inputs(sql_parameters_type=tuple)
 @background_task()
-def test_rollback_on_exception(pyodbc_driver):
+def test_rollback_on_exception(connection_string):
     import pyodbc
 
     with pytest.raises(RuntimeError):
-        with pyodbc.connect(
-            "DRIVER={%s};SERVER=%s;PORT=%s;DATABASE=%s;UID=%s;PWD=%s"
-            % (
-                pyodbc_driver,
-                DB_SETTINGS["host"],
-                DB_SETTINGS["port"],
-                DB_SETTINGS["name"],
-                DB_SETTINGS["user"],
-                DB_SETTINGS["password"],
-            )
-        ) as connection:
+        with pyodbc.connect(connection_string) as connection:
             raise RuntimeError("error")
-
-
-@pytest.fixture
-def pyodbc_driver():
-    import pyodbc
-
-    driver_name = "PostgreSQL Unicode"
-    assert driver_name in pyodbc.drivers()
-    return driver_name

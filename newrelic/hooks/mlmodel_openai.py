@@ -93,7 +93,6 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     transaction._add_agent_attribute("llm", True)
 
     completion_id = str(uuid.uuid4())
-    request_message_list = kwargs.get("messages", [])
 
     ft = FunctionTrace(name=wrapped.__name__, group="Llm/completion/OpenAI")
     ft.__enter__()
@@ -275,7 +274,6 @@ def _record_embedding_success(transaction, embedding_id, linking_metadata, kwarg
 
         request_id = response_headers.get("x-request-id")
         response_model = attribute_response.get("model")
-        response_usage = attribute_response.get("usage", {}) or {}
         organization = (
             response_headers.get("openai-organization")
             if OPENAI_V1
@@ -430,9 +428,6 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
 
 def _handle_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val):
     settings = transaction.settings if transaction.settings is not None else global_settings()
-    span_id = linking_metadata.get("span.id")
-    trace_id = linking_metadata.get("trace.id")
-    request_message_list = kwargs.get("messages") or []
     stream = kwargs.get("stream", False)
     # Only if streaming and streaming monitoring is enabled and the response is not empty
     # do we not exit the function trace.
@@ -485,7 +480,6 @@ def _record_completion_success(transaction, linking_metadata, completion_id, kwa
         if response:
             response_model = response.get("model")
             response_id = response.get("id")
-            response_usage = response.get("usage") or {}
             output_message_list = []
             finish_reason = None
             choices = response.get("choices") or []
@@ -497,7 +491,6 @@ def _record_completion_success(transaction, linking_metadata, completion_id, kwa
         else:
             response_model = kwargs.get("response.model")
             response_id = kwargs.get("id")
-            response_usage = {}
             output_message_list = []
             finish_reason = None
             if "content" in kwargs:
@@ -718,7 +711,7 @@ async def wrap_base_client_process_response_async(wrapped, instance, args, kwarg
 
 class GeneratorProxy(ObjectProxy):
     def __init__(self, wrapped):
-        super(GeneratorProxy, self).__init__(wrapped)
+        super().__init__(wrapped)
 
     def __iter__(self):
         return self
@@ -732,7 +725,7 @@ class GeneratorProxy(ObjectProxy):
         try:
             return_val = self.__wrapped__.__next__()
             _record_stream_chunk(self, return_val)
-        except StopIteration as e:
+        except StopIteration:
             _record_events_on_stop_iteration(self, transaction)
             raise
         except Exception as exc:
@@ -741,7 +734,7 @@ class GeneratorProxy(ObjectProxy):
         return return_val
 
     def close(self):
-        return super(GeneratorProxy, self).close()
+        return super().close()
 
 
 def _record_stream_chunk(self, return_val):
@@ -814,7 +807,7 @@ def _handle_streaming_completion_error(self, transaction, exc):
 
 class AsyncGeneratorProxy(ObjectProxy):
     def __init__(self, wrapped):
-        super(AsyncGeneratorProxy, self).__init__(wrapped)
+        super().__init__(wrapped)
 
     def __aiter__(self):
         self._nr_wrapped_iter = self.__wrapped__.__aiter__()
@@ -829,7 +822,7 @@ class AsyncGeneratorProxy(ObjectProxy):
         try:
             return_val = await self._nr_wrapped_iter.__anext__()
             _record_stream_chunk(self, return_val)
-        except StopAsyncIteration as e:
+        except StopAsyncIteration:
             _record_events_on_stop_iteration(self, transaction)
             raise
         except Exception as exc:
@@ -838,7 +831,7 @@ class AsyncGeneratorProxy(ObjectProxy):
         return return_val
 
     async def aclose(self):
-        return await super(AsyncGeneratorProxy, self).aclose()
+        return await super().aclose()
 
 
 def wrap_stream_iter_events_sync(wrapped, instance, args, kwargs):

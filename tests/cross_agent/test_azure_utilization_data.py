@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import json
-import os
+from pathlib import Path
 
 import pytest
 from testing_support.mock_http_client import create_client_cls
@@ -21,8 +21,7 @@ from testing_support.validators.validate_internal_metrics import validate_intern
 
 from newrelic.common.utilization import AzureUtilization
 
-CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
-FIXTURE = os.path.normpath(os.path.join(CURRENT_DIR, "fixtures", "utilization_vendor_specific", "azure.json"))
+FIXTURE = Path(__file__).parent / "fixtures" / "utilization_vendor_specific" / "azure.json"
 
 _parameters_list = ["testname", "uri", "expected_vendors_hash", "expected_metrics"]
 
@@ -30,7 +29,7 @@ _parameters = ",".join(_parameters_list)
 
 
 def _load_tests():
-    with open(FIXTURE, "r") as fh:
+    with FIXTURE.open() as fh:
         js = fh.read()
     return json.loads(js)
 

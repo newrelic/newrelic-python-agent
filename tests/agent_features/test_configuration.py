@@ -47,7 +47,7 @@ from newrelic.core.config import (
 SKIP_IF_NOT_PY311 = pytest.mark.skipif(sys.version_info < (3, 11), reason="TOML not in the standard library.")
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def collector_available_fixture():
     # Disable fixture that requires real application to exist for this file
     pass
@@ -1101,7 +1101,7 @@ def caplog_handler():
 
         def __init__(self, *args, **kwargs):
             self.records = []
-            super(CaplogHandler, self).__init__(*args, **kwargs)
+            super().__init__(*args, **kwargs)
 
         def emit(self, record):
             self.records.append(self.format(record))

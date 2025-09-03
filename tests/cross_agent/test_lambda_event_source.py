@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import json
-import os
+from pathlib import Path
 
 import pytest
 from testing_support.fixtures import override_application_settings
@@ -21,21 +21,20 @@ from testing_support.validators.validate_transaction_event_attributes import val
 
 from newrelic.api.lambda_handler import lambda_handler
 
-CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
-FIXTURE_DIR = os.path.normpath(os.path.join(CURRENT_DIR, "fixtures"))
-FIXTURE = os.path.join(FIXTURE_DIR, "lambda_event_source.json")
+FIXTURE_DIR = Path(__file__).parent / "fixtures"
+FIXTURE = FIXTURE_DIR / "lambda_event_source.json"
 tests = {}
 events = {}
 
 
 def _load_tests():
-    with open(FIXTURE, "r") as fh:
+    with FIXTURE.open() as fh:
         for test in json.loads(fh.read()):
             test_name = test.pop("name")
 
             test_file = f"{test_name}.json"
-            path = os.path.join(FIXTURE_DIR, "lambda_event_source", test_file)
-            with open(path, "r") as fh:
+            path = FIXTURE_DIR / "lambda_event_source" / test_file
+            with path.open() as fh:
                 events[test_name] = json.loads(fh.read())
 
             tests[test_name] = test

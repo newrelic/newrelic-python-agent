@@ -52,13 +52,13 @@ def client_type(request):
     return request.param
 
 
-@pytest.fixture()
+@pytest.fixture
 def skip_if_not_serializing(client_type):
     if client_type == "cimpl":
         pytest.skip("Only serializing clients supported.")
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def producer(topic, client_type, json_serializer, broker):
     from confluent_kafka import Producer, SerializingProducer
 
@@ -83,7 +83,7 @@ def producer(topic, client_type, json_serializer, broker):
         producer.purge()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def consumer(group_id, topic, producer, client_type, json_deserializer, broker):
     from confluent_kafka import Consumer, DeserializingConsumer
 
@@ -164,11 +164,11 @@ def json_deserializer():
     return JSONDeserializer()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def topic(broker):
     from confluent_kafka.admin import AdminClient, NewTopic
 
-    topic = f"test-topic-{str(uuid.uuid4())}"
+    topic = f"test-topic-{uuid.uuid4()!s}"
 
     admin = AdminClient({"bootstrap.servers": broker})
     new_topics = [NewTopic(topic, num_partitions=1, replication_factor=1)]
@@ -186,7 +186,7 @@ def group_id():
     return str(uuid.uuid4())
 
 
-@pytest.fixture()
+@pytest.fixture
 def send_producer_message(topic, producer, serialize, client_type):
     callback_called = []
 
@@ -204,7 +204,7 @@ def send_producer_message(topic, producer, serialize, client_type):
     return _test
 
 
-@pytest.fixture()
+@pytest.fixture
 def get_consumer_record(topic, send_producer_message, consumer, deserialize):
     def _test():
         send_producer_message()

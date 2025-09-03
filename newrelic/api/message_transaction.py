@@ -40,7 +40,7 @@ class MessageTransaction(BackgroundTask):
     ):
         name, group = self.get_transaction_name(library, destination_type, destination_name)
 
-        super(MessageTransaction, self).__init__(application, name, group=group, source=source)
+        super().__init__(application, name, group=group, source=source)
 
         self.headers = headers
 
@@ -55,6 +55,7 @@ class MessageTransaction(BackgroundTask):
         self.routing_key = routing_key
         self.exchange_type = exchange_type
         self.queue_name = queue_name
+        self.destination_name = destination_name
         self.reply_to = reply_to
         self.correlation_id = correlation_id
 
@@ -83,7 +84,7 @@ class MessageTransaction(BackgroundTask):
         if self.routing_key is not None:
             ms_attrs["message.routingKey"] = self.routing_key
 
-        super(MessageTransaction, self)._update_agent_attributes()
+        super()._update_agent_attributes()
 
 
 def MessageTransactionWrapper(

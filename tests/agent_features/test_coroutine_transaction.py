@@ -26,11 +26,6 @@ from newrelic.api.transaction import current_transaction
 from newrelic.api.web_transaction import web_transaction
 from newrelic.core.config import global_settings
 
-if sys.version_info >= (3, 5):
-    from _test_async_coroutine_transaction import native_coroutine_test
-else:
-    native_coroutine_test = None
-
 settings = global_settings()
 
 
@@ -51,12 +46,39 @@ def coroutine_test(event_loop, transaction, nr_enabled=True, does_hang=False, ca
 
         try:
             if does_hang:
-                await loop.create_future()
+                await event_loop.create_future()
             else:
                 await asyncio.sleep(0.0)
                 if nr_enabled and txn.enabled:
                     # Validate loop time is recorded after suspend
                     assert txn._loop_time > 0.0
+        except GeneratorExit:
+            if runtime_error:
+                await asyncio.sleep(0.0)
+
+    return task
+
+
+def native_coroutine_test(
+    event_loop, transaction, nr_enabled=True, does_hang=False, call_exit=False, runtime_error=False
+):
+    @transaction
+    async def task():
+        txn = current_transaction()
+
+        if not nr_enabled:
+            assert txn is None
+
+        if call_exit:
+            txn.__exit__(None, None, None)
+        else:
+            assert current_transaction() is txn
+
+        try:
+            if does_hang:
+                await event_loop.create_future()
+            else:
+                await asyncio.sleep(0.0)
         except GeneratorExit:
             if runtime_error:
                 await asyncio.sleep(0.0)

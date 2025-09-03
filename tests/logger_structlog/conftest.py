@@ -54,7 +54,7 @@ def StructLogCapLog():
         fatal = failure = err = error = critical = exception = msg
 
         def __repr__(self):
-            return f"<StructLogCapLog {str(id(self))}>"
+            return f"<StructLogCapLog {id(self)!s}>"
 
         __str__ = __repr__
 
@@ -83,12 +83,12 @@ def drop_event_processor(logger, method_name, event_dict):
         return event_dict
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def structlog_caplog(StructLogCapLog):
     return StructLogCapLog()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def logger(structlog_caplog):
     import structlog
 
@@ -97,7 +97,7 @@ def logger(structlog_caplog):
     return _logger
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def filtering_logger(structlog_caplog):
     import structlog
 

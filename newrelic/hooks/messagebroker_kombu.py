@@ -103,8 +103,6 @@ def wrap_Producer_publish(wrapped, instance, args, kwargs):
 
     headers = bound_args["headers"]
     headers = headers if headers else {}
-    value = bound_args["body"]
-    key = bound_args["routing_key"]
     exchange = getattr(bound_args["exchange"], "name", None) or "Default"
 
     transaction.add_messagebroker_info("Kombu", get_package_version("kombu"))
@@ -196,7 +194,6 @@ def wrap_consumer_recieve_callback(wrapped, instance, args, kwargs):
                 source=wrapped,
             )
             created_transaction.__enter__()
-            created_transaction.destination_name = destination_name
 
             # Obtain consumer client_id to send up as agent attribute
             if hasattr(message, "channel") and hasattr(message.channel, "channel_id"):
@@ -257,7 +254,7 @@ def wrap_serialize(wrapped, instance, args, kwargs):
     group = "MessageBroker/Kombu/Exchange"
     name = f"Named/{exchange}/Serialization/Value"
 
-    with FunctionTrace(name=name, group=group) as ft:
+    with FunctionTrace(name=name, group=group):
         return wrapped(*args, **kwargs)
 
 

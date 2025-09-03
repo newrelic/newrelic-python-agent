@@ -17,6 +17,7 @@ import os
 import sys
 import tempfile
 from importlib import reload
+from pathlib import Path
 
 import pytest
 
@@ -27,17 +28,16 @@ from testing_support.mock_http_client import create_client_cls
 import newrelic.core.config
 from newrelic.common.object_wrapper import function_wrapper
 from newrelic.common.system_info import BootIdUtilization
-from newrelic.common.utilization import CommonUtilization
+from newrelic.common.utilization import AWSUtilization, CommonUtilization
 from newrelic.core.agent_protocol import AgentProtocol
 
 INITIAL_ENV = os.environ
 
-CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
-FIXTURE = os.path.normpath(os.path.join(CURRENT_DIR, "fixtures", "utilization", "utilization_json.json"))
+FIXTURE = Path(__file__).parent / "fixtures" / "utilization" / "utilization_json.json"
 
 
 def _load_tests():
-    with open(FIXTURE, "r") as fh:
+    with FIXTURE.open() as fh:
         js = fh.read()
     return json.loads(js)
 
@@ -186,6 +186,8 @@ def test_utilization_settings(test, monkeypatch):
 
     for key, val in env.items():
         monkeypatch.setenv(key, str(val))
+
+    AWSUtilization._utilization_data = None  # reset cached data before test
 
     @patch_boot_id_file(test)
     @patch_system_info(test, monkeypatch)

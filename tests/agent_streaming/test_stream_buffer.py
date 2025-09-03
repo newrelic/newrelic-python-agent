@@ -29,7 +29,7 @@ def stop_iteration_condition(*args, **kwargs):
     return StopIterationOnWait(*args, **kwargs)
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def stop_iteration_on_wait(monkeypatch):
     monkeypatch.setattr(StreamBuffer, "condition", stop_iteration_condition)
 

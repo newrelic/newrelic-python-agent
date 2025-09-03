@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.admin import command, usage
+from newrelic.admin import command
 
 
 @command(
@@ -31,6 +31,7 @@ def run_python(args):
     import os
     import sys
     import time
+    from pathlib import Path
 
     startup_debug = os.environ.get("NEW_RELIC_STARTUP_DEBUG", "off").lower() in ("on", "true", "1")
 
@@ -42,10 +43,11 @@ def run_python(args):
 
     log_message("New Relic Admin Script (%s)", __file__)
 
-    log_message("working_directory = %r", os.getcwd())
+    log_message("working_directory = %r", str(Path.cwd()))
     log_message("current_command = %r", sys.argv)
 
-    log_message("sys.prefix = %r", os.path.normpath(sys.prefix))
+    sys_prefix = str(Path(sys.prefix).resolve())
+    log_message("sys.prefix = %r", sys_prefix)
 
     try:
         log_message("sys.real_prefix = %r", sys.real_prefix)
@@ -61,11 +63,13 @@ def run_python(args):
         if name.startswith("NEW_RELIC_") or name.startswith("PYTHON"):
             log_message("%s = %r", name, os.environ.get(name))
 
-    from newrelic import __file__ as root_directory
-    from newrelic import version
+    import newrelic
 
-    root_directory = os.path.dirname(root_directory)
-    boot_directory = os.path.join(root_directory, "bootstrap")
+    root_directory = Path(newrelic.__file__).parent
+    boot_directory = root_directory / "bootstrap"
+
+    root_directory = str(root_directory)
+    boot_directory = str(boot_directory)
 
     log_message("root_directory = %r", root_directory)
     log_message("boot_directory = %r", boot_directory)
@@ -73,15 +77,15 @@ def run_python(args):
     python_path = boot_directory
 
     if "PYTHONPATH" in os.environ:
-        path = os.environ["PYTHONPATH"].split(os.path.pathsep)
+        path = os.environ["PYTHONPATH"].split(os.pathsep)
         if boot_directory not in path:
-            python_path = f"{boot_directory}{os.path.pathsep}{os.environ['PYTHONPATH']}"
+            python_path = f"{boot_directory}{os.pathsep}{os.environ['PYTHONPATH']}"
 
     os.environ["PYTHONPATH"] = python_path
 
     os.environ["NEW_RELIC_ADMIN_COMMAND"] = repr(sys.argv)
 
-    os.environ["NEW_RELIC_PYTHON_PREFIX"] = os.path.realpath(os.path.normpath(sys.prefix))
+    os.environ["NEW_RELIC_PYTHON_PREFIX"] = sys_prefix
     os.environ["NEW_RELIC_PYTHON_VERSION"] = ".".join(map(str, sys.version_info[:2]))
 
     # Heroku does not set #! line on installed Python scripts
@@ -92,17 +96,19 @@ def run_python(args):
     # this script in preference to that used to execute this
     # script.
 
-    bin_directory = os.path.dirname(sys.argv[0])
+    argv_executable = sys.argv[0]
 
+    # Don't use path.parent, as it can't distinguish between ./ and no parent.
+    bin_directory = os.path.dirname(argv_executable)  # noqa: PTH120
     if bin_directory:
-        python_exe = os.path.basename(sys.executable)
-        python_exe_path = os.path.join(bin_directory, python_exe)
-        if not os.path.exists(python_exe_path) or not os.access(python_exe_path, os.X_OK):
-            python_exe_path = sys.executable
+        python_exe = Path(sys.executable).name
+        python_exe_path = Path(bin_directory) / python_exe
+        if not python_exe_path.exists() or not os.access(python_exe_path, os.X_OK):
+            python_exe_path = Path(sys.executable)
     else:
-        python_exe_path = sys.executable
+        python_exe_path = Path(sys.executable)
 
-    log_message("python_exe_path = %r", python_exe_path)
-    log_message("execl_arguments = %r", [python_exe_path, python_exe_path] + args)
+    log_message("python_exe_path = %r", str(python_exe_path))
+    log_message("execl_arguments = %r", [python_exe_path, python_exe_path, *args])
 
     os.execl(python_exe_path, python_exe_path, *args)  # noqa: S606

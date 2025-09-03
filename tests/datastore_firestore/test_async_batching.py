@@ -20,7 +20,7 @@ from testing_support.validators.validate_tt_collector_json import validate_tt_co
 from newrelic.api.background_task import background_task
 
 
-@pytest.fixture()
+@pytest.fixture
 def exercise_async_write_batch(async_client, async_collection):
     async def _exercise_async_write_batch():
         docs = [async_collection.document(str(x)) for x in range(1, 4)]

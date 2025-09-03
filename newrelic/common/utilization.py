@@ -18,6 +18,7 @@ import os
 import re
 import socket
 import string
+from pathlib import Path
 
 from newrelic.common.agent_http import InsecureHttpClient
 from newrelic.common.encoding_utils import json_decode
@@ -26,6 +27,8 @@ from newrelic.packages import urllib3
 
 _logger = logging.getLogger(__name__)
 VALID_CHARS_RE = re.compile(r"[0-9a-zA-Z_ ./-]")
+AZURE_RESOURCE_GROUP_NAME_RE = re.compile(r"\+([a-zA-Z0-9\-]+)-[a-zA-Z0-9]+(?:-Linux)")
+AZURE_RESOURCE_GROUP_NAME_PARTIAL_RE = re.compile(r"\+([a-zA-Z0-9\-]+)(?:-Linux)?-[a-zA-Z0-9]+")
 
 
 class UtilizationHttpClient(InsecureHttpClient):
@@ -44,7 +47,7 @@ class UtilizationHttpClient(InsecureHttpClient):
         finally:
             sock.close()
 
-        return super(UtilizationHttpClient, self).send_request(*args, **kwargs)
+        return super().send_request(*args, **kwargs)
 
 
 class CommonUtilization:
@@ -158,8 +161,9 @@ class AWSUtilization(CommonUtilization):
     METADATA_HOST = "169.254.169.254"
     METADATA_PATH = "/latest/dynamic/instance-identity/document"
     METADATA_TOKEN_PATH = "/latest/api/token"  # noqa: S105
-    HEADERS = {"X-aws-ec2-metadata-token-ttl-seconds": "21600"}
+    HEADERS = {"X-aws-ec2-metadata-token-ttl-seconds": "21600"}  # noqa: RUF012
     VENDOR_NAME = "aws"
+    _utilization_data = None
 
     @classmethod
     def fetchAuthToken(cls):
@@ -182,7 +186,8 @@ class AWSUtilization(CommonUtilization):
         try:
             authToken = cls.fetchAuthToken()
             if authToken is None:
-                return
+                metadata = cls._utilization_data
+                return metadata
             cls.HEADERS = {"X-aws-ec2-metadata-token": authToken}
             with cls.CLIENT_CLS(cls.METADATA_HOST, timeout=cls.FETCH_TIMEOUT) as client:
                 resp = client.send_request(
@@ -190,6 +195,19 @@ class AWSUtilization(CommonUtilization):
                 )
             if not 200 <= resp[0] < 300:
                 raise ValueError(resp[0])
+            # Cache this for forced agent restarts within the same
+            # environment if return value is valid.
+            try:
+                response_dict = json.loads(resp[1].decode("utf-8"))
+                availabilityZone = response_dict.get("availabilityZone", None)
+                instanceId = response_dict.get("instanceId", None)
+                instanceType = response_dict.get("instanceType", None)
+                if all((availabilityZone, instanceId, instanceType)):
+                    # Cache the utilization data for reuse
+                    cls._utilization_data = resp[1]
+            except:
+                # Exits without caching if the response is not valid
+                pass
             return resp[1]
         except Exception as e:
             _logger.debug(
@@ -201,18 +219,55 @@ class AWSUtilization(CommonUtilization):
 class AzureUtilization(CommonUtilization):
     METADATA_HOST = "169.254.169.254"
     METADATA_PATH = "/metadata/instance/compute"
-    METADATA_QUERY = {"api-version": "2017-03-01"}
+    METADATA_QUERY = {"api-version": "2017-03-01"}  # noqa: RUF012
     EXPECTED_KEYS = ("location", "name", "vmId", "vmSize")
-    HEADERS = {"Metadata": "true"}
+    HEADERS = {"Metadata": "true"}  # noqa: RUF012
     VENDOR_NAME = "azure"
+
+
+class AzureFunctionUtilization(CommonUtilization):
+    METADATA_HOST = "169.254.169.254"
+    METADATA_PATH = "/metadata/instance/compute"
+    METADATA_QUERY = {"api-version": "2017-03-01"}  # noqa: RUF012
+    EXPECTED_KEYS = ("faas.app_name", "cloud.region")
+    HEADERS = {"Metadata": "true"}  # noqa: RUF012
+    VENDOR_NAME = "azurefunction"
+
+    @staticmethod
+    def fetch():
+        cloud_region = os.environ.get("REGION_NAME")
+        website_owner_name = os.environ.get("WEBSITE_OWNER_NAME")
+        azure_function_app_name = os.environ.get("WEBSITE_SITE_NAME")
+
+        if all((cloud_region, website_owner_name, azure_function_app_name)):
+            if website_owner_name.endswith("-Linux"):
+                resource_group_name = AZURE_RESOURCE_GROUP_NAME_RE.search(website_owner_name).group(1)
+            else:
+                resource_group_name = AZURE_RESOURCE_GROUP_NAME_PARTIAL_RE.search(website_owner_name).group(1)
+            subscription_id = re.search(r"(?:(?!\+).)*", website_owner_name).group(0)
+            faas_app_name = f"/subscriptions/{subscription_id}/resourceGroups/{resource_group_name}/providers/Microsoft.Web/sites/{azure_function_app_name}"
+            # Only send if all values are present
+            return (faas_app_name, cloud_region)
+
+    @classmethod
+    def get_values(cls, response):
+        if response is None or len(response) != 2:
+            return
+
+        values = {}
+        for k, v in zip(cls.EXPECTED_KEYS, response):
+            if hasattr(v, "decode"):
+                v = v.decode("utf-8")
+            values[k] = v
+        return values
 
 
 class GCPUtilization(CommonUtilization):
     EXPECTED_KEYS = ("id", "machineType", "name", "zone")
-    HEADERS = {"Metadata-Flavor": "Google"}
+    HEADERS = {"Metadata-Flavor": "Google"}  # noqa: RUF012
     METADATA_HOST = "metadata.google.internal"
     METADATA_PATH = "/computeMetadata/v1/instance/"
-    METADATA_QUERY = {"recursive": "true"}
+    METADATA_QUERY = {"recursive": "true"}  # noqa: RUF012
     VENDOR_NAME = "gcp"
 
     @classmethod
@@ -227,7 +282,7 @@ class GCPUtilization(CommonUtilization):
         else:
             formatted = data
 
-        return super(GCPUtilization, cls).normalize(key, formatted)
+        return super().normalize(key, formatted)
 
 
 class PCFUtilization(CommonUtilization):
@@ -270,7 +325,7 @@ class DockerUtilization(CommonUtilization):
     def fetch(cls):
         # Try to read from cgroups
         try:
-            with open(cls.METADATA_FILE_CGROUPS_V1, "rb") as f:
+            with Path(cls.METADATA_FILE_CGROUPS_V1).open("rb") as f:
                 for line in f:
                     stripped = line.decode("utf-8").strip()
                     cgroup = stripped.split(":")
@@ -289,7 +344,7 @@ class DockerUtilization(CommonUtilization):
 
         # Fallback to reading from mountinfo
         try:
-            with open(cls.METADATA_FILE_CGROUPS_V2, "rb") as f:
+            with Path(cls.METADATA_FILE_CGROUPS_V2).open("rb") as f:
                 for line in f:
                     stripped = line.decode("utf-8").strip()
                     match = cls.METADATA_RE_CGROUPS_V2.match(stripped)
@@ -313,7 +368,7 @@ class DockerUtilization(CommonUtilization):
             return False
         hex_digits = set(string.hexdigits)
 
-        valid = all((c in hex_digits for c in data))
+        valid = all(c in hex_digits for c in data)
         if valid:
             return True
 

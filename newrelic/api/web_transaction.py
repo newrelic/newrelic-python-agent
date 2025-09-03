@@ -169,7 +169,7 @@ class WebTransaction(Transaction):
         enabled=None,
         source=None,
     ):
-        super(WebTransaction, self).__init__(application, enabled, source=source)
+        super().__init__(application, enabled, source=source)
 
         # Flag for tracking whether RUM header has been generated.
         self.rum_header_generated = False
@@ -362,7 +362,7 @@ class WebTransaction(Transaction):
         if self._response_code is not None:
             self._add_agent_attribute("response.status", str(self._response_code))
 
-        return super(WebTransaction, self)._update_agent_attributes()
+        return super()._update_agent_attributes()
 
     def browser_timing_header(self, nonce=None):
         """Returns the JavaScript header to be included in any HTML
@@ -579,7 +579,7 @@ class WSGIWebTransaction(WebTransaction):
 
         # Initialise the common transaction base class.
 
-        super(WSGIWebTransaction, self).__init__(
+        super().__init__(
             application,
             name=None,
             port=environ.get("SERVER_PORT"),
@@ -665,13 +665,22 @@ class WSGIWebTransaction(WebTransaction):
         self._request_uri = request_uri
 
         if self._request_uri is not None:
-            # Need to make sure we drop off any query string
-            # arguments on the path if we have to fallback
-            # to using the original REQUEST_URI. Can't use
-            # attribute access on result as only support for
-            # Python 2.5+.
-
-            self._request_uri = urlparse.urlparse(self._request_uri)[2]
+            # This try/except logic is to handle cases where
+            # `REQUEST_URI` is malformed or contains invalid
+            # characters.  This can happen at this point if
+            # a malformed request is passed in and for versions
+            # of `urllib` in the Python standard library older
+            # than what has been released Jan 31, 2025.
+            try:
+                # Need to make sure we drop off any query string
+                # arguments on the path if we have to fallback
+                # to using the original REQUEST_URI. Can't use
+                # attribute access on result as only support for
+                # Python 2.5+.
+                self._request_uri = urlparse.urlparse(self._request_uri)[2]
+            except:
+                # If `self._request_uri` is invalid, set to `None`
+                self._request_uri = None
 
         if script_name is not None or path_info is not None:
             if path_info is None:
@@ -737,7 +746,7 @@ class WSGIWebTransaction(WebTransaction):
         self.record_custom_metric("Python/WSGI/Output/Calls/yield", self._calls_yield)
         self.record_custom_metric("Python/WSGI/Output/Calls/write", self._calls_write)
 
-        return super(WSGIWebTransaction, self).__exit__(exc, value, tb)
+        return super().__exit__(exc, value, tb)
 
     def _update_agent_attributes(self):
         # Add WSGI agent attributes
@@ -761,7 +770,7 @@ class WSGIWebTransaction(WebTransaction):
         if self._calls_yield != 0:
             self._add_agent_attribute("wsgi.output.calls.yield", self._calls_yield)
 
-        return super(WSGIWebTransaction, self)._update_agent_attributes()
+        return super()._update_agent_attributes()
 
     def process_response(self, status, response_headers, *args):
         """Processes response status and headers, extracting any
@@ -781,7 +790,7 @@ class WSGIWebTransaction(WebTransaction):
         except Exception:
             status = None
 
-        return super(WSGIWebTransaction, self).process_response(status, response_headers)
+        return super().process_response(status, response_headers)
 
 
 def WebTransactionWrapper(

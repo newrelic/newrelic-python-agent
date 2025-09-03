@@ -13,18 +13,17 @@
 # limitations under the License.
 
 import json
-import os
 import sys
 import tempfile
+from pathlib import Path
 
 import pytest
 from testing_support.validators.validate_internal_metrics import validate_internal_metrics
 
 from newrelic.common.system_info import BootIdUtilization
 
-CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 SYS_PLATFORM = sys.platform
-FIXTURE = os.path.normpath(os.path.join(CURRENT_DIR, "fixtures", "utilization", "boot_id.json"))
+FIXTURE = Path(__file__).parent / "fixtures" / "utilization" / "boot_id.json"
 
 _parameters_list = [
     "testname",
@@ -40,7 +39,7 @@ _parameters = ",".join(_parameters_list)
 
 
 def _load_tests():
-    with open(FIXTURE, "r") as fh:
+    with FIXTURE.open() as fh:
         js = fh.read()
     return json.loads(js)
 

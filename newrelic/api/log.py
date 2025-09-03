@@ -69,7 +69,7 @@ class NewRelicContextFormatter(logging.Formatter):
                 raise ValueError("stack_trace_limit must be None or a non-negative integer")
         self._stack_trace_limit = stack_trace_limit
 
-        super(NewRelicContextFormatter, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
 
     @classmethod
     def format_exc_info(cls, exc_info, stack_trace_limit=0):
@@ -131,7 +131,7 @@ format_exc_info = NewRelicContextFormatter.format_exc_info
 
 
 class NewRelicLogForwardingHandler(logging.Handler):
-    IGNORED_LOG_RECORD_KEYS = {"message", "msg"}
+    IGNORED_LOG_RECORD_KEYS = frozenset(("message", "msg"))
 
     def emit(self, record):
         try:
@@ -218,7 +218,7 @@ class NewRelicLogHandler(logging.Handler):
             DeprecationWarning,
             stacklevel=2,
         )
-        super(NewRelicLogHandler, self).__init__(level=level)
+        super().__init__(level=level)
         self.license_key = license_key or self.settings.license_key
         self.host = host or self.settings.host or self.default_host(self.license_key)
 

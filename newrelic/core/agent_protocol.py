@@ -14,6 +14,7 @@
 
 import logging
 import os
+from pathlib import Path
 
 from newrelic import version
 from newrelic.common import system_info
@@ -21,6 +22,7 @@ from newrelic.common.agent_http import ApplicationModeClient, ServerlessModeClie
 from newrelic.common.encoding_utils import json_decode, json_encode, serverless_payload_encode
 from newrelic.common.utilization import (
     AWSUtilization,
+    AzureFunctionUtilization,
     AzureUtilization,
     DockerUtilization,
     ECSUtilization,
@@ -47,7 +49,7 @@ _logger = logging.getLogger(__name__)
 class AgentProtocol:
     VERSION = 17
 
-    STATUS_CODE_RESPONSE = {
+    STATUS_CODE_RESPONSE = {  # noqa: RUF012
         400: DiscardDataForRequest,
         401: ForceAgentRestart,
         403: DiscardDataForRequest,
@@ -67,7 +69,7 @@ class AgentProtocol:
         500: RetryDataForRequest,
         503: RetryDataForRequest,
     }
-    LOG_MESSAGES = {
+    LOG_MESSAGES = {  # noqa: RUF012
         401: (
             logging.ERROR,
             (
@@ -144,7 +146,7 @@ class AgentProtocol:
         "ai_monitoring.enabled",
     )
 
-    LOGGER_FUNC_MAPPING = {
+    LOGGER_FUNC_MAPPING = {  # noqa: RUF012
         "ERROR": _logger.error,
         "WARN": _logger.warning,
         "INFO": _logger.info,
@@ -153,7 +155,7 @@ class AgentProtocol:
 
     def __init__(self, settings, host=None, client_cls=ApplicationModeClient):
         if settings.audit_log_file:
-            audit_log_fp = open(settings.audit_log_file, "a")
+            audit_log_fp = Path(settings.audit_log_file).open("a")
         else:
             audit_log_fp = None
 
@@ -282,7 +284,7 @@ class AgentProtocol:
     @staticmethod
     def _connect_payload(app_name, linked_applications, environment, settings):
         settings = global_settings_dump(settings)
-        app_names = [app_name] + linked_applications
+        app_names = [app_name, *linked_applications]
 
         hostname = system_info.gethostname(
             settings["heroku.use_dyno_names"], settings["heroku.dyno_name_prefixes_to_shorten"]
@@ -302,7 +304,7 @@ class AgentProtocol:
 
         utilization_settings = {}
         # metadata_version corresponds to the utilization spec being used.
-        utilization_settings["metadata_version"] = 5
+        utilization_settings["metadata_version"] = 6
         utilization_settings["logical_processors"] = system_info.logical_processor_count()
         utilization_settings["total_ram_mib"] = system_info.total_physical_memory()
         utilization_settings["hostname"] = hostname
@@ -342,6 +344,8 @@ class AgentProtocol:
             vendors.append(GCPUtilization)
         if settings["utilization.detect_azure"]:
             vendors.append(AzureUtilization)
+        if settings["utilization.detect_azurefunction"]:
+            vendors.append(AzureFunctionUtilization)
 
         for vendor in vendors:
             metadata = vendor.detect()
@@ -491,7 +495,7 @@ class AgentProtocol:
 
 class ServerlessModeProtocol(AgentProtocol):
     def __init__(self, settings, host=None, client_cls=ServerlessModeClient):
-        super(ServerlessModeProtocol, self).__init__(settings, host=host, client_cls=client_cls)
+        super().__init__(settings, host=host, client_cls=client_cls)
         self._metadata = {
             "protocol_version": self.VERSION,
             "execution_environment": os.environ.get("AWS_EXECUTION_ENV", None),
@@ -528,7 +532,7 @@ class ServerlessModeProtocol(AgentProtocol):
 class OtlpProtocol(AgentProtocol):
     def __init__(self, settings, host=None, client_cls=ApplicationModeClient):
         if settings.audit_log_file:
-            audit_log_fp = open(settings.audit_log_file, "a")
+            audit_log_fp = Path(settings.audit_log_file).open("a")
         else:
             audit_log_fp = None
 

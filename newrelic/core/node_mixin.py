@@ -50,7 +50,7 @@ class GenericNodeMixin:
         return _params
 
     def span_event(self, settings, base_attrs=None, parent_guid=None, attr_class=dict):
-        i_attrs = base_attrs and base_attrs.copy() or attr_class()
+        i_attrs = (base_attrs and base_attrs.copy()) or attr_class()
         i_attrs["type"] = "Span"
         i_attrs["name"] = self.name
         i_attrs["guid"] = self.guid
@@ -76,7 +76,7 @@ class GenericNodeMixin:
         yield self.span_event(settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class)
 
         for child in self.children:
-            for event in child.span_events(
+            for event in child.span_events(  # noqa: UP028
                 settings, base_attrs=base_attrs, parent_guid=self.guid, attr_class=attr_class
             ):
                 yield event
@@ -110,7 +110,7 @@ class DatastoreNodeMixin(GenericNodeMixin):
 
     def span_event(self, *args, **kwargs):
         self.agent_attributes["db.instance"] = self.db_instance
-        attrs = super(DatastoreNodeMixin, self).span_event(*args, **kwargs)
+        attrs = super().span_event(*args, **kwargs)
         i_attrs = attrs[0]
         a_attrs = attrs[2]
 

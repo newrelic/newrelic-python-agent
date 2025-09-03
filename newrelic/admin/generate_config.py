@@ -19,27 +19,25 @@ from newrelic.admin import command, usage
     "generate-config", "license_key [output_file]", """Generates a sample agent configuration file for <license_key>."""
 )
 def generate_config(args):
-    import os
     import sys
+    from pathlib import Path
 
     if len(args) == 0:
         usage("generate-config")
         sys.exit(1)
 
-    from newrelic import __file__ as package_root
+    import newrelic
 
-    package_root = os.path.dirname(package_root)
+    config_file = Path(newrelic.__file__).parent / "newrelic.ini"
 
-    config_file = os.path.join(package_root, "newrelic.ini")
-
-    content = open(config_file, "r").read()
+    with config_file.open() as f:
+        content = f.read()
 
     if len(args) >= 1:
         content = content.replace("*** REPLACE ME ***", args[0])
 
     if len(args) >= 2 and args[1] != "-":
-        output_file = open(args[1], "w")
-        output_file.write(content)
-        output_file.close()
+        with Path(args[1]).open("w") as output_file:
+            output_file.write(content)
     else:
         print(content)

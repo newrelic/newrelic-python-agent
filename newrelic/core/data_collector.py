@@ -279,7 +279,7 @@ class DeveloperModeSession(Session):
 
     def connect_span_stream(self, span_iterator, record_metric):
         if self.configuration.debug.connect_span_stream_in_developer_mode:
-            super(DeveloperModeSession, self).connect_span_stream(span_iterator, record_metric)
+            super().connect_span_stream(span_iterator, record_metric)
 
 
 class ServerlessModeSession(Session):

@@ -187,7 +187,7 @@ def traverse_deepest_unique_path(fields, fragments):
 
         if is_named_fragment(field):
             name = get_node_value(field.type_condition, "name")
-            if name:
+            if name and len(deepest_path) > 0:
                 deepest_path.append(f"{deepest_path.pop()}<{name}>")
 
         elif is_fragment(field):
@@ -196,14 +196,16 @@ def traverse_deepest_unique_path(fields, fragments):
 
             # list(fragments.values())[0] 's index is OK because the previous line
             # ensures that there is only one field in the list
-            full_fragment_selection_set = list(fragments.values())[0].selection_set.selections
+            full_fragment_selection_set = next(iter(fragments.values())).selection_set.selections
             fragment_selection_set = filter_ignored_fields(full_fragment_selection_set)
 
             if len(fragment_selection_set) != 1:
                 return deepest_path
             else:
                 fragment_field_name = get_node_value(fragment_selection_set[0], "name")
-                deepest_path.append(fragment_field_name)
+                if fragment_field_name:
+                    # If get_node_value returns None, the join function upstream will fail
+                    deepest_path.append(fragment_field_name)
 
         else:
             if field_name:
@@ -453,7 +455,7 @@ def wrap_graphql_impl(wrapped, instance, args, kwargs):
     try:
         with ErrorTrace(ignore=ignore_graphql_duplicate_exception):
             result = wrapped(*args, **kwargs)
-    except Exception as e:
+    except Exception:
         # Execution finished synchronously, exit immediately.
         trace.__exit__(*sys.exc_info())
         raise

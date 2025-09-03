@@ -13,20 +13,18 @@
 # limitations under the License.
 
 import json
-import os
+from pathlib import Path
 
 import pytest
-from testing_support.fixtures import override_application_settings
 
 from newrelic.config import _map_as_mapping, _process_labels_setting
 from newrelic.core.config import global_settings
 
-CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
-FIXTURE = os.path.join(CURRENT_DIR, "fixtures", "labels.json")
+FIXTURE = Path(__file__).parent / "fixtures" / "labels.json"
 
 
 def _load_tests():
-    with open(FIXTURE, "r") as fh:
+    with FIXTURE.open() as fh:
         js = fh.read()
     return json.loads(js)
 

@@ -13,14 +13,13 @@
 # limitations under the License.
 
 import json
-import os
+from pathlib import Path
 
 import pytest
 
 from newrelic.core.database_utils import SQLStatement
 
-CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
-JSON_DIR = os.path.normpath(os.path.join(CURRENT_DIR, "fixtures", "sql_obfuscation"))
+FIXTURE = Path(__file__).parent / "fixtures" / "sql_obfuscation" / "sql_obfuscation.json"
 
 _parameters_list = ["obfuscated", "dialects", "sql", "pathological"]
 _parameters = ",".join(_parameters_list)
@@ -28,8 +27,7 @@ _parameters = ",".join(_parameters_list)
 
 def load_tests():
     result = []
-    path = os.path.join(JSON_DIR, "sql_obfuscation.json")
-    with open(path, "r") as fh:
+    with FIXTURE.open() as fh:
         tests = json.load(fh)
 
     for test in tests:

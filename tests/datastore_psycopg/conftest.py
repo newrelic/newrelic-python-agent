@@ -43,7 +43,7 @@ def is_async(request):
     return request.param == "async"
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def connection(loop, is_async):
     import psycopg
 
@@ -70,7 +70,7 @@ def connection(loop, is_async):
     loop.run_until_complete(maybe_await(connection.close()))
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture
 def multiple_connections(loop, is_async):
     import psycopg
 

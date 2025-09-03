@@ -45,7 +45,7 @@ class CursorWrapper(DBAPI2CursorWrapper):
         if hasattr(sql, "as_string"):
             sql = sql.as_string(self)
 
-        return super(CursorWrapper, self).execute(sql, parameters, *args, **kwargs)
+        return super().execute(sql, parameters, *args, **kwargs)
 
     def __enter__(self):
         self.__wrapped__.__enter__()
@@ -55,7 +55,7 @@ class CursorWrapper(DBAPI2CursorWrapper):
         if hasattr(sql, "as_string"):
             sql = sql.as_string(self)
 
-        return super(CursorWrapper, self).executemany(sql, seq_of_parameters)
+        return super().executemany(sql, seq_of_parameters)
 
 
 class ConnectionSaveParamsWrapper(DBAPI2ConnectionWrapper):
@@ -63,6 +63,10 @@ class ConnectionSaveParamsWrapper(DBAPI2ConnectionWrapper):
 
     def __enter__(self):
         transaction = current_transaction()
+        if not transaction:
+            # Return unwrapped connection if there is no transaction
+            return self.__wrapped__.__enter__()
+
         name = callable_name(self.__wrapped__.__enter__)
         with FunctionTrace(name, source=self.__wrapped__.__enter__):
             self.__wrapped__.__enter__()
@@ -77,6 +81,9 @@ class ConnectionSaveParamsWrapper(DBAPI2ConnectionWrapper):
 
     def __exit__(self, exc, value, tb):
         transaction = current_transaction()
+        if not transaction:
+            return self.__wrapped__.__exit__(exc, value, tb)
+
         name = callable_name(self.__wrapped__.__exit__)
         with FunctionTrace(name, source=self.__wrapped__.__exit__):
             if exc is None:
@@ -114,7 +121,7 @@ class ConnectionFactory(DBAPI2ConnectionFactory):
         if _bind_connect(*args, **kwargs):
             self.__connection_wrapper__ = ConnectionSaveParamsWrapper
 
-        return super(ConnectionFactory, self).__call__(*args, **kwargs)
+        return super().__call__(*args, **kwargs)
 
 
 def instance_info(args, kwargs):

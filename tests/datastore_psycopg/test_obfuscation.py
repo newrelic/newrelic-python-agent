@@ -21,7 +21,7 @@ from newrelic.api.background_task import background_task
 from newrelic.core.database_utils import SQLConnections
 
 
-@pytest.fixture()
+@pytest.fixture
 def cursor(loop, connection):
     try:
         cursor = connection.cursor()
@@ -87,7 +87,7 @@ def any_length_explain_plan(node):
 
     sql_connections = SQLConnections()
     explain_plan = node.explain_plan(sql_connections)
-    assert explain_plan and len(explain_plan) > 0
+    assert len(explain_plan) > 0
 
 
 _test_explain_plans = [

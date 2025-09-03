@@ -118,15 +118,16 @@ def test_client(
         expected_text = f"{service_method_type}: Hello World"
         response_texts_correct = [r.text == expected_text for r in reply]
         assert len(response_texts_correct) == message_count
-        assert response_texts_correct and all(response_texts_correct)
+        assert response_texts_correct
+        assert all(response_texts_correct)
 
     try:
         _test_client()
     except grpc.RpcError as e:
         if raises_exception:
-            assert f"{service_method_type}: Hello World" in e.details()
+            assert f"{service_method_type}: Hello World" in e.details()  # noqa: PT017
         elif cancel:
-            assert e.code() == grpc.StatusCode.CANCELLED
+            assert e.code() == grpc.StatusCode.CANCELLED  # noqa: PT017
         else:
             raise
     except grpc.FutureCancelledError:
@@ -178,7 +179,7 @@ def test_future_timeout_error(service_method_type, service_method_method_name, f
         request = create_request(streaming_request, count=1, timesout=True)
 
         reply = get_result(service_method_method, request, timeout=0.01)
-        assert reply and reply.code() == grpc.StatusCode.DEADLINE_EXCEEDED
+        assert reply.code() == grpc.StatusCode.DEADLINE_EXCEEDED
 
     _test_future_timeout_error()
 

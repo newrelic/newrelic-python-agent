@@ -13,9 +13,9 @@
 # limitations under the License.
 
 import os
-import random
 import socket
 import time
+from pathlib import Path
 
 import pytest
 from testing_support.fixtures import TerminatingPopen
@@ -29,8 +29,8 @@ from testing_support.util import get_open_port
 
 @pytest.mark.parametrize("nr_enabled", (True, False))
 def test_asgi_app(nr_enabled):
-    nr_admin = os.path.join(os.environ["TOX_ENV_DIR"], "bin", "newrelic-admin")
-    gunicorn = os.path.join(os.environ["TOX_ENV_DIR"], "bin", "gunicorn")
+    nr_admin = Path(os.environ["TOX_ENV_DIR"]) / "bin" / "newrelic-admin"
+    gunicorn = Path(os.environ["TOX_ENV_DIR"]) / "bin" / "gunicorn"
 
     PORT = get_open_port()
     cmd = [gunicorn, "-b", f"127.0.0.1:{PORT}", "--worker-class", "worker.AsgiWorker", "asgi_app:Application"]
@@ -61,7 +61,7 @@ def test_asgi_app(nr_enabled):
                     s.connect(("127.0.0.1", PORT))
                     s.close()
                     break
-                except socket.error:
+                except OSError:
                     pass
 
                 time.sleep(0.1)

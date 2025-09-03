@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 # Copyright 2010 New Relic, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -142,7 +141,7 @@ def test_base_web_transaction(use_bytes):
         transaction.process_response(200, response_headers)
 
 
-@pytest.fixture()
+@pytest.fixture
 def validate_no_garbage():
     yield
 

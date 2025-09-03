@@ -19,7 +19,7 @@ can be found in test/framework_tornado_r3/test_cat_map.py
 """
 
 import json
-import os
+from pathlib import Path
 from urllib.request import urlopen
 
 import pytest
@@ -44,8 +44,7 @@ from newrelic.api.wsgi_application import wsgi_application
 from newrelic.common.encoding_utils import json_encode, obfuscate
 
 ENCODING_KEY = "1234567890123456789012345678901234567890"
-CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
-JSON_DIR = os.path.normpath(os.path.join(CURRENT_DIR, "fixtures"))
+FIXTURE = Path(__file__).parent / "fixtures" / "cat_map.json"
 OUTBOUD_REQUESTS = {}
 
 _parameters_list = [
@@ -68,8 +67,7 @@ def server():
 
 def load_tests():
     result = []
-    path = os.path.join(JSON_DIR, "cat_map.json")
-    with open(path, "r") as fh:
+    with FIXTURE.open() as fh:
         tests = json.load(fh)
 
     for test in tests:

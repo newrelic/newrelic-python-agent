@@ -33,7 +33,7 @@ def sample_data(collection):
 # ===== AsyncQuery =====
 
 
-@pytest.fixture()
+@pytest.fixture
 def exercise_async_query(async_collection):
     async def _exercise_async_query():
         async_query = (
@@ -91,7 +91,7 @@ def test_firestore_async_query_trace_node_datastore_params(loop, exercise_async_
 # ===== AsyncAggregationQuery =====
 
 
-@pytest.fixture()
+@pytest.fixture
 def exercise_async_aggregation_query(async_collection):
     async def _exercise_async_aggregation_query():
         async_aggregation_query = async_collection.select("x").where(field_path="x", op_string="<=", value=3).count()
@@ -149,7 +149,7 @@ def test_firestore_async_aggregation_query_trace_node_datastore_params(
 # ===== CollectionGroup =====
 
 
-@pytest.fixture()
+@pytest.fixture
 def patch_partition_queries(monkeypatch, async_client, collection, sample_data):
     """
     Partitioning is not implemented in the Firestore emulator.
@@ -172,10 +172,9 @@ def patch_partition_queries(monkeypatch, async_client, collection, sample_data):
         return _mock_partition_query()
 
     monkeypatch.setattr(async_client._firestore_api, "partition_query", mock_partition_query)
-    yield
 
 
-@pytest.fixture()
+@pytest.fixture
 def exercise_async_collection_group(async_client, async_collection):
     async def _exercise_async_collection_group():
         async_collection_group = async_client.collection_group(async_collection.id)

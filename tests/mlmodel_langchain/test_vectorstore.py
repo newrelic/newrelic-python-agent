@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import copy
-import os
+from pathlib import Path
 
 import langchain
 import pytest
@@ -35,6 +35,8 @@ from newrelic.api.background_task import background_task
 from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.object_names import callable_name
+
+PDF_FILE_PATH = str(Path(__file__).parent / "hello.pdf")
 
 
 def vectorstore_events_sans_content(event):
@@ -82,7 +84,7 @@ vectorstore_recorded_events = [
             "metadata.page_label": "1",
             "metadata.page": 0,
             "metadata.producer": "xdvipdfmx (20210318)",
-            "metadata.source": os.path.join(os.path.dirname(__file__), "hello.pdf"),
+            "metadata.source": PDF_FILE_PATH,
             "metadata.total_pages": 1,
         },
     ),
@@ -119,8 +121,8 @@ def test_vectorstore_modules_instrumented():
         if not hasattr(class_.asimilarity_search, "__wrapped__"):
             uninstrumented_async_classes.append(class_name)
 
-    assert not uninstrumented_sync_classes, f"Uninstrumented sync classes found: {str(uninstrumented_sync_classes)}"
-    assert not uninstrumented_async_classes, f"Uninstrumented async classes found: {str(uninstrumented_async_classes)}"
+    assert not uninstrumented_sync_classes, f"Uninstrumented sync classes found: {uninstrumented_sync_classes!s}"
+    assert not uninstrumented_async_classes, f"Uninstrumented async classes found: {uninstrumented_async_classes!s}"
 
 
 @reset_core_stats_engine()
@@ -143,8 +145,7 @@ def test_pdf_pagesplitter_vectorstore_in_txn(set_trace_info, embedding_openai_cl
     add_custom_attribute("non_llm_attr", "python-agent")
 
     with WithLlmCustomAttributes({"context": "attr"}):
-        script_dir = os.path.dirname(__file__)
-        loader = PyPDFLoader(os.path.join(script_dir, "hello.pdf"))
+        loader = PyPDFLoader(PDF_FILE_PATH)
         docs = loader.load()
 
         faiss_index = FAISS.from_documents(docs, embedding_openai_client)
@@ -172,8 +173,7 @@ def test_pdf_pagesplitter_vectorstore_in_txn_no_content(set_trace_info, embeddin
     add_custom_attribute("llm.foo", "bar")
     add_custom_attribute("non_llm_attr", "python-agent")
 
-    script_dir = os.path.dirname(__file__)
-    loader = PyPDFLoader(os.path.join(script_dir, "hello.pdf"))
+    loader = PyPDFLoader(PDF_FILE_PATH)
     docs = loader.load()
 
     faiss_index = FAISS.from_documents(docs, embedding_openai_client)
@@ -186,8 +186,7 @@ def test_pdf_pagesplitter_vectorstore_in_txn_no_content(set_trace_info, embeddin
 def test_pdf_pagesplitter_vectorstore_outside_txn(set_trace_info, embedding_openai_client):
     set_trace_info()
 
-    script_dir = os.path.dirname(__file__)
-    loader = PyPDFLoader(os.path.join(script_dir, "hello.pdf"))
+    loader = PyPDFLoader(PDF_FILE_PATH)
     docs = loader.load()
 
     faiss_index = FAISS.from_documents(docs, embedding_openai_client)
@@ -202,8 +201,7 @@ def test_pdf_pagesplitter_vectorstore_outside_txn(set_trace_info, embedding_open
 def test_pdf_pagesplitter_vectorstore_ai_monitoring_disabled(set_trace_info, embedding_openai_client):
     set_trace_info()
 
-    script_dir = os.path.dirname(__file__)
-    loader = PyPDFLoader(os.path.join(script_dir, "hello.pdf"))
+    loader = PyPDFLoader(PDF_FILE_PATH)
     docs = loader.load()
 
     faiss_index = FAISS.from_documents(docs, embedding_openai_client)
@@ -232,8 +230,7 @@ def test_async_pdf_pagesplitter_vectorstore_in_txn(loop, set_trace_info, embeddi
         add_custom_attribute("non_llm_attr", "python-agent")
 
         with WithLlmCustomAttributes({"context": "attr"}):
-            script_dir = os.path.dirname(__file__)
-            loader = PyPDFLoader(os.path.join(script_dir, "hello.pdf"))
+            loader = PyPDFLoader(PDF_FILE_PATH)
             docs = loader.load()
 
             faiss_index = await FAISS.afrom_documents(docs, embedding_openai_client)
@@ -265,8 +262,7 @@ def test_async_pdf_pagesplitter_vectorstore_in_txn_no_content(loop, set_trace_in
         add_custom_attribute("llm.foo", "bar")
         add_custom_attribute("non_llm_attr", "python-agent")
 
-        script_dir = os.path.dirname(__file__)
-        loader = PyPDFLoader(os.path.join(script_dir, "hello.pdf"))
+        loader = PyPDFLoader(PDF_FILE_PATH)
         docs = loader.load()
 
         faiss_index = await FAISS.afrom_documents(docs, embedding_openai_client)
@@ -283,8 +279,7 @@ def test_async_pdf_pagesplitter_vectorstore_outside_txn(loop, set_trace_info, em
     async def _test():
         set_trace_info()
 
-        script_dir = os.path.dirname(__file__)
-        loader = PyPDFLoader(os.path.join(script_dir, "hello.pdf"))
+        loader = PyPDFLoader(PDF_FILE_PATH)
         docs = loader.load()
 
         faiss_index = await FAISS.afrom_documents(docs, embedding_openai_client)
@@ -302,8 +297,7 @@ def test_async_pdf_pagesplitter_vectorstore_ai_monitoring_disabled(loop, set_tra
     async def _test():
         set_trace_info()
 
-        script_dir = os.path.dirname(__file__)
-        loader = PyPDFLoader(os.path.join(script_dir, "hello.pdf"))
+        loader = PyPDFLoader(PDF_FILE_PATH)
         docs = loader.load()
 
         faiss_index = await FAISS.afrom_documents(docs, embedding_openai_client)
@@ -348,8 +342,8 @@ def test_vectorstore_error(set_trace_info, embedding_openai_client, loop):
     with pytest.raises(AssertionError):
         with WithLlmCustomAttributes({"context": "attr"}):
             set_trace_info()
-            script_dir = os.path.dirname(__file__)
-            loader = PyPDFLoader(os.path.join(script_dir, "hello.pdf"))
+
+            loader = PyPDFLoader(PDF_FILE_PATH)
             docs = loader.load()
 
             faiss_index = FAISS.from_documents(docs, embedding_openai_client)
@@ -371,10 +365,9 @@ def test_vectorstore_error(set_trace_info, embedding_openai_client, loop):
 )
 @background_task()
 def test_vectorstore_error_no_content(set_trace_info, embedding_openai_client):
+    set_trace_info()
     with pytest.raises(AssertionError):
-        set_trace_info()
-        script_dir = os.path.dirname(__file__)
-        loader = PyPDFLoader(os.path.join(script_dir, "hello.pdf"))
+        loader = PyPDFLoader(PDF_FILE_PATH)
         docs = loader.load()
 
         faiss_index = FAISS.from_documents(docs, embedding_openai_client)
@@ -398,8 +391,7 @@ def test_async_vectorstore_error(loop, set_trace_info, embedding_openai_client):
     async def _test():
         set_trace_info()
 
-        script_dir = os.path.dirname(__file__)
-        loader = PyPDFLoader(os.path.join(script_dir, "hello.pdf"))
+        loader = PyPDFLoader(PDF_FILE_PATH)
         docs = loader.load()
 
         faiss_index = await FAISS.afrom_documents(docs, embedding_openai_client)
@@ -429,8 +421,7 @@ def test_async_vectorstore_error_no_content(loop, set_trace_info, embedding_open
     async def _test():
         set_trace_info()
 
-        script_dir = os.path.dirname(__file__)
-        loader = PyPDFLoader(os.path.join(script_dir, "hello.pdf"))
+        loader = PyPDFLoader(PDF_FILE_PATH)
         docs = loader.load()
 
         faiss_index = await FAISS.afrom_documents(docs, embedding_openai_client)

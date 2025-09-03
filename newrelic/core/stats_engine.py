@@ -79,7 +79,7 @@ class ApdexStats(list):
     # be the apdex_t value in use at the time.
 
     def __init__(self, satisfying=0, tolerating=0, frustrating=0, apdex_t=0.0):
-        super(ApdexStats, self).__init__([satisfying, tolerating, frustrating, apdex_t, apdex_t, 0])
+        super().__init__([satisfying, tolerating, frustrating, apdex_t, apdex_t, 0])
 
     satisfying = property(operator.itemgetter(0))
     tolerating = property(operator.itemgetter(1))
@@ -92,7 +92,7 @@ class ApdexStats(list):
         self[1] += other[1]
         self[2] += other[2]
 
-        self[3] = (self[0] or self[1] or self[2]) and min(self[3], other[3]) or other[3]
+        self[3] = ((self[0] or self[1] or self[2]) and min(self[3], other[3])) or other[3]
         self[4] = max(self[4], other[3])
 
     def merge_apdex_metric(self, metric):
@@ -102,7 +102,7 @@ class ApdexStats(list):
         self[1] += metric.tolerating
         self[2] += metric.frustrating
 
-        self[3] = (self[0] or self[1] or self[2]) and min(self[3], metric.apdex_t) or metric.apdex_t
+        self[3] = ((self[0] or self[1] or self[2]) and min(self[3], metric.apdex_t)) or metric.apdex_t
         self[4] = max(self[4], metric.apdex_t)
 
 
@@ -124,7 +124,7 @@ class TimeStats(list):
     ):
         if total_exclusive_call_time is None:
             total_exclusive_call_time = total_call_time
-        super(TimeStats, self).__init__(
+        super().__init__(
             [call_count, total_call_time, total_exclusive_call_time, min_call_time, max_call_time, sum_of_squares]
         )
 
@@ -140,7 +140,7 @@ class TimeStats(list):
 
         self[1] += other[1]
         self[2] += other[2]
-        self[3] = self[0] and min(self[3], other[3]) or other[3]
+        self[3] = (self[0] and min(self[3], other[3])) or other[3]
         self[4] = max(self[4], other[4])
         self[5] += other[5]
 
@@ -157,7 +157,7 @@ class TimeStats(list):
 
         self[1] += duration
         self[2] += exclusive
-        self[3] = self[0] and min(self[3], duration) or duration
+        self[3] = (self[0] and min(self[3], duration)) or duration
         self[4] = max(self[4], duration)
         self[5] += duration**2
 
@@ -321,7 +321,7 @@ class DimensionalMetrics:
         return str(self.__stats_table)
 
     def __repr__(self):
-        return f"{__class__.__name__}({repr(self.__stats_table)})"
+        return f"{__class__.__name__}({self.__stats_table!r})"
 
     def items(self):
         return self.metrics()
@@ -329,7 +329,7 @@ class DimensionalMetrics:
 
 class SlowSqlStats(list):
     def __init__(self):
-        super(SlowSqlStats, self).__init__([0, 0, 0, 0, None])
+        super().__init__([0, 0, 0, 0, None])
 
     call_count = property(operator.itemgetter(0))
     total_call_time = property(operator.itemgetter(1))
@@ -341,7 +341,7 @@ class SlowSqlStats(list):
         """Merge data from another instance of this object."""
 
         self[1] += other[1]
-        self[2] = self[0] and min(self[2], other[2]) or other[2]
+        self[2] = (self[0] and min(self[2], other[2])) or other[2]
         self[3] = max(self[3], other[3])
 
         if self[3] == other[3]:
@@ -358,7 +358,7 @@ class SlowSqlStats(list):
         duration = node.duration
 
         self[1] += duration
-        self[2] = self[0] and min(self[2], duration) or duration
+        self[2] = (self[0] and min(self[2], duration)) or duration
         self[3] = max(self[3], duration)
 
         if self[3] == duration:
@@ -448,7 +448,7 @@ class SampledDataSet:
 
 class LimitedDataSet(list):
     def __init__(self, capacity=200):
-        super(LimitedDataSet, self).__init__()
+        super().__init__()
 
         self.capacity = capacity
         self.num_seen = 0
@@ -853,7 +853,7 @@ class StatsEngine:
                         _, error_group_name = process_user_attribute("error.group.name", error_group_name_raw)
                         if error_group_name is None or not isinstance(error_group_name, str):
                             raise ValueError(
-                                f"Invalid attribute value for error.group.name. Expected string, got: {repr(error_group_name_raw)}"
+                                f"Invalid attribute value for error.group.name. Expected string, got: {error_group_name_raw!r}"
                             )
                         else:
                             agent_attributes["error.group.name"] = error_group_name

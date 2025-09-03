@@ -26,7 +26,7 @@ from external_botocore._test_bedrock_embeddings import (
     embedding_payload_templates,
 )
 from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
-from testing_support.ml_testing_utils import (  # noqa: F401
+from testing_support.ml_testing_utils import (
     add_token_count_to_events,
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
@@ -362,7 +362,7 @@ def test_bedrock_embedding_error_malformed_request_body(loop, bedrock_server, se
 
     async def _test():
         model = "amazon.titan-embed-g1-text-02"
-        body = "{ Malformed Request Body".encode("utf-8")
+        body = b"{ Malformed Request Body"
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         add_custom_attribute("llm.foo", "bar")
@@ -411,7 +411,7 @@ def test_bedrock_embedding_error_malformed_response_body(loop, bedrock_server, s
     loop.run_until_complete(_test())
 
 
-def test_embedding_models_instrumented():
+def test_embedding_models_instrumented(loop):
     import aiobotocore
 
     SUPPORTED_MODELS = [model for model, _, _, _ in MODEL_EXTRACTORS if "embed" in model]

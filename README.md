@@ -6,6 +6,15 @@
 
 # New Relic Python Agent
 
+[![GitHub release](https://img.shields.io/github/v/release/newrelic/newrelic-python-agent?sort=semver)](https://github.com/newrelic/newrelic-python-agent/releases)
+[![image](https://img.shields.io/pypi/v/newrelic.svg)](https://pypi.python.org/pypi/newrelic)
+[![image](https://img.shields.io/pypi/pyversions/newrelic.svg)](https://pypi.python.org/pypi/newrelic)
+[![Tests](https://github.com/newrelic/newrelic-python-agent/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/newrelic/newrelic-python-agent/actions/workflows/tests.yml)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![MegaLinter](https://github.com/newrelic/newrelic-python-agent/actions/workflows/mega-linter.yml/badge.svg?branch=main)](https://github.com/newrelic/newrelic-python-agent/actions/workflows/mega-linter.yml)
+[![codecov](https://codecov.io/gh/newrelic/newrelic-python-agent/branch/main/graph/badge.svg)](https://codecov.io/gh/newrelic/newrelic-python-agent)
+[![Secured with Trivy](https://img.shields.io/badge/Trivy-secured-green)](https://github.com/aquasecurity/trivy)
+
 The `newrelic` package instruments your application for performance
 monitoring and advanced performance analytics with [New
 Relic](http://newrelic.com).
@@ -31,11 +40,10 @@ This package can be installed via pip:
 pip install newrelic
 ```
 
-(These instructions can also be found online: [Python Agent Quick
-Start](https://docs.newrelic.com/docs/agents/python-agent/getting-started/python-agent-quick-start).)
+(These instructions can also be found online: [Python Agent Installation Guide](https://docs.newrelic.com/install/python/).)
 
 1. Generate the agent configuration file with your [license
-    key](https://docs.newrelic.com/docs/accounts-partnerships/accounts/account-setup/license-key).
+    key](https://docs.newrelic.com/docs/apis/intro-apis/new-relic-api-keys/).
 
     ```bash
     newrelic-admin generate-config $YOUR_LICENSE_KEY newrelic.ini
@@ -57,7 +65,7 @@ Start](https://docs.newrelic.com/docs/agents/python-agent/getting-started/python
     Modify the existing startup script, prefixing the existing startup
     command and options with `newrelic-admin run-program`.
 
-    Also, set the [NEW_RELIC_CONFIG_FILE]{.title-ref} environment
+    Also, set the **NEW_RELIC_CONFIG_FILE** environment
     variable to the name of the configuration file you created above:
 
     ```bash

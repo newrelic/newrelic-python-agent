@@ -28,6 +28,7 @@ import re
 import types
 import zlib
 from collections import OrderedDict
+from pathlib import Path
 
 HEXDIGLC_RE = re.compile("^[0-9a-f]+$")
 DELIMITER_FORMAT_RE = re.compile("[ \t]*,[ \t]*")
@@ -66,6 +67,8 @@ def json_encode(obj, **kwargs):
     def _encode(o):
         if isinstance(o, bytes):
             return o.decode("latin-1")
+        elif isinstance(o, Path):
+            return str(o)
         elif isinstance(o, types.GeneratorType):
             return list(o)
         elif hasattr(o, "__iter__"):
@@ -483,7 +486,7 @@ class NrTraceState(dict):
         if pr:
             pr = f"{pr:.6f}".rstrip("0").rstrip(".")
 
-        payload = f"0-0-{self['ac']}-{self['ap']}-{self.get('id', '')}-{self.get('tx', '')}-{'1' if self.get('sa') else '0'}-{pr}-{str(self['ti'])}"
+        payload = f"0-0-{self['ac']}-{self['ap']}-{self.get('id', '')}-{self.get('tx', '')}-{'1' if self.get('sa') else '0'}-{pr}-{self['ti']!s}"
         return f"{self.get('tk', self['ac'])}@nr={payload}"
 
     @classmethod

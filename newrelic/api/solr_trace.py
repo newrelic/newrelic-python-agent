@@ -25,7 +25,7 @@ class SolrTrace(newrelic.api.time_trace.TimeTrace):
         if kwargs:
             raise TypeError("Invalid keyword arguments:", kwargs)
 
-        super(SolrTrace, self).__init__(parent=parent, source=source)
+        super().__init__(parent=parent, source=source)
 
         self.library = library
         self.command = command

@@ -33,50 +33,49 @@ pep8-naming.extend-ignore-names = ["X", "y"]
 
 select = [
     # Enabled linters and rules
-    # "F",  # Pyflakes
-    "E",  # pycodestyle
-    "W",  # pycodestyle
-    "I",  # isort
-    # "N",  # pep8-naming
-    # "UP",  # pyupgrade
-    "YTT",  # flake8-2020
-    "ASYNC",  # flake8-async
-    "S",  # flake8-bandit
-    # "BLE",  # flake8-blind-except
-    # "FBT",  # flake8-boolean-trap
-    "B",  # flake8-bugbear
     "A",  # flake8-builtins
-    "COM",  # flake8-commas
+    "ASYNC",  # flake8-async
+    "B",  # flake8-bugbear
     "C4",  # flake8-comprehensions
+    "COM",  # flake8-commas
     "DTZ",  # flake8-datetimez
-    "T10",  # flake8-debugger
-    # "EM",  # flake8-errmsg
+    "E",  # pycodestyle
     "EXE",  # flake8-executable
+    "F",  # Pyflakes
     "FA",  # flake8-future-annotations
-    "ISC",  # flake8-implicit-str-concat
-    "ICN",  # flake8-import-conventions
-    "LOG",  # flake8-logging
+    "FLY",  # flynt
+    "FURB",  # refurb
     "G",  # flake8-logging-format
-    # "INP",  # flake8-no-pep420
-    "PYI",  # flake8-pyi
-    # "PT",  # flake8-pytest-style
-    "Q",  # flake8-quotes
-    "RSE",  # flake8-raise
-    # "RET",  # flake8-return
-    # "SLF",  # flake8-self
-    "SLOT",  # flake8-slots
-    # "SIM",  # flake8-simplify
-    "TID",  # flake8-tidy-imports
+    "I",  # isort
+    "ICN",  # flake8-import-conventions
+    "INP",  # flake8-no-pep420
     "INT",  # flake8-gettext
-    # "ARG",  # flake8-unused-arguments
-    # "PTH",  # flake8-use-pathlib
+    "ISC",  # flake8-implicit-str-concat
+    "LOG",  # flake8-logging
+    "PERF",  # Perflint
     "PGH",  # pygrep-hooks
     "PL",  # Pylint
+    "PT",  # flake8-pytest-style
+    "PTH",  # flake8-use-pathlib
+    "PYI",  # flake8-pyi
+    "Q",  # flake8-quotes
+    "RSE",  # flake8-raise
+    "RUF",  # Ruff-specific rules
+    "S",  # flake8-bandit
+    "SLOT",  # flake8-slots
+    "T10",  # flake8-debugger
+    "TID",  # flake8-tidy-imports
+    "UP",  # pyupgrade
+    "W",  # pycodestyle
+    "YTT",  # flake8-2020
+    # "ARG",  # flake8-unused-arguments
+    # "BLE",  # flake8-blind-except
+    # "EM",  # flake8-errmsg
+    # "FBT",  # flake8-boolean-trap
+    # "N",  # pep8-naming
+    # "RET",  # flake8-return
+    # "SIM",  # flake8-simplify
     # "TRY",  # tryceratops
-    "FLY",  # flynt
-    "PERF",  # Perflint
-    "FURB",  # refurb
-    # "RUF",  # Ruff-specific rules
 ]
 
 # Disabled Linters
@@ -86,6 +85,7 @@ select = [
 # "DJ",  # flake8-django
 # "PIE",  # flake8-pie
 # "T20",  # flake8-print
+# "SLF",  # flake8-self
 # "TC",  # flake8-type-checking
 # "TD",  # flake8-todos
 # "FIX",  # flake8-fixme
@@ -94,6 +94,7 @@ select = [
 # "NPY",  # NumPy-specific rules
 # "FAST",  # FastAPI
 # "AIR",  # Airflow
+# "SLF",  # flake8-self (only scans for private member access, which is intentional)
 
 # Preview linters (disabled)
 # "CPY",  # flake8-copyright
@@ -101,14 +102,16 @@ select = [
 
 ignore = [
     # Temporarily disabled rules
-    "RUF100",  # unused-noqa (TODO: remove this once all linters are enabled)
     "PERF203",  # try-except-in-loop (most of these are unavoidable)
     "S110",  # try-except-pass (Bandit wants us to log the exception, which is usually pointless. Spot check these later)
     "PLW0603",  # global-statement (this is currently used extensively)
     "PLW2901",  # redefined-loop-name (frequently used, not generally an issue)
     "PLR",  # Pylint Recommendations (too many to fix all at once)
     "E722",  # bare-except (too many to fix all at once)
+    "PT012",  # pytest-raises-with-multiple-statements (too many to fix all at once)
     # Permanently disabled rules
+    "PLC0415",  # import-outside-top-level (intentionally used frequently)
+    "UP006",  # non-pep585-annotation (not compatible with Python 3.7 or 3.8)
     "D203",  # incorrect-blank-line-before-class
     "D213",  # multi-line-summary-second-line
     "ARG001",  # unused-argument
@@ -135,12 +138,21 @@ ignore = [
 "tests/*" = [
     # Disabled rules in tests
     "S",  # flake8-bandit (security checks are not necessary in tests)
+    "INP",  # flake8-no-pep420 (tests need not be not part of a package)
     "F401",  # unused-import
     "F811",  # redefined-while-unused (pytest fixtures trigger this)
+    "F841",  # unused-variable (intentional in tests to document what an unused output is)
+    "RUF012",  # mutable-class-default
+    "RUF015",  # unnecessary-iterable-allocation-for-first-element (more readable in tests)
     "E731",  # lambda-assignment (acceptable in tests)
+    "RUF012",  # mutable-class-default
+    "RUF015",  # unnecessary-iterable-allocation-for-first-element (more readable in tests)
     "PLR2004",  # magic-value-comparison (comparing to constant values)
     "ASYNC251",  # blocking-sleep-in-async-function (acceptable in tests)
     "B904",  # raise-without-from-inside-except (not necessary in tests)
+    "PT006",  # pytest-parametrize-names-wrong-type (style choice)
+    "PT007",  # pytest-parametrize-values-wrong-type (style choice)
+    "PT011",  # pytest-raises-too-broad (we frequently test for generic errors)
 ]
 "newrelic/admin/*" = [
     # Disabled rules in admin scripts

@@ -64,7 +64,7 @@ def test_run_process_with_result(monkeypatch, loop):
 @validate_transaction_metrics(
     "test_zeebe_client:deploy_resource", rollup_metrics=[("ZeebeClient/deploy_resource", 1)], background_task=True
 )
-@validate_span_events(exact_agents={"zeebe.client.resourceCount": 1, "zeebe.client.resourceFile": "test.bpmn"}, count=1)
+@validate_span_events(exact_agents={"zeebe.client.resourceFile": "test.bpmn"}, count=1)
 def test_deploy_resource(monkeypatch, loop):
     monkeypatch.setattr(ZeebeAdapter, "deploy_resource", dummy_deploy_resource)
 

@@ -44,15 +44,12 @@ def _add_client_input_attributes(method_name, trace, args, kwargs):
     if message_id:
         trace._add_agent_attribute("zeebe.client.messageId", message_id)
     
-    try: 
-        if method_name == "deploy_resource":
-            resources = list(args)
-            if resources:
-                trace._add_agent_attribute("zeebe.client.resourceCount", len(resources))
-                if len(resources) == 1:
-                    trace._add_agent_attribute("zeebe.client.resourceFile", str(resources[0]))
-    except Exception:
-        _logger.warning(CLIENT_ATTRIBUTES_DEPLOY_RESOURCE_LOG_MSG, exc_info=True)
+    resource = extract_agent_attribute_from_methods(args, {}, method_name, ("deploy_resource"), None, 0)
+    if resource:
+        try:
+            trace._add_agent_attribute("zeebe.client.resourceFile", resource)
+        except Exception:
+            _logger.warning(CLIENT_ATTRIBUTES_DEPLOY_RESOURCE_LOG_MSG, exc_info=True)
 
 
 def extract_agent_attribute_from_methods(args, kwargs, method_name, methods, param, index):

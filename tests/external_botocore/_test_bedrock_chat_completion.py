@@ -13,6 +13,7 @@
 # limitations under the License.
 
 # Ignore unicode characters in this file from LLM responses
+# ruff: noqa: RUF001
 
 chat_completion_payload_templates = {
     "amazon.titan-text-express-v1": '{ "inputText": "%s", "textGenerationConfig": {"temperature": %f, "maxTokenCount": %d }}',
@@ -430,7 +431,7 @@ chat_completion_langchain_expected_streaming_events = {
                 "request_id": "48c7ee13-7790-461f-959f-04b0a4cf91c8",
                 "span_id": None,
                 "trace_id": "trace-id",
-                "content": " To convert a temperature from Fahrenheit to Celsius, you can use the following formula: Celsius = (Fahrenheit - 32) x 5/9.\n\nSo, to convert 212 degrees Fahrenheit to Celsius, do the following calculation:\n\nCelsius = (212°F - 32) x 5/9\n\nCelsius = (212 - 32)",
+                "content": " To convert a temperature from Fahrenheit to Celsius, you can use the following formula: Celsius = (Fahrenheit - 32) × 5/9.\n\nSo, to convert 212 degrees Fahrenheit to Celsius, do the following calculation:\n\nCelsius = (212°F - 32) × 5/9\n\nCelsius = (212 - 32)",
                 "role": "assistant",
                 "completion_id": None,
                 "sequence": 1,
@@ -894,7 +895,7 @@ chat_completion_streaming_expected_events = {
                 "request_id": "48c7ee13-7790-461f-959f-04b0a4cf91c8",
                 "span_id": None,
                 "trace_id": "trace-id",
-                "content": " To convert a temperature from Fahrenheit to Celsius, you can use the following formula: Celsius = (Fahrenheit - 32) x 5/9.\n\nSo, to convert 212 degrees Fahrenheit to Celsius, do the following calculation:\n\nCelsius = (212°F - 32) x 5/9\n\nCelsius = (212 - 32)",
+                "content": " To convert a temperature from Fahrenheit to Celsius, you can use the following formula: Celsius = (Fahrenheit - 32) × 5/9.\n\nSo, to convert 212 degrees Fahrenheit to Celsius, do the following calculation:\n\nCelsius = (212°F - 32) × 5/9\n\nCelsius = (212 - 32)",
                 "role": "assistant",
                 "completion_id": None,
                 "sequence": 1,
@@ -1131,7 +1132,7 @@ chat_completion_streaming_expected_events = {
                 "trace_id": "trace-id",
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
-                "content": "  What is the conversion formula?\n\n212 degrees Fahrenheit is equal to 100 degrees Celsius.\n\nThe conversion formula is:\n\n°C = (°F - 32) x 5/9\n\nSo, to convert 212 degrees Fahrenheit to Celsius, we can use the formula like this:\n\n°C = (212 - 32) x 5/9\n",
+                "content": "  What is the conversion formula?\n\n212 degrees Fahrenheit is equal to 100 degrees Celsius.\n\nThe conversion formula is:\n\n°C = (°F - 32) × 5/9\n\nSo, to convert 212 degrees Fahrenheit to Celsius, we can use the formula like this:\n\n°C = (212 - 32) × 5/9\n",
                 "role": "assistant",
                 "completion_id": None,
                 "sequence": 1,

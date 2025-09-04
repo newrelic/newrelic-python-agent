@@ -102,7 +102,7 @@ chat_completion_expected_events = [
             "request_id": "c20d345e-6878-4778-b674-6b187bae8ecf",
             "span_id": None,
             "trace_id": "trace-id",
-            "content": "To convert 212°F to Celsius, we can use the formula:\n\nC = (F - 32) x 5/9\n\nWhere:\nC is the temperature in Celsius\nF is the temperature in Fahrenheit\n\nPlugging in 212°F, we get:\n\nC = (212 - 32) x 5/9\nC = 180 x 5/9\nC = 100\n\nTherefore, 212°",
+            "content": "To convert 212°F to Celsius, we can use the formula:\n\nC = (F - 32) × 5/9\n\nWhere:\nC is the temperature in Celsius\nF is the temperature in Fahrenheit\n\nPlugging in 212°F, we get:\n\nC = (212 - 32) × 5/9\nC = 180 × 5/9\nC = 100\n\nTherefore, 212°",  # noqa: RUF001
             "role": "assistant",
             "completion_id": None,
             "sequence": 2,

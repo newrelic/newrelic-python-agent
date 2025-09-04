@@ -26,7 +26,7 @@ RESPONSES = {
                 "message": {
                     "content": [
                         {
-                            "text": "To convert 212°F to Celsius, we can use the formula:\n\nC = (F - 32) x 5/9\n\nWhere:\nC is the temperature in Celsius\nF is the temperature in Fahrenheit\n\nPlugging in 212°F, we get:\n\nC = (212 - 32) x 5/9\nC = 180 x 5/9\nC = 100\n\nTherefore, 212°"
+                            "text": "To convert 212°F to Celsius, we can use the formula:\n\nC = (F - 32) × 5/9\n\nWhere:\nC is the temperature in Celsius\nF is the temperature in Fahrenheit\n\nPlugging in 212°F, we get:\n\nC = (212 - 32) × 5/9\nC = 180 × 5/9\nC = 100\n\nTherefore, 212°"  # noqa: RUF001
                         }
                     ],
                     "role": "assistant",

@@ -50,6 +50,7 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         pkg-config \
         python3-dev \
         python3-pip \
+        rustc \
         sudo \
         tzdata \
         unixodbc-dev \

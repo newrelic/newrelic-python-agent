@@ -25,8 +25,8 @@ from testing_support.fixtures import (
     capture_transaction_metrics,
     dt_enabled,
     override_application_settings,
-    validate_function_not_called,
 )
+from testing_support.validators.validate_function_not_called import validate_function_not_called
 from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics

@@ -21,13 +21,9 @@ from compat import basic_consume
 from conftest import BODY, CORRELATION_ID, EXCHANGE, EXCHANGE_2, HEADERS, PIKA_VERSION_INFO, QUEUE, QUEUE_2, REPLY_TO
 from pika.adapters.tornado_connection import TornadoConnection
 from testing_support.db_settings import rabbitmq_settings
-from testing_support.fixtures import (
-    capture_transaction_metrics,
-    dt_enabled,
-    override_application_settings,
-)
-from testing_support.validators.validate_function_not_called import validate_function_not_called
+from testing_support.fixtures import capture_transaction_metrics, dt_enabled, override_application_settings
 from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
+from testing_support.validators.validate_function_not_called import validate_function_not_called
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.validators.validate_tt_collector_json import validate_tt_collector_json

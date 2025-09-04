@@ -16,8 +16,9 @@ import grpc
 import pytest
 from _test_common import create_request, wait_for_transaction_completion
 from conftest import create_stub_and_channel
-from testing_support.fixtures import function_not_called, override_application_settings, override_generic_settings
+from testing_support.fixtures import override_application_settings, override_generic_settings
 from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
+from testing_support.validators.validate_function_not_called import validate_function_not_called
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
@@ -173,7 +174,7 @@ def test_newrelic_disabled_no_transaction(mock_grpc_server, stub):
     method = stub.DoUnaryUnary
 
     @override_generic_settings(global_settings(), {"enabled": False})
-    @function_not_called("newrelic.core.stats_engine", "StatsEngine.record_transaction")
+    @validate_function_not_called("newrelic.core.stats_engine", "StatsEngine.record_transaction")
     @wait_for_transaction_completion
     def _doit():
         method(request)

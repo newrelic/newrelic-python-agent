@@ -89,7 +89,7 @@ class optional_build_ext(build_ext):
 
 kwargs = dict(
     name="newrelic",
-    setup_requires=["setuptools>=61.2", "setuptools_scm>=3.2,<10"], 
+    setup_requires=["setuptools>=61.2", "setuptools_scm>=6.4,<10"],
     license="Apache-2.0",
 )
 

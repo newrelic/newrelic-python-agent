@@ -58,7 +58,7 @@ newrelic-admin = "newrelic.admin:main"
 [build-system]
 requires = [
     "setuptools>=61.2",
-    "setuptools_scm>=3.2,<10",
+    "setuptools_scm>=6.4,<10",
 ]
 build-backend = "setuptools.build_meta"
 

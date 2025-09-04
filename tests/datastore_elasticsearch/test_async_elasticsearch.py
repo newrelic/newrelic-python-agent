@@ -203,12 +203,12 @@ def test_async_elasticsearch_options_no_crash(async_client, loop):
     """Test that the options method on the async client doesn't cause a crash when run with the agent"""
 
     async def _test():
-        client_with_auth = async_client.options(basic_auth=('username', 'password'))
+        client_with_auth = async_client.options(basic_auth=("username", "password"))
         assert client_with_auth is not None
         assert client_with_auth != async_client
 
         # If options was instrumented, this would cause a crash since the first call would return an unexpected coroutine
-        client_chained = async_client.options(basic_auth=('user', 'pass')).options(request_timeout=60)
+        client_chained = async_client.options(basic_auth=("user", "pass")).options(request_timeout=60)
         assert client_chained is not None
 
     loop.run_until_complete(_test())

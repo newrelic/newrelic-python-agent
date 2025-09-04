@@ -20,6 +20,7 @@ from testing_support.validators.validate_transaction_errors import validate_tran
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
+from newrelic.api.transaction import current_transaction
 
 # Settings
 
@@ -191,6 +192,25 @@ def test_async_elasticsearch_operation_disabled(async_client, loop):
 @background_task()
 def test_async_elasticsearch_operation_enabled(async_client, loop):
     loop.run_until_complete(_exercise_es(async_client))
+
+
+@validate_transaction_errors(errors=[])
+@validate_transaction_metrics(
+    "test_async_elasticsearch:test_async_elasticsearch_operation_enabled_empty_transaction_settings",
+    scoped_metrics=_enable_scoped_metrics,
+    rollup_metrics=_enable_rollup_metrics,
+    background_task=True,
+)
+@override_application_settings(_enable_instance_settings)
+@background_task()
+def test_async_elasticsearch_operation_enabled_empty_transaction_settings(async_client, loop):
+    transaction = current_transaction()
+    settings = transaction._settings
+    transaction._settings = None
+
+    loop.run_until_complete(_exercise_es(async_client))
+
+    transaction._settings = settings
 
 
 def test_async_elasticsearch_no_transaction(async_client, loop):

@@ -215,6 +215,10 @@ def _map_inc_excl_attributes(s):
     return newrelic.core.config._parse_attributes(s)
 
 
+def _map_inc_excl_middleware(s):
+    return newrelic.core.config._parse_attributes(s, middleware=True)
+
+
 def _map_case_insensitive_excl_labels(s):
     return [v.lower() for v in newrelic.core.config._parse_attributes(s)]
 
@@ -512,6 +516,9 @@ def _process_configuration(section):
         section, "instrumentation.kombu.ignored_exchanges", "get", newrelic.core.config.parse_space_separated_into_list
     )
     _process_setting(section, "instrumentation.kombu.consumer.enabled", "getboolean", None)
+    _process_setting(section, "instrumentation.middleware.django.enabled", "getboolean", None)
+    _process_setting(section, "instrumentation.middleware.django.exclude", "get", _map_inc_excl_middleware)
+    _process_setting(section, "instrumentation.middleware.django.include", "get", _map_inc_excl_middleware)
 
 
 # Loading of configuration from specified file and for specified

@@ -19,13 +19,10 @@ import re
 from pathlib import Path
 
 import pytest
-from _mock_external_bedrock_server_invoke_model import MockExternalBedrockServer, extract_shortened_prompt
 from _mock_external_bedrock_server_converse import MockExternalBedrockConverseServer, extract_shortened_prompt_converse
+from _mock_external_bedrock_server_invoke_model import MockExternalBedrockServer, extract_shortened_prompt
 from botocore.response import StreamingBody
-from testing_support.fixtures import (
-    collector_agent_registration_fixture,
-    collector_available_fixture,
-)
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version, get_package_version_tuple

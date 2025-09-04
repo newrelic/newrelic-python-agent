@@ -21,8 +21,8 @@ from newrelic.api.external_trace import ExternalTrace
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.hooks.external_botocore import (
     EMBEDDING_STREAMING_UNSUPPORTED_LOG_MESSAGE,
-    RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE,
     REQUEST_EXTRACTOR_FAILURE_LOG_MESSAGE,
+    RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE,
     AsyncEventStreamWrapper,
     extract_bedrock_converse_attrs,
     handle_bedrock_exception,

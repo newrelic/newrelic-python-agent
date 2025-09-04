@@ -90,7 +90,7 @@ class GenericNodeMixin:
                 ct_processing_time[0] += (time.time() - start_time)
                 return [i_attrs, u_attrs, {}] if settings.distributed_tracing.minimize_attributes.enabled else [i_attrs, u_attrs, a_attrs]
             # If this is the an LLM node, always return it.
-            if a_attrs.get("llm"):
+            if a_attrs.get("llm") or i_attrs["name"].startswith("Llm/"):
                 ct_processing_time[0] += (time.time() - start_time)
                 return [i_attrs, u_attrs, {"llm": True}] if settings.distributed_tracing.minimize_attributes.enabled else [i_attrs, u_attrs, a_attrs]
             # If the span is not an exit span, skip it by returning None.

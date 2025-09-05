@@ -48,7 +48,7 @@ from newrelic.core.agent_control_health import (
     agent_control_health_instance,
     agent_control_healthcheck_loop,
 )
-from newrelic.core.config import Settings, apply_config_setting, default_host, fetch_config_setting
+from newrelic.core.config import Settings, apply_config_setting, default_host
 
 __all__ = ["filter_app_factory", "initialize"]
 
@@ -683,7 +683,6 @@ def translate_deprecated_settings(settings, cached_settings):
                 _logger.info("Applying value of deprecated setting %r to %r.", old_key, new_key)
 
             delete_setting(settings, old_key)
-
 
     # The 'capture_params' setting is deprecated, but since it affects
     # attribute filter default destinations, it is not translated here. We

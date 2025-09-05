@@ -918,7 +918,7 @@ enabled = false
 
 [tool.newrelic.error_collector]
 enabled = true
-ignore_errors = ["module:name1", "module:name"]
+ignore_classes = ["module:name1", "module:name"]
 
 [tool.newrelic.transaction_tracer]
 enabled = true

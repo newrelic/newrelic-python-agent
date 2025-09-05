@@ -33,6 +33,8 @@ async def wrap_call_tool(wrapped, instance, args, kwargs):
     if not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
+    transaction._add_agent_attribute("llm", True)
+
     func_name = callable_name(wrapped)
     bound_args = bind_args(wrapped, args, kwargs)
     tool_name = bound_args.get("name") or "tool"
@@ -50,6 +52,8 @@ async def wrap_read_resource(wrapped, instance, args, kwargs):
     settings = transaction.settings or global_settings()
     if not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
+
+    transaction._add_agent_attribute("llm", True)
 
     func_name = callable_name(wrapped)
     bound_args = bind_args(wrapped, args, kwargs)
@@ -76,6 +80,8 @@ async def wrap_get_prompt(wrapped, instance, args, kwargs):
     settings = transaction.settings or global_settings()
     if not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
+
+    transaction._add_agent_attribute("llm", True)
 
     func_name = callable_name(wrapped)
     bound_args = bind_args(wrapped, args, kwargs)

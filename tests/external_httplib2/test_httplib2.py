@@ -15,7 +15,7 @@
 import httplib2
 import pytest
 from testing_support.external_fixtures import cache_outgoing_headers, insert_incoming_headers
-from testing_support.fixtures import cat_enabled, override_application_settings
+from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_cross_process_headers import validate_cross_process_headers
 from testing_support.validators.validate_external_node_params import validate_external_node_params
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
@@ -112,7 +112,7 @@ def test_httplib2_cross_process_request(distributed_tracing, span_events, server
     _test()
 
 
-@cat_enabled
+# @cat_enabled
 def test_httplib2_cross_process_response(server):
     _test_httplib2_cross_process_response_scoped_metrics = [
         (f"ExternalTransaction/localhost:{server.port}/1#2/test", 1)

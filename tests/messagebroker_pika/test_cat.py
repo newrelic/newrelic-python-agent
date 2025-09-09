@@ -19,7 +19,7 @@ import string
 import pika
 from compat import basic_consume
 from testing_support.db_settings import rabbitmq_settings
-from testing_support.fixtures import cat_enabled, override_application_settings
+from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
@@ -60,7 +60,7 @@ def do_basic_consume(channel):
     channel.start_consuming()
 
 
-@cat_enabled
+# @cat_enabled
 @override_application_settings(_override_settings)
 def test_basic_consume_cat_headers():
     def on_receive(ch, method, properties, msg):

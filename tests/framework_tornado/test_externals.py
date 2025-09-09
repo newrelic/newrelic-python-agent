@@ -160,7 +160,7 @@ def test_httpclient(
         {
             "distributed_tracing.enabled": distributed_tracing,
             "span_events.enabled": span_events,
-            "cross_application_tracer.enabled": not distributed_tracing,
+            # "cross_application_tracer.enabled": not distributed_tracing,
         }
     )
     @validate_transaction_metrics(
@@ -243,11 +243,11 @@ def cat_response_server():
 
 
 @pytest.mark.parametrize("client_class", ["AsyncHTTPClient", "CurlAsyncHTTPClient", "HTTPClient"])
-@pytest.mark.parametrize("cat_enabled", [True, False])
+@pytest.mark.parametrize("dt_enabled", [True, False])
 @pytest.mark.parametrize("request_type", ["uri", "class"])
 @pytest.mark.parametrize("response_code,raise_error", [(500, True), (500, False), (200, False)])
 def test_client_cat_response_processing(
-    cat_enabled, request_type, client_class, raise_error, response_code, cat_response_server
+    dt_enabled, request_type, client_class, raise_error, response_code, cat_response_server
 ):
     global CAT_RESPONSE_CODE
     CAT_RESPONSE_CODE = response_code
@@ -256,15 +256,13 @@ def test_client_cat_response_processing(
         "cross_process_id": "1#1",
         "encoding_key": ENCODING_KEY,
         "trusted_account_ids": [1],
-        "cross_application_tracer.enabled": cat_enabled,
-        "distributed_tracing.enabled": not cat_enabled,
+        # "cross_application_tracer.enabled": cat_enabled,
+        "distributed_tracing.enabled": dt_enabled,
         "transaction_tracer.transaction_threshold": 0.0,
     }
 
     port = cat_response_server.port
-    expected_metrics = [
-        (f"ExternalTransaction/localhost:{port}/1#1/WebTransaction/Function/app:beep", 1 if cat_enabled else None)
-    ]
+    expected_metrics = None
 
     @validate_transaction_metrics(
         "make_request", background_task=True, rollup_metrics=expected_metrics, scoped_metrics=expected_metrics

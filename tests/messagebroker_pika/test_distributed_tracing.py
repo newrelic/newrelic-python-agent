@@ -31,7 +31,7 @@ _override_settings = {
     "primary_application_id": "12345",
     "account_id": "33",
     "trusted_account_key": "1",
-    "cross_application_tracer.enabled": True,
+    # "cross_application_tracer.enabled": True,
     "distributed_tracing.enabled": True,
 }
 

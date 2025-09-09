@@ -256,8 +256,8 @@ class DebugSettings(Settings):
     pass
 
 
-class CrossApplicationTracerSettings(Settings):
-    pass
+# class CrossApplicationTracerSettings(Settings):
+#     pass
 
 
 class TransactionEventsSettings(Settings):
@@ -497,7 +497,7 @@ _settings.browser_monitoring = BrowserMonitorSettings()
 _settings.browser_monitoring.attributes = BrowserMonitorAttributesSettings()
 _settings.code_level_metrics = CodeLevelMetricsSettings()
 _settings.console = ConsoleSettings()
-_settings.cross_application_tracer = CrossApplicationTracerSettings()
+# _settings.cross_application_tracer = CrossApplicationTracerSettings()
 _settings.custom_insights_events = CustomInsightsEventsSettings()
 _settings.ml_insights_events = MlInsightsEventsSettings()
 _settings.datastore_tracer = DatastoreTracerSettings()
@@ -808,7 +808,7 @@ _settings.attributes.exclude = []
 _settings.attributes.include = []
 
 _settings.thread_profiler.enabled = True
-_settings.cross_application_tracer.enabled = False
+# _settings.cross_application_tracer.enabled = False
 
 _settings.gc_runtime_metrics.enabled = _environ_as_bool("NEW_RELIC_GC_RUNTIME_METRICS_ENABLED", default=False)
 _settings.gc_runtime_metrics.top_object_count_limit = 5

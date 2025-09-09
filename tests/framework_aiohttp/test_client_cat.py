@@ -18,7 +18,7 @@ import aiohttp
 import pytest
 from testing_support.external_fixtures import create_incoming_headers
 from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_cross_process_headers import validate_cross_process_headers
+# from testing_support.validators.validate_cross_process_headers import validate_cross_process_headers
 from testing_support.validators.validate_external_node_params import validate_external_node_params
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
@@ -64,10 +64,11 @@ async def fetch(url, headers=None, raise_for_status=False, connector=None):
     return headers
 
 
-@pytest.mark.parametrize("cat_enabled", (True, False))
+# @pytest.mark.parametrize("cat_enabled", (True, False))
 @pytest.mark.parametrize("distributed_tracing", (True, False))
 @pytest.mark.parametrize("span_events", (True, False))
-def test_outbound_cross_process_headers(event_loop, cat_enabled, distributed_tracing, span_events, mock_header_server):
+def test_outbound_cross_process_headers(event_loop, distributed_tracing, span_events, mock_header_server):
+# def test_outbound_cross_process_headers(event_loop, cat_enabled, distributed_tracing, span_events, mock_header_server):
     @background_task(name="test_outbound_cross_process_headers")
     async def _test():
         headers = await fetch(f"http://127.0.0.1:{mock_header_server.port}")
@@ -77,9 +78,9 @@ def test_outbound_cross_process_headers(event_loop, cat_enabled, distributed_tra
 
         if distributed_tracing:
             assert "newrelic" in headers
-        elif cat_enabled:
-            assert ExternalTrace.cat_id_key in headers
-            assert ExternalTrace.cat_transaction_key in headers
+        # elif cat_enabled:
+        #     assert ExternalTrace.cat_id_key in headers
+        #     assert ExternalTrace.cat_transaction_key in headers
         else:
             assert "newrelic" not in headers
             assert ExternalTrace.cat_id_key not in headers
@@ -88,14 +89,14 @@ def test_outbound_cross_process_headers(event_loop, cat_enabled, distributed_tra
         def _validate():
             pass
 
-        if cat_enabled or distributed_tracing:
-            _validate = validate_cross_process_headers(_validate)
+        # if cat_enabled or distributed_tracing:
+        #     _validate = validate_cross_process_headers(_validate)
 
         _validate()
 
     @override_application_settings(
         {
-            "cross_application_tracer.enabled": cat_enabled,
+            # "cross_application_tracer.enabled": cat_enabled,
             "distributed_tracing.enabled": distributed_tracing,
             "span_events.enabled": span_events,
         }
@@ -155,12 +156,13 @@ class PoorResolvingConnector(aiohttp.TCPConnector):
         return res
 
 
-@pytest.mark.parametrize("cat_enabled", [True, False])
+# @pytest.mark.parametrize("cat_enabled", [True, False])
 @pytest.mark.parametrize("response_code", [200, 404])
 @pytest.mark.parametrize("raise_for_status", [True, False])
 @pytest.mark.parametrize("connector_class", [None, PoorResolvingConnector])  # None will use default
 def test_process_incoming_headers(
-    event_loop, cat_enabled, response_code, raise_for_status, connector_class, mock_external_http_server
+    event_loop, response_code, raise_for_status, connector_class, mock_external_http_server
+    # event_loop, cat_enabled, response_code, raise_for_status, connector_class, mock_external_http_server
 ):
     # It was discovered via packnsend that the `throw` method of the `_request`
     # coroutine is used in the case of poorly resolved hosts. An older version
@@ -174,15 +176,15 @@ def test_process_incoming_headers(
     port = server.port
 
     _test_cross_process_response_scoped_metrics = [
-        (f"ExternalTransaction/127.0.0.1:{port}/1#2/test", 1 if cat_enabled else None)
+        (f"ExternalTransaction/127.0.0.1:{port}/1#2/test", None)
     ]
 
     _test_cross_process_response_rollup_metrics = [
         ("External/all", 1),
         ("External/allOther", 1),
         (f"External/127.0.0.1:{port}/all", 1),
-        (f"ExternalApp/127.0.0.1:{port}/1#2/all", 1 if cat_enabled else None),
-        (f"ExternalTransaction/127.0.0.1:{port}/1#2/test", 1 if cat_enabled else None),
+        (f"ExternalApp/127.0.0.1:{port}/1#2/all", None),
+        (f"ExternalTransaction/127.0.0.1:{port}/1#2/test", None),
     ]
 
     _test_cross_process_response_external_node_params = [
@@ -207,7 +209,7 @@ def test_process_incoming_headers(
         await fetch(address, raise_for_status=raise_for_status, connector=connector)
 
     @override_application_settings(
-        {"cross_application_tracer.enabled": cat_enabled, "distributed_tracing.enabled": False}
+        {"distributed_tracing.enabled": False}
     )
     @validate_transaction_metrics(
         "test_process_incoming_headers",
@@ -216,8 +218,8 @@ def test_process_incoming_headers(
         background_task=True,
     )
     @validate_external_node_params(
-        params=(_test_cross_process_response_external_node_params if cat_enabled else []),
-        forgone_params=([] if cat_enabled else _test_cross_process_response_external_node_forgone_params),
+        params=[],
+        forgone_params=_test_cross_process_response_external_node_forgone_params,
     )
     def test():
         event_loop.run_until_complete(_test())

@@ -47,10 +47,10 @@ class MessageTransaction(BackgroundTask):
         if headers is not None and self.settings is not None:
             if self.settings.distributed_tracing.enabled:
                 self.accept_distributed_trace_headers(headers, transport_type=transport_type)
-            elif self.settings.cross_application_tracer.enabled:
-                self._process_incoming_cat_headers(
-                    headers.pop(MessageTrace.cat_id_key, None), headers.pop(MessageTrace.cat_transaction_key, None)
-                )
+            # elif self.settings.cross_application_tracer.enabled:
+            #     self._process_incoming_cat_headers(
+            #         headers.pop(MessageTrace.cat_id_key, None), headers.pop(MessageTrace.cat_transaction_key, None)
+            #     )
 
         self.routing_key = routing_key
         self.exchange_type = exchange_type

@@ -216,7 +216,7 @@ def test_urlopen_cross_process_request(distributed_tracing, span_events, server)
     _test = override_application_settings(
         {
             "distributed_tracing.enabled": distributed_tracing,
-            "cross_application_tracer.enabled": not distributed_tracing,
+            # "cross_application_tracer.enabled": not distributed_tracing,
             "span_events.enabled": span_events,
         }
     )(_test)

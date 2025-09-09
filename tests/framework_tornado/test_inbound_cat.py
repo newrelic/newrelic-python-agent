@@ -26,7 +26,7 @@ _custom_settings = {
     "cross_process_id": "1#1",
     "encoding_key": ENCODING_KEY,
     "trusted_account_ids": [1],
-    "cross_application_tracer.enabled": True,
+    # "cross_application_tracer.enabled": True,
     "distributed_tracing.enabled": False,
     "transaction_tracer.transaction_threshold": 0.0,
 }

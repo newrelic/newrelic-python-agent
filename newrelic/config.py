@@ -450,7 +450,7 @@ def _process_configuration(section):
     _process_setting(section, "debug.disable_harvest_until_shutdown", "getboolean", None)
     _process_setting(section, "debug.connect_span_stream_in_developer_mode", "getboolean", None)
     _process_setting(section, "debug.otlp_content_encoding", "get", None)
-    _process_setting(section, "cross_application_tracer.enabled", "getboolean", None)
+    # _process_setting(section, "cross_application_tracer.enabled", "getboolean", None)
     _process_setting(section, "message_tracer.segment_parameters_enabled", "getboolean", None)
     _process_setting(section, "process_host.display_name", "get", None)
     _process_setting(section, "utilization.detect_aws", "getboolean", None)
@@ -701,14 +701,14 @@ def translate_deprecated_settings(settings, cached_settings):
             "attributes.exclude."
         )
 
-    if "cross_application_tracer.enabled" in cached:
-        # CAT Deprecation Warning
-        _logger.info(
-            "Deprecated setting found: cross_application_tracer.enabled. Please replace Cross Application Tracing "
-            "(CAT) with the newer Distributed Tracing by setting 'distributed_tracing.enabled' to True in your agent "
-            "configuration. For further details on distributed tracing, please refer to our documentation: "
-            "https://docs.newrelic.com/docs/distributed-tracing/concepts/distributed-tracing-planning-guide/#changes."
-        )
+    # if "cross_application_tracer.enabled" in cached:
+    #     # CAT Deprecation Warning
+    #     _logger.info(
+    #         "Deprecated setting found: cross_application_tracer.enabled. Please replace Cross Application Tracing "
+    #         "(CAT) with the newer Distributed Tracing by setting 'distributed_tracing.enabled' to True in your agent "
+    #         "configuration. For further details on distributed tracing, please refer to our documentation: "
+    #         "https://docs.newrelic.com/docs/distributed-tracing/concepts/distributed-tracing-planning-guide/#changes."
+    #     )
 
     return settings
 

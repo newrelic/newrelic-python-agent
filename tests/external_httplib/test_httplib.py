@@ -124,7 +124,7 @@ def test_httplib_cross_process_request(server, distributed_tracing, span_events)
     _test = override_application_settings(
         {
             "distributed_tracing.enabled": distributed_tracing,
-            "cross_application_tracer.enabled": not distributed_tracing,
+            # "cross_application_tracer.enabled": not distributed_tracing,
             "span_events.enabled": span_events,
         }
     )(_test)

@@ -15,7 +15,7 @@
 from newrelic.common.encoding_utils import (
     base64_decode,
     base64_encode,
-    deobfuscate,
+    # deobfuscate,
     json_decode,
     json_encode,
     obfuscate,
@@ -39,35 +39,35 @@ class CatHeaderMixin:
             self.settings = self.transaction.settings or None
         return result
 
-    def process_response_headers(self, response_headers):
-        """
-        Decode the response headers and create appropriate metrics based on the
-        header values. The response_headers are passed in as a list of tuples.
-        [(HEADER_NAME0, HEADER_VALUE0), (HEADER_NAME1, HEADER_VALUE1)]
+    # def process_response_headers(self, response_headers):
+    #     """
+    #     Decode the response headers and create appropriate metrics based on the
+    #     header values. The response_headers are passed in as a list of tuples.
+    #     [(HEADER_NAME0, HEADER_VALUE0), (HEADER_NAME1, HEADER_VALUE1)]
 
-        """
+    #     """
 
-        settings = self.settings
-        if not settings:
-            return
+    #     settings = self.settings
+    #     if not settings:
+    #         return
 
-        if not settings.cross_application_tracer.enabled:
-            return
+    #     if not settings.cross_application_tracer.enabled:
+    #         return
 
-        appdata = None
-        try:
-            for k, v in response_headers:
-                if k.upper() == self.cat_appdata_key.upper():
-                    appdata = json_decode(deobfuscate(v, settings.encoding_key))
-                    break
+    #     appdata = None
+    #     try:
+    #         for k, v in response_headers:
+    #             if k.upper() == self.cat_appdata_key.upper():
+    #                 appdata = json_decode(deobfuscate(v, settings.encoding_key))
+    #                 break
 
-            if appdata:
-                self.params["cross_process_id"] = appdata[0]
-                self.params["external_txn_name"] = appdata[1]
-                self.params["transaction_guid"] = appdata[5]
+    #         if appdata:
+    #             self.params["cross_process_id"] = appdata[0]
+    #             self.params["external_txn_name"] = appdata[1]
+    #             self.params["transaction_guid"] = appdata[5]
 
-        except Exception:
-            pass
+    #     except Exception:
+    #         pass
 
     def process_response_metadata(self, cat_linking_value):
         payload = base64_decode(cat_linking_value)
@@ -92,19 +92,19 @@ class CatHeaderMixin:
         if settings.distributed_tracing.enabled:
             transaction.insert_distributed_trace_headers(nr_headers)
 
-        elif settings.cross_application_tracer.enabled:
-            transaction.is_part_of_cat = True
-            path_hash = transaction.path_hash
-            if path_hash is None:
-                # Disable cat if path_hash fails to generate.
-                transaction.is_part_of_cat = False
-            else:
-                encoded_cross_process_id = obfuscate(settings.cross_process_id, settings.encoding_key)
-                nr_headers.append((cls.cat_id_key, encoded_cross_process_id))
+        # elif settings.cross_application_tracer.enabled:
+        #     transaction.is_part_of_cat = True
+        #     path_hash = transaction.path_hash
+        #     if path_hash is None:
+        #         # Disable cat if path_hash fails to generate.
+        #         transaction.is_part_of_cat = False
+        #     else:
+        #         encoded_cross_process_id = obfuscate(settings.cross_process_id, settings.encoding_key)
+        #         nr_headers.append((cls.cat_id_key, encoded_cross_process_id))
 
-                transaction_data = [transaction.guid, transaction.record_tt, transaction.trip_id, path_hash]
-                encoded_transaction = obfuscate(json_encode(transaction_data), settings.encoding_key)
-                nr_headers.append((cls.cat_transaction_key, encoded_transaction))
+        #         transaction_data = [transaction.guid, transaction.record_tt, transaction.trip_id, path_hash]
+        #         encoded_transaction = obfuscate(json_encode(transaction_data), settings.encoding_key)
+        #         nr_headers.append((cls.cat_transaction_key, encoded_transaction))
 
         if transaction.synthetics_header:
             nr_headers.append((cls.cat_synthetics_key, transaction.synthetics_header))

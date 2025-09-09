@@ -1343,64 +1343,65 @@ class Transaction:
             # metric for the lack of payload/distributed_header
             self._accept_distributed_trace_payload(distributed_header, transport_type)
 
-    def _process_incoming_cat_headers(self, encoded_cross_process_id, encoded_txn_header):
-        settings = self._settings
+    # def _process_incoming_cat_headers(self, encoded_cross_process_id, encoded_txn_header):
+    #     settings = self._settings
 
-        if not self.enabled:
-            return
+    #     if not self.enabled:
+    #         return
 
-        if not (
-            settings.cross_application_tracer.enabled
-            and settings.cross_process_id
-            and settings.trusted_account_ids
-            and settings.encoding_key
-        ):
-            return
+        # If CAT is disabled, function will exit early.
+    #     if not (
+    #         settings.cross_application_tracer.enabled
+    #         and settings.cross_process_id
+    #         and settings.trusted_account_ids
+    #         and settings.encoding_key
+    #     ):
+    #         return
 
-        if encoded_cross_process_id is None:
-            return
+    #     if encoded_cross_process_id is None:
+    #         return
 
-        try:
-            client_cross_process_id = deobfuscate(encoded_cross_process_id, settings.encoding_key)
+    #     try:
+    #         client_cross_process_id = deobfuscate(encoded_cross_process_id, settings.encoding_key)
 
-            # The cross process ID consists of the client
-            # account ID and the ID of the specific application
-            # the client is recording requests against. We need
-            # to validate that the client account ID is in the
-            # list of trusted account IDs and ignore it if it
-            # isn't. The trusted account IDs list has the
-            # account IDs as integers, so save the client ones
-            # away as integers here so easier to compare later.
+    #         # The cross process ID consists of the client
+    #         # account ID and the ID of the specific application
+    #         # the client is recording requests against. We need
+    #         # to validate that the client account ID is in the
+    #         # list of trusted account IDs and ignore it if it
+    #         # isn't. The trusted account IDs list has the
+    #         # account IDs as integers, so save the client ones
+    #         # away as integers here so easier to compare later.
 
-            client_account_id, client_application_id = map(int, client_cross_process_id.split("#"))
+    #         client_account_id, client_application_id = map(int, client_cross_process_id.split("#"))
 
-            if client_account_id not in settings.trusted_account_ids:
-                return
+    #         if client_account_id not in settings.trusted_account_ids:
+    #             return
 
-            self.client_cross_process_id = client_cross_process_id
-            self.client_account_id = client_account_id
-            self.client_application_id = client_application_id
+    #         self.client_cross_process_id = client_cross_process_id
+    #         self.client_account_id = client_account_id
+    #         self.client_application_id = client_application_id
 
-            txn_header = json_decode(deobfuscate(encoded_txn_header, settings.encoding_key))
+    #         txn_header = json_decode(deobfuscate(encoded_txn_header, settings.encoding_key))
 
-            if txn_header:
-                self.is_part_of_cat = True
-                self.referring_transaction_guid = txn_header[0]
+    #         if txn_header:
+    #             self.is_part_of_cat = True
+    #             self.referring_transaction_guid = txn_header[0]
 
-                # Incoming record_tt is OR'd with existing
-                # record_tt. In the scenario where we make multiple
-                # ext request, this will ensure we don't set the
-                # record_tt to False by a later request if it was
-                # set to True by an earlier request.
+    #             # Incoming record_tt is OR'd with existing
+    #             # record_tt. In the scenario where we make multiple
+    #             # ext request, this will ensure we don't set the
+    #             # record_tt to False by a later request if it was
+    #             # set to True by an earlier request.
 
-                self.record_tt = self.record_tt or txn_header[1]
+    #             self.record_tt = self.record_tt or txn_header[1]
 
-                if isinstance(txn_header[2], str):
-                    self._trip_id = txn_header[2]
-                if isinstance(txn_header[3], str):
-                    self._referring_path_hash = txn_header[3]
-        except Exception:
-            pass
+    #             if isinstance(txn_header[2], str):
+    #                 self._trip_id = txn_header[2]
+    #             if isinstance(txn_header[3], str):
+    #                 self._referring_path_hash = txn_header[3]
+    #     except Exception:
+    #         pass
 
     def _generate_response_headers(self, read_length=None):
         nr_headers = []

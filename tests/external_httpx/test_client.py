@@ -124,7 +124,7 @@ def test_sync_cross_process_request(httpx, sync_client, mock_server, distributed
         {
             "distributed_tracing.enabled": distributed_tracing,
             "span_events.enabled": span_events,
-            "cross_application_tracer.enabled": not distributed_tracing,
+            # "cross_application_tracer.enabled": not distributed_tracing,
         }
     )
     @validate_transaction_errors(errors=[])
@@ -206,85 +206,85 @@ def test_async_cross_process_override_headers(httpx, async_client, mock_server, 
     assert response.request.headers["newrelic"] == "1234"
 
 
-@pytest.mark.parametrize("cat_enabled", [True, False])
-@pytest.mark.parametrize("response_code", [200, 500])
-def test_sync_client_cat_response_processing(cat_enabled, response_code, sync_client, mock_server, httpx):
-    global CAT_RESPONSE_CODE
-    CAT_RESPONSE_CODE = response_code
+# @pytest.mark.parametrize("cat_enabled", [True, False])
+# @pytest.mark.parametrize("response_code", [200, 500])
+# def test_sync_client_cat_response_processing(cat_enabled, response_code, sync_client, mock_server, httpx):
+#     global CAT_RESPONSE_CODE
+#     CAT_RESPONSE_CODE = response_code
 
-    _custom_settings = {
-        "cross_process_id": "1#1",
-        "encoding_key": ENCODING_KEY,
-        "trusted_account_ids": [1],
-        "cross_application_tracer.enabled": cat_enabled,
-        "distributed_tracing.enabled": False,
-        "transaction_tracer.transaction_threshold": 0.0,
-    }
+#     _custom_settings = {
+#         "cross_process_id": "1#1",
+#         "encoding_key": ENCODING_KEY,
+#         "trusted_account_ids": [1],
+#         "cross_application_tracer.enabled": cat_enabled,
+#         "distributed_tracing.enabled": False,
+#         "transaction_tracer.transaction_threshold": 0.0,
+#     }
 
-    expected_metrics = [
-        (
-            f"ExternalTransaction/localhost:{mock_server.port}/1#1/WebTransaction/Function/app:beep",
-            1 if cat_enabled else None,
-        )
-    ]
+#     expected_metrics = [
+#         (
+#             f"ExternalTransaction/localhost:{mock_server.port}/1#1/WebTransaction/Function/app:beep",
+#             1 if cat_enabled else None,
+#         )
+#     ]
 
-    @validate_transaction_metrics(
-        "test_sync_client_cat_response_processing",
-        background_task=True,
-        rollup_metrics=expected_metrics,
-        scoped_metrics=expected_metrics,
-    )
-    @validate_tt_segment_params(exact_params={"http.statusCode": response_code})
-    @override_application_settings(_custom_settings)
-    @background_task(name="test_sync_client_cat_response_processing")
-    def _test():
-        with sync_client:
-            response = sync_client.get(f"http://localhost:{mock_server.port}")
+#     @validate_transaction_metrics(
+#         "test_sync_client_cat_response_processing",
+#         background_task=True,
+#         rollup_metrics=expected_metrics,
+#         scoped_metrics=expected_metrics,
+#     )
+#     @validate_tt_segment_params(exact_params={"http.statusCode": response_code})
+#     @override_application_settings(_custom_settings)
+#     @background_task(name="test_sync_client_cat_response_processing")
+#     def _test():
+#         with sync_client:
+#             response = sync_client.get(f"http://localhost:{mock_server.port}")
 
-    _test()
+#     _test()
 
 
-@pytest.mark.parametrize("cat_enabled", [True, False])
-@pytest.mark.parametrize("response_code", [200, 500])
-def test_async_client_cat_response_processing(cat_enabled, response_code, httpx, async_client, mock_server, loop):
-    global CAT_RESPONSE_CODE
-    CAT_RESPONSE_CODE = response_code
+# @pytest.mark.parametrize("cat_enabled", [True, False])
+# @pytest.mark.parametrize("response_code", [200, 500])
+# def test_async_client_cat_response_processing(cat_enabled, response_code, httpx, async_client, mock_server, loop):
+#     global CAT_RESPONSE_CODE
+#     CAT_RESPONSE_CODE = response_code
 
-    _custom_settings = {
-        "cross_process_id": "1#1",
-        "encoding_key": ENCODING_KEY,
-        "trusted_account_ids": [1],
-        "cross_application_tracer.enabled": cat_enabled,
-        "distributed_tracing.enabled": False,
-        "transaction_tracer.transaction_threshold": 0.0,
-    }
+#     _custom_settings = {
+#         "cross_process_id": "1#1",
+#         "encoding_key": ENCODING_KEY,
+#         "trusted_account_ids": [1],
+#         "cross_application_tracer.enabled": cat_enabled,
+#         "distributed_tracing.enabled": False,
+#         "transaction_tracer.transaction_threshold": 0.0,
+#     }
 
-    expected_metrics = [
-        (
-            f"ExternalTransaction/localhost:{mock_server.port}/1#1/WebTransaction/Function/app:beep",
-            1 if cat_enabled else None,
-        )
-    ]
+#     expected_metrics = [
+#         (
+#             f"ExternalTransaction/localhost:{mock_server.port}/1#1/WebTransaction/Function/app:beep",
+#             1 if cat_enabled else None,
+#         )
+#     ]
 
-    @validate_transaction_metrics(
-        "test_async_client_cat_response_processing",
-        background_task=True,
-        rollup_metrics=expected_metrics,
-        scoped_metrics=expected_metrics,
-    )
-    @validate_tt_segment_params(exact_params={"http.statusCode": response_code})
-    @override_application_settings(_custom_settings)
-    @background_task(name="test_async_client_cat_response_processing")
-    def _test():
-        async def coro():
-            async with async_client:
-                response = await async_client.get(f"http://localhost:{mock_server.port}")
+#     @validate_transaction_metrics(
+#         "test_async_client_cat_response_processing",
+#         background_task=True,
+#         rollup_metrics=expected_metrics,
+#         scoped_metrics=expected_metrics,
+#     )
+#     @validate_tt_segment_params(exact_params={"http.statusCode": response_code})
+#     @override_application_settings(_custom_settings)
+#     @background_task(name="test_async_client_cat_response_processing")
+#     def _test():
+#         async def coro():
+#             async with async_client:
+#                 response = await async_client.get(f"http://localhost:{mock_server.port}")
 
-            return response
+#             return response
 
-        response = loop.run_until_complete(coro())
+#         response = loop.run_until_complete(coro())
 
-    _test()
+#     _test()
 
 
 @dt_enabled

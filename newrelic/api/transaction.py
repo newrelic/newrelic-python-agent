@@ -297,7 +297,7 @@ class Transaction:
         self._trip_id = None
         self._referring_path_hash = None
         self._alternate_path_hashes = {}
-        self.is_part_of_cat = False
+        # self.is_part_of_cat = False
 
         # Synthetics Header
         self.synthetics_resource_id = None
@@ -610,7 +610,7 @@ class Transaction:
             synthetics_initiator=self.synthetics_initiator,
             synthetics_attributes=self.synthetics_attributes,
             synthetics_info_header=self.synthetics_info_header,
-            is_part_of_cat=self.is_part_of_cat,
+            # is_part_of_cat=self.is_part_of_cat,
             trip_id=self.trip_id,
             path_hash=self.path_hash,
             referring_path_hash=self._referring_path_hash,
@@ -748,53 +748,53 @@ class Transaction:
         """
         return sorted(set(self._alternate_path_hashes.values()) - {self.path_hash})
 
-    @property
-    def path_hash(self):
-        """Path hash is a 32-bit digest of the string "appname;txn_name"
-        XORed with the referring_path_hash. Since the txn_name can change
-        during the course of a transaction, up to 10 path_hashes are stored
-        in _alternate_path_hashes. Before generating the path hash, check the
-        _alternate_path_hashes to determine if we've seen this identifier and
-        return the value.
+    # @property
+    # def path_hash(self):
+    #     """Path hash is a 32-bit digest of the string "appname;txn_name"
+    #     XORed with the referring_path_hash. Since the txn_name can change
+    #     during the course of a transaction, up to 10 path_hashes are stored
+    #     in _alternate_path_hashes. Before generating the path hash, check the
+    #     _alternate_path_hashes to determine if we've seen this identifier and
+    #     return the value.
 
-        """
+    #     """
 
-        if not self.is_part_of_cat:
-            return None
+    #     if not self.is_part_of_cat:
+    #         return None
 
-        identifier = f"{self.application.name};{self.path}"
+    #     identifier = f"{self.application.name};{self.path}"
 
-        # Check if identifier is already part of the _alternate_path_hashes and
-        # return the value if available.
+    #     # Check if identifier is already part of the _alternate_path_hashes and
+    #     # return the value if available.
 
-        if self._alternate_path_hashes.get(identifier):
-            return self._alternate_path_hashes[identifier]
+    #     if self._alternate_path_hashes.get(identifier):
+    #         return self._alternate_path_hashes[identifier]
 
-        # If the referring_path_hash is unavailable then we use '0' as the
-        # seed.
+    #     # If the referring_path_hash is unavailable then we use '0' as the
+    #     # seed.
 
-        try:
-            seed = int((self._referring_path_hash or "0"), base=16)
-        except Exception:
-            seed = 0
+    #     try:
+    #         seed = int((self._referring_path_hash or "0"), base=16)
+    #     except Exception:
+    #         seed = 0
 
-        try:
-            path_hash = generate_path_hash(identifier, seed)
-        except ValueError:
-            _logger.warning(
-                "Unable to generate cross application tracer headers. "
-                "MD5 hashing may not be available. (Is this system FIPS compliant?) "
-                "We recommend enabling distributed tracing instead. For details and a transition guide see "
-                "https://docs.newrelic.com/docs/agents/python-agent/configuration/python-agent-configuration#distributed-tracing-settings"
-            )
-            return None
+    #     try:
+    #         path_hash = generate_path_hash(identifier, seed)
+    #     except ValueError:
+    #         _logger.warning(
+    #             "Unable to generate cross application tracer headers. "
+    #             "MD5 hashing may not be available. (Is this system FIPS compliant?) "
+    #             "We recommend enabling distributed tracing instead. For details and a transition guide see "
+    #             "https://docs.newrelic.com/docs/agents/python-agent/configuration/python-agent-configuration#distributed-tracing-settings"
+    #         )
+    #         return None
 
-        # Only store up to 10 alternate path hashes.
+    #     # Only store up to 10 alternate path hashes.
 
-        if len(self._alternate_path_hashes) < 10:
-            self._alternate_path_hashes[identifier] = path_hash
+    #     if len(self._alternate_path_hashes) < 10:
+    #         self._alternate_path_hashes[identifier] = path_hash
 
-        return path_hash
+    #     return path_hash
 
     @property
     def attribute_filter(self):
@@ -1449,31 +1449,31 @@ class Transaction:
 
         return nr_headers
 
-    # This function is CAT related and has been deprecated.
-    # Eventually, this will be removed.  Until then, coverage
-    # does not need to factor this function into its analysis.
-    def get_response_metadata(self):  # pragma: no cover
-        nr_headers = dict(self._generate_response_headers())
-        return convert_to_cat_metadata_value(nr_headers)
+    # # This function is CAT related and has been deprecated.
+    # # Eventually, this will be removed.  Until then, coverage
+    # # does not need to factor this function into its analysis.
+    # def get_response_metadata(self):  # pragma: no cover
+    #     nr_headers = dict(self._generate_response_headers())
+    #     return convert_to_cat_metadata_value(nr_headers)
 
-    # This function is CAT related and has been deprecated.
-    # Eventually, this will be removed.  Until then, coverage
-    # does not need to factor this function into its analysis.
-    def process_request_metadata(self, cat_linking_value):  # pragma: no cover
-        try:
-            payload = base64_decode(cat_linking_value)
-        except:
-            # `cat_linking_value` should always be able to be base64_decoded.
-            # If this is encountered, the data being sent is corrupt. No
-            # exception should be raised.
-            return
+    # # This function is CAT related and has been deprecated.
+    # # Eventually, this will be removed.  Until then, coverage
+    # # does not need to factor this function into its analysis.
+    # def process_request_metadata(self, cat_linking_value):  # pragma: no cover
+    #     try:
+    #         payload = base64_decode(cat_linking_value)
+    #     except:
+    #         # `cat_linking_value` should always be able to be base64_decoded.
+    #         # If this is encountered, the data being sent is corrupt. No
+    #         # exception should be raised.
+    #         return
 
-        nr_headers = json_decode(payload)
-        # TODO: All the external CAT APIs really need to
-        # be refactored into the transaction class.
-        encoded_cross_process_id = nr_headers.get("X-NewRelic-ID")
-        encoded_txn_header = nr_headers.get("X-NewRelic-Transaction")
-        return self._process_incoming_cat_headers(encoded_cross_process_id, encoded_txn_header)
+    #     nr_headers = json_decode(payload)
+    #     # TODO: All the external CAT APIs really need to
+    #     # be refactored into the transaction class.
+    #     encoded_cross_process_id = nr_headers.get("X-NewRelic-ID")
+    #     encoded_txn_header = nr_headers.get("X-NewRelic-Transaction")
+    #     return self._process_incoming_cat_headers(encoded_cross_process_id, encoded_txn_header)
 
     def set_transaction_name(self, name, group=None, priority=None):
         # Always perform this operation even if the transaction

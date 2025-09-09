@@ -93,24 +93,24 @@ def httplib_getresponse_wrapper(wrapped, instance, args, kwargs):
     return response
 
 
-def httplib_putheader_wrapper(wrapped, instance, args, kwargs):
-    transaction = current_transaction()
+# def httplib_putheader_wrapper(wrapped, instance, args, kwargs):
+#     transaction = current_transaction()
 
-    if transaction is None:
-        return wrapped(*args, **kwargs)
+#     if transaction is None:
+#         return wrapped(*args, **kwargs)
 
-    # Remember if we see any NR headers being set. This is only doing
-    # it if we see either, but they should always both be getting set.
+#     # # Remember if we see any NR headers being set. This is only doing
+#     # # it if we see either, but they should always both be getting set.
 
-    def nr_header(header, *args, **kwargs):
-        return header.upper() in ("NEWRELIC", "X-NEWRELIC-ID", "X-NEWRELIC-TRANSACTION")
+#     # def nr_header(header, *args, **kwargs):
+#     #     return header.upper() in ("NEWRELIC", "X-NEWRELIC-ID", "X-NEWRELIC-TRANSACTION")
 
-    connection = instance
+#     # connection = instance
 
-    if nr_header(*args, **kwargs):
-        connection._nr_skip_headers = True
+#     # if nr_header(*args, **kwargs):
+#     #     connection._nr_skip_headers = True
 
-    return wrapped(*args, **kwargs)
+#     return wrapped(*args, **kwargs)
 
 
 def instrument(module):
@@ -125,4 +125,4 @@ def instrument(module):
         functools.partial(httplib_endheaders_wrapper, scheme="https", library="http"),
     )
     wrap_function_wrapper(module, "HTTPConnection.getresponse", httplib_getresponse_wrapper)
-    wrap_function_wrapper(module, "HTTPConnection.putheader", httplib_putheader_wrapper)
+    # wrap_function_wrapper(module, "HTTPConnection.putheader", httplib_putheader_wrapper)

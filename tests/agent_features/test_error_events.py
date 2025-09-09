@@ -18,7 +18,7 @@ import time
 import webtest
 from testing_support.fixtures import (
     # cat_enabled,
-    make_cross_agent_headers,
+    # make_cross_agent_headers,
     make_synthetics_headers,
     override_application_settings,
     reset_core_stats_engine,
@@ -113,12 +113,13 @@ _intrinsic_attributes = {
 
 
 # @cat_enabled
+# COMEBACK: Change to DT tests.  
 @validate_error_event_sample_data(required_attrs=_intrinsic_attributes, required_user_attrs=True)
 def test_transaction_error_cross_agent():
     test_environ = {"err_message": ERR_MESSAGE}
     settings = application_settings()
     transaction_data = [7, 1, 77, "/path-hash"]
-    headers = make_cross_agent_headers(transaction_data, settings.encoding_key, settings.cross_process_id)
+    # headers = make_cross_agent_headers(transaction_data, settings.encoding_key, settings.cross_process_id)
     response = fully_featured_application.get("/", headers=headers, extra_environ=test_environ)
 
 

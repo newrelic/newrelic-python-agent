@@ -77,7 +77,7 @@ _TransactionNode = namedtuple(
         "synthetics_initiator",
         "synthetics_attributes",
         "synthetics_info_header",
-        "is_part_of_cat",
+        # "is_part_of_cat",
         "trip_id",
         "path_hash",
         "referring_path_hash",

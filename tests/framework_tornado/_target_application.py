@@ -43,9 +43,9 @@ class ProcessCatHeadersHandler(tornado.web.RequestHandler):
     def get(self, client_cross_process_id, txn_header, flush=None):
         import newrelic.api.transaction as _transaction
 
-        txn = _transaction.current_transaction()
-        if txn:
-            txn._process_incoming_cat_headers(client_cross_process_id, txn_header)
+        # txn = _transaction.current_transaction()
+        # if txn:
+        #     txn._process_incoming_cat_headers(client_cross_process_id, txn_header)
 
         if self.response_code != 200:
             self.set_status(self.response_code)

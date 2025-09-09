@@ -40,7 +40,7 @@ class ExternalTrace(CatHeaderMixin, TimeTrace):
 
     def process_response(self, status_code, headers):
         self._add_agent_attribute("http.statusCode", status_code)
-        self.process_response_headers(headers)
+        # self.process_response_headers(headers)
 
     def terminal_node(self):
         return True

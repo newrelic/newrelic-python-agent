@@ -145,7 +145,7 @@ def transaction_node(request):
         synthetics_initiator=None,
         synthetics_attributes=None,
         synthetics_info_header=None,
-        is_part_of_cat=False,
+        # is_part_of_cat=False,
         trip_id="4485b89db608aece",
         path_hash=None,
         referring_path_hash=None,

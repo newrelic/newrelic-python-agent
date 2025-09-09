@@ -24,13 +24,13 @@ from newrelic.common.encoding_utils import (
 
 # CatHeaderMixin assumes the mixin class also inherits from TimeTrace
 class CatHeaderMixin:
-    cat_id_key = "X-NewRelic-ID"
-    cat_transaction_key = "X-NewRelic-Transaction"
-    cat_appdata_key = "X-NewRelic-App-Data"
-    cat_synthetics_key = "X-NewRelic-Synthetics"
-    cat_synthetics_info_key = "X-NewRelic-Synthetics-Info"
-    cat_metadata_key = "x-newrelic-trace"
-    cat_distributed_trace_key = "newrelic"
+    # cat_id_key = "X-NewRelic-ID"
+    # cat_transaction_key = "X-NewRelic-Transaction"
+    # cat_appdata_key = "X-NewRelic-App-Data"
+    # cat_synthetics_key = "X-NewRelic-Synthetics"
+    # cat_synthetics_info_key = "X-NewRelic-Synthetics-Info"
+    # cat_metadata_key = "x-newrelic-trace"
+    # cat_distributed_trace_key = "newrelic"
     settings = None
 
     def __enter__(self):
@@ -69,10 +69,10 @@ class CatHeaderMixin:
     #     except Exception:
     #         pass
 
-    def process_response_metadata(self, cat_linking_value):
-        payload = base64_decode(cat_linking_value)
-        nr_headers = json_decode(payload)
-        self.process_response_headers(nr_headers.items())
+    # def process_response_metadata(self, cat_linking_value):
+    #     payload = base64_decode(cat_linking_value)
+    #     nr_headers = json_decode(payload)
+    #     self.process_response_headers(nr_headers.items())
 
     @classmethod
     def generate_request_headers(cls, transaction):

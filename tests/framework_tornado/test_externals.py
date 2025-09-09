@@ -20,7 +20,7 @@ import pytest
 from testing_support.fixtures import override_application_settings
 from testing_support.mock_external_http_server import MockExternalHTTPHResponseHeadersServer, MockExternalHTTPServer
 from testing_support.validators.validate_distributed_tracing_header import validate_distributed_tracing_header
-from testing_support.validators.validate_outbound_headers import validate_outbound_headers
+# from testing_support.validators.validate_outbound_headers import validate_outbound_headers
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
@@ -201,7 +201,7 @@ def test_httpclient(
         #     if distributed_tracing:
         #         validate_distributed_tracing_header(header="Newrelic")
         #     else:
-            validate_outbound_headers()
+            # validate_outbound_headers()
         else:
             # new relic shouldn't add anything to the outgoing
             assert "x-newrelic" not in body, body

@@ -419,10 +419,10 @@ def catch_background_exceptions(wrapped, instance, args, kwargs):
             raise_background_exceptions.event.set()
 
 
-def make_cross_agent_headers(payload, encoding_key, cat_id):
-    value = obfuscate(json_encode(payload), encoding_key)
-    id_value = obfuscate(cat_id, encoding_key)
-    return {"X-NewRelic-Transaction": value, "X-NewRelic-ID": id_value}
+# def make_cross_agent_headers(payload, encoding_key, cat_id):
+#     value = obfuscate(json_encode(payload), encoding_key)
+#     id_value = obfuscate(cat_id, encoding_key)
+#     return {"X-NewRelic-Transaction": value, "X-NewRelic-ID": id_value}
 
 
 def make_synthetics_headers(

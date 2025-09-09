@@ -37,7 +37,7 @@ from newrelic.common.encoding_utils import (
     convert_to_cat_metadata_value,
     deobfuscate,
     ensure_str,
-    generate_path_hash,
+    # generate_path_hash,
     json_decode,
     json_encode,
     obfuscate,
@@ -295,8 +295,8 @@ class Transaction:
         self.referring_transaction_guid = None
         self.record_tt = False
         self._trip_id = None
-        self._referring_path_hash = None
-        self._alternate_path_hashes = {}
+        # self._referring_path_hash = None
+        # self._alternate_path_hashes = {}
         # self.is_part_of_cat = False
 
         # Synthetics Header
@@ -616,9 +616,9 @@ class Transaction:
             synthetics_info_header=self.synthetics_info_header,
             # is_part_of_cat=self.is_part_of_cat,
             trip_id=self.trip_id,
-            path_hash=self.path_hash,
-            referring_path_hash=self._referring_path_hash,
-            alternate_path_hashes=self.alternate_path_hashes,
+            # path_hash=self.path_hash,
+            # referring_path_hash=self._referring_path_hash,
+            # alternate_path_hashes=self.alternate_path_hashes,
             trace_intrinsics=self.trace_intrinsics,
             distributed_trace_intrinsics=self.distributed_trace_intrinsics,
             agent_attributes=agent_attributes,
@@ -744,13 +744,14 @@ class Transaction:
     def trace_id(self):
         return self._trace_id
 
-    @property
-    def alternate_path_hashes(self):
-        """Return the alternate path hashes but not including the current path
-        hash.
+    # @property
+    # def alternate_path_hashes(self):
+    #     """Return the alternate path hashes but not including the current path
+    #     hash.
 
-        """
-        return sorted(set(self._alternate_path_hashes.values()) - {self.path_hash})
+    #     """
+    #     # return sorted(set(self._alternate_path_hashes.values()) - {self.path_hash})
+    #     return sorted(set(self._alternate_path_hashes.values()) - {None})
 
     # @property
     # def path_hash(self):
@@ -763,8 +764,9 @@ class Transaction:
 
     #     """
 
-    #     if not self.is_part_of_cat:
-    #         return None
+    #     # if not self.is_part_of_cat:
+    #     #     return None
+    #     return None
 
     #     identifier = f"{self.application.name};{self.path}"
 
@@ -843,8 +845,8 @@ class Transaction:
             i_attrs["client_cross_process_id"] = self.client_cross_process_id
         if self.trip_id:
             i_attrs["trip_id"] = self.trip_id
-        if self.path_hash:
-            i_attrs["path_hash"] = self.path_hash
+        # if self.path_hash:
+        #     i_attrs["path_hash"] = self.path_hash
         if self.synthetics_resource_id:
             i_attrs["synthetics_resource_id"] = self.synthetics_resource_id
         if self.synthetics_job_id:

@@ -15,7 +15,7 @@
 from newrelic.common.encoding_utils import (
     base64_decode,
     base64_encode,
-    # deobfuscate,
+    deobfuscate,
     json_decode,
     json_encode,
     obfuscate,

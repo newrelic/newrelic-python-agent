@@ -79,9 +79,9 @@ _TransactionNode = namedtuple(
         "synthetics_info_header",
         # "is_part_of_cat",
         "trip_id",
-        "path_hash",
-        "referring_path_hash",
-        "alternate_path_hashes",
+        # "path_hash",
+        # "referring_path_hash",
+        # "alternate_path_hashes",
         "trace_intrinsics",
         "agent_attributes",
         "distributed_trace_intrinsics",
@@ -470,14 +470,14 @@ class TransactionNode(_TransactionNode):
         if self.errors:
             intrinsics["error"] = True
 
-        if self.path_hash:
-            intrinsics["nr.guid"] = self.guid
-            intrinsics["nr.tripId"] = self.trip_id
-            intrinsics["nr.pathHash"] = self.path_hash
+        # if self.path_hash:
+        #     intrinsics["nr.guid"] = self.guid
+        #     intrinsics["nr.tripId"] = self.trip_id
+        #     intrinsics["nr.pathHash"] = self.path_hash
 
-            _add_if_not_empty("nr.referringPathHash", self.referring_path_hash)
-            _add_if_not_empty("nr.alternatePathHashes", ",".join(self.alternate_path_hashes))
-            _add_if_not_empty("nr.referringTransactionGuid", self.referring_transaction_guid)
+        #     _add_if_not_empty("nr.referringPathHash", self.referring_path_hash)
+        #     _add_if_not_empty("nr.alternatePathHashes", ",".join(self.alternate_path_hashes))
+        #     _add_if_not_empty("nr.referringTransactionGuid", self.referring_transaction_guid)
 
         if self.synthetics_resource_id:
             intrinsics["nr.guid"] = self.guid

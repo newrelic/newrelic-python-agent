@@ -35,33 +35,33 @@ class BadGetStatusHandler(tornado.web.RequestHandler):
         raise ValueError("Bad Status")
 
 
-class ProcessCatHeadersHandler(tornado.web.RequestHandler):
-    def __init__(self, application, request, response_code=200, **kwargs):
-        super().__init__(application, request, **kwargs)
-        self.response_code = response_code
+# class ProcessCatHeadersHandler(tornado.web.RequestHandler):
+#     def __init__(self, application, request, response_code=200, **kwargs):
+#         super().__init__(application, request, **kwargs)
+#         self.response_code = response_code
 
-    def get(self, client_cross_process_id, txn_header, flush=None):
-        import newrelic.api.transaction as _transaction
+#     def get(self, client_cross_process_id, txn_header, flush=None):
+#         import newrelic.api.transaction as _transaction
 
-        # txn = _transaction.current_transaction()
-        # if txn:
-        #     txn._process_incoming_cat_headers(client_cross_process_id, txn_header)
+#         # txn = _transaction.current_transaction()
+#         # if txn:
+#         #     txn._process_incoming_cat_headers(client_cross_process_id, txn_header)
 
-        if self.response_code != 200:
-            self.set_status(self.response_code)
-            return
+#         if self.response_code != 200:
+#             self.set_status(self.response_code)
+#             return
 
-        self.write("Hello, world")
+#         self.write("Hello, world")
 
-        if flush == "flush":
-            # Force a flush prior to calling finish
-            # This causes the headers to get written immediately. The tests
-            # which hit this endpoint will check that the response has been
-            # properly processed even though we send the headers here.
-            self.flush()
+#         if flush == "flush":
+#             # Force a flush prior to calling finish
+#             # This causes the headers to get written immediately. The tests
+#             # which hit this endpoint will check that the response has been
+#             # properly processed even though we send the headers here.
+#             self.flush()
 
-            # change the headers to garbage
-            self.set_header("Content-Type", "garbage")
+#             # change the headers to garbage
+#             self.set_header("Content-Type", "garbage")
 
 
 class EchoHeaderHandler(tornado.web.RequestHandler):
@@ -250,8 +250,8 @@ def make_app(custom=False):
         (r"/init", InitializeHandler),
         (r"/html-insertion", HTMLInsertionHandler),
         (r"/bad-get-status", BadGetStatusHandler),
-        (r"/force-cat-response/(\S+)/(\S+)/(\S+)", ProcessCatHeadersHandler),
-        (r"/304-cat-response/(\S+)/(\S+)", ProcessCatHeadersHandler, {"response_code": 304}),
+        # (r"/force-cat-response/(\S+)/(\S+)/(\S+)", ProcessCatHeadersHandler),
+        # (r"/304-cat-response/(\S+)/(\S+)", ProcessCatHeadersHandler, {"response_code": 304}),
         (r"/echo-headers", EchoHeaderHandler),
         (r"/native-simple", NativeSimpleHandler),
         (r"/multi-trace", MultiTraceHandler),

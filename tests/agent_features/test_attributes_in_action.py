@@ -281,6 +281,7 @@ _expected_absent_attributes = {"agent": REQ_PARAMS, "user": [], "intrinsic": []}
 def test_error_in_transaction_capture_params_exclude_request_params(normal_application):
     normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
+
 _override_settings = {"attributes.enabled": True, "transaction_tracer.attributes.exclude": ["request.parameters.*"]}
 
 

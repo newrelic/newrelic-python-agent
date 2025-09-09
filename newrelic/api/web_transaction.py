@@ -625,9 +625,7 @@ class WSGIWebTransaction(WebTransaction):
         # While settings.capture_params has been removed, the Python Agent
         # has not removed the newrelic specific environ setting for
         # capturing request parameters.
-        self._capture_request_params = _lookup_environ_setting(
-            environ, "newrelic.capture_request_params", None
-        )
+        self._capture_request_params = _lookup_environ_setting(environ, "newrelic.capture_request_params", None)
 
         if self._capture_request_params:
             self.settings.attributes.include.append("request.parameters.*")
@@ -641,7 +639,7 @@ class WSGIWebTransaction(WebTransaction):
         if settings.high_security:
             self.settings.attributes.exclude.append("request.parameters.*")
 
-        # Don't add request parameters at all, which means 
+        # Don't add request parameters at all, which means
         # they will not go through the AttributeFilter.
         if "request.parameters.*" in self.settings.attributes.exclude:
             self._request_params.clear()

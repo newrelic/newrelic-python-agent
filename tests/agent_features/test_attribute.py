@@ -86,15 +86,16 @@ _forgone_agent = []
 # is set to True and settings.attributes.include has not been set to include
 # request parameters, then request parameters will be captured.
 
-required_agent_request_param = [
-    "request.parameters.key-1",
-]
+required_agent_request_param = ["request.parameters.key-1"]
+
 
 @validate_attributes("agent", required_agent_request_param, _forgone_agent)
 def test_agent_capture_request_params_environ():
     target_application = webtest.TestApp(target_wsgi_application)
 
-    response = target_application.get("/", params="key-1=value-1", extra_environ={"newrelic.capture_request_params": True})
+    response = target_application.get(
+        "/", params="key-1=value-1", extra_environ={"newrelic.capture_request_params": True}
+    )
     assert response.body == b"Hello World!"
 
 

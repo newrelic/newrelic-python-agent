@@ -683,7 +683,6 @@ def translate_deprecated_settings(settings, cached_settings):
 
             delete_setting(settings, old_key)
 
-
     if "cross_application_tracer.enabled" in cached:
         # CAT Deprecation Warning
         _logger.info(
@@ -713,7 +712,9 @@ def apply_local_high_security_mode_setting(settings):
     # Check to see if `request.parameters.*` or any variant that would
     # capture request parameters is in `attributes.include`.  If so,
     # exclude them and log this so that users do not think this is silently failing.
-    request_parameters_in_attributes_include = [attr for attr in settings.attributes.include if attr.startswith("request.parameters.")]
+    request_parameters_in_attributes_include = [
+        attr for attr in settings.attributes.include if attr.startswith("request.parameters.")
+    ]
     if settings.attributes.enabled and request_parameters_in_attributes_include:
         settings.attributes.exclude.extend(["request.parameters.*"])
         _logger.info("Excluding request parameters because High Security Mode has been activated.")

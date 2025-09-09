@@ -53,7 +53,7 @@ from newrelic.core.attribute import (
     resolve_logging_context_attributes,
     truncate,
 )
-from newrelic.core.attribute_filter import DST_ALL, DST_ERROR_COLLECTOR, DST_NONE, DST_TRANSACTION_TRACER
+from newrelic.core.attribute_filter import DST_ALL, DST_NONE
 from newrelic.core.config import CUSTOM_EVENT_RESERVOIR_SIZE, LOG_EVENT_RESERVOIR_SIZE, ML_EVENT_RESERVOIR_SIZE
 from newrelic.core.custom_event import create_custom_event
 from newrelic.core.log_event_node import LogEventNode

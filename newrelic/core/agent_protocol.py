@@ -463,8 +463,8 @@ class AgentProtocol:
             server_settings
             and ("agent_config" in server_settings)
             and (
-                ("attributes.exclude" in server_settings["agent_config"])
-                and ("request.parameters.*" not in server_settings["agent_config"]["attributes.exclude"])
+                (("attributes.exclude" in server_settings["agent_config"])
+                and ("request.parameters.*" not in server_settings["agent_config"]["attributes.exclude"]))
                 or ("attributes.exclude" not in server_settings["agent_config"])
             )
         ):

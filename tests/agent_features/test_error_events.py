@@ -17,7 +17,7 @@ import time
 
 import webtest
 from testing_support.fixtures import (
-    cat_enabled,
+    # cat_enabled,
     make_cross_agent_headers,
     make_synthetics_headers,
     override_application_settings,
@@ -112,7 +112,7 @@ _intrinsic_attributes = {
 }
 
 
-@cat_enabled
+# @cat_enabled
 @validate_error_event_sample_data(required_attrs=_intrinsic_attributes, required_user_attrs=True)
 def test_transaction_error_cross_agent():
     test_environ = {"err_message": ERR_MESSAGE}

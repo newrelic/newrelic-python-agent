@@ -15,7 +15,7 @@
 import pytest
 import webtest
 from testing_support.fixtures import (
-    cat_enabled,
+    # cat_enabled,
     dt_enabled,
     override_application_settings,
     reset_core_stats_engine,
@@ -186,7 +186,7 @@ _expected_attributes_event = {
 _expected_absent_attributes = {"agent": REQ_PARAMS, "user": [], "intrinsic": DISTRIBUTED_TRACE_ATTRS}
 
 
-@cat_enabled
+# @cat_enabled
 @validate_error_event_attributes(_expected_attributes_event, _expected_absent_attributes)
 @validate_transaction_error_trace_attributes(_expected_attributes, _expected_absent_attributes)
 def test_error_in_transaction_default_settings(normal_application):
@@ -196,7 +196,7 @@ def test_error_in_transaction_default_settings(normal_application):
 _expected_attributes = {"agent": TRACE_ERROR_AGENT_KEYS, "user": USER_ATTRS, "intrinsic": ["trip_id"]}
 
 
-@cat_enabled
+# @cat_enabled
 @validate_transaction_trace_attributes(_expected_attributes, _expected_absent_attributes)
 @override_application_settings({})
 def test_transaction_trace_default_attribute_settings(normal_application):

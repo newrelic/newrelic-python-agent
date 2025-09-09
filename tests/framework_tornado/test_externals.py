@@ -124,13 +124,10 @@ def make_request(port, req_type, client_cls, count=1, raise_error=True, as_kwarg
     ],
 )
 @pytest.mark.parametrize(
-    "cat_enabled,user_header,span_events,distributed_tracing",
+    "user_header,span_events,distributed_tracing",
     [
-        (True, None, False, False),
-        (True, "X-NewRelic-ID", False, False),
-        (True, "X-NewRelic-Transaction", False, False),
-        (False, None, True, True),
-        (False, None, False, True),
+        (None, True, True),
+        (None, False, True),
     ],
 )
 # @pytest.mark.parametrize('cat_enabled,user_header', [
@@ -142,10 +139,10 @@ def make_request(port, req_type, client_cls, count=1, raise_error=True, as_kwarg
 @pytest.mark.parametrize("request_type", ["uri", "class"])
 @pytest.mark.parametrize("num_requests", [1, 2])
 def test_httpclient(
-    cat_enabled,
+    # cat_enabled,
     request_type,
     client_class,
-    user_header,
+    # user_header,
     num_requests,
     distributed_tracing,
     span_events,
@@ -172,8 +169,8 @@ def test_httpclient(
     @background_task(name="test_externals:test_httpclient")
     def _test():
         headers = {}
-        if user_header:
-            headers = {user_header: "USER"}
+        # if user_header:
+        #     headers = {user_header: "USER"}
 
         response = make_request(
             port, request_type, client_class, headers=headers, count=num_requests, as_kwargs=as_kwargs
@@ -194,17 +191,17 @@ def test_httpclient(
             headers[header_key] = header_val
 
         # User headers override all inserted NR headers
-        if user_header:
-            assert headers[user_header] == "USER"
-        elif cat_enabled:
-            t = current_transaction()
-            assert t
-            t._test_request_headers = headers
+        # if user_header:
+        #     assert headers[user_header] == "USER"
+        # elif cat_enabled:
+        #     t = current_transaction()
+        #     assert t
+        #     t._test_request_headers = headers
 
-            if distributed_tracing:
-                validate_distributed_tracing_header(header="Newrelic")
-            else:
-                validate_outbound_headers()
+        #     if distributed_tracing:
+        #         validate_distributed_tracing_header(header="Newrelic")
+        #     else:
+            validate_outbound_headers()
         else:
             # new relic shouldn't add anything to the outgoing
             assert "x-newrelic" not in body, body

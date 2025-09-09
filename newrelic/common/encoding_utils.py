@@ -232,21 +232,21 @@ def unpack_field(field):
     return data
 
 
-def generate_path_hash(name, seed):
-    """Algorithm for generating the path hash:
-    * Rotate Left the seed value and truncate to 32-bits.
-    * Compute the md5 digest of the name, take the last 4 bytes (32-bits).
-    * XOR the 4 bytes of digest with the seed and return the result.
+# def generate_path_hash(name, seed):
+#     """Algorithm for generating the path hash:
+#     * Rotate Left the seed value and truncate to 32-bits.
+#     * Compute the md5 digest of the name, take the last 4 bytes (32-bits).
+#     * XOR the 4 bytes of digest with the seed and return the result.
 
-    """
+#     """
 
-    rotated = ((seed << 1) | (seed >> 31)) & 0xFFFFFFFF
+#     rotated = ((seed << 1) | (seed >> 31)) & 0xFFFFFFFF
 
-    if not isinstance(name, bytes):
-        name = name.encode("UTF-8")
+#     if not isinstance(name, bytes):
+#         name = name.encode("UTF-8")
 
-    path_hash = rotated ^ int(hashlib.md5(name).hexdigest()[-8:], base=16)  # noqa: S324
-    return f"{path_hash:08x}"
+#     path_hash = rotated ^ int(hashlib.md5(name).hexdigest()[-8:], base=16)  # noqa: S324
+#     return f"{path_hash:08x}"
 
 
 def base64_encode(text):

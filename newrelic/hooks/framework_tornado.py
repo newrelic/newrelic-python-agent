@@ -251,9 +251,9 @@ def create_client_wrapper(wrapped, trace):
             except Exception as e:
                 response = getattr(e, "response", None)
                 raise
-            finally:
-                if response:
-                    trace.process_response_headers(response.headers.get_all())
+            # finally:
+            #     if response:
+            #         trace.process_response_headers(response.headers.get_all())
             return response
 
     return wrapper

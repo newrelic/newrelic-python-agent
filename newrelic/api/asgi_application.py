@@ -222,9 +222,6 @@ class ASGIWebTransaction(WebTransaction):
             source=source,
         )
 
-        if self._settings:
-            self.capture_params = self._settings.capture_params
-
     async def send(self, event):
         if event["type"] == "http.response.body" and not event.get("more_body", False):
             try:

@@ -136,7 +136,6 @@ class AgentProtocol:
     PARAMS_ALLOWLIST = frozenset(("method", "protocol_version", "marshal_format", "run_id"))
 
     SECURITY_SETTINGS = (
-        "capture_params",
         "transaction_tracer.record_sql",
         "strip_exception_messages.enabled",
         "custom_insights_events.enabled",
@@ -298,7 +297,6 @@ class AgentProtocol:
         connect_settings["ai_monitoring.enabled"] = settings["ai_monitoring.enabled"]
 
         security_settings = {}
-        security_settings["capture_params"] = settings["capture_params"]
         security_settings["transaction_tracer"] = {}
         security_settings["transaction_tracer"]["record_sql"] = settings["transaction_tracer.record_sql"]
 
@@ -427,6 +425,14 @@ class AgentProtocol:
             if setting in server_settings:
                 del server_settings[setting]
 
+        # Override attributes.exclude setting for high security mode.
+        if (
+            server_settings
+            and ("attributes.exclude" in server_settings)
+            and ("request.parameters.*" not in server_settings["attributes.exclude"])
+        ):
+            server_settings["attributes.exclude"].append("request.parameters.*")
+
         # When server side configuration is disabled, there will be no
         # agent_config value in server_settings, so no more fix-ups
         # are required.
@@ -451,6 +457,21 @@ class AgentProtocol:
                     setting,
                     fetch_config_setting(local_settings, setting),
                 )
+
+        # Override attributes.exclude setting for high security mode.
+        if (
+            server_settings
+            and ("agent_config" in server_settings)
+            and (
+                ("attributes.exclude" in server_settings["agent_config"])
+                and ("request.parameters.*" not in server_settings["agent_config"]["attributes.exclude"])
+                or ("attributes.exclude" not in server_settings["agent_config"])
+            )
+        ):
+            try:
+                server_settings["agent_config"]["attributes.exclude"].append("request.parameters.*")
+            except KeyError:
+                server_settings["agent_config"]["attributes.exclude"] = ["request.parameters.*"]
 
         return server_settings
 

@@ -82,6 +82,22 @@ if ThreadUtilization:
 _forgone_agent = []
 
 
+# This test demonstrates that when environ["newrelic.capture_request_params"]
+# is set to True and settings.attributes.include has not been set to include
+# request parameters, then request parameters will be captured.
+
+required_agent_request_param = [
+    "request.parameters.key-1",
+]
+
+@validate_attributes("agent", required_agent_request_param, _forgone_agent)
+def test_agent_capture_request_params_environ():
+    target_application = webtest.TestApp(target_wsgi_application)
+
+    response = target_application.get("/", params="key-1=value-1", extra_environ={"newrelic.capture_request_params": True})
+    assert response.body == b"Hello World!"
+
+
 @validate_attributes("agent", _required_agent, _forgone_agent)
 def test_agent():
     target_application = webtest.TestApp(target_wsgi_application)
@@ -108,32 +124,6 @@ _forgone_user = []
 def test_user_add_attribute():
     target_application = webtest.TestApp(target_wsgi_application)
     response = target_application.get("/user_attribute")
-    assert response.body == b"Hello World!"
-
-
-_settings_legacy_false = {"capture_params": False}
-_required_request_legacy_false = []
-_forgone_request_legacy_false = ["request.parameters.foo"]
-
-
-@override_application_settings(_settings_legacy_false)
-@validate_attributes("agent", _required_request_legacy_false, _forgone_request_legacy_false)
-def test_capture_request_params_legacy_false():
-    target_application = webtest.TestApp(target_wsgi_application)
-    response = target_application.get("/?foo=bar")
-    assert response.body == b"Hello World!"
-
-
-_settings_legacy_true = {"capture_params": True}
-_required_request_legacy_true = ["request.parameters.foo"]
-_forgone_request_legacy_true = []
-
-
-@override_application_settings(_settings_legacy_true)
-@validate_attributes("agent", _required_request_legacy_true, _forgone_request_legacy_true)
-def test_capture_request_params_legacy_true():
-    target_application = webtest.TestApp(target_wsgi_application)
-    response = target_application.get("/?foo=bar")
     assert response.body == b"Hello World!"
 
 

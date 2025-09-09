@@ -341,7 +341,6 @@ def _process_configuration(section):
     _process_setting(section, "monitor_mode", "getboolean", None)
     _process_setting(section, "developer_mode", "getboolean", None)
     _process_setting(section, "high_security", "getboolean", None)
-    _process_setting(section, "capture_params", "getboolean", None)
     _process_setting(section, "capture_environ", "getboolean", None)
     _process_setting(section, "include_environ", "get", _map_split_strings)
     _process_setting(section, "max_stack_trace_lines", "getint", None)
@@ -684,20 +683,6 @@ def translate_deprecated_settings(settings, cached_settings):
 
             delete_setting(settings, old_key)
 
-    # The 'capture_params' setting is deprecated, but since it affects
-    # attribute filter default destinations, it is not translated here. We
-    # log a message, but keep the capture_params setting.
-    #
-    # See newrelic.core.transaction:Transaction.agent_attributes to see how
-    # it is used.
-
-    if "capture_params" in cached:
-        _logger.info(
-            "Deprecated setting found: capture_params. Please use "
-            "new setting: attributes.exclude. To disable capturing all "
-            'request parameters, add "request.parameters.*" to '
-            "attributes.exclude."
-        )
 
     if "cross_application_tracer.enabled" in cached:
         # CAT Deprecation Warning
@@ -725,22 +710,13 @@ def apply_local_high_security_mode_setting(settings):
         "setting was %r. The new setting is %r."
     )
 
-    # capture_params is a deprecated setting for users, and has three
-    # possible values:
-    #
-    #   True:  For backward compatibility.
-    #   False: For backward compatibility.
-    #   None:  The current default setting.
-    #
-    # In High Security, capture_params must be False, but we only need
-    # to log if the customer has actually used the deprecated setting
-    # and set it to True.
-
-    if settings.capture_params:
-        settings.capture_params = False
-        _logger.info(log_template, "capture_params", True, False)
-    elif settings.capture_params is None:
-        settings.capture_params = False
+    # Check to see if `request.parameters.*` or any variant that would
+    # capture request parameters is in `attributes.include`.  If so,
+    # exclude them and log this so that users do not think this is silently failing.
+    request_parameters_in_attributes_include = [attr for attr in settings.attributes.include if attr.startswith("request.parameters.")]
+    if settings.attributes.enabled and request_parameters_in_attributes_include:
+        settings.attributes.exclude.extend(["request.parameters.*"])
+        _logger.info("Excluding request parameters because High Security Mode has been activated.")
 
     if settings.transaction_tracer.record_sql == "raw":
         settings.transaction_tracer.record_sql = "obfuscated"

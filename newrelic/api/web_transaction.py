@@ -618,12 +618,19 @@ class WSGIWebTransaction(WebTransaction):
         self.ignore_transaction = _lookup_environ_setting(environ, "newrelic.ignore_transaction", False)
         self.suppress_apdex = _lookup_environ_setting(environ, "newrelic.suppress_apdex_metric", False)
         self.suppress_transaction_trace = _lookup_environ_setting(environ, "newrelic.suppress_transaction_trace", False)
-        self.capture_params = _lookup_environ_setting(
-            environ, "newrelic.capture_request_params", settings.capture_params
-        )
         self.autorum_disabled = _lookup_environ_setting(
             environ, "newrelic.disable_browser_autorum", not settings.browser_monitoring.auto_instrument
         )
+
+        # While settings.capture_params has been removed, the Python Agent
+        # has not removed the newrelic specific environ setting for
+        # capturing request parameters.
+        self._capture_request_params = _lookup_environ_setting(
+            environ, "newrelic.capture_request_params", None
+        )
+
+        if self._capture_request_params:
+            self.settings.attributes.include.append("request.parameters.*")
 
         # Make sure that if high security mode is enabled that
         # capture of request params is still being disabled.
@@ -632,13 +639,11 @@ class WSGIWebTransaction(WebTransaction):
         # of noise.
 
         if settings.high_security:
-            self.capture_params = False
+            self.settings.attributes.exclude.append("request.parameters.*")
 
-        # LEGACY: capture_params = False
-        #
-        #    Don't add request parameters at all, which means they will not
-        #    go through the AttributeFilter.
-        if self.capture_params is False:
+        # Don't add request parameters at all, which means 
+        # they will not go through the AttributeFilter.
+        if "request.parameters.*" in self.settings.attributes.exclude:
             self._request_params.clear()
 
         # Extract from the WSGI environ dictionary

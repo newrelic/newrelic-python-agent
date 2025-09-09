@@ -257,8 +257,15 @@ class Transaction:
         self.suppress_apdex = False
         self.suppress_transaction_trace = False
 
-        self.capture_params = None
-
+        # Three states: None, True, False:
+        # None: not set
+        # True: capture request parameters
+        # False: do not capture request parameters
+        # The distinction between the falsy parameters is
+        # what will be used to determine if the exclude
+        # attributes setting should be reset at the end
+        # of a transaction.
+        self._capture_request_params = None
         self.apdex = 0
 
         self.rum_token = None
@@ -420,6 +427,23 @@ class Transaction:
 
         if not self._settings:
             return
+
+        # Remove the request parameter include/exclude flags
+        # from the application settings for the case where
+        # either the environ `newrelic.capture_request_params`
+        # was set or the `capture_request_params` API was called
+        # within the context of a transaction.  Because these
+        # settings can be different for each transaction, we need
+        # to reset them at the end of the transaction.
+        #
+        # This check is applied to ensure that only the setting
+        # modifications made by the agent are removed/reset and
+        # not those that have been set by the user for their
+        # application.
+        if self._capture_request_params:
+            self.settings.attributes.include.remove("request.parameters.*")
+        elif self._capture_request_params == 0:
+            self.settings.attributes.exclude.remove("request.parameters.*")
 
         # Record error if one was registered.
 
@@ -927,45 +951,14 @@ class Transaction:
     def filter_request_parameters(self, params):
         # Request parameters are a special case of agent attributes, so
         # they must be filtered separately
-
-        # There are 3 cases we need to handle:
-        #
-        # 1. LEGACY: capture_params = False
-        #
-        #    Don't add request parameters at all, which means they will not
-        #    go through the AttributeFilter.
-        #
-        # 2. LEGACY: capture_params = True
-        #
-        #    Filter request parameters through the AttributeFilter, but
-        #    set the destinations to `TRANSACTION_TRACER | ERROR_COLLECTOR`.
-        #
-        #    If the user does not add any additional attribute filtering
-        #    rules, this will result in the same outcome as the old
-        #    capture_params = True behavior. They will be added to transaction
-        #    traces and error traces.
-        #
-        # 3. CURRENT: capture_params is None
-        #
-        #    Filter request parameters through the AttributeFilter, but set
-        #    the destinations to NONE.
-        #
-        #    That means by default, request parameters won't get included in
-        #    any destination. But, it will allow user added include/exclude
-        #    attribute filtering rules to be applied to the request parameters.
         attributes_request = []
 
-        if self.capture_params is None:
-            attributes_request = create_attributes(params, DST_NONE, self.attribute_filter)
-        elif self.capture_params:
-            attributes_request = create_attributes(
-                params, DST_ERROR_COLLECTOR | DST_TRANSACTION_TRACER, self.attribute_filter
-            )
+        attributes_request = create_attributes(params, DST_NONE, self.attribute_filter)
         return attributes_request
 
     @property
     def request_parameters(self):
-        if (self.capture_params is None) or self.capture_params:
+        if self.settings.attributes.enabled:
             if self._request_params:
                 r_attrs = {}
 
@@ -1820,10 +1813,12 @@ def suppress_apdex_metric(flag=True):
 def capture_request_params(flag=True):
     transaction = current_transaction()
     if transaction and transaction.settings:
-        if transaction.settings.high_security:
-            _logger.warning("Cannot modify capture_params in High Security Mode.")
+        if flag and transaction.settings.high_security:
+            _logger.warning("Cannot enable request parameter collection in High Security Mode.")
+        elif flag:
+            transaction.settings.attributes.include.append("request.parameters.*")
         else:
-            transaction.capture_params = flag
+            transaction.settings.attributes.exclude.append("request.parameters.*")
 
 
 def add_custom_attribute(key, value):

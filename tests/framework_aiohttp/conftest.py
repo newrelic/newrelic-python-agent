@@ -123,7 +123,8 @@ def mock_external_http_server():
         self.end_headers()
         self.wfile.write(b"")
 
-    with MockExternalHTTPServer(handler=respond_with_cat_header) as server:
+    # with MockExternalHTTPServer(handler=respond_with_cat_header) as server:
+    with MockExternalHTTPServer() as server:
         yield (server, response_values)
 
 

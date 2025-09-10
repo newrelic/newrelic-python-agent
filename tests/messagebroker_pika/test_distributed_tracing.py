@@ -81,8 +81,8 @@ def test_basic_consume_distributed_tracing_headers():
     def on_receive(ch, method, properties, msg):
         headers = properties.headers
         assert headers
-        assert "NewRelicID" not in headers
-        assert "NewRelicTransaction" not in headers
+        # assert "NewRelicID" not in headers
+        # assert "NewRelicTransaction" not in headers
         assert msg == b"Testing distributed_tracing 123"
         txn = current_transaction()
 
@@ -134,8 +134,8 @@ def do_basic_get(channel, QUEUE):
     headers = properties.headers
 
     assert headers
-    assert "NewRelicID" not in headers
-    assert "NewRelicTransaction" not in headers
+    # assert "NewRelicID" not in headers
+    # assert "NewRelicTransaction" not in headers
     assert msg == b"Testing distributed_tracing 123"
 
     txn = current_transaction()

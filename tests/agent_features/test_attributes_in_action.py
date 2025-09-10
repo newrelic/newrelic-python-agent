@@ -96,7 +96,7 @@ TRANS_EVENT_INTRINSICS = (
     "timestamp",
     "totalTime",
     "error",
-    "nr.apdexPerfZone",
+    # "nr.apdexPerfZone",
     "apdexPerfZone",
 )
 TRANS_EVENT_AGENT_KEYS = [

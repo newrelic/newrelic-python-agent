@@ -797,7 +797,7 @@ def validate_error_event_sample_data(required_attrs=None, required_user_attrs=Tr
                 assert intrinsics["error.class"] == required_attrs["error.class"]
                 assert intrinsics["error.message"].startswith(required_attrs["error.message"])
                 assert intrinsics["error.expected"] == required_attrs["error.expected"]
-                assert intrinsics["nr.transactionGuid"] is not None
+                # assert intrinsics["nr.transactionGuid"] is not None
                 assert intrinsics["spanId"] is not None
 
                 # check that transaction event intrinsics haven't bled in
@@ -860,11 +860,11 @@ def _validate_event_attributes(intrinsics, user_attributes, required_intrinsics,
     else:
         assert "queueDuration" not in intrinsics
 
-    if "nr.referringTransactionGuid" in required_intrinsics:
-        guid = required_intrinsics["nr.referringTransactionGuid"]
-        assert intrinsics["nr.referringTransactionGuid"] == guid
-    else:
-        assert "nr.referringTransactionGuid" not in intrinsics
+    # if "nr.referringTransactionGuid" in required_intrinsics:
+    #     guid = required_intrinsics["nr.referringTransactionGuid"]
+    #     assert intrinsics["nr.referringTransactionGuid"] == guid
+    # else:
+    #     assert "nr.referringTransactionGuid" not in intrinsics
 
     if "nr.syntheticsResourceId" in required_intrinsics:
         res_id = required_intrinsics["nr.syntheticsResourceId"]

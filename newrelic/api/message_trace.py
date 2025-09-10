@@ -22,11 +22,11 @@ from newrelic.core.message_node import MessageNode
 
 
 class MessageTrace(CatHeaderMixin, TimeTrace):
-    cat_id_key = "NewRelicID"
-    cat_transaction_key = "NewRelicTransaction"
-    cat_appdata_key = "NewRelicAppData"
-    cat_synthetics_key = "NewRelicSynthetics"
-    cat_synthetics_info_key = "NewRelicSyntheticsInfo"
+    # cat_id_key = "NewRelicID"
+    # cat_transaction_key = "NewRelicTransaction"
+    # cat_appdata_key = "NewRelicAppData"
+    synthetics_key = "NewRelicSynthetics"
+    synthetics_info_key = "NewRelicSyntheticsInfo"
 
     def __init__(self, library, operation, destination_type, destination_name, params=None, terminal=True, **kwargs):
         parent = kwargs.pop("parent", None)

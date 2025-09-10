@@ -465,7 +465,7 @@ class TransactionNode(_TransactionNode):
 
         apdex_perf_zone = self.apdex_perf_zone()
         _add_if_not_empty("apdexPerfZone", apdex_perf_zone)
-        _add_if_not_empty("nr.apdexPerfZone", apdex_perf_zone)
+        # _add_if_not_empty("nr.apdexPerfZone", apdex_perf_zone)
 
         if self.errors:
             intrinsics["error"] = True
@@ -541,10 +541,10 @@ class TransactionNode(_TransactionNode):
         intrinsics["transactionName"] = self.path
         intrinsics["spanId"] = error.span_id
 
-        intrinsics["nr.transactionGuid"] = self.guid
-        if self.referring_transaction_guid:
-            guid = self.referring_transaction_guid
-            intrinsics["nr.referringTransactionGuid"] = guid
+        # intrinsics["nr.transactionGuid"] = self.guid
+        # if self.referring_transaction_guid:
+        #     guid = self.referring_transaction_guid
+        #     intrinsics["nr.referringTransactionGuid"] = guid
 
         return intrinsics
 

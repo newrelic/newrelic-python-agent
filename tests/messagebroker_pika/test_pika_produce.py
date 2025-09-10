@@ -164,7 +164,7 @@ def test_blocking_connection_reply_to(producer):
 
 
 _message_broker_tt_included_test_headers = _message_broker_tt_included_params.copy()
-# _message_broker_tt_included_test_headers.update({"headers": HEADERS.copy()})
+_message_broker_tt_included_test_headers.update({"headers": HEADERS.copy()})
 
 _message_broker_tt_forgone_test_headers = ["queue_name", "correlation_id", "reply_to"]
 

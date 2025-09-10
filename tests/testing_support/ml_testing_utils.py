@@ -34,11 +34,19 @@ def add_token_count_to_events(expected_events):
     events = copy.deepcopy(expected_events)
     for event in events:
         if event[0]["type"] != "LlmChatCompletionSummary":
+            event[1]["token_count"] = 105
+    return events
+
+
+def add_token_count_to_embedding_events(expected_events):
+    events = copy.deepcopy(expected_events)
+    for event in events:
+        if event[0]["type"] == "LlmEmbedding":
             event[1]["response.usage.total_tokens"] = 105
     return events
 
 
-def add_token_counts_to_events(expected_events):
+def add_token_counts_to_chat_events(expected_events):
     events = copy.deepcopy(expected_events)
     for event in events:
         if event[0]["type"] == "LlmChatCompletionSummary":

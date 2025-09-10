@@ -479,8 +479,8 @@ class TransactionNode(_TransactionNode):
         #     _add_if_not_empty("nr.alternatePathHashes", ",".join(self.alternate_path_hashes))
         #     _add_if_not_empty("nr.referringTransactionGuid", self.referring_transaction_guid)
 
-        if self.synthetics_resource_id:
-            intrinsics["nr.guid"] = self.guid
+        # if self.synthetics_resource_id:
+        #     intrinsics["nr.guid"] = self.guid
 
         if self.parent_tx:
             intrinsics["parentId"] = self.parent_tx

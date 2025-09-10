@@ -106,10 +106,10 @@ class CatHeaderMixin:
         #         encoded_transaction = obfuscate(json_encode(transaction_data), settings.encoding_key)
         #         nr_headers.append((cls.cat_transaction_key, encoded_transaction))
 
-        if transaction.synthetics_header:
-            nr_headers.append((cls.cat_synthetics_key, transaction.synthetics_header))
-            if transaction.synthetics_info_header:
-                nr_headers.append((cls.cat_synthetics_info_key, transaction.synthetics_info_header))
+        # if transaction.synthetics_header:
+        #     nr_headers.append((cls.cat_synthetics_key, transaction.synthetics_header))
+        #     if transaction.synthetics_info_header:
+        #         nr_headers.append((cls.cat_synthetics_info_key, transaction.synthetics_info_header))
 
         return nr_headers
 

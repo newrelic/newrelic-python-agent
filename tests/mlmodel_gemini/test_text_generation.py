@@ -15,7 +15,7 @@
 import google.genai
 from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
-    add_token_count_to_events,
+    add_token_counts_to_chat_events,
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
     events_sans_content,
@@ -50,6 +50,9 @@ text_generation_recorded_events = [
             "vendor": "gemini",
             "ingest_source": "Python",
             "response.number_of_messages": 2,
+            "response.usage.prompt_tokens": 9,
+            "response.usage.completion_tokens": 13,
+            "response.usage.total_tokens": 22,
         },
     ),
     (
@@ -60,6 +63,7 @@ text_generation_recorded_events = [
             "llm.foo": "bar",
             "span_id": None,
             "trace_id": "trace-id",
+            "token_count": 0,
             "content": "How many letters are in the word Python?",
             "role": "user",
             "completion_id": None,
@@ -77,6 +81,7 @@ text_generation_recorded_events = [
             "llm.foo": "bar",
             "span_id": None,
             "trace_id": "trace-id",
+            "token_count": 0,
             "content": 'There are **6** letters in the word "Python".\n',
             "role": "model",
             "completion_id": None,
@@ -183,7 +188,8 @@ def test_gemini_text_generation_sync_no_content(gemini_dev_client, set_trace_inf
 
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
-@validate_custom_events(add_token_count_to_events(text_generation_recorded_events))
+# Ensure LLM callback is invoked and response token counts are overridden
+@validate_custom_events(add_token_counts_to_chat_events(text_generation_recorded_events))
 @validate_custom_event_count(count=3)
 @validate_transaction_metrics(
     name="test_text_generation:test_gemini_text_generation_sync_with_token_count",
@@ -324,7 +330,7 @@ def test_gemini_text_generation_async_no_content(gemini_dev_client, loop, set_tr
 
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
-@validate_custom_events(add_token_count_to_events(text_generation_recorded_events))
+@validate_custom_events(add_token_counts_to_chat_events(text_generation_recorded_events))
 @validate_custom_event_count(count=3)
 @validate_transaction_metrics(
     name="test_text_generation:test_gemini_text_generation_async_with_token_count",

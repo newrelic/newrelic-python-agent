@@ -245,7 +245,7 @@ def wrap_generate_content_sync(wrapped, instance, args, kwargs):
 
     ft.__exit__(None, None, None)
 
-    _handle_generation_success(transaction, settings, linking_metadata, completion_id, kwargs, ft, return_val)
+    _handle_generation_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val)
 
     return return_val
 
@@ -278,7 +278,7 @@ async def wrap_generate_content_async(wrapped, instance, args, kwargs):
 
     ft.__exit__(None, None, None)
 
-    _handle_generation_success(transaction, settings, linking_metadata, completion_id, kwargs, ft, return_val)
+    _handle_generation_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val)
 
     return return_val
 
@@ -366,7 +366,7 @@ def _record_generation_error(transaction, linking_metadata, completion_id, kwarg
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
 
 
-def _handle_generation_success(transaction, settings, linking_metadata, completion_id, kwargs, ft, return_val):
+def _handle_generation_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val):
     if not return_val:
         return
 
@@ -374,13 +374,14 @@ def _handle_generation_success(transaction, settings, linking_metadata, completi
         # Response objects are pydantic models so this function call converts the response into a dict
         response = return_val.model_dump() if hasattr(return_val, "model_dump") else return_val
 
-        _record_generation_success(transaction, settings, linking_metadata, completion_id, kwargs, ft, response)
+        _record_generation_success(transaction, linking_metadata, completion_id, kwargs, ft, response)
 
     except Exception:
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
 
 
-def _record_generation_success(transaction, settings, linking_metadata, completion_id, kwargs, ft, response):
+def _record_generation_success(transaction, linking_metadata, completion_id, kwargs, ft, response):
+    settings = transaction.settings or global_settings()
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
     try:
@@ -430,11 +431,6 @@ def _record_generation_success(transaction, settings, linking_metadata, completi
             response_prompt_tokens = token_usage.get("prompt_token_count")
             response_completion_tokens = token_usage.get("candidates_token_count")
             response_total_tokens = token_usage.get("total_token_count")
-            # Filter out the token usage object to only include the keys we want to report in the LLM event
-            filtered_token_usage = {
-                key: token_usage.get(key)
-                for key in ["prompt_token_count", "candidates_token_count", "total_token_count"]
-            }
 
         else:
             response_prompt_tokens = None
@@ -540,7 +536,7 @@ def create_chat_completion_message_event(
     response_model,
     llm_metadata,
     output_message_list,
-    all_token_counts,
+    all_token_counts
 ):
     try:
         settings = transaction.settings or global_settings()

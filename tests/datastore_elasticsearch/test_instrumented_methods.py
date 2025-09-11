@@ -84,7 +84,7 @@ def test_method_on_client_datastore_trace_inputs(client, sub_module, method, arg
 
 def _test_methods_wrapped(_object, ignored_methods=None):
     if not ignored_methods:
-        ignored_methods = {"perform_request", "transport"}
+        ignored_methods = {"perform_request", "transport", "options"}
 
     def is_wrapped(m):
         return hasattr(getattr(_object, m), "__wrapped__")

@@ -16,6 +16,7 @@ from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version_tuple
+from newrelic.core.config import global_settings
 
 # An index name can be a string, None or a sequence. In the case of None
 # an empty string or '*', it is the same as using '_all'. When a string
@@ -139,7 +140,8 @@ def wrap_elasticsearch_client_method(module, class_name, method_name, arg_extrac
         with trace:
             result = wrapped(*args, **kwargs)
 
-            tracer_settings = trace.settings.datastore_tracer
+            settings = trace.settings or global_settings()
+            tracer_settings = settings.datastore_tracer
 
             if tracer_settings.instance_reporting.enabled:
                 try:
@@ -182,7 +184,8 @@ def wrap_async_elasticsearch_client_method(module, class_name, method_name, arg_
         with trace:
             result = await wrapped(*args, **kwargs)
 
-            tracer_settings = trace.settings.datastore_tracer
+            settings = trace.settings or global_settings()
+            tracer_settings = settings.datastore_tracer
 
             if tracer_settings.instance_reporting.enabled:
                 try:
@@ -267,7 +270,6 @@ _elasticsearch_client_methods_v8 = (
     ("msearch_template", _extract_args_search_templates_index),
     ("mtermvectors", _extract_args_index),
     ("open_point_in_time", _extract_args_index),
-    ("options", None),
     ("ping", None),
     ("put_script", None),
     ("rank_eval", _extract_args_requests_index),
@@ -783,7 +785,8 @@ def _nr_get_connection_wrapper(wrapped, instance, args, kwargs):
 
     host = port_path_or_id = "unknown"
     try:
-        tracer_settings = trace.settings.datastore_tracer
+        settings = trace.settings or global_settings()
+        tracer_settings = settings.datastore_tracer
 
         if tracer_settings.instance_reporting.enabled:
             host, port_path_or_id = conn._nr_host_port

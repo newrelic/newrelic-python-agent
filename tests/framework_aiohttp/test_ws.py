@@ -13,12 +13,12 @@
 # limitations under the License.
 
 import aiohttp
-from testing_support.fixtures import function_not_called
+from testing_support.validators.validate_function_not_called import validate_function_not_called
 
 version_info = tuple(int(_) for _ in aiohttp.__version__.split(".")[:2])
 
 
-@function_not_called("newrelic.core.stats_engine", "StatsEngine.record_transaction")
+@validate_function_not_called("newrelic.core.stats_engine", "StatsEngine.record_transaction")
 def test_websocket(aiohttp_app):
     async def ws_write():
         ws = await aiohttp_app.client.ws_connect("/ws")

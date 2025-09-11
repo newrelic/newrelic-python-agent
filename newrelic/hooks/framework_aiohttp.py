@@ -215,18 +215,18 @@ class HeaderProxy(ObjectProxy):
         return itertools.chain(self.__wrapped__.items(), nr_headers.items())
 
 
-def _nr_aiohttp_add_cat_headers_(wrapped, instance, args, kwargs):
+def _nr_aiohttp_add_dt_headers_(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if transaction is None:
         return wrapped(*args, **kwargs)
 
     try:
-        cat_headers = ExternalTrace.generate_request_headers(transaction)
+        dt_headers = ExternalTrace.generate_request_headers(transaction)
     except:
         return wrapped(*args, **kwargs)
 
     tmp = instance.headers
-    instance.headers = HeaderProxy(tmp, cat_headers)
+    instance.headers = HeaderProxy(tmp, dt_headers)
 
     if is_coroutine_callable(wrapped):
 
@@ -245,21 +245,21 @@ def _nr_aiohttp_add_cat_headers_(wrapped, instance, args, kwargs):
             instance.headers = tmp
 
 
-def _nr_aiohttp_add_cat_headers_simple_(wrapped, instance, args, kwargs):
+def _nr_aiohttp_add_dt_headers_simple_(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if transaction is None:
         return wrapped(*args, **kwargs)
 
     try:
-        cat_headers = ExternalTrace.generate_request_headers(transaction)
+        dt_headers = ExternalTrace.generate_request_headers(transaction)
     except:
         return wrapped(*args, **kwargs)
 
-    for k, _ in cat_headers:
+    for k, _ in dt_headers:
         if k in instance.headers:
             return wrapped(*args, **kwargs)
 
-    instance.headers.update(cat_headers)
+    instance.headers.update(dt_headers)
     return wrapped(*args, **kwargs)
 
 
@@ -304,15 +304,15 @@ def instrument_aiohttp_client_reqrep(module):
     if version_info >= (2, 0):
         # TODO: Verify that headers_preserve_casting is always True
         # if headers_preserve_casing():
-        cat_wrapper = _nr_aiohttp_add_cat_headers_simple_
+        dt_wrapper = _nr_aiohttp_add_dt_headers_simple_
         # else:
-        #     cat_wrapper = _nr_aiohttp_add_cat_headers_
+        #     dt_wrapper = _nr_aiohttp_add_dt_headers_
 
-        wrap_function_wrapper(module, "ClientRequest.send", cat_wrapper)
+        wrap_function_wrapper(module, "ClientRequest.send", dt_wrapper)
 
 
 def instrument_aiohttp_protocol(module):
-    wrap_function_wrapper(module, "Request.send_headers", _nr_aiohttp_add_cat_headers_)
+    wrap_function_wrapper(module, "Request.send_headers", _nr_aiohttp_add_dt_headers_)
 
 
 def instrument_aiohttp_web_urldispatcher(module):

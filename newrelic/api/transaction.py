@@ -289,7 +289,7 @@ class Transaction:
 
         self._distributed_trace_state = 0
 
-        self.client_cross_process_id = None
+        # self.client_cross_process_id = None
         self.client_account_id = None
         self.client_application_id = None
         self.referring_transaction_guid = None
@@ -537,9 +537,9 @@ class Transaction:
         #
         self.total_time += exclusive
 
-        if self.client_cross_process_id is not None:
-            metric_name = f"ClientApplication/{self.client_cross_process_id}/all"
-            self.record_custom_metric(metric_name, duration)
+        # if self.client_cross_process_id is not None:
+        #     metric_name = f"ClientApplication/{self.client_cross_process_id}/all"
+        #     self.record_custom_metric(metric_name, duration)
 
         # Record supportability metrics for api calls
 
@@ -599,7 +599,7 @@ class Transaction:
             guid=self.guid,
             cpu_time=self._cpu_user_time_value,
             suppress_transaction_trace=self.suppress_transaction_trace,
-            client_cross_process_id=self.client_cross_process_id,
+            # client_cross_process_id=self.client_cross_process_id,
             referring_transaction_guid=self.referring_transaction_guid,
             record_tt=self.record_tt,
             synthetics_resource_id=self.synthetics_resource_id,
@@ -837,8 +837,8 @@ class Transaction:
 
         if self.referring_transaction_guid:
             i_attrs["referring_transaction_guid"] = self.referring_transaction_guid
-        if self.client_cross_process_id:
-            i_attrs["client_cross_process_id"] = self.client_cross_process_id
+        # if self.client_cross_process_id:
+        #     i_attrs["client_cross_process_id"] = self.client_cross_process_id
         if self.trip_id:
             i_attrs["trip_id"] = self.trip_id
         # if self.path_hash:

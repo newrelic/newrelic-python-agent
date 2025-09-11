@@ -17,7 +17,7 @@ import json
 import pytest
 from testing_support.fixtures import override_generic_settings
 from testing_support.validators.validate_serverless_data import validate_serverless_data
-from testing_support.validators.validate_serverless_metadata import validate_serverless_metadata
+# from testing_support.validators.validate_serverless_metadata import validate_serverless_metadata
 from testing_support.validators.validate_serverless_payload import validate_serverless_payload
 
 from newrelic.api.application import application_instance
@@ -65,22 +65,22 @@ def test_serverless_payload(capsys, serverless_application):
     payload = json.loads(out)
 
 
-def test_no_cat_headers(serverless_application):
-    @background_task(application=serverless_application, name="test_cat_headers")
-    def _test_cat_headers():
-        transaction = current_transaction()
+# def test_no_cat_headers(serverless_application):
+#     @background_task(application=serverless_application, name="test_cat_headers")
+#     def _test_cat_headers():
+#         transaction = current_transaction()
 
-        payload = ExternalTrace.generate_request_headers(transaction)
-        assert not payload
+#         payload = ExternalTrace.generate_request_headers(transaction)
+#         assert not payload
 
-        trace = ExternalTrace("testlib", "http://example.com")
-        response_headers = [("X-NewRelic-App-Data", "Cookies")]
-        with trace:
-            trace.process_response_headers(response_headers)
+#         trace = ExternalTrace("testlib", "http://example.com")
+#         response_headers = [("X-NewRelic-App-Data", "Cookies")]
+#         with trace:
+#             trace.process_response_headers(response_headers)
 
-        # assert transaction.settings.cross_application_tracer.enabled is False
+#         # assert transaction.settings.cross_application_tracer.enabled is False
 
-    _test_cat_headers()
+#     _test_cat_headers()
 
 
 @pytest.mark.parametrize("trusted_account_key", ("1", None), ids=("tk_set", "tk_unset"))

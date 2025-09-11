@@ -128,15 +128,15 @@ def cache_outgoing_headers(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
-@transient_function_wrapper(httplib.__name__, "HTTPResponse.getheaders")
-def insert_incoming_headers(wrapped, instance, args, kwargs):
-    transaction = current_transaction()
+# @transient_function_wrapper(httplib.__name__, "HTTPResponse.getheaders")
+# def insert_incoming_headers(wrapped, instance, args, kwargs):
+#     transaction = current_transaction()
 
-    if transaction is None:
-        return wrapped(*args, **kwargs)
+#     if transaction is None:
+#         return wrapped(*args, **kwargs)
 
-    headers = list(wrapped(*args, **kwargs))
+#     headers = list(wrapped(*args, **kwargs))
 
-    headers.extend(create_incoming_headers(transaction))
+#     headers.extend(create_incoming_headers(transaction))
 
-    return headers
+#     return headers

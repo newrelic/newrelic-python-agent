@@ -14,14 +14,14 @@
 
 import functools
 
-from newrelic.api.cat_header_mixin import CatHeaderMixin
+from newrelic.api.header_mixin import HeaderMixin
 from newrelic.api.time_trace import TimeTrace, current_trace
 from newrelic.common.async_wrapper import async_wrapper as get_async_wrapper
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.core.message_node import MessageNode
 
 
-class MessageTrace(CatHeaderMixin, TimeTrace):
+class MessageTrace(HeaderMixin, TimeTrace):
     # cat_id_key = "NewRelicID"
     # cat_transaction_key = "NewRelicTransaction"
     # cat_appdata_key = "NewRelicAppData"

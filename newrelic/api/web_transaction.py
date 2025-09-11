@@ -324,13 +324,13 @@ class WebTransaction(Transaction):
         if self.client_cross_process_id is None:
             return []
 
-        # Generate CAT response headers
-        try:
-            read_length = int(self._request_headers.get("content-length"))
-        except Exception:
-            read_length = -1
+        # # Generate CAT response headers
+        # try:
+        #     read_length = int(self._request_headers.get("content-length"))
+        # except Exception:
+        #     read_length = -1
 
-        return self._generate_response_headers(read_length)
+        # return self._generate_response_headers(read_length)
 
     def _update_agent_attributes(self):
         if "accept" in self._request_headers:

@@ -197,7 +197,7 @@ def test_httpclient(
     _test()
 
 
-CAT_RESPONSE_CODE = None
+# CAT_RESPONSE_CODE = None
 
 
 # def cat_response_handler(self):

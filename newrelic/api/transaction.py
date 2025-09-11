@@ -1405,55 +1405,55 @@ class Transaction:
     #     except Exception:
     #         pass
 
-    def _generate_response_headers(self, read_length=None):
-        nr_headers = []
+    # def _generate_response_headers(self, read_length=None):
+    #     nr_headers = []
 
-        # Generate metrics and response headers for inbound cross
-        # process web external calls.
+    #     # Generate metrics and response headers for inbound cross
+    #     # process web external calls.
 
-        if self.client_cross_process_id is not None:
-            # Need to work out queueing time and duration up to this
-            # point for inclusion in metrics and response header. If the
-            # recording of the transaction had been prematurely stopped
-            # via an API call, only return time up until that call was
-            # made so it will match what is reported as duration for the
-            # transaction.
+    #     if self.client_cross_process_id is not None:
+    #         # Need to work out queueing time and duration up to this
+    #         # point for inclusion in metrics and response header. If the
+    #         # recording of the transaction had been prematurely stopped
+    #         # via an API call, only return time up until that call was
+    #         # made so it will match what is reported as duration for the
+    #         # transaction.
 
-            if self.queue_start:
-                queue_time = self.start_time - self.queue_start
-            else:
-                queue_time = 0
+    #         if self.queue_start:
+    #             queue_time = self.start_time - self.queue_start
+    #         else:
+    #             queue_time = 0
 
-            if self.end_time:
-                duration = self.end_time - self.start_time
-            else:
-                duration = time.time() - self.start_time
+    #         if self.end_time:
+    #             duration = self.end_time - self.start_time
+    #         else:
+    #             duration = time.time() - self.start_time
 
-            # Generate the additional response headers which provide
-            # information back to the caller. We need to freeze the
-            # transaction name before adding to the header.
+    #         # Generate the additional response headers which provide
+    #         # information back to the caller. We need to freeze the
+    #         # transaction name before adding to the header.
 
-            self._freeze_path()
+    #         self._freeze_path()
 
-            if read_length is None:
-                read_length = self._read_length
+    #         if read_length is None:
+    #             read_length = self._read_length
 
-            read_length = read_length if read_length is not None else -1
+    #         read_length = read_length if read_length is not None else -1
 
-            payload = (
-                self._settings.cross_process_id,
-                self.path,
-                queue_time,
-                duration,
-                read_length,
-                self.guid,
-                self.record_tt,
-            )
-            app_data = json_encode(payload)
+    #         payload = (
+    #             self._settings.cross_process_id,
+    #             self.path,
+    #             queue_time,
+    #             duration,
+    #             read_length,
+    #             self.guid,
+    #             self.record_tt,
+    #         )
+    #         app_data = json_encode(payload)
 
-            nr_headers.append(("X-NewRelic-App-Data", obfuscate(app_data, self._settings.encoding_key)))
+    #         nr_headers.append(("X-NewRelic-App-Data", obfuscate(app_data, self._settings.encoding_key)))
 
-        return nr_headers
+    #     return nr_headers
 
     # # This function is CAT related and has been deprecated.
     # # Eventually, this will be removed.  Until then, coverage

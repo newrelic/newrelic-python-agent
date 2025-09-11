@@ -425,13 +425,10 @@ class AgentProtocol:
             if setting in server_settings:
                 del server_settings[setting]
 
-        # Override attributes.exclude setting for high security mode.
-        if (
-            server_settings
-            and ("attributes.exclude" in server_settings)
-            and ("request.parameters.*" not in server_settings["attributes.exclude"])
-        ):
-            server_settings["attributes.exclude"].append("request.parameters.*")
+        # TODO: Override attributes.include setting for high security mode.
+        # Go through server side settings and find all items prepended 
+        # with "request.parameters.".  Remove those attributes and 
+        # override server_settings["attributes.include"] with new list
 
         # When server side configuration is disabled, there will be no
         # agent_config value in server_settings, so no more fix-ups
@@ -458,22 +455,10 @@ class AgentProtocol:
                     fetch_config_setting(local_settings, setting),
                 )
 
-        # Override attributes.exclude setting for high security mode.
-        if (
-            server_settings
-            and ("agent_config" in server_settings)
-            and (
-                (
-                    ("attributes.exclude" in server_settings["agent_config"])
-                    and ("request.parameters.*" not in server_settings["agent_config"]["attributes.exclude"])
-                )
-                or ("attributes.exclude" not in server_settings["agent_config"])
-            )
-        ):
-            try:
-                server_settings["agent_config"]["attributes.exclude"].append("request.parameters.*")
-            except KeyError:
-                server_settings["agent_config"]["attributes.exclude"] = ["request.parameters.*"]
+        # TODO: Override attributes.exclude setting for high security mode.
+        # Go through server side agent config settings and find all items
+        # prepended with "request.parameters.".  Remove those attributes and
+        # override server_settings["agent_config"]["attributes.include"] with new list
 
         return server_settings
 

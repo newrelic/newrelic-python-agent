@@ -257,15 +257,6 @@ class Transaction:
         self.suppress_apdex = False
         self.suppress_transaction_trace = False
 
-        # Three states: None, True, False:
-        # None: not set
-        # True: capture request parameters
-        # False: do not capture request parameters
-        # The distinction between the falsy parameters is
-        # what will be used to determine if the exclude
-        # attributes setting should be reset at the end
-        # of a transaction.
-        self._capture_request_params = None
         self.apdex = 0
 
         self.rum_token = None
@@ -428,23 +419,6 @@ class Transaction:
 
         if not self._settings:
             return
-
-        # Remove the request parameter include/exclude flags
-        # from the application settings for the case where
-        # either the environ `newrelic.capture_request_params`
-        # was set or the `capture_request_params` API was called
-        # within the context of a transaction.  Because these
-        # settings can be different for each transaction, we need
-        # to reset them at the end of the transaction.
-        #
-        # This check is applied to ensure that only the setting
-        # modifications made by the agent are removed/reset and
-        # not those that have been set by the user for their
-        # application.
-        if self._capture_request_params:
-            self.settings.attributes.include.remove("request.parameters.*")
-        elif self._capture_request_params == 0:
-            self.settings.attributes.exclude.remove("request.parameters.*")
 
         # Record error if one was registered.
 
@@ -952,8 +926,6 @@ class Transaction:
     def filter_request_parameters(self, params):
         # Request parameters are a special case of agent attributes, so
         # they must be filtered separately
-        attributes_request = []
-
         attributes_request = create_attributes(params, DST_NONE, self.attribute_filter)
         return attributes_request
 
@@ -1838,9 +1810,9 @@ def capture_request_params(flag=True):
         if flag and transaction.settings.high_security:
             _logger.warning("Cannot enable request parameter collection in High Security Mode.")
         elif flag:
-            transaction.settings.attributes.include.append("request.parameters.*")
+            transaction._agent_attributes.update(transaction.request_parameters())
         else:
-            transaction.settings.attributes.exclude.append("request.parameters.*")
+            transaction._request_params.clear()
 
 
 def add_custom_attribute(key, value):

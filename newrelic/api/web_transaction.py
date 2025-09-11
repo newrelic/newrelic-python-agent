@@ -622,27 +622,17 @@ class WSGIWebTransaction(WebTransaction):
             environ, "newrelic.disable_browser_autorum", not settings.browser_monitoring.auto_instrument
         )
 
-        # While settings.capture_params has been removed, the Python Agent
-        # has not removed the newrelic specific environ setting for
-        # capturing request parameters.
-        self._capture_request_params = _lookup_environ_setting(environ, "newrelic.capture_request_params", None)
-
-        if self._capture_request_params:
-            self.settings.attributes.include.append("request.parameters.*")
-
         # Make sure that if high security mode is enabled that
         # capture of request params is still being disabled.
         # No warning is issued for this in the logs because it
         # is a per request configuration and would create a lot
         # of noise.
 
-        if settings.high_security:
-            self.settings.attributes.exclude.append("request.parameters.*")
-
-        # Don't add request parameters at all, which means
-        # they will not go through the AttributeFilter.
-        if "request.parameters.*" in self.settings.attributes.exclude:
-            self._request_params.clear()
+        # By the time we get here, HSM should have already blocked
+        # the population of self._request_params
+        
+        # if settings.high_security:
+        #     self._request_params.clear()
 
         # Extract from the WSGI environ dictionary
         # details of the URL path. This will be set as

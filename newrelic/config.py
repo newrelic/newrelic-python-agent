@@ -713,13 +713,14 @@ def apply_local_high_security_mode_setting(settings):
 
     # Check to see if `request.parameters.*` or any variant that would
     # capture request parameters is in `attributes.include`.  If so,
-    # exclude them and log this so that users do not think this is silently failing.
-    request_parameters_in_attributes_include = [
-        attr for attr in settings.attributes.include if attr.startswith("request.parameters.")
+    # remove them and log this change so that users do not think this 
+    # is silently failing.
+    no_request_parameters_in_attributes_include = [
+        attr for attr in settings.attributes.include if not attr.startswith("request.parameters.")
     ]
-    if settings.attributes.enabled and request_parameters_in_attributes_include:
-        settings.attributes.exclude.extend(["request.parameters.*"])
-        _logger.info("Excluding request parameters because High Security Mode has been activated.")
+    if settings.attributes.enabled and (settings.attributes.include != no_request_parameters_in_attributes_include):
+        _logger.info(log_template, "attributes.include", str(settings.attributes.include), str(no_request_parameters_in_attributes_include))
+        settings.attributes.include = no_request_parameters_in_attributes_include
 
     if settings.transaction_tracer.record_sql == "raw":
         settings.transaction_tracer.record_sql = "obfuscated"

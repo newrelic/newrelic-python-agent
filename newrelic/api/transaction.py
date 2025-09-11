@@ -34,7 +34,7 @@ from newrelic.common.encoding_utils import (
     W3CTraceParent,
     W3CTraceState,
     base64_decode,
-    convert_to_cat_metadata_value,
+    # convert_to_cat_metadata_value,
     deobfuscate,
     ensure_str,
     # generate_path_hash,
@@ -294,7 +294,7 @@ class Transaction:
         self.client_application_id = None
         # self.referring_transaction_guid = None
         self.record_tt = False
-        self._trip_id = None
+        # self._trip_id = None
         # self._referring_path_hash = None
         # self._alternate_path_hashes = {}
         # self.is_part_of_cat = False
@@ -615,7 +615,7 @@ class Transaction:
             synthetics_attributes=self.synthetics_attributes,
             synthetics_info_header=self.synthetics_info_header,
             # is_part_of_cat=self.is_part_of_cat,
-            trip_id=self.trip_id,
+            # trip_id=self.trip_id,
             # path_hash=self.path_hash,
             # referring_path_hash=self._referring_path_hash,
             # alternate_path_hashes=self.alternate_path_hashes,
@@ -736,9 +736,9 @@ class Transaction:
 
         return f"{self.type}/{self.name_for_metric}"
 
-    @property
-    def trip_id(self):
-        return self._trip_id or self.guid
+    # @property
+    # def trip_id(self):
+    #     return self._trip_id or self.guid
 
     @property
     def trace_id(self):
@@ -843,8 +843,8 @@ class Transaction:
         #     i_attrs["referring_transaction_guid"] = self.referring_transaction_guid
         # if self.client_cross_process_id:
         #     i_attrs["client_cross_process_id"] = self.client_cross_process_id
-        if self.trip_id:
-            i_attrs["trip_id"] = self.trip_id
+        # if self.trip_id:
+        #     i_attrs["trip_id"] = self.trip_id
         # if self.path_hash:
         #     i_attrs["path_hash"] = self.path_hash
         if self.synthetics_resource_id:

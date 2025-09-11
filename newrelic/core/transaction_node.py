@@ -67,7 +67,7 @@ _TransactionNode = namedtuple(
         "cpu_time",
         "suppress_transaction_trace",
         # "client_cross_process_id",
-        "referring_transaction_guid",
+        # "referring_transaction_guid",
         "record_tt",
         "synthetics_resource_id",
         "synthetics_job_id",

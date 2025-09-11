@@ -292,7 +292,7 @@ class Transaction:
         # self.client_cross_process_id = None
         self.client_account_id = None
         self.client_application_id = None
-        self.referring_transaction_guid = None
+        # self.referring_transaction_guid = None
         self.record_tt = False
         self._trip_id = None
         # self._referring_path_hash = None
@@ -604,7 +604,7 @@ class Transaction:
             cpu_time=self._cpu_user_time_value,
             suppress_transaction_trace=self.suppress_transaction_trace,
             # client_cross_process_id=self.client_cross_process_id,
-            referring_transaction_guid=self.referring_transaction_guid,
+            # referring_transaction_guid=self.referring_transaction_guid,
             record_tt=self.record_tt,
             synthetics_resource_id=self.synthetics_resource_id,
             synthetics_job_id=self.synthetics_job_id,
@@ -839,8 +839,8 @@ class Transaction:
         """Intrinsic attributes for transaction traces and error traces"""
         i_attrs = {}
 
-        if self.referring_transaction_guid:
-            i_attrs["referring_transaction_guid"] = self.referring_transaction_guid
+        # if self.referring_transaction_guid:
+        #     i_attrs["referring_transaction_guid"] = self.referring_transaction_guid
         # if self.client_cross_process_id:
         #     i_attrs["client_cross_process_id"] = self.client_cross_process_id
         if self.trip_id:

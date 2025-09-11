@@ -135,7 +135,7 @@ def transaction_node(request):
         cpu_time=0.0,
         suppress_transaction_trace=False,
         # client_cross_process_id=None,
-        referring_transaction_guid=None,
+        # referring_transaction_guid=None,
         record_tt=False,
         synthetics_resource_id=None,
         synthetics_job_id=None,

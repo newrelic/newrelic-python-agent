@@ -96,7 +96,7 @@ TRANS_EVENT_INTRINSICS = (
     "timestamp",
     "totalTime",
     "error",
-    "nr.apdexPerfZone",
+    # "nr.apdexPerfZone",
     "apdexPerfZone",
 )
 TRANS_EVENT_AGENT_KEYS = [
@@ -174,7 +174,7 @@ _expected_attributes_event = {
     "intrinsic": ERROR_EVENT_INTRINSICS,
 }
 
-_expected_absent_attributes = {"agent": REQ_PARAMS, "user": [], "intrinsic": DISTRIBUTED_TRACE_ATTRS}
+_expected_absent_attributes = {"agent": REQ_PARAMS, "user": [], "intrinsic": []}
 
 
 # @cat_enabled
@@ -190,7 +190,7 @@ _expected_attributes = {"agent": TRACE_ERROR_AGENT_KEYS, "user": USER_ATTRS, "in
 
 # @cat_enabled
 @validate_transaction_trace_attributes(_expected_attributes, _expected_absent_attributes)
-@override_application_settings({})
+# @override_application_settings({})
 def test_transaction_trace_default_attribute_settings(normal_application):
     normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 

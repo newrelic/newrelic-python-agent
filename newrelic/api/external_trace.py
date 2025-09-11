@@ -14,14 +14,14 @@
 
 import functools
 
-from newrelic.api.cat_header_mixin import CatHeaderMixin
+from newrelic.api.header_mixin import HeaderMixin
 from newrelic.api.time_trace import TimeTrace, current_trace
 from newrelic.common.async_wrapper import async_wrapper as get_async_wrapper
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.core.external_node import ExternalNode
 
 
-class ExternalTrace(CatHeaderMixin, TimeTrace):
+class ExternalTrace(HeaderMixin, TimeTrace):
     def __init__(self, library, url, method=None, **kwargs):
         parent = kwargs.pop("parent", None)
         source = kwargs.pop("source", None)

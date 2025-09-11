@@ -1252,30 +1252,6 @@ def error_is_saved(error, app_name=None):
     return error_name in [e.type for e in errors if e.type == error_name]
 
 
-def function_not_called(module, name):
-    """Verify that a function is not called.
-
-    Assert False, if it is.
-
-    """
-
-    called = []
-
-    @transient_function_wrapper(module, name)
-    def _function_not_called_(wrapped, instance, args, kwargs):
-        called.append(True)
-        return wrapped(*args, **kwargs)
-
-    @function_wrapper
-    def wrapper(wrapped, instance, args, kwargs):
-        new_wrapper = _function_not_called_(wrapped)
-        result = new_wrapper(*args, **kwargs)
-        assert not called
-        return result
-
-    return wrapper
-
-
 def validate_analytics_catmap_data(name, expected_attributes=(), non_expected_attributes=()):
     samples = []
 

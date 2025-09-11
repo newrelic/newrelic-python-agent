@@ -16,7 +16,8 @@ import time
 from importlib import reload
 
 import pytest
-from testing_support.fixtures import function_not_called, override_application_settings, reset_core_stats_engine
+from testing_support.fixtures import override_application_settings, reset_core_stats_engine
+from testing_support.validators.validate_function_not_called import validate_function_not_called
 from testing_support.validators.validate_ml_event_count import validate_ml_event_count
 from testing_support.validators.validate_ml_event_payload import validate_ml_event_payload
 from testing_support.validators.validate_ml_events import validate_ml_events
@@ -331,7 +332,7 @@ def test_ml_event_settings_check_ml_insights_disabled():
 
 @override_application_settings({"ml_insights_events.enabled": False})
 @reset_core_stats_engine()
-@function_not_called("newrelic.api.transaction", "create_custom_event")
+@validate_function_not_called("newrelic.api.transaction", "create_custom_event")
 @background_task()
 def test_transaction_create_ml_event_not_called():
     record_ml_event("FooEvent", {"foo": "bar"})
@@ -339,7 +340,7 @@ def test_transaction_create_ml_event_not_called():
 
 @override_application_settings({"ml_insights_events.enabled": False})
 @reset_core_stats_engine()
-@function_not_called("newrelic.core.application", "create_custom_event")
+@validate_function_not_called("newrelic.core.application", "create_custom_event")
 @background_task()
 def test_application_create_ml_event_not_called():
     app = application()

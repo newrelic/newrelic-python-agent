@@ -20,7 +20,8 @@ import threading
 import moto.server
 import pytest
 import werkzeug.serving
-from external_botocore._mock_external_bedrock_server import MockExternalBedrockServer
+from external_botocore._mock_external_bedrock_server_converse import MockExternalBedrockConverseServer
+from external_botocore._mock_external_bedrock_server_invoke_model import MockExternalBedrockServer
 from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
@@ -169,6 +170,40 @@ def bedrock_server(loop):
 
     # Use mocked Bedrock backend and prerecorded responses
     with MockExternalBedrockServer() as server:
+        session = aiobotocore.session.get_session()
+        client = loop.run_until_complete(
+            session.create_client(
+                "bedrock-runtime",
+                "us-east-1",
+                endpoint_url=f"http://localhost:{server.port}",
+                aws_access_key_id="NOT-A-REAL-SECRET",
+                aws_secret_access_key="NOT-A-REAL-SECRET",
+            ).__aenter__()
+        )
+
+        yield client
+
+        loop.run_until_complete(client.__aexit__(None, None, None))
+
+
+# Bedrock Fixtures
+@pytest.fixture(scope="session")
+def bedrock_converse_server(loop):
+    """
+    This fixture will create a mocked backend for testing purposes.
+    """
+    import aiobotocore
+
+    from newrelic.core.config import _environ_as_bool
+
+    if get_package_version_tuple("botocore") < (1, 31, 57):
+        pytest.skip(reason="Bedrock Runtime not available.")
+
+    if _environ_as_bool("NEW_RELIC_TESTING_RECORD_BEDROCK_RESPONSES", False):
+        raise NotImplementedError("To record test responses, use botocore instead.")
+
+    # Use mocked Bedrock backend and prerecorded responses
+    with MockExternalBedrockConverseServer() as server:
         session = aiobotocore.session.get_session()
         client = loop.run_until_complete(
             session.create_client(

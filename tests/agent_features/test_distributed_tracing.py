@@ -17,8 +17,10 @@ import json
 
 import pytest
 import webtest
-from testing_support.fixtures import override_application_settings, validate_attributes
+from testing_support.fixtures import override_application_settings, validate_attributes, validate_attributes_complete
 from testing_support.validators.validate_error_event_attributes import validate_error_event_attributes
+from testing_support.validators.validate_function_called import validate_function_called
+from testing_support.validators.validate_function_not_called import validate_function_not_called
 from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
@@ -35,6 +37,7 @@ from newrelic.api.transaction import (
 )
 from newrelic.api.web_transaction import WSGIWebTransaction
 from newrelic.api.wsgi_application import wsgi_application
+from newrelic.core.attribute import Attribute
 
 distributed_trace_intrinsics = ["guid", "traceId", "priority", "sampled"]
 inbound_payload_intrinsics = [
@@ -413,3 +416,65 @@ def test_inbound_dt_payload_acceptance(trusted_account_key):
             assert not result
 
     _test_inbound_dt_payload_acceptance()
+
+
+@pytest.mark.parametrize(
+    "sampled,remote_parent_sampled,remote_parent_not_sampled,expected_sampled,expected_priority,expected_adaptive_sampling_algo_called",
+    (
+        (True, "default", "default", None, None, True),  # Uses sampling algo.
+        (True, "always_on", "default", True, 2, False),  # Always sampled.
+        (True, "always_off", "default", False, 0, False),  # Never sampled.
+        (False, "default", "default", None, None, True),  # Uses sampling algo.
+        (False, "always_on", "default", None, None, True),  # Uses sampling alog.
+        (False, "always_off", "default", None, None, True),  # Uses sampling algo.
+        (True, "default", "always_on", None, None, True),  # Uses sampling algo.
+        (True, "default", "always_off", None, None, True),  # Uses sampling algo.
+        (False, "default", "always_on", True, 2, False),  # Always sampled.
+        (False, "default", "always_off", False, 0, False),  # Never sampled.
+    ),
+)
+def test_distributed_trace_w3cparent_sampling_decision(
+    sampled,
+    remote_parent_sampled,
+    remote_parent_not_sampled,
+    expected_sampled,
+    expected_priority,
+    expected_adaptive_sampling_algo_called,
+):
+    required_intrinsics = []
+    if expected_sampled is not None:
+        required_intrinsics.append(Attribute(name="sampled", value=expected_sampled, destinations=0b110))
+    if expected_priority is not None:
+        required_intrinsics.append(Attribute(name="priority", value=expected_priority, destinations=0b110))
+
+    test_settings = _override_settings.copy()
+    test_settings.update(
+        {
+            "distributed_tracing.sampler.remote_parent_sampled": remote_parent_sampled,
+            "distributed_tracing.sampler.remote_parent_not_sampled": remote_parent_not_sampled,
+            "span_events.enabled": True,
+        }
+    )
+    if expected_adaptive_sampling_algo_called:
+        function_called_decorator = validate_function_called(
+            "newrelic.api.transaction", "Transaction.sampling_algo_compute_sampled_and_priority"
+        )
+    else:
+        function_called_decorator = validate_function_not_called(
+            "newrelic.api.transaction", "Transaction.sampling_algo_compute_sampled_and_priority"
+        )
+
+    @function_called_decorator
+    @override_application_settings(test_settings)
+    @validate_attributes_complete("intrinsic", required_intrinsics)
+    @background_task(name="test_distributed_trace_attributes")
+    def _test():
+        txn = current_transaction()
+
+        headers = {
+            "traceparent": f"00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-{int(sampled):02x}",
+            "tracestate": "rojo=f06a0ba902b7,congo=t61rcWkgMzE",
+        }
+        accept_distributed_trace_headers(headers)
+
+    _test()

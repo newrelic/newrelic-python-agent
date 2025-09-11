@@ -368,13 +368,13 @@ def decode_newrelic_header(encoded_header, encoding_key):
     return decoded_header
 
 
-def convert_to_cat_metadata_value(nr_headers):
-    if not nr_headers:
-        return None
+# def convert_to_cat_metadata_value(nr_headers):
+#     if not nr_headers:
+#         return None
 
-    payload = json_encode(nr_headers)
-    cat_linking_value = base64_encode(payload)
-    return cat_linking_value
+#     payload = json_encode(nr_headers)
+#     cat_linking_value = base64_encode(payload)
+#     return cat_linking_value
 
 
 class DistributedTracePayload(dict):

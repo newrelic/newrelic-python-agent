@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from conftest import ES_SETTINGS, IS_V8_OR_ABOVE
+from conftest import ES_SETTINGS, IS_V8_OR_ABOVE, RUN_IF_V8_OR_ABOVE
 from elasticsearch._async import client
 from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import override_application_settings
@@ -20,6 +20,7 @@ from testing_support.validators.validate_transaction_errors import validate_tran
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
+from newrelic.api.transaction import current_transaction
 
 # Settings
 
@@ -193,5 +194,41 @@ def test_async_elasticsearch_operation_enabled(async_client, loop):
     loop.run_until_complete(_exercise_es(async_client))
 
 
+@validate_transaction_errors(errors=[])
+@validate_transaction_metrics(
+    "test_async_elasticsearch:test_async_elasticsearch_operation_enabled_empty_transaction_settings",
+    scoped_metrics=_enable_scoped_metrics,
+    rollup_metrics=_enable_rollup_metrics,
+    background_task=True,
+)
+@override_application_settings(_enable_instance_settings)
+@background_task()
+def test_async_elasticsearch_operation_enabled_empty_transaction_settings(async_client, loop):
+    transaction = current_transaction()
+    settings = transaction._settings
+    transaction._settings = None
+
+    loop.run_until_complete(_exercise_es(async_client))
+
+    transaction._settings = settings
+
+
 def test_async_elasticsearch_no_transaction(async_client, loop):
     loop.run_until_complete(_exercise_es(async_client))
+
+
+@RUN_IF_V8_OR_ABOVE
+@background_task()
+def test_async_elasticsearch_options_no_crash(async_client, loop):
+    """Test that the options method on the async client doesn't cause a crash when run with the agent"""
+
+    async def _test():
+        client_with_auth = async_client.options(basic_auth=("username", "password"))
+        assert client_with_auth is not None
+        assert client_with_auth != async_client
+
+        # If options was instrumented, this would cause a crash since the first call would return an unexpected coroutine
+        client_chained = async_client.options(basic_auth=("user", "pass")).options(request_timeout=60)
+        assert client_chained is not None
+
+    loop.run_until_complete(_test())

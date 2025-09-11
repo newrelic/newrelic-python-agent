@@ -41,7 +41,7 @@ _ExternalNode = namedtuple(
 
 class ExternalNode(_ExternalNode, GenericNodeMixin):
     # cross_process_id = None
-    external_txn_name = None
+    # external_txn_name = None
 
     @property
     def details(self):
@@ -107,15 +107,15 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
 
         netloc = self.netloc
 
-        try:
-            # Remove cross_process_id from the params dict otherwise it shows
-            # up in the UI.
+        # try:
+        #     # Remove cross_process_id from the params dict otherwise it shows
+        #     # up in the UI.
 
-            # self.cross_process_id = self.params.pop("cross_process_id")
-            self.external_txn_name = self.params.pop("external_txn_name")
-        except KeyError:
-            # self.cross_process_id = None
-            self.external_txn_name = None
+        #     self.cross_process_id = self.params.pop("cross_process_id")
+        #     self.external_txn_name = self.params.pop("external_txn_name")
+        # except KeyError:
+        #     self.cross_process_id = None
+        #     self.external_txn_name = None
 
         name = f"External/{netloc}/all"
 

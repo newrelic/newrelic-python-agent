@@ -16,7 +16,7 @@ import http.client as httplib
 
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.transaction import current_transaction
-from newrelic.common.encoding_utils import json_encode, obfuscate
+# from newrelic.common.encoding_utils import json_encode, obfuscate
 from newrelic.common.object_wrapper import transient_function_wrapper
 
 

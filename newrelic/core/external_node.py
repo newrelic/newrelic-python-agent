@@ -40,7 +40,7 @@ _ExternalNode = namedtuple(
 
 
 class ExternalNode(_ExternalNode, GenericNodeMixin):
-    cross_process_id = None
+    # cross_process_id = None
     external_txn_name = None
 
     @property
@@ -111,45 +111,45 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
             # Remove cross_process_id from the params dict otherwise it shows
             # up in the UI.
 
-            self.cross_process_id = self.params.pop("cross_process_id")
+            # self.cross_process_id = self.params.pop("cross_process_id")
             self.external_txn_name = self.params.pop("external_txn_name")
         except KeyError:
-            self.cross_process_id = None
+            # self.cross_process_id = None
             self.external_txn_name = None
 
         name = f"External/{netloc}/all"
 
         yield TimeMetric(name=name, scope="", duration=self.duration, exclusive=self.exclusive)
 
-        if self.cross_process_id is None:
-            method = self.method or ""
+        # if self.cross_process_id is None:
+        method = self.method or ""
 
-            name = f"External/{netloc}/{self.library}/{method}"
+        name = f"External/{netloc}/{self.library}/{method}"
 
-            yield TimeMetric(name=name, scope="", duration=self.duration, exclusive=self.exclusive)
+        yield TimeMetric(name=name, scope="", duration=self.duration, exclusive=self.exclusive)
 
-            yield TimeMetric(name=name, scope=root.path, duration=self.duration, exclusive=self.exclusive)
+        yield TimeMetric(name=name, scope=root.path, duration=self.duration, exclusive=self.exclusive)
 
-        else:
-            name = f"ExternalTransaction/{netloc}/{self.cross_process_id}/{self.external_txn_name}"
+        # else:
+        #     name = f"ExternalTransaction/{netloc}/{self.cross_process_id}/{self.external_txn_name}"
 
-            yield TimeMetric(name=name, scope="", duration=self.duration, exclusive=self.exclusive)
+        #     yield TimeMetric(name=name, scope="", duration=self.duration, exclusive=self.exclusive)
 
-            yield TimeMetric(name=name, scope=root.path, duration=self.duration, exclusive=self.exclusive)
+        #     yield TimeMetric(name=name, scope=root.path, duration=self.duration, exclusive=self.exclusive)
 
-            name = f"ExternalApp/{netloc}/{self.cross_process_id}/all"
+        #     name = f"ExternalApp/{netloc}/{self.cross_process_id}/all"
 
-            yield TimeMetric(name=name, scope="", duration=self.duration, exclusive=self.exclusive)
+        #     yield TimeMetric(name=name, scope="", duration=self.duration, exclusive=self.exclusive)
 
     def trace_node(self, stats, root, connections):
         netloc = self.netloc
 
         method = self.method or ""
 
-        if self.cross_process_id is None:
-            name = f"External/{netloc}/{self.library}/{method}"
-        else:
-            name = f"ExternalTransaction/{netloc}/{self.cross_process_id}/{self.external_txn_name}"
+        # if self.cross_process_id is None:
+        name = f"External/{netloc}/{self.library}/{method}"
+        # else:
+        #     name = f"ExternalTransaction/{netloc}/{self.cross_process_id}/{self.external_txn_name}"
 
         name = root.string_table.cache(name)
 

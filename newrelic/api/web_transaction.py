@@ -321,8 +321,10 @@ class WebTransaction(Transaction):
         except Exception:
             pass
 
-        if self.client_cross_process_id is None:
-            return []
+        return []
+    
+        # if self.client_cross_process_id is None:
+        #     return []
 
         # # Generate CAT response headers
         # try:

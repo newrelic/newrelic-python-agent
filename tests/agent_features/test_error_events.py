@@ -19,7 +19,7 @@ import webtest
 from testing_support.fixtures import (
     # cat_enabled,
     # make_cross_agent_headers,
-    # make_synthetics_headers,
+    make_synthetics_headers,
     override_application_settings,
     reset_core_stats_engine,
     validate_error_event_sample_data,
@@ -29,17 +29,17 @@ from testing_support.validators.validate_non_transaction_error_event import vali
 from testing_support.validators.validate_transaction_error_event_count import validate_transaction_error_event_count
 
 from newrelic.api.application import application_instance as application
-# from newrelic.api.application import application_settings
+from newrelic.api.application import application_settings
 from newrelic.api.time_trace import notice_error
 from newrelic.common.object_names import callable_name
 
 # Error in test app hard-coded as a ValueError
-# SYNTHETICS_RESOURCE_ID = "09845779-16ef-4fa7-b7f2-44da8e62931c"
-# SYNTHETICS_JOB_ID = "8c7dd3ba-4933-4cbb-b1ed-b62f511782f4"
-# SYNTHETICS_MONITOR_ID = "dc452ae9-1a93-4ab5-8a33-600521e9cd00"
-# SYNTHETICS_TYPE = "scheduled"
-# SYNTHETICS_INITIATOR = "graphql"
-# SYNTHETICS_ATTRIBUTES = {"exampleAttribute": "1"}
+SYNTHETICS_RESOURCE_ID = "09845779-16ef-4fa7-b7f2-44da8e62931c"
+SYNTHETICS_JOB_ID = "8c7dd3ba-4933-4cbb-b1ed-b62f511782f4"
+SYNTHETICS_MONITOR_ID = "dc452ae9-1a93-4ab5-8a33-600521e9cd00"
+SYNTHETICS_TYPE = "scheduled"
+SYNTHETICS_INITIATOR = "graphql"
+SYNTHETICS_ATTRIBUTES = {"exampleAttribute": "1"}
 
 ERR_MESSAGE = "Transaction had bad value"
 ERROR = ValueError(ERR_MESSAGE)
@@ -119,35 +119,35 @@ def test_transaction_error_dt_headers():
     response = fully_featured_application.get("/", extra_environ=test_environ)
 
 
-# _intrinsic_attributes = {
-#     "error.class": callable_name(ERROR),
-#     "error.message": ERR_MESSAGE,
-#     "error.expected": False,
-#     "transactionName": "WebTransaction/Uri/",
-#     "nr.syntheticsResourceId": SYNTHETICS_RESOURCE_ID,
-#     "nr.syntheticsJobId": SYNTHETICS_JOB_ID,
-#     "nr.syntheticsMonitorId": SYNTHETICS_MONITOR_ID,
-#     "nr.syntheticsType": SYNTHETICS_TYPE,
-#     "nr.syntheticsInitiator": SYNTHETICS_INITIATOR,
-#     "nr.syntheticsExampleAttribute": "1",
-# }
+_intrinsic_attributes = {
+    "error.class": callable_name(ERROR),
+    "error.message": ERR_MESSAGE,
+    "error.expected": False,
+    "transactionName": "WebTransaction/Uri/",
+    "nr.syntheticsResourceId": SYNTHETICS_RESOURCE_ID,
+    "nr.syntheticsJobId": SYNTHETICS_JOB_ID,
+    "nr.syntheticsMonitorId": SYNTHETICS_MONITOR_ID,
+    "nr.syntheticsType": SYNTHETICS_TYPE,
+    "nr.syntheticsInitiator": SYNTHETICS_INITIATOR,
+    "nr.syntheticsExampleAttribute": "1",
+}
 
 
-# @validate_error_event_sample_data(required_attrs=_intrinsic_attributes, required_user_attrs=True)
-# def test_transaction_error_with_synthetics():
-#     test_environ = {"err_message": ERR_MESSAGE}
-#     settings = application_settings()
-#     headers = make_synthetics_headers(
-#         settings.encoding_key,
-#         settings.trusted_account_ids[0],
-#         SYNTHETICS_RESOURCE_ID,
-#         SYNTHETICS_JOB_ID,
-#         SYNTHETICS_MONITOR_ID,
-#         SYNTHETICS_TYPE,
-#         SYNTHETICS_INITIATOR,
-#         SYNTHETICS_ATTRIBUTES,
-#     )
-#     response = fully_featured_application.get("/", headers=headers, extra_environ=test_environ)
+@validate_error_event_sample_data(required_attrs=_intrinsic_attributes, required_user_attrs=True)
+def test_transaction_error_with_synthetics():
+    test_environ = {"err_message": ERR_MESSAGE}
+    settings = application_settings()
+    headers = make_synthetics_headers(
+        settings.encoding_key,
+        settings.trusted_account_ids[0],
+        SYNTHETICS_RESOURCE_ID,
+        SYNTHETICS_JOB_ID,
+        SYNTHETICS_MONITOR_ID,
+        SYNTHETICS_TYPE,
+        SYNTHETICS_INITIATOR,
+        SYNTHETICS_ATTRIBUTES,
+    )
+    response = fully_featured_application.get("/", headers=headers, extra_environ=test_environ)
 
 
 _intrinsic_attributes = {

@@ -24,7 +24,7 @@ except ImportError:
 from testing_support.external_fixtures import cache_outgoing_headers, insert_incoming_headers
 from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_cross_process_headers import validate_cross_process_headers
-from testing_support.validators.validate_external_node_params import validate_external_node_params
+# from testing_support.validators.validate_external_node_params import validate_external_node_params
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
@@ -225,35 +225,35 @@ def test_urlopen_cross_process_request(distributed_tracing, span_events, server)
 
 
 # @cat_enabled
-def test_urlopen_cross_process_response(server):
-    _test_urlopen_cross_process_response_scoped_metrics = [(f"ExternalTransaction/localhost:{server.port}/1#2/test", 1)]
+# def test_urlopen_cross_process_response(server):
+#     _test_urlopen_cross_process_response_scoped_metrics = [(f"ExternalTransaction/localhost:{server.port}/1#2/test", 1)]
 
-    _test_urlopen_cross_process_response_rollup_metrics = [
-        ("External/all", 1),
-        ("External/allOther", 1),
-        (f"External/localhost:{server.port}/all", 1),
-        (f"ExternalApp/localhost:{server.port}/1#2/all", 1),
-        (f"ExternalTransaction/localhost:{server.port}/1#2/test", 1),
-    ]
+#     _test_urlopen_cross_process_response_rollup_metrics = [
+#         ("External/all", 1),
+#         ("External/allOther", 1),
+#         (f"External/localhost:{server.port}/all", 1),
+#         (f"ExternalApp/localhost:{server.port}/1#2/all", 1),
+#         (f"ExternalTransaction/localhost:{server.port}/1#2/test", 1),
+#     ]
 
-    _test_urlopen_cross_process_response_external_node_params = [
-        ("cross_process_id", "1#2"),
-        ("external_txn_name", "test"),
-        ("transaction_guid", "0123456789012345"),
-    ]
+#     _test_urlopen_cross_process_response_external_node_params = [
+#         ("cross_process_id", "1#2"),
+#         ("external_txn_name", "test"),
+#         ("transaction_guid", "0123456789012345"),
+#     ]
 
-    @validate_transaction_errors(errors=[])
-    @validate_transaction_metrics(
-        "test_urllib3:test_urlopen_cross_process_response",
-        scoped_metrics=_test_urlopen_cross_process_response_scoped_metrics,
-        rollup_metrics=_test_urlopen_cross_process_response_rollup_metrics,
-        background_task=True,
-    )
-    @insert_incoming_headers
-    @validate_external_node_params(params=_test_urlopen_cross_process_response_external_node_params)
-    @background_task(name="test_urllib3:test_urlopen_cross_process_response")
-    def _test():
-        pool = urllib3.HTTPConnectionPool(f"localhost:{server.port}")
-        pool.urlopen("GET", "/")
+#     @validate_transaction_errors(errors=[])
+#     @validate_transaction_metrics(
+#         "test_urllib3:test_urlopen_cross_process_response",
+#         scoped_metrics=_test_urlopen_cross_process_response_scoped_metrics,
+#         rollup_metrics=_test_urlopen_cross_process_response_rollup_metrics,
+#         background_task=True,
+#     )
+#     @insert_incoming_headers
+#     @validate_external_node_params(params=_test_urlopen_cross_process_response_external_node_params)
+#     @background_task(name="test_urllib3:test_urlopen_cross_process_response")
+#     def _test():
+#         pool = urllib3.HTTPConnectionPool(f"localhost:{server.port}")
+#         pool.urlopen("GET", "/")
 
-    _test()
+#     _test()

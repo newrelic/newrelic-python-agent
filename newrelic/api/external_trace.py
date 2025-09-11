@@ -38,7 +38,7 @@ class ExternalTrace(CatHeaderMixin, TimeTrace):
     def __repr__(self):
         return f"<{self.__class__.__name__} object at 0x{id(self):x} { {'library': self.library, 'url': self.url, 'method': self.method} }>"
 
-    def process_response(self, status_code, headers):
+    def process_response(self, status_code, headers=None):
         self._add_agent_attribute("http.statusCode", status_code)
         # self.process_response_headers(headers)
 

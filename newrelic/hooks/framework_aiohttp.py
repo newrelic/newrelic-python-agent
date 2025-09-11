@@ -15,6 +15,7 @@
 import inspect
 import itertools
 
+from newrelic.api.time_trace import notice_error
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.function_trace import function_trace
 from newrelic.api.transaction import current_transaction, ignore_transaction
@@ -279,16 +280,14 @@ def _nr_aiohttp_request_wrapper_(wrapped, instance, args, kwargs):
             response = await wrapped(*args, **kwargs)
 
             try:
-                trace.process_response_headers(response.headers.items())
+                # trace.process_response_headers(response.headers.items())
+                trace.process_response(status_code=response.status)
             except:
                 pass
 
             return response
-        except Exception as e:
-            try:
-                trace.process_response_headers(e.headers.items())
-            except:
-                pass
+        except Exception:
+            notice_error()
 
             raise
 

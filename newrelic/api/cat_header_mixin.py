@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.common.encoding_utils import (
-    base64_decode,
-    base64_encode,
-    deobfuscate,
-    json_decode,
-    json_encode,
-    obfuscate,
-)
+# from newrelic.common.encoding_utils import (
+#     base64_decode,
+#     base64_encode,
+#     deobfuscate,
+#     json_decode,
+#     json_encode,
+#     obfuscate,
+# )
 
 
 # CatHeaderMixin assumes the mixin class also inherits from TimeTrace
@@ -113,17 +113,17 @@ class CatHeaderMixin:
 
         return nr_headers
 
-    @staticmethod
-    def _convert_to_cat_metadata_value(nr_headers):
-        payload = json_encode(nr_headers)
-        cat_linking_value = base64_encode(payload)
-        return cat_linking_value
+    # @staticmethod
+    # def _convert_to_cat_metadata_value(nr_headers):
+    #     payload = json_encode(nr_headers)
+    #     cat_linking_value = base64_encode(payload)
+    #     return cat_linking_value
 
-    @classmethod
-    def get_request_metadata(cls, transaction):
-        nr_headers = dict(cls.generate_request_headers(transaction))
+    # @classmethod
+    # def get_request_metadata(cls, transaction):
+    #     nr_headers = dict(cls.generate_request_headers(transaction))
 
-        if not nr_headers:
-            return None
+    #     if not nr_headers:
+    #         return None
 
-        return cls._convert_to_cat_metadata_value(nr_headers)
+    #     return cls._convert_to_cat_metadata_value(nr_headers)

@@ -150,8 +150,8 @@ def _nr_wrapper_basic_publish(wrapped, instance, args, kwargs):
         params=params,
         source=wrapped,
     ) as trace:
-        cat_headers = MessageTrace.generate_request_headers(transaction)
-        properties.headers.update(cat_headers)
+        headers = MessageTrace.generate_request_headers(transaction)
+        properties.headers.update(headers)
 
         # Extract host from channel to add as an agent attribute
         host = instance_info(instance)

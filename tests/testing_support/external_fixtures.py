@@ -20,30 +20,30 @@ from newrelic.common.encoding_utils import json_encode, obfuscate
 from newrelic.common.object_wrapper import transient_function_wrapper
 
 
-def create_incoming_headers(transaction):
-    settings = transaction.settings
-    encoding_key = settings.encoding_key
+# def create_incoming_headers(transaction):
+#     settings = transaction.settings
+#     encoding_key = settings.encoding_key
 
-    headers = []
+#     headers = []
 
-    cross_process_id = "1#2"
-    path = "test"
-    queue_time = 1.0
-    duration = 2.0
-    read_length = 1024
-    guid = "0123456789012345"
-    record_tt = False
+#     cross_process_id = "1#2"
+#     path = "test"
+#     queue_time = 1.0
+#     duration = 2.0
+#     read_length = 1024
+#     guid = "0123456789012345"
+#     record_tt = False
 
-    payload = (cross_process_id, path, queue_time, duration, read_length, guid, record_tt)
-    app_data = json_encode(payload)
+#     payload = (cross_process_id, path, queue_time, duration, read_length, guid, record_tt)
+#     app_data = json_encode(payload)
 
-    value = obfuscate(app_data, encoding_key)
+#     value = obfuscate(app_data, encoding_key)
 
-    assert isinstance(value, str)
+#     assert isinstance(value, str)
 
-    headers.append(("X-NewRelic-App-Data", value))
+#     headers.append(("X-NewRelic-App-Data", value))
 
-    return headers
+#     return headers
 
 
 def validate_synthetics_external_trace_header(synthetics_header, synthetics_info_header):

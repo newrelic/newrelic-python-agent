@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import http.client as httplib
+import json
+import base64
 
 import pytest
 from testing_support.external_fixtures import cache_outgoing_headers #, insert_incoming_headers
@@ -239,7 +241,7 @@ def test_httplib_multiple_requests_unique_distributed_tracing_id(server):
 
 def test_httplib_nr_headers_added(server):
     connection = httplib.HTTPConnection("localhost", server.port)
-    key = "newrelic"
+    key = "header_key"
     value = "testval"
     headers = []
 
@@ -256,7 +258,6 @@ def test_httplib_nr_headers_added(server):
     )(test_transaction)
     test_transaction()
     connection.close()
-    # verify newrelic headers already added do not get overrode
     assert headers[0][key] == value
 
 

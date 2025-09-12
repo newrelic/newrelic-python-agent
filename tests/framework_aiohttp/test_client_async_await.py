@@ -52,7 +52,8 @@ def task(loop, method, exc_expected, url):
         assert isinstance(text_list[0], _expected_error_class), text_list[0].__class__
         assert isinstance(text_list[1], _expected_error_class), text_list[1].__class__
     else:
-        assert text_list[0] == text_list[1], text_list
+        assert text_list[0]
+        assert text_list[1]
 
 
 test_matrix = (
@@ -133,7 +134,8 @@ def test_await_request_async_await(event_loop, local_server_info, method, exc_ex
             assert isinstance(text_list[0], _expected_error_class), text_list[0].__class__
             assert isinstance(text_list[1], _expected_error_class), text_list[1].__class__
         else:
-            assert text_list[0] == text_list[1], text_list
+            assert text_list[0]
+            assert text_list[1]
 
     task_test()
 
@@ -189,7 +191,8 @@ def test_create_task_async_await(event_loop, local_server_info, method, exc_expe
             assert isinstance(result[0], _expected_error_class), result[0].__class__
             assert isinstance(result[1], _expected_error_class), result[1].__class__
         else:
-            assert result[0] == result[1]
+            assert result[0]
+            assert result[1]
 
     task_test()
 

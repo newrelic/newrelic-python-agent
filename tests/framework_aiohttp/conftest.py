@@ -115,7 +115,7 @@ def mock_header_server():
 def mock_external_http_server():
     response_values = []
 
-    def respond_with_cat_header(self):
+    def respond_with_dt_header(self):
         headers, response_code = response_values.pop()
         self.send_response(response_code)
         for header, value in headers:
@@ -124,7 +124,8 @@ def mock_external_http_server():
         self.wfile.write(b"")
 
     # with MockExternalHTTPServer(handler=respond_with_cat_header) as server:
-    with MockExternalHTTPServer() as server:
+    # with MockExternalHTTPServer() as server:
+    with MockExternalHTTPServer(handler=respond_with_dt_header) as server: 
         yield (server, response_values)
 
 

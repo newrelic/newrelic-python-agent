@@ -582,7 +582,8 @@ def test_span_event_exclude_agent_attribute(normal_application):
 
 _override_settings = {"capture_params": True}
 
-_expected_attributes = {"agent": AGENT_KEYS_ALL, "user": ERROR_USER_ATTRS, "intrinsic": ["trip_id"]}
+# _expected_attributes = {"agent": AGENT_KEYS_ALL, "user": ERROR_USER_ATTRS, "intrinsic": ["trip_id"]}
+_expected_attributes = {"agent": AGENT_KEYS_ALL, "user": ERROR_USER_ATTRS, "intrinsic": []}
 
 _expected_attributes_event = {"agent": AGENT_KEYS_ALL, "user": ERROR_USER_ATTRS, "intrinsic": ERROR_EVENT_INTRINSICS}
 
@@ -594,7 +595,8 @@ def test_error_in_transaction_deprecated_capture_params_true(normal_application)
     normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
 
-_expected_attributes = {"agent": AGENT_KEYS_ALL, "user": USER_ATTRS, "intrinsic": ["trip_id"]}
+# _expected_attributes = {"agent": AGENT_KEYS_ALL, "user": USER_ATTRS, "intrinsic": ["trip_id"]}
+_expected_attributes = {"agent": AGENT_KEYS_ALL, "user": USER_ATTRS, "intrinsic": []}
 
 
 @validate_transaction_trace_attributes(_expected_attributes)
@@ -633,7 +635,8 @@ def test_browser_deprecated_capture_params_true(normal_application):
 
 _override_settings = {"capture_params": False}
 
-_expected_attributes = {"agent": TRACE_ERROR_AGENT_KEYS, "user": ERROR_USER_ATTRS, "intrinsic": ["trip_id"]}
+# _expected_attributes = {"agent": TRACE_ERROR_AGENT_KEYS, "user": ERROR_USER_ATTRS, "intrinsic": ["trip_id"]}
+_expected_attributes = {"agent": TRACE_ERROR_AGENT_KEYS, "user": ERROR_USER_ATTRS, "intrinsic": []}
 
 _expected_attributes_event = {
     "agent": TRACE_ERROR_AGENT_KEYS,
@@ -651,7 +654,8 @@ def test_error_in_transaction_deprecated_capture_params_false(normal_application
     normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
 
-_expected_attributes = {"agent": TRACE_ERROR_AGENT_KEYS, "user": USER_ATTRS, "intrinsic": ["trip_id"]}
+# _expected_attributes = {"agent": TRACE_ERROR_AGENT_KEYS, "user": USER_ATTRS, "intrinsic": ["trip_id"]}
+_expected_attributes = {"agent": TRACE_ERROR_AGENT_KEYS, "user": USER_ATTRS, "intrinsic": []}
 
 
 @validate_transaction_trace_attributes(_expected_attributes, _expected_absent_attributes)

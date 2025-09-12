@@ -253,7 +253,7 @@ def create_client_wrapper(wrapped, trace):
                 raise
             finally:
                 if response:
-                    trace.process_response(response.status_code)
+                    trace.process_response(response.code)
             #         trace.process_response_headers(response.headers.get_all())
             return response
 
@@ -270,7 +270,7 @@ def wrap_httpclient_fetch(wrapped, instance, args, kwargs):
 
     outgoing_headers = trace.generate_request_headers(current_transaction())
     for header_name, header_value in outgoing_headers:
-        # User headers should override our CAT headers
+        # User headers should override our headers
         if header_name in req.headers:
             continue
         req.headers[header_name] = header_value

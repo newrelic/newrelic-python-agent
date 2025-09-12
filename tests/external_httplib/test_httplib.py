@@ -12,14 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import base64
 import http.client as httplib
 import json
-import base64
 
 import pytest
-from testing_support.external_fixtures import cache_outgoing_headers #, insert_incoming_headers
+from testing_support.external_fixtures import cache_outgoing_headers  # , insert_incoming_headers
 from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_cross_process_headers import validate_cross_process_headers
+
 # from testing_support.validators.validate_external_node_params import validate_external_node_params
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics

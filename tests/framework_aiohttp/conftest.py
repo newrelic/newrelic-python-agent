@@ -125,7 +125,7 @@ def mock_external_http_server():
 
     # with MockExternalHTTPServer(handler=respond_with_cat_header) as server:
     # with MockExternalHTTPServer() as server:
-    with MockExternalHTTPServer(handler=respond_with_dt_header) as server: 
+    with MockExternalHTTPServer(handler=respond_with_dt_header) as server:
         yield (server, response_values)
 
 

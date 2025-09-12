@@ -338,7 +338,7 @@ class WebTransaction(Transaction):
             pass
 
         return []
-    
+
         # if self.client_cross_process_id is None:
         #     return []
 

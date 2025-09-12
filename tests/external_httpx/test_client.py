@@ -55,11 +55,12 @@ DT_RESPONSE_CODE = None
 #     self.end_headers()
 #     self.wfile.write(b"Example Data")
 
+
 def dt_response_handler(self):
     if not DT_RESPONSE_CODE:
         raise ValueError("DT_RESPONSE_CODE must be a valid status_code.")
-    
-    response = str(self.headers).encode("utf-8")    # Might need to put headers here
+
+    response = str(self.headers).encode("utf-8")  # Might need to put headers here
     self.send_response(DT_RESPONSE_CODE)
     self.end_headers()
     self.wfile.write(response)
@@ -178,7 +179,7 @@ def test_async_cross_process_request(httpx, async_client, mock_server, loop, dis
 
 
 @override_application_settings(
-    {"distributed_tracing.enabled": True, "span_events.enabled": True} #, "cross_application_tracer.enabled": True}
+    {"distributed_tracing.enabled": True, "span_events.enabled": True}  # , "cross_application_tracer.enabled": True}
 )
 @validate_transaction_errors(errors=[])
 @background_task(name="test_sync_cross_process_override_headers")

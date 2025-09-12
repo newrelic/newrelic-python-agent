@@ -33,14 +33,8 @@ from newrelic.common.encoding_utils import (
     NrTraceState,
     W3CTraceParent,
     W3CTraceState,
-    base64_decode,
-    # convert_to_cat_metadata_value,
-    deobfuscate,
     ensure_str,
     # generate_path_hash,
-    json_decode,
-    json_encode,
-    obfuscate,
     snake_case,
 )
 from newrelic.core.attribute import (
@@ -1347,7 +1341,7 @@ class Transaction:
     #     if not self.enabled:
     #         return
 
-        # If CAT is disabled, function will exit early.
+    # If CAT is disabled, function will exit early.
     #     if not (
     #         settings.cross_application_tracer.enabled
     #         and settings.cross_process_id

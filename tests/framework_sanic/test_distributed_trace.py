@@ -30,6 +30,7 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
 from newrelic.api.application import application_instance
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.transaction import Transaction
+
 # from newrelic.common.encoding_utils import deobfuscate
 
 BASE_METRICS = [("Function/_target_application:index", 1)]

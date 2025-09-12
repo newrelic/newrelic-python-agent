@@ -16,7 +16,6 @@ import functools
 
 from newrelic.api.application import Application, application_instance
 from newrelic.api.background_task import BackgroundTask
-from newrelic.api.message_trace import MessageTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.async_proxy import TransactionContext, async_proxy
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object

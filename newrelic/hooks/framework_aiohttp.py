@@ -15,9 +15,9 @@
 import inspect
 import itertools
 
-from newrelic.api.time_trace import notice_error
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.function_trace import function_trace
+from newrelic.api.time_trace import notice_error
 from newrelic.api.transaction import current_transaction, ignore_transaction
 from newrelic.api.web_transaction import web_transaction
 from newrelic.common.async_wrapper import async_wrapper, is_coroutine_callable
@@ -380,8 +380,7 @@ def _nr_request_wrapper(wrapped, instance, args, kwargs):
 
 
 def instrument_aiohttp_web(module):
-    global _nr_process_response
-    # TODO: Verify that this is correct/not always True
+    # global _nr_process_response
     # if not headers_preserve_casing():
     #     _nr_process_response = _nr_process_response_proxy
 

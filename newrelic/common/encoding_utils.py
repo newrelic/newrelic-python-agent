@@ -19,7 +19,6 @@ of data.
 
 import base64
 import gzip
-import hashlib
 import io
 import itertools
 import json
@@ -245,7 +244,7 @@ def unpack_field(field):
 #     if not isinstance(name, bytes):
 #         name = name.encode("UTF-8")
 
-#     path_hash = rotated ^ int(hashlib.md5(name).hexdigest()[-8:], base=16)  # noqa: S324
+#     path_hash = rotated ^ int(hashlib.md5(name).hexdigest()[-8:], base=16)
 #     return f"{path_hash:08x}"
 
 

@@ -16,34 +16,7 @@ import http.client as httplib
 
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.transaction import current_transaction
-
-# from newrelic.common.encoding_utils import json_encode, obfuscate
 from newrelic.common.object_wrapper import transient_function_wrapper
-
-# def create_incoming_headers(transaction):
-#     settings = transaction.settings
-#     encoding_key = settings.encoding_key
-
-#     headers = []
-
-#     cross_process_id = "1#2"
-#     path = "test"
-#     queue_time = 1.0
-#     duration = 2.0
-#     read_length = 1024
-#     guid = "0123456789012345"
-#     record_tt = False
-
-#     payload = (cross_process_id, path, queue_time, duration, read_length, guid, record_tt)
-#     app_data = json_encode(payload)
-
-#     value = obfuscate(app_data, encoding_key)
-
-#     assert isinstance(value, str)
-
-#     headers.append(("X-NewRelic-App-Data", value))
-
-#     return headers
 
 
 def validate_synthetics_external_trace_header(synthetics_header, synthetics_info_header):
@@ -126,17 +99,3 @@ def cache_outgoing_headers(wrapped, instance, args, kwargs):
         cache[header] = list(values)
 
     return wrapped(*args, **kwargs)
-
-
-# @transient_function_wrapper(httplib.__name__, "HTTPResponse.getheaders")
-# def insert_incoming_headers(wrapped, instance, args, kwargs):
-#     transaction = current_transaction()
-
-#     if transaction is None:
-#         return wrapped(*args, **kwargs)
-
-#     headers = list(wrapped(*args, **kwargs))
-
-#     headers.extend(create_incoming_headers(transaction))
-
-#     return headers

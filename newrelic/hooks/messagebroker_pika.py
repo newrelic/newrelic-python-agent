@@ -62,8 +62,6 @@ def _add_consume_rabbitmq_trace(transaction, method, properties, nr_start_time, 
 
     # Do not record dt headers in the segment parameters
     if headers:
-        # headers.pop(MessageTrace.cat_id_key, None)
-        # headers.pop(MessageTrace.cat_transaction_key, None)
         headers.pop(MessageTrace.distributed_trace_key, None)
         headers.pop("traceparent", None)
         headers.pop("tracestate", None)
@@ -124,8 +122,6 @@ def _nr_wrapper_basic_publish(wrapped, instance, args, kwargs):
     user_headers = properties.headers.copy()
 
     # Do not record dt headers in the segment parameters
-    # user_headers.pop(MessageTrace.cat_id_key, None)
-    # user_headers.pop(MessageTrace.cat_transaction_key, None)
     user_headers.pop(MessageTrace.distributed_trace_key, None)
     user_headers.pop("traceparent", None)
     user_headers.pop("tracestate", None)

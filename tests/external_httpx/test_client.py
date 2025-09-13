@@ -21,39 +21,16 @@ from testing_support.validators.validate_cross_process_headers import validate_c
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from testing_support.validators.validate_tt_segment_params import validate_tt_segment_params
 
 from newrelic.api.background_task import background_task
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
 from newrelic.core.config import global_settings
 
-ENCODING_KEY = "1234567890123456789012345678901234567890"
 SCOPED_METRICS = []
 ROLLUP_METRICS = [("External/all", 2), ("External/allOther", 2)]
 
 DT_RESPONSE_CODE = None
-
-
-# def cat_response_handler(self):
-#     if not DT_RESPONSE_CODE:
-#         raise ValueError("DT_RESPONSE_CODE must be a valid status_code.")
-
-#     # payload
-#     # (
-#     #     u'1#1', u'WebTransaction/Function/app:beep',
-#     #     0, 1.23, -1,
-#     #     'dd4a810b7cb7f937',
-#     #     False,
-#     # )
-#     cat_response_header = (
-#         "X-NewRelic-App-Data",
-#         "ahACFwQUGxpuVVNmQVVbRVZbTVleXBxyQFhUTFBfXx1SREUMVV1cQBMeAxgEGAULFR0AHhFQUQJWAAgAUwVQVgJQDgsOEh1UUlhGU2o=",
-#     )
-#     self.send_response(DT_RESPONSE_CODE)
-#     self.send_header(*cat_response_header)
-#     self.end_headers()
-#     self.wfile.write(b"Example Data")
 
 
 def dt_response_handler(self):
@@ -68,7 +45,6 @@ def dt_response_handler(self):
 
 @pytest.fixture(scope="session")
 def mock_server():
-    # external = MockExternalHTTPHResponseHeadersServer(handler=cat_response_handler)
     external = MockExternalHTTPHResponseHeadersServer(handler=dt_response_handler)
     with external:
         yield external
@@ -132,11 +108,7 @@ def test_sync_cross_process_request(httpx, sync_client, mock_server, distributed
     DT_RESPONSE_CODE = 200
 
     @override_application_settings(
-        {
-            "distributed_tracing.enabled": distributed_tracing,
-            "span_events.enabled": span_events,
-            # "cross_application_tracer.enabled": not distributed_tracing,
-        }
+        {"distributed_tracing.enabled": distributed_tracing, "span_events.enabled": span_events}
     )
     @validate_transaction_errors(errors=[])
     @background_task(name="test_sync_cross_process_request")
@@ -215,87 +187,6 @@ def test_async_cross_process_override_headers(httpx, async_client, mock_server, 
 
     assert response.status_code == 200
     assert response.request.headers["newrelic"] == "1234"
-
-
-# @pytest.mark.parametrize("cat_enabled", [True, False])
-# @pytest.mark.parametrize("response_code", [200, 500])
-# def test_sync_client_cat_response_processing(cat_enabled, response_code, sync_client, mock_server, httpx):
-#     global CAT_RESPONSE_CODE
-#     CAT_RESPONSE_CODE = response_code
-
-#     _custom_settings = {
-#         "cross_process_id": "1#1",
-#         "encoding_key": ENCODING_KEY,
-#         "trusted_account_ids": [1],
-#         "cross_application_tracer.enabled": cat_enabled,
-#         "distributed_tracing.enabled": False,
-#         "transaction_tracer.transaction_threshold": 0.0,
-#     }
-
-#     expected_metrics = [
-#         (
-#             f"ExternalTransaction/localhost:{mock_server.port}/1#1/WebTransaction/Function/app:beep",
-#             1 if cat_enabled else None,
-#         )
-#     ]
-
-#     @validate_transaction_metrics(
-#         "test_sync_client_cat_response_processing",
-#         background_task=True,
-#         rollup_metrics=expected_metrics,
-#         scoped_metrics=expected_metrics,
-#     )
-#     @validate_tt_segment_params(exact_params={"http.statusCode": response_code})
-#     @override_application_settings(_custom_settings)
-#     @background_task(name="test_sync_client_cat_response_processing")
-#     def _test():
-#         with sync_client:
-#             response = sync_client.get(f"http://localhost:{mock_server.port}")
-
-#     _test()
-
-
-# @pytest.mark.parametrize("cat_enabled", [True, False])
-# @pytest.mark.parametrize("response_code", [200, 500])
-# def test_async_client_cat_response_processing(cat_enabled, response_code, httpx, async_client, mock_server, loop):
-#     global CAT_RESPONSE_CODE
-#     CAT_RESPONSE_CODE = response_code
-
-#     _custom_settings = {
-#         "cross_process_id": "1#1",
-#         "encoding_key": ENCODING_KEY,
-#         "trusted_account_ids": [1],
-#         "cross_application_tracer.enabled": cat_enabled,
-#         "distributed_tracing.enabled": False,
-#         "transaction_tracer.transaction_threshold": 0.0,
-#     }
-
-#     expected_metrics = [
-#         (
-#             f"ExternalTransaction/localhost:{mock_server.port}/1#1/WebTransaction/Function/app:beep",
-#             1 if cat_enabled else None,
-#         )
-#     ]
-
-#     @validate_transaction_metrics(
-#         "test_async_client_cat_response_processing",
-#         background_task=True,
-#         rollup_metrics=expected_metrics,
-#         scoped_metrics=expected_metrics,
-#     )
-#     @validate_tt_segment_params(exact_params={"http.statusCode": response_code})
-#     @override_application_settings(_custom_settings)
-#     @background_task(name="test_async_client_cat_response_processing")
-#     def _test():
-#         async def coro():
-#             async with async_client:
-#                 response = await async_client.get(f"http://localhost:{mock_server.port}")
-
-#             return response
-
-#         response = loop.run_until_complete(coro())
-
-#     _test()
 
 
 @dt_enabled

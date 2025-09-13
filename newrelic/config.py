@@ -701,15 +701,6 @@ def translate_deprecated_settings(settings, cached_settings):
             "attributes.exclude."
         )
 
-    # if "cross_application_tracer.enabled" in cached:
-    #     # CAT Deprecation Warning
-    #     _logger.info(
-    #         "Deprecated setting found: cross_application_tracer.enabled. Please replace Cross Application Tracing "
-    #         "(CAT) with the newer Distributed Tracing by setting 'distributed_tracing.enabled' to True in your agent "
-    #         "configuration. For further details on distributed tracing, please refer to our documentation: "
-    #         "https://docs.newrelic.com/docs/distributed-tracing/concepts/distributed-tracing-planning-guide/#changes."
-    #     )
-
     return settings
 
 

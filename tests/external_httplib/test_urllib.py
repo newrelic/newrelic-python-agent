@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-
 import pytest
 
 try:
@@ -21,12 +19,8 @@ try:
 except:
     import urllib
 
-from testing_support.external_fixtures import cache_outgoing_headers  # , insert_incoming_headers
-
-# from testing_support.fixtures import cat_enabled
+from testing_support.external_fixtures import cache_outgoing_headers
 from testing_support.validators.validate_cross_process_headers import validate_cross_process_headers
-
-# from testing_support.validators.validate_external_node_params import validate_external_node_params
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
@@ -133,42 +127,6 @@ def test_urlopener_cross_process_request(server):
     opener.open(f"http://localhost:{server.port}/")
 
 
-# # @cat_enabled
-# def test_urlopener_cross_process_response(server):
-#     _test_urlopener_cross_process_response_scoped_metrics = [
-#         (f"ExternalTransaction/localhost:{server.port}/1#2/test", 1)
-#     ]
-
-#     _test_urlopener_cross_process_response_rollup_metrics = [
-#         ("External/all", 1),
-#         ("External/allOther", 1),
-#         (f"External/localhost:{server.port}/all", 1),
-#         (f"ExternalApp/localhost:{server.port}/1#2/all", 1),
-#         (f"ExternalTransaction/localhost:{server.port}/1#2/test", 1),
-#     ]
-
-#     _test_urlopener_cross_process_response_external_node_params = [
-#         ("cross_process_id", "1#2"),
-#         ("external_txn_name", "test"),
-#         ("transaction_guid", "0123456789012345"),
-#     ]
-
-#     @validate_transaction_metrics(
-#         "test_urllib:test_urlopener_cross_process_response",
-#         scoped_metrics=_test_urlopener_cross_process_response_scoped_metrics,
-#         rollup_metrics=_test_urlopener_cross_process_response_rollup_metrics,
-#         background_task=True,
-#     )
-#     @insert_incoming_headers
-#     @validate_external_node_params(params=_test_urlopener_cross_process_response_external_node_params)
-#     @background_task(name="test_urllib:test_urlopener_cross_process_response")
-#     def _test():
-#         opener = urllib.URLopener()
-#         opener.open(f"http://localhost:{server.port}/")
-
-#     _test()
-
-
 def test_urlretrieve_http_request(server, metrics):
     @validate_transaction_metrics(
         "test_urllib:test_urlretrieve_http_request",
@@ -205,38 +163,3 @@ def test_urlretrieve_https_request(server, metrics):
 @validate_cross_process_headers
 def test_urlretrieve_cross_process_request(server):
     urllib.urlretrieve(f"http://localhost:{server.port}/")
-
-
-# @cat_enabled
-# def test_urlretrieve_cross_process_response(server):
-#     _test_urlretrieve_cross_process_response_scoped_metrics = [
-#         (f"ExternalTransaction/localhost:{server.port}/1#2/test", 1)
-#     ]
-
-#     _test_urlretrieve_cross_process_response_rollup_metrics = [
-#         ("External/all", 1),
-#         ("External/allOther", 1),
-#         (f"External/localhost:{server.port}/all", 1),
-#         (f"ExternalApp/localhost:{server.port}/1#2/all", 1),
-#         (f"ExternalTransaction/localhost:{server.port}/1#2/test", 1),
-#     ]
-
-#     _test_urlretrieve_cross_process_response_external_node_params = [
-#         ("cross_process_id", "1#2"),
-#         ("external_txn_name", "test"),
-#         ("transaction_guid", "0123456789012345"),
-#     ]
-
-#     @validate_transaction_metrics(
-#         "test_urllib:test_urlretrieve_cross_process_response",
-#         scoped_metrics=_test_urlretrieve_cross_process_response_scoped_metrics,
-#         rollup_metrics=_test_urlretrieve_cross_process_response_rollup_metrics,
-#         background_task=True,
-#     )
-#     @insert_incoming_headers
-#     @validate_external_node_params(params=_test_urlretrieve_cross_process_response_external_node_params)
-#     @background_task(name="test_urllib:test_urlretrieve_cross_process_response")
-#     def _test():
-#         urllib.urlretrieve(f"http://localhost:{server.port}/")
-
-#     _test()

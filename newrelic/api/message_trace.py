@@ -22,9 +22,6 @@ from newrelic.core.message_node import MessageNode
 
 
 class MessageTrace(HeaderMixin, TimeTrace):
-    # cat_id_key = "NewRelicID"
-    # cat_transaction_key = "NewRelicTransaction"
-    # cat_appdata_key = "NewRelicAppData"
     synthetics_key = "NewRelicSynthetics"
     synthetics_info_key = "NewRelicSyntheticsInfo"
 

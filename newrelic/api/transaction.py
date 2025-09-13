@@ -34,7 +34,6 @@ from newrelic.common.encoding_utils import (
     W3CTraceParent,
     W3CTraceState,
     ensure_str,
-    # generate_path_hash,
     snake_case,
 )
 from newrelic.core.attribute import (
@@ -283,15 +282,9 @@ class Transaction:
 
         self._distributed_trace_state = 0
 
-        # self.client_cross_process_id = None
         self.client_account_id = None
         self.client_application_id = None
-        # self.referring_transaction_guid = None
         self.record_tt = False
-        # self._trip_id = None
-        # self._referring_path_hash = None
-        # self._alternate_path_hashes = {}
-        # self.is_part_of_cat = False
 
         # Synthetics Header
         self.synthetics_resource_id = None
@@ -532,12 +525,7 @@ class Transaction:
         )
 
         # Add transaction exclusive time to total exclusive time
-        #
         self.total_time += exclusive
-
-        # if self.client_cross_process_id is not None:
-        #     metric_name = f"ClientApplication/{self.client_cross_process_id}/all"
-        #     self.record_custom_metric(metric_name, duration)
 
         # Record supportability metrics for api calls
 
@@ -597,8 +585,6 @@ class Transaction:
             guid=self.guid,
             cpu_time=self._cpu_user_time_value,
             suppress_transaction_trace=self.suppress_transaction_trace,
-            # client_cross_process_id=self.client_cross_process_id,
-            # referring_transaction_guid=self.referring_transaction_guid,
             record_tt=self.record_tt,
             synthetics_resource_id=self.synthetics_resource_id,
             synthetics_job_id=self.synthetics_job_id,
@@ -608,11 +594,6 @@ class Transaction:
             synthetics_initiator=self.synthetics_initiator,
             synthetics_attributes=self.synthetics_attributes,
             synthetics_info_header=self.synthetics_info_header,
-            # is_part_of_cat=self.is_part_of_cat,
-            # trip_id=self.trip_id,
-            # path_hash=self.path_hash,
-            # referring_path_hash=self._referring_path_hash,
-            # alternate_path_hashes=self.alternate_path_hashes,
             trace_intrinsics=self.trace_intrinsics,
             distributed_trace_intrinsics=self.distributed_trace_intrinsics,
             agent_attributes=agent_attributes,
@@ -730,71 +711,9 @@ class Transaction:
 
         return f"{self.type}/{self.name_for_metric}"
 
-    # @property
-    # def trip_id(self):
-    #     return self._trip_id or self.guid
-
     @property
     def trace_id(self):
         return self._trace_id
-
-    # @property
-    # def alternate_path_hashes(self):
-    #     """Return the alternate path hashes but not including the current path
-    #     hash.
-
-    #     """
-    #     # return sorted(set(self._alternate_path_hashes.values()) - {self.path_hash})
-    #     return sorted(set(self._alternate_path_hashes.values()) - {None})
-
-    # @property
-    # def path_hash(self):
-    #     """Path hash is a 32-bit digest of the string "appname;txn_name"
-    #     XORed with the referring_path_hash. Since the txn_name can change
-    #     during the course of a transaction, up to 10 path_hashes are stored
-    #     in _alternate_path_hashes. Before generating the path hash, check the
-    #     _alternate_path_hashes to determine if we've seen this identifier and
-    #     return the value.
-
-    #     """
-
-    #     # if not self.is_part_of_cat:
-    #     #     return None
-    #     return None
-
-    #     identifier = f"{self.application.name};{self.path}"
-
-    #     # Check if identifier is already part of the _alternate_path_hashes and
-    #     # return the value if available.
-
-    #     if self._alternate_path_hashes.get(identifier):
-    #         return self._alternate_path_hashes[identifier]
-
-    #     # If the referring_path_hash is unavailable then we use '0' as the
-    #     # seed.
-
-    #     try:
-    #         seed = int((self._referring_path_hash or "0"), base=16)
-    #     except Exception:
-    #         seed = 0
-
-    #     try:
-    #         path_hash = generate_path_hash(identifier, seed)
-    #     except ValueError:
-    #         _logger.warning(
-    #             "Unable to generate cross application tracer headers. "
-    #             "MD5 hashing may not be available. (Is this system FIPS compliant?) "
-    #             "We recommend enabling distributed tracing instead. For details and a transition guide see "
-    #             "https://docs.newrelic.com/docs/agents/python-agent/configuration/python-agent-configuration#distributed-tracing-settings"
-    #         )
-    #         return None
-
-    #     # Only store up to 10 alternate path hashes.
-
-    #     if len(self._alternate_path_hashes) < 10:
-    #         self._alternate_path_hashes[identifier] = path_hash
-
-    #     return path_hash
 
     @property
     def attribute_filter(self):
@@ -833,14 +752,6 @@ class Transaction:
         """Intrinsic attributes for transaction traces and error traces"""
         i_attrs = {}
 
-        # if self.referring_transaction_guid:
-        #     i_attrs["referring_transaction_guid"] = self.referring_transaction_guid
-        # if self.client_cross_process_id:
-        #     i_attrs["client_cross_process_id"] = self.client_cross_process_id
-        # if self.trip_id:
-        #     i_attrs["trip_id"] = self.trip_id
-        # if self.path_hash:
-        #     i_attrs["path_hash"] = self.path_hash
         if self.synthetics_resource_id:
             i_attrs["synthetics_resource_id"] = self.synthetics_resource_id
         if self.synthetics_job_id:
@@ -1338,142 +1249,6 @@ class Transaction:
             # Do not return anything, but still generate supportability
             # metric for the lack of payload/distributed_header
             self._accept_distributed_trace_payload(distributed_header, transport_type)
-
-    # def _process_incoming_cat_headers(self, encoded_cross_process_id, encoded_txn_header):
-    #     settings = self._settings
-
-    #     if not self.enabled:
-    #         return
-
-    # If CAT is disabled, function will exit early.
-    #     if not (
-    #         settings.cross_application_tracer.enabled
-    #         and settings.cross_process_id
-    #         and settings.trusted_account_ids
-    #         and settings.encoding_key
-    #     ):
-    #         return
-
-    #     if encoded_cross_process_id is None:
-    #         return
-
-    #     try:
-    #         client_cross_process_id = deobfuscate(encoded_cross_process_id, settings.encoding_key)
-
-    #         # The cross process ID consists of the client
-    #         # account ID and the ID of the specific application
-    #         # the client is recording requests against. We need
-    #         # to validate that the client account ID is in the
-    #         # list of trusted account IDs and ignore it if it
-    #         # isn't. The trusted account IDs list has the
-    #         # account IDs as integers, so save the client ones
-    #         # away as integers here so easier to compare later.
-
-    #         client_account_id, client_application_id = map(int, client_cross_process_id.split("#"))
-
-    #         if client_account_id not in settings.trusted_account_ids:
-    #             return
-
-    #         self.client_cross_process_id = client_cross_process_id
-    #         self.client_account_id = client_account_id
-    #         self.client_application_id = client_application_id
-
-    #         txn_header = json_decode(deobfuscate(encoded_txn_header, settings.encoding_key))
-
-    #         if txn_header:
-    #             self.is_part_of_cat = True
-    #             self.referring_transaction_guid = txn_header[0]
-
-    #             # Incoming record_tt is OR'd with existing
-    #             # record_tt. In the scenario where we make multiple
-    #             # ext request, this will ensure we don't set the
-    #             # record_tt to False by a later request if it was
-    #             # set to True by an earlier request.
-
-    #             self.record_tt = self.record_tt or txn_header[1]
-
-    #             if isinstance(txn_header[2], str):
-    #                 self._trip_id = txn_header[2]
-    #             if isinstance(txn_header[3], str):
-    #                 self._referring_path_hash = txn_header[3]
-    #     except Exception:
-    #         pass
-
-    # def _generate_response_headers(self, read_length=None):
-    #     nr_headers = []
-
-    #     # Generate metrics and response headers for inbound cross
-    #     # process web external calls.
-
-    #     if self.client_cross_process_id is not None:
-    #         # Need to work out queueing time and duration up to this
-    #         # point for inclusion in metrics and response header. If the
-    #         # recording of the transaction had been prematurely stopped
-    #         # via an API call, only return time up until that call was
-    #         # made so it will match what is reported as duration for the
-    #         # transaction.
-
-    #         if self.queue_start:
-    #             queue_time = self.start_time - self.queue_start
-    #         else:
-    #             queue_time = 0
-
-    #         if self.end_time:
-    #             duration = self.end_time - self.start_time
-    #         else:
-    #             duration = time.time() - self.start_time
-
-    #         # Generate the additional response headers which provide
-    #         # information back to the caller. We need to freeze the
-    #         # transaction name before adding to the header.
-
-    #         self._freeze_path()
-
-    #         if read_length is None:
-    #             read_length = self._read_length
-
-    #         read_length = read_length if read_length is not None else -1
-
-    #         payload = (
-    #             self._settings.cross_process_id,
-    #             self.path,
-    #             queue_time,
-    #             duration,
-    #             read_length,
-    #             self.guid,
-    #             self.record_tt,
-    #         )
-    #         app_data = json_encode(payload)
-
-    #         nr_headers.append(("X-NewRelic-App-Data", obfuscate(app_data, self._settings.encoding_key)))
-
-    #     return nr_headers
-
-    # # This function is CAT related and has been deprecated.
-    # # Eventually, this will be removed.  Until then, coverage
-    # # does not need to factor this function into its analysis.
-    # def get_response_metadata(self):  # pragma: no cover
-    #     nr_headers = dict(self._generate_response_headers())
-    #     return convert_to_cat_metadata_value(nr_headers)
-
-    # # This function is CAT related and has been deprecated.
-    # # Eventually, this will be removed.  Until then, coverage
-    # # does not need to factor this function into its analysis.
-    # def process_request_metadata(self, cat_linking_value):  # pragma: no cover
-    #     try:
-    #         payload = base64_decode(cat_linking_value)
-    #     except:
-    #         # `cat_linking_value` should always be able to be base64_decoded.
-    #         # If this is encountered, the data being sent is corrupt. No
-    #         # exception should be raised.
-    #         return
-
-    #     nr_headers = json_decode(payload)
-    #     # TODO: All the external CAT APIs really need to
-    #     # be refactored into the transaction class.
-    #     encoded_cross_process_id = nr_headers.get("X-NewRelic-ID")
-    #     encoded_txn_header = nr_headers.get("X-NewRelic-Transaction")
-    #     return self._process_incoming_cat_headers(encoded_cross_process_id, encoded_txn_header)
 
     def set_transaction_name(self, name, group=None, priority=None):
         # Always perform this operation even if the transaction

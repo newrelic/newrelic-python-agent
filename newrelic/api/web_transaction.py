@@ -284,10 +284,6 @@ class WebTransaction(Transaction):
         # the relevant details.
         if self._settings.distributed_tracing.enabled:
             self.accept_distributed_trace_headers(self._request_headers)
-        # else:
-        #     client_cross_process_id = self._request_headers.get("x-newrelic-id")
-        #     txn_header = self._request_headers.get("x-newrelic-transaction")
-        #     self._process_incoming_cat_headers(client_cross_process_id, txn_header)
 
     def process_response(self, status_code, response_headers):
         """Processes response status and headers, extracting any
@@ -322,17 +318,6 @@ class WebTransaction(Transaction):
             pass
 
         return []
-
-        # if self.client_cross_process_id is None:
-        #     return []
-
-        # # Generate CAT response headers
-        # try:
-        #     read_length = int(self._request_headers.get("content-length"))
-        # except Exception:
-        #     read_length = -1
-
-        # return self._generate_response_headers(read_length)
 
     def _update_agent_attributes(self):
         if "accept" in self._request_headers:

@@ -15,7 +15,6 @@
 import pytest
 import webtest
 from testing_support.fixtures import (
-    # cat_enabled,
     dt_enabled,
     override_application_settings,
     reset_core_stats_engine,
@@ -94,16 +93,7 @@ TRACE_ERROR_AGENT_KEYS = [
 
 AGENT_KEYS_ALL = TRACE_ERROR_AGENT_KEYS + REQ_PARAMS
 
-TRANS_EVENT_INTRINSICS = (
-    "name",
-    "duration",
-    "type",
-    "timestamp",
-    "totalTime",
-    "error",
-    # "nr.apdexPerfZone",
-    "apdexPerfZone",
-)
+TRANS_EVENT_INTRINSICS = ("name", "duration", "type", "timestamp", "totalTime", "error", "apdexPerfZone")
 TRANS_EVENT_AGENT_KEYS = [
     "response.status",
     "request.method",
@@ -175,7 +165,6 @@ def normal_application(request):
 # Tests for checking the presence and format of agent attributes.
 # Test default settings.
 
-# _expected_attributes = {"agent": TRACE_ERROR_AGENT_KEYS, "user": ERROR_USER_ATTRS, "intrinsic": ["trip_id"]}
 _expected_attributes = {"agent": TRACE_ERROR_AGENT_KEYS, "user": ERROR_USER_ATTRS, "intrinsic": []}
 
 _expected_attributes_event = {
@@ -187,20 +176,16 @@ _expected_attributes_event = {
 _expected_absent_attributes = {"agent": REQ_PARAMS, "user": [], "intrinsic": []}
 
 
-# @cat_enabled
 @validate_error_event_attributes(_expected_attributes_event, _expected_absent_attributes)
 @validate_transaction_error_trace_attributes(_expected_attributes, _expected_absent_attributes)
 def test_error_in_transaction_default_settings(normal_application):
     normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
 
-# _expected_attributes = {"agent": TRACE_ERROR_AGENT_KEYS, "user": USER_ATTRS, "intrinsic": ["trip_id"]}
 _expected_attributes = {"agent": TRACE_ERROR_AGENT_KEYS, "user": USER_ATTRS, "intrinsic": []}
 
 
-# @cat_enabled
 @validate_transaction_trace_attributes(_expected_attributes, _expected_absent_attributes)
-# @override_application_settings({})
 def test_transaction_trace_default_attribute_settings(normal_application):
     normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
@@ -243,7 +228,6 @@ def test_browser_default_attribute_settings(normal_application):
 _override_settings = {"error_collector.attributes.exclude": ["request.parameters.*"]}
 
 _expected_attributes = {"agent": TRACE_ERROR_AGENT_KEYS, "user": ERROR_USER_ATTRS, "intrinsic": []}
-# _expected_attributes = {"agent": TRACE_ERROR_AGENT_KEYS, "user": ERROR_USER_ATTRS, "intrinsic": ["trip_id"]}
 
 _expected_attributes_event = {
     "agent": TRACE_ERROR_AGENT_KEYS,
@@ -264,7 +248,6 @@ def test_error_in_transaction_exclude_request_params(normal_application):
 _override_settings = {"transaction_tracer.attributes.exclude": ["request.parameters.*"]}
 
 _expected_attributes = {"agent": TRACE_ERROR_AGENT_KEYS, "user": USER_ATTRS, "intrinsic": []}
-# _expected_attributes = {"agent": TRACE_ERROR_AGENT_KEYS, "user": USER_ATTRS, "intrinsic": ["trip_id"]}
 
 
 @validate_transaction_trace_attributes(_expected_attributes, _expected_absent_attributes)
@@ -276,7 +259,6 @@ def test_transaction_trace_exclude_request_params(normal_application):
 _override_settings = {"capture_params": True, "error_collector.attributes.exclude": ["request.parameters.*"]}
 
 _expected_attributes = {"agent": TRACE_ERROR_AGENT_KEYS, "user": USER_ATTRS, "intrinsic": []}
-# _expected_attributes = {"agent": TRACE_ERROR_AGENT_KEYS, "user": USER_ATTRS, "intrinsic": ["trip_id"]}
 
 _expected_absent_attributes = {"agent": REQ_PARAMS, "user": [], "intrinsic": []}
 
@@ -592,7 +574,6 @@ def test_span_event_exclude_agent_attribute(normal_application):
 
 _override_settings = {"capture_params": True}
 
-# _expected_attributes = {"agent": AGENT_KEYS_ALL, "user": ERROR_USER_ATTRS, "intrinsic": ["trip_id"]}
 _expected_attributes = {"agent": AGENT_KEYS_ALL, "user": ERROR_USER_ATTRS, "intrinsic": []}
 
 _expected_attributes_event = {"agent": AGENT_KEYS_ALL, "user": ERROR_USER_ATTRS, "intrinsic": ERROR_EVENT_INTRINSICS}
@@ -605,7 +586,6 @@ def test_error_in_transaction_deprecated_capture_params_true(normal_application)
     normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
 
-# _expected_attributes = {"agent": AGENT_KEYS_ALL, "user": USER_ATTRS, "intrinsic": ["trip_id"]}
 _expected_attributes = {"agent": AGENT_KEYS_ALL, "user": USER_ATTRS, "intrinsic": []}
 
 
@@ -645,7 +625,6 @@ def test_browser_deprecated_capture_params_true(normal_application):
 
 _override_settings = {"capture_params": False}
 
-# _expected_attributes = {"agent": TRACE_ERROR_AGENT_KEYS, "user": ERROR_USER_ATTRS, "intrinsic": ["trip_id"]}
 _expected_attributes = {"agent": TRACE_ERROR_AGENT_KEYS, "user": ERROR_USER_ATTRS, "intrinsic": []}
 
 _expected_attributes_event = {
@@ -664,7 +643,6 @@ def test_error_in_transaction_deprecated_capture_params_false(normal_application
     normal_application.get(REQUEST_URL, headers=REQUEST_HEADERS)
 
 
-# _expected_attributes = {"agent": TRACE_ERROR_AGENT_KEYS, "user": USER_ATTRS, "intrinsic": ["trip_id"]}
 _expected_attributes = {"agent": TRACE_ERROR_AGENT_KEYS, "user": USER_ATTRS, "intrinsic": []}
 
 

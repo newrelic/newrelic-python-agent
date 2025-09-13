@@ -254,7 +254,6 @@ def create_client_wrapper(wrapped, trace):
             finally:
                 if response:
                     trace.process_response(response.code)
-            #         trace.process_response_headers(response.headers.get_all())
             return response
 
     return wrapper

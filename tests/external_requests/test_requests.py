@@ -14,6 +14,7 @@
 
 import pytest
 import requests
+import requests.exceptions
 from testing_support.external_fixtures import cache_outgoing_headers
 from testing_support.fixtures import override_application_settings, validate_tt_parenting
 from testing_support.validators.validate_cross_process_headers import validate_cross_process_headers
@@ -120,8 +121,9 @@ _test_requests_none_url_rollup_metrics = [
 def test_none_url_get():
     try:
         requests.get(None)
+    except requests.exceptions.MissingSchema:
+        pass
     except TypeError:
-        # Python 3.
         pass
 
 

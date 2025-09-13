@@ -20,6 +20,7 @@ import sys
 import threading
 import time
 import traceback
+from datetime import datetime, timezone
 from pathlib import Path
 
 import newrelic.api.application
@@ -1104,6 +1105,19 @@ def module_import_hook_results():
 def _module_import_hook(target, module, function):
     def _instrument(target):
         _logger.debug("instrument module %s", ((target, module, function),))
+
+        # Deprecation warning for archived/unsupported modules
+        library_name = target.__package__.split(".")[0]
+        deprecated_modules = {"aioredis": datetime(2022, 2, 22, 0, 0, tzinfo=timezone.utc)}
+
+        if library_name in deprecated_modules:
+            _logger.warning(
+                "%(module)s has been archived by the developers "
+                "and has not been supported since %(date)s. %(module)s "
+                "support will be removed from New Relic in a future "
+                "release.",
+                {"module": library_name, "date": deprecated_modules[library_name].strftime("%B %d, %Y")},
+            )
 
         try:
             instrumented = target._nr_instrumented

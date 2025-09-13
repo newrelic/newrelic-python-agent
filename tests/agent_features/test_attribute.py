@@ -57,7 +57,6 @@ def target_wsgi_application(environ, start_response):
 
 
 _required_intrinsics = ["totalTime"]
-# _required_intrinsics = ["trip_id", "totalTime"]
 _forgone_intrinsics = []
 
 

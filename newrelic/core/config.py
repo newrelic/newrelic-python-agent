@@ -256,10 +256,6 @@ class DebugSettings(Settings):
     pass
 
 
-# class CrossApplicationTracerSettings(Settings):
-#     pass
-
-
 class TransactionEventsSettings(Settings):
     pass
 
@@ -497,7 +493,6 @@ _settings.browser_monitoring = BrowserMonitorSettings()
 _settings.browser_monitoring.attributes = BrowserMonitorAttributesSettings()
 _settings.code_level_metrics = CodeLevelMetricsSettings()
 _settings.console = ConsoleSettings()
-# _settings.cross_application_tracer = CrossApplicationTracerSettings()
 _settings.custom_insights_events = CustomInsightsEventsSettings()
 _settings.ml_insights_events = MlInsightsEventsSettings()
 _settings.datastore_tracer = DatastoreTracerSettings()
@@ -792,7 +787,6 @@ _settings.transaction_name_rules = []
 _settings.transaction_segment_terms = []
 
 _settings.account_id = os.environ.get("NEW_RELIC_ACCOUNT_ID")
-# _settings.cross_process_id = None
 _settings.primary_application_id = os.environ.get("NEW_RELIC_PRIMARY_APPLICATION_ID", "Unknown")
 _settings.trusted_account_ids = []
 _settings.trusted_account_key = os.environ.get("NEW_RELIC_TRUSTED_ACCOUNT_KEY")
@@ -808,7 +802,6 @@ _settings.attributes.exclude = []
 _settings.attributes.include = []
 
 _settings.thread_profiler.enabled = True
-# _settings.cross_application_tracer.enabled = False
 
 _settings.gc_runtime_metrics.enabled = _environ_as_bool("NEW_RELIC_GC_RUNTIME_METRICS_ENABLED", default=False)
 _settings.gc_runtime_metrics.top_object_count_limit = 5
@@ -1346,24 +1339,6 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
         "custom_insights_events.max_attribute_value",
         min(settings_snapshot.custom_insights_events.max_attribute_value, 4095),
     )
-
-    # This will be removed at some future point
-    # Special case for account_id which will be sent instead of
-    # cross_process_id in the future
-
-    # if settings_snapshot.cross_process_id is not None:
-    #     vals = [settings_snapshot.account_id, settings_snapshot.application_id]
-    #     derived_vals = settings_snapshot.cross_process_id.split("#")
-
-    #     if len(derived_vals) == 2:
-    #         for idx, _val in enumerate(derived_vals):
-    #             # only override the value if the server side does not provide
-    #             # the value specifically
-    #             if vals[idx] is None:
-    #                 vals[idx] = derived_vals[idx]
-
-    #         settings_snapshot.account_id = vals[0]
-    #         settings_snapshot.application_id = vals[1]
 
     # Reapply on top any local setting overrides.
 

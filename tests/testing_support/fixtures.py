@@ -426,12 +426,6 @@ def catch_background_exceptions(wrapped, instance, args, kwargs):
             raise_background_exceptions.event.set()
 
 
-# def make_cross_agent_headers(payload, encoding_key, cat_id):
-#     value = obfuscate(json_encode(payload), encoding_key)
-#     id_value = obfuscate(cat_id, encoding_key)
-#     return {"X-NewRelic-Transaction": value, "X-NewRelic-ID": id_value}
-
-
 def make_synthetics_headers(
     encoding_key,
     account_id,
@@ -797,7 +791,6 @@ def validate_error_event_sample_data(required_attrs=None, required_user_attrs=Tr
                 assert intrinsics["error.class"] == required_attrs["error.class"]
                 assert intrinsics["error.message"].startswith(required_attrs["error.message"])
                 assert intrinsics["error.expected"] == required_attrs["error.expected"]
-                # assert intrinsics["nr.transactionGuid"] is not None
                 assert intrinsics["spanId"] is not None
 
                 # check that transaction event intrinsics haven't bled in
@@ -859,12 +852,6 @@ def _validate_event_attributes(intrinsics, user_attributes, required_intrinsics,
         assert intrinsics["queueDuration"] > 0
     else:
         assert "queueDuration" not in intrinsics
-
-    # if "nr.referringTransactionGuid" in required_intrinsics:
-    #     guid = required_intrinsics["nr.referringTransactionGuid"]
-    #     assert intrinsics["nr.referringTransactionGuid"] == guid
-    # else:
-    #     assert "nr.referringTransactionGuid" not in intrinsics
 
     if "nr.syntheticsResourceId" in required_intrinsics:
         res_id = required_intrinsics["nr.syntheticsResourceId"]
@@ -1044,14 +1031,6 @@ def dt_enabled(wrapped, instance, args, kwargs):
     wrapped = force_sampled(wrapped)
 
     return wrapped(*args, **kwargs)
-
-
-# @function_wrapper
-# def cat_enabled(wrapped, instance, args, kwargs):
-#     settings = {"cross_application_tracer.enabled": True, "distributed_tracing.enabled": False}
-#     wrapped = override_application_settings(settings)(wrapped)
-
-#     return wrapped(*args, **kwargs)
 
 
 def override_application_settings(overrides):

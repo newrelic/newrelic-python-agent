@@ -187,7 +187,6 @@ _test_valid_synthetics_tt_required = {
 }
 
 
-# @cat_enabled
 @validate_synthetics_transaction_trace(_test_valid_synthetics_tt_required)
 @override_application_settings(_override_settings)
 def test_valid_synthetics_in_transaction_trace():
@@ -220,7 +219,6 @@ _external_synthetics_header = _external_synthetics_headers["X-NewRelic-Synthetic
 _external_synthetics_info_header = _external_synthetics_headers["X-NewRelic-Synthetics-Info"]
 
 
-# @cat_enabled
 @validate_synthetics_external_trace_header(_external_synthetics_header, _external_synthetics_info_header)
 @override_application_settings(_override_settings)
 def test_valid_synthetics_external_trace_header():
@@ -228,7 +226,6 @@ def test_valid_synthetics_external_trace_header():
     response = target_application.get("/", headers=headers)
 
 
-# @cat_enabled
 @validate_synthetics_external_trace_header(_external_synthetics_header, None)
 @override_application_settings(_override_settings)
 def test_valid_synthetics_external_trace_header_without_info():
@@ -236,7 +233,6 @@ def test_valid_synthetics_external_trace_header_without_info():
     response = target_application.get("/", headers=headers)
 
 
-# @cat_enabled
 @validate_synthetics_external_trace_header(_external_synthetics_header, _external_synthetics_info_header)
 @override_application_settings(_override_settings)
 def test_valid_external_trace_header_with_byte_inbound_header():

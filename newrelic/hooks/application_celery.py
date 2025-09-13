@@ -127,11 +127,6 @@ def CeleryTaskWrapper(wrapped):
                                         headers.update(dict(dt_headers))
                                 except Exception:
                                     pass
-                        # elif transaction.settings.cross_application_tracer.enabled:
-                        #     transaction._process_incoming_cat_headers(
-                        #         headers.get(MessageTrace.cat_id_key, None),
-                        #         headers.get(MessageTrace.cat_transaction_key, None),
-                        #     )
                 except Exception:
                     pass
 
@@ -247,11 +242,6 @@ def wrap_task_call(wrapped, instance, args, kwargs):
                                     headers.update(dict(dt_headers))
                             except Exception:
                                 pass
-                    # elif transaction.settings.cross_application_tracer.enabled:
-                    #     transaction._process_incoming_cat_headers(
-                    #         headers.get(MessageTrace.cat_id_key, None),
-                    #         headers.get(MessageTrace.cat_transaction_key, None),
-                    #     )
             except Exception:
                 pass
 

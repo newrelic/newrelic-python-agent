@@ -16,8 +16,6 @@ import asyncio
 
 import aiohttp
 import pytest
-
-# from testing_support.fixtures import cat_enabled
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from yarl import URL
 
@@ -68,7 +66,6 @@ test_matrix = (
 )
 
 
-# @cat_enabled
 @pytest.mark.parametrize("method,exc_expected", test_matrix)
 def test_client_async_await(event_loop, local_server_info, method, exc_expected):
     @validate_transaction_metrics(
@@ -83,7 +80,6 @@ def test_client_async_await(event_loop, local_server_info, method, exc_expected)
     task_test()
 
 
-# @cat_enabled
 def test_client_yarl_async_await(event_loop, local_server_info):
     method = "get"
 
@@ -100,7 +96,6 @@ def test_client_yarl_async_await(event_loop, local_server_info):
 
 
 @pytest.mark.parametrize("method,exc_expected", test_matrix)
-# @cat_enabled
 def test_client_no_txn_async_await(event_loop, local_server_info, method, exc_expected):
     def task_test():
         task(event_loop, method, exc_expected, local_server_info.url)
@@ -109,7 +104,6 @@ def test_client_no_txn_async_await(event_loop, local_server_info, method, exc_ex
 
 
 @pytest.mark.parametrize("method,exc_expected", test_matrix)
-# @cat_enabled
 def test_await_request_async_await(event_loop, local_server_info, method, exc_expected):
     async def request_with_await():
         async with aiohttp.ClientSession() as session:
@@ -163,7 +157,6 @@ def test_ws_connect_async_await(event_loop, local_server_info, method, exc_expec
 
 
 @pytest.mark.parametrize("method,exc_expected", test_matrix)
-# @cat_enabled
 def test_create_task_async_await(event_loop, local_server_info, method, exc_expected):
     # `loop.create_task` returns a Task object which uses the coroutine's
     # `send` method, not `__next__`
@@ -199,7 +192,6 @@ def test_create_task_async_await(event_loop, local_server_info, method, exc_expe
 
 
 @pytest.mark.parametrize("method,exc_expected", test_matrix)
-# @cat_enabled
 def test_terminal_parent_async_await(event_loop, local_server_info, method, exc_expected):
     """
     This test injects a terminal node into a simple background task workflow.

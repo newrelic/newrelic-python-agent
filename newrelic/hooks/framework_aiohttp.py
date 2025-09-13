@@ -34,17 +34,6 @@ def aiohttp_version_info():
     return tuple(int(_) for _ in aiohttp.__version__.split(".")[:2])
 
 
-# def headers_preserve_casing():
-#     try:
-#         from multidict import CIMultiDict
-#     except:
-#         return True
-
-#     d = CIMultiDict()
-#     d.update({"X-NewRelic-ID": "value"})
-#     return "X-NewRelic-ID" in dict(d.items())
-
-
 def should_ignore(transaction):
     settings = transaction.settings
 
@@ -280,7 +269,6 @@ def _nr_aiohttp_request_wrapper_(wrapped, instance, args, kwargs):
             response = await wrapped(*args, **kwargs)
 
             try:
-                # trace.process_response_headers(response.headers.items())
                 trace.process_response(status_code=response.status)
             except:
                 pass
@@ -302,11 +290,7 @@ def instrument_aiohttp_client_reqrep(module):
     version_info = aiohttp_version_info()
 
     if version_info >= (2, 0):
-        # TODO: Verify that headers_preserve_casting is always True
-        # if headers_preserve_casing():
         dt_wrapper = _nr_aiohttp_add_dt_headers_simple_
-        # else:
-        #     dt_wrapper = _nr_aiohttp_add_dt_headers_
 
         wrap_function_wrapper(module, "ClientRequest.send", dt_wrapper)
 
@@ -380,10 +364,6 @@ def _nr_request_wrapper(wrapped, instance, args, kwargs):
 
 
 def instrument_aiohttp_web(module):
-    # global _nr_process_response
-    # if not headers_preserve_casing():
-    #     _nr_process_response = _nr_process_response_proxy
-
     wrap_function_wrapper(module, "Application._handle", _nr_request_wrapper)
     wrap_function_wrapper(module, "Application.__init__", _nr_aiohttp_wrap_application_init_)
 

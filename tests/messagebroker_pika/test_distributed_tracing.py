@@ -31,7 +31,6 @@ _override_settings = {
     "primary_application_id": "12345",
     "account_id": "33",
     "trusted_account_key": "1",
-    "cross_application_tracer.enabled": True,
     "distributed_tracing.enabled": True,
 }
 
@@ -81,8 +80,6 @@ def test_basic_consume_distributed_tracing_headers():
     def on_receive(ch, method, properties, msg):
         headers = properties.headers
         assert headers
-        assert "NewRelicID" not in headers
-        assert "NewRelicTransaction" not in headers
         assert msg == b"Testing distributed_tracing 123"
         txn = current_transaction()
 
@@ -134,13 +131,10 @@ def do_basic_get(channel, QUEUE):
     headers = properties.headers
 
     assert headers
-    assert "NewRelicID" not in headers
-    assert "NewRelicTransaction" not in headers
     assert msg == b"Testing distributed_tracing 123"
 
     txn = current_transaction()
 
-    assert txn.client_cross_process_id is None
     assert txn.client_account_id is None
     assert txn.client_application_id is None
 

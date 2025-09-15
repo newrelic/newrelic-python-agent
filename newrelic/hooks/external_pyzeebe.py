@@ -48,6 +48,7 @@ def _add_client_input_attributes(method_name, trace, args, kwargs):
     if resource:
         try:
             trace._add_agent_attribute("zeebe.client.resourceFile", resource)
+            trace._add_agent_attribute("zeebe.client.resourceCount", len(list(args)))
         except Exception:
             _logger.warning(CLIENT_ATTRIBUTES_DEPLOY_RESOURCE_LOG_MSG, exc_info=True)
 

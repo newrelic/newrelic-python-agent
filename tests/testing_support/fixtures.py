@@ -342,7 +342,7 @@ def collector_available_fixture(request, collector_agent_registration):
         time.sleep(0.1)
         timeout -= 0.1
 
-    assert application.active, "Application failed to activate after 10 seconds."
+    assert application.active, f"Application failed to activate after {timeout} seconds."
 
 
 def raise_background_exceptions(timeout=5.0):

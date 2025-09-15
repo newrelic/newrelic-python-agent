@@ -48,7 +48,7 @@ from newrelic.core.agent_control_health import (
     agent_control_health_instance,
     agent_control_healthcheck_loop,
 )
-from newrelic.core.config import Settings, apply_config_setting, default_host, fetch_config_setting
+from newrelic.core.config import Settings, apply_config_setting, default_host
 
 __all__ = ["filter_app_factory", "initialize"]
 
@@ -331,7 +331,6 @@ def _process_configuration(section):
     _process_setting(section, "port", "getint", None)
     _process_setting(section, "otlp_host", "get", None)
     _process_setting(section, "otlp_port", "getint", None)
-    _process_setting(section, "ssl", "getboolean", None)
     _process_setting(section, "proxy_scheme", "get", None)
     _process_setting(section, "proxy_host", "get", None)
     _process_setting(section, "proxy_port", "getint", None)
@@ -343,7 +342,6 @@ def _process_configuration(section):
     _process_setting(section, "developer_mode", "getboolean", None)
     _process_setting(section, "high_security", "getboolean", None)
     _process_setting(section, "capture_params", "getboolean", None)
-    _process_setting(section, "ignored_params", "get", _map_split_strings)
     _process_setting(section, "capture_environ", "getboolean", None)
     _process_setting(section, "include_environ", "get", _map_split_strings)
     _process_setting(section, "max_stack_trace_lines", "getint", None)
@@ -374,7 +372,6 @@ def _process_configuration(section):
     _process_setting(section, "error_collector.capture_events", "getboolean", None)
     _process_setting(section, "error_collector.max_event_samples_stored", "getint", None)
     _process_setting(section, "error_collector.capture_source", "getboolean", None)
-    _process_setting(section, "error_collector.ignore_errors", "get", _map_split_strings)
     _process_setting(section, "error_collector.ignore_classes", "get", _map_split_strings)
     _process_setting(section, "error_collector.ignore_status_codes", "get", _merge_ignore_status_codes)
     _process_setting(section, "error_collector.expected_classes", "get", _map_split_strings)
@@ -404,6 +401,8 @@ def _process_configuration(section):
     _process_setting(section, "ml_insights_events.enabled", "getboolean", None)
     _process_setting(section, "distributed_tracing.enabled", "getboolean", None)
     _process_setting(section, "distributed_tracing.exclude_newrelic_header", "getboolean", None)
+    _process_setting(section, "distributed_tracing.sampler.remote_parent_sampled", "get", None)
+    _process_setting(section, "distributed_tracing.sampler.remote_parent_not_sampled", "get", None)
     _process_setting(section, "span_events.enabled", "getboolean", None)
     _process_setting(section, "span_events.max_samples_stored", "getint", None)
     _process_setting(section, "span_events.attributes.enabled", "getboolean", None)
@@ -421,7 +420,6 @@ def _process_configuration(section):
     _process_setting(section, "agent_limits.sql_explain_plans", "getint", None)
     _process_setting(section, "agent_limits.sql_explain_plans_per_harvest", "getint", None)
     _process_setting(section, "agent_limits.slow_sql_data", "getint", None)
-    _process_setting(section, "agent_limits.merge_stats_maximum", "getint", None)
     _process_setting(section, "agent_limits.errors_per_transaction", "getint", None)
     _process_setting(section, "agent_limits.errors_per_harvest", "getint", None)
     _process_setting(section, "agent_limits.slow_transaction_dry_harvests", "getint", None)
@@ -668,19 +666,12 @@ def translate_deprecated_settings(settings, cached_settings):
     cached = dict(cached_settings)
 
     deprecated_settings_map = [
-        ("transaction_tracer.capture_attributes", "transaction_tracer.attributes.enabled"),
-        ("error_collector.capture_attributes", "error_collector.attributes.enabled"),
-        ("browser_monitoring.capture_attributes", "browser_monitoring.attributes.enabled"),
-        ("analytics_events.capture_attributes", "transaction_events.attributes.enabled"),
-        ("analytics_events.enabled", "transaction_events.enabled"),
         ("analytics_events.max_samples_stored", "event_harvest_config.harvest_limits.analytic_event_data"),
         ("transaction_events.max_samples_stored", "event_harvest_config.harvest_limits.analytic_event_data"),
         ("span_events.max_samples_stored", "event_harvest_config.harvest_limits.span_event_data"),
         ("error_collector.max_event_samples_stored", "event_harvest_config.harvest_limits.error_event_data"),
         ("custom_insights_events.max_samples_stored", "event_harvest_config.harvest_limits.custom_event_data"),
         ("application_logging.forwarding.max_samples_stored", "event_harvest_config.harvest_limits.log_event_data"),
-        ("error_collector.ignore_errors", "error_collector.ignore_classes"),
-        ("strip_exception_messages.whitelist", "strip_exception_messages.allowlist"),
     ]
 
     for old_key, new_key in deprecated_settings_map:
@@ -694,41 +685,6 @@ def translate_deprecated_settings(settings, cached_settings):
                 _logger.info("Applying value of deprecated setting %r to %r.", old_key, new_key)
 
             delete_setting(settings, old_key)
-
-    # The 'ignored_params' setting is more complicated than the above
-    # deprecated settings, so it gets handled separately.
-
-    if "ignored_params" in cached:
-        _logger.info(
-            "Deprecated setting found: ignored_params. Please use "
-            "new setting: attributes.exclude. For the new setting, an "
-            "ignored parameter should be prefaced with "
-            '"request.parameters.". For example, ignoring a parameter '
-            'named "foo" should be added added to attributes.exclude as '
-            '"request.parameters.foo."'
-        )
-
-        # Don't merge 'ignored_params' settings. If user set
-        # 'attributes.exclude' setting, only use those values,
-        # and ignore 'ignored_params' settings.
-
-        if "attributes.exclude" in cached:
-            _logger.info("Ignoring deprecated setting: ignored_params. Using new setting: attributes.exclude.")
-
-        else:
-            ignored_params = fetch_config_setting(settings, "ignored_params")
-
-            for p in ignored_params:
-                attr_value = f"request.parameters.{p}"
-                excluded_attrs = fetch_config_setting(settings, "attributes.exclude")
-
-                if attr_value not in excluded_attrs:
-                    settings.attributes.exclude.append(attr_value)
-                    _logger.info(
-                        "Applying value of deprecated setting ignored_params to attributes.exclude: %r.", attr_value
-                    )
-
-        delete_setting(settings, "ignored_params")
 
     # The 'capture_params' setting is deprecated, but since it affects
     # attribute filter default destinations, it is not translated here. We
@@ -752,17 +708,6 @@ def translate_deprecated_settings(settings, cached_settings):
             "(CAT) with the newer Distributed Tracing by setting 'distributed_tracing.enabled' to True in your agent "
             "configuration. For further details on distributed tracing, please refer to our documentation: "
             "https://docs.newrelic.com/docs/distributed-tracing/concepts/distributed-tracing-planning-guide/#changes."
-        )
-
-    if not settings.ssl:
-        settings.ssl = True
-        _logger.info("Ignoring deprecated setting: ssl. Enabling ssl is now mandatory. Setting ssl=true.")
-
-    if settings.agent_limits.merge_stats_maximum is not None:
-        _logger.info(
-            "Ignoring deprecated setting: "
-            "agent_limits.merge_stats_maximum. The agent will now respect "
-            "server-side commands."
         )
 
     return settings

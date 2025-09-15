@@ -33,7 +33,7 @@ else:
             (3, 4): "4.20.0.120",
             (3, 5): "5.24.0.153",
             (3, 6): "7.16.0.178",
-            (3, 7): "10.16.0",
+            (3, 7): "10.17.0",
         }
         last_supported_version = last_supported_version_lookup.get(python_version, None)
 
@@ -157,7 +157,7 @@ kwargs = {
         "git_describe_command": "git describe --dirty --tags --long --match *.*.*",
         "write_to": "newrelic/version.txt",
     },
-    "setup_requires": ["setuptools_scm>=3.2,<9"],
+    "setup_requires": ["setuptools>=61.2", "setuptools_scm>=6.4,<10"],
     "description": "New Relic Python Agent",
     "long_description": readme_file_contents,
     "long_description_content_type": "text/markdown",
@@ -187,7 +187,51 @@ kwargs = {
 if with_setuptools:
     kwargs["entry_points"] = {"console_scripts": ["newrelic-admin = newrelic.admin:main"]}
 else:
+    script_directory = os.path.dirname(__file__)
+    if not script_directory:
+        script_directory = os.getcwd()
+
+    readme_file = os.path.join(script_directory, "README.md")
+
     kwargs["scripts"] = ["scripts/newrelic-admin"]
+
+    # Old config that now lives in pyproject.toml
+    # Preserved here for backwards compatibility with distutils
+    packages = [
+        "newrelic",
+        "newrelic.admin",
+        "newrelic.api",
+        "newrelic.bootstrap",
+        "newrelic.common",
+        "newrelic.core",
+        "newrelic.extras",
+        "newrelic.extras.framework_django",
+        "newrelic.extras.framework_django.templatetags",
+        "newrelic.hooks",
+        "newrelic.network",
+        "newrelic.packages",
+        "newrelic.packages.isort",
+        "newrelic.packages.isort.stdlibs",
+        "newrelic.packages.urllib3",
+        "newrelic.packages.urllib3.util",
+        "newrelic.packages.urllib3.contrib",
+        "newrelic.packages.urllib3.contrib._securetransport",
+        "newrelic.packages.urllib3.packages",
+        "newrelic.packages.urllib3.packages.backports",
+        "newrelic.packages.wrapt",
+        "newrelic.packages.opentelemetry_proto",
+        "newrelic.samplers",
+    ]
+
+    kwargs.update(dict(
+        python_requires=">=3.8",
+        zip_safe=False,
+        packages=packages,
+        package_data={
+            "newrelic": ["newrelic.ini", "version.txt", "packages/urllib3/LICENSE.txt", "common/cacert.pem", "scripts/azure-prebuild.sh"],
+        },
+    ))
+
 
 
 def with_librt():
@@ -245,9 +289,9 @@ optimised C versions, will also be used resulting in additional overheads.
 
 with_extensions = os.environ.get("NEW_RELIC_EXTENSIONS", None)
 if with_extensions:
-    if with_extensions.lower() == "true":
+    if with_extensions.lower() in ["on", "true", "1"]:
         with_extensions = True
-    elif with_extensions.lower() == "false":
+    elif with_extensions.lower() in ["off", "false", "0"]:
         with_extensions = False
     else:
         with_extensions = None

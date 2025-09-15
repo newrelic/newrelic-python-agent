@@ -48,8 +48,6 @@ from newrelic.api.generator_trace import generator_trace as __generator_trace
 from newrelic.api.generator_trace import wrap_generator_trace as __wrap_generator_trace
 from newrelic.api.html_insertion import insert_html_snippet as __insert_html_snippet
 from newrelic.api.html_insertion import verify_body_exists as __verify_body_exists
-from newrelic.api.lambda_handler import LambdaHandlerWrapper as __LambdaHandlerWrapper
-from newrelic.api.lambda_handler import lambda_handler as __lambda_handler
 from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes as __WithLlmCustomAttributes
 from newrelic.api.log import NewRelicContextFormatter as __NewRelicContextFormatter
 from newrelic.api.message_trace import MessageTrace as __MessageTrace
@@ -72,22 +70,16 @@ from newrelic.api.time_trace import add_custom_span_attribute as __add_custom_sp
 from newrelic.api.time_trace import current_trace as __current_trace
 from newrelic.api.time_trace import get_linking_metadata as __get_linking_metadata
 from newrelic.api.time_trace import notice_error as __notice_error
-from newrelic.api.time_trace import record_exception as __record_exception
 from newrelic.api.transaction import accept_distributed_trace_headers as __accept_distributed_trace_headers
-from newrelic.api.transaction import accept_distributed_trace_payload as __accept_distributed_trace_payload
 from newrelic.api.transaction import add_custom_attribute as __add_custom_attribute
 from newrelic.api.transaction import add_custom_attributes as __add_custom_attributes
-from newrelic.api.transaction import add_custom_parameter as __add_custom_parameter
-from newrelic.api.transaction import add_custom_parameters as __add_custom_parameters
 from newrelic.api.transaction import add_framework_info as __add_framework_info
 from newrelic.api.transaction import capture_request_params as __capture_request_params
-from newrelic.api.transaction import create_distributed_trace_payload as __create_distributed_trace_payload
 from newrelic.api.transaction import current_span_id as __current_span_id
 from newrelic.api.transaction import current_trace_id as __current_trace_id
 from newrelic.api.transaction import current_transaction as __current_transaction
 from newrelic.api.transaction import disable_browser_autorum as __disable_browser_autorum
 from newrelic.api.transaction import end_of_transaction as __end_of_transaction
-from newrelic.api.transaction import get_browser_timing_footer as __get_browser_timing_footer
 from newrelic.api.transaction import get_browser_timing_header as __get_browser_timing_header
 from newrelic.api.transaction import ignore_transaction as __ignore_transaction
 from newrelic.api.transaction import insert_distributed_trace_headers as __insert_distributed_trace_headers
@@ -116,7 +108,6 @@ from newrelic.common.object_wrapper import CallableObjectProxy as __CallableObje
 from newrelic.common.object_wrapper import FunctionWrapper as __FunctionWrapper
 from newrelic.common.object_wrapper import InFunctionWrapper as __InFunctionWrapper
 from newrelic.common.object_wrapper import ObjectProxy as __ObjectProxy
-from newrelic.common.object_wrapper import ObjectWrapper as __ObjectWrapper
 from newrelic.common.object_wrapper import OutFunctionWrapper as __OutFunctionWrapper
 from newrelic.common.object_wrapper import PostFunctionWrapper as __PostFunctionWrapper
 from newrelic.common.object_wrapper import PreFunctionWrapper as __PreFunctionWrapper
@@ -168,15 +159,11 @@ set_background_task = __wrap_api_call(__set_background_task, "set_background_tas
 ignore_transaction = __wrap_api_call(__ignore_transaction, "ignore_transaction")
 suppress_apdex_metric = __wrap_api_call(__suppress_apdex_metric, "suppress_apdex_metric")
 capture_request_params = __wrap_api_call(__capture_request_params, "capture_request_params")
-add_custom_parameter = __wrap_api_call(__add_custom_parameter, "add_custom_parameter")
-add_custom_parameters = __wrap_api_call(__add_custom_parameters, "add_custom_parameters")
 add_custom_attribute = __wrap_api_call(__add_custom_attribute, "add_custom_attribute")
 add_custom_attributes = __wrap_api_call(__add_custom_attributes, "add_custom_attributes")
 add_framework_info = __wrap_api_call(__add_framework_info, "add_framework_info")
-record_exception = __wrap_api_call(__record_exception, "record_exception")
 notice_error = __wrap_api_call(__notice_error, "notice_error")
 get_browser_timing_header = __wrap_api_call(__get_browser_timing_header, "get_browser_timing_header")
-get_browser_timing_footer = __wrap_api_call(__get_browser_timing_footer, "get_browser_timing_footer")
 disable_browser_autorum = __wrap_api_call(__disable_browser_autorum, "disable_browser_autorum")
 suppress_transaction_trace = __wrap_api_call(__suppress_transaction_trace, "suppress_transaction_trace")
 record_custom_metric = __wrap_api_call(__record_custom_metric, "record_custom_metric")
@@ -185,12 +172,6 @@ record_custom_event = __wrap_api_call(__record_custom_event, "record_custom_even
 record_log_event = __wrap_api_call(__record_log_event, "record_log_event")
 record_ml_event = __wrap_api_call(__record_ml_event, "record_ml_event")
 WithLlmCustomAttributes = __wrap_api_call(__WithLlmCustomAttributes, "WithLlmCustomAttributes")
-accept_distributed_trace_payload = __wrap_api_call(
-    __accept_distributed_trace_payload, "accept_distributed_trace_payload"
-)
-create_distributed_trace_payload = __wrap_api_call(
-    __create_distributed_trace_payload, "create_distributed_trace_payload"
-)
 accept_distributed_trace_headers = __wrap_api_call(
     __accept_distributed_trace_headers, "accept_distributed_trace_headers"
 )
@@ -213,8 +194,6 @@ background_task = __wrap_api_call(__background_task, "background_task")
 BackgroundTask = __wrap_api_call(__BackgroundTask, "BackgroundTask")
 BackgroundTaskWrapper = __wrap_api_call(__BackgroundTaskWrapper, "BackgroundTaskWrapper")
 wrap_background_task = __wrap_api_call(__wrap_background_task, "wrap_background_task")
-LambdaHandlerWrapper = __wrap_api_call(__LambdaHandlerWrapper, "LambdaHandlerWrapper")
-lambda_handler = __wrap_api_call(__lambda_handler, "lambda_handler")
 NewRelicContextFormatter = __wrap_api_call(__NewRelicContextFormatter, "NewRelicContextFormatter")
 transaction_name = __wrap_api_call(__transaction_name, "transaction_name")
 TransactionNameWrapper = __wrap_api_call(__TransactionNameWrapper, "TransactionNameWrapper")
@@ -265,7 +244,6 @@ FunctionWrapper = __wrap_api_call(__FunctionWrapper, "FunctionWrapper")
 function_wrapper = __wrap_api_call(__function_wrapper, "function_wrapper")
 wrap_function_wrapper = __wrap_api_call(__wrap_function_wrapper, "wrap_function_wrapper")
 patch_function_wrapper = __wrap_api_call(__patch_function_wrapper, "patch_function_wrapper")
-ObjectWrapper = __wrap_api_call(__ObjectWrapper, "ObjectWrapper")
 pre_function = __wrap_api_call(__pre_function, "pre_function")
 PreFunctionWrapper = __wrap_api_call(__PreFunctionWrapper, "PreFunctionWrapper")
 wrap_pre_function = __wrap_api_call(__wrap_pre_function, "wrap_pre_function")

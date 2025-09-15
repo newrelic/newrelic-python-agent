@@ -18,7 +18,8 @@ import time
 from pathlib import Path
 
 import pytest
-from testing_support.fixtures import failing_endpoint, function_not_called, override_generic_settings
+from testing_support.fixtures import failing_endpoint, override_generic_settings
+from testing_support.validators.validate_function_not_called import validate_function_not_called
 
 from newrelic.common.agent_http import DeveloperModeClient
 from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
@@ -646,7 +647,7 @@ def test_serverless_mode_adaptive_sampling(time_to_next_reset, computed_count, c
     assert app.adaptive_sampler.computed_count_last == computed_count_last
 
 
-@function_not_called("newrelic.core.adaptive_sampler", "AdaptiveSampler._reset")
+@validate_function_not_called("newrelic.core.adaptive_sampler", "AdaptiveSampler._reset")
 @override_generic_settings(settings, {"developer_mode": True})
 def test_compute_sampled_no_reset():
     app = Application("Python Agent Test (Harvest Loop)")
@@ -856,22 +857,6 @@ def test_default_events_harvested(allowlist_event):
     assert app._stats_engine.span_events.num_seen == num_seen
 
     assert app._stats_engine.metrics_count() == 4
-
-
-@failing_endpoint("analytic_event_data")
-@override_generic_settings(settings, {"developer_mode": True, "agent_limits.merge_stats_maximum": 0})
-def test_infinite_merges():
-    app = Application("Python Agent Test (Harvest Loop)")
-    app.connect_to_data_collector(None)
-
-    app._stats_engine.transaction_events.add("transaction event")
-
-    assert app._stats_engine.transaction_events.num_seen == 1
-
-    app.harvest()
-
-    # the agent_limits.merge_stats_maximum is not respected
-    assert app._stats_engine.transaction_events.num_seen == 1
 
 
 @failing_endpoint("analytic_event_data")

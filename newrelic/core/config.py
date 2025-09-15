@@ -332,6 +332,10 @@ class DistributedTracingSettings(Settings):
     pass
 
 
+class DistributedTracingSamplerSettings(Settings):
+    pass
+
+
 class ServerlessModeSettings(Settings):
     pass
 
@@ -501,6 +505,7 @@ _settings.datastore_tracer.database_name_reporting = DatastoreTracerDatabaseName
 _settings.datastore_tracer.instance_reporting = DatastoreTracerInstanceReportingSettings()
 _settings.debug = DebugSettings()
 _settings.distributed_tracing = DistributedTracingSettings()
+_settings.distributed_tracing.sampler = DistributedTracingSamplerSettings()
 _settings.error_collector = ErrorCollectorSettings()
 _settings.error_collector.attributes = ErrorCollectorAttributesSettings()
 _settings.event_harvest_config = EventHarvestConfigSettings()
@@ -711,8 +716,6 @@ else:
 _settings.license_key = os.environ.get("NEW_RELIC_LICENSE_KEY", None)
 _settings.api_key = os.environ.get("NEW_RELIC_API_KEY", None)
 
-_settings.ssl = _environ_as_bool("NEW_RELIC_SSL", True)
-
 _settings.host = os.environ.get("NEW_RELIC_HOST")
 _settings.otlp_host = os.environ.get("NEW_RELIC_OTLP_HOST")
 _settings.port = int(os.environ.get("NEW_RELIC_PORT", "0"))
@@ -756,7 +759,6 @@ _settings.apdex_t = _environ_as_float("NEW_RELIC_APDEX_T", 0.5)
 _settings.web_transactions_apdex = {}
 
 _settings.capture_params = None
-_settings.ignored_params = []
 
 _settings.capture_environ = True
 _settings.include_environ = [
@@ -828,6 +830,12 @@ _settings.custom_insights_events.max_attribute_value = _environ_as_int(
 _settings.ml_insights_events.enabled = False
 
 _settings.distributed_tracing.enabled = _environ_as_bool("NEW_RELIC_DISTRIBUTED_TRACING_ENABLED", default=True)
+_settings.distributed_tracing.sampler.remote_parent_sampled = os.environ.get(
+    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_REMOTE_PARENT_SAMPLED", "default"
+)
+_settings.distributed_tracing.sampler.remote_parent_not_sampled = os.environ.get(
+    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_REMOTE_PARENT_NOT_SAMPLED", "default"
+)
 _settings.distributed_tracing.exclude_newrelic_header = False
 _settings.span_events.enabled = _environ_as_bool("NEW_RELIC_SPAN_EVENTS_ENABLED", default=True)
 _settings.span_events.attributes.enabled = True
@@ -889,7 +897,6 @@ _settings.agent_limits.max_sql_connections = 4
 _settings.agent_limits.sql_explain_plans = 30
 _settings.agent_limits.sql_explain_plans_per_harvest = 60
 _settings.agent_limits.slow_sql_data = 10
-_settings.agent_limits.merge_stats_maximum = None
 _settings.agent_limits.errors_per_transaction = 5
 _settings.agent_limits.errors_per_harvest = 20
 _settings.agent_limits.slow_transaction_dry_harvests = 5
@@ -1278,13 +1285,6 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
         value = agent_config["transaction_tracer.transaction_threshold"]
         if value == "apdex_f":
             agent_config["transaction_tracer.transaction_threshold"] = None
-
-    # If ignore_errors exists, and either ignore_classes is not set or it is empty
-    if "error_collector.ignore_errors" in agent_config and (
-        "error_collector.ignore_classes" not in agent_config or not agent_config["error_collector.ignore_classes"]
-    ):
-        # Remap to newer config key
-        agent_config["error_collector.ignore_classes"] = agent_config.pop("error_collector.ignore_errors")
 
     # Overlay with agent server side configuration settings.
 

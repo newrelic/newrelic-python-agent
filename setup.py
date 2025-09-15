@@ -187,11 +187,11 @@ kwargs = {
 if with_setuptools:
     kwargs["entry_points"] = {"console_scripts": ["newrelic-admin = newrelic.admin:main"]}
 else:
-    script_directory = os.path.dirname(__file__)
+    script_directory = Path.parent(__file__)
     if not script_directory:
-        script_directory = os.getcwd()
+        script_directory = Path.cwd()
 
-    readme_file = os.path.join(script_directory, "README.md")
+    readme_file = script_directory / "README.md"
 
     kwargs["scripts"] = ["scripts/newrelic-admin"]
 
@@ -223,15 +223,22 @@ else:
         "newrelic.samplers",
     ]
 
-    kwargs.update(dict(
-        python_requires=">=3.8",
-        zip_safe=False,
-        packages=packages,
-        package_data={
-            "newrelic": ["newrelic.ini", "version.txt", "packages/urllib3/LICENSE.txt", "common/cacert.pem", "scripts/azure-prebuild.sh"],
-        },
-    ))
-
+    kwargs.update(
+        {
+            "python_requires": ">=3.8",
+            "zip_safe": False,
+            "packages": packages,
+            "package_data": {
+                "newrelic": [
+                    "newrelic.ini",
+                    "version.txt",
+                    "packages/urllib3/LICENSE.txt",
+                    "common/cacert.pem",
+                    "scripts/azure-prebuild.sh",
+                ]
+            },
+        }
+    )
 
 
 def with_librt():

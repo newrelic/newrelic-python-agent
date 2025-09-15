@@ -488,12 +488,12 @@ translate_settings_tests = [
         TSetting("custom_insights_events.max_samples_stored", 3600, 3600),
     ),
     (
-        TSetting("application_logging.forwarding.max_samples_stored", 10000, 10000),
-        TSetting("event_harvest_config.harvest_limits.log_event_data", 99999, 10000),
+        TSetting("event_harvest_config.harvest_limits.log_event_data", 10000, 10000),
+        TSetting("application_logging.forwarding.max_samples_stored", 99999, 10000),
     ),
     (
-        TSetting("application_logging.forwarding.max_samples_stored", 99999, 10000),
-        TSetting("event_harvest_config.harvest_limits.log_event_data", 10000, 10000),
+        TSetting("event_harvest_config.harvest_limits.log_event_data", 99999, 10000),
+        TSetting("application_logging.forwarding.max_samples_stored", 10000, 10000),
     ),
 ]
 

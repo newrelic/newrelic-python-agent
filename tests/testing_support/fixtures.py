@@ -333,9 +333,16 @@ def django_collector_agent_registration_fixture(
 
 @pytest.fixture
 def collector_available_fixture(request, collector_agent_registration):
-    application = application_instance()
-    active = application.active
-    assert active
+    application = collector_agent_registration
+    settings = global_settings()
+
+    # Wait for the application to become active.
+    timeout = (settings.startup_timeout or 0) + 10.0
+    while not application.active and timeout > 0:
+        time.sleep(0.1)
+        timeout -= 0.1
+
+    assert application.active, "Application failed to activate after 10 seconds."
 
 
 def raise_background_exceptions(timeout=5.0):

@@ -674,7 +674,7 @@ def translate_deprecated_settings(settings, cached_settings):
         ("event_harvest_config.harvest_limits.analytic_event_data", "analytics_events.max_samples_stored"),
         ("event_harvest_config.harvest_limits.analytic_event_data", "transaction_events.max_samples_stored"),
         ("event_harvest_config.harvest_limits.span_event_data", "span_events.max_samples_stored"),
-        ("error_collector.max_event_samples_stored", "event_harvest_config.harvest_limits.error_event_data"),
+        ("event_harvest_config.harvest_limits.error_event_data", "error_collector.max_event_samples_stored"),
         ("custom_insights_events.max_samples_stored", "event_harvest_config.harvest_limits.custom_event_data"),
         ("application_logging.forwarding.max_samples_stored", "event_harvest_config.harvest_limits.log_event_data"),
     ]

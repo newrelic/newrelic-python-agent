@@ -55,6 +55,8 @@ __all__ = ["filter_app_factory", "initialize"]
 
 _logger = logging.getLogger(__name__)
 
+DEPRECATED_MODULES = {"aioredis": datetime(2022, 2, 22, 0, 0, tzinfo=timezone.utc)}
+
 
 def _map_aws_account_id(s):
     return newrelic.core.config._map_aws_account_id(s, _logger)
@@ -1108,15 +1110,14 @@ def _module_import_hook(target, module, function):
 
         # Deprecation warning for archived/unsupported modules
         library_name = target.__package__.split(".")[0]
-        deprecated_modules = {"aioredis": datetime(2022, 2, 22, 0, 0, tzinfo=timezone.utc)}
 
-        if library_name in deprecated_modules:
+        if library_name in DEPRECATED_MODULES:
             _logger.warning(
                 "%(module)s has been archived by the developers "
                 "and has not been supported since %(date)s. %(module)s "
                 "support will be removed from New Relic in a future "
                 "release.",
-                {"module": library_name, "date": deprecated_modules[library_name].strftime("%B %d, %Y")},
+                {"module": library_name, "date": DEPRECATED_MODULES[library_name].strftime("%B %d, %Y")},
             )
 
         try:

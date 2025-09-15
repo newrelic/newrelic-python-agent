@@ -456,12 +456,12 @@ translate_settings_tests = [
         TSetting("analytics_events.max_samples_stored", 1200, 1200),
     ),
     (
-        TSetting("transaction_events.max_samples_stored", 1200, 1200),
-        TSetting("event_harvest_config.harvest_limits.analytic_event_data", 9999, 1200),
+        TSetting("event_harvest_config.harvest_limits.analytic_event_data", 1200, 1200),
+        TSetting("transaction_events.max_samples_stored", 9999, 1200),
     ),
     (
-        TSetting("transaction_events.max_samples_stored", 9999, 1200),
-        TSetting("event_harvest_config.harvest_limits.analytic_event_data", 1200, 1200),
+        TSetting("event_harvest_config.harvest_limits.analytic_event_data", 9999, 1200),
+        TSetting("transaction_events.max_samples_stored", 1200, 1200),
     ),
     (
         TSetting("span_events.max_samples_stored", 1000, 2000),

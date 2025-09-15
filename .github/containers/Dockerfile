@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:20.04
+FROM ubuntu:24.04
 ARG TARGETPLATFORM
 
 # Install OS packages
@@ -23,33 +23,15 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         bash \
         build-essential \
         curl \
-        default-libmysqlclient-dev \
-        expat \
         fish \
         fontconfig \
-        freetds-common \
-        freetds-dev \
         gcc \
         git \
-        libbz2-dev \
-        libcurl4-openssl-dev \
-        libffi-dev \
-        libgmp-dev \
-        libkrb5-dev \
-        liblzma-dev \
-        libmpfr-dev \
-        libncurses-dev \
-        libpq-dev \
-        libreadline-dev \
-        libsqlite3-dev \
-        libssl-dev \
         locales \
         make \
         odbc-postgresql \
         openssl \
         pkg-config \
-        python3-dev \
-        python3-pip \
         rustc \
         sudo \
         tzdata \
@@ -58,8 +40,6 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         vim \
         wget \
         zip \
-        zlib1g \
-        zlib1g-dev \
         zsh && \
     rm -rf /var/lib/apt/lists/*
 

@@ -87,7 +87,9 @@ def _lookup_environ_setting(environ, name, default=False):
     # Check for deprecated WSGI environ dictionary setting
     if name in DEPRECATED_ENVIRON_DICT:
         warnings.warn(
-            f"Environ setting '{name}' is deprecated and will be removed in a future release.", DeprecationWarning, stacklevel=2
+            f"Environ setting '{name}' is deprecated and will be removed in a future release.",
+            DeprecationWarning,
+            stacklevel=2,
         )
 
     flag = environ[name]

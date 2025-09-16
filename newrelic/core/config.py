@@ -818,13 +818,17 @@ _settings.memory_runtime_pid_metrics.enabled = _environ_as_bool(
 )
 
 _settings.transaction_events.enabled = True
-_settings.transaction_events.max_samples_stored = _environ_as_int("NEW_RELIC_TRANSACTION_EVENTS_MAX_SAMPLES_STORED", default=DEFAULT_RESERVOIR_SIZE)
+_settings.transaction_events.max_samples_stored = _environ_as_int(
+    "NEW_RELIC_TRANSACTION_EVENTS_MAX_SAMPLES_STORED", default=DEFAULT_RESERVOIR_SIZE
+)
 _settings.transaction_events.attributes.enabled = True
 _settings.transaction_events.attributes.exclude = []
 _settings.transaction_events.attributes.include = []
 
 _settings.custom_insights_events.enabled = True
-_settings.custom_insights_events.max_samples_stored = _environ_as_int("NEW_RELIC_CUSTOM_INSIGHTS_EVENTS_MAX_SAMPLES_STORED", default=CUSTOM_EVENT_RESERVOIR_SIZE)
+_settings.custom_insights_events.max_samples_stored = _environ_as_int(
+    "NEW_RELIC_CUSTOM_INSIGHTS_EVENTS_MAX_SAMPLES_STORED", default=CUSTOM_EVENT_RESERVOIR_SIZE
+)
 _settings.custom_insights_events.max_attribute_value = _environ_as_int(
     "NEW_RELIC_CUSTOM_INSIGHTS_EVENTS_MAX_ATTRIBUTE_VALUE", default=MAX_ATTRIBUTE_LENGTH
 )
@@ -868,7 +872,9 @@ _settings.error_collector.capture_source = False
 _settings.error_collector.ignore_classes = []
 _settings.error_collector.ignore_status_codes = _parse_status_codes("100-102 200-208 226 300-308 404", set())
 _settings.error_collector.expected_classes = []
-_settings.error_collector.max_event_samples_stored = _environ_as_int("NEW_RELIC_ERROR_COLLECTOR_MAX_EVENT_SAMPLES_STORED", default=ERROR_EVENT_RESERVOIR_SIZE)
+_settings.error_collector.max_event_samples_stored = _environ_as_int(
+    "NEW_RELIC_ERROR_COLLECTOR_MAX_EVENT_SAMPLES_STORED", default=ERROR_EVENT_RESERVOIR_SIZE
+)
 _settings.error_collector.expected_status_codes = set()
 _settings.error_collector._error_group_callback = None
 _settings.error_collector.attributes.enabled = True

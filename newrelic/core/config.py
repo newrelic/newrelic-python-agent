@@ -819,7 +819,7 @@ _settings.memory_runtime_pid_metrics.enabled = _environ_as_bool(
 
 _settings.transaction_events.enabled = True
 _settings.transaction_events.max_samples_stored = _environ_as_int(
-    "NEW_RELIC_TRANSACTION_EVENTS_MAX_SAMPLES_STORED", default=DEFAULT_RESERVOIR_SIZE
+    "NEW_RELIC_ANALYTICS_EVENTS_MAX_SAMPLES_STORED", default=DEFAULT_RESERVOIR_SIZE
 )
 _settings.transaction_events.attributes.enabled = True
 _settings.transaction_events.attributes.exclude = []

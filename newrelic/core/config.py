@@ -844,7 +844,7 @@ _settings.distributed_tracing.sampler.remote_parent_not_sampled = os.environ.get
 )
 _settings.distributed_tracing.exclude_newrelic_header = False
 _settings.span_events.enabled = _environ_as_bool("NEW_RELIC_SPAN_EVENTS_ENABLED", default=True)
-_settings.span_events.max_samples_stored = _environ_as_int("NEW_RELIC_SPAN_EVENTS_MAX_SAMPLES_STORED", default=2000)
+_settings.span_events.max_samples_stored = _environ_as_int("NEW_RELIC_SPAN_EVENTS_MAX_SAMPLES_STORED", default=SPAN_EVENT_RESERVOIR_SIZE)
 _settings.span_events.attributes.enabled = True
 _settings.span_events.attributes.exclude = []
 _settings.span_events.attributes.include = []

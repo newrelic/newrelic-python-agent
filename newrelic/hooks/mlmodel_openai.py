@@ -129,11 +129,11 @@ def create_chat_completion_message_event(
     span_id,
     trace_id,
     response_model,
-    request_model,
     response_id,
     request_id,
     llm_metadata,
     output_message_list,
+    all_token_counts,
 ):
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
@@ -153,11 +153,6 @@ def create_chat_completion_message_event(
             "request_id": request_id,
             "span_id": span_id,
             "trace_id": trace_id,
-            "token_count": (
-                settings.ai_monitoring.llm_token_count_callback(request_model, message_content)
-                if settings.ai_monitoring.llm_token_count_callback
-                else None
-            ),
             "role": message.get("role"),
             "completion_id": chat_completion_id,
             "sequence": index,
@@ -165,6 +160,9 @@ def create_chat_completion_message_event(
             "vendor": "openai",
             "ingest_source": "Python",
         }
+
+        if all_token_counts:
+            chat_completion_input_message_dict["token_count"] = 0
 
         if settings.ai_monitoring.record_content.enabled:
             chat_completion_input_message_dict["content"] = message_content
@@ -193,11 +191,6 @@ def create_chat_completion_message_event(
                 "request_id": request_id,
                 "span_id": span_id,
                 "trace_id": trace_id,
-                "token_count": (
-                    settings.ai_monitoring.llm_token_count_callback(response_model, message_content)
-                    if settings.ai_monitoring.llm_token_count_callback
-                    else None
-                ),
                 "role": message.get("role"),
                 "completion_id": chat_completion_id,
                 "sequence": index,
@@ -206,6 +199,9 @@ def create_chat_completion_message_event(
                 "ingest_source": "Python",
                 "is_response": True,
             }
+
+            if all_token_counts:
+                chat_completion_output_message_dict["token_count"] = 0
 
             if settings.ai_monitoring.record_content.enabled:
                 chat_completion_output_message_dict["content"] = message_content
@@ -280,15 +276,18 @@ def _record_embedding_success(transaction, embedding_id, linking_metadata, kwarg
             else getattr(attribute_response, "organization", None)
         )
 
+        response_total_tokens = attribute_response.get("usage", {}).get("total_tokens") if response else None
+
+        total_tokens = (
+            settings.ai_monitoring.llm_token_count_callback(response_model, input_)
+            if settings.ai_monitoring.llm_token_count_callback and input_
+            else response_total_tokens
+        )
+
         full_embedding_response_dict = {
             "id": embedding_id,
             "span_id": span_id,
             "trace_id": trace_id,
-            "token_count": (
-                settings.ai_monitoring.llm_token_count_callback(response_model, input_)
-                if settings.ai_monitoring.llm_token_count_callback
-                else None
-            ),
             "request.model": kwargs.get("model") or kwargs.get("engine"),
             "request_id": request_id,
             "duration": ft.duration * 1000,
@@ -313,6 +312,7 @@ def _record_embedding_success(transaction, embedding_id, linking_metadata, kwarg
             "response.headers.ratelimitRemainingRequests": check_rate_limit_header(
                 response_headers, "x-ratelimit-remaining-requests", True
             ),
+            "response.usage.total_tokens": total_tokens,
             "vendor": "openai",
             "ingest_source": "Python",
         }
@@ -474,12 +474,15 @@ def _handle_completion_success(transaction, linking_metadata, completion_id, kwa
 
 
 def _record_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, response_headers, response):
+    settings = transaction.settings if transaction.settings is not None else global_settings()
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
+
     try:
         if response:
             response_model = response.get("model")
             response_id = response.get("id")
+            token_usage = response.get("usage") or {}
             output_message_list = []
             finish_reason = None
             choices = response.get("choices") or []
@@ -491,17 +494,53 @@ def _record_completion_success(transaction, linking_metadata, completion_id, kwa
         else:
             response_model = kwargs.get("response.model")
             response_id = kwargs.get("id")
+            token_usage = {}
             output_message_list = []
             finish_reason = None
             if "content" in kwargs:
                 output_message_list = [{"content": kwargs.get("content"), "role": kwargs.get("role")}]
                 finish_reason = kwargs.get("finish_reason")
+
         request_model = kwargs.get("model") or kwargs.get("engine")
+
+        messages = kwargs.get("messages") or [{"content": kwargs.get("prompt"), "role": "user"}]
+        input_message_list = list(messages)
+
+        # Extract token counts from response object
+        if token_usage:
+            response_prompt_tokens = token_usage.get("prompt_tokens")
+            response_completion_tokens = token_usage.get("completion_tokens")
+            response_total_tokens = token_usage.get("total_tokens")
+
+        else:
+            response_prompt_tokens = None
+            response_completion_tokens = None
+            response_total_tokens = None
+
+        # Calculate token counts by checking if a callback is registered and if we have the necessary content to pass
+        # to it. If not, then we use the token counts provided in the response object
+        input_message_content = " ".join([msg.get("content", "") for msg in input_message_list if msg.get("content")])
+        prompt_tokens = (
+            settings.ai_monitoring.llm_token_count_callback(request_model, input_message_content)
+            if settings.ai_monitoring.llm_token_count_callback and input_message_content
+            else response_prompt_tokens
+        )
+        output_message_content = " ".join([msg.get("content", "") for msg in output_message_list if msg.get("content")])
+        completion_tokens = (
+            settings.ai_monitoring.llm_token_count_callback(response_model, output_message_content)
+            if settings.ai_monitoring.llm_token_count_callback and output_message_content
+            else response_completion_tokens
+        )
+
+        total_tokens = (
+            prompt_tokens + completion_tokens if all([prompt_tokens, completion_tokens]) else response_total_tokens
+        )
+
+        all_token_counts = bool(prompt_tokens and completion_tokens and total_tokens)
 
         request_id = response_headers.get("x-request-id")
         organization = response_headers.get("openai-organization") or getattr(response, "organization", None)
-        messages = kwargs.get("messages") or [{"content": kwargs.get("prompt"), "role": "user"}]
-        input_message_list = list(messages)
+
         full_chat_completion_summary_dict = {
             "id": completion_id,
             "span_id": span_id,
@@ -546,6 +585,12 @@ def _record_completion_success(transaction, linking_metadata, completion_id, kwa
             ),
             "response.number_of_messages": len(input_message_list) + len(output_message_list),
         }
+
+        if all_token_counts:
+            full_chat_completion_summary_dict["response.usage.prompt_tokens"] = prompt_tokens
+            full_chat_completion_summary_dict["response.usage.completion_tokens"] = completion_tokens
+            full_chat_completion_summary_dict["response.usage.total_tokens"] = total_tokens
+
         llm_metadata = _get_llm_attributes(transaction)
         full_chat_completion_summary_dict.update(llm_metadata)
         transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
@@ -557,11 +602,11 @@ def _record_completion_success(transaction, linking_metadata, completion_id, kwa
             span_id,
             trace_id,
             response_model,
-            request_model,
             response_id,
             request_id,
             llm_metadata,
             output_message_list,
+            all_token_counts,
         )
     except Exception:
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
@@ -572,6 +617,7 @@ def _record_completion_error(transaction, linking_metadata, completion_id, kwarg
     trace_id = linking_metadata.get("trace.id")
     request_message_list = kwargs.get("messages", None) or []
     notice_error_attributes = {}
+
     try:
         if OPENAI_V1:
             response = getattr(exc, "response", None)
@@ -636,6 +682,7 @@ def _record_completion_error(transaction, linking_metadata, completion_id, kwarg
         output_message_list = []
         if "content" in kwargs:
             output_message_list = [{"content": kwargs.get("content"), "role": kwargs.get("role")}]
+
         create_chat_completion_message_event(
             transaction,
             request_message_list,
@@ -643,11 +690,12 @@ def _record_completion_error(transaction, linking_metadata, completion_id, kwarg
             span_id,
             trace_id,
             kwargs.get("response.model"),
-            request_model,
             response_id,
             request_id,
             llm_metadata,
             output_message_list,
+            # We do not record token counts in error cases, so set all_token_counts to True so the pipeline tokenizer does not run
+            all_token_counts=True,
         )
     except Exception:
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))

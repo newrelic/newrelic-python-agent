@@ -12,10 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from urllib.request import urlopen, urlretrieve
+
 import pytest
-
-from urllib.request import urlopen as urlopen, urlretrieve
-
 from testing_support.external_fixtures import cache_outgoing_headers, insert_incoming_headers
 from testing_support.fixtures import cat_enabled
 from testing_support.validators.validate_cross_process_headers import validate_cross_process_headers
@@ -24,9 +23,10 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
 
 from newrelic.api.background_task import background_task
 
-# Since Python 3.3, `urllib.URLopener()` has been deprecated in favor of 
+# Since Python 3.3, `urllib.URLopener()` has been deprecated in favor of
 # `urllib.request.urlopen`.  In Python 3.14, `urllib.URLopener()` will be
 # removed. `urllib.request.urlopen` corresponds to the old `urllib2.urlopen`
+
 
 @pytest.fixture(scope="session")
 def metrics(server):
@@ -124,6 +124,7 @@ def test_urlopener_file_request():
 def test_urlopener_cross_process_request(server):
     with urlopen(f"http://localhost:{server.port}/") as response:
         assert response.status == 200
+
 
 @pytest.mark.skip("Skipping CAT test")
 @cat_enabled

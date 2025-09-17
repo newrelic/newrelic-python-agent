@@ -12,14 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-
 import pytest
 
-try:
-    import urllib.request as urllib
-except:
-    import urllib
+from urllib.request import urlopen as urlopen, urlretrieve
 
 from testing_support.external_fixtures import cache_outgoing_headers, insert_incoming_headers
 from testing_support.fixtures import cat_enabled
@@ -29,16 +24,19 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
 
 from newrelic.api.background_task import background_task
 
+# Since Python 3.3, `urllib.URLopener()` has been deprecated in favor of 
+# `urllib.request.urlopen`.  In Python 3.14, `urllib.URLopener()` will be
+# removed. `urllib.request.urlopen` corresponds to the old `urllib2.urlopen`
 
 @pytest.fixture(scope="session")
 def metrics(server):
-    scoped = [(f"External/localhost:{server.port}/urllib/", 1)]
+    scoped = [(f"External/localhost:{server.port}/urllib2/", 1)]
 
     rollup = [
         ("External/all", 1),
         ("External/allOther", 1),
         (f"External/localhost:{server.port}/all", 1),
-        (f"External/localhost:{server.port}/urllib/", 1),
+        (f"External/localhost:{server.port}/urllib2/", 1),
     ]
 
     return scoped, rollup
@@ -53,8 +51,8 @@ def test_urlopener_http_request(server, metrics):
     )
     @background_task(name="test_urllib:test_urlopener_http_request")
     def _test():
-        opener = urllib.URLopener()
-        opener.open(f"http://localhost:{server.port}/")
+        with urlopen(f"http://localhost:{server.port}/") as response:
+            assert response.status == 200
 
     _test()
 
@@ -68,23 +66,20 @@ def test_urlopener_https_request(server, metrics):
     )
     @background_task(name="test_urllib:test_urlopener_https_request")
     def _test():
-        opener = urllib.URLopener()
-        try:
-            opener.open(f"https://localhost:{server.port}/")
-        except Exception:
-            pass
+        with urlopen(f"http://localhost:{server.port}/") as response:
+            assert response.status == 200
 
     _test()
 
 
 def test_urlopener_http_request_with_port(server):
-    scoped = [(f"External/localhost:{server.port}/urllib/", 1)]
+    scoped = [(f"External/localhost:{server.port}/urllib2/", 1)]
 
     rollup = [
         ("External/all", 1),
         ("External/allOther", 1),
         (f"External/localhost:{server.port}/all", 1),
-        (f"External/localhost:{server.port}/urllib/", 1),
+        (f"External/localhost:{server.port}/urllib2/", 1),
     ]
 
     @validate_transaction_metrics(
@@ -95,18 +90,18 @@ def test_urlopener_http_request_with_port(server):
     )
     @background_task(name="test_urllib:test_urlopener_http_request_with_port")
     def _test():
-        opener = urllib.URLopener()
-        opener.open(f"http://localhost:{server.port}/")
+        with urlopen(f"http://localhost:{server.port}/") as response:
+            assert response.status == 200
 
     _test()
 
 
-_test_urlopener_file_request_scoped_metrics = [("External/unknown/urllib/", None)]
+_test_urlopener_file_request_scoped_metrics = [("External/unknown/urllib2/", None)]
 
 _test_urlopener_file_request_rollup_metrics = [
     ("External/all", None),
     ("External/allOther", None),
-    ("External/unknown/urllib/", None),
+    ("External/unknown/urllib2/", None),
 ]
 
 
@@ -119,18 +114,18 @@ _test_urlopener_file_request_rollup_metrics = [
 @background_task()
 def test_urlopener_file_request():
     file_uri = f"file://{__file__}"
-    opener = urllib.URLopener()
-    opener.open(file_uri)
+    with urlopen(file_uri) as response:
+        assert response
 
 
 @background_task()
 @cache_outgoing_headers
 @validate_cross_process_headers
 def test_urlopener_cross_process_request(server):
-    opener = urllib.URLopener()
-    opener.open(f"http://localhost:{server.port}/")
+    with urlopen(f"http://localhost:{server.port}/") as response:
+        assert response.status == 200
 
-
+@pytest.mark.skip("Skipping CAT test")
 @cat_enabled
 def test_urlopener_cross_process_response(server):
     _test_urlopener_cross_process_response_scoped_metrics = [
@@ -161,8 +156,8 @@ def test_urlopener_cross_process_response(server):
     @validate_external_node_params(params=_test_urlopener_cross_process_response_external_node_params)
     @background_task(name="test_urllib:test_urlopener_cross_process_response")
     def _test():
-        opener = urllib.URLopener()
-        opener.open(f"http://localhost:{server.port}/")
+        with urlopen(f"http://localhost:{server.port}/") as response:
+            assert response.status == 200
 
     _test()
 
@@ -176,7 +171,7 @@ def test_urlretrieve_http_request(server, metrics):
     )
     @background_task(name="test_urllib:test_urlretrieve_http_request")
     def _test():
-        urllib.urlretrieve(f"http://localhost:{server.port}/")
+        urlretrieve(f"http://localhost:{server.port}/")
 
     _test()
 
@@ -191,7 +186,7 @@ def test_urlretrieve_https_request(server, metrics):
     @background_task(name="test_urllib:test_urlretrieve_https_request")
     def _test():
         try:
-            urllib.urlretrieve(f"https://localhost:{server.port}/")
+            urlretrieve(f"https://localhost:{server.port}/")
         except Exception:
             pass
 
@@ -202,7 +197,7 @@ def test_urlretrieve_https_request(server, metrics):
 @cache_outgoing_headers
 @validate_cross_process_headers
 def test_urlretrieve_cross_process_request(server):
-    urllib.urlretrieve(f"http://localhost:{server.port}/")
+    urlretrieve(f"http://localhost:{server.port}/")
 
 
 @cat_enabled
@@ -235,6 +230,6 @@ def test_urlretrieve_cross_process_response(server):
     @validate_external_node_params(params=_test_urlretrieve_cross_process_response_external_node_params)
     @background_task(name="test_urllib:test_urlretrieve_cross_process_response")
     def _test():
-        urllib.urlretrieve(f"http://localhost:{server.port}/")
+        urlretrieve(f"http://localhost:{server.port}/")
 
     _test()

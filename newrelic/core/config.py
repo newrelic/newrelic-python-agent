@@ -844,7 +844,9 @@ _settings.distributed_tracing.sampler.remote_parent_not_sampled = os.environ.get
 )
 _settings.distributed_tracing.exclude_newrelic_header = False
 _settings.span_events.enabled = _environ_as_bool("NEW_RELIC_SPAN_EVENTS_ENABLED", default=True)
-_settings.span_events.max_samples_stored = _environ_as_int("NEW_RELIC_SPAN_EVENTS_MAX_SAMPLES_STORED", default=SPAN_EVENT_RESERVOIR_SIZE)
+_settings.span_events.max_samples_stored = _environ_as_int(
+    "NEW_RELIC_SPAN_EVENTS_MAX_SAMPLES_STORED", default=SPAN_EVENT_RESERVOIR_SIZE
+)
 _settings.span_events.attributes.enabled = True
 _settings.span_events.attributes.exclude = []
 _settings.span_events.attributes.include = []
@@ -1319,9 +1321,7 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
     span_event_harvest_config = server_side_config.get("span_event_harvest_config", {})
     span_event_harvest_limit = span_event_harvest_config.get("harvest_limit", None)
     if span_event_harvest_limit is not None:
-        apply_config_setting(
-            settings_snapshot, "span_events.max_samples_stored", span_event_harvest_limit
-        )
+        apply_config_setting(settings_snapshot, "span_events.max_samples_stored", span_event_harvest_limit)
 
     # Check to see if collect_ai appears in the connect response to handle account-level AIM toggling
     collect_ai = server_side_config.get("collect_ai", None)

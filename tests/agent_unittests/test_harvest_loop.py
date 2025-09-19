@@ -563,8 +563,10 @@ def test_reservoir_size_zeros(harvest_name, harvest_setting, event_name):
         setattr(getattr(settings, harvest_setting), harvest_name, 0)
     except AttributeError:
         # For `settings.application_logging.forwarding.max_samples_stored`
-        setattr(getattr(getattr(settings, harvest_setting.split(".")[0]), harvest_setting.split(".")[1]), harvest_name, 0)
-    
+        setattr(
+            getattr(getattr(settings, harvest_setting.split(".")[0]), harvest_setting.split(".")[1]), harvest_name, 0
+        )
+
     settings.event_harvest_config.allowlist = frozenset(())
     app._stats_engine.reset_stats(settings)
 

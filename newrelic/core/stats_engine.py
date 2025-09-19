@@ -1704,9 +1704,7 @@ class StatsEngine:
         """
 
         if self.__settings is not None:
-            self._transaction_events = SampledDataSet(
-                self.__settings.transaction_events.max_samples_stored
-            )
+            self._transaction_events = SampledDataSet(self.__settings.transaction_events.max_samples_stored)
         else:
             self._transaction_events = SampledDataSet()
 

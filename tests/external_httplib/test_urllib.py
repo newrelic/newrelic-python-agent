@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import sys
+
 import pytest
 
 try:
@@ -36,6 +37,7 @@ SKIP_IF_PYTHON_3_14_OR_ABOVE = pytest.mark.skipif(
     sys.version_info[0:2] >= (3, 14), reason="urllib.URLopener() is removed in Python 3.14 and above"
 )
 
+
 @pytest.fixture(scope="session")
 def metrics(server):
     scoped = [(f"External/localhost:{server.port}/urllib/", 1)]
@@ -48,6 +50,7 @@ def metrics(server):
     ]
 
     return scoped, rollup
+
 
 @SKIP_IF_PYTHON_3_14_OR_ABOVE
 def test_urlopener_http_request(server, metrics):
@@ -82,6 +85,7 @@ def test_urlopener_https_request(server, metrics):
             pass
 
     _test()
+
 
 @SKIP_IF_PYTHON_3_14_OR_ABOVE
 def test_urlopener_http_request_with_port(server):

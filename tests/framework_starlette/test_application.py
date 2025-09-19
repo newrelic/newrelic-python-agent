@@ -120,7 +120,7 @@ def test_exception_in_middleware(target_application, app_name):
 
     # Starlette >=0.15 and <0.17 raises an exception group instead of reraising the ValueError
     # This only occurs on Python versions >=3.8
-    if sys.version_info[0:2] > (3, 7) and starlette_version >= (0, 15, 0) and starlette_version < (0, 17, 0):
+    if (0, 15, 0) <= starlette_version < (0, 17, 0):
         from anyio._backends._asyncio import ExceptionGroup
 
         exc_type = ExceptionGroup

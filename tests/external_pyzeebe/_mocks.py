@@ -31,7 +31,11 @@ DummyPublishMessageResponse = SimpleNamespace(key=99999, tenant_id=None)
 
 # Dummy RPC stub coroutines
 async def dummy_create_process_instance(
-    self, bpmn_process_id: str, variables: dict = None, version: int = -1, tenant_id: str = None # noqa: RUF013
+    self,
+    bpmn_process_id: str,
+    variables: dict = None,  # noqa: RUF013
+    version: int = -1,
+    tenant_id: str = None,  # noqa: RUF013
 ):
     """Simulate ZeebeAdapter.create_process_instance"""
     return DummyCreateProcessInstanceResponse
@@ -40,17 +44,17 @@ async def dummy_create_process_instance(
 async def dummy_create_process_instance_with_result(
     self,
     bpmn_process_id: str,
-    variables: dict = None, # noqa: RUF013
+    variables: dict = None,  # noqa: RUF013
     version: int = -1,
     timeout: int = 0,
     variables_to_fetch=None,
-    tenant_id: str = None, # noqa: RUF013
+    tenant_id: str = None,  # noqa: RUF013
 ):
     """Simulate ZeebeAdapter.create_process_instance_with_result"""
     return DummyCreateProcessInstanceWithResultResponse
 
 
-async def dummy_deploy_resource(*resource_file_path: str, tenant_id: str = None): # noqa: RUF013
+async def dummy_deploy_resource(*resource_file_path: str, tenant_id: str = None):  # noqa: RUF013
     """Simulate ZeebeAdapter.deploy_resource"""
     # Create dummy deployment metadata for each provided resource path
     deployments = [
@@ -73,10 +77,10 @@ async def dummy_publish_message(
     self,
     name: str,
     correlation_key: str,
-    variables: dict = None, # noqa: RUF013
+    variables: dict = None,  # noqa: RUF013
     time_to_live_in_milliseconds: int = 60000,
-    message_id: str = None, # noqa: RUF013
-    tenant_id: str = None, # noqa: RUF013
+    message_id: str = None,  # noqa: RUF013
+    tenant_id: str = None,  # noqa: RUF013
 ):
     """Simulate ZeebeAdapter.publish_message"""
     # Return the dummy response (contains message key)

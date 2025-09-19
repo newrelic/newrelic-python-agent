@@ -537,13 +537,13 @@ def test_reservoir_sizes(transaction_node):
 
 
 @pytest.mark.parametrize(
-    "harvest_name, harvest_setting, event_name",
+    "harvest_setting,event_name",
     [
-        ("max_samples_stored", "transaction_events", "transaction_events"),
-        ("max_event_samples_stored", "error_collector", "error_events"),
-        ("max_samples_stored", "custom_insights_events", "custom_events"),
-        ("max_samples_stored", "application_logging.forwarding", "log_events"),
-        ("max_samples_stored", "span_events", "span_events"),
+        ("transaction_events.max_samples_stored", "transaction_events"),
+        ("error_collector.max_event_samples_stored", "error_events"),
+        ("custom_insights_events.max_samples_stored", "custom_events"),
+        ("application_logging.forwarding.max_samples_stored", "log_events"),
+        ("span_events.max_samples_stored", "span_events"),
     ],
 )
 @override_generic_settings(
@@ -555,17 +555,17 @@ def test_reservoir_sizes(transaction_node):
         "distributed_tracing.enabled": True,
     },
 )
-def test_reservoir_size_zeros(harvest_name, harvest_setting, event_name):
+def test_reservoir_size_zeros(harvest_setting, event_name):
     app = Application("Python Agent Test (Harvest Loop)")
     app.connect_to_data_collector(None)
 
-    try:
-        setattr(getattr(settings, harvest_setting), harvest_name, 0)
-    except AttributeError:
-        # For `settings.application_logging.forwarding.max_samples_stored`
-        setattr(
-            getattr(getattr(settings, harvest_setting.split(".")[0]), harvest_setting.split(".")[1]), harvest_name, 0
-        )
+    # Walk down the settings tree until the 2nd to last setting name is reached to get the
+    # settings container, then set the final setting on that container to 0
+    harvest_setting = list(harvest_setting.split("."))
+    _settings = settings
+    for setting_attr in harvest_setting[:-1]:
+        _settings = getattr(_settings, setting_attr)
+    setattr(_settings, harvest_setting[-1], 0)
 
     settings.event_harvest_config.allowlist = frozenset(())
     app._stats_engine.reset_stats(settings)

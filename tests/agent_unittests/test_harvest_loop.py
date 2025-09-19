@@ -342,7 +342,7 @@ def test_application_harvest_with_spans(distributed_tracing_enabled, span_events
             "license_key": "**NOT A LICENSE KEY**",
             "distributed_tracing.enabled": distributed_tracing_enabled,
             "span_events.enabled": span_events_enabled,
-            "event_harvest_config.harvest_limits.span_event_data": max_samples_stored,
+            "span_events.max_samples_stored": max_samples_stored,
         },
     )
     def _test():
@@ -507,10 +507,10 @@ def test_adaptive_sampling(transaction_node, monkeypatch):
         "feature_flag": set(),
         "distributed_tracing.enabled": True,
         "application_logging.forwarding.enabled": True,
-        "event_harvest_config.harvest_limits.error_event_data": 1000,
-        "event_harvest_config.harvest_limits.span_event_data": 1000,
-        "event_harvest_config.harvest_limits.custom_event_data": 1000,
-        "event_harvest_config.harvest_limits.log_event_data": 1000,
+        "error_collector.max_event_samples_stored": 1000,
+        "span_events.max_samples_stored": 1000,
+        "custom_insights_events.max_samples_stored": 1000,
+        "application_logging.forwarding.max_samples_stored": 1000,
     },
 )
 def test_reservoir_sizes(transaction_node):
@@ -530,13 +530,13 @@ def test_reservoir_sizes(transaction_node):
 
 
 @pytest.mark.parametrize(
-    "harvest_name, event_name",
+    "harvest_setting,event_name",
     [
-        ("analytic_event_data", "transaction_events"),
-        ("error_event_data", "error_events"),
-        ("custom_event_data", "custom_events"),
-        ("log_event_data", "log_events"),
-        ("span_event_data", "span_events"),
+        ("transaction_events.max_samples_stored", "transaction_events"),
+        ("error_collector.max_event_samples_stored", "error_events"),
+        ("custom_insights_events.max_samples_stored", "custom_events"),
+        ("application_logging.forwarding.max_samples_stored", "log_events"),
+        ("span_events.max_samples_stored", "span_events"),
     ],
 )
 @override_generic_settings(
@@ -548,11 +548,18 @@ def test_reservoir_sizes(transaction_node):
         "distributed_tracing.enabled": True,
     },
 )
-def test_reservoir_size_zeros(harvest_name, event_name):
+def test_reservoir_size_zeros(harvest_setting, event_name):
     app = Application("Python Agent Test (Harvest Loop)")
     app.connect_to_data_collector(None)
 
-    setattr(settings.event_harvest_config.harvest_limits, harvest_name, 0)
+    # Walk down the settings tree until the 2nd to last setting name is reached to get the
+    # settings container, then set the final setting on that container to 0
+    harvest_setting = list(harvest_setting.split("."))
+    _settings = settings
+    for setting_attr in harvest_setting[:-1]:
+        _settings = getattr(_settings, setting_attr)
+    setattr(_settings, harvest_setting[-1], 0)
+
     settings.event_harvest_config.allowlist = frozenset(())
     app._stats_engine.reset_stats(settings)
 
@@ -600,7 +607,7 @@ def test_error_event_sampling_info(events_seen):
         {
             "developer_mode": True,
             "license_key": "**NOT A LICENSE KEY**",
-            "event_harvest_config.harvest_limits.error_event_data": reservoir_size,
+            "error_collector.max_event_samples_stored": reservoir_size,
         },
     )
     def _test():
@@ -669,7 +676,7 @@ def test_analytic_event_sampling_info():
         settings,
         {
             "developer_mode": True,
-            "event_harvest_config.harvest_limits.analytic_event_data": transactions_limit,
+            "transaction_events.max_samples_stored": transactions_limit,
             "agent_limits.synthetics_events": synthetics_limit,
         },
     )

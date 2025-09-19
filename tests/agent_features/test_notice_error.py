@@ -411,7 +411,7 @@ def test_transaction_error_event_limit():
 @override_application_settings(
     {
         "agent_limits.errors_per_harvest": _errors_per_harvest_limit,
-        "event_harvest_config.harvest_limits.error_event_data": _error_event_limit,
+        "error_collector.max_event_samples_stored": _error_event_limit,
     }
 )
 @reset_core_stats_engine()

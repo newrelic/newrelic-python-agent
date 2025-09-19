@@ -406,52 +406,94 @@ TSetting = collections.namedtuple("TSetting", ["name", "value", "default"])
 
 translate_settings_tests = [
     (
+        TSetting("strip_exception_messages.whitelist", [], []),
+        TSetting("strip_exception_messages.allowlist", ["non-default-value"], []),
+    ),
+    (
+        TSetting("strip_exception_messages.whitelist", ["non-default-value"], []),
+        TSetting("strip_exception_messages.allowlist", [], []),
+    ),
+    (
+        TSetting("transaction_tracer.capture_attributes", True, True),
+        TSetting("transaction_tracer.attributes.enabled", False, True),
+    ),
+    (
+        TSetting("transaction_tracer.capture_attributes", False, True),
+        TSetting("transaction_tracer.attributes.enabled", True, True),
+    ),
+    (
+        TSetting("error_collector.capture_attributes", True, True),
+        TSetting("error_collector.attributes.enabled", False, True),
+    ),
+    (
+        TSetting("error_collector.capture_attributes", False, True),
+        TSetting("error_collector.attributes.enabled", True, True),
+    ),
+    (
+        TSetting("browser_monitoring.capture_attributes", False, False),
+        TSetting("browser_monitoring.attributes.enabled", True, False),
+    ),
+    (
+        TSetting("browser_monitoring.capture_attributes", True, False),
+        TSetting("browser_monitoring.attributes.enabled", False, False),
+    ),
+    (
+        TSetting("analytics_events.capture_attributes", True, True),
+        TSetting("transaction_events.attributes.enabled", False, True),
+    ),
+    (
+        TSetting("analytics_events.capture_attributes", False, True),
+        TSetting("transaction_events.attributes.enabled", True, True),
+    ),
+    (TSetting("analytics_events.enabled", True, True), TSetting("transaction_events.enabled", False, True)),
+    (TSetting("analytics_events.enabled", False, True), TSetting("transaction_events.enabled", True, True)),
+    (
         TSetting("analytics_events.max_samples_stored", 1200, 1200),
-        TSetting("event_harvest_config.harvest_limits.analytic_event_data", 9999, 1200),
+        TSetting("transaction_events.max_samples_stored", 9999, 1200),
     ),
     (
         TSetting("analytics_events.max_samples_stored", 9999, 1200),
-        TSetting("event_harvest_config.harvest_limits.analytic_event_data", 1200, 1200),
-    ),
-    (
         TSetting("transaction_events.max_samples_stored", 1200, 1200),
-        TSetting("event_harvest_config.harvest_limits.analytic_event_data", 9999, 1200),
     ),
     (
-        TSetting("transaction_events.max_samples_stored", 9999, 1200),
         TSetting("event_harvest_config.harvest_limits.analytic_event_data", 1200, 1200),
+        TSetting("transaction_events.max_samples_stored", 9999, 1200),
     ),
     (
-        TSetting("span_events.max_samples_stored", 1000, 2000),
-        TSetting("event_harvest_config.harvest_limits.span_event_data", 9999, 2000),
+        TSetting("event_harvest_config.harvest_limits.analytic_event_data", 9999, 1200),
+        TSetting("transaction_events.max_samples_stored", 1200, 1200),
     ),
     (
-        TSetting("span_events.max_samples_stored", 9999, 2000),
         TSetting("event_harvest_config.harvest_limits.span_event_data", 1000, 2000),
+        TSetting("span_events.max_samples_stored", 9999, 2000),
     ),
     (
-        TSetting("error_collector.max_event_samples_stored", 100, 100),
-        TSetting("event_harvest_config.harvest_limits.error_event_data", 9999, 100),
+        TSetting("event_harvest_config.harvest_limits.span_event_data", 9999, 2000),
+        TSetting("span_events.max_samples_stored", 1000, 2000),
     ),
     (
-        TSetting("error_collector.max_event_samples_stored", 9999, 100),
         TSetting("event_harvest_config.harvest_limits.error_event_data", 100, 100),
+        TSetting("error_collector.max_event_samples_stored", 9999, 100),
     ),
     (
-        TSetting("custom_insights_events.max_samples_stored", 3600, 3600),
-        TSetting("event_harvest_config.harvest_limits.custom_event_data", 9999, 3600),
+        TSetting("event_harvest_config.harvest_limits.error_event_data", 9999, 100),
+        TSetting("error_collector.max_event_samples_stored", 100, 100),
     ),
     (
-        TSetting("custom_insights_events.max_samples_stored", 9999, 3600),
         TSetting("event_harvest_config.harvest_limits.custom_event_data", 3600, 3600),
+        TSetting("custom_insights_events.max_samples_stored", 9999, 3600),
     ),
     (
-        TSetting("application_logging.forwarding.max_samples_stored", 10000, 10000),
-        TSetting("event_harvest_config.harvest_limits.log_event_data", 99999, 10000),
+        TSetting("event_harvest_config.harvest_limits.custom_event_data", 9999, 3600),
+        TSetting("custom_insights_events.max_samples_stored", 3600, 3600),
     ),
     (
-        TSetting("application_logging.forwarding.max_samples_stored", 99999, 10000),
         TSetting("event_harvest_config.harvest_limits.log_event_data", 10000, 10000),
+        TSetting("application_logging.forwarding.max_samples_stored", 99999, 10000),
+    ),
+    (
+        TSetting("event_harvest_config.harvest_limits.log_event_data", 99999, 10000),
+        TSetting("application_logging.forwarding.max_samples_stored", 10000, 10000),
     ),
 ]
 

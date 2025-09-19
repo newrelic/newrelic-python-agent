@@ -20,6 +20,7 @@ import sys
 import threading
 import time
 import traceback
+from datetime import datetime, timezone
 from pathlib import Path
 
 import newrelic.api.application
@@ -53,6 +54,8 @@ from newrelic.core.config import Settings, apply_config_setting, default_host
 __all__ = ["filter_app_factory", "initialize"]
 
 _logger = logging.getLogger(__name__)
+
+DEPRECATED_MODULES = {"aioredis": datetime(2022, 2, 22, 0, 0, tzinfo=timezone.utc)}
 
 
 def _map_aws_account_id(s):
@@ -1047,6 +1050,18 @@ def module_import_hook_results():
 def _module_import_hook(target, module, function):
     def _instrument(target):
         _logger.debug("instrument module %s", ((target, module, function),))
+
+        # Deprecation warning for archived/unsupported modules
+        library_name = target.__package__.split(".")[0]
+
+        if library_name in DEPRECATED_MODULES:
+            _logger.warning(
+                "%(module)s has been archived by the developers "
+                "and has not been supported since %(date)s. %(module)s "
+                "support will be removed from New Relic in a future "
+                "release.",
+                {"module": library_name, "date": DEPRECATED_MODULES[library_name].strftime("%B %d, %Y")},
+            )
 
         try:
             instrumented = target._nr_instrumented
@@ -4053,6 +4068,12 @@ def _process_module_builtin_defaults():
         "azure_functions_worker.dispatcher",
         "newrelic.hooks.framework_azurefunctions",
         "instrument_azure_functions_worker_dispatcher",
+    )
+    _process_module_definition(
+        "pyzeebe.client.client", "newrelic.hooks.external_pyzeebe", "instrument_pyzeebe_client_client"
+    )
+    _process_module_definition(
+        "pyzeebe.worker.job_executor", "newrelic.hooks.external_pyzeebe", "instrument_pyzeebe_worker_job_executor"
     )
 
 

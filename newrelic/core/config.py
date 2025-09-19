@@ -1320,7 +1320,7 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
     span_event_harvest_limit = span_event_harvest_config.get("harvest_limit", None)
     if span_event_harvest_limit is not None:
         apply_config_setting(
-            settings_snapshot, "event_harvest_config.harvest_limits.span_event_data", span_event_harvest_limit
+            settings_snapshot, "span_events.max_samples_stored", span_event_harvest_limit
         )
 
     # Check to see if collect_ai appears in the connect response to handle account-level AIM toggling

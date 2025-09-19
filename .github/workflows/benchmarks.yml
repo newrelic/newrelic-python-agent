@@ -33,7 +33,6 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-
     strategy:
       matrix:
         python: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
@@ -70,6 +69,6 @@ jobs:
           asv continuous \
             --show-stderr \
             --split \
-            --factor ${ASV_FACTOR} \
+            --factor "${ASV_FACTOR}" \
             --python=${{ matrix.python }} \
-            ${BASE_SHA} ${GITHUB_SHA}
+            "${BASE_SHA}" "${GITHUB_SHA}"

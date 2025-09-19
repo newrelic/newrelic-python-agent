@@ -818,11 +818,17 @@ _settings.memory_runtime_pid_metrics.enabled = _environ_as_bool(
 )
 
 _settings.transaction_events.enabled = True
+_settings.transaction_events.max_samples_stored = _environ_as_int(
+    "NEW_RELIC_ANALYTICS_EVENTS_MAX_SAMPLES_STORED", default=DEFAULT_RESERVOIR_SIZE
+)
 _settings.transaction_events.attributes.enabled = True
 _settings.transaction_events.attributes.exclude = []
 _settings.transaction_events.attributes.include = []
 
 _settings.custom_insights_events.enabled = True
+_settings.custom_insights_events.max_samples_stored = _environ_as_int(
+    "NEW_RELIC_CUSTOM_INSIGHTS_EVENTS_MAX_SAMPLES_STORED", default=CUSTOM_EVENT_RESERVOIR_SIZE
+)
 _settings.custom_insights_events.max_attribute_value = _environ_as_int(
     "NEW_RELIC_CUSTOM_INSIGHTS_EVENTS_MAX_ATTRIBUTE_VALUE", default=MAX_ATTRIBUTE_LENGTH
 )
@@ -838,6 +844,9 @@ _settings.distributed_tracing.sampler.remote_parent_not_sampled = os.environ.get
 )
 _settings.distributed_tracing.exclude_newrelic_header = False
 _settings.span_events.enabled = _environ_as_bool("NEW_RELIC_SPAN_EVENTS_ENABLED", default=True)
+_settings.span_events.max_samples_stored = _environ_as_int(
+    "NEW_RELIC_SPAN_EVENTS_MAX_SAMPLES_STORED", default=SPAN_EVENT_RESERVOIR_SIZE
+)
 _settings.span_events.attributes.enabled = True
 _settings.span_events.attributes.exclude = []
 _settings.span_events.attributes.include = []
@@ -865,6 +874,9 @@ _settings.error_collector.capture_source = False
 _settings.error_collector.ignore_classes = []
 _settings.error_collector.ignore_status_codes = _parse_status_codes("100-102 200-208 226 300-308 404", set())
 _settings.error_collector.expected_classes = []
+_settings.error_collector.max_event_samples_stored = _environ_as_int(
+    "NEW_RELIC_ERROR_COLLECTOR_MAX_EVENT_SAMPLES_STORED", default=ERROR_EVENT_RESERVOIR_SIZE
+)
 _settings.error_collector.expected_status_codes = set()
 _settings.error_collector._error_group_callback = None
 _settings.error_collector.attributes.enabled = True
@@ -1020,6 +1032,9 @@ _settings.application_logging.forwarding.enabled = _environ_as_bool(
 )
 _settings.application_logging.forwarding.custom_attributes = _environ_as_mapping(
     "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_CUSTOM_ATTRIBUTES", default=""
+)
+_settings.application_logging.forwarding.max_samples_stored = _environ_as_int(
+    "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_MAX_SAMPLES_STORED", default=LOG_EVENT_RESERVOIR_SIZE
 )
 
 _settings.application_logging.forwarding.labels.enabled = _environ_as_bool(
@@ -1306,9 +1321,7 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
     span_event_harvest_config = server_side_config.get("span_event_harvest_config", {})
     span_event_harvest_limit = span_event_harvest_config.get("harvest_limit", None)
     if span_event_harvest_limit is not None:
-        apply_config_setting(
-            settings_snapshot, "event_harvest_config.harvest_limits.span_event_data", span_event_harvest_limit
-        )
+        apply_config_setting(settings_snapshot, "span_events.max_samples_stored", span_event_harvest_limit)
 
     # Check to see if collect_ai appears in the connect response to handle account-level AIM toggling
     collect_ai = server_side_config.get("collect_ai", None)

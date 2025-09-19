@@ -15,15 +15,13 @@
 import os
 import sys
 
-from pathlib import Path
-
 python_version = sys.version_info[:2]
 
-if python_version >= (3, 7):
+if python_version >= (3, 8):
     pass
 else:
     error_msg = (
-        "The New Relic Python agent only supports Python 3.7+. We recommend upgrading to a newer version of Python."
+        "The New Relic Python agent only supports Python 3.8+. We recommend upgrading to a newer version of Python."
     )
 
     try:
@@ -35,14 +33,14 @@ else:
             (3, 4): "4.20.0.120",
             (3, 5): "5.24.0.153",
             (3, 6): "7.16.0.178",
+            (3, 7): "10.17.0",
         }
         last_supported_version = last_supported_version_lookup.get(python_version, None)
 
         if last_supported_version:
-            python_version_str = "%s.%s" % (python_version[0], python_version[1])
-            error_msg += " The last agent version to support Python %s was v%s." % (
-                python_version_str,
-                last_supported_version,
+            python_version_str = "{}.{}".format(python_version[0], python_version[1])
+            error_msg += " The last agent version to support Python {} was v{}.".format(
+                python_version_str, last_supported_version
             )
     except Exception:
         pass
@@ -61,12 +59,9 @@ except ImportError:
 from distutils.command.build_ext import build_ext
 from distutils.core import Extension
 from distutils.errors import CCompilerError, DistutilsExecError, DistutilsPlatformError
+from pathlib import Path
 
-
-if sys.platform == "win32":
-    build_ext_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError, IOError)
-else:
-    build_ext_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError)
+build_ext_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError, OSError)
 
 
 class BuildExtFailed(Exception):
@@ -78,27 +73,27 @@ class optional_build_ext(build_ext):
         try:
             build_ext.run(self)
         except DistutilsPlatformError:
-            raise BuildExtFailed()
+            raise BuildExtFailed
 
     def build_extension(self, ext):
         try:
             build_ext.build_extension(self, ext)
         except build_ext_errors:
-            raise BuildExtFailed()
+            raise BuildExtFailed
 
 
-kwargs = dict(
-    name="newrelic",
-    setup_requires=["setuptools>=61.2", "setuptools_scm>=6.4,<10"],
-    license="Apache-2.0",
-)
+kwargs = {
+    "name": "newrelic",
+    "setup_requires": ["setuptools>=61.2", "setuptools_scm>=6.4,<10"],
+    "license": "Apache-2.0",
+}
 
 if not with_setuptools:
-    script_directory = os.path.dirname(__file__)
+    script_directory = Path(__file__).parent
     if not script_directory:
-        script_directory = os.getcwd()
+        script_directory = Path.cwd()
 
-    readme_file = os.path.join(script_directory, "README.md")
+    readme_file = script_directory / "README.md"
 
     kwargs["scripts"] = ["scripts/newrelic-admin"]
 
@@ -130,25 +125,22 @@ if not with_setuptools:
         "newrelic.samplers",
     ]
 
-    kwargs.update(dict(
-        python_requires=">=3.7",
-        zip_safe=False,
-        packages=packages,
-        package_data={
-            "newrelic": ["newrelic.ini", "version.txt", "packages/urllib3/LICENSE.txt", "common/cacert.pem", "scripts/azure-prebuild.sh"],
-        },
-    ))
-
-
-
-def with_librt():
-    try:
-        if sys.platform.startswith("linux"):
-            import ctypes.util
-
-            return ctypes.util.find_library("rt")
-    except Exception:
-        pass
+    kwargs.update(
+        {
+            "python_requires": ">=3.8",
+            "zip_safe": False,
+            "packages": packages,
+            "package_data": {
+                "newrelic": [
+                    "newrelic.ini",
+                    "version.txt",
+                    "packages/urllib3/LICENSE.txt",
+                    "common/cacert.pem",
+                    "scripts/azure-prebuild.sh",
+                ]
+            },
+        }
+    )
 
 
 def run_setup(with_extensions):
@@ -159,18 +151,11 @@ def run_setup(with_extensions):
         kwargs_tmp = dict(kwargs)
 
         if with_extensions:
-            monotonic_libraries = []
-            if with_librt():
-                monotonic_libraries = ["rt"]
-
             kwargs_tmp["ext_modules"] = [
                 Extension("newrelic.packages.wrapt._wrappers", ["newrelic/packages/wrapt/_wrappers.c"]),
-                Extension(
-                    "newrelic.common._monotonic", ["newrelic/common/_monotonic.c"], libraries=monotonic_libraries
-                ),
                 Extension("newrelic.core._thread_utilization", ["newrelic/core/_thread_utilization.c"]),
             ]
-            kwargs_tmp["cmdclass"] = dict(build_ext=optional_build_ext)
+            kwargs_tmp["cmdclass"] = {"build_ext": optional_build_ext}
 
         setup(**kwargs_tmp)
 

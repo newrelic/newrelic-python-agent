@@ -14,12 +14,14 @@
 
 import pytest
 import webtest
+from testing_support.asgi_testing import AsgiTest
 from testing_support.fixtures import (
     dt_enabled,
     override_application_settings,
     reset_core_stats_engine,
     validate_attributes,
 )
+from testing_support.sample_asgi_applications import normal_asgi_application
 from testing_support.validators.validate_browser_attributes import validate_browser_attributes
 from testing_support.validators.validate_error_event_attributes import validate_error_event_attributes
 from testing_support.validators.validate_error_event_attributes_outside_transaction import (
@@ -43,13 +45,6 @@ from newrelic.api.time_trace import notice_error
 from newrelic.api.transaction import add_custom_attribute, set_user_id
 from newrelic.api.wsgi_application import wsgi_application
 from newrelic.common.object_names import callable_name
-
-try:
-    from testing_support.asgi_testing import AsgiTest
-    from testing_support.sample_asgi_applications import normal_asgi_application
-except SyntaxError:
-    normal_asgi_application = None
-
 
 URL_PARAM = "some_key"
 URL_PARAM2 = "second_key"
@@ -150,12 +145,7 @@ def normal_wsgi_application(environ, start_response):
     return [output]
 
 
-application_params = [normal_wsgi_application]
-if normal_asgi_application:
-    application_params.append(normal_asgi_application)
-
-
-@pytest.fixture(scope="module", params=application_params)
+@pytest.fixture(scope="module", params=[normal_wsgi_application, normal_asgi_application])
 def normal_application(request):
     if request.param is normal_wsgi_application:
         return webtest.TestApp(normal_wsgi_application)

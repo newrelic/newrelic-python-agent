@@ -109,3 +109,11 @@ def test_as_string_10(connection):
     )
     result = q2.as_string(connection)
     assert result == 'insert into table ("foo", "bar", "baz") values (%(foo)s, %(bar)s, %(baz)s)'
+
+
+@background_task()
+def test_as_string_11(connection):
+    ident = sql.Identifier("foo")
+    # No context provided to as_string(), should not raise an error
+    result = ident.as_string()
+    assert result == '"foo"'

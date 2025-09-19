@@ -20,8 +20,8 @@ from _mocks import (
 )
 from pyzeebe import ZeebeClient, create_insecure_channel
 from pyzeebe.grpc_internals.zeebe_adapter import ZeebeAdapter
-from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_custom_event import validate_custom_event_count
+from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
@@ -114,7 +114,14 @@ def test_deploy_resource_outside_txn(monkeypatch, loop):
 @validate_transaction_metrics(
     "test_zeebe_client:publish_message", rollup_metrics=[("ZeebeClient/publish_message", 1)], background_task=True
 )
-@validate_span_events(exact_agents={"zeebe.client.messageName": "test_message", "zeebe.client.correlationKey": "999999", "zeebe.client.messageId": "abc123"}, count=1)
+@validate_span_events(
+    exact_agents={
+        "zeebe.client.messageName": "test_message",
+        "zeebe.client.correlationKey": "999999",
+        "zeebe.client.messageId": "abc123",
+    },
+    count=1,
+)
 def test_publish_message(monkeypatch, loop):
     monkeypatch.setattr(ZeebeAdapter, "publish_message", dummy_publish_message)
 
@@ -124,6 +131,7 @@ def test_publish_message(monkeypatch, loop):
         assert result.key == 999999
 
     loop.run_until_complete(_test())
+
 
 @validate_custom_event_count(count=0)
 def test_publish_message_outside_txn(monkeypatch, loop):

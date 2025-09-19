@@ -4126,8 +4126,12 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.framework_azurefunctions",
         "instrument_azure_functions_worker_dispatcher",
     )
-    _process_module_definition("pyzeebe.client.client", "newrelic.hooks.external_pyzeebe", "instrument_pyzeebe_client_client")
-    _process_module_definition("pyzeebe.worker.job_executor", "newrelic.hooks.external_pyzeebe", "instrument_pyzeebe_worker_job_executor")
+    _process_module_definition(
+        "pyzeebe.client.client", "newrelic.hooks.external_pyzeebe", "instrument_pyzeebe_client_client"
+    )
+    _process_module_definition(
+        "pyzeebe.worker.job_executor", "newrelic.hooks.external_pyzeebe", "instrument_pyzeebe_worker_job_executor"
+    )
 
 
 def _process_module_entry_points():

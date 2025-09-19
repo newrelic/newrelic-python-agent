@@ -30,11 +30,10 @@ from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import (
     accept_distributed_trace_headers,
-    accept_distributed_trace_payload,
-    create_distributed_trace_payload,
     current_span_id,
     current_trace_id,
     current_transaction,
+    insert_distributed_trace_headers,
 )
 from newrelic.api.web_transaction import WSGIWebTransaction
 from newrelic.api.wsgi_application import wsgi_application
@@ -184,10 +183,13 @@ def test_distributed_trace_attributes(span_events, accept_payload):
         payload["d"]["pa"] = "5e5733a911cfbc73"
 
         if accept_payload:
-            result = accept_distributed_trace_payload(payload)
+            headers = {"newrelic": payload}
+            result = accept_distributed_trace_headers(headers)
             assert result
         else:
-            create_distributed_trace_payload()
+            headers = []
+            insert_distributed_trace_headers(headers)
+            assert headers
 
         try:
             raise ValueError("cookies")
@@ -264,7 +266,8 @@ def test_distributed_tracing_metrics(web_transaction, gen_error, has_parent):
     )
     def _test():
         with _make_test_transaction() as transaction:
-            transaction.accept_distributed_trace_payload(dt_payload)
+            dt_headers = {"newrelic": dt_payload}
+            transaction.accept_distributed_trace_headers(dt_headers)
 
             if gen_error:
                 try:
@@ -405,8 +408,8 @@ def test_inbound_dt_payload_acceptance(trusted_account_key):
                 "tx": "8703ff3d88eefe9d",
             },
         }
-
-        result = transaction.accept_distributed_trace_payload(payload)
+        headers = {"newrelic": payload}
+        result = transaction.accept_distributed_trace_headers(headers)
         if trusted_account_key:
             assert result
         else:

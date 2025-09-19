@@ -860,22 +860,6 @@ def test_default_events_harvested(allowlist_event):
 
 
 @failing_endpoint("analytic_event_data")
-@override_generic_settings(settings, {"developer_mode": True, "agent_limits.merge_stats_maximum": 0})
-def test_infinite_merges():
-    app = Application("Python Agent Test (Harvest Loop)")
-    app.connect_to_data_collector(None)
-
-    app._stats_engine.transaction_events.add("transaction event")
-
-    assert app._stats_engine.transaction_events.num_seen == 1
-
-    app.harvest()
-
-    # the agent_limits.merge_stats_maximum is not respected
-    assert app._stats_engine.transaction_events.num_seen == 1
-
-
-@failing_endpoint("analytic_event_data")
 @override_generic_settings(settings, {"developer_mode": True})
 def test_flexible_harvest_rollback():
     app = Application("Python Agent Test (Harvest Loop)")

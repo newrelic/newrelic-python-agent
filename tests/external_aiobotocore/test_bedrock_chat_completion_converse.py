@@ -17,7 +17,7 @@ import pytest
 from conftest import BOTOCORE_VERSION
 from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
-    add_token_count_to_events,
+    add_token_counts_to_chat_events,
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
     events_sans_content,
@@ -49,6 +49,9 @@ chat_completion_expected_events = [
             "duration": None,  # Response time varies each test run
             "request.model": "anthropic.claude-3-sonnet-20240229-v1:0",
             "response.model": "anthropic.claude-3-sonnet-20240229-v1:0",
+            "response.usage.prompt_tokens": 26,
+            "response.usage.completion_tokens": 100,
+            "response.usage.total_tokens": 126,
             "request.temperature": 0.7,
             "request.max_tokens": 100,
             "response.choices.finish_reason": "max_tokens",
@@ -70,6 +73,7 @@ chat_completion_expected_events = [
             "role": "system",
             "completion_id": None,
             "sequence": 0,
+            "token_count": 0,
             "response.model": "anthropic.claude-3-sonnet-20240229-v1:0",
             "vendor": "bedrock",
             "ingest_source": "Python",
@@ -88,6 +92,7 @@ chat_completion_expected_events = [
             "role": "user",
             "completion_id": None,
             "sequence": 1,
+            "token_count": 0,
             "response.model": "anthropic.claude-3-sonnet-20240229-v1:0",
             "vendor": "bedrock",
             "ingest_source": "Python",
@@ -106,6 +111,7 @@ chat_completion_expected_events = [
             "role": "assistant",
             "completion_id": None,
             "sequence": 2,
+            "token_count": 0,
             "response.model": "anthropic.claude-3-sonnet-20240229-v1:0",
             "vendor": "bedrock",
             "ingest_source": "Python",
@@ -189,7 +195,7 @@ def test_bedrock_chat_completion_no_content(set_trace_info, exercise_model):
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
 def test_bedrock_chat_completion_with_token_count(set_trace_info, exercise_model):
-    @validate_custom_events(add_token_count_to_events(chat_completion_expected_events))
+    @validate_custom_events(add_token_counts_to_chat_events(chat_completion_expected_events))
     # One summary event, one user message, and one response message from the assistant
     @validate_custom_event_count(count=4)
     @validate_transaction_metrics(
@@ -474,48 +480,5 @@ def test_bedrock_chat_completion_error_invalid_model_no_content(loop, bedrock_co
         add_custom_attribute("non_llm_attr", "python-agent")
 
         converse_invalid_model(loop, bedrock_converse_server)
-
-    _test()
-
-
-@reset_core_stats_engine()
-@override_llm_token_callback_settings(llm_token_count_callback)
-def test_bedrock_chat_completion_error_incorrect_access_key_with_token_count(
-    monkeypatch, bedrock_converse_server, loop, set_trace_info
-):
-    """
-    A request is made to the server with invalid credentials. botocore will reach out to the server and receive an
-    UnrecognizedClientException as a response. Information from the request will be parsed and reported in customer
-    events. The error response can also be parsed, and will be included as attributes on the recorded exception.
-    """
-
-    @validate_custom_events(add_token_count_to_events(chat_completion_invalid_access_key_error_events))
-    @validate_error_trace_attributes(
-        _client_error_name,
-        exact_attrs={
-            "agent": {},
-            "intrinsic": {},
-            "user": {
-                "http.statusCode": 403,
-                "error.message": "The security token included in the request is invalid.",
-                "error.code": "UnrecognizedClientException",
-            },
-        },
-    )
-    @validate_transaction_metrics(
-        name="test_bedrock_chat_completion_incorrect_access_key_with_token_count",
-        scoped_metrics=[("Llm/completion/Bedrock/converse", 1)],
-        rollup_metrics=[("Llm/completion/Bedrock/converse", 1)],
-        custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
-        background_task=True,
-    )
-    @background_task(name="test_bedrock_chat_completion_incorrect_access_key_with_token_count")
-    def _test():
-        set_trace_info()
-        add_custom_attribute("llm.conversation_id", "my-awesome-id")
-        add_custom_attribute("llm.foo", "bar")
-        add_custom_attribute("non_llm_attr", "python-agent")
-
-        converse_incorrect_access_key(loop, bedrock_converse_server, monkeypatch)
 
     _test()

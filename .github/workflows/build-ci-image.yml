@@ -89,8 +89,6 @@ jobs:
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
           outputs: type=image,name=ghcr.io/${{ steps.image-name.outputs.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true
-          cache-from: type=gha,scope=build-${{ matrix.cache_tag }}
-          cache-to: type=gha,scope=build-${{ matrix.cache_tag }}
 
       - name: Export Digest
         run: |

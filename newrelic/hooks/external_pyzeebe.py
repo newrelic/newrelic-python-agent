@@ -16,9 +16,9 @@
 import logging
 
 from newrelic.api.application import application_instance
-from newrelic.api.web_transaction import WebTransaction
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.transaction import current_transaction
+from newrelic.api.web_transaction import WebTransaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
 _logger = logging.getLogger(__name__)
@@ -28,7 +28,9 @@ CLIENT_ATTRIBUTES_DEPLOY_RESOURCE_LOG_MSG = "Exception occurred in PyZeebe instr
 
 # Adds client method params as txn or span attributes
 def _add_client_input_attributes(method_name, trace, args, kwargs):
-    bpmn_id = extract_agent_attribute_from_methods(args, kwargs, method_name, ("run_process", "run_process_with_result"), "bpmn_process_id", 0)
+    bpmn_id = extract_agent_attribute_from_methods(
+        args, kwargs, method_name, ("run_process", "run_process_with_result"), "bpmn_process_id", 0
+    )
     if bpmn_id:
         trace._add_agent_attribute("zeebe.client.bpmnProcessId", bpmn_id)
 
@@ -36,14 +38,16 @@ def _add_client_input_attributes(method_name, trace, args, kwargs):
     if msg_name:
         trace._add_agent_attribute("zeebe.client.messageName", msg_name)
 
-    correlation_key = extract_agent_attribute_from_methods(args, kwargs, method_name, ("publish_message"), "correlation_key", 1)
+    correlation_key = extract_agent_attribute_from_methods(
+        args, kwargs, method_name, ("publish_message"), "correlation_key", 1
+    )
     if correlation_key:
         trace._add_agent_attribute("zeebe.client.correlationKey", correlation_key)
-    
+
     message_id = extract_agent_attribute_from_methods(args, kwargs, method_name, ("publish_message"), "message_id", 4)
     if message_id:
         trace._add_agent_attribute("zeebe.client.messageId", message_id)
-    
+
     resource = extract_agent_attribute_from_methods(args, {}, method_name, ("deploy_resource"), None, 0)
     if resource:
         try:
@@ -61,7 +65,13 @@ def extract_agent_attribute_from_methods(args, kwargs, method_name, methods, par
                 value = args[index]
             return value
     except Exception:
-        _logger.warning("Exception occurred in PyZeebe instrumentation: failed to extract %s from %s. Report this issue to New Relic support.", param, method_name, exc_info=True)
+        _logger.warning(
+            "Exception occurred in PyZeebe instrumentation: failed to extract %s from %s. Report this issue to New Relic support.",
+            param,
+            method_name,
+            exc_info=True,
+        )
+
 
 # Async wrapper that instruments router/worker annotations`
 async def _nr_wrapper_execute_one_job(wrapped, instance, args, kwargs):

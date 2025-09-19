@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
+from conftest import PSYCOPG_VERSION
+
 try:
     from psycopg import sql
 except ImportError:
@@ -111,6 +114,7 @@ def test_as_string_10(connection):
     assert result == 'insert into table ("foo", "bar", "baz") values (%(foo)s, %(bar)s, %(baz)s)'
 
 
+@pytest.mark.skipif(PSYCOPG_VERSION < (3, 2, 0), reason="This signature was changed in psycopg 3.2.0")
 @background_task()
 def test_as_string_11(connection):
     ident = sql.Identifier("foo")

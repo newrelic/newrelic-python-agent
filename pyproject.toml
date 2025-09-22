@@ -12,14 +12,103 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# ===========================
+# Project Build Configuration
+# ===========================
+
+[project]
+name="newrelic"
+description = "New Relic Python Agent"
+authors = [{name = "New Relic", email = "support@newrelic.com"}]
+maintainers = [{name = "New Relic", email = "support@newrelic.com"}]
+readme = "README.md"
+# License requires setuptools>=77.0.3 for pyproject.toml, which is Python 3.9+
+# license = "Apache-2.0"
+# license-files = [
+#     "LICENSE",
+#     "THIRD_PARTY_NOTICES.md",
+# ]
+requires-python = ">=3.7"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+    "Topic :: System :: Monitoring",
+]
+dynamic = ["version", "license"]
+
+[project.urls]
+Homepage = "https://docs.newrelic.com/docs/apm/agents/python-agent/"
+GitHub = "https://github.com/newrelic/newrelic-python-agent"
+"Release Notes" = "https://docs.newrelic.com/docs/release-notes/agent-release-notes/python-release-notes/"
+
+[project.optional-dependencies]
+infinite-tracing = ["grpcio", "protobuf"]
+
+[project.scripts]
+newrelic-admin = "newrelic.admin:main"
+
+[build-system]
+requires = [
+    "setuptools>=61.2",
+    "setuptools_scm>=6.4,<10",
+]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+zip-safe = false
+packages = [
+    "newrelic",
+    "newrelic.admin",
+    "newrelic.api",
+    "newrelic.bootstrap",
+    "newrelic.common",
+    "newrelic.core",
+    "newrelic.extras",
+    "newrelic.extras.framework_django",
+    "newrelic.extras.framework_django.templatetags",
+    "newrelic.hooks",
+    "newrelic.network",
+    "newrelic.packages",
+    "newrelic.packages.isort",
+    "newrelic.packages.isort.stdlibs",
+    "newrelic.packages.urllib3",
+    "newrelic.packages.urllib3.util",
+    "newrelic.packages.urllib3.contrib",
+    "newrelic.packages.urllib3.contrib._securetransport",
+    "newrelic.packages.urllib3.packages",
+    "newrelic.packages.urllib3.packages.backports",
+    "newrelic.packages.wrapt",
+    "newrelic.packages.opentelemetry_proto",
+    "newrelic.samplers",
+]
+
+[tool.setuptools.package-data]
+newrelic = ["newrelic.ini", "version.txt", "packages/urllib3/LICENSE.txt", "common/cacert.pem", "scripts/azure-prebuild.sh"]
+
+[tool.setuptools_scm]
+write_to = "newrelic/_version.py"
+# Don't convert git_describe_command to an array, it doesn't seem to work properly on any versions of setuptools_scm.
+git_describe_command = 'git describe --dirty --tags --long --match "*.*.*"'
+
+# ==================
+# Ruff Configuration
+# ==================
+
 [tool.ruff]
 output-format = "grouped"
 line-length = 120
-target-version = "py37"
+target-version = "py38"
 force-exclude = true  # Fixes issue with megalinter config preventing exclusion of files
 extend-exclude = [
     "newrelic/packages/",
-    "setup.py",
     "newrelic/core/infinite_tracing_*_pb2.py",
 ]
 namespace-packages = ["testing_support"]
@@ -111,7 +200,7 @@ ignore = [
     "PT012",  # pytest-raises-with-multiple-statements (too many to fix all at once)
     # Permanently disabled rules
     "PLC0415",  # import-outside-top-level (intentionally used frequently)
-    "UP006",  # non-pep585-annotation (not compatible with Python 3.7 or 3.8)
+    "UP006",  # non-pep585-annotation (not compatible with Python 3.8)
     "D203",  # incorrect-blank-line-before-class
     "D213",  # multi-line-summary-second-line
     "ARG001",  # unused-argument
@@ -135,6 +224,13 @@ ignore = [
 ]
 
 [tool.ruff.lint.per-file-ignores]
+"setup.py" = [
+    # Disabled rules in setup.py
+    # setup.py needs to not immediately crash on Python 2 to log error messages
+    "UP032",  # f-string (Python 3+ syntax)
+    "B904",  # raise-without-from-inside-except (Python 3+ syntax)
+    "E402",  # module-import-not-at-top-of-file (intentional)
+]
 "tests/*" = [
     # Disabled rules in tests
     "S",  # flake8-bandit (security checks are not necessary in tests)
@@ -159,61 +255,9 @@ ignore = [
     "S108",  # flake8-bandit (hardcoded log files are never used as input)
 ]
 
-# Alternate linters and formatters
-[tool.black]
-line-length = 120
-include = '\.pyi?$'
-
-[tool.isort]
-profile = "black"
-
-[tool.pylint.messages_control]
-disable = [
-    "C0103",
-    "C0114",
-    "C0115",
-    "C0116",
-    "C0209",
-    "C0302",
-    "C0415",
-    "E0401",
-    "E1120",
-    "R0205",
-    "R0401",
-    "R0801",
-    "R0902",
-    "R0903",
-    "R0904",
-    "R0911",
-    "R0912",
-    "R0913",
-    "R0914",
-    "R0915",
-    "R1705",
-    "R1710",
-    "R1725",
-    "W0201",
-    "W0212",
-    "W0223",
-    "W0402",
-    "W0603",
-    "W0612",
-    "W0613",
-    "W0702",
-    "W0703",
-    "W0706",
-    "line-too-long",
-    "redefined-outer-name",
-]
-
-[tool.pylint.format]
-max-line-length = "120"
-
-[tool.pylint.basic]
-good-names = "exc,val,tb"
-
-[tool.bandit]
-skips = ["B110", "B101", "B404"]
+# =========================
+# Other Tools Configuration
+# =========================
 
 [tool.flynt]
 line-length = 999999

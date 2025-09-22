@@ -180,7 +180,8 @@ def test_distributed_tracing_metrics(web_transaction, gen_error, has_parent):
     )
     def _test():
         with _make_test_transaction() as transaction:
-            transaction.accept_distributed_trace_payload(dt_payload)
+            dt_headers = {"newrelic": dt_payload}
+            transaction.accept_distributed_trace_headers(dt_headers)
 
             if gen_error:
                 try:

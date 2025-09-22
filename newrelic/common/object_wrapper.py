@@ -20,7 +20,6 @@ make use of when doing monkey patching.
 """
 
 import inspect
-import warnings
 
 from newrelic.packages.wrapt import BoundFunctionWrapper as _BoundFunctionWrapper
 from newrelic.packages.wrapt import CallableObjectProxy as _CallableObjectProxy
@@ -111,23 +110,6 @@ class FunctionWrapper(ObjectProxy, _FunctionWrapper):
 
 class CallableObjectProxy(ObjectProxy, _CallableObjectProxy):
     pass
-
-
-# The ObjectWrapper class needs to be deprecated and removed once all our
-# own code no longer uses it. It reaches down into what are wrapt internals
-# at present which shouldn't be doing.
-
-
-class ObjectWrapper(FunctionWrapper):
-    def __init__(self, wrapped, instance, wrapper):
-        warnings.warn(
-            (
-                "The ObjectWrapper API is deprecated. Please use one of ObjectProxy, FunctionWrapper, or CallableObjectProxy instead."
-            ),
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        super().__init__(wrapped, wrapper)
 
 
 # Function for creating a decorator for applying to functions, as well as

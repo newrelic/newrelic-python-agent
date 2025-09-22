@@ -140,7 +140,7 @@ def test_span_event_harvest_config(connect_response_fields):
         from newrelic.core.config import SPAN_EVENT_RESERVOIR_SIZE
 
         expected = SPAN_EVENT_RESERVOIR_SIZE
-    assert protocol.configuration.event_harvest_config.harvest_limits.span_event_data == expected
+    assert protocol.configuration.span_events.max_samples_stored == expected
 
 
 @override_generic_settings(global_settings(), {"developer_mode": True})

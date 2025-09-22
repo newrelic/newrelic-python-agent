@@ -24,7 +24,7 @@ from newrelic.api.application import application_instance as application
 from newrelic.api.background_task import BackgroundTask
 
 
-@override_application_settings({"event_harvest_config.harvest_limits.analytic_event_data": 1})
+@override_application_settings({"transaction_events.max_samples_stored": 1})
 @pytest.mark.parametrize("first_transaction_saved", [True, False])
 def test_priority_used_in_transaction_events(first_transaction_saved):
     first_priority = 1 if first_transaction_saved else 0
@@ -57,7 +57,7 @@ def test_priority_used_in_transaction_events(first_transaction_saved):
     _test()
 
 
-@override_application_settings({"event_harvest_config.harvest_limits.error_event_data": 1})
+@override_application_settings({"error_collector.max_event_samples_stored": 1})
 @pytest.mark.parametrize("first_transaction_saved", [True, False])
 def test_priority_used_in_transaction_error_events(first_transaction_saved):
     first_priority = 1 if first_transaction_saved else 0
@@ -97,7 +97,7 @@ def test_priority_used_in_transaction_error_events(first_transaction_saved):
     _test()
 
 
-@override_application_settings({"event_harvest_config.harvest_limits.custom_event_data": 1})
+@override_application_settings({"custom_insights_events.max_samples_stored": 1})
 @pytest.mark.parametrize("first_transaction_saved", [True, False])
 def test_priority_used_in_transaction_custom_events(first_transaction_saved):
     first_priority = 1 if first_transaction_saved else 0

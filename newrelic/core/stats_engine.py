@@ -714,7 +714,7 @@ class StatsEngine:
         if getattr(value, "_nr_ignored", None):
             return
 
-        module, name, fullnames, message_raw = parse_exc_info(error)
+        _module, name, fullnames, message_raw = parse_exc_info(error)
         fullname = fullnames[0]
 
         # In the case case of JSON formatting for OpenAI models

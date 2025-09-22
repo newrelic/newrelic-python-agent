@@ -253,7 +253,7 @@ class TimeTrace:
         if getattr(value, "_nr_ignored", None):
             return
 
-        module, name, fullnames, message_raw = parse_exc_info((exc, value, tb))
+        _module, name, fullnames, message_raw = parse_exc_info((exc, value, tb))
         fullname = fullnames[0]
 
         # In case message is in JSON format for OpenAI models

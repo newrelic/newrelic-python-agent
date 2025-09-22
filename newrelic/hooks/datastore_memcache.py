@@ -69,7 +69,7 @@ def MemcacheSingleWrapper(wrapped, product, target, operation, module):
             result = wrapped(*args, **kwargs)
 
             instance_info = transaction._nr_datastore_instance_info
-            (host, port_path_or_id, db) = instance_info
+            (host, port_path_or_id, _db) = instance_info
             dt.host = host
             dt.port_path_or_id = port_path_or_id
 

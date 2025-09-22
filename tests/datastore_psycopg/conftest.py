@@ -17,6 +17,8 @@ from testing_support.db_settings import postgresql_settings
 from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
+from newrelic.common.package_version_utils import get_package_version_tuple
+
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
     "transaction_tracer.explain_threshold": 0.0,
@@ -36,6 +38,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 
 DB_MULTIPLE_SETTINGS = postgresql_settings()
 DB_SETTINGS = DB_MULTIPLE_SETTINGS[0]
+PSYCOPG_VERSION = get_package_version_tuple("psycopg")
 
 
 @pytest.fixture(scope="session", params=["sync", "async"])

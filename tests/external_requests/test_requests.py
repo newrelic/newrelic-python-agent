@@ -17,7 +17,7 @@ import requests
 import requests.exceptions
 from testing_support.external_fixtures import cache_outgoing_headers
 from testing_support.fixtures import override_application_settings, validate_tt_parenting
-from testing_support.validators.validate_cross_process_headers import validate_cross_process_headers
+from testing_support.validators.validate_distributed_tracing_headers import validate_distributed_tracing_headers
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
@@ -153,11 +153,11 @@ def test_wrong_datatype_url_get():
 
 
 @pytest.mark.parametrize("distributed_tracing,span_events", ((True, True), (True, False), (False, False)))
-def test_requests_cross_process_request(distributed_tracing, span_events, server):
+def test_requests_distributed_tracing_request(distributed_tracing, span_events, server):
     @validate_transaction_errors(errors=[])
-    @background_task(name="test_requests:test_requests_cross_process_request")
+    @background_task(name="test_requests:test_requests_distributed_tracing_request")
     @cache_outgoing_headers
-    @validate_cross_process_headers
+    @validate_distributed_tracing_headers
     def _test():
         requests.get(f"http://localhost:{server.port}/")
 

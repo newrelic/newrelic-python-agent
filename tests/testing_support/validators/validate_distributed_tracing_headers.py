@@ -18,7 +18,7 @@ from testing_support.validators.validate_distributed_tracing_header import valid
 
 
 @function_wrapper
-def validate_cross_process_headers(wrapped, instance, args, kwargs):
+def validate_distributed_tracing_headers(wrapped, instance, args, kwargs):
     result = wrapped(*args, **kwargs)
 
     transaction = current_transaction()

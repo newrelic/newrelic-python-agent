@@ -19,7 +19,7 @@ import json
 import pytest
 from testing_support.external_fixtures import cache_outgoing_headers
 from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_cross_process_headers import validate_cross_process_headers
+from testing_support.validators.validate_distributed_tracing_headers import validate_distributed_tracing_headers
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.validators.validate_tt_segment_params import validate_tt_segment_params
@@ -111,10 +111,10 @@ def test_httplib_http_with_port_request(server):
 
 
 @pytest.mark.parametrize("distributed_tracing,span_events", ((True, True), (True, False), (False, False)))
-def test_httplib_cross_process_request(server, distributed_tracing, span_events):
-    @background_task(name="test_httplib:test_httplib_cross_process_request")
+def test_httplib_distributed_tracing_request(server, distributed_tracing, span_events):
+    @background_task(name="test_httplib:test_httplib_distributed_tracing_request")
     @cache_outgoing_headers
-    @validate_cross_process_headers
+    @validate_distributed_tracing_headers
     def _test():
         connection = httplib.HTTPConnection("localhost", server.port)
         connection.request("GET", "/")

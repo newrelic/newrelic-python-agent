@@ -16,7 +16,7 @@ import urllib.request as urllib2
 
 import pytest
 from testing_support.external_fixtures import cache_outgoing_headers
-from testing_support.validators.validate_cross_process_headers import validate_cross_process_headers
+from testing_support.validators.validate_distributed_tracing_headers import validate_distributed_tracing_headers
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
@@ -113,6 +113,6 @@ def test_urlopen_file_request():
 
 @background_task()
 @cache_outgoing_headers
-@validate_cross_process_headers
-def test_urlopen_cross_process_request(server):
+@validate_distributed_tracing_headers
+def test_urlopen_distributed_tracing_request(server):
     urllib2.urlopen(f"http://localhost:{server.port}/")

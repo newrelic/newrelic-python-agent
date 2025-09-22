@@ -49,7 +49,7 @@ def validate_custom_event_collector_json(num_events=1):
         assert decoded_agent_run_id == agent_run_id
         assert decoded_sampling_info == sampling_info
 
-        max_setting = settings.event_harvest_config.harvest_limits.custom_event_data
+        max_setting = settings.custom_insights_events.max_samples_stored
         assert decoded_sampling_info["reservoir_size"] == max_setting
 
         assert decoded_sampling_info["events_seen"] == num_events

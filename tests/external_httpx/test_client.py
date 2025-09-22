@@ -17,7 +17,7 @@ import asyncio
 import pytest
 from testing_support.fixtures import dt_enabled, override_application_settings, override_generic_settings
 from testing_support.mock_external_http_server import MockExternalHTTPHResponseHeadersServer
-from testing_support.validators.validate_cross_process_headers import validate_cross_process_headers
+from testing_support.validators.validate_distributed_tracing_headers import validate_distributed_tracing_headers
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
@@ -103,7 +103,7 @@ def test_async_client(httpx, async_client, mock_server, loop, method):
 
 
 @pytest.mark.parametrize("distributed_tracing,span_events", ((True, True), (True, False), (False, False)))
-def test_sync_cross_process_request(httpx, sync_client, mock_server, distributed_tracing, span_events):
+def test_sync_distributed_tracing_request(httpx, sync_client, mock_server, distributed_tracing, span_events):
     global DT_RESPONSE_CODE
     DT_RESPONSE_CODE = 200
 
@@ -111,8 +111,8 @@ def test_sync_cross_process_request(httpx, sync_client, mock_server, distributed
         {"distributed_tracing.enabled": distributed_tracing, "span_events.enabled": span_events}
     )
     @validate_transaction_errors(errors=[])
-    @background_task(name="test_sync_cross_process_request")
-    @validate_cross_process_headers
+    @background_task(name="test_sync_distributed_tracing_request")
+    @validate_distributed_tracing_headers
     def _test():
         transaction = current_transaction()
 
@@ -128,9 +128,9 @@ def test_sync_cross_process_request(httpx, sync_client, mock_server, distributed
 
 @pytest.mark.parametrize("distributed_tracing,span_events", ((True, True), (True, False), (False, False)))
 @validate_transaction_errors(errors=[])
-@background_task(name="test_async_cross_process_request")
-@validate_cross_process_headers
-def test_async_cross_process_request(httpx, async_client, mock_server, loop, distributed_tracing, span_events):
+@background_task(name="test_async_distributed_tracing_request")
+@validate_distributed_tracing_headers
+def test_async_distributed_tracing_request(httpx, async_client, mock_server, loop, distributed_tracing, span_events):
     global DT_RESPONSE_CODE
     DT_RESPONSE_CODE = 200
 
@@ -154,8 +154,8 @@ def test_async_cross_process_request(httpx, async_client, mock_server, loop, dis
     {"distributed_tracing.enabled": True, "span_events.enabled": True}  # , "cross_application_tracer.enabled": True}
 )
 @validate_transaction_errors(errors=[])
-@background_task(name="test_sync_cross_process_override_headers")
-def test_sync_cross_process_override_headers(httpx, sync_client, mock_server, loop):
+@background_task(name="test_sync_distributed_tracing_override_headers")
+def test_sync_distributed_tracing_override_headers(httpx, sync_client, mock_server, loop):
     global DT_RESPONSE_CODE
     DT_RESPONSE_CODE = 200
 
@@ -172,8 +172,8 @@ def test_sync_cross_process_override_headers(httpx, sync_client, mock_server, lo
 
 @override_application_settings({"distributed_tracing.enabled": True, "span_events.enabled": True})
 @validate_transaction_errors(errors=[])
-@background_task(name="test_async_cross_process_override_headers")
-def test_async_cross_process_override_headers(httpx, async_client, mock_server, loop):
+@background_task(name="test_async_distributed_tracing_override_headers")
+def test_async_distributed_tracing_override_headers(httpx, async_client, mock_server, loop):
     global DT_RESPONSE_CODE
     DT_RESPONSE_CODE = 200
 

@@ -22,7 +22,7 @@ except ImportError:
     import urllib
 
 from testing_support.external_fixtures import cache_outgoing_headers
-from testing_support.validators.validate_cross_process_headers import validate_cross_process_headers
+from testing_support.validators.validate_distributed_tracing_headers import validate_distributed_tracing_headers
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
@@ -136,8 +136,8 @@ def test_urlopener_file_request():
 @SKIP_IF_PYTHON_3_14_OR_ABOVE
 @background_task()
 @cache_outgoing_headers
-@validate_cross_process_headers
-def test_urlopener_cross_process_request(server):
+@validate_distributed_tracing_headers
+def test_urlopener_distributed_tracing_request(server):
     opener = urllib.URLopener()
     opener.open(f"http://localhost:{server.port}/")
 
@@ -175,6 +175,6 @@ def test_urlretrieve_https_request(server, metrics):
 
 @background_task()
 @cache_outgoing_headers
-@validate_cross_process_headers
-def test_urlretrieve_cross_process_request(server):
+@validate_distributed_tracing_headers
+def test_urlretrieve_distributed_tracing_request(server):
     urllib.urlretrieve(f"http://localhost:{server.port}/")

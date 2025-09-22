@@ -16,7 +16,7 @@ import httplib2
 import pytest
 from testing_support.external_fixtures import cache_outgoing_headers
 from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_cross_process_headers import validate_cross_process_headers
+from testing_support.validators.validate_distributed_tracing_headers import validate_distributed_tracing_headers
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
@@ -89,10 +89,10 @@ def test_httplib2_http_request(server, metrics):
 
 
 @pytest.mark.parametrize("distributed_tracing,span_events", ((True, True), (True, False), (False, False)))
-def test_httplib2_cross_process_request(distributed_tracing, span_events, server):
-    @background_task(name="test_httplib2:test_httplib2_cross_process_response")
+def test_httplib2_distributed_tracing_request(distributed_tracing, span_events, server):
+    @background_task(name="test_httplib2:test_httplib2_distributed_tracing_response")
     @cache_outgoing_headers
-    @validate_cross_process_headers
+    @validate_distributed_tracing_headers
     def _test():
         connection = httplib2.HTTPConnectionWithTimeout("localhost", server.port)
         connection.request("GET", "/")

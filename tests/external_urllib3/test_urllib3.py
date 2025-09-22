@@ -22,7 +22,7 @@ except ImportError:
 
 from testing_support.external_fixtures import cache_outgoing_headers
 from testing_support.fixtures import override_application_settings
-from testing_support.validators.validate_cross_process_headers import validate_cross_process_headers
+from testing_support.validators.validate_distributed_tracing_headers import validate_distributed_tracing_headers
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
@@ -202,11 +202,11 @@ def test_HTTPConnection_port_included(server):
 
 
 @pytest.mark.parametrize("distributed_tracing,span_events", ((True, True), (True, False), (False, False)))
-def test_urlopen_cross_process_request(distributed_tracing, span_events, server):
+def test_urlopen_distributed_tracing_request(distributed_tracing, span_events, server):
     @validate_transaction_errors(errors=[])
-    @background_task(name="test_urllib3:test_urlopen_cross_process_request")
+    @background_task(name="test_urllib3:test_urlopen_distributed_tracing_request")
     @cache_outgoing_headers
-    @validate_cross_process_headers
+    @validate_distributed_tracing_headers
     def _test():
         pool = urllib3.HTTPConnectionPool(f"localhost:{server.port}")
         pool.urlopen("GET", "/")

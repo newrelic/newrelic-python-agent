@@ -127,7 +127,7 @@ if not with_setuptools:
 
     kwargs.update(
         {
-            "python_requires": ">=3.8",
+            "python_requires": ">=3.8",  # python_requires is also located in pyproject.toml
             "zip_safe": False,
             "packages": packages,
             "package_data": {

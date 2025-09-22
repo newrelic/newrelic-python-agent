@@ -15,18 +15,11 @@
 import platform
 
 import pytest
-from flask import __version__ as flask_version  # required for python 3.7 in lieu of get_package_version_tuple
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 from newrelic.common.package_version_utils import get_package_version_tuple
 
-try:
-    FLASK_VERSION = tuple(int(v) for v in flask_version.split("."))
-except:
-    # This does not work for Python 3.7 for v2.2.5
-    # This only works for flaskmaster
-    FLASK_VERSION = get_package_version_tuple("flask")
-
-from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
+FLASK_VERSION = get_package_version_tuple("flask")
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.

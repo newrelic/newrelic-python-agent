@@ -2,7 +2,7 @@
 # Ignored Vulnerabilities
 # =======================
 
-# Accepting risk due to Python 3.7 and 3.8 support.
+# Accepting risk due to Python 3.8 support.
 CVE-2025-50181
 
 # Not relevant, only affects Pyodide

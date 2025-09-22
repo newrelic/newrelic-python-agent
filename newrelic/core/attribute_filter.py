@@ -209,6 +209,9 @@ class AttributeFilterRule:
     def __repr__(self):
         return f"({self.name}, {bin(self.destinations)}, {self.is_wildcard}, {self.is_include})"
 
+    def __hash__(self):
+        return hash((self.name, self.destinations, self.is_include, self.is_wildcard))
+
     def name_match(self, name):
         if self.is_wildcard:
             return name.startswith(self.name)

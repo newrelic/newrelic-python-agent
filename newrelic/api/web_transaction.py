@@ -71,10 +71,26 @@ def _parse_time_stamp(time_stamp):
 TRUE_VALUES = {"on", "true", "1"}
 FALSE_VALUES = {"off", "false", "0"}
 
+DEPRECATED_ENVIRON_SETTINGS = (
+    "newrelic.set_background_task",
+    "newrelic.suppress_apdex_metric",
+    "newrelic.suppress_transaction_trace",
+    "newrelic.capture_request_params",
+    "newrelic.disable_browser_autorum",
+)
+
 
 def _lookup_environ_setting(environ, name, default=False):
     if name not in environ:
         return default
+
+    # Check for deprecated WSGI environ dictionary setting
+    if name in DEPRECATED_ENVIRON_SETTINGS:
+        warnings.warn(
+            f"Environ setting '{name}' is deprecated and will be removed in a future release.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
 
     flag = environ[name]
 

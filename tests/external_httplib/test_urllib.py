@@ -12,11 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
+
 import pytest
 
 try:
     import urllib.request as urllib
-except:
+except ImportError:
     import urllib
 
 from testing_support.external_fixtures import cache_outgoing_headers
@@ -24,6 +26,14 @@ from testing_support.validators.validate_cross_process_headers import validate_c
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
+
+# Since Python 3.3, `urllib.URLopener()` has been deprecated in favor of
+# `urllib.request.urlopen`.  In Python 3.14, `urllib.URLopener()` will be
+# removed. `urllib.request.urlopen` corresponds to the old `urllib2.urlopen`
+
+SKIP_IF_PYTHON_3_14_OR_ABOVE = pytest.mark.skipif(
+    sys.version_info[0:2] >= (3, 14), reason="urllib.URLopener() is removed in Python 3.14 and above"
+)
 
 
 @pytest.fixture(scope="session")
@@ -40,6 +50,7 @@ def metrics(server):
     return scoped, rollup
 
 
+@SKIP_IF_PYTHON_3_14_OR_ABOVE
 def test_urlopener_http_request(server, metrics):
     @validate_transaction_metrics(
         "test_urllib:test_urlopener_http_request",
@@ -55,6 +66,7 @@ def test_urlopener_http_request(server, metrics):
     _test()
 
 
+@SKIP_IF_PYTHON_3_14_OR_ABOVE
 def test_urlopener_https_request(server, metrics):
     @validate_transaction_metrics(
         "test_urllib:test_urlopener_https_request",
@@ -73,6 +85,7 @@ def test_urlopener_https_request(server, metrics):
     _test()
 
 
+@SKIP_IF_PYTHON_3_14_OR_ABOVE
 def test_urlopener_http_request_with_port(server):
     scoped = [(f"External/localhost:{server.port}/urllib/", 1)]
 
@@ -106,6 +119,7 @@ _test_urlopener_file_request_rollup_metrics = [
 ]
 
 
+@SKIP_IF_PYTHON_3_14_OR_ABOVE
 @validate_transaction_metrics(
     "test_urllib:test_urlopener_file_request",
     scoped_metrics=_test_urlopener_file_request_scoped_metrics,
@@ -119,6 +133,7 @@ def test_urlopener_file_request():
     opener.open(file_uri)
 
 
+@SKIP_IF_PYTHON_3_14_OR_ABOVE
 @background_task()
 @cache_outgoing_headers
 @validate_cross_process_headers

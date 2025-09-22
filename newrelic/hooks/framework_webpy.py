@@ -12,15 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 import newrelic.api.function_trace
-import newrelic.api.in_function
-import newrelic.api.out_function
-import newrelic.api.pre_function
 import newrelic.api.transaction
 from newrelic.api.time_trace import notice_error
 from newrelic.api.wsgi_application import WSGIApplicationWrapper
 from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import wrap_in_function, wrap_out_function, wrap_pre_function
 
 
 def transaction_name_delegate(*args, **kwargs):
@@ -46,9 +43,9 @@ def template_name(render_obj, name):
 
 def instrument(module):
     if module.__name__ == "web.application":
-        newrelic.api.out_function.wrap_out_function(module, "application.wsgifunc", WSGIApplicationWrapper)
-        newrelic.api.in_function.wrap_in_function(module, "application._delegate", transaction_name_delegate)
-        newrelic.api.pre_function.wrap_pre_function(module, "application.internalerror", wrap_handle_exception)
+        wrap_out_function(module, "application.wsgifunc", WSGIApplicationWrapper)
+        wrap_in_function(module, "application._delegate", transaction_name_delegate)
+        wrap_pre_function(module, "application.internalerror", wrap_handle_exception)
 
     elif module.__name__ == "web.template":
         newrelic.api.function_trace.wrap_function_trace(module, "render.__getattr__", template_name, "Template/Render")

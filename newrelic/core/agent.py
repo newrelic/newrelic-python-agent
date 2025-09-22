@@ -25,7 +25,6 @@ import sys
 import threading
 import time
 import traceback
-import warnings
 
 import newrelic
 import newrelic.core.application
@@ -472,16 +471,6 @@ class Agent:
         from newrelic.core.thread_utilization import _utilization_trackers
 
         _utilization_trackers.clear()
-
-    def record_exception(self, app_name, exc=None, value=None, tb=None, params=None, ignore_errors=None):
-        # Deprecation Warning
-        warnings.warn(
-            ("The record_exception function is deprecated. Please use the new api named notice_error instead."),
-            DeprecationWarning,
-            stacklevel=2,
-        )
-
-        self.notice_error(app_name, error=(exc, value, tb), attributes=params, ignore=ignore_errors)
 
     def notice_error(self, app_name, error=None, attributes=None, expected=None, ignore=None, status_code=None):
         application = self._applications.get(app_name, None)

@@ -26,9 +26,8 @@ from newrelic.api.application import application_instance
 from newrelic.api.background_task import BackgroundTask
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.message_trace import MessageTrace
-from newrelic.api.pre_function import wrap_pre_function
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import FunctionWrapper, wrap_function_wrapper
+from newrelic.common.object_wrapper import FunctionWrapper, wrap_function_wrapper, wrap_pre_function
 from newrelic.common.signature import bind_args
 from newrelic.core.agent import shutdown_agent
 

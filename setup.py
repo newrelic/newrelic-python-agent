@@ -15,15 +15,13 @@
 import os
 import sys
 
-from pathlib import Path
-
 python_version = sys.version_info[:2]
 
-if python_version >= (3, 7):
+if python_version >= (3, 8):
     pass
 else:
     error_msg = (
-        "The New Relic Python agent only supports Python 3.7+. We recommend upgrading to a newer version of Python."
+        "The New Relic Python agent only supports Python 3.8+. We recommend upgrading to a newer version of Python."
     )
 
     try:
@@ -35,14 +33,14 @@ else:
             (3, 4): "4.20.0.120",
             (3, 5): "5.24.0.153",
             (3, 6): "7.16.0.178",
+            (3, 7): "10.17.0",
         }
         last_supported_version = last_supported_version_lookup.get(python_version, None)
 
         if last_supported_version:
-            python_version_str = "%s.%s" % (python_version[0], python_version[1])
-            error_msg += " The last agent version to support Python %s was v%s." % (
-                python_version_str,
-                last_supported_version,
+            python_version_str = "{}.{}".format(python_version[0], python_version[1])
+            error_msg += " The last agent version to support Python {} was v{}.".format(
+                python_version_str, last_supported_version
             )
     except Exception:
         pass
@@ -61,38 +59,9 @@ except ImportError:
 from distutils.command.build_ext import build_ext
 from distutils.core import Extension
 from distutils.errors import CCompilerError, DistutilsExecError, DistutilsPlatformError
+from pathlib import Path
 
-
-def newrelic_agent_guess_next_version(tag_version):
-    if hasattr(tag_version, "tag"):  # For setuptools_scm 7.0+
-        tag_version = tag_version.tag
-
-    version, _, _ = str(tag_version).partition("+")
-    version_info = list(map(int, version.split(".")))
-    if len(version_info) < 3:
-        return version
-    version_info[1] += 1
-    version_info[2] = 0
-    return ".".join(map(str, version_info))
-
-
-def newrelic_agent_next_version(version):
-    if version.exact:
-        return version.format_with("{tag}")
-    else:
-        return version.format_next_version(newrelic_agent_guess_next_version, fmt="{guessed}")
-
-
-script_directory = Path(__file__).parent
-
-readme_file = script_directory / "README.md"
-with readme_file.open() as f:
-    readme_file_contents = f.read()
-
-if sys.platform == "win32" and python_version > (2, 6):
-    build_ext_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError, IOError)
-else:
-    build_ext_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError)
+build_ext_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError, OSError)
 
 
 class BuildExtFailed(Exception):
@@ -104,101 +73,74 @@ class optional_build_ext(build_ext):
         try:
             build_ext.run(self)
         except DistutilsPlatformError:
-            raise BuildExtFailed()
+            raise BuildExtFailed
 
     def build_extension(self, ext):
         try:
             build_ext.build_extension(self, ext)
         except build_ext_errors:
-            raise BuildExtFailed()
+            raise BuildExtFailed
 
 
-packages = [
-    "newrelic",
-    "newrelic.admin",
-    "newrelic.api",
-    "newrelic.bootstrap",
-    "newrelic.common",
-    "newrelic.core",
-    "newrelic.extras",
-    "newrelic.extras.framework_django",
-    "newrelic.extras.framework_django.templatetags",
-    "newrelic.hooks",
-    "newrelic.network",
-    "newrelic/packages",
-    "newrelic/packages/isort",
-    "newrelic/packages/isort/stdlibs",
-    "newrelic/packages/urllib3",
-    "newrelic/packages/urllib3/util",
-    "newrelic/packages/urllib3/contrib",
-    "newrelic/packages/urllib3/contrib/_securetransport",
-    "newrelic/packages/urllib3/packages",
-    "newrelic/packages/urllib3/packages/backports",
-    "newrelic/packages/wrapt",
-    "newrelic/packages/opentelemetry_proto",
-    "newrelic.samplers",
-]
+kwargs = {
+    "name": "newrelic",
+    "setup_requires": ["setuptools>=61.2", "setuptools_scm>=6.4,<10"],
+    "license": "Apache-2.0",
+}
 
-classifiers = [
-    "Development Status :: 5 - Production/Stable",
-    "License :: OSI Approved :: Apache Software License",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
-    "Programming Language :: Python :: 3.13",
-    "Programming Language :: Python :: Implementation :: CPython",
-    "Programming Language :: Python :: Implementation :: PyPy",
-    "Topic :: System :: Monitoring",
-]
+if not with_setuptools:
+    script_directory = Path(__file__).parent
+    if not script_directory:
+        script_directory = Path.cwd()
 
-kwargs = dict(
-    name="newrelic",
-    use_scm_version={
-        "version_scheme": newrelic_agent_next_version,
-        "local_scheme": "no-local-version",
-        "git_describe_command": "git describe --dirty --tags --long --match *.*.*",
-        "write_to": "newrelic/version.txt",
-    },
-    setup_requires=["setuptools_scm>=3.2,<9"],
-    description="New Relic Python Agent",
-    long_description=readme_file_contents,
-    long_description_content_type="text/markdown",
-    url="https://docs.newrelic.com/docs/apm/agents/python-agent/",
-    project_urls={"Source": "https://github.com/newrelic/newrelic-python-agent"},
-    author="New Relic",
-    author_email="support@newrelic.com",
-    maintainer="New Relic",
-    maintainer_email="support@newrelic.com",
-    license="Apache-2.0",
-    zip_safe=False,
-    classifiers=classifiers,
-    packages=packages,
-    python_requires=">=3.7",
-    package_data={
-        "newrelic": ["newrelic.ini", "version.txt", "packages/urllib3/LICENSE.txt", "common/cacert.pem", "scripts/azure-prebuild.sh"],
-    },
-    extras_require={"infinite-tracing": ["grpcio", "protobuf"]},
-)
+    readme_file = script_directory / "README.md"
 
-if with_setuptools:
-    kwargs["entry_points"] = {
-        "console_scripts": ["newrelic-admin = newrelic.admin:main"],
-    }
-else:
     kwargs["scripts"] = ["scripts/newrelic-admin"]
 
+    # Old config that now lives in pyproject.toml
+    # Preserved here for backwards compatibility with distutils
+    packages = [
+        "newrelic",
+        "newrelic.admin",
+        "newrelic.api",
+        "newrelic.bootstrap",
+        "newrelic.common",
+        "newrelic.core",
+        "newrelic.extras",
+        "newrelic.extras.framework_django",
+        "newrelic.extras.framework_django.templatetags",
+        "newrelic.hooks",
+        "newrelic.network",
+        "newrelic.packages",
+        "newrelic.packages.isort",
+        "newrelic.packages.isort.stdlibs",
+        "newrelic.packages.urllib3",
+        "newrelic.packages.urllib3.util",
+        "newrelic.packages.urllib3.contrib",
+        "newrelic.packages.urllib3.contrib._securetransport",
+        "newrelic.packages.urllib3.packages",
+        "newrelic.packages.urllib3.packages.backports",
+        "newrelic.packages.wrapt",
+        "newrelic.packages.opentelemetry_proto",
+        "newrelic.samplers",
+    ]
 
-def with_librt():
-    try:
-        if sys.platform.startswith("linux"):
-            import ctypes.util
-
-            return ctypes.util.find_library("rt")
-    except Exception:
-        pass
+    kwargs.update(
+        {
+            "python_requires": ">=3.8",
+            "zip_safe": False,
+            "packages": packages,
+            "package_data": {
+                "newrelic": [
+                    "newrelic.ini",
+                    "version.txt",
+                    "packages/urllib3/LICENSE.txt",
+                    "common/cacert.pem",
+                    "scripts/azure-prebuild.sh",
+                ]
+            },
+        }
+    )
 
 
 def run_setup(with_extensions):
@@ -209,18 +151,11 @@ def run_setup(with_extensions):
         kwargs_tmp = dict(kwargs)
 
         if with_extensions:
-            monotonic_libraries = []
-            if with_librt():
-                monotonic_libraries = ["rt"]
-
             kwargs_tmp["ext_modules"] = [
                 Extension("newrelic.packages.wrapt._wrappers", ["newrelic/packages/wrapt/_wrappers.c"]),
-                Extension(
-                    "newrelic.common._monotonic", ["newrelic/common/_monotonic.c"], libraries=monotonic_libraries
-                ),
                 Extension("newrelic.core._thread_utilization", ["newrelic/core/_thread_utilization.c"]),
             ]
-            kwargs_tmp["cmdclass"] = dict(build_ext=optional_build_ext)
+            kwargs_tmp["cmdclass"] = {"build_ext": optional_build_ext}
 
         setup(**kwargs_tmp)
 
@@ -253,9 +188,9 @@ optimised C versions, will also be used resulting in additional overheads.
 
 with_extensions = os.environ.get("NEW_RELIC_EXTENSIONS", None)
 if with_extensions:
-    if with_extensions.lower() == "true":
+    if with_extensions.lower() in ["on", "true", "1"]:
         with_extensions = True
-    elif with_extensions.lower() == "false":
+    elif with_extensions.lower() in ["off", "false", "0"]:
         with_extensions = False
     else:
         with_extensions = None

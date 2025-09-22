@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import threading
-import warnings
 
 import newrelic.api.import_hook
 import newrelic.core.agent
@@ -109,16 +108,6 @@ class Application:
 
     def link_to_application(self, name):
         self._linked[name] = True
-
-    def record_exception(self, exc=None, value=None, tb=None, params=None, ignore_errors=None):
-        # Deprecation Warning
-        warnings.warn(
-            ("The record_exception function is deprecated. Please use the new api named notice_error instead."),
-            DeprecationWarning,
-            stacklevel=2,
-        )
-
-        self.notice_error(error=(exc, value, tb), attributes=params, ignore=ignore_errors)
 
     def notice_error(self, error=None, attributes=None, expected=None, ignore=None, status_code=None):
         if not self.active:

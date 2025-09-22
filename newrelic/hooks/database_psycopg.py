@@ -418,7 +418,7 @@ def _add_defaults(parsed_host, parsed_hostaddr, parsed_port, parsed_database):
 
 
 def wrapper_psycopg_as_string(wrapped, instance, args, kwargs):
-    def _bind_params(context, *args, **kwargs):
+    def _bind_params(context=None, *args, **kwargs):
         return context, args, kwargs
 
     context, _args, _kwargs = _bind_params(*args, **kwargs)

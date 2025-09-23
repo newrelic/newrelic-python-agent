@@ -28,10 +28,9 @@ readme = "README.md"
 #     "LICENSE",
 #     "THIRD_PARTY_NOTICES.md",
 # ]
-requires-python = ">=3.7"
+requires-python = ">=3.8"  # python_requires is also located in setup.py
 classifiers = [
     "Development Status :: 5 - Production/Stable",
-    "Programming Language :: Python :: 3.7",
     "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",

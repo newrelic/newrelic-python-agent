@@ -17,7 +17,6 @@ import itertools
 
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.function_trace import function_trace
-from newrelic.api.time_trace import notice_error
 from newrelic.api.transaction import current_transaction, ignore_transaction
 from newrelic.api.web_transaction import web_transaction
 from newrelic.common.async_wrapper import async_wrapper, is_coroutine_callable
@@ -60,16 +59,8 @@ def is_expected(transaction):
     return _is_expected
 
 
-def _nr_process_response_proxy(response, transaction):
-    nr_headers = transaction.process_response(response.status, response.headers)
-
-    response._headers = HeaderProxy(response.headers, nr_headers)
-
-
 def _nr_process_response(response, transaction):
-    nr_headers = transaction.process_response(response.status, response.headers)
-
-    response._headers.update(nr_headers)
+    transaction.process_response(response.status, response.headers)
 
 
 @function_wrapper
@@ -144,20 +135,6 @@ def _nr_aiohttp_wrap_wsgi_response_(wrapped, instance, args, kwargs):
     instance.response = ResponseProxy()
 
     return result
-
-
-def _nr_aiohttp_response_prepare_(wrapped, instance, args, kwargs):
-    def _bind_params(request):
-        return request
-
-    request = _bind_params(*args, **kwargs)
-
-    nr_headers = getattr(request, "_nr_headers", None)
-    if nr_headers:
-        nr_headers.update(instance.headers)
-        instance._headers = nr_headers
-
-    return wrapped(*args, **kwargs)
 
 
 @function_wrapper
@@ -262,24 +239,8 @@ def _nr_aiohttp_request_wrapper_(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     method, url = _bind_request(*args, **kwargs)
-    trace = ExternalTrace("aiohttp", str(url), method)
-
-    async def _coro():
-        try:
-            response = await wrapped(*args, **kwargs)
-
-            try:
-                trace.process_response(status_code=response.status)
-            except:
-                pass
-
-            return response
-        except Exception:
-            notice_error()
-
-            raise
-
-    return async_wrapper(wrapped)(_coro, trace)()
+    with ExternalTrace("aiohttp", str(url), method):
+		return await wrapped(*args, **kwargs))
 
 
 def instrument_aiohttp_client(module):
@@ -346,8 +307,7 @@ def _nr_request_wrapper(wrapped, instance, args, kwargs):
             _nr_process_response(e, transaction)
             raise
         except Exception:
-            nr_headers = transaction.process_response(500, ())
-            request._nr_headers = dict(nr_headers)
+            transaction.process_response(500, ())
             raise
 
         _nr_process_response(response, transaction)
@@ -371,6 +331,3 @@ def instrument_aiohttp_web(module):
 def instrument_aiohttp_wsgi(module):
     wrap_function_wrapper(module, "WsgiResponse.__init__", _nr_aiohttp_wrap_wsgi_response_)
 
-
-def instrument_aiohttp_web_response(module):
-    wrap_function_wrapper(module, "Response.prepare", _nr_aiohttp_response_prepare_)

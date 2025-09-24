@@ -15,7 +15,7 @@
 import openai
 from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
-    add_token_count_to_events,
+    add_token_count_to_embedding_events,
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
     events_sans_content,
@@ -48,6 +48,7 @@ embedding_recorded_events = [
             "response.headers.ratelimitResetRequests": "20ms",
             "response.headers.ratelimitRemainingTokens": 999994,
             "response.headers.ratelimitRemainingRequests": 2999,
+            "response.usage.total_tokens": 6,
             "vendor": "openai",
             "ingest_source": "Python",
         },
@@ -111,7 +112,7 @@ def test_openai_embedding_sync_no_content(set_trace_info, sync_openai_client):
 
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
-@validate_custom_events(add_token_count_to_events(embedding_recorded_events))
+@validate_custom_events(add_token_count_to_embedding_events(embedding_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
     name="test_embeddings_v1:test_openai_embedding_sync_with_token_count",
@@ -206,7 +207,7 @@ def test_openai_embedding_async_no_content(loop, set_trace_info, async_openai_cl
 
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
-@validate_custom_events(add_token_count_to_events(embedding_recorded_events))
+@validate_custom_events(add_token_count_to_embedding_events(embedding_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
     name="test_embeddings_v1:test_openai_embedding_async_with_token_count",

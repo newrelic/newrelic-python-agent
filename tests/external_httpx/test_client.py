@@ -30,15 +30,15 @@ from newrelic.core.config import global_settings
 SCOPED_METRICS = []
 ROLLUP_METRICS = [("External/all", 2), ("External/allOther", 2)]
 
-DT_RESPONSE_CODE = None
+RESPONSE_CODE = None
 
 
 def dt_response_handler(self):
-    if not DT_RESPONSE_CODE:
-        raise ValueError("DT_RESPONSE_CODE must be a valid status_code.")
+    if not RESPONSE_CODE:
+        raise ValueError("RESPONSE_CODE must be a valid status_code.")
 
     response = str(self.headers).encode("utf-8")  # Might need to put headers here
-    self.send_response(DT_RESPONSE_CODE)
+    self.send_response(RESPONSE_CODE)
     self.end_headers()
     self.wfile.write(response)
 
@@ -72,8 +72,8 @@ def exercise_sync_client(server, client, method, protocol="http"):
 )
 @background_task(name="test_sync_client")
 def test_sync_client(httpx, sync_client, mock_server, method):
-    global DT_RESPONSE_CODE
-    DT_RESPONSE_CODE = 200
+    global RESPONSE_CODE
+    RESPONSE_CODE = 200
 
     assert exercise_sync_client(mock_server, sync_client, method).status_code == 200
 
@@ -95,8 +95,8 @@ async def exercise_async_client(server, client, method, protocol="http"):
 )
 @background_task(name="test_async_client")
 def test_async_client(httpx, async_client, mock_server, loop, method):
-    global DT_RESPONSE_CODE
-    DT_RESPONSE_CODE = 200
+    global RESPONSE_CODE
+    RESPONSE_CODE = 200
 
     responses = loop.run_until_complete(exercise_async_client(mock_server, async_client, method))
     assert all(response.status_code == 200 for response in responses)
@@ -104,8 +104,8 @@ def test_async_client(httpx, async_client, mock_server, loop, method):
 
 @pytest.mark.parametrize("distributed_tracing,span_events", ((True, True), (True, False), (False, False)))
 def test_sync_distributed_tracing_request(httpx, sync_client, mock_server, distributed_tracing, span_events):
-    global DT_RESPONSE_CODE
-    DT_RESPONSE_CODE = 200
+    global RESPONSE_CODE
+    RESPONSE_CODE = 200
 
     @override_application_settings(
         {"distributed_tracing.enabled": distributed_tracing, "span_events.enabled": span_events}
@@ -131,8 +131,8 @@ def test_sync_distributed_tracing_request(httpx, sync_client, mock_server, distr
 @background_task(name="test_async_distributed_tracing_request")
 @validate_distributed_tracing_headers
 def test_async_distributed_tracing_request(httpx, async_client, mock_server, loop, distributed_tracing, span_events):
-    global DT_RESPONSE_CODE
-    DT_RESPONSE_CODE = 200
+    global RESPONSE_CODE
+    RESPONSE_CODE = 200
 
     @override_application_settings(
         {"distributed_tracing.enabled": distributed_tracing, "span_events.enabled": span_events}
@@ -156,8 +156,8 @@ def test_async_distributed_tracing_request(httpx, async_client, mock_server, loo
 @validate_transaction_errors(errors=[])
 @background_task(name="test_sync_distributed_tracing_override_headers")
 def test_sync_distributed_tracing_override_headers(httpx, sync_client, mock_server, loop):
-    global DT_RESPONSE_CODE
-    DT_RESPONSE_CODE = 200
+    global RESPONSE_CODE
+    RESPONSE_CODE = 200
 
     transaction = current_transaction()
 
@@ -174,8 +174,8 @@ def test_sync_distributed_tracing_override_headers(httpx, sync_client, mock_serv
 @validate_transaction_errors(errors=[])
 @background_task(name="test_async_distributed_tracing_override_headers")
 def test_async_distributed_tracing_override_headers(httpx, async_client, mock_server, loop):
-    global DT_RESPONSE_CODE
-    DT_RESPONSE_CODE = 200
+    global RESPONSE_CODE
+    RESPONSE_CODE = 200
 
     async def _test():
         async with async_client:
@@ -191,8 +191,8 @@ def test_async_distributed_tracing_override_headers(httpx, async_client, mock_se
 
 @dt_enabled
 def test_sync_client_event_hook_exception(httpx, mock_server):
-    global DT_RESPONSE_CODE
-    DT_RESPONSE_CODE = 500
+    global RESPONSE_CODE
+    RESPONSE_CODE = 500
 
     def exception_event_hook(response):
         if response.status_code >= 400:
@@ -204,7 +204,7 @@ def test_sync_client_event_hook_exception(httpx, mock_server):
     @validate_span_events(
         count=1,
         exact_intrinsics={"name": f"External/localhost:{mock_server.port}/httpx/GET"},
-        exact_agents={"http.statusCode": DT_RESPONSE_CODE},
+        exact_agents={"http.statusCode": RESPONSE_CODE},
     )
     @background_task(name="test_sync_client_event_hook_exception")
     def make_request(client, exc_expected=True):
@@ -237,8 +237,8 @@ def test_sync_client_event_hook_exception(httpx, mock_server):
 
 @override_application_settings({"distributed_tracing.enabled": True, "span_events.enabled": True})
 def test_async_client_event_hook_exception(httpx, mock_server, loop):
-    global DT_RESPONSE_CODE
-    DT_RESPONSE_CODE = 500
+    global RESPONSE_CODE
+    RESPONSE_CODE = 500
 
     def exception_event_hook(response):
         if response.status_code >= 400:
@@ -250,7 +250,7 @@ def test_async_client_event_hook_exception(httpx, mock_server, loop):
     @validate_span_events(
         count=1,
         exact_intrinsics={"name": f"External/localhost:{mock_server.port}/httpx/GET"},
-        exact_agents={"http.statusCode": DT_RESPONSE_CODE},
+        exact_agents={"http.statusCode": RESPONSE_CODE},
     )
     @background_task(name="test_sync_client_event_hook_exception")
     def make_request(client, exc_expected=True):
@@ -287,8 +287,8 @@ def test_async_client_event_hook_exception(httpx, mock_server, loop):
 
 @override_generic_settings(global_settings(), {"enabled": False})
 def test_sync_nr_disabled(httpx, mock_server):
-    global DT_RESPONSE_CODE
-    DT_RESPONSE_CODE = 200
+    global RESPONSE_CODE
+    RESPONSE_CODE = 200
 
     with httpx.Client() as client:
         trace = current_trace()
@@ -300,8 +300,8 @@ def test_sync_nr_disabled(httpx, mock_server):
 
 @override_generic_settings(global_settings(), {"enabled": False})
 def test_async_nr_disabled(httpx, mock_server, loop):
-    global DT_RESPONSE_CODE
-    DT_RESPONSE_CODE = 200
+    global RESPONSE_CODE
+    RESPONSE_CODE = 200
 
     async def _test():
         async with httpx.AsyncClient() as client:
@@ -317,8 +317,8 @@ def test_async_nr_disabled(httpx, mock_server, loop):
 
 @pytest.mark.parametrize("client", ("Client", "AsyncClient"))
 def test_invalid_import_order_client(monkeypatch, httpx, mock_server, loop, client):
-    global DT_RESPONSE_CODE
-    DT_RESPONSE_CODE = 200
+    global RESPONSE_CODE
+    RESPONSE_CODE = 200
 
     if "Async" in client:
         is_async = True
@@ -349,8 +349,8 @@ def test_invalid_import_order_client(monkeypatch, httpx, mock_server, loop, clie
 )
 @background_task(name="test_sync_client_http2")
 def test_sync_client_http2(httpx, real_server):
-    global DT_RESPONSE_CODE
-    DT_RESPONSE_CODE = 200
+    global RESPONSE_CODE
+    RESPONSE_CODE = 200
 
     client = httpx.Client(http1=False, http2=True, verify=False)
     response = exercise_sync_client(real_server, client, "get", protocol="https")
@@ -364,8 +364,8 @@ def test_sync_client_http2(httpx, real_server):
 )
 @background_task(name="test_async_client_http2")
 def test_async_client_http2(httpx, real_server, loop):
-    global DT_RESPONSE_CODE
-    DT_RESPONSE_CODE = 200
+    global RESPONSE_CODE
+    RESPONSE_CODE = 200
 
     client = httpx.AsyncClient(http1=False, http2=True, verify=False)
 

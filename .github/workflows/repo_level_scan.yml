@@ -43,6 +43,7 @@ jobs:
     name: 'Trigger Organization Scan'
     needs: build
     permissions:
+      actions: read
       contents: read
       packages: read
       security-events: write

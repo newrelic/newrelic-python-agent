@@ -458,6 +458,7 @@ class TransactionNode(_TransactionNode):
 
         apdex_perf_zone = self.apdex_perf_zone()
         _add_if_not_empty("apdexPerfZone", apdex_perf_zone)
+        _add_if_not_empty("nr.apdexPerfZone", apdex_perf_zone)
 
         if self.errors:
             intrinsics["error"] = True

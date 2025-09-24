@@ -88,7 +88,16 @@ TRACE_ERROR_AGENT_KEYS = [
 
 AGENT_KEYS_ALL = TRACE_ERROR_AGENT_KEYS + REQ_PARAMS
 
-TRANS_EVENT_INTRINSICS = ("name", "duration", "type", "timestamp", "totalTime", "error", "apdexPerfZone")
+TRANS_EVENT_INTRINSICS = (
+    "name",
+    "duration",
+    "type",
+    "timestamp",
+    "totalTime",
+    "error",
+    "nr.apdexPerfZone",
+    "apdexPerfZone",
+)
 TRANS_EVENT_AGENT_KEYS = [
     "response.status",
     "request.method",

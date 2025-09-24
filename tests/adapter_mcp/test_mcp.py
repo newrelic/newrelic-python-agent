@@ -19,9 +19,9 @@ from fastmcp.client.transports import FastMCPTransport
 from fastmcp.server.server import FastMCP
 from mcp.server.fastmcp.tools import ToolManager
 
-from testing_support.fixtures import function_not_called
 from testing_support.ml_testing_utils import disabled_ai_monitoring_settings
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_function_not_called import validate_function_not_called
 
 
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
@@ -143,7 +143,7 @@ def test_prompt_tracing(loop, fastmcp_server):
 
 
 @disabled_ai_monitoring_settings
-@function_not_called("newrelic.api.function_trace", "FunctionTrace.__enter__")
+@validate_function_not_called("newrelic.api.function_trace", "FunctionTrace.__enter__")
 @background_task()
 def test_tool_tracing_aim_disabled(loop, fastmcp_server):
     async def _test():
@@ -157,14 +157,14 @@ def test_tool_tracing_aim_disabled(loop, fastmcp_server):
 
 
 @disabled_ai_monitoring_settings
-@function_not_called("newrelic.api.function_trace", "FunctionTrace.__enter__")
+@validate_function_not_called("newrelic.api.function_trace", "FunctionTrace.__enter__")
 @background_task()
 def test_resource_tracing_aim_disabled(loop, fastmcp_server):
     run_read_resources(loop, fastmcp_server, "greeting://Python")
 
 
 @disabled_ai_monitoring_settings
-@function_not_called("newrelic.api.function_trace", "FunctionTrace.__enter__")
+@validate_function_not_called("newrelic.api.function_trace", "FunctionTrace.__enter__")
 @background_task()
 def test_prompt_tracing_aim_disabled(loop, fastmcp_server):
     async def _test():

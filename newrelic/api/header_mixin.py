@@ -17,7 +17,6 @@
 class HeaderMixin:
     synthetics_key = "X-NewRelic-Synthetics"
     synthetics_info_key = "X-NewRelic-Synthetics-Info"
-    distributed_trace_key = "newrelic"
     settings = None
 
     def __enter__(self):

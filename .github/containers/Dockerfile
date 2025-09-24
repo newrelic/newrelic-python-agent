@@ -86,12 +86,24 @@ WORKDIR "${HOME}"
 # Install and configure uv
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH="${HOME}/.local/bin:${PATH}"
-ENV UV_PYTHON="3.13"
 ENV UV_PYTHON_PREFERENCE="only-managed"
+ENV UV_PYTHON_DOWNLOADS="manual"
 
 # Install Python
 ARG PYTHON_VERSIONS="3.13 3.12 3.11 3.10 3.9 3.8 pypy3.10"
-RUN bash -c "uv python install ${PYTHON_VERSIONS}"
+RUN bash -c "uv python install ${PYTHON_VERSIONS}" && \
+    uv python pin --global 3.13
+
+# Add shims for python and pip
+COPY --chmod=775 <<EOF "${HOME}/.local/bin/python"
+#!/bin/bash
+exec uv run --no-project python \$@
+EOF
+
+COPY --chmod=775 <<EOF "${HOME}/.local/bin/pip"
+#!/bin/bash
+exec uv pip \$@
+EOF
 
 # Prevent any runtime downloads
 ENV UV_PYTHON_DOWNLOADS=never

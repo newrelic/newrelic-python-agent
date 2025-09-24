@@ -132,10 +132,7 @@ def wrap_write_headers(wrapped, instance, args, kwargs):
 
     if transaction:
         http_status, headers = _bind_response_headers(*args, **kwargs)
-        dt_headers = transaction.process_response(http_status, headers)
-
-        for name, value in dt_headers:
-            headers.add(name, value)
+        transaction.process_response(http_status, headers)
 
     return wrapped(*args, **kwargs)
 

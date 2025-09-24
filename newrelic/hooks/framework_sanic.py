@@ -170,12 +170,7 @@ def _nr_sanic_response_get_headers(wrapped, instance, args, kwargs):
         return result
 
     # instance is the response object
-    dt_headers = transaction.process_response(str(instance.status), instance.headers.items())
-
-    for header_name, header_value in dt_headers:
-        if header_name not in instance.headers:
-            instance.headers[header_name] = header_value
-
+    transaction.process_response(str(instance.status), instance.headers.items())
     return wrapped(*args, **kwargs)
 
 
@@ -189,12 +184,7 @@ async def _nr_sanic_response_send(wrapped, instance, args, kwargs):
         return result
 
     # instance is the response object
-    dt_headers = transaction.process_response(str(instance.status), instance.headers.items())
-
-    for header_name, header_value in dt_headers:
-        if header_name not in instance.headers:
-            instance.headers[header_name] = header_value
-
+    transaction.process_response(str(instance.status), instance.headers.items())
     return result
 
 
@@ -205,12 +195,7 @@ def _nr_sanic_response_parse_headers(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     # instance is the response object
-    dt_headers = transaction.process_response(str(instance.status), instance.headers.items())
-
-    for header_name, header_value in dt_headers:
-        if header_name not in instance.headers:
-            instance.headers[header_name] = header_value
-
+    transaction.process_response(str(instance.status), instance.headers.items())
     return wrapped(*args, **kwargs)
 
 

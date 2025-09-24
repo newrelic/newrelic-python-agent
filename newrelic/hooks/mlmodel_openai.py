@@ -489,6 +489,8 @@ def _record_completion_success(transaction, linking_metadata, completion_id, kwa
                     choices[0].get("message") or {"content": choices[0].get("text"), "role": "assistant"}
                 ]
                 finish_reason = choices[0].get("finish_reason")
+            if "tool_calls" in output_message_list[0] and not output_message_list[0].get("content"):
+                output_message_list = []
         else:
             response_model = kwargs.get("response.model")
             response_id = kwargs.get("id")

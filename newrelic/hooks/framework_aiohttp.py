@@ -239,8 +239,9 @@ def _nr_aiohttp_request_wrapper_(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     method, url = _bind_request(*args, **kwargs)
-    with ExternalTrace("aiohttp", str(url), method):
-        return await wrapped(*args, **kwargs)
+    trace = ExternalTrace("aiohttp", str(url), method)
+    with trace:
+        return wrapped(*args, **kwargs)
 
 
 def instrument_aiohttp_client(module):
@@ -251,9 +252,7 @@ def instrument_aiohttp_client_reqrep(module):
     version_info = aiohttp_version_info()
 
     if version_info >= (2, 0):
-        dt_wrapper = _nr_aiohttp_add_dt_headers_simple_
-
-        wrap_function_wrapper(module, "ClientRequest.send", dt_wrapper)
+        wrap_function_wrapper(module, "ClientRequest.send", _nr_aiohttp_add_dt_headers_simple_)
 
 
 def instrument_aiohttp_protocol(module):

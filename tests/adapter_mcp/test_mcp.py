@@ -20,11 +20,9 @@ from fastmcp.server.server import FastMCP
 from mcp.server.fastmcp.tools import ToolManager
 
 from testing_support.ml_testing_utils import disabled_ai_monitoring_settings
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.validators.validate_function_not_called import validate_function_not_called
-
-
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+
 from newrelic.api.background_task import background_task
 
 

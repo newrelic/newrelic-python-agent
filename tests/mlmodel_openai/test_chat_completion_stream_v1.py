@@ -17,8 +17,8 @@ import pytest
 from conftest import get_openai_version
 from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
-    add_token_counts_to_chat_events,
     add_token_count_streaming_events,
+    add_token_counts_to_chat_events,
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
     disabled_ai_monitoring_streaming_settings,
@@ -299,10 +299,11 @@ def test_openai_chat_completion_sync_no_content(set_trace_info, sync_openai_clie
         assert resp
 
 
-
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
-@validate_custom_events(add_token_counts_to_chat_events(add_token_count_streaming_events(chat_completion_recorded_events)))
+@validate_custom_events(
+    add_token_counts_to_chat_events(add_token_count_streaming_events(chat_completion_recorded_events))
+)
 # One summary event, one system message, one user message, and one response message from the assistant
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
@@ -624,7 +625,9 @@ def test_openai_chat_completion_async_no_content(loop, set_trace_info, async_ope
 
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
-@validate_custom_events(add_token_counts_to_chat_events(add_token_count_streaming_events(chat_completion_recorded_events)))
+@validate_custom_events(
+    add_token_counts_to_chat_events(add_token_count_streaming_events(chat_completion_recorded_events))
+)
 # One summary event, one system message, one user message, and one response message from the assistant
 # @validate_custom_event_count(count=4)
 @validate_transaction_metrics(

@@ -240,7 +240,7 @@ def _nr_aiohttp_request_wrapper_(wrapped, instance, args, kwargs):
 
     method, url = _bind_request(*args, **kwargs)
     with ExternalTrace("aiohttp", str(url), method):
-		return await wrapped(*args, **kwargs))
+		return await wrapped(*args, **kwargs)
 
 
 def instrument_aiohttp_client(module):

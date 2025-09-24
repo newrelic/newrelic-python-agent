@@ -2998,12 +2998,6 @@ def _process_module_builtin_defaults():
     _process_module_definition("aiohttp.wsgi", "newrelic.hooks.framework_aiohttp", "instrument_aiohttp_wsgi")
     _process_module_definition("aiohttp.web", "newrelic.hooks.framework_aiohttp", "instrument_aiohttp_web")
     _process_module_definition(
-        "aiohttp.web_reqrep", "newrelic.hooks.framework_aiohttp", "instrument_aiohttp_web_response"
-    )
-    _process_module_definition(
-        "aiohttp.web_response", "newrelic.hooks.framework_aiohttp", "instrument_aiohttp_web_response"
-    )
-    _process_module_definition(
         "aiohttp.web_urldispatcher", "newrelic.hooks.framework_aiohttp", "instrument_aiohttp_web_urldispatcher"
     )
     _process_module_definition("aiohttp.client", "newrelic.hooks.framework_aiohttp", "instrument_aiohttp_client")

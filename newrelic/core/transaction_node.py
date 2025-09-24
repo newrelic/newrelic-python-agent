@@ -522,6 +522,8 @@ class TransactionNode(_TransactionNode):
         intrinsics["transactionName"] = self.path
         intrinsics["spanId"] = error.span_id
 
+        intrinsics["nr.transactionGuid"] = self.guid
+
         return intrinsics
 
     def _event_intrinsics(self, stats_table):

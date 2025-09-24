@@ -87,7 +87,6 @@ WORKDIR "${HOME}"
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH="${HOME}/.local/bin:${PATH}"
 ENV UV_PYTHON_PREFERENCE="only-managed"
-ENV UV_PYTHON_DOWNLOADS="manual"
 
 # Install Python
 ARG PYTHON_VERSIONS="3.13 3.12 3.11 3.10 3.9 3.8 pypy3.10"

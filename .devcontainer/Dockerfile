@@ -26,5 +26,8 @@ RUN mkdir -p ${HOME} && \
     useradd --uid ${UID} --gid ${GID} --home ${HOME} vscode && \
     chown -R ${UID}:${GID} /home/vscode
 
+# Allow uv to download Python versions manually
+ENV UV_PYTHON_DOWNLOADS=manual
+
 # Set user
 USER ${UID}:${GID}

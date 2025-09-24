@@ -62,7 +62,7 @@ def _add_consume_rabbitmq_trace(transaction, method, properties, nr_start_time, 
 
     # Do not record dt headers in the segment parameters
     if headers:
-        headers.pop(MessageTrace.distributed_trace_key, None)
+        headers.pop("newrelic", None)
         headers.pop("traceparent", None)
         headers.pop("tracestate", None)
 
@@ -122,7 +122,7 @@ def _nr_wrapper_basic_publish(wrapped, instance, args, kwargs):
     user_headers = properties.headers.copy()
 
     # Do not record dt headers in the segment parameters
-    user_headers.pop(MessageTrace.distributed_trace_key, None)
+    user_headers.pop("newrelic", None)
     user_headers.pop("traceparent", None)
     user_headers.pop("tracestate", None)
 

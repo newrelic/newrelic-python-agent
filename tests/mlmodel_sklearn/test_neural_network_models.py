@@ -61,7 +61,7 @@ def run_neural_network_model():
         from sklearn.model_selection import train_test_split
 
         X, y = load_iris(return_X_y=True)
-        x_train, x_test, y_train, y_test = train_test_split(X, y, stratify=y, random_state=0)
+        x_train, x_test, y_train, _y_test = train_test_split(X, y, stratify=y, random_state=0)
 
         clf = getattr(sklearn.neural_network, neural_network_model_name)()
 

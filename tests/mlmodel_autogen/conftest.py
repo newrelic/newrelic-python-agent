@@ -13,8 +13,8 @@
 # limitations under the License.
 
 import json
-import pytest
 
+import pytest
 from autogen_core import FunctionCall
 from autogen_core.models import CreateResult, RequestUsage
 from autogen_ext.models.replay import ReplayChatCompletionClient

@@ -13,12 +13,10 @@
 # limitations under the License.
 
 import pytest
-
 from fastmcp.client import Client
 from fastmcp.client.transports import FastMCPTransport
 from fastmcp.server.server import FastMCP
 from mcp.server.fastmcp.tools import ToolManager
-
 from testing_support.ml_testing_utils import disabled_ai_monitoring_settings
 from testing_support.validators.validate_function_not_called import validate_function_not_called
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics

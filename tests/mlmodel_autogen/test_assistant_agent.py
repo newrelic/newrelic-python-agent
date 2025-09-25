@@ -14,7 +14,6 @@
 
 
 import pytest
-
 from autogen_agentchat.agents import AssistantAgent
 from autogen_agentchat.base import TaskResult
 from testing_support.fixtures import reset_core_stats_engine, validate_attributes
@@ -35,7 +34,6 @@ from newrelic.api.background_task import background_task
 from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 from newrelic.common.object_names import callable_name
 from newrelic.common.package_version_utils import get_package_version_tuple
-
 
 AUTOGEN_VERSION = get_package_version_tuple("autogen-agentchat")
 

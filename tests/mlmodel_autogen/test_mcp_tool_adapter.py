@@ -17,9 +17,7 @@ from unittest.mock import AsyncMock
 import pytest
 from autogen_ext.tools.mcp import SseMcpToolAdapter, SseServerParams
 from mcp import ClientSession, Tool
-from testing_support.validators.validate_transaction_metrics import (
-    validate_transaction_metrics,
-)
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
@@ -42,41 +40,24 @@ def add_exclamation():
     return Tool(
         name="add_exclamation",
         description="A test SSE tool that adds an exclamation mark to a string",
-        inputSchema={
-            "type": "object",
-            "properties": {"input": {"type": "string"}},
-            "required": ["input"],
-        },
+        inputSchema={"type": "object", "properties": {"input": {"type": "string"}}, "required": ["input"]},
     )
 
 
 @validate_transaction_metrics(
     "test_mcp_tool_adapter:test_from_server_params_tracing",
-    scoped_metrics=[
-        (
-            "Llm/autogen_ext.tools.mcp._sse:SseMcpToolAdapter.from_server_params/add_exclamation",
-            1,
-        )
-    ],
-    rollup_metrics=[
-        (
-            "Llm/autogen_ext.tools.mcp._sse:SseMcpToolAdapter.from_server_params/add_exclamation",
-            1,
-        )
-    ],
+    scoped_metrics=[("Llm/autogen_ext.tools.mcp._sse:SseMcpToolAdapter.from_server_params/add_exclamation", 1)],
+    rollup_metrics=[("Llm/autogen_ext.tools.mcp._sse:SseMcpToolAdapter.from_server_params/add_exclamation", 1)],
     background_task=True,
 )
 @background_task()
-def test_from_server_params_tracing(
-    loop, mock_sse_session, monkeypatch, add_exclamation
-):
+def test_from_server_params_tracing(loop, mock_sse_session, monkeypatch, add_exclamation):
     async def _test():
         params = SseServerParams(url="http://test-url")
         mock_context = AsyncMock()
         mock_context.__aenter__.return_value = mock_sse_session
         monkeypatch.setattr(
-            "autogen_ext.tools.mcp._base.create_mcp_server_session",
-            lambda *args, **kwargs: mock_context,
+            "autogen_ext.tools.mcp._base.create_mcp_server_session", lambda *args, **kwargs: mock_context
         )
 
         mock_sse_session.list_tools.return_value.tools = [add_exclamation]
@@ -86,16 +67,13 @@ def test_from_server_params_tracing(
     loop.run_until_complete(_test())
 
 
-def test_from_server_params_tracing_no_transaction(
-    loop, mock_sse_session, monkeypatch, add_exclamation
-):
+def test_from_server_params_tracing_no_transaction(loop, mock_sse_session, monkeypatch, add_exclamation):
     async def _test():
         params = SseServerParams(url="http://test-url")
         mock_context = AsyncMock()
         mock_context.__aenter__.return_value = mock_sse_session
         monkeypatch.setattr(
-            "autogen_ext.tools.mcp._base.create_mcp_server_session",
-            lambda *args, **kwargs: mock_context,
+            "autogen_ext.tools.mcp._base.create_mcp_server_session", lambda *args, **kwargs: mock_context
         )
 
         mock_sse_session.list_tools.return_value.tools = [add_exclamation]

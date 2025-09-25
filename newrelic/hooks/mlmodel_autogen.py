@@ -94,7 +94,6 @@ def wrap_on_messages_stream(wrapped, instance, args, kwargs):
     return return_val
 
 
-
 def _get_llm_metadata(transaction):
     # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
     custom_attrs_dict = transaction._custom_params
@@ -163,7 +162,7 @@ def _construct_base_agent_event_dict(agent_name, agent_id, transaction):
 
     return agent_event_dict
 
-  
+
 async def wrap__execute_tool_call(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:

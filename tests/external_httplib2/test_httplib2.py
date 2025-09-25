@@ -83,7 +83,7 @@ def test_httplib2_http_request(server, metrics):
     @background_task(name="test_httplib2:test_httplib2_http_request")
     def _test():
         connection = httplib2.Http()
-        response, content = connection.request(f"http://localhost:{server.port}", "GET")
+        connection.request(f"http://localhost:{server.port}", "GET")
 
     _test()
 

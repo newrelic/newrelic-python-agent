@@ -55,7 +55,7 @@ def test_serverless_payload(capsys, serverless_application):
 
     _test()
 
-    out, err = capsys.readouterr()
+    out, _err = capsys.readouterr()
 
     # Validate that something is printed to stdout
     assert out

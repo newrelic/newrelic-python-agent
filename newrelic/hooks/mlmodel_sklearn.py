@@ -284,7 +284,7 @@ def create_prediction_event(transaction, class_, instance, args, kwargs, return_
             "modelName": model_name,
         },
     )
-    features, predictions = np_casted_data_set.shape
+    _features, _predictions = np_casted_data_set.shape
     for prediction_index, prediction in enumerate(np_casted_data_set):
         inference_id = uuid.uuid4()
 
@@ -346,7 +346,7 @@ def wrap_metric_scorer(wrapped, instance, args, kwargs):
 
     score = wrapped(*args, **kwargs)
 
-    y_true, y_pred, args, kwargs = _bind_scorer(*args, **kwargs)
+    _y_true, y_pred, args, kwargs = _bind_scorer(*args, **kwargs)
     model_name = "Unknown"
     training_step = "Unknown"
     if hasattr(y_pred, "_nr_model_name"):

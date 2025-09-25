@@ -61,7 +61,7 @@ def error_middleware(next, root, info, **args):  # noqa: A002
 
 
 def test_no_harm_no_transaction(target_application):
-    framework, version, target_application, is_bg, schema_type, extra_spans = target_application
+    _framework, _version, target_application, _is_bg, _schema_type, _extra_spans = target_application
 
     def _test():
         response = target_application("{ __schema { types { name } } }")
@@ -95,7 +95,7 @@ def _graphql_base_rollup_metrics(framework, version, background_task=True):
 
 
 def test_basic(target_application):
-    framework, version, target_application, is_bg, schema_type, extra_spans = target_application
+    framework, version, target_application, is_bg, _schema_type, _extra_spans = target_application
 
     @validate_transaction_metrics(
         "query/<anonymous>/hello",
@@ -112,7 +112,7 @@ def test_basic(target_application):
 
 
 def test_transaction_empty_settings(target_application):
-    framework, version, target_application, is_bg, schema_type, extra_spans = target_application
+    framework, version, target_application, _is_bg, _schema_type, _extra_spans = target_application
 
     @validate_transaction_metrics(
         "query/<anonymous>/hello",
@@ -136,7 +136,7 @@ def test_transaction_empty_settings(target_application):
 
 @dt_enabled
 def test_query_and_mutation(target_application):
-    framework, version, target_application, is_bg, schema_type, extra_spans = target_application
+    framework, version, target_application, is_bg, schema_type, _extra_spans = target_application
 
     mutation_path = "storage_add" if framework != "Graphene" else "storage_add.string"
     type_annotation = "!" if framework == "Strawberry" else ""
@@ -245,7 +245,7 @@ def test_middleware(target_application, middleware):
 @pytest.mark.parametrize("middleware", error_middleware)
 @dt_enabled
 def test_exception_in_middleware(target_application, middleware):
-    framework, version, target_application, is_bg, schema_type, extra_spans = target_application
+    framework, version, target_application, is_bg, schema_type, _extra_spans = target_application
     query = "query MyQuery { error_middleware }"
     field = "error_middleware"
 
@@ -300,7 +300,7 @@ def test_exception_in_middleware(target_application, middleware):
 @pytest.mark.parametrize("field", ("error", "error_non_null"))
 @dt_enabled
 def test_exception_in_resolver(target_application, field):
-    framework, version, target_application, is_bg, schema_type, extra_spans = target_application
+    framework, version, target_application, is_bg, schema_type, _extra_spans = target_application
     query = f"query MyQuery {{ {field} }}"
 
     txn_name = f"framework_{framework.lower()}._target_schema_{schema_type}:resolve_error"
@@ -356,7 +356,7 @@ def test_exception_in_resolver(target_application, field):
     ],
 )
 def test_exception_in_validation(target_application, query, exc_class):
-    framework, version, target_application, is_bg, schema_type, extra_spans = target_application
+    framework, version, target_application, is_bg, _schema_type, _extra_spans = target_application
     if "syntax" in query:
         txn_name = "graphql.language.parser:parse"
     else:
@@ -401,7 +401,7 @@ def test_exception_in_validation(target_application, query, exc_class):
 
 @dt_enabled
 def test_operation_metrics_and_attrs(target_application):
-    framework, version, target_application, is_bg, schema_type, extra_spans = target_application
+    framework, version, target_application, is_bg, _schema_type, extra_spans = target_application
     operation_metrics = [(f"GraphQL/operation/{framework}/query/MyQuery/library", 1)]
     operation_attrs = {"graphql.operation.type": "query", "graphql.operation.name": "MyQuery"}
 
@@ -428,7 +428,7 @@ def test_operation_metrics_and_attrs(target_application):
 
 @dt_enabled
 def test_field_resolver_metrics_and_attrs(target_application):
-    framework, version, target_application, is_bg, schema_type, extra_spans = target_application
+    framework, version, target_application, is_bg, _schema_type, extra_spans = target_application
     field_resolver_metrics = [(f"GraphQL/resolve/{framework}/hello", 1)]
 
     type_annotation = "!" if framework == "Strawberry" else ""
@@ -478,7 +478,7 @@ _test_queries = [
 @dt_enabled
 @pytest.mark.parametrize("query,obfuscated", _test_queries)
 def test_query_obfuscation(target_application, query, obfuscated):
-    framework, version, target_application, is_bg, schema_type, extra_spans = target_application
+    framework, _version, target_application, is_bg, _schema_type, _extra_spans = target_application
     graphql_attrs = {"graphql.operation.query": obfuscated}
 
     if callable(query):
@@ -526,7 +526,7 @@ _test_queries = [
 @dt_enabled
 @pytest.mark.parametrize("query,expected_path", _test_queries)
 def test_deepest_unique_path(target_application, query, expected_path):
-    framework, version, target_application, is_bg, schema_type, extra_spans = target_application
+    framework, _version, target_application, is_bg, schema_type, _extra_spans = target_application
     if expected_path == "/error":
         txn_name = f"framework_{framework.lower()}._target_schema_{schema_type}:resolve_error"
     else:
@@ -542,7 +542,7 @@ def test_deepest_unique_path(target_application, query, expected_path):
 
 @pytest.mark.parametrize("capture_introspection_setting", (True, False))
 def test_introspection_transactions(target_application, capture_introspection_setting):
-    framework, version, target_application, is_bg, schema_type, extra_spans = target_application
+    _framework, _version, target_application, _is_bg, _schema_type, _extra_spans = target_application
     txn_ct = 1 if capture_introspection_setting else 0
 
     @override_application_settings(

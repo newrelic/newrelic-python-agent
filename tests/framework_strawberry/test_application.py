@@ -37,7 +37,7 @@ def target_application(request):
 
 @pytest.mark.parametrize("capture_introspection_setting", (True, False))
 def test_introspection_transactions(target_application, capture_introspection_setting):
-    framework, version, target_application, is_bg, schema_type, extra_spans = target_application
+    _framework, _version, target_application, _is_bg, _schema_type, _extra_spans = target_application
 
     txn_ct = 1 if capture_introspection_setting else 0
 

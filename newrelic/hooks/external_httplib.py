@@ -103,7 +103,7 @@ def httplib_putheader_wrapper(wrapped, instance, args, kwargs):
     # it if we see either, but they should always both be getting set.
 
     def nr_header(header, *args, **kwargs):
-        return header.upper() in ("NEWRELIC", "X-NEWRELIC-ID", "X-NEWRELIC-TRANSACTION")
+        return header.upper() == "NEWRELIC"
 
     connection = instance
 

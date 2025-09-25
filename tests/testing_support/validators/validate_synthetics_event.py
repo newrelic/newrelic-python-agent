@@ -42,8 +42,6 @@ def validate_synthetics_event(required_attrs=None, forgone_attrs=None, should_ex
 
                 flat_event = _flatten(event)
 
-                assert "nr.guid" in flat_event, f"name=nr.guid, event={flat_event!r}"
-
                 for name, value in required_attrs:
                     assert name in flat_event, f"name={name!r}, event={flat_event!r}"
                     assert flat_event[name] == value, f"name={name!r}, value={value!r}, event={flat_event!r}"

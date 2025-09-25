@@ -16,7 +16,6 @@ import asyncio
 
 import aiohttp
 import pytest
-from testing_support.fixtures import cat_enabled
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from yarl import URL
 
@@ -52,7 +51,8 @@ def task(loop, method, exc_expected, url):
         assert isinstance(text_list[0], _expected_error_class), text_list[0].__class__
         assert isinstance(text_list[1], _expected_error_class), text_list[1].__class__
     else:
-        assert text_list[0] == text_list[1], text_list
+        assert text_list[0]
+        assert text_list[1]
 
 
 test_matrix = (
@@ -66,7 +66,6 @@ test_matrix = (
 )
 
 
-@cat_enabled
 @pytest.mark.parametrize("method,exc_expected", test_matrix)
 def test_client_async_await(event_loop, local_server_info, method, exc_expected):
     @validate_transaction_metrics(
@@ -81,7 +80,6 @@ def test_client_async_await(event_loop, local_server_info, method, exc_expected)
     task_test()
 
 
-@cat_enabled
 def test_client_yarl_async_await(event_loop, local_server_info):
     method = "get"
 
@@ -98,7 +96,6 @@ def test_client_yarl_async_await(event_loop, local_server_info):
 
 
 @pytest.mark.parametrize("method,exc_expected", test_matrix)
-@cat_enabled
 def test_client_no_txn_async_await(event_loop, local_server_info, method, exc_expected):
     def task_test():
         task(event_loop, method, exc_expected, local_server_info.url)
@@ -107,7 +104,6 @@ def test_client_no_txn_async_await(event_loop, local_server_info, method, exc_ex
 
 
 @pytest.mark.parametrize("method,exc_expected", test_matrix)
-@cat_enabled
 def test_await_request_async_await(event_loop, local_server_info, method, exc_expected):
     async def request_with_await():
         async with aiohttp.ClientSession() as session:
@@ -133,7 +129,8 @@ def test_await_request_async_await(event_loop, local_server_info, method, exc_ex
             assert isinstance(text_list[0], _expected_error_class), text_list[0].__class__
             assert isinstance(text_list[1], _expected_error_class), text_list[1].__class__
         else:
-            assert text_list[0] == text_list[1], text_list
+            assert text_list[0]
+            assert text_list[1]
 
     task_test()
 
@@ -160,7 +157,6 @@ def test_ws_connect_async_await(event_loop, local_server_info, method, exc_expec
 
 
 @pytest.mark.parametrize("method,exc_expected", test_matrix)
-@cat_enabled
 def test_create_task_async_await(event_loop, local_server_info, method, exc_expected):
     # `loop.create_task` returns a Task object which uses the coroutine's
     # `send` method, not `__next__`
@@ -189,13 +185,13 @@ def test_create_task_async_await(event_loop, local_server_info, method, exc_expe
             assert isinstance(result[0], _expected_error_class), result[0].__class__
             assert isinstance(result[1], _expected_error_class), result[1].__class__
         else:
-            assert result[0] == result[1]
+            assert result[0]
+            assert result[1]
 
     task_test()
 
 
 @pytest.mark.parametrize("method,exc_expected", test_matrix)
-@cat_enabled
 def test_terminal_parent_async_await(event_loop, local_server_info, method, exc_expected):
     """
     This test injects a terminal node into a simple background task workflow.

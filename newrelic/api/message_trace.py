@@ -14,19 +14,16 @@
 
 import functools
 
-from newrelic.api.cat_header_mixin import CatHeaderMixin
+from newrelic.api.header_mixin import HeaderMixin
 from newrelic.api.time_trace import TimeTrace, current_trace
 from newrelic.common.async_wrapper import async_wrapper as get_async_wrapper
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 from newrelic.core.message_node import MessageNode
 
 
-class MessageTrace(CatHeaderMixin, TimeTrace):
-    cat_id_key = "NewRelicID"
-    cat_transaction_key = "NewRelicTransaction"
-    cat_appdata_key = "NewRelicAppData"
-    cat_synthetics_key = "NewRelicSynthetics"
-    cat_synthetics_info_key = "NewRelicSyntheticsInfo"
+class MessageTrace(HeaderMixin, TimeTrace):
+    synthetics_key = "NewRelicSynthetics"
+    synthetics_info_key = "NewRelicSyntheticsInfo"
 
     def __init__(self, library, operation, destination_type, destination_name, params=None, terminal=True, **kwargs):
         parent = kwargs.pop("parent", None)

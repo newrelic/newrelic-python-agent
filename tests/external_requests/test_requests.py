@@ -15,10 +15,9 @@
 import pytest
 import requests
 import requests.exceptions
-from testing_support.external_fixtures import cache_outgoing_headers, insert_incoming_headers
-from testing_support.fixtures import cat_enabled, override_application_settings, validate_tt_parenting
-from testing_support.validators.validate_cross_process_headers import validate_cross_process_headers
-from testing_support.validators.validate_external_node_params import validate_external_node_params
+from testing_support.external_fixtures import cache_outgoing_headers
+from testing_support.fixtures import override_application_settings, validate_tt_parenting
+from testing_support.validators.validate_distributed_tracing_headers import validate_distributed_tracing_headers
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
@@ -123,10 +122,8 @@ def test_none_url_get():
     try:
         requests.get(None)
     except requests.exceptions.MissingSchema:
-        # Python 2.
         pass
     except TypeError:
-        # Python 3.
         pass
 
 
@@ -156,56 +153,16 @@ def test_wrong_datatype_url_get():
 
 
 @pytest.mark.parametrize("distributed_tracing,span_events", ((True, True), (True, False), (False, False)))
-def test_requests_cross_process_request(distributed_tracing, span_events, server):
+def test_requests_distributed_tracing_request(distributed_tracing, span_events, server):
     @validate_transaction_errors(errors=[])
-    @background_task(name="test_requests:test_requests_cross_process_request")
+    @background_task(name="test_requests:test_requests_distributed_tracing_request")
     @cache_outgoing_headers
-    @validate_cross_process_headers
+    @validate_distributed_tracing_headers
     def _test():
         requests.get(f"http://localhost:{server.port}/")
 
     _test = override_application_settings(
-        {
-            "distributed_tracing.enabled": distributed_tracing,
-            "cross_application_tracer.enabled": not distributed_tracing,
-            "span_events.enabled": span_events,
-        }
+        {"distributed_tracing.enabled": distributed_tracing, "span_events.enabled": span_events}
     )(_test)
-
-    _test()
-
-
-@cat_enabled
-def test_requests_cross_process_response(server):
-    _test_requests_cross_process_response_scoped_metrics = [
-        (f"ExternalTransaction/localhost:{server.port}/1#2/test", 1)
-    ]
-
-    _test_requests_cross_process_response_rollup_metrics = [
-        ("External/all", 1),
-        ("External/allOther", 1),
-        (f"External/localhost:{server.port}/all", 1),
-        (f"ExternalApp/localhost:{server.port}/1#2/all", 1),
-        (f"ExternalTransaction/localhost:{server.port}/1#2/test", 1),
-    ]
-
-    _test_requests_cross_process_response_external_node_params = [
-        ("cross_process_id", "1#2"),
-        ("external_txn_name", "test"),
-        ("transaction_guid", "0123456789012345"),
-    ]
-
-    @validate_transaction_errors(errors=[])
-    @validate_transaction_metrics(
-        "test_requests:test_requests_cross_process_response",
-        scoped_metrics=_test_requests_cross_process_response_scoped_metrics,
-        rollup_metrics=_test_requests_cross_process_response_rollup_metrics,
-        background_task=True,
-    )
-    @insert_incoming_headers
-    @validate_external_node_params(params=_test_requests_cross_process_response_external_node_params)
-    @background_task(name="test_requests:test_requests_cross_process_response")
-    def _test():
-        requests.get(f"http://localhost:{server.port}/")
 
     _test()

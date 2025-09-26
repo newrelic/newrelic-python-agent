@@ -66,8 +66,6 @@ _TransactionNode = namedtuple(
         "guid",
         "cpu_time",
         "suppress_transaction_trace",
-        "client_cross_process_id",
-        "referring_transaction_guid",
         "record_tt",
         "synthetics_resource_id",
         "synthetics_job_id",
@@ -77,11 +75,6 @@ _TransactionNode = namedtuple(
         "synthetics_initiator",
         "synthetics_attributes",
         "synthetics_info_header",
-        "is_part_of_cat",
-        "trip_id",
-        "path_hash",
-        "referring_path_hash",
-        "alternate_path_hashes",
         "trace_intrinsics",
         "agent_attributes",
         "distributed_trace_intrinsics",
@@ -470,18 +463,8 @@ class TransactionNode(_TransactionNode):
         if self.errors:
             intrinsics["error"] = True
 
-        if self.path_hash:
-            intrinsics["nr.guid"] = self.guid
-            intrinsics["nr.tripId"] = self.trip_id
-            intrinsics["nr.pathHash"] = self.path_hash
-
-            _add_if_not_empty("nr.referringPathHash", self.referring_path_hash)
-            _add_if_not_empty("nr.alternatePathHashes", ",".join(self.alternate_path_hashes))
-            _add_if_not_empty("nr.referringTransactionGuid", self.referring_transaction_guid)
-
         if self.synthetics_resource_id:
             intrinsics["nr.guid"] = self.guid
-
         if self.parent_tx:
             intrinsics["parentId"] = self.parent_tx
 
@@ -542,9 +525,6 @@ class TransactionNode(_TransactionNode):
         intrinsics["spanId"] = error.span_id
 
         intrinsics["nr.transactionGuid"] = self.guid
-        if self.referring_transaction_guid:
-            guid = self.referring_transaction_guid
-            intrinsics["nr.referringTransactionGuid"] = guid
 
         return intrinsics
 

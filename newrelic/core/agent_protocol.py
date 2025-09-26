@@ -522,7 +522,7 @@ class ServerlessModeProtocol(AgentProtocol):
     @classmethod
     def connect(cls, app_name, linked_applications, environment, settings, client_cls=ServerlessModeClient):
         aws_lambda_metadata = settings.aws_lambda_metadata
-        settings = finalize_application_settings({"cross_application_tracer.enabled": False}, settings)
+        settings = finalize_application_settings(settings=settings)
         # Metadata must come from the original settings object since it
         # can be modified later
         settings.aws_lambda_metadata = aws_lambda_metadata

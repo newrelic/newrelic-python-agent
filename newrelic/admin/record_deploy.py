@@ -14,6 +14,7 @@
 
 import os
 import pwd
+import warnings
 
 from newrelic.admin import command, usage
 from newrelic.common import agent_http, encoding_utils
@@ -109,6 +110,13 @@ def record_deploy(
 )
 def record_deploy_cmd(args):
     import sys
+
+    # Deprecation Warning
+    warnings.warn(
+        ("The record_deploy command is deprecated and will be removed in the next major release."),
+        DeprecationWarning,
+        stacklevel=2,
+    )
 
     if len(args) < 2:
         usage("record-deploy")

@@ -1,5 +1,0 @@
-pip==24.0
-pipx
-setuptools
-virtualenv==20.26.6
-wheel

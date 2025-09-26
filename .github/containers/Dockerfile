@@ -108,6 +108,7 @@ EOF
 ENV UV_PYTHON_DOWNLOADS=never
 
 # Install tools with uv in isolated environments
-RUN uv tool install pre-commit --with pre-commit-uv && \
+RUN uv tool install tox==4.23.2 --with tox-uv && \
     uv tool install ruff && \
-    uv tool install tox==4.23.2 --with tox-uv
+    uv tool install pre-commit --with pre-commit-uv && \
+    uv tool install asv --with virtualenv

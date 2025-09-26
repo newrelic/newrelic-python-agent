@@ -56,10 +56,6 @@ jobs:
           mkdir -p /github/home/.cache/pip
           chown -R "$(whoami)" /github/home/.cache/pip
 
-      - name: Install Dependencies
-        run: |
-          pip install asv
-
       - name: Configure Machine Information
         run: |
           asv machine --yes

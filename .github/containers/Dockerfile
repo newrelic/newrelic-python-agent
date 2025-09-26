@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM ubuntu:20.04
+FROM ubuntu:24.04
 ARG TARGETPLATFORM
 
 # Install OS packages
@@ -23,33 +23,15 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         bash \
         build-essential \
         curl \
-        default-libmysqlclient-dev \
-        expat \
         fish \
         fontconfig \
-        freetds-common \
-        freetds-dev \
         gcc \
         git \
-        libbz2-dev \
-        libcurl4-openssl-dev \
-        libffi-dev \
-        libgmp-dev \
-        libkrb5-dev \
-        liblzma-dev \
-        libmpfr-dev \
-        libncurses-dev \
-        libpq-dev \
-        libreadline-dev \
-        libsqlite3-dev \
-        libssl-dev \
         locales \
         make \
         odbc-postgresql \
         openssl \
         pkg-config \
-        python3-dev \
-        python3-pip \
         rustc \
         sudo \
         tzdata \
@@ -58,8 +40,6 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         vim \
         wget \
         zip \
-        zlib1g \
-        zlib1g-dev \
         zsh && \
     rm -rf /var/lib/apt/lists/*
 
@@ -103,36 +83,32 @@ RUN ln -fs "/usr/share/zoneinfo/${TZ}" /etc/localtime && \
 ENV HOME=/root
 WORKDIR "${HOME}"
 
-# Install pyenv
-ENV PYENV_ROOT="/usr/local/pyenv"
-RUN curl https://pyenv.run/ | /bin/bash
-ENV PATH="${PYENV_ROOT}/bin:${PYENV_ROOT}/shims:${PATH}"
-RUN echo 'eval "$(pyenv init -)"' >>${HOME}/.bashrc && \
-    pyenv update
+# Install and configure uv
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+ENV PATH="${HOME}/.local/bin:${PATH}"
+ENV UV_PYTHON_PREFERENCE="only-managed"
 
 # Install Python
-ARG PYTHON_VERSIONS="3.13 3.12 3.11 3.10 3.9 3.8 pypy3.10-7.3.17"
-COPY --chown=0:0 --chmod=755 ./install-python.sh /tmp/install-python.sh
-RUN /tmp/install-python.sh && \
-    rm /tmp/install-python.sh
+ARG PYTHON_VERSIONS="3.13 3.12 3.11 3.10 3.9 3.8 pypy3.10"
+RUN bash -c "uv python install ${PYTHON_VERSIONS}" && \
+    uv python pin --global 3.13
 
-# Install dependencies for main python installation
-COPY ./requirements.txt /tmp/requirements.txt
-RUN pyenv exec pip install --upgrade -r /tmp/requirements.txt && \
-    rm /tmp/requirements.txt
+# Add shims for python and pip
+COPY --chmod=775 <<EOF "${HOME}/.local/bin/python"
+#!/bin/bash
+exec uv run --no-project python \$@
+EOF
 
-# Install tools with pipx in isolated environments
-COPY ./requirements-tools.txt /tmp/requirements-tools.txt
-ENV PIPX_HOME="/opt/pipx"
-ENV PIPX_BIN_DIR="${PIPX_HOME}/bin"
-ENV PATH="${PIPX_BIN_DIR}:${PATH}"
-RUN mkdir -p "${PIPX_BIN_DIR}" && \
-    while IFS="" read -r line || [ -n "$line" ]; do \
-        pyenv exec pipx install --global "${line}"; \
-    done </tmp/requirements-tools.txt && \
-    rm /tmp/requirements-tools.txt
+COPY --chmod=775 <<EOF "${HOME}/.local/bin/pip"
+#!/bin/bash
+exec uv pip \$@
+EOF
 
-# Inject compatibile dependencies for tox
-COPY ./requirements-tox.txt /tmp/requirements-tox.txt
-RUN pipx inject --force tox -r /tmp/requirements-tox.txt && \
-    rm /tmp/requirements-tox.txt
+# Prevent any runtime downloads
+ENV UV_PYTHON_DOWNLOADS=never
+
+# Install tools with uv in isolated environments
+RUN uv tool install tox==4.23.2 --with tox-uv && \
+    uv tool install ruff && \
+    uv tool install pre-commit --with pre-commit-uv && \
+    uv tool install asv --with virtualenv

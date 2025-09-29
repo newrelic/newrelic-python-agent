@@ -28,10 +28,6 @@ jobs:
   # Benchmarks
   benchmark:
     runs-on: ubuntu-24.04
-    container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
-      options: >-
-        --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     strategy:
       matrix:
@@ -46,15 +42,19 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # 6.0.0
+        with:
+          python-version: "${{ matrix.python }}"
+
       - name: Fetch git tags
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
 
-      - name: Configure pip cache
+      - name: Install Dependencies
         run: |
-          mkdir -p /github/home/.cache/pip
-          chown -R "$(whoami)" /github/home/.cache/pip
+          pip install --upgrade pip
+          pip install asv virtualenv
 
       - name: Configure Machine Information
         run: |

@@ -110,7 +110,7 @@ jobs:
   # Tests
   python:
     env:
-      TOTAL_GROUPS: 20
+      TOTAL_GROUPS: 12
 
     strategy:
       fail-fast: false
@@ -129,14 +129,6 @@ jobs:
             10,
             11,
             12,
-            13,
-            14,
-            15,
-            16,
-            17,
-            18,
-            19,
-            20,
           ]
 
     runs-on: ubuntu-24.04
@@ -552,12 +544,12 @@ jobs:
 
   mysql:
     env:
-      TOTAL_GROUPS: 2
+      TOTAL_GROUPS: 1
 
     strategy:
       fail-fast: false
       matrix:
-        group-number: [1, 2]
+        group-number: [1]
 
     runs-on: ubuntu-24.04
     container:
@@ -726,12 +718,12 @@ jobs:
 
   redis:
     env:
-      TOTAL_GROUPS: 2
+      TOTAL_GROUPS: 1
 
     strategy:
       fail-fast: false
       matrix:
-        group-number: [1, 2]
+        group-number: [1]
 
     runs-on: ubuntu-24.04
     container:
@@ -923,12 +915,12 @@ jobs:
 
   memcached:
     env:
-      TOTAL_GROUPS: 2
+      TOTAL_GROUPS: 1
 
     strategy:
       fail-fast: false
       matrix:
-        group-number: [1, 2]
+        group-number: [1]
 
     runs-on: ubuntu-24.04
     container:

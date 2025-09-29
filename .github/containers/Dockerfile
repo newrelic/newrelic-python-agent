@@ -107,18 +107,20 @@ WORKDIR "${HOME}"
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 ENV PATH="${HOME}/.local/bin:${PATH}"
 ENV UV_PYTHON_PREFERENCE="only-managed"
+ENV UV_LINK_MODE="copy"
 
-# Install Python
-ARG PYTHON_VERSIONS="3.13 3.12 3.11 3.10 3.9 3.8 pypy3.10"
-RUN bash -c "uv python install ${PYTHON_VERSIONS}" && \
-    uv python pin --global 3.13
+# Install PyPy versions and rename shims
+RUN uv python install -f pp3.11 pp3.10
+RUN mv "${HOME}/.local/bin/python3.11" "${HOME}/.local/bin/pypy3.11" && \
+    mv "${HOME}/.local/bin/python3.10" "${HOME}/.local/bin/pypy3.10"
 
-# Add shims for python and pip
-COPY --chmod=775 <<EOF "${HOME}/.local/bin/python"
-#!/bin/bash
-exec uv run --no-project python \$@
-EOF
+# Install CPython versions
+RUN uv python install -f cp3.14 cp3.13 cp3.12 cp3.11 cp3.10 cp3.9 cp3.8
 
+# Set default Python version to CPython 3.13
+RUN uv python install -f --default cp3.13
+
+# Add shim for pip to use 'uv pip'
 COPY --chmod=775 <<EOF "${HOME}/.local/bin/pip"
 #!/bin/bash
 exec uv pip \$@

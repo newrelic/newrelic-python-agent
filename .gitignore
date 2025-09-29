@@ -4,6 +4,9 @@
 # Linter
 megalinter-reports/
 
+# Benchmarks
+.asv/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

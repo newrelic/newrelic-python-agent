@@ -26,10 +26,8 @@ RUN mkdir -p ${HOME} && \
     useradd --uid ${UID} --gid ${GID} --home ${HOME} vscode && \
     chown -R ${UID}:${GID} /home/vscode
 
-# Fix pyenv installation
-RUN echo 'eval "$(pyenv init -)"' >>${HOME}/.bashrc && \
-    chown -R vscode:vscode "${PYENV_ROOT}" && \
-    chown -R vscode:vscode "${PIPX_HOME}"
+# Allow uv to download Python versions manually
+ENV UV_PYTHON_DOWNLOADS=manual
 
 # Set user
 USER ${UID}:${GID}

@@ -363,21 +363,27 @@ def test_strip_proxy_details(settings):
     assert proxy_host == expected_proxy_host
 
 
-def test_delete_setting():
-    d = {"transaction_tracer.capture_attributes": True}
-    settings = apply_server_side_settings(d)
-    assert "capture_attributes" in settings.transaction_tracer
+# TODO: Reenable once newly deprecated settings have been
+# been put into the `deprecated_settings_map`
+# def test_delete_setting():
+#     """This test applies to a deprecated setting
+#     """
+#     d = {"transaction_tracer.explain_enabled": True}
+#     settings = apply_server_side_settings(d)
+#     assert "explain_enabled" in settings.transaction_tracer
 
-    delete_setting(settings, "transaction_tracer.capture_attributes")
-    assert "capture_attributes" not in settings.transaction_tracer
+#     delete_setting(settings, "transaction_tracer.explain_enabled")
+#     assert "explain_enabled" not in settings.transaction_tracer
 
 
-def test_delete_setting_absent():
-    settings = apply_server_side_settings()
-    assert "capture_attributes" not in settings.transaction_tracer
+# def test_delete_setting_absent():
+#     """This test applies to a deprecated setting
+#     """
+#     settings = apply_server_side_settings()
+#     assert "explain_enabled" not in settings.transaction_tracer
 
-    delete_setting(settings, "transaction_tracer.capture_attributes")
-    assert "capture_attributes" not in settings.transaction_tracer
+#     delete_setting(settings, "transaction_tracer.explain_enabled")
+#     assert "explain_enabled" not in settings.transaction_tracer
 
 
 def test_delete_setting_parent():
@@ -443,59 +449,51 @@ translate_settings_tests = [
     (TSetting("analytics_events.enabled", False, True), TSetting("transaction_events.enabled", True, True)),
     (
         TSetting("analytics_events.max_samples_stored", 1200, 1200),
-        TSetting("event_harvest_config.harvest_limits.analytic_event_data", 9999, 1200),
+        TSetting("transaction_events.max_samples_stored", 9999, 1200),
     ),
     (
         TSetting("analytics_events.max_samples_stored", 9999, 1200),
-        TSetting("event_harvest_config.harvest_limits.analytic_event_data", 1200, 1200),
-    ),
-    (
         TSetting("transaction_events.max_samples_stored", 1200, 1200),
-        TSetting("event_harvest_config.harvest_limits.analytic_event_data", 9999, 1200),
     ),
     (
-        TSetting("transaction_events.max_samples_stored", 9999, 1200),
         TSetting("event_harvest_config.harvest_limits.analytic_event_data", 1200, 1200),
+        TSetting("transaction_events.max_samples_stored", 9999, 1200),
     ),
     (
-        TSetting("span_events.max_samples_stored", 1000, 2000),
-        TSetting("event_harvest_config.harvest_limits.span_event_data", 9999, 2000),
+        TSetting("event_harvest_config.harvest_limits.analytic_event_data", 9999, 1200),
+        TSetting("transaction_events.max_samples_stored", 1200, 1200),
     ),
     (
-        TSetting("span_events.max_samples_stored", 9999, 2000),
         TSetting("event_harvest_config.harvest_limits.span_event_data", 1000, 2000),
+        TSetting("span_events.max_samples_stored", 9999, 2000),
     ),
     (
-        TSetting("error_collector.max_event_samples_stored", 100, 100),
-        TSetting("event_harvest_config.harvest_limits.error_event_data", 9999, 100),
+        TSetting("event_harvest_config.harvest_limits.span_event_data", 9999, 2000),
+        TSetting("span_events.max_samples_stored", 1000, 2000),
     ),
     (
-        TSetting("error_collector.max_event_samples_stored", 9999, 100),
         TSetting("event_harvest_config.harvest_limits.error_event_data", 100, 100),
+        TSetting("error_collector.max_event_samples_stored", 9999, 100),
     ),
     (
-        TSetting("custom_insights_events.max_samples_stored", 3600, 3600),
-        TSetting("event_harvest_config.harvest_limits.custom_event_data", 9999, 3600),
+        TSetting("event_harvest_config.harvest_limits.error_event_data", 9999, 100),
+        TSetting("error_collector.max_event_samples_stored", 100, 100),
     ),
     (
-        TSetting("custom_insights_events.max_samples_stored", 9999, 3600),
         TSetting("event_harvest_config.harvest_limits.custom_event_data", 3600, 3600),
+        TSetting("custom_insights_events.max_samples_stored", 9999, 3600),
     ),
     (
-        TSetting("application_logging.forwarding.max_samples_stored", 10000, 10000),
-        TSetting("event_harvest_config.harvest_limits.log_event_data", 99999, 10000),
+        TSetting("event_harvest_config.harvest_limits.custom_event_data", 9999, 3600),
+        TSetting("custom_insights_events.max_samples_stored", 3600, 3600),
     ),
     (
-        TSetting("application_logging.forwarding.max_samples_stored", 99999, 10000),
         TSetting("event_harvest_config.harvest_limits.log_event_data", 10000, 10000),
+        TSetting("application_logging.forwarding.max_samples_stored", 99999, 10000),
     ),
     (
-        TSetting("error_collector.ignore_errors", [], []),
-        TSetting("error_collector.ignore_classes", callable_name(ValueError), []),
-    ),
-    (
-        TSetting("error_collector.ignore_errors", callable_name(ValueError), []),
-        TSetting("error_collector.ignore_classes", [], []),
+        TSetting("event_harvest_config.harvest_limits.log_event_data", 99999, 10000),
+        TSetting("application_logging.forwarding.max_samples_stored", 10000, 10000),
     ),
 ]
 
@@ -565,46 +563,6 @@ def test_translate_deprecated_setting_without_old_setting(old, new):
     assert result is settings
     assert old.name not in flatten_settings(result)
     assert fetch_config_setting(result, new.name) == new.value
-
-
-def test_translate_deprecated_ignored_params_without_new_setting():
-    ignored_params = ["foo", "bar"]
-    settings = apply_server_side_settings()
-    apply_config_setting(settings, "ignored_params", ignored_params)
-
-    assert "foo" in settings.ignored_params
-    assert "bar" in settings.ignored_params
-    assert len(settings.attributes.exclude) == 0
-
-    cached = [("ignored_params", ignored_params)]
-    result = translate_deprecated_settings(settings, cached)
-
-    assert result is settings
-    assert "request.parameters.foo" in result.attributes.exclude
-    assert "request.parameters.bar" in result.attributes.exclude
-    assert "ignored_params" not in result
-
-
-def test_translate_deprecated_ignored_params_with_new_setting():
-    ignored_params = ["foo", "bar"]
-    attr_exclude = ["request.parameters.foo"]
-    settings = apply_server_side_settings()
-    apply_config_setting(settings, "ignored_params", ignored_params)
-    apply_config_setting(settings, "attributes.exclude", attr_exclude)
-
-    assert "foo" in settings.ignored_params
-    assert "bar" in settings.ignored_params
-    assert "request.parameters.foo" in settings.attributes.exclude
-
-    cached = [("ignored_params", ignored_params), ("attributes.exclude", attr_exclude)]
-    result = translate_deprecated_settings(settings, cached)
-
-    # ignored_params are not merged!
-
-    assert result is settings
-    assert "request.parameters.foo" in result.attributes.exclude
-    assert "request.parameters.bar" not in result.attributes.exclude
-    assert "ignored_params" not in result
 
 
 @pytest.mark.parametrize(
@@ -1002,7 +960,7 @@ enabled = false
 
 [tool.newrelic.error_collector]
 enabled = true
-ignore_errors = ["module:name1", "module:name"]
+ignore_classes = ["module:name1", "module:name"]
 
 [tool.newrelic.transaction_tracer]
 enabled = true

@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import newrelic.api.in_function
 import newrelic.api.wsgi_application
+from newrelic.common.object_wrapper import wrap_in_function
 
 
 def instrument_paste_httpserver(module):
@@ -22,4 +22,4 @@ def instrument_paste_httpserver(module):
         args = [server, application, *args]
         return (args, kwargs)
 
-    newrelic.api.in_function.wrap_in_function(module, "WSGIServerBase.__init__", wrap_wsgi_application_entry_point)
+    wrap_in_function(module, "WSGIServerBase.__init__", wrap_wsgi_application_entry_point)

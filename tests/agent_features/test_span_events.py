@@ -15,7 +15,8 @@
 import sys
 
 import pytest
-from testing_support.fixtures import dt_enabled, function_not_called, override_application_settings
+from testing_support.fixtures import dt_enabled, override_application_settings
+from testing_support.validators.validate_function_not_called import validate_function_not_called
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
@@ -415,7 +416,7 @@ def test_collect_span_events_override(collect_span_events, span_events_enabled):
             pass
 
     if not spans_expected:
-        _test = function_not_called("newrelic.core.attribute", "resolve_agent_attributes")(_test)
+        _test = validate_function_not_called("newrelic.core.attribute", "resolve_agent_attributes")(_test)
 
     _test()
 
@@ -516,9 +517,9 @@ def test_span_event_user_attributes(trace_type, args, exclude_attributes):
 def test_span_user_attribute_overrides_transaction_attribute():
     transaction = current_transaction()
 
-    transaction.add_custom_parameter("foo", "a")
+    transaction.add_custom_attribute("foo", "a")
     add_custom_span_attribute("foo", "b")
-    transaction.add_custom_parameter("foo", "c")
+    transaction.add_custom_attribute("foo", "c")
 
 
 @override_application_settings({"attributes.include": "*"})
@@ -563,7 +564,7 @@ def test_span_custom_attribute_limit():
         transaction = current_transaction()
 
         for i in range(128):
-            transaction.add_custom_parameter(f"txn_attr{i}", "txnValue")
+            transaction.add_custom_attribute(f"txn_attr{i}", "txnValue")
             if i < 64:
                 add_custom_span_attribute(f"span_attr{i}", "spanValue")
 

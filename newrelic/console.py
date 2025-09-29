@@ -354,7 +354,7 @@ class ConsoleShell(cmd.Cmd):
         """ """
 
         for item in _trace_cache.active_threads():
-            transaction, thread_id, thread_type, frame = item
+            transaction, _thread_id, _thread_type, _frame = item
             print("THREAD", item, file=self.stdout)
             if transaction is not None:
                 transaction.dump(self.stdout)
@@ -460,7 +460,7 @@ class ConnectionManager:
         listener.listen(5)
 
         while True:
-            client, addr = listener.accept()
+            client, _addr = listener.accept()
 
             if not self.__console_initialized:
                 self.__console_initialized = True

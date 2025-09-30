@@ -14,17 +14,13 @@
 
 import json
 import logging
-import re
-import warnings
 from traceback import format_exception
 
 from newrelic.api.application import application_instance
 from newrelic.api.time_trace import get_linking_metadata
 from newrelic.api.transaction import current_transaction, record_log_event
-from newrelic.common import agent_http
 from newrelic.common.encoding_utils import json_encode
 from newrelic.common.object_names import parse_exc_info
-from newrelic.core.attribute import truncate
 from newrelic.core.config import global_settings, is_expected_error
 
 
@@ -186,85 +182,3 @@ class NewRelicLogForwardingHandler(logging.Handler):
     def filter_record_attributes(cls, record):
         record_attrs = vars(record)
         return {k: record_attrs[k] for k in record_attrs if k not in cls.IGNORED_LOG_RECORD_KEYS}
-
-
-class NewRelicLogHandler(logging.Handler):
-    """
-    Deprecated: Please use NewRelicLogForwardingHandler instead.
-    This is an experimental log handler provided by the community. Use with caution.
-    """
-
-    PATH = "/log/v1"
-
-    def __init__(
-        self,
-        level=logging.INFO,
-        license_key=None,
-        host=None,
-        port=443,
-        proxy_scheme=None,
-        proxy_host=None,
-        proxy_user=None,
-        proxy_pass=None,
-        timeout=None,
-        ca_bundle_path=None,
-        disable_certificate_validation=False,
-    ):
-        warnings.warn(
-            "The contributed NewRelicLogHandler has been superseded by automatic instrumentation for "
-            "logging in the standard lib. If for some reason you need to manually configure a handler, "
-            "please use newrelic.api.log.NewRelicLogForwardingHandler to take advantage of all the "
-            "features included in application log forwarding such as proper batching.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        super().__init__(level=level)
-        self.license_key = license_key or self.settings.license_key
-        self.host = host or self.settings.host or self.default_host(self.license_key)
-
-        self.client = agent_http.HttpClient(
-            host=host,
-            port=port,
-            proxy_scheme=proxy_scheme,
-            proxy_host=proxy_host,
-            proxy_user=proxy_user,
-            proxy_pass=proxy_pass,
-            timeout=timeout,
-            ca_bundle_path=ca_bundle_path,
-            disable_certificate_validation=disable_certificate_validation,
-        )
-
-        self.setFormatter(NewRelicContextFormatter())
-
-    @property
-    def settings(self):
-        transaction = current_transaction()
-        if transaction:
-            return transaction.settings
-        return global_settings()
-
-    def emit(self, record):
-        try:
-            headers = {"Api-Key": self.license_key or "", "Content-Type": "application/json"}
-            payload = self.format(record).encode("utf-8")
-            with self.client:
-                status_code, response = self.client.send_request(path=self.PATH, headers=headers, payload=payload)
-                if status_code < 200 or status_code >= 300:
-                    raise RuntimeError(
-                        f"An unexpected HTTP response of {status_code!r} was received for request made to https://{self.client._host}:{int(self.client._port)}{self.PATH}.The response payload for the request was {truncate(response.decode('utf-8'), 1024)!r}. If this issue persists then please report this problem to New Relic support for further investigation."
-                    )
-
-        except Exception:
-            self.handleError(record)
-
-    def default_host(self, license_key):
-        if not license_key:
-            return "log-api.newrelic.com"
-
-        region_aware_match = re.match("^(.+?)x", license_key)
-        if not region_aware_match:
-            return "log-api.newrelic.com"
-
-        region = region_aware_match.group(1)
-        host = f"log-api.{region}.newrelic.com"
-        return host

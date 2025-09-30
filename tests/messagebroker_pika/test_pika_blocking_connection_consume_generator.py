@@ -93,7 +93,7 @@ def test_blocking_connection_consume_timeout(producer):
         for result in channel.consume(QUEUE, inactivity_timeout=0.01):
             # result is None if there is a timeout
             if result and any(result):
-                method_frame, properties, body = result
+                method_frame, _properties, body = result
                 channel.basic_ack(method_frame.delivery_tag)
                 assert hasattr(method_frame, "_nr_start_time")
                 assert body == BODY
@@ -202,7 +202,7 @@ def test_blocking_connection_consume_using_methods(producer):
 
         consumer = channel.consume(QUEUE, inactivity_timeout=0.01)
 
-        method, properties, body = next(consumer)
+        method, _properties, body = next(consumer)
         assert hasattr(method, "_nr_start_time")
         assert body == BODY
 
@@ -256,9 +256,9 @@ def test_blocking_connection_consume_many_outside_txn(produce_five):
     @validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
     def consume_it(consumer, up_next=None):
         if up_next is None:
-            method_frame, properties, body = next(consumer)
+            method_frame, _properties, body = next(consumer)
         else:
-            method_frame, properties, body = up_next
+            method_frame, _properties, body = up_next
         assert hasattr(method_frame, "_nr_start_time")
         assert body == BODY
         return next(consumer)
@@ -291,7 +291,7 @@ def test_blocking_connection_consume_using_methods_outside_txn(producer):
 
         consumer = channel.consume(QUEUE, inactivity_timeout=0.01)
 
-        method, properties, body = next(consumer)
+        method, _properties, body = next(consumer)
         assert hasattr(method, "_nr_start_time")
         assert body == BODY
 

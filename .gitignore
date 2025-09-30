@@ -4,6 +4,9 @@
 # Linter
 megalinter-reports/
 
+# Benchmarks
+.asv/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -32,7 +35,10 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+_version.py
 version.txt
+version.py
+_version.py
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

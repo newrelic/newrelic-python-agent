@@ -12,6 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Use of these from this module will be deprecated.
+from newrelic.agent import background_task, current_transaction
 
-from newrelic.common.object_wrapper import PostFunctionWrapper, post_function, wrap_post_function  # noqa: F401
+from . import benchmark
+
+# This benchmark suite is a placeholder until actual benchmark suites can be added.
+# For now, this ensures the infrastructure works as intended.
+
+
+@benchmark
+class Suite:
+    def bench_application_active(self):
+        from newrelic.agent import application
+
+        assert application().active
+
+    @background_task()
+    def bench_transaction_active(self):
+        from newrelic.agent import application
+
+        assert current_transaction()

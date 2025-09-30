@@ -45,8 +45,7 @@ def validate_error_event_collector_json(num_errors=1):
 
             sampling_info = decoded_json[1]
 
-            harvest_config = instance.settings.event_harvest_config
-            reservoir_size = harvest_config.harvest_limits.error_event_data
+            reservoir_size = instance.settings.error_collector.max_event_samples_stored
 
             assert sampling_info["reservoir_size"] == reservoir_size
             assert sampling_info["events_seen"] == num_errors

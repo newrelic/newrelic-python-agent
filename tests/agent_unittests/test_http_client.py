@@ -319,7 +319,7 @@ def test_http_payload_compression(server, client_cls, method, threshold):
 
 def test_cert_path(server):
     with HttpClient("localhost", server.port, ca_bundle_path=CERT_PATH) as client:
-        status, data = client.send_request()
+        client.send_request()
 
 
 @pytest.mark.parametrize("system_certs_available", (True, False))

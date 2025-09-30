@@ -27,6 +27,7 @@ from testing_support.ml_testing_utils import (
     disabled_ai_monitoring_settings,
     events_with_context_attrs,
     set_trace_info,
+    tool_events_sans_content,
 )
 from testing_support.validators.validate_custom_event import validate_custom_event_count
 from testing_support.validators.validate_custom_events import validate_custom_events
@@ -57,15 +58,6 @@ def multi_arg_tool():
         return first_num + second_num
 
     return _multi_arg_tool
-
-
-def events_sans_content(event):
-    new_event = copy.deepcopy(event)
-    for _event in new_event:
-        del _event[1]["input"]
-        if "output" in _event[1]:
-            del _event[1]["output"]
-    return new_event
 
 
 single_arg_tool_recorded_events = [
@@ -108,7 +100,7 @@ def test_langchain_single_arg_tool(set_trace_info, single_arg_tool):
 
 @reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
-@validate_custom_events(events_sans_content(single_arg_tool_recorded_events))
+@validate_custom_events(tool_events_sans_content(single_arg_tool_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
     name="test_tool:test_langchain_single_arg_tool_no_content",
@@ -144,7 +136,7 @@ def test_langchain_single_arg_tool_async(set_trace_info, single_arg_tool, loop):
 
 @reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
-@validate_custom_events(events_sans_content(single_arg_tool_recorded_events))
+@validate_custom_events(tool_events_sans_content(single_arg_tool_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
     name="test_tool:test_langchain_single_arg_tool_async_no_content",
@@ -275,7 +267,7 @@ def test_langchain_error_in_run(set_trace_info, multi_arg_tool):
 @validate_error_trace_attributes(
     callable_name(pydantic_core._pydantic_core.ValidationError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}}
 )
-@validate_custom_events(events_sans_content(multi_arg_error_recorded_events))
+@validate_custom_events(tool_events_sans_content(multi_arg_error_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
     name="test_tool:test_langchain_error_in_run_no_content",
@@ -327,7 +319,7 @@ def test_langchain_error_in_run_async(set_trace_info, multi_arg_tool, loop):
 @validate_error_trace_attributes(
     callable_name(pydantic_core._pydantic_core.ValidationError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}}
 )
-@validate_custom_events(events_sans_content(multi_arg_error_recorded_events))
+@validate_custom_events(tool_events_sans_content(multi_arg_error_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
     name="test_tool:test_langchain_error_in_run_async_no_content",

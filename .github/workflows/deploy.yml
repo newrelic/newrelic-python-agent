@@ -23,51 +23,6 @@ permissions:
   contents: read
 
 jobs:
-  build-wheels-legacy:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          # Linux glibc
-          - wheel: cp37-manylinux
-            os: ubuntu-24.04
-          # Linux musllibc
-          - wheel: cp37-musllinux
-            os: ubuntu-24.04
-
-    name: Build wheels for ${{ matrix.wheel }}
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
-        with:
-          persist-credentials: false
-          fetch-depth: 0
-
-      - name: Setup QEMU
-        if: runner.os == 'Linux'
-        uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # 3.6.0
-        with:
-          platforms: arm64
-
-      - name: Build Wheels
-        uses: pypa/cibuildwheel@8d945475ac4b1aac4ae08b2fd27db9917158b6ce # 2.17.0
-        env:
-          CIBW_PLATFORM: auto
-          CIBW_BUILD: "${{ matrix.wheel }}*"
-          CIBW_ARCHS_LINUX: x86_64 aarch64
-          CIBW_ENVIRONMENT_LINUX: "LD_LIBRARY_PATH=/opt/rh/devtoolset-8/root/usr/lib64:/opt/rh/devtoolset-8/root/usr/lib:/opt/rh/devtoolset-8/root/usr/lib64/dyninst:/opt/rh/devtoolset-8/root/usr/lib/dyninst:/usr/local/lib64:/usr/local/lib"
-          CIBW_TEST_REQUIRES: pytest
-          CIBW_TEST_COMMAND_LINUX: "export PYTHONPATH={project}/tests; pytest {project}/tests/agent_unittests -vx"
-
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
-        with:
-          name: ${{ github.job }}-${{ matrix.wheel }}
-          path: ./wheelhouse/*.whl
-          if-no-files-found: error
-          retention-days: 1
-
   build-wheels:
     strategy:
       fail-fast: false
@@ -153,7 +108,7 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
-      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # 5.6.0
+      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # 6.0.0
         with:
           python-version: "3.13"
 
@@ -190,7 +145,6 @@ jobs:
       id-token: write # IMPORTANT: this permission is mandatory for trusted publishing
       attestations: write
     needs:
-      - build-wheels-legacy
       - build-wheels
       - build-sdist
 
@@ -227,19 +181,21 @@ jobs:
 
       - name: Upload Package to PyPI
         if: matrix.pypi-instance == 'pypi'
-        uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc # 1.12.4
+        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # 1.13.0
 
       - name: Upload Package to TestPyPI
         if: matrix.pypi-instance == 'testpypi'
-        uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc # 1.12.4
+        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # 1.13.0
         with:
           repository-url: https://test.pypi.org/legacy/
 
       - name: Attest
-        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # 2.4.0
+        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # 3.0.0
         id: attest
         with:
-          subject-path: ./dist/*
+          subject-path: |
+            ./dist/*.whl
+            ./dist/*.tar.gz
 
       - name: Wait for release to be available
         if: matrix.pypi-instance == 'pypi'

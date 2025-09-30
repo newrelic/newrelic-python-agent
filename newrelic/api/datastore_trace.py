@@ -17,6 +17,7 @@ import functools
 from newrelic.api.time_trace import TimeTrace, current_trace
 from newrelic.common.async_wrapper import async_wrapper as get_async_wrapper
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
+from newrelic.core.config import global_settings
 from newrelic.core.datastore_node import DatastoreNode
 
 
@@ -86,7 +87,8 @@ class DatastoreTrace(TimeTrace):
             self.port_path_or_id = transaction._intern_string(self.port_path_or_id)
             self.database_name = transaction._intern_string(self.database_name)
 
-            datastore_tracer_settings = transaction.settings.datastore_tracer
+            settings = transaction.settings or global_settings()
+            datastore_tracer_settings = settings.datastore_tracer
             self.instance_reporting_enabled = datastore_tracer_settings.instance_reporting.enabled
             self.database_name_enabled = datastore_tracer_settings.database_name_reporting.enabled
         return result

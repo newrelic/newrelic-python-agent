@@ -20,36 +20,8 @@ whatever clock has the highest resolution.
 
 import time
 
-try:
-    # Python 3.3 and later implements PEP 418. Use the
-    # performance counter it provides which is monotonically
-    # increasing.
-
-    default_timer = time.perf_counter
-    timer_implementation = "time.perf_counter()"
-
-except AttributeError:
-    try:
-        # Next try our own bundled back port of the monotonic()
-        # function. Python 3.3 does on Windows use a different
-        # clock for the performance counter, but the standard
-        # monotonic clock should suit our requirements okay.
-
-        from newrelic.common._monotonic import monotonic as default_timer
-
-        default_timer()
-        timer_implementation = "_monotonic.monotonic()"
-
-    except (ImportError, NotImplementedError, OSError):
-        # If neither of the above, fallback to using the default
-        # timer from the timeit module. This will use the best
-        # resolution clock available on a particular platform,
-        # albeit that it isn't monotonically increasing.
-
-        import timeit
-
-        default_timer = timeit.default_timer
-        timer_implementation = "timeit.default_timer()"
+default_timer = time.perf_counter
+timer_implementation = "time.perf_counter()"
 
 # A timer class which deals with remembering the start time based on
 # wall clock time and duration based on a monotonic clock where

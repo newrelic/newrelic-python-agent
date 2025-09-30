@@ -12,14 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from pathlib import Path
-
-VERSION_FILE = Path(__file__).parent / "version.txt"
-
 try:
-    with VERSION_FILE.open() as f:
-        version = f.read()
-except Exception:
-    version = "0.0.0"
+    from newrelic._version import __version__, __version_tuple__, version, version_tuple
+except ImportError:  # pragma: no cover
+    __version__ = version = "0.0.0"  # pragma: no cover
+    __version_tuple__ = version_tuple = (0, 0, 0)  # pragma: no cover
 
-version_info = list(map(int, version.split(".")))
+# Older compatibility attribute
+version_info = version_tuple

@@ -689,9 +689,8 @@ def default_otlp_host(host):
     }
     otlp_host = HOST_MAP.get(host, None)
     if not otlp_host:
-        default = HOST_MAP["collector.newrelic.com"]
-        _logger.warning("Unable to find corresponding OTLP host using default %s", default)
-        otlp_host = default
+        otlp_host = HOST_MAP["collector.newrelic.com"]
+        _logger.warning("Unable to find corresponding OTLP host using default %s", otlp_host)
     return otlp_host
 
 

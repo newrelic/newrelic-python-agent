@@ -229,6 +229,10 @@ jobs:
   windows:
     env:
       TOTAL_GROUPS: 1
+      UV_PYTHON: "3.13"
+      UV_PYTHON_DOWNLOADS: "never"
+      UV_PYTHON_PREFERENCE: "only-system"
+
 
     strategy:
       fail-fast: false
@@ -249,11 +253,12 @@ jobs:
         with:
           python-version: "3.13"
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # 6.8.0
+
       - name: Install Dependencies
         run: |
-          pip install --upgrade tox
-        env:
-          GROUP_NUMBER: ${{ matrix.group-number }}
+          uv tool install tox --with tox-uv
 
       - name: Get Environments
         id: get-envs
@@ -281,6 +286,10 @@ jobs:
   windows_arm64:
     env:
       TOTAL_GROUPS: 1
+      UV_PYTHON: "3.13"
+      UV_PYTHON_DOWNLOADS: "never"
+      UV_PYTHON_PREFERENCE: "only-system"
+
 
     strategy:
       fail-fast: false
@@ -301,11 +310,12 @@ jobs:
         with:
           python-version: "3.13"
 
+      - name: Install uv
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # 6.8.0
+
       - name: Install Dependencies
         run: |
-          pip install --upgrade tox
-        env:
-          GROUP_NUMBER: ${{ matrix.group-number }}
+          uv tool install tox --with tox-uv
 
       - name: Get Environments
         id: get-envs

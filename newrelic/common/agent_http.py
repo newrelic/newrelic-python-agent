@@ -602,7 +602,7 @@ class ServerlessModeClient(DeveloperModeClient):
         result = super().send_request(method=method, path=path, params=params, headers=headers, payload=payload)
 
         # Check for the presence of agent_method to ensure this isn't an OTLP request
-        agent_method = params.get("method", None)
+        agent_method = params and params.get("method")
         if result[0] == 200 and agent_method:
             self.payload[agent_method] = json_decode(payload.decode("utf-8"))
 

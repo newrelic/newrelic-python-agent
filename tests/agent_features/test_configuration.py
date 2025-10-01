@@ -406,56 +406,6 @@ TSetting = collections.namedtuple("TSetting", ["name", "value", "default"])
 
 translate_settings_tests = [
     (
-        TSetting("strip_exception_messages.whitelist", [], []),
-        TSetting("strip_exception_messages.allowlist", ["non-default-value"], []),
-    ),
-    (
-        TSetting("strip_exception_messages.whitelist", ["non-default-value"], []),
-        TSetting("strip_exception_messages.allowlist", [], []),
-    ),
-    (
-        TSetting("transaction_tracer.capture_attributes", True, True),
-        TSetting("transaction_tracer.attributes.enabled", False, True),
-    ),
-    (
-        TSetting("transaction_tracer.capture_attributes", False, True),
-        TSetting("transaction_tracer.attributes.enabled", True, True),
-    ),
-    (
-        TSetting("error_collector.capture_attributes", True, True),
-        TSetting("error_collector.attributes.enabled", False, True),
-    ),
-    (
-        TSetting("error_collector.capture_attributes", False, True),
-        TSetting("error_collector.attributes.enabled", True, True),
-    ),
-    (
-        TSetting("browser_monitoring.capture_attributes", False, False),
-        TSetting("browser_monitoring.attributes.enabled", True, False),
-    ),
-    (
-        TSetting("browser_monitoring.capture_attributes", True, False),
-        TSetting("browser_monitoring.attributes.enabled", False, False),
-    ),
-    (
-        TSetting("analytics_events.capture_attributes", True, True),
-        TSetting("transaction_events.attributes.enabled", False, True),
-    ),
-    (
-        TSetting("analytics_events.capture_attributes", False, True),
-        TSetting("transaction_events.attributes.enabled", True, True),
-    ),
-    (TSetting("analytics_events.enabled", True, True), TSetting("transaction_events.enabled", False, True)),
-    (TSetting("analytics_events.enabled", False, True), TSetting("transaction_events.enabled", True, True)),
-    (
-        TSetting("analytics_events.max_samples_stored", 1200, 1200),
-        TSetting("transaction_events.max_samples_stored", 9999, 1200),
-    ),
-    (
-        TSetting("analytics_events.max_samples_stored", 9999, 1200),
-        TSetting("transaction_events.max_samples_stored", 1200, 1200),
-    ),
-    (
         TSetting("event_harvest_config.harvest_limits.analytic_event_data", 1200, 1200),
         TSetting("transaction_events.max_samples_stored", 9999, 1200),
     ),

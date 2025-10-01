@@ -223,7 +223,6 @@ def create_chat_completion_message_event(
             "vendor": "bedrock",
             "ingest_source": "Python",
         }
-
         if settings.ai_monitoring.record_content.enabled:
             chat_completion_message_dict["content"] = content
 
@@ -234,6 +233,7 @@ def create_chat_completion_message_event(
     for index, message in enumerate(output_message_list):
         index += len(input_message_list)
         content = message.get("content", "")
+
         # For anthropic models run via langchain, a list is returned with a dictionary of content inside
         # We only want to report the raw dictionary in the LLM message event
         if isinstance(content, list) and len(content) == 1:
@@ -262,7 +262,6 @@ def create_chat_completion_message_event(
             "ingest_source": "Python",
             "is_response": True,
         }
-
         if settings.ai_monitoring.record_content.enabled:
             chat_completion_message_dict["content"] = content
 
@@ -393,7 +392,7 @@ def extract_bedrock_claude_model_request(request_body, bedrock_attrs):
         ]
     else:
         input_message_list = [{"role": "user", "content": request_body.get("prompt")}]
-    bedrock_attrs["request.max_tokens"] = request_body.get("max_tokens_to_sample")
+    bedrock_attrs["request.max_tokens"] = request_body.get("max_tokens_to_sample") or request_body.get("max_tokens")
     bedrock_attrs["request.temperature"] = request_body.get("temperature")
     bedrock_attrs["input_message_list"] = input_message_list
 
@@ -405,6 +404,9 @@ def extract_bedrock_claude_model_response(response_body, bedrock_attrs):
         response_body = json.loads(response_body)
         role = response_body.get("role", "assistant")
         content = response_body.get("content") or response_body.get("completion")
+        if isinstance(content, list):
+            content = content[0].get("text")
+
         output_message_list = [{"role": role, "content": content}]
         bedrock_attrs["response.choices.finish_reason"] = response_body.get("stop_reason")
         bedrock_attrs["output_message_list"] = output_message_list
@@ -419,6 +421,7 @@ def extract_bedrock_claude_model_streaming_response(response_body, bedrock_attrs
             bedrock_attrs["output_message_list"] = [{"role": "assistant", "content": ""}]
         bedrock_attrs["output_message_list"][0]["content"] += content
         bedrock_attrs["response.choices.finish_reason"] = response_body.get("stop_reason")
+
     return bedrock_attrs
 
 
@@ -921,6 +924,13 @@ def handle_chat_completion_event(transaction, bedrock_attrs):
 
     input_message_list = bedrock_attrs.get("input_message_list", [])
     output_message_list = bedrock_attrs.get("output_message_list", [])
+
+    no_output_content = len(output_message_list) == 1 and not output_message_list[0].get("content", "")
+
+    # This checks handles Sonnet 3+ models which report an additional empty input and empty output in streaming cases after the main content has been generated
+    if not input_message_list and no_output_content:
+        return
+
     number_of_messages = (
         len(input_message_list) + len(output_message_list)
     ) or None  # If 0, attribute will be set to None and removed

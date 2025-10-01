@@ -118,6 +118,30 @@ def test_server_side_config_precedence():
     assert protocol.configuration.span_events.enabled is False
 
 
+# The collector uses `event_harvest_config.harvest_limit.*`
+# which is a notation deprecated in favor of `*.max_samples_stored`
+# on the agent configuration, client-side.
+# Test ID explains which endpoint is used for testing
+# and which agent settings are used in this format:
+# <endpoint>:<agent_client_setting>[&<agent_client_setting>]
+@pytest.mark.parametrize("connect_response_fields", 
+    (
+        {"agent_config": {"application_logging.forwarding.max_samples_stored": 1}, "event_harvest_config.harvest_limits.log_event_data": 100},
+        {"agent_config": {"application_logging.forwarding.max_samples_stored": 2, "event_harvest_config.harvest_limits.log_event_data": 3}, "event_harvest_config.harvest_limits.log_event_data": 100},
+        {"agent_config": {"event_harvest_config.harvest_limits.log_event_data": 4}, "event_harvest_config.harvest_limits.log_event_data": 100},
+    ),
+    ids=["log:max_samples", "log:max_samples_&_harvest_limit", "log:harvest_limit"] 
+)
+def test_server_side_config_precedence_log_max_samples(connect_response_fields):
+    client_cls = functools.partial(CustomTestClient, connect_response_fields=connect_response_fields)
+
+    protocol = AgentProtocol.connect(
+        "app_name", LINKED_APPLICATIONS, ENVIRONMENT, global_settings(), client_cls=client_cls
+    )
+
+    assert protocol.configuration.application_logging.forwarding.max_samples_stored == 100
+
+
 @override_generic_settings(global_settings(), {"developer_mode": True})
 @pytest.mark.parametrize(
     "connect_response_fields",

@@ -1251,6 +1251,16 @@ def fetch_config_setting(settings_object, name):
 
     return target
 
+# These are the setting names that are mismatched between
+# the agent (client side) and the collector (server side)
+COLLECTOR_TO_AGENT_SETTINGS_MAPPING = {
+    "event_harvest_config.harvest_limits.analytic_event_data": "transaction_events.max_samples_stored",
+    "event_harvest_config.harvest_limits.span_event_data": "span_events.max_samples_stored",
+    "event_harvest_config.harvest_limits.error_event_data": "error_events.max_event_samples_stored",
+    "event_harvest_config.harvest_limits.custom_insights_data": "custom_insights.max_samples_stored",
+    "event_harvest_config.harvest_limits.log_event_data": "application_logging.forwarding.max_samples_stored"
+}
+
 
 def apply_server_side_settings(server_side_config=None, settings=_settings):
     """Create a snapshot of the global default settings and overlay it
@@ -1291,6 +1301,8 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
     # agent configuration settings.
 
     for name, value in server_side_config.items():
+        if name in COLLECTOR_TO_AGENT_SETTINGS_MAPPING:
+            name = COLLECTOR_TO_AGENT_SETTINGS_MAPPING[name]
         apply_config_setting(settings_snapshot, name, value)
 
     event_harvest_config = server_side_config.get("event_harvest_config", {})

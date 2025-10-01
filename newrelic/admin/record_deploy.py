@@ -113,7 +113,7 @@ def record_deploy_cmd(args):
     # Deprecation Warning
     warnings.warn(
         (
-            "The record_deploy command is deprecated and will be removed in the next major release. This is being removed in favor of the new deployment tracking feature. Check the documentation for more information: https://docs.newrelic.com/docs/change-tracking/change-tracking-introduction/"
+            "The record_deploy command is deprecated and will be removed in the next major release. It is being removed in favor of other methods of creating a change tracking marker. See the documentation for replacement alternatives: https://docs.newrelic.com/docs/change-tracking/change-tracking-introduction/"
         ),
         DeprecationWarning,
         stacklevel=2,

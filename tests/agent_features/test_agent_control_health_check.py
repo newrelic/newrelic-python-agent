@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import re
+import sys
 import threading
 import time
 from pathlib import Path
@@ -21,11 +22,7 @@ from testing_support.fixtures import initialize_agent
 from testing_support.http_client_recorder import HttpClientRecorder
 
 from newrelic.config import _reset_configuration_done, initialize
-from newrelic.core.agent_control_health import (
-    HealthStatus,
-    agent_control_health_instance,
-    is_valid_file_delivery_location,
-)
+from newrelic.core.agent_control_health import HealthStatus, agent_control_health_instance
 from newrelic.core.agent_protocol import AgentProtocol
 from newrelic.core.application import Application
 from newrelic.core.config import finalize_application_settings, global_settings
@@ -41,8 +38,29 @@ def get_health_file_contents(tmp_path):
 
 
 @pytest.mark.parametrize("file_uri", ["", "file://", "/test/dir", "foo:/test/dir"])
-def test_invalid_file_directory_supplied(file_uri):
-    assert not is_valid_file_delivery_location(file_uri)
+def test_invalid_file_directory_supplied(monkeypatch, file_uri):
+    # Setup expected env vars to run agent control health check
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_ENABLED", "True")
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", file_uri)
+
+    agent_control_instance = agent_control_health_instance()
+    assert not agent_control_instance.health_delivery_location_is_valid
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Only valid for Windows")
+@pytest.mark.parametrize("leading_slash", [True, False], ids=["leading_slash", "no_leading_slash"])
+def test_inconsistent_paths_on_windows(monkeypatch, tmp_path, leading_slash):
+    file_uri = tmp_path.as_uri()
+    if not leading_slash:
+        assert file_uri.startswith("file:///")
+        file_uri.replace("file:///", "file://")
+
+    # Setup expected env vars to run agent control health check
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_ENABLED", "True")
+    monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", file_uri)
+
+    agent_control_instance = agent_control_health_instance()
+    assert agent_control_instance.health_delivery_location_is_valid
 
 
 def test_agent_control_not_enabled(monkeypatch, tmp_path):

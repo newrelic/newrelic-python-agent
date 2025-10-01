@@ -938,6 +938,11 @@ def _load_configuration(config_file=None, environment=None, ignore_errors=True, 
 
     initialize_logging(log_file, log_level)
 
+    # Check the resolution of the system timers we will be using
+    # and log a warning if it isn't precise enough.
+
+    _check_timer_resolution()
+
     # Now process the remainder of the global configuration
     # settings.
 
@@ -1027,6 +1032,44 @@ def _load_configuration(config_file=None, environment=None, ignore_errors=True, 
             newrelic.api.import_hook.register_import_hook(module, hook)
         except Exception:
             _raise_configuration_error(section=None, option="transaction_tracer.generator_trace")
+
+
+def _check_timer_resolution():
+    """Check the resolution of the system timer we will be using. If it isn't precise enough then log warnings."""
+
+    from time import get_clock_info
+
+    timer = "time"  # Hard code this for now, in the future we may want to make timer selection dynamic
+    min_recommended_timer_resolution = 1e-4  # 0.1 milliseconds
+
+    # Attempt to get the resolution of the selected timer. If this fails, log a warning and exit early.
+    try:
+        resolution = get_clock_info(timer).resolution
+    except Exception:
+        _logger.warning("Unable to determine resolution of system timer.")
+        return
+
+    # Check the resolution level of the timer and log appropriate messages for it.
+    resolution_log_level = logging.DEBUG
+    if resolution > min_recommended_timer_resolution:
+        resolution_log_level = logging.WARNING
+        _logger.warning(
+            "The resolution of time.%s() on this system is not precise enough and may result in "
+            "inaccurate timing measurements. This can cause widely varying response times and "
+            "trace durations to be reported by the New Relic agent.",
+            timer,
+        )
+
+        # On Windows, Python 3.13+ uses a higher resolution timer implementation. Add a specific recommendation for this.
+        if sys.platform == "win32" and sys.version_info < (3, 13):
+            _logger.warning(
+                "On Windows, consider using Python 3.13 or later to take advantage of the higher resolution timer implementations."
+            )
+
+    # Log the used timer's resolution at the appropriate log level.
+    # If the resolution is too low, this will be a warning.
+    # Otherwise, it will be a debug message.
+    _logger.log(resolution_log_level, "Timer implementation: time.%s(). Resolution: %s seconds.", timer, resolution)
 
 
 # Generic error reporting functions.
@@ -1168,10 +1211,11 @@ def _module_function_glob(module, object_path):
             # Skip adding all class methods on failure
             pass
 
-        # Under the hood uses fnmatch, which uses os.path.normcase
-        # On windows this would cause issues with case insensitivity,
-        # but on all other operating systems there should be no issues.
-        return fnmatch.filter(available_functions, object_path)
+        # Globbing must be done using fnmatch.fnmatchcase as
+        # fnmatch.filter and fnmatch.fnmatch use os.path.normcase
+        # which cause case insensitivity issues on Windows.
+
+        return [func for func in available_functions if fnmatch.fnmatchcase(func, object_path)]
 
 
 # Setup wsgi application wrapper defined in configuration file.

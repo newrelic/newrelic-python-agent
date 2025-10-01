@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import getpass
+import warnings
 
 from newrelic.admin import command, usage
 from newrelic.common import agent_http, encoding_utils

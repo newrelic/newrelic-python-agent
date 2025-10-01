@@ -69,6 +69,7 @@ from newrelic.agent import (
     web_transaction,
     wsgi_application,
 )
+from newrelic.api.transaction import record_dimensional_metric
 
 from . import benchmark
 
@@ -238,10 +239,9 @@ class MetricApis:
             ]
         )
 
-    # TODO: Make this work in developer mode, at the moment it still tries to connect to the OTLP endpoint
-    # @background_task()
-    # def bench_record_dimensional_metric(self):
-    #     record_dimensional_metric("TestDimensionalMetric", 1, tags={"tag": "tag"})
+    @background_task()
+    def bench_record_dimensional_metric(self):
+        record_dimensional_metric("TestDimensionalMetric", 1, tags={"tag": "tag"})
 
 
 @benchmark

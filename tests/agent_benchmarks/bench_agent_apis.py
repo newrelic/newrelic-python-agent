@@ -69,7 +69,7 @@ from newrelic.agent import (
     web_transaction,
     wsgi_application,
 )
-from newrelic.api.transaction import record_dimensional_metric
+from newrelic.api.transaction import record_dimensional_metric, record_dimensional_metrics
 
 from . import benchmark
 
@@ -242,6 +242,10 @@ class MetricApis:
     @background_task()
     def bench_record_dimensional_metric(self):
         record_dimensional_metric("TestDimensionalMetric", 1, tags={"tag": "tag"})
+
+    @background_task()
+    def bench_record_dimensional_metrics(self):
+        record_dimensional_metrics([("TestDimensionalMetric", 1, {"tag": "tag"})])
 
 
 @benchmark

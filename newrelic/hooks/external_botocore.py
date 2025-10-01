@@ -224,6 +224,7 @@ def create_chat_completion_message_event(
             "vendor": "bedrock",
             "ingest_source": "Python",
         }
+
         if settings.ai_monitoring.record_content.enabled:
             chat_completion_message_dict["content"] = content
 
@@ -234,7 +235,6 @@ def create_chat_completion_message_event(
     for index, message in enumerate(output_message_list):
         index += len(input_message_list)
         content = message.get("content", "")
-
         # For anthropic models run via langchain, a list is returned with a dictionary of content inside
         # We only want to report the raw dictionary in the LLM message event
         if isinstance(content, list) and len(content) == 1:
@@ -263,6 +263,7 @@ def create_chat_completion_message_event(
             "ingest_source": "Python",
             "is_response": True,
         }
+
         if settings.ai_monitoring.record_content.enabled:
             chat_completion_message_dict["content"] = content
 

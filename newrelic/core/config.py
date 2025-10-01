@@ -943,28 +943,8 @@ _settings.instrumentation.middleware.django.enabled = _environ_as_bool(
 _settings.instrumentation.middleware.django.exclude = []
 _settings.instrumentation.middleware.django.include = []
 
-_settings.event_harvest_config.harvest_limits.analytic_event_data = _environ_as_int(
-    "NEW_RELIC_ANALYTICS_EVENTS_MAX_SAMPLES_STORED", DEFAULT_RESERVOIR_SIZE
-)
-
-_settings.event_harvest_config.harvest_limits.custom_event_data = _environ_as_int(
-    "NEW_RELIC_CUSTOM_INSIGHTS_EVENTS_MAX_SAMPLES_STORED", CUSTOM_EVENT_RESERVOIR_SIZE
-)
-
 _settings.event_harvest_config.harvest_limits.ml_event_data = _environ_as_int(
     "NEW_RELIC_ML_INSIGHTS_EVENTS_MAX_SAMPLES_STORED", ML_EVENT_RESERVOIR_SIZE
-)
-
-_settings.event_harvest_config.harvest_limits.span_event_data = _environ_as_int(
-    "NEW_RELIC_SPAN_EVENTS_MAX_SAMPLES_STORED", SPAN_EVENT_RESERVOIR_SIZE
-)
-
-_settings.event_harvest_config.harvest_limits.error_event_data = _environ_as_int(
-    "NEW_RELIC_ERROR_COLLECTOR_MAX_EVENT_SAMPLES_STORED", ERROR_EVENT_RESERVOIR_SIZE
-)
-
-_settings.event_harvest_config.harvest_limits.log_event_data = _environ_as_int(
-    "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_MAX_SAMPLES_STORED", LOG_EVENT_RESERVOIR_SIZE
 )
 
 _settings.console.listener_socket = None

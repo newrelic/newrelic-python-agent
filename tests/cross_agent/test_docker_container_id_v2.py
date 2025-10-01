@@ -16,6 +16,7 @@ import json
 from pathlib import Path
 
 import pytest
+from conftest import SKIP_ON_WINDOWS
 
 import newrelic.common.utilization as u
 
@@ -28,7 +29,7 @@ def _load_docker_test_attributes():
 
     """
     test_cases = DOCKER_FIXTURE / "cases.json"
-    with test_cases.open() as fh:
+    with test_cases.open(encoding="utf-8") as fh:
         json_list = json.load(fh)
     docker_test_attributes = [(json_record["filename"], json_record["containerId"]) for json_record in json_list]
     return docker_test_attributes
@@ -46,6 +47,7 @@ def mock_open(mock_file):
     return _mock_open
 
 
+@SKIP_ON_WINDOWS
 @pytest.mark.parametrize("filename, containerId", _load_docker_test_attributes())
 def test_docker_container_id_v2(monkeypatch, filename, containerId):
     path = DOCKER_FIXTURE / filename

@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import functools
-import sys
 import time
 
 import pytest

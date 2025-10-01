@@ -48,6 +48,7 @@ else:
     raise RuntimeError(error_msg)
 
 with_setuptools = False
+is_windows = sys.platform == "win32"
 
 try:
     from setuptools import setup

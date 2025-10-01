@@ -14,10 +14,10 @@
 
 import json
 import sys
-import tempfile
 from pathlib import Path
 
 import pytest
+from testing_support.util import NamedTemporaryFile
 from testing_support.validators.validate_internal_metrics import validate_internal_metrics
 
 from newrelic.common.system_info import BootIdUtilization
@@ -39,7 +39,7 @@ _parameters = ",".join(_parameters_list)
 
 
 def _load_tests():
-    with FIXTURE.open() as fh:
+    with FIXTURE.open(encoding="utf-8") as fh:
         js = fh.read()
     return json.loads(js)
 
@@ -57,7 +57,7 @@ class MockedBootIdEndpoint:
 
     def __enter__(self):
         if self.boot_id is not None:
-            self.boot_id_file = tempfile.NamedTemporaryFile()
+            self.boot_id_file = NamedTemporaryFile().__enter__()
             self.boot_id_file.write(self.boot_id.encode("utf8"))
             self.boot_id_file.seek(0)
             BootIdUtilization.METADATA_URL = self.boot_id_file.name
@@ -68,7 +68,7 @@ class MockedBootIdEndpoint:
     def __exit__(self, *args, **kwargs):
         sys.platform = SYS_PLATFORM
         if self.boot_id:
-            del self.boot_id_file  # close and thus delete the tempfile
+            self.boot_id_file.__exit__(*args, **kwargs)  # close and thus delete the tempfile
 
 
 @pytest.mark.parametrize(_parameters, _boot_id_tests)

@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
+
+import pytest
 from testing_support.fixture.event_loop import event_loop
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 from testing_support.fixtures import newrelic_caplog as caplog

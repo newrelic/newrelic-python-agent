@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import asyncio
-import sys
 
 import pytest
 from testing_support.fixtures import capture_transaction_metrics, override_generic_settings

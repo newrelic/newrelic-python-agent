@@ -14,6 +14,7 @@
 
 import logging
 import os
+import sys
 from pathlib import Path
 
 from newrelic import version
@@ -355,9 +356,16 @@ class AgentProtocol:
 
         if settings["utilization.detect_docker"]:
             if not ecs_id:
-                docker = DockerUtilization.detect()
-                if docker:
-                    utilization_vendor_settings["docker"] = docker
+                if sys.platform == "win32":
+                    _logger.warning(
+                        "Docker utilization detection is not supported on Windows. "
+                        "Skipping Docker utilization detection. You can disable this "
+                        "warning by not setting utilization.detect_docker in your configuration."
+                    )
+                else:
+                    docker = DockerUtilization.detect()
+                    if docker:
+                        utilization_vendor_settings["docker"] = docker
 
         if settings["utilization.detect_kubernetes"]:
             kubernetes = KubernetesUtilization.detect()

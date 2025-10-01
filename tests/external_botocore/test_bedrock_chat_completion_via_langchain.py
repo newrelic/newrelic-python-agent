@@ -37,6 +37,7 @@ UNSUPPORTED_LANGCHAIN_MODELS = ["ai21.j2-mid-v1", "cohere.command-text-v14"]
         "amazon.titan-text-express-v1",
         "ai21.j2-mid-v1",
         "anthropic.claude-instant-v1",
+        "anthropic.claude-3-sonnet-20240229-v1:0",
         "cohere.command-text-v14",
         "meta.llama2-13b-chat-v1",
     ],

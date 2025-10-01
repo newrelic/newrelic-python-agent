@@ -55,8 +55,9 @@ jobs:
           - wheel: cp313-musllinux
             os: ubuntu-24.04
           # Windows
-          - wheel: cp313-win
-            os: windows-2025
+          # Windows wheels won't but published until the full release announcement.
+          # - wheel: cp313-win
+          #   os: windows-2025
 
     name: Build wheels for ${{ matrix.wheel }}
     runs-on: ${{ matrix.os }}

@@ -17,9 +17,6 @@ from newrelic.core.attribute_filter import DST_SPAN_EVENTS, DST_TRANSACTION_SEGM
 
 
 class GenericNodeMixin:
-    def __init__(self, *args, **kwargs):
-        self.ids = []
-
     @property
     def processed_user_attributes(self):
         if hasattr(self, "_processed_user_attributes"):
@@ -76,7 +73,7 @@ class GenericNodeMixin:
         u_attrs = self.processed_user_attributes
         if settings.distributed_tracing.unique_spans.enabled:
             # ids is the list of span guids that share this unqiue exit span.
-            u_attrs["nr.ids"] = self.ids
+            u_attrs["nr.ids"] = []
 
         u_attrs = attribute.resolve_user_attributes(
             u_attrs, settings.attribute_filter, DST_SPAN_EVENTS, attr_class=attr_class
@@ -108,14 +105,15 @@ class GenericNodeMixin:
                 new_exit_span = span_attrs not in ct_exit_spans
                 # If this is a new exit span, add it to the known ct_exit_spans and return it.
                 if new_exit_span:
-                    ct_exit_spans[span_attrs] = [self.ids, i_attrs]
+                    u_attrs["nr.durations"] = self.duration
+                    ct_exit_spans[span_attrs] = [u_attrs]
                     ct_processing_time[0] += (time.time() - start_time)
                     return [i_attrs, u_attrs, a_minimized_attrs] if settings.distributed_tracing.minimize_attributes.enabled else [i_attrs, u_attrs, a_attrs]
                 # If this is an exit span we've already seen, add it's guid to the list
                 # of ids on the seen span and return None.
                 # For now add ids to user attributes list
-                ct_exit_spans[span_attrs][0].append(self.guid)
-                ct_exit_spans[span_attrs][1]["duration"] += self.duration
+                ct_exit_spans[span_attrs][0]["nr.ids"].append(self.guid)
+                ct_exit_spans[span_attrs][0]["nr.durations"] += self.duration
 
                 ct_processing_time[0] += (time.time() - start_time)
                 return None

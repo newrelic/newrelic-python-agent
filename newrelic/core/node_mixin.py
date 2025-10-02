@@ -49,7 +49,7 @@ class GenericNodeMixin:
         _params["exclusive_duration_millis"] = 1000.0 * self.exclusive
         return _params
 
-    def span_event(self, settings, base_attrs=None, parent_guid=None, attr_class=dict, ct_exit_spans=None, ct_processing_time=None):
+    def span_event(self, settings, base_attrs=None, parent_guid=None, attr_class=dict, ct_exit_spans=None):
         if ct_exit_spans is None:
             ct_exit_spans = {}
         i_attrs = (base_attrs and base_attrs.copy()) or attr_class()
@@ -79,20 +79,16 @@ class GenericNodeMixin:
             u_attrs, settings.attribute_filter, DST_SPAN_EVENTS, attr_class=attr_class
         )
 
-        start_time = time.time()
         if settings.distributed_tracing.drop_inprocess_spans.enabled or settings.distributed_tracing.unique_spans.enabled:
             exit_span_attrs_present = attribute.SPAN_ENTITY_RELATIONSHIP_ATTRIBUTES & set(a_attrs)
             # If this is the entry node, always return it.
             if i_attrs.get("nr.entryPoint"):
-                ct_processing_time[0] += (time.time() - start_time)
                 return [i_attrs, u_attrs, {}] if settings.distributed_tracing.minimize_attributes.enabled else [i_attrs, u_attrs, a_attrs]
             # If this is the an LLM node, always return it.
             if a_attrs.get("llm") or i_attrs["name"].startswith("Llm/"):
-                ct_processing_time[0] += (time.time() - start_time)
                 return [i_attrs, u_attrs, {"llm": True}] if settings.distributed_tracing.minimize_attributes.enabled else [i_attrs, u_attrs, a_attrs]
             # If the span is not an exit span, skip it by returning None.
             if not exit_span_attrs_present:
-                ct_processing_time[0] += (time.time() - start_time)
                 return None
             # If the span is an exit span but unique spans is enabled, we need to check
             # for uniqueness before returning it.
@@ -107,7 +103,6 @@ class GenericNodeMixin:
                 if new_exit_span:
                     u_attrs["nr.durations"] = self.duration
                     ct_exit_spans[span_attrs] = [u_attrs]
-                    ct_processing_time[0] += (time.time() - start_time)
                     return [i_attrs, u_attrs, a_minimized_attrs] if settings.distributed_tracing.minimize_attributes.enabled else [i_attrs, u_attrs, a_attrs]
                 # If this is an exit span we've already seen, add it's guid to the list
                 # of ids on the seen span and return None.
@@ -115,17 +110,15 @@ class GenericNodeMixin:
                 ct_exit_spans[span_attrs][0]["nr.ids"].append(self.guid)
                 ct_exit_spans[span_attrs][0]["nr.durations"] += self.duration
 
-                ct_processing_time[0] += (time.time() - start_time)
                 return None
         elif settings.distributed_tracing.minimize_attributes.enabled:
             # Drop all non-entity relationship attributes from the span.
             exit_span_attrs_present = attribute.SPAN_ENTITY_RELATIONSHIP_ATTRIBUTES & set(a_attrs)
             a_attrs = attr_class({key: a_attrs[key] for key in exit_span_attrs_present})
-        ct_processing_time[0] += (time.time() - start_time)
         return [i_attrs, u_attrs, a_attrs]
 
-    def span_events(self, settings, base_attrs=None, parent_guid=None, attr_class=dict, ct_exit_spans=None, ct_processing_time=None):
-        span = self.span_event(settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class, ct_exit_spans=ct_exit_spans, ct_processing_time=ct_processing_time)
+    def span_events(self, settings, base_attrs=None, parent_guid=None, attr_class=dict, ct_exit_spans=None):
+        span = self.span_event(settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class, ct_exit_spans=ct_exit_spans)
         parent_id = parent_guid
         if span:  # span will be None if the span is an inprocess span or repeated exit span.
             yield span
@@ -134,7 +127,7 @@ class GenericNodeMixin:
                 parent_id = self.guid
         for child in self.children:
             for event in child.span_events(  # noqa: UP028
-                settings, base_attrs=base_attrs, parent_guid=parent_id, attr_class=attr_class, ct_exit_spans=ct_exit_spans, ct_processing_time=ct_processing_time
+                settings, base_attrs=base_attrs, parent_guid=parent_id, attr_class=attr_class, ct_exit_spans=ct_exit_spans
             ):
                 if event:  # event will be None if the span is an inprocess span or repeated exit span.
                     yield event

@@ -333,19 +333,11 @@ class DistributedTracingSettings(Settings):
     pass
 
 
-class DistributedTracingDropInprocessSpansSettings(Settings):
-    pass
-
-
-class DistributedTracingUniqueSpansSettings(Settings):
-    pass
-
-
-class DistributedTracingMinimizeAttributesSettings(Settings):
-    pass
-
-
 class DistributedTracingSamplerSettings(Settings):
+    pass
+
+
+class DistributedTracingSamplerPartialGranularitySettings(Settings):
     pass
 
 
@@ -522,6 +514,7 @@ _settings.distributed_tracing.drop_inprocess_spans = DistributedTracingDropInpro
 _settings.distributed_tracing.unique_spans = DistributedTracingUniqueSpansSettings()
 _settings.distributed_tracing.minimize_attributes = DistributedTracingMinimizeAttributesSettings()
 _settings.distributed_tracing.sampler = DistributedTracingSamplerSettings()
+_settings.distributed_tracing.sampler.partial_granularity = DistributedTracingSamplerPartialGranularitySettings()
 _settings.error_collector = ErrorCollectorSettings()
 _settings.error_collector.attributes = ErrorCollectorAttributesSettings()
 _settings.event_harvest_config = EventHarvestConfigSettings()
@@ -852,14 +845,21 @@ _settings.custom_insights_events.max_attribute_value = _environ_as_int(
 _settings.ml_insights_events.enabled = False
 
 _settings.distributed_tracing.enabled = _environ_as_bool("NEW_RELIC_DISTRIBUTED_TRACING_ENABLED", default=True)
-_settings.distributed_tracing.drop_inprocess_spans.enabled = _environ_as_bool("NEW_RELIC_DISTRIBUTED_TRACING_DROP_INPROCESS_SPANS_ENABLED", default=False)
-_settings.distributed_tracing.unique_spans.enabled = _environ_as_bool("NEW_RELIC_DISTRIBUTED_TRACING_UNIQUE_SPANS_ENABLED", default=False)
-_settings.distributed_tracing.minimize_attributes.enabled = _environ_as_bool("NEW_RELIC_DISTRIBUTED_TRACING_MINIMIZE_ATTRIBUTES_ENABLED", default=False)
 _settings.distributed_tracing.sampler.remote_parent_sampled = os.environ.get(
     "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_REMOTE_PARENT_SAMPLED", "default"
 )
 _settings.distributed_tracing.sampler.remote_parent_not_sampled = os.environ.get(
     "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_REMOTE_PARENT_NOT_SAMPLED", "default"
+)
+_settings.distributed_tracing.sampler.partial_granularity.enabled = _environ_as_bool("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_ENABLED", default=False)
+_settings.distributed_tracing.sampler.partial_granularity.type = os.environ.get(
+    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_TYPE", "essential"
+)
+_settings.distributed_tracing.sampler.partial_granularity.remote_parent_sampled = os.environ.get(
+    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_SAMPLED", "default"
+)
+_settings.distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled = os.environ.get(
+    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_NOT_SAMPLED", "default"
 )
 _settings.distributed_tracing.exclude_newrelic_header = False
 _settings.span_events.enabled = _environ_as_bool("NEW_RELIC_SPAN_EVENTS_ENABLED", default=True)

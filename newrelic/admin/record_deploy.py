@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import getpass
+import warnings
 
 from newrelic.admin import command, usage
 from newrelic.common import agent_http, encoding_utils
@@ -108,6 +109,15 @@ def record_deploy(
 )
 def record_deploy_cmd(args):
     import sys
+
+    # Deprecation Warning
+    warnings.warn(
+        (
+            "The record_deploy command is deprecated and will be removed in the next major release. It is being removed in favor of other methods of creating a change tracking marker. See the documentation for replacement alternatives: https://docs.newrelic.com/docs/change-tracking/change-tracking-introduction/"
+        ),
+        DeprecationWarning,
+        stacklevel=2,
+    )
 
     if len(args) < 2:
         usage("record-deploy")

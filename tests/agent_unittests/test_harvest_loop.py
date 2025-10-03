@@ -349,7 +349,8 @@ def test_application_harvest_with_spans(distributed_tracing_enabled, span_events
             "license_key": "**NOT A LICENSE KEY**",
             "distributed_tracing.enabled": distributed_tracing_enabled,
             "span_events.enabled": span_events_enabled,
-            "span_events.max_samples_stored": max_samples_stored,
+            # Uses the name from post-translation as this is modifying the settings object, not a config file
+            "event_harvest_config.harvest_limits.span_event_data": max_samples_stored,
         },
     )
     def _test():
@@ -514,10 +515,10 @@ def test_adaptive_sampling(transaction_node, monkeypatch):
         "feature_flag": set(),
         "distributed_tracing.enabled": True,
         "application_logging.forwarding.enabled": True,
-        "error_collector.max_event_samples_stored": 1000,
-        "span_events.max_samples_stored": 1000,
-        "custom_insights_events.max_samples_stored": 1000,
-        "application_logging.forwarding.max_samples_stored": 1000,
+        "event_harvest_config.harvest_limits.error_event_data": 1000,
+        "event_harvest_config.harvest_limits.span_event_data": 1000,
+        "event_harvest_config.harvest_limits.custom_event_data": 1000,
+        "event_harvest_config.harvest_limits.log_event_data": 1000,
     },
 )
 def test_reservoir_sizes(transaction_node):
@@ -539,11 +540,11 @@ def test_reservoir_sizes(transaction_node):
 @pytest.mark.parametrize(
     "harvest_setting,event_name",
     [
-        ("transaction_events.max_samples_stored", "transaction_events"),
-        ("error_collector.max_event_samples_stored", "error_events"),
-        ("custom_insights_events.max_samples_stored", "custom_events"),
-        ("application_logging.forwarding.max_samples_stored", "log_events"),
-        ("span_events.max_samples_stored", "span_events"),
+        ("event_harvest_config.harvest_limits.analytic_event_data", "transaction_events"),
+        ("event_harvest_config.harvest_limits.error_event_data", "error_events"),
+        ("event_harvest_config.harvest_limits.custom_event_data", "custom_events"),
+        ("event_harvest_config.harvest_limits.log_event_data", "log_events"),
+        ("event_harvest_config.harvest_limits.span_event_data", "span_events"),
     ],
 )
 @override_generic_settings(
@@ -614,7 +615,7 @@ def test_error_event_sampling_info(events_seen):
         {
             "developer_mode": True,
             "license_key": "**NOT A LICENSE KEY**",
-            "error_collector.max_event_samples_stored": reservoir_size,
+            "event_harvest_config.harvest_limits.error_event_data": reservoir_size,
         },
     )
     def _test():
@@ -683,7 +684,7 @@ def test_analytic_event_sampling_info():
         settings,
         {
             "developer_mode": True,
-            "transaction_events.max_samples_stored": transactions_limit,
+            "event_harvest_config.harvest_limits.analytic_event_data": transactions_limit,
             "agent_limits.synthetics_events": synthetics_limit,
         },
     )

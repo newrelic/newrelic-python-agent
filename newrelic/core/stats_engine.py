@@ -1704,19 +1704,19 @@ class StatsEngine:
         """
 
         if self.__settings is not None:
-            self._transaction_events = SampledDataSet(self.__settings.transaction_events.max_samples_stored)
+            self._transaction_events = SampledDataSet(self.__settings.event_harvest_config.harvest_limits.analytic_event_data)
         else:
             self._transaction_events = SampledDataSet()
 
     def reset_error_events(self):
         if self.__settings is not None:
-            self._error_events = SampledDataSet(self.__settings.error_collector.max_event_samples_stored)
+            self._error_events = SampledDataSet(self.__settings.event_harvest_config.harvest_limits.error_event_data)
         else:
             self._error_events = SampledDataSet()
 
     def reset_custom_events(self):
         if self.__settings is not None:
-            self._custom_events = SampledDataSet(self.__settings.custom_insights_events.max_samples_stored)
+            self._custom_events = SampledDataSet(self.__settings.event_harvest_config.harvest_limits.custom_event_data)
         else:
             self._custom_events = SampledDataSet()
 
@@ -1728,13 +1728,13 @@ class StatsEngine:
 
     def reset_span_events(self):
         if self.__settings is not None:
-            self._span_events = SampledDataSet(self.__settings.span_events.max_samples_stored)
+            self._span_events = SampledDataSet(self.__settings.event_harvest_config.harvest_limits.span_event_data)
         else:
             self._span_events = SampledDataSet()
 
     def reset_log_events(self):
         if self.__settings is not None:
-            self._log_events = SampledDataSet(self.__settings.application_logging.forwarding.max_samples_stored)
+            self._log_events = SampledDataSet(self.__settings.event_harvest_config.harvest_limits.log_event_data)
         else:
             self._log_events = SampledDataSet()
 

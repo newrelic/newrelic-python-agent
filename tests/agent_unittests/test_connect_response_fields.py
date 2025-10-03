@@ -106,6 +106,8 @@ def test_blob():
     assert headers == {"Content-Type": "application/json", "X-Foo": "Bar"}
 
 
+# This test tests the precedence order of agent server side
+# config settings and global server side config settings
 @override_generic_settings(global_settings(), {"developer_mode": True})
 def test_server_side_config_precedence():
     connect_response_fields = {"agent_config": {"span_events.enabled": True}, "span_events.enabled": False}
@@ -116,30 +118,6 @@ def test_server_side_config_precedence():
     )
 
     assert protocol.configuration.span_events.enabled is False
-
-
-# The collector uses `event_harvest_config.harvest_limit.*`
-# which is a notation deprecated in favor of `*.max_samples_stored`
-# on the agent configuration, client-side.
-# Test ID explains which endpoint is used for testing
-# and which agent settings are used in this format:
-# <endpoint>:<agent_client_setting>[&<agent_client_setting>]
-@pytest.mark.parametrize("connect_response_fields", 
-    (
-        {"agent_config": {"application_logging.forwarding.max_samples_stored": 1}, "event_harvest_config.harvest_limits.log_event_data": 100},
-        {"agent_config": {"application_logging.forwarding.max_samples_stored": 2, "event_harvest_config.harvest_limits.log_event_data": 3}, "event_harvest_config.harvest_limits.log_event_data": 100},
-        {"agent_config": {"event_harvest_config.harvest_limits.log_event_data": 4}, "event_harvest_config.harvest_limits.log_event_data": 100},
-    ),
-    ids=["log:max_samples", "log:max_samples_&_harvest_limit", "log:harvest_limit"] 
-)
-def test_server_side_config_precedence_log_max_samples(connect_response_fields):
-    client_cls = functools.partial(CustomTestClient, connect_response_fields=connect_response_fields)
-
-    protocol = AgentProtocol.connect(
-        "app_name", LINKED_APPLICATIONS, ENVIRONMENT, global_settings(), client_cls=client_cls
-    )
-
-    assert protocol.configuration.event_harvest_config.harvest_limits.log_event_data == 100
 
 
 @override_generic_settings(global_settings(), {"developer_mode": True})
@@ -164,7 +142,8 @@ def test_span_event_harvest_config(connect_response_fields):
         from newrelic.core.config import SPAN_EVENT_RESERVOIR_SIZE
 
         expected = SPAN_EVENT_RESERVOIR_SIZE
-    assert protocol.configuration.span_events.max_samples_stored == expected
+
+    assert protocol.configuration.event_harvest_config.harvest_limits.span_event_data == expected
 
 
 @override_generic_settings(global_settings(), {"developer_mode": True})

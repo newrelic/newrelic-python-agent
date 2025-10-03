@@ -654,10 +654,16 @@ def translate_event_harvest_config_settings(settings, cached_settings):
     convention from the user's end but translate the settings
     to their deprecated `event_harvest_config` counterparts during
     the configuration process.
+
+    Here, the user will still get warnings about deprecated settings 
+    being used.  However, the agent will also translate the settings
+    to their deprecated `event_harvest_config` counterparts during
+    the configuration process.
     """
 
     cached = dict(cached_settings)
 
+    # breakpoint()
     event_harvest_to_max_samples_settings_map = [
         ("event_harvest_config.harvest_limits.analytic_event_data", "transaction_events.max_samples_stored"),
         ("event_harvest_config.harvest_limits.span_event_data", "span_events.max_samples_stored"),
@@ -671,12 +677,17 @@ def translate_event_harvest_config_settings(settings, cached_settings):
             _logger.info("Deprecated setting found: %r. Please use new setting: %r.", event_harvest_key, max_samples_key)
 
             if max_samples_key in cached:
+                # Since there is the max_samples key as well as the event_harvest key,
+                # we need to apply the max_samples value to the event_harvest key.
                 apply_config_setting(settings, event_harvest_key, cached[max_samples_key])
                 _logger.info("Ignoring deprecated setting: %r. Using new setting: %r.", event_harvest_key, max_samples_key)
             else:
+                # Translation to event_harvest_config has already happened
                 _logger.info("Applying value of deprecated setting %r to %r.", event_harvest_key, max_samples_key)
+        elif max_samples_key in cached:
+            apply_config_setting(settings, event_harvest_key, cached[max_samples_key])
 
-            delete_setting(settings, max_samples_key)
+        delete_setting(settings, max_samples_key)
 
 
 def translate_deprecated_settings(settings, cached_settings):

@@ -18,7 +18,7 @@ import sys
 import threading
 import warnings
 
-from newrelic.api.application import application_settings, register_application
+from newrelic.api.application import register_application
 from newrelic.api.background_task import BackgroundTaskWrapper
 from newrelic.api.error_trace import wrap_error_trace
 from newrelic.api.function_trace import FunctionTrace, FunctionTraceWrapper, wrap_function_trace
@@ -1094,7 +1094,8 @@ def _nr_wrap_converted_middleware_(middleware, name):
 # avoid this logic for multiple calls to the same middleware?
 # Also, is that even a scenario we need to worry about?
 def is_denied_middleware(callable_name):
-    settings = application_settings() or global_settings()
+    # Do not call application_settings() here, as it will cause an early activation.
+    settings = global_settings()
 
     # Return True (skip wrapping) if:
     # 1. middleware wrapping is disabled or

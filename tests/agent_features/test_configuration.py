@@ -447,7 +447,10 @@ translate_settings_tests = [
     ),
 ]
 
-@pytest.mark.skip("Behavior for the event_harvest_config will be different than typical deprecated settings.  Renable this test once there are other deprecated settings.")
+
+@pytest.mark.skip(
+    "Behavior for the event_harvest_config will be different than typical deprecated settings.  Renable this test once there are other deprecated settings."
+)
 @pytest.mark.parametrize("old,new", translate_settings_tests)
 def test_translate_deprecated_setting_without_new_setting(old, new):
     # Before: deprecated setting will be in settings object.

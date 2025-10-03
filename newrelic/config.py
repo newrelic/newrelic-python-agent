@@ -642,11 +642,11 @@ def translate_event_harvest_config_settings(settings, cached_settings):
     """Translate event_harvest_config settings to max_samples settings.
 
     Background:
-    The collector/server side agent configuration uses the 
+    The collector/server side agent configuration uses the
     `event_harvest_config` naming convention for their harvest
     limit settings.  The original intent was for the language
     agents to switch to this convention.  However, this only
-    happened for the Python agent.  Eventually, to remain 
+    happened for the Python agent.  Eventually, to remain
     consistent with the other language agents, the decision
     was made to change this back.  However, because the server
     side configuration settings override the client-side settings,
@@ -655,7 +655,7 @@ def translate_event_harvest_config_settings(settings, cached_settings):
     to their deprecated `event_harvest_config` counterparts during
     the configuration process.
 
-    Here, the user will still get warnings about deprecated settings 
+    Here, the user will still get warnings about deprecated settings
     being used.  However, the agent will also translate the settings
     to their deprecated `event_harvest_config` counterparts during
     the configuration process.
@@ -674,13 +674,17 @@ def translate_event_harvest_config_settings(settings, cached_settings):
 
     for event_harvest_key, max_samples_key in event_harvest_to_max_samples_settings_map:
         if event_harvest_key in cached:
-            _logger.info("Deprecated setting found: %r. Please use new setting: %r.", event_harvest_key, max_samples_key)
+            _logger.info(
+                "Deprecated setting found: %r. Please use new setting: %r.", event_harvest_key, max_samples_key
+            )
 
             if max_samples_key in cached:
                 # Since there is the max_samples key as well as the event_harvest key,
                 # we need to apply the max_samples value to the event_harvest key.
                 apply_config_setting(settings, event_harvest_key, cached[max_samples_key])
-                _logger.info("Ignoring deprecated setting: %r. Using new setting: %r.", event_harvest_key, max_samples_key)
+                _logger.info(
+                    "Ignoring deprecated setting: %r. Using new setting: %r.", event_harvest_key, max_samples_key
+                )
             else:
                 # Translation to event_harvest_config has already happened
                 _logger.info("Applying value of deprecated setting %r to %r.", event_harvest_key, max_samples_key)

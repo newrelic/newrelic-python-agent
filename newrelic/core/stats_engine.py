@@ -1704,7 +1704,9 @@ class StatsEngine:
         """
 
         if self.__settings is not None:
-            self._transaction_events = SampledDataSet(self.__settings.event_harvest_config.harvest_limits.analytic_event_data)
+            self._transaction_events = SampledDataSet(
+                self.__settings.event_harvest_config.harvest_limits.analytic_event_data
+            )
         else:
             self._transaction_events = SampledDataSet()
 

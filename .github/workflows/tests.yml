@@ -233,7 +233,6 @@ jobs:
       UV_PYTHON_DOWNLOADS: "never"
       UV_PYTHON_PREFERENCE: "only-system"
 
-
     strategy:
       fail-fast: false
       matrix:
@@ -289,7 +288,6 @@ jobs:
       UV_PYTHON: "3.13"
       UV_PYTHON_DOWNLOADS: "never"
       UV_PYTHON_PREFERENCE: "only-system"
-
 
     strategy:
       fail-fast: false

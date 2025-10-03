@@ -75,7 +75,7 @@ class ContextOf:
                 self.trace_cache[self.thread_id] = self.restore
             else:
                 # Remove entry from cache
-                self.trace_cache.pop(self.thread_id)
+                self.trace_cache.pop(self.thread_id, None)
 
 
 def context_wrapper(func, trace=None, request=None, trace_cache_id=None, strict=True):

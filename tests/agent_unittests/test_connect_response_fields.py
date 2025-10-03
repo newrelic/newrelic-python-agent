@@ -139,7 +139,7 @@ def test_server_side_config_precedence_log_max_samples(connect_response_fields):
         "app_name", LINKED_APPLICATIONS, ENVIRONMENT, global_settings(), client_cls=client_cls
     )
 
-    assert protocol.configuration.application_logging.forwarding.max_samples_stored == 100
+    assert protocol.configuration.event_harvest_config.harvest_limits.log_event_data == 100
 
 
 @override_generic_settings(global_settings(), {"developer_mode": True})

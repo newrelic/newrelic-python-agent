@@ -15,6 +15,7 @@
 import logging
 import os
 import ssl
+import sys
 import tempfile
 from pathlib import Path
 
@@ -375,6 +376,12 @@ def test_connect(
     with_aws, with_ecs, with_pcf, with_gcp, with_azure, with_azurefunction, with_docker, with_kubernetes, with_ip
 ):
     global AWS, AZURE, AZUREFUNCTION, GCP, PCF, DOCKER, KUBERNETES, IP_ADDRESS
+
+    if sys.platform == "win32":
+        # Docker utilization is not supported on Windows.
+        # Override the test matrix to always be False.
+        with_docker = False
+
     if not with_aws:
         AWS = Exception
     if not with_pcf:
@@ -526,7 +533,8 @@ def test_audit_logging():
     protocol = AgentProtocol(settings, client_cls=HttpClientRecorder)
     protocol.send("preconnect")
 
-    with Path(f.name).open() as f:
+    audit_log_path = Path(f.name)
+    with audit_log_path.open() as f:
         audit_log_contents = f.read()
 
     assert audit_log_contents.startswith("*\n")
@@ -543,7 +551,12 @@ def test_ca_bundle_path(monkeypatch, ca_bundle_path):
         def __init__(self, *args, **kwargs):
             pass
 
-    monkeypatch.setattr(ssl, "DefaultVerifyPaths", DefaultVerifyPaths)
+    def get_ca_certs(purpose=None):
+        return []
+
+    monkeypatch.setattr(ssl, "DefaultVerifyPaths", DefaultVerifyPaths)  # Bypass OpenSSL default certs
+    if sys.platform == "win32":
+        monkeypatch.setattr(ssl.SSLContext, "get_ca_certs", get_ca_certs)  # Bypass Windows default certs
 
     settings = finalize_application_settings({"ca_bundle_path": ca_bundle_path})
     protocol = AgentProtocol(settings)

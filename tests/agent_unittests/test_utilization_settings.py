@@ -12,12 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-import tempfile
 from importlib import reload
 
 import pytest
 from testing_support.fixtures import Environ
+from testing_support.util import NamedTemporaryFile
 
 # these will be reloaded for each test
 import newrelic.config
@@ -73,8 +72,7 @@ ENV_WITH_HEROKU = {
 def reset_agent_config(ini_contents, env_dict):
     @function_wrapper
     def reset(wrapped, instance, args, kwargs):
-        with Environ(env_dict):
-            ini_file = tempfile.NamedTemporaryFile()
+        with Environ(env_dict), NamedTemporaryFile() as ini_file:
             ini_file.write(ini_contents)
             ini_file.seek(0)
 

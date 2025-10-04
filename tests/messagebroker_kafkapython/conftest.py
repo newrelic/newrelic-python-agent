@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import json
+import logging
 import uuid
 
 import kafka
@@ -22,6 +23,8 @@ from testing_support.fixtures import collector_agent_registration_fixture, colle
 
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import transient_function_wrapper
+
+_logger = logging.getLogger(__name__)
 
 DB_SETTINGS = kafka_settings()[0]
 
@@ -81,7 +84,12 @@ def producer(client_type, json_serializer, json_callable_serializer, broker):
         )
 
     yield producer
-    producer.close()
+
+    # Close the producer, but ignore any shutdown exceptions
+    try:
+        producer.close()
+    except Exception:
+        _logger.warning("Exception ignored during Producer.close()", exc_info=True)
 
 
 @pytest.fixture
@@ -130,7 +138,12 @@ def consumer(group_id, topic, producer, client_type, json_deserializer, json_cal
         )
 
     yield consumer
-    consumer.close()
+
+    # Close the consumer, but ignore any shutdown exceptions
+    try:
+        consumer.close()
+    except Exception:
+        _logger.warning("Exception ignored during Consumer.close()", exc_info=True)
 
 
 @pytest.fixture(scope="session")

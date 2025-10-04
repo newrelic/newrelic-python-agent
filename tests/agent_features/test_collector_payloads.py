@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 import webtest
 from testing_support.fixtures import override_application_settings
 from testing_support.sample_applications import simple_app, simple_custom_event_app, simple_exceptional_app

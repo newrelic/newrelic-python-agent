@@ -93,6 +93,7 @@ class BaseClient:
         audit_log_fp=None,
         default_content_encoding_header="Identity",
     ):
+        self._host = host
         self._audit_log_fp = audit_log_fp
 
     def __enter__(self):
@@ -565,12 +566,20 @@ class DeveloperModeClient(SupportabilityMixin, BaseClient):
     def send_request(
         self, method="POST", path="/agent_listener/invoke_raw_method", params=None, headers=None, payload=None
     ):
-        request_id = self.log_request(
-            self._audit_log_fp, "POST", f"https://fake-collector.newrelic.com{path}", params, payload, headers
-        )
+        # Pre-connect and OTLP endpoint requests will not have the fake- prefix, so we forcibly add it just to be sure.
+        host = self._host if self._host.startswith("fake-") else f"fake-{self._host}"
+        url = f"https://{host}{path}"
+        request_id = self.log_request(self._audit_log_fp, "POST", url, params, payload, headers)
+
+        # Don't attempt to handle OTLP endpoint requests
+        if host == "fake-otlp.nr-data.net":
+            return 200, b""
+
+        # Requests to the collector must have a method parameter or they're invalid
         if not params or "method" not in params:
             return 400, b"Missing method parameter"
 
+        # If we don't have a canned response for the method, return an error
         method = params["method"]
         if method not in self.RESPONSES:
             return 400, b"Invalid method received"
@@ -592,8 +601,9 @@ class ServerlessModeClient(DeveloperModeClient):
     ):
         result = super().send_request(method=method, path=path, params=params, headers=headers, payload=payload)
 
-        if result[0] == 200:
-            agent_method = params["method"]
+        # Check for the presence of agent_method to ensure this isn't an OTLP request
+        agent_method = params and params.get("method")
+        if result[0] == 200 and agent_method:
             self.payload[agent_method] = json_decode(payload.decode("utf-8"))
 
         return result

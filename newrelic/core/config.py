@@ -337,6 +337,10 @@ class DistributedTracingSamplerSettings(Settings):
     pass
 
 
+class DistributedTracingSamplerPartialGranularitySettings(Settings):
+    pass
+
+
 class ServerlessModeSettings(Settings):
     pass
 
@@ -506,7 +510,11 @@ _settings.datastore_tracer.database_name_reporting = DatastoreTracerDatabaseName
 _settings.datastore_tracer.instance_reporting = DatastoreTracerInstanceReportingSettings()
 _settings.debug = DebugSettings()
 _settings.distributed_tracing = DistributedTracingSettings()
+_settings.distributed_tracing.drop_inprocess_spans = DistributedTracingDropInprocessSpansSettings()
+_settings.distributed_tracing.unique_spans = DistributedTracingUniqueSpansSettings()
+_settings.distributed_tracing.minimize_attributes = DistributedTracingMinimizeAttributesSettings()
 _settings.distributed_tracing.sampler = DistributedTracingSamplerSettings()
+_settings.distributed_tracing.sampler.partial_granularity = DistributedTracingSamplerPartialGranularitySettings()
 _settings.error_collector = ErrorCollectorSettings()
 _settings.error_collector.attributes = ErrorCollectorAttributesSettings()
 _settings.event_harvest_config = EventHarvestConfigSettings()
@@ -842,6 +850,16 @@ _settings.distributed_tracing.sampler.remote_parent_sampled = os.environ.get(
 )
 _settings.distributed_tracing.sampler.remote_parent_not_sampled = os.environ.get(
     "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_REMOTE_PARENT_NOT_SAMPLED", "default"
+)
+_settings.distributed_tracing.sampler.partial_granularity.enabled = _environ_as_bool("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_ENABLED", default=False)
+_settings.distributed_tracing.sampler.partial_granularity.type = os.environ.get(
+    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_TYPE", "essential"
+)
+_settings.distributed_tracing.sampler.partial_granularity.remote_parent_sampled = os.environ.get(
+    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_SAMPLED", "default"
+)
+_settings.distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled = os.environ.get(
+    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_NOT_SAMPLED", "default"
 )
 _settings.distributed_tracing.exclude_newrelic_header = False
 _settings.span_events.enabled = _environ_as_bool("NEW_RELIC_SPAN_EVENTS_ENABLED", default=True)

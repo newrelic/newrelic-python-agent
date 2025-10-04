@@ -663,7 +663,6 @@ def translate_event_harvest_config_settings(settings, cached_settings):
 
     cached = dict(cached_settings)
 
-    # breakpoint()
     event_harvest_to_max_samples_settings_map = [
         ("event_harvest_config.harvest_limits.analytic_event_data", "transaction_events.max_samples_stored"),
         ("event_harvest_config.harvest_limits.span_event_data", "span_events.max_samples_stored"),

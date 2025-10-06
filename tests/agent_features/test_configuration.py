@@ -451,19 +451,19 @@ translate_event_harvest_settings_tests = [
 
 @pytest.mark.parametrize("external,internal", translate_event_harvest_settings_tests)
 def test_translate_event_harvest_setting_without_new_setting(external, internal):
-    # From the user's end, the *.max_samples_stored naming convention 
+    # From the user's end, the *.max_samples_stored naming convention
     # is the desired setting name, but since the collector still uses the
-    # event_harvest_config.harvest_limits.* naming convention, those will be 
+    # event_harvest_config.harvest_limits.* naming convention, those will be
     # what is actually stored in the settings object.
     #
     # Before: max_samples_stored setting will be in settings object.
-    #         event_harvest_config.harvest_limits.* settings will 
+    #         event_harvest_config.harvest_limits.* settings will
     #         *NOT* be in settings object.
     #
     # After:  max_samples_stored setting will *NOT* be in settings object.
-    #         event_harvest_config.harvest_limits.* settings will be in 
+    #         event_harvest_config.harvest_limits.* settings will be in
     #         settings object with value given by max_samples_stored
-    
+
     settings = apply_server_side_settings()
     apply_config_setting(settings, external.name, external.value)
 
@@ -483,15 +483,15 @@ def test_translate_event_harvest_setting_with_new_setting(external, internal):
     # NOTE: This is the same behavior for whether the old setting is present or not
     # From the user's end, the *.max_samples_stored naming convention
     # is the desired setting name, but since the collector still uses the
-    # event_harvest_config.harvest_limits.* naming convention, those will be 
+    # event_harvest_config.harvest_limits.* naming convention, those will be
     # what is actually stored in the settings object.
     #
     # Before: max_samples_stored setting will be in settings object.
-    #         event_harvest_config.harvest_limits.* settings will 
+    #         event_harvest_config.harvest_limits.* settings will
     #         also be in settings object.
     #
     # After:  max_samples_stored setting will *NOT* be in settings object.
-    #         event_harvest_config.harvest_limits.* settings will be in 
+    #         event_harvest_config.harvest_limits.* settings will be in
     #         settings object with value given by max_samples_stored
 
     settings = apply_server_side_settings()
@@ -513,9 +513,8 @@ translate_deprecated_settings_tests = [
     # Nothing in here right now.
 ]
 
-@pytest.mark.skip(
-    "Renable this test once there are other deprecated settings."
-)
+
+@pytest.mark.skip("Renable this test once there are other deprecated settings.")
 @pytest.mark.parametrize("old,new", translate_deprecated_settings_tests)
 def test_translate_deprecated_setting_without_new_setting(old, new):
     # Before: deprecated setting will be in settings object.
@@ -538,9 +537,7 @@ def test_translate_deprecated_setting_without_new_setting(old, new):
     assert fetch_config_setting(result, new.name) == old.value
 
 
-@pytest.mark.skip(
-    "Renable this test once there are other deprecated settings."
-)
+@pytest.mark.skip("Renable this test once there are other deprecated settings.")
 @pytest.mark.parametrize("old,new", translate_deprecated_settings_tests)
 def test_translate_deprecated_setting_with_new_setting(old, new):
     # Before: deprecated setting will be in settings object.
@@ -564,9 +561,7 @@ def test_translate_deprecated_setting_with_new_setting(old, new):
     assert fetch_config_setting(result, new.name) == new.value
 
 
-@pytest.mark.skip(
-    "Renable this test once there are other deprecated settings."
-)
+@pytest.mark.skip("Renable this test once there are other deprecated settings.")
 @pytest.mark.parametrize("old,new", translate_deprecated_settings_tests)
 def test_translate_deprecated_setting_without_old_setting(old, new):
     # Before: deprecated setting will *NOT* be in settings object.

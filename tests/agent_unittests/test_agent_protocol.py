@@ -474,10 +474,6 @@ def test_connect(
     assert HttpClientRecorder.STATE == 0
 
 
-def test_connect_logging():
-    pass
-
-
 def test_connect_metadata(monkeypatch):
     monkeypatch.setenv("NEW_RELIC_METADATA_FOOBAR", "foobar")
     monkeypatch.setenv("_NEW_RELIC_METADATA_WRONG", "wrong")

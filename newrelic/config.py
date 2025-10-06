@@ -691,6 +691,8 @@ def translate_event_harvest_config_settings(settings, cached_settings):
             apply_config_setting(settings, event_harvest_key, cached[max_samples_key])
 
         delete_setting(settings, max_samples_key)
+    
+    return settings
 
 
 def translate_deprecated_settings(settings, cached_settings):

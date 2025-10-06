@@ -32,6 +32,7 @@ from newrelic.config import (
     delete_setting,
     initialize,
     translate_deprecated_settings,
+    translate_event_harvest_config_settings,
 )
 from newrelic.core.config import (
     Settings,
@@ -404,54 +405,118 @@ def test_delete_setting_parent():
 #       'value' != 'default'
 TSetting = collections.namedtuple("TSetting", ["name", "value", "default"])
 
-translate_settings_tests = [
+translate_event_harvest_settings_tests = [
     (
-        TSetting("event_harvest_config.harvest_limits.analytic_event_data", 1200, 1200),
-        TSetting("transaction_events.max_samples_stored", 9999, 1200),
-    ),
-    (
-        TSetting("event_harvest_config.harvest_limits.analytic_event_data", 9999, 1200),
         TSetting("transaction_events.max_samples_stored", 1200, 1200),
+        TSetting("event_harvest_config.harvest_limits.analytic_event_data", 9999, 1200),
     ),
     (
-        TSetting("event_harvest_config.harvest_limits.span_event_data", 1000, 2000),
-        TSetting("span_events.max_samples_stored", 9999, 2000),
+        TSetting("transaction_events.max_samples_stored", 9999, 1200),
+        TSetting("event_harvest_config.harvest_limits.analytic_event_data", 1200, 1200),
     ),
     (
-        TSetting("event_harvest_config.harvest_limits.span_event_data", 9999, 2000),
         TSetting("span_events.max_samples_stored", 1000, 2000),
+        TSetting("event_harvest_config.harvest_limits.span_event_data", 9999, 2000),
     ),
     (
-        TSetting("event_harvest_config.harvest_limits.error_event_data", 100, 100),
-        TSetting("error_collector.max_event_samples_stored", 9999, 100),
+        TSetting("span_events.max_samples_stored", 9999, 2000),
+        TSetting("event_harvest_config.harvest_limits.span_event_data", 1000, 2000),
     ),
     (
-        TSetting("event_harvest_config.harvest_limits.error_event_data", 9999, 100),
         TSetting("error_collector.max_event_samples_stored", 100, 100),
+        TSetting("event_harvest_config.harvest_limits.error_event_data", 9999, 100),
     ),
     (
-        TSetting("event_harvest_config.harvest_limits.custom_event_data", 3600, 3600),
-        TSetting("custom_insights_events.max_samples_stored", 9999, 3600),
+        TSetting("error_collector.max_event_samples_stored", 9999, 100),
+        TSetting("event_harvest_config.harvest_limits.error_event_data", 100, 100),
     ),
     (
-        TSetting("event_harvest_config.harvest_limits.custom_event_data", 9999, 3600),
         TSetting("custom_insights_events.max_samples_stored", 3600, 3600),
+        TSetting("event_harvest_config.harvest_limits.custom_event_data", 9999, 3600),
     ),
     (
-        TSetting("event_harvest_config.harvest_limits.log_event_data", 10000, 10000),
-        TSetting("application_logging.forwarding.max_samples_stored", 99999, 10000),
+        TSetting("custom_insights_events.max_samples_stored", 9999, 3600),
+        TSetting("event_harvest_config.harvest_limits.custom_event_data", 3600, 3600),
     ),
     (
-        TSetting("event_harvest_config.harvest_limits.log_event_data", 99999, 10000),
         TSetting("application_logging.forwarding.max_samples_stored", 10000, 10000),
+        TSetting("event_harvest_config.harvest_limits.log_event_data", 99999, 10000),
+    ),
+    (
+        TSetting("application_logging.forwarding.max_samples_stored", 99999, 10000),
+        TSetting("event_harvest_config.harvest_limits.log_event_data", 10000, 10000),
     ),
 ]
 
 
+@pytest.mark.parametrize("external,internal", translate_event_harvest_settings_tests)
+def test_translate_event_harvest_setting_without_new_setting(external, internal):
+    # From the user's end, the *.max_samples_stored naming convention 
+    # is the desired setting name, but since the collector still uses the
+    # event_harvest_config.harvest_limits.* naming convention, those will be 
+    # what is actually stored in the settings object.
+    #
+    # Before: max_samples_stored setting will be in settings object.
+    #         event_harvest_config.harvest_limits.* settings will 
+    #         *NOT* be in settings object.
+    #
+    # After:  max_samples_stored setting will *NOT* be in settings object.
+    #         event_harvest_config.harvest_limits.* settings will be in 
+    #         settings object with value given by max_samples_stored
+    
+    settings = apply_server_side_settings()
+    apply_config_setting(settings, external.name, external.value)
+
+    assert fetch_config_setting(settings, external.name) == external.value
+    assert fetch_config_setting(settings, internal.name) == internal.default
+
+    cached = [(external.name, external.value)]
+    result = translate_event_harvest_config_settings(settings, cached)
+
+    assert result is settings
+    assert external.name not in flatten_settings(result)
+    assert fetch_config_setting(result, internal.name) == external.value
+
+
+@pytest.mark.parametrize("external,internal", translate_event_harvest_settings_tests)
+def test_translate_event_harvest_setting_with_new_setting(external, internal):
+    # NOTE: This is the same behavior for whether the old setting is present or not
+    # From the user's end, the *.max_samples_stored naming convention
+    # is the desired setting name, but since the collector still uses the
+    # event_harvest_config.harvest_limits.* naming convention, those will be 
+    # what is actually stored in the settings object.
+    #
+    # Before: max_samples_stored setting will be in settings object.
+    #         event_harvest_config.harvest_limits.* settings will 
+    #         also be in settings object.
+    #
+    # After:  max_samples_stored setting will *NOT* be in settings object.
+    #         event_harvest_config.harvest_limits.* settings will be in 
+    #         settings object with value given by max_samples_stored
+
+    settings = apply_server_side_settings()
+    apply_config_setting(settings, external.name, external.value)
+    apply_config_setting(settings, internal.name, internal.value)
+
+    assert fetch_config_setting(settings, external.name) == external.value
+    assert fetch_config_setting(settings, internal.name) == internal.value
+
+    cached = [(external.name, external.value), (internal.name, internal.value)]
+    result = translate_event_harvest_config_settings(settings, cached)
+
+    assert result is settings
+    assert external.name not in flatten_settings(result)
+    assert fetch_config_setting(result, internal.name) == external.value
+
+
+translate_deprecated_settings_tests = [
+    # Nothing in here right now.
+]
+
 @pytest.mark.skip(
-    "Behavior for the event_harvest_config will be different than typical deprecated settings.  Renable this test once there are other deprecated settings."
+    "Renable this test once there are other deprecated settings."
 )
-@pytest.mark.parametrize("old,new", translate_settings_tests)
+@pytest.mark.parametrize("old,new", translate_deprecated_settings_tests)
 def test_translate_deprecated_setting_without_new_setting(old, new):
     # Before: deprecated setting will be in settings object.
     #         new setting will be in settings object and have default value
@@ -473,7 +538,10 @@ def test_translate_deprecated_setting_without_new_setting(old, new):
     assert fetch_config_setting(result, new.name) == old.value
 
 
-@pytest.mark.parametrize("old,new", translate_settings_tests)
+@pytest.mark.skip(
+    "Renable this test once there are other deprecated settings."
+)
+@pytest.mark.parametrize("old,new", translate_deprecated_settings_tests)
 def test_translate_deprecated_setting_with_new_setting(old, new):
     # Before: deprecated setting will be in settings object.
     #         new setting will be in settings object and have its value
@@ -496,7 +564,10 @@ def test_translate_deprecated_setting_with_new_setting(old, new):
     assert fetch_config_setting(result, new.name) == new.value
 
 
-@pytest.mark.parametrize("old,new", translate_settings_tests)
+@pytest.mark.skip(
+    "Renable this test once there are other deprecated settings."
+)
+@pytest.mark.parametrize("old,new", translate_deprecated_settings_tests)
 def test_translate_deprecated_setting_without_old_setting(old, new):
     # Before: deprecated setting will *NOT* be in settings object.
     #         new setting will be in settings object and have its value

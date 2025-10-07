@@ -108,7 +108,7 @@ class DatastoreNodeMixin(GenericNodeMixin):
         self._db_instance = db_instance_attr
         return db_instance_attr
 
-    def span_event(self, settings, base_attrs=None, parent_guid=None, attr_class=dict, *args, **kwargs):
+    def span_event(self, settings, base_attrs=None, parent_guid=None, attr_class=dict):
         a_attrs = self.agent_attributes
         a_attrs["db.instance"] = self.db_instance
         i_attrs = base_attrs and base_attrs.copy() or attr_class()
@@ -140,4 +140,4 @@ class DatastoreNodeMixin(GenericNodeMixin):
         except Exception:
             pass
 
-        return super().span_event(settings, base_attrs=i_attrs, parent_guid=parent_guid, attr_class=attr_class, *args, **kwargs)
+        return super().span_event(settings, base_attrs=i_attrs, parent_guid=parent_guid, attr_class=attr_class)

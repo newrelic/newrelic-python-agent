@@ -12,16 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 import openai
 import pytest
-from testing_support.fixtures import dt_enabled, override_llm_token_callback_settings, reset_core_stats_engine
+from testing_support.fixtures import dt_enabled, reset_core_stats_engine
 from testing_support.ml_testing_utils import (
-    add_token_count_to_events,
     disabled_ai_monitoring_record_content_settings,
     events_sans_content,
     events_with_context_attrs,
-    llm_token_count_callback,
     set_trace_info,
 )
 from testing_support.validators.validate_custom_event import validate_custom_event_count
@@ -70,6 +67,7 @@ expected_events_on_no_model_error = [
             "role": "system",
             "completion_id": None,
             "sequence": 0,
+            "token_count": 0,
             "vendor": "openai",
             "ingest_source": "Python",
         },
@@ -86,6 +84,7 @@ expected_events_on_no_model_error = [
             "role": "user",
             "completion_id": None,
             "sequence": 1,
+            "token_count": 0,
             "vendor": "openai",
             "ingest_source": "Python",
         },
@@ -251,6 +250,7 @@ expected_events_on_invalid_model_error = [
             "role": "user",
             "completion_id": None,
             "sequence": 0,
+            "token_count": 0,
             "vendor": "openai",
             "ingest_source": "Python",
         },
@@ -432,6 +432,7 @@ expected_events_on_wrong_api_key_error = [
             "role": "user",
             "completion_id": None,
             "sequence": 0,
+            "token_count": 0,
             "vendor": "openai",
             "ingest_source": "Python",
         },

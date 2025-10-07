@@ -536,7 +536,7 @@ def create_chat_completion_message_event(
     response_model,
     llm_metadata,
     output_message_list,
-    all_token_counts
+    all_token_counts,
 ):
     try:
         settings = transaction.settings or global_settings()

@@ -364,7 +364,7 @@ def _record_generation_error(transaction, linking_metadata, completion_id, kwarg
             llm_metadata,
             output_message_list,
             # We do not record token counts in error cases, so set all_token_counts to True so the pipeline tokenizer does not run
-           True,
+            True,
             request_timestamp,
         )
     except Exception:

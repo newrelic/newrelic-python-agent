@@ -576,6 +576,7 @@ def create_chat_completion_message_event(
 
             if settings.ai_monitoring.record_content.enabled:
                 chat_completion_input_message_dict["content"] = input_message_content
+
             if request_timestamp:
                 chat_completion_input_message_dict["timestamp"] = request_timestamp
 

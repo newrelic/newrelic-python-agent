@@ -11,9 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-
-import asyncio
 import json
 
 from graphql import MiddlewareManager
@@ -52,6 +49,10 @@ def run_sync(schema):
 
 
 def run_async(schema):
+    import asyncio
+
+    loop = asyncio.new_event_loop()
+
     def _run_async(query, middleware=None):
         from ariadne import graphql
 
@@ -60,7 +61,6 @@ def run_async(schema):
             if middleware:
                 middleware = MiddlewareManager(*middleware)
 
-        loop = asyncio.get_event_loop()
         success, response = loop.run_until_complete(graphql(schema, {"query": query}, middleware=middleware))
         check_response(query, success, response)
 

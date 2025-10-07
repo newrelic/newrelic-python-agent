@@ -15,23 +15,22 @@
 
 import fileinput
 import os
+from pathlib import Path
 from textwrap import dedent
 
 GROUP_NUMBER = int(os.environ["GROUP_NUMBER"]) - 1
 TOTAL_GROUPS = int(os.environ["TOTAL_GROUPS"])
 GITHUB_JOB = os.environ["GITHUB_JOB"]
+GITHUB_OUTPUT = os.environ.get("GITHUB_OUTPUT", None)
 
 
 def main(stdin):
     environments = [env.rstrip() for env in stdin]
     filtered_envs = [env for env in environments if env.startswith(GITHUB_JOB + "-")]
     grouped_envs = filtered_envs[GROUP_NUMBER::TOTAL_GROUPS]
-    joined_envs = ",".join(grouped_envs)
 
     # If not environments are found, raise an error with helpful information.
-    if joined_envs:
-        print(joined_envs)
-    else:
+    if not grouped_envs:
         error_msg = dedent(f"""
             No matching environments found.
             GITHUB_JOB = {GITHUB_JOB}
@@ -41,9 +40,16 @@ def main(stdin):
             environments = {environments}
             filtered_envs = {filtered_envs}
             grouped_envs = {grouped_envs}
-            joined_envs = {joined_envs}
         """)
         raise RuntimeError(error_msg(environments))
+
+    # Output results to GITHUB_OUTPUT for use in later steps.
+    if GITHUB_OUTPUT:
+        with Path(GITHUB_OUTPUT).open("a") as output_fh:
+            print(f"envs={','.join(grouped_envs)}", file=output_fh)
+
+    # Output human readable results to stdout for visibility in logs.
+    print("\n".join(grouped_envs))
 
 
 if __name__ == "__main__":

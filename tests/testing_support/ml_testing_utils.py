@@ -46,6 +46,14 @@ def add_token_count_to_embedding_events(expected_events):
     return events
 
 
+def add_token_count_streaming_events(expected_events):
+    events = copy.deepcopy(expected_events)
+    for event in events:
+        if event[0]["type"] == "LlmChatCompletionMessage":
+            event[1]["token_count"] = 0
+    return events
+
+
 def add_token_counts_to_chat_events(expected_events):
     events = copy.deepcopy(expected_events)
     for event in events:

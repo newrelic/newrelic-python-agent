@@ -300,14 +300,11 @@ def extract_bedrock_titan_text_model_response(response_body, bedrock_attrs):
         response_body = json.loads(response_body)
 
         input_tokens = response_body.get("inputTextTokenCount", 0)
-        completion_tokens = sum(result["tokenCount"] for result in response_body.get("results", []))
-        if not completion_tokens:
-            completion_tokens = 0
-
+        completion_tokens = sum(result.get("tokenCount", 0) for result in response_body.get("results", []))
         total_tokens = input_tokens + completion_tokens
 
         output_message_list = [
-            {"role": "assistant", "content": result["outputText"]} for result in response_body.get("results", [])
+            {"role": "assistant", "content": result.get("outputText")} for result in response_body.get("results", [])
         ]
 
         bedrock_attrs["response.choices.finish_reason"] = response_body["results"][0]["completionReason"]

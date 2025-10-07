@@ -106,6 +106,8 @@ def test_blob():
     assert headers == {"Content-Type": "application/json", "X-Foo": "Bar"}
 
 
+# This test tests the precedence order of agent server side
+# config settings and global server side config settings
 @override_generic_settings(global_settings(), {"developer_mode": True})
 def test_server_side_config_precedence():
     connect_response_fields = {"agent_config": {"span_events.enabled": True}, "span_events.enabled": False}
@@ -140,6 +142,7 @@ def test_span_event_harvest_config(connect_response_fields):
         from newrelic.core.config import SPAN_EVENT_RESERVOIR_SIZE
 
         expected = SPAN_EVENT_RESERVOIR_SIZE
+
     assert protocol.configuration.event_harvest_config.harvest_limits.span_event_data == expected
 
 

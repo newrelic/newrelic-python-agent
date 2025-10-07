@@ -30,13 +30,13 @@ def validate_datastore_trace_inputs(operation=None, target=None, host=None, port
             return (product, target, operation, host, port_path_or_id, database_name, kwargs)
 
         (
-            captured_product,
+            _captured_product,
             captured_target,
             captured_operation,
             captured_host,
             captured_port_path_or_id,
             captured_database_name,
-            captured_kwargs,
+            _captured_kwargs,
         ) = _bind_params(*args, **kwargs)
 
         if target is not None:

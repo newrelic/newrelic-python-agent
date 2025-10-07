@@ -27,16 +27,28 @@ on:
 permissions:
   contents: read
 
+# Ensure bash is used on all runners as the default shell
+defaults:
+  run:
+    shell: bash
+
 concurrency:
   group: ${{ github.ref || github.run_id }}-${{ github.workflow }}
   cancel-in-progress: true
 
 jobs:
-  # Aggregate job that provides a single check for all tests passing
+  # ========================================
+  # Aggregate Test Results and Code Coverage
+  # ========================================
+
   tests:
     runs-on: ubuntu-24.04
     if: always() # Always run, even on cancellation or failure
     needs:
+      - linux
+      - linux_arm64
+      - windows
+      - windows_arm64
       - python
       - cassandra
       - elasticsearchserver07
@@ -44,15 +56,15 @@ jobs:
       - firestore
       - grpc
       - kafka
-      - oracledb
       - memcached
       - mongodb3
       - mongodb8
       - mssql
       - mysql
       - nginx
-      - postgres16
+      - oracledb
       - postgres9
+      - postgres16
       - rabbitmq
       - redis
       - rediscluster
@@ -84,7 +96,7 @@ jobs:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
       - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # 6.0.0
         with:
-          python-version: "3.10"
+          python-version: "3.13"
           architecture: x64
 
       - name: Download Coverage Artifacts
@@ -106,37 +118,20 @@ jobs:
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
 
-  # Tests
-  python:
+  # ======================================
+  # OS Specific Core Test Suite Runners
+  #  - Linux runs in the CI container
+  #  - Windows runs directly on the runner
+  # ======================================
+
+  linux:
     env:
-      TOTAL_GROUPS: 20
+      TOTAL_GROUPS: 2
 
     strategy:
       fail-fast: false
       matrix:
-        group-number:
-          [
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            7,
-            8,
-            9,
-            10,
-            11,
-            12,
-            13,
-            14,
-            15,
-            16,
-            17,
-            18,
-            19,
-            20,
-          ]
+        group-number: [1, 2]
 
     runs-on: ubuntu-24.04
     container:
@@ -160,7 +155,499 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> "$GITHUB_OUTPUT"
+          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
+
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          FORCE_COLOR: "true"
+
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  linux_arm64:
+    env:
+      TOTAL_GROUPS: 2
+
+    strategy:
+      fail-fast: false
+      matrix:
+        group-number: [1, 2]
+
+    runs-on: ubuntu-24.04-arm
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          mkdir -p /github/home/.cache/pip
+          chown -R "$(whoami)" /github/home/.cache/pip
+
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
+
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          FORCE_COLOR: "true"
+
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  windows:
+    env:
+      TOTAL_GROUPS: 1
+      UV_PYTHON: "3.13"
+      UV_PYTHON_DOWNLOADS: "never"
+      UV_PYTHON_PREFERENCE: "only-system"
+
+    strategy:
+      fail-fast: false
+      matrix:
+        group-number: [1]
+
+    runs-on: windows-2025
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
+
+      - name: Fetch git tags
+        run: |
+          git fetch --tags origin
+
+      - name: Install Python
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # 6.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # 6.8.0
+
+      - name: Install Dependencies
+        run: |
+          uv tool install tox --with tox-uv
+
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
+
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          FORCE_COLOR: "true"
+
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  windows_arm64:
+    env:
+      TOTAL_GROUPS: 1
+      UV_PYTHON: "3.13"
+      UV_PYTHON_DOWNLOADS: "never"
+      UV_PYTHON_PREFERENCE: "only-system"
+
+    strategy:
+      fail-fast: false
+      matrix:
+        group-number: [1]
+
+    runs-on: windows-11-arm
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
+
+      - name: Fetch git tags
+        run: |
+          git fetch --tags origin
+
+      - name: Install Python
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # 6.0.0
+        with:
+          python-version: "3.13"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # 6.8.0
+
+      - name: Install Dependencies
+        run: |
+          uv tool install tox --with tox-uv
+
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
+
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          FORCE_COLOR: "true"
+
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  # ====================================
+  # Integration Test Suite Runners
+  #  - runs on Linux in the CI container
+  # ====================================
+
+  python:
+    env:
+      TOTAL_GROUPS: 12
+
+    strategy:
+      fail-fast: false
+      matrix:
+        group-number: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          mkdir -p /github/home/.cache/pip
+          chown -R "$(whoami)" /github/home/.cache/pip
+
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
+
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          FORCE_COLOR: "true"
+
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  cassandra:
+    env:
+      TOTAL_GROUPS: 1
+
+    strategy:
+      fail-fast: false
+      matrix:
+        group-number: [1]
+
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
+    timeout-minutes: 30
+    services:
+      cassandra:
+        image: cassandra:5.0.2
+        env:
+          CASSANDRA_SEEDS: "cassandra"
+          CASSANDRA_CLUSTER_NAME: TestCluster
+          CASSANDRA_ENDPOINT_SNITCH: SimpleSnitch
+          CASSANDRA_NUM_TOKENS: "128"
+        ports:
+          - 8080:9042
+          - 8081:9042
+        # Set health checks to wait until container has started
+        options: >-
+          --health-cmd "cqlsh localhost 9042 -e 'describe cluster'"
+          --health-interval 30s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          mkdir -p /github/home/.cache/pip
+          chown -R "$(whoami)" /github/home/.cache/pip
+
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
+
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          FORCE_COLOR: "true"
+
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  elasticsearchserver07:
+    env:
+      TOTAL_GROUPS: 1
+
+    strategy:
+      fail-fast: false
+      matrix:
+        group-number: [1]
+
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
+    timeout-minutes: 30
+    services:
+      elasticsearch:
+        image: elasticsearch:7.17.8
+        env:
+          "discovery.type": "single-node"
+        ports:
+          - 8080:9200
+          - 8081:9200
+        # Set health checks to wait until container has started
+        options: >-
+          --health-cmd "curl --silent --fail localhost:9200/_cluster/health || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          mkdir -p /github/home/.cache/pip
+          chown -R "$(whoami)" /github/home/.cache/pip
+
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
+
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          FORCE_COLOR: "true"
+
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  elasticsearchserver08:
+    env:
+      TOTAL_GROUPS: 1
+
+    strategy:
+      fail-fast: false
+      matrix:
+        group-number: [1]
+
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
+    timeout-minutes: 30
+    services:
+      elasticsearch:
+        image: elasticsearch:8.6.0
+        env:
+          "xpack.security.enabled": "false"
+          "discovery.type": "single-node"
+        ports:
+          - 8080:9200
+          - 8081:9200
+        # Set health checks to wait until container has started
+        options: >-
+          --health-cmd "curl --silent --fail localhost:9200/_cluster/health || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          mkdir -p /github/home/.cache/pip
+          chown -R "$(whoami)" /github/home/.cache/pip
+
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
+
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          FORCE_COLOR: "true"
+
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  firestore:
+    env:
+      TOTAL_GROUPS: 1
+
+    strategy:
+      fail-fast: false
+      matrix:
+        group-number: [1]
+
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
+    timeout-minutes: 30
+    services:
+      firestore:
+        # Image set here MUST be repeated down below in options. See comment below.
+        image: gcr.io/google.com/cloudsdktool/google-cloud-cli:437.0.1-emulators
+        ports:
+          - 8080:8080
+        # Set health checks to wait until container has started
+        options: >-
+          --health-cmd "echo success"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          --health-start-period 5s
+          gcr.io/google.com/cloudsdktool/google-cloud-cli:437.0.1-emulators /bin/bash -c "gcloud emulators firestore start --host-port=0.0.0.0:8080" ||
+        # This is a very hacky solution. GitHub Actions doesn't provide APIs for setting commands on services, but allows adding arbitrary options.
+        # --entrypoint won't work as it only accepts an executable and not the [] syntax.
+        # Instead, we specify the image again the command afterwards like a call to docker create. The result is a few environment variables
+        # and the original command being appended to our hijacked docker create command. We can avoid any issues by adding || to prevent that
+        # from every being executed as bash commands.
+
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          mkdir -p /github/home/.cache/pip
+          chown -R "$(whoami)" /github/home/.cache/pip
+
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
@@ -211,7 +698,7 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> "$GITHUB_OUTPUT"
+          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
@@ -231,14 +718,14 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  nginx:
+  kafka:
     env:
-      TOTAL_GROUPS: 1
+      TOTAL_GROUPS: 4
 
     strategy:
       fail-fast: false
       matrix:
-        group-number: [1]
+        group-number: [1, 2, 3, 4]
 
     runs-on: ubuntu-24.04
     container:
@@ -247,18 +734,29 @@ jobs:
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     services:
-      nginx:
-        image: tpansino1643652/nginx-hello-world:latest
+      zookeeper:
+        image: bitnamilegacy/zookeeper:3.9.1
+        env:
+          ALLOW_ANONYMOUS_LOGIN: yes
+
+        ports:
+          - 2181:2181
+
+      kafka:
+        image: bitnamilegacy/kafka:3.3.2
         ports:
           - 8080:8080
-          - 8081:8081
           - 8082:8082
-        # Set health checks to wait until container has started
-        options: >-
-          --health-cmd "service nginx status || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          - 8083:8083
+        env:
+          KAFKA_ENABLE_KRAFT: no
+          ALLOW_PLAINTEXT_LISTENER: yes
+          KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+          KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: true
+          KAFKA_CFG_LISTENERS: L1://:8082,L2://:8083,L3://:8080
+          KAFKA_CFG_ADVERTISED_LISTENERS: L1://host.docker.internal:8082,L2://host.docker.internal:8083,L3://kafka:8080
+          KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: L1:PLAINTEXT,L2:PLAINTEXT,L3:PLAINTEXT
+          KAFKA_CFG_INTER_BROKER_LISTENER_NAME: L3
 
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
@@ -276,7 +774,7 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> "$GITHUB_OUTPUT"
+          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
@@ -296,73 +794,7 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
-  postgres16:
-    env:
-      TOTAL_GROUPS: 2
-
-    strategy:
-      fail-fast: false
-      matrix:
-        group-number: [1, 2]
-
-    runs-on: ubuntu-24.04
-    container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
-      options: >-
-        --add-host=host.docker.internal:host-gateway
-    timeout-minutes: 30
-    services:
-      postgres16:
-        image: postgres:16
-        env:
-          POSTGRES_PASSWORD: postgres
-        ports:
-          - 8080:5432
-          - 8081:5432
-        # Set health checks to wait until container has started
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
-
-      - name: Fetch git tags
-        run: |
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          git fetch --tags origin
-
-      - name: Configure pip cache
-        run: |
-          mkdir -p /github/home/.cache/pip
-          chown -R "$(whoami)" /github/home/.cache/pip
-
-      - name: Get Environments
-        id: get-envs
-        run: |
-          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> "$GITHUB_OUTPUT"
-        env:
-          GROUP_NUMBER: ${{ matrix.group-number }}
-
-      - name: Test
-        run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-        env:
-          TOX_PARALLEL_NO_SPINNER: 1
-          FORCE_COLOR: "true"
-
-      - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
-        with:
-          name: coverage-${{ github.job }}-${{ strategy.job-index }}
-          path: ./**/.coverage.*
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 1
-
-  postgres9:
+  memcached:
     env:
       TOTAL_GROUPS: 1
 
@@ -378,16 +810,14 @@ jobs:
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     services:
-      postgres9:
-        image: postgres:9
-        env:
-          POSTGRES_PASSWORD: postgres
+      memcached:
+        image: memcached
         ports:
-          - 8080:5432
-          - 8081:5432
+          - 8080:11211
+          - 8081:11211
         # Set health checks to wait until container has started
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "timeout 5 bash -c 'cat < /dev/null > /dev/udp/127.0.0.1/11211'"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -408,7 +838,135 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> "$GITHUB_OUTPUT"
+          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
+
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          FORCE_COLOR: "true"
+
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  mongodb3:
+    env:
+      TOTAL_GROUPS: 1
+
+    strategy:
+      fail-fast: false
+      matrix:
+        group-number: [1]
+
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
+    timeout-minutes: 30
+    services:
+      mongodb:
+        image: mongo:3.6.4
+        ports:
+          - 8080:27017
+          - 8081:27017
+        # Set health checks to wait until container has started
+        options: >-
+          --health-cmd "echo 'db.runCommand(\"ping\").ok' | mongo localhost:27017/test --quiet || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          mkdir -p /github/home/.cache/pip
+          chown -R "$(whoami)" /github/home/.cache/pip
+
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
+
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          FORCE_COLOR: "true"
+
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  mongodb8:
+    env:
+      TOTAL_GROUPS: 1
+
+    strategy:
+      fail-fast: false
+      matrix:
+        group-number: [1]
+
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
+    timeout-minutes: 30
+    services:
+      mongodb:
+        image: mongo:8.0.3
+        ports:
+          - 8080:27017
+          - 8081:27017
+        # Set health checks to wait until container has started
+        options: >-
+          --health-cmd "echo 'db.runCommand(\"ping\").ok' | mongosh localhost:27017/test --quiet || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          mkdir -p /github/home/.cache/pip
+          chown -R "$(whoami)" /github/home/.cache/pip
+
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
@@ -477,7 +1035,7 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> "$GITHUB_OUTPUT"
+          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
@@ -499,12 +1057,12 @@ jobs:
 
   mysql:
     env:
-      TOTAL_GROUPS: 2
+      TOTAL_GROUPS: 1
 
     strategy:
       fail-fast: false
       matrix:
-        group-number: [1, 2]
+        group-number: [1]
 
     runs-on: ubuntu-24.04
     container:
@@ -546,7 +1104,400 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> "$GITHUB_OUTPUT"
+          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
+
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          FORCE_COLOR: "true"
+
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  nginx:
+    env:
+      TOTAL_GROUPS: 1
+
+    strategy:
+      fail-fast: false
+      matrix:
+        group-number: [1]
+
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
+    timeout-minutes: 30
+    services:
+      nginx:
+        image: tpansino1643652/nginx-hello-world:latest
+        ports:
+          - 8080:8080
+          - 8081:8081
+          - 8082:8082
+        # Set health checks to wait until container has started
+        options: >-
+          --health-cmd "service nginx status || exit 1"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          mkdir -p /github/home/.cache/pip
+          chown -R "$(whoami)" /github/home/.cache/pip
+
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
+
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          FORCE_COLOR: "true"
+
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  oracledb:
+    env:
+      TOTAL_GROUPS: 1
+
+    strategy:
+      fail-fast: false
+      matrix:
+        group-number: [1]
+
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
+    timeout-minutes: 30
+    services:
+      oracledb:
+        image: container-registry.oracle.com/database/free:latest-lite
+        ports:
+          - 8080:1521
+          - 8081:1521
+        env:
+          ORACLE_CHARACTERSET: utf8
+          ORACLE_PWD: oracle
+        # Set health checks to wait until container has started
+        options: >-
+          --health-cmd "timeout 5 bash -c 'cat < /dev/null > /dev/udp/127.0.0.1/11211'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          mkdir -p /github/home/.cache/pip
+          chown -R "$(whoami)" /github/home/.cache/pip
+
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
+
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          FORCE_COLOR: "true"
+
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  postgres9:
+    env:
+      TOTAL_GROUPS: 1
+
+    strategy:
+      fail-fast: false
+      matrix:
+        group-number: [1]
+
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
+    timeout-minutes: 30
+    services:
+      postgres9:
+        image: postgres:9
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 8080:5432
+          - 8081:5432
+        # Set health checks to wait until container has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          mkdir -p /github/home/.cache/pip
+          chown -R "$(whoami)" /github/home/.cache/pip
+
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
+
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          FORCE_COLOR: "true"
+
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  postgres16:
+    env:
+      TOTAL_GROUPS: 2
+
+    strategy:
+      fail-fast: false
+      matrix:
+        group-number: [1, 2]
+
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
+    timeout-minutes: 30
+    services:
+      postgres16:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 8080:5432
+          - 8081:5432
+        # Set health checks to wait until container has started
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          mkdir -p /github/home/.cache/pip
+          chown -R "$(whoami)" /github/home/.cache/pip
+
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
+
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          FORCE_COLOR: "true"
+
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  rabbitmq:
+    env:
+      TOTAL_GROUPS: 1
+
+    strategy:
+      fail-fast: false
+      matrix:
+        group-number: [1]
+
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
+    timeout-minutes: 30
+    services:
+      rabbitmq:
+        image: rabbitmq
+        env:
+          RABBITMQ_PASSWORD: rabbitmq
+        ports:
+          - 5672:5672
+        # Set health checks to wait until container has started
+        options: >-
+          --health-cmd "rabbitmq-diagnostics status"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          mkdir -p /github/home/.cache/pip
+          chown -R "$(whoami)" /github/home/.cache/pip
+
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
+
+      - name: Test
+        run: |
+          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          FORCE_COLOR: "true"
+
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  redis:
+    env:
+      TOTAL_GROUPS: 1
+
+    strategy:
+      fail-fast: false
+      matrix:
+        group-number: [1]
+
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
+    timeout-minutes: 30
+    services:
+      redis:
+        image: redis
+        ports:
+          - 8080:6379
+          - 8081:6379
+        # Set health checks to wait until container has started
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          mkdir -p /github/home/.cache/pip
+          chown -R "$(whoami)" /github/home/.cache/pip
+
+      - name: Get Environments
+        id: get-envs
+        run: |
+          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
@@ -651,71 +1602,7 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> "$GITHUB_OUTPUT"
-        env:
-          GROUP_NUMBER: ${{ matrix.group-number }}
-
-      - name: Test
-        run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-        env:
-          TOX_PARALLEL_NO_SPINNER: 1
-          FORCE_COLOR: "true"
-
-      - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
-        with:
-          name: coverage-${{ github.job }}-${{ strategy.job-index }}
-          path: ./**/.coverage.*
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 1
-
-  redis:
-    env:
-      TOTAL_GROUPS: 2
-
-    strategy:
-      fail-fast: false
-      matrix:
-        group-number: [1, 2]
-
-    runs-on: ubuntu-24.04
-    container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
-      options: >-
-        --add-host=host.docker.internal:host-gateway
-    timeout-minutes: 30
-    services:
-      redis:
-        image: redis
-        ports:
-          - 8080:6379
-          - 8081:6379
-        # Set health checks to wait until container has started
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
-
-      - name: Fetch git tags
-        run: |
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          git fetch --tags origin
-
-      - name: Configure pip cache
-        run: |
-          mkdir -p /github/home/.cache/pip
-          chown -R "$(whoami)" /github/home/.cache/pip
-
-      - name: Get Environments
-        id: get-envs
-        run: |
-          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> "$GITHUB_OUTPUT"
+          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
@@ -781,680 +1668,7 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> "$GITHUB_OUTPUT"
-        env:
-          GROUP_NUMBER: ${{ matrix.group-number }}
-
-      - name: Test
-        run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-        env:
-          TOX_PARALLEL_NO_SPINNER: 1
-          FORCE_COLOR: "true"
-
-      - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
-        with:
-          name: coverage-${{ github.job }}-${{ strategy.job-index }}
-          path: ./**/.coverage.*
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 1
-
-  oracledb:
-    env:
-      TOTAL_GROUPS: 1
-
-    strategy:
-      fail-fast: false
-      matrix:
-        group-number: [1]
-
-    runs-on: ubuntu-24.04
-    container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
-      options: >-
-        --add-host=host.docker.internal:host-gateway
-    timeout-minutes: 30
-    services:
-      oracledb:
-        image: container-registry.oracle.com/database/free:latest-lite
-        ports:
-          - 8080:1521
-          - 8081:1521
-        env:
-          ORACLE_CHARACTERSET: utf8
-          ORACLE_PWD: oracle
-        # Set health checks to wait until container has started
-        options: >-
-          --health-cmd "timeout 5 bash -c 'cat < /dev/null > /dev/udp/127.0.0.1/11211'"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
-
-      - name: Fetch git tags
-        run: |
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          git fetch --tags origin
-
-      - name: Configure pip cache
-        run: |
-          mkdir -p /github/home/.cache/pip
-          chown -R "$(whoami)" /github/home/.cache/pip
-
-      - name: Get Environments
-        id: get-envs
-        run: |
-          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> "$GITHUB_OUTPUT"
-        env:
-          GROUP_NUMBER: ${{ matrix.group-number }}
-
-      - name: Test
-        run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-        env:
-          TOX_PARALLEL_NO_SPINNER: 1
-          FORCE_COLOR: "true"
-
-      - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
-        with:
-          name: coverage-${{ github.job }}-${{ strategy.job-index }}
-          path: ./**/.coverage.*
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 1
-
-  memcached:
-    env:
-      TOTAL_GROUPS: 2
-
-    strategy:
-      fail-fast: false
-      matrix:
-        group-number: [1, 2]
-
-    runs-on: ubuntu-24.04
-    container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
-      options: >-
-        --add-host=host.docker.internal:host-gateway
-    timeout-minutes: 30
-    services:
-      memcached:
-        image: memcached
-        ports:
-          - 8080:11211
-          - 8081:11211
-        # Set health checks to wait until container has started
-        options: >-
-          --health-cmd "timeout 5 bash -c 'cat < /dev/null > /dev/udp/127.0.0.1/11211'"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
-
-      - name: Fetch git tags
-        run: |
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          git fetch --tags origin
-
-      - name: Configure pip cache
-        run: |
-          mkdir -p /github/home/.cache/pip
-          chown -R "$(whoami)" /github/home/.cache/pip
-
-      - name: Get Environments
-        id: get-envs
-        run: |
-          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> "$GITHUB_OUTPUT"
-        env:
-          GROUP_NUMBER: ${{ matrix.group-number }}
-
-      - name: Test
-        run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-        env:
-          TOX_PARALLEL_NO_SPINNER: 1
-          FORCE_COLOR: "true"
-
-      - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
-        with:
-          name: coverage-${{ github.job }}-${{ strategy.job-index }}
-          path: ./**/.coverage.*
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 1
-
-  rabbitmq:
-    env:
-      TOTAL_GROUPS: 1
-
-    strategy:
-      fail-fast: false
-      matrix:
-        group-number: [1]
-
-    runs-on: ubuntu-24.04
-    container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
-      options: >-
-        --add-host=host.docker.internal:host-gateway
-    timeout-minutes: 30
-    services:
-      rabbitmq:
-        image: rabbitmq
-        env:
-          RABBITMQ_PASSWORD: rabbitmq
-        ports:
-          - 5672:5672
-        # Set health checks to wait until container has started
-        options: >-
-          --health-cmd "rabbitmq-diagnostics status"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
-
-      - name: Fetch git tags
-        run: |
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          git fetch --tags origin
-
-      - name: Configure pip cache
-        run: |
-          mkdir -p /github/home/.cache/pip
-          chown -R "$(whoami)" /github/home/.cache/pip
-
-      - name: Get Environments
-        id: get-envs
-        run: |
-          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> "$GITHUB_OUTPUT"
-        env:
-          GROUP_NUMBER: ${{ matrix.group-number }}
-
-      - name: Test
-        run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-        env:
-          TOX_PARALLEL_NO_SPINNER: 1
-          FORCE_COLOR: "true"
-
-      - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
-        with:
-          name: coverage-${{ github.job }}-${{ strategy.job-index }}
-          path: ./**/.coverage.*
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 1
-
-  kafka:
-    env:
-      TOTAL_GROUPS: 4
-
-    strategy:
-      fail-fast: false
-      matrix:
-        group-number: [1, 2, 3, 4]
-
-    runs-on: ubuntu-24.04
-    container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
-      options: >-
-        --add-host=host.docker.internal:host-gateway
-    timeout-minutes: 30
-    services:
-      zookeeper:
-        image: bitnamilegacy/zookeeper:3.9.1
-        env:
-          ALLOW_ANONYMOUS_LOGIN: yes
-
-        ports:
-          - 2181:2181
-
-      kafka:
-        image: bitnamilegacy/kafka:3.3.2
-        ports:
-          - 8080:8080
-          - 8082:8082
-          - 8083:8083
-        env:
-          KAFKA_ENABLE_KRAFT: no
-          ALLOW_PLAINTEXT_LISTENER: yes
-          KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-          KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: true
-          KAFKA_CFG_LISTENERS: L1://:8082,L2://:8083,L3://:8080
-          KAFKA_CFG_ADVERTISED_LISTENERS: L1://host.docker.internal:8082,L2://host.docker.internal:8083,L3://kafka:8080
-          KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: L1:PLAINTEXT,L2:PLAINTEXT,L3:PLAINTEXT
-          KAFKA_CFG_INTER_BROKER_LISTENER_NAME: L3
-
-    steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
-
-      - name: Fetch git tags
-        run: |
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          git fetch --tags origin
-
-      - name: Configure pip cache
-        run: |
-          mkdir -p /github/home/.cache/pip
-          chown -R "$(whoami)" /github/home/.cache/pip
-
-      - name: Get Environments
-        id: get-envs
-        run: |
-          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> "$GITHUB_OUTPUT"
-        env:
-          GROUP_NUMBER: ${{ matrix.group-number }}
-
-      - name: Test
-        run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-        env:
-          TOX_PARALLEL_NO_SPINNER: 1
-          FORCE_COLOR: "true"
-
-      - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
-        with:
-          name: coverage-${{ github.job }}-${{ strategy.job-index }}
-          path: ./**/.coverage.*
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 1
-
-  mongodb3:
-    env:
-      TOTAL_GROUPS: 1
-
-    strategy:
-      fail-fast: false
-      matrix:
-        group-number: [1]
-
-    runs-on: ubuntu-24.04
-    container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
-      options: >-
-        --add-host=host.docker.internal:host-gateway
-    timeout-minutes: 30
-    services:
-      mongodb:
-        image: mongo:3.6.4
-        ports:
-          - 8080:27017
-          - 8081:27017
-        # Set health checks to wait until container has started
-        options: >-
-          --health-cmd "echo 'db.runCommand(\"ping\").ok' | mongo localhost:27017/test --quiet || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
-
-      - name: Fetch git tags
-        run: |
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          git fetch --tags origin
-
-      - name: Configure pip cache
-        run: |
-          mkdir -p /github/home/.cache/pip
-          chown -R "$(whoami)" /github/home/.cache/pip
-
-      - name: Get Environments
-        id: get-envs
-        run: |
-          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> "$GITHUB_OUTPUT"
-        env:
-          GROUP_NUMBER: ${{ matrix.group-number }}
-
-      - name: Test
-        run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-        env:
-          TOX_PARALLEL_NO_SPINNER: 1
-          FORCE_COLOR: "true"
-
-      - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
-        with:
-          name: coverage-${{ github.job }}-${{ strategy.job-index }}
-          path: ./**/.coverage.*
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 1
-
-  mongodb8:
-    env:
-      TOTAL_GROUPS: 1
-
-    strategy:
-      fail-fast: false
-      matrix:
-        group-number: [1]
-
-    runs-on: ubuntu-24.04
-    container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
-      options: >-
-        --add-host=host.docker.internal:host-gateway
-    timeout-minutes: 30
-    services:
-      mongodb:
-        image: mongo:8.0.3
-        ports:
-          - 8080:27017
-          - 8081:27017
-        # Set health checks to wait until container has started
-        options: >-
-          --health-cmd "echo 'db.runCommand(\"ping\").ok' | mongosh localhost:27017/test --quiet || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
-
-      - name: Fetch git tags
-        run: |
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          git fetch --tags origin
-
-      - name: Configure pip cache
-        run: |
-          mkdir -p /github/home/.cache/pip
-          chown -R "$(whoami)" /github/home/.cache/pip
-
-      - name: Get Environments
-        id: get-envs
-        run: |
-          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> "$GITHUB_OUTPUT"
-        env:
-          GROUP_NUMBER: ${{ matrix.group-number }}
-
-      - name: Test
-        run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-        env:
-          TOX_PARALLEL_NO_SPINNER: 1
-          FORCE_COLOR: "true"
-
-      - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
-        with:
-          name: coverage-${{ github.job }}-${{ strategy.job-index }}
-          path: ./**/.coverage.*
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 1
-
-  cassandra:
-    env:
-      TOTAL_GROUPS: 1
-
-    strategy:
-      fail-fast: false
-      matrix:
-        group-number: [1]
-
-    runs-on: ubuntu-24.04
-    container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
-      options: >-
-        --add-host=host.docker.internal:host-gateway
-    timeout-minutes: 30
-    services:
-      cassandra:
-        image: cassandra:5.0.2
-        env:
-          CASSANDRA_SEEDS: "cassandra"
-          CASSANDRA_CLUSTER_NAME: TestCluster
-          CASSANDRA_ENDPOINT_SNITCH: SimpleSnitch
-          CASSANDRA_NUM_TOKENS: "128"
-        ports:
-          - 8080:9042
-          - 8081:9042
-        # Set health checks to wait until container has started
-        options: >-
-          --health-cmd "cqlsh localhost 9042 -e 'describe cluster'"
-          --health-interval 30s
-          --health-timeout 5s
-          --health-retries 10
-
-    steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
-
-      - name: Fetch git tags
-        run: |
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          git fetch --tags origin
-
-      - name: Configure pip cache
-        run: |
-          mkdir -p /github/home/.cache/pip
-          chown -R "$(whoami)" /github/home/.cache/pip
-
-      - name: Get Environments
-        id: get-envs
-        run: |
-          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> "$GITHUB_OUTPUT"
-        env:
-          GROUP_NUMBER: ${{ matrix.group-number }}
-
-      - name: Test
-        run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-        env:
-          TOX_PARALLEL_NO_SPINNER: 1
-          FORCE_COLOR: "true"
-
-      - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
-        with:
-          name: coverage-${{ github.job }}-${{ strategy.job-index }}
-          path: ./**/.coverage.*
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 1
-
-  elasticsearchserver07:
-    env:
-      TOTAL_GROUPS: 1
-
-    strategy:
-      fail-fast: false
-      matrix:
-        group-number: [1]
-
-    runs-on: ubuntu-24.04
-    container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
-      options: >-
-        --add-host=host.docker.internal:host-gateway
-    timeout-minutes: 30
-    services:
-      elasticsearch:
-        image: elasticsearch:7.17.8
-        env:
-          "discovery.type": "single-node"
-        ports:
-          - 8080:9200
-          - 8081:9200
-        # Set health checks to wait until container has started
-        options: >-
-          --health-cmd "curl --silent --fail localhost:9200/_cluster/health || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
-
-      - name: Fetch git tags
-        run: |
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          git fetch --tags origin
-
-      - name: Configure pip cache
-        run: |
-          mkdir -p /github/home/.cache/pip
-          chown -R "$(whoami)" /github/home/.cache/pip
-
-      - name: Get Environments
-        id: get-envs
-        run: |
-          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> "$GITHUB_OUTPUT"
-        env:
-          GROUP_NUMBER: ${{ matrix.group-number }}
-
-      - name: Test
-        run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-        env:
-          TOX_PARALLEL_NO_SPINNER: 1
-          FORCE_COLOR: "true"
-
-      - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
-        with:
-          name: coverage-${{ github.job }}-${{ strategy.job-index }}
-          path: ./**/.coverage.*
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 1
-
-  elasticsearchserver08:
-    env:
-      TOTAL_GROUPS: 1
-
-    strategy:
-      fail-fast: false
-      matrix:
-        group-number: [1]
-
-    runs-on: ubuntu-24.04
-    container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
-      options: >-
-        --add-host=host.docker.internal:host-gateway
-    timeout-minutes: 30
-    services:
-      elasticsearch:
-        image: elasticsearch:8.6.0
-        env:
-          "xpack.security.enabled": "false"
-          "discovery.type": "single-node"
-        ports:
-          - 8080:9200
-          - 8081:9200
-        # Set health checks to wait until container has started
-        options: >-
-          --health-cmd "curl --silent --fail localhost:9200/_cluster/health || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
-    steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
-
-      - name: Fetch git tags
-        run: |
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          git fetch --tags origin
-
-      - name: Configure pip cache
-        run: |
-          mkdir -p /github/home/.cache/pip
-          chown -R "$(whoami)" /github/home/.cache/pip
-
-      - name: Get Environments
-        id: get-envs
-        run: |
-          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> "$GITHUB_OUTPUT"
-        env:
-          GROUP_NUMBER: ${{ matrix.group-number }}
-
-      - name: Test
-        run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
-        env:
-          TOX_PARALLEL_NO_SPINNER: 1
-          FORCE_COLOR: "true"
-
-      - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
-        with:
-          name: coverage-${{ github.job }}-${{ strategy.job-index }}
-          path: ./**/.coverage.*
-          include-hidden-files: true
-          if-no-files-found: error
-          retention-days: 1
-
-  firestore:
-    env:
-      TOTAL_GROUPS: 1
-
-    strategy:
-      fail-fast: false
-      matrix:
-        group-number: [1]
-
-    runs-on: ubuntu-24.04
-    container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
-      options: >-
-        --add-host=host.docker.internal:host-gateway
-    timeout-minutes: 30
-    services:
-      firestore:
-        # Image set here MUST be repeated down below in options. See comment below.
-        image: gcr.io/google.com/cloudsdktool/google-cloud-cli:437.0.1-emulators
-        ports:
-          - 8080:8080
-        # Set health checks to wait until container has started
-        options: >-
-          --health-cmd "echo success"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-          --health-start-period 5s
-          gcr.io/google.com/cloudsdktool/google-cloud-cli:437.0.1-emulators /bin/bash -c "gcloud emulators firestore start --host-port=0.0.0.0:8080" ||
-        # This is a very hacky solution. GitHub Actions doesn't provide APIs for setting commands on services, but allows adding arbitrary options.
-        # --entrypoint won't work as it only accepts an executable and not the [] syntax.
-        # Instead, we specify the image again the command afterwards like a call to docker create. The result is a few environment variables
-        # and the original command being appended to our hijacked docker create command. We can avoid any issues by adding || to prevent that
-        # from every being executed as bash commands.
-
-    steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
-
-      - name: Fetch git tags
-        run: |
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          git fetch --tags origin
-
-      - name: Configure pip cache
-        run: |
-          mkdir -p /github/home/.cache/pip
-          chown -R "$(whoami)" /github/home/.cache/pip
-
-      - name: Get Environments
-        id: get-envs
-        run: |
-          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> "$GITHUB_OUTPUT"
+          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
@@ -1518,7 +1732,7 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "envs=$(tox -l | grep '^${{ github.job }}\-' | ./.github/workflows/get-envs.py)" >> "$GITHUB_OUTPUT"
+          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 

@@ -23,7 +23,6 @@ from testing_support.validators.validate_serverless_payload import validate_serv
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import background_task
 from newrelic.api.external_trace import ExternalTrace
-from newrelic.api.lambda_handler import lambda_handler
 from newrelic.api.transaction import current_transaction
 from newrelic.core.config import global_settings
 
@@ -57,7 +56,7 @@ def test_serverless_payload(capsys, serverless_application):
 
     _test()
 
-    out, err = capsys.readouterr()
+    out, _err = capsys.readouterr()
 
     # Validate that something is printed to stdout
     assert out
@@ -135,39 +134,8 @@ def test_inbound_dt_payload_acceptance(serverless_application, trusted_account_k
                 "tx": "8703ff3d88eefe9d",
             },
         }
-
-        result = transaction.accept_distributed_trace_payload(payload)
+        headers = {"newrelic": payload}
+        result = transaction.accept_distributed_trace_headers(headers)
         assert result
 
     _test_inbound_dt_payload_acceptance()
-
-
-# The lambda_hander has been deprecated for 3+ years
-@pytest.mark.skip(reason="The lambda_handler has been deprecated")
-@pytest.mark.parametrize("arn_set", (True, False))
-def test_payload_metadata_arn(serverless_application, arn_set):
-    # If the session object gathers the arn from the settings object before the
-    # lambda handler records it there, then this test will fail.
-
-    settings = global_settings()
-    original_metadata = settings.aws_lambda_metadata.copy()
-
-    arn = None
-    if arn_set:
-        arn = "arrrrrrrrrrRrrrrrrrn"
-
-    settings.aws_lambda_metadata.update({"arn": arn, "function_version": "$LATEST"})
-
-    class Context:
-        invoked_function_arn = arn
-
-    @validate_serverless_metadata(exact_metadata={"arn": arn})
-    @lambda_handler(application=serverless_application)
-    def handler(event, context):
-        assert settings.aws_lambda_metadata["arn"] == arn
-        return {}
-
-    try:
-        handler({}, Context)
-    finally:
-        settings.aws_lambda_metadata = original_metadata

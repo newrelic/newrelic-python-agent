@@ -63,7 +63,7 @@ def run_svm_model():
         from sklearn.model_selection import train_test_split
 
         X, y = load_iris(return_X_y=True)
-        x_train, x_test, y_train, y_test = train_test_split(X, y, stratify=y, random_state=0)
+        x_train, x_test, y_train, _y_test = train_test_split(X, y, stratify=y, random_state=0)
 
         kwargs = {"random_state": 0}
         if svm_model_name in ["SVR", "NuSVR", "OneClassSVM"]:

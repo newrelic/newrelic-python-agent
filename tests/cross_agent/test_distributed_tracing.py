@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import base64
 import json
 from pathlib import Path
 
@@ -52,7 +53,7 @@ _parameters = ",".join(_parameters_list)
 
 def load_tests():
     result = []
-    with FIXTURE.open() as fh:
+    with FIXTURE.open(encoding="utf-8") as fh:
         tests = json.load(fh)
 
     for test in tests:
@@ -118,13 +119,22 @@ def target_wsgi_application(environ, start_response):
 
     extra_inbound_payloads = test_settings["extra_inbound_payloads"]
     for payload, expected_result in extra_inbound_payloads:
-        result = txn.accept_distributed_trace_payload(payload, test_settings["transport_type"])
+        headers = {"newrelic": payload}
+        result = txn.accept_distributed_trace_headers(headers, test_settings["transport_type"])
         assert result is expected_result
 
     outbound_payloads = test_settings["outbound_payloads"]
     if outbound_payloads:
         for payload_assertions in outbound_payloads:
-            payload = txn._create_distributed_trace_payload()
+            headers = []
+            txn.insert_distributed_trace_headers(headers)
+            # To revert to the dict format of the payload, use this:
+            payload = json.loads(
+                base64.b64decode([value for key, value in headers if key == "newrelic"][0]).decode("utf-8")
+            )
+            payload_version = payload.get("v")
+            if payload_version and isinstance(payload_version, list):
+                payload["v"] = tuple(payload_version)
             assert_payload(payload, payload_assertions, test_settings["major_version"], test_settings["minor_version"])
 
     start_response(status, response_headers)
@@ -153,15 +163,16 @@ def test_distributed_tracing(
     web_transaction,
 ):
     extra_inbound_payloads = []
-    if transport_type != "HTTP":
-        # Since wsgi_application calls accept_distributed_trace_payload
+    if not inbound_payloads:
+        # If there is no `inbound_payloads`, we do
+        # not want to break the downstream logic,
+        # so this is explicitly skipped.
+        pass
+    elif transport_type != "HTTP":
+        # Since wsgi_application calls accept_distributed_trace_headers
         # automatically with transport_type='HTTP', we must defer this call
         # until we can specify the transport type.
         extra_inbound_payloads.append((inbound_payloads.pop(), True))
-    elif not inbound_payloads:
-        # In order to assert that accept_distributed_trace_payload returns
-        # False in this instance, we defer.
-        extra_inbound_payloads.append((inbound_payloads, False))
     elif len(inbound_payloads) > 1:
         extra_inbound_payloads.extend((payload, False) for payload in inbound_payloads[1:])
 

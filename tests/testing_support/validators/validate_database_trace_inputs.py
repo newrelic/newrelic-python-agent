@@ -35,7 +35,7 @@ def validate_database_trace_inputs(sql_parameters_type):
         ):
             return (sql, dbapi2_module, connect_params, cursor_params, sql_parameters, execute_params, source)
 
-        (sql, dbapi2_module, connect_params, cursor_params, sql_parameters, execute_params, source) = _bind_params(
+        (_sql, dbapi2_module, connect_params, cursor_params, sql_parameters, execute_params, source) = _bind_params(
             *args, **kwargs
         )
 

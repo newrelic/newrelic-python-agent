@@ -69,7 +69,7 @@ def get_package_version_tuple(name):
     return version
 
 
-@lru_cache()
+@lru_cache
 def _get_package_version(name):
     module = sys.modules.get(name, None)
     version = None

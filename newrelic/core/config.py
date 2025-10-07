@@ -27,6 +27,7 @@ import copy
 import logging
 import os
 import re
+import sys
 import threading
 import urllib.parse as urlparse
 
@@ -716,8 +717,6 @@ else:
 _settings.license_key = os.environ.get("NEW_RELIC_LICENSE_KEY", None)
 _settings.api_key = os.environ.get("NEW_RELIC_API_KEY", None)
 
-_settings.ssl = _environ_as_bool("NEW_RELIC_SSL", True)
-
 _settings.host = os.environ.get("NEW_RELIC_HOST")
 _settings.otlp_host = os.environ.get("NEW_RELIC_OTLP_HOST")
 _settings.port = int(os.environ.get("NEW_RELIC_PORT", "0"))
@@ -761,7 +760,6 @@ _settings.apdex_t = _environ_as_float("NEW_RELIC_APDEX_T", 0.5)
 _settings.web_transactions_apdex = {}
 
 _settings.capture_params = None
-_settings.ignored_params = []
 
 _settings.capture_environ = True
 _settings.include_environ = [
@@ -821,11 +819,17 @@ _settings.memory_runtime_pid_metrics.enabled = _environ_as_bool(
 )
 
 _settings.transaction_events.enabled = True
+_settings.event_harvest_config.harvest_limits.analytic_event_data = _environ_as_int(
+    "NEW_RELIC_ANALYTICS_EVENTS_MAX_SAMPLES_STORED", default=DEFAULT_RESERVOIR_SIZE
+)
 _settings.transaction_events.attributes.enabled = True
 _settings.transaction_events.attributes.exclude = []
 _settings.transaction_events.attributes.include = []
 
 _settings.custom_insights_events.enabled = True
+_settings.event_harvest_config.harvest_limits.custom_event_data = _environ_as_int(
+    "NEW_RELIC_CUSTOM_INSIGHTS_EVENTS_MAX_SAMPLES_STORED", default=CUSTOM_EVENT_RESERVOIR_SIZE
+)
 _settings.custom_insights_events.max_attribute_value = _environ_as_int(
     "NEW_RELIC_CUSTOM_INSIGHTS_EVENTS_MAX_ATTRIBUTE_VALUE", default=MAX_ATTRIBUTE_LENGTH
 )
@@ -841,6 +845,9 @@ _settings.distributed_tracing.sampler.remote_parent_not_sampled = os.environ.get
 )
 _settings.distributed_tracing.exclude_newrelic_header = False
 _settings.span_events.enabled = _environ_as_bool("NEW_RELIC_SPAN_EVENTS_ENABLED", default=True)
+_settings.event_harvest_config.harvest_limits.span_event_data = _environ_as_int(
+    "NEW_RELIC_SPAN_EVENTS_MAX_SAMPLES_STORED", default=SPAN_EVENT_RESERVOIR_SIZE
+)
 _settings.span_events.attributes.enabled = True
 _settings.span_events.attributes.exclude = []
 _settings.span_events.attributes.include = []
@@ -868,6 +875,9 @@ _settings.error_collector.capture_source = False
 _settings.error_collector.ignore_classes = []
 _settings.error_collector.ignore_status_codes = _parse_status_codes("100-102 200-208 226 300-308 404", set())
 _settings.error_collector.expected_classes = []
+_settings.event_harvest_config.harvest_limits.error_event_data = _environ_as_int(
+    "NEW_RELIC_ERROR_COLLECTOR_MAX_EVENT_SAMPLES_STORED", default=ERROR_EVENT_RESERVOIR_SIZE
+)
 _settings.error_collector.expected_status_codes = set()
 _settings.error_collector._error_group_callback = None
 _settings.error_collector.attributes.enabled = True
@@ -900,7 +910,6 @@ _settings.agent_limits.max_sql_connections = 4
 _settings.agent_limits.sql_explain_plans = 30
 _settings.agent_limits.sql_explain_plans_per_harvest = 60
 _settings.agent_limits.slow_sql_data = 10
-_settings.agent_limits.merge_stats_maximum = None
 _settings.agent_limits.errors_per_transaction = 5
 _settings.agent_limits.errors_per_harvest = 20
 _settings.agent_limits.slow_transaction_dry_harvests = 5
@@ -935,28 +944,8 @@ _settings.instrumentation.middleware.django.enabled = _environ_as_bool(
 _settings.instrumentation.middleware.django.exclude = []
 _settings.instrumentation.middleware.django.include = []
 
-_settings.event_harvest_config.harvest_limits.analytic_event_data = _environ_as_int(
-    "NEW_RELIC_ANALYTICS_EVENTS_MAX_SAMPLES_STORED", DEFAULT_RESERVOIR_SIZE
-)
-
-_settings.event_harvest_config.harvest_limits.custom_event_data = _environ_as_int(
-    "NEW_RELIC_CUSTOM_INSIGHTS_EVENTS_MAX_SAMPLES_STORED", CUSTOM_EVENT_RESERVOIR_SIZE
-)
-
 _settings.event_harvest_config.harvest_limits.ml_event_data = _environ_as_int(
     "NEW_RELIC_ML_INSIGHTS_EVENTS_MAX_SAMPLES_STORED", ML_EVENT_RESERVOIR_SIZE
-)
-
-_settings.event_harvest_config.harvest_limits.span_event_data = _environ_as_int(
-    "NEW_RELIC_SPAN_EVENTS_MAX_SAMPLES_STORED", SPAN_EVENT_RESERVOIR_SIZE
-)
-
-_settings.event_harvest_config.harvest_limits.error_event_data = _environ_as_int(
-    "NEW_RELIC_ERROR_COLLECTOR_MAX_EVENT_SAMPLES_STORED", ERROR_EVENT_RESERVOIR_SIZE
-)
-
-_settings.event_harvest_config.harvest_limits.log_event_data = _environ_as_int(
-    "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_MAX_SAMPLES_STORED", LOG_EVENT_RESERVOIR_SIZE
 )
 
 _settings.console.listener_socket = None
@@ -991,7 +980,7 @@ _settings.message_tracer.segment_parameters_enabled = True
 _settings.utilization.detect_aws = True
 _settings.utilization.detect_azure = True
 _settings.utilization.detect_azurefunction = True
-_settings.utilization.detect_docker = True
+_settings.utilization.detect_docker = sys.platform != "win32"  # Docker detection is not supported on Windows
 _settings.utilization.detect_kubernetes = True
 _settings.utilization.detect_gcp = True
 _settings.utilization.detect_pcf = True
@@ -1024,6 +1013,9 @@ _settings.application_logging.forwarding.enabled = _environ_as_bool(
 )
 _settings.application_logging.forwarding.custom_attributes = _environ_as_mapping(
     "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_CUSTOM_ATTRIBUTES", default=""
+)
+_settings.event_harvest_config.harvest_limits.log_event_data = _environ_as_int(
+    "NEW_RELIC_APPLICATION_LOGGING_FORWARDING_MAX_SAMPLES_STORED", default=LOG_EVENT_RESERVOIR_SIZE
 )
 
 _settings.application_logging.forwarding.labels.enabled = _environ_as_bool(
@@ -1289,13 +1281,6 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
         value = agent_config["transaction_tracer.transaction_threshold"]
         if value == "apdex_f":
             agent_config["transaction_tracer.transaction_threshold"] = None
-
-    # If ignore_errors exists, and either ignore_classes is not set or it is empty
-    if "error_collector.ignore_errors" in agent_config and (
-        "error_collector.ignore_classes" not in agent_config or not agent_config["error_collector.ignore_classes"]
-    ):
-        # Remap to newer config key
-        agent_config["error_collector.ignore_classes"] = agent_config.pop("error_collector.ignore_errors")
 
     # Overlay with agent server side configuration settings.
 

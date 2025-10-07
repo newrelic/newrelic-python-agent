@@ -396,7 +396,7 @@ def test_application_error_trace_limit():
 @override_application_settings(
     {
         "agent_limits.errors_per_transaction": _errors_per_transaction_limit,
-        "error_collector.max_event_samples_stored": _error_event_limit,
+        "event_harvest_config.harvest_limits.error_event_data": _error_event_limit,
     }
 )
 @validate_transaction_error_event_count(_errors_per_transaction_limit)

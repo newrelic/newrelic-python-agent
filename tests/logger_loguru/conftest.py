@@ -29,7 +29,7 @@ _default_settings = {
     "application_logging.metrics.enabled": True,
     "application_logging.local_decorating.enabled": True,
     "application_logging.forwarding.context_data.enabled": True,
-    "event_harvest_config.harvest_limits.log_event_data": 100000,
+    "application_logging.forwarding.max_samples_stored": 100000,
 }
 
 collector_agent_registration = collector_agent_registration_fixture(

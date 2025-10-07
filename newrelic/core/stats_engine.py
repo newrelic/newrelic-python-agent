@@ -27,7 +27,6 @@ import random
 import sys
 import time
 import traceback
-import warnings
 import zlib
 from heapq import heapify, heapreplace
 
@@ -676,16 +675,6 @@ class StatsEngine:
         for metric in metrics:
             self.record_time_metric(metric)
 
-    def record_exception(self, exc=None, value=None, tb=None, params=None, ignore_errors=None):
-        # Deprecation Warning
-        warnings.warn(
-            ("The record_exception function is deprecated. Please use the new api named notice_error instead."),
-            DeprecationWarning,
-            stacklevel=2,
-        )
-
-        self.notice_error(error=(exc, value, tb), attributes=params, ignore=ignore_errors)
-
     def notice_error(self, error=None, attributes=None, expected=None, ignore=None, status_code=None):
         attributes = attributes if attributes is not None else {}
         settings = self.__settings
@@ -714,7 +703,7 @@ class StatsEngine:
         if getattr(value, "_nr_ignored", None):
             return
 
-        module, name, fullnames, message_raw = parse_exc_info(error)
+        _module, name, fullnames, message_raw = parse_exc_info(error)
         fullname = fullnames[0]
 
         # In the case case of JSON formatting for OpenAI models

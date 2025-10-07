@@ -181,7 +181,7 @@ def test_query_and_mutation(target_application):
 
 @dt_enabled
 def test_middleware(target_application):
-    framework, version, target_application = target_application
+    framework, _version, target_application = target_application
     _test_middleware_metrics = [
         ("GraphQL/operation/GraphQLServer/query/<anonymous>/hello", 1),
         ("GraphQL/resolve/GraphQLServer/hello", 1),
@@ -207,7 +207,7 @@ def test_middleware(target_application):
 
 @dt_enabled
 def test_exception_in_middleware(target_application):
-    framework, version, target_application = target_application
+    _framework, _version, target_application = target_application
     query = "query MyQuery { error_middleware }"
     field = "error_middleware"
 
@@ -254,7 +254,7 @@ def test_exception_in_middleware(target_application):
 @pytest.mark.parametrize("field", ("error", "error_non_null"))
 @dt_enabled
 def test_exception_in_resolver(target_application, field):
-    framework, version, target_application = target_application
+    _framework, _version, target_application = target_application
     query = f"query MyQuery {{ {field} }}"
 
     txn_name = "framework_graphql._target_schema_sync:resolve_error"
@@ -308,7 +308,7 @@ def test_exception_in_resolver(target_application, field):
     ],
 )
 def test_exception_in_validation(target_application, is_graphql_2, query, exc_class):
-    framework, version, target_application = target_application
+    _framework, _version, target_application = target_application
     if "syntax" in query:
         txn_name = "graphql.language.parser:parse"
     else:
@@ -354,7 +354,7 @@ def test_exception_in_validation(target_application, is_graphql_2, query, exc_cl
 
 @dt_enabled
 def test_operation_metrics_and_attrs(target_application):
-    framework, version, target_application = target_application
+    framework, _version, target_application = target_application
     operation_metrics = [("GraphQL/operation/GraphQLServer/query/MyQuery/library", 1)]
     operation_attrs = {"graphql.operation.type": "query", "graphql.operation.name": "MyQuery"}
 
@@ -380,7 +380,7 @@ def test_operation_metrics_and_attrs(target_application):
 
 @dt_enabled
 def test_field_resolver_metrics_and_attrs(target_application):
-    framework, version, target_application = target_application
+    framework, _version, target_application = target_application
     field_resolver_metrics = [("GraphQL/resolve/GraphQLServer/hello", 1)]
     graphql_attrs = {
         "graphql.field.name": "hello",
@@ -426,7 +426,7 @@ _test_queries = [
 @dt_enabled
 @pytest.mark.parametrize("query,obfuscated", _test_queries)
 def test_query_obfuscation(target_application, query, obfuscated):
-    framework, version, target_application = target_application
+    _framework, _version, target_application = target_application
     graphql_attrs = {"graphql.operation.query": obfuscated}
 
     if callable(query):
@@ -471,7 +471,7 @@ _test_queries = [
 @dt_enabled
 @pytest.mark.parametrize("query,expected_path", _test_queries)
 def test_deepest_unique_path(target_application, query, expected_path):
-    framework, version, target_application = target_application
+    _framework, _version, target_application = target_application
     if expected_path == "/error":
         txn_name = "framework_graphql._target_schema_sync:resolve_error"
     else:
@@ -486,5 +486,5 @@ def test_deepest_unique_path(target_application, query, expected_path):
 
 @validate_transaction_count(0)
 def test_ignored_introspection_transactions(target_application):
-    framework, version, target_application = target_application
+    _framework, _version, target_application = target_application
     response = target_application("{ __schema { types { name } } }")

@@ -631,7 +631,7 @@ def _record_completion_success(
             llm_metadata,
             output_message_list,
             all_token_counts,
-            request_timestamp,
+            request_timestamp
         )
     except Exception:
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))

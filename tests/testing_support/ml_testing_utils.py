@@ -29,6 +29,7 @@ def llm_token_count_callback(model, content):
     return 105
 
 
+# This will be removed once all LLM instrumentations have been converted to use new token count design
 def add_token_count_to_events(expected_events):
     events = copy.deepcopy(expected_events)
     for event in events:

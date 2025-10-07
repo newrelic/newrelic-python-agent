@@ -649,7 +649,7 @@ def _record_completion_error(transaction, linking_metadata, completion_id, kwarg
             response_headers = getattr(response, "headers", None) or {}
             exc_organization = response_headers.get("openai-organization")
             # There appears to be a bug here in openai v1 where despite having code,
-            # param, etc in the error response, they are not populated on the exception
+            # param, etc. in the error response, they are not populated on the exception
             # object so grab them from the response body object instead.
             body = getattr(exc, "body", None) or {}
             notice_error_attributes = {

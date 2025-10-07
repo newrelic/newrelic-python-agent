@@ -111,7 +111,7 @@ class DatastoreNodeMixin(GenericNodeMixin):
     def span_event(self, settings, base_attrs=None, parent_guid=None, attr_class=dict):
         a_attrs = self.agent_attributes
         a_attrs["db.instance"] = self.db_instance
-        i_attrs = base_attrs and base_attrs.copy() or attr_class()
+        i_attrs = (base_attrs and base_attrs.copy()) or attr_class()
 
         i_attrs["category"] = "datastore"
         i_attrs["span.kind"] = "client"

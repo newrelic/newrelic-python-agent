@@ -272,8 +272,6 @@ def test_chat_completion_invalid_request_error_invalid_model(set_trace_info, syn
         )
 
 
-
-
 @dt_enabled
 @reset_core_stats_engine()
 @validate_error_trace_attributes(

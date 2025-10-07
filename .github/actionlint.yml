@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Use of these from this module will be deprecated.
-
-from newrelic.common.object_wrapper import PostFunctionWrapper, post_function, wrap_post_function  # noqa: F401
+paths:
+  .github/workflows/**/*.{yml,yaml}:
+    ignore:
+      # This runner exists, but is in beta and not known to actionlint.
+      - 'label "windows-11-arm" is unknown\. .+'

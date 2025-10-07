@@ -49,7 +49,7 @@ from newrelic.core.agent_control_health import (
     agent_control_health_instance,
     agent_control_healthcheck_loop,
 )
-from newrelic.core.config import Settings, apply_config_setting, default_host, fetch_config_setting
+from newrelic.core.config import Settings, apply_config_setting, default_host
 
 __all__ = ["filter_app_factory", "initialize"]
 
@@ -334,7 +334,6 @@ def _process_configuration(section):
     _process_setting(section, "port", "getint", None)
     _process_setting(section, "otlp_host", "get", None)
     _process_setting(section, "otlp_port", "getint", None)
-    _process_setting(section, "ssl", "getboolean", None)
     _process_setting(section, "proxy_scheme", "get", None)
     _process_setting(section, "proxy_host", "get", None)
     _process_setting(section, "proxy_port", "getint", None)
@@ -346,7 +345,6 @@ def _process_configuration(section):
     _process_setting(section, "developer_mode", "getboolean", None)
     _process_setting(section, "high_security", "getboolean", None)
     _process_setting(section, "capture_params", "getboolean", None)
-    _process_setting(section, "ignored_params", "get", _map_split_strings)
     _process_setting(section, "capture_environ", "getboolean", None)
     _process_setting(section, "include_environ", "get", _map_split_strings)
     _process_setting(section, "max_stack_trace_lines", "getint", None)
@@ -377,7 +375,6 @@ def _process_configuration(section):
     _process_setting(section, "error_collector.capture_events", "getboolean", None)
     _process_setting(section, "error_collector.max_event_samples_stored", "getint", None)
     _process_setting(section, "error_collector.capture_source", "getboolean", None)
-    _process_setting(section, "error_collector.ignore_errors", "get", _map_split_strings)
     _process_setting(section, "error_collector.ignore_classes", "get", _map_split_strings)
     _process_setting(section, "error_collector.ignore_status_codes", "get", _merge_ignore_status_codes)
     _process_setting(section, "error_collector.expected_classes", "get", _map_split_strings)
@@ -426,7 +423,6 @@ def _process_configuration(section):
     _process_setting(section, "agent_limits.sql_explain_plans", "getint", None)
     _process_setting(section, "agent_limits.sql_explain_plans_per_harvest", "getint", None)
     _process_setting(section, "agent_limits.slow_sql_data", "getint", None)
-    _process_setting(section, "agent_limits.merge_stats_maximum", "getint", None)
     _process_setting(section, "agent_limits.errors_per_transaction", "getint", None)
     _process_setting(section, "agent_limits.errors_per_harvest", "getint", None)
     _process_setting(section, "agent_limits.slow_transaction_dry_harvests", "getint", None)
@@ -642,6 +638,63 @@ def delete_setting(settings_object, name):
         _logger.debug("Failed to delete setting: %r", name)
 
 
+def translate_event_harvest_config_settings(settings, cached_settings):
+    """Translate event_harvest_config settings to max_samples settings.
+
+    Background:
+    The collector/server side agent configuration uses the
+    `event_harvest_config` naming convention for their harvest
+    limit settings.  The original intent was for the language
+    agents to switch to this convention.  However, this only
+    happened for the Python agent.  Eventually, to remain
+    consistent with the other language agents, the decision
+    was made to change this back.  However, because the server
+    side configuration settings override the client-side settings,
+    the agent will insist on employing the `max_samples` naming
+    convention from the user's end but translate the settings
+    to their deprecated `event_harvest_config` counterparts during
+    the configuration process.
+
+    Here, the user will still get warnings about deprecated settings
+    being used.  However, the agent will also translate the settings
+    to their deprecated `event_harvest_config` counterparts during
+    the configuration process.
+    """
+
+    cached = dict(cached_settings)
+
+    event_harvest_to_max_samples_settings_map = [
+        ("event_harvest_config.harvest_limits.analytic_event_data", "transaction_events.max_samples_stored"),
+        ("event_harvest_config.harvest_limits.span_event_data", "span_events.max_samples_stored"),
+        ("event_harvest_config.harvest_limits.error_event_data", "error_collector.max_event_samples_stored"),
+        ("event_harvest_config.harvest_limits.custom_event_data", "custom_insights_events.max_samples_stored"),
+        ("event_harvest_config.harvest_limits.log_event_data", "application_logging.forwarding.max_samples_stored"),
+    ]
+
+    for event_harvest_key, max_samples_key in event_harvest_to_max_samples_settings_map:
+        if event_harvest_key in cached:
+            _logger.info(
+                "Deprecated setting found: %r. Please use new setting: %r.", event_harvest_key, max_samples_key
+            )
+
+            if max_samples_key in cached:
+                # Since there is the max_samples key as well as the event_harvest key,
+                # we need to apply the max_samples value to the event_harvest key.
+                apply_config_setting(settings, event_harvest_key, cached[max_samples_key])
+                _logger.info(
+                    "Ignoring deprecated setting: %r. Using new setting: %r.", event_harvest_key, max_samples_key
+                )
+            else:
+                # Translation to event_harvest_config has already happened
+                _logger.info("Applying value of deprecated setting %r to %r.", event_harvest_key, max_samples_key)
+        elif max_samples_key in cached:
+            apply_config_setting(settings, event_harvest_key, cached[max_samples_key])
+
+        delete_setting(settings, max_samples_key)
+
+    return settings
+
+
 def translate_deprecated_settings(settings, cached_settings):
     # If deprecated setting has been set by user, but the new
     # setting has not, then translate the deprecated setting to the
@@ -673,19 +726,7 @@ def translate_deprecated_settings(settings, cached_settings):
     cached = dict(cached_settings)
 
     deprecated_settings_map = [
-        ("transaction_tracer.capture_attributes", "transaction_tracer.attributes.enabled"),
-        ("error_collector.capture_attributes", "error_collector.attributes.enabled"),
-        ("browser_monitoring.capture_attributes", "browser_monitoring.attributes.enabled"),
-        ("analytics_events.capture_attributes", "transaction_events.attributes.enabled"),
-        ("analytics_events.enabled", "transaction_events.enabled"),
-        ("analytics_events.max_samples_stored", "event_harvest_config.harvest_limits.analytic_event_data"),
-        ("transaction_events.max_samples_stored", "event_harvest_config.harvest_limits.analytic_event_data"),
-        ("span_events.max_samples_stored", "event_harvest_config.harvest_limits.span_event_data"),
-        ("error_collector.max_event_samples_stored", "event_harvest_config.harvest_limits.error_event_data"),
-        ("custom_insights_events.max_samples_stored", "event_harvest_config.harvest_limits.custom_event_data"),
-        ("application_logging.forwarding.max_samples_stored", "event_harvest_config.harvest_limits.log_event_data"),
-        ("error_collector.ignore_errors", "error_collector.ignore_classes"),
-        ("strip_exception_messages.whitelist", "strip_exception_messages.allowlist"),
+        # Nothing in here right now!
     ]
 
     for old_key, new_key in deprecated_settings_map:
@@ -699,41 +740,6 @@ def translate_deprecated_settings(settings, cached_settings):
                 _logger.info("Applying value of deprecated setting %r to %r.", old_key, new_key)
 
             delete_setting(settings, old_key)
-
-    # The 'ignored_params' setting is more complicated than the above
-    # deprecated settings, so it gets handled separately.
-
-    if "ignored_params" in cached:
-        _logger.info(
-            "Deprecated setting found: ignored_params. Please use "
-            "new setting: attributes.exclude. For the new setting, an "
-            "ignored parameter should be prefaced with "
-            '"request.parameters.". For example, ignoring a parameter '
-            'named "foo" should be added added to attributes.exclude as '
-            '"request.parameters.foo."'
-        )
-
-        # Don't merge 'ignored_params' settings. If user set
-        # 'attributes.exclude' setting, only use those values,
-        # and ignore 'ignored_params' settings.
-
-        if "attributes.exclude" in cached:
-            _logger.info("Ignoring deprecated setting: ignored_params. Using new setting: attributes.exclude.")
-
-        else:
-            ignored_params = fetch_config_setting(settings, "ignored_params")
-
-            for p in ignored_params:
-                attr_value = f"request.parameters.{p}"
-                excluded_attrs = fetch_config_setting(settings, "attributes.exclude")
-
-                if attr_value not in excluded_attrs:
-                    settings.attributes.exclude.append(attr_value)
-                    _logger.info(
-                        "Applying value of deprecated setting ignored_params to attributes.exclude: %r.", attr_value
-                    )
-
-        delete_setting(settings, "ignored_params")
 
     # The 'capture_params' setting is deprecated, but since it affects
     # attribute filter default destinations, it is not translated here. We
@@ -757,17 +763,6 @@ def translate_deprecated_settings(settings, cached_settings):
             "(CAT) with the newer Distributed Tracing by setting 'distributed_tracing.enabled' to True in your agent "
             "configuration. For further details on distributed tracing, please refer to our documentation: "
             "https://docs.newrelic.com/docs/distributed-tracing/concepts/distributed-tracing-planning-guide/#changes."
-        )
-
-    if not settings.ssl:
-        settings.ssl = True
-        _logger.info("Ignoring deprecated setting: ssl. Enabling ssl is now mandatory. Setting ssl=true.")
-
-    if settings.agent_limits.merge_stats_maximum is not None:
-        _logger.info(
-            "Ignoring deprecated setting: "
-            "agent_limits.merge_stats_maximum. The agent will now respect "
-            "server-side commands."
         )
 
     return settings
@@ -988,6 +983,11 @@ def _load_configuration(config_file=None, environment=None, ignore_errors=True, 
 
     initialize_logging(log_file, log_level)
 
+    # Check the resolution of the system timers we will be using
+    # and log a warning if it isn't precise enough.
+
+    _check_timer_resolution()
+
     # Now process the remainder of the global configuration
     # settings.
 
@@ -1023,6 +1023,10 @@ def _load_configuration(config_file=None, environment=None, ignore_errors=True, 
     # Translate old settings
 
     translate_deprecated_settings(_settings, _cache_object)
+
+    # Translate event_harvest_config settings to max_samples settings (from user's side)
+
+    translate_event_harvest_config_settings(_settings, _cache_object)
 
     # Apply High Security Mode policy if enabled in local agent
     # configuration file.
@@ -1077,6 +1081,44 @@ def _load_configuration(config_file=None, environment=None, ignore_errors=True, 
             newrelic.api.import_hook.register_import_hook(module, hook)
         except Exception:
             _raise_configuration_error(section=None, option="transaction_tracer.generator_trace")
+
+
+def _check_timer_resolution():
+    """Check the resolution of the system timer we will be using. If it isn't precise enough then log warnings."""
+
+    from time import get_clock_info
+
+    timer = "time"  # Hard code this for now, in the future we may want to make timer selection dynamic
+    min_recommended_timer_resolution = 1e-4  # 0.1 milliseconds
+
+    # Attempt to get the resolution of the selected timer. If this fails, log a warning and exit early.
+    try:
+        resolution = get_clock_info(timer).resolution
+    except Exception:
+        _logger.warning("Unable to determine resolution of system timer.")
+        return
+
+    # Check the resolution level of the timer and log appropriate messages for it.
+    resolution_log_level = logging.DEBUG
+    if resolution > min_recommended_timer_resolution:
+        resolution_log_level = logging.WARNING
+        _logger.warning(
+            "The resolution of time.%s() on this system is not precise enough and may result in "
+            "inaccurate timing measurements. This can cause widely varying response times and "
+            "trace durations to be reported by the New Relic agent.",
+            timer,
+        )
+
+        # On Windows, Python 3.13+ uses a higher resolution timer implementation. Add a specific recommendation for this.
+        if sys.platform == "win32" and sys.version_info < (3, 13):
+            _logger.warning(
+                "On Windows, consider using Python 3.13 or later to take advantage of the higher resolution timer implementations."
+            )
+
+    # Log the used timer's resolution at the appropriate log level.
+    # If the resolution is too low, this will be a warning.
+    # Otherwise, it will be a debug message.
+    _logger.log(resolution_log_level, "Timer implementation: time.%s(). Resolution: %s seconds.", timer, resolution)
 
 
 # Generic error reporting functions.
@@ -1218,10 +1260,11 @@ def _module_function_glob(module, object_path):
             # Skip adding all class methods on failure
             pass
 
-        # Under the hood uses fnmatch, which uses os.path.normcase
-        # On windows this would cause issues with case insensitivity,
-        # but on all other operating systems there should be no issues.
-        return fnmatch.filter(available_functions, object_path)
+        # Globbing must be done using fnmatch.fnmatchcase as
+        # fnmatch.filter and fnmatch.fnmatch use os.path.normcase
+        # which cause case insensitivity issues on Windows.
+
+        return [func for func in available_functions if fnmatch.fnmatchcase(func, object_path)]
 
 
 # Setup wsgi application wrapper defined in configuration file.
@@ -2892,7 +2935,20 @@ def _process_module_builtin_defaults():
     _process_module_definition("loguru", "newrelic.hooks.logger_loguru", "instrument_loguru")
     _process_module_definition("loguru._logger", "newrelic.hooks.logger_loguru", "instrument_loguru_logger")
 
+    _process_module_definition(
+        "autogen_ext.tools.mcp._base", "newrelic.hooks.mlmodel_autogen", "instrument_autogen_ext_tools_mcp__base"
+    )
+    _process_module_definition(
+        "autogen_agentchat.agents._assistant_agent",
+        "newrelic.hooks.mlmodel_autogen",
+        "instrument_autogen_agentchat_agents__assistant_agent",
+    )
     _process_module_definition("mcp.client.session", "newrelic.hooks.adapter_mcp", "instrument_mcp_client_session")
+    _process_module_definition(
+        "mcp.server.fastmcp.tools.tool_manager",
+        "newrelic.hooks.adapter_mcp",
+        "instrument_mcp_server_fastmcp_tools_tool_manager",
+    )
 
     _process_module_definition("structlog._base", "newrelic.hooks.logger_structlog", "instrument_structlog__base")
     _process_module_definition("structlog._frames", "newrelic.hooks.logger_structlog", "instrument_structlog__frames")
@@ -4125,6 +4181,12 @@ def _process_module_builtin_defaults():
         "azure_functions_worker.dispatcher",
         "newrelic.hooks.framework_azurefunctions",
         "instrument_azure_functions_worker_dispatcher",
+    )
+    _process_module_definition(
+        "pyzeebe.client.client", "newrelic.hooks.external_pyzeebe", "instrument_pyzeebe_client_client"
+    )
+    _process_module_definition(
+        "pyzeebe.worker.job_executor", "newrelic.hooks.external_pyzeebe", "instrument_pyzeebe_worker_job_executor"
     )
 
 

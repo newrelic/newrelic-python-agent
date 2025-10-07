@@ -19,6 +19,7 @@ from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.signature import bind_args
+from newrelic.core.config import global_settings
 
 _logger = logging.getLogger(__name__)
 
@@ -26,6 +27,10 @@ _logger = logging.getLogger(__name__)
 async def wrap_call_tool(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
+        return await wrapped(*args, **kwargs)
+
+    settings = transaction.settings or global_settings()
+    if not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
     func_name = callable_name(wrapped)
@@ -40,6 +45,10 @@ async def wrap_call_tool(wrapped, instance, args, kwargs):
 async def wrap_read_resource(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
+        return await wrapped(*args, **kwargs)
+
+    settings = transaction.settings or global_settings()
+    if not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
     func_name = callable_name(wrapped)
@@ -64,6 +73,10 @@ async def wrap_get_prompt(wrapped, instance, args, kwargs):
     if not transaction:
         return await wrapped(*args, **kwargs)
 
+    settings = transaction.settings or global_settings()
+    if not settings.ai_monitoring.enabled:
+        return await wrapped(*args, **kwargs)
+
     func_name = callable_name(wrapped)
     bound_args = bind_args(wrapped, args, kwargs)
     prompt_name = bound_args.get("name") or "prompt"
@@ -81,3 +94,9 @@ def instrument_mcp_client_session(module):
             wrap_function_wrapper(module, "ClientSession.read_resource", wrap_read_resource)
         if hasattr(module.ClientSession, "get_prompt"):
             wrap_function_wrapper(module, "ClientSession.get_prompt", wrap_get_prompt)
+
+
+def instrument_mcp_server_fastmcp_tools_tool_manager(module):
+    if hasattr(module, "ToolManager"):
+        if hasattr(module.ToolManager, "call_tool"):
+            wrap_function_wrapper(module, "ToolManager.call_tool", wrap_call_tool)

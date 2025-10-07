@@ -1,4 +1,3 @@
-#!/usr/bin/env python3.8
 # Copyright 2010 New Relic, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,24 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import fileinput
-import os
+from newrelic.agent import background_task, current_transaction
 
-GROUP_NUMBER = int(os.environ["GROUP_NUMBER"]) - 1
-TOTAL_GROUPS = int(os.environ["TOTAL_GROUPS"])
+from . import benchmark
 
-
-def main(f):
-    environments = [e.rstrip() for e in f]
-    filtered_envs = environments[GROUP_NUMBER::TOTAL_GROUPS]
-    joined_envs = ",".join(filtered_envs)
-
-    assert joined_envs, (  # noqa: S101
-        f"No environments found.\nenvironments = {environments!s}\nGROUP_NUMBER = {GROUP_NUMBER + 1}\nTOTAL_GROUPS = {TOTAL_GROUPS}"
-    )
-    print(joined_envs)
+# This benchmark suite is a placeholder until actual benchmark suites can be added.
+# For now, this ensures the infrastructure works as intended.
 
 
-if __name__ == "__main__":
-    with fileinput.input() as f:
-        main(f)
+@benchmark
+class Suite:
+    def bench_application_active(self):
+        from newrelic.agent import application
+
+        assert application().active
+
+    @background_task()
+    def bench_transaction_active(self):
+        from newrelic.agent import application
+
+        assert current_transaction()

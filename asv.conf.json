@@ -1,0 +1,100 @@
+{
+    "version": 1,  // The version of the config file format.
+    "project": "newrelic",
+    "project_url": "https://github.com/newrelic/newrelic-python-agent",
+    "show_commit_url": "https://github.com/newrelic/newrelic-python-agent/commit/",
+    "repo": ".",
+    "environment_type": "virtualenv",
+    "install_timeout": 120,
+    "pythons": ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"],
+    "benchmark_dir": "tests/agent_benchmarks",
+    "env_dir": ".asv/env",
+    "results_dir": ".asv/results",
+    "html_dir": ".asv/html",
+    "regressions_thresholds": {
+       ".*": 0.2,     // Threshold of 20%
+    },
+
+    // The matrix of dependencies to test.  Each key of the "req"
+    // requirements dictionary is the name of a package (in PyPI) and
+    // the values are version numbers.  An empty list or empty string
+    // indicates to just test against the default (latest)
+    // version. null indicates that the package is to not be
+    // installed. If the package to be tested is only available from
+    // PyPi, and the 'environment_type' is conda, then you can preface
+    // the package name by 'pip+', and the package will be installed
+    // via pip (with all the conda available packages installed first,
+    // followed by the pip installed packages).
+    //
+    // The ``@env`` and ``@env_nobuild`` keys contain the matrix of
+    // environment variables to pass to build and benchmark commands.
+    // An environment will be created for every combination of the
+    // cartesian product of the "@env" variables in this matrix.
+    // Variables in "@env_nobuild" will be passed to every environment
+    // during the benchmark phase, but will not trigger creation of
+    // new environments.  A value of ``null`` means that the variable
+    // will not be set for the current combination.
+    //
+    // "matrix": {
+    //     "req": {
+    //         "numpy": ["1.6", "1.7"],
+    //         "six": ["", null],  // test with and without six installed
+    //         "pip+emcee": [""]   // emcee is only available for install with pip.
+    //     },
+    //     "env": {"ENV_VAR_1": ["val1", "val2"]},
+    //     "env_nobuild": {"ENV_VAR_2": ["val3", null]},
+    // },
+    
+    // Combinations of libraries/python versions can be excluded/included
+    // from the set to test. Each entry is a dictionary containing additional
+    // key-value pairs to include/exclude.
+    //
+    // An exclude entry excludes entries where all values match. The
+    // values are regexps that should match the whole string.
+    //
+    // An include entry adds an environment. Only the packages listed
+    // are installed. The 'python' key is required. The exclude rules
+    // do not apply to includes.
+    //
+    // In addition to package names, the following keys are available:
+    //
+    // - python
+    //     Python version, as in the *pythons* variable above.
+    // - environment_type
+    //     Environment type, as above.
+    // - sys_platform
+    //     Platform, as in sys.platform. Possible values for the common
+    //     cases: 'linux2', 'win32', 'cygwin', 'darwin'.
+    // - req
+    //     Required packages
+    // - env
+    //     Environment variables
+    // - env_nobuild
+    //     Non-build environment variables
+    //
+    // "exclude": [
+    //     {"python": "3.2", "sys_platform": "win32"}, // skip py3.2 on windows
+    //     {"environment_type": "conda", "req": {"six": null}}, // don't run without six on conda
+    //     {"env": {"ENV_VAR_1": "val2"}}, // skip val2 for ENV_VAR_1
+    // ],
+    //
+    // "include": [
+    //     // additional env for python3.12
+    //     {"python": "3.12", "req": {"numpy": "1.26"}, "env_nobuild": {"FOO": "123"}},
+    //     // additional env if run on windows+conda
+    //     {"platform": "win32", "environment_type": "conda", "python": "3.12", "req": {"libpython": ""}},
+    // ],
+
+    // The commits after which the regression search in `asv publish`
+    // should start looking for regressions. Dictionary whose keys are
+    // regexps matching to benchmark names, and values corresponding to
+    // the commit (exclusive) after which to start looking for
+    // regressions.  The default is to start from the first commit
+    // with results. If the commit is `null`, regression detection is
+    // skipped for the matching benchmark.
+    //
+    // "regressions_first_commits": {
+    //    "some_benchmark": "352cdf",  // Consider regressions only after this commit
+    //    "another_benchmark": null,   // Skip regression detection altogether
+    // },
+}

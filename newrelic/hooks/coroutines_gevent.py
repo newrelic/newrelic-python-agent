@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.api.post_function import wrap_post_function
+from newrelic.common.object_wrapper import wrap_post_function
 
 
 def _patch_thread(threading=True, *args, **kwargs):

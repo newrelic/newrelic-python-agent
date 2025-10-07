@@ -161,7 +161,7 @@ jobs:
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel -e ${{ steps.get-envs.outputs.envs }}
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
@@ -212,7 +212,7 @@ jobs:
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel -e ${{ steps.get-envs.outputs.envs }}
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
@@ -270,7 +270,7 @@ jobs:
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel -e ${{ steps.get-envs.outputs.envs }}
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
@@ -328,7 +328,7 @@ jobs:
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel -e ${{ steps.get-envs.outputs.envs }}
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
@@ -384,7 +384,7 @@ jobs:
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel -e ${{ steps.get-envs.outputs.envs }}
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
@@ -453,7 +453,7 @@ jobs:
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel -e ${{ steps.get-envs.outputs.envs }}
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
@@ -519,7 +519,7 @@ jobs:
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel -e ${{ steps.get-envs.outputs.envs }}
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
@@ -586,7 +586,7 @@ jobs:
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel -e ${{ steps.get-envs.outputs.envs }}
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
@@ -657,7 +657,7 @@ jobs:
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel -e ${{ steps.get-envs.outputs.envs }}
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
@@ -708,7 +708,7 @@ jobs:
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }}
+          tox run -e ${{ steps.get-envs.outputs.envs }}
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
@@ -784,7 +784,7 @@ jobs:
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel -e ${{ steps.get-envs.outputs.envs }}
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
@@ -848,7 +848,7 @@ jobs:
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel -e ${{ steps.get-envs.outputs.envs }}
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
@@ -912,7 +912,7 @@ jobs:
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel -e ${{ steps.get-envs.outputs.envs }}
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
@@ -976,7 +976,7 @@ jobs:
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel -e ${{ steps.get-envs.outputs.envs }}
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
@@ -1045,7 +1045,7 @@ jobs:
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel -e ${{ steps.get-envs.outputs.envs }}
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
@@ -1114,7 +1114,7 @@ jobs:
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel -e ${{ steps.get-envs.outputs.envs }}
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
@@ -1179,7 +1179,7 @@ jobs:
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel -e ${{ steps.get-envs.outputs.envs }}
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
@@ -1246,7 +1246,7 @@ jobs:
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel -e ${{ steps.get-envs.outputs.envs }}
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
@@ -1312,7 +1312,7 @@ jobs:
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel -e ${{ steps.get-envs.outputs.envs }}
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
@@ -1378,7 +1378,7 @@ jobs:
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel -e ${{ steps.get-envs.outputs.envs }}
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
@@ -1443,7 +1443,7 @@ jobs:
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel -e ${{ steps.get-envs.outputs.envs }}
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
@@ -1507,7 +1507,7 @@ jobs:
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel -e ${{ steps.get-envs.outputs.envs }}
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
@@ -1612,7 +1612,7 @@ jobs:
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel -e ${{ steps.get-envs.outputs.envs }}
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
@@ -1678,7 +1678,7 @@ jobs:
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel -e ${{ steps.get-envs.outputs.envs }}
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
@@ -1742,7 +1742,7 @@ jobs:
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel -e ${{ steps.get-envs.outputs.envs }}
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"

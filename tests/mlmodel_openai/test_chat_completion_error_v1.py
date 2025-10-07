@@ -14,13 +14,11 @@
 
 import openai
 import pytest
-from testing_support.fixtures import dt_enabled, override_llm_token_callback_settings, reset_core_stats_engine
+from testing_support.fixtures import dt_enabled, reset_core_stats_engine
 from testing_support.ml_testing_utils import (
-    add_token_count_to_events,
     disabled_ai_monitoring_record_content_settings,
     events_sans_content,
     events_with_context_attrs,
-    llm_token_count_callback,
     set_trace_info,
 )
 from testing_support.validators.validate_custom_event import validate_custom_event_count
@@ -69,6 +67,7 @@ expected_events_on_no_model_error = [
             "role": "system",
             "completion_id": None,
             "sequence": 0,
+            "token_count": 0,
             "vendor": "openai",
             "ingest_source": "Python",
         },
@@ -85,6 +84,7 @@ expected_events_on_no_model_error = [
             "role": "user",
             "completion_id": None,
             "sequence": 1,
+            "token_count": 0,
             "vendor": "openai",
             "ingest_source": "Python",
         },
@@ -234,6 +234,7 @@ expected_events_on_invalid_model_error = [
             "role": "user",
             "completion_id": None,
             "sequence": 0,
+            "token_count": 0,
             "vendor": "openai",
             "ingest_source": "Python",
         },
@@ -260,37 +261,6 @@ expected_events_on_invalid_model_error = [
 @validate_custom_event_count(count=2)
 @background_task()
 def test_chat_completion_invalid_request_error_invalid_model(set_trace_info, sync_openai_client):
-    set_trace_info()
-    with pytest.raises(openai.NotFoundError):
-        add_custom_attribute("llm.conversation_id", "my-awesome-id")
-        sync_openai_client.chat.completions.create(
-            model="does-not-exist",
-            messages=({"role": "user", "content": "Model does not exist."},),
-            temperature=0.7,
-            max_tokens=100,
-        )
-
-
-@dt_enabled
-@reset_core_stats_engine()
-@override_llm_token_callback_settings(llm_token_count_callback)
-@validate_error_trace_attributes(
-    callable_name(openai.NotFoundError),
-    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.code": "model_not_found", "http.statusCode": 404}},
-)
-@validate_span_events(
-    exact_agents={"error.message": "The model `does-not-exist` does not exist or you do not have access to it."}
-)
-@validate_transaction_metrics(
-    "test_chat_completion_error_v1:test_chat_completion_invalid_request_error_invalid_model_with_token_count",
-    scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
-    rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
-    background_task=True,
-)
-@validate_custom_events(add_token_count_to_events(expected_events_on_invalid_model_error))
-@validate_custom_event_count(count=2)
-@background_task()
-def test_chat_completion_invalid_request_error_invalid_model_with_token_count(set_trace_info, sync_openai_client):
     set_trace_info()
     with pytest.raises(openai.NotFoundError):
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
@@ -334,41 +304,6 @@ def test_chat_completion_invalid_request_error_invalid_model_async(loop, set_tra
         )
 
 
-@dt_enabled
-@reset_core_stats_engine()
-@override_llm_token_callback_settings(llm_token_count_callback)
-@validate_error_trace_attributes(
-    callable_name(openai.NotFoundError),
-    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.code": "model_not_found", "http.statusCode": 404}},
-)
-@validate_span_events(
-    exact_agents={"error.message": "The model `does-not-exist` does not exist or you do not have access to it."}
-)
-@validate_transaction_metrics(
-    "test_chat_completion_error_v1:test_chat_completion_invalid_request_error_invalid_model_with_token_count_async",
-    scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
-    rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
-    background_task=True,
-)
-@validate_custom_events(add_token_count_to_events(expected_events_on_invalid_model_error))
-@validate_custom_event_count(count=2)
-@background_task()
-def test_chat_completion_invalid_request_error_invalid_model_with_token_count_async(
-    loop, set_trace_info, async_openai_client
-):
-    set_trace_info()
-    with pytest.raises(openai.NotFoundError):
-        add_custom_attribute("llm.conversation_id", "my-awesome-id")
-        loop.run_until_complete(
-            async_openai_client.chat.completions.create(
-                model="does-not-exist",
-                messages=({"role": "user", "content": "Model does not exist."},),
-                temperature=0.7,
-                max_tokens=100,
-            )
-        )
-
-
 expected_events_on_wrong_api_key_error = [
     (
         {"type": "LlmChatCompletionSummary"},
@@ -398,6 +333,7 @@ expected_events_on_wrong_api_key_error = [
             "role": "user",
             "completion_id": None,
             "sequence": 0,
+            "token_count": 0,
             "vendor": "openai",
             "ingest_source": "Python",
         },
@@ -619,39 +555,6 @@ def test_chat_completion_invalid_request_error_invalid_model_with_raw_response(s
 
 @dt_enabled
 @reset_core_stats_engine()
-@override_llm_token_callback_settings(llm_token_count_callback)
-@validate_error_trace_attributes(
-    callable_name(openai.NotFoundError),
-    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.code": "model_not_found", "http.statusCode": 404}},
-)
-@validate_span_events(
-    exact_agents={"error.message": "The model `does-not-exist` does not exist or you do not have access to it."}
-)
-@validate_transaction_metrics(
-    "test_chat_completion_error_v1:test_chat_completion_invalid_request_error_invalid_model_with_token_count_with_raw_response",
-    scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
-    rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
-    background_task=True,
-)
-@validate_custom_events(add_token_count_to_events(expected_events_on_invalid_model_error))
-@validate_custom_event_count(count=2)
-@background_task()
-def test_chat_completion_invalid_request_error_invalid_model_with_token_count_with_raw_response(
-    set_trace_info, sync_openai_client
-):
-    set_trace_info()
-    with pytest.raises(openai.NotFoundError):
-        add_custom_attribute("llm.conversation_id", "my-awesome-id")
-        sync_openai_client.chat.completions.with_raw_response.create(
-            model="does-not-exist",
-            messages=({"role": "user", "content": "Model does not exist."},),
-            temperature=0.7,
-            max_tokens=100,
-        )
-
-
-@dt_enabled
-@reset_core_stats_engine()
 @validate_error_trace_attributes(
     callable_name(openai.NotFoundError),
     exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.code": "model_not_found", "http.statusCode": 404}},
@@ -669,41 +572,6 @@ def test_chat_completion_invalid_request_error_invalid_model_with_token_count_wi
 @validate_custom_event_count(count=2)
 @background_task()
 def test_chat_completion_invalid_request_error_invalid_model_async_with_raw_response(
-    loop, set_trace_info, async_openai_client
-):
-    set_trace_info()
-    with pytest.raises(openai.NotFoundError):
-        add_custom_attribute("llm.conversation_id", "my-awesome-id")
-        loop.run_until_complete(
-            async_openai_client.chat.completions.with_raw_response.create(
-                model="does-not-exist",
-                messages=({"role": "user", "content": "Model does not exist."},),
-                temperature=0.7,
-                max_tokens=100,
-            )
-        )
-
-
-@dt_enabled
-@reset_core_stats_engine()
-@override_llm_token_callback_settings(llm_token_count_callback)
-@validate_error_trace_attributes(
-    callable_name(openai.NotFoundError),
-    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.code": "model_not_found", "http.statusCode": 404}},
-)
-@validate_span_events(
-    exact_agents={"error.message": "The model `does-not-exist` does not exist or you do not have access to it."}
-)
-@validate_transaction_metrics(
-    "test_chat_completion_error_v1:test_chat_completion_invalid_request_error_invalid_model_with_token_count_async_with_raw_response",
-    scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
-    rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
-    background_task=True,
-)
-@validate_custom_events(add_token_count_to_events(expected_events_on_invalid_model_error))
-@validate_custom_event_count(count=2)
-@background_task()
-def test_chat_completion_invalid_request_error_invalid_model_with_token_count_async_with_raw_response(
     loop, set_trace_info, async_openai_client
 ):
     set_trace_info()

@@ -15,7 +15,7 @@
 import openai
 from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
-    add_token_count_to_events,
+    add_token_counts_to_chat_events,
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
     disabled_ai_monitoring_streaming_settings,
@@ -55,6 +55,9 @@ chat_completion_recorded_events = [
             "response.organization": "new-relic-nkmd8b",
             "request.temperature": 0.7,
             "request.max_tokens": 100,
+            "response.usage.completion_tokens": 75,
+            "response.usage.total_tokens": 101,
+            "response.usage.prompt_tokens": 26,
             "response.choices.finish_reason": "stop",
             "response.headers.llmVersion": "2020-10-01",
             "response.headers.ratelimitLimitRequests": 10000,
@@ -82,6 +85,7 @@ chat_completion_recorded_events = [
             "role": "system",
             "completion_id": None,
             "sequence": 0,
+            "token_count": 0,
             "response.model": "gpt-3.5-turbo-0125",
             "vendor": "openai",
             "ingest_source": "Python",
@@ -101,6 +105,7 @@ chat_completion_recorded_events = [
             "role": "user",
             "completion_id": None,
             "sequence": 1,
+            "token_count": 0,
             "response.model": "gpt-3.5-turbo-0125",
             "vendor": "openai",
             "ingest_source": "Python",
@@ -120,6 +125,7 @@ chat_completion_recorded_events = [
             "role": "assistant",
             "completion_id": None,
             "sequence": 2,
+            "token_count": 0,
             "response.model": "gpt-3.5-turbo-0125",
             "vendor": "openai",
             "is_response": True,
@@ -197,7 +203,7 @@ def test_openai_chat_completion_sync_no_content(set_trace_info, sync_openai_clie
 
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
-@validate_custom_events(add_token_count_to_events(chat_completion_recorded_events))
+@validate_custom_events(add_token_counts_to_chat_events(chat_completion_recorded_events))
 # One summary event, one system message, one user message, and one response message from the assistant
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
@@ -393,7 +399,7 @@ def test_openai_chat_completion_async_with_llm_metadata_no_content(loop, set_tra
 
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
-@validate_custom_events(add_token_count_to_events(chat_completion_recorded_events))
+@validate_custom_events(add_token_counts_to_chat_events(chat_completion_recorded_events))
 # One summary event, one system message, one user message, and one response message from the assistant
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(

@@ -299,7 +299,6 @@ def test_openai_chat_completion_sync_no_content(set_trace_info, sync_openai_clie
         assert resp
 
 
-
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
 @validate_custom_events(

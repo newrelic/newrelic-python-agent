@@ -6,7 +6,7 @@
     "repo": ".",
     "environment_type": "virtualenv",
     "install_timeout": 120,
-    "pythons": ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"],
+    "pythons": ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14"],
     "benchmark_dir": "tests/agent_benchmarks",
     "env_dir": ".asv/env",
     "results_dir": ".asv/results",

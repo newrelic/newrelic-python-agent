@@ -15,8 +15,8 @@
 import openai
 from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
-    add_token_counts_to_chat_events,
     add_token_count_streaming_events,
+    add_token_counts_to_chat_events,
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
     disabled_ai_monitoring_streaming_settings,
@@ -277,7 +277,9 @@ chat_completion_recorded_token_events = [
 
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
-@validate_custom_events(add_token_counts_to_chat_events(add_token_count_streaming_events(chat_completion_recorded_events)))
+@validate_custom_events(
+    add_token_counts_to_chat_events(add_token_count_streaming_events(chat_completion_recorded_events))
+)
 # One summary event, one system message, one user message, and one response message from the assistant
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
@@ -469,7 +471,9 @@ def test_openai_chat_completion_async_no_content(loop, set_trace_info):
 
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
-@validate_custom_events(add_token_counts_to_chat_events(add_token_count_streaming_events(chat_completion_recorded_events)))
+@validate_custom_events(
+    add_token_counts_to_chat_events(add_token_count_streaming_events(chat_completion_recorded_events))
+)
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
     name="test_chat_completion_stream:test_openai_chat_completion_async_with_token_count",

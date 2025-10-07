@@ -44,6 +44,7 @@ def add_token_count_to_embedding_events(expected_events):
             event[1]["response.usage.total_tokens"] = 105
     return events
 
+
 def add_token_count_streaming_events(expected_events):
     events = copy.deepcopy(expected_events)
     for event in events:

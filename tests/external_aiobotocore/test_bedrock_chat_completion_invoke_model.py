@@ -34,8 +34,8 @@ from external_botocore._test_bedrock_chat_completion import (
 )
 from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
-    add_token_counts_to_chat_events,
     add_token_count_streaming_events,
+    add_token_counts_to_chat_events,
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
     disabled_ai_monitoring_streaming_settings,
@@ -207,7 +207,7 @@ def test_bedrock_chat_completion_no_content(set_trace_info, exercise_model, expe
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
 def test_bedrock_chat_completion_with_token_count(set_trace_info, exercise_model, expected_events, expected_metrics):
-    @validate_custom_events(add_token_counts_to_chat_events((add_token_count_streaming_events(expected_events))))
+    @validate_custom_events(add_token_counts_to_chat_events(add_token_count_streaming_events(expected_events)))
     # One summary event, one user message, and one response message from the assistant
     @validate_custom_event_count(count=3)
     @validate_transaction_metrics(

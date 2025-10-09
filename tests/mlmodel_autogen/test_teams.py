@@ -28,6 +28,7 @@ from testing_support.ml_testing_utils import (
 from testing_support.validators.validate_custom_event import validate_custom_event_count
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import validate_error_trace_attributes
+from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_error_event_count import validate_transaction_error_event_count
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
@@ -174,6 +175,13 @@ def add_exclamation(message: str) -> str:
 def compute_sum(a: int, b: int) -> int:
     return a + b
 
+subcomponent_attributes = {
+    "subcomponent": '{"type": "APM-Agent", "name": "pire_agent"}',
+    "subcomponent": '{"type": "APM-Agent", "name": "robot_agent"}',
+    "subcomponent": '{"type": "APM-Tool", "name": "add_exclamation"}',
+    "subcomponent": '{"type": "APM-Tool", "name": "compute_sum"}',
+}
+
 
 @reset_core_stats_engine()
 @validate_custom_event_count(count=8)
@@ -213,6 +221,7 @@ def compute_sum(a: int, b: int) -> int:
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
+@validate_span_events(exact_agents=subcomponent_attributes)
 @background_task()
 def test_run_stream_round_robin_group(loop, set_trace_info, multi_tool_model_client):
     set_trace_info()

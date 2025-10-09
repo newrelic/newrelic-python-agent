@@ -27,6 +27,7 @@ from testing_support.ml_testing_utils import (
 from testing_support.validators.validate_custom_event import validate_custom_event_count
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import validate_error_trace_attributes
+from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_error_event_count import validate_transaction_error_event_count
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
@@ -96,6 +97,10 @@ agent_recorded_event = [
 def add_exclamation(message: str) -> str:
     return f"{message}!"
 
+subcomponent_attributes = {
+    "subcomponent": '{"type": "APM-Agent", "name": "pirate_agent"}',
+    "subcomponent": '{"type": "APM-Tool", "name": "add_exclaation"}',
+}
 
 @reset_core_stats_engine()
 @validate_custom_events(
@@ -127,6 +132,7 @@ def add_exclamation(message: str) -> str:
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
+@validate_span_events(exact_agents=subcomponent_attributes)
 @background_task()
 def test_run_assistant_agent(loop, set_trace_info, single_tool_model_client):
     set_trace_info()
@@ -170,6 +176,7 @@ def test_run_assistant_agent(loop, set_trace_info, single_tool_model_client):
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
+@validate_span_events(exact_agents=subcomponent_attributes)
 @background_task()
 def test_run_stream_assistant_agent(loop, set_trace_info, single_tool_model_client):
     set_trace_info()
@@ -221,6 +228,7 @@ def test_run_stream_assistant_agent(loop, set_trace_info, single_tool_model_clie
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
+@validate_span_events(exact_agents=subcomponent_attributes)
 @background_task()
 def test_run_assistant_agent_no_content(loop, set_trace_info, single_tool_model_client):
     set_trace_info()
@@ -289,6 +297,7 @@ SKIP_IF_AUTOGEN_062 = pytest.mark.skipif(
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
+@validate_span_events(exact_agents=subcomponent_attributes)
 @background_task()
 def test_run_assistant_agent_error(loop, set_trace_info, single_tool_model_client_error):
     set_trace_info()

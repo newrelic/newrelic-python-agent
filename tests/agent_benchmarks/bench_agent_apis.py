@@ -45,7 +45,6 @@ from newrelic.agent import (
     global_settings,
     ignore_transaction,
     in_function,
-    initialize,
     insert_html_snippet,
     message_trace,
     message_transaction,
@@ -57,6 +56,8 @@ from newrelic.agent import (
     record_custom_event,
     record_custom_metric,
     record_custom_metrics,
+    record_log_event,
+    record_ml_event,
     set_background_task,
     set_error_group_callback,
     set_llm_token_count_callback,
@@ -69,6 +70,7 @@ from newrelic.agent import (
     web_transaction,
     wsgi_application,
 )
+from newrelic.api.ml_model import record_llm_feedback_event
 from newrelic.api.transaction import record_dimensional_metric, record_dimensional_metrics
 
 from . import benchmark
@@ -262,20 +264,22 @@ class EventApis:
         record_custom_event("TestEvent", {"attribute1": "value1", "attribute2": 2})
 
     @background_task()
-    def bench_record_exception(self):
-        pass
-
-    @background_task()
     def bench_record_llm_feedback_event(self):
-        pass
+        record_llm_feedback_event(
+            rating="Good",
+            trace_id="123456789abcdefgh",
+            category="informative",
+            message="message",
+            metadata={"foo": "bar"},
+        )
 
     @background_task()
     def bench_record_log_event(self):
-        pass
+        record_log_event("log message", "info", timestamp=1760046878, attributes={"key": "value"})
 
     @background_task()
     def bench_record_ml_event(self):
-        pass
+        record_ml_event("ParamsListEvent", ["not", "a", "dict"])
 
 
 @benchmark

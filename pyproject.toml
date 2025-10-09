@@ -91,7 +91,7 @@ packages = [
 ]
 
 [tool.setuptools.package-data]
-newrelic = ["newrelic.ini", "version.txt", "packages/urllib3/LICENSE.txt", "common/cacert.pem", "scripts/azure-prebuild.sh"]
+newrelic = ["newrelic.ini", "packages/urllib3/LICENSE.txt", "common/cacert.pem", "scripts/azure-prebuild.sh"]
 
 [tool.setuptools_scm]
 write_to = "newrelic/_version.py"

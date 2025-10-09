@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+import json
 import logging
 import sys
 import uuid
@@ -72,6 +72,9 @@ def wrap_on_messages_stream(wrapped, instance, args, kwargs):
     agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
     func_name = callable_name(wrapped)
     function_trace_name = f"{func_name}/{agent_name}"
+
+    agentic_subcomponent_data = {"type": "APM-Agent", "name": agent_name}
+    transaction._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
 
     ft = FunctionTrace(name=function_trace_name, group="Llm/agent/Autogen")
     ft.__enter__()
@@ -182,6 +185,9 @@ async def wrap__execute_tool_call(wrapped, instance, args, kwargs):
     tool_event_dict = _construct_base_tool_event_dict(bound_args, tool_call_data, tool_id, transaction, settings)
 
     tool_name = getattr(tool_call_data, "name", "tool")
+
+    agentic_subcomponent_data = {"type": "APM-Tool", "name": tool_name}
+    transaction._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
 
     func_name = callable_name(wrapped)
     ft = FunctionTrace(name=f"{func_name}/{tool_name}", group="Llm/tool/Autogen")

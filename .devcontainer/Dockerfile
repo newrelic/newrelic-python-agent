@@ -20,13 +20,13 @@ FROM ghcr.io/newrelic/newrelic-python-agent-ci:${IMAGE_TAG}
 USER root
 ARG UID=1001
 ARG GID=${UID}
-ENV HOME=/home/vscode
+ENV HOME=/root
 RUN mkdir -p ${HOME} && \
     groupadd --gid ${GID} vscode && \
     useradd --uid ${UID} --gid ${GID} --home ${HOME} vscode && \
-    chown -R ${UID}:${GID} /home/vscode
+    chown -R ${UID}:${GID} ${HOME}/
 
-# Allow uv to download Python versions manually
+# Restrict uv to only download Python versions manually
 ENV UV_PYTHON_DOWNLOADS=manual
 
 # Set user

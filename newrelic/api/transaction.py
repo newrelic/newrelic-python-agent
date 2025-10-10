@@ -659,6 +659,13 @@ class Transaction:
         return self._sampled
 
     @property
+    def ct_sampled(self):
+        # If DT doesn't sample it CT will.
+        if not self.sampled and (self._settings.distributed_tracing.drop_inprocess_spans.enabled or self._settings.distributed_tracing.unique_spans.enabled):
+            return True
+        return False
+
+    @property
     def priority(self):
         return self._priority
 
@@ -1102,12 +1109,13 @@ class Transaction:
             return
 
         self._compute_sampled_and_priority()
+        sampled = self.sampled or self.ct_sampled
         data = {
             "ty": "App",
             "ac": account_id,
             "ap": application_id,
             "tr": self.trace_id,
-            "sa": self.sampled,
+            "sa": sampled,
             "pr": self.priority,
             "tx": self.guid,
             "ti": int(time.time() * 1000.0),

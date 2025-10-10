@@ -176,9 +176,13 @@ def compute_sum(a: int, b: int) -> int:
     return a + b
 
 subcomponent_attributes = {
-    "subcomponent": '{"type": "APM-Agent", "name": "pire_agent"}',
-    "subcomponent": '{"type": "APM-Agent", "name": "robot_agent"}',
+    "subcomponent": '{"type": "APM-Agent", "name": "pirate_agent"}',
     "subcomponent": '{"type": "APM-Tool", "name": "add_exclamation"}',
+    "subcomponent": '{"type": "APM-Agent", "name": "robot_agent"}',
+    "subcomponent": '{"type": "APM-Tool", "name": "compute_sum"}',
+    "subcomponent": '{"type": "APM-Agent", "name": "pirate_agent"}',
+    "subcomponent": '{"type": "APM-Tool", "name": "add_exclamation"}',
+    "subcomponent": '{"type": "APM-Agent", "name": "robot_agent"}',
     "subcomponent": '{"type": "APM-Tool", "name": "compute_sum"}',
 }
 

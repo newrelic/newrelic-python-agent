@@ -79,10 +79,8 @@ class LoopNode(_LoopNode, GenericNodeMixin):
             start_time=start_time, end_time=end_time, name=name, params=params, children=children, label=None
         )
 
-    def span_event(self, *args, **kwargs):
-        attrs = super().span_event(*args, **kwargs)
-        i_attrs = attrs[0]
-
+    def span_event(self, settings, base_attrs=None, parent_guid=None, attr_class=dict):
+        i_attrs = (base_attrs and base_attrs.copy()) or attr_class()
         i_attrs["name"] = f"EventLoop/Wait/{self.name}"
 
-        return attrs
+        return super().span_event(settings, base_attrs=i_attrs, parent_guid=parent_guid, attr_class=attr_class)

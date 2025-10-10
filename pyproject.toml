@@ -37,6 +37,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
     "Topic :: System :: Monitoring",
@@ -90,7 +91,7 @@ packages = [
 ]
 
 [tool.setuptools.package-data]
-newrelic = ["newrelic.ini", "version.txt", "packages/urllib3/LICENSE.txt", "common/cacert.pem", "scripts/azure-prebuild.sh"]
+newrelic = ["newrelic.ini", "packages/urllib3/LICENSE.txt", "common/cacert.pem", "scripts/azure-prebuild.sh"]
 
 [tool.setuptools_scm]
 write_to = "newrelic/_version.py"

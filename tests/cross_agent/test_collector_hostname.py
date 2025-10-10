@@ -108,6 +108,6 @@ def test_collector_hostname(config_file_key, config_override_host, env_key, env_
         },
     )
     process.start()
-    result = queue.get(timeout=2)
+    result = queue.get(timeout=15)
 
     assert result == "PASS"

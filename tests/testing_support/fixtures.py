@@ -351,12 +351,12 @@ def collector_available_fixture(collector_agent_registration):
     settings = global_settings()
 
     # Wait for the application to become active.
-    timeout = (settings.startup_timeout or 0) + 10.0
+    timeout = _timeout = (settings.startup_timeout or 0) + 10.0
     while not application.active and timeout > 0:
         time.sleep(0.1)
         timeout -= 0.1
 
-    assert application.active, f"Application failed to activate after {timeout} seconds."
+    assert application.active, f"Application failed to activate after {_timeout} seconds."
 
 
 def raise_background_exceptions(timeout=5.0):

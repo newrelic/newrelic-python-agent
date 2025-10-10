@@ -134,7 +134,6 @@ if not with_setuptools:
             "package_data": {
                 "newrelic": [
                     "newrelic.ini",
-                    "version.txt",
                     "packages/urllib3/LICENSE.txt",
                     "common/cacert.pem",
                     "scripts/azure-prebuild.sh",

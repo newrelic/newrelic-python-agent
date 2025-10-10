@@ -41,6 +41,8 @@ jobs:
             os: ubuntu-24.04
           - wheel: cp313-manylinux
             os: ubuntu-24.04
+          - wheel: cp314-manylinux
+            os: ubuntu-24.04
           # Linux musllibc
           - wheel: cp38-musllinux
             os: ubuntu-24.04
@@ -54,9 +56,13 @@ jobs:
             os: ubuntu-24.04
           - wheel: cp313-musllinux
             os: ubuntu-24.04
+          - wheel: cp314-musllinux
+            os: ubuntu-24.04
           # Windows
           # Windows wheels won't but published until the full release announcement.
           # - wheel: cp313-win
+          #   os: windows-2025
+          # - wheel: cp314-win
           #   os: windows-2025
 
     name: Build wheels for ${{ matrix.wheel }}

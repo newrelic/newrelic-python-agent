@@ -169,16 +169,15 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
             start_time=start_time, end_time=end_time, name=name, params=params, children=children, label=None
         )
 
-    def span_event(self, *args, **kwargs):
+    def span_event(self, settings, base_attrs=None, parent_guid=None, attr_class=dict):
         self.agent_attributes["http.url"] = self.http_url
-        attrs = super().span_event(*args, **kwargs)
-        i_attrs = attrs[0]
 
+        i_attrs = (base_attrs and base_attrs.copy()) or attr_class()
         i_attrs["category"] = "http"
         i_attrs["span.kind"] = "client"
-        _, i_attrs["component"] = attribute.process_user_attribute("component", self.library)
+        i_attrs["component"] = self.library
 
         if self.method:
-            _, i_attrs["http.method"] = attribute.process_user_attribute("http.method", self.method)
+            i_attrs["http.method"] = self.method
 
-        return attrs
+        return super().span_event(settings, base_attrs=i_attrs, parent_guid=parent_guid, attr_class=attr_class)

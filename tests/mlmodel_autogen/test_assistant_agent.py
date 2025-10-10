@@ -99,7 +99,7 @@ def add_exclamation(message: str) -> str:
 
 subcomponent_attributes = {
     "subcomponent": '{"type": "APM-Agent", "name": "pirate_agent"}',
-    "subcomponent": '{"type": "APM-Tool", "name": "add_exclaation"}',
+    "subcomponent": '{"type": "APM-Tool", "name": "add_exclamation"}',
 }
 
 @reset_core_stats_engine()

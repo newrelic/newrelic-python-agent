@@ -419,21 +419,31 @@ def test_inbound_dt_payload_acceptance(trusted_account_key):
 
 
 @pytest.mark.parametrize(
-    "sampled,remote_parent_sampled,remote_parent_not_sampled,expected_sampled,expected_priority,expected_adaptive_sampling_algo_called",
+    "traceparent_sampled,newrelic_sampled,remote_parent_sampled,remote_parent_not_sampled,expected_sampled,expected_priority,expected_adaptive_sampling_algo_called",
     (
-        (True, "default", "default", None, None, True),  # Uses sampling algo.
-        (True, "always_on", "default", True, 2, False),  # Always sampled.
-        (True, "always_off", "default", False, 0, False),  # Never sampled.
-        (False, "default", "default", None, None, True),  # Uses sampling algo.
-        (False, "always_on", "default", None, None, True),  # Uses sampling alog.
-        (False, "always_off", "default", None, None, True),  # Uses sampling algo.
-        (True, "default", "always_on", None, None, True),  # Uses sampling algo.
-        (True, "default", "always_off", None, None, True),  # Uses sampling algo.
-        (False, "default", "always_on", True, 2, False),  # Always sampled.
-        (False, "default", "always_off", False, 0, False),  # Never sampled.
+        (True, None, "default", "default", None, None, True),  # Uses sampling algo.
+        (True, None, "always_on", "default", True, 2, False),  # Always sampled.
+        (True, None, "always_off", "default", False, 0, False),  # Never sampled.
+        (False, None, "default", "default", None, None, True),  # Uses sampling algo.
+        (False, None, "always_on", "default", None, None, True),  # Uses sampling alog.
+        (False, None, "always_off", "default", None, None, True),  # Uses sampling algo.
+        (True, None, "default", "always_on", None, None, True),  # Uses sampling algo.
+        (True, None, "default", "always_off", None, None, True),  # Uses sampling algo.
+        (False, None, "default", "always_on", True, 2, False),  # Always sampled.
+        (False, None, "default", "always_off", False, 0, False),  # Never sampled.
+        (None, True, "default", "default", None, None, True),  # Uses sampling algo.
+        (None, True, "always_on", "default", True, 2, False),  # Always sampled.
+        (None, True, "always_off", "default", False, 0, False),  # Never sampled.
+        (None, False, "default", "default", None, None, True),  # Uses sampling algo.
+        (None, False, "always_on", "default", None, None, True),  # Uses sampling alog.
+        (None, False, "always_off", "default", None, None, True),  # Uses sampling algo.
+        (None, True, "default", "always_on", None, None, True),  # Uses sampling algo.
+        (None, True, "default", "always_off", None, None, True),  # Uses sampling algo.
+        (None, False, "default", "always_on", True, 2, False),  # Always sampled.
+        (None, False, "default", "always_off", False, 0, False),  # Never sampled.
     ),
 )
-def test_distributed_trace_w3cparent_sampling_decision(
+def test_distributed_trace_remote_parent_sampling_decision(
     sampled,
     remote_parent_sampled,
     remote_parent_not_sampled,
@@ -471,10 +481,16 @@ def test_distributed_trace_w3cparent_sampling_decision(
     def _test():
         txn = current_transaction()
 
-        headers = {
-            "traceparent": f"00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-{int(sampled):02x}",
-            "tracestate": "rojo=f06a0ba902b7,congo=t61rcWkgMzE",
-        }
+        if traceparent_sampled is not None:
+            headers = {
+                "traceparent": f"00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-{int(traceparent_sampled):02x}",
+                "tracestate": "33@nr=0-0-33-2827902-7d3efb1b173fecfa-e8b91a159289ff74-1-1.23456-1518469636035"
+                "newrelic": "{\"v\":[0,1],\"d\":{\"ty\":\"Mobile\",\"ac\":\"123\",\"ap\":\"51424\",\"id\":\"5f474d64b9cc9b2a\",\"tr\":\"6e2fea0b173fdad0\",\"pr\":0.1234,\"sa\":true,\"ti\":1482959525577,\"tx\":\"27856f70d3d314b7\"}}"
+            }
+        else:
+            headers = {
+                "newrelic": "{\"v\":[0,1],\"d\":{\"ty\":\"Mobile\",\"ac\":\"123\",\"ap\":\"51424\",\"id\":\"5f474d64b9cc9b2a\",\"tr\":\"6e2fea0b173fdad0\",\"pr\":0.1234,\"sa\":%s,\"ti\":1482959525577,\"tx\":\"27856f70d3d314b7\"}}"%(str(newrelic_sampled).lower())
+            }
         accept_distributed_trace_headers(headers)
 
     _test()

@@ -13,7 +13,6 @@
 # limitations under the License.
 
 
-import asyncio
 import json
 
 import pytest
@@ -46,13 +45,16 @@ def run_sync(schema):
 
 
 def run_async(schema):
+    import asyncio
+
+    loop = asyncio.new_event_loop()
+
     def _run_async(query, middleware=None):
         from graphql.language.source import Source
 
         if middleware is not None:
             pytest.skip("Middleware not supported in Strawberry.")
 
-        loop = asyncio.get_event_loop()
         response = loop.run_until_complete(schema.execute(query))
 
         if (isinstance(query, str) and "error" not in query) or (

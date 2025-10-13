@@ -47,9 +47,10 @@ def run_async(schema):
 
     from graphql import graphql
 
+    loop = asyncio.new_event_loop()
+
     def _run_async(query, middleware=None):
         coro = graphql(schema, query, middleware=middleware)
-        loop = asyncio.get_event_loop()
         response = loop.run_until_complete(coro)
 
         check_response(query, response)

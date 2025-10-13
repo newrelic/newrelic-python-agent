@@ -102,6 +102,7 @@ jobs:
       - name: Download Coverage Artifacts
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # 5.0.0
         with:
+          pattern: coverage-*
           path: ./
 
       - name: Combine Coverage
@@ -117,6 +118,31 @@ jobs:
           files: coverage.xml
           fail_ci_if_error: true
           token: ${{ secrets.CODECOV_TOKEN }}
+
+  # Combine and upload coverage data
+  summary:
+    runs-on: ubuntu-24.04
+    if: success() || failure() # Does not run on cancelled workflows
+    needs:
+      - tests
+
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
+      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # 6.0.0
+        with:
+          python-version: "3.13"
+          architecture: x64
+
+      - name: Download Results Artifacts
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # 5.0.0
+        with:
+          pattern: results-*
+          path: ./
+
+      - name: Report Results Summary
+        run: |
+          find . -name "*-results.json" -exec mv {} ./ \;
+          python ./.github/scripts/tox-summary.py
 
   # ======================================
   # OS Specific Core Test Suite Runners
@@ -155,22 +181,36 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+          tox -l | python ./.github/scripts/get-envs.py
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel \
+            -vv -e ${{ steps.get-envs.outputs.envs }} \
+            --result-json=./.tox/${{ github.job }}-${{ matrix.group-number }}-${{ github.run_id }}-${{ job.check_run_id }}-results.json \
+            --exit-and-dump-after=900
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload Results Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
+        with:
+          name: results-${{ github.job }}-${{ strategy.job-index }}
+          path: ./.tox/*-results.json
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
@@ -206,22 +246,36 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+          tox -l | python ./.github/scripts/get-envs.py
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel \
+            -vv -e ${{ steps.get-envs.outputs.envs }} \
+            --result-json=./.tox/${{ github.job }}-${{ matrix.group-number }}-${{ github.run_id }}-${{ job.check_run_id }}-results.json \
+            --exit-and-dump-after=900
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload Results Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
+        with:
+          name: results-${{ github.job }}-${{ strategy.job-index }}
+          path: ./.tox/*-results.json
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
@@ -250,7 +304,9 @@ jobs:
       - name: Install Python
         uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # 6.0.0
         with:
-          python-version: "3.13"
+          python-version: |
+            3.13
+            3.14
 
       - name: Install uv
         uses: astral-sh/setup-uv@3259c6206f993105e3a61b142c2d97bf4b9ef83d # 7.1.0
@@ -262,22 +318,36 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+          tox -l | python ./.github/scripts/get-envs.py
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel \
+            -vv -e ${{ steps.get-envs.outputs.envs }} \
+            --result-json=./.tox/${{ github.job }}-${{ matrix.group-number }}-${{ github.run_id }}-${{ job.check_run_id }}-results.json \
+            --exit-and-dump-after=900
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload Results Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
+        with:
+          name: results-${{ github.job }}-${{ strategy.job-index }}
+          path: ./.tox/*-results.json
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
@@ -306,7 +376,9 @@ jobs:
       - name: Install Python
         uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # 6.0.0
         with:
-          python-version: "3.13"
+          python-version: |
+            3.13
+            3.14
 
       - name: Install uv
         uses: astral-sh/setup-uv@3259c6206f993105e3a61b142c2d97bf4b9ef83d # 7.1.0
@@ -318,22 +390,36 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+          tox -l | python ./.github/scripts/get-envs.py
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel \
+            -vv -e ${{ steps.get-envs.outputs.envs }} \
+            --result-json=./.tox/${{ github.job }}-${{ matrix.group-number }}-${{ github.run_id }}-${{ job.check_run_id }}-results.json \
+            --exit-and-dump-after=900
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload Results Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
+        with:
+          name: results-${{ github.job }}-${{ strategy.job-index }}
+          path: ./.tox/*-results.json
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
@@ -374,22 +460,36 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+          tox -l | python ./.github/scripts/get-envs.py
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel \
+            -vv -e ${{ steps.get-envs.outputs.envs }} \
+            --result-json=./.tox/${{ github.job }}-${{ matrix.group-number }}-${{ github.run_id }}-${{ job.check_run_id }}-results.json \
+            --exit-and-dump-after=900
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload Results Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
+        with:
+          name: results-${{ github.job }}-${{ strategy.job-index }}
+          path: ./.tox/*-results.json
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
@@ -443,22 +543,36 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+          tox -l | python ./.github/scripts/get-envs.py
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel \
+            -vv -e ${{ steps.get-envs.outputs.envs }} \
+            --result-json=./.tox/${{ github.job }}-${{ matrix.group-number }}-${{ github.run_id }}-${{ job.check_run_id }}-results.json \
+            --exit-and-dump-after=900
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload Results Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
+        with:
+          name: results-${{ github.job }}-${{ strategy.job-index }}
+          path: ./.tox/*-results.json
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
@@ -509,22 +623,36 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+          tox -l | python ./.github/scripts/get-envs.py
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel \
+            -vv -e ${{ steps.get-envs.outputs.envs }} \
+            --result-json=./.tox/${{ github.job }}-${{ matrix.group-number }}-${{ github.run_id }}-${{ job.check_run_id }}-results.json \
+            --exit-and-dump-after=900
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload Results Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
+        with:
+          name: results-${{ github.job }}-${{ strategy.job-index }}
+          path: ./.tox/*-results.json
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
@@ -576,22 +704,36 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+          tox -l | python ./.github/scripts/get-envs.py
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel \
+            -vv -e ${{ steps.get-envs.outputs.envs }} \
+            --result-json=./.tox/${{ github.job }}-${{ matrix.group-number }}-${{ github.run_id }}-${{ job.check_run_id }}-results.json \
+            --exit-and-dump-after=900
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload Results Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
+        with:
+          name: results-${{ github.job }}-${{ strategy.job-index }}
+          path: ./.tox/*-results.json
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
@@ -647,22 +789,36 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+          tox -l | python ./.github/scripts/get-envs.py
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel \
+            -vv -e ${{ steps.get-envs.outputs.envs }} \
+            --result-json=./.tox/${{ github.job }}-${{ matrix.group-number }}-${{ github.run_id }}-${{ job.check_run_id }}-results.json \
+            --exit-and-dump-after=900
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload Results Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
+        with:
+          name: results-${{ github.job }}-${{ strategy.job-index }}
+          path: ./.tox/*-results.json
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
@@ -698,22 +854,36 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+          tox -l | python ./.github/scripts/get-envs.py
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }}
+          tox run \
+            -vv -e ${{ steps.get-envs.outputs.envs }} \
+            --result-json=./.tox/${{ github.job }}-${{ matrix.group-number }}-${{ github.run_id }}-${{ job.check_run_id }}-results.json \
+            --exit-and-dump-after=900
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload Results Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
+        with:
+          name: results-${{ github.job }}-${{ strategy.job-index }}
+          path: ./.tox/*-results.json
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
@@ -774,22 +944,36 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+          tox -l | python ./.github/scripts/get-envs.py
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel \
+            -vv -e ${{ steps.get-envs.outputs.envs }} \
+            --result-json=./.tox/${{ github.job }}-${{ matrix.group-number }}-${{ github.run_id }}-${{ job.check_run_id }}-results.json \
+            --exit-and-dump-after=900
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload Results Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
+        with:
+          name: results-${{ github.job }}-${{ strategy.job-index }}
+          path: ./.tox/*-results.json
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
@@ -838,22 +1022,36 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+          tox -l | python ./.github/scripts/get-envs.py
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel \
+            -vv -e ${{ steps.get-envs.outputs.envs }} \
+            --result-json=./.tox/${{ github.job }}-${{ matrix.group-number }}-${{ github.run_id }}-${{ job.check_run_id }}-results.json \
+            --exit-and-dump-after=900
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload Results Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
+        with:
+          name: results-${{ github.job }}-${{ strategy.job-index }}
+          path: ./.tox/*-results.json
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
@@ -902,22 +1100,36 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+          tox -l | python ./.github/scripts/get-envs.py
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel \
+            -vv -e ${{ steps.get-envs.outputs.envs }} \
+            --result-json=./.tox/${{ github.job }}-${{ matrix.group-number }}-${{ github.run_id }}-${{ job.check_run_id }}-results.json \
+            --exit-and-dump-after=900
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload Results Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
+        with:
+          name: results-${{ github.job }}-${{ strategy.job-index }}
+          path: ./.tox/*-results.json
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
@@ -966,22 +1178,36 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+          tox -l | python ./.github/scripts/get-envs.py
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel \
+            -vv -e ${{ steps.get-envs.outputs.envs }} \
+            --result-json=./.tox/${{ github.job }}-${{ matrix.group-number }}-${{ github.run_id }}-${{ job.check_run_id }}-results.json \
+            --exit-and-dump-after=900
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload Results Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
+        with:
+          name: results-${{ github.job }}-${{ strategy.job-index }}
+          path: ./.tox/*-results.json
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
@@ -1035,22 +1261,36 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+          tox -l | python ./.github/scripts/get-envs.py
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel \
+            -vv -e ${{ steps.get-envs.outputs.envs }} \
+            --result-json=./.tox/${{ github.job }}-${{ matrix.group-number }}-${{ github.run_id }}-${{ job.check_run_id }}-results.json \
+            --exit-and-dump-after=900
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload Results Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
+        with:
+          name: results-${{ github.job }}-${{ strategy.job-index }}
+          path: ./.tox/*-results.json
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
@@ -1104,22 +1344,36 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+          tox -l | python ./.github/scripts/get-envs.py
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel \
+            -vv -e ${{ steps.get-envs.outputs.envs }} \
+            --result-json=./.tox/${{ github.job }}-${{ matrix.group-number }}-${{ github.run_id }}-${{ job.check_run_id }}-results.json \
+            --exit-and-dump-after=900
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload Results Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
+        with:
+          name: results-${{ github.job }}-${{ strategy.job-index }}
+          path: ./.tox/*-results.json
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
@@ -1169,22 +1423,36 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+          tox -l | python ./.github/scripts/get-envs.py
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel \
+            -vv -e ${{ steps.get-envs.outputs.envs }} \
+            --result-json=./.tox/${{ github.job }}-${{ matrix.group-number }}-${{ github.run_id }}-${{ job.check_run_id }}-results.json \
+            --exit-and-dump-after=900
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload Results Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
+        with:
+          name: results-${{ github.job }}-${{ strategy.job-index }}
+          path: ./.tox/*-results.json
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
@@ -1236,22 +1504,36 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+          tox -l | python ./.github/scripts/get-envs.py
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel \
+            -vv -e ${{ steps.get-envs.outputs.envs }} \
+            --result-json=./.tox/${{ github.job }}-${{ matrix.group-number }}-${{ github.run_id }}-${{ job.check_run_id }}-results.json \
+            --exit-and-dump-after=900
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload Results Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
+        with:
+          name: results-${{ github.job }}-${{ strategy.job-index }}
+          path: ./.tox/*-results.json
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
@@ -1302,22 +1584,36 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+          tox -l | python ./.github/scripts/get-envs.py
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel \
+            -vv -e ${{ steps.get-envs.outputs.envs }} \
+            --result-json=./.tox/${{ github.job }}-${{ matrix.group-number }}-${{ github.run_id }}-${{ job.check_run_id }}-results.json \
+            --exit-and-dump-after=900
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload Results Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
+        with:
+          name: results-${{ github.job }}-${{ strategy.job-index }}
+          path: ./.tox/*-results.json
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
@@ -1368,22 +1664,36 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+          tox -l | python ./.github/scripts/get-envs.py
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel \
+            -vv -e ${{ steps.get-envs.outputs.envs }} \
+            --result-json=./.tox/${{ github.job }}-${{ matrix.group-number }}-${{ github.run_id }}-${{ job.check_run_id }}-results.json \
+            --exit-and-dump-after=900
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload Results Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
+        with:
+          name: results-${{ github.job }}-${{ strategy.job-index }}
+          path: ./.tox/*-results.json
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
@@ -1433,22 +1743,36 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+          tox -l | python ./.github/scripts/get-envs.py
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel \
+            -vv -e ${{ steps.get-envs.outputs.envs }} \
+            --result-json=./.tox/${{ github.job }}-${{ matrix.group-number }}-${{ github.run_id }}-${{ job.check_run_id }}-results.json \
+            --exit-and-dump-after=900
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload Results Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
+        with:
+          name: results-${{ github.job }}-${{ strategy.job-index }}
+          path: ./.tox/*-results.json
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
@@ -1497,22 +1821,36 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+          tox -l | python ./.github/scripts/get-envs.py
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel \
+            -vv -e ${{ steps.get-envs.outputs.envs }} \
+            --result-json=./.tox/${{ github.job }}-${{ matrix.group-number }}-${{ github.run_id }}-${{ job.check_run_id }}-results.json \
+            --exit-and-dump-after=900
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload Results Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
+        with:
+          name: results-${{ github.job }}-${{ strategy.job-index }}
+          path: ./.tox/*-results.json
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
@@ -1602,22 +1940,36 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+          tox -l | python ./.github/scripts/get-envs.py
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel \
+            -vv -e ${{ steps.get-envs.outputs.envs }} \
+            --result-json=./.tox/${{ github.job }}-${{ matrix.group-number }}-${{ github.run_id }}-${{ job.check_run_id }}-results.json \
+            --exit-and-dump-after=900
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload Results Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
+        with:
+          name: results-${{ github.job }}-${{ strategy.job-index }}
+          path: ./.tox/*-results.json
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
@@ -1668,22 +2020,36 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+          tox -l | python ./.github/scripts/get-envs.py
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel \
+            -vv -e ${{ steps.get-envs.outputs.envs }} \
+            --result-json=./.tox/${{ github.job }}-${{ matrix.group-number }}-${{ github.run_id }}-${{ job.check_run_id }}-results.json \
+            --exit-and-dump-after=900
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload Results Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
+        with:
+          name: results-${{ github.job }}-${{ strategy.job-index }}
+          path: ./.tox/*-results.json
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
@@ -1732,22 +2098,36 @@ jobs:
       - name: Get Environments
         id: get-envs
         run: |
-          echo "envs=$(tox -l | python ./.github/scripts/get-envs.py)" >> "$GITHUB_OUTPUT"
+          tox -l | python ./.github/scripts/get-envs.py
         env:
           GROUP_NUMBER: ${{ matrix.group-number }}
 
       - name: Test
         run: |
-          tox -vv -e ${{ steps.get-envs.outputs.envs }} -p auto
+          tox run-parallel \
+            -vv -e ${{ steps.get-envs.outputs.envs }} \
+            --result-json=./.tox/${{ github.job }}-${{ matrix.group-number }}-${{ github.run_id }}-${{ job.check_run_id }}-results.json \
+            --exit-and-dump-after=900
         env:
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
           path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload Results Artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        if: always()
+        with:
+          name: results-${{ github.job }}-${{ strategy.job-index }}
+          path: ./.tox/*-results.json
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1

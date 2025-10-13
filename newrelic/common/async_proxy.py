@@ -15,7 +15,12 @@
 import logging
 import time
 
-from newrelic.common.coroutine import is_asyncio_coroutine, is_coroutine_callable, is_generator_function
+from newrelic.common.coroutine import (
+    is_async_generator_function,
+    is_asyncio_coroutine,
+    is_coroutine_callable,
+    is_generator_function,
+)
 from newrelic.common.object_wrapper import ObjectProxy
 from newrelic.core.trace_cache import trace_cache
 
@@ -29,6 +34,7 @@ class TransactionContext:
         self.enter_time = None
         self.transaction = None
         self.transaction_init = transaction_init
+        self.is_async_generator = False
 
     def pre_close(self):
         # If close is called prior to the start of the coroutine do not create
@@ -90,11 +96,34 @@ class TransactionContext:
             except:
                 CancelledError = GeneratorExit
 
-        # case: coroutine completed or cancelled
-        if exc is StopIteration or exc is GeneratorExit or exc is CancelledError:
+        if exc is StopAsyncIteration:
+            # If an async generator completes normally, complete the transaction without error.
+            if self.is_async_generator:
+                self.transaction.__exit__(None, None, None)
+            # If a non-async generator reaches this, complete the transaction and report as an error.
+            else:
+                self.transaction.__exit__(exc, value, tb)
+
+        elif exc is StopIteration:
+            # If a non-async generator completes normally, complete the transaction without error.
+            if not self.is_async_generator:
+                self.transaction.__exit__(None, None, None)
+
+            # If an async generator reaches this, don't complete the transaction as this is
+            # caused by yielding an item from the generator. This is due to completing the
+            # underlying coroutine which is a generator internally and will raise StopIteration.
+            # We need to wait until the async generator itself completes normally with
+            # a final StopAsyncIteration.
+
+            # Note: This block is equivalent to "else: pass".
+            # If this code block is unnested in the future, that should be made explicit.
+
+        # If coroutine was cancelled, either by asyncio.CancelledError, .close(), or .aclose(),
+        # complete the transaction without error.
+        elif exc in (GeneratorExit, CancelledError):
             self.transaction.__exit__(None, None, None)
 
-        # case: coroutine completed because of error
+        # Unexpected exception, complete the transaction and report as an error.
         elif exc:
             self.transaction.__exit__(exc, value, tb)
 
@@ -151,9 +180,33 @@ class CoroutineProxy(Coroutine):
         return GeneratorProxy(self.__wrapped__, self._nr_context)
 
 
+class AsyncGeneratorProxy(ObjectProxy):
+    def __init__(self, wrapped, context):
+        super().__init__(wrapped)
+        self._nr_context = context
+        self._nr_context.is_async_generator = True
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self):
+        return await self.asend(None)
+
+    async def asend(self, value):
+        return await CoroutineProxy(self.__wrapped__.asend(value), self._nr_context)
+
+    async def athrow(self, *args, **kwargs):
+        return await CoroutineProxy(self.__wrapped__.athrow(*args, **kwargs), self._nr_context)
+
+    async def aclose(self):
+        return await CoroutineProxy(self.__wrapped__.aclose(), self._nr_context)
+
+
 def async_proxy(wrapped):
     if is_coroutine_callable(wrapped):
         return CoroutineProxy
+    elif is_async_generator_function(wrapped):
+        return AsyncGeneratorProxy
     elif is_generator_function(wrapped):
         if is_asyncio_coroutine(wrapped):
             return AwaitableGeneratorProxy

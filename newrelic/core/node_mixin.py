@@ -106,12 +106,19 @@ class GenericNodeMixin:
                     # ids is the list of span guids that share this unqiue exit span.
                     a_minimized_attrs["nr.ids"] = []
                     a_minimized_attrs["nr.durations"] = self.duration
-                    ct_exit_spans[span_attrs] = [a_minimized_attrs]
+                    ct_exit_spans[span_attrs] = [i_attrs, a_minimized_attrs]
                     return [i_attrs, {}, a_minimized_attrs]
                 # If this is an exit span we've already seen, add it's guid to the list
                 # of ids on the seen span and return None.
-                ct_exit_spans[span_attrs][0]["nr.ids"].append(self.guid)
-                ct_exit_spans[span_attrs][0]["nr.durations"] += self.duration
+                ct_exit_spans[span_attrs][1]["nr.ids"].append(self.guid)
+                # Compute the new start and end time for all compressed spans and use
+                # that to set the duration for all compressed spans.
+                new_start_time = min(ct_exit_spans[span_attrs][0]["timestamp"], i_attrs["timestamp"])
+                new_end_time = max(i_attrs["timestamp"]/1000 + self.duration, ct_exit_spans[span_attrs][0]["timestamp"]/1000 + ct_exit_spans[span_attrs][1]["nr.durations"])
+                ct_exit_spans[span_attrs][1]["nr.durations"] = new_end_time - new_start_time
+                # Reset the start time of the compressed span to be the start time of
+                # the oldest compressed span.
+                ct_exit_spans[span_attrs][0]["timestamp"] = new_start_time
                 return None
 
     def span_events(self, settings, base_attrs=None, parent_guid=None, attr_class=dict, partial_granularity_sampled=False, ct_exit_spans=None):

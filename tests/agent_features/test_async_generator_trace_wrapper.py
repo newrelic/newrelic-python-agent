@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import functools
+import gc
+import sys
 import time
 
 import pytest
@@ -30,6 +32,7 @@ from newrelic.api.memcache_trace import memcache_trace
 from newrelic.api.message_trace import message_trace
 
 asyncio = pytest.importorskip("asyncio")
+is_pypy = hasattr(sys, "pypy_version_info")
 
 
 @pytest.mark.parametrize(
@@ -182,17 +185,17 @@ def test_async_generator_handles_terminal_nodes(event_loop):
 
 
 @validate_transaction_metrics(
-    "test_async_generator_close_ends_trace",
+    "test_async_generator_aclose_ends_trace",
     background_task=True,
     scoped_metrics=[("Function/agen", 1)],
     rollup_metrics=[("Function/agen", 1)],
 )
-def test_async_generator_close_ends_trace(event_loop):
+def test_async_generator_aclose_ends_trace(event_loop):
     @function_trace(name="agen")
     async def agen():
         yield
 
-    @background_task(name="test_async_generator_close_ends_trace")
+    @background_task(name="test_async_generator_aclose_ends_trace")
     async def _test():
         gen = agen()
 

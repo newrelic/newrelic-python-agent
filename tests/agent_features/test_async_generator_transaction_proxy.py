@@ -13,6 +13,8 @@
 # limitations under the License.
 
 import functools
+import gc
+import sys
 import time
 
 import pytest
@@ -24,6 +26,7 @@ from newrelic.api.background_task import background_task
 from newrelic.api.web_transaction import web_transaction
 
 asyncio = pytest.importorskip("asyncio")
+is_pypy = hasattr(sys, "pypy_version_info")
 
 
 @pytest.mark.parametrize(
@@ -116,9 +119,9 @@ def test_async_generator_caught_exception(event_loop):
     assert full_metrics[(metric_key, "")].total_call_time >= 0.2
 
 
-@validate_transaction_metrics("test_async_generator_close_ends_trace", background_task=True)
-def test_async_generator_close_ends_trace(event_loop):
-    @background_task(name="test_async_generator_close_ends_trace")
+@validate_transaction_metrics("test_async_generator_aclose_ends_trace", background_task=True)
+def test_async_generator_aclose_ends_trace(event_loop):
+    @background_task(name="test_async_generator_aclose_ends_trace")
     async def agen():
         yield
 

@@ -1065,14 +1065,14 @@ class Transaction:
                 remote_parent_not_sampled_setting = self.settings.distributed_tracing.sampler.full_granularity.remote_parent_not_sampled,
             )
             _logger.debug("Full granularity sampling decision was %s with priority=%s.", sampled, priority)
-            if computed_sampled:
+            if computed_sampled or not self.settings.distributed_tracing.sampler.partial_granularity.enabled:
                 self._priority = computed_priority
                 self._sampled = computed_sampled
                 self._sampling_decision_made = True
                 return
 
         # If full granularity is not going to sample, let partial granularity decide.
-        if self.settings.distributed_tracing.sampler.partial_granularity.enabled:
+        if not self.settings.distributed_tracing.sampler.partial_granularity.enabled:
             _logger.debug("Partial granularity tracing is enabled. Asking if partial granularity wants to sample.")
             self._priority, self._sampled = self._compute_sampled_and_priority(
                 priority,
@@ -1237,7 +1237,6 @@ class Transaction:
             return False
 
         try:
-            self._remote_parent_sampled = payload.get("sa")
             version = payload.get("v")
             major_version = version and int(version[0])
 
@@ -1258,7 +1257,7 @@ class Transaction:
             if not any(k in data for k in ("id", "tx")):
                 self._record_supportability("Supportability/DistributedTrace/AcceptPayload/ParseException")
                 return False
-
+            self._remote_parent_sampled = data.get("sa")
             settings = self._settings
             account_id = data.get("ac")
             trusted_account_key = settings.trusted_account_key or (
@@ -1349,7 +1348,7 @@ class Transaction:
             try:
                 traceparent = ensure_str(traceparent).strip()
                 data = W3CTraceParent.decode(traceparent)
-                self._remote_parent_sampled = data.get("sa")
+                self._remote_parent_sampled = data.pop("sa", None)
             except:
                 data = None
 

@@ -84,7 +84,7 @@ class MyException(Exception):
     scoped_metrics=[("Function/agen", 1)],
     rollup_metrics=[("Function/agen", 1)],
 )
-@validate_transaction_errors(errors=["test_async_generator_trace:MyException"])
+@validate_transaction_errors(errors=["test_async_generator_trace_wrapper:MyException"])
 def test_async_generator_error(event_loop):
     @function_trace(name="agen")
     async def agen():

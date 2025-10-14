@@ -175,6 +175,7 @@ def add_exclamation(message: str) -> str:
 def compute_sum(a: int, b: int) -> int:
     return a + b
 
+
 subcomponent_attributes = {
     "subcomponent": '{"type": "APM-Agent", "name": "pirate_agent"}',
     "subcomponent": '{"type": "APM-Tool", "name": "add_exclamation"}',
@@ -225,7 +226,10 @@ subcomponent_attributes = {
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
-@validate_span_events(exact_agents=subcomponent_attributes)
+@validate_span_events(count=2, exact_agents={"subcomponent": '{"type": "APM-Agent", "name": "pirate_agent"}'})
+@validate_span_events(count=2, exact_agents={"subcomponent": '{"type": "APM-Tool", "name": "add_exclamation"}'})
+@validate_span_events(count=2, exact_agents={"subcomponent": '{"type": "APM-Agent", "name": "robot_agent"}'})
+@validate_span_events(count=2, exact_agents={"subcomponent": '{"type": "APM-Tool", "name": "compute_sum"}'})
 @background_task()
 def test_run_stream_round_robin_group(loop, set_trace_info, multi_tool_model_client):
     set_trace_info()
@@ -300,6 +304,10 @@ def test_run_stream_round_robin_group(loop, set_trace_info, multi_tool_model_cli
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
+@validate_span_events(count=2, exact_agents={"subcomponent": '{"type": "APM-Agent", "name": "pirate_agent"}'})
+@validate_span_events(count=2, exact_agents={"subcomponent": '{"type": "APM-Tool", "name": "add_exclamation"}'})
+@validate_span_events(count=2, exact_agents={"subcomponent": '{"type": "APM-Agent", "name": "robot_agent"}'})
+@validate_span_events(count=2, exact_agents={"subcomponent": '{"type": "APM-Tool", "name": "compute_sum"}'})
 @background_task()
 def test_run_round_robin_group(loop, set_trace_info, multi_tool_model_client):
     set_trace_info()
@@ -371,6 +379,10 @@ def test_run_round_robin_group(loop, set_trace_info, multi_tool_model_client):
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
+@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-Agent", "name": "pirate_agent"}'})
+@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-Tool", "name": "add_exclamation"}'})
+@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-Agent", "name": "robot_agent"}'})
+@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-Tool", "name": "compute_sum"}'})
 @background_task()
 def test_run_round_robin_group_no_content(loop, set_trace_info, multi_tool_model_client):
     set_trace_info()
@@ -469,6 +481,10 @@ def test_run_round_robin_group_disabled_ai_events(loop, set_trace_info, multi_to
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
+@validate_span_events(count=2, exact_agents={"subcomponent": '{"type": "APM-Agent", "name": "pirate_agent"}'})
+@validate_span_events(count=2, exact_agents={"subcomponent": '{"type": "APM-Tool", "name": "add_exclamation"}'})
+@validate_span_events(count=2, exact_agents={"subcomponent": '{"type": "APM-Agent", "name": "robot_agent"}'})
+@validate_span_events(count=2, exact_agents={"subcomponent": '{"type": "APM-Tool", "name": "compute_sum"}'})
 @background_task()
 def test_run_round_robin_group_error(loop, set_trace_info, multi_tool_model_client_error):
     set_trace_info()

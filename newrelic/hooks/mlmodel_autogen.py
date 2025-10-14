@@ -183,11 +183,11 @@ async def wrap__execute_tool_call(wrapped, instance, args, kwargs):
     bound_args = bind_args(wrapped, args, kwargs)
     tool_call_data = bound_args.get("tool_call")
     tool_event_dict = _construct_base_tool_event_dict(bound_args, tool_call_data, tool_id, transaction, settings)
-
     tool_name = getattr(tool_call_data, "name", "tool")
+    func_name = callable_name(wrapped)
 
     agentic_subcomponent_data = {"type": "APM-Tool", "name": tool_name}
-    func_name = callable_name(wrapped)
+
     ft = FunctionTrace(name=f"{func_name}/{tool_name}", group="Llm/tool/Autogen")
     ft.__enter__()
     ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))

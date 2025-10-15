@@ -421,26 +421,26 @@ def test_inbound_dt_payload_acceptance(trusted_account_key):
 @pytest.mark.parametrize(
     "traceparent_sampled,newrelic_sampled,remote_parent_sampled_setting,remote_parent_not_sampled_setting,expected_sampled,expected_priority,expected_adaptive_sampling_algo_called",
     (
-        #(True, None, "default", "default", None, None, True),  # Uses adaptive sampling algo.
-        #(True, None, "always_on", "default", True, 2, False),  # Always sampled.
-        #(True, None, "always_off", "default", False, 0, False),  # Never sampled.
-        #(False, None, "default", "default", None, None, True),  # Uses adaptive sampling algo.
-        #(False, None, "always_on", "default", None, None, True),  # Uses adaptive sampling alog.
-        #(False, None, "always_off", "default", None, None, True),  # Uses adaptive sampling algo.
-        #(True, None, "default", "always_on", None, None, True),  # Uses adaptive sampling algo.
-        #(True, None, "default", "always_off", None, None, True),  # Uses adaptive sampling algo.
-        #(False, None, "default", "always_on", True, 2, False),  # Always sampled.
-        #(False, None, "default", "always_off", False, 0, False),  # Never sampled.
+        (True, None, "default", "default", None, None, True),  # Uses adaptive sampling algo.
+        (True, None, "always_on", "default", True, 2, False),  # Always sampled.
+        (True, None, "always_off", "default", False, 0, False),  # Never sampled.
+        (False, None, "default", "default", None, None, True),  # Uses adaptive sampling algo.
+        (False, None, "always_on", "default", None, None, True),  # Uses adaptive sampling alog.
+        (False, None, "always_off", "default", None, None, True),  # Uses adaptive sampling algo.
+        (True, None, "default", "always_on", None, None, True),  # Uses adaptive sampling algo.
+        (True, None, "default", "always_off", None, None, True),  # Uses adaptive sampling algo.
+        (False, None, "default", "always_on", True, 2, False),  # Always sampled.
+        (False, None, "default", "always_off", False, 0, False),  # Never sampled.
 
-        #(True, True, "default", "default", True, 1.23456, False),  # Uses sampling decision in W3C TraceState header.
-        #(True, False, "default", "default", False, 1.23456, False),  # Uses sampling decision in W3C TraceState header.
-        #(False, False, "default", "default", False, 1.23456, False),  # Uses sampling decision in W3C TraceState header.
-        #(True, False, "always_on", "default", True, 2, False),  # Always sampled.
-        #(True, True, "always_off", "default", False, 0, False),  # Never sampled.
-        #(False, False, "default", "always_on", True, 2, False),  # Always sampled.
-        #(False, True, "default", "always_off", False, 0, False),  # Never sampled.
+        (True, True, "default", "default", True, 1.23456, False),  # Uses sampling decision in W3C TraceState header.
+        (True, False, "default", "default", False, 1.23456, False),  # Uses sampling decision in W3C TraceState header.
+        (False, False, "default", "default", False, 1.23456, False),  # Uses sampling decision in W3C TraceState header.
+        (True, False, "always_on", "default", True, 2, False),  # Always sampled.
+        (True, True, "always_off", "default", False, 0, False),  # Never sampled.
+        (False, False, "default", "always_on", True, 2, False),  # Always sampled.
+        (False, True, "default", "always_off", False, 0, False),  # Never sampled.
 
-        #(None, True, "default", "default", True, .1234, False),  # Uses sampling and priority from newrelic header.
+        (None, True, "default", "default", True, .1234, False),  # Uses sampling and priority from newrelic header.
         (None, True, "always_on", "default", True, 2, False),  # Always sampled.
         (None, True, "always_off", "default", False, 0, False),  # Never sampled.
         (None, False, "default", "default", False, .1234, False),  # Uses sampling and priority from newrelic header.

@@ -195,20 +195,26 @@ def test_async_generator_aclose_ends_trace(event_loop):
     async def agen():
         yield
 
+    # Save a reference to the generator and run the validations before that
+    # is garbage collected to avoid this test becoming a duplicate
+    # of the test "test_incomplete_async_generator"
+    gen = agen()
+
     @background_task(name="test_async_generator_aclose_ends_trace")
-    async def _test():
-        gen = agen()
+    def _test_async_generator_aclose_ends_trace():
+        async def _test():
+            # kickstart the coroutine
+            await gen.asend(None)
 
-        # kickstart the coroutine
-        await gen.asend(None)
+            # trace should be ended/recorded by close
+            await gen.aclose()
 
-        # trace should be ended/recorded by close
-        await gen.aclose()
+            # We may call gen.close as many times as we want
+            await gen.aclose()
 
-        # We may call gen.close as many times as we want
-        await gen.aclose()
+        event_loop.run_until_complete(_test())
 
-    event_loop.run_until_complete(_test())
+    _test_async_generator_aclose_ends_trace()
 
 
 @validate_tt_parenting(("TransactionNode", [("FunctionNode", [("FunctionNode", [])])]))

@@ -119,25 +119,31 @@ def test_async_generator_caught_exception(event_loop):
     assert full_metrics[(metric_key, "")].total_call_time >= 0.2
 
 
-@validate_transaction_metrics("test_async_generator_aclose_ends_trace", background_task=True)
-def test_async_generator_aclose_ends_trace(event_loop):
-    @background_task(name="test_async_generator_aclose_ends_trace")
+def test_async_generator_aclose_ends_transaction(event_loop):
+    @background_task(name="test_async_generator_aclose_ends_transaction")
     async def agen():
         yield
 
-    async def _test():
-        gen = agen()
+    # Save a reference to the generator and run the validations before that
+    # is garbage collected to avoid this test becoming a duplicate
+    # of the test "test_incomplete_async_generator"
+    gen = agen()
 
-        # kickstart the coroutine
-        await gen.asend(None)
+    @validate_transaction_metrics("test_async_generator_aclose_ends_transaction", background_task=True)
+    def _test_async_generator_aclose_ends_transaction():
+        async def _test():
+            # kickstart the coroutine
+            await gen.asend(None)
 
-        # trace should be ended/recorded by close
-        await gen.aclose()
+            # trace should be ended/recorded by close
+            await gen.aclose()
 
-        # We may call gen.close as many times as we want
-        await gen.aclose()
+            # We may call gen.close as many times as we want
+            await gen.aclose()
 
-    event_loop.run_until_complete(_test())
+        event_loop.run_until_complete(_test())
+
+    _test_async_generator_aclose_ends_transaction()
 
 
 @validate_transaction_metrics("test_asend_receives_a_value", background_task=True)

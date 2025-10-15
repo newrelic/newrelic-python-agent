@@ -130,6 +130,7 @@ class TransactionContext:
 
         if exc is StopAsyncIteration:
             # If an async generator completes normally, complete the transaction without error.
+            # This condition is also manually run when an async generator is closed via AsyncGeneratorProxy.aclose().
             if self.is_async_generator:
                 self.transaction.__exit__(None, None, None)
             # If a non-async generator reaches this, complete the transaction and report as an error.
@@ -150,7 +151,7 @@ class TransactionContext:
             # Note: This block is equivalent to "else: pass".
             # If this code block is unnested in the future, that should be made explicit.
 
-        # If coroutine was cancelled, either by asyncio.CancelledError, .close(), or .aclose(),
+        # If coroutine was cancelled, either by asyncio.CancelledError, .close(),
         # complete the transaction without error.
         elif exc in (GeneratorExit, CancelledError):
             self.transaction.__exit__(None, None, None)
@@ -234,7 +235,15 @@ class AsyncGeneratorProxy(ObjectProxy):
         return await CoroutineProxy(self.__wrapped__.athrow(*args, **kwargs), self._nr_context)
 
     async def aclose(self):
-        return await CoroutineProxy(self.__wrapped__.aclose(), self._nr_context)
+        try:
+            return await CoroutineProxy(self.__wrapped__.aclose(), self._nr_context)
+        finally:
+            # There is nothing further down that can tell correctly that the async generator
+            # is being closed, so we call __exit__ with StopAsyncIteration manually to ensure
+            # the transaction is correctly completed without error. Otherwise this would rely on
+            # the garbage collector deleting the async generator to complete the transaction by
+            # calling Transaction.__del__, which will cause a hanging transaction and race conditions.
+            self._nr_context.__exit__(StopAsyncIteration, None, None)
 
 
 def async_proxy(wrapped):

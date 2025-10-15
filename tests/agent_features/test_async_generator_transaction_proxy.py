@@ -326,6 +326,27 @@ def test_incomplete_async_generator(event_loop):
             async for _ in c:
                 break
 
+            # This test differs from the test for async_proxy in that the generator
+            # going out of scope does not immediately close the trace. Instead, it's
+            # the transaction ending that closes the trace. No need to call gc.collect().
+
+            if is_pypy:
+                # pypy is not guaranteed to delete the coroutine when it goes out
+                # of scope. This code "helps" pypy along. The test above is really
+                # just to verify that incomplete coroutines will "eventually" be
+                # cleaned up. In pypy, unfortunately that means it may not be
+                # reported all the time. A customer would be expected to call gc
+                # directly; however, they already have to handle this case since
+                # incomplete generators are well documented as having problems with
+                # pypy's gc.
+
+                # See:
+                # http://doc.pypy.org/en/latest/cpython_differences.html#differences-related-to-garbage-collection-strategies
+                # https://bitbucket.org/pypy/pypy/issues/736
+
+                del c
+                gc.collect()
+
         event_loop.run_until_complete(_test())
 
     _test_incomplete_async_generator()

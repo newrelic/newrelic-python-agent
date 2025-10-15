@@ -32,7 +32,6 @@ from newrelic.api.memcache_trace import memcache_trace
 from newrelic.api.message_trace import message_trace
 
 asyncio = pytest.importorskip("asyncio")
-is_pypy = hasattr(sys, "pypy_version_info")
 
 
 @pytest.mark.parametrize(
@@ -501,6 +500,10 @@ def test_incomplete_async_generator(event_loop, nr_transaction):
 
             async for _ in c:
                 break
+
+            # This test differs from the test for async_proxy in that the generator
+            # going out of scope does not immediately close the trace. Instead, it's
+            # the transaction ending that closes the trace. No need to call gc.collect().
 
         if nr_transaction:
             _test = background_task(name="test_incomplete_async_generator")(_test)

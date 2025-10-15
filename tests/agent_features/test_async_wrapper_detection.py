@@ -27,7 +27,7 @@ from newrelic.api.function_trace import function_trace
 from newrelic.api.graphql_trace import graphql_operation_trace, graphql_resolver_trace
 from newrelic.api.memcache_trace import memcache_trace
 from newrelic.api.message_trace import message_trace
-from newrelic.common.async_wrapper import generator_wrapper
+from newrelic.common.async_wrapper import async_generator_wrapper, generator_wrapper
 
 trace_metric_cases = [
     (functools.partial(function_trace, name="simple_gen"), "Function/simple_gen"),
@@ -98,6 +98,77 @@ def test_manual_generator_trace_wrapper(trace, metric):
 
         for _ in wrapper_func():
             pass
+
+    _test()
+
+    # Check that generators time the total call time (including pauses)
+    metric_key = (metric, "")
+    assert full_metrics[metric_key].total_call_time >= 0.2
+
+
+@pytest.mark.parametrize("trace,metric", trace_metric_cases)
+def test_automatic_async_generator_trace_wrapper(trace, metric, event_loop):
+    metrics = []
+    full_metrics = {}
+
+    @capture_transaction_metrics(metrics, full_metrics)
+    @validate_transaction_metrics(
+        "test_automatic_generator_trace_wrapper",
+        background_task=True,
+        scoped_metrics=[(metric, 1)],
+        rollup_metrics=[(metric, 1)],
+    )
+    @background_task(name="test_automatic_generator_trace_wrapper")
+    def _test():
+        async def _test_coro():
+            @trace()
+            async def agen():
+                time.sleep(0.1)
+                yield
+                time.sleep(0.1)
+
+            async for _ in agen():
+                pass
+
+        event_loop.run_until_complete(_test_coro())
+
+    _test()
+
+    # Check that generators time the total call time (including pauses)
+    metric_key = (metric, "")
+    assert full_metrics[metric_key].total_call_time >= 0.2
+
+
+@pytest.mark.parametrize("trace,metric", trace_metric_cases)
+def test_manual_async_generator_trace_wrapper(trace, metric, event_loop):
+    metrics = []
+    full_metrics = {}
+
+    @capture_transaction_metrics(metrics, full_metrics)
+    @validate_transaction_metrics(
+        "test_automatic_generator_trace_wrapper",
+        background_task=True,
+        scoped_metrics=[(metric, 1)],
+        rollup_metrics=[(metric, 1)],
+    )
+    @background_task(name="test_automatic_generator_trace_wrapper")
+    def _test():
+        async def _test_coro():
+            @trace(async_wrapper=async_generator_wrapper)
+            def wrapper_func():
+                """Function that returns a generator object, obscuring the automatic introspection of async_wrapper()"""
+
+                async def agen():
+                    time.sleep(0.1)
+                    yield
+                    time.sleep(0.1)
+
+                return agen()
+
+            async for _ in wrapper_func():
+                pass
+
+        event_loop.run_until_complete(_test_coro())
 
     _test()
 

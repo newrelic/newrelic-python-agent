@@ -107,7 +107,7 @@ def consumer_validate_dt(producer, consumer_connection, queue, consume_validate_
 def consume(events):
     def _consume(body, message):
         message.ack()
-        events.append({"body": body, "routing_key": message.delivery_info["routing_key"]})
+        events.append({"body": body, "routing_key": message.delivery_info["routing_key"], "message": message})
 
     return _consume
 
@@ -116,7 +116,7 @@ def consume(events):
 def consume_error(events):
     def _consume(body, message):
         message.ack()
-        events.append({"body": body, "routing_key": message.delivery_info["routing_key"]})
+        events.append({"body": body, "routing_key": message.delivery_info["routing_key"], "message": message})
         raise RuntimeError("Error in consumer callback")
 
     return _consume
@@ -133,7 +133,7 @@ def consume_validate_dt(events, transport_type):
         txn._test_request_headers = message.headers
 
         message.ack()
-        events.append({"body": body, "routing_key": message.delivery_info["routing_key"]})
+        events.append({"body": body, "routing_key": message.delivery_info["routing_key"], "message": message})
 
     return _consume
 

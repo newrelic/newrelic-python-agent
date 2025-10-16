@@ -128,8 +128,8 @@ def add_exclamation(message: str) -> str:
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
-@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-Agent", "name": "pirate_agent"}'})
-@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-Tool", "name": "add_exclamation"}'})
+@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "pirate_agent"}'})
+@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "add_exclamation"}'})
 @background_task()
 def test_run_assistant_agent(loop, set_trace_info, single_tool_model_client):
     set_trace_info()
@@ -173,8 +173,8 @@ def test_run_assistant_agent(loop, set_trace_info, single_tool_model_client):
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
-@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-Agent", "name": "pirate_agent"}'})
-@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-Tool", "name": "add_exclamation"}'})
+@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "pirate_agent"}'})
+@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "add_exclamation"}'})
 @background_task()
 def test_run_stream_assistant_agent(loop, set_trace_info, single_tool_model_client):
     set_trace_info()
@@ -226,8 +226,8 @@ def test_run_stream_assistant_agent(loop, set_trace_info, single_tool_model_clie
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
-@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-Agent", "name": "pirate_agent"}'})
-@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-Tool", "name": "add_exclamation"}'})
+@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "pirate_agent"}'})
+@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "add_exclamation"}'})
 @background_task()
 def test_run_assistant_agent_no_content(loop, set_trace_info, single_tool_model_client):
     set_trace_info()
@@ -296,8 +296,8 @@ SKIP_IF_AUTOGEN_062 = pytest.mark.skipif(
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
-@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-Agent", "name": "pirate_agent"}'})
-@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-Tool", "name": "add_exclamation"}'})
+@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "pirate_agent"}'})
+@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "add_exclamation"}'})
 @background_task()
 def test_run_assistant_agent_error(loop, set_trace_info, single_tool_model_client_error):
     set_trace_info()

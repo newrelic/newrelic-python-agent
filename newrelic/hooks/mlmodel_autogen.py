@@ -73,7 +73,7 @@ def wrap_on_messages_stream(wrapped, instance, args, kwargs):
     func_name = callable_name(wrapped)
     function_trace_name = f"{func_name}/{agent_name}"
 
-    agentic_subcomponent_data = {"type": "APM-Agent", "name": agent_name}
+    agentic_subcomponent_data = {"type": "APM-AI_AGENT", "name": agent_name}
 
     ft = FunctionTrace(name=function_trace_name, group="Llm/agent/Autogen")
     ft.__enter__()
@@ -186,7 +186,7 @@ async def wrap__execute_tool_call(wrapped, instance, args, kwargs):
     tool_name = getattr(tool_call_data, "name", "tool")
     func_name = callable_name(wrapped)
 
-    agentic_subcomponent_data = {"type": "APM-Tool", "name": tool_name}
+    agentic_subcomponent_data = {"type": "APM-AI_TOOL", "name": tool_name}
 
     ft = FunctionTrace(name=f"{func_name}/{tool_name}", group="Llm/tool/Autogen")
     ft.__enter__()

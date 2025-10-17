@@ -141,7 +141,7 @@ def create_custom_event(event_type, params, settings=None, is_ml_event=False):
         )
         return None
 
-    intrinsics = {"type": name, "timestamp": int(1000.0 * time.time())}
+    intrinsics = {"type": name, "timestamp": params.get("timestamp") or int(1000.0 * time.time())}
 
     event = [intrinsics, attributes]
     return event

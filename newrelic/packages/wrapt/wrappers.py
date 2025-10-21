@@ -1,19 +1,24 @@
-import sys
-import operator
 import inspect
+import operator
+import sys
 
-PY2 = sys.version_info[0] == 2
-
-if PY2:
-    string_types = basestring,
-else:
-    string_types = str,
 
 def with_metaclass(meta, *bases):
     """Create a base class with a metaclass."""
     return meta("NewBase", bases, {})
 
-class _ObjectProxyMethods(object):
+
+class WrapperNotInitializedError(ValueError, AttributeError):
+    """
+    Exception raised when a wrapper is accessed before it has been initialized.
+    To satisfy different situations where this could arise, we inherit from both
+    ValueError and AttributeError.
+    """
+
+    pass
+
+
+class _ObjectProxyMethods:
 
     # We use properties to override the values of __module__ and
     # __doc__. If we add these in ObjectProxy, the derived class
@@ -56,6 +61,7 @@ class _ObjectProxyMethods(object):
     def __weakref__(self):
         return self.__wrapped__.__weakref__
 
+
 class _ObjectProxyMetaType(type):
     def __new__(cls, name, bases, dictionary):
         # Copy our special properties into the class so that they
@@ -67,19 +73,47 @@ class _ObjectProxyMetaType(type):
 
         return type.__new__(cls, name, bases, dictionary)
 
-class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
 
-    __slots__ = '__wrapped__'
+# NOTE: Although Python 3+ supports the newer metaclass=MetaClass syntax,
+# we must continue using with_metaclass() for ObjectProxy. The newer syntax
+# changes how __slots__ is handled during class creation, which would break
+# the ability to set _self_* attributes on ObjectProxy instances. The
+# with_metaclass() approach creates an intermediate base class that allows
+# the necessary attribute flexibility while still applying the metaclass.
+
+
+class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):  # type: ignore[misc]
+
+    __slots__ = "__wrapped__"
 
     def __init__(self, wrapped):
-        object.__setattr__(self, '__wrapped__', wrapped)
+        """Create an object proxy around the given object."""
+
+        if wrapped is None:
+            try:
+                callback = object.__getattribute__(self, "__wrapped_factory__")
+            except AttributeError:
+                callback = None
+
+            if callback is not None:
+                # If wrapped is none and class has a __wrapped_factory__
+                # method, then we don't set __wrapped__ yet and instead will
+                # defer creation of the wrapped object until it is first
+                # needed.
+
+                pass
+
+            else:
+                object.__setattr__(self, "__wrapped__", wrapped)
+        else:
+            object.__setattr__(self, "__wrapped__", wrapped)
 
         # Python 3.2+ has the __qualname__ attribute, but it does not
         # allow it to be overridden using a property and it must instead
         # be an actual string object instead.
 
         try:
-            object.__setattr__(self, '__qualname__', wrapped.__qualname__)
+            object.__setattr__(self, "__qualname__", wrapped.__qualname__)
         except AttributeError:
             pass
 
@@ -87,9 +121,13 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
         # using a property and it must instead be set explicitly.
 
         try:
-            object.__setattr__(self, '__annotations__', wrapped.__annotations__)
+            object.__setattr__(self, "__annotations__", wrapped.__annotations__)
         except AttributeError:
             pass
+
+    @property
+    def __object_proxy__(self):
+        return ObjectProxy
 
     def __self_setattr__(self, name, value):
         object.__setattr__(self, name, value)
@@ -116,26 +154,27 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
     def __str__(self):
         return str(self.__wrapped__)
 
-    if not PY2:
-        def __bytes__(self):
-            return bytes(self.__wrapped__)
+    def __bytes__(self):
+        return bytes(self.__wrapped__)
 
     def __repr__(self):
-        return '<{} at 0x{:x} for {} at 0x{:x}>'.format(
-                type(self).__name__, id(self),
-                type(self.__wrapped__).__name__,
-                id(self.__wrapped__))
+        return f"<{type(self).__name__} at 0x{id(self):x} for {type(self.__wrapped__).__name__} at 0x{id(self.__wrapped__):x}>"
+
+    def __format__(self, format_spec):
+        return format(self.__wrapped__, format_spec)
 
     def __reversed__(self):
         return reversed(self.__wrapped__)
 
-    if not PY2:
-        def __round__(self):
-            return round(self.__wrapped__)
+    def __round__(self, ndigits=None):
+        return round(self.__wrapped__, ndigits)
 
-    if sys.hexversion >= 0x03070000:
-        def __mro_entries__(self, bases):
-            return (self.__wrapped__,)
+    def __mro_entries__(self, bases):
+        if not isinstance(self.__wrapped__, type) and hasattr(
+            self.__wrapped__, "__mro_entries__"
+        ):
+            return self.__wrapped__.__mro_entries__(bases)
+        return (self.__wrapped__,)
 
     def __lt__(self, other):
         return self.__wrapped__ < other
@@ -165,33 +204,41 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
         return bool(self.__wrapped__)
 
     def __setattr__(self, name, value):
-        if name.startswith('_self_'):
+        if name.startswith("_self_"):
             object.__setattr__(self, name, value)
 
-        elif name == '__wrapped__':
+        elif name == "__wrapped__":
             object.__setattr__(self, name, value)
+
             try:
-                object.__delattr__(self, '__qualname__')
+                object.__delattr__(self, "__qualname__")
             except AttributeError:
                 pass
             try:
-                object.__setattr__(self, '__qualname__', value.__qualname__)
+                object.__setattr__(self, "__qualname__", value.__qualname__)
             except AttributeError:
                 pass
             try:
-                object.__delattr__(self, '__annotations__')
+                object.__delattr__(self, "__annotations__")
             except AttributeError:
                 pass
             try:
-                object.__setattr__(self, '__annotations__', value.__annotations__)
+                object.__setattr__(self, "__annotations__", value.__annotations__)
             except AttributeError:
                 pass
 
-        elif name == '__qualname__':
+            __wrapped_setattr_fixups__ = getattr(
+                self, "__wrapped_setattr_fixups__", None
+            )
+
+            if __wrapped_setattr_fixups__ is not None:
+                __wrapped_setattr_fixups__()
+
+        elif name == "__qualname__":
             setattr(self.__wrapped__, name, value)
             object.__setattr__(self, name, value)
 
-        elif name == '__annotations__':
+        elif name == "__annotations__":
             setattr(self.__wrapped__, name, value)
             object.__setattr__(self, name, value)
 
@@ -202,22 +249,37 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
             setattr(self.__wrapped__, name, value)
 
     def __getattr__(self, name):
-        # If we are being to lookup '__wrapped__' then the
-        # '__init__()' method cannot have been called.
+        # If we need to lookup `__wrapped__` then the `__init__()` method
+        # cannot have been called, or this is a lazy object proxy which is
+        # deferring creation of the wrapped object until it is first needed.
 
-        if name == '__wrapped__':
-            raise ValueError('wrapper has not been initialised')
+        if name == "__wrapped__":
+            # Note that we use existance of `__wrapped_factory__` to gate whether
+            # we can attempt to initialize the wrapped object lazily, but it is
+            # `__wrapped_get__` that we actually call to do the initialization.
+            # This is so that we can handle multithreading correctly by having
+            # `__wrapped_get__` use a lock to protect against multiple threads
+            # trying to initialize the wrapped object at the same time.
+
+            try:
+                object.__getattribute__(self, "__wrapped_factory__")
+            except AttributeError:
+                pass
+            else:
+                return object.__getattribute__(self, "__wrapped_get__")()
+
+            raise WrapperNotInitializedError("wrapper has not been initialized")
 
         return getattr(self.__wrapped__, name)
 
     def __delattr__(self, name):
-        if name.startswith('_self_'):
+        if name.startswith("_self_"):
             object.__delattr__(self, name)
 
-        elif name == '__wrapped__':
-            raise TypeError('__wrapped__ must be an object')
+        elif name == "__wrapped__":
+            raise TypeError("__wrapped__ attribute cannot be deleted")
 
-        elif name == '__qualname__':
+        elif name == "__qualname__":
             object.__delattr__(self, name)
             delattr(self.__wrapped__, name)
 
@@ -235,9 +297,6 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
 
     def __mul__(self, other):
         return self.__wrapped__ * other
-
-    def __div__(self, other):
-        return operator.div(self.__wrapped__, other)
 
     def __truediv__(self, other):
         return operator.truediv(self.__wrapped__, other)
@@ -278,9 +337,6 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
     def __rmul__(self, other):
         return other * self.__wrapped__
 
-    def __rdiv__(self, other):
-        return operator.div(other, self.__wrapped__)
-
     def __rtruediv__(self, other):
         return operator.truediv(other, self.__wrapped__)
 
@@ -312,56 +368,90 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
         return other | self.__wrapped__
 
     def __iadd__(self, other):
-        self.__wrapped__ += other
-        return self
+        if hasattr(self.__wrapped__, "__iadd__"):
+            self.__wrapped__ += other
+            return self
+        else:
+            return self.__object_proxy__(self.__wrapped__ + other)
 
     def __isub__(self, other):
-        self.__wrapped__ -= other
-        return self
+        if hasattr(self.__wrapped__, "__isub__"):
+            self.__wrapped__ -= other
+            return self
+        else:
+            return self.__object_proxy__(self.__wrapped__ - other)
 
     def __imul__(self, other):
-        self.__wrapped__ *= other
-        return self
-
-    def __idiv__(self, other):
-        self.__wrapped__ = operator.idiv(self.__wrapped__, other)
-        return self
+        if hasattr(self.__wrapped__, "__imul__"):
+            self.__wrapped__ *= other
+            return self
+        else:
+            return self.__object_proxy__(self.__wrapped__ * other)
 
     def __itruediv__(self, other):
-        self.__wrapped__ = operator.itruediv(self.__wrapped__, other)
-        return self
+        if hasattr(self.__wrapped__, "__itruediv__"):
+            self.__wrapped__ /= other
+            return self
+        else:
+            return self.__object_proxy__(self.__wrapped__ / other)
 
     def __ifloordiv__(self, other):
-        self.__wrapped__ //= other
-        return self
+        if hasattr(self.__wrapped__, "__ifloordiv__"):
+            self.__wrapped__ //= other
+            return self
+        else:
+            return self.__object_proxy__(self.__wrapped__ // other)
 
     def __imod__(self, other):
-        self.__wrapped__ %= other
+        if hasattr(self.__wrapped__, "__imod__"):
+            self.__wrapped__ %= other
+            return self
+        else:
+            return self.__object_proxy__(self.__wrapped__ % other)
+
         return self
 
-    def __ipow__(self, other):
-        self.__wrapped__ **= other
-        return self
+    def __ipow__(self, other):  # type: ignore[misc]
+        if hasattr(self.__wrapped__, "__ipow__"):
+            self.__wrapped__ **= other
+            return self
+        else:
+            return self.__object_proxy__(self.__wrapped__**other)
 
     def __ilshift__(self, other):
-        self.__wrapped__ <<= other
-        return self
+        if hasattr(self.__wrapped__, "__ilshift__"):
+            self.__wrapped__ <<= other
+            return self
+        else:
+            return self.__object_proxy__(self.__wrapped__ << other)
 
     def __irshift__(self, other):
-        self.__wrapped__ >>= other
-        return self
+        if hasattr(self.__wrapped__, "__irshift__"):
+            self.__wrapped__ >>= other
+            return self
+        else:
+            return self.__object_proxy__(self.__wrapped__ >> other)
 
     def __iand__(self, other):
-        self.__wrapped__ &= other
-        return self
+        if hasattr(self.__wrapped__, "__iand__"):
+            self.__wrapped__ &= other
+            return self
+        else:
+            return self.__object_proxy__(self.__wrapped__ & other)
 
     def __ixor__(self, other):
-        self.__wrapped__ ^= other
-        return self
+        if hasattr(self.__wrapped__, "__ixor__"):
+            self.__wrapped__ ^= other
+            return self
+        else:
+            return self.__object_proxy__(self.__wrapped__ ^ other)
 
     def __ior__(self, other):
-        self.__wrapped__ |= other
-        return self
+        if hasattr(self.__wrapped__, "__ior__"):
+            self.__wrapped__ |= other
+            return self
+        else:
+            return self.__object_proxy__(self.__wrapped__ | other)
 
     def __neg__(self):
         return -self.__wrapped__
@@ -378,9 +468,6 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
     def __int__(self):
         return int(self.__wrapped__)
 
-    def __long__(self):
-        return long(self.__wrapped__)
-
     def __float__(self):
         return float(self.__wrapped__)
 
@@ -395,6 +482,19 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
 
     def __index__(self):
         return operator.index(self.__wrapped__)
+
+    def __matmul__(self, other):
+        return self.__wrapped__ @ other
+
+    def __rmatmul__(self, other):
+        return other @ self.__wrapped__
+
+    def __imatmul__(self, other):
+        if hasattr(self.__wrapped__, "__imatmul__"):
+            self.__wrapped__ @= other
+            return self
+        else:
+            return self.__object_proxy__(self.__wrapped__ @ other)
 
     def __len__(self):
         return len(self.__wrapped__)
@@ -426,22 +526,24 @@ class ObjectProxy(with_metaclass(_ObjectProxyMetaType)):
     def __exit__(self, *args, **kwargs):
         return self.__wrapped__.__exit__(*args, **kwargs)
 
-    def __iter__(self):
-        return iter(self.__wrapped__)
+    def __aenter__(self):
+        return self.__wrapped__.__aenter__()
+
+    def __aexit__(self, *args, **kwargs):
+        return self.__wrapped__.__aexit__(*args, **kwargs)
 
     def __copy__(self):
-        raise NotImplementedError('object proxy must define __copy__()')
+        raise NotImplementedError("object proxy must define __copy__()")
 
     def __deepcopy__(self, memo):
-        raise NotImplementedError('object proxy must define __deepcopy__()')
+        raise NotImplementedError("object proxy must define __deepcopy__()")
 
     def __reduce__(self):
-        raise NotImplementedError(
-                'object proxy must define __reduce_ex__()')
+        raise NotImplementedError("object proxy must define __reduce__()")
 
     def __reduce_ex__(self, protocol):
-        raise NotImplementedError(
-                'object proxy must define __reduce_ex__()')
+        raise NotImplementedError("object proxy must define __reduce_ex__()")
+
 
 class CallableObjectProxy(ObjectProxy):
 
@@ -453,21 +555,31 @@ class CallableObjectProxy(ObjectProxy):
 
         return self.__wrapped__(*args, **kwargs)
 
+
 class PartialCallableObjectProxy(ObjectProxy):
+    """A callable object proxy that supports partial application of arguments
+    and keywords.
+    """
 
     def __init__(*args, **kwargs):
+        """Create a callable object proxy with partial application of the given
+        arguments and keywords. This behaves the same as `functools.partial`, but
+        implemented using the `ObjectProxy` class to provide better support for
+        introspection.
+        """
+
         def _unpack_self(self, *args):
             return self, args
 
         self, args = _unpack_self(*args)
 
         if len(args) < 1:
-            raise TypeError('partial type takes at least one argument')
+            raise TypeError("partial type takes at least one argument")
 
         wrapped, args = args[0], args[1:]
 
         if not callable(wrapped):
-            raise TypeError('the first argument must be callable')
+            raise TypeError("the first argument must be callable")
 
         super(PartialCallableObjectProxy, self).__init__(wrapped)
 
@@ -479,7 +591,7 @@ class PartialCallableObjectProxy(ObjectProxy):
             return self, args
 
         self, args = _unpack_self(*args)
-    
+
         _args = self._self_args + args
 
         _kwargs = dict(self._self_kwargs)
@@ -487,75 +599,112 @@ class PartialCallableObjectProxy(ObjectProxy):
 
         return self.__wrapped__(*_args, **_kwargs)
 
+
 class _FunctionWrapperBase(ObjectProxy):
 
-    __slots__ = ('_self_instance', '_self_wrapper', '_self_enabled',
-            '_self_binding', '_self_parent')
+    __slots__ = (
+        "_self_instance",
+        "_self_wrapper",
+        "_self_enabled",
+        "_self_binding",
+        "_self_parent",
+        "_self_owner",
+    )
 
-    def __init__(self, wrapped, instance, wrapper, enabled=None,
-            binding='function', parent=None):
+    def __init__(
+        self,
+        wrapped,
+        instance,
+        wrapper,
+        enabled=None,
+        binding="callable",
+        parent=None,
+        owner=None,
+    ):
 
         super(_FunctionWrapperBase, self).__init__(wrapped)
 
-        object.__setattr__(self, '_self_instance', instance)
-        object.__setattr__(self, '_self_wrapper', wrapper)
-        object.__setattr__(self, '_self_enabled', enabled)
-        object.__setattr__(self, '_self_binding', binding)
-        object.__setattr__(self, '_self_parent', parent)
+        object.__setattr__(self, "_self_instance", instance)
+        object.__setattr__(self, "_self_wrapper", wrapper)
+        object.__setattr__(self, "_self_enabled", enabled)
+        object.__setattr__(self, "_self_binding", binding)
+        object.__setattr__(self, "_self_parent", parent)
+        object.__setattr__(self, "_self_owner", owner)
 
     def __get__(self, instance, owner):
-        # This method is actually doing double duty for both unbound and
-        # bound derived wrapper classes. It should possibly be broken up
-        # and the distinct functionality moved into the derived classes.
-        # Can't do that straight away due to some legacy code which is
-        # relying on it being here in this base class.
+        # This method is actually doing double duty for both unbound and bound
+        # derived wrapper classes. It should possibly be broken up and the
+        # distinct functionality moved into the derived classes. Can't do that
+        # straight away due to some legacy code which is relying on it being
+        # here in this base class.
         #
-        # The distinguishing attribute which determines whether we are
-        # being called in an unbound or bound wrapper is the parent
-        # attribute. If binding has never occurred, then the parent will
-        # be None.
+        # The distinguishing attribute which determines whether we are being
+        # called in an unbound or bound wrapper is the parent attribute. If
+        # binding has never occurred, then the parent will be None.
         #
-        # First therefore, is if we are called in an unbound wrapper. In
-        # this case we perform the binding.
+        # First therefore, is if we are called in an unbound wrapper. In this
+        # case we perform the binding.
         #
-        # We have one special case to worry about here. This is where we
-        # are decorating a nested class. In this case the wrapped class
-        # would not have a __get__() method to call. In that case we
-        # simply return self.
+        # We have two special cases to worry about here. These are where we are
+        # decorating a class or builtin function as neither provide a __get__()
+        # method to call. In this case we simply return self.
         #
-        # Note that we otherwise still do binding even if instance is
-        # None and accessing an unbound instance method from a class.
-        # This is because we need to be able to later detect that
-        # specific case as we will need to extract the instance from the
-        # first argument of those passed in.
+        # Note that we otherwise still do binding even if instance is None and
+        # accessing an unbound instance method from a class. This is because we
+        # need to be able to later detect that specific case as we will need to
+        # extract the instance from the first argument of those passed in.
 
         if self._self_parent is None:
-            if not inspect.isclass(self.__wrapped__):
-                descriptor = self.__wrapped__.__get__(instance, owner)
+            # Technically can probably just check for existence of __get__ on
+            # the wrapped object, but this is more explicit.
 
-                return self.__bound_function_wrapper__(descriptor, instance,
-                        self._self_wrapper, self._self_enabled,
-                        self._self_binding, self)
+            if self._self_binding == "builtin":
+                return self
 
-            return self
+            if self._self_binding == "class":
+                return self
 
-        # Now we have the case of binding occurring a second time on what
-        # was already a bound function. In this case we would usually
-        # return ourselves again. This mirrors what Python does.
+            binder = getattr(self.__wrapped__, "__get__", None)
+
+            if binder is None:
+                return self
+
+            descriptor = binder(instance, owner)
+
+            return self.__bound_function_wrapper__(
+                descriptor,
+                instance,
+                self._self_wrapper,
+                self._self_enabled,
+                self._self_binding,
+                self,
+                owner,
+            )
+
+        # Now we have the case of binding occurring a second time on what was
+        # already a bound function. In this case we would usually return
+        # ourselves again. This mirrors what Python does.
         #
-        # The special case this time is where we were originally bound
-        # with an instance of None and we were likely an instance
-        # method. In that case we rebind against the original wrapped
-        # function from the parent again.
+        # The special case this time is where we were originally bound with an
+        # instance of None and we were likely an instance method. In that case
+        # we rebind against the original wrapped function from the parent again.
 
-        if self._self_instance is None and self._self_binding == 'function':
-            descriptor = self._self_parent.__wrapped__.__get__(
-                    instance, owner)
+        if self._self_instance is None and self._self_binding in (
+            "function",
+            "instancemethod",
+            "callable",
+        ):
+            descriptor = self._self_parent.__wrapped__.__get__(instance, owner)
 
             return self._self_parent.__bound_function_wrapper__(
-                    descriptor, instance, self._self_wrapper,
-                    self._self_enabled, self._self_binding,
-                    self._self_parent)
+                descriptor,
+                instance,
+                self._self_wrapper,
+                self._self_enabled,
+                self._self_binding,
+                self._self_parent,
+                owner,
+            )
 
         return self
 
@@ -582,12 +731,16 @@ class _FunctionWrapperBase(ObjectProxy):
         # a function that was already bound to an instance. In that case
         # we want to extract the instance from the function and use it.
 
-        if self._self_binding in ('function', 'classmethod'):
+        if self._self_binding in (
+            "function",
+            "instancemethod",
+            "classmethod",
+            "callable",
+        ):
             if self._self_instance is None:
-                instance = getattr(self.__wrapped__, '__self__', None)
+                instance = getattr(self.__wrapped__, "__self__", None)
                 if instance is not None:
-                    return self._self_wrapper(self.__wrapped__, instance,
-                            args, kwargs)
+                    return self._self_wrapper(self.__wrapped__, instance, args, kwargs)
 
         # This is generally invoked when the wrapped function is being
         # called as a normal function and is not bound to a class as an
@@ -595,8 +748,7 @@ class _FunctionWrapperBase(ObjectProxy):
         # wrapped function was a method, but this wrapper was in turn
         # wrapped using the staticmethod decorator.
 
-        return self._self_wrapper(self.__wrapped__, self._self_instance,
-                args, kwargs)
+        return self._self_wrapper(self.__wrapped__, self._self_instance, args, kwargs)
 
     def __set_name__(self, owner, name):
         # This is a special method use to supply information to
@@ -625,6 +777,7 @@ class _FunctionWrapperBase(ObjectProxy):
         else:
             return issubclass(subclass, self.__wrapped__)
 
+
 class BoundFunctionWrapper(_FunctionWrapperBase):
 
     def __call__(*args, **kwargs):
@@ -633,11 +786,11 @@ class BoundFunctionWrapper(_FunctionWrapperBase):
 
         self, args = _unpack_self(*args)
 
-        # If enabled has been specified, then evaluate it at this point
-        # and if the wrapper is not to be executed, then simply return
-        # the bound function rather than a bound wrapper for the bound
-        # function. When evaluating enabled, if it is callable we call
-        # it, otherwise we evaluate it as a boolean.
+        # If enabled has been specified, then evaluate it at this point and if
+        # the wrapper is not to be executed, then simply return the bound
+        # function rather than a bound wrapper for the bound function. When
+        # evaluating enabled, if it is callable we call it, otherwise we
+        # evaluate it as a boolean.
 
         if self._self_enabled is not None:
             if callable(self._self_enabled):
@@ -646,28 +799,39 @@ class BoundFunctionWrapper(_FunctionWrapperBase):
             elif not self._self_enabled:
                 return self.__wrapped__(*args, **kwargs)
 
-        # We need to do things different depending on whether we are
-        # likely wrapping an instance method vs a static method or class
-        # method.
+        # We need to do things different depending on whether we are likely
+        # wrapping an instance method vs a static method or class method.
 
-        if self._self_binding == 'function':
+        if self._self_binding == "function":
+            if self._self_instance is None and args:
+                instance, newargs = args[0], args[1:]
+                if isinstance(instance, self._self_owner):
+                    wrapped = PartialCallableObjectProxy(self.__wrapped__, instance)
+                    return self._self_wrapper(wrapped, instance, newargs, kwargs)
+
+            return self._self_wrapper(
+                self.__wrapped__, self._self_instance, args, kwargs
+            )
+
+        elif self._self_binding == "callable":
             if self._self_instance is None:
                 # This situation can occur where someone is calling the
-                # instancemethod via the class type and passing the instance
-                # as the first argument. We need to shift the args before
-                # making the call to the wrapper and effectively bind the
-                # instance to the wrapped function using a partial so the
-                # wrapper doesn't see anything as being different.
+                # instancemethod via the class type and passing the instance as
+                # the first argument. We need to shift the args before making
+                # the call to the wrapper and effectively bind the instance to
+                # the wrapped function using a partial so the wrapper doesn't
+                # see anything as being different.
 
                 if not args:
-                    raise TypeError('missing 1 required positional argument')
+                    raise TypeError("missing 1 required positional argument")
 
                 instance, args = args[0], args[1:]
                 wrapped = PartialCallableObjectProxy(self.__wrapped__, instance)
                 return self._self_wrapper(wrapped, instance, args, kwargs)
 
-            return self._self_wrapper(self.__wrapped__, self._self_instance,
-                    args, kwargs)
+            return self._self_wrapper(
+                self.__wrapped__, self._self_instance, args, kwargs
+            )
 
         else:
             # As in this case we would be dealing with a classmethod or
@@ -683,16 +847,32 @@ class BoundFunctionWrapper(_FunctionWrapperBase):
             # class type, as it reflects what they have available in the
             # decoratored function.
 
-            instance = getattr(self.__wrapped__, '__self__', None)
+            instance = getattr(self.__wrapped__, "__self__", None)
 
-            return self._self_wrapper(self.__wrapped__, instance, args,
-                    kwargs)
+            return self._self_wrapper(self.__wrapped__, instance, args, kwargs)
+
 
 class FunctionWrapper(_FunctionWrapperBase):
+    """
+    A wrapper for callable objects that can be used to apply decorators to
+    functions, methods, classmethods, and staticmethods, or any other callable.
+    It handles binding and unbinding of methods, and allows for the wrapper to
+    be enabled or disabled.
+    """
 
     __bound_function_wrapper__ = BoundFunctionWrapper
 
     def __init__(self, wrapped, wrapper, enabled=None):
+        """
+        Initialize the `FunctionWrapper` with the `wrapped` callable, the
+        `wrapper` function, and an optional `enabled` argument. The `enabled`
+        argument can be a boolean or a callable that returns a boolean. When a
+        callable is provided, it will be called each time the wrapper is
+        invoked to determine if the wrapper function should be executed or
+        whether the wrapped function should be called directly. If `enabled`
+        is not provided, the wrapper is enabled by default.
+        """
+
         # What it is we are wrapping here could be anything. We need to
         # try and detect specific cases though. In particular, we need
         # to detect when we are given something that is a method of a
@@ -733,7 +913,7 @@ class FunctionWrapper(_FunctionWrapperBase):
         #
         # 4. The wrapper is being applied when performing monkey
         # patching of an instance of a class. In this case binding will
-        # have been perfomed where the instance was not None.
+        # have been performed where the instance was not None.
         #
         # This case is a problem because we can no longer tell if the
         # method was a static method.
@@ -759,26 +939,42 @@ class FunctionWrapper(_FunctionWrapperBase):
         # or patch it in the __dict__ of the class type.
         #
         # So to get the best outcome we can, whenever we aren't sure what
-        # it is, we label it as a 'function'. If it was already bound and
+        # it is, we label it as a 'callable'. If it was already bound and
         # that is rebound later, we assume that it will be an instance
-        # method and try an cope with the possibility that the 'self'
+        # method and try and cope with the possibility that the 'self'
         # argument it being passed as an explicit argument and shuffle
         # the arguments around to extract 'self' for use as the instance.
 
-        if isinstance(wrapped, classmethod):
-            binding = 'classmethod'
+        binding = None
 
-        elif isinstance(wrapped, staticmethod):
-            binding = 'staticmethod'
+        if isinstance(wrapped, _FunctionWrapperBase):
+            binding = wrapped._self_binding
 
-        elif hasattr(wrapped, '__self__'):
-            if inspect.isclass(wrapped.__self__):
-                binding = 'classmethod'
+        if not binding:
+            if inspect.isbuiltin(wrapped):
+                binding = "builtin"
+
+            elif inspect.isfunction(wrapped):
+                binding = "function"
+
+            elif inspect.isclass(wrapped):
+                binding = "class"
+
+            elif isinstance(wrapped, classmethod):
+                binding = "classmethod"
+
+            elif isinstance(wrapped, staticmethod):
+                binding = "staticmethod"
+
+            elif hasattr(wrapped, "__self__"):
+                if inspect.isclass(wrapped.__self__):
+                    binding = "classmethod"
+                elif inspect.ismethod(wrapped):
+                    binding = "instancemethod"
+                else:
+                    binding = "callable"
+
             else:
-                binding = 'function'
+                binding = "callable"
 
-        else:
-            binding = 'function'
-
-        super(FunctionWrapper, self).__init__(wrapped, None, wrapper,
-                enabled, binding)
+        super(FunctionWrapper, self).__init__(wrapped, None, wrapper, enabled, binding)

@@ -506,11 +506,11 @@ def test_other_transaction_multiple_custom_parameters_hsm_enabled():
     transaction.add_custom_attributes([("key-1", "value-1"), ("key-2", "value-2")])
 
 
-class TestException(Exception):
+class MyException(Exception):
     pass
 
 
-_test_exception_name = f"{__name__}:{TestException.__name__}"
+_test_exception_name = f"{__name__}:{MyException.__name__}"
 
 
 @override_application_settings(_test_transaction_settings_hsm_disabled)
@@ -520,7 +520,7 @@ _test_exception_name = f"{__name__}:{TestException.__name__}"
 def test_other_transaction_error_parameters_hsm_disabled():
     add_custom_attribute("key-1", "value-1")
     try:
-        raise TestException("test message")
+        raise MyException("test message")
     except Exception:
         notice_error(attributes={"key-2": "value-2"})
 
@@ -534,14 +534,14 @@ def test_other_transaction_error_parameters_hsm_disabled():
 def test_other_transaction_error_parameters_hsm_enabled():
     add_custom_attribute("key-1", "value-1")
     try:
-        raise TestException("test message")
+        raise MyException("test message")
     except Exception:
         notice_error(attributes={"key-2": "value-2"})
 
 
 _err_message = "Error! :("
 _intrinsic_attributes = {
-    "error.class": callable_name(TestException),
+    "error.class": callable_name(MyException),
     "error.message": _err_message,
     "error.expected": False,
 }
@@ -552,14 +552,14 @@ _intrinsic_attributes = {
 @validate_non_transaction_error_event(required_intrinsics=_intrinsic_attributes, required_user={"key-1": "value-1"})
 def test_non_transaction_error_parameters_hsm_disabled():
     try:
-        raise TestException(_err_message)
+        raise MyException(_err_message)
     except Exception:
         app = application()
         notice_error(attributes={"key-1": "value-1"}, application=app)
 
 
 _intrinsic_attributes = {
-    "error.class": callable_name(TestException),
+    "error.class": callable_name(MyException),
     "error.message": STRIP_EXCEPTION_MESSAGE,
     "error.expected": False,
 }
@@ -570,7 +570,7 @@ _intrinsic_attributes = {
 @validate_non_transaction_error_event(required_intrinsics=_intrinsic_attributes, forgone_user={"key-1": "value-1"})
 def test_non_transaction_error_parameters_hsm_enabled():
     try:
-        raise TestException(_err_message)
+        raise MyException(_err_message)
     except Exception:
         app = application()
         notice_error(attributes={"key-1": "value-1"}, application=app)

@@ -117,14 +117,14 @@ class DatastoreNodeMixin(GenericNodeMixin):
         i_attrs["span.kind"] = "client"
 
         if self.product:
-            i_attrs["component"] = a_attrs["db.system"] = self.product
+            i_attrs["component"] = a_attrs["db.system"] = attribute.process_user_attribute("db.system", self.product)[1]
         if self.operation:
-            a_attrs["db.operation"] = self.operation
+            a_attrs["db.operation"] = attribute.process_user_attribute("db.operation", self.operation)[1]
         if self.target:
-            a_attrs["db.collection"] = self.target
+            a_attrs["db.collection"] = attribute.process_user_attribute("db.collection", self.target)[1]
 
         if self.instance_hostname:
-            peer_hostname = self.instance_hostname
+            peer_hostname = attribute.process_user_attribute("peer.hostname", self.instance_hostname)[1]
         else:
             peer_hostname = "Unknown"
 
@@ -132,7 +132,7 @@ class DatastoreNodeMixin(GenericNodeMixin):
 
         peer_address = f"{peer_hostname}:{self.port_path_or_id or 'Unknown'}"
 
-        a_attrs["peer.address"] = peer_address
+        a_attrs["peer.address"] = attribute.process_user_attribute("peer.address", peer_address)[1]
 
         # Attempt to treat port_path_or_id as an integer, fallback to not including it
         try:

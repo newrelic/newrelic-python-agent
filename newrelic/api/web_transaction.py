@@ -302,10 +302,8 @@ class WebTransaction(Transaction):
             self.accept_distributed_trace_headers(self._request_headers)
 
     def process_response(self, status_code, response_headers):
-        """Processes response status and headers, extracting any
-        details required and returning a set of additional headers
-        to merge into that being returned for the web transaction.
-
+        """
+        Processes response status and headers; extracting any details required.
         """
 
         if not self.enabled:
@@ -325,15 +323,8 @@ class WebTransaction(Transaction):
 
         try:
             self._response_code = int(status_code)
-
-            # If response code is 304 do not insert CAT headers. See:
-            # https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.3.5
-            if self._response_code == 304:
-                return
         except Exception:
             pass
-
-        return
 
     def _update_agent_attributes(self):
         if "accept" in self._request_headers:

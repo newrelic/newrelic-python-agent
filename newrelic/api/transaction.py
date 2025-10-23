@@ -265,7 +265,7 @@ class Transaction:
         # 32-digit random hex. Padded with zeros in the front.
         self._trace_id = trace_id
 
-        # This may be overridden by processing an inbound CAT header
+        # This may be overridden by processing an inbound DT header
         self.parent_type = None
         self.parent_span = None
         self.trusted_parent_span = None

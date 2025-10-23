@@ -59,10 +59,6 @@ def is_expected(transaction):
     return _is_expected
 
 
-def _nr_process_response(response, transaction):
-    transaction.process_response(response.status, response.headers)
-
-
 @function_wrapper
 def _nr_aiohttp_view_wrapper_(wrapped, instance, args, kwargs):
     transaction = current_transaction()
@@ -240,8 +236,23 @@ def _nr_aiohttp_request_wrapper_(wrapped, instance, args, kwargs):
 
     method, url = _bind_request(*args, **kwargs)
     trace = ExternalTrace("aiohttp", str(url), method)
-    with trace:
-        return wrapped(*args, **kwargs)
+
+    async def _coro():
+        try:
+            response = await wrapped(*args, **kwargs)
+
+            try:
+                trace.process_response(status_code=response.status)
+            except:
+                pass
+
+            return response
+        except Exception:
+            notice_error()
+
+            raise
+
+    return async_wrapper(wrapped)(_coro, trace)()
 
 
 def instrument_aiohttp_client(module):
@@ -303,13 +314,13 @@ def _nr_request_wrapper(wrapped, instance, args, kwargs):
         try:
             response = await coro
         except _web.HTTPException as e:
-            _nr_process_response(e, transaction)
+            transaction.process_response(e.status, e.headers)
             raise
         except Exception:
             transaction.process_response(500, ())
             raise
 
-        _nr_process_response(response, transaction)
+        transaction.process_response(response.status, response.headers)
         return response
 
     _coro = web_transaction(

@@ -458,13 +458,10 @@ class TransactionNode(_TransactionNode):
 
         apdex_perf_zone = self.apdex_perf_zone()
         _add_if_not_empty("apdexPerfZone", apdex_perf_zone)
-        _add_if_not_empty("nr.apdexPerfZone", apdex_perf_zone)
 
         if self.errors:
             intrinsics["error"] = True
 
-        if self.synthetics_resource_id:
-            intrinsics["nr.guid"] = self.guid
         if self.parent_tx:
             intrinsics["parentId"] = self.parent_tx
 

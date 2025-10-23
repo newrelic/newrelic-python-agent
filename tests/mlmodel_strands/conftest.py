@@ -15,6 +15,7 @@
 import pytest
 from _mock_model_provider import MockedModelProvider
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
+from testing_support.ml_testing_utils import set_trace_info
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slowdowns.

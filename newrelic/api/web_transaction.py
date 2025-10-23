@@ -329,11 +329,11 @@ class WebTransaction(Transaction):
             # If response code is 304 do not insert CAT headers. See:
             # https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.3.5
             if self._response_code == 304:
-                return None
+                return
         except Exception:
             pass
 
-        return None
+        return
 
     def _update_agent_attributes(self):
         if "accept" in self._request_headers:

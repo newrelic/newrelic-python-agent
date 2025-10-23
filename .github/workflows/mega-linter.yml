@@ -53,7 +53,7 @@ jobs:
       # MegaLinter
       - name: MegaLinter
         id: ml
-        uses: oxsecurity/megalinter/flavors/python@0dcbedd66ea456ba2d54fd350affaa15df8a0da3 # 9.0.1
+        uses: oxsecurity/megalinter/flavors/python@62c799d895af9bcbca5eacfebca29d527f125a57 # 9.1.0
         env:
           # All available variables are described in documentation
           # https://megalinter.io/latest/configuration/
@@ -109,7 +109,7 @@ jobs:
         run: sudo chown -Rc $UID .git/
 
       - name: Commit and push applied linter fixes
-        uses: stefanzweifel/git-auto-commit-action@778341af668090896ca464160c2def5d1d1a3eb0 # 6.0.1
+        uses: stefanzweifel/git-auto-commit-action@28e16e81777b558cc906c8750092100bbb34c5e3 # 7.0.0
         if: env.APPLY_FIXES_IF_COMMIT == 'true'
         with:
           branch: >-

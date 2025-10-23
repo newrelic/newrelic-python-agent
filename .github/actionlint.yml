@@ -12,22 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# To target other architectures, change the --platform directive in the Dockerfile.
-ARG IMAGE_TAG=latest
-FROM ghcr.io/newrelic/newrelic-python-agent-ci:${IMAGE_TAG}
-
-# Setup non-root user
-USER root
-ARG UID=1001
-ARG GID=${UID}
-ENV HOME=/root
-RUN mkdir -p ${HOME} && \
-    groupadd --gid ${GID} vscode && \
-    useradd --uid ${UID} --gid ${GID} --home ${HOME} vscode && \
-    chown -R ${UID}:${GID} ${HOME}/
-
-# Restrict uv to only download Python versions manually
-ENV UV_PYTHON_DOWNLOADS=manual
-
-# Set user
-USER ${UID}:${GID}
+paths:
+  .github/workflows/**/*.{yml,yaml}:
+    ignore:
+      # This runner exists, but is in beta and not known to actionlint.
+      - 'label "windows-11-arm" is unknown\. .+'
+      - 'property "check_run_id" is not defined.+'

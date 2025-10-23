@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
 from pathlib import Path
 
 import pytest
@@ -64,20 +65,24 @@ def _generator():
     yield from range(1, 4)
 
 
-@pytest.mark.parametrize(
-    "input_,expected",
-    [
-        (10, "10"),
-        (10.0, "10.0"),
-        ("my_string", '"my_string"'),
-        (b"my_bytes", '"my_bytes"'),
-        ({"id": 1, "name": "test", "NoneType": None}, '{"id":1,"name":"test","NoneType":null}'),
-        (_generator(), "[1,2,3]"),
-        (tuple(range(4, 7)), "[4,5,6]"),
-        (Path("test/path/file.txt"), '"test/path/file.txt"'),
-    ],
-    ids=["int", "float", "str", "bytes", "dict", "generator", "iterable", "Path"],
-)
+JSON_ENCODE_TESTS = [
+    pytest.param(10, "10", id="int"),
+    pytest.param(10.0, "10.0", id="float"),
+    pytest.param("my_string", '"my_string"', id="str"),
+    pytest.param(b"my_bytes", '"my_bytes"', id="bytes"),
+    pytest.param({"id": 1, "name": "test", "NoneType": None}, '{"id":1,"name":"test","NoneType":null}', id="dict"),
+    pytest.param(_generator(), "[1,2,3]", id="generator"),
+    pytest.param(tuple(range(4, 7)), "[4,5,6]", id="iterable"),
+]
+
+# Add a Path object test that's platform dependent
+if sys.platform == "win32":
+    JSON_ENCODE_TESTS.append(pytest.param(Path("test\\path\\file.txt"), '"test\\\\path\\\\file.txt"', id="Path"))
+else:
+    JSON_ENCODE_TESTS.append(pytest.param(Path("test/path/file.txt"), '"test/path/file.txt"', id="Path"))
+
+
+@pytest.mark.parametrize("input_,expected", JSON_ENCODE_TESTS)
 def test_json_encode(input_, expected):
     output = json_encode(input_)
     assert output == expected

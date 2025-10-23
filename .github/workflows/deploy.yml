@@ -23,24 +23,50 @@ permissions:
   contents: read
 
 jobs:
-  build-linux-py3:
-    runs-on: ubuntu-24.04
+  build-wheels:
     strategy:
       fail-fast: false
       matrix:
-        wheel:
-          - cp38-manylinux
-          - cp38-musllinux
-          - cp39-manylinux
-          - cp39-musllinux
-          - cp310-manylinux
-          - cp310-musllinux
-          - cp311-manylinux
-          - cp311-musllinux
-          - cp312-manylinux
-          - cp312-musllinux
-          - cp313-manylinux
-          - cp313-musllinux
+        include:
+          # Linux glibc
+          - wheel: cp38-manylinux
+            os: ubuntu-24.04
+          - wheel: cp39-manylinux
+            os: ubuntu-24.04
+          - wheel: cp310-manylinux
+            os: ubuntu-24.04
+          - wheel: cp311-manylinux
+            os: ubuntu-24.04
+          - wheel: cp312-manylinux
+            os: ubuntu-24.04
+          - wheel: cp313-manylinux
+            os: ubuntu-24.04
+          - wheel: cp314-manylinux
+            os: ubuntu-24.04
+          # Linux musllibc
+          - wheel: cp38-musllinux
+            os: ubuntu-24.04
+          - wheel: cp39-musllinux
+            os: ubuntu-24.04
+          - wheel: cp310-musllinux
+            os: ubuntu-24.04
+          - wheel: cp311-musllinux
+            os: ubuntu-24.04
+          - wheel: cp312-musllinux
+            os: ubuntu-24.04
+          - wheel: cp313-musllinux
+            os: ubuntu-24.04
+          - wheel: cp314-musllinux
+            os: ubuntu-24.04
+          # Windows
+          # Windows wheels won't but published until the full release announcement.
+          # - wheel: cp313-win
+          #   os: windows-2025
+          # - wheel: cp314-win
+          #   os: windows-2025
+
+    name: Build wheels for ${{ matrix.wheel }}
+    runs-on: ${{ matrix.os }}
 
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
@@ -49,17 +75,26 @@ jobs:
           fetch-depth: 0
 
       - name: Setup QEMU
+        if: runner.os == 'Linux'
         uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # 3.6.0
+        with:
+          platforms: arm64
 
       - name: Build Wheels
         uses: pypa/cibuildwheel@faf86a6ed7efa889faf6996aa23820831055001a # 2.23.3
         env:
-          CIBW_PLATFORM: linux
+          CIBW_PLATFORM: auto
           CIBW_BUILD: "${{ matrix.wheel }}*"
           CIBW_ARCHS_LINUX: x86_64 aarch64
-          CIBW_ENVIRONMENT: "LD_LIBRARY_PATH=/opt/rh/devtoolset-8/root/usr/lib64:/opt/rh/devtoolset-8/root/usr/lib:/opt/rh/devtoolset-8/root/usr/lib64/dyninst:/opt/rh/devtoolset-8/root/usr/lib/dyninst:/usr/local/lib64:/usr/local/lib"
+          CIBW_ARCHS_MACOS: native
+          CIBW_ARCHS_WINDOWS: AMD64 ARM64
+          CIBW_ENVIRONMENT_LINUX: "LD_LIBRARY_PATH=/opt/rh/devtoolset-8/root/usr/lib64:/opt/rh/devtoolset-8/root/usr/lib:/opt/rh/devtoolset-8/root/usr/lib64/dyninst:/opt/rh/devtoolset-8/root/usr/lib/dyninst:/usr/local/lib64:/usr/local/lib"
           CIBW_TEST_REQUIRES: pytest
-          CIBW_TEST_COMMAND: "PYTHONPATH={project}/tests pytest {project}/tests/agent_unittests -vx"
+          CIBW_TEST_COMMAND_LINUX: "export PYTHONPATH={project}/tests; pytest {project}/tests/agent_unittests -vx"
+          CIBW_TEST_COMMAND_MACOS: "export PYTHONPATH={project}/tests; pytest {project}/tests/agent_unittests -vx"
+          CIBW_TEST_COMMAND_WINDOWS: "set PYTHONPATH={project}/tests; pytest {project}/tests/agent_unittests -vx"
+          # Windows ARM64 tests won't run when using cross compilation. Skip unless we can move to a native windows-arm runner.
+          CIBW_TEST_SKIP: "*-win_arm64"
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
@@ -70,7 +105,9 @@ jobs:
           retention-days: 1
 
   build-sdist:
+    name: Build sdist
     runs-on: ubuntu-24.04
+
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # 5.0.0
         with:
@@ -79,7 +116,7 @@ jobs:
 
       - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # 6.0.0
         with:
-          python-version: "3.12"
+          python-version: "3.13"
 
       - name: Install Dependencies
         run: |
@@ -107,16 +144,26 @@ jobs:
           retention-days: 1
 
   publish:
+    name: Publish
     runs-on: ubuntu-24.04
-    environment: pypi
     permissions:
       contents: read
       id-token: write # IMPORTANT: this permission is mandatory for trusted publishing
       attestations: write
-
     needs:
-      - build-linux-py3
+      - build-wheels
       - build-sdist
+
+    strategy:
+      matrix:
+        pypi-instance:
+          - pypi
+          # Valid values for deployment are:
+          # - "pypi" for production
+          # - "testpypi" for testing
+          # - "build-only" to skip publishing and only test builds.
+
+    environment: ${{ matrix.pypi-instance }}
 
     steps:
       - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # 5.0.0
@@ -125,6 +172,7 @@ jobs:
           merge-multiple: true
 
       - name: Upload Package to S3
+        if: matrix.pypi-instance == 'pypi'
         run: |
           tarball="$(basename ./dist/*.tar.gz)"
           md5_file="${tarball}.md5"
@@ -137,8 +185,15 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: us-west-2
 
-      - name: Upload Package
+      - name: Upload Package to PyPI
+        if: matrix.pypi-instance == 'pypi'
         uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # 1.13.0
+
+      - name: Upload Package to TestPyPI
+        if: matrix.pypi-instance == 'testpypi'
+        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # 1.13.0
+        with:
+          repository-url: https://test.pypi.org/legacy/
 
       - name: Attest
         uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # 3.0.0
@@ -149,11 +204,13 @@ jobs:
             ./dist/*.tar.gz
 
       - name: Wait for release to be available
+        if: matrix.pypi-instance == 'pypi'
         id: wait
         run: |
           sleep 60
 
       - name: Create release tags for Lambda and K8s Init Containers
+        if: matrix.pypi-instance == 'pypi'
         run: |
           RELEASE_TITLE="New Relic Python Agent ${GITHUB_REF_NAME}.0"
           RELEASE_TAG="${GITHUB_REF_NAME}.0_python"

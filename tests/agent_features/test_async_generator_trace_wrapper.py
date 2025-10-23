@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import functools
+import gc
 import sys
 import time
 
@@ -85,7 +86,7 @@ class MyException(Exception):
     scoped_metrics=[("Function/agen", 1)],
     rollup_metrics=[("Function/agen", 1)],
 )
-@validate_transaction_errors(errors=["test_async_generator_trace:MyException"])
+@validate_transaction_errors(errors=["test_async_generator_trace_wrapper:MyException"])
 def test_async_generator_error(event_loop):
     @function_trace(name="agen")
     async def agen():
@@ -183,30 +184,36 @@ def test_async_generator_handles_terminal_nodes(event_loop):
 
 
 @validate_transaction_metrics(
-    "test_async_generator_close_ends_trace",
+    "test_async_generator_aclose_ends_trace",
     background_task=True,
     scoped_metrics=[("Function/agen", 1)],
     rollup_metrics=[("Function/agen", 1)],
 )
-def test_async_generator_close_ends_trace(event_loop):
+def test_async_generator_aclose_ends_trace(event_loop):
     @function_trace(name="agen")
     async def agen():
         yield
 
-    @background_task(name="test_async_generator_close_ends_trace")
-    async def _test():
-        gen = agen()
+    # Save a reference to the generator and run the validations before that
+    # is garbage collected to avoid this test becoming a duplicate
+    # of the test "test_incomplete_async_generator"
+    gen = agen()
 
-        # kickstart the coroutine
-        await gen.asend(None)
+    @background_task(name="test_async_generator_aclose_ends_trace")
+    def _test_async_generator_aclose_ends_trace():
+        async def _test():
+            # kickstart the coroutine
+            await gen.asend(None)
 
-        # trace should be ended/recorded by close
-        await gen.aclose()
+            # trace should be ended/recorded by close
+            await gen.aclose()
 
-        # We may call gen.close as many times as we want
-        await gen.aclose()
+            # We may call gen.close as many times as we want
+            await gen.aclose()
 
-    event_loop.run_until_complete(_test())
+        event_loop.run_until_complete(_test())
+
+    _test_async_generator_aclose_ends_trace()
 
 
 @validate_tt_parenting(("TransactionNode", [("FunctionNode", [("FunctionNode", [])])]))
@@ -493,6 +500,10 @@ def test_incomplete_async_generator(event_loop, nr_transaction):
 
             async for _ in c:
                 break
+
+            # This test differs from the test for async_proxy in that the generator
+            # going out of scope does not immediately close the trace. Instead, it's
+            # the transaction ending that closes the trace. No need to call gc.collect().
 
         if nr_transaction:
             _test = background_task(name="test_incomplete_async_generator")(_test)

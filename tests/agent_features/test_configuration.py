@@ -17,11 +17,11 @@ import copy
 import logging
 import pathlib
 import sys
-import tempfile
 import urllib.parse as urlparse
 
 import pytest
 from testing_support.fixtures import override_generic_settings
+from testing_support.util import NamedTemporaryFile
 
 from newrelic.api.exceptions import ConfigurationError
 from newrelic.common.object_names import callable_name
@@ -32,6 +32,7 @@ from newrelic.config import (
     delete_setting,
     initialize,
     translate_deprecated_settings,
+    translate_event_harvest_config_settings,
 )
 from newrelic.core.config import (
     Settings,
@@ -404,101 +405,117 @@ def test_delete_setting_parent():
 #       'value' != 'default'
 TSetting = collections.namedtuple("TSetting", ["name", "value", "default"])
 
-translate_settings_tests = [
+translate_event_harvest_settings_tests = [
     (
-        TSetting("strip_exception_messages.whitelist", [], []),
-        TSetting("strip_exception_messages.allowlist", ["non-default-value"], []),
-    ),
-    (
-        TSetting("strip_exception_messages.whitelist", ["non-default-value"], []),
-        TSetting("strip_exception_messages.allowlist", [], []),
-    ),
-    (
-        TSetting("transaction_tracer.capture_attributes", True, True),
-        TSetting("transaction_tracer.attributes.enabled", False, True),
-    ),
-    (
-        TSetting("transaction_tracer.capture_attributes", False, True),
-        TSetting("transaction_tracer.attributes.enabled", True, True),
-    ),
-    (
-        TSetting("error_collector.capture_attributes", True, True),
-        TSetting("error_collector.attributes.enabled", False, True),
-    ),
-    (
-        TSetting("error_collector.capture_attributes", False, True),
-        TSetting("error_collector.attributes.enabled", True, True),
-    ),
-    (
-        TSetting("browser_monitoring.capture_attributes", False, False),
-        TSetting("browser_monitoring.attributes.enabled", True, False),
-    ),
-    (
-        TSetting("browser_monitoring.capture_attributes", True, False),
-        TSetting("browser_monitoring.attributes.enabled", False, False),
-    ),
-    (
-        TSetting("analytics_events.capture_attributes", True, True),
-        TSetting("transaction_events.attributes.enabled", False, True),
-    ),
-    (
-        TSetting("analytics_events.capture_attributes", False, True),
-        TSetting("transaction_events.attributes.enabled", True, True),
-    ),
-    (TSetting("analytics_events.enabled", True, True), TSetting("transaction_events.enabled", False, True)),
-    (TSetting("analytics_events.enabled", False, True), TSetting("transaction_events.enabled", True, True)),
-    (
-        TSetting("analytics_events.max_samples_stored", 1200, 1200),
-        TSetting("transaction_events.max_samples_stored", 9999, 1200),
-    ),
-    (
-        TSetting("analytics_events.max_samples_stored", 9999, 1200),
         TSetting("transaction_events.max_samples_stored", 1200, 1200),
-    ),
-    (
-        TSetting("event_harvest_config.harvest_limits.analytic_event_data", 1200, 1200),
-        TSetting("transaction_events.max_samples_stored", 9999, 1200),
-    ),
-    (
         TSetting("event_harvest_config.harvest_limits.analytic_event_data", 9999, 1200),
-        TSetting("transaction_events.max_samples_stored", 1200, 1200),
     ),
     (
-        TSetting("event_harvest_config.harvest_limits.span_event_data", 1000, 2000),
-        TSetting("span_events.max_samples_stored", 9999, 2000),
+        TSetting("transaction_events.max_samples_stored", 9999, 1200),
+        TSetting("event_harvest_config.harvest_limits.analytic_event_data", 1200, 1200),
     ),
     (
-        TSetting("event_harvest_config.harvest_limits.span_event_data", 9999, 2000),
         TSetting("span_events.max_samples_stored", 1000, 2000),
+        TSetting("event_harvest_config.harvest_limits.span_event_data", 9999, 2000),
     ),
     (
-        TSetting("event_harvest_config.harvest_limits.error_event_data", 100, 100),
-        TSetting("error_collector.max_event_samples_stored", 9999, 100),
+        TSetting("span_events.max_samples_stored", 9999, 2000),
+        TSetting("event_harvest_config.harvest_limits.span_event_data", 1000, 2000),
     ),
     (
-        TSetting("event_harvest_config.harvest_limits.error_event_data", 9999, 100),
         TSetting("error_collector.max_event_samples_stored", 100, 100),
+        TSetting("event_harvest_config.harvest_limits.error_event_data", 9999, 100),
     ),
     (
-        TSetting("event_harvest_config.harvest_limits.custom_event_data", 3600, 3600),
-        TSetting("custom_insights_events.max_samples_stored", 9999, 3600),
+        TSetting("error_collector.max_event_samples_stored", 9999, 100),
+        TSetting("event_harvest_config.harvest_limits.error_event_data", 100, 100),
     ),
     (
-        TSetting("event_harvest_config.harvest_limits.custom_event_data", 9999, 3600),
         TSetting("custom_insights_events.max_samples_stored", 3600, 3600),
+        TSetting("event_harvest_config.harvest_limits.custom_event_data", 9999, 3600),
     ),
     (
-        TSetting("event_harvest_config.harvest_limits.log_event_data", 10000, 10000),
-        TSetting("application_logging.forwarding.max_samples_stored", 99999, 10000),
+        TSetting("custom_insights_events.max_samples_stored", 9999, 3600),
+        TSetting("event_harvest_config.harvest_limits.custom_event_data", 3600, 3600),
     ),
     (
-        TSetting("event_harvest_config.harvest_limits.log_event_data", 99999, 10000),
         TSetting("application_logging.forwarding.max_samples_stored", 10000, 10000),
+        TSetting("event_harvest_config.harvest_limits.log_event_data", 99999, 10000),
+    ),
+    (
+        TSetting("application_logging.forwarding.max_samples_stored", 99999, 10000),
+        TSetting("event_harvest_config.harvest_limits.log_event_data", 10000, 10000),
     ),
 ]
 
 
-@pytest.mark.parametrize("old,new", translate_settings_tests)
+@pytest.mark.parametrize("external,internal", translate_event_harvest_settings_tests)
+def test_translate_event_harvest_setting_without_new_setting(external, internal):
+    # From the user's end, the *.max_samples_stored naming convention
+    # is the desired setting name, but since the collector still uses the
+    # event_harvest_config.harvest_limits.* naming convention, those will be
+    # what is actually stored in the settings object.
+    #
+    # Before: max_samples_stored setting will be in settings object.
+    #         event_harvest_config.harvest_limits.* settings will
+    #         *NOT* be in settings object.
+    #
+    # After:  max_samples_stored setting will *NOT* be in settings object.
+    #         event_harvest_config.harvest_limits.* settings will be in
+    #         settings object with value given by max_samples_stored
+
+    settings = apply_server_side_settings()
+    apply_config_setting(settings, external.name, external.value)
+
+    assert fetch_config_setting(settings, external.name) == external.value
+    assert fetch_config_setting(settings, internal.name) == internal.default
+
+    cached = [(external.name, external.value)]
+    result = translate_event_harvest_config_settings(settings, cached)
+
+    assert result is settings
+    assert external.name not in flatten_settings(result)
+    assert fetch_config_setting(result, internal.name) == external.value
+
+
+@pytest.mark.parametrize("external,internal", translate_event_harvest_settings_tests)
+def test_translate_event_harvest_setting_with_new_setting(external, internal):
+    # NOTE: This is the same behavior for whether the old setting is present or not
+    # From the user's end, the *.max_samples_stored naming convention
+    # is the desired setting name, but since the collector still uses the
+    # event_harvest_config.harvest_limits.* naming convention, those will be
+    # what is actually stored in the settings object.
+    #
+    # Before: max_samples_stored setting will be in settings object.
+    #         event_harvest_config.harvest_limits.* settings will
+    #         also be in settings object.
+    #
+    # After:  max_samples_stored setting will *NOT* be in settings object.
+    #         event_harvest_config.harvest_limits.* settings will be in
+    #         settings object with value given by max_samples_stored
+
+    settings = apply_server_side_settings()
+    apply_config_setting(settings, external.name, external.value)
+    apply_config_setting(settings, internal.name, internal.value)
+
+    assert fetch_config_setting(settings, external.name) == external.value
+    assert fetch_config_setting(settings, internal.name) == internal.value
+
+    cached = [(external.name, external.value), (internal.name, internal.value)]
+    result = translate_event_harvest_config_settings(settings, cached)
+
+    assert result is settings
+    assert external.name not in flatten_settings(result)
+    assert fetch_config_setting(result, internal.name) == external.value
+
+
+translate_deprecated_settings_tests = [
+    # Nothing in here right now.
+]
+
+
+@pytest.mark.skip("Renable this test once there are other deprecated settings.")
+@pytest.mark.parametrize("old,new", translate_deprecated_settings_tests)
 def test_translate_deprecated_setting_without_new_setting(old, new):
     # Before: deprecated setting will be in settings object.
     #         new setting will be in settings object and have default value
@@ -520,7 +537,8 @@ def test_translate_deprecated_setting_without_new_setting(old, new):
     assert fetch_config_setting(result, new.name) == old.value
 
 
-@pytest.mark.parametrize("old,new", translate_settings_tests)
+@pytest.mark.skip("Renable this test once there are other deprecated settings.")
+@pytest.mark.parametrize("old,new", translate_deprecated_settings_tests)
 def test_translate_deprecated_setting_with_new_setting(old, new):
     # Before: deprecated setting will be in settings object.
     #         new setting will be in settings object and have its value
@@ -543,7 +561,8 @@ def test_translate_deprecated_setting_with_new_setting(old, new):
     assert fetch_config_setting(result, new.name) == new.value
 
 
-@pytest.mark.parametrize("old,new", translate_settings_tests)
+@pytest.mark.skip("Renable this test once there are other deprecated settings.")
+@pytest.mark.parametrize("old,new", translate_deprecated_settings_tests)
 def test_translate_deprecated_setting_without_old_setting(old, new):
     # Before: deprecated setting will *NOT* be in settings object.
     #         new setting will be in settings object and have its value
@@ -595,7 +614,7 @@ app_name = Python Agent Test (agent_features)
 def test_initialize_raises_if_config_does_not_match_previous():
     error_message = "Configuration has already been done against differing configuration file or environment.*"
     with pytest.raises(ConfigurationError, match=error_message):
-        with tempfile.NamedTemporaryFile() as f:
+        with NamedTemporaryFile() as f:
             f.write(newrelic_ini_contents)
             f.seek(0)
 
@@ -604,7 +623,7 @@ def test_initialize_raises_if_config_does_not_match_previous():
 
 def test_initialize_via_config_file():
     _reset_configuration_done()
-    with tempfile.NamedTemporaryFile() as f:
+    with NamedTemporaryFile() as f:
         f.write(newrelic_ini_contents)
         f.seek(0)
 
@@ -625,7 +644,7 @@ def test_initialize_config_file_does_not_exist():
 
 def test_initialize_environment():
     _reset_configuration_done()
-    with tempfile.NamedTemporaryFile() as f:
+    with NamedTemporaryFile() as f:
         f.write(newrelic_ini_contents)
         f.seek(0)
 
@@ -634,7 +653,7 @@ def test_initialize_environment():
 
 def test_initialize_log_level():
     _reset_configuration_done()
-    with tempfile.NamedTemporaryFile() as f:
+    with NamedTemporaryFile() as f:
         f.write(newrelic_ini_contents)
         f.seek(0)
 
@@ -643,7 +662,7 @@ def test_initialize_log_level():
 
 def test_initialize_log_file():
     _reset_configuration_done()
-    with tempfile.NamedTemporaryFile() as f:
+    with NamedTemporaryFile() as f:
         f.write(newrelic_ini_contents)
         f.seek(0)
 
@@ -658,7 +677,7 @@ def test_initialize_config_file_feature_flag(feature_flag, expect_warning, logge
     apply_config_setting(settings, "feature_flag", feature_flag)
     _reset_configuration_done()
 
-    with tempfile.NamedTemporaryFile() as f:
+    with NamedTemporaryFile() as f:
         f.write(newrelic_ini_contents)
         f.seek(0)
 
@@ -717,7 +736,7 @@ def test_initialize_config_file_with_traces(setting_name, setting_value, expect_
     apply_config_setting(settings, setting_name, setting_value)
     _reset_configuration_done()
 
-    with tempfile.NamedTemporaryFile() as f:
+    with NamedTemporaryFile() as f:
         f.write(newrelic_ini_contents)
         f.seek(0)
 
@@ -909,7 +928,7 @@ def test_initialize_developer_mode(section, expect_error, logger):
     _reset_instrumentation_done()
     _reset_config_parser()
 
-    with tempfile.NamedTemporaryFile() as f:
+    with NamedTemporaryFile() as f:
         f.write(newrelic_ini_contents)
         f.write(section)
         f.seek(0)
@@ -977,7 +996,7 @@ def test_toml_parse_development():
     _reset_config_parser()
     _reset_instrumentation_done()
 
-    with tempfile.NamedTemporaryFile(suffix=".toml") as f:
+    with NamedTemporaryFile(suffix=".toml") as f:
         f.write(newrelic_toml_contents)
         f.seek(0)
 
@@ -999,7 +1018,7 @@ def test_toml_parse_production():
     _reset_config_parser()
     _reset_instrumentation_done()
 
-    with tempfile.NamedTemporaryFile(suffix=".toml") as f:
+    with NamedTemporaryFile(suffix=".toml") as f:
         f.write(newrelic_toml_contents)
         f.seek(0)
 
@@ -1019,7 +1038,7 @@ def test_config_file_path_types_ini(pathtype):
     _reset_config_parser()
     _reset_instrumentation_done()
 
-    with tempfile.NamedTemporaryFile(suffix=".ini") as f:
+    with NamedTemporaryFile(suffix=".ini") as f:
         f.write(newrelic_ini_contents)
         f.seek(0)
 
@@ -1039,7 +1058,7 @@ def test_config_file_path_types_toml(pathtype):
     _reset_config_parser()
     _reset_instrumentation_done()
 
-    with tempfile.NamedTemporaryFile(suffix=".toml") as f:
+    with NamedTemporaryFile(suffix=".toml") as f:
         f.write(newrelic_toml_contents)
         f.seek(0)
 

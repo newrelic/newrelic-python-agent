@@ -23,8 +23,6 @@ import time
 from pathlib import Path
 from queue import Queue
 
-import pytest
-
 from newrelic.admin.record_deploy import record_deploy
 from newrelic.api.application import application_instance, application_settings, register_application
 from newrelic.api.ml_model import set_llm_token_count_callback
@@ -46,6 +44,22 @@ from newrelic.network.exceptions import RetryDataForRequest
 from testing_support.sample_applications import error_user_params_added, user_attributes_added
 
 _logger = logging.getLogger("newrelic.tests")
+
+try:
+    import pytest
+except ImportError:
+    # When running benchmarks, we don't use pytest.
+    # Instead, make these fixtures into functions and generators we can use manually.
+    pytest = type("pytest", (), {})
+
+    def fixture(func=None, **kwargs):
+        # Passthrough to make this transparent for benchmarks
+        if func:
+            return func
+        else:
+            return fixture
+
+    pytest.fixture = fixture
 
 
 def _environ_as_bool(name, default=False):
@@ -188,7 +202,7 @@ def collector_agent_registration_fixture(
     linked_applications = linked_applications or []
 
     @pytest.fixture(scope=scope)
-    def _collector_agent_registration_fixture(request):
+    def _collector_agent_registration_fixture():
         if should_initialize_agent:
             initialize_agent(app_name=app_name, default_settings=default_settings)
 
@@ -332,17 +346,17 @@ def django_collector_agent_registration_fixture(
 
 
 @pytest.fixture
-def collector_available_fixture(request, collector_agent_registration):
+def collector_available_fixture(collector_agent_registration):
     application = collector_agent_registration
     settings = global_settings()
 
     # Wait for the application to become active.
-    timeout = (settings.startup_timeout or 0) + 10.0
+    timeout = _timeout = (settings.startup_timeout or 0) + 10.0
     while not application.active and timeout > 0:
         time.sleep(0.1)
         timeout -= 0.1
 
-    assert application.active, f"Application failed to activate after {timeout} seconds."
+    assert application.active, f"Application failed to activate after {_timeout} seconds."
 
 
 def raise_background_exceptions(timeout=5.0):

@@ -637,6 +637,63 @@ def delete_setting(settings_object, name):
         _logger.debug("Failed to delete setting: %r", name)
 
 
+def translate_event_harvest_config_settings(settings, cached_settings):
+    """Translate event_harvest_config settings to max_samples settings.
+
+    Background:
+    The collector/server side agent configuration uses the
+    `event_harvest_config` naming convention for their harvest
+    limit settings.  The original intent was for the language
+    agents to switch to this convention.  However, this only
+    happened for the Python agent.  Eventually, to remain
+    consistent with the other language agents, the decision
+    was made to change this back.  However, because the server
+    side configuration settings override the client-side settings,
+    the agent will insist on employing the `max_samples` naming
+    convention from the user's end but translate the settings
+    to their deprecated `event_harvest_config` counterparts during
+    the configuration process.
+
+    Here, the user will still get warnings about deprecated settings
+    being used.  However, the agent will also translate the settings
+    to their deprecated `event_harvest_config` counterparts during
+    the configuration process.
+    """
+
+    cached = dict(cached_settings)
+
+    event_harvest_to_max_samples_settings_map = [
+        ("event_harvest_config.harvest_limits.analytic_event_data", "transaction_events.max_samples_stored"),
+        ("event_harvest_config.harvest_limits.span_event_data", "span_events.max_samples_stored"),
+        ("event_harvest_config.harvest_limits.error_event_data", "error_collector.max_event_samples_stored"),
+        ("event_harvest_config.harvest_limits.custom_event_data", "custom_insights_events.max_samples_stored"),
+        ("event_harvest_config.harvest_limits.log_event_data", "application_logging.forwarding.max_samples_stored"),
+    ]
+
+    for event_harvest_key, max_samples_key in event_harvest_to_max_samples_settings_map:
+        if event_harvest_key in cached:
+            _logger.info(
+                "Deprecated setting found: %r. Please use new setting: %r.", event_harvest_key, max_samples_key
+            )
+
+            if max_samples_key in cached:
+                # Since there is the max_samples key as well as the event_harvest key,
+                # we need to apply the max_samples value to the event_harvest key.
+                apply_config_setting(settings, event_harvest_key, cached[max_samples_key])
+                _logger.info(
+                    "Ignoring deprecated setting: %r. Using new setting: %r.", event_harvest_key, max_samples_key
+                )
+            else:
+                # Translation to event_harvest_config has already happened
+                _logger.info("Applying value of deprecated setting %r to %r.", event_harvest_key, max_samples_key)
+        elif max_samples_key in cached:
+            apply_config_setting(settings, event_harvest_key, cached[max_samples_key])
+
+        delete_setting(settings, max_samples_key)
+
+    return settings
+
+
 def translate_deprecated_settings(settings, cached_settings):
     # If deprecated setting has been set by user, but the new
     # setting has not, then translate the deprecated setting to the
@@ -668,19 +725,7 @@ def translate_deprecated_settings(settings, cached_settings):
     cached = dict(cached_settings)
 
     deprecated_settings_map = [
-        ("transaction_tracer.capture_attributes", "transaction_tracer.attributes.enabled"),
-        ("error_collector.capture_attributes", "error_collector.attributes.enabled"),
-        ("browser_monitoring.capture_attributes", "browser_monitoring.attributes.enabled"),
-        ("analytics_events.capture_attributes", "transaction_events.attributes.enabled"),
-        ("analytics_events.enabled", "transaction_events.enabled"),
-        ("analytics_events.max_samples_stored", "transaction_events.max_samples_stored"),
-        ("event_harvest_config.harvest_limits.analytic_event_data", "transaction_events.max_samples_stored"),
-        ("event_harvest_config.harvest_limits.span_event_data", "span_events.max_samples_stored"),
-        ("event_harvest_config.harvest_limits.error_event_data", "error_collector.max_event_samples_stored"),
-        ("event_harvest_config.harvest_limits.custom_event_data", "custom_insights_events.max_samples_stored"),
-        ("event_harvest_config.harvest_limits.log_event_data", "application_logging.forwarding.max_samples_stored"),
-        ("error_collector.ignore_errors", "error_collector.ignore_classes"),
-        ("strip_exception_messages.whitelist", "strip_exception_messages.allowlist"),
+        # Nothing in here right now!
     ]
 
     for old_key, new_key in deprecated_settings_map:
@@ -928,6 +973,11 @@ def _load_configuration(config_file=None, environment=None, ignore_errors=True, 
 
     initialize_logging(log_file, log_level)
 
+    # Check the resolution of the system timers we will be using
+    # and log a warning if it isn't precise enough.
+
+    _check_timer_resolution()
+
     # Now process the remainder of the global configuration
     # settings.
 
@@ -963,6 +1013,10 @@ def _load_configuration(config_file=None, environment=None, ignore_errors=True, 
     # Translate old settings
 
     translate_deprecated_settings(_settings, _cache_object)
+
+    # Translate event_harvest_config settings to max_samples settings (from user's side)
+
+    translate_event_harvest_config_settings(_settings, _cache_object)
 
     # Apply High Security Mode policy if enabled in local agent
     # configuration file.
@@ -1017,6 +1071,44 @@ def _load_configuration(config_file=None, environment=None, ignore_errors=True, 
             newrelic.api.import_hook.register_import_hook(module, hook)
         except Exception:
             _raise_configuration_error(section=None, option="transaction_tracer.generator_trace")
+
+
+def _check_timer_resolution():
+    """Check the resolution of the system timer we will be using. If it isn't precise enough then log warnings."""
+
+    from time import get_clock_info
+
+    timer = "time"  # Hard code this for now, in the future we may want to make timer selection dynamic
+    min_recommended_timer_resolution = 1e-4  # 0.1 milliseconds
+
+    # Attempt to get the resolution of the selected timer. If this fails, log a warning and exit early.
+    try:
+        resolution = get_clock_info(timer).resolution
+    except Exception:
+        _logger.warning("Unable to determine resolution of system timer.")
+        return
+
+    # Check the resolution level of the timer and log appropriate messages for it.
+    resolution_log_level = logging.DEBUG
+    if resolution > min_recommended_timer_resolution:
+        resolution_log_level = logging.WARNING
+        _logger.warning(
+            "The resolution of time.%s() on this system is not precise enough and may result in "
+            "inaccurate timing measurements. This can cause widely varying response times and "
+            "trace durations to be reported by the New Relic agent.",
+            timer,
+        )
+
+        # On Windows, Python 3.13+ uses a higher resolution timer implementation. Add a specific recommendation for this.
+        if sys.platform == "win32" and sys.version_info < (3, 13):
+            _logger.warning(
+                "On Windows, consider using Python 3.13 or later to take advantage of the higher resolution timer implementations."
+            )
+
+    # Log the used timer's resolution at the appropriate log level.
+    # If the resolution is too low, this will be a warning.
+    # Otherwise, it will be a debug message.
+    _logger.log(resolution_log_level, "Timer implementation: time.%s(). Resolution: %s seconds.", timer, resolution)
 
 
 # Generic error reporting functions.
@@ -1158,10 +1250,11 @@ def _module_function_glob(module, object_path):
             # Skip adding all class methods on failure
             pass
 
-        # Under the hood uses fnmatch, which uses os.path.normcase
-        # On windows this would cause issues with case insensitivity,
-        # but on all other operating systems there should be no issues.
-        return fnmatch.filter(available_functions, object_path)
+        # Globbing must be done using fnmatch.fnmatchcase as
+        # fnmatch.filter and fnmatch.fnmatch use os.path.normcase
+        # which cause case insensitivity issues on Windows.
+
+        return [func for func in available_functions if fnmatch.fnmatchcase(func, object_path)]
 
 
 # Setup wsgi application wrapper defined in configuration file.
@@ -1993,6 +2086,9 @@ def _process_module_builtin_defaults():
     )
     _process_module_definition(
         "langchain.chains.base", "newrelic.hooks.mlmodel_langchain", "instrument_langchain_chains_base"
+    )
+    _process_module_definition(
+        "langchain_classic.chains.base", "newrelic.hooks.mlmodel_langchain", "instrument_langchain_chains_base"
     )
     _process_module_definition(
         "langchain_core.callbacks.manager", "newrelic.hooks.mlmodel_langchain", "instrument_langchain_callbacks_manager"

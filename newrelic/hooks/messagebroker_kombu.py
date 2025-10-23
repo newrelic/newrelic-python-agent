@@ -82,7 +82,7 @@ def bind_publish(
         "expiration": expiration,
         "timeout": timeout,
         "confirm_timeout": confirm_timeout,
-        "properties": properties,
+        **properties,
     }
 
 

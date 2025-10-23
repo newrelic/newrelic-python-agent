@@ -320,9 +320,13 @@ class Transaction:
                     self.enabled = True
 
         if self._settings:
-            self._custom_events = SampledDataSet(capacity=self._settings.custom_insights_events.max_samples_stored)
+            self._custom_events = SampledDataSet(
+                capacity=self._settings.event_harvest_config.harvest_limits.custom_event_data
+            )
             self._ml_events = SampledDataSet(capacity=self._settings.event_harvest_config.harvest_limits.ml_event_data)
-            self._log_events = SampledDataSet(capacity=self._settings.application_logging.forwarding.max_samples_stored)
+            self._log_events = SampledDataSet(
+                capacity=self._settings.event_harvest_config.harvest_limits.log_event_data
+            )
         else:
             self._custom_events = SampledDataSet(capacity=CUSTOM_EVENT_RESERVOIR_SIZE)
             self._log_events = SampledDataSet(capacity=LOG_EVENT_RESERVOIR_SIZE)

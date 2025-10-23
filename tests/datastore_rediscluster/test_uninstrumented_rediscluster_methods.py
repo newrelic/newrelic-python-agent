@@ -138,6 +138,7 @@ IGNORED_METHODS = {
     "result_callbacks",
     "set_default_node",
     "user_on_connect_func",
+    "startup_nodes",
 }
 
 REDIS_MODULES = {"bf", "cf", "cms", "ft", "graph", "json", "tdigest", "topk", "ts", "vset"}

@@ -78,6 +78,10 @@ def wrap_pool__acquire(dbapi2_module):
         with FunctionTrace(name=callable_name(wrapped), terminal=True, rollup=rollup, source=wrapped):
             connection = await wrapped(*args, **kwargs)
             connection_kwargs = getattr(instance, "_conn_kwargs", {})
+
+            if isinstance(connection, AsyncConnectionWrapper):
+                return connection
+
             return AsyncConnectionWrapper(connection, dbapi2_module, (((), connection_kwargs)))
 
     return _wrap_pool__acquire

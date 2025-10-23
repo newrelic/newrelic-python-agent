@@ -175,9 +175,9 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
         i_attrs = (base_attrs and base_attrs.copy()) or attr_class()
         i_attrs["category"] = "http"
         i_attrs["span.kind"] = "client"
-        i_attrs["component"] = self.library
+        _, i_attrs["component"] = attribute.process_user_attribute("component", self.library)
 
         if self.method:
-            i_attrs["http.method"] = self.method
+            _, i_attrs["http.method"] = attribute.process_user_attribute("http.method", self.method)
 
         return super().span_event(settings, base_attrs=i_attrs, parent_guid=parent_guid, attr_class=attr_class)

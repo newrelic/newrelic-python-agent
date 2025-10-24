@@ -746,7 +746,12 @@ class Agent:
             self._harvest_thread.start()
 
         if self._harvest_thread.is_alive():
-            self._harvest_thread.join(timeout)
+            try:
+                self._harvest_thread.join(timeout)
+            except RuntimeError:
+                # This can occur if the application is killed while in the harvest thread,
+                # causing shutdown_agent to be called from within the harvest thread.
+                pass
 
 
 def agent_instance():

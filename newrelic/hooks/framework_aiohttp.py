@@ -17,6 +17,7 @@ import itertools
 
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.function_trace import function_trace
+from newrelic.api.time_trace import notice_error
 from newrelic.api.transaction import current_transaction, ignore_transaction
 from newrelic.api.web_transaction import web_transaction
 from newrelic.common.async_wrapper import async_wrapper, is_coroutine_callable

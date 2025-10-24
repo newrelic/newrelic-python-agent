@@ -13,21 +13,15 @@
 # limitations under the License.
 
 import io
-import socket
 import sys
 
 import pytest
 from testing_support.fixtures import override_application_settings
-from testing_support.mock_external_http_server import MockExternalHTTPHResponseHeadersServer, MockExternalHTTPServer
-from testing_support.validators.validate_distributed_tracing_header import validate_distributed_tracing_header
-from testing_support.validators.validate_outbound_headers import validate_outbound_headers
+from testing_support.mock_external_http_server import MockExternalHTTPHResponseHeadersServer
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import FunctionTrace
-from newrelic.api.transaction import current_transaction
-
-ENCODING_KEY = "1234567890123456789012345678901234567890"
 
 is_pypy = hasattr(sys, "pypy_version_info")
 
@@ -123,46 +117,15 @@ def make_request(port, req_type, client_cls, count=1, raise_error=True, as_kwarg
         ("HTTPClient", True),
     ],
 )
-@pytest.mark.parametrize(
-    "cat_enabled,user_header,span_events,distributed_tracing",
-    [
-        (True, None, False, False),
-        (True, "X-NewRelic-ID", False, False),
-        (True, "X-NewRelic-Transaction", False, False),
-        (False, None, True, True),
-        (False, None, False, True),
-    ],
-)
-# @pytest.mark.parametrize('cat_enabled,user_header', [
-#    (True, None),
-#    (True, 'X-NewRelic-ID'),
-#    (True, 'X-NewRelic-Transaction'),
-#    (False, None),
-# ])
+@pytest.mark.parametrize("span_events", [True, False])
 @pytest.mark.parametrize("request_type", ["uri", "class"])
 @pytest.mark.parametrize("num_requests", [1, 2])
-def test_httpclient(
-    cat_enabled,
-    request_type,
-    client_class,
-    user_header,
-    num_requests,
-    distributed_tracing,
-    span_events,
-    external,
-    as_kwargs,
-):
+def test_httpclient(request_type, client_class, num_requests, span_events, external, as_kwargs):
     port = external.port
 
     expected_metrics = [(f"External/localhost:{port}/tornado/GET", num_requests)]
 
-    @override_application_settings(
-        {
-            "distributed_tracing.enabled": distributed_tracing,
-            "span_events.enabled": span_events,
-            "cross_application_tracer.enabled": not distributed_tracing,
-        }
-    )
+    @override_application_settings({"distributed_tracing.enabled": True, "span_events.enabled": span_events})
     @validate_transaction_metrics(
         "test_externals:test_httpclient",
         background_task=True,
@@ -172,8 +135,6 @@ def test_httpclient(
     @background_task(name="test_externals:test_httpclient")
     def _test():
         headers = {}
-        if user_header:
-            headers = {user_header: "USER"}
 
         response = make_request(
             port, request_type, client_class, headers=headers, count=num_requests, as_kwargs=as_kwargs
@@ -192,97 +153,6 @@ def test_httpclient(
             header_key = header_key.strip()
             header_val = header_val.strip()
             headers[header_key] = header_val
-
-        # User headers override all inserted NR headers
-        if user_header:
-            assert headers[user_header] == "USER"
-        elif cat_enabled:
-            t = current_transaction()
-            assert t
-            t._test_request_headers = headers
-
-            if distributed_tracing:
-                validate_distributed_tracing_header(header="Newrelic")
-            else:
-                validate_outbound_headers()
-        else:
-            # new relic shouldn't add anything to the outgoing
-            assert "x-newrelic" not in body, body
-
-        assert "X-NewRelic-App-Data" not in headers
-
-    _test()
-
-
-CAT_RESPONSE_CODE = None
-
-
-def cat_response_handler(self):
-    # payload
-    # (
-    #     u'1#1', u'WebTransaction/Function/app:beep',
-    #     0, 1.23, -1,
-    #     'dd4a810b7cb7f937',
-    #     False,
-    # )
-    cat_response_header = (
-        "X-NewRelic-App-Data",
-        "ahACFwQUGxpuVVNmQVVbRVZbTVleXBxyQFhUTFBfXx1SREUMVV1cQBMeAxgEGAULFR0AHhFQUQJWAAgAUwVQVgJQDgsOEh1UUlhGU2o=",
-    )
-    self.send_response(CAT_RESPONSE_CODE)
-    self.send_header(*cat_response_header)
-    self.end_headers()
-    self.wfile.write(b"Example Data")
-
-
-@pytest.fixture(scope="module")
-def cat_response_server():
-    external = MockExternalHTTPServer(handler=cat_response_handler)
-    with external:
-        yield external
-
-
-@pytest.mark.parametrize("client_class", ["AsyncHTTPClient", "CurlAsyncHTTPClient", "HTTPClient"])
-@pytest.mark.parametrize("cat_enabled", [True, False])
-@pytest.mark.parametrize("request_type", ["uri", "class"])
-@pytest.mark.parametrize("response_code,raise_error", [(500, True), (500, False), (200, False)])
-def test_client_cat_response_processing(
-    cat_enabled, request_type, client_class, raise_error, response_code, cat_response_server
-):
-    global CAT_RESPONSE_CODE
-    CAT_RESPONSE_CODE = response_code
-
-    _custom_settings = {
-        "cross_process_id": "1#1",
-        "encoding_key": ENCODING_KEY,
-        "trusted_account_ids": [1],
-        "cross_application_tracer.enabled": cat_enabled,
-        "distributed_tracing.enabled": not cat_enabled,
-        "transaction_tracer.transaction_threshold": 0.0,
-    }
-
-    port = cat_response_server.port
-    expected_metrics = [
-        (f"ExternalTransaction/localhost:{port}/1#1/WebTransaction/Function/app:beep", 1 if cat_enabled else None)
-    ]
-
-    @validate_transaction_metrics(
-        "make_request", background_task=True, rollup_metrics=expected_metrics, scoped_metrics=expected_metrics
-    )
-    @override_application_settings(_custom_settings)
-    def _test():
-        import tornado
-        import tornado.httpclient
-
-        try:
-            response = make_request(port, request_type, client_class, raise_error=raise_error)
-        except tornado.httpclient.HTTPError as e:
-            assert raise_error
-            response = e.response
-        else:
-            assert not raise_error
-
-        assert response.code == response_code
 
     _test()
 

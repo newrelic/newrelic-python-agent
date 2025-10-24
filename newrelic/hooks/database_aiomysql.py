@@ -79,7 +79,7 @@ def wrap_pool__acquire(dbapi2_module):
             connection = await wrapped(*args, **kwargs)
             connection_kwargs = getattr(instance, "_conn_kwargs", {})
 
-            if isinstance(connection, AsyncConnectionWrapper):
+            if hasattr(connection, "__wrapped__"):
                 return connection
 
             return AsyncConnectionWrapper(connection, dbapi2_module, (((), connection_kwargs)))

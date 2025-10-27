@@ -1451,6 +1451,9 @@ CUSTOM_TRACE_POINTS = {
     ("kinesis", "untag_resource"): aws_function_trace(
         "untag_resource", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
+    ("kinesis", "update_max_record_size"): aws_function_trace(
+        "update_max_record_size", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
     ("kinesis", "update_shard_count"): aws_function_trace(
         "update_shard_count", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),

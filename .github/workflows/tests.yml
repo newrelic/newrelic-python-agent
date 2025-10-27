@@ -100,7 +100,7 @@ jobs:
           architecture: x64
 
       - name: Download Coverage Artifacts
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # 5.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # 6.0.0
         with:
           pattern: coverage-*
           path: ./
@@ -134,7 +134,7 @@ jobs:
           architecture: x64
 
       - name: Download Results Artifacts
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # 5.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # 6.0.0
         with:
           pattern: results-*
           path: ./
@@ -196,7 +196,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -206,7 +206,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -261,7 +261,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -271,7 +271,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -309,7 +309,7 @@ jobs:
             3.14
 
       - name: Install uv
-        uses: astral-sh/setup-uv@2ddd2b9cb38ad8efd50337e8ab201519a34c9f24 # 7.1.1
+        uses: astral-sh/setup-uv@85856786d1ce8acfbcc2f13a5f3fbd6b938f9f41 # 7.1.2
 
       - name: Install Dependencies
         run: |
@@ -333,7 +333,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -343,7 +343,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -381,7 +381,7 @@ jobs:
             3.14
 
       - name: Install uv
-        uses: astral-sh/setup-uv@2ddd2b9cb38ad8efd50337e8ab201519a34c9f24 # 7.1.1
+        uses: astral-sh/setup-uv@85856786d1ce8acfbcc2f13a5f3fbd6b938f9f41 # 7.1.2
 
       - name: Install Dependencies
         run: |
@@ -405,7 +405,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -415,7 +415,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -475,7 +475,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -485,7 +485,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -558,7 +558,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -568,7 +568,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -638,7 +638,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -648,7 +648,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -719,7 +719,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -729,7 +729,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -804,7 +804,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -814,7 +814,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -869,7 +869,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -879,7 +879,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -959,7 +959,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -969,7 +969,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -1037,7 +1037,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1047,7 +1047,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -1115,7 +1115,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1125,7 +1125,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -1193,7 +1193,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1203,7 +1203,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -1276,7 +1276,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1286,7 +1286,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -1359,7 +1359,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1369,7 +1369,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -1438,7 +1438,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1448,7 +1448,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -1519,7 +1519,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1529,7 +1529,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -1599,7 +1599,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1609,7 +1609,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -1679,7 +1679,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1689,7 +1689,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -1758,7 +1758,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1768,7 +1768,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -1836,7 +1836,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1846,7 +1846,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -1955,7 +1955,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1965,7 +1965,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -2035,7 +2035,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -2045,7 +2045,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -2113,7 +2113,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -2123,7 +2123,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}

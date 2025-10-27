@@ -22,4 +22,3 @@ def _get_llm_metadata(transaction):
         llm_metadata_dict.update(llm_context_attrs)
 
     return llm_metadata_dict
-

@@ -1,3 +1,4 @@
+
 # Copyright 2010 New Relic, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -127,9 +128,7 @@ def _record_agent_event_on_stop_iteration(self, transaction):
 
             agent_name = strands_attrs.get("agent_name", "agent")
             agent_id = strands_attrs.get("agent_id", None)
-            agent_event_dict = _construct_base_agent_event_dict(
-                agent_name, agent_id, transaction, linking_metadata
-            )
+            agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction, linking_metadata)
             agent_event_dict.update({"duration": self._nr_ft.duration * 1000})
             transaction.record_custom_event("LlmAgent", agent_event_dict)
 
@@ -234,6 +233,7 @@ def _construct_base_agent_event_dict(agent_name, agent_id, transaction, linking_
 
     return agent_event_dict
 
+
 def _handle_agent_streaming_completion_error(self, transaction):
     if hasattr(self, "_nr_ft"):
         strands_attrs = getattr(self, "_nr_strands_attrs", {})
@@ -255,9 +255,7 @@ def _handle_agent_streaming_completion_error(self, transaction):
             self._nr_ft.__exit__(*sys.exc_info())
 
             # Create error event
-            agent_event_dict = _construct_base_agent_event_dict(
-                agent_name, agent_id, transaction, linking_metadata
-            )
+            agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction, linking_metadata)
             agent_event_dict.update({"duration": self._nr_ft.duration * 1000, "error": True})
             transaction.record_custom_event("LlmAgent", agent_event_dict)
 
@@ -301,6 +299,10 @@ def _handle_tool_streaming_completion_error(self, transaction):
                 strands_attrs, tool_results, transaction, linking_metadata
             )
             tool_event_dict.update({"duration": self._nr_ft.duration * 1000})
+            # Ensure error flag is set to True in case the tool_results did not indicate an error
+            if "error" not in tool_event_dict:
+                tool_event_dict.update({"error": True})
+
             transaction.record_custom_event("LlmTool", tool_event_dict)
 
         except Exception:
@@ -386,7 +388,7 @@ class AsyncGeneratorProxy(ObjectProxy):
         except StopAsyncIteration:
             self._nr_on_stop_iteration(self, transaction)
             raise
-        except Exception as exc:
+        except Exception:
             self._nr_on_error(self, transaction)
             raise
         return return_val

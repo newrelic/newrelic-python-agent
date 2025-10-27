@@ -163,7 +163,6 @@ def wrap_async_elasticsearch_client_method(module, class_name, method_name, arg_
 
         if transaction is None:
             return await wrapped(*args, **kwargs)
-
         # When index is None, it means there is no target field
         # associated with this method. Hence this method will only
         # create an operation metric and no statement metric. This is

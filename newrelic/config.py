@@ -2946,6 +2946,13 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.mlmodel_autogen",
         "instrument_autogen_agentchat_agents__assistant_agent",
     )
+    _process_module_definition("strands.agent.agent", "newrelic.hooks.mlmodel_strands", "instrument_agent_agent")
+    _process_module_definition(
+        "strands.tools.executors._executor", "newrelic.hooks.mlmodel_strands", "instrument_tools_executors__executor"
+    )
+
+    _process_module_definition("strands.tools.registry", "newrelic.hooks.mlmodel_strands", "instrument_tools_registry")
+
     _process_module_definition("mcp.client.session", "newrelic.hooks.adapter_mcp", "instrument_mcp_client_session")
     _process_module_definition(
         "mcp.server.fastmcp.tools.tool_manager",

@@ -361,7 +361,6 @@ class TimeTrace:
 
     def notice_error(self, error=None, attributes=None, expected=None, ignore=None, status_code=None):
         attributes = attributes if attributes is not None else {}
-
         # If no exception details provided, use current exception.
 
         # Pull from sys.exc_info if no exception is passed

@@ -446,8 +446,18 @@ def _process_configuration(section):
     _process_setting(section, "distributed_tracing.enabled", "getboolean", None)
     _process_setting(section, "distributed_tracing.exclude_newrelic_header", "getboolean", None)
     _process_setting(section, "distributed_tracing.sampler.adaptive_sampling_target", "getint", None)
-    _process_dt_setting(section, "distributed_tracing.sampler.full_granularity.remote_parent_sampled", "distributed_tracing.sampler.remote_parent_sampled", "get")
-    _process_dt_setting(section, "distributed_tracing.sampler.full_granularity.remote_parent_not_sampled", "distributed_tracing.sampler.remote_parent_not_sampled", "get")
+    _process_dt_setting(
+        section,
+        "distributed_tracing.sampler.full_granularity.remote_parent_sampled",
+        "distributed_tracing.sampler.remote_parent_sampled",
+        "get",
+    )
+    _process_dt_setting(
+        section,
+        "distributed_tracing.sampler.full_granularity.remote_parent_not_sampled",
+        "distributed_tracing.sampler.remote_parent_not_sampled",
+        "get",
+    )
     _process_setting(section, "distributed_tracing.sampler.full_granularity.enabled", "getboolean", None)
     _process_setting(section, "distributed_tracing.sampler.partial_granularity.enabled", "getboolean", None)
     _process_setting(section, "distributed_tracing.sampler.partial_granularity.type", "get", None)

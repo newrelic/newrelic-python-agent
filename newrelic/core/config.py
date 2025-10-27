@@ -860,14 +860,10 @@ _settings.distributed_tracing.sampler.full_granularity.enabled = _environ_as_boo
 )
 _settings.distributed_tracing.sampler.full_granularity.remote_parent_sampled = os.environ.get(
     "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_REMOTE_PARENT_SAMPLED", None
-) or os.environ.get(
-    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_REMOTE_PARENT_SAMPLED", "default"
-)
+) or os.environ.get("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_REMOTE_PARENT_SAMPLED", "default")
 _settings.distributed_tracing.sampler.full_granularity.remote_parent_not_sampled = os.environ.get(
     "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_REMOTE_PARENT_NOT_SAMPLED", None
-) or os.environ.get(
-    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_REMOTE_PARENT_NOT_SAMPLED", "default"
-)
+) or os.environ.get("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_REMOTE_PARENT_NOT_SAMPLED", "default")
 _settings.distributed_tracing.sampler.partial_granularity.enabled = _environ_as_bool(
     "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_ENABLED", default=False
 )

@@ -581,9 +581,9 @@ class Agent:
 
         return application.normalize_name(name, rule_type)
 
-    def compute_sampled(self, app_name):
+    def compute_sampled(self, app_name, full_granularity, section, *args, **kwargs):
         application = self._applications.get(app_name, None)
-        return application.compute_sampled()
+        return application.compute_sampled(full_granularity, section, *args, **kwargs)
 
     def _harvest_shutdown_is_set(self):
         try:
@@ -746,7 +746,12 @@ class Agent:
             self._harvest_thread.start()
 
         if self._harvest_thread.is_alive():
-            self._harvest_thread.join(timeout)
+            try:
+                self._harvest_thread.join(timeout)
+            except RuntimeError:
+                # This can occur if the application is killed while in the harvest thread,
+                # causing shutdown_agent to be called from within the harvest thread.
+                pass
 
 
 def agent_instance():

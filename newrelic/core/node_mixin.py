@@ -162,8 +162,10 @@ class GenericNodeMixin:
             partial_granularity_sampled=partial_granularity_sampled,
             ct_exit_spans=ct_exit_spans,
         )
+        ct_exit_spans["instrumented"] += 1
         parent_id = parent_guid
         if span:  # span will be None if the span is an inprocess span or repeated exit span.
+            ct_exit_spans["kept"] += 1
             yield span
             # Compressed spans are always reparented onto the entry span.
             if not settings.distributed_tracing.sampler.partial_granularity.type == "compact" or span[0].get(
@@ -179,7 +181,9 @@ class GenericNodeMixin:
                 partial_granularity_sampled=partial_granularity_sampled,
                 ct_exit_spans=ct_exit_spans,
             ):
+                ct_exit_spans["instrumented"] += 1
                 if event:  # event will be None if the span is an inprocess span or repeated exit span.
+                    ct_exit_spans["kept"] += 1
                     yield event
 
 

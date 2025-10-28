@@ -1006,7 +1006,7 @@ class Transaction:
     def user_attributes(self):
         return create_attributes(self._custom_params, DST_ALL, self.attribute_filter)
 
-    def sampling_algo_compute_sampled_and_priority(self, priority, sampled):
+    def sampling_algo_compute_sampled_and_priority(self, priority, sampled, sampler_kwargs):
         # self._priority and self._sampled are set when parsing the W3C tracestate
         # or newrelic DT headers and may be overridden in _make_sampling_decision
         # based on the configuration. The only time they are set in here is when the
@@ -1016,7 +1016,7 @@ class Transaction:
             priority = float(f"{random.random():.6f}")  # noqa: S311
         if sampled is None:
             _logger.debug("No trusted account id found. Sampling decision will be made by adaptive sampling algorithm.")
-            sampled = self._application.compute_sampled()
+            sampled = self._application.compute_sampled(**sampler_kwargs)
             if sampled:
                 priority += 1
         return priority, sampled
@@ -1025,25 +1025,28 @@ class Transaction:
         self,
         priority,
         sampled,
-        remote_parent_sampled_path,
+        full_granularity,
         remote_parent_sampled_setting,
-        remote_parent_not_sampled_path,
         remote_parent_not_sampled_setting,
     ):
         if self._remote_parent_sampled is None:
+            section = 0
             config = "default"  # Use sampling algo.
             _logger.debug("Sampling decision made based on no remote parent sampling decision present.")
         elif self._remote_parent_sampled:
-            setting_path = remote_parent_sampled_path
+            section = 1
+            setting_path = f"distributed_tracing.sampler.{'full_granularity' if full_granularity else: 'partial_granularity'}.remote_parent_sampled"
             config = remote_parent_sampled_setting
             _logger.debug(
                 "Sampling decision made based on remote_parent_sampled=%s and %s=%s.",
                 self._remote_parent_sampled,
                 setting_path,
+
                 config,
             )
         else:  # self._remote_parent_sampled is False.
-            setting_path = remote_parent_not_sampled_path
+            section = 2
+            setting_path = f"distributed_tracing.sampler.{'full_granularity' if full_granularity else: 'partial_granularity'}.remote_parent_not_sampled"
             config = remote_parent_not_sampled_setting
             _logger.debug(
                 "Sampling decision made based on remote_parent_sampled=%s and %s=%s.",
@@ -1064,7 +1067,7 @@ class Transaction:
             _logger.debug(
                 "Let adaptive sampler algorithm decide based on sampled=%s and priority=%s.", sampled, priority
             )
-            priority, sampled = self.sampling_algo_compute_sampled_and_priority(priority, sampled)
+            priority, sampled = self.sampling_algo_compute_sampled_and_priority(priority, sampled, {"full_granularity":full_granularity, "section": section})
         return priority, sampled
 
     def _make_sampling_decision(self):
@@ -1084,9 +1087,8 @@ class Transaction:
             computed_priority, computed_sampled = self._compute_sampled_and_priority(
                 priority,
                 sampled,
-                remote_parent_sampled_path="distributed_tracing.sampler.full_granularity.remote_parent_sampled",
+                full_granularity=True,
                 remote_parent_sampled_setting=self.settings.distributed_tracing.sampler.full_granularity.remote_parent_sampled,
-                remote_parent_not_sampled_path="distributed_tracing.sampler.full_granularity.remote_parent_not_sampled",
                 remote_parent_not_sampled_setting=self.settings.distributed_tracing.sampler.full_granularity.remote_parent_not_sampled,
             )
             _logger.debug("Full granularity sampling decision was %s with priority=%s.", sampled, priority)
@@ -1102,9 +1104,8 @@ class Transaction:
             self._priority, self._sampled = self._compute_sampled_and_priority(
                 priority,
                 sampled,
-                remote_parent_sampled_path="distributed_tracing.sampler.partial_granularity.remote_parent_sampled",
+                full_granularity=False,
                 remote_parent_sampled_setting=self.settings.distributed_tracing.sampler.partial_granularity.remote_parent_sampled,
-                remote_parent_not_sampled_path="distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled",
                 remote_parent_not_sampled_setting=self.settings.distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled,
             )
             _logger.debug(

@@ -22,8 +22,8 @@ import time
 import traceback
 from functools import partial
 
+from newrelic.core.samplers.sampler_proxy import SamplerProxy
 from newrelic.common.object_names import callable_name
-from newrelic.core.adaptive_sampler import AdaptiveSampler
 from newrelic.core.agent_control_health import (
     HealthStatus,
     agent_control_health_instance,
@@ -156,11 +156,11 @@ class Application:
     def active(self):
         return self.configuration is not None
 
-    def compute_sampled(self):
-        if self.adaptive_sampler is None:
+    def compute_sampled(self, full_granularity, section, *args, **kwargs):
+        if self.sampler is None:
             return False
 
-        return self.adaptive_sampler.compute_sampled()
+        return self.sampler.compute_sampled(full_granularity, section, *args, **kwargs)
 
     def dump(self, file):
         """Dumps details about the application to the file object."""
@@ -501,12 +501,7 @@ class Application:
 
         with self._stats_lock:
             self._stats_engine.reset_stats(configuration, reset_stream=True)
-
-            if configuration.serverless_mode.enabled:
-                sampling_target_period = 60.0
-            else:
-                sampling_target_period = configuration.sampling_target_period_in_seconds
-            self.adaptive_sampler = AdaptiveSampler(configuration.sampling_target, sampling_target_period)
+            self.sampler = SamplerProxy(configuration)
 
         active_session.connect_span_stream(self._stats_engine.span_stream, self.record_custom_metric)
 

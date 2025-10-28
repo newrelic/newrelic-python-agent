@@ -156,11 +156,11 @@ class Application:
             return self._agent.normalize_name(self._name, name, rule_type)
         return name, False
 
-    def compute_sampled(self):
+    def compute_sampled(self, full_granularity, section, *args, **kwargs):
         if not self.active or not self.settings.distributed_tracing.enabled:
             return False
 
-        return self._agent.compute_sampled(self._name)
+        return self._agent.compute_sampled(self._name, full_granularity, section, *args, **kwargs)
 
 
 def application_instance(name=None, activate=True):

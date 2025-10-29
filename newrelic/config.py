@@ -2950,7 +2950,6 @@ def _process_module_builtin_defaults():
     _process_module_definition(
         "strands.tools.executors._executor", "newrelic.hooks.mlmodel_strands", "instrument_tools_executors__executor"
     )
-
     _process_module_definition("strands.tools.registry", "newrelic.hooks.mlmodel_strands", "instrument_tools_registry")
 
     _process_module_definition("mcp.client.session", "newrelic.hooks.adapter_mcp", "instrument_mcp_client_session")

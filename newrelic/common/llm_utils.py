@@ -12,11 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
-
-_logger = logging.getLogger(__name__)
-RECORD_EVENTS_FAILURE_LOG_MESSAGE = "Exception occurred in Autogen instrumentation: Failed to record LLM events. Please report this issue to New Relic Support.\n%s"
-
 
 def _get_llm_metadata(transaction):
     # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
@@ -28,19 +23,3 @@ def _get_llm_metadata(transaction):
 
     return llm_metadata_dict
 
-
-def _construct_base_agent_event_dict(agent_name, agent_id, transaction, linking_metadata, vendor_name):
-    try:
-        agent_event_dict = {
-            "id": agent_id,
-            "name": agent_name,
-            "span_id": linking_metadata.get("span.id"),
-            "trace_id": linking_metadata.get("trace.id"),
-            "vendor": vendor_name,
-            "ingest_source": "Python",
-        }
-        agent_event_dict.update(_get_llm_metadata(transaction))
-    except Exception:
-        agent_event_dict = {}
-
-    return agent_event_dict

@@ -166,6 +166,7 @@ def transaction_node(request):
         root_span_guid=None,
         trace_id="4485b89db608aece",
         loop_time=0.0,
+        partial_granularity_sampled=False,
     )
     return node
 
@@ -321,14 +322,14 @@ def test_serverless_application_harvest():
 
 
 @pytest.mark.parametrize(
-    "distributed_tracing_enabled,span_events_enabled,spans_created",
-    [(True, True, 1), (True, True, 15), (True, False, 1), (True, True, 0), (True, False, 0), (False, True, 0)],
+    "distributed_tracing_enabled,full_granularity_enabled,partial_granularity_enabled,span_events_enabled,spans_created",
+    [(True, True, False, True, 1), (True, True, True, True, 1), (True, True, False, True, 15), (True, True, False, False, 1), (True, True, False, True, 0), (True, True, False, False, 0), (False, True, False, True, 0)],
 )
-def test_application_harvest_with_spans(distributed_tracing_enabled, span_events_enabled, spans_created):
+def test_application_harvest_with_spans(distributed_tracing_enabled, full_granularity_enabled, partial_granularity_enabled, span_events_enabled, spans_created):
     span_endpoints_called = []
     max_samples_stored = 10
 
-    if distributed_tracing_enabled and span_events_enabled:
+    if distributed_tracing_enabled and span_events_enabled and (full_granularity_enabled or partial_granularity_enabled):
         seen = spans_created
         sent = min(spans_created, max_samples_stored)
     else:
@@ -340,6 +341,10 @@ def test_application_harvest_with_spans(distributed_tracing_enabled, span_events
     spans_required_metrics.extend(
         [("Supportability/SpanEvent/TotalEventsSeen", seen), ("Supportability/SpanEvent/TotalEventsSent", sent)]
     )
+    if partial_granularity_enabled:
+        spans_required_metrics.extend(
+            [("Supportability/Python/PartialGranularity/essential", 1)]
+        )
 
     @validate_metric_payload(metrics=spans_required_metrics, endpoints_called=span_endpoints_called)
     @override_generic_settings(
@@ -348,6 +353,8 @@ def test_application_harvest_with_spans(distributed_tracing_enabled, span_events
             "developer_mode": True,
             "license_key": "**NOT A LICENSE KEY**",
             "distributed_tracing.enabled": distributed_tracing_enabled,
+            "distributed_tracing.sampler.full_granularity.enabled": full_granularity_enabled,
+            "distributed_tracing.sampler.partial_granularity.enabled": partial_granularity_enabled,
             "span_events.enabled": span_events_enabled,
             # Uses the name from post-translation as this is modifying the settings object, not a config file
             "event_harvest_config.harvest_limits.span_event_data": max_samples_stored,
@@ -366,12 +373,12 @@ def test_application_harvest_with_spans(distributed_tracing_enabled, span_events
 
         # Verify that the metric_data endpoint is the 2nd to last and
         # span_event_data is the 3rd to last endpoint called
-        assert span_endpoints_called[-2] == "metric_data"
+        assert span_endpoints_called[-2] == "metric_data", span_endpoints_called
 
         if span_events_enabled and spans_created > 0:
-            assert span_endpoints_called[-3] == "span_event_data"
+            assert span_endpoints_called[-3] == "span_event_data", span_endpoints_called
         else:
-            assert span_endpoints_called[-3] != "span_event_data"
+            assert span_endpoints_called[-3] != "span_event_data", span_endpoints_called
 
     _test()
 

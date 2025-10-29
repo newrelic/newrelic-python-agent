@@ -1373,6 +1373,8 @@ class Application:
                                 spans_sampled = spans.num_samples
                                 internal_count_metric("Supportability/SpanEvent/TotalEventsSeen", spans_seen)
                                 internal_count_metric("Supportability/SpanEvent/TotalEventsSent", spans_sampled)
+                                if configuration.distributed_tracing.sampler.partial_granularity.enabled:
+                                    internal_count_metric(f"Supportability/Python/PartialGranularity/{partial_gran_type}", 1)
 
                                 stats.reset_span_events()
 

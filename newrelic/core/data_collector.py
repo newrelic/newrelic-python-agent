@@ -117,7 +117,14 @@ class Session:
 
     def send_span_events(self, sampling_info, span_event_data):
         """Called to submit sample set for span events."""
-
+        # TODO: remove this later after list types are suported.
+        for span_event in span_event_data:
+            try:
+                ids = span_event[1].get("nr.ids")
+                if ids:
+                    span_event[1]["nr.ids"] = ",".join(ids)
+            except:
+                pass
         payload = (self.agent_run_id, sampling_info, span_event_data)
         return self._protocol.send("span_event_data", payload)
 

@@ -637,6 +637,7 @@ class Transaction:
             trace_id=self.trace_id,
             loop_time=self._loop_time,
             root=root_node,
+            partial_granularity_sampled=hasattr(self, "partial_granularity_sampled"),
         )
 
         # Clear settings as we are all done and don't need it
@@ -1073,23 +1074,52 @@ class Transaction:
             return
         priority = self._priority
         sampled = self._sampled
-        _logger.debug(
-            "Full granularity tracing is enabled. Asking if full granularity wants to sample. priority=%s, sampled=%s",
-            priority,
-            sampled,
-        )
-        computed_priority, computed_sampled = self._compute_sampled_and_priority(
-            priority,
-            sampled,
-            remote_parent_sampled_path="distributed_tracing.sampler.remote_parent_sampled",
-            remote_parent_sampled_setting=self.settings.distributed_tracing.sampler.remote_parent_sampled,
-            remote_parent_not_sampled_path="distributed_tracing.sampler.remote_parent_not_sampled",
-            remote_parent_not_sampled_setting=self.settings.distributed_tracing.sampler.remote_parent_not_sampled,
-        )
-        _logger.debug("Full granularity sampling decision was %s with priority=%s.", sampled, priority)
-        self._priority = computed_priority
-        self._sampled = computed_sampled
-        self._sampling_decision_made = True
+        # Compute sampling decision for full granularity.
+        if self.settings.distributed_tracing.sampler.full_granularity.enabled:
+            _logger.debug(
+                "Full granularity tracing is enabled. Asking if full granularity wants to sample. priority=%s, sampled=%s",
+                priority,
+                sampled,
+            )
+            computed_priority, computed_sampled = self._compute_sampled_and_priority(
+                priority,
+                sampled,
+                remote_parent_sampled_path="distributed_tracing.sampler.full_granularity.remote_parent_sampled",
+                remote_parent_sampled_setting=self.settings.distributed_tracing.sampler.full_granularity.remote_parent_sampled,
+                remote_parent_not_sampled_path="distributed_tracing.sampler.full_granularity.remote_parent_not_sampled",
+                remote_parent_not_sampled_setting=self.settings.distributed_tracing.sampler.full_granularity.remote_parent_not_sampled,
+            )
+            _logger.debug("Full granularity sampling decision was %s with priority=%s.", sampled, priority)
+            if computed_sampled or not self.settings.distributed_tracing.sampler.partial_granularity.enabled:
+                self._priority = computed_priority
+                self._sampled = computed_sampled
+                self._sampling_decision_made = True
+                return
+
+        # If full granularity is not going to sample, let partial granularity decide.
+        if self.settings.distributed_tracing.sampler.partial_granularity.enabled:
+            _logger.debug("Partial granularity tracing is enabled. Asking if partial granularity wants to sample.")
+            self._priority, self._sampled = self._compute_sampled_and_priority(
+                priority,
+                sampled,
+                remote_parent_sampled_path="distributed_tracing.sampler.partial_granularity.remote_parent_sampled",
+                remote_parent_sampled_setting=self.settings.distributed_tracing.sampler.partial_granularity.remote_parent_sampled,
+                remote_parent_not_sampled_path="distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled",
+                remote_parent_not_sampled_setting=self.settings.distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled,
+            )
+            _logger.debug(
+                "Partial granularity sampling decision was %s with priority=%s.", self._sampled, self._priority
+            )
+            self._sampling_decision_made = True
+            if self._sampled:
+                self.partial_granularity_sampled = True
+            return
+
+        # This is only reachable if both full and partial granularity tracing are off.
+        # Set priority=0 and do not sample. This enables DT headers to still be sent
+        # even if the trace is never sampled.
+        self._priority = 0
+        self._sampled = False
 
     def _freeze_path(self):
         if self._frozen_path is None:

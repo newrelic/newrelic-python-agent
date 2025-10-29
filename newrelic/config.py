@@ -319,6 +319,47 @@ def _process_setting(section, option, getter, mapper):
         _raise_configuration_error(section, option)
 
 
+def _process_dt_setting(section, option_p1, option_p2, getter):
+    try:
+        # The type of a value is dictated by the getter
+        # function supplied.
+
+        value1 = getattr(_config_object, getter)(section, option_p1)
+        value2 = getattr(_config_object, getter)(section, option_p2)
+
+        # Now need to apply the option from the
+        # configuration file to the internal settings
+        # object. Walk the object path and assign it.
+
+        target = _settings
+        fields = option_p1.split(".", 1)
+
+        while True:
+            if len(fields) == 1:
+                value = value1 or value2 or "default"
+                setattr(target, fields[0], value)
+                break
+            target = getattr(target, fields[0])
+            fields = fields[1].split(".", 1)
+
+        # Cache the configuration so can be dumped out to
+        # log file when whole main configuration has been
+        # processed. This ensures that the log file and log
+        # level entries have been set.
+
+        _cache_object.append((option_p1, value1))
+        _cache_object.append((option_p2, value2))
+
+    except configparser.NoSectionError:
+        pass
+
+    except configparser.NoOptionError:
+        pass
+
+    except Exception:
+        _raise_configuration_error(section, option_p1)
+
+
 # Processing of all the settings for specified section except
 # for log file and log level which are applied separately to
 # ensure they are set as soon as possible.
@@ -405,8 +446,23 @@ def _process_configuration(section):
     _process_setting(section, "distributed_tracing.enabled", "getboolean", None)
     _process_setting(section, "distributed_tracing.exclude_newrelic_header", "getboolean", None)
     _process_setting(section, "distributed_tracing.sampler.adaptive_sampling_target", "getint", None)
-    _process_setting(section, "distributed_tracing.sampler.remote_parent_sampled", "get", None)
-    _process_setting(section, "distributed_tracing.sampler.remote_parent_not_sampled", "get", None)
+    _process_dt_setting(
+        section,
+        "distributed_tracing.sampler.full_granularity.remote_parent_sampled",
+        "distributed_tracing.sampler.remote_parent_sampled",
+        "get",
+    )
+    _process_dt_setting(
+        section,
+        "distributed_tracing.sampler.full_granularity.remote_parent_not_sampled",
+        "distributed_tracing.sampler.remote_parent_not_sampled",
+        "get",
+    )
+    _process_setting(section, "distributed_tracing.sampler.full_granularity.enabled", "getboolean", None)
+    _process_setting(section, "distributed_tracing.sampler.partial_granularity.enabled", "getboolean", None)
+    _process_setting(section, "distributed_tracing.sampler.partial_granularity.type", "get", None)
+    _process_setting(section, "distributed_tracing.sampler.partial_granularity.remote_parent_sampled", "get", None)
+    _process_setting(section, "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled", "get", None)
     _process_setting(section, "span_events.enabled", "getboolean", None)
     _process_setting(section, "span_events.max_samples_stored", "getint", None)
     _process_setting(section, "span_events.attributes.enabled", "getboolean", None)

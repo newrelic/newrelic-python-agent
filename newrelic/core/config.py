@@ -625,35 +625,6 @@ def _environ_as_mapping(name, default=""):
     return result
 
 
-def _environ_as_comma_separated_list(name, default=""):
-    result = []
-    attributes = os.environ.get(name, default)
-
-    # Strip all whitespace and commas from the end of the string.
-    # That way, when we split a valid labels string by ',', the resulting
-    # list will contain no empty elements.
-
-    attributes = attributes.strip(", \t\n\r\f\v")
-
-    if not attributes:
-        return result
-
-    for attribute in attributes.split(","):
-        attribute = attribute.strip()
-
-        if attribute:
-            result.append(attribute)
-        else:
-            _logger.warning(
-                "Invalid configuration. Cannot parse: %r. Expected format 'attribute1, attribute2, attribute3'",
-                attributes,
-            )
-            result = []
-            break
-
-    return result
-
-
 def _parse_status_codes(value, target):
     items = value.split()
     for item in items:
@@ -833,8 +804,8 @@ _settings.compressed_content_encoding = "gzip"
 _settings.max_payload_size_in_bytes = 1000000
 
 _settings.attributes.enabled = _environ_as_bool("NEW_RELIC_ATTRIBUTES_ENABLED", default=True)
-_settings.attributes.exclude = _environ_as_comma_separated_list(os.environ.get("NEW_RELIC_ATTRIBUTES_EXCLUDE", ""))
-_settings.attributes.include = _environ_as_comma_separated_list(os.environ.get("NEW_RELIC_ATTRIBUTES_INCLUDE", ""))
+_settings.attributes.exclude = _environ_as_set(os.environ.get("NEW_RELIC_ATTRIBUTES_EXCLUDE", ""))
+_settings.attributes.include = _environ_as_set(os.environ.get("NEW_RELIC_ATTRIBUTES_INCLUDE", ""))
 
 _settings.thread_profiler.enabled = True
 _settings.cross_application_tracer.enabled = False
@@ -853,10 +824,10 @@ _settings.event_harvest_config.harvest_limits.analytic_event_data = _environ_as_
 _settings.transaction_events.attributes.enabled = _environ_as_bool(
     "NEW_RELIC_TRANSACTION_EVENTS_ATTRIBUTES_ENABLED", default=True
 )
-_settings.transaction_events.attributes.exclude = _environ_as_comma_separated_list(
+_settings.transaction_events.attributes.exclude = _environ_as_set(
     os.environ.get("NEW_RELIC_TRANSACTION_EVENTS_ATTRIBUTES_EXCLUDE", "")
 )
-_settings.transaction_events.attributes.include = _environ_as_comma_separated_list(
+_settings.transaction_events.attributes.include = _environ_as_set(
     os.environ.get("NEW_RELIC_TRANSACTION_EVENTS_ATTRIBUTES_INCLUDE", "")
 )
 
@@ -883,20 +854,20 @@ _settings.event_harvest_config.harvest_limits.span_event_data = _environ_as_int(
     "NEW_RELIC_SPAN_EVENTS_MAX_SAMPLES_STORED", default=SPAN_EVENT_RESERVOIR_SIZE
 )
 _settings.span_events.attributes.enabled = _environ_as_bool("NEW_RELIC_SPAN_EVENTS_ATTRIBUTES_ENABLED", default=True)
-_settings.span_events.attributes.exclude = _environ_as_comma_separated_list(
+_settings.span_events.attributes.exclude = _environ_as_set(
     os.environ.get("NEW_RELIC_SPAN_EVENTS_ATTRIBUTES_EXCLUDE", "")
 )
-_settings.span_events.attributes.include = _environ_as_comma_separated_list(
+_settings.span_events.attributes.include = _environ_as_set(
     os.environ.get("NEW_RELIC_SPAN_EVENTS_ATTRIBUTES_INCLUDE", "")
 )
 
 _settings.transaction_segments.attributes.enabled = _environ_as_bool(
     "NEW_RELIC_TRANSACTION_SEGMENTS_ATTRIBUTES_ENABLED", default=True
 )
-_settings.transaction_segments.attributes.exclude = _environ_as_comma_separated_list(
+_settings.transaction_segments.attributes.exclude = _environ_as_set(
     os.environ.get("NEW_RELIC_TRANSACTION_SEGMENTS_ATTRIBUTES_EXCLUDE", "")
 )
-_settings.transaction_segments.attributes.include = _environ_as_comma_separated_list(
+_settings.transaction_segments.attributes.include = _environ_as_set(
     os.environ.get("NEW_RELIC_TRANSACTION_SEGMENTS_ATTRIBUTES_INCLUDE", "")
 )
 
@@ -912,10 +883,10 @@ _settings.transaction_tracer.top_n = 20
 _settings.transaction_tracer.attributes.enabled = _environ_as_bool(
     "NEW_RELIC_TRANSACTION_TRACER_ATTRIBUTES_ENABLED", default=True
 )
-_settings.transaction_tracer.attributes.exclude = _environ_as_comma_separated_list(
+_settings.transaction_tracer.attributes.exclude = _environ_as_set(
     os.environ.get("NEW_RELIC_TRANSACTION_TRACER_ATTRIBUTES_EXCLUDE", "")
 )
-_settings.transaction_tracer.attributes.include = _environ_as_comma_separated_list(
+_settings.transaction_tracer.attributes.include = _environ_as_set(
     os.environ.get("NEW_RELIC_TRANSACTION_TRACER_ATTRIBUTES_INCLUDE", "")
 )
 
@@ -933,10 +904,10 @@ _settings.error_collector._error_group_callback = None
 _settings.error_collector.attributes.enabled = _environ_as_bool(
     "NEW_RELIC_ERROR_COLLECTOR_ATTRIBUTES_ENABLED", default=True
 )
-_settings.error_collector.attributes.exclude = _environ_as_comma_separated_list(
+_settings.error_collector.attributes.exclude = _environ_as_set(
     os.environ.get("NEW_RELIC_ERROR_COLLECTOR_ATTRIBUTES_EXCLUDE", "")
 )
-_settings.error_collector.attributes.include = _environ_as_comma_separated_list(
+_settings.error_collector.attributes.include = _environ_as_set(
     os.environ.get("NEW_RELIC_ERROR_COLLECTOR_ATTRIBUTES_INCLUDE", "")
 )
 
@@ -950,10 +921,10 @@ _settings.browser_monitoring.content_type = ["text/html"]
 _settings.browser_monitoring.attributes.enabled = _environ_as_bool(
     "NEW_RELIC_BROWSER_MONITORING_ATTRIBUTES_ENABLED", default=False
 )
-_settings.browser_monitoring.attributes.exclude = _environ_as_comma_separated_list(
+_settings.browser_monitoring.attributes.exclude = _environ_as_set(
     os.environ.get("NEW_RELIC_BROWSER_MONITORING_ATTRIBUTES_EXCLUDE", "")
 )
-_settings.browser_monitoring.attributes.include = _environ_as_comma_separated_list(
+_settings.browser_monitoring.attributes.include = _environ_as_set(
     os.environ.get("NEW_RELIC_BROWSER_MONITORING_ATTRIBUTES_INCLUDE", "")
 )
 

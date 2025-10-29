@@ -20,7 +20,7 @@ from newrelic.api.error_trace import ErrorTraceWrapper
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import current_trace, get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
-from newrelic.common.llm_utils import _construct_base_agent_event_dict, _get_llm_metadata
+from newrelic.common.llm_utils import _get_llm_metadata
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import ObjectProxy, wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
@@ -67,7 +67,7 @@ async def wrap_agent_invoke_async(wrapped, instance, args, kwargs):
     except Exception:
         return await wrapped(*args, **kwargs)
 
-    # If we found a transaction to propagate, use it. Otherwise, just call wrapped.
+    # If we find a transaction to propagate, use it. Otherwise, just call wrapped.
     if trace:
         with ContextOf(trace=trace):
             return await wrapped(*args, **kwargs)
@@ -129,7 +129,7 @@ def _record_agent_event_on_stop_iteration(self, transaction):
             agent_name = strands_attrs.get("agent_name", "agent")
             agent_id = strands_attrs.get("agent_id", None)
             agent_event_dict = _construct_base_agent_event_dict(
-                agent_name, agent_id, transaction, linking_metadata, "strands"
+                agent_name, agent_id, transaction, linking_metadata
             )
             agent_event_dict.update({"duration": self._nr_ft.duration * 1000})
             transaction.record_custom_event("LlmAgent", agent_event_dict)
@@ -209,6 +209,7 @@ def _construct_base_tool_event_dict(strands_attrs, tool_results, transaction, li
 
         if settings.ai_monitoring.record_content.enabled:
             tool_event_dict.update({"input": tool_input})
+            # In error cases, the output will hold the error message
             tool_event_dict.update({"output": tool_output})
         tool_event_dict.update(_get_llm_metadata(transaction))
     except Exception:
@@ -218,7 +219,23 @@ def _construct_base_tool_event_dict(strands_attrs, tool_results, transaction, li
     return tool_event_dict
 
 
-def _handle_agent_streaming_completion_error(self, transaction, exc):
+def _construct_base_agent_event_dict(agent_name, agent_id, transaction, linking_metadata):
+    try:
+        agent_event_dict = {
+            "id": agent_id,
+            "name": agent_name,
+            "span_id": linking_metadata.get("span.id"),
+            "trace_id": linking_metadata.get("trace.id"),
+            "vendor": "strands",
+            "ingest_source": "Python",
+        }
+        agent_event_dict.update(_get_llm_metadata(transaction))
+    except Exception:
+        agent_event_dict = {}
+
+    return agent_event_dict
+
+def _handle_agent_streaming_completion_error(self, transaction):
     if hasattr(self, "_nr_ft"):
         strands_attrs = getattr(self, "_nr_strands_attrs", {})
 
@@ -240,7 +257,7 @@ def _handle_agent_streaming_completion_error(self, transaction, exc):
 
             # Create error event
             agent_event_dict = _construct_base_agent_event_dict(
-                agent_name, agent_id, transaction, linking_metadata, "strands"
+                agent_name, agent_id, transaction, linking_metadata
             )
             agent_event_dict.update({"duration": self._nr_ft.duration * 1000, "error": True})
             transaction.record_custom_event("LlmAgent", agent_event_dict)
@@ -253,7 +270,7 @@ def _handle_agent_streaming_completion_error(self, transaction, exc):
                 self._nr_strands_attrs.clear()
 
 
-def _handle_tool_streaming_completion_error(self, transaction, exc):
+def _handle_tool_streaming_completion_error(self, transaction):
     if hasattr(self, "_nr_ft"):
         strands_attrs = getattr(self, "_nr_strands_attrs", {})
 
@@ -282,7 +299,7 @@ def _handle_tool_streaming_completion_error(self, transaction, exc):
 
             # Create error event
             tool_event_dict = _construct_base_tool_event_dict(
-                strands_attrs, tool_results, transaction, linking_metadata, "strands"
+                strands_attrs, tool_results, transaction, linking_metadata
             )
             tool_event_dict.update({"duration": self._nr_ft.duration * 1000})
             transaction.record_custom_event("LlmTool", tool_event_dict)
@@ -372,7 +389,7 @@ class AsyncGeneratorProxy(ObjectProxy):
             self._nr_on_stop_iteration(self, transaction)
             raise
         except Exception as exc:
-            self._nr_on_error(self, transaction, exc)
+            self._nr_on_error(self, transaction)
             raise
         return return_val
 
@@ -392,7 +409,7 @@ def instrument_agent_agent(module):
             wrap_function_wrapper(module, "Agent.__call__", wrap_agent__call__)
         if hasattr(module.Agent, "invoke_async"):
             wrap_function_wrapper(module, "Agent.invoke_async", wrap_agent_invoke_async)
-        if hasattr(module.Agent, "_run_loop"):
+        if hasattr(module.Agent, "stream_async"):
             wrap_function_wrapper(module, "Agent.stream_async", wrap_stream_async)
 
 

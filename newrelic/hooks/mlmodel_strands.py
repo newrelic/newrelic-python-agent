@@ -99,8 +99,7 @@ def wrap_stream_async(wrapped, instance, args, kwargs):
 
     try:
         return_val = wrapped(*args, **kwargs)
-    except Exception as exc:
-        _handle_agent_streaming_completion_error(ft, transaction, exc)
+    except Exception:
         raise
 
     # For streaming responses, wrap with proxy and attach metadata
@@ -346,8 +345,7 @@ def wrap_tool_executor__stream(wrapped, instance, args, kwargs):
 
     try:
         return_val = wrapped(*args, **kwargs)
-    except Exception as exc:
-        _handle_tool_streaming_completion_error(ft, transaction, exc)
+    except Exception:
         raise
 
     # For streaming responses, wrap with proxy and attach metadata

@@ -738,7 +738,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
             "trace_id": trace_id,
         }
 
-        run_bedrock_request_extractor(request_extractor, request_body, bedrock_attrs, request_timestamp)
+        run_bedrock_request_extractor(request_extractor, request_body, bedrock_attrs)
 
         try:
             bedrock_attrs.pop("timestamp", None) # The request timestamp is only needed for request extraction

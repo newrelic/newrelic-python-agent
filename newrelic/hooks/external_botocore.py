@@ -539,13 +539,10 @@ MODEL_EXTRACTORS = [  # Order is important here, avoiding dictionaries
 
 
 def handle_bedrock_exception(
-    exc, is_embedding, model, span_id, trace_id, request_extractor, request_body, ft, transaction, kwargs, is_converse
+    exc, is_embedding, model, span_id, trace_id, request_extractor, request_body, ft, transaction, kwargs, is_converse, request_timestamp=None
 ):
     try:
         bedrock_attrs = {"model": model, "span_id": span_id, "trace_id": trace_id}
-
-        if kwargs.get("timestamp"):
-            bedrock_attrs["timestamp"] = kwargs.get("timestamp")
 
         if is_converse:
             try:
@@ -590,12 +587,12 @@ def handle_bedrock_exception(
         if is_embedding:
             handle_embedding_event(transaction, error_attributes)
         else:
-            handle_chat_completion_event(transaction, error_attributes)
+            handle_chat_completion_event(transaction, error_attributes, request_timestamp)
     except Exception:
         _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE, exc_info=True)
 
 
-def run_bedrock_response_extractor(response_extractor, response_body, bedrock_attrs, is_embedding, transaction):
+def run_bedrock_response_extractor(response_extractor, response_body, bedrock_attrs, is_embedding, transaction, request_timestamp=None):
     # Run response extractor for non-streaming responses
     try:
         response_extractor(response_body, bedrock_attrs)
@@ -605,7 +602,7 @@ def run_bedrock_response_extractor(response_extractor, response_body, bedrock_at
     if is_embedding:
         handle_embedding_event(transaction, bedrock_attrs)
     else:
-        handle_chat_completion_event(transaction, bedrock_attrs)
+        handle_chat_completion_event(transaction, bedrock_attrs, request_timestamp)
 
 
 def run_bedrock_request_extractor(request_extractor, request_body, bedrock_attrs):
@@ -706,6 +703,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
                 transaction,
                 kwargs,
                 is_converse=False,
+                request_timestamp=request_timestamp,
             )
             raise
 
@@ -731,10 +729,9 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
             "model": model,
             "span_id": span_id,
             "trace_id": trace_id,
-            "timestamp": request_timestamp,
         }
 
-        run_bedrock_request_extractor(request_extractor, request_body, bedrock_attrs)
+        run_bedrock_request_extractor(request_extractor, request_body, bedrock_attrs, request_timestamp)
 
         try:
             bedrock_attrs.pop("timestamp", None) # The request timestamp is only needed for request extraction
@@ -754,7 +751,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
             bedrock_attrs["duration"] = ft.duration * 1000
             response["body"] = StreamingBody(BytesIO(response_body), len(response_body))
 
-            run_bedrock_response_extractor(response_extractor, response_body, bedrock_attrs, is_embedding, transaction)
+            run_bedrock_response_extractor(response_extractor, response_body, bedrock_attrs, is_embedding, transaction, request_timestamp=request_timestamp)
 
         except Exception:
             _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE, exc_info=True)
@@ -818,7 +815,7 @@ def wrap_bedrock_runtime_converse(response_streaming=False):
             response = wrapped(*args, **kwargs)
         except Exception as exc:
             handle_bedrock_exception(
-                exc, False, model, span_id, trace_id, request_extractor, {}, ft, transaction, kwargs, is_converse=True
+                exc, False, model, span_id, trace_id, request_extractor, {}, ft, transaction, kwargs, is_converse=True, request_timestamp=request_timestamp
             )
             raise
 
@@ -837,7 +834,7 @@ def wrap_bedrock_runtime_converse(response_streaming=False):
         try:
             ft.__exit__(None, None, None)
             bedrock_attrs["duration"] = ft.duration * 1000
-            run_bedrock_response_extractor(response_extractor, {}, bedrock_attrs, False, transaction)
+            run_bedrock_response_extractor(response_extractor, {}, bedrock_attrs, False, transaction, request_timestamp=request_timestamp)
 
         except Exception:
             _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE, exc_info=True)
@@ -890,6 +887,7 @@ class EventStreamWrapper(ObjectProxy):
 class GeneratorProxy(ObjectProxy):
     def __init__(self, wrapped):
         super().__init__(wrapped)
+        self.request_timestamp = int(1000.0 * time.time())
 
     def __iter__(self):
         return self
@@ -902,12 +900,12 @@ class GeneratorProxy(ObjectProxy):
         return_val = None
         try:
             return_val = self.__wrapped__.__next__()
-            record_stream_chunk(self, return_val, transaction)
+            record_stream_chunk(self, return_val, transaction, request_timestamp=self.request_timestamp)
         except StopIteration:
-            record_events_on_stop_iteration(self, transaction)
+            record_events_on_stop_iteration(self, transaction, request_timestamp=self.request_timestamp)
             raise
         except Exception as exc:
-            record_error(self, transaction, exc)
+            record_error(self, transaction, exc, request_timestamp=self.request_timestamp)
             raise
         return return_val
 
@@ -927,6 +925,7 @@ class AsyncEventStreamWrapper(ObjectProxy):
 class AsyncGeneratorProxy(ObjectProxy):
     def __init__(self, wrapped):
         super().__init__(wrapped)
+        self.request_timestamp = int(1000.0 * time.time())
 
     def __aiter__(self):
         return self
@@ -938,12 +937,12 @@ class AsyncGeneratorProxy(ObjectProxy):
         return_val = None
         try:
             return_val = await self.__wrapped__.__anext__()
-            record_stream_chunk(self, return_val, transaction)
+            record_stream_chunk(self, return_val, transaction, request_timestamp=self.request_timestamp)
         except StopAsyncIteration:
-            record_events_on_stop_iteration(self, transaction)
+            record_events_on_stop_iteration(self, transaction, request_timestamp=self.request_timestamp)
             raise
         except Exception as exc:
-            record_error(self, transaction, exc)
+            record_error(self, transaction, exc, request_timestamp=self.request_timestamp)
             raise
         return return_val
 
@@ -951,7 +950,7 @@ class AsyncGeneratorProxy(ObjectProxy):
         return await super().aclose()
 
 
-def record_stream_chunk(self, return_val, transaction):
+def record_stream_chunk(self, return_val, transaction, request_timestamp=None):
     if return_val:
         try:
             chunk = json.loads(return_val["chunk"]["bytes"].decode("utf-8"))
@@ -960,12 +959,12 @@ def record_stream_chunk(self, return_val, transaction):
             # So we need to call the record events here since stop iteration will not be raised.
             _type = chunk.get("type")
             if _type == "content_block_stop":
-                record_events_on_stop_iteration(self, transaction)
+                record_events_on_stop_iteration(self, transaction, request_timestamp)
         except Exception:
             _logger.warning(RESPONSE_EXTRACTOR_FAILURE_LOG_MESSAGE, exc_info=True)
 
 
-def record_events_on_stop_iteration(self, transaction):
+def record_events_on_stop_iteration(self, transaction, request_timestamp=None):
     if hasattr(self, "_nr_ft"):
         bedrock_attrs = getattr(self, "_nr_bedrock_attrs", {})
         self._nr_ft.__exit__(None, None, None)
@@ -976,7 +975,7 @@ def record_events_on_stop_iteration(self, transaction):
 
         try:
             bedrock_attrs["duration"] = self._nr_ft.duration * 1000
-            handle_chat_completion_event(transaction, bedrock_attrs)
+            handle_chat_completion_event(transaction, bedrock_attrs, request_timestamp)
         except Exception:
             _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE, exc_info=True)
 
@@ -984,7 +983,7 @@ def record_events_on_stop_iteration(self, transaction):
         self._nr_bedrock_attrs.clear()
 
 
-def record_error(self, transaction, exc):
+def record_error(self, transaction, exc, request_timestamp=None):
     if hasattr(self, "_nr_ft"):
         try:
             ft = self._nr_ft
@@ -1007,7 +1006,7 @@ def record_error(self, transaction, exc):
             ft.__exit__(*sys.exc_info())
             error_attributes["duration"] = ft.duration * 1000
 
-            handle_chat_completion_event(transaction, error_attributes)
+            handle_chat_completion_event(transaction, error_attributes, request_timestamp)
 
             # Clear cached data as this can be very large.
             error_attributes.clear()
@@ -1056,7 +1055,7 @@ def handle_embedding_event(transaction, bedrock_attrs):
     transaction.record_custom_event("LlmEmbedding", embedding_dict)
 
 
-def handle_chat_completion_event(transaction, bedrock_attrs):
+def handle_chat_completion_event(transaction, bedrock_attrs, request_timestamp=None):
     chat_completion_id = str(uuid.uuid4())
     # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
     custom_attrs_dict = transaction._custom_params
@@ -1109,7 +1108,7 @@ def handle_chat_completion_event(transaction, bedrock_attrs):
         request_id=request_id,
         llm_metadata_dict=llm_metadata_dict,
         response_id=response_id,
-        request_timestamp=bedrock_attrs.get("timestamp") or None,
+        request_timestamp=request_timestamp
     )
 
 

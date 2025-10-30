@@ -1391,6 +1391,17 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
         min(settings_snapshot.custom_insights_events.max_attribute_value, 4095),
     )
 
+    # Partial granularity tracing is not available in infinite tracing mode.
+    if settings_snapshot.infinite_tracing.enabled and settings_snapshot.distributed_tracing.sampler.partial_granularity.enabled:
+        _logger.warning(
+            "Improper configuration. Infinite tracing cannot be enabled at the same time as partial granularity tracing. Setting distributed_tracing.sampler.partial_granularity.enabled=False."
+        )
+        apply_config_setting(
+            settings_snapshot,
+            "distributed_tracing.sampler.partial_granularity.enabled",
+            False,
+        )
+
     # This will be removed at some future point
     # Special case for account_id which will be sent instead of
     # cross_process_id in the future
@@ -1430,18 +1441,7 @@ def finalize_application_settings(server_side_config=None, settings=_settings):
 
     application_settings.attribute_filter = AttributeFilter(flatten_settings(application_settings))
 
-    simplify_distributed_tracing_sampler_granularity_settings(application_settings)
-
     return application_settings
-
-
-def simplify_distributed_tracing_sampler_granularity_settings(settings):
-    # Partial granularity tracing is not available in infinite tracing mode.
-    if settings.infinite_tracing.enabled and settings.distributed_tracing.sampler.partial_granularity.enabled:
-        _logger.warning(
-            "Improper configuration. Infinite tracing cannot be enabled at the same time as partial granularity tracing. Setting distributed_tracing.sampler.partial_granularity.enabled=False."
-        )
-        settings.distributed_tracing.sampler.partial_granularity.enabled = False
 
 
 def _remove_ignored_configs(server_settings):

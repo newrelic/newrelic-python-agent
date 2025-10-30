@@ -483,7 +483,7 @@ def _handle_completion_success(transaction, linking_metadata, completion_id, kwa
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
 
-def _record_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, response_headers, response):
+def _record_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, response_headers, response, request_timestamp=None):
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
     try:
@@ -578,7 +578,7 @@ def _record_completion_success(transaction, linking_metadata, completion_id, kwa
             request_id,
             llm_metadata,
             output_message_list,
-            kwargs.get("timestamp") or None
+            request_timestamp,
         )
     except Exception:
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))

@@ -394,7 +394,7 @@ def extract_bedrock_claude_model_request(request_body, bedrock_attrs):
         ]
     else:
         input_message_list = [{"role": "user", "content": request_body.get("prompt")}]
-    bedrock_attrs["request.max_tokens"] = request_body.get("max_tokens_to_sample")
+    bedrock_attrs["request.max_tokens"] = request_body.get("max_tokens_to_sample") or request_body.get("max_tokens")
     bedrock_attrs["request.temperature"] = request_body.get("temperature")
     bedrock_attrs["input_message_list"] = input_message_list
 
@@ -406,7 +406,13 @@ def extract_bedrock_claude_model_response(response_body, bedrock_attrs):
         response_body = json.loads(response_body)
         role = response_body.get("role", "assistant")
         content = response_body.get("content") or response_body.get("completion")
-        output_message_list = [{"role": role, "content": content}]
+
+        # For Claude Sonnet 3+ models, the content key holds a list with the type and text of the output
+        if isinstance(content, list):
+            output_message_list = [{"role": "assistant", "content": result.get("text")} for result in content]
+        else:
+            output_message_list = [{"role": role, "content": content}]
+
         bedrock_attrs["response.choices.finish_reason"] = response_body.get("stop_reason")
         bedrock_attrs["output_message_list"] = output_message_list
 
@@ -420,6 +426,7 @@ def extract_bedrock_claude_model_streaming_response(response_body, bedrock_attrs
             bedrock_attrs["output_message_list"] = [{"role": "assistant", "content": ""}]
         bedrock_attrs["output_message_list"][0]["content"] += content
         bedrock_attrs["response.choices.finish_reason"] = response_body.get("stop_reason")
+
     return bedrock_attrs
 
 
@@ -639,7 +646,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
 
         # Determine extractor by model type
         for extractor_name, request_extractor, response_extractor, stream_extractor in MODEL_EXTRACTORS:  # noqa: B007
-            if model.startswith(extractor_name):
+            if extractor_name in model:
                 break
         else:
             # Model was not found in extractor list
@@ -1057,6 +1064,13 @@ def handle_chat_completion_event(transaction, bedrock_attrs):
 
     input_message_list = bedrock_attrs.get("input_message_list", [])
     output_message_list = bedrock_attrs.get("output_message_list", [])
+
+    no_output_content = len(output_message_list) == 1 and not output_message_list[0].get("content", "")
+
+    # This checks handles Sonnet 3+ models which report an additional empty input and empty output in streaming cases after the main content has been generated
+    if not input_message_list and no_output_content:
+        return
+
     number_of_messages = (
         len(input_message_list) + len(output_message_list)
     ) or None  # If 0, attribute will be set to None and removed

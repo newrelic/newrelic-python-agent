@@ -1392,15 +1392,14 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
     )
 
     # Partial granularity tracing is not available in infinite tracing mode.
-    if settings_snapshot.infinite_tracing.enabled and settings_snapshot.distributed_tracing.sampler.partial_granularity.enabled:
+    if (
+        settings_snapshot.infinite_tracing.enabled
+        and settings_snapshot.distributed_tracing.sampler.partial_granularity.enabled
+    ):
         _logger.warning(
             "Improper configuration. Infinite tracing cannot be enabled at the same time as partial granularity tracing. Setting distributed_tracing.sampler.partial_granularity.enabled=False."
         )
-        apply_config_setting(
-            settings_snapshot,
-            "distributed_tracing.sampler.partial_granularity.enabled",
-            False,
-        )
+        apply_config_setting(settings_snapshot, "distributed_tracing.sampler.partial_granularity.enabled", False)
 
     # This will be removed at some future point
     # Special case for account_id which will be sent instead of

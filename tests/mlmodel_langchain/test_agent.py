@@ -14,14 +14,23 @@
 
 import langchain
 import pytest
-from langchain.agents import AgentExecutor, create_openai_functions_agent
-from langchain.prompts import ChatPromptTemplate
 from langchain.tools import tool
 from langchain_core.prompts import MessagesPlaceholder
 from testing_support.fixtures import reset_core_stats_engine, validate_attributes
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
+
+# Moved in langchain v1.0.1
+try:
+    from langchain_classic.agents import AgentExecutor, create_openai_functions_agent
+except ImportError:
+    from langchain.agents import AgentExecutor, create_openai_functions_agent
+
+try:
+    from langchain_core.prompts import ChatPromptTemplate
+except Exception:
+    from langchain.prompts import ChatPromptTemplate
 
 
 @pytest.fixture

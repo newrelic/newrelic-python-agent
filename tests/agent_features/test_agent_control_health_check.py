@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import copy
 import re
 import sys
 import threading
@@ -35,6 +36,20 @@ def get_health_file_contents(tmp_path):
     with health_file.open() as f:
         contents = f.readlines()
         return contents
+
+
+@pytest.fixture(scope="module", autouse=True)
+def restore_settings_fixture():
+    # Backup settings from before this test file runs
+    original_settings = global_settings()
+    backup = copy.deepcopy(original_settings.__dict__)
+
+    # Run tests
+    yield
+
+    # Restore settings after tests run
+    original_settings.__dict__.clear()
+    original_settings.__dict__.update(backup)
 
 
 @pytest.mark.parametrize("file_uri", ["", "file://", "/test/dir", "foo:/test/dir"])
@@ -247,6 +262,7 @@ def test_max_app_name_status(monkeypatch, tmp_path):
     file_path = tmp_path.as_uri()
     monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", file_path)
 
+    # Set app name to exceed maximum allowed configured names
     _reset_configuration_done()
     initialize_agent(app_name="test1;test2;test3;test4")
     # Give time for the scheduler to kick in and write to the health file
@@ -259,7 +275,3 @@ def test_max_app_name_status(monkeypatch, tmp_path):
     assert contents[0] == "healthy: False\n"
     assert contents[1] == "status: The maximum number of configured app names (3) exceeded\n"
     assert contents[4] == "last_error: NR-APM-006\n"
-
-    # Set app name back to original name specific
-    settings = global_settings()
-    settings.app_name = "Python Agent Test (agent_features)"

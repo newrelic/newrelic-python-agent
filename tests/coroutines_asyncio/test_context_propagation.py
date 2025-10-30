@@ -35,9 +35,18 @@ from newrelic.core.trace_cache import trace_cache
 try:
     import uvloop
 
-    loop_policies = (None, uvloop.EventLoopPolicy())
+    loop_policies = (pytest.param(None, id="asyncio"), pytest.param(uvloop.EventLoopPolicy(), id="uvloop"))
 except ImportError:
-    loop_policies = (None,)
+    loop_policies = (pytest.param(None, id="asyncio"),)
+
+
+@pytest.fixture(autouse=True)
+def reset_event_loop():
+    from asyncio import set_event_loop, set_event_loop_policy
+
+    # Remove the loop policy to avoid side effects
+    set_event_loop_policy(None)
+    set_event_loop(None)
 
 
 @function_trace("waiter3")
@@ -166,6 +175,7 @@ def test_two_transactions(event_loop, trace):
 
     tasks = []
 
+    asyncio.set_event_loop(event_loop)
     ready = asyncio.Event()
     done = asyncio.Event()
 
@@ -194,11 +204,11 @@ def test_two_transactions(event_loop, trace):
     if sys.version_info >= (3, 10, 0):
         afut = asyncio.ensure_future(create_coro(), loop=event_loop)
         bfut = asyncio.ensure_future(await_task(), loop=event_loop)
-        event_loop.run_until_complete(asyncio.gather(afut, bfut))
     else:
         afut = asyncio.ensure_future(create_coro())
         bfut = asyncio.ensure_future(await_task())
-        asyncio.get_event_loop().run_until_complete(asyncio.gather(afut, bfut))
+
+    event_loop.run_until_complete(asyncio.gather(afut, bfut))
 
 
 # Sentinel left in cache transaction exited

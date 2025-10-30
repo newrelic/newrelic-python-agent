@@ -57,10 +57,14 @@ def response_streaming(request):
 def exercise_model(bedrock_server, model_id, response_streaming):
     try:
         # These are only available in certain botocore environments.
-        from langchain.chains import ConversationChain
+        from langchain_classic.chains import ConversationChain
         from langchain_community.chat_models import BedrockChat
     except ImportError:
-        pytest.skip(reason="Langchain not installed.")
+        try:
+            from langchain.chains import ConversationChain
+            from langchain_community.chat_models import BedrockChat
+        except ImportError:
+            pytest.skip(reason="Langchain not installed.")
 
     def _exercise_model(prompt):
         bedrock_llm = BedrockChat(model_id=model_id, client=bedrock_server, streaming=response_streaming)

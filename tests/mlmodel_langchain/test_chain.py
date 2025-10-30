@@ -20,8 +20,6 @@ import langchain
 import langchain_core
 import openai
 import pytest
-from langchain.chains.combine_documents import create_stuff_documents_chain
-from langchain.chains.openai_functions import create_structured_output_chain, create_structured_output_runnable
 from langchain_community.vectorstores.faiss import FAISS
 from testing_support.fixtures import reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
@@ -41,6 +39,20 @@ from newrelic.api.background_task import background_task
 from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.object_names import callable_name
+
+try:
+    from langchain_classic.chains import create_retrieval_chain
+    from langchain_classic.chains.combine_documents import create_stuff_documents_chain
+    from langchain_classic.chains.openai_functions import (
+        create_structured_output_chain,
+        create_structured_output_runnable,
+    )
+    from langchain_core.output_parsers import BaseOutputParser
+except ImportError:
+    from langchain.chains import create_retrieval_chain
+    from langchain.chains.combine_documents import create_stuff_documents_chain
+    from langchain.chains.openai_functions import create_structured_output_chain, create_structured_output_runnable
+    from langchain.schema import BaseOutputParser
 
 _test_openai_chat_completion_messages = (
     {"role": "system", "content": "You are a scientist."},
@@ -1678,7 +1690,7 @@ def test_retrieval_chains(set_trace_info, retrieval_chain_prompt, embedding_open
     retriever = vectordb.as_retriever()
     question_answer_chain = create_stuff_documents_chain(llm=chat_openai_client, prompt=retrieval_chain_prompt)
 
-    rag_chain = langchain.chains.create_retrieval_chain(retriever, question_answer_chain)
+    rag_chain = create_retrieval_chain(retriever, question_answer_chain)
     response = rag_chain.invoke({"input": "math"})
 
     assert response
@@ -1746,7 +1758,7 @@ def prompt_openai_error():
 
 @pytest.fixture
 def comma_separated_list_output_parser():
-    class _CommaSeparatedListOutputParser(langchain.schema.BaseOutputParser):
+    class _CommaSeparatedListOutputParser(BaseOutputParser):
         """Parse the output of an LLM call to a comma-separated list."""
 
         def parse(self, text):

@@ -103,12 +103,10 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     try:
         return_val = wrapped(*args, **kwargs)
     except Exception as exc:
-        kwargs["timestamp"] = request_timestamp
-        _record_completion_error(transaction, linking_metadata, completion_id, kwargs, ft, exc)
+        _record_completion_error(transaction, linking_metadata, completion_id, kwargs, ft, exc, request_timestamp)
         raise
 
-    kwargs["timestamp"] = request_timestamp
-    _handle_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val)
+    _handle_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val, request_timestamp)
     return return_val
 
 
@@ -430,16 +428,14 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
     try:
         return_val = await wrapped(*args, **kwargs)
     except Exception as exc:
-        kwargs["timestamp"] = request_timestamp
-        _record_completion_error(transaction, linking_metadata, completion_id, kwargs, ft, exc)
+        _record_completion_error(transaction, linking_metadata, completion_id, kwargs, ft, exc, request_timestamp)
         raise
 
-    kwargs["timestamp"] = request_timestamp
-    _handle_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val)
+    _handle_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val, request_timestamp)
     return return_val
 
 
-def _handle_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val):
+def _handle_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val, request_timestamp=None):
     settings = transaction.settings if transaction.settings is not None else global_settings()
     stream = kwargs.get("stream", False)
     # Only if streaming and streaming monitoring is enabled and the response is not empty
@@ -482,7 +478,7 @@ def _handle_completion_success(transaction, linking_metadata, completion_id, kwa
                 # openai._legacy_response.LegacyAPIResponse
                 response = json.loads(response.http_response.text.strip())
 
-        _record_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, response_headers, response)
+        _record_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, response_headers, response, request_timestamp)
     except Exception:
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
@@ -588,7 +584,7 @@ def _record_completion_success(transaction, linking_metadata, completion_id, kwa
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
 
-def _record_completion_error(transaction, linking_metadata, completion_id, kwargs, ft, exc):
+def _record_completion_error(transaction, linking_metadata, completion_id, kwargs, ft, exc, request_timestamp=None):
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
     request_message_list = kwargs.get("messages", None) or []
@@ -669,7 +665,7 @@ def _record_completion_error(transaction, linking_metadata, completion_id, kwarg
             request_id,
             llm_metadata,
             output_message_list,
-            kwargs.get("timestamp") or None,
+            request_timestamp,
         )
     except Exception:
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))

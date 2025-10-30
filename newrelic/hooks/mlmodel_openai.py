@@ -85,7 +85,7 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     if (kwargs.get("extra_headers") or {}).get("X-Stainless-Raw-Response") == "stream":
         return wrapped(*args, **kwargs)
 
-    kwargs["timestamp"] = int(1000.0 * time.time())
+    request_timestamp = int(1000.0 * time.time())
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
     if not settings.ai_monitoring.enabled:
@@ -103,8 +103,11 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     try:
         return_val = wrapped(*args, **kwargs)
     except Exception as exc:
+        kwargs["timestamp"] = request_timestamp
         _record_completion_error(transaction, linking_metadata, completion_id, kwargs, ft, exc)
         raise
+
+    kwargs["timestamp"] = request_timestamp
     _handle_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val)
     return return_val
 
@@ -409,7 +412,7 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
     if (kwargs.get("extra_headers") or {}).get("X-Stainless-Raw-Response") == "stream":
         return await wrapped(*args, **kwargs)
 
-    kwargs["timestamp"] = int(1000.0 * time.time())
+    request_timestamp = int(1000.0 * time.time())
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
     if not settings.ai_monitoring.enabled:
@@ -427,9 +430,11 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
     try:
         return_val = await wrapped(*args, **kwargs)
     except Exception as exc:
+        kwargs["timestamp"] = request_timestamp
         _record_completion_error(transaction, linking_metadata, completion_id, kwargs, ft, exc)
         raise
 
+    kwargs["timestamp"] = request_timestamp
     _handle_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val)
     return return_val
 

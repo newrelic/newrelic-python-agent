@@ -17,6 +17,7 @@ import json
 import logging
 import re
 import sys
+import time
 import uuid
 from io import BytesIO
 
@@ -193,6 +194,7 @@ def create_chat_completion_message_event(
     request_id,
     llm_metadata_dict,
     response_id=None,
+    request_timestamp=None,
 ):
     if not transaction:
         return
@@ -227,6 +229,8 @@ def create_chat_completion_message_event(
 
         if settings.ai_monitoring.record_content.enabled:
             chat_completion_message_dict["content"] = content
+        if request_timestamp:
+            chat_completion_message_dict["timestamp"] = request_timestamp
 
         chat_completion_message_dict.update(llm_metadata_dict)
 
@@ -546,6 +550,10 @@ def handle_bedrock_exception(
 ):
     try:
         bedrock_attrs = {"model": model, "span_id": span_id, "trace_id": trace_id}
+
+        if kwargs.get("timestamp"):
+            bedrock_attrs["timestamp"] = kwargs.get("timestamp")
+
         if is_converse:
             try:
                 input_message_list = [
@@ -627,6 +635,8 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
         settings = transaction.settings if transaction.settings is not None else global_settings()
         if not settings.ai_monitoring.enabled:
             return wrapped(*args, **kwargs)
+
+        request_timestamp = int(1000.0 * time.time())
 
         transaction.add_ml_model_info("Bedrock", BOTOCORE_VERSION)
         transaction._add_agent_attribute("llm", True)
@@ -728,11 +738,14 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
             "model": model,
             "span_id": span_id,
             "trace_id": trace_id,
+            "timestamp": request_timestamp,
         }
 
         run_bedrock_request_extractor(request_extractor, request_body, bedrock_attrs)
 
         try:
+            bedrock_attrs.pop("timestamp", None) # The request timestamp is only needed for request extraction
+
             if response_streaming:
                 # Wrap EventStream object here to intercept __iter__ method instead of instrumenting class.
                 # This class is used in numerous other services in botocore, and would cause conflicts.
@@ -769,6 +782,8 @@ def wrap_bedrock_runtime_converse(response_streaming=False):
         settings = transaction.settings or global_settings()
         if not settings.ai_monitoring.enabled:
             return wrapped(*args, **kwargs)
+
+        request_timestamp = int(1000.0 * time.time())
 
         transaction.add_ml_model_info("Bedrock", BOTOCORE_VERSION)
         transaction._add_agent_attribute("llm", True)
@@ -824,6 +839,7 @@ def wrap_bedrock_runtime_converse(response_streaming=False):
 
         response_headers = response.get("ResponseMetadata", {}).get("HTTPHeaders") or {}
         bedrock_attrs = extract_bedrock_converse_attrs(kwargs, response, response_headers, model, span_id, trace_id)
+        bedrock_attrs["timestamp"] = request_timestamp
 
         try:
             if response_streaming:
@@ -1144,6 +1160,7 @@ def handle_chat_completion_event(transaction, bedrock_attrs):
         request_id=request_id,
         llm_metadata_dict=llm_metadata_dict,
         response_id=response_id,
+        request_timestamp=bedrock_attrs.get("timestamp") or None,
     )
 
 

@@ -61,7 +61,9 @@ def validate_custom_event_count(count):
             raise
         else:
             stats = core_application_stats_engine(None)
-            assert stats.custom_events.num_samples == count
+            assert stats.custom_events.num_samples == count, (
+                f"Expected: {count}, Got: {stats.custom_events.num_samples}. Events: {list(stats.custom_events)}"
+            )
 
         return result
 

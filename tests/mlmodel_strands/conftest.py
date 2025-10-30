@@ -14,6 +14,7 @@
 
 import pytest
 from _mock_model_provider import MockedModelProvider
+from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 from testing_support.ml_testing_utils import set_trace_info
 
@@ -50,15 +51,33 @@ def single_tool_model():
 
 
 @pytest.fixture
-def single_tool_model_error():
+def single_tool_model_runtime_error_coro():
     model = MockedModelProvider(
         [
             {
                 "role": "assistant",
                 "content": [
-                    {"text": "Calling add_exclamation tool"},
+                    {"text": "Calling throw_exception_coro tool"},
                     # Set arguments to an invalid type to trigger error in tool
-                    {"toolUse": {"name": "add_exclamation", "toolUseId": "123", "input": {"message": 12}}},
+                    {"toolUse": {"name": "throw_exception_coro", "toolUseId": "123", "input": {"message": "Hello"}}},
+                ],
+            },
+            {"role": "assistant", "content": [{"text": "Success!"}]},
+        ]
+    )
+    return model
+
+
+@pytest.fixture
+def single_tool_model_runtime_error_agen():
+    model = MockedModelProvider(
+        [
+            {
+                "role": "assistant",
+                "content": [
+                    {"text": "Calling throw_exception_agen tool"},
+                    # Set arguments to an invalid type to trigger error in tool
+                    {"toolUse": {"name": "throw_exception_agen", "toolUseId": "123", "input": {"message": "Hello"}}},
                 ],
             },
             {"role": "assistant", "content": [{"text": "Success!"}]},

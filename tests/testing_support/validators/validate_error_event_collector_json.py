@@ -52,7 +52,7 @@ def validate_error_event_collector_json(num_errors=1):
 
             error_events = decoded_json[2]
 
-            assert len(error_events) == num_errors
+            assert len(error_events) == num_errors, f"Expected: {num_errors}, Got: {len(error_events)}"
             for event in error_events:
                 # event is an array containing intrinsics, user-attributes,
                 # and agent-attributes

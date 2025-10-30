@@ -15,6 +15,7 @@
 import functools
 
 from newrelic.api.time_trace import current_trace, notice_error
+from newrelic.common.async_wrapper import async_wrapper as get_async_wrapper
 from newrelic.common.object_wrapper import FunctionWrapper, wrap_object
 
 
@@ -43,17 +44,25 @@ class ErrorTrace:
         )
 
 
-def ErrorTraceWrapper(wrapped, ignore=None, expected=None, status_code=None):
-    def wrapper(wrapped, instance, args, kwargs):
-        parent = current_trace()
+def ErrorTraceWrapper(wrapped, ignore=None, expected=None, status_code=None, async_wrapper=None):
+    def literal_wrapper(wrapped, instance, args, kwargs):
+        wrapper = async_wrapper if async_wrapper is not None else get_async_wrapper(wrapped)
+        if not wrapper:
+            parent = current_trace()
+            if not parent:
+                return wrapped(*args, **kwargs)
+        else:
+            parent = None
 
-        if parent is None:
+        trace = ErrorTrace(ignore, expected, status_code, parent=parent)
+
+        if wrapper:
+            return wrapper(wrapped, trace)(*args, **kwargs)
+
+        with trace:
             return wrapped(*args, **kwargs)
 
-        with ErrorTrace(ignore, expected, status_code, parent=parent):
-            return wrapped(*args, **kwargs)
-
-    return FunctionWrapper(wrapped, wrapper)
+    return FunctionWrapper(wrapped, literal_wrapper)
 
 
 def error_trace(ignore=None, expected=None, status_code=None):

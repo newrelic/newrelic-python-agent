@@ -666,7 +666,7 @@ def _create_error_chain_run_events(transaction, instance, run_args, completion_i
     full_chat_completion_summary_dict.update(llm_metadata_dict)
     transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
     create_chat_completion_message_event(
-        transaction, input_message_list, completion_id, span_id, trace_id, run_id, llm_metadata_dict, []
+        transaction, input_message_list, completion_id, span_id, trace_id, run_id, llm_metadata_dict, [], run_args["timestamp"] or None
     )
 
 

@@ -14,6 +14,7 @@
 
 import logging
 import sys
+import time
 import uuid
 
 import google
@@ -221,6 +222,8 @@ def wrap_generate_content_sync(wrapped, instance, args, kwargs):
     if not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
+    kwargs["timestamp"] = int(1000.0 * time.time())
+
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("Gemini", GEMINI_VERSION)
     transaction._add_agent_attribute("llm", True)
@@ -254,6 +257,8 @@ async def wrap_generate_content_async(wrapped, instance, args, kwargs):
     settings = transaction.settings or global_settings()
     if not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
+
+    kwargs["timestamp"] = int(1000.0 * time.time())
 
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("Gemini", GEMINI_VERSION)
@@ -357,6 +362,7 @@ def _record_generation_error(transaction, linking_metadata, completion_id, kwarg
             request_model,
             llm_metadata,
             output_message_list,
+            kwargs.get("timestamp") or None,
         )
     except Exception:
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
@@ -452,6 +458,7 @@ def _record_generation_success(transaction, linking_metadata, completion_id, kwa
             request_model,
             llm_metadata,
             output_message_list,
+            kwargs.get("timestamp") or None,
         )
     except Exception:
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
@@ -467,6 +474,7 @@ def create_chat_completion_message_event(
     request_model,
     llm_metadata,
     output_message_list,
+    request_timestamp=None,
 ):
     try:
         settings = transaction.settings or global_settings()
@@ -510,6 +518,8 @@ def create_chat_completion_message_event(
 
             if settings.ai_monitoring.record_content.enabled:
                 chat_completion_input_message_dict["content"] = input_message_content
+            if request_timestamp:
+                chat_completion_input_message_dict["timestamp"] = request_timestamp
 
             chat_completion_input_message_dict.update(llm_metadata)
 

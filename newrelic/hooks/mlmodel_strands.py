@@ -127,9 +127,7 @@ def _record_agent_event_on_stop_iteration(self, transaction):
 
             agent_name = strands_attrs.get("agent_name", "agent")
             agent_id = strands_attrs.get("agent_id", None)
-            agent_event_dict = _construct_base_agent_event_dict(
-                agent_name, agent_id, transaction, linking_metadata
-            )
+            agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction, linking_metadata)
             agent_event_dict.update({"duration": self._nr_ft.duration * 1000})
             transaction.record_custom_event("LlmAgent", agent_event_dict)
 
@@ -234,6 +232,7 @@ def _construct_base_agent_event_dict(agent_name, agent_id, transaction, linking_
 
     return agent_event_dict
 
+
 def _handle_agent_streaming_completion_error(self, transaction):
     if hasattr(self, "_nr_ft"):
         strands_attrs = getattr(self, "_nr_strands_attrs", {})
@@ -255,9 +254,7 @@ def _handle_agent_streaming_completion_error(self, transaction):
             self._nr_ft.__exit__(*sys.exc_info())
 
             # Create error event
-            agent_event_dict = _construct_base_agent_event_dict(
-                agent_name, agent_id, transaction, linking_metadata
-            )
+            agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction, linking_metadata)
             agent_event_dict.update({"duration": self._nr_ft.duration * 1000, "error": True})
             transaction.record_custom_event("LlmAgent", agent_event_dict)
 
@@ -386,7 +383,7 @@ class AsyncGeneratorProxy(ObjectProxy):
         except StopAsyncIteration:
             self._nr_on_stop_iteration(self, transaction)
             raise
-        except Exception as exc:
+        except Exception:
             self._nr_on_error(self, transaction)
             raise
         return return_val

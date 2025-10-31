@@ -80,7 +80,6 @@ def exercise_model(bedrock_converse_server, response_streaming):
             inferenceConfig=inference_config,
         )
         _responses = list(response["stream"])  # Consume the response stream
-        pass
 
     return _exercise_model_streaming if response_streaming else _exercise_model
 

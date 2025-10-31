@@ -115,19 +115,36 @@ chat_completion_expected_events = [
 ]
 
 
+@pytest.fixture(scope="session", params=[pytest.param(True, id="streaming"), pytest.param(False, id="non-streaming")])
+def response_streaming(request):
+    return request.param
+
+
 @pytest.fixture(scope="module")
-def exercise_model(bedrock_converse_server):
+def exercise_model(bedrock_converse_server, response_streaming):
     def _exercise_model(message):
         inference_config = {"temperature": 0.7, "maxTokens": 100}
 
-        response = bedrock_converse_server.converse(
+        _response = bedrock_converse_server.converse(
             modelId="anthropic.claude-3-sonnet-20240229-v1:0",
             messages=message,
             system=[{"text": "You are a scientist."}],
             inferenceConfig=inference_config,
         )
 
-    return _exercise_model
+    def _exercise_model_streaming(message):
+        inference_config = {"temperature": 0.7, "maxTokens": 100}
+
+        response = bedrock_converse_server.converse_stream(
+            modelId="anthropic.claude-3-sonnet-20240229-v1:0",
+            messages=message,
+            system=[{"text": "You are a scientist."}],
+            inferenceConfig=inference_config,
+        )
+        _responses = list(response["stream"])  # Consume the response stream
+        pass
+
+    return _exercise_model_streaming if response_streaming else _exercise_model
 
 
 @reset_core_stats_engine()

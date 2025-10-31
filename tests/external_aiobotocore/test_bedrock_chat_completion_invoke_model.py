@@ -20,6 +20,18 @@ import botocore.eventstream
 import botocore.exceptions
 import pytest
 from conftest import BOTOCORE_VERSION
+from external_botocore._test_bedrock_chat_completion_invoke_model import (
+    chat_completion_expected_events,
+    chat_completion_expected_malformed_request_body_events,
+    chat_completion_expected_malformed_response_body_events,
+    chat_completion_expected_malformed_response_streaming_body_events,
+    chat_completion_expected_malformed_response_streaming_chunk_events,
+    chat_completion_expected_streaming_error_events,
+    chat_completion_invalid_access_key_error_events,
+    chat_completion_invalid_model_error_events,
+    chat_completion_payload_templates,
+    chat_completion_streaming_expected_events,
+)
 from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     add_token_count_to_events,
@@ -42,18 +54,6 @@ from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.object_names import callable_name
 from newrelic.hooks.external_botocore import MODEL_EXTRACTORS
-from tests.external_botocore._test_bedrock_chat_completion_invoke_model import (
-    chat_completion_expected_events,
-    chat_completion_expected_malformed_request_body_events,
-    chat_completion_expected_malformed_response_body_events,
-    chat_completion_expected_malformed_response_streaming_body_events,
-    chat_completion_expected_malformed_response_streaming_chunk_events,
-    chat_completion_expected_streaming_error_events,
-    chat_completion_invalid_access_key_error_events,
-    chat_completion_invalid_model_error_events,
-    chat_completion_payload_templates,
-    chat_completion_streaming_expected_events,
-)
 
 
 @pytest.fixture(scope="session", params=[False, True], ids=["ResponseStandard", "ResponseStreaming"])

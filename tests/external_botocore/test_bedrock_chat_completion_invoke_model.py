@@ -16,11 +16,10 @@ import os
 from io import BytesIO
 
 import boto3
-import botocore.errorfactory
 import botocore.eventstream
 import botocore.exceptions
 import pytest
-from _test_bedrock_chat_completion import (
+from _test_bedrock_chat_completion_invoke_model import (
     chat_completion_expected_events,
     chat_completion_expected_malformed_request_body_events,
     chat_completion_expected_malformed_response_body_events,

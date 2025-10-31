@@ -149,6 +149,17 @@ async def wrap_client__make_api_call(wrapped, instance, args, kwargs):
             bedrock_attrs = extract_bedrock_converse_attrs(
                 args[1], response, response_headers, model, span_id, trace_id
             )
+
+            if response_streaming:
+                # Wrap EventStream object here to intercept __iter__ method instead of instrumenting class.
+                # This class is used in numerous other services in botocore, and would cause conflicts.
+                response["stream"] = stream = AsyncEventStreamWrapper(response["stream"])
+                stream._nr_ft = ft or None
+                stream._nr_bedrock_attrs = bedrock_attrs or {}
+                stream._nr_model_extractor = stream_extractor or None
+                stream._nr_is_converse = True
+                return response
+
         else:
             bedrock_attrs = {
                 "request_id": response_headers.get("x-amzn-requestid"),

@@ -207,9 +207,26 @@ _client_error = botocore.exceptions.ClientError
 _client_error_name = callable_name(_client_error)
 
 
+@pytest.fixture
+def exercise_converse_incorrect_access_key(bedrock_converse_server, response_streaming, monkeypatch):
+    def _exercise_converse_incorrect_access_key():
+        monkeypatch.setattr(bedrock_converse_server._request_signer._credentials, "access_key", "INVALID-ACCESS-KEY")
+
+        message = [{"role": "user", "content": [{"text": "Invalid Token"}]}]
+        request = bedrock_converse_server.converse_stream if response_streaming else bedrock_converse_server.converse
+        with pytest.raises(_client_error):
+            request(
+                modelId="anthropic.claude-3-sonnet-20240229-v1:0",
+                messages=message,
+                inferenceConfig={"temperature": 0.7, "maxTokens": 100},
+            )
+
+    return _exercise_converse_incorrect_access_key
+
+
 @reset_core_stats_engine()
 def test_bedrock_chat_completion_error_incorrect_access_key(
-    monkeypatch, bedrock_converse_server, response_streaming, set_trace_info, expected_metric
+    exercise_converse_incorrect_access_key, set_trace_info, expected_metric
 ):
     """
     A request is made to the server with invalid credentials. botocore will reach out to the server and receive an
@@ -239,112 +256,12 @@ def test_bedrock_chat_completion_error_incorrect_access_key(
     )
     @background_task(name="test_bedrock_chat_completion")
     def _test():
-        monkeypatch.setattr(bedrock_converse_server._request_signer._credentials, "access_key", "INVALID-ACCESS-KEY")
-
-        with pytest.raises(_client_error):
-            set_trace_info()
-            add_custom_attribute("llm.conversation_id", "my-awesome-id")
-            add_custom_attribute("llm.foo", "bar")
-            add_custom_attribute("non_llm_attr", "python-agent")
-
-            message = [{"role": "user", "content": [{"text": "Invalid Token"}]}]
-
-            request = (
-                bedrock_converse_server.converse_stream if response_streaming else bedrock_converse_server.converse
-            )
-            request(
-                modelId="anthropic.claude-3-sonnet-20240229-v1:0",
-                messages=message,
-                inferenceConfig={"temperature": 0.7, "maxTokens": 100},
-            )
-
-    _test()
-
-
-@reset_core_stats_engine()
-def test_bedrock_chat_completion_error_invalid_model(
-    bedrock_converse_server, response_streaming, set_trace_info, expected_metric
-):
-    @validate_custom_events(events_with_context_attrs(chat_completion_invalid_model_error_events))
-    @validate_error_trace_attributes(
-        "botocore.errorfactory:ValidationException",
-        exact_attrs={
-            "agent": {},
-            "intrinsic": {},
-            "user": {
-                "http.statusCode": 400,
-                "error.message": "The provided model identifier is invalid.",
-                "error.code": "ValidationException",
-            },
-        },
-    )
-    @validate_transaction_metrics(
-        name="test_bedrock_chat_completion_error_invalid_model",
-        scoped_metrics=[expected_metric],
-        rollup_metrics=[expected_metric],
-        custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
-        background_task=True,
-    )
-    @background_task(name="test_bedrock_chat_completion_error_invalid_model")
-    def _test():
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         add_custom_attribute("llm.foo", "bar")
         add_custom_attribute("non_llm_attr", "python-agent")
 
-        with pytest.raises(_client_error):
-            with WithLlmCustomAttributes({"context": "attr"}):
-                message = [{"role": "user", "content": [{"text": "Model does not exist."}]}]
-
-                request = (
-                    bedrock_converse_server.converse_stream if response_streaming else bedrock_converse_server.converse
-                )
-                request(
-                    modelId="does-not-exist", messages=message, inferenceConfig={"temperature": 0.7, "maxTokens": 100}
-                )
-
-    _test()
-
-
-@reset_core_stats_engine()
-@disabled_ai_monitoring_record_content_settings
-def test_bedrock_chat_completion_error_invalid_model_no_content(
-    bedrock_converse_server, response_streaming, set_trace_info, expected_metric
-):
-    @validate_custom_events(events_sans_content(chat_completion_invalid_model_error_events))
-    @validate_error_trace_attributes(
-        "botocore.errorfactory:ValidationException",
-        exact_attrs={
-            "agent": {},
-            "intrinsic": {},
-            "user": {
-                "http.statusCode": 400,
-                "error.message": "The provided model identifier is invalid.",
-                "error.code": "ValidationException",
-            },
-        },
-    )
-    @validate_transaction_metrics(
-        name="test_bedrock_chat_completion_error_invalid_model_no_content",
-        scoped_metrics=[expected_metric],
-        rollup_metrics=[expected_metric],
-        custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
-        background_task=True,
-    )
-    @background_task(name="test_bedrock_chat_completion_error_invalid_model_no_content")
-    def _test():
-        set_trace_info()
-        add_custom_attribute("llm.conversation_id", "my-awesome-id")
-        add_custom_attribute("llm.foo", "bar")
-        add_custom_attribute("non_llm_attr", "python-agent")
-
-        with pytest.raises(_client_error):
-            message = [{"role": "user", "content": [{"text": "Model does not exist."}]}]
-
-            request = (
-                bedrock_converse_server.converse_stream if response_streaming else bedrock_converse_server.converse
-            )
-            request(modelId="does-not-exist", messages=message, inferenceConfig={"temperature": 0.7, "maxTokens": 100})
+        exercise_converse_incorrect_access_key()
 
     _test()
 
@@ -352,7 +269,7 @@ def test_bedrock_chat_completion_error_invalid_model_no_content(
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
 def test_bedrock_chat_completion_error_incorrect_access_key_with_token_count(
-    monkeypatch, bedrock_converse_server, response_streaming, set_trace_info, expected_metric
+    exercise_converse_incorrect_access_key, set_trace_info, expected_metric
 ):
     """
     A request is made to the server with invalid credentials. botocore will reach out to the server and receive an
@@ -382,23 +299,96 @@ def test_bedrock_chat_completion_error_incorrect_access_key_with_token_count(
     )
     @background_task(name="test_bedrock_chat_completion_incorrect_access_key_with_token_count")
     def _test():
+        set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        add_custom_attribute("llm.foo", "bar")
+        add_custom_attribute("non_llm_attr", "python-agent")
+
+        exercise_converse_incorrect_access_key()
+
+    _test()
+
+
+@pytest.fixture
+def exercise_converse_invalid_model(bedrock_converse_server, response_streaming, monkeypatch):
+    def _exercise_converse_invalid_model():
         monkeypatch.setattr(bedrock_converse_server._request_signer._credentials, "access_key", "INVALID-ACCESS-KEY")
 
+        message = [{"role": "user", "content": [{"text": "Model does not exist."}]}]
+        request = bedrock_converse_server.converse_stream if response_streaming else bedrock_converse_server.converse
         with pytest.raises(_client_error):
-            set_trace_info()
-            add_custom_attribute("llm.conversation_id", "my-awesome-id")
-            add_custom_attribute("llm.foo", "bar")
-            add_custom_attribute("non_llm_attr", "python-agent")
+            request(modelId="does-not-exist", messages=message, inferenceConfig={"temperature": 0.7, "maxTokens": 100})
 
-            message = [{"role": "user", "content": [{"text": "Invalid Token"}]}]
+    return _exercise_converse_invalid_model
 
-            request = (
-                bedrock_converse_server.converse_stream if response_streaming else bedrock_converse_server.converse
-            )
-            request(
-                modelId="anthropic.claude-3-sonnet-20240229-v1:0",
-                messages=message,
-                inferenceConfig={"temperature": 0.7, "maxTokens": 100},
-            )
+
+@reset_core_stats_engine()
+def test_bedrock_chat_completion_error_invalid_model(exercise_converse_invalid_model, set_trace_info, expected_metric):
+    @validate_custom_events(events_with_context_attrs(chat_completion_invalid_model_error_events))
+    @validate_error_trace_attributes(
+        "botocore.errorfactory:ValidationException",
+        exact_attrs={
+            "agent": {},
+            "intrinsic": {},
+            "user": {
+                "http.statusCode": 400,
+                "error.message": "The provided model identifier is invalid.",
+                "error.code": "ValidationException",
+            },
+        },
+    )
+    @validate_transaction_metrics(
+        name="test_bedrock_chat_completion_error_invalid_model",
+        scoped_metrics=[expected_metric],
+        rollup_metrics=[expected_metric],
+        custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
+        background_task=True,
+    )
+    @background_task(name="test_bedrock_chat_completion_error_invalid_model")
+    def _test():
+        set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        add_custom_attribute("llm.foo", "bar")
+        add_custom_attribute("non_llm_attr", "python-agent")
+
+        with WithLlmCustomAttributes({"context": "attr"}):
+            exercise_converse_invalid_model()
+
+    _test()
+
+
+@reset_core_stats_engine()
+@disabled_ai_monitoring_record_content_settings
+def test_bedrock_chat_completion_error_invalid_model_no_content(
+    exercise_converse_invalid_model, set_trace_info, expected_metric
+):
+    @validate_custom_events(events_sans_content(chat_completion_invalid_model_error_events))
+    @validate_error_trace_attributes(
+        "botocore.errorfactory:ValidationException",
+        exact_attrs={
+            "agent": {},
+            "intrinsic": {},
+            "user": {
+                "http.statusCode": 400,
+                "error.message": "The provided model identifier is invalid.",
+                "error.code": "ValidationException",
+            },
+        },
+    )
+    @validate_transaction_metrics(
+        name="test_bedrock_chat_completion_error_invalid_model_no_content",
+        scoped_metrics=[expected_metric],
+        rollup_metrics=[expected_metric],
+        custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
+        background_task=True,
+    )
+    @background_task(name="test_bedrock_chat_completion_error_invalid_model_no_content")
+    def _test():
+        set_trace_info()
+        add_custom_attribute("llm.conversation_id", "my-awesome-id")
+        add_custom_attribute("llm.foo", "bar")
+        add_custom_attribute("non_llm_attr", "python-agent")
+
+        exercise_converse_invalid_model()
 
     _test()

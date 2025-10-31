@@ -884,43 +884,7 @@ def extract_bedrock_converse_attrs(kwargs, response, response_headers, model, sp
     return bedrock_attrs
 
 
-class EventStreamWrapper(ObjectProxy):
-    def __iter__(self):
-        g = GeneratorProxy(self.__wrapped__.__iter__())
-        g._nr_ft = getattr(self, "_nr_ft", None)
-        g._nr_bedrock_attrs = getattr(self, "_nr_bedrock_attrs", {})
-        g._nr_model_extractor = getattr(self, "_nr_model_extractor", NULL_EXTRACTOR)
-        g._nr_is_converse = getattr(self, "_nr_is_converse", False)
-        return g
-
-
-class GeneratorProxy(ObjectProxy):
-    def __init__(self, wrapped):
-        super().__init__(wrapped)
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        transaction = current_transaction()
-        if not transaction:
-            return self.__wrapped__.__next__()
-
-        return_val = None
-        try:
-            return_val = self.__wrapped__.__next__()
-            self.record_stream_chunk(return_val, transaction)
-        except StopIteration:
-            self.record_events_on_stop_iteration(transaction)
-            raise
-        except Exception as exc:
-            self.record_error(transaction, exc)
-            raise
-        return return_val
-
-    def close(self):
-        return super().close()
-
+class BedrockRecordEventMixin:
     def record_events_on_stop_iteration(self, transaction):
         if hasattr(self, "_nr_ft"):
             bedrock_attrs = getattr(self, "_nr_bedrock_attrs", {})
@@ -1009,6 +973,44 @@ class GeneratorProxy(ObjectProxy):
         #     self.record_events_on_stop_iteration(transaction)
 
 
+class EventStreamWrapper(ObjectProxy):
+    def __iter__(self):
+        g = GeneratorProxy(self.__wrapped__.__iter__())
+        g._nr_ft = getattr(self, "_nr_ft", None)
+        g._nr_bedrock_attrs = getattr(self, "_nr_bedrock_attrs", {})
+        g._nr_model_extractor = getattr(self, "_nr_model_extractor", NULL_EXTRACTOR)
+        g._nr_is_converse = getattr(self, "_nr_is_converse", False)
+        return g
+
+
+class GeneratorProxy(BedrockRecordEventMixin, ObjectProxy):
+    def __init__(self, wrapped):
+        super().__init__(wrapped)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        transaction = current_transaction()
+        if not transaction:
+            return self.__wrapped__.__next__()
+
+        return_val = None
+        try:
+            return_val = self.__wrapped__.__next__()
+            self.record_stream_chunk(return_val, transaction)
+        except StopIteration:
+            self.record_events_on_stop_iteration(transaction)
+            raise
+        except Exception as exc:
+            self.record_error(transaction, exc)
+            raise
+        return return_val
+
+    def close(self):
+        return super().close()
+
+
 class AsyncEventStreamWrapper(ObjectProxy):
     def __aiter__(self):
         g = AsyncGeneratorProxy(self.__wrapped__.__aiter__())
@@ -1019,13 +1021,7 @@ class AsyncEventStreamWrapper(ObjectProxy):
         return g
 
 
-class AsyncGeneratorProxy(ObjectProxy):
-    # Import these methods from the synchronous GeneratorProxy
-    # Avoid direct inheritance so we don't implement both __iter__ and __aiter__
-    record_stream_chunk = GeneratorProxy.record_stream_chunk
-    record_events_on_stop_iteration = GeneratorProxy.record_events_on_stop_iteration
-    record_error = GeneratorProxy.record_error
-
+class AsyncGeneratorProxy(BedrockRecordEventMixin, ObjectProxy):
     def __aiter__(self):
         return self
 

@@ -112,25 +112,7 @@ STREAMED_RESPONSES = {
             "000000bd00000051911972ae0b3a6576656e742d7479706507000b6d65737361676553746f700d3a636f6e74656e742d747970650700106170706c69636174696f6e2f6a736f6e0d3a6d6573736167652d747970650700056576656e747b2270223a226162636465666768696a6b6c6d6e6f707172737475767778797a4142434445464748494a4b4c4d4e4f505152535455565758595a303132333435222c2273746f70526561736f6e223a226d61785f746f6b656e73227d2963d7e1",
             "000000f00000004ebc72e3a30b3a6576656e742d747970650700086d657461646174610d3a636f6e74656e742d747970650700106170706c69636174696f6e2f6a736f6e0d3a6d6573736167652d747970650700056576656e747b226d657472696373223a7b226c6174656e63794d73223a323134397d2c2270223a226162636465666768696a6b6c6d6e6f707172737475767778222c227573616765223a7b22696e707574546f6b656e73223a32362c226f7574707574546f6b656e73223a3130302c22736572766572546f6f6c5573616765223a7b7d2c22746f74616c546f6b656e73223a3132367d7dd415e186",
         ],
-    ],
-    "Model does not exist.": [
-        {
-            "Content-Type": "application/json",
-            "x-amzn-RequestId": "bf0106fd-1782-4afc-a289-4b591992ecec",
-            "x-amzn-ErrorType": "ValidationException:http://internal.amazon.com/coral/com.amazon.bedrock/",
-        },
-        400,
-        {"message": "The provided model identifier is invalid."},
-    ],
-    "Invalid Token": [
-        {
-            "Content-Type": "application/json",
-            "x-amzn-RequestId": "9dd5a736-67bc-41ea-9c87-c9a66fb7287c",
-            "x-amzn-ErrorType": "UnrecognizedClientException:http://internal.amazon.com/coral/com.amazon.coral.service/",
-        },
-        403,
-        {"message": "The security token included in the request is invalid."},
-    ],
+    ]
 }
 
 RESPONSES = {

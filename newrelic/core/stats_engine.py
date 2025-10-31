@@ -676,9 +676,14 @@ class StatsEngine:
             self.record_time_metric(metric)
 
     def notice_error(self, error=None, attributes=None, expected=None, ignore=None, status_code=None):
+        def error_is_iterable(error):
+            return hasattr(error, "__iter__") and not isinstance(error, (str, bytes))
+
+        def none_in_error(error):
+            return error_is_iterable(error) and None in error
+
         attributes = attributes if attributes is not None else {}
         settings = self.__settings
-
         if not settings:
             return
 
@@ -691,11 +696,12 @@ class StatsEngine:
             return
 
         # Pull from sys.exc_info if no exception is passed
-        if not error or None in error:
+        # Check that the error exists and that it is a fully populated iterable
+        if not error or none_in_error(error) or (error and not error_is_iterable(error)):
             error = sys.exc_info()
 
             # If no exception to report, exit
-            if not error or None in error:
+            if not error or none_in_error(error) or (error and not error_is_iterable(error)):
                 return
 
         exc, value, tb = error

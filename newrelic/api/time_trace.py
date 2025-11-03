@@ -360,23 +360,16 @@ class TimeTrace:
         return fullname, message, message_raw, tb, is_expected
 
     def notice_error(self, error=None, attributes=None, expected=None, ignore=None, status_code=None):
-        def error_is_iterable(error):
-            return hasattr(error, "__iter__") and not isinstance(error, (str, bytes))
-
-        def none_in_error(error):
-            return error_is_iterable(error) and None in error
-
         attributes = attributes if attributes is not None else {}
 
         # If no exception details provided, use current exception.
 
-        # Pull from sys.exc_info() if no exception is passed
-        # Check that the error exists and that it is a fully populated iterable
-        if not error or none_in_error(error) or (error and not error_is_iterable(error)):
+        # Pull from sys.exc_info if no exception is passed
+        if not error or None in error:
             error = sys.exc_info()
 
             # If no exception to report, exit
-            if not error or none_in_error(error) or (error and not error_is_iterable(error)):
+            if not error or None in error:
                 return
 
         exc, value, tb = error

@@ -1388,6 +1388,7 @@ CUSTOM_TRACE_POINTS = {
         extract_agent_attrs=extract_kinesis_agent_attrs,
         library="Kinesis",
     ),
+    ("kinesis", "describe_account_settings"): aws_function_trace("describe_account_settings", library="Kinesis"),
     ("kinesis", "describe_limits"): aws_function_trace("describe_limits", library="Kinesis"),
     ("kinesis", "describe_stream"): aws_function_trace(
         "describe_stream", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
@@ -1465,6 +1466,7 @@ CUSTOM_TRACE_POINTS = {
     ("kinesis", "untag_resource"): aws_function_trace(
         "untag_resource", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
+    ("kinesis", "update_account_settings"): aws_function_trace("update_account_settings", library="Kinesis"),
     ("kinesis", "update_max_record_size"): aws_function_trace(
         "update_max_record_size", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
@@ -1473,6 +1475,12 @@ CUSTOM_TRACE_POINTS = {
     ),
     ("kinesis", "update_stream_mode"): aws_function_trace(
         "update_stream_mode", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "update_stream_warm_throughput"): aws_function_trace(
+        "update_stream_warm_throughput",
+        extract_kinesis,
+        extract_agent_attrs=extract_kinesis_agent_attrs,
+        library="Kinesis",
     ),
     ("kinesis", "put_record"): aws_message_trace(
         "Produce", "Stream", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"

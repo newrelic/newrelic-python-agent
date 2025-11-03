@@ -58,6 +58,43 @@ def test_notice_error_no_exc_info():
         notice_error()
 
 
+@validate_transaction_errors(errors=[(_runtime_error_name, "one")])
+@background_task()
+def test_notice_error_exception_instance():
+    """Test that notice_error works when passed an exception object directly"""
+    try:
+        raise RuntimeError("one")
+    except RuntimeError as e:
+        exc = e  # Reassign name to ensure scope isn't lost
+
+    # Call notice_error outside of try/except block to ensure it's not pulling from sys.exc_info()
+    notice_error(exc)
+
+
+@validate_transaction_errors(errors=[(_runtime_error_name, "one"), (_type_error_name, "two")])
+@background_task()
+def test_notice_error_exception_instance_multiple_exceptions():
+    """Test that notice_error reports the passed exception object even when a different exception is active."""
+    try:
+        raise RuntimeError("one")
+    except RuntimeError as e:
+        exc1 = e  # Reassign name to ensure scope isn't lost
+
+    try:
+        raise TypeError("two")
+    except TypeError as exc2:
+        notice_error(exc1)
+        notice_error(exc2)
+
+
+@validate_transaction_error_event_count(0)
+@background_task()
+def test_notice_error_exception_instance_no_traceback():
+    """Test that notice_error does not report an exception if it has not been raised as it has no __traceback__"""
+    exc = RuntimeError("one")
+    notice_error(exc)  # Try once with no active exception
+
+
 @validate_transaction_errors(errors=[(_runtime_error_name, "one")], required_params=[("key", "value")])
 @background_task()
 def test_notice_error_custom_params():

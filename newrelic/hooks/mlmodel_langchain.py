@@ -777,6 +777,7 @@ def create_chat_completion_message_event(
             "vendor": "langchain",
             "ingest_source": "Python",
             "virtual_llm": True,
+            "role": "user", # default role for input messages, overridden by values in llm_metadata_dict
         }
         if settings.ai_monitoring.record_content.enabled:
             chat_completion_input_message_dict["content"] = message
@@ -802,6 +803,7 @@ def create_chat_completion_message_event(
                 "ingest_source": "Python",
                 "is_response": True,
                 "virtual_llm": True,
+                "role": "assistant",  # default role for output messages, overridden by values in llm_metadata_dict
             }
             if settings.ai_monitoring.record_content.enabled:
                 chat_completion_output_message_dict["content"] = message

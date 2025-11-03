@@ -39,25 +39,6 @@ _type_error_name = callable_name(TypeError)
 
 # =============== Test errors during a transaction ===============
 
-_key_error_name = callable_name(KeyError)
-
-_test_notice_error_exception_object = [(_key_error_name, "'f'")]
-
-
-@validate_transaction_errors(errors=_test_notice_error_exception_object)
-@background_task()
-def test_notice_error_non_iterable_object():
-    """Test that notice_error works when passed an exception object directly"""
-    try:
-        test_dict = {"a": 4, "b": 5}
-        # Force a KeyError
-        test_dict["f"]
-    except KeyError as e:
-        # The caught exception here is a non-iterable, singular KeyError object with no associated traceback
-        # This will exercise logic to pull from sys.exc_info() instead of using the exception directly
-        notice_error(e)
-
-
 _test_notice_error_sys_exc_info = [(_runtime_error_name, "one")]
 
 

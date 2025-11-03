@@ -81,7 +81,7 @@ jobs:
           platforms: arm64
 
       - name: Build Wheels
-        uses: pypa/cibuildwheel@faf86a6ed7efa889faf6996aa23820831055001a # 2.23.3
+        uses: pypa/cibuildwheel@9c00cb4f6b517705a3794b22395aedc36257242c # 3.2.1
         env:
           CIBW_PLATFORM: auto
           CIBW_BUILD: "${{ matrix.wheel }}*"

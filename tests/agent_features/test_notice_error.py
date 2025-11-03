@@ -39,10 +39,8 @@ _type_error_name = callable_name(TypeError)
 
 # =============== Test errors during a transaction ===============
 
-_test_notice_error_sys_exc_info = [(_runtime_error_name, "one")]
 
-
-@validate_transaction_errors(errors=_test_notice_error_sys_exc_info)
+@validate_transaction_errors(errors=[(_runtime_error_name, "one")])
 @background_task()
 def test_notice_error_sys_exc_info():
     try:
@@ -51,10 +49,7 @@ def test_notice_error_sys_exc_info():
         notice_error(sys.exc_info())
 
 
-_test_notice_error_no_exc_info = [(_runtime_error_name, "one")]
-
-
-@validate_transaction_errors(errors=_test_notice_error_no_exc_info)
+@validate_transaction_errors(errors=[(_runtime_error_name, "one")])
 @background_task()
 def test_notice_error_no_exc_info():
     try:
@@ -63,10 +58,7 @@ def test_notice_error_no_exc_info():
         notice_error()
 
 
-_test_notice_error_custom_params = [(_runtime_error_name, "one")]
-
-
-@validate_transaction_errors(errors=_test_notice_error_custom_params, required_params=[("key", "value")])
+@validate_transaction_errors(errors=[(_runtime_error_name, "one")], required_params=[("key", "value")])
 @background_task()
 def test_notice_error_custom_params():
     try:
@@ -75,10 +67,7 @@ def test_notice_error_custom_params():
         notice_error(sys.exc_info(), attributes={"key": "value"})
 
 
-_test_notice_error_multiple_different_type = [(_runtime_error_name, "one"), (_type_error_name, "two")]
-
-
-@validate_transaction_errors(errors=_test_notice_error_multiple_different_type)
+@validate_transaction_errors(errors=[(_runtime_error_name, "one"), (_type_error_name, "two")])
 @background_task()
 def test_notice_error_multiple_different_type():
     try:
@@ -92,10 +81,7 @@ def test_notice_error_multiple_different_type():
         notice_error()
 
 
-_test_notice_error_multiple_same_type = [(_runtime_error_name, "one"), (_runtime_error_name, "two")]
-
-
-@validate_transaction_errors(errors=_test_notice_error_multiple_same_type)
+@validate_transaction_errors(errors=[(_runtime_error_name, "one"), (_runtime_error_name, "two")])
 @background_task()
 def test_notice_error_multiple_same_type():
     try:
@@ -111,11 +97,9 @@ def test_notice_error_multiple_same_type():
 
 # =============== Test errors outside a transaction ===============
 
-_test_application_exception = [(_runtime_error_name, "one")]
-
 
 @reset_core_stats_engine()
-@validate_application_errors(errors=_test_application_exception)
+@validate_application_errors(errors=[(_runtime_error_name, "one")])
 def test_application_exception():
     try:
         raise RuntimeError("one")
@@ -124,11 +108,8 @@ def test_application_exception():
         notice_error(application=application_instance)
 
 
-_test_application_exception_sys_exc_info = [(_runtime_error_name, "one")]
-
-
 @reset_core_stats_engine()
-@validate_application_errors(errors=_test_application_exception_sys_exc_info)
+@validate_application_errors(errors=[(_runtime_error_name, "one")])
 def test_application_exception_sys_exec_info():
     try:
         raise RuntimeError("one")
@@ -137,11 +118,8 @@ def test_application_exception_sys_exec_info():
         notice_error(sys.exc_info(), application=application_instance)
 
 
-_test_application_exception_custom_params = [(_runtime_error_name, "one")]
-
-
 @reset_core_stats_engine()
-@validate_application_errors(errors=_test_application_exception_custom_params, required_params=[("key", "value")])
+@validate_application_errors(errors=[(_runtime_error_name, "one")], required_params=[("key", "value")])
 def test_application_exception_custom_params():
     try:
         raise RuntimeError("one")
@@ -150,11 +128,8 @@ def test_application_exception_custom_params():
         notice_error(attributes={"key": "value"}, application=application_instance)
 
 
-_test_application_exception_multiple = [(_runtime_error_name, "one"), (_runtime_error_name, "one")]
-
-
 @reset_core_stats_engine()
-@validate_application_errors(errors=_test_application_exception_multiple)
+@validate_application_errors(errors=[(_runtime_error_name, "one"), (_runtime_error_name, "one")])
 @background_task()
 def test_application_exception_multiple():
     """Exceptions submitted straight to the stats engine doesn't check for
@@ -174,12 +149,11 @@ def test_application_exception_multiple():
 
 # =============== Test exception message stripping/allowlisting ===============
 
-_test_notice_error_strip_message_disabled = [(_runtime_error_name, "one")]
 
 _strip_message_disabled_settings = {"strip_exception_messages.enabled": False}
 
 
-@validate_transaction_errors(errors=_test_notice_error_strip_message_disabled)
+@validate_transaction_errors(errors=[(_runtime_error_name, "one")])
 @override_application_settings(_strip_message_disabled_settings)
 @background_task()
 def test_notice_error_strip_message_disabled():
@@ -215,12 +189,10 @@ def test_notice_error_strip_message_disabled_outside_transaction():
     assert my_error.message == ErrorOne.message
 
 
-_test_notice_error_strip_message_enabled = [(_runtime_error_name, STRIP_EXCEPTION_MESSAGE)]
-
 _strip_message_enabled_settings = {"strip_exception_messages.enabled": True}
 
 
-@validate_transaction_errors(errors=_test_notice_error_strip_message_enabled)
+@validate_transaction_errors(errors=[(_runtime_error_name, STRIP_EXCEPTION_MESSAGE)])
 @override_application_settings(_strip_message_enabled_settings)
 @background_task()
 def test_notice_error_strip_message_enabled():
@@ -256,15 +228,13 @@ def test_notice_error_strip_message_enabled_outside_transaction():
     assert my_error.message == STRIP_EXCEPTION_MESSAGE
 
 
-_test_notice_error_strip_message_in_allowlist = [(_runtime_error_name, "original error message")]
-
 _strip_message_in_allowlist_settings = {
     "strip_exception_messages.enabled": True,
     "strip_exception_messages.allowlist": [_runtime_error_name],
 }
 
 
-@validate_transaction_errors(errors=_test_notice_error_strip_message_in_allowlist)
+@validate_transaction_errors(errors=[(_runtime_error_name, "original error message")])
 @override_application_settings(_strip_message_in_allowlist_settings)
 @background_task()
 def test_notice_error_strip_message_in_allowlist():
@@ -307,15 +277,13 @@ def test_notice_error_strip_message_in_allowlist_outside_transaction():
     assert my_error.message == ErrorThree.message
 
 
-_test_notice_error_strip_message_not_in_allowlist = [(_runtime_error_name, STRIP_EXCEPTION_MESSAGE)]
-
 _strip_message_not_in_allowlist_settings = {
     "strip_exception_messages.enabled": True,
     "strip_exception_messages.allowlist": ["FooError", "BarError"],
 }
 
 
-@validate_transaction_errors(errors=_test_notice_error_strip_message_not_in_allowlist)
+@validate_transaction_errors(errors=[(_runtime_error_name, STRIP_EXCEPTION_MESSAGE)])
 @override_application_settings(_strip_message_not_in_allowlist_settings)
 @background_task()
 def test_notice_error_strip_message_not_in_allowlist():

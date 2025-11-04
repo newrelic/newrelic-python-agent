@@ -51,6 +51,24 @@ tool_recorded_event = [
     )
 ]
 
+tool_recorded_event_forced_internal_error = [
+    (
+        {"type": "LlmTool"},
+        {
+            "id": None,
+            "run_id": "123",
+            "name": "add_exclamation",
+            "agent_name": "my_agent",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "input": "{'message': 'Hello'}",
+            "vendor": "strands",
+            "ingest_source": "Python",
+            "duration": None,
+            "error": True,
+        },
+    )
+]
 
 tool_recorded_event_error_coro = [
     (
@@ -360,6 +378,43 @@ def test_agent_invoke_tool_agen_runtime_error(set_trace_info, single_tool_model_
     response = my_agent('Add an exclamation to the word "Hello"')
     assert response.message["content"][0]["text"] == "Success!"
     assert response.metrics.tool_metrics["throw_exception_agen"].error_count == 1
+
+
+@reset_core_stats_engine()
+@validate_transaction_error_event_count(1)
+@validate_error_trace_attributes(callable_name(ValueError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
+@validate_custom_events(agent_recorded_event)
+@validate_custom_events(tool_recorded_event_forced_internal_error)
+@validate_custom_event_count(count=2)
+@validate_transaction_metrics(
+    "test_agent:test_agent_tool_forced_exception",
+    scoped_metrics=[
+        ("Llm/agent/Strands/strands.agent.agent:Agent.stream_async/my_agent", 1),
+        ("Llm/tool/Strands/strands.tools.executors._executor:ToolExecutor._stream/add_exclamation", 1),
+    ],
+    rollup_metrics=[
+        ("Llm/agent/Strands/strands.agent.agent:Agent.stream_async/my_agent", 1),
+        ("Llm/tool/Strands/strands.tools.executors._executor:ToolExecutor._stream/add_exclamation", 1),
+    ],
+    background_task=True,
+)
+@validate_attributes("agent", ["llm"])
+@background_task()
+def test_agent_tool_forced_exception(set_trace_info, single_tool_model):
+    # Add a wrapper to intentionally force an error in the ToolExecutor._stream code to hit the exception path in
+    # the AsyncGeneratorProxy
+    @transient_function_wrapper("strands.hooks.events", "BeforeToolCallEvent.__init__")
+    def _wrap_BeforeToolCallEvent_init(wrapped, instance, args, kwargs):
+        raise ValueError("Oops")
+
+    @_wrap_BeforeToolCallEvent_init
+    def _test():
+        set_trace_info()
+        my_agent = Agent(name="my_agent", model=single_tool_model, tools=[add_exclamation])
+        my_agent('Add an exclamation to the word "Hello"')
+
+    # This will not explicitly raise a ValueError when running the test but we are still able to  capture it in the error trace
+    _test()
 
 
 @reset_core_stats_engine()

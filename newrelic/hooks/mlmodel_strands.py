@@ -298,6 +298,10 @@ def _handle_tool_streaming_completion_error(self, transaction):
                 strands_attrs, tool_results, transaction, linking_metadata
             )
             tool_event_dict.update({"duration": self._nr_ft.duration * 1000})
+            # Ensure error flag is set to True in case the tool_results did not indicate an error
+            if "error" not in tool_event_dict:
+                tool_event_dict.update({"error": True})
+
             transaction.record_custom_event("LlmTool", tool_event_dict)
 
         except Exception:

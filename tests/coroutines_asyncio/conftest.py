@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+import pytest
 from testing_support.fixture.event_loop import event_loop
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
@@ -28,3 +28,25 @@ _default_settings = {
 collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (coroutines_asyncio)", default_settings=_default_settings
 )
+
+# uvloop is not available on PyPy.
+try:
+    import uvloop
+
+    loop_policies = (pytest.param(None, id="asyncio"), pytest.param(uvloop.EventLoopPolicy(), id="uvloop"))
+except ImportError:
+    loop_policies = (pytest.param(None, id="asyncio"),)
+
+
+@pytest.fixture(scope="session", params=loop_policies)
+def loop_policy(request):
+    return request.param
+
+
+@pytest.fixture(autouse=True)
+def reset_event_loop():
+    from asyncio import set_event_loop, set_event_loop_policy
+
+    # Remove the loop policy to avoid side effects
+    set_event_loop_policy(None)
+    set_event_loop(None)

@@ -31,23 +31,6 @@ from newrelic.api.time_trace import current_trace
 from newrelic.core.config import global_settings
 from newrelic.core.trace_cache import trace_cache
 
-# uvloop is not available on PyPy.
-try:
-    import uvloop
-
-    loop_policies = (pytest.param(None, id="asyncio"), pytest.param(uvloop.EventLoopPolicy(), id="uvloop"))
-except ImportError:
-    loop_policies = (pytest.param(None, id="asyncio"),)
-
-
-@pytest.fixture(autouse=True)
-def reset_event_loop():
-    from asyncio import set_event_loop, set_event_loop_policy
-
-    # Remove the loop policy to avoid side effects
-    set_event_loop_policy(None)
-    set_event_loop(None)
-
 
 @function_trace("waiter3")
 async def child():
@@ -76,7 +59,7 @@ async def task(asyncio, trace, event, wait):
     await waiter(asyncio, event, wait)
 
 
-@background_task(name="test_context_propagation")
+@background_task(name="test_coroutine_context_propagation")
 async def _test(asyncio, schedule, nr_enabled=True):
     trace = current_trace()
 
@@ -102,14 +85,13 @@ async def _test(asyncio, schedule, nr_enabled=True):
     return trace
 
 
-@pytest.mark.parametrize("loop_policy", loop_policies)
 @pytest.mark.parametrize("schedule", ("create_task", "ensure_future"))
 @validate_transaction_metrics(
-    "test_context_propagation",
+    "test_coroutine_context_propagation",
     background_task=True,
     scoped_metrics=(("Function/waiter1", 2), ("Function/waiter2", 2), ("Function/waiter3", 2)),
 )
-def test_context_propagation(event_loop, schedule, loop_policy):
+def test_coroutine_context_propagation(event_loop, schedule, loop_policy):
     import asyncio
 
     asyncio.set_event_loop_policy(loop_policy)

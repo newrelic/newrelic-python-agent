@@ -27,6 +27,15 @@ from newrelic.api.transaction import current_transaction
 from newrelic.core.trace_cache import trace_cache
 
 
+@pytest.fixture(scope="function")
+def event_loop():
+    from asyncio import new_event_loop, set_event_loop
+
+    loop = new_event_loop()
+    set_event_loop(loop)
+    return loop
+
+
 @background_task(name="block")
 async def block_loop(ready, done, blocking_transaction_active, times=1):
     for _ in range(times):
@@ -64,8 +73,6 @@ async def wait_for_loop(ready, done, times=1):
     "blocking_transaction_active,event_loop_visibility_enabled", ((True, True), (False, True), (False, False))
 )
 def test_record_event_loop_wait(event_loop, blocking_transaction_active, event_loop_visibility_enabled):
-    # import asyncio
-
     metric_count = 2 if event_loop_visibility_enabled else None
     execute_attributes = {"intrinsic": ("eventLoopTime",), "agent": (), "user": ()}
     wait_attributes = {"intrinsic": ("eventLoopWait",), "agent": (), "user": ()}
@@ -143,8 +150,6 @@ def test_blocking_task_on_different_loop():
 
 
 def test_record_event_loop_wait_on_different_task(event_loop):
-    # import asyncio
-
     async def recorder(ready, wait):
         ready.set()
         await wait.wait()

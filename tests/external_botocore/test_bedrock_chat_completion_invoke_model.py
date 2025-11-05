@@ -73,6 +73,7 @@ def request_streaming(request):
         "amazon.titan-text-express-v1",
         "ai21.j2-mid-v1",
         "anthropic.claude-instant-v1",
+        "anthropic.claude-3-sonnet-20240229-v1:0",
         "cohere.command-text-v14",
         "meta.llama2-13b-chat-v1",
         "mistral.mistral-7b-instruct-v0:2",
@@ -107,7 +108,6 @@ def exercise_model(bedrock_server, model_id, request_streaming, response_streami
         body = (payload_template % (prompt, temperature, max_tokens)).encode("utf-8")
         if request_streaming:
             body = BytesIO(body)
-
         response = bedrock_server.invoke_model_with_response_stream(
             body=body, modelId=model_id, accept="application/json", contentType="application/json"
         )

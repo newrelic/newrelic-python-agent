@@ -81,7 +81,7 @@ jobs:
           platforms: arm64
 
       - name: Build Wheels
-        uses: pypa/cibuildwheel@faf86a6ed7efa889faf6996aa23820831055001a # 2.23.3
+        uses: pypa/cibuildwheel@9c00cb4f6b517705a3794b22395aedc36257242c # 3.2.1
         env:
           CIBW_PLATFORM: auto
           CIBW_BUILD: "${{ matrix.wheel }}*"
@@ -97,7 +97,7 @@ jobs:
           CIBW_TEST_SKIP: "*-win_arm64"
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         with:
           name: ${{ github.job }}-${{ matrix.wheel }}
           path: ./wheelhouse/*.whl
@@ -134,7 +134,7 @@ jobs:
           openssl md5 -binary "dist/${tarball}" | xxd -p | tr -d '\n' > "dist/${md5_file}"
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # 4.6.2
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
         with:
           name: ${{ github.job }}-sdist
           path: |
@@ -166,7 +166,7 @@ jobs:
     environment: ${{ matrix.pypi-instance }}
 
     steps:
-      - uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # 5.0.0
+      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # 6.0.0
         with:
           path: ./dist/
           merge-multiple: true

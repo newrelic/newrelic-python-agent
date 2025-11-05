@@ -27,7 +27,7 @@ from newrelic.api.transaction import current_transaction
 from newrelic.core.trace_cache import trace_cache
 
 
-@pytest.fixture()
+@pytest.fixture
 def event_loop():
     from asyncio import new_event_loop, set_event_loop
 

@@ -73,6 +73,7 @@ def request_streaming(request):
         "amazon.titan-text-express-v1",
         "ai21.j2-mid-v1",
         "anthropic.claude-instant-v1",
+        "anthropic.claude-3-sonnet-20240229-v1:0",
         "meta.llama2-13b-chat-v1",
         "mistral.mistral-7b-instruct-v0:2",
     ],

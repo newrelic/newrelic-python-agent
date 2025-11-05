@@ -374,8 +374,12 @@ jobs:
 
       - name: Install Python
         run: |
-          uv python install -f 3.13 3.14 3.14t
-          uv python install -f --default 3.13
+          uv python install -f \
+            cpython-3.13-windows-aarch64-none \
+            cpython-3.14-windows-aarch64-none \
+            cpython-3.14t-windows-aarch64-none
+          uv python install -f --default \
+            cpython-3.13-windows-aarch64-none
 
       - name: Install Dependencies
         run: |

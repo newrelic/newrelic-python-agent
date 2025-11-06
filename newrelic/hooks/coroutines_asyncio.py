@@ -57,7 +57,7 @@ def wrap_run_in_executor(wrapped, instance, args, kwargs):
 
     # Replace the original target function with a wrapped version that propagates trace context.
     executor, func, args = _bind_run_in_executor(*args, **kwargs)
-    wrapped_func = context_wrapper(func, trace=trace)
+    wrapped_func = context_wrapper(func, trace=trace, strict=False)
     return wrapped(executor, wrapped_func, *args)
 
 

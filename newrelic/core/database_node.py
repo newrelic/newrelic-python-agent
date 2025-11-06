@@ -279,7 +279,15 @@ class DatabaseNode(_DatabaseNode, DatastoreNodeMixin):
             start_time=start_time, end_time=end_time, name=name, params=params, children=children, label=None
         )
 
-    def span_event(self, settings, base_attrs=None, parent_guid=None, attr_class=dict):
+    def span_event(
+        self,
+        settings,
+        base_attrs=None,
+        parent_guid=None,
+        attr_class=dict,
+        partial_granularity_sampled=False,
+        ct_exit_spans=None,
+    ):
         sql = self.formatted
 
         if sql:
@@ -288,4 +296,11 @@ class DatabaseNode(_DatabaseNode, DatastoreNodeMixin):
 
         self.agent_attributes["db.statement"] = sql
 
-        return super().span_event(settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class)
+        return super().span_event(
+            settings,
+            base_attrs=base_attrs,
+            parent_guid=parent_guid,
+            attr_class=attr_class,
+            partial_granularity_sampled=partial_granularity_sampled,
+            ct_exit_spans=ct_exit_spans,
+        )

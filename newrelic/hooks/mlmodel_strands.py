@@ -402,6 +402,47 @@ def wrap_ToolRegister_register_tool(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
+def wrap_bedrock_model_stream(wrapped, instance, args, kwargs):
+    """Stores trace context on the messages argument to be retrieved by the _stream() instrumentation."""
+    trace = current_trace()
+    if not trace:
+        return wrapped(*args, **kwargs)
+
+    settings = trace.settings or global_settings()
+    if not settings.ai_monitoring.enabled:
+        return wrapped(*args, **kwargs)
+
+    try:
+        bound_args = bind_args(wrapped, args, kwargs)
+    except Exception:
+        return wrapped(*args, **kwargs)
+
+    if "messages" in bound_args and isinstance(bound_args["messages"], list):
+        bound_args["messages"].append({"newrelic_trace": trace})
+
+    return wrapped(*args, **kwargs)
+
+
+def wrap_bedrock_model__stream(wrapped, instance, args, kwargs):
+    """Retrieves trace context stored on the messages argument and propagates it to the new thread."""
+    try:
+        bound_args = bind_args(wrapped, args, kwargs)
+    except Exception:
+        return wrapped(*args, **kwargs)
+
+    if (
+        "messages" in bound_args
+        and isinstance(bound_args["messages"], list)
+        and bound_args["messages"]  # non-empty list
+        and "newrelic_trace" in bound_args["messages"][-1]
+    ):
+        trace_message = bound_args["messages"].pop()
+        with ContextOf(trace=trace_message["newrelic_trace"]):
+            return wrapped(*args, **kwargs)
+
+    return wrapped(*args, **kwargs)
+
+
 def instrument_agent_agent(module):
     if hasattr(module, "Agent"):
         if hasattr(module.Agent, "__call__"):  # noqa: B004
@@ -422,3 +463,12 @@ def instrument_tools_registry(module):
     if hasattr(module, "ToolRegistry"):
         if hasattr(module.ToolRegistry, "register_tool"):
             wrap_function_wrapper(module, "ToolRegistry.register_tool", wrap_ToolRegister_register_tool)
+
+
+def instrument_models_bedrock(module):
+    # This instrumentation only exists to pass trace context due to bedrock models using a separate thread.
+    if hasattr(module, "BedrockModel"):
+        if hasattr(module.BedrockModel, "stream"):
+            wrap_function_wrapper(module, "BedrockModel.stream", wrap_bedrock_model_stream)
+        if hasattr(module.BedrockModel, "_stream"):
+            wrap_function_wrapper(module, "BedrockModel._stream", wrap_bedrock_model__stream)

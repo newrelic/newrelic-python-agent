@@ -40,6 +40,41 @@ def wrap_create_task(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
+def wrap__lazy_init(wrapped, instance, args, kwargs):
+    result = wrapped(*args, **kwargs)
+    # This logic can be used for uvloop, but should
+    # work for any valid custom loop factory.
+    
+    if not instance._set_event_loop:
+        # A custom loop_factory will be used to create
+        # a new event loop instance.  It will then run
+        # the main() coroutine on this event loop.  Once
+        # this coroutine is complete, the event loop will
+        # be stopped and closed.
+
+        # The new loop that is created and set as the
+        # running loop of the duration of the run() call.
+        # When the coroutine starts, it runs in the context
+        # that was active when run() was called.  Any tasks
+        # created within this coroutine on this new event
+        # loop will inherit that context.
+
+        # Note: The loop created by loop_factory is never
+        # set as the global current loop for the thread,
+        # even while it is running.
+        loop = instance._loop
+        if loop and not hasattr(loop.create_task, "__wrapped__"):
+            wrap_out_function(loop, "create_task", propagate_task_context)
+
+    # If `instance._set_event_loop` has been set,
+    # the event loop has been set by the default
+    # `set_event_loop()` method, which has been
+    # accounted for in our instrumentation.
+    
+    return result   # Does not actually return anything
+
+
+
 def instrument_asyncio_base_events(module):
     wrap_out_function(module, "BaseEventLoop.create_task", propagate_task_context)
 
@@ -49,3 +84,10 @@ def instrument_asyncio_events(module):
         wrap_function_wrapper(module, "_BaseDefaultEventLoopPolicy.set_event_loop", wrap_create_task)
     else:  # Python <= 3.13
         wrap_function_wrapper(module, "BaseDefaultEventLoopPolicy.set_event_loop", wrap_create_task)
+
+
+# For Python >= 3.11
+def instrument_asyncio_runners(module):
+    if hasattr(module, "Runner") and hasattr(module.Runner, "_lazy_init"):
+        wrap_function_wrapper(module, "Runner._lazy_init", wrap__lazy_init)
+

@@ -1132,7 +1132,7 @@ def handle_embedding_event(transaction, bedrock_attrs):
     model = bedrock_attrs.get("model", None)
     input_ = bedrock_attrs.get("input")
 
-    response_total_tokens = bedrock_attrs.get("response.usage.total_tokens", None)
+    response_total_tokens = bedrock_attrs.get("response.usage.total_tokens")
 
     total_tokens = (
         settings.ai_monitoring.llm_token_count_callback(model, input_)
@@ -1179,9 +1179,9 @@ def handle_chat_completion_event(transaction, bedrock_attrs):
     response_id = bedrock_attrs.get("response_id", None)
     model = bedrock_attrs.get("model", None)
 
-    response_prompt_tokens = bedrock_attrs.get("response.usage.prompt_tokens", None)
-    response_completion_tokens = bedrock_attrs.get("response.usage.completion_tokens", None)
-    response_total_tokens = bedrock_attrs.get("response.usage.total_tokens", None)
+    response_prompt_tokens = bedrock_attrs.get("response.usage.prompt_tokens")
+    response_completion_tokens = bedrock_attrs.get("response.usage.completion_tokens")
+    response_total_tokens = bedrock_attrs.get("response.usage.total_tokens")
 
     input_message_list = bedrock_attrs.get("input_message_list", [])
     output_message_list = bedrock_attrs.get("output_message_list", [])

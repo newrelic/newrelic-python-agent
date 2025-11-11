@@ -37,7 +37,6 @@ AGENT_EVENT_FAILURE_LOG_MESSAGE = "Exception occurred in Strands instrumentation
 TOOL_EXTRACTOR_FAILURE_LOG_MESSAGE = "Exception occurred in Strands instrumentation: Failed to extract tool information. If the issue persists, report this issue to New Relic support.\n"
 
 
-
 def wrap_agent__call__(wrapped, instance, args, kwargs):
     trace = current_trace()
     if not trace:

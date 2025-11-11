@@ -344,7 +344,7 @@ def extract_bedrock_mistral_text_model_streaming_response(response_body, bedrock
                 "output_message_list", [{"role": "assistant", "content": ""}]
             )
             bedrock_attrs["output_message_list"][0]["content"] += outputs[0].get("text", "")
-            bedrock_attrs["response.choices.finish_reason"] = outputs[0].get("stop_reason", None)
+            bedrock_attrs["response.choices.finish_reason"] = outputs[0].get("stop_reason")
     return bedrock_attrs
 
 
@@ -367,7 +367,7 @@ def extract_bedrock_titan_text_model_streaming_response(response_body, bedrock_a
             bedrock_attrs["output_message_list"] = messages = bedrock_attrs.get("output_message_list", [])
             messages.append({"role": "assistant", "content": response_body["outputText"]})
 
-        bedrock_attrs["response.choices.finish_reason"] = response_body.get("completionReason", None)
+        bedrock_attrs["response.choices.finish_reason"] = response_body.get("completionReason")
 
         # Extract token information
         invocation_metrics = response_body.get("amazon-bedrock-invocationMetrics", {})
@@ -660,8 +660,8 @@ def handle_bedrock_exception(
                 input_message_list = []
 
             bedrock_attrs["input_message_list"] = input_message_list
-            bedrock_attrs["request.max_tokens"] = kwargs.get("inferenceConfig", {}).get("maxTokens", None)
-            bedrock_attrs["request.temperature"] = kwargs.get("inferenceConfig", {}).get("temperature", None)
+            bedrock_attrs["request.max_tokens"] = kwargs.get("inferenceConfig", {}).get("maxTokens")
+            bedrock_attrs["request.temperature"] = kwargs.get("inferenceConfig", {}).get("temperature")
 
         try:
             request_extractor(request_body, bedrock_attrs)
@@ -970,8 +970,8 @@ def extract_bedrock_converse_attrs(kwargs, response, response_headers, model, sp
         "trace_id": trace_id,
         "response.choices.finish_reason": response.get("stopReason"),
         "output_message_list": output_message_list,
-        "request.max_tokens": kwargs.get("inferenceConfig", {}).get("maxTokens", None),
-        "request.temperature": kwargs.get("inferenceConfig", {}).get("temperature", None),
+        "request.max_tokens": kwargs.get("inferenceConfig", {}).get("maxTokens"),
+        "request.temperature": kwargs.get("inferenceConfig", {}).get("temperature"),
         "input_message_list": input_message_list,
         "response.usage.prompt_tokens": response_prompt_tokens,
         "response.usage.completion_tokens": response_completion_tokens,
@@ -1126,10 +1126,10 @@ def handle_embedding_event(transaction, bedrock_attrs):
     custom_attrs_dict = transaction._custom_params
     llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
 
-    span_id = bedrock_attrs.get("span_id", None)
-    trace_id = bedrock_attrs.get("trace_id", None)
-    request_id = bedrock_attrs.get("request_id", None)
-    model = bedrock_attrs.get("model", None)
+    span_id = bedrock_attrs.get("span_id")
+    trace_id = bedrock_attrs.get("trace_id")
+    request_id = bedrock_attrs.get("request_id")
+    model = bedrock_attrs.get("model")
     input_ = bedrock_attrs.get("input")
 
     response_total_tokens = bedrock_attrs.get("response.usage.total_tokens")
@@ -1147,11 +1147,11 @@ def handle_embedding_event(transaction, bedrock_attrs):
         "span_id": span_id,
         "trace_id": trace_id,
         "request_id": request_id,
-        "duration": bedrock_attrs.get("duration", None),
+        "duration": bedrock_attrs.get("duration"),
         "request.model": model,
         "response.model": model,
         "response.usage.total_tokens": total_tokens,
-        "error": bedrock_attrs.get("error", None),
+        "error": bedrock_attrs.get("error"),
     }
 
     embedding_dict.update(llm_metadata_dict)
@@ -1173,11 +1173,11 @@ def handle_chat_completion_event(transaction, bedrock_attrs):
     llm_context_attrs = getattr(transaction, "_llm_context_attrs", None)
     if llm_context_attrs:
         llm_metadata_dict.update(llm_context_attrs)
-    span_id = bedrock_attrs.get("span_id", None)
-    trace_id = bedrock_attrs.get("trace_id", None)
-    request_id = bedrock_attrs.get("request_id", None)
-    response_id = bedrock_attrs.get("response_id", None)
-    model = bedrock_attrs.get("model", None)
+    span_id = bedrock_attrs.get("span_id")
+    trace_id = bedrock_attrs.get("trace_id")
+    request_id = bedrock_attrs.get("request_id")
+    response_id = bedrock_attrs.get("response_id")
+    model = bedrock_attrs.get("model")
 
     response_prompt_tokens = bedrock_attrs.get("response.usage.prompt_tokens")
     response_completion_tokens = bedrock_attrs.get("response.usage.completion_tokens")
@@ -1189,14 +1189,14 @@ def handle_chat_completion_event(transaction, bedrock_attrs):
         len(input_message_list) + len(output_message_list)
     ) or None  # If 0, attribute will be set to None and removed
 
-    input_message_content = " ".join([msg.get("content", "") for msg in input_message_list if msg.get("content")])
+    input_message_content = " ".join([msg.get("content") for msg in input_message_list if msg.get("content")])
     prompt_tokens = (
         settings.ai_monitoring.llm_token_count_callback(model, input_message_content)
         if settings.ai_monitoring.llm_token_count_callback and input_message_content
         else response_prompt_tokens
     )
 
-    output_message_content = " ".join([msg.get("content", "") for msg in output_message_list if msg.get("content")])
+    output_message_content = " ".join([msg.get("content") for msg in output_message_list if msg.get("content")])
     completion_tokens = (
         settings.ai_monitoring.llm_token_count_callback(model, output_message_content)
         if settings.ai_monitoring.llm_token_count_callback and output_message_content
@@ -1216,14 +1216,14 @@ def handle_chat_completion_event(transaction, bedrock_attrs):
         "trace_id": trace_id,
         "request_id": request_id,
         "response_id": response_id,
-        "duration": bedrock_attrs.get("duration", None),
-        "request.max_tokens": bedrock_attrs.get("request.max_tokens", None),
-        "request.temperature": bedrock_attrs.get("request.temperature", None),
+        "duration": bedrock_attrs.get("duration"),
+        "request.max_tokens": bedrock_attrs.get("request.max_tokens"),
+        "request.temperature": bedrock_attrs.get("request.temperature"),
         "request.model": model,
         "response.model": model,  # Duplicate data required by the UI
         "response.number_of_messages": number_of_messages,
-        "response.choices.finish_reason": bedrock_attrs.get("response.choices.finish_reason", None),
-        "error": bedrock_attrs.get("error", None),
+        "response.choices.finish_reason": bedrock_attrs.get("response.choices.finish_reason"),
+        "error": bedrock_attrs.get("error"),
     }
 
     if all_token_counts:

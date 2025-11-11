@@ -46,17 +46,23 @@ class ErrorTrace:
 
 def ErrorTraceWrapper(wrapped, ignore=None, expected=None, status_code=None, async_wrapper=None):
     def literal_wrapper(wrapped, instance, args, kwargs):
+        # Determine if the wrapped function is async or sync
         wrapper = async_wrapper if async_wrapper is not None else get_async_wrapper(wrapped)
+        # Sync function path
         if not wrapper:
             parent = current_trace()
             if not parent:
+                # No active tracing context so just call the wrapped function directly
                 return wrapped(*args, **kwargs)
+        # Async function path
         else:
+            # For async functions, the async wrapper will handle trace context propagation
             parent = None
 
         trace = ErrorTrace(ignore, expected, status_code, parent=parent)
 
         if wrapper:
+            # The async wrapper handles the context management for us
             return wrapper(wrapped, trace)(*args, **kwargs)
 
         with trace:

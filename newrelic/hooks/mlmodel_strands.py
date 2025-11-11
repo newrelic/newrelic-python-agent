@@ -33,6 +33,9 @@ STRANDS_VERSION = get_package_version("strands-agents")
 
 RECORD_EVENTS_FAILURE_LOG_MESSAGE = "Exception occurred in Strands instrumentation: Failed to record LLM events. Please report this issue to New Relic Support."
 TOOL_OUTPUT_FAILURE_LOG_MESSAGE = "Exception occurred in Strands instrumentation: Failed to record output of tool call. Please report this issue to New Relic Support."
+AGENT_EVENT_FAILURE_LOG_MESSAGE = "Exception occurred in Strands instrumentation: Failed to record agent data. Please report this issue to New Relic Support."
+TOOL_EXTRACTOR_FAILURE_LOG_MESSAGE = "Exception occurred in Strands instrumentation: Failed to extract tool information. If the issue persists, report this issue to New Relic support.\n"
+
 
 
 def wrap_agent__call__(wrapped, instance, args, kwargs):
@@ -103,13 +106,19 @@ def wrap_stream_async(wrapped, instance, args, kwargs):
         raise
 
     # For streaming responses, wrap with proxy and attach metadata
-    proxied_return_val = AsyncGeneratorProxy(
-        return_val, _record_agent_event_on_stop_iteration, _handle_agent_streaming_completion_error
-    )
-    proxied_return_val._nr_ft = ft
-    proxied_return_val._nr_metadata = linking_metadata
-    proxied_return_val._nr_strands_attrs = {"agent_name": agent_name, "agent_id": agent_id}
-    return proxied_return_val
+    try:
+        # For streaming responses, wrap with proxy and attach metadata
+        proxied_return_val = AsyncGeneratorProxy(
+            return_val, _record_agent_event_on_stop_iteration, _handle_agent_streaming_completion_error
+        )
+        proxied_return_val._nr_ft = ft
+        proxied_return_val._nr_metadata = linking_metadata
+        proxied_return_val._nr_strands_attrs = {"agent_name": agent_name, "agent_id": agent_id}
+        return proxied_return_val
+    except Exception:
+        # If proxy creation fails, clean up the function trace and return original value
+        ft.__exit__(*sys.exc_info())
+        return return_val
 
 
 def _record_agent_event_on_stop_iteration(self, transaction):
@@ -126,9 +135,9 @@ def _record_agent_event_on_stop_iteration(self, transaction):
                 return
 
             agent_name = strands_attrs.get("agent_name", "agent")
-            agent_id = strands_attrs.get("agent_id", None)
+            agent_id = strands_attrs.get("agent_id")
             agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction, linking_metadata)
-            agent_event_dict.update({"duration": self._nr_ft.duration * 1000})
+            agent_event_dict["duration"] = self._nr_ft.duration * 1000
             transaction.record_custom_event("LlmAgent", agent_event_dict)
 
         except Exception:
@@ -161,7 +170,7 @@ def _record_tool_event_on_stop_iteration(self, transaction):
             tool_event_dict = _construct_base_tool_event_dict(
                 strands_attrs, tool_results, transaction, linking_metadata
             )
-            tool_event_dict.update({"duration": self._nr_ft.duration * 1000})
+            tool_event_dict["duration"] = self._nr_ft.duration * 1000
             transaction.record_custom_event("LlmTool", tool_event_dict)
 
         except Exception:
@@ -183,9 +192,9 @@ def _construct_base_tool_event_dict(strands_attrs, tool_results, transaction, li
             _logger.warning(TOOL_OUTPUT_FAILURE_LOG_MESSAGE, exc_info=True)
 
         tool_name = strands_attrs.get("tool_name", "tool")
-        tool_id = strands_attrs.get("tool_id", None)
-        run_id = strands_attrs.get("run_id", None)
-        tool_input = strands_attrs.get("tool_input", None)
+        tool_id = strands_attrs.get("tool_id")
+        run_id = strands_attrs.get("run_id")
+        tool_input = strands_attrs.get("tool_input")
         agent_name = strands_attrs.get("agent_name", "agent")
         settings = transaction.settings or global_settings()
 
@@ -205,9 +214,9 @@ def _construct_base_tool_event_dict(strands_attrs, tool_results, transaction, li
             tool_event_dict["error"] = True
 
         if settings.ai_monitoring.record_content.enabled:
-            tool_event_dict.update({"input": tool_input})
+            tool_event_dict["input"] = tool_input
             # In error cases, the output will hold the error message
-            tool_event_dict.update({"output": tool_output})
+            tool_event_dict["output"] = tool_output
         tool_event_dict.update(_get_llm_metadata(transaction))
     except Exception:
         tool_event_dict = {}
@@ -228,6 +237,7 @@ def _construct_base_agent_event_dict(agent_name, agent_id, transaction, linking_
         }
         agent_event_dict.update(_get_llm_metadata(transaction))
     except Exception:
+        _logger.warning(AGENT_EVENT_FAILURE_LOG_MESSAGE, exc_info=True)
         agent_event_dict = {}
 
     return agent_event_dict
@@ -247,7 +257,7 @@ def _handle_agent_streaming_completion_error(self, transaction):
 
         try:
             agent_name = strands_attrs.get("agent_name", "agent")
-            agent_id = strands_attrs.get("agent_id", None)
+            agent_id = strands_attrs.get("agent_id")
 
             # Notice the error on the function trace
             self._nr_ft.notice_error(attributes={"agent_id": agent_id})
@@ -279,7 +289,7 @@ def _handle_tool_streaming_completion_error(self, transaction):
         linking_metadata = self._nr_metadata or get_trace_linking_metadata()
 
         try:
-            tool_id = strands_attrs["tool_id"]
+            tool_id = strands_attrs.get("tool_id")
 
             # We expect this to never have any output since this is an error case,
             # but if it does we will report it.
@@ -297,10 +307,10 @@ def _handle_tool_streaming_completion_error(self, transaction):
             tool_event_dict = _construct_base_tool_event_dict(
                 strands_attrs, tool_results, transaction, linking_metadata
             )
-            tool_event_dict.update({"duration": self._nr_ft.duration * 1000})
+            tool_event_dict["duration"] = self._nr_ft.duration * 1000
             # Ensure error flag is set to True in case the tool_results did not indicate an error
             if "error" not in tool_event_dict:
-                tool_event_dict.update({"error": True})
+                tool_event_dict["error"] = True
 
             transaction.record_custom_event("LlmTool", tool_event_dict)
 
@@ -326,15 +336,19 @@ def wrap_tool_executor__stream(wrapped, instance, args, kwargs):
     transaction._add_agent_attribute("llm", True)
 
     # Grab tool data
-    bound_args = bind_args(wrapped, args, kwargs)
-    agent_name = getattr(bound_args.get("agent"), "name", "agent")
-    tool_use = bound_args.get("tool_use", {})
+    try:
+        bound_args = bind_args(wrapped, args, kwargs)
+        agent_name = getattr(bound_args.get("agent"), "name", "agent")
+        tool_use = bound_args.get("tool_use", {})
 
-    run_id = tool_use.get("toolUseId", "")
-    tool_name = tool_use.get("name", "tool")
-    _input = tool_use.get("input")
-    tool_input = str(_input) if _input else None
-    tool_results = bound_args.get("tool_results", [])
+        run_id = tool_use.get("toolUseId", "")
+        tool_name = tool_use.get("name", "tool")
+        _input = tool_use.get("input")
+        tool_input = str(_input) if _input else None
+        tool_results = bound_args.get("tool_results", [])
+    except Exception:
+        tool_name = "tool"
+        _logger.warning(TOOL_EXTRACTOR_FAILURE_LOG_MESSAGE, exc_info=True)
 
     func_name = callable_name(wrapped)
     function_trace_name = f"{func_name}/{tool_name}"
@@ -349,21 +363,26 @@ def wrap_tool_executor__stream(wrapped, instance, args, kwargs):
     except Exception:
         raise
 
-    # For streaming responses, wrap with proxy and attach metadata
-    proxied_return_val = AsyncGeneratorProxy(
-        return_val, _record_tool_event_on_stop_iteration, _handle_tool_streaming_completion_error
-    )
-    proxied_return_val._nr_ft = ft
-    proxied_return_val._nr_metadata = linking_metadata
-    proxied_return_val._nr_strands_attrs = {
-        "tool_results": tool_results,
-        "tool_name": tool_name,
-        "tool_id": tool_id,
-        "run_id": run_id,
-        "tool_input": tool_input,
-        "agent_name": agent_name,
-    }
-    return proxied_return_val
+    try:
+        # Wrap return value with proxy and attach metadata for later access
+        proxied_return_val = AsyncGeneratorProxy(
+            return_val, _record_tool_event_on_stop_iteration, _handle_tool_streaming_completion_error
+        )
+        proxied_return_val._nr_ft = ft
+        proxied_return_val._nr_metadata = linking_metadata
+        proxied_return_val._nr_strands_attrs = {
+            "tool_results": tool_results,
+            "tool_name": tool_name,
+            "tool_id": tool_id,
+            "run_id": run_id,
+            "tool_input": tool_input,
+            "agent_name": agent_name,
+        }
+        return proxied_return_val
+    except Exception:
+        # If proxy creation fails, clean up the function trace and return original value
+        ft.__exit__(*sys.exc_info())
+        return return_val
 
 
 class AsyncGeneratorProxy(ObjectProxy):

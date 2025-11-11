@@ -466,7 +466,7 @@ def test_connect(
     # Verify that agent settings sent have converted null, containers, and
     # unserializable types to string
     assert agent_settings_payload["proxy_host"] == "None"
-    assert agent_settings_payload["attributes.include"] == "[]"
+    assert agent_settings_payload["attributes.include"] == str(set())
     assert agent_settings_payload["feature_flag"] == str(set())
     assert isinstance(agent_settings_payload["attribute_filter"], str)
 

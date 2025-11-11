@@ -48,7 +48,7 @@ def wrap__lazy_init(wrapped, instance, args, kwargs):
     result = wrapped(*args, **kwargs)
     # This logic can be used for uvloop, but should
     # work for any valid custom loop factory.
-    
+
     # A custom loop_factory will be used to create
     # a new event loop instance.  It will then run
     # the main() coroutine on this event loop.  Once
@@ -67,7 +67,7 @@ def wrap__lazy_init(wrapped, instance, args, kwargs):
     # even while it is running.
     loop = instance._loop
     _instrument_event_loop(loop)
-    
+
     return result
 
 
@@ -86,4 +86,3 @@ def instrument_asyncio_events(module):
 def instrument_asyncio_runners(module):
     if hasattr(module, "Runner") and hasattr(module.Runner, "_lazy_init"):
         wrap_function_wrapper(module, "Runner._lazy_init", wrap__lazy_init)
-

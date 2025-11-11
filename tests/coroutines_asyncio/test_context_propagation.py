@@ -44,7 +44,7 @@ except ImportError:
 
 def loop_factories():
     import asyncio
-    
+
     if sys.platform == "win32":
         return (pytest.param(asyncio.ProactorEventLoop, id="asyncio.ProactorEventLoop"), *uvloop_factory)
     else:
@@ -55,7 +55,7 @@ def loop_factories():
 def reset_event_loop():
     try:
         from asyncio import set_event_loop, set_event_loop_policy
-        
+
         # Remove the loop policy to avoid side effects
         set_event_loop_policy(None)
     except ImportError:
@@ -230,15 +230,8 @@ def test_two_transactions_with_global_event_loop(event_loop, trace):
 
 
 @pytest.mark.skipif(sys.version_info < (3, 11), reason="asyncio.Runner is not available")
-@validate_transaction_metrics(
-    "await_task",
-    background_task=True,
-)
-@validate_transaction_metrics(
-    "create_coro",
-    background_task=True,
-    index=-2,
-)
+@validate_transaction_metrics("await_task", background_task=True)
+@validate_transaction_metrics("create_coro", background_task=True, index=-2)
 @pytest.mark.parametrize("loop_factory", loop_factories())
 @pytest.mark.parametrize(
     "trace",
@@ -262,26 +255,21 @@ def test_two_transactions_with_loop_factory(trace, loop_factory):
     """
     import asyncio
 
-
     @trace
     async def task():
         pass
-    
-    
+
     @background_task(name="create_coro")
     async def create_coro():
         return asyncio.create_task(task())
-    
-    
+
     @background_task(name="await_task")
     async def await_task(task_to_await):
         return await task_to_await
-    
 
     async def _main():
         _task = await create_coro()
         return await await_task(_task)
-    
 
     with asyncio.Runner(loop_factory=loop_factory) as runner:
         runner.run(_main())
@@ -299,12 +287,13 @@ def test_context_propagation_with_loop_factory(loop_factory):
     import asyncio
 
     exceptions = []
+
     def handle_exception(loop, context):
         exceptions.append(context)
-        
+
         # Call default handler for standard logging
         loop.default_exception_handler(context)
-    
+
     async def subtask():
         with FunctionTrace(name="waiter2", terminal=True):
             pass
@@ -313,12 +302,11 @@ def test_context_propagation_with_loop_factory(loop_factory):
 
     async def _task(trace):
         assert current_trace() == trace
-        
+
         await subtask()
 
-
     trace = current_trace()
-    
+
     with asyncio.Runner(loop_factory=loop_factory) as runner:
         assert trace == current_trace()
         runner._loop.set_exception_handler(handle_exception)

@@ -46,9 +46,9 @@ def loop_factories():
     import asyncio
     
     if sys.platform == "win32":
-        return (pytest.param(asyncio.ProactorEventLoop, id="asyncio.ProactorEventLoop"),) + uvloop_factory
+        return (pytest.param(asyncio.ProactorEventLoop, id="asyncio.ProactorEventLoop"), *uvloop_factory)
     else:
-        return (pytest.param(asyncio.SelectorEventLoop, id="asyncio.SelectorEventLoop"),) + uvloop_factory
+        return (pytest.param(asyncio.SelectorEventLoop, id="asyncio.SelectorEventLoop"), *uvloop_factory)
 
 
 @pytest.fixture(autouse=True)

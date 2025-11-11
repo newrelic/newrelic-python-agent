@@ -39,136 +39,139 @@ settings = global_settings()
 
 @pytest.fixture(scope="module")
 def transaction_node(request):
-    default_capacity = SampledDataSet().capacity
-    num_events = default_capacity + 1
+    def _transaction_node(partial_granularity=False):
+        default_capacity = SampledDataSet().capacity
+        num_events = default_capacity + 1
 
-    custom_events = SampledDataSet(capacity=num_events)
-    for _ in range(num_events):
-        event = create_custom_event("Custom", {})
-        custom_events.add(event)
+        custom_events = SampledDataSet(capacity=num_events)
+        for _ in range(num_events):
+            event = create_custom_event("Custom", {})
+            custom_events.add(event)
 
-    ml_events = SampledDataSet(capacity=num_events)
-    for _ in range(num_events):
-        event = create_custom_event("Custom", {})
-        ml_events.add(event)
+        ml_events = SampledDataSet(capacity=num_events)
+        for _ in range(num_events):
+            event = create_custom_event("Custom", {})
+            ml_events.add(event)
 
-    log_events = SampledDataSet(capacity=num_events)
-    for _ in range(num_events):
-        event = LogEventNode(1653609717, "WARNING", "A", {})
-        log_events.add(event)
+        log_events = SampledDataSet(capacity=num_events)
+        for _ in range(num_events):
+            event = LogEventNode(1653609717, "WARNING", "A", {})
+            log_events.add(event)
 
-    error = ErrorNode(
-        timestamp=0,
-        type="foo:bar",
-        message="oh no! your foo had a bar",
-        expected=False,
-        span_id=None,
-        stack_trace="",
-        error_group_name=None,
-        custom_params={},
-        source=None,
-    )
+        error = ErrorNode(
+            timestamp=0,
+            type="foo:bar",
+            message="oh no! your foo had a bar",
+            expected=False,
+            span_id=None,
+            stack_trace="",
+            error_group_name=None,
+            custom_params={},
+            source=None,
+        )
 
-    errors = tuple(error for _ in range(num_events))
+        errors = tuple(error for _ in range(num_events))
 
-    function = FunctionNode(
-        group="Function",
-        name="foo",
-        children=(),
-        start_time=0,
-        end_time=1,
-        duration=1,
-        exclusive=1,
-        label=None,
-        params=None,
-        rollup=None,
-        guid="GUID",
-        agent_attributes={},
-        user_attributes={},
-    )
+        function = FunctionNode(
+            group="Function",
+            name="foo",
+            children=(),
+            start_time=0,
+            end_time=1,
+            duration=1,
+            exclusive=1,
+            label=None,
+            params=None,
+            rollup=None,
+            guid="GUID",
+            agent_attributes={},
+            user_attributes={},
+        )
 
-    children = tuple(function for _ in range(num_events))
+        children = tuple(function for _ in range(num_events))
 
-    root = RootNode(
-        name="Function/main",
-        children=children,
-        start_time=1524764430.0,
-        end_time=1524764430.1,
-        duration=0.1,
-        exclusive=0.1,
-        guid=None,
-        agent_attributes={},
-        user_attributes={},
-        path="OtherTransaction/Function/main",
-        trusted_parent_span=None,
-        tracing_vendors=None,
-    )
+        root = RootNode(
+            name="Function/main",
+            children=children,
+            start_time=1524764430.0,
+            end_time=1524764430.1,
+            duration=0.1,
+            exclusive=0.1,
+            guid=None,
+            agent_attributes={},
+            user_attributes={},
+            path="OtherTransaction/Function/main",
+            trusted_parent_span=None,
+            tracing_vendors=None,
+        )
 
-    node = TransactionNode(
-        settings=finalize_application_settings({"agent_run_id": "1234567"}),
-        path="OtherTransaction/Function/main",
-        type="OtherTransaction",
-        group="Function",
-        base_name="main",
-        name_for_metric="Function/main",
-        port=None,
-        request_uri=None,
-        queue_start=0.0,
-        start_time=1524764430.0,
-        end_time=1524764430.1,
-        last_byte_time=0.0,
-        total_time=0.1,
-        response_time=0.1,
-        duration=0.1,
-        exclusive=0.1,
-        root=root,
-        errors=errors,
-        slow_sql=(),
-        custom_events=custom_events,
-        ml_events=ml_events,
-        log_events=log_events,
-        apdex_t=0.5,
-        suppress_apdex=False,
-        custom_metrics=CustomMetrics(),
-        dimensional_metrics=DimensionalMetrics(),
-        guid="4485b89db608aece",
-        cpu_time=0.0,
-        suppress_transaction_trace=False,
-        client_cross_process_id=None,
-        referring_transaction_guid=None,
-        record_tt=False,
-        synthetics_resource_id=None,
-        synthetics_job_id=None,
-        synthetics_monitor_id=None,
-        synthetics_header=None,
-        synthetics_type=None,
-        synthetics_initiator=None,
-        synthetics_attributes=None,
-        synthetics_info_header=None,
-        is_part_of_cat=False,
-        trip_id="4485b89db608aece",
-        path_hash=None,
-        referring_path_hash=None,
-        alternate_path_hashes=[],
-        trace_intrinsics={},
-        distributed_trace_intrinsics={},
-        agent_attributes=[],
-        user_attributes=[],
-        priority=1.0,
-        parent_transport_duration=None,
-        parent_span=None,
-        parent_type=None,
-        parent_account=None,
-        parent_app=None,
-        parent_tx=None,
-        parent_transport_type=None,
-        sampled=True,
-        root_span_guid=None,
-        trace_id="4485b89db608aece",
-        loop_time=0.0,
-        partial_granularity_sampled=False,
-    )
-    return node
+        node = TransactionNode(
+            settings=finalize_application_settings({"agent_run_id": "1234567"}),
+            path="OtherTransaction/Function/main",
+            type="OtherTransaction",
+            group="Function",
+            base_name="main",
+            name_for_metric="Function/main",
+            port=None,
+            request_uri=None,
+            queue_start=0.0,
+            start_time=1524764430.0,
+            end_time=1524764430.1,
+            last_byte_time=0.0,
+            total_time=0.1,
+            response_time=0.1,
+            duration=0.1,
+            exclusive=0.1,
+            root=root,
+            errors=errors,
+            slow_sql=(),
+            custom_events=custom_events,
+            ml_events=ml_events,
+            log_events=log_events,
+            apdex_t=0.5,
+            suppress_apdex=False,
+            custom_metrics=CustomMetrics(),
+            dimensional_metrics=DimensionalMetrics(),
+            guid="4485b89db608aece",
+            cpu_time=0.0,
+            suppress_transaction_trace=False,
+            client_cross_process_id=None,
+            referring_transaction_guid=None,
+            record_tt=False,
+            synthetics_resource_id=None,
+            synthetics_job_id=None,
+            synthetics_monitor_id=None,
+            synthetics_header=None,
+            synthetics_type=None,
+            synthetics_initiator=None,
+            synthetics_attributes=None,
+            synthetics_info_header=None,
+            is_part_of_cat=False,
+            trip_id="4485b89db608aece",
+            path_hash=None,
+            referring_path_hash=None,
+            alternate_path_hashes=[],
+            trace_intrinsics={},
+            distributed_trace_intrinsics={},
+            agent_attributes=[],
+            user_attributes=[],
+            priority=1.0,
+            parent_transport_duration=None,
+            parent_span=None,
+            parent_type=None,
+            parent_account=None,
+            parent_app=None,
+            parent_tx=None,
+            parent_transport_type=None,
+            sampled=True,
+            root_span_guid=None,
+            trace_id="4485b89db608aece",
+            loop_time=0.0,
+            partial_granularity_sampled=partial_granularity,
+        )
+        return node
+
+    return _transaction_node
 
 
 def validate_metric_payload(metrics=None, endpoints_called=None):
@@ -322,14 +325,32 @@ def test_serverless_application_harvest():
 
 
 @pytest.mark.parametrize(
-    "distributed_tracing_enabled,span_events_enabled,spans_created",
-    [(True, True, 1), (True, True, 15), (True, False, 1), (True, True, 0), (True, False, 0), (False, True, 0)],
+    "distributed_tracing_enabled,full_granularity_enabled,partial_granularity_enabled,span_events_enabled,spans_created",
+    [
+        (True, True, False, True, 1),
+        (True, True, True, True, 1),
+        (True, True, False, True, 15),
+        (True, True, False, False, 1),
+        (True, True, False, True, 0),
+        (True, True, False, False, 0),
+        (False, True, False, True, 0),
+    ],
 )
-def test_application_harvest_with_spans(distributed_tracing_enabled, span_events_enabled, spans_created):
+def test_application_harvest_with_spans(
+    distributed_tracing_enabled,
+    full_granularity_enabled,
+    partial_granularity_enabled,
+    span_events_enabled,
+    spans_created,
+):
     span_endpoints_called = []
     max_samples_stored = 10
 
-    if distributed_tracing_enabled and span_events_enabled:
+    if (
+        distributed_tracing_enabled
+        and span_events_enabled
+        and (full_granularity_enabled or partial_granularity_enabled)
+    ):
         seen = spans_created
         sent = min(spans_created, max_samples_stored)
     else:
@@ -341,6 +362,8 @@ def test_application_harvest_with_spans(distributed_tracing_enabled, span_events
     spans_required_metrics.extend(
         [("Supportability/SpanEvent/TotalEventsSeen", seen), ("Supportability/SpanEvent/TotalEventsSent", sent)]
     )
+    if partial_granularity_enabled:
+        spans_required_metrics.extend([("Supportability/Python/PartialGranularity/essential", 1)])
 
     @validate_metric_payload(metrics=spans_required_metrics, endpoints_called=span_endpoints_called)
     @override_generic_settings(
@@ -349,6 +372,8 @@ def test_application_harvest_with_spans(distributed_tracing_enabled, span_events
             "developer_mode": True,
             "license_key": "**NOT A LICENSE KEY**",
             "distributed_tracing.enabled": distributed_tracing_enabled,
+            "distributed_tracing.sampler.full_granularity.enabled": full_granularity_enabled,
+            "distributed_tracing.sampler.partial_granularity.enabled": partial_granularity_enabled,
             "span_events.enabled": span_events_enabled,
             # Uses the name from post-translation as this is modifying the settings object, not a config file
             "event_harvest_config.harvest_limits.span_event_data": max_samples_stored,
@@ -367,12 +392,12 @@ def test_application_harvest_with_spans(distributed_tracing_enabled, span_events
 
         # Verify that the metric_data endpoint is the 2nd to last and
         # span_event_data is the 3rd to last endpoint called
-        assert span_endpoints_called[-2] == "metric_data"
+        assert span_endpoints_called[-2] == "metric_data", span_endpoints_called
 
         if span_events_enabled and spans_created > 0:
-            assert span_endpoints_called[-3] == "span_event_data"
+            assert span_endpoints_called[-3] == "span_event_data", span_endpoints_called
         else:
-            assert span_endpoints_called[-3] != "span_event_data"
+            assert span_endpoints_called[-3] != "span_event_data", span_endpoints_called
 
     _test()
 
@@ -452,10 +477,11 @@ def test_failed_spans_harvest(span_events_enabled):
     },
 )
 def test_transaction_count(transaction_node):
+    txn_node = transaction_node()
     app = Application("Python Agent Test (Harvest Loop)")
     app.connect_to_data_collector(None)
 
-    app.record_transaction(transaction_node)
+    app.record_transaction(txn_node)
 
     # Harvest has not run yet
     assert app._transaction_count == 1
@@ -466,8 +492,41 @@ def test_transaction_count(transaction_node):
     assert app._transaction_count == 0
 
     # Record a transaction
-    app.record_transaction(transaction_node)
+    app.record_transaction(txn_node)
     assert app._transaction_count == 1
+
+    app.harvest()
+
+    # Harvest resets the transaction count
+    assert app._transaction_count == 0
+
+
+@override_generic_settings(
+    settings,
+    {
+        "developer_mode": True,
+        "license_key": "**NOT A LICENSE KEY**",
+        "feature_flag": set(),
+        "collect_custom_events": False,
+        "application_logging.forwarding.enabled": False,
+        "distributed_tracing.sampler.full_granularity.enabled": False,
+        "distributed_tracing.sampler.partial_granularity.enabled": True,
+    },
+)
+def test_partial_granularity_metrics(transaction_node):
+    txn_node = transaction_node(True)
+    app = Application("Python Agent Test (Harvest Loop)")
+    app.connect_to_data_collector(None)
+
+    app.record_transaction(txn_node)
+
+    # Harvest has not run yet
+    assert app._transaction_count == 1
+
+    instrumented = "Supportability/DistributedTrace/PartialGranularity/essential/Span/Instrumented"
+    kept = "Supportability/DistributedTrace/PartialGranularity/essential/Span/Kept"
+    assert app._stats_engine.stats_table[(instrumented, "")][0] == 102
+    assert app._stats_engine.stats_table[(kept, "")][0] == 1
 
     app.harvest()
 
@@ -479,6 +538,7 @@ def test_transaction_count(transaction_node):
     settings, {"developer_mode": True, "license_key": "**NOT A LICENSE KEY**", "feature_flag": set()}
 )
 def test_adaptive_sampling(transaction_node, monkeypatch):
+    txn_node = transaction_node()
     app = Application("Python Agent Test (Harvest Loop)")
 
     # Should always return false for sampling prior to connect
@@ -523,11 +583,12 @@ def test_adaptive_sampling(transaction_node, monkeypatch):
     },
 )
 def test_reservoir_sizes(transaction_node):
+    txn_node = transaction_node()
     app = Application("Python Agent Test (Harvest Loop)")
     app.connect_to_data_collector(None)
 
     # Record a transaction with events
-    app.record_transaction(transaction_node)
+    app.record_transaction(txn_node)
 
     # Test that the samples have been recorded
     assert app._stats_engine.custom_events.num_samples == 101

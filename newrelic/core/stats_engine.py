@@ -1190,6 +1190,20 @@ class StatsEngine:
             elif transaction.sampled:
                 for event in transaction.span_events(self.__settings):
                     self._span_events.add(event, priority=transaction.priority)
+                if transaction.partial_granularity_sampled:
+                    partial_gran_type = settings.distributed_tracing.sampler.partial_granularity.type
+                    self.record_custom_metrics(
+                        [
+                            (
+                                f"Supportability/DistributedTrace/PartialGranularity/{partial_gran_type}/Span/Instrumented",
+                                {"count": transaction.instrumented},
+                            ),
+                            (
+                                f"Supportability/DistributedTrace/PartialGranularity/{partial_gran_type}/Span/Kept",
+                                {"count": transaction.kept},
+                            ),
+                        ]
+                    )
 
         # Merge in log events
 

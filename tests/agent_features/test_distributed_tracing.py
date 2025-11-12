@@ -586,8 +586,8 @@ def test_distributed_trace_remote_parent_sampling_decision_full_granularity(
     test_settings = _override_settings.copy()
     test_settings.update(
         {
-            "distributed_tracing.sampler.full_granularity.remote_parent_sampled": remote_parent_sampled_setting,
-            "distributed_tracing.sampler.full_granularity.remote_parent_not_sampled": remote_parent_not_sampled_setting,
+            "distributed_tracing.sampler.full_granularity._remote_parent_sampled": remote_parent_sampled_setting,
+            "distributed_tracing.sampler.full_granularity._remote_parent_not_sampled": remote_parent_not_sampled_setting,
             "span_events.enabled": True,
         }
     )
@@ -677,8 +677,8 @@ def test_distributed_trace_remote_parent_sampling_decision_partial_granularity(
         {
             "distributed_tracing.sampler.full_granularity.enabled": False,
             "distributed_tracing.sampler.partial_granularity.enabled": True,
-            "distributed_tracing.sampler.partial_granularity.remote_parent_sampled": remote_parent_sampled_setting,
-            "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled": remote_parent_not_sampled_setting,
+            "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": remote_parent_sampled_setting,
+            "distributed_tracing.sampler.partial_granularity._remote_parent_not_sampled": remote_parent_not_sampled_setting,
             "span_events.enabled": True,
         }
     )
@@ -745,8 +745,8 @@ def test_distributed_trace_remote_parent_sampling_decision_between_full_and_part
         {
             "distributed_tracing.sampler.full_granularity.enabled": full_granularity_enabled,
             "distributed_tracing.sampler.partial_granularity.enabled": partial_granularity_enabled,
-            "distributed_tracing.sampler.full_granularity.remote_parent_sampled": full_granularity_remote_parent_sampled_setting,
-            "distributed_tracing.sampler.partial_granularity.remote_parent_sampled": partial_granularity_remote_parent_sampled_setting,
+            "distributed_tracing.sampler.full_granularity._remote_parent_sampled": full_granularity_remote_parent_sampled_setting,
+            "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": partial_granularity_remote_parent_sampled_setting,
             "span_events.enabled": True,
         }
     )
@@ -815,7 +815,7 @@ def test_partial_granularity_max_compressed_spans():
             "distributed_tracing.sampler.full_granularity.enabled": False,
             "distributed_tracing.sampler.partial_granularity.enabled": True,
             "distributed_tracing.sampler.partial_granularity.type": "compact",
-            "distributed_tracing.sampler.partial_granularity.remote_parent_sampled": "always_on",
+            "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "always_on",
             "span_events.enabled": True,
         }
     )(_test)
@@ -868,7 +868,7 @@ def test_partial_granularity_compressed_span_attributes_in_series():
             "distributed_tracing.sampler.full_granularity.enabled": False,
             "distributed_tracing.sampler.partial_granularity.enabled": True,
             "distributed_tracing.sampler.partial_granularity.type": "compact",
-            "distributed_tracing.sampler.partial_granularity.remote_parent_sampled": "always_on",
+            "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "always_on",
             "span_events.enabled": True,
         }
     )(_test)
@@ -918,7 +918,7 @@ def test_partial_granularity_compressed_span_attributes_overlapping():
             "distributed_tracing.sampler.full_granularity.enabled": False,
             "distributed_tracing.sampler.partial_granularity.enabled": True,
             "distributed_tracing.sampler.partial_granularity.type": "compact",
-            "distributed_tracing.sampler.partial_granularity.remote_parent_sampled": "always_on",
+            "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "always_on",
             "span_events.enabled": True,
         }
     )(_test)
@@ -972,7 +972,7 @@ def test_partial_granularity_reduced_span_attributes():
             "distributed_tracing.sampler.full_granularity.enabled": False,
             "distributed_tracing.sampler.partial_granularity.enabled": True,
             "distributed_tracing.sampler.partial_granularity.type": "reduced",
-            "distributed_tracing.sampler.partial_granularity.remote_parent_sampled": "always_on",
+            "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "always_on",
             "span_events.enabled": True,
         }
     )(_test)
@@ -1026,7 +1026,7 @@ def test_partial_granularity_essential_span_attributes():
             "distributed_tracing.sampler.full_granularity.enabled": False,
             "distributed_tracing.sampler.partial_granularity.enabled": True,
             "distributed_tracing.sampler.partial_granularity.type": "essential",
-            "distributed_tracing.sampler.partial_granularity.remote_parent_sampled": "always_on",
+            "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "always_on",
             "span_events.enabled": True,
         }
     )(_test)

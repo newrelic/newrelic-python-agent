@@ -338,10 +338,44 @@ class DistributedTracingSamplerSettings(Settings):
 
 
 class DistributedTracingSamplerFullGranularitySettings(Settings):
+    _remote_parent_sampled = "default"
+    _remote_parent_not_sampled = "default"
+
+
+class DistributedTracingSamplerFullGranularityRemoteParentSampledSettings:
+    pass
+
+
+class DistributedTracingSamplerFullGranularityRemoteParentSampledAdaptiveSettings:
+    pass
+
+
+class DistributedTracingSamplerFullGranularityRemoteParentNotSampledSettings:
+    pass
+
+
+class DistributedTracingSamplerFullGranularityRemoteParentNotSampledAdaptiveSettings:
     pass
 
 
 class DistributedTracingSamplerPartialGranularitySettings(Settings):
+    _remote_parent_sampled = "default"
+    _remote_parent_not_sampled = "default"
+
+
+class DistributedTracingSamplerPartialGranularityRemoteParentSampledSettings:
+    pass
+
+
+class DistributedTracingSamplerPartialGranularityRemoteParentSampledAdaptiveSettings:
+    pass
+
+
+class DistributedTracingSamplerPartialGranularityRemoteParentNotSampledSettings:
+    pass
+
+
+class DistributedTracingSamplerPartialGranularityRemoteParentNotSampledAdaptiveSettings:
     pass
 
 
@@ -516,7 +550,15 @@ _settings.debug = DebugSettings()
 _settings.distributed_tracing = DistributedTracingSettings()
 _settings.distributed_tracing.sampler = DistributedTracingSamplerSettings()
 _settings.distributed_tracing.sampler.full_granularity = DistributedTracingSamplerFullGranularitySettings()
+_settings.distributed_tracing.sampler.full_granularity.remote_parent_sampled = DistributedTracingSamplerFullGranularityRemoteParentSampledSettings()
+_settings.distributed_tracing.sampler.full_granularity.remote_parent_sampled.adaptive = DistributedTracingSamplerFullGranularityRemoteParentSampledAdaptiveSettings()
+_settings.distributed_tracing.sampler.full_granularity.remote_parent_not_sampled = DistributedTracingSamplerFullGranularityRemoteParentNotSampledSettings()
+_settings.distributed_tracing.sampler.full_granularity.remote_parent_not_sampled.adaptive = DistributedTracingSamplerFullGranularityRemoteParentNotSampledAdaptiveSettings()
 _settings.distributed_tracing.sampler.partial_granularity = DistributedTracingSamplerPartialGranularitySettings()
+_settings.distributed_tracing.sampler.partial_granularity.remote_parent_sampled = DistributedTracingSamplerPartialGranularityRemoteParentSampledSettings()
+_settings.distributed_tracing.sampler.partial_granularity.remote_parent_sampled.adaptive = DistributedTracingSamplerPartialGranularityRemoteParentSampledAdaptiveSettings()
+_settings.distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled = DistributedTracingSamplerPartialGranularityRemoteParentNotSampledSettings()
+_settings.distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.adaptive = DistributedTracingSamplerPartialGranularityRemoteParentNotSampledAdaptiveSettings()
 _settings.error_collector = ErrorCollectorSettings()
 _settings.error_collector.attributes = ErrorCollectorAttributesSettings()
 _settings.event_harvest_config = EventHarvestConfigSettings()
@@ -561,6 +603,8 @@ _settings.audit_log_file = os.environ.get("NEW_RELIC_AUDIT_LOG", None)
 def _environ_as_int(name, default=0):
     val = os.environ.get(name, default)
     try:
+        if default is None and val is None:
+            return None
         return int(val)
     except ValueError:
         return default
@@ -858,23 +902,35 @@ _settings.distributed_tracing.sampler.adaptive_sampling_target = _environ_as_int
 _settings.distributed_tracing.sampler.full_granularity.enabled = _environ_as_bool(
     "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_ENABLED", default=True
 )
-_settings.distributed_tracing.sampler.full_granularity.remote_parent_sampled = os.environ.get(
+_settings.distributed_tracing.sampler.full_granularity._remote_parent_sampled = ("adaptive" if os.environ.get("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_REMOTE_PARENT_SAMPLED_ADAPTIVE_SAMPLING_TARGET", None) else None) or os.environ.get(
     "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_REMOTE_PARENT_SAMPLED", None
 ) or os.environ.get("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_REMOTE_PARENT_SAMPLED", "default")
-_settings.distributed_tracing.sampler.full_granularity.remote_parent_not_sampled = os.environ.get(
+_settings.distributed_tracing.sampler.full_granularity.remote_parent_sampled.adaptive.sampling_target = _environ_as_int(
+    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_REMOTE_PARENT_SAMPLED_ADAPTIVE_SAMPLING_TARGET", None
+)
+_settings.distributed_tracing.sampler.full_granularity._remote_parent_not_sampled = ("adaptive" if os.environ.get("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_REMOTE_PARENT_NOT_SAMPLED_ADAPTIVE_SAMPLING_TARGET", None) else None) or os.environ.get(
     "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_REMOTE_PARENT_NOT_SAMPLED", None
 ) or os.environ.get("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_REMOTE_PARENT_NOT_SAMPLED", "default")
+_settings.distributed_tracing.sampler.full_granularity.remote_parent_not_sampled.adaptive.sampling_target = _environ_as_int(
+    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_REMOTE_PARENT_NOT_SAMPLED_ADAPTIVE_SAMPLING_TARGET", None
+)
 _settings.distributed_tracing.sampler.partial_granularity.enabled = _environ_as_bool(
     "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_ENABLED", default=False
 )
 _settings.distributed_tracing.sampler.partial_granularity.type = os.environ.get(
     "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_TYPE", "essential"
 )
-_settings.distributed_tracing.sampler.partial_granularity.remote_parent_sampled = os.environ.get(
+_settings.distributed_tracing.sampler.partial_granularity._remote_parent_sampled = ("adaptive" if os.environ.get("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_SAMPLED_ADAPTIVE_SAMPLING_TARGET", None) else None) or os.environ.get(
     "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_SAMPLED", "default"
 )
-_settings.distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled = os.environ.get(
+_settings.distributed_tracing.sampler.partial_granularity.remote_parent_sampled.adaptive.sampling_target = _environ_as_int(
+    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_SAMPLED_ADAPTIVE_SAMPLING_TARGET", None
+)
+_settings.distributed_tracing.sampler.partial_granularity._remote_parent_not_sampled = ("adaptive" if os.environ.get("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_NOT_SAMPLED_ADAPTIVE_SAMPLING_TARGET", None) else None) or os.environ.get(
     "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_NOT_SAMPLED", "default"
+)
+_settings.distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.adaptive.sampling_target = _environ_as_int(
+    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_NOT_SAMPLED_ADAPTIVE_SAMPLING_TARGET", None
 )
 _settings.distributed_tracing.exclude_newrelic_header = False
 _settings.span_events.enabled = _environ_as_bool("NEW_RELIC_SPAN_EVENTS_ENABLED", default=True)

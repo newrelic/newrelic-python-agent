@@ -337,7 +337,11 @@ def _process_dt_setting(section, option_p1, option_p2, getter):
         while True:
             if len(fields) == 1:
                 value = value1 or value2 or "default"
-                setattr(target, fields[0], value)
+                # Store the value at the underscored location so if option_p1 is
+                # distributed_tracing.sampler.full_granularity.remote_parent_sampled
+                # store it at location
+                # distributed_tracing.sampler.full_granularity._remote_parent_sampled
+                setattr(target, f"_{fields[0]}", value)
                 break
             target = getattr(target, fields[0])
             fields = fields[1].split(".", 1)
@@ -358,6 +362,90 @@ def _process_dt_setting(section, option_p1, option_p2, getter):
 
     except Exception:
         _raise_configuration_error(section, option_p1)
+
+
+def _process_dt_hidden_setting(section, option, getter):
+    try:
+        # The type of a value is dictated by the getter
+        # function supplied.
+
+        value = getattr(_config_object, getter)(section, option)
+
+        # Now need to apply the option from the
+        # configuration file to the internal settings
+        # object. Walk the object path and assign it.
+
+        target = _settings
+        fields = option.split(".", 1)
+
+        while True:
+            if len(fields) == 1:
+                value = value or "default"
+                # Store the value at the underscored location so if option is
+                # distributed_tracing.sampler.full_granularity.remote_parent_sampled
+                # store it at location
+                # distributed_tracing.sampler.full_granularity._remote_parent_sampled
+                setattr(target, f"_{fields[0]}", value)
+                break
+            target = getattr(target, fields[0])
+            fields = fields[1].split(".", 1)
+
+        # Cache the configuration so can be dumped out to
+        # log file when whole main configuration has been
+        # processed. This ensures that the log file and log
+        # level entries have been set.
+
+        _cache_object.append((option, value))
+
+    except configparser.NoSectionError:
+        pass
+
+    except configparser.NoOptionError:
+        pass
+
+    except Exception:
+        _raise_configuration_error(section, option)
+
+def _process_dt_sampler_setting(section, option, getter):
+    try:
+        # The type of a value is dictated by the getter
+        # function supplied.
+
+        value = getattr(_config_object, getter)(section, option)
+
+        # Now need to apply the option from the
+        # configuration file to the internal settings
+        # object. Walk the object path and assign it.
+
+        target = _settings
+        fields = option.split(".", 1)
+
+        while True:
+            if len(fields) == 1:
+                setattr(target, f"{fields[0]}", value)
+                break
+            elif fields[0] in ("root", "remote_parent_sampled", "remote_parent_not_sampled"):
+                sampler = fields[1].split(".", 1)[0]
+                setattr(target, f"_{fields[0]}", sampler)
+            target = getattr(target, fields[0])
+            fields = fields[1].split(".", 1)
+
+
+        # Cache the configuration so can be dumped out to
+        # log file when whole main configuration has been
+        # processed. This ensures that the log file and log
+        # level entries have been set.
+
+        _cache_object.append((option, value))
+
+    except configparser.NoSectionError:
+        pass
+
+    except configparser.NoOptionError:
+        pass
+
+    except Exception:
+        _raise_configuration_error(section, option)
 
 
 # Processing of all the settings for specified section except
@@ -452,17 +540,37 @@ def _process_configuration(section):
         "distributed_tracing.sampler.remote_parent_sampled",
         "get",
     )
+    _process_dt_sampler_setting(
+        section,
+        "distributed_tracing.sampler.full_granularity.remote_parent_sampled.adaptive.sampling_target",
+        "getint",
+    )
     _process_dt_setting(
         section,
         "distributed_tracing.sampler.full_granularity.remote_parent_not_sampled",
         "distributed_tracing.sampler.remote_parent_not_sampled",
         "get",
     )
+    _process_dt_sampler_setting(
+        section,
+        "distributed_tracing.sampler.full_granularity.remote_parent_not_sampled.adaptive.sampling_target",
+        "getint",
+    )
     _process_setting(section, "distributed_tracing.sampler.full_granularity.enabled", "getboolean", None)
     _process_setting(section, "distributed_tracing.sampler.partial_granularity.enabled", "getboolean", None)
     _process_setting(section, "distributed_tracing.sampler.partial_granularity.type", "get", None)
-    _process_setting(section, "distributed_tracing.sampler.partial_granularity.remote_parent_sampled", "get", None)
-    _process_setting(section, "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled", "get", None)
+    _process_dt_hidden_setting(section, "distributed_tracing.sampler.partial_granularity.remote_parent_sampled", "get")
+    _process_dt_sampler_setting(
+        section,
+        "distributed_tracing.sampler.partial_granularity.remote_parent_sampled.adaptive.sampling_target",
+        "getint",
+    )
+    _process_dt_hidden_setting(section, "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled", "get")
+    _process_dt_sampler_setting(
+        section,
+        "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.adaptive.sampling_target",
+        "getint",
+    )
     _process_setting(section, "span_events.enabled", "getboolean", None)
     _process_setting(section, "span_events.max_samples_stored", "getint", None)
     _process_setting(section, "span_events.attributes.enabled", "getboolean", None)

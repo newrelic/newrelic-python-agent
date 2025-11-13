@@ -661,7 +661,7 @@ def _create_error_chain_run_events(transaction, instance, run_args, completion_i
             "response.number_of_messages": len(input_message_list),
             "tags": tags,
             "error": True,
-            "timestamp": run_args.get("timestamp") or None
+            "timestamp": run_args.get("timestamp") or None,
         }
     )
     full_chat_completion_summary_dict.update(llm_metadata_dict)
@@ -740,7 +740,7 @@ def _create_successful_chain_run_events(
             "duration": duration,
             "response.number_of_messages": len(input_message_list) + len(output_message_list),
             "tags": tags,
-            "timestamp": run_args.get("timestamp") or None
+            "timestamp": run_args.get("timestamp") or None,
         }
     )
 

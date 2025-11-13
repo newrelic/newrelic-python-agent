@@ -1048,6 +1048,10 @@ def extract_bedrock_converse_attrs(kwargs, response, response_headers, model, sp
     response_completion_tokens = response.get("usage", {}).get("outputTokens") if response else None
     response_total_tokens = response.get("usage", {}).get("totalTokens") if response else None
 
+    response_prompt_tokens = response.get("usage", {}).get("inputTokens") if response else None
+    response_completion_tokens = response.get("usage", {}).get("outputTokens") if response else None
+    response_total_tokens = response.get("usage", {}).get("totalTokens") if response else None
+
     bedrock_attrs = {
         "request_id": response_headers.get("x-amzn-requestid"),
         "model": model,

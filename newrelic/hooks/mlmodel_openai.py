@@ -570,6 +570,8 @@ def _record_completion_success(
         }
         llm_metadata = _get_llm_attributes(transaction)
         full_chat_completion_summary_dict.update(llm_metadata)
+        if request_timestamp:
+            full_chat_completion_summary_dict["timestamp"] = request_timestamp
         transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
 
         create_chat_completion_message_event(
@@ -654,6 +656,8 @@ def _record_completion_error(transaction, linking_metadata, completion_id, kwarg
         }
         llm_metadata = _get_llm_attributes(transaction)
         error_chat_completion_dict.update(llm_metadata)
+        if request_timestamp:
+            error_chat_completion_dict["timestamp"] = request_timestamp
         transaction.record_custom_event("LlmChatCompletionSummary", error_chat_completion_dict)
 
         output_message_list = []

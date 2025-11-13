@@ -106,7 +106,7 @@ class AsgiTest:
             if self.response_state is ResponseState.NOT_STARTED:
                 assert message["type"] == "http.response.start"
                 response_status = message["status"]
-                response_headers = message.get("headers", response_headers)
+                response_headers = list(message.get("headers", response_headers))
                 self.response_state = ResponseState.BODY
             elif self.response_state is ResponseState.BODY:
                 assert message["type"] == "http.response.body"

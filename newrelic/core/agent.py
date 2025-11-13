@@ -581,9 +581,9 @@ class Agent:
 
         return application.normalize_name(name, rule_type)
 
-    def compute_sampled(self, app_name):
+    def compute_sampled(self, app_name, full_granularity, section, *args, **kwargs):
         application = self._applications.get(app_name, None)
-        return application.compute_sampled()
+        return application.compute_sampled(full_granularity, section, *args, **kwargs)
 
     def _harvest_shutdown_is_set(self):
         try:

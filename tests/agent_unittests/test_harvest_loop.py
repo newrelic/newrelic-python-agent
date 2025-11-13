@@ -542,15 +542,15 @@ def test_adaptive_sampling(transaction_node, monkeypatch):
     app = Application("Python Agent Test (Harvest Loop)")
 
     # Should always return false for sampling prior to connect
-    assert app.compute_sampled() is False
+    assert app.compute_sampled(True, 0) is False
 
     app.connect_to_data_collector(None)
 
     # First harvest, first N should be sampled
     for _ in range(settings.sampling_target):
-        assert app.compute_sampled() is True
+        assert app.compute_sampled(True, 0) is True
 
-    assert app.compute_sampled() is False
+    assert app.compute_sampled(True, 0) is False
 
     # fix random.randrange to return 0
     monkeypatch.setattr(random, "randrange", lambda *args, **kwargs: 0)
@@ -558,14 +558,14 @@ def test_adaptive_sampling(transaction_node, monkeypatch):
     # Multiple resets should behave the same
     for _ in range(2):
         # Set the last_reset to longer than the period so a reset will occur.
-        app.adaptive_sampler.last_reset = time.time() - app.adaptive_sampler.period
+        app.sampler.get_sampler(True, 0).last_reset = time.time() - app.sampler.get_sampler(True, 0).period
 
         # Subsequent harvests should allow sampling of 2X the target
         for _ in range(2 * settings.sampling_target):
-            assert app.compute_sampled() is True
+            assert app.compute_sampled(True, 0) is True
 
         # No further samples should be saved
-        assert app.compute_sampled() is False
+        assert app.compute_sampled(True, 0) is False
 
 
 @override_generic_settings(
@@ -709,20 +709,20 @@ def test_serverless_mode_adaptive_sampling(time_to_next_reset, computed_count, c
     app = Application("Python Agent Test (Harvest Loop)")
 
     app.connect_to_data_collector(None)
-    app.adaptive_sampler.computed_count = 123
-    app.adaptive_sampler.last_reset = time.time() - 60 + time_to_next_reset
+    app.sampler.get_sampler(True, 0).computed_count = 123
+    app.sampler.get_sampler(True, 0).last_reset = time.time() - 60 + time_to_next_reset
 
-    assert app.compute_sampled() is True
-    assert app.adaptive_sampler.computed_count == computed_count
-    assert app.adaptive_sampler.computed_count_last == computed_count_last
+    assert app.compute_sampled(True, 0) is True
+    assert app.sampler.get_sampler(True, 0).computed_count == computed_count
+    assert app.sampler.get_sampler(True, 0).computed_count_last == computed_count_last
 
 
-@validate_function_not_called("newrelic.core.adaptive_sampler", "AdaptiveSampler._reset")
+@validate_function_not_called("newrelic.core.samplers.adaptive_sampler", "AdaptiveSampler._reset")
 @override_generic_settings(settings, {"developer_mode": True})
 def test_compute_sampled_no_reset():
     app = Application("Python Agent Test (Harvest Loop)")
     app.connect_to_data_collector(None)
-    assert app.compute_sampled() is True
+    assert app.compute_sampled(True, 0) is True
 
 
 def test_analytic_event_sampling_info():

@@ -41,7 +41,7 @@ class MockedModelProvider(Model):
     def format_chunk(self, event):
         return event
 
-    def format_request(self, messages, tool_specs=None, system_prompt=None):
+    def format_request(self, messages, tool_specs=None, system_prompt=None, **kwargs):
         return None
 
     def get_config(self):
@@ -53,7 +53,7 @@ class MockedModelProvider(Model):
     async def structured_output(self, output_model, prompt, system_prompt=None, **kwargs):
         pass
 
-    async def stream(self, messages, tool_specs=None, system_prompt=None):
+    async def stream(self, messages, tool_specs=None, system_prompt=None, **kwargs):
         events = self.map_agent_message_to_events(self.agent_responses[self.index])
         for event in events:
             yield event

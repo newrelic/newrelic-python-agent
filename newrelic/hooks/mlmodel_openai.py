@@ -567,7 +567,7 @@ def _record_completion_success(
                 response_headers, "x-ratelimit-remaining-tokens_usage_based", True
             ),
             "response.number_of_messages": len(input_message_list) + len(output_message_list),
-            "timestamp": request_timestamp or None
+            "timestamp": request_timestamp or None,
         }
         llm_metadata = _get_llm_attributes(transaction)
         full_chat_completion_summary_dict.update(llm_metadata)
@@ -652,7 +652,7 @@ def _record_completion_error(transaction, linking_metadata, completion_id, kwarg
             "response.organization": exc_organization,
             "duration": ft.duration * 1000,
             "error": True,
-            "timestamp": request_timestamp or None
+            "timestamp": request_timestamp or None,
         }
         llm_metadata = _get_llm_attributes(transaction)
         error_chat_completion_dict.update(llm_metadata)

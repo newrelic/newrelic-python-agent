@@ -593,11 +593,11 @@ def test_distributed_trace_remote_parent_sampling_decision_full_granularity(
     )
     if expected_adaptive_sampling_algo_called:
         function_called_decorator = validate_function_called(
-            "newrelic.core.adaptive_sampler", "AdaptiveSampler.compute_sampled"
+            "newrelic.core.samplers.adaptive_sampler", "AdaptiveSampler.compute_sampled"
         )
     else:
         function_called_decorator = validate_function_not_called(
-            "newrelic.core.adaptive_sampler", "AdaptiveSampler.compute_sampled"
+            "newrelic.core.samplers.adaptive_sampler", "AdaptiveSampler.compute_sampled"
         )
 
     @function_called_decorator
@@ -684,11 +684,11 @@ def test_distributed_trace_remote_parent_sampling_decision_partial_granularity(
     )
     if expected_adaptive_sampling_algo_called:
         function_called_decorator = validate_function_called(
-            "newrelic.core.adaptive_sampler", "AdaptiveSampler.compute_sampled"
+            "newrelic.core.samplers.adaptive_sampler", "AdaptiveSampler.compute_sampled"
         )
     else:
         function_called_decorator = validate_function_not_called(
-            "newrelic.core.adaptive_sampler", "AdaptiveSampler.compute_sampled"
+            "newrelic.core.samplers.adaptive_sampler", "AdaptiveSampler.compute_sampled"
         )
 
     @function_called_decorator
@@ -752,11 +752,11 @@ def test_distributed_trace_remote_parent_sampling_decision_between_full_and_part
     )
     if expected_adaptive_sampling_algo_called:
         function_called_decorator = validate_function_called(
-            "newrelic.core.adaptive_sampler", "AdaptiveSampler.compute_sampled"
+            "newrelic.core.samplers.adaptive_sampler", "AdaptiveSampler.compute_sampled"
         )
     else:
         function_called_decorator = validate_function_not_called(
-            "newrelic.core.adaptive_sampler", "AdaptiveSampler.compute_sampled"
+            "newrelic.core.samplers.adaptive_sampler", "AdaptiveSampler.compute_sampled"
         )
 
     @function_called_decorator

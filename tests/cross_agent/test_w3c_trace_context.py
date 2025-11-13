@@ -161,7 +161,7 @@ test_application = webtest.TestApp(target_wsgi_application)
 
 
 def override_compute_sampled(override):
-    @transient_function_wrapper("newrelic.core.adaptive_sampler", "AdaptiveSampler.compute_sampled")
+    @transient_function_wrapper("newrelic.core.samplers.adaptive_sampler", "AdaptiveSampler.compute_sampled")
     def _override_compute_sampled(wrapped, instance, args, kwargs):
         if override:
             return True

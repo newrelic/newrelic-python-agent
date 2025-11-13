@@ -19,6 +19,7 @@ import traceback
 import uuid
 
 import openai
+import time
 
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import get_trace_linking_metadata
@@ -84,6 +85,8 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     if (kwargs.get("extra_headers") or {}).get("X-Stainless-Raw-Response") == "stream":
         return wrapped(*args, **kwargs)
 
+    request_timestamp = int(1000.0 * time.time())
+
     settings = transaction.settings if transaction.settings is not None else global_settings()
     if not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
@@ -100,9 +103,10 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     try:
         return_val = wrapped(*args, **kwargs)
     except Exception as exc:
-        _record_completion_error(transaction, linking_metadata, completion_id, kwargs, ft, exc)
+        _record_completion_error(transaction, linking_metadata, completion_id, kwargs, ft, exc, request_timestamp)
         raise
-    _handle_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val)
+
+    _handle_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val, request_timestamp)
     return return_val
 
 
@@ -134,6 +138,7 @@ def create_chat_completion_message_event(
     request_id,
     llm_metadata,
     output_message_list,
+    request_timestamp=None,
 ):
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
@@ -168,6 +173,8 @@ def create_chat_completion_message_event(
 
         if settings.ai_monitoring.record_content.enabled:
             chat_completion_input_message_dict["content"] = message_content
+        if request_timestamp:
+            chat_completion_input_message_dict["timestamp"] = request_timestamp
 
         chat_completion_input_message_dict.update(llm_metadata)
 
@@ -403,6 +410,8 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
     if (kwargs.get("extra_headers") or {}).get("X-Stainless-Raw-Response") == "stream":
         return await wrapped(*args, **kwargs)
 
+    request_timestamp = int(1000.0 * time.time())
+
     settings = transaction.settings if transaction.settings is not None else global_settings()
     if not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
@@ -419,14 +428,14 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
     try:
         return_val = await wrapped(*args, **kwargs)
     except Exception as exc:
-        _record_completion_error(transaction, linking_metadata, completion_id, kwargs, ft, exc)
+        _record_completion_error(transaction, linking_metadata, completion_id, kwargs, ft, exc, request_timestamp)
         raise
 
-    _handle_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val)
+    _handle_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val, request_timestamp)
     return return_val
 
 
-def _handle_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val):
+def _handle_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val, request_timestamp=None):
     settings = transaction.settings if transaction.settings is not None else global_settings()
     stream = kwargs.get("stream", False)
     # Only if streaming and streaming monitoring is enabled and the response is not empty
@@ -469,12 +478,12 @@ def _handle_completion_success(transaction, linking_metadata, completion_id, kwa
                 # openai._legacy_response.LegacyAPIResponse
                 response = json.loads(response.http_response.text.strip())
 
-        _record_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, response_headers, response)
+        _record_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, response_headers, response, request_timestamp)
     except Exception:
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
 
-def _record_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, response_headers, response):
+def _record_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, response_headers, response, request_timestamp=None):
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
     try:
@@ -569,12 +578,13 @@ def _record_completion_success(transaction, linking_metadata, completion_id, kwa
             request_id,
             llm_metadata,
             output_message_list,
+            request_timestamp,
         )
     except Exception:
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
 
-def _record_completion_error(transaction, linking_metadata, completion_id, kwargs, ft, exc):
+def _record_completion_error(transaction, linking_metadata, completion_id, kwargs, ft, exc, request_timestamp=None):
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
     request_message_list = kwargs.get("messages", None) or []
@@ -655,6 +665,7 @@ def _record_completion_error(transaction, linking_metadata, completion_id, kwarg
             request_id,
             llm_metadata,
             output_message_list,
+            request_timestamp,
         )
     except Exception:
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))

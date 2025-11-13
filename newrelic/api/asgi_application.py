@@ -232,7 +232,13 @@ class ASGIWebTransaction(WebTransaction):
             finally:
                 self.__exit__(*sys.exc_info())
         elif event["type"] == "http.response.start":
-            self.process_response(event["status"], event.get("headers", ()))
+            # event["headers"] may be a generator, and consuming it via process_response will leave the original
+            # ASGI application with no headers. Fix this by preserving them in a list before consuming them.
+            if "headers" in event:
+                event["headers"] = headers = list(event["headers"])
+            else:
+                headers = []
+            self.process_response(event["status"], headers)
         return await self._send(event)
 
 

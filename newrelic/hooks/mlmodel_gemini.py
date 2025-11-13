@@ -344,6 +344,7 @@ def _record_generation_error(transaction, linking_metadata, completion_id, kwarg
             "ingest_source": "Python",
             "duration": ft.duration * 1000,
             "error": True,
+            "timestamp": kwargs.get("timestamp") or None,
         }
         llm_metadata = _get_llm_attributes(transaction)
         error_chat_completion_dict.update(llm_metadata)
@@ -442,6 +443,7 @@ def _record_generation_success(transaction, linking_metadata, completion_id, kwa
             # message This value should be 2 in almost all cases since we will report a summary event for each
             # separate request (every input and output from the LLM)
             "response.number_of_messages": 1 + len(output_message_list),
+            "timestamp": kwargs.get("timestamp") or None,
         }
 
         llm_metadata = _get_llm_attributes(transaction)

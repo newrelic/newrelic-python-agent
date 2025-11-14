@@ -132,10 +132,20 @@ class ASGIBrowserMiddleware:
 
         message_type = message["type"]
         if message_type == "http.response.start" and not self.initial_message:
-            headers = list(message.get("headers", ()))
+            # message["headers"] may be a generator, and consuming it via process_response will leave the original
+            # application with no headers. Fix this by preserving them in a list before consuming them.
+            if "headers" in message:
+                message["headers"] = headers = list(message["headers"])
+            else:
+                headers = []
+
+            # Check if we should insert the HTML snippet based on the headers.
+            # Currently if there are no headers this will always be False, but call the function
+            # anyway in case this logic changes in the future.
             if not self.should_insert_html(headers):
                 await self.abort()
                 return
+
             message["headers"] = headers
             self.initial_message = message
         elif message_type == "http.response.body" and self.initial_message:
@@ -232,7 +242,13 @@ class ASGIWebTransaction(WebTransaction):
             finally:
                 self.__exit__(*sys.exc_info())
         elif event["type"] == "http.response.start":
-            self.process_response(event["status"], event.get("headers", ()))
+            # event["headers"] may be a generator, and consuming it via process_response will leave the original
+            # ASGI application with no headers. Fix this by preserving them in a list before consuming them.
+            if "headers" in event:
+                event["headers"] = headers = list(event["headers"])
+            else:
+                headers = []
+            self.process_response(event["status"], headers)
         return await self._send(event)
 
 

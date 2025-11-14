@@ -19,6 +19,7 @@ from testing_support.asgi_testing import AsgiTest
 from testing_support.fixtures import override_application_settings
 from testing_support.sample_asgi_applications import (
     AppWithDescriptor,
+    asgi_application_generator_headers,
     simple_app_v2,
     simple_app_v2_init_exc,
     simple_app_v2_raw,
@@ -37,6 +38,7 @@ simple_app_v3_original = AsgiTest(simple_app_v3_raw)
 simple_app_v3_wrapped = AsgiTest(simple_app_v3)
 simple_app_v2_wrapped = AsgiTest(simple_app_v2)
 simple_app_v2_init_exc = AsgiTest(simple_app_v2_init_exc)
+asgi_application_generator_headers = AsgiTest(asgi_application_generator_headers)
 
 
 # Test naming scheme logic and ASGIApplicationWrapper for a single callable
@@ -83,6 +85,28 @@ def test_double_callable_raw():
     assert response.status == 200
     assert response.headers == {}
     assert response.body == b""
+
+
+# Ensure headers object is preserved
+@pytest.mark.parametrize("browser_monitoring", [True, False])
+@validate_transaction_metrics(name="", group="Uri")
+def test_generator_headers(browser_monitoring):
+    """
+    Both ASGIApplicationWrapper and ASGIBrowserMiddleware can cause headers to be lost if generators are
+    not handled properly.
+
+    Ensure neither destroys headers by testing with and without the ASGIBrowserMiddleware, to make sure whichever
+    receives headers first properly preserves them in a list.
+    """
+
+    @override_application_settings({"browser_monitoring.enabled": browser_monitoring})
+    def _test():
+        response = asgi_application_generator_headers.make_request("GET", "/")
+        assert response.status == 200
+        assert response.headers == {"x-my-header": "myvalue"}
+        assert response.body == b""
+
+    _test()
 
 
 # Test asgi_application decorator with parameters passed in on a single callable

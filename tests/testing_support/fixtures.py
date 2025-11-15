@@ -1048,7 +1048,7 @@ def override_application_name(app_name):
 
 @function_wrapper
 def dt_enabled(wrapped, instance, args, kwargs):
-    @transient_function_wrapper("newrelic.core.adaptive_sampler", "AdaptiveSampler.compute_sampled")
+    @transient_function_wrapper("newrelic.core.samplers.adaptive_sampler", "AdaptiveSampler.compute_sampled")
     def force_sampled(wrapped, instance, args, kwargs):
         wrapped(*args, **kwargs)
         return True

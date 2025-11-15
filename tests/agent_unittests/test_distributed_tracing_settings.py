@@ -146,9 +146,14 @@ def test_full_granularity_precedence(ini, env, global_settings, expected):
 
     assert app_settings.distributed_tracing.sampler.full_granularity._remote_parent_sampled == expected[0]
     assert app_settings.distributed_tracing.sampler.full_granularity._remote_parent_not_sampled == expected[1]
-    assert app_settings.distributed_tracing.sampler.full_granularity.remote_parent_sampled.adaptive.sampling_target == expected[2]
-    assert app_settings.distributed_tracing.sampler.full_granularity.remote_parent_not_sampled.adaptive.sampling_target == expected[3]
-
+    assert (
+        app_settings.distributed_tracing.sampler.full_granularity.remote_parent_sampled.adaptive.sampling_target
+        == expected[2]
+    )
+    assert (
+        app_settings.distributed_tracing.sampler.full_granularity.remote_parent_not_sampled.adaptive.sampling_target
+        == expected[3]
+    )
 
 
 @pytest.mark.parametrize(
@@ -209,5 +214,11 @@ def test_partial_granularity_precedence(ini, env, global_settings, expected):
 
     assert app_settings.distributed_tracing.sampler.partial_granularity._remote_parent_sampled == expected[0]
     assert app_settings.distributed_tracing.sampler.partial_granularity._remote_parent_not_sampled == expected[1]
-    assert app_settings.distributed_tracing.sampler.partial_granularity.remote_parent_sampled.adaptive.sampling_target == expected[2]
-    assert app_settings.distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.adaptive.sampling_target == expected[3]
+    assert (
+        app_settings.distributed_tracing.sampler.partial_granularity.remote_parent_sampled.adaptive.sampling_target
+        == expected[2]
+    )
+    assert (
+        app_settings.distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.adaptive.sampling_target
+        == expected[3]
+    )

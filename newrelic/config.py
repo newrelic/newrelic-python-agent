@@ -406,6 +406,7 @@ def _process_dt_hidden_setting(section, option, getter):
     except Exception:
         _raise_configuration_error(section, option)
 
+
 def _process_dt_sampler_setting(section, option, getter):
     try:
         # The type of a value is dictated by the getter
@@ -429,7 +430,6 @@ def _process_dt_sampler_setting(section, option, getter):
                 setattr(target, f"_{fields[0]}", sampler)
             target = getattr(target, fields[0])
             fields = fields[1].split(".", 1)
-
 
         # Cache the configuration so can be dumped out to
         # log file when whole main configuration has been
@@ -541,9 +541,7 @@ def _process_configuration(section):
         "get",
     )
     _process_dt_sampler_setting(
-        section,
-        "distributed_tracing.sampler.full_granularity.remote_parent_sampled.adaptive.sampling_target",
-        "getint",
+        section, "distributed_tracing.sampler.full_granularity.remote_parent_sampled.adaptive.sampling_target", "getint"
     )
     _process_dt_setting(
         section,
@@ -565,7 +563,9 @@ def _process_configuration(section):
         "distributed_tracing.sampler.partial_granularity.remote_parent_sampled.adaptive.sampling_target",
         "getint",
     )
-    _process_dt_hidden_setting(section, "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled", "get")
+    _process_dt_hidden_setting(
+        section, "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled", "get"
+    )
     _process_dt_sampler_setting(
         section,
         "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.adaptive.sampling_target",

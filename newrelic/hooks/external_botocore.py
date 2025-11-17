@@ -576,9 +576,9 @@ def handle_bedrock_exception(
         }
 
         if is_embedding:
-            notice_error_attributes.update({"embedding_id": str(uuid.uuid4())})
+            notice_error_attributes["embedding_id"] = str(uuid.uuid4())
         else:
-            notice_error_attributes.update({"completion_id": str(uuid.uuid4())})
+            notice_error_attributes["completion_id"] = str(uuid.uuid4())
 
         if ft:
             ft.notice_error(attributes=notice_error_attributes)
@@ -766,7 +766,7 @@ def wrap_bedrock_runtime_converse(response_streaming=False):
         if not transaction:
             return wrapped(*args, **kwargs)
 
-        settings = transaction.settings or global_settings
+        settings = transaction.settings or global_settings()
         if not settings.ai_monitoring.enabled:
             return wrapped(*args, **kwargs)
 
@@ -919,7 +919,7 @@ class BedrockRecordEventMixin:
                     "error.message": error_attributes.get("error.message"),
                     "error.code": error_attributes.get("error.code"),
                 }
-                notice_error_attributes.update({"completion_id": str(uuid.uuid4())})
+                notice_error_attributes["completion_id"] = str(uuid.uuid4())
 
                 ft.notice_error(attributes=notice_error_attributes)
 

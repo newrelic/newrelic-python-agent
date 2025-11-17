@@ -850,17 +850,20 @@ def wrap_bedrock_runtime_converse(response_streaming=False):
 
 def extract_bedrock_converse_attrs(kwargs, response, response_headers, model, span_id, trace_id):
     input_message_list = []
-    output_message_list = None
     # If a system message is supplied, it is under its own key in kwargs rather than with the other input messages
     if "system" in kwargs.keys():
         input_message_list.extend({"role": "system", "content": result["text"]} for result in kwargs.get("system", []))
 
     # kwargs["messages"] can hold multiple requests and responses to maintain conversation history
     # We grab the last message (the newest request) in the list each time, so we don't duplicate recorded data
+    _input_messages = kwargs.get("messages", [])
+    _input_messages = _input_messages and (_input_messages[-1] or {})
+    _input_messages = _input_messages.get("content", [])
     input_message_list.extend(
-        [{"role": "user", "content": result["text"]} for result in kwargs["messages"][-1].get("content", [])]
+        [{"role": "user", "content": result["text"]} for result in _input_messages if "text" in result]
     )
 
+    output_message_list = None
     if "output" in response:
         output_message_list = [
             {"role": "assistant", "content": result["text"]}

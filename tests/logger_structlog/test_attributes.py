@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
+
 import pytest
 from testing_support.validators.validate_log_event_count import validate_log_event_count
 from testing_support.validators.validate_log_events import validate_log_events
@@ -23,12 +25,18 @@ from newrelic.api.background_task import background_task
 def logger(structlog_caplog):
     import structlog
 
+    # For Python < 3.11 co_qualname does not exist and causes errors.
+    # Remove it from the CallsiteParameterAdder input list.
+    _callsite_params = set(structlog.processors.CallsiteParameter)
+    if sys.version_info < (3, 11) and hasattr(structlog.processors.CallsiteParameter, "QUAL_NAME"):
+        _callsite_params.remove(structlog.processors.CallsiteParameter.QUAL_NAME)
+
     structlog.configure(
         processors=[
             structlog.contextvars.merge_contextvars,
             structlog.processors.format_exc_info,
             structlog.processors.StackInfoRenderer(),
-            structlog.processors.CallsiteParameterAdder(),
+            structlog.processors.CallsiteParameterAdder(parameters=_callsite_params),
         ],
         logger_factory=lambda *args, **kwargs: structlog_caplog,
     )

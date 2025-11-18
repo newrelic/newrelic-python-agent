@@ -26,6 +26,7 @@ from testing_support.validators.validate_function_not_called import validate_fun
 from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
+from newrelic.api.application import application_instance
 from newrelic.api.function_trace import function_trace
 from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
 
@@ -586,8 +587,8 @@ def test_distributed_trace_remote_parent_sampling_decision_full_granularity(
     test_settings = _override_settings.copy()
     test_settings.update(
         {
-            "distributed_tracing.sampler.full_granularity.remote_parent_sampled": remote_parent_sampled_setting,
-            "distributed_tracing.sampler.full_granularity.remote_parent_not_sampled": remote_parent_not_sampled_setting,
+            "distributed_tracing.sampler.full_granularity._remote_parent_sampled": remote_parent_sampled_setting,
+            "distributed_tracing.sampler.full_granularity._remote_parent_not_sampled": remote_parent_not_sampled_setting,
             "span_events.enabled": True,
         }
     )
@@ -677,8 +678,8 @@ def test_distributed_trace_remote_parent_sampling_decision_partial_granularity(
         {
             "distributed_tracing.sampler.full_granularity.enabled": False,
             "distributed_tracing.sampler.partial_granularity.enabled": True,
-            "distributed_tracing.sampler.partial_granularity.remote_parent_sampled": remote_parent_sampled_setting,
-            "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled": remote_parent_not_sampled_setting,
+            "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": remote_parent_sampled_setting,
+            "distributed_tracing.sampler.partial_granularity._remote_parent_not_sampled": remote_parent_not_sampled_setting,
             "span_events.enabled": True,
         }
     )
@@ -745,8 +746,8 @@ def test_distributed_trace_remote_parent_sampling_decision_between_full_and_part
         {
             "distributed_tracing.sampler.full_granularity.enabled": full_granularity_enabled,
             "distributed_tracing.sampler.partial_granularity.enabled": partial_granularity_enabled,
-            "distributed_tracing.sampler.full_granularity.remote_parent_sampled": full_granularity_remote_parent_sampled_setting,
-            "distributed_tracing.sampler.partial_granularity.remote_parent_sampled": partial_granularity_remote_parent_sampled_setting,
+            "distributed_tracing.sampler.full_granularity._remote_parent_sampled": full_granularity_remote_parent_sampled_setting,
+            "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": partial_granularity_remote_parent_sampled_setting,
             "span_events.enabled": True,
         }
     )
@@ -815,7 +816,7 @@ def test_partial_granularity_max_compressed_spans():
             "distributed_tracing.sampler.full_granularity.enabled": False,
             "distributed_tracing.sampler.partial_granularity.enabled": True,
             "distributed_tracing.sampler.partial_granularity.type": "compact",
-            "distributed_tracing.sampler.partial_granularity.remote_parent_sampled": "always_on",
+            "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "always_on",
             "span_events.enabled": True,
         }
     )(_test)
@@ -868,7 +869,7 @@ def test_partial_granularity_compressed_span_attributes_in_series():
             "distributed_tracing.sampler.full_granularity.enabled": False,
             "distributed_tracing.sampler.partial_granularity.enabled": True,
             "distributed_tracing.sampler.partial_granularity.type": "compact",
-            "distributed_tracing.sampler.partial_granularity.remote_parent_sampled": "always_on",
+            "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "always_on",
             "span_events.enabled": True,
         }
     )(_test)
@@ -918,7 +919,7 @@ def test_partial_granularity_compressed_span_attributes_overlapping():
             "distributed_tracing.sampler.full_granularity.enabled": False,
             "distributed_tracing.sampler.partial_granularity.enabled": True,
             "distributed_tracing.sampler.partial_granularity.type": "compact",
-            "distributed_tracing.sampler.partial_granularity.remote_parent_sampled": "always_on",
+            "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "always_on",
             "span_events.enabled": True,
         }
     )(_test)
@@ -972,7 +973,7 @@ def test_partial_granularity_reduced_span_attributes():
             "distributed_tracing.sampler.full_granularity.enabled": False,
             "distributed_tracing.sampler.partial_granularity.enabled": True,
             "distributed_tracing.sampler.partial_granularity.type": "reduced",
-            "distributed_tracing.sampler.partial_granularity.remote_parent_sampled": "always_on",
+            "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "always_on",
             "span_events.enabled": True,
         }
     )(_test)
@@ -1026,9 +1027,118 @@ def test_partial_granularity_essential_span_attributes():
             "distributed_tracing.sampler.full_granularity.enabled": False,
             "distributed_tracing.sampler.partial_granularity.enabled": True,
             "distributed_tracing.sampler.partial_granularity.type": "essential",
-            "distributed_tracing.sampler.partial_granularity.remote_parent_sampled": "always_on",
+            "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "always_on",
             "span_events.enabled": True,
         }
     )(_test)
+
+    _test()
+
+
+@pytest.mark.parametrize(
+    "dt_settings,dt_headers,expected_sampling_instance_called,expected_adaptive_computed_count,expected_adaptive_sampled_count,expected_adaptive_sampling_target",
+    (
+        (
+            {
+                "distributed_tracing.sampler.full_granularity.enabled": False,
+                "distributed_tracing.sampler.partial_granularity.enabled": True,
+                "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "default",
+                "distributed_tracing.sampler.partial_granularity.remote_parent_sampled.adaptive.sampling_target": 5,
+                "distributed_tracing.sampler.partial_granularity._remote_parent_not_sampled": "default",
+                "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.adaptive.sampling_target": 6,
+            },
+            {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01"},
+            (False, 1),
+            1,
+            1,
+            5,
+        ),
+        (
+            {
+                "distributed_tracing.sampler.full_granularity.enabled": False,
+                "distributed_tracing.sampler.partial_granularity.enabled": True,
+                "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "default",
+                "distributed_tracing.sampler.partial_granularity.remote_parent_sampled.adaptive.sampling_target": 5,
+                "distributed_tracing.sampler.partial_granularity._remote_parent_not_sampled": "default",
+                "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.adaptive.sampling_target": 6,
+            },
+            {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-00"},
+            (False, 2),
+            1,
+            1,
+            6,
+        ),
+        (
+            {
+                "distributed_tracing.sampler.full_granularity.enabled": True,
+                "distributed_tracing.sampler.partial_granularity.enabled": False,
+                "distributed_tracing.sampler.full_granularity._remote_parent_sampled": "default",
+                "distributed_tracing.sampler.full_granularity.remote_parent_sampled.adaptive.sampling_target": 5,
+                "distributed_tracing.sampler.full_granularity._remote_parent_not_sampled": "default",
+                "distributed_tracing.sampler.full_granularity.remote_parent_not_sampled.adaptive.sampling_target": 6,
+            },
+            {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01"},
+            (True, 1),
+            1,
+            1,
+            5,
+        ),
+        (
+            {
+                "distributed_tracing.sampler.full_granularity.enabled": True,
+                "distributed_tracing.sampler.partial_granularity.enabled": False,
+                "distributed_tracing.sampler.full_granularity._remote_parent_sampled": "default",
+                "distributed_tracing.sampler.full_granularity.remote_parent_sampled.adaptive.sampling_target": 5,
+                "distributed_tracing.sampler.full_granularity._remote_parent_not_sampled": "default",
+                "distributed_tracing.sampler.full_granularity.remote_parent_not_sampled.adaptive.sampling_target": 6,
+            },
+            {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-00"},
+            (True, 2),
+            1,
+            1,
+            6,
+        ),
+    ),
+)
+def test_distributed_trace_uses_sampling_instance(
+    dt_settings,
+    dt_headers,
+    expected_sampling_instance_called,
+    expected_adaptive_computed_count,
+    expected_adaptive_sampled_count,
+    expected_adaptive_sampling_target,
+):
+    test_settings = _override_settings.copy()
+    test_settings.update(dt_settings)
+    function_called_decorator = validate_function_called(
+        "newrelic.core.samplers.adaptive_sampler", "AdaptiveSampler.compute_sampled"
+    )
+
+    @function_called_decorator
+    @override_application_settings(test_settings)
+    @background_task(name="test_distributed_trace_attributes")
+    def _test():
+        txn = current_transaction()
+        application = txn._application._agent._applications.get(txn.settings.app_name)
+        # Re-initialize sampler proxy after overriding settings.
+        application.sampler.__init__(txn.settings)
+
+        accept_distributed_trace_headers(dt_headers)
+        # Explicitly call this so we can assert sampling decision during the transaction
+        # as opposed to after it ends and we lose the application context.
+        txn._make_sampling_decision()
+
+        assert (
+            application.sampler._samplers[expected_sampling_instance_called].computed_count
+            == expected_adaptive_computed_count
+        )
+        assert (
+            application.sampler._samplers[expected_sampling_instance_called].sampled_count
+            == expected_adaptive_sampled_count
+        )
+        assert (
+            application.sampler._samplers[expected_sampling_instance_called].sampling_target
+            == expected_adaptive_sampling_target
+        )
 
     _test()

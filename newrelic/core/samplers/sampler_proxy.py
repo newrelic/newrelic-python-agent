@@ -21,10 +21,41 @@ class SamplerProxy:
         else:
             sampling_target_period = settings.sampling_target_period_in_seconds
         adaptive_sampler = AdaptiveSampler(settings.sampling_target, sampling_target_period)
-        self._samplers = [adaptive_sampler]
+        self._samplers = {"global": adaptive_sampler}
+        # Add adaptive sampler instances for each config section if configured.
+        self.add_adaptive_sampler(
+            (True, 1),
+            settings.distributed_tracing.sampler.full_granularity.remote_parent_sampled.adaptive.sampling_target,
+            sampling_target_period,
+        )
+        self.add_adaptive_sampler(
+            (True, 2),
+            settings.distributed_tracing.sampler.full_granularity.remote_parent_not_sampled.adaptive.sampling_target,
+            sampling_target_period,
+        )
+        self.add_adaptive_sampler(
+            (False, 1),
+            settings.distributed_tracing.sampler.partial_granularity.remote_parent_sampled.adaptive.sampling_target,
+            sampling_target_period,
+        )
+        self.add_adaptive_sampler(
+            (False, 2),
+            settings.distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.adaptive.sampling_target,
+            sampling_target_period,
+        )
+
+    def add_adaptive_sampler(self, key, sampling_target, sampling_target_period):
+        """
+        Add an adaptive sampler instance to self._samplers if the sampling_target is specified.
+        """
+        if sampling_target:
+            adaptive_sampler = AdaptiveSampler(sampling_target, sampling_target_period)
+            self._samplers[key] = adaptive_sampler
 
     def get_sampler(self, full_granularity, section):
-        return self._samplers[0]
+        # Return the sampler instance for the given config section.
+        # If no instance is present, return the global adaptive sampler instance instead.
+        return self._samplers.get((full_granularity, section)) or self._samplers["global"]
 
     def compute_sampled(self, full_granularity, section, *args, **kwargs):
         """

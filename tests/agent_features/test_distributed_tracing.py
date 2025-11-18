@@ -554,19 +554,89 @@ def test_inbound_dt_payload_acceptance(trusted_account_key):
         (True, True, None, "default", "default", "always_off", None, None, True),  # Uses adaptive sampling algo.
         (True, False, None, "default", "default", "always_on", True, 2, False),  # Always sampled.
         (True, False, None, "default", "default", "always_off", False, 0, False),  # Never sampled.
-        (True, True, True, "default", "default", "default", True, 1.23456, False),  # Uses sampling decision in W3C TraceState header.
-        (True, True, False, "default", "default", "default", False, 1.23456, False),  # Uses sampling decision in W3C TraceState header.
-        (True, False, False, "default", "default", "default", False, 1.23456, False),  # Uses sampling decision in W3C TraceState header.
+        (
+            True,
+            True,
+            True,
+            "default",
+            "default",
+            "default",
+            True,
+            1.23456,
+            False,
+        ),  # Uses sampling decision in W3C TraceState header.
+        (
+            True,
+            True,
+            False,
+            "default",
+            "default",
+            "default",
+            False,
+            1.23456,
+            False,
+        ),  # Uses sampling decision in W3C TraceState header.
+        (
+            True,
+            False,
+            False,
+            "default",
+            "default",
+            "default",
+            False,
+            1.23456,
+            False,
+        ),  # Uses sampling decision in W3C TraceState header.
         (True, True, False, "default", "always_on", "default", True, 2, False),  # Always sampled.
         (True, True, True, "default", "always_off", "default", False, 0, False),  # Never sampled.
         (True, False, False, "default", "default", "always_on", True, 2, False),  # Always sampled.
         (True, False, True, "default", "default", "always_off", False, 0, False),  # Never sampled.
-        (True, None, True, "default", "default", "default", True, 0.1234, False),  # Uses sampling and priority from newrelic header.
+        (
+            True,
+            None,
+            True,
+            "default",
+            "default",
+            "default",
+            True,
+            0.1234,
+            False,
+        ),  # Uses sampling and priority from newrelic header.
         (True, None, True, "default", "always_on", "default", True, 2, False),  # Always sampled.
         (True, None, True, "default", "always_off", "default", False, 0, False),  # Never sampled.
-        (True, None, False, "default", "default", "default", False, 0.1234, False),  # Uses sampling and priority from newrelic header.
-        (True, None, False, "default", "always_on", "default", False, 0.1234, False),  # Uses sampling and priority from newrelic header.
-        (True, None, True, "default", "default", "always_on", True, 0.1234, False),  # Uses sampling and priority from newrelic header.
+        (
+            True,
+            None,
+            False,
+            "default",
+            "default",
+            "default",
+            False,
+            0.1234,
+            False,
+        ),  # Uses sampling and priority from newrelic header.
+        (
+            True,
+            None,
+            False,
+            "default",
+            "always_on",
+            "default",
+            False,
+            0.1234,
+            False,
+        ),  # Uses sampling and priority from newrelic header.
+        (
+            True,
+            None,
+            True,
+            "default",
+            "default",
+            "always_on",
+            True,
+            0.1234,
+            False,
+        ),  # Uses sampling and priority from newrelic header.
         (True, None, False, "default", "default", "always_on", True, 2, False),  # Always sampled.
         (True, None, False, "default", "default", "always_off", False, 0, False),  # Never sampled.
         (True, None, None, "default", "default", "default", None, None, True),  # Uses adaptive sampling algo.
@@ -651,19 +721,89 @@ def test_distributed_trace_remote_parent_sampling_decision_full_granularity(
         (True, True, None, "default", "default", "always_off", None, None, True),  # Uses adaptive sampling algo.
         (True, False, None, "default", "default", "always_on", True, 2, False),  # Always sampled.
         (True, False, None, "default", "default", "always_off", False, 0, False),  # Never sampled.
-        (True, True, True, "default", "default", "default", True, 1.23456, False),  # Uses sampling decision in W3C TraceState header.
-        (True, True, False, "default", "default", "default", False, 1.23456, False),  # Uses sampling decision in W3C TraceState header.
-        (True, False, False, "default", "default", "default", False, 1.23456, False),  # Uses sampling decision in W3C TraceState header.
+        (
+            True,
+            True,
+            True,
+            "default",
+            "default",
+            "default",
+            True,
+            1.23456,
+            False,
+        ),  # Uses sampling decision in W3C TraceState header.
+        (
+            True,
+            True,
+            False,
+            "default",
+            "default",
+            "default",
+            False,
+            1.23456,
+            False,
+        ),  # Uses sampling decision in W3C TraceState header.
+        (
+            True,
+            False,
+            False,
+            "default",
+            "default",
+            "default",
+            False,
+            1.23456,
+            False,
+        ),  # Uses sampling decision in W3C TraceState header.
         (True, True, False, "default", "always_on", "default", True, 2, False),  # Always sampled.
         (True, True, True, "default", "always_off", "default", False, 0, False),  # Never sampled.
         (True, False, False, "default", "default", "always_on", True, 2, False),  # Always sampled.
         (True, False, True, "default", "default", "always_off", False, 0, False),  # Never sampled.
-        (True, None, True, "default", "default", "default", True, 0.1234, False),  # Uses sampling and priority from newrelic header.
+        (
+            True,
+            None,
+            True,
+            "default",
+            "default",
+            "default",
+            True,
+            0.1234,
+            False,
+        ),  # Uses sampling and priority from newrelic header.
         (True, None, True, "default", "always_on", "default", True, 2, False),  # Always sampled.
         (True, None, True, "default", "always_off", "default", False, 0, False),  # Never sampled.
-        (True, None, False, "default", "default", "default", False, 0.1234, False),  # Uses sampling and priority from newrelic header.
-        (True, None, False, "default", "always_on", "default", False, 0.1234, False),  # Uses sampling and priority from newrelic header.
-        (True, None, True, "default", "default", "always_on", True, 0.1234, False),  # Uses sampling and priority from newrelic header.
+        (
+            True,
+            None,
+            False,
+            "default",
+            "default",
+            "default",
+            False,
+            0.1234,
+            False,
+        ),  # Uses sampling and priority from newrelic header.
+        (
+            True,
+            None,
+            False,
+            "default",
+            "always_on",
+            "default",
+            False,
+            0.1234,
+            False,
+        ),  # Uses sampling and priority from newrelic header.
+        (
+            True,
+            None,
+            True,
+            "default",
+            "default",
+            "always_on",
+            True,
+            0.1234,
+            False,
+        ),  # Uses sampling and priority from newrelic header.
         (True, None, False, "default", "default", "always_on", True, 2, False),  # Always sampled.
         (True, None, False, "default", "default", "always_off", False, 0, False),  # Never sampled.
         (True, None, None, "default", "default", "default", None, None, True),  # Uses adaptive sampling algo.

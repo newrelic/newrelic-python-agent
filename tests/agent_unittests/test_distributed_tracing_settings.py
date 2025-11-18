@@ -159,10 +159,7 @@ def test_full_granularity_precedence(ini, env, global_settings, expected):
     assert app_settings.distributed_tracing.sampler.full_granularity._root == expected[0]
     assert app_settings.distributed_tracing.sampler.full_granularity._remote_parent_sampled == expected[1]
     assert app_settings.distributed_tracing.sampler.full_granularity._remote_parent_not_sampled == expected[2]
-    assert (
-        app_settings.distributed_tracing.sampler.full_granularity.root.adaptive.sampling_target
-        == expected[3]
-    )
+    assert app_settings.distributed_tracing.sampler.full_granularity.root.adaptive.sampling_target == expected[3]
     assert (
         app_settings.distributed_tracing.sampler.full_granularity.remote_parent_sampled.adaptive.sampling_target
         == expected[4]
@@ -184,7 +181,7 @@ def test_full_granularity_precedence(ini, env, global_settings, expected):
         (  # More specific sampler path overrides less specific path in ini file.
             INI_FILE_PARTIAL_GRAN_CONFLICTS_ADAPTIVE,
             {},
-            ("adaptive","adaptive", "adaptive", 5, 10, 20),
+            ("adaptive", "adaptive", "adaptive", 5, 10, 20),
         ),
         (  # ini config takes precedence over env vars.
             INI_FILE_PARTIAL_GRAN_CONFLICTS_ADAPTIVE,
@@ -205,7 +202,7 @@ def test_full_granularity_precedence(ini, env, global_settings, expected):
                 "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_SAMPLED": "always_on",
                 "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_NOT_SAMPLED": "always_off",
             },
-            ("always_on","always_on", "always_off", None, None, None),
+            ("always_on", "always_on", "always_off", None, None, None),
         ),
         (  # More specific sampler path overrides less specific path in env vars.
             INI_FILE_EMPTY,
@@ -235,10 +232,7 @@ def test_partial_granularity_precedence(ini, env, global_settings, expected):
     assert app_settings.distributed_tracing.sampler.partial_granularity._root == expected[0]
     assert app_settings.distributed_tracing.sampler.partial_granularity._remote_parent_sampled == expected[1]
     assert app_settings.distributed_tracing.sampler.partial_granularity._remote_parent_not_sampled == expected[2]
-    assert (
-        app_settings.distributed_tracing.sampler.partial_granularity.root.adaptive.sampling_target
-        == expected[3]
-    )
+    assert app_settings.distributed_tracing.sampler.partial_granularity.root.adaptive.sampling_target == expected[3]
     assert (
         app_settings.distributed_tracing.sampler.partial_granularity.remote_parent_sampled.adaptive.sampling_target
         == expected[4]

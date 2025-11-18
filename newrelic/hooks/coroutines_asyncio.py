@@ -78,7 +78,7 @@ def instrument_asyncio_base_events(module):
 def instrument_asyncio_events(module):
     if hasattr(module, "_BaseDefaultEventLoopPolicy"):  # Python >= 3.14
         wrap_function_wrapper(module, "_BaseDefaultEventLoopPolicy.set_event_loop", wrap_set_event_loop)
-    else:  # Python <= 3.13
+    elif hasattr(module, "BaseDefaultEventLoopPolicy"):  # Python <= 3.13
         wrap_function_wrapper(module, "BaseDefaultEventLoopPolicy.set_event_loop", wrap_set_event_loop)
 
 

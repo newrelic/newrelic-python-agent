@@ -462,6 +462,8 @@ class TransactionNode(_TransactionNode):
         if self.errors:
             intrinsics["error"] = True
 
+        if self.synthetics_resource_id:
+            intrinsics["nr.guid"] = self.guid
         if self.parent_tx:
             intrinsics["parentId"] = self.parent_tx
 

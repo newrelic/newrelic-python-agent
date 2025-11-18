@@ -970,11 +970,6 @@ class BedrockRecordEventMixin:
         if "messageStop" in event:
             bedrock_attrs["response.choices.finish_reason"] = (event.get("messageStop") or {}).get("stopReason", "")
 
-        # TODO: Is this also subject to the content_block_stop behavior from Langchain?
-        # If so, that would preclude us from ever capturing the messageStop event with the stopReason.
-        # if "contentBlockStop" in event:
-        #     self.record_events_on_stop_iteration(transaction)
-
 
 class EventStreamWrapper(ObjectProxy):
     def __iter__(self):

@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import time
+from pprint import pformat
 
 from newrelic.common.object_wrapper import function_wrapper
 from testing_support.fixtures import core_application_stats_engine
@@ -62,7 +63,7 @@ def validate_custom_event_count(count):
         else:
             stats = core_application_stats_engine(None)
             assert stats.custom_events.num_samples == count, (
-                f"Expected: {count}, Got: {stats.custom_events.num_samples}. Events: {list(stats.custom_events)}"
+                f"Expected: {count}, Got: {stats.custom_events.num_samples}\nEvents: {pformat(list(stats.custom_events))}"
             )
 
         return result

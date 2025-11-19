@@ -30,23 +30,13 @@ def test_trace_with_span_attributes():
             "name": "Function/test_traces_attributes:test_trace_with_span_attributes.<locals>._test",
             "transaction.name": "OtherTransaction/Function/test_traces_attributes:test_trace_with_span_attributes.<locals>._test",
             "sampled": True,
-        }
+        },
     )
     @validate_span_events(
         count=1,
-        exact_intrinsics={
-            "name": "Function/otelspan", 
-            "sampled": True,
-        },
-        expected_intrinsics={
-            "priority": None,
-            "traceId": None,
-            "guid": None,
-        },
-        exact_users={
-            "otel_attribute": "bar",
-            "nr_attribute": "foo",
-        },
+        exact_intrinsics={"name": "Function/otelspan", "sampled": True},
+        expected_intrinsics={"priority": None, "traceId": None, "guid": None},
+        exact_users={"otel_attribute": "bar", "nr_attribute": "foo"},
     )
     @background_task()
     def _test():
@@ -80,21 +70,12 @@ def test_trace_with_otel_to_newrelic():
             "transaction.name": "OtherTransaction/Function/test_traces_attributes:test_trace_with_otel_to_newrelic.<locals>.newrelic_background_task",
             "sampled": True,
         },
-        exact_users={
-            "NR_trace_attribute_from_function": "NR trace attribute",
-        },
+        exact_users={"NR_trace_attribute_from_function": "NR trace attribute"},
     )
     @validate_span_events(
         count=1,
-        exact_intrinsics={
-            "name": "Function/foo", 
-            "sampled": True,
-        },
-        expected_intrinsics={
-            "priority": None,
-            "traceId": None,
-            "guid": None,
-        },
+        exact_intrinsics={"name": "Function/foo", "sampled": True},
+        expected_intrinsics={"priority": None, "traceId": None, "guid": None},
         exact_users={
             "nr_trace_attribute": "NR span attribute from BG",
             "otel_span_attribute_BG": "OTel span attribute from BG",
@@ -117,6 +98,5 @@ def test_trace_with_otel_to_newrelic():
             add_custom_span_attribute("nr_trace_attribute", "NR span attribute from BG")
             otel_span.set_attribute("otel_span_attribute_BG", "OTel span attribute from BG")
             newrelic_function_trace()
-            
-    newrelic_background_task()
 
+    newrelic_background_task()

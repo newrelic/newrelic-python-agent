@@ -683,6 +683,7 @@ def _process_configuration(section):
     _process_setting(section, "instrumentation.middleware.django.enabled", "getboolean", None)
     _process_setting(section, "instrumentation.middleware.django.exclude", "get", _map_inc_excl_middleware)
     _process_setting(section, "instrumentation.middleware.django.include", "get", _map_inc_excl_middleware)
+    _process_setting(section, "otel_bridge.enabled", "getboolean", None)
 
 
 # Loading of configuration from specified file and for specified
@@ -4357,6 +4358,15 @@ def _process_module_builtin_defaults():
     )
     _process_module_definition(
         "pyzeebe.worker.job_executor", "newrelic.hooks.external_pyzeebe", "instrument_pyzeebe_worker_job_executor"
+    )
+
+    # Hybrid Agent Hooks
+    _process_module_definition(
+        "opentelemetry.trace", "newrelic.hooks.hybridagent_opentelemetry", "instrument_trace_api"
+    )
+
+    _process_module_definition(
+        "opentelemetry.instrumentation.utils", "newrelic.hooks.hybridagent_opentelemetry", "instrument_utils"
     )
 
 

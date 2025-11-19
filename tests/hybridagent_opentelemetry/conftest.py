@@ -13,12 +13,9 @@
 # limitations under the License.
 
 from opentelemetry import trace
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 from newrelic.api.opentelemetry import TracerProvider
-from testing_support.fixtures import (  # noqa: F401; pylint: disable=W0611
-    collector_agent_registration_fixture,
-    collector_available_fixture,
-)
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
@@ -27,11 +24,11 @@ _default_settings = {
     "transaction_tracer.stack_trace_threshold": 0.0,
     "debug.log_data_collector_payloads": True,
     "debug.record_transaction_failure": True,
+    "otel_bridge.enabled": True,
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
-    app_name="Python Agent Test (Hybrid Agent)",
-    default_settings=_default_settings,
+    app_name="Python Agent Test (Hybrid Agent)", default_settings=_default_settings
 )
 
 trace_provider = TracerProvider()

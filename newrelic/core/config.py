@@ -516,6 +516,10 @@ class EventHarvestConfigHarvestLimitSettings(Settings):
     nested = True
 
 
+class OtelBridgeSettings(Settings):
+    pass
+
+
 _settings = TopLevelSettings()
 _settings.agent_limits = AgentLimitsSettings()
 _settings.application_logging = ApplicationLoggingSettings()
@@ -592,6 +596,7 @@ _settings.instrumentation.kombu.consumer = InstrumentationKombuConsumerSettings(
 _settings.instrumentation.middleware = InstrumentationMiddlewareSettings()
 _settings.instrumentation.middleware.django = InstrumentationDjangoMiddlewareSettings()
 _settings.message_tracer = MessageTracerSettings()
+_settings.otel_bridge = OtelBridgeSettings()
 _settings.process_host = ProcessHostSettings()
 _settings.rum = RumSettings()
 _settings.serverless_mode = ServerlessModeSettings()
@@ -1223,6 +1228,7 @@ _settings.k8s_operator.enabled = _environ_as_bool("NEW_RELIC_K8S_OPERATOR_ENABLE
 _settings.azure_operator.enabled = _environ_as_bool("NEW_RELIC_AZURE_OPERATOR_ENABLED", default=False)
 _settings.package_reporting.enabled = _environ_as_bool("NEW_RELIC_PACKAGE_REPORTING_ENABLED", default=True)
 _settings.ml_insights_events.enabled = _environ_as_bool("NEW_RELIC_ML_INSIGHTS_EVENTS_ENABLED", default=False)
+_settings.otel_bridge.enabled = _environ_as_bool("NEW_RELIC_OTEL_BRIDGE_ENABLED", default=False)
 
 
 def global_settings():

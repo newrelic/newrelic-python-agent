@@ -28,6 +28,7 @@ _TRACER_PROVIDER = None
 #   Trace Instrumentation
 ###########################################
 
+
 def wrap_set_tracer_provider(wrapped, instance, args, kwargs):
     settings = global_settings()
 

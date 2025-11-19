@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
 import logging
+import sys
 from contextlib import contextmanager
 
 from opentelemetry import trace as otel_api_trace
@@ -69,7 +69,7 @@ INSTRUMENTING_MODULE_TYPE = {
 #   though right now, we can only do SpanProcessor and SynchronousMultiSpanProcessor
 # Tracer: we can think of this as the transaction.
 # Span: we can think of this as the trace.
-# Links functionality has now been enabled but not implemented yet.  Links are relationships 
+# Links functionality has now been enabled but not implemented yet.  Links are relationships
 #   between spans, but lateral in hierarchy.  In NR we only have parent-child relationships.
 #   We may want to preserve this information with a custom attribute.  We can also add this
 #   as a new attribute in a trace, but it will still not be seen in the UI other than a trace
@@ -122,7 +122,6 @@ class Span(otel_api_trace.Span):
             _logger.debug("Otel span and NR trace do not match nor correspond to a remote span")
             _logger.debug("otel span: %s\nnewrelic trace: %s", self.otel_parent, current_nr_trace)
             raise ValueError("Unexpected span parent scenario encountered")
-        
 
         if nr_trace_type == FunctionTrace:
             trace_kwargs = {"name": self.name, "params": self.attributes, "parent": self.nr_parent}

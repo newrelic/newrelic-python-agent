@@ -539,39 +539,114 @@ def test_inbound_dt_payload_acceptance(trusted_account_key):
 
 
 @pytest.mark.parametrize(
-    "traceparent_sampled,newrelic_sampled,remote_parent_sampled_setting,remote_parent_not_sampled_setting,expected_sampled,expected_priority,expected_adaptive_sampling_algo_called",
+    "newrelic_header,traceparent_sampled,newrelic_sampled,root_setting,remote_parent_sampled_setting,remote_parent_not_sampled_setting,expected_sampled,expected_priority,expected_adaptive_sampling_algo_called",
     (
-        (True, None, "default", "default", None, None, True),  # Uses adaptive sampling algo.
-        (True, None, "always_on", "default", True, 2, False),  # Always sampled.
-        (True, None, "always_off", "default", False, 0, False),  # Never sampled.
-        (False, None, "default", "default", None, None, True),  # Uses adaptive sampling algo.
-        (False, None, "always_on", "default", None, None, True),  # Uses adaptive sampling alog.
-        (False, None, "always_off", "default", None, None, True),  # Uses adaptive sampling algo.
-        (True, None, "default", "always_on", None, None, True),  # Uses adaptive sampling algo.
-        (True, None, "default", "always_off", None, None, True),  # Uses adaptive sampling algo.
-        (False, None, "default", "always_on", True, 2, False),  # Always sampled.
-        (False, None, "default", "always_off", False, 0, False),  # Never sampled.
-        (True, True, "default", "default", True, 1.23456, False),  # Uses sampling decision in W3C TraceState header.
-        (True, False, "default", "default", False, 1.23456, False),  # Uses sampling decision in W3C TraceState header.
-        (False, False, "default", "default", False, 1.23456, False),  # Uses sampling decision in W3C TraceState header.
-        (True, False, "always_on", "default", True, 2, False),  # Always sampled.
-        (True, True, "always_off", "default", False, 0, False),  # Never sampled.
-        (False, False, "default", "always_on", True, 2, False),  # Always sampled.
-        (False, True, "default", "always_off", False, 0, False),  # Never sampled.
-        (None, True, "default", "default", True, 0.1234, False),  # Uses sampling and priority from newrelic header.
-        (None, True, "always_on", "default", True, 2, False),  # Always sampled.
-        (None, True, "always_off", "default", False, 0, False),  # Never sampled.
-        (None, False, "default", "default", False, 0.1234, False),  # Uses sampling and priority from newrelic header.
-        (None, False, "always_on", "default", False, 0.1234, False),  # Uses sampling and priority from newrelic header.
-        (None, True, "default", "always_on", True, 0.1234, False),  # Uses sampling and priority from newrelic header.
-        (None, False, "default", "always_on", True, 2, False),  # Always sampled.
-        (None, False, "default", "always_off", False, 0, False),  # Never sampled.
-        (None, None, "default", "default", None, None, True),  # Uses adaptive sampling algo.
+        (False, None, None, "default", "default", "default", None, None, True),  # Uses adaptive sampling algo.
+        (False, None, None, "always_on", "default", "default", True, 2, False),  # Always sampled.
+        (False, None, None, "always_off", "default", "default", False, 0, False),  # Never sampled.
+        (True, True, None, "default", "default", "default", None, None, True),  # Uses adaptive sampling algo.
+        (True, True, None, "default", "always_on", "default", True, 2, False),  # Always sampled.
+        (True, True, None, "default", "always_off", "default", False, 0, False),  # Never sampled.
+        (True, False, None, "default", "default", "default", None, None, True),  # Uses adaptive sampling algo.
+        (True, False, None, "default", "always_on", "default", None, None, True),  # Uses adaptive sampling alog.
+        (True, False, None, "default", "always_off", "default", None, None, True),  # Uses adaptive sampling algo.
+        (True, True, None, "default", "default", "always_on", None, None, True),  # Uses adaptive sampling algo.
+        (True, True, None, "default", "default", "always_off", None, None, True),  # Uses adaptive sampling algo.
+        (True, False, None, "default", "default", "always_on", True, 2, False),  # Always sampled.
+        (True, False, None, "default", "default", "always_off", False, 0, False),  # Never sampled.
+        (
+            True,
+            True,
+            True,
+            "default",
+            "default",
+            "default",
+            True,
+            1.23456,
+            False,
+        ),  # Uses sampling decision in W3C TraceState header.
+        (
+            True,
+            True,
+            False,
+            "default",
+            "default",
+            "default",
+            False,
+            1.23456,
+            False,
+        ),  # Uses sampling decision in W3C TraceState header.
+        (
+            True,
+            False,
+            False,
+            "default",
+            "default",
+            "default",
+            False,
+            1.23456,
+            False,
+        ),  # Uses sampling decision in W3C TraceState header.
+        (True, True, False, "default", "always_on", "default", True, 2, False),  # Always sampled.
+        (True, True, True, "default", "always_off", "default", False, 0, False),  # Never sampled.
+        (True, False, False, "default", "default", "always_on", True, 2, False),  # Always sampled.
+        (True, False, True, "default", "default", "always_off", False, 0, False),  # Never sampled.
+        (
+            True,
+            None,
+            True,
+            "default",
+            "default",
+            "default",
+            True,
+            0.1234,
+            False,
+        ),  # Uses sampling and priority from newrelic header.
+        (True, None, True, "default", "always_on", "default", True, 2, False),  # Always sampled.
+        (True, None, True, "default", "always_off", "default", False, 0, False),  # Never sampled.
+        (
+            True,
+            None,
+            False,
+            "default",
+            "default",
+            "default",
+            False,
+            0.1234,
+            False,
+        ),  # Uses sampling and priority from newrelic header.
+        (
+            True,
+            None,
+            False,
+            "default",
+            "always_on",
+            "default",
+            False,
+            0.1234,
+            False,
+        ),  # Uses sampling and priority from newrelic header.
+        (
+            True,
+            None,
+            True,
+            "default",
+            "default",
+            "always_on",
+            True,
+            0.1234,
+            False,
+        ),  # Uses sampling and priority from newrelic header.
+        (True, None, False, "default", "default", "always_on", True, 2, False),  # Always sampled.
+        (True, None, False, "default", "default", "always_off", False, 0, False),  # Never sampled.
+        (True, None, None, "default", "default", "default", None, None, True),  # Uses adaptive sampling algo.
     ),
 )
 def test_distributed_trace_remote_parent_sampling_decision_full_granularity(
+    newrelic_header,
     traceparent_sampled,
     newrelic_sampled,
+    root_setting,
     remote_parent_sampled_setting,
     remote_parent_not_sampled_setting,
     expected_sampled,
@@ -587,6 +662,7 @@ def test_distributed_trace_remote_parent_sampling_decision_full_granularity(
     test_settings = _override_settings.copy()
     test_settings.update(
         {
+            "distributed_tracing.sampler.full_granularity._root": root_setting,
             "distributed_tracing.sampler.full_granularity._remote_parent_sampled": remote_parent_sampled_setting,
             "distributed_tracing.sampler.full_granularity._remote_parent_not_sampled": remote_parent_not_sampled_setting,
             "span_events.enabled": True,
@@ -608,6 +684,7 @@ def test_distributed_trace_remote_parent_sampling_decision_full_granularity(
     def _test():
         txn = current_transaction()
 
+        headers = {}
         if traceparent_sampled is not None:
             headers = {
                 "traceparent": f"00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-{int(traceparent_sampled):02x}",
@@ -617,50 +694,126 @@ def test_distributed_trace_remote_parent_sampling_decision_full_granularity(
                 headers["tracestate"] = (
                     f"1@nr=0-0-1-2827902-0af7651916cd43dd-00f067aa0ba902b7-{int(newrelic_sampled)}-1.23456-1518469636035"
                 )
-        else:
+        elif newrelic_header:
             headers = {
                 "newrelic": '{"v":[0,1],"d":{"ty":"Mobile","ac":"1","ap":"51424","id":"00f067aa0ba902b7","tr":"0af7651916cd43dd8448eb211c80319c","pr":0.1234,"sa":%s,"ti":1482959525577,"tx":"0af7651916cd43dd"}}'
                 % (str(newrelic_sampled).lower())
             }
-        accept_distributed_trace_headers(headers)
+        if headers:
+            accept_distributed_trace_headers(headers)
 
     _test()
 
 
 @pytest.mark.parametrize(
-    "traceparent_sampled,newrelic_sampled,remote_parent_sampled_setting,remote_parent_not_sampled_setting,expected_sampled,expected_priority,expected_adaptive_sampling_algo_called",
+    "newrelic_header,traceparent_sampled,newrelic_sampled,root_setting,remote_parent_sampled_setting,remote_parent_not_sampled_setting,expected_sampled,expected_priority,expected_adaptive_sampling_algo_called",
     (
-        (True, None, "default", "default", None, None, True),  # Uses adaptive sampling algo.
-        (True, None, "always_on", "default", True, 2, False),  # Always sampled.
-        (True, None, "always_off", "default", False, 0, False),  # Never sampled.
-        (False, None, "default", "default", None, None, True),  # Uses adaptive sampling algo.
-        (False, None, "always_on", "default", None, None, True),  # Uses adaptive sampling alog.
-        (False, None, "always_off", "default", None, None, True),  # Uses adaptive sampling algo.
-        (True, None, "default", "always_on", None, None, True),  # Uses adaptive sampling algo.
-        (True, None, "default", "always_off", None, None, True),  # Uses adaptive sampling algo.
-        (False, None, "default", "always_on", True, 2, False),  # Always sampled.
-        (False, None, "default", "always_off", False, 0, False),  # Never sampled.
-        (True, True, "default", "default", True, 1.23456, False),  # Uses sampling decision in W3C TraceState header.
-        (True, False, "default", "default", False, 1.23456, False),  # Uses sampling decision in W3C TraceState header.
-        (False, False, "default", "default", False, 1.23456, False),  # Uses sampling decision in W3C TraceState header.
-        (True, False, "always_on", "default", True, 2, False),  # Always sampled.
-        (True, True, "always_off", "default", False, 0, False),  # Never sampled.
-        (False, False, "default", "always_on", True, 2, False),  # Always sampled.
-        (False, True, "default", "always_off", False, 0, False),  # Never sampled.
-        (None, True, "default", "default", True, 0.1234, False),  # Uses sampling and priority from newrelic header.
-        (None, True, "always_on", "default", True, 2, False),  # Always sampled.
-        (None, True, "always_off", "default", False, 0, False),  # Never sampled.
-        (None, False, "default", "default", False, 0.1234, False),  # Uses sampling and priority from newrelic header.
-        (None, False, "always_on", "default", False, 0.1234, False),  # Uses sampling and priority from newrelic header.
-        (None, True, "default", "always_on", True, 0.1234, False),  # Uses sampling and priority from newrelic header.
-        (None, False, "default", "always_on", True, 2, False),  # Always sampled.
-        (None, False, "default", "always_off", False, 0, False),  # Never sampled.
-        (None, None, "default", "default", None, None, True),  # Uses adaptive sampling algo.
+        (False, None, None, "default", "default", "default", None, None, True),  # Uses adaptive sampling algo.
+        (False, None, None, "always_on", "default", "default", True, 2, False),  # Always sampled.
+        (False, None, None, "always_off", "default", "default", False, 0, False),  # Never sampled.
+        (True, True, None, "default", "default", "default", None, None, True),  # Uses adaptive sampling algo.
+        (True, True, None, "default", "always_on", "default", True, 2, False),  # Always sampled.
+        (True, True, None, "default", "always_off", "default", False, 0, False),  # Never sampled.
+        (True, False, None, "default", "default", "default", None, None, True),  # Uses adaptive sampling algo.
+        (True, False, None, "default", "always_on", "default", None, None, True),  # Uses adaptive sampling alog.
+        (True, False, None, "default", "always_off", "default", None, None, True),  # Uses adaptive sampling algo.
+        (True, True, None, "default", "default", "always_on", None, None, True),  # Uses adaptive sampling algo.
+        (True, True, None, "default", "default", "always_off", None, None, True),  # Uses adaptive sampling algo.
+        (True, False, None, "default", "default", "always_on", True, 2, False),  # Always sampled.
+        (True, False, None, "default", "default", "always_off", False, 0, False),  # Never sampled.
+        (
+            True,
+            True,
+            True,
+            "default",
+            "default",
+            "default",
+            True,
+            1.23456,
+            False,
+        ),  # Uses sampling decision in W3C TraceState header.
+        (
+            True,
+            True,
+            False,
+            "default",
+            "default",
+            "default",
+            False,
+            1.23456,
+            False,
+        ),  # Uses sampling decision in W3C TraceState header.
+        (
+            True,
+            False,
+            False,
+            "default",
+            "default",
+            "default",
+            False,
+            1.23456,
+            False,
+        ),  # Uses sampling decision in W3C TraceState header.
+        (True, True, False, "default", "always_on", "default", True, 2, False),  # Always sampled.
+        (True, True, True, "default", "always_off", "default", False, 0, False),  # Never sampled.
+        (True, False, False, "default", "default", "always_on", True, 2, False),  # Always sampled.
+        (True, False, True, "default", "default", "always_off", False, 0, False),  # Never sampled.
+        (
+            True,
+            None,
+            True,
+            "default",
+            "default",
+            "default",
+            True,
+            0.1234,
+            False,
+        ),  # Uses sampling and priority from newrelic header.
+        (True, None, True, "default", "always_on", "default", True, 2, False),  # Always sampled.
+        (True, None, True, "default", "always_off", "default", False, 0, False),  # Never sampled.
+        (
+            True,
+            None,
+            False,
+            "default",
+            "default",
+            "default",
+            False,
+            0.1234,
+            False,
+        ),  # Uses sampling and priority from newrelic header.
+        (
+            True,
+            None,
+            False,
+            "default",
+            "always_on",
+            "default",
+            False,
+            0.1234,
+            False,
+        ),  # Uses sampling and priority from newrelic header.
+        (
+            True,
+            None,
+            True,
+            "default",
+            "default",
+            "always_on",
+            True,
+            0.1234,
+            False,
+        ),  # Uses sampling and priority from newrelic header.
+        (True, None, False, "default", "default", "always_on", True, 2, False),  # Always sampled.
+        (True, None, False, "default", "default", "always_off", False, 0, False),  # Never sampled.
+        (True, None, None, "default", "default", "default", None, None, True),  # Uses adaptive sampling algo.
     ),
 )
 def test_distributed_trace_remote_parent_sampling_decision_partial_granularity(
+    newrelic_header,
     traceparent_sampled,
     newrelic_sampled,
+    root_setting,
     remote_parent_sampled_setting,
     remote_parent_not_sampled_setting,
     expected_sampled,
@@ -678,6 +831,7 @@ def test_distributed_trace_remote_parent_sampling_decision_partial_granularity(
         {
             "distributed_tracing.sampler.full_granularity.enabled": False,
             "distributed_tracing.sampler.partial_granularity.enabled": True,
+            "distributed_tracing.sampler.partial_granularity._root": root_setting,
             "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": remote_parent_sampled_setting,
             "distributed_tracing.sampler.partial_granularity._remote_parent_not_sampled": remote_parent_not_sampled_setting,
             "span_events.enabled": True,
@@ -699,6 +853,7 @@ def test_distributed_trace_remote_parent_sampling_decision_partial_granularity(
     def _test():
         txn = current_transaction()
 
+        headers = {}
         if traceparent_sampled is not None:
             headers = {
                 "traceparent": f"00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-{int(traceparent_sampled):02x}",
@@ -708,12 +863,13 @@ def test_distributed_trace_remote_parent_sampling_decision_partial_granularity(
                 headers["tracestate"] = (
                     f"1@nr=0-0-1-2827902-0af7651916cd43dd-00f067aa0ba902b7-{int(newrelic_sampled)}-1.23456-1518469636035"
                 )
-        else:
+        elif newrelic_header:
             headers = {
                 "newrelic": '{"v":[0,1],"d":{"ty":"Mobile","ac":"1","ap":"51424","id":"00f067aa0ba902b7","tr":"0af7651916cd43dd8448eb211c80319c","pr":0.1234,"sa":%s,"ti":1482959525577,"tx":"0af7651916cd43dd"}}'
                 % (str(newrelic_sampled).lower())
             }
-        accept_distributed_trace_headers(headers)
+        if headers:
+            accept_distributed_trace_headers(headers)
 
     _test()
 
@@ -1042,6 +1198,19 @@ def test_partial_granularity_essential_span_attributes():
             {
                 "distributed_tracing.sampler.full_granularity.enabled": False,
                 "distributed_tracing.sampler.partial_granularity.enabled": True,
+                "distributed_tracing.sampler.partial_granularity._root": "default",
+                "distributed_tracing.sampler.partial_granularity.root.adaptive.sampling_target": 5,
+            },
+            {},
+            (False, 0),
+            1,
+            1,
+            5,
+        ),
+        (
+            {
+                "distributed_tracing.sampler.full_granularity.enabled": False,
+                "distributed_tracing.sampler.partial_granularity.enabled": True,
                 "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "default",
                 "distributed_tracing.sampler.partial_granularity.remote_parent_sampled.adaptive.sampling_target": 5,
                 "distributed_tracing.sampler.partial_granularity._remote_parent_not_sampled": "default",
@@ -1067,6 +1236,19 @@ def test_partial_granularity_essential_span_attributes():
             1,
             1,
             6,
+        ),
+        (
+            {
+                "distributed_tracing.sampler.full_granularity.enabled": True,
+                "distributed_tracing.sampler.partial_granularity.enabled": False,
+                "distributed_tracing.sampler.full_granularity._root": "default",
+                "distributed_tracing.sampler.full_granularity.root.adaptive.sampling_target": 5,
+            },
+            {},
+            (True, 0),
+            1,
+            1,
+            5,
         ),
         (
             {

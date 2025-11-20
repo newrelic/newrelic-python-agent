@@ -24,6 +24,11 @@ class SamplerProxy:
         self._samplers = {"global": adaptive_sampler}
         # Add adaptive sampler instances for each config section if configured.
         self.add_adaptive_sampler(
+            (True, 0),
+            settings.distributed_tracing.sampler.full_granularity.root.adaptive.sampling_target,
+            sampling_target_period,
+        )
+        self.add_adaptive_sampler(
             (True, 1),
             settings.distributed_tracing.sampler.full_granularity.remote_parent_sampled.adaptive.sampling_target,
             sampling_target_period,
@@ -31,6 +36,11 @@ class SamplerProxy:
         self.add_adaptive_sampler(
             (True, 2),
             settings.distributed_tracing.sampler.full_granularity.remote_parent_not_sampled.adaptive.sampling_target,
+            sampling_target_period,
+        )
+        self.add_adaptive_sampler(
+            (False, 0),
+            settings.distributed_tracing.sampler.partial_granularity.root.adaptive.sampling_target,
             sampling_target_period,
         )
         self.add_adaptive_sampler(

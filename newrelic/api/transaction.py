@@ -1022,12 +1022,25 @@ class Transaction:
         return priority, sampled
 
     def _compute_sampled_and_priority(
-        self, priority, sampled, full_granularity, remote_parent_sampled_setting, remote_parent_not_sampled_setting
+        self,
+        priority,
+        sampled,
+        full_granularity,
+        root_setting,
+        remote_parent_sampled_setting,
+        remote_parent_not_sampled_setting,
     ):
         if self._remote_parent_sampled is None:
             section = 0
-            config = "default"  # Use sampling algo.
-            _logger.debug("Sampling decision made based on no remote parent sampling decision present.")
+            setting_path = (
+                f"distributed_tracing.sampler.{'full_granularity' if full_granularity else 'partial_granularity'}.root"
+            )
+            config = root_setting
+            _logger.debug(
+                "Sampling decision made based on no remote parent sampling decision present and %s=%s.",
+                setting_path,
+                config,
+            )
         elif self._remote_parent_sampled:
             section = 1
             setting_path = f"distributed_tracing.sampler.{'full_granularity' if full_granularity else 'partial_granularity'}.remote_parent_sampled"
@@ -1084,6 +1097,7 @@ class Transaction:
                 priority,
                 sampled,
                 full_granularity=True,
+                root_setting=self.settings.distributed_tracing.sampler.full_granularity._root,
                 remote_parent_sampled_setting=self.settings.distributed_tracing.sampler.full_granularity._remote_parent_sampled,
                 remote_parent_not_sampled_setting=self.settings.distributed_tracing.sampler.full_granularity._remote_parent_not_sampled,
             )
@@ -1101,6 +1115,7 @@ class Transaction:
                 priority,
                 sampled,
                 full_granularity=False,
+                root_setting=self.settings.distributed_tracing.sampler.partial_granularity._root,
                 remote_parent_sampled_setting=self.settings.distributed_tracing.sampler.partial_granularity._remote_parent_sampled,
                 remote_parent_not_sampled_setting=self.settings.distributed_tracing.sampler.partial_granularity._remote_parent_not_sampled,
             )

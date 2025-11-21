@@ -18,7 +18,7 @@ from contextlib import contextmanager
 
 from opentelemetry import trace as otel_api_trace
 
-from newrelic.api.application import application_instance, register_application
+from newrelic.api.application import application_instance
 from newrelic.api.background_task import BackgroundTask
 from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.external_trace import ExternalTrace
@@ -99,6 +99,11 @@ class Span(otel_api_trace.Span):
         )  # This attribute is purely to prevent garbage collection
         self.nr_trace = None
         self.instrumenting_module = instrumenting_module
+
+        # Do not create a New Relic trace if parent
+        # is a remote span and it is not sampled
+        if self._is_remote() and not self._is_sampled():
+            return
 
         self.nr_parent = None
         current_nr_trace = current_trace()
@@ -287,16 +292,6 @@ class Tracer(otel_api_trace.Tracer):
     def __init__(self, resource=None, instrumentation_library=None, *args, **kwargs):
         self.resource = resource
         self.instrumentation_library = instrumentation_library.split(".")[-1].capitalize()
-        self.nr_application = application_instance(activate=False) or register_application("OtelTracer")
-        self.global_settings = self.nr_application and self.nr_application.global_settings
-
-        if self.nr_application and self.global_settings.enabled and self.nr_application.enabled:
-            self._settings = self.nr_application.settings
-            if not self._settings:
-                self.nr_application.activate()
-                self._settings = self.nr_application.settings
-        else:
-            _logger.warning("Unable to find or register New Relic application for Otel Tracer")
 
     def start_span(
         self,
@@ -319,6 +314,7 @@ class Tracer(otel_api_trace.Tracer):
 
         nr_trace_type = FunctionTrace
         transaction = current_transaction()
+        self.nr_application = application_instance()
         self.attributes = attributes or {}
 
         # If remote_parent, transaction must be created, regardless of kind type

@@ -125,7 +125,6 @@ class Span(otel_api_trace.Span):
             # Not sure if there is a usecase where we could get in here
             # but for debug purposes, we will raise an error
             _logger.debug("Otel span and NR trace do not match nor correspond to a remote span")
-            _logger.debug("otel span: %s\nnewrelic trace: %s", self.otel_parent, current_nr_trace)
             raise ValueError("Unexpected span parent scenario encountered")
 
         if nr_trace_type == FunctionTrace:

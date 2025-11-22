@@ -461,7 +461,7 @@ def wrap_bedrock_model__stream(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
-def instrument_agent_agent(module):
+def instrument_strands_agent_agent(module):
     if hasattr(module, "Agent"):
         if hasattr(module.Agent, "__call__"):  # noqa: B004
             wrap_function_wrapper(module, "Agent.__call__", wrap_agent__call__)
@@ -471,19 +471,19 @@ def instrument_agent_agent(module):
             wrap_function_wrapper(module, "Agent.stream_async", wrap_stream_async)
 
 
-def instrument_tools_executors__executor(module):
+def instrument_strands_tools_executors__executor(module):
     if hasattr(module, "ToolExecutor"):
         if hasattr(module.ToolExecutor, "_stream"):
             wrap_function_wrapper(module, "ToolExecutor._stream", wrap_tool_executor__stream)
 
 
-def instrument_tools_registry(module):
+def instrument_strands_tools_registry(module):
     if hasattr(module, "ToolRegistry"):
         if hasattr(module.ToolRegistry, "register_tool"):
             wrap_function_wrapper(module, "ToolRegistry.register_tool", wrap_ToolRegister_register_tool)
 
 
-def instrument_models_bedrock(module):
+def instrument_strands_models_bedrock(module):
     # This instrumentation only exists to pass trace context due to bedrock models using a separate thread.
     if hasattr(module, "BedrockModel"):
         if hasattr(module.BedrockModel, "stream"):

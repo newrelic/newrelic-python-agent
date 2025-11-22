@@ -210,7 +210,7 @@ class Span(otel_api_trace.Span):
             self.set_attribute(key, value)
 
     def _set_attributes_in_nr(self, otel_attributes=None):
-        if not (otel_attributes and getattr(self, "nr_trace", False):
+        if not (otel_attributes and hasattr(self, "nr_trace") and self.nr_trace):
             return
         for key, value in otel_attributes.items():
             self.nr_trace.add_custom_attribute(key, value)
@@ -222,7 +222,7 @@ class Span(otel_api_trace.Span):
 
     def add_link(self, context=None, attributes=None):
         # TODO: Not implemented yet.
-    raise NotImplementedError("Not implemented yet.")
+        raise NotImplementedError("Not implemented yet.")
 
     def update_name(self, name):
         # Sentinel, MessageTrace, DatastoreTrace, and ExternalTrace
@@ -234,7 +234,6 @@ class Span(otel_api_trace.Span):
     def is_recording(self):
         return self._is_sampled() and not (
             getattr(getattr(self, "nr_trace"),  None), "end_time", None)
-        )
 
     def set_status(self, status, description=None):
         # TODO: not implemented yet

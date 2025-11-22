@@ -182,7 +182,7 @@ class Span(otel_api_trace.Span):
         if self.otel_parent:
             return bool(self.otel_parent.trace_flags)
         else:
-            return bool(self.nr_transaction and (self.nr_transaction.sampled or (self.nr_transaction._sampled is None)))
+            return bool(self.nr_transaction and (self.nr_transaction.sampled or (self.nr_transaction.sampled is None)))
 
     def _is_remote(self):
         # Remote span denotes if propagated from a remote parent

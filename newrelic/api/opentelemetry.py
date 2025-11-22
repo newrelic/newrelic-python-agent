@@ -191,7 +191,7 @@ class Span(otel_api_trace.Span):
         return False
 
     def get_span_context(self):
-        if not (hasattr(self, "nr_trace") and self.nr_trace):
+        if not getattr(self, "nr_trace", False):
             return otel_api_trace.INVALID_SPAN_CONTEXT
 
         otel_tracestate_headers = None

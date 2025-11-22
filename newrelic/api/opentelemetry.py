@@ -222,7 +222,7 @@ class Span(otel_api_trace.Span):
 
     def add_link(self, context=None, attributes=None):
         # TODO: Not implemented yet.
-        pass
+    raise NotImplementedError("Not implemented yet.")
 
     def update_name(self, name):
         # Sentinel, MessageTrace, DatastoreTrace, and ExternalTrace

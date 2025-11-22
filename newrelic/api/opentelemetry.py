@@ -232,8 +232,7 @@ class Span(otel_api_trace.Span):
             self.nr_trace.name = self._name
 
     def is_recording(self):
-        return self._is_sampled() and not (
-            getattr(getattr(self, "nr_trace"),  None), "end_time", None)
+        return self._is_sampled() and not (getattr(self.nr_trace, None), "end_time", None)
 
     def set_status(self, status, description=None):
         # TODO: not implemented yet

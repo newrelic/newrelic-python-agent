@@ -114,7 +114,7 @@ def wrap_get_current_span(wrapped, instance, args, kwargs):
     otel_tracestate_headers = None
 
     span_context = otel_api_trace.SpanContext(
-        trace_id=int(transaction._trace_id, 16),
+        trace_id=int(transaction.trace_id, 16),
         span_id=int(trace.guid, 16),
         is_remote=span.get_span_context().is_remote,
         trace_flags=otel_api_trace.TraceFlags(span.get_span_context().trace_flags),

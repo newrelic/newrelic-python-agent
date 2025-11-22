@@ -186,9 +186,7 @@ class Span(otel_api_trace.Span):
 
     def _is_remote(self):
         # Remote span denotes if propagated from a remote parent
-        if self.otel_parent and self.otel_parent.is_remote:
-            return True
-        return False
+        return bool(self.otel_parent and self.otel_parent.is_remote)
 
     def get_span_context(self):
         if not getattr(self, "nr_trace", False):
@@ -243,29 +241,20 @@ class Span(otel_api_trace.Span):
         raise NotImplementedError("Not implemented yet")
 
     def record_exception(self, exception, attributes=None, timestamp=None, escaped=False):
+        error_args = sys.exc_info() if not exception else (type(exception), exception, exception.__traceback__)
+
         if not hasattr(self, "nr_trace"):
-            if exception:
-                notice_error((type(exception), exception, exception.__traceback__))
-            else:
-                notice_error(sys.exc_info(), attributes=attributes)
+            notice_error(error_args, attributes=attributes)
         else:
-            self.nr_trace.notice_error((type(exception), exception, exception.__traceback__), attributes=attributes)
+            self.nr_trace.notice_error(error_args, attributes=attributes)
 
     def end(self, end_time=None, *args, **kwargs):
         # We will ignore the end_time parameter and use NR's end_time
 
         # Check to see if New Relic trace ever existed or,
         # if it does, that trace has already ended
-        if (
-            not hasattr(self, "nr_trace")
-            or not self.nr_trace
-            or (
-                hasattr(self, "nr_trace")
-                and self.nr_trace
-                and hasattr(self.nr_trace, "end_time")
-                and self.nr_trace.end_time
-            )
-        ):
+        nr_trace = hasattr(self, "nr_trace", None)
+        if not nr_trace or nr_trace and getattr(nr_trace, "end_time", None):
             return
 
         # Add attributes as Trace parameters

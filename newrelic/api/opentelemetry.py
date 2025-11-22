@@ -197,7 +197,7 @@ class Span(otel_api_trace.Span):
         otel_tracestate_headers = None
 
         return otel_api_trace.SpanContext(
-            trace_id=int(self.nr_transaction._trace_id, 16),
+            trace_id=int(self.nr_transaction.trace_id, 16),
             span_id=int(self.nr_trace.guid, 16),
             is_remote=self._is_remote(),
             trace_flags=otel_api_trace.TraceFlags(0x01 if self._is_sampled() else 0x00),

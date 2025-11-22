@@ -240,7 +240,7 @@ class Span(otel_api_trace.Span):
 
     def set_status(self, status, description=None):
         # TODO: not implemented yet
-        pass
+       raise NotImplementedError("Not implemented yet")
 
     def record_exception(self, exception, attributes=None, timestamp=None, escaped=False):
         if not hasattr(self, "nr_trace"):

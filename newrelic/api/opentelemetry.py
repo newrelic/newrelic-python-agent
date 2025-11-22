@@ -210,7 +210,7 @@ class Span(otel_api_trace.Span):
             self.set_attribute(key, value)
 
     def _set_attributes_in_nr(self, otel_attributes=None):
-        if not (otel_attributes and hasattr(self, "nr_trace") and self.nr_trace):
+        if not (otel_attributes and getattr(self, "nr_trace", False):
             return
         for key, value in otel_attributes.items():
             self.nr_trace.add_custom_attribute(key, value)

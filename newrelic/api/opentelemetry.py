@@ -233,7 +233,7 @@ class Span(otel_api_trace.Span):
 
     def is_recording(self):
         return self._is_sampled() and not (
-            hasattr(self, "nr_trace") and hasattr(self.nr_trace, "end_time") and self.nr_trace.end_time
+            getattr(getattr(self, "nr_trace"),  None), "end_time", None)
         )
 
     def set_status(self, status, description=None):

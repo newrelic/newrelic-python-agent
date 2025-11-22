@@ -253,7 +253,7 @@ class Span(otel_api_trace.Span):
 
         # Check to see if New Relic trace ever existed or,
         # if it does, that trace has already ended
-        nr_trace = hasattr(self, "nr_trace", None)
+        nr_trace = hasattr(self, "nr_trace")
         if not nr_trace or (nr_trace and getattr(nr_trace, "end_time", None)):
             return
 

@@ -218,7 +218,7 @@ class Span(otel_api_trace.Span):
     def add_event(self, name, attributes=None, timestamp=None):
         # TODO: Not implemented yet.
         # We can implement this as a log event
-        pass
+        raise NotImplementedError("TODO: We can implement this as a log event.")
 
     def add_link(self, context=None, attributes=None):
         # TODO: Not implemented yet.

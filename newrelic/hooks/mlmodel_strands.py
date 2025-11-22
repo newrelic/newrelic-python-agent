@@ -471,6 +471,22 @@ def instrument_strands_agent_agent(module):
             wrap_function_wrapper(module, "Agent.stream_async", wrap_stream_async)
 
 
+def instrument_strands_multiagent_graph(module):
+    if hasattr(module, "Graph"):
+        if hasattr(module.Graph, "__call__"):  # noqa: B004
+            wrap_function_wrapper(module, "Graph.__call__", wrap_agent__call__)
+        if hasattr(module.Graph, "invoke_async"):
+            wrap_function_wrapper(module, "Graph.invoke_async", wrap_agent_invoke_async)
+
+
+def instrument_strands_multiagent_swarm(module):
+    if hasattr(module, "Swarm"):
+        if hasattr(module.Swarm, "__call__"):  # noqa: B004
+            wrap_function_wrapper(module, "Swarm.__call__", wrap_agent__call__)
+        if hasattr(module.Swarm, "invoke_async"):
+            wrap_function_wrapper(module, "Swarm.invoke_async", wrap_agent_invoke_async)
+
+
 def instrument_strands_tools_executors__executor(module):
     if hasattr(module, "ToolExecutor"):
         if hasattr(module.ToolExecutor, "_stream"):

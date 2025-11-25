@@ -934,7 +934,7 @@ def extract_bedrock_converse_attrs(kwargs, response, response_headers, model, sp
 
 
 class BedrockRecordEventMixin:
-    def record_events_on_stop_iteration(self, transaction):
+    def record_events_on_stop_iteration(self, transaction, request_timestamp=None):
         if hasattr(self, "_nr_ft"):
             bedrock_attrs = getattr(self, "_nr_bedrock_attrs", {})
             self._nr_ft.__exit__(None, None, None)
@@ -945,14 +945,14 @@ class BedrockRecordEventMixin:
 
             try:
                 bedrock_attrs["duration"] = self._nr_ft.duration * 1000
-                handle_chat_completion_event(transaction, bedrock_attrs)
+                handle_chat_completion_event(transaction, bedrock_attrs, request_timestamp)
             except Exception:
                 _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE, exc_info=True)
 
             # Clear cached data as this can be very large.
             self._nr_bedrock_attrs.clear()
 
-    def record_error(self, transaction, exc):
+    def record_error(self, transaction, exc, request_timestamp=None):
         if hasattr(self, "_nr_ft"):
             try:
                 ft = self._nr_ft
@@ -975,24 +975,24 @@ class BedrockRecordEventMixin:
                 ft.__exit__(*sys.exc_info())
                 error_attributes["duration"] = ft.duration * 1000
 
-                handle_chat_completion_event(transaction, error_attributes)
+                handle_chat_completion_event(transaction, error_attributes, request_timestamp)
 
                 # Clear cached data as this can be very large.
                 error_attributes.clear()
             except Exception:
                 _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE, exc_info=True)
 
-    def record_stream_chunk(self, event, transaction):
+    def record_stream_chunk(self, event, transaction, request_timestamp=None):
         if event:
             try:
                 if getattr(self, "_nr_is_converse", False):
                     return self.converse_record_stream_chunk(event, transaction)
                 else:
-                    return self.invoke_record_stream_chunk(event, transaction)
+                    return self.invoke_record_stream_chunk(event, transaction, request_timestamp)
             except Exception:
                 _logger.warning(RESPONSE_EXTRACTOR_FAILURE_LOG_MESSAGE, exc_info=True)
 
-    def invoke_record_stream_chunk(self, event, transaction):
+    def invoke_record_stream_chunk(self, event, transaction, request_timestamp=None):
         bedrock_attrs = getattr(self, "_nr_bedrock_attrs", {})
         chunk = json.loads(event["chunk"]["bytes"].decode("utf-8"))
         self._nr_model_extractor(chunk, bedrock_attrs)
@@ -1000,7 +1000,7 @@ class BedrockRecordEventMixin:
         # So we need to call the record events here since stop iteration will not be raised.
         _type = chunk.get("type")
         if _type == "content_block_stop":
-            self.record_events_on_stop_iteration(transaction)
+            self.record_events_on_stop_iteration(transaction, request_timestamp)
 
     def converse_record_stream_chunk(self, event, transaction):
         bedrock_attrs = getattr(self, "_nr_bedrock_attrs", {})
@@ -1043,12 +1043,12 @@ class GeneratorProxy(BedrockRecordEventMixin, ObjectProxy):
         return_val = None
         try:
             return_val = self.__wrapped__.__next__()
-            self.record_stream_chunk(return_val, transaction)
+            self.record_stream_chunk(return_val, transaction, self.request_timestamp)
         except StopIteration:
-            self.record_events_on_stop_iteration(transaction)
+            self.record_events_on_stop_iteration(transaction, self.request_timestamp)
             raise
         except Exception as exc:
-            self.record_error(transaction, exc)
+            self.record_error(transaction, exc, self.request_timestamp)
             raise
         return return_val
 
@@ -1081,12 +1081,12 @@ class AsyncGeneratorProxy(BedrockRecordEventMixin, ObjectProxy):
         return_val = None
         try:
             return_val = await self.__wrapped__.__anext__()
-            self.record_stream_chunk(return_val, transaction)
+            self.record_stream_chunk(return_val, transaction, self.request_timestamp)
         except StopAsyncIteration:
-            self.record_events_on_stop_iteration(transaction)
+            self.record_events_on_stop_iteration(transaction, self.request_timestamp)
             raise
         except Exception as exc:
-            self.record_error(transaction, exc)
+            self.record_error(transaction, exc, self.request_timestamp)
             raise
         return return_val
 
@@ -1179,6 +1179,7 @@ def handle_chat_completion_event(transaction, bedrock_attrs, request_timestamp=N
         "response.number_of_messages": number_of_messages,
         "response.choices.finish_reason": bedrock_attrs.get("response.choices.finish_reason", None),
         "error": bedrock_attrs.get("error", None),
+        "timestamp": request_timestamp or None,
     }
     chat_completion_summary_dict.update(llm_metadata_dict)
     chat_completion_summary_dict = {k: v for k, v in chat_completion_summary_dict.items() if v is not None}

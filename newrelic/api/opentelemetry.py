@@ -32,34 +32,7 @@ from newrelic.core.otlp_utils import create_resource
 
 _logger = logging.getLogger(__name__)
 
-# Attributes that help distinguish span types are
-# sometimes added after span creation and sometimes
-# they are added during span creation.  During the case
-# of the former, we have no way of knowing what sort of
-# library instrumentation to apply, so we have a
-# dictionary of module types as a safeguard.
-#
-# Transactions:
-#   "web": Web Application
-#   "wsgi": WSGI Web Application
-#   "asgi": ASGI Web Application
-#   "other": Background Task
-#   "message": Message Queue
-# Traces:
-#   "other": Function Trace
-#   "db": Database/Datastore
-#   "message": Message Queue
-#
-INSTRUMENTING_MODULE_TYPE = {
-    "Redis": "db",
-    "Mongodb": "db",
-    "Dynamodb": "db",
-    "Pika": "message",
-    "Kombu": "message",
-    "Kafka": "message",
-    "Flask": "wsgi",
-    "Requests": "external",
-}
+
 # ----------------------------------------------
 # Custom OTel Spans and Traces
 # ----------------------------------------------
@@ -102,7 +75,7 @@ class Span(otel_api_trace.Span):
 
         # Do not create a New Relic trace if parent
         # is a remote span and it is not sampled
-        if self._is_remote() and not self._is_sampled():
+        if self._remote() and not self._sampled():
             return
 
         self.nr_parent = None
@@ -162,29 +135,32 @@ class Span(otel_api_trace.Span):
             }
             self.nr_trace = nr_trace_type(**trace_kwargs)
         else:
-            # TODO: Still need to implement GraphQLOperationTrace and GraphQLResolverTrace
             trace_kwargs = {"name": self.name, "params": self.attributes, "parent": self.nr_parent}
             self.nr_trace = nr_trace_type(**trace_kwargs)
 
         self.nr_trace.__enter__()
 
-    def _is_sampled(self):
+    def _sampled(self):
         # Uses NR to determine if the trace is sampled
-
-        # transaction.sampled can be None, True, False.
-        # If None, this has not been computed by NR which
+        # 
+        # transaction.sampled can be `None`, `True`, `False`.
+        # If `None`, this has not been computed by NR which
         # can also mean the following:
         # 1. There was not a context passed in that explicitly has sampling disabled.
         #   This flag would be found in the traceparent or traceparent and tracespan headers.
         # 2. Transaction was not created where DT headers are accepted during __init__
-        # Therefore, we will treat a value of `None` as `True` for now.
+        #   Therefore, we will treat a value of `None` as `True` for now.
+        #
+        # The primary reason for this behavior is because Otel expects to
+        # only be able to record information like events and attributes
+        # when `is_recording()` == `True`
 
         if self.otel_parent:
             return bool(self.otel_parent.trace_flags)
         else:
             return bool(self.nr_transaction and (self.nr_transaction.sampled or (self.nr_transaction.sampled is None)))
 
-    def _is_remote(self):
+    def _remote(self):
         # Remote span denotes if propagated from a remote parent
         return bool(self.otel_parent and self.otel_parent.is_remote)
 
@@ -197,8 +173,8 @@ class Span(otel_api_trace.Span):
         return otel_api_trace.SpanContext(
             trace_id=int(self.nr_transaction.trace_id, 16),
             span_id=int(self.nr_trace.guid, 16),
-            is_remote=self._is_remote(),
-            trace_flags=otel_api_trace.TraceFlags(0x01 if self._is_sampled() else 0x00),
+            is_remote=self._remote(),
+            trace_flags=otel_api_trace.TraceFlags(0x01 if self._sampled() else 0x00),
             trace_state=otel_api_trace.TraceState(otel_tracestate_headers),
         )
 
@@ -232,7 +208,7 @@ class Span(otel_api_trace.Span):
             self.nr_trace.name = self._name
 
     def is_recording(self):
-        return self._is_sampled() and not (getattr(self.nr_trace, None), "end_time", None)
+        return self._sampled() and not (getattr(self.nr_trace, None), "end_time", None)
 
     def set_status(self, status, description=None):
         # TODO: not implemented yet
@@ -330,26 +306,19 @@ class Tracer(otel_api_trace.Tracer):
             elif kind in (otel_api_trace.SpanKind.PRODUCER, otel_api_trace.SpanKind.INTERNAL):
                 transaction = BackgroundTask(self.nr_application, name=name)
             elif kind == otel_api_trace.SpanKind.CONSUMER:
-                # NOTE: NR uses MessageTransaction for Pika, RabbitMQ, Kafka
-                if (
-                    self.instrumentation_library in INSTRUMENTING_MODULE_TYPE
-                    and INSTRUMENTING_MODULE_TYPE[self.instrumentation_library] == "message"
-                ):
-                    transaction = MessageTransaction(
-                        library=self.instrumentation_library,
-                        destination_type="Topic",
-                        destination_name=name,
-                        application=self.nr_application,
-                        transport_type=self.instrumentation_library,
-                        headers=headers,
-                    )
-                else:
-                    transaction = BackgroundTask(self.nr_application, name=name, group="Celery")
+                transaction = MessageTransaction(
+                    library=self.instrumentation_library,
+                    destination_type="Topic",
+                    destination_name=name,
+                    application=self.nr_application,
+                    transport_type=self.instrumentation_library,
+                    headers=headers,
+                )
 
             transaction.__enter__()
 
         # If not parent_span_context or not parent_span_context.is_remote
-        # To simplify calculation logic, we will use Demorgan's Theorem:
+        # To simplify calculation logic, we will use DeMorgan's Theorem:
         # (!parent_span_context or !parent_span_context.is_remote)
         # !!(!parent_span_context or !parent_span_context.is_remote)
         # !(parent_span_context and parent_span_context.is_remote)
@@ -384,34 +353,24 @@ class Tracer(otel_api_trace.Tracer):
                     return otel_api_trace.INVALID_SPAN
             elif kind == otel_api_trace.SpanKind.CLIENT:
                 if transaction:
-                    if (
-                        (self.instrumentation_library in INSTRUMENTING_MODULE_TYPE)
-                        and (INSTRUMENTING_MODULE_TYPE[self.instrumentation_library] == "db")
-                    ) or (attributes and ("db.system" in attributes)):
-                        nr_trace_type = DatastoreTrace
-                    else:
+                    if self.attributes.get("http.url") or self.attributes.get("http.method"):
                         nr_trace_type = ExternalTrace
+                    else:
+                        nr_trace_type = DatastoreTrace
                 else:
                     return otel_api_trace.INVALID_SPAN
             elif kind == otel_api_trace.SpanKind.CONSUMER:
                 if transaction:
                     nr_trace_type = FunctionTrace
                 elif not transaction:
-                    # NOTE: NR uses MessageTransaction for Pika, RabbitMQ, Kafka
-                    if (
-                        self.instrumentation_library in INSTRUMENTING_MODULE_TYPE
-                        and INSTRUMENTING_MODULE_TYPE[self.instrumentation_library] == "message"
-                    ):
-                        transaction = MessageTransaction(
-                            library=self.instrumentation_library,
-                            destination_type="Topic",
-                            destination_name=name,
-                            application=self.nr_application,
-                            transport_type=self.instrumentation_library,
-                            headers=headers,
-                        )
-                    else:
-                        transaction = BackgroundTask(self.nr_application, name=name, group="Celery")
+                    transaction = MessageTransaction(
+                        library=self.instrumentation_library,
+                        destination_type="Topic",
+                        destination_name=name,
+                        application=self.nr_application,
+                        transport_type=self.instrumentation_library,
+                        headers=headers,
+                    )
                     transaction.__enter__()
             elif kind == otel_api_trace.SpanKind.PRODUCER:
                 if transaction:
@@ -473,4 +432,4 @@ class TracerProvider(otel_api_trace.TracerProvider):
         *args,
         **kwargs,
     ):
-        return Tracer(resource=self._resource, instrumentation_library=instrumenting_module_name)
+        return Tracer(resource=self._resource, instrumentation_library=instrumenting_module_name, *args, **kwargs)

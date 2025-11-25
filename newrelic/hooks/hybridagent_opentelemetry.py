@@ -36,9 +36,10 @@ def wrap_set_tracer_provider(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     global _TRACER_PROVIDER
-    bound_args = bind_args(wrapped, args, kwargs)
-    tracer_provider = bound_args.get("tracer_provider")
+
     if _TRACER_PROVIDER is None:
+        bound_args = bind_args(wrapped, args, kwargs)
+        tracer_provider = bound_args.get("tracer_provider")
         _TRACER_PROVIDER = tracer_provider
     else:
         _logger.warning("TracerProvider has already been set.")
@@ -50,8 +51,6 @@ def wrap_get_tracer_provider(wrapped, instance, args, kwargs):
     if not settings.otel_bridge.enabled:
         return wrapped(*args, **kwargs)
 
-    from newrelic.api.opentelemetry import TracerProvider
-
     # This needs to act as a singleton, like the agent instance.
     # We should initialize the agent here as well, if there is
     # not an instance already.
@@ -61,8 +60,10 @@ def wrap_get_tracer_provider(wrapped, instance, args, kwargs):
 
     global _TRACER_PROVIDER
 
-    hybrid_agent_tracer_provider = TracerProvider("hybrid_agent_tracer_provider")
     if _TRACER_PROVIDER is None:
+        from newrelic.api.opentelemetry import TracerProvider
+        
+        hybrid_agent_tracer_provider = TracerProvider("hybrid_agent_tracer_provider")
         _TRACER_PROVIDER = hybrid_agent_tracer_provider
     return _TRACER_PROVIDER
 

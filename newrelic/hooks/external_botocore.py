@@ -705,6 +705,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
         instance._nr_ft = ft
         instance._nr_response_streaming = response_streaming
         instance._nr_settings = settings
+        instance._nr_request_timestamp = request_timestamp
 
         # Add a bedrock flag to instance so we can determine when make_api_call instrumentation is hit from non-Bedrock paths and bypass it if so
         instance._nr_is_bedrock = True
@@ -834,6 +835,7 @@ def wrap_bedrock_runtime_converse(response_streaming=False):
         instance._nr_ft = ft
         instance._nr_response_streaming = response_streaming
         instance._nr_settings = settings
+        instance._nr_request_timestamp = request_timestamp
         instance._nr_is_converse = True
 
         # Add a bedrock flag to instance so we can determine when make_api_call instrumentation is hit from non-Bedrock paths and bypass it if so

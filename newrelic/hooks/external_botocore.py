@@ -270,6 +270,8 @@ def create_chat_completion_message_event(
 
         if settings.ai_monitoring.record_content.enabled:
             chat_completion_message_dict["content"] = content
+        if request_timestamp:
+            chat_completion_message_dict["timestamp"] = request_timestamp
 
         chat_completion_message_dict.update(llm_metadata_dict)
 
@@ -751,7 +753,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
             "trace_id": trace_id,
         }
 
-        run_bedrock_request_extractor(request_extractor, request_body, bedrock_attrs, request_timestamp)
+        run_bedrock_request_extractor(request_extractor, request_body, bedrock_attrs)
 
         try:
             bedrock_attrs.pop("timestamp", None)  # The request timestamp is only needed for request extraction
@@ -1030,7 +1032,7 @@ class EventStreamWrapper(ObjectProxy):
 class GeneratorProxy(BedrockRecordEventMixin, ObjectProxy):
     def __init__(self, wrapped):
         super().__init__(wrapped)
-        self.request_timestamp = int(1000.0 * time.time())
+        self._nr_request_timestamp = int(1000.0 * time.time())
 
     def __iter__(self):
         return self
@@ -1043,12 +1045,12 @@ class GeneratorProxy(BedrockRecordEventMixin, ObjectProxy):
         return_val = None
         try:
             return_val = self.__wrapped__.__next__()
-            self.record_stream_chunk(return_val, transaction, self.request_timestamp)
+            self.record_stream_chunk(return_val, transaction, self._nr_request_timestamp)
         except StopIteration:
-            self.record_events_on_stop_iteration(transaction, self.request_timestamp)
+            self.record_events_on_stop_iteration(transaction, self._nr_request_timestamp)
             raise
         except Exception as exc:
-            self.record_error(transaction, exc, self.request_timestamp)
+            self.record_error(transaction, exc, self._nr_request_timestamp)
             raise
         return return_val
 
@@ -1069,7 +1071,7 @@ class AsyncEventStreamWrapper(ObjectProxy):
 class AsyncGeneratorProxy(BedrockRecordEventMixin, ObjectProxy):
     def __init__(self, wrapped):
         super().__init__(wrapped)
-        self.request_timestamp = int(1000.0 * time.time())
+        self._nr_request_timestamp = int(1000.0 * time.time())
 
     def __aiter__(self):
         return self
@@ -1081,12 +1083,12 @@ class AsyncGeneratorProxy(BedrockRecordEventMixin, ObjectProxy):
         return_val = None
         try:
             return_val = await self.__wrapped__.__anext__()
-            self.record_stream_chunk(return_val, transaction, self.request_timestamp)
+            self.record_stream_chunk(return_val, transaction, self._nr_request_timestamp)
         except StopAsyncIteration:
-            self.record_events_on_stop_iteration(transaction, self.request_timestamp)
+            self.record_events_on_stop_iteration(transaction, self._nr_request_timestamp)
             raise
         except Exception as exc:
-            self.record_error(transaction, exc, self.request_timestamp)
+            self.record_error(transaction, exc, self._nr_request_timestamp)
             raise
         return return_val
 

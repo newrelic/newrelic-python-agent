@@ -745,7 +745,7 @@ def _create_successful_chain_run_events(
     )
 
     if run_args.get("timestamp"):
-        full_chat_completion_summary_dict["request.timestamp"] = run_args.get("timestamp")
+        full_chat_completion_summary_dict["timestamp"] = run_args.get("timestamp")
 
     full_chat_completion_summary_dict.update(llm_metadata_dict)
     transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
@@ -817,6 +817,8 @@ def create_chat_completion_message_event(
             }
             if settings.ai_monitoring.record_content.enabled:
                 chat_completion_output_message_dict["content"] = message
+            if request_timestamp:
+                chat_completion_output_message_dict["timestamp"] = request_timestamp
             chat_completion_output_message_dict.update(llm_metadata_dict)
             transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_output_message_dict)
 

@@ -20,6 +20,7 @@ chat_completion_expected_events = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,  # UUID that varies with each run
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "span_id": None,
@@ -40,6 +41,7 @@ chat_completion_expected_events = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,  # UUID that varies with each run
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": "c20d345e-6878-4778-b674-6b187bae8ecf",
@@ -58,6 +60,7 @@ chat_completion_expected_events = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,  # UUID that varies with each run
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": "c20d345e-6878-4778-b674-6b187bae8ecf",
@@ -76,6 +79,7 @@ chat_completion_expected_events = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,  # UUID that varies with each run
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": "c20d345e-6878-4778-b674-6b187bae8ecf",
@@ -98,6 +102,7 @@ chat_completion_expected_streaming_events = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,  # UUID that varies with each run
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "span_id": None,
@@ -118,6 +123,7 @@ chat_completion_expected_streaming_events = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,  # UUID that varies with each run
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": "f070b880-e0fb-4537-8093-796671c39239",
@@ -136,6 +142,7 @@ chat_completion_expected_streaming_events = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,  # UUID that varies with each run
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": "f070b880-e0fb-4537-8093-796671c39239",
@@ -154,6 +161,7 @@ chat_completion_expected_streaming_events = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,  # UUID that varies with each run
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": "f070b880-e0fb-4537-8093-796671c39239",
@@ -176,6 +184,7 @@ chat_completion_invalid_access_key_error_events = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,  # UUID that varies with each run
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "span_id": None,
@@ -196,6 +205,7 @@ chat_completion_invalid_access_key_error_events = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,  # UUID that varies with each run
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": "e1206e19-2318-4a9d-be98-017c73f06118",
@@ -216,6 +226,7 @@ chat_completion_invalid_model_error_events = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,  # UUID that varies with each run
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": "f4908827-3db9-4742-9103-2bbc34578b03",
@@ -236,6 +247,7 @@ chat_completion_invalid_model_error_events = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "span_id": None,

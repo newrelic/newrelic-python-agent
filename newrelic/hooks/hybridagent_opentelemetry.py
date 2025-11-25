@@ -37,7 +37,7 @@ def wrap_set_tracer_provider(wrapped, instance, args, kwargs):
 
     global _TRACER_PROVIDER
     bound_args = bind_args(wrapped, args, kwargs)
-    tracer_provider = bound_args.get("tracer_provider", None)
+    tracer_provider = bound_args.get("tracer_provider")
     if _TRACER_PROVIDER is None:
         _TRACER_PROVIDER = tracer_provider
     else:
@@ -137,7 +137,7 @@ def wrap_start_internal_or_server_span(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     bound_args = bind_args(wrapped, args, kwargs)
-    context_carrier = bound_args.get("context_carrier", None)
+    context_carrier = bound_args.get("context_carrier")
     attributes = bound_args.get("attributes", {})
 
     if context_carrier:

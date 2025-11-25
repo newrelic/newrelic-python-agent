@@ -1045,13 +1045,16 @@ class GeneratorProxy(BedrockRecordEventMixin, ObjectProxy):
             return_val = self.__wrapped__.__next__()
             self.record_stream_chunk(return_val, transaction)
             record_stream_chunk(self, return_val, transaction, request_timestamp=self.request_timestamp)
+            self.record_stream_chunk(return_val, transaction)
         except StopIteration:
             self.record_events_on_stop_iteration(transaction)
             record_events_on_stop_iteration(self, transaction, request_timestamp=self.request_timestamp)
+            self.record_events_on_stop_iteration(transaction)
             raise
         except Exception as exc:
             self.record_error(transaction, exc)
             record_error(self, transaction, exc, request_timestamp=self.request_timestamp)
+            self.record_error(transaction, exc)
             raise
         return return_val
 
@@ -1075,6 +1078,7 @@ class AsyncGeneratorProxy(ObjectProxy):
         super().__init__(wrapped)
         self.request_timestamp = int(1000.0 * time.time())
 
+class AsyncGeneratorProxy(BedrockRecordEventMixin, ObjectProxy):
     def __aiter__(self):
         return self
 
@@ -1087,13 +1091,16 @@ class AsyncGeneratorProxy(ObjectProxy):
             return_val = await self.__wrapped__.__anext__()
             self.record_stream_chunk(return_val, transaction)
             record_stream_chunk(self, return_val, transaction, request_timestamp=self.request_timestamp)
+            self.record_stream_chunk(return_val, transaction)
         except StopAsyncIteration:
             self.record_events_on_stop_iteration(transaction)
             record_events_on_stop_iteration(self, transaction, request_timestamp=self.request_timestamp)
+            self.record_events_on_stop_iteration(transaction)
             raise
         except Exception as exc:
             self.record_error(transaction, exc)
             record_error(self, transaction, exc, request_timestamp=self.request_timestamp)
+            self.record_error(transaction, exc)
             raise
         return return_val
 

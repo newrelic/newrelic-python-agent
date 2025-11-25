@@ -13,17 +13,16 @@
 # limitations under the License.
 
 from opentelemetry import trace
-from testing_support.validators.validate_span_events import validate_span_events
 
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import function_trace
 from newrelic.api.time_trace import add_custom_span_attribute
 from newrelic.api.transaction import add_custom_attribute
 
+from testing_support.validators.validate_span_events import validate_span_events
 
-def test_trace_with_span_attributes():
-    tracer = trace.get_tracer(__name__)
 
+def test_trace_with_span_attributes(tracer):
     @validate_span_events(
         count=1,
         exact_intrinsics={
@@ -46,7 +45,7 @@ def test_trace_with_span_attributes():
     _test()
 
 
-def test_trace_with_otel_to_newrelic():
+def test_trace_with_otel_to_newrelic(tracer):
     """
     This test adds custom attributes to the transaction and trace.
     * `add_custom_attribute` adds custom attributes to the transaction.
@@ -54,7 +53,6 @@ def test_trace_with_otel_to_newrelic():
     NOTE: a transaction's custom attributes are added to the root
     span's user attributes.
     """
-    tracer = trace.get_tracer(__name__)
 
     @function_trace()
     def newrelic_function_trace():

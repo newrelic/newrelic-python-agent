@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
 from opentelemetry import trace
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
@@ -31,5 +32,9 @@ collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (Hybrid Agent)", default_settings=_default_settings
 )
 
-trace_provider = TracerProvider()
-trace.set_tracer_provider(trace_provider)
+@pytest.fixture(scope="session")
+def tracer():
+    trace_provider = TracerProvider()
+    trace.set_tracer_provider(trace_provider)
+
+    return trace.get_tracer(__name__)

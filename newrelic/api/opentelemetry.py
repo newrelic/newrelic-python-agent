@@ -272,16 +272,20 @@ class Tracer(otel_api_trace.Tracer):
         *args,
         **kwargs,
     ):
+        
+        nr_trace_type = FunctionTrace
+        transaction = current_transaction()
+        self.nr_application = application_instance()
+        self.attributes = attributes or {}
+        
+        if not self.nr_application.settings.otel_bridge.enabled:
+            return otel_api_trace.INVALID_SPAN
+        
         # Retrieve parent span
         parent_span_context = otel_api_trace.get_current_span(context).get_span_context()
 
         if parent_span_context is None or not parent_span_context.is_valid:
             parent_span_context = None
-
-        nr_trace_type = FunctionTrace
-        transaction = current_transaction()
-        self.nr_application = application_instance()
-        self.attributes = attributes or {}
 
         # If remote_parent, transaction must be created, regardless of kind type
         if parent_span_context and parent_span_context.is_remote:

@@ -20,17 +20,14 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
 
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import BackgroundTask
-from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
 
-tracer = otel_api_trace.get_tracer(__name__)
-
 
 # Does not create segment without a transaction
 @validate_transaction_count(0)
-def test_does_not_create_segment_without_a_transaction():
+def test_does_not_create_segment_without_a_transaction(tracer):
     with tracer.start_as_current_span(name="Bar", kind=otel_api_trace.SpanKind.INTERNAL):
         # The OpenTelmetry span should not be created
         assert otel_api_trace.get_current_span() == otel_api_trace.INVALID_SPAN
@@ -45,7 +42,7 @@ def test_does_not_create_segment_without_a_transaction():
     exact_intrinsics={"name": "Function/Bar", "category": "generic"}, expected_intrinsics=("parentId",)
 )
 @validate_span_events(exact_intrinsics={"name": "Function/Foo", "category": "generic", "nr.entryPoint": True})
-def test_creates_opentelemetry_segment_in_a_transaction():
+def test_creates_opentelemetry_segment_in_a_transaction(tracer):
     application = application_instance(activate=False)
 
     with BackgroundTask(application, name="Foo"):
@@ -68,7 +65,7 @@ def test_creates_opentelemetry_segment_in_a_transaction():
     exact_intrinsics={"name": "Function/Bar", "category": "generic"}, expected_intrinsics=("parentId",)
 )
 @validate_span_events(exact_intrinsics={"name": "Function/Foo", "category": "generic"})
-def test_creates_new_relic_span_as_child_of_open_telemetry_span():
+def test_creates_new_relic_span_as_child_of_open_telemetry_span(tracer):
     application = application_instance(activate=False)
 
     with BackgroundTask(application, name="Foo"):
@@ -87,7 +84,7 @@ def test_creates_new_relic_span_as_child_of_open_telemetry_span():
 @validate_transaction_metrics(name="Foo", background_task=True)
 @validate_span_events(exact_intrinsics={"name": "Function/Baz"}, exact_users={"spanNumber": 2})
 @validate_span_events(exact_intrinsics={"name": "Function/Bar"}, exact_users={"spanNumber": 1})
-def test_opentelemetry_api_can_add_custom_attributes_to_spans():
+def test_opentelemetry_api_can_add_custom_attributes_to_spans(tracer):
     application = application_instance(activate=False)
 
     with BackgroundTask(application, name="Foo"):
@@ -104,7 +101,7 @@ def test_opentelemetry_api_can_add_custom_attributes_to_spans():
     exact_attrs={"agent": {}, "intrinsic": {"error.message": "Test exception message"}, "user": {}}
 )
 @validate_span_events(exact_intrinsics={"name": "Function/Bar"})
-def test_opentelemetry_api_can_record_errors():
+def test_opentelemetry_api_can_record_errors(tracer):
     application = application_instance(activate=False)
 
     with BackgroundTask(application, name="Foo"):

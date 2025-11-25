@@ -546,7 +546,18 @@ MODEL_EXTRACTORS = [  # Order is important here, avoiding dictionaries
 
 
 def handle_bedrock_exception(
-    exc, is_embedding, model, span_id, trace_id, request_extractor, request_body, ft, transaction, kwargs, is_converse, request_timestamp=None
+    exc,
+    is_embedding,
+    model,
+    span_id,
+    trace_id,
+    request_extractor,
+    request_body,
+    ft,
+    transaction,
+    kwargs,
+    is_converse,
+    request_timestamp=None,
 ):
     try:
         bedrock_attrs = {"model": model, "span_id": span_id, "trace_id": trace_id}
@@ -599,7 +610,9 @@ def handle_bedrock_exception(
         _logger.warning(EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE, exc_info=True)
 
 
-def run_bedrock_response_extractor(response_extractor, response_body, bedrock_attrs, is_embedding, transaction, request_timestamp=None):
+def run_bedrock_response_extractor(
+    response_extractor, response_body, bedrock_attrs, is_embedding, transaction, request_timestamp=None
+):
     # Run response extractor for non-streaming responses
     try:
         response_extractor(response_body, bedrock_attrs)
@@ -741,7 +754,7 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
         run_bedrock_request_extractor(request_extractor, request_body, bedrock_attrs, request_timestamp)
 
         try:
-            bedrock_attrs.pop("timestamp", None) # The request timestamp is only needed for request extraction
+            bedrock_attrs.pop("timestamp", None)  # The request timestamp is only needed for request extraction
 
             if response_streaming:
                 # Wrap EventStream object here to intercept __iter__ method instead of instrumenting class.
@@ -758,7 +771,14 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
             bedrock_attrs["duration"] = ft.duration * 1000
             response["body"] = StreamingBody(BytesIO(response_body), len(response_body))
 
-            run_bedrock_response_extractor(response_extractor, response_body, bedrock_attrs, is_embedding, transaction, request_timestamp=request_timestamp)
+            run_bedrock_response_extractor(
+                response_extractor,
+                response_body,
+                bedrock_attrs,
+                is_embedding,
+                transaction,
+                request_timestamp=request_timestamp,
+            )
 
         except Exception:
             _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE, exc_info=True)
@@ -822,7 +842,18 @@ def wrap_bedrock_runtime_converse(response_streaming=False):
             response = wrapped(*args, **kwargs)
         except Exception as exc:
             handle_bedrock_exception(
-                exc, False, model, span_id, trace_id, request_extractor, {}, ft, transaction, kwargs, is_converse=True, request_timestamp=request_timestamp
+                exc,
+                False,
+                model,
+                span_id,
+                trace_id,
+                request_extractor,
+                {},
+                ft,
+                transaction,
+                kwargs,
+                is_converse=True,
+                request_timestamp=request_timestamp,
             )
             raise
 
@@ -851,7 +882,9 @@ def wrap_bedrock_runtime_converse(response_streaming=False):
 
             ft.__exit__(None, None, None)
             bedrock_attrs["duration"] = ft.duration * 1000
-            run_bedrock_response_extractor(response_extractor, {}, bedrock_attrs, False, transaction, request_timestamp=request_timestamp)
+            run_bedrock_response_extractor(
+                response_extractor, {}, bedrock_attrs, False, transaction, request_timestamp=request_timestamp
+            )
 
         except Exception:
             _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE, exc_info=True)
@@ -1060,6 +1093,7 @@ class AsyncGeneratorProxy(BedrockRecordEventMixin, ObjectProxy):
     async def aclose(self):
         return await super().aclose()
 
+
 def handle_embedding_event(transaction, bedrock_attrs):
     embedding_id = str(uuid.uuid4())
 
@@ -1161,7 +1195,7 @@ def handle_chat_completion_event(transaction, bedrock_attrs, request_timestamp=N
         request_id=request_id,
         llm_metadata_dict=llm_metadata_dict,
         response_id=response_id,
-        request_timestamp=request_timestamp
+        request_timestamp=request_timestamp,
     )
 
 

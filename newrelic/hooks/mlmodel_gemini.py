@@ -367,7 +367,9 @@ def _record_generation_error(transaction, linking_metadata, completion_id, kwarg
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
 
 
-def _handle_generation_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val, request_timestamp=None):
+def _handle_generation_success(
+    transaction, linking_metadata, completion_id, kwargs, ft, return_val, request_timestamp=None
+):
     if not return_val:
         return
 
@@ -375,13 +377,17 @@ def _handle_generation_success(transaction, linking_metadata, completion_id, kwa
         # Response objects are pydantic models so this function call converts the response into a dict
         response = return_val.model_dump() if hasattr(return_val, "model_dump") else return_val
 
-        _record_generation_success(transaction, linking_metadata, completion_id, kwargs, ft, response, request_timestamp)
+        _record_generation_success(
+            transaction, linking_metadata, completion_id, kwargs, ft, response, request_timestamp
+        )
 
     except Exception:
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
 
 
-def _record_generation_success(transaction, linking_metadata, completion_id, kwargs, ft, response, request_timestamp=None):
+def _record_generation_success(
+    transaction, linking_metadata, completion_id, kwargs, ft, response, request_timestamp=None
+):
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
     try:

@@ -121,8 +121,6 @@ _test_requests_none_url_rollup_metrics = [
 def test_none_url_get():
     try:
         requests.get(None)
-    except requests.exceptions.MissingSchema:
-        pass
     except TypeError:
         pass
 

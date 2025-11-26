@@ -60,6 +60,12 @@ def is_expected(transaction):
     return _is_expected
 
 
+def _nr_process_response(response, transaction):
+    nr_headers = transaction.process_response(response.status, response.headers)
+
+    response._headers.update(nr_headers)
+
+
 @function_wrapper
 def _nr_aiohttp_view_wrapper_(wrapped, instance, args, kwargs):
     transaction = current_transaction()
@@ -132,6 +138,20 @@ def _nr_aiohttp_wrap_wsgi_response_(wrapped, instance, args, kwargs):
     instance.response = ResponseProxy()
 
     return result
+
+
+def _nr_aiohttp_response_prepare_(wrapped, instance, args, kwargs):
+    def _bind_params(request):
+        return request
+
+    request = _bind_params(*args, **kwargs)
+
+    nr_headers = getattr(request, "_nr_headers", None)
+    if nr_headers:
+        nr_headers.update(instance.headers)
+        instance._headers = nr_headers
+
+    return wrapped(*args, **kwargs)
 
 
 @function_wrapper
@@ -335,9 +355,15 @@ def _nr_request_wrapper(wrapped, instance, args, kwargs):
 
 
 def instrument_aiohttp_web(module):
+    global _nr_process_response
     wrap_function_wrapper(module, "Application._handle", _nr_request_wrapper)
     wrap_function_wrapper(module, "Application.__init__", _nr_aiohttp_wrap_application_init_)
 
 
 def instrument_aiohttp_wsgi(module):
     wrap_function_wrapper(module, "WsgiResponse.__init__", _nr_aiohttp_wrap_wsgi_response_)
+
+
+def instrument_aiohttp_web_response(module):
+    wrap_function_wrapper(module, "Response.prepare", _nr_aiohttp_response_prepare_)
+    

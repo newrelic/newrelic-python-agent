@@ -323,9 +323,16 @@ class WebTransaction(Transaction):
 
         try:
             self._response_code = int(status_code)
+
+            # If response code is 304 do not insert CAT headers. See:
+            # https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.3.5
+            if self._response_code == 304:
+                return []
         except Exception:
             pass
 
+        return []
+            
     def _update_agent_attributes(self):
         if "accept" in self._request_headers:
             self._add_agent_attribute("request.headers.accept", self._request_headers["accept"])

@@ -17,7 +17,6 @@ import itertools
 
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.function_trace import function_trace
-from newrelic.api.time_trace import notice_error
 from newrelic.api.transaction import current_transaction, ignore_transaction
 from newrelic.api.web_transaction import web_transaction
 from newrelic.common.async_wrapper import async_wrapper, is_coroutine_callable
@@ -58,12 +57,6 @@ def is_expected(transaction):
             return is_expected_error((exc, value, tb), status_code, settings=settings)
 
     return _is_expected
-
-
-def _nr_process_response(response, transaction):
-    nr_headers = transaction.process_response(response.status, response.headers)
-
-    response._headers.update(nr_headers)
 
 
 @function_wrapper
@@ -259,19 +252,14 @@ def _nr_aiohttp_request_wrapper_(wrapped, instance, args, kwargs):
     trace = ExternalTrace("aiohttp", str(url), method)
 
     async def _coro():
+        response = await wrapped(*args, **kwargs)
+
         try:
-            response = await wrapped(*args, **kwargs)
+            trace.process_response_headers(response.headers.items())
+        except:
+            pass
 
-            try:
-                trace.process_response(status_code=response.status)
-            except:
-                pass
-
-            return response
-        except Exception:
-            notice_error()
-
-            raise
+        return response
 
     return async_wrapper(wrapped)(_coro, trace)()
 
@@ -355,7 +343,6 @@ def _nr_request_wrapper(wrapped, instance, args, kwargs):
 
 
 def instrument_aiohttp_web(module):
-    global _nr_process_response
     wrap_function_wrapper(module, "Application._handle", _nr_request_wrapper)
     wrap_function_wrapper(module, "Application.__init__", _nr_aiohttp_wrap_application_init_)
 
@@ -366,4 +353,3 @@ def instrument_aiohttp_wsgi(module):
 
 def instrument_aiohttp_web_response(module):
     wrap_function_wrapper(module, "Response.prepare", _nr_aiohttp_response_prepare_)
-    

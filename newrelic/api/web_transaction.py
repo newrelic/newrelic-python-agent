@@ -324,10 +324,6 @@ class WebTransaction(Transaction):
         try:
             self._response_code = int(status_code)
 
-            # If response code is 304 do not insert CAT headers. See:
-            # https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.3.5
-            if self._response_code == 304:
-                return []
         except Exception:
             pass
 

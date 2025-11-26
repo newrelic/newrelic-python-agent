@@ -17,6 +17,7 @@ import json
 import pytest
 from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 test_uris = [
     ("/error?hello=world", "_target_application:error"),
@@ -59,34 +60,26 @@ expected_attributes = {
 }
 
 
-@pytest.mark.parametrize("uri,metric_name", test_uris)
-def test_distributed_tracing_headers(uri, metric_name, aiohttp_app):
-    async def fetch():
-        headers = {"newrelic": json.dumps(inbound_payload)}
-        resp = await aiohttp_app.client.request("GET", uri, headers=headers)
-
-        # DT does not send a response in the headers
-        assert "newrelic" not in resp.headers
-
-    # NOTE: the logic-flow of this test can be a bit confusing.
-    #       the override settings and attribute validation occur
-    #       not when the request is made (above) since it does not
-    #       occur inside a transaction. instead, the settings and
-    #       validation are for the new transaction that is made
-    #       asynchronously on the *server side* when the request
-    #       is received and subsequently processed. that code is
-    #       a fixture from conftest.py/_target_application.py
-
+@pytest.mark.parametrize("uri,txn_name", test_uris)
+@override_application_settings(
+    {
+        "account_id": "33",
+        "trusted_account_key": "33",
+        "primary_application_id": primary_application_id,
+        "distributed_tracing.enabled": True,
+    }
+)
+def test_distributed_tracing_headers(uri, txn_name, aiohttp_app):
+    @validate_transaction_metrics(txn_name)
     @validate_transaction_event_attributes(expected_attributes)
-    @override_application_settings(
-        {
-            "account_id": "33",
-            "trusted_account_key": "33",
-            "primary_application_id": primary_application_id,
-            "distributed_tracing.enabled": True,
-        }
-    )
     def _test():
+        async def fetch():
+            headers = {"newrelic": json.dumps(inbound_payload)}
+            resp = await aiohttp_app.client.request("GET", uri, headers=headers)
+
+            # DT does not send a response in the headers
+            assert "newrelic" not in resp.headers
+
         aiohttp_app.loop.run_until_complete(fetch())
 
     _test()

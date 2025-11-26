@@ -1324,3 +1324,79 @@ def test_distributed_trace_uses_sampling_instance(
         )
 
     _test()
+
+
+@pytest.mark.parametrize(
+    "dt_settings,dt_headers,expected_sampling_instance_called,expected_ratio",
+    (
+        ( # Ratio for partial granularity does not exceed 1.
+            {
+                "distributed_tracing.sampler.full_granularity.enabled": True,
+                "distributed_tracing.sampler.partial_granularity.enabled": True,
+                "distributed_tracing.sampler.full_granularity.remote_parent_sampled.trace_id_ratio_based.ratio": .5,
+                "distributed_tracing.sampler.full_granularity._remote_parent_sampled": "trace_id_ratio_based",
+                "distributed_tracing.sampler.partial_granularity.remote_parent_sampled.trace_id_ratio_based.ratio": .7,
+                "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "trace_id_ratio_based",
+            },
+            {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01"},
+            (False, 1),
+            1,
+        ),
+        (  # Partial granularity ratio = full ratio + partial ratio.
+            {
+                "distributed_tracing.sampler.full_granularity.enabled": True,
+                "distributed_tracing.sampler.partial_granularity.enabled": True,
+                "distributed_tracing.sampler.full_granularity.remote_parent_sampled.trace_id_ratio_based.ratio": .5,
+                "distributed_tracing.sampler.full_granularity._remote_parent_sampled": "trace_id_ratio_based",
+                "distributed_tracing.sampler.partial_granularity.remote_parent_sampled.trace_id_ratio_based.ratio": .5,
+                "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "trace_id_ratio_based",
+            },
+            {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01"},
+            (False, 1),
+            1,
+        ),
+        (  # Trace ID ratio sampler is called for full granularity.
+            {
+                "distributed_tracing.sampler.full_granularity.enabled": True,
+                "distributed_tracing.sampler.partial_granularity.enabled": False,
+                "distributed_tracing.sampler.full_granularity.remote_parent_sampled.trace_id_ratio_based.ratio": 1,
+                "distributed_tracing.sampler.full_granularity._remote_parent_sampled": "trace_id_ratio_based",
+            },
+            {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01"},
+            (True, 1),
+            1,
+        ),
+    ),
+)
+def test_distributed_trace_uses_sampling_instance(
+    dt_settings,
+    dt_headers,
+    expected_sampling_instance_called,
+    expected_ratio,
+):
+    test_settings = _override_settings.copy()
+    test_settings.update(dt_settings)
+    function_called_decorator = validate_function_called(
+        "newrelic.core.samplers.trace_id_ratio_based_sampler", "TraceIdRatioBasedSampler.compute_sampled"
+    )
+
+    @function_called_decorator
+    @override_application_settings(test_settings)
+    @background_task(name="test_distributed_trace_attributes")
+    def _test():
+        txn = current_transaction()
+        application = txn._application._agent._applications.get(txn.settings.app_name)
+        # Re-initialize sampler proxy after overriding settings.
+        application.sampler.__init__(txn.settings)
+
+        accept_distributed_trace_headers(dt_headers)
+        # Explicitly call this so we can assert sampling decision during the transaction
+        # as opposed to after it ends and we lose the application context.
+        txn._make_sampling_decision()
+
+        assert (
+            application.sampler._samplers[expected_sampling_instance_called].ratio
+            == expected_ratio
+        )
+
+    _test()

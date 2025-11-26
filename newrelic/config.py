@@ -95,7 +95,15 @@ _settings = newrelic.api.settings.settings()
 # modules to look up customised settings defined in the loaded
 # configuration file.
 
-_config_object = configparser.RawConfigParser()
+def ratio(value):
+    try:
+        val = float(value)
+        if 0 < val <= 1:
+            return val
+    except ValueError:
+        pass
+
+_config_object = configparser.RawConfigParser(converters={"ratio": ratio})
 
 # Cache of the parsed global settings found in the configuration
 # file. We cache these so can dump them out to the log file once
@@ -378,6 +386,8 @@ def _process_dt_hidden_setting(section, option, getter):
         target = _settings
         fields = option.split(".", 1)
 
+        if value == "trace_id_ratio_based":
+            raise configparser.NoOptionError("trace_id_ratio_sampler option can only be set by configuring the ratio")
         while True:
             if len(fields) == 1:
                 value = value or "default"
@@ -538,6 +548,9 @@ def _process_configuration(section):
     _process_dt_sampler_setting(
         section, "distributed_tracing.sampler.full_granularity.root.adaptive.sampling_target", "getint"
     )
+    _process_dt_sampler_setting(
+        section, "distributed_tracing.sampler.full_granularity.root.trace_id_ratio_based.ratio", "getratio"
+    )
     _process_dt_setting(
         section,
         "distributed_tracing.sampler.full_granularity.remote_parent_sampled",
@@ -546,6 +559,9 @@ def _process_configuration(section):
     )
     _process_dt_sampler_setting(
         section, "distributed_tracing.sampler.full_granularity.remote_parent_sampled.adaptive.sampling_target", "getint"
+    )
+    _process_dt_sampler_setting(
+        section, "distributed_tracing.sampler.full_granularity.remote_parent_sampled.trace_id_ratio_based.ratio", "getratio"
     )
     _process_dt_setting(
         section,
@@ -558,6 +574,11 @@ def _process_configuration(section):
         "distributed_tracing.sampler.full_granularity.remote_parent_not_sampled.adaptive.sampling_target",
         "getint",
     )
+    _process_dt_sampler_setting(
+        section,
+        "distributed_tracing.sampler.full_granularity.remote_parent_not_sampled.trace_id_ratio_based.ratio",
+        "getratio",
+    )
     _process_setting(section, "distributed_tracing.sampler.full_granularity.enabled", "getboolean", None)
     _process_setting(section, "distributed_tracing.sampler.partial_granularity.enabled", "getboolean", None)
     _process_setting(section, "distributed_tracing.sampler.partial_granularity.type", "get", None)
@@ -565,11 +586,19 @@ def _process_configuration(section):
     _process_dt_sampler_setting(
         section, "distributed_tracing.sampler.partial_granularity.root.adaptive.sampling_target", "getint"
     )
+    _process_dt_sampler_setting(
+        section, "distributed_tracing.sampler.partial_granularity.root.trace_id_ratio_based.ratio", "getratio"
+    )
     _process_dt_hidden_setting(section, "distributed_tracing.sampler.partial_granularity.remote_parent_sampled", "get")
     _process_dt_sampler_setting(
         section,
         "distributed_tracing.sampler.partial_granularity.remote_parent_sampled.adaptive.sampling_target",
         "getint",
+    )
+    _process_dt_sampler_setting(
+        section,
+        "distributed_tracing.sampler.partial_granularity.remote_parent_sampled.trace_id_ratio_based.ratio",
+        "getratio",
     )
     _process_dt_hidden_setting(
         section, "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled", "get"
@@ -578,6 +607,11 @@ def _process_configuration(section):
         section,
         "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.adaptive.sampling_target",
         "getint",
+    )
+    _process_dt_sampler_setting(
+        section,
+        "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.trace_id_ratio_based.ratio",
+        "getratio",
     )
     _process_setting(section, "span_events.enabled", "getboolean", None)
     _process_setting(section, "span_events.max_samples_stored", "getint", None)

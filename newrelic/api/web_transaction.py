@@ -307,7 +307,7 @@ class WebTransaction(Transaction):
         """
 
         if not self.enabled:
-            return
+            return []  # Return empty list for backwards compatibility, as this used to return a list of headers
 
         # Extract response headers
         if response_headers:
@@ -327,7 +327,7 @@ class WebTransaction(Transaction):
         except Exception:
             pass
 
-        return []
+        return []  # Return empty list for backwards compatibility, as this used to return a list of headers
 
     def _update_agent_attributes(self):
         if "accept" in self._request_headers:

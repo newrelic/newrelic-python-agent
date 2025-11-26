@@ -203,6 +203,9 @@ def test_HTTPConnection_port_included(server):
 
 @pytest.mark.parametrize("distributed_tracing,span_events", ((True, True), (True, False), (False, False)))
 def test_urlopen_distributed_tracing_request(distributed_tracing, span_events, server):
+    @override_application_settings(
+        {"distributed_tracing.enabled": distributed_tracing, "span_events.enabled": span_events}
+    )
     @validate_transaction_errors(errors=[])
     @background_task(name="test_urllib3:test_urlopen_distributed_tracing_request")
     @cache_outgoing_headers
@@ -210,9 +213,5 @@ def test_urlopen_distributed_tracing_request(distributed_tracing, span_events, s
     def _test():
         pool = urllib3.HTTPConnectionPool(f"localhost:{server.port}")
         pool.urlopen("GET", "/")
-
-    _test = override_application_settings(
-        {"distributed_tracing.enabled": distributed_tracing, "span_events.enabled": span_events}
-    )(_test)
 
     _test()

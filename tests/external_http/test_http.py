@@ -72,6 +72,9 @@ def test_http_https_request(server, metrics):
 
 @pytest.mark.parametrize("distributed_tracing,span_events", ((True, True), (True, False), (False, False)))
 def test_http_distributed_tracing_request(distributed_tracing, span_events, server):
+    @override_application_settings(
+        {"distributed_tracing.enabled": distributed_tracing, "span_events.enabled": span_events}
+    )
     @background_task(name="test_http:test_http_distributed_tracing_request")
     @cache_outgoing_headers
     @validate_distributed_tracing_headers
@@ -81,9 +84,5 @@ def test_http_distributed_tracing_request(distributed_tracing, span_events, serv
         response = connection.getresponse()
         response.read()
         connection.close()
-
-    _test = override_application_settings(
-        {"distributed_tracing.enabled": distributed_tracing, "span_events.enabled": span_events}
-    )(_test)
 
     _test()

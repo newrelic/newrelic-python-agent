@@ -112,6 +112,9 @@ def test_httplib_http_with_port_request(server):
 
 @pytest.mark.parametrize("distributed_tracing,span_events", ((True, True), (True, False), (False, False)))
 def test_httplib_distributed_tracing_request(server, distributed_tracing, span_events):
+    @override_application_settings(
+        {"distributed_tracing.enabled": distributed_tracing, "span_events.enabled": span_events}
+    )
     @background_task(name="test_httplib:test_httplib_distributed_tracing_request")
     @cache_outgoing_headers
     @validate_distributed_tracing_headers
@@ -121,10 +124,6 @@ def test_httplib_distributed_tracing_request(server, distributed_tracing, span_e
         response = connection.getresponse()
         response.read()
         connection.close()
-
-    _test = override_application_settings(
-        {"distributed_tracing.enabled": distributed_tracing, "span_events.enabled": span_events}
-    )(_test)
 
     _test()
 

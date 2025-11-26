@@ -152,15 +152,14 @@ def test_wrong_datatype_url_get():
 
 @pytest.mark.parametrize("distributed_tracing,span_events", ((True, True), (True, False), (False, False)))
 def test_requests_distributed_tracing_request(distributed_tracing, span_events, server):
+    @override_application_settings(
+        {"distributed_tracing.enabled": distributed_tracing, "span_events.enabled": span_events}
+    )
     @validate_transaction_errors(errors=[])
     @background_task(name="test_requests:test_requests_distributed_tracing_request")
     @cache_outgoing_headers
     @validate_distributed_tracing_headers
     def _test():
         requests.get(f"http://localhost:{server.port}/")
-
-    _test = override_application_settings(
-        {"distributed_tracing.enabled": distributed_tracing, "span_events.enabled": span_events}
-    )(_test)
 
     _test()

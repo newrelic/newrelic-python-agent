@@ -67,15 +67,12 @@ async def fetch(url, headers=None, raise_for_status=False, connector=None):
 @validate_distributed_tracing_headers
 def test_outbound_headers(event_loop, distributed_tracing, span_events, mock_header_server):
     @override_application_settings(
-        {
-            "distributed_tracing.enabled": distributed_tracing,
-            "span_events.enabled": span_events,
-        }
+        {"distributed_tracing.enabled": distributed_tracing, "span_events.enabled": span_events}
     )
     async def _test():
         headers = await fetch(f"http://127.0.0.1:{mock_header_server.port}")
         return headers
-        
+
     transaction = current_transaction()
     request_headers = event_loop.run_until_complete(_test())
     transaction._test_request_headers = request_headers

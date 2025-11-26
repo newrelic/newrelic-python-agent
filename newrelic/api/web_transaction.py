@@ -328,7 +328,7 @@ class WebTransaction(Transaction):
             pass
 
         return []
-            
+
     def _update_agent_attributes(self):
         if "accept" in self._request_headers:
             self._add_agent_attribute("request.headers.accept", self._request_headers["accept"])

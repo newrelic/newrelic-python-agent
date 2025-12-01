@@ -941,6 +941,68 @@ def test_initialize_developer_mode(section, expect_error, logger):
         assert "CONFIGURATION ERROR" not in logger.caplog.records
 
 
+grouping_disabled_newrelic_ini = b"""
+[import-hook:flask]
+enabled = False
+"""
+
+grouping_and_individual_disabled_newrelic_ini = b"""
+[import-hook:flask.app]
+enabled = False
+
+[import-hook:flask]
+enabled = False
+"""
+
+grouping_disabled_individual_enabled_newrelic_ini = b"""
+[import-hook:flask]
+enabled = False
+
+[import-hook:flask.app]
+enabled = True
+"""
+
+
+@pytest.mark.parametrize(
+    "ini",
+    (
+        grouping_disabled_newrelic_ini,
+        grouping_and_individual_disabled_newrelic_ini,
+        grouping_disabled_individual_enabled_newrelic_ini,
+    ),
+    ids=(
+        "grouping_disabled_newrelic_ini",
+        "grouping_and_individual_disabled_newrelic_ini",
+        "grouping_disabled_individual_enabled_newrelic_ini",
+    ),
+)
+def test_grouping_instrumentation(ini, logger):
+    """
+    This test shows that
+    1. the grouping functionality works
+    2. the grouping functionality takes precedence over the individual hook settings
+    
+    In this case, all combinations presented will result in the
+    overall package being disabled, despite individual settings.
+    
+    """
+    settings = global_settings()
+    apply_config_setting(settings, "monitor_mode", False)
+    apply_config_setting(settings, "developer_mode", True)
+    _reset_configuration_done()
+    _reset_instrumentation_done()
+    _reset_config_parser()
+
+    with NamedTemporaryFile() as f:
+        f.write(newrelic_ini_contents)
+        f.write(ini)
+        f.seek(0)
+
+        initialize(config_file=f.name)
+
+    assert "register module ('flask" not in logger.caplog.records
+
+
 @pytest.mark.parametrize(
     "account_id,expected_account_id",
     (

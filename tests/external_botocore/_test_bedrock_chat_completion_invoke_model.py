@@ -71,6 +71,7 @@ chat_completion_expected_events = {
             {"type": "LlmChatCompletionMessage"},
             {
                 "id": None,  # UUID that varies with each run
+                "timestamp": None,
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
                 "request_id": "48c7ee13-7790-461f-959f-04b0a4cf91c8",
@@ -132,6 +133,7 @@ chat_completion_expected_events = {
             {"type": "LlmChatCompletionMessage"},
             {
                 "id": None,  # UUID that varies with each run
+                "timestamp": None,
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
                 "request_id": "81508a1c-33a8-4294-8743-f0c629af2f49",
@@ -194,6 +196,7 @@ chat_completion_expected_events = {
             {"type": "LlmChatCompletionMessage"},
             {
                 "id": "1234-1",
+                "timestamp": None,
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
                 "request_id": "228ee63f-4eca-4b7d-b679-bc920de63525",
@@ -255,6 +258,7 @@ chat_completion_expected_events = {
             {"type": "LlmChatCompletionMessage"},
             {
                 "id": None,  # UUID that varies with each run
+                "timestamp": None,
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
                 "request_id": "6a886158-b39f-46ce-b214-97458ab76f2f",
@@ -316,6 +320,7 @@ chat_completion_expected_events = {
             {"type": "LlmChatCompletionMessage"},
             {
                 "id": None,  # UUID that varies with each run
+                "timestamp": None,
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
                 "request_id": "ab38295d-df9c-4141-8173-38221651bf46",
@@ -378,6 +383,7 @@ chat_completion_expected_events = {
             {"type": "LlmChatCompletionMessage"},
             {
                 "id": None,  # UUID that varies with each run
+                "timestamp": None,
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
                 "request_id": "12912a17-aa13-45f3-914c-cc82166f3601",
@@ -439,6 +445,7 @@ chat_completion_expected_events = {
             {"type": "LlmChatCompletionMessage"},
             {
                 "id": None,  # UUID that varies with each run
+                "timestamp": None,
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
                 "request_id": "a168214d-742d-4244-bd7f-62214ffa07df",
@@ -502,6 +509,7 @@ chat_completion_langchain_expected_streaming_events = {
             {"type": "LlmChatCompletionMessage"},
             {
                 "id": None,  # UUID that varies with each run
+                "timestamp": None,
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
                 "request_id": "48c7ee13-7790-461f-959f-04b0a4cf91c8",
@@ -561,6 +569,7 @@ chat_completion_langchain_expected_streaming_events = {
             {"type": "LlmChatCompletionMessage"},
             {
                 "id": None,  # UUID that varies with each run
+                "timestamp": None,
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
                 "request_id": "884db5c9-18ab-4f27-8892-33656176a2e6",
@@ -619,6 +628,7 @@ chat_completion_langchain_expected_streaming_events = {
             {"type": "LlmChatCompletionMessage"},
             {
                 "id": None,  # UUID that varies with each run
+                "timestamp": None,
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
                 "request_id": "1a72a1f6-310f-469c-af1d-2c59eb600089",
@@ -658,6 +668,7 @@ chat_completion_langchain_expected_streaming_events = {
             {"type": "LlmChatCompletionMessage"},
             {
                 "id": None,  # UUID that varies with each run
+                "timestamp": None,
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
                 "request_id": "e8fc1dd7-3d1e-42c6-9c58-535cae563bff",
@@ -676,6 +687,7 @@ chat_completion_langchain_expected_streaming_events = {
             {"type": "LlmChatCompletionMessage"},
             {
                 "id": None,  # UUID that varies with each run
+                "timestamp": None,
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
                 "request_id": "e8fc1dd7-3d1e-42c6-9c58-535cae563bff",
@@ -735,6 +747,7 @@ chat_completion_langchain_expected_streaming_events = {
             {"type": "LlmChatCompletionMessage"},
             {
                 "id": None,  # UUID that varies with each run
+                "timestamp": None,
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
                 "request_id": "cce6b34c-812c-4f97-8885-515829aa9639",
@@ -798,6 +811,7 @@ chat_completion_langchain_expected_events = {
             {"type": "LlmChatCompletionMessage"},
             {
                 "id": None,  # UUID that varies with each run
+                "timestamp": None,
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
                 "request_id": "48c7ee13-7790-461f-959f-04b0a4cf91c8",
@@ -857,6 +871,7 @@ chat_completion_langchain_expected_events = {
             {"type": "LlmChatCompletionMessage"},
             {
                 "id": None,  # UUID that varies with each run
+                "timestamp": None,
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
                 "request_id": "884db5c9-18ab-4f27-8892-33656176a2e6",
@@ -916,6 +931,7 @@ chat_completion_langchain_expected_events = {
             {"type": "LlmChatCompletionMessage"},
             {
                 "id": None,  # UUID that varies with each run
+                "timestamp": None,
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
                 "request_id": "1a72a1f6-310f-469c-af1d-2c59eb600089",
@@ -975,6 +991,7 @@ chat_completion_langchain_expected_events = {
             {"type": "LlmChatCompletionMessage"},
             {
                 "id": None,  # UUID that varies with each run
+                "timestamp": None,
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
                 "request_id": "96c7306d-2d60-4629-83e9-dbd6befb0e4e",
@@ -1034,6 +1051,7 @@ chat_completion_langchain_expected_events = {
             {"type": "LlmChatCompletionMessage"},
             {
                 "id": None,  # UUID that varies with each run
+                "timestamp": None,
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
                 "request_id": "cce6b34c-812c-4f97-8885-515829aa9639",
@@ -1098,6 +1116,7 @@ chat_completion_streaming_expected_events = {
             {"type": "LlmChatCompletionMessage"},
             {
                 "id": None,  # UUID that varies with each run
+                "timestamp": None,
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
                 "request_id": "48c7ee13-7790-461f-959f-04b0a4cf91c8",
@@ -1159,6 +1178,7 @@ chat_completion_streaming_expected_events = {
             {"type": "LlmChatCompletionMessage"},
             {
                 "id": None,  # UUID that varies with each run
+                "timestamp": None,
                 "request_id": "b427270f-371a-458d-81b6-a05aafb2704c",
                 "span_id": None,
                 "trace_id": "trace-id",
@@ -1220,6 +1240,7 @@ chat_completion_streaming_expected_events = {
             {"type": "LlmChatCompletionMessage"},
             {
                 "id": None,  # UUID that varies with each run
+                "timestamp": None,
                 "request_id": "a645548f-0b3a-47ce-a675-f51e6e9037de",
                 "span_id": None,
                 "trace_id": "trace-id",
@@ -1280,6 +1301,7 @@ chat_completion_streaming_expected_events = {
             {"type": "LlmChatCompletionMessage"},
             {
                 "id": None,  # UUID that varies with each run
+                "timestamp": None,
                 "llm.conversation_id": "my-awesome-id",
                 "llm.foo": "bar",
                 "request_id": "1efe6197-80f9-43a6-89a5-bb536c1b822f",
@@ -1342,6 +1364,7 @@ chat_completion_streaming_expected_events = {
             {"type": "LlmChatCompletionMessage"},
             {
                 "id": None,  # UUID that varies with each run
+                "timestamp": None,
                 "request_id": "4f8ab6c5-42d1-4e35-9573-30f9f41f821e",
                 "span_id": None,
                 "trace_id": "trace-id",
@@ -1403,6 +1426,7 @@ chat_completion_streaming_expected_events = {
             {"type": "LlmChatCompletionMessage"},
             {
                 "id": None,  # UUID that varies with each run
+                "timestamp": None,
                 "request_id": "6dd99878-0919-4f92-850c-48f50f923b76",
                 "span_id": None,
                 "trace_id": "trace-id",

@@ -102,6 +102,7 @@ class Span(otel_api_trace.Span):
                 self.otel_parent,
                 current_nr_trace,
             )
+            return
 
         if nr_trace_type == FunctionTrace:
             trace_kwargs = {"name": self.name, "params": self.attributes, "parent": self.nr_parent}

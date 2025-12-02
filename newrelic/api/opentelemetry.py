@@ -96,13 +96,12 @@ class Span(otel_api_trace.Span):
             self.nr_parent = current_nr_trace
         else:
             # Not sure if there is a usecase where we could get in here
-            # but for debug purposes, we will raise an error
+            # but for debug purposes, we will log this with details
             _logger.warning(
                 "OpenTelemetry span (%s) and NR trace (%s) do not match nor correspond to a remote span.",
                 self.otel_parent,
                 current_nr_trace,
             )
-            raise ValueError("Unexpected span parent scenario encountered")
 
         if nr_trace_type == FunctionTrace:
             trace_kwargs = {"name": self.name, "params": self.attributes, "parent": self.nr_parent}

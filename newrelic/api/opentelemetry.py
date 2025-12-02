@@ -17,6 +17,10 @@ import sys
 from contextlib import contextmanager
 
 from opentelemetry import trace as otel_api_trace
+from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
+from opentelemetry.baggage.propagation import W3CBaggagePropagator
+from opentelemetry.propagators.composite import CompositePropagator
+from opentelemetry.propagate import set_global_textmap
 
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import BackgroundTask
@@ -28,10 +32,136 @@ from newrelic.api.message_transaction import MessageTransaction
 from newrelic.api.time_trace import current_trace, notice_error
 from newrelic.api.transaction import Sentinel, current_transaction
 from newrelic.api.web_transaction import WebTransaction
+
+from newrelic.common.encoding_utils import (
+    W3CTraceState,
+    NrTraceState,
+)
 from newrelic.core.otlp_utils import create_resource
 
 _logger = logging.getLogger(__name__)
 
+
+class NRTraceContextPropagator(TraceContextTextMapPropagator):
+    LIST_OF_TRACEPARENT_KEYS = ("traceparent", "HTTP_TRACEPARENT")
+    LIST_OF_TRACESTATE_KEYS = ("tracestate", "HTTP_TRACESTATE")
+    
+    def _convert_nr_to_otel(self, tracestate):
+        application_settings = application_instance(activate=False).settings
+        vendors = W3CTraceState.decode(tracestate)
+        trusted_account_key = application_settings.trusted_account_key or (
+            application_settings.serverless_mode.enabled and application_settings.account_id
+        )
+        payload = vendors.pop(f"{trusted_account_key}@nr", "")
+        
+        otel_tracestate = W3CTraceState(NrTraceState.decode(payload, trusted_account_key)).text()
+        return otel_tracestate
+
+    def _convert_otel_to_nr(self, tracestate):
+        tracestate_dict = W3CTraceState.decode(tracestate)
+        # Convert sampled, priority, and timestamp data types
+        tracestate_dict["sa"] = True if tracestate_dict.get("sa").upper() == "TRUE" else False
+        tracestate_dict["pr"] = float(tracestate_dict.get("pr"))
+        tracestate_dict["ti"] = int(tracestate_dict.get("ti"))
+        
+        nr_tracestate = NrTraceState(tracestate_dict).text()
+        return nr_tracestate
+
+    def extract(self, carrier, context=None, getter=None):
+        # We need to make sure that the carrier goes out
+        # in OTel format.  However, we want to convert this to
+        # NR to use the `accept_distributed_trace_headers` API
+        transaction = current_transaction()
+        tracestate_key = None
+        tracestate_headers = None
+        for key in self.LIST_OF_TRACESTATE_KEYS:
+            if key in carrier:
+                tracestate_key = key
+                tracestate_headers = carrier[tracestate_key]
+                break
+        # If we are passing into New Relic, traceparent and/or tracestate's keys also need to be NR compatible.
+        if tracestate_headers:
+            # Check to see if in NR or OTel format
+            if "@nr=" in tracestate_headers:
+                # NR format
+                # Reformatting DT keys in case they are in the HTTP_* format:
+                nr_headers = carrier.copy()
+                for header_type in ("traceparent", "tracestate", "newrelic"):
+                    if (header_type not in nr_headers) and (f"HTTP_{header_type.upper()}" in nr_headers):
+                        nr_headers[header_type] = nr_headers.pop(f"HTTP_{header_type.upper()}")
+                transaction.accept_distributed_trace_headers(nr_headers)
+                # Convert NR format to OTel format for OTel extract function
+                tracestate = self._convert_nr_to_otel(tracestate_headers)
+                carrier[tracestate_key] = tracestate
+            else:
+                # OTel format
+                if transaction:
+                    # Convert to NR format to use the
+                    # `accept_distributed_trace_headers` API
+                    nr_tracestate = self._convert_otel_to_nr(tracestate_headers)
+                    nr_headers = {key: value for key, value in carrier.items()}
+                    nr_headers.pop("HTTP_TRACESTATE", None)
+                    nr_headers["tracestate"] = nr_tracestate
+                    for header_type in ("traceparent", "newrelic"):
+                        if header_type not in nr_headers:
+                            nr_headers[header_type] = nr_headers.pop(f"HTTP_{header_type.upper()}", None)
+                    transaction.accept_distributed_trace_headers(nr_headers)
+        elif ("traceparent" in carrier) and transaction:
+            transaction.accept_distributed_trace_headers(carrier)
+
+        return super().extract(carrier=carrier, context=context, getter=getter)
+    
+
+    def inject(self, carrier, context=None, setter=None):
+        transaction = current_transaction()
+        # Only insert headers if we have not done so already this transaction
+        # Distributed Trace State will have the following states:
+        #   0 if not set
+        #   1 if already accepted
+        #   2 if inserted but not accepted
+
+        if transaction and not transaction._distributed_trace_state:
+            try:
+                nr_headers = [(key, value) for key, value in carrier.items()]
+                transaction.insert_distributed_trace_headers(nr_headers)
+                # Convert back, now with new headers
+                carrier.update(dict(nr_headers))
+                carrier["tracestate"] = self._convert_nr_to_otel(carrier["tracestate"])
+                
+            except AttributeError:
+                # Already in list form.
+                transaction.insert_distributed_trace_headers(carrier)
+
+                # If it came in list form, we likely want to keep it in that format.
+                # Convert to dict to modify NR format of tracestate to Otel's format
+                # and then convert back to the list of tuples.
+                otel_headers = dict(carrier)
+                otel_headers["tracestate"] = self._convert_nr_to_otel(otel_headers["tracestate"])
+                
+                # This is done instead of assigning the result of a list
+                # comprehension to preserve the ID of the carrier in
+                # order to allow propagation.
+                for header in otel_headers.items():
+                    if header not in carrier:
+                        carrier.append(header)
+        
+        elif not transaction:
+            # Convert carrier's tracestate to Otel format if not already
+            # This assumes that carrier is a dict but tracestate is in NR format.
+            if ("tracestate" in carrier) and ("@nr=" in carrier["tracestate"]):
+                # Needs to be converted to OTel before running original function
+                carrier["tracestate"] = self._convert_nr_to_otel(carrier["tracestate"])
+            return super().inject(carrier=carrier, context=context, setter=setter)
+
+
+# Context and Context Propagator Setup
+otel_context_propagator = CompositePropagator(
+    propagators=[
+        NRTraceContextPropagator(),
+        W3CBaggagePropagator(),
+    ]
+)
+set_global_textmap(otel_context_propagator)
 
 # ----------------------------------------------
 # Custom OTel Spans and Traces
@@ -168,7 +298,17 @@ class Span(otel_api_trace.Span):
         if not getattr(self, "nr_trace", False):
             return otel_api_trace.INVALID_SPAN_CONTEXT
 
-        otel_tracestate_headers = None
+        if self.nr_transaction.settings.distributed_tracing.enabled:
+            nr_tracestate_headers = (
+                self.nr_transaction._create_distributed_trace_data()
+            )
+            
+            nr_tracestate_headers["sa"] = self._sampled()
+            otel_tracestate_headers = [
+                (key, str(value)) for key, value in nr_tracestate_headers.items()
+            ]
+        else:
+            otel_tracestate_headers = None
 
         return otel_api_trace.SpanContext(
             trace_id=int(self.nr_transaction.trace_id, 16),
@@ -286,7 +426,17 @@ class Tracer(otel_api_trace.Tracer):
         if parent_span_context is None or not parent_span_context.is_valid:
             parent_span_context = None
 
+        # If parent_span_context exists, we can create traceparent
+        # and tracestate headers
+        _headers = {}
+        if parent_span_context and self.nr_application.settings.distributed_tracing.enabled:
+            parent_span_trace_id = parent_span_context.trace_id
+            parent_span_span_id = parent_span_context.span_id
+            parent_span_trace_flags = parent_span_context.trace_flags
+            
+            
         # If remote_parent, transaction must be created, regardless of kind type
+        # Make sure we transfer DT headers when we are here, if DT is enabled
         if parent_span_context and parent_span_context.is_remote:
             if kind in (otel_api_trace.SpanKind.SERVER, otel_api_trace.SpanKind.CLIENT):
                 # This is a web request
@@ -296,6 +446,11 @@ class Tracer(otel_api_trace.Tracer):
                 port = self.attributes.get("net.host.port")
                 request_method = self.attributes.get("http.method")
                 request_path = self.attributes.get("http.route")
+
+                if not headers:
+                    headers = _headers
+                    update_sampled_flag = True
+
                 transaction = WebTransaction(
                     self.nr_application,
                     name=name,
@@ -306,7 +461,13 @@ class Tracer(otel_api_trace.Tracer):
                     request_path=request_path,
                     headers=headers,
                 )
-            elif kind in (otel_api_trace.SpanKind.PRODUCER, otel_api_trace.SpanKind.INTERNAL):
+                    
+                if update_sampled_flag and parent_span_context:
+                    transaction._sampled = bool(parent_span_trace_flags)
+            elif kind in (
+                otel_api_trace.SpanKind.PRODUCER,
+                otel_api_trace.SpanKind.INTERNAL,
+            ):
                 transaction = BackgroundTask(self.nr_application, name=name)
             elif kind == otel_api_trace.SpanKind.CONSUMER:
                 transaction = MessageTransaction(
@@ -338,6 +499,10 @@ class Tracer(otel_api_trace.Tracer):
                     request_method = self.attributes.get("http.method")
                     request_path = self.attributes.get("http.route")
 
+                    if not headers:
+                        headers = _headers
+                        update_GUID_flag = True
+
                     transaction = WebTransaction(
                         self.nr_application,
                         name=name,
@@ -348,6 +513,11 @@ class Tracer(otel_api_trace.Tracer):
                         request_path=request_path,
                         headers=headers,
                     )
+                        
+                    if update_GUID_flag and parent_span_context:
+                        guid = parent_span_trace_id >> 64
+                        transaction.guid = f"{guid:x}"
+                        
                 transaction.__enter__()
             elif kind == otel_api_trace.SpanKind.INTERNAL:
                 if transaction:

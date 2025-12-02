@@ -4408,11 +4408,27 @@ def _process_module_builtin_defaults():
 
     # Hybrid Agent Hooks
     _process_module_definition(
-        "opentelemetry.trace", "newrelic.hooks.hybridagent_opentelemetry", "instrument_trace_api"
+        "opentelemetry.context",
+        "newrelic.hooks.hybridagent_opentelemetry",
+        "instrument_context_api",
     )
 
     _process_module_definition(
-        "opentelemetry.instrumentation.utils", "newrelic.hooks.hybridagent_opentelemetry", "instrument_utils"
+        "opentelemetry.instrumentation.propagators",
+        "newrelic.hooks.hybridagent_opentelemetry",
+        "instrument_global_propagators_api",
+    )
+
+    _process_module_definition(
+        "opentelemetry.trace",
+        "newrelic.hooks.hybridagent_opentelemetry",
+        "instrument_trace_api",
+    )
+    
+    _process_module_definition(
+        "opentelemetry.instrumentation.utils",
+        "newrelic.hooks.hybridagent_opentelemetry",
+        "instrument_utils",
     )
 
 

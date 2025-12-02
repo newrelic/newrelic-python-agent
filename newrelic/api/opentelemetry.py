@@ -97,8 +97,8 @@ class Span(otel_api_trace.Span):
         else:
             # Not sure if there is a usecase where we could get in here
             # but for debug purposes, we will log this with details
-            _logger.warning(
-                "OpenTelemetry span (%s) and NR trace (%s) do not match nor correspond to a remote span.",
+            _logger.error(
+                "OpenTelemetry span (%s) and NR trace (%s) do not match nor correspond to a remote span. Open Telemetry span will not be reported to New Relic. Please report this problem to New Relic.",
                 self.otel_parent,
                 current_nr_trace,
             )

@@ -16,6 +16,7 @@ import asyncio
 import copy
 import json
 import time
+import random
 
 import pytest
 import webtest
@@ -25,6 +26,7 @@ from testing_support.validators.validate_function_called import validate_functio
 from testing_support.validators.validate_function_not_called import validate_function_not_called
 from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_transaction_object_attributes import validate_transaction_object_attributes
 
 from newrelic.api.application import application_instance
 from newrelic.api.function_trace import function_trace
@@ -542,17 +544,17 @@ def test_inbound_dt_payload_acceptance(trusted_account_key):
     "newrelic_header,traceparent_sampled,newrelic_sampled,root_setting,remote_parent_sampled_setting,remote_parent_not_sampled_setting,expected_sampled,expected_priority,expected_adaptive_sampling_algo_called",
     (
         (False, None, None, "default", "default", "default", None, None, True),  # Uses adaptive sampling algo.
-        (False, None, None, "always_on", "default", "default", True, 2, False),  # Always sampled.
+        (False, None, None, "always_on", "default", "default", True, 3, False),  # Always sampled.
         (False, None, None, "always_off", "default", "default", False, 0, False),  # Never sampled.
         (True, True, None, "default", "default", "default", None, None, True),  # Uses adaptive sampling algo.
-        (True, True, None, "default", "always_on", "default", True, 2, False),  # Always sampled.
+        (True, True, None, "default", "always_on", "default", True, 3, False),  # Always sampled.
         (True, True, None, "default", "always_off", "default", False, 0, False),  # Never sampled.
         (True, False, None, "default", "default", "default", None, None, True),  # Uses adaptive sampling algo.
         (True, False, None, "default", "always_on", "default", None, None, True),  # Uses adaptive sampling alog.
         (True, False, None, "default", "always_off", "default", None, None, True),  # Uses adaptive sampling algo.
         (True, True, None, "default", "default", "always_on", None, None, True),  # Uses adaptive sampling algo.
         (True, True, None, "default", "default", "always_off", None, None, True),  # Uses adaptive sampling algo.
-        (True, False, None, "default", "default", "always_on", True, 2, False),  # Always sampled.
+        (True, False, None, "default", "default", "always_on", True, 3, False),  # Always sampled.
         (True, False, None, "default", "default", "always_off", False, 0, False),  # Never sampled.
         (
             True,
@@ -587,9 +589,9 @@ def test_inbound_dt_payload_acceptance(trusted_account_key):
             1.23456,
             False,
         ),  # Uses sampling decision in W3C TraceState header.
-        (True, True, False, "default", "always_on", "default", True, 2, False),  # Always sampled.
+        (True, True, False, "default", "always_on", "default", True, 3, False),  # Always sampled.
         (True, True, True, "default", "always_off", "default", False, 0, False),  # Never sampled.
-        (True, False, False, "default", "default", "always_on", True, 2, False),  # Always sampled.
+        (True, False, False, "default", "default", "always_on", True, 3, False),  # Always sampled.
         (True, False, True, "default", "default", "always_off", False, 0, False),  # Never sampled.
         (
             True,
@@ -602,7 +604,7 @@ def test_inbound_dt_payload_acceptance(trusted_account_key):
             0.1234,
             False,
         ),  # Uses sampling and priority from newrelic header.
-        (True, None, True, "default", "always_on", "default", True, 2, False),  # Always sampled.
+        (True, None, True, "default", "always_on", "default", True, 3, False),  # Always sampled.
         (True, None, True, "default", "always_off", "default", False, 0, False),  # Never sampled.
         (
             True,
@@ -637,7 +639,7 @@ def test_inbound_dt_payload_acceptance(trusted_account_key):
             0.1234,
             False,
         ),  # Uses sampling and priority from newrelic header.
-        (True, None, False, "default", "default", "always_on", True, 2, False),  # Always sampled.
+        (True, None, False, "default", "default", "always_on", True, 3, False),  # Always sampled.
         (True, None, False, "default", "default", "always_off", False, 0, False),  # Never sampled.
         (True, None, None, "default", "default", "default", None, None, True),  # Uses adaptive sampling algo.
     ),
@@ -878,8 +880,7 @@ def test_distributed_trace_remote_parent_sampling_decision_partial_granularity(
     "full_granularity_enabled,full_granularity_remote_parent_sampled_setting,partial_granularity_enabled,partial_granularity_remote_parent_sampled_setting,expected_sampled,expected_priority,expected_adaptive_sampling_algo_called",
     (
         (True, "always_off", True, "adaptive", None, None, True),  # Uses adaptive sampling algo.
-        (True, "always_on", True, "adaptive", True, 2, False),  # Uses adaptive sampling algo.
-        (False, "always_on", False, "adaptive", False, 0, False),  # Uses adaptive sampling algo.
+        (True, "always_on", True, "adaptive", True, 3, False),  # Always samples.
     ),
 )
 def test_distributed_trace_remote_parent_sampling_decision_between_full_and_partial_granularity(
@@ -1392,5 +1393,61 @@ def test_distributed_trace_uses_ratio_sampling_instance(
         txn._make_sampling_decision()
 
         assert application.sampler._samplers[expected_sampling_instance_called].ratio == expected_ratio
+
+    _test()
+
+
+@pytest.mark.parametrize(
+    "dt_settings,expected_priority,expected_sampled",
+    (
+        (  # When dt is enabled but full and partial are disabled.
+            {
+                "distributed_tracing.sampler.full_granularity.enabled": False,
+                "distributed_tracing.sampler.partial_granularity.enabled": False,
+            },
+            0.123, # random
+            False,
+        ),
+        (  # When dt is disabled.
+            {
+                "distributed_tracing.enabled": False,
+            },
+            0.123, # random
+            False,
+        ),
+        (  # Verify when full granularity sampled +2 is added to the priority.
+            {
+                "distributed_tracing.sampler.full_granularity.root.trace_id_ratio_based.ratio": 1,
+            },
+            2.123, # random + 2
+            True,
+        ),
+        (  # Verify when partial granularity sampled +1 is added to the priority.
+            {
+                "distributed_tracing.sampler.full_granularity.enabled": False,
+                "distributed_tracing.sampler.partial_granularity.enabled": True,
+                "distributed_tracing.sampler.partial_granularity.root.trace_id_ratio_based.ratio": 1,
+            },
+            1.123, # random + 1
+            True,
+        ),
+    ),
+)
+def test_distributed_trace_enabled_settings_set_correct_sampled_priority(
+    dt_settings,
+    expected_priority,
+    expected_sampled,
+    monkeypatch,
+):
+    monkeypatch.setattr(random, 'random', lambda *args, **kwargs: 0.123)
+
+    test_settings = _override_settings.copy()
+    test_settings.update(dt_settings)
+
+    @override_application_settings(test_settings)
+    @validate_transaction_object_attributes({"sampled": expected_sampled, "priority": expected_priority})
+    @background_task(name="test_distributed_trace_attributes")
+    def _test():
+        pass
 
     _test()

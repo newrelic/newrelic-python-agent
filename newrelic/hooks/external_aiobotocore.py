@@ -98,6 +98,7 @@ async def wrap_client__make_api_call(wrapped, instance, args, kwargs):
     response_extractor = getattr(instance, "_nr_response_extractor", None)
     stream_extractor = getattr(instance, "_nr_stream_extractor", None)
     response_streaming = getattr(instance, "_nr_response_streaming", False)
+    request_timestamp = getattr(instance, "_nr_request_timestamp", None)
     is_converse = getattr(instance, "_nr_is_converse", False)
     ft = getattr(instance, "_nr_ft", None)
 
@@ -125,6 +126,7 @@ async def wrap_client__make_api_call(wrapped, instance, args, kwargs):
             transaction,
             bedrock_args,
             is_converse,
+            request_timestamp,
         )
         raise
 
@@ -149,6 +151,17 @@ async def wrap_client__make_api_call(wrapped, instance, args, kwargs):
             bedrock_attrs = extract_bedrock_converse_attrs(
                 args[1], response, response_headers, model, span_id, trace_id
             )
+
+            if response_streaming:
+                # Wrap EventStream object here to intercept __iter__ method instead of instrumenting class.
+                # This class is used in numerous other services in botocore, and would cause conflicts.
+                response["stream"] = stream = AsyncEventStreamWrapper(response["stream"])
+                stream._nr_ft = ft or None
+                stream._nr_bedrock_attrs = bedrock_attrs or {}
+                stream._nr_model_extractor = stream_extractor or None
+                stream._nr_is_converse = True
+                return response
+
         else:
             bedrock_attrs = {
                 "request_id": response_headers.get("x-amzn-requestid"),
@@ -176,7 +189,9 @@ async def wrap_client__make_api_call(wrapped, instance, args, kwargs):
         if ft:
             ft.__exit__(None, None, None)
             bedrock_attrs["duration"] = ft.duration * 1000
-        run_bedrock_response_extractor(response_extractor, response_body, bedrock_attrs, is_embedding, transaction)
+        run_bedrock_response_extractor(
+            response_extractor, response_body, bedrock_attrs, is_embedding, transaction, request_timestamp
+        )
 
     except Exception:
         _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE, exc_info=True)

@@ -65,6 +65,7 @@ chat_completion_recorded_events_invoke_langchain_error = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "span_id": None,
@@ -83,6 +84,7 @@ chat_completion_recorded_events_invoke_langchain_error = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -93,6 +95,7 @@ chat_completion_recorded_events_invoke_langchain_error = [
             "sequence": 0,
             "vendor": "langchain",
             "ingest_source": "Python",
+            "role": "user",
             "virtual_llm": True,
         },
     ),
@@ -103,6 +106,7 @@ chat_completion_recorded_events_runnable_invoke_openai_error = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "span_id": None,
@@ -121,6 +125,7 @@ chat_completion_recorded_events_runnable_invoke_openai_error = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -131,6 +136,7 @@ chat_completion_recorded_events_runnable_invoke_openai_error = [
             "sequence": 0,
             "vendor": "langchain",
             "ingest_source": "Python",
+            "role": "user",
             "virtual_llm": True,
         },
     ),
@@ -140,6 +146,7 @@ chat_completion_recorded_events_runnable_invoke = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "span_id": None,
@@ -158,6 +165,7 @@ chat_completion_recorded_events_runnable_invoke = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -168,6 +176,7 @@ chat_completion_recorded_events_runnable_invoke = [
             "sequence": 0,
             "vendor": "langchain",
             "ingest_source": "Python",
+            "role": "user",
             "virtual_llm": True,
         },
     ),
@@ -175,6 +184,7 @@ chat_completion_recorded_events_runnable_invoke = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -185,6 +195,7 @@ chat_completion_recorded_events_runnable_invoke = [
             "sequence": 1,
             "vendor": "langchain",
             "ingest_source": "Python",
+            "role": "assistant",
             "is_response": True,
             "virtual_llm": True,
         },
@@ -195,6 +206,7 @@ chat_completion_recorded_events_invoke = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "span_id": None,
@@ -213,6 +225,7 @@ chat_completion_recorded_events_invoke = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -223,6 +236,7 @@ chat_completion_recorded_events_invoke = [
             "sequence": 0,
             "vendor": "langchain",
             "ingest_source": "Python",
+            "role": "user",
             "virtual_llm": True,
         },
     ),
@@ -230,6 +244,7 @@ chat_completion_recorded_events_invoke = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -240,6 +255,7 @@ chat_completion_recorded_events_invoke = [
             "sequence": 1,
             "vendor": "langchain",
             "ingest_source": "Python",
+            "role": "assistant",
             "is_response": True,
             "virtual_llm": True,
         },
@@ -250,6 +266,7 @@ chat_completion_recorded_events_runnable_invoke_no_metadata_or_tags = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "span_id": None,
@@ -266,6 +283,7 @@ chat_completion_recorded_events_runnable_invoke_no_metadata_or_tags = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -276,6 +294,7 @@ chat_completion_recorded_events_runnable_invoke_no_metadata_or_tags = [
             "sequence": 0,
             "vendor": "langchain",
             "ingest_source": "Python",
+            "role": "user",
             "virtual_llm": True,
         },
     ),
@@ -283,6 +302,7 @@ chat_completion_recorded_events_runnable_invoke_no_metadata_or_tags = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -293,6 +313,7 @@ chat_completion_recorded_events_runnable_invoke_no_metadata_or_tags = [
             "sequence": 1,
             "vendor": "langchain",
             "ingest_source": "Python",
+            "role": "assistant",
             "is_response": True,
             "virtual_llm": True,
         },
@@ -303,6 +324,7 @@ chat_completion_recorded_events_invoke_no_metadata_or_tags = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "span_id": None,
@@ -319,6 +341,7 @@ chat_completion_recorded_events_invoke_no_metadata_or_tags = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -329,6 +352,7 @@ chat_completion_recorded_events_invoke_no_metadata_or_tags = [
             "sequence": 0,
             "vendor": "langchain",
             "ingest_source": "Python",
+            "role": "user",
             "virtual_llm": True,
         },
     ),
@@ -336,6 +360,7 @@ chat_completion_recorded_events_invoke_no_metadata_or_tags = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -346,6 +371,7 @@ chat_completion_recorded_events_invoke_no_metadata_or_tags = [
             "sequence": 1,
             "vendor": "langchain",
             "ingest_source": "Python",
+            "role": "assistant",
             "is_response": True,
             "virtual_llm": True,
         },
@@ -430,6 +456,7 @@ recorded_events_retrieval_chain_response = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
+            "timestamp": None,
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -438,6 +465,7 @@ recorded_events_retrieval_chain_response = [
             "vendor": "langchain",
             "ingest_source": "Python",
             "is_response": True,
+            "role": "assistant",
             "virtual_llm": True,
             "content": "page_content='What is 2 + 4?'",
         },
@@ -446,6 +474,7 @@ recorded_events_retrieval_chain_response = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,
+            "timestamp": None,
             "span_id": None,
             "trace_id": "trace-id",
             "request.model": "gpt-3.5-turbo",
@@ -471,6 +500,7 @@ recorded_events_retrieval_chain_response = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
+            "timestamp": None,
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -487,6 +517,7 @@ recorded_events_retrieval_chain_response = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
+            "timestamp": None,
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -503,6 +534,7 @@ recorded_events_retrieval_chain_response = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
+            "timestamp": None,
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -520,6 +552,7 @@ recorded_events_retrieval_chain_response = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
+            "timestamp": None,
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -527,6 +560,7 @@ recorded_events_retrieval_chain_response = [
             "sequence": 0,
             "vendor": "langchain",
             "ingest_source": "Python",
+            "role": "user",
             "virtual_llm": True,
             "content": "{'input': 'math', 'context': [Document(id='1234', metadata={}, page_content='What is 2 + 4?')]}",
         },
@@ -535,6 +569,7 @@ recorded_events_retrieval_chain_response = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
+            "timestamp": None,
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -542,6 +577,7 @@ recorded_events_retrieval_chain_response = [
             "sequence": 1,
             "vendor": "langchain",
             "ingest_source": "Python",
+            "role": "assistant",
             "is_response": True,
             "virtual_llm": True,
             "content": "```html\n<!DOCTYPE html>\n<html>\n<head>\n  <title>Math Quiz</title>\n</head>\n<body>\n  <h2>Math Quiz Questions</h2>\n  <ol>\n    <li>What is the result of 5 + 3?</li>\n      <ul>\n        <li>A) 7</li>\n        <li>B) 8</li>\n        <li>C) 9</li>\n        <li>D) 10</li>\n      </ul>\n    <li>What is the product of 6 x 7?</li>\n      <ul>\n        <li>A) 36</li>\n        <li>B) 42</li>\n        <li>C) 48</li>\n        <li>D) 56</li>\n      </ul>\n    <li>What is the square root of 64?</li>\n      <ul>\n        <li>A) 6</li>\n        <li>B) 7</li>\n        <li>C) 8</li>\n        <li>D) 9</li>\n      </ul>\n    <li>What is the result of 12 / 4?</li>\n      <ul>\n        <li>A) 2</li>\n        <li>B) 3</li>\n        <li>C) 4</li>\n        <li>D) 5</li>\n      </ul>\n    <li>What is the sum of 15 + 9?</li>\n      <ul>\n        <li>A) 22</li>\n        <li>B) 23</li>\n        <li>C) 24</li>\n        <li>D) 25</li>\n      </ul>\n  </ol>\n</body>\n</html>\n```",
@@ -551,6 +587,7 @@ recorded_events_retrieval_chain_response = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
+            "timestamp": None,
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -558,6 +595,7 @@ recorded_events_retrieval_chain_response = [
             "sequence": 1,
             "vendor": "langchain",
             "ingest_source": "Python",
+            "role": "assistant",
             "is_response": True,
             "virtual_llm": True,
             "content": "{'input': 'math', 'context': [Document(id='1234', metadata={}, page_content='What is 2 + 4?')], 'answer': '```html\\n<!DOCTYPE html>\\n<html>\\n<head>\\n  <title>Math Quiz</title>\\n</head>\\n<body>\\n  <h2>Math Quiz Questions</h2>\\n  <ol>\\n    <li>What is the result of 5 + 3?</li>\\n      <ul>\\n        <li>A) 7</li>\\n        <li>B) 8</li>\\n        <li>C) 9</li>\\n        <li>D) 10</li>\\n      </ul>\\n    <li>What is the product of 6 x 7?</li>\\n      <ul>\\n        <li>A) 36</li>\\n        <li>B) 42</li>\\n        <li>C) 48</li>\\n        <li>D) 56</li>\\n      </ul>\\n    <li>What is the square root of 64?</li>\\n      <ul>\\n        <li>A) 6</li>\\n        <li>B) 7</li>\\n        <li>C) 8</li>\\n        <li>D) 9</li>\\n      </ul>\\n    <li>What is the result of 12 / 4?</li>\\n      <ul>\\n        <li>A) 2</li>\\n        <li>B) 3</li>\\n        <li>C) 4</li>\\n        <li>D) 5</li>\\n      </ul>\\n    <li>What is the sum of 15 + 9?</li>\\n      <ul>\\n        <li>A) 22</li>\\n        <li>B) 23</li>\\n        <li>C) 24</li>\\n        <li>D) 25</li>\\n      </ul>\\n  </ol>\\n</body>\\n</html>\\n```'}",
@@ -570,6 +608,7 @@ chat_completion_recorded_events_str_response = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "span_id": None,
@@ -587,6 +626,7 @@ chat_completion_recorded_events_str_response = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -597,6 +637,7 @@ chat_completion_recorded_events_str_response = [
             "sequence": 0,
             "vendor": "langchain",
             "ingest_source": "Python",
+            "role": "user",
             "virtual_llm": True,
         },
     ),
@@ -604,6 +645,7 @@ chat_completion_recorded_events_str_response = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -614,6 +656,7 @@ chat_completion_recorded_events_str_response = [
             "sequence": 1,
             "vendor": "langchain",
             "ingest_source": "Python",
+            "role": "assistant",
             "is_response": True,
             "virtual_llm": True,
         },
@@ -624,6 +667,7 @@ chat_completion_recorded_events_list_response = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "span_id": None,
@@ -641,6 +685,7 @@ chat_completion_recorded_events_list_response = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -651,6 +696,7 @@ chat_completion_recorded_events_list_response = [
             "sequence": 0,
             "vendor": "langchain",
             "ingest_source": "Python",
+            "role": "user",
             "virtual_llm": True,
         },
     ),
@@ -658,6 +704,7 @@ chat_completion_recorded_events_list_response = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -668,6 +715,7 @@ chat_completion_recorded_events_list_response = [
             "sequence": 1,
             "vendor": "langchain",
             "ingest_source": "Python",
+            "role": "assistant",
             "is_response": True,
             "virtual_llm": True,
         },
@@ -679,6 +727,7 @@ chat_completion_recorded_events_error_in_openai = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "span_id": None,
@@ -696,6 +745,7 @@ chat_completion_recorded_events_error_in_openai = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -706,6 +756,7 @@ chat_completion_recorded_events_error_in_openai = [
             "sequence": 0,
             "vendor": "langchain",
             "ingest_source": "Python",
+            "role": "user",
             "virtual_llm": True,
         },
     ),
@@ -716,6 +767,7 @@ chat_completion_recorded_events_error_in_langchain = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "span_id": None,
@@ -732,6 +784,7 @@ chat_completion_recorded_events_error_in_langchain = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -742,6 +795,7 @@ chat_completion_recorded_events_error_in_langchain = [
             "sequence": 0,
             "vendor": "langchain",
             "ingest_source": "Python",
+            "role": "user",
             "virtual_llm": True,
         },
     ),

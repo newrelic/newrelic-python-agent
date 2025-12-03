@@ -142,7 +142,7 @@ class Span(otel_api_trace.Span):
 
     def _sampled(self):
         # Uses NR to determine if the trace is sampled
-        # 
+        #
         # transaction.sampled can be `None`, `True`, `False`.
         # If `None`, this has not been computed by NR which
         # can also mean the following:
@@ -272,15 +272,15 @@ class Tracer(otel_api_trace.Tracer):
         *args,
         **kwargs,
     ):
-        
+
         nr_trace_type = FunctionTrace
         transaction = current_transaction()
         self.nr_application = application_instance()
         self.attributes = attributes or {}
-        
+
         if not self.nr_application.settings.otel_bridge.enabled:
             return otel_api_trace.INVALID_SPAN
-        
+
         # Retrieve parent span
         parent_span_context = otel_api_trace.get_current_span(context).get_span_context()
 

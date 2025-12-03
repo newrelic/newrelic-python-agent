@@ -116,7 +116,7 @@ agent_control_health = agent_control_health_instance()
 def _reset_config_parser():
     global _config_object
     global _cache_object
-    _config_object = configparser.RawConfigParser()
+    _config_object = configparser.RawConfigParser(converters={"ratio": ratio})
     _cache_object = []
 
 

@@ -25,7 +25,7 @@ from ._test_multiagent_graph import agent_graph, analysis_agent, analysis_model,
 
 agent_recorded_events = [
     [
-        {"timestamp": 1763765633833, "type": "LlmAgent"},
+        {"type": "LlmAgent"},
         {
             "duration": None,
             "id": None,
@@ -37,7 +37,7 @@ agent_recorded_events = [
         },
     ],
     [
-        {"timestamp": 1763765633834, "type": "LlmAgent"},
+        {"type": "LlmAgent"},
         {
             "duration": None,
             "id": None,
@@ -52,7 +52,7 @@ agent_recorded_events = [
 
 tool_recorded_events = [
     [
-        {"timestamp": 1763765633833, "type": "LlmTool"},
+        {"type": "LlmTool"},
         {
             "agent_name": "math_agent",
             "duration": None,
@@ -68,7 +68,7 @@ tool_recorded_events = [
         },
     ],
     [
-        {"timestamp": 1763765633834, "type": "LlmTool"},
+        {"type": "LlmTool"},
         {
             "agent_name": "analysis_agent",
             "duration": None,

@@ -1329,13 +1329,13 @@ def test_distributed_trace_uses_sampling_instance(
 @pytest.mark.parametrize(
     "dt_settings,dt_headers,expected_sampling_instance_called,expected_ratio",
     (
-        ( # Ratio for partial granularity does not exceed 1.
+        (  # Ratio for partial granularity does not exceed 1.
             {
                 "distributed_tracing.sampler.full_granularity.enabled": True,
                 "distributed_tracing.sampler.partial_granularity.enabled": True,
-                "distributed_tracing.sampler.full_granularity.remote_parent_sampled.trace_id_ratio_based.ratio": .5,
+                "distributed_tracing.sampler.full_granularity.remote_parent_sampled.trace_id_ratio_based.ratio": 0.5,
                 "distributed_tracing.sampler.full_granularity._remote_parent_sampled": "trace_id_ratio_based",
-                "distributed_tracing.sampler.partial_granularity.remote_parent_sampled.trace_id_ratio_based.ratio": .7,
+                "distributed_tracing.sampler.partial_granularity.remote_parent_sampled.trace_id_ratio_based.ratio": 0.7,
                 "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "trace_id_ratio_based",
             },
             {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01"},
@@ -1346,9 +1346,9 @@ def test_distributed_trace_uses_sampling_instance(
             {
                 "distributed_tracing.sampler.full_granularity.enabled": True,
                 "distributed_tracing.sampler.partial_granularity.enabled": True,
-                "distributed_tracing.sampler.full_granularity.remote_parent_sampled.trace_id_ratio_based.ratio": .5,
+                "distributed_tracing.sampler.full_granularity.remote_parent_sampled.trace_id_ratio_based.ratio": 0.5,
                 "distributed_tracing.sampler.full_granularity._remote_parent_sampled": "trace_id_ratio_based",
-                "distributed_tracing.sampler.partial_granularity.remote_parent_sampled.trace_id_ratio_based.ratio": .5,
+                "distributed_tracing.sampler.partial_granularity.remote_parent_sampled.trace_id_ratio_based.ratio": 0.5,
                 "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "trace_id_ratio_based",
             },
             {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01"},
@@ -1369,10 +1369,7 @@ def test_distributed_trace_uses_sampling_instance(
     ),
 )
 def test_distributed_trace_uses_sampling_instance(
-    dt_settings,
-    dt_headers,
-    expected_sampling_instance_called,
-    expected_ratio,
+    dt_settings, dt_headers, expected_sampling_instance_called, expected_ratio
 ):
     test_settings = _override_settings.copy()
     test_settings.update(dt_settings)
@@ -1394,9 +1391,6 @@ def test_distributed_trace_uses_sampling_instance(
         # as opposed to after it ends and we lose the application context.
         txn._make_sampling_decision()
 
-        assert (
-            application.sampler._samplers[expected_sampling_instance_called].ratio
-            == expected_ratio
-        )
+        assert application.sampler._samplers[expected_sampling_instance_called].ratio == expected_ratio
 
     _test()

@@ -16,19 +16,18 @@
 # low-order bits of the trace ID to decide whether to sample a given trace.
 TRACE_ID_LIMIT = (1 << 64) - 1
 
+
 class TraceIdRatioBasedSampler:
     """
     This replicates behavior of TraceIdRatioBased sampler in
     https://github.com/open-telemetry/opentelemetry-python/blob/main/opentelemetry-sdk/src/opentelemetry/sdk/trace/sampling.py.
     """
+
     def __init__(self, ratio):
         self.ratio = ratio
         self.bound = round(ratio * (TRACE_ID_LIMIT + 1))
 
-    def compute_sampled(
-        self,
-        trace_id,
-    ):
+    def compute_sampled(self, trace_id):
         if trace_id & TRACE_ID_LIMIT < self.bound:
             return True
         return False

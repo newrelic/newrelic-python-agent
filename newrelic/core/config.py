@@ -701,6 +701,7 @@ def _environ_as_sampler(name, default):
         return default
     return val
 
+
 def _environ_as_int(name, default=0):
     val = os.environ.get(name, default)
     try:
@@ -1020,21 +1021,25 @@ _settings.distributed_tracing.sampler.full_granularity.enabled = _environ_as_boo
     "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_ENABLED", default=True
 )
 _settings.distributed_tracing.sampler.full_granularity._root = (
-    "trace_id_ratio_based"
-    if _environ_as_ratio("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_ROOT_TRACE_ID_RATIO_BASED_RATIO", None)
-    else None
-) or ("adaptive"
-    if os.environ.get("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_ROOT_ADAPTIVE_SAMPLING_TARGET", None)
-    else None
-) or _environ_as_sampler("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_ROOT", "default")
+    (
+        "trace_id_ratio_based"
+        if _environ_as_ratio(
+            "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_ROOT_TRACE_ID_RATIO_BASED_RATIO", None
+        )
+        else None
+    )
+    or (
+        "adaptive"
+        if os.environ.get("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_ROOT_ADAPTIVE_SAMPLING_TARGET", None)
+        else None
+    )
+    or _environ_as_sampler("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_ROOT", "default")
+)
 _settings.distributed_tracing.sampler.full_granularity.root.adaptive.sampling_target = _environ_as_int(
     "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_ROOT_ADAPTIVE_SAMPLING_TARGET", None
 )
-_settings.distributed_tracing.sampler.full_granularity.root.trace_id_ratio_based.ratio = (
-    _environ_as_ratio(
-        "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_ROOT_TRACE_ID_RATIO_BASED_RATIO",
-        None,
-    )
+_settings.distributed_tracing.sampler.full_granularity.root.trace_id_ratio_based.ratio = _environ_as_ratio(
+    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_ROOT_TRACE_ID_RATIO_BASED_RATIO", None
 )
 _settings.distributed_tracing.sampler.full_granularity._remote_parent_sampled = (
     (
@@ -1061,8 +1066,7 @@ _settings.distributed_tracing.sampler.full_granularity.remote_parent_sampled.ada
 )
 _settings.distributed_tracing.sampler.full_granularity.remote_parent_sampled.trace_id_ratio_based.ratio = (
     _environ_as_ratio(
-        "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_REMOTE_PARENT_SAMPLED_TRACE_ID_RATIO_BASED_RATIO",
-        None,
+        "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_REMOTE_PARENT_SAMPLED_TRACE_ID_RATIO_BASED_RATIO", None
     )
 )
 _settings.distributed_tracing.sampler.full_granularity._remote_parent_not_sampled = (
@@ -1104,13 +1108,22 @@ _settings.distributed_tracing.sampler.partial_granularity.type = os.environ.get(
     "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_TYPE", "essential"
 )
 _settings.distributed_tracing.sampler.partial_granularity._root = (
-    "trace_id_ratio_based"
-    if _environ_as_ratio("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_ROOT_TRACE_ID_RATIO_BASED_RATIO", None)
-    else None
-) or ("adaptive"
-    if os.environ.get("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_ROOT_ADAPTIVE_SAMPLING_TARGET", None)
-    else None
-) or _environ_as_sampler("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_ROOT", "default")
+    (
+        "trace_id_ratio_based"
+        if _environ_as_ratio(
+            "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_ROOT_TRACE_ID_RATIO_BASED_RATIO", None
+        )
+        else None
+    )
+    or (
+        "adaptive"
+        if os.environ.get(
+            "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_ROOT_ADAPTIVE_SAMPLING_TARGET", None
+        )
+        else None
+    )
+    or _environ_as_sampler("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_ROOT", "default")
+)
 _settings.distributed_tracing.sampler.partial_granularity.root.adaptive.sampling_target = _environ_as_int(
     "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_ROOT_ADAPTIVE_SAMPLING_TARGET", None
 )
@@ -1118,40 +1131,56 @@ _settings.distributed_tracing.sampler.partial_granularity.root.trace_id_ratio_ba
     "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_ROOT_TRACE_ID_RATIO_BASED_RATIO", None
 )
 _settings.distributed_tracing.sampler.partial_granularity._remote_parent_sampled = (
-    "trace_id_ratio_based"
-    if _environ_as_ratio(
-        "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_SAMPLED_TRACE_ID_RATIO_BASED_RATIO",
-        None,
+    (
+        "trace_id_ratio_based"
+        if _environ_as_ratio(
+            "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_SAMPLED_TRACE_ID_RATIO_BASED_RATIO",
+            None,
+        )
+        else None
     )
-    else None
-) or ("adaptive"
-    if os.environ.get(
-        "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_SAMPLED_ADAPTIVE_SAMPLING_TARGET", None
+    or (
+        "adaptive"
+        if os.environ.get(
+            "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_SAMPLED_ADAPTIVE_SAMPLING_TARGET",
+            None,
+        )
+        else None
     )
-    else None
-) or _environ_as_sampler("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_SAMPLED", "default")
+    or _environ_as_sampler("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_SAMPLED", "default")
+)
 _settings.distributed_tracing.sampler.partial_granularity.remote_parent_sampled.adaptive.sampling_target = (
     _environ_as_int(
         "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_SAMPLED_ADAPTIVE_SAMPLING_TARGET", None
     )
 )
-_settings.distributed_tracing.sampler.partial_granularity.remote_parent_sampled.trace_id_ratio_based.ratio = _environ_as_ratio(
-    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_SAMPLED_TRACE_ID_RATIO_BASED_RATIO", None
+_settings.distributed_tracing.sampler.partial_granularity.remote_parent_sampled.trace_id_ratio_based.ratio = (
+    _environ_as_ratio(
+        "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_SAMPLED_TRACE_ID_RATIO_BASED_RATIO",
+        None,
+    )
 )
 _settings.distributed_tracing.sampler.partial_granularity._remote_parent_not_sampled = (
-    "trace_id_ratio_based"
-    if _environ_as_ratio(
-        "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_NOT_SAMPLED_TRACE_ID_RATIO_BASED_RATIO",
-        None,
+    (
+        "trace_id_ratio_based"
+        if _environ_as_ratio(
+            "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_NOT_SAMPLED_TRACE_ID_RATIO_BASED_RATIO",
+            None,
+        )
+        else None
     )
-    else None
-) or ("adaptive"
-    if os.environ.get(
-        "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_NOT_SAMPLED_ADAPTIVE_SAMPLING_TARGET",
-        None,
+    or (
+        "adaptive"
+        if os.environ.get(
+            "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_NOT_SAMPLED_ADAPTIVE_SAMPLING_TARGET",
+            None,
+        )
+        else None
     )
-    else None
-) or _environ_as_sampler("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_NOT_SAMPLED", "default")
+    or _environ_as_sampler(
+        "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_NOT_SAMPLED", "default"
+    )
+)
 _settings.distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.adaptive.sampling_target = (
     _environ_as_int(
         "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_NOT_SAMPLED_ADAPTIVE_SAMPLING_TARGET",
@@ -1159,7 +1188,8 @@ _settings.distributed_tracing.sampler.partial_granularity.remote_parent_not_samp
     )
 )
 _settings.distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.trace_id_ratio_based.ratio = _environ_as_ratio(
-    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_NOT_SAMPLED_TRACE_ID_RATIO_BASED_RATIO", None
+    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_NOT_SAMPLED_TRACE_ID_RATIO_BASED_RATIO",
+    None,
 )
 _settings.distributed_tracing.exclude_newrelic_header = False
 _settings.span_events.enabled = _environ_as_bool("NEW_RELIC_SPAN_EVENTS_ENABLED", default=True)

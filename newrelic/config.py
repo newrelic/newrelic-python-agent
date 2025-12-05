@@ -95,6 +95,7 @@ _settings = newrelic.api.settings.settings()
 # modules to look up customised settings defined in the loaded
 # configuration file.
 
+
 def ratio(value):
     try:
         val = float(value)
@@ -102,6 +103,7 @@ def ratio(value):
             return val
     except ValueError:
         pass
+
 
 _config_object = configparser.RawConfigParser(converters={"ratio": ratio})
 
@@ -561,7 +563,9 @@ def _process_configuration(section):
         section, "distributed_tracing.sampler.full_granularity.remote_parent_sampled.adaptive.sampling_target", "getint"
     )
     _process_dt_sampler_setting(
-        section, "distributed_tracing.sampler.full_granularity.remote_parent_sampled.trace_id_ratio_based.ratio", "getratio"
+        section,
+        "distributed_tracing.sampler.full_granularity.remote_parent_sampled.trace_id_ratio_based.ratio",
+        "getratio",
     )
     _process_dt_setting(
         section,

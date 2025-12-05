@@ -436,4 +436,4 @@ class TracerProvider(otel_api_trace.TracerProvider):
         *args,
         **kwargs,
     ):
-        return Tracer(resource=self._resource, instrumentation_library=instrumenting_module_name, *args, **kwargs)
+        return Tracer(*args, resource=self._resource, instrumentation_library=instrumenting_module_name, **kwargs)

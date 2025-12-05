@@ -696,7 +696,7 @@ _settings.audit_log_file = os.environ.get("NEW_RELIC_AUDIT_LOG", None)
 
 def _environ_as_sampler(name, default):
     val = os.environ.get(name, default)
-    # The trace_id_ratio_based value can only bet set by setting the ratio"
+    # The trace_id_ratio_based value can only be set by setting the ratio
     if val == "trace_id_ratio_based":
         return default
     return val

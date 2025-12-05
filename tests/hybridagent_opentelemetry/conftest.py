@@ -32,6 +32,7 @@ collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (Hybrid Agent)", default_settings=_default_settings
 )
 
+
 @pytest.fixture(scope="session")
 def tracer():
     trace_provider = TracerProvider()

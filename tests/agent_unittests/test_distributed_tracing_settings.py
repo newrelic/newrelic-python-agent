@@ -145,7 +145,7 @@ def test_distributed_trace_setings(ini, env, expected_format, global_settings):
         (  # More specific sampler path overrides less specific path in ini file.
             INI_FILE_FULL_GRAN_CONFLICTS_RATIO,
             {},
-            ("trace_id_ratio_based", "trace_id_ratio_based", "trace_id_ratio_based", .5, .1, .2),
+            ("trace_id_ratio_based", "trace_id_ratio_based", "trace_id_ratio_based", 0.5, 0.1, 0.2),
         ),
         (  # ini file configuration takes precedence over env vars.
             INI_FILE_FULL_GRAN_CONFLICTS_ADAPTIVE,
@@ -206,7 +206,7 @@ def test_distributed_trace_setings(ini, env, expected_format, global_settings):
                 "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_REMOTE_PARENT_SAMPLED_TRACE_ID_RATIO_BASED_RATIO": ".1",
                 "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_REMOTE_PARENT_NOT_SAMPLED_TRACE_ID_RATIO_BASED_RATIO": ".2",
             },
-            ("trace_id_ratio_based", "trace_id_ratio_based", "trace_id_ratio_based", .5, .1, .2),
+            ("trace_id_ratio_based", "trace_id_ratio_based", "trace_id_ratio_based", 0.5, 0.1, 0.2),
         ),
         (  # Falls back on adaptive when invalid ratio.
             INI_FILE_EMPTY,
@@ -231,7 +231,7 @@ def test_distributed_trace_setings(ini, env, expected_format, global_settings):
         (  # Ratio takes precedence over adaptive.
             INI_FILE_FULL_GRAN_MULTIPLE_VALID_SAMPLERS,
             {},
-            ("trace_id_ratio_based", "trace_id_ratio_based", "trace_id_ratio_based", .5, .1, .2),
+            ("trace_id_ratio_based", "trace_id_ratio_based", "trace_id_ratio_based", 0.5, 0.1, 0.2),
         ),
     ),
 )
@@ -285,7 +285,7 @@ def test_full_granularity_precedence(ini, env, global_settings, expected):
         (  # More specific sampler path overrides less specific path in ini file.
             INI_FILE_PARTIAL_GRAN_CONFLICTS_RATIO,
             {},
-            ("trace_id_ratio_based", "trace_id_ratio_based", "trace_id_ratio_based", .5, .1, .2),
+            ("trace_id_ratio_based", "trace_id_ratio_based", "trace_id_ratio_based", 0.5, 0.1, 0.2),
         ),
         (  # ini config takes precedence over env vars.
             INI_FILE_PARTIAL_GRAN_CONFLICTS_ADAPTIVE,
@@ -317,7 +317,7 @@ def test_full_granularity_precedence(ini, env, global_settings, expected):
                 "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_NOT_SAMPLED": "trace_id_ratio_based",
                 "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_NOT_SAMPLED_TRACE_ID_RATIO_BASED_RATIO": ".1",
             },
-            ("default", "default", "trace_id_ratio_based", None, None, .1),
+            ("default", "default", "trace_id_ratio_based", None, None, 0.1),
         ),
         (  # More specific sampler path overrides less specific path in env vars.
             INI_FILE_EMPTY,
@@ -346,7 +346,7 @@ def test_full_granularity_precedence(ini, env, global_settings, expected):
                 "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_SAMPLED_TRACE_ID_RATIO_BASED_RATIO": ".1",
                 "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_NOT_SAMPLED_TRACE_ID_RATIO_BASED_RATIO": ".2",
             },
-            ("trace_id_ratio_based", "trace_id_ratio_based", "trace_id_ratio_based", .5, .1, .2),
+            ("trace_id_ratio_based", "trace_id_ratio_based", "trace_id_ratio_based", 0.5, 0.1, 0.2),
         ),
         (  # Ignores other unknown samplers.
             INI_FILE_PARTIAL_GRAN_MULTIPLE_SAMPLERS,
@@ -379,7 +379,9 @@ def test_partial_granularity_precedence(ini, env, global_settings, expected):
     assert app_settings.distributed_tracing.sampler.partial_granularity._remote_parent_sampled == expected[1]
     assert app_settings.distributed_tracing.sampler.partial_granularity._remote_parent_not_sampled == expected[2]
     if expected[0] == "trace_id_ratio_based":
-        assert app_settings.distributed_tracing.sampler.partial_granularity.root.trace_id_ratio_based.ratio == expected[3]
+        assert (
+            app_settings.distributed_tracing.sampler.partial_granularity.root.trace_id_ratio_based.ratio == expected[3]
+        )
     else:
         assert app_settings.distributed_tracing.sampler.partial_granularity.root.adaptive.sampling_target == expected[3]
 

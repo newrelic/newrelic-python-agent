@@ -1068,11 +1068,15 @@ class Transaction:
             sampled = False
             priority = 0
         elif config == "trace_id_ratio_based":
-            _logger.debug(
-                "Let trace id ratio based sampler algorithm decide based on trace_id = %s.", self._trace_id
-            )
+            _logger.debug("Let trace id ratio based sampler algorithm decide based on trace_id = %s.", self._trace_id)
             priority, sampled = self.sampling_algo_compute_sampled_and_priority(
-                priority, sampled, {"full_granularity": full_granularity, "section": section, "trace_id": int(self._trace_id.lower().zfill(32), 16)},
+                priority,
+                sampled,
+                {
+                    "full_granularity": full_granularity,
+                    "section": section,
+                    "trace_id": int(self._trace_id.lower().zfill(32), 16),
+                },
             )
         else:
             if config not in ("default", "adaptive"):

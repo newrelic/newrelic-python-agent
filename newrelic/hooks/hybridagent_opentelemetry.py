@@ -62,7 +62,7 @@ def wrap_get_tracer_provider(wrapped, instance, args, kwargs):
 
     if _TRACER_PROVIDER is None:
         from newrelic.api.opentelemetry import TracerProvider
-        
+
         hybrid_agent_tracer_provider = TracerProvider("hybrid_agent_tracer_provider")
         _TRACER_PROVIDER = hybrid_agent_tracer_provider
     return _TRACER_PROVIDER

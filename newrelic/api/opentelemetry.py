@@ -272,7 +272,6 @@ class Tracer(otel_api_trace.Tracer):
         *args,
         **kwargs,
     ):
-
         nr_trace_type = FunctionTrace
         transaction = current_transaction()
         self.nr_application = application_instance()

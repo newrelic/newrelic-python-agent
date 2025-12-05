@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import pytest
-from strands import Agent, tool
+from strands import Agent
 from testing_support.fixtures import reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     disabled_ai_monitoring_record_content_settings,
@@ -31,6 +31,17 @@ from newrelic.api.background_task import background_task
 from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import transient_function_wrapper
+
+from ._test_agent import (
+    add_exclamation,
+    multi_tool_model,
+    multi_tool_model_error,
+    single_tool_model,
+    single_tool_model_runtime_error_agen,
+    single_tool_model_runtime_error_coro,
+    throw_exception_agen,
+    throw_exception_coro,
+)
 
 tool_recorded_event = [
     (
@@ -144,29 +155,12 @@ agent_recorded_event_error = [
 ]
 
 
-# Example tool for testing purposes
-@tool
-async def add_exclamation(message: str) -> str:
-    return f"{message}!"
-
-
-@tool
-async def throw_exception_coro(message: str) -> str:
-    raise RuntimeError("Oops")
-
-
-@tool
-async def throw_exception_agen(message: str) -> str:
-    raise RuntimeError("Oops")
-    yield
-
-
 @reset_core_stats_engine()
 @validate_custom_events(events_with_context_attrs(tool_recorded_event))
 @validate_custom_events(events_with_context_attrs(agent_recorded_event))
 @validate_custom_event_count(count=2)
 @validate_transaction_metrics(
-    "test_agent:test_agent_invoke",
+    "mlmodel_strands.test_agent:test_agent_invoke",
     scoped_metrics=[
         ("Llm/agent/Strands/strands.agent.agent:Agent.stream_async/my_agent", 1),
         ("Llm/tool/Strands/strands.tools.executors._executor:ToolExecutor._stream/add_exclamation", 1),
@@ -194,7 +188,7 @@ def test_agent_invoke(set_trace_info, single_tool_model):
 @validate_custom_events(agent_recorded_event)
 @validate_custom_event_count(count=2)
 @validate_transaction_metrics(
-    "test_agent:test_agent_invoke_async",
+    "mlmodel_strands.test_agent:test_agent_invoke_async",
     scoped_metrics=[
         ("Llm/agent/Strands/strands.agent.agent:Agent.stream_async/my_agent", 1),
         ("Llm/tool/Strands/strands.tools.executors._executor:ToolExecutor._stream/add_exclamation", 1),
@@ -224,7 +218,7 @@ def test_agent_invoke_async(loop, set_trace_info, single_tool_model):
 @validate_custom_events(agent_recorded_event)
 @validate_custom_event_count(count=2)
 @validate_transaction_metrics(
-    "test_agent:test_agent_stream_async",
+    "mlmodel_strands.test_agent:test_agent_stream_async",
     scoped_metrics=[
         ("Llm/agent/Strands/strands.agent.agent:Agent.stream_async/my_agent", 1),
         ("Llm/tool/Strands/strands.tools.executors._executor:ToolExecutor._stream/add_exclamation", 1),
@@ -260,7 +254,7 @@ def test_agent_stream_async(loop, set_trace_info, single_tool_model):
 @validate_custom_events(tool_events_sans_content(tool_recorded_event))
 @validate_custom_event_count(count=2)
 @validate_transaction_metrics(
-    "test_agent:test_agent_invoke_no_content",
+    "mlmodel_strands.test_agent:test_agent_invoke_no_content",
     scoped_metrics=[
         ("Llm/agent/Strands/strands.agent.agent:Agent.stream_async/my_agent", 1),
         ("Llm/tool/Strands/strands.tools.executors._executor:ToolExecutor._stream/add_exclamation", 1),
@@ -301,7 +295,7 @@ def test_agent_invoke_disabled_ai_monitoring_events(set_trace_info, single_tool_
 @validate_custom_events(agent_recorded_event_error)
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
-    "test_agent:test_agent_invoke_error",
+    "mlmodel_strands.test_agent:test_agent_invoke_error",
     scoped_metrics=[("Llm/agent/Strands/strands.agent.agent:Agent.stream_async/my_agent", 1)],
     rollup_metrics=[("Llm/agent/Strands/strands.agent.agent:Agent.stream_async/my_agent", 1)],
     background_task=True,
@@ -330,7 +324,7 @@ def test_agent_invoke_error(set_trace_info, single_tool_model):
 @validate_custom_events(tool_recorded_event_error_coro)
 @validate_custom_event_count(count=2)
 @validate_transaction_metrics(
-    "test_agent:test_agent_invoke_tool_coro_runtime_error",
+    "mlmodel_strands.test_agent:test_agent_invoke_tool_coro_runtime_error",
     scoped_metrics=[
         ("Llm/agent/Strands/strands.agent.agent:Agent.stream_async/my_agent", 1),
         ("Llm/tool/Strands/strands.tools.executors._executor:ToolExecutor._stream/throw_exception_coro", 1),
@@ -358,7 +352,7 @@ def test_agent_invoke_tool_coro_runtime_error(set_trace_info, single_tool_model_
 @validate_custom_events(tool_recorded_event_error_agen)
 @validate_custom_event_count(count=2)
 @validate_transaction_metrics(
-    "test_agent:test_agent_invoke_tool_agen_runtime_error",
+    "mlmodel_strands.test_agent:test_agent_invoke_tool_agen_runtime_error",
     scoped_metrics=[
         ("Llm/agent/Strands/strands.agent.agent:Agent.stream_async/my_agent", 1),
         ("Llm/tool/Strands/strands.tools.executors._executor:ToolExecutor._stream/throw_exception_agen", 1),
@@ -387,7 +381,7 @@ def test_agent_invoke_tool_agen_runtime_error(set_trace_info, single_tool_model_
 @validate_custom_events(tool_recorded_event_forced_internal_error)
 @validate_custom_event_count(count=2)
 @validate_transaction_metrics(
-    "test_agent:test_agent_tool_forced_exception",
+    "mlmodel_strands.test_agent:test_agent_tool_forced_exception",
     scoped_metrics=[
         ("Llm/agent/Strands/strands.agent.agent:Agent.stream_async/my_agent", 1),
         ("Llm/tool/Strands/strands.tools.executors._executor:ToolExecutor._stream/add_exclamation", 1),

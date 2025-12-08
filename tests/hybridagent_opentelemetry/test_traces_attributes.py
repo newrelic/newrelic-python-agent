@@ -13,13 +13,12 @@
 # limitations under the License.
 
 from opentelemetry import trace
+from testing_support.validators.validate_span_events import validate_span_events
 
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import function_trace
 from newrelic.api.time_trace import add_custom_span_attribute
 from newrelic.api.transaction import add_custom_attribute
-
-from testing_support.validators.validate_span_events import validate_span_events
 
 
 def test_trace_with_span_attributes(tracer):

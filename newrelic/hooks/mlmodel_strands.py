@@ -416,7 +416,10 @@ class AsyncGeneratorProxy(ObjectProxy):
 
 def wrap_ToolRegister_register_tool(wrapped, instance, args, kwargs):
     bound_args = bind_args(wrapped, args, kwargs)
-    bound_args["tool"]._tool_func = ErrorTraceWrapper(bound_args["tool"]._tool_func)
+    tool = bound_args.get("tool")
+
+    if hasattr(tool, "_tool_func"):
+        tool._tool_func = ErrorTraceWrapper(tool._tool_func)
     return wrapped(*args, **kwargs)
 
 

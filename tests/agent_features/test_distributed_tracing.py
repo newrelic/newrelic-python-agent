@@ -1282,7 +1282,7 @@ def test_partial_granularity_essential_span_attributes():
         ),
     ),
 )
-def test_distributed_trace_uses_sampling_instance(
+def test_distributed_trace_uses_adaptive_sampling_instance(
     dt_settings,
     dt_headers,
     expected_sampling_instance_called,
@@ -1368,7 +1368,7 @@ def test_distributed_trace_uses_sampling_instance(
         ),
     ),
 )
-def test_distributed_trace_uses_sampling_instance(
+def test_distributed_trace_uses_ratio_sampling_instance(
     dt_settings, dt_headers, expected_sampling_instance_called, expected_ratio
 ):
     test_settings = _override_settings.copy()

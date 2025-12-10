@@ -121,24 +121,23 @@ def wrap_get_tracer_provider(wrapped, instance, args, kwargs):
 def wrap_get_current_span(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     trace = current_trace()
-
+    span = wrapped(*args, **kwargs)
+    
     # If a NR trace does not exist (aside from the Sentinel
     # trace), return the original function's result.
-    if not transaction or isinstance(trace, Sentinel):
-        return wrapped(*args, **kwargs)
+    if not transaction:
+        return span
 
     # Do not allow the wrapper to continue if
     # the Hybrid Agent setting is not enabled
     settings = transaction.settings or global_settings()
 
     if not settings.otel_bridge.enabled:
-        return wrapped(*args, **kwargs)
+        return span
 
     # If a NR trace does exist, check to see if the current
     # OTel span corresponds to the current NR trace.  If so,
     # return the original function's result.
-    span = wrapped(*args, **kwargs)
-
     if span.get_span_context().span_id == int(trace.guid, 16):
         return span
 
@@ -163,14 +162,22 @@ def wrap_get_current_span(wrapped, instance, args, kwargs):
                 add_custom_span_attribute(key, value)
 
     if transaction.settings.distributed_tracing.enabled:
-        transaction._trace_id = f'{span.get_span_context().trace_id:x}'
-        guid = span.get_span_context().trace_id >> 64
-        transaction.guid = f'{guid:x}'
+        if not isinstance(span, otel_api_trace.NonRecordingSpan):
+            # Use the Otel trace and span ids if current span
+            # is not a NonRecordingSpan.  Otherwise, we need to 
+            # override the current span with the transaction
+            # and trace guids.
+            transaction._trace_id = f'{span.get_span_context().trace_id:x}'
+            guid = span.get_span_context().trace_id >> 64
+            transaction.guid = f'{guid:x}'
         
         nr_tracestate_headers = (
             transaction._create_distributed_trace_data()
         )
-        nr_tracestate_headers["sa"] = bool(span.get_span_context().trace_flags)
+        transaction._distributed_trace_state = 0    # Make sure to reset DT state here
+        
+        # If the span is not a NonRecordingSpan and it is sampled, use that flag.  Else, use the existing flag.
+        nr_tracestate_headers["sa"] |= bool(span.get_span_context().trace_flags) & (not isinstance(span, otel_api_trace.NonRecordingSpan))
         
         otel_tracestate_headers = [
             (key, str(value)) for key, value in nr_tracestate_headers.items()
@@ -182,7 +189,7 @@ def wrap_get_current_span(wrapped, instance, args, kwargs):
         trace_id=int(transaction.trace_id, 16),
         span_id=int(trace.guid, 16),
         is_remote=span.get_span_context().is_remote,
-        trace_flags=otel_api_trace.TraceFlags(span.get_span_context().trace_flags),
+        trace_flags=otel_api_trace.TraceFlags(0x01 if nr_tracestate_headers["sa"] else 0x00),
         trace_state=otel_api_trace.TraceState(otel_tracestate_headers),
     )
 

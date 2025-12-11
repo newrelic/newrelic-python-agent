@@ -151,6 +151,7 @@ def test_bedrock_chat_completion_with_token_count(set_trace_info, exercise_model
     expected_events = add_token_counts_to_chat_events(expected_events)
     if response_streaming:
         expected_events = add_token_count_streaming_events(expected_events)
+
     @validate_custom_events(expected_events)
     # One summary event, one user message, and one response message from the assistant
     @validate_custom_event_count(count=4)

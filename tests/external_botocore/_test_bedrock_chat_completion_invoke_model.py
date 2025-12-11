@@ -294,8 +294,8 @@ chat_completion_expected_events = {
                 "duration": None,  # Response time varies each test run
                 "request.model": "anthropic.claude-3-sonnet-20240229-v1:0",
                 "response.model": "anthropic.claude-3-sonnet-20240229-v1:0",
-                "response.usage.completion_tokens": 31,
                 "response.usage.prompt_tokens": 21,
+                "response.usage.completion_tokens": 31,
                 "response.usage.total_tokens": 52,
                 "request.temperature": 0.7,
                 "request.max_tokens": 100,

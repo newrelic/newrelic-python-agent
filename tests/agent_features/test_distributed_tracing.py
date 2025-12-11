@@ -15,8 +15,8 @@
 import asyncio
 import copy
 import json
-import time
 import random
+import time
 
 import pytest
 import webtest
@@ -1405,21 +1405,17 @@ def test_distributed_trace_uses_ratio_sampling_instance(
                 "distributed_tracing.sampler.full_granularity.enabled": False,
                 "distributed_tracing.sampler.partial_granularity.enabled": False,
             },
-            0.123, # random
+            0.123,  # random
             False,
         ),
         (  # When dt is disabled.
-            {
-                "distributed_tracing.enabled": False,
-            },
-            0.123, # random
+            {"distributed_tracing.enabled": False},
+            0.123,  # random
             False,
         ),
         (  # Verify when full granularity sampled +2 is added to the priority.
-            {
-                "distributed_tracing.sampler.full_granularity.root.trace_id_ratio_based.ratio": 1,
-            },
-            2.123, # random + 2
+            {"distributed_tracing.sampler.full_granularity.root.trace_id_ratio_based.ratio": 1},
+            2.123,  # random + 2
             True,
         ),
         (  # Verify when partial granularity sampled +1 is added to the priority.
@@ -1428,18 +1424,15 @@ def test_distributed_trace_uses_ratio_sampling_instance(
                 "distributed_tracing.sampler.partial_granularity.enabled": True,
                 "distributed_tracing.sampler.partial_granularity.root.trace_id_ratio_based.ratio": 1,
             },
-            1.123, # random + 1
+            1.123,  # random + 1
             True,
         ),
     ),
 )
 def test_distributed_trace_enabled_settings_set_correct_sampled_priority(
-    dt_settings,
-    expected_priority,
-    expected_sampled,
-    monkeypatch,
+    dt_settings, expected_priority, expected_sampled, monkeypatch
 ):
-    monkeypatch.setattr(random, 'random', lambda *args, **kwargs: 0.123)
+    monkeypatch.setattr(random, "random", lambda *args, **kwargs: 0.123)
 
     test_settings = _override_settings.copy()
     test_settings.update(dt_settings)
@@ -1453,18 +1446,16 @@ def test_distributed_trace_enabled_settings_set_correct_sampled_priority(
     _test()
 
 
-def test_distributed_trace_priority_set_when_only_sampled_set_in_headers(
-    monkeypatch,
-):
-    monkeypatch.setattr(random, 'random', lambda *args, **kwargs: 0.123)
+def test_distributed_trace_priority_set_when_only_sampled_set_in_headers(monkeypatch):
+    monkeypatch.setattr(random, "random", lambda *args, **kwargs: 0.123)
 
     @override_application_settings(_override_settings)
     @validate_transaction_object_attributes({"sampled": True, "priority": 2.123})
     @background_task()
     def _test():
         headers = {
-            "traceparent": f"00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01",
-            "tracestate": f"1@nr=0-0-1-2827902-0af7651916cd43dd-00f067aa0ba902b7-1--1518469636035"
+            "traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01",
+            "tracestate": "1@nr=0-0-1-2827902-0af7651916cd43dd-00f067aa0ba902b7-1--1518469636035",
         }
         accept_distributed_trace_headers(headers)
 

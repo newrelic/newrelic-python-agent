@@ -23,8 +23,8 @@ from external_botocore._test_bedrock_chat_completion_converse import (
 )
 from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
-    add_token_counts_to_chat_events,
     add_token_count_streaming_events,
+    add_token_counts_to_chat_events,
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
     events_sans_content,

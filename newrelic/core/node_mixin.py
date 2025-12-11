@@ -168,7 +168,7 @@ class GenericNodeMixin:
             ct_exit_spans["kept"] += 1
             yield span
             # Compressed spans are always reparented onto the entry span.
-            if not settings.distributed_tracing.sampler.partial_granularity.type == "compact" or span[0].get(
+            if settings.distributed_tracing.sampler.partial_granularity.type != "compact" or span[0].get(
                 "nr.entryPoint"
             ):
                 parent_id = self.guid

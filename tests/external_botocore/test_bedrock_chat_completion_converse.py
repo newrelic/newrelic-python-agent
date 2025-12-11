@@ -23,8 +23,8 @@ from _test_bedrock_chat_completion_converse import (
 from conftest import BOTOCORE_VERSION
 from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
-    add_token_counts_to_chat_events,
     add_token_count_streaming_events,
+    add_token_counts_to_chat_events,
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
     events_sans_content,
@@ -141,7 +141,9 @@ def test_bedrock_chat_completion_no_content(set_trace_info, exercise_model, expe
 
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
-def test_bedrock_chat_completion_with_token_count(set_trace_info, exercise_model, expected_metric, expected_events, response_streaming):
+def test_bedrock_chat_completion_with_token_count(
+    set_trace_info, exercise_model, expected_metric, expected_events, response_streaming
+):
     expected_events = add_token_counts_to_chat_events(expected_events)
     if response_streaming:
         expected_events = add_token_count_streaming_events(expected_events)

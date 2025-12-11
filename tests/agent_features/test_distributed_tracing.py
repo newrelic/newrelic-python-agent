@@ -1446,7 +1446,7 @@ def test_distributed_trace_enabled_settings_set_correct_sampled_priority(
     _test()
 
 
-def test_distributed_trace_priority_set_when_only_sampled_set_in_headers(monkeypatch):
+def test_distributed_trace_priority_set_when_only_sampled_set_in_tracestate_header(monkeypatch):
     monkeypatch.setattr(random, "random", lambda *args, **kwargs: 0.123)
 
     @override_application_settings(_override_settings)

@@ -1451,3 +1451,21 @@ def test_distributed_trace_enabled_settings_set_correct_sampled_priority(
         pass
 
     _test()
+
+
+def test_distributed_trace_priority_set_when_only_sampled_set_in_headers(
+    monkeypatch,
+):
+    monkeypatch.setattr(random, 'random', lambda *args, **kwargs: 0.123)
+
+    @override_application_settings(_override_settings)
+    @validate_transaction_object_attributes({"sampled": True, "priority": 2.123})
+    @background_task()
+    def _test():
+        headers = {
+            "traceparent": f"00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01",
+            "tracestate": f"1@nr=0-0-1-2827902-0af7651916cd43dd-00f067aa0ba902b7-1--1518469636035"
+        }
+        accept_distributed_trace_headers(headers)
+
+    _test()

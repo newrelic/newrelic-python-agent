@@ -1017,15 +1017,16 @@ class Transaction:
         # or newrelic DT headers and may be overridden in _make_sampling_decision
         # based on the configuration. The only time they are set in here is when the
         # sampling decision must be made by the adaptive sampling algorithm.
+        adjust_priority = priority is None or sampled is None
         if priority is None:
             # Truncate priority field to 6 digits past the decimal.
             priority = float(f"{random.random():.6f}")  # noqa: S311
         if sampled is None:
             _logger.debug("No trusted account id found. Sampling decision will be made by adaptive sampling algorithm.")
             sampled = self._application.compute_sampled(**sampler_kwargs)
+        if adjust_priority and sampled:
             # Increment the priority + 2 for full and + 1 for partial granularity.
-            if sampled:
-                priority += 1 + int(sampler_kwargs.get("full_granularity"))
+            priority += 1 + int(sampler_kwargs.get("full_granularity"))
         return priority, sampled
 
     def _compute_sampled_and_priority(

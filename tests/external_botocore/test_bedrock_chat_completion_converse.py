@@ -25,7 +25,6 @@ from testing_support.fixtures import override_llm_token_callback_settings, reset
 from testing_support.ml_testing_utils import (
     add_token_count_streaming_events,
     add_token_counts_to_chat_events,
-    add_token_count_streaming_events,
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
     events_sans_content,

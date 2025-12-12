@@ -125,6 +125,12 @@ SPAN_ENTITY_RELATIONSHIP_ATTRIBUTES = {
     "span.kind",
 }
 
+SPAN_ERROR_ATTRIBUTES = {
+    "error.class",
+    "error.message",
+    "error.expected",
+}
+
 
 MAX_NUM_USER_ATTRIBUTES = 128
 MAX_ATTRIBUTE_LENGTH = 255

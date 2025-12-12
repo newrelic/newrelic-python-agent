@@ -1196,11 +1196,15 @@ class StatsEngine:
                         [
                             (
                                 f"Supportability/DistributedTrace/PartialGranularity/{partial_gran_type}/Span/Instrumented",
-                                {"count": transaction.instrumented},
+                                {"count": getattr(transaction, "instrumented", 0)},
                             ),
                             (
                                 f"Supportability/DistributedTrace/PartialGranularity/{partial_gran_type}/Span/Kept",
-                                {"count": transaction.kept},
+                                {"count": getattr(transaction, "kept", 0)},
+                            ),
+                            (
+                                "Supportability/Python/PartialGranularity/NrIds/Dropped",
+                                {"count": getattr(transaction, "dropped_ids", 0)},
                             ),
                         ]
                     )

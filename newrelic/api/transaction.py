@@ -571,6 +571,12 @@ class Transaction:
             # Sampled and priority need to be computed at the end of the
             # transaction when distributed tracing or span events are enabled.
             self._make_sampling_decision()
+        else:
+            # If dt is disabled, set sampled=False and priority random number between 0 and 1.
+            # The priority of the transaction is used for other data like transaction
+            # events even when span events are not sent.
+            self._priority = float(f"{random.random():.6f}")  # noqa: S311
+            self._sampled = False
 
         self._cached_path._name = self.path
         agent_attributes = self.agent_attributes
@@ -1011,14 +1017,16 @@ class Transaction:
         # or newrelic DT headers and may be overridden in _make_sampling_decision
         # based on the configuration. The only time they are set in here is when the
         # sampling decision must be made by the adaptive sampling algorithm.
+        adjust_priority = priority is None or sampled is None
         if priority is None:
             # Truncate priority field to 6 digits past the decimal.
             priority = float(f"{random.random():.6f}")  # noqa: S311
         if sampled is None:
             _logger.debug("No trusted account id found. Sampling decision will be made by adaptive sampling algorithm.")
             sampled = self._application.compute_sampled(**sampler_kwargs)
-            if sampled:
-                priority += 1
+        if adjust_priority and sampled:
+            # Increment the priority + 2 for full and + 1 for partial granularity.
+            priority += 1 + int(sampler_kwargs.get("full_granularity"))
         return priority, sampled
 
     def _compute_sampled_and_priority(
@@ -1063,7 +1071,8 @@ class Transaction:
             )
         if config == "always_on":
             sampled = True
-            priority = 2.0
+            # priority=3 for full granularity and priority=2 for partial granularity.
+            priority = 2.0 + int(full_granularity)
         elif config == "always_off":
             sampled = False
             priority = 0
@@ -1139,9 +1148,9 @@ class Transaction:
             return
 
         # This is only reachable if both full and partial granularity tracing are off.
-        # Set priority=0 and do not sample. This enables DT headers to still be sent
-        # even if the trace is never sampled.
-        self._priority = 0
+        # Set priority to random number between 0 and 1 and do not sample. This enables
+        # DT headers to still be sent even if the trace is never sampled.
+        self._priority = float(f"{random.random():.6f}")  # noqa: S311
         self._sampled = False
 
     def _freeze_path(self):

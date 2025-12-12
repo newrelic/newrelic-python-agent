@@ -390,7 +390,10 @@ class Tracer(otel_api_trace.Tracer):
                     request_path=request_path,
                     headers=headers,
                 )
-                    
+                
+                # If headers do not contain the traceparent/tracestate
+                # the sampled flag needs to be updated to that of the
+                # parent span.
                 if update_sampled_flag and parent_span_context:
                     transaction._sampled = bool(parent_span_trace_flags)
             elif kind in (
@@ -441,7 +444,10 @@ class Tracer(otel_api_trace.Tracer):
                         request_path=request_path,
                         headers=headers,
                     )
-                        
+
+                    # If headers do not contain the traceparent/tracestate
+                    # the transaction GUID needs to be updated to that of
+                    # the parent span.
                     if update_GUID_flag and parent_span_context:
                         guid = parent_span_trace_id >> 64
                         transaction.guid = f"{guid:x}"

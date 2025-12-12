@@ -64,11 +64,8 @@ class NRTraceContextPropagator(TraceContextTextMapPropagator):
             if isinstance(carrier, dict):
                 nr_headers = list(carrier.items())
                 insert_distributed_trace_headers(nr_headers)
-
             elif isinstance(carrier, list):
                 insert_distributed_trace_headers(carrier)
-
-
             else:
                 raise TypeError("Unsupported carrier type")
             
@@ -95,18 +92,6 @@ set_global_textmap(otel_context_propagator)
 # ----------------------------------------------
 # Custom OTel Spans and Traces
 # ----------------------------------------------
-
-# TracerProvider: we can think of this as the agent instance.  Only one can exist
-# SpanProcessor: we can think of this as an application.  In NR, we can have multiple applications
-#   though right now, we can only do SpanProcessor and SynchronousMultiSpanProcessor
-# Tracer: we can think of this as the transaction.
-# Span: we can think of this as the trace.
-# Links functionality has now been enabled but not implemented yet.  Links are relationships
-#   between spans, but lateral in hierarchy.  In NR we only have parent-child relationships.
-#   We may want to preserve this information with a custom attribute.  We can also add this
-#   as a new attribute in a trace, but it will still not be seen in the UI other than a trace
-#   attribute.
-
 
 class Span(otel_api_trace.Span):
     def __init__(

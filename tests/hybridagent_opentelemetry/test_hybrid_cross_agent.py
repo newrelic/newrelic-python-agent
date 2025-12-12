@@ -25,7 +25,7 @@ from testing_support.validators.validate_transaction_count import validate_trans
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_error_event_attributes import validate_error_event_attributes
-from testing_support.fixtures import override_application_settings
+from testing_support.fixtures import override_application_settings, dt_enabled
 
 PROPAGATOR = otel_api_propagate.get_global_textmap()
 
@@ -42,6 +42,7 @@ def test_does_not_create_segment_without_a_transaction(tracer):
 
 
 # Creates OpenTelemetry segment in a transaction
+@dt_enabled
 @validate_transaction_metrics(name="Foo", background_task=True)
 @validate_span_events(
     exact_intrinsics={
@@ -52,12 +53,11 @@ def test_does_not_create_segment_without_a_transaction(tracer):
 )
 @validate_span_events(
     exact_intrinsics={
-          "name": "Function/Foo",
-          "category": "generic",
-          "nr.entryPoint": True
+        "name": "Function/Foo",
+        "category": "generic",
+        "nr.entryPoint": True
     },
 )
-@validate_span_events(exact_intrinsics={"name": "Function/Foo", "category": "generic", "nr.entryPoint": True})
 def test_creates_opentelemetry_segment_in_a_transaction(tracer):
     application = application_instance(activate=False)
 
@@ -73,6 +73,7 @@ def test_creates_opentelemetry_segment_in_a_transaction(tracer):
 
 
 # Creates New Relic span as child of OpenTelemetry span
+@dt_enabled
 @validate_transaction_metrics(name="Foo", background_task=True)
 @validate_span_events(
     exact_intrinsics={
@@ -112,6 +113,7 @@ def test_creates_new_relic_span_as_child_of_open_telemetry_span(tracer):
 
 
 # OpenTelemetry API can add custom attributes to spans
+@dt_enabled
 @validate_transaction_metrics(name="Foo", background_task=True)
 @validate_span_events(exact_intrinsics={"name": "Function/Baz"}, exact_users={"spanNumber": 2})
 @validate_span_events(exact_intrinsics={"name": "Function/Bar"}, exact_users={"spanNumber": 1})
@@ -127,6 +129,7 @@ def test_opentelemetry_api_can_add_custom_attributes_to_spans(tracer):
 
 
 # OpenTelemetry API can record errors
+@dt_enabled
 @validate_transaction_metrics(name="Foo", background_task=True)
 @validate_error_event_attributes(
     exact_attrs={"agent": {}, "intrinsic": {"error.message": "Test exception message"}, "user": {}}
@@ -144,6 +147,7 @@ def test_opentelemetry_api_can_record_errors(tracer):
 
 
 # OpenTelemetry API and New Relic API can inject outbound trace context
+@dt_enabled
 @validate_transaction_metrics(name="Foo", background_task=True)
 @validate_span_events(
     exact_intrinsics={
@@ -249,6 +253,7 @@ def test_opentelemetry_api_and_new_relic_api_can_inject_outbound_trace_context(t
 
 
 # Starting transaction tests
+@dt_enabled
 @validate_transaction_metrics(name="Foo", index=-3)
 @validate_transaction_metrics(name="Bar", index=-2)
 @validate_transaction_metrics(name="Baz", background_task=True, index=-1)
@@ -289,6 +294,7 @@ def test_starting_transaction_tests(tracer):
     
 
 # Inbound distributed tracing tests
+@dt_enabled
 @validate_transaction_metrics(name="Foo")
 @validate_span_events(count=0)
 @override_application_settings(

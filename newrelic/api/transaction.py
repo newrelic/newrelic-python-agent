@@ -1438,18 +1438,6 @@ class Transaction:
                             data.update(tracestate_data)
                         else:
                             self._record_supportability("Supportability/TraceContext/TraceState/InvalidNrEntry")
-                    elif not payload and (tracestate == self.tracestate):
-                        self._record_supportability("Supportability/TraceContext/TraceState/NoNrEntry")
-                        self._record_supportability("Supportability/TraceContext/TraceState/OtelEntry")
-                        try:
-                            vendors["sa"] = True if vendors.get("sa").lower() == "true" else False
-                            vendors["pr"] = float(vendors.get("pr"))
-                            vendors["ti"] = int(vendors.get("ti"))
-                            
-                            self.trusted_parent_span = vendors.pop("id", None)
-                            data.update(vendors)
-                        except:
-                            pass
                     else:
                         self._record_supportability("Supportability/TraceContext/TraceState/NoNrEntry")
 

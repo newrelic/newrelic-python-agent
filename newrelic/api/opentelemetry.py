@@ -30,13 +30,9 @@ from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.message_trace import MessageTrace
 from newrelic.api.message_transaction import MessageTransaction
 from newrelic.api.time_trace import current_trace, notice_error
-from newrelic.api.transaction import Sentinel, current_transaction
+from newrelic.api.transaction import Sentinel, current_transaction, accept_distributed_trace_headers, insert_distributed_trace_headers
 from newrelic.api.web_transaction import WebTransaction
 
-from newrelic.common.encoding_utils import (
-    W3CTraceState,
-    NrTraceState,
-)
 from newrelic.core.otlp_utils import create_resource
 
 _logger = logging.getLogger(__name__)
@@ -45,70 +41,14 @@ _logger = logging.getLogger(__name__)
 class NRTraceContextPropagator(TraceContextTextMapPropagator):
     LIST_OF_TRACEPARENT_KEYS = ("traceparent", "HTTP_TRACEPARENT")
     LIST_OF_TRACESTATE_KEYS = ("tracestate", "HTTP_TRACESTATE")
-    
-    def _convert_nr_to_otel(self, tracestate):
-        application_settings = application_instance(activate=False).settings
-        vendors = W3CTraceState.decode(tracestate)
-        trusted_account_key = application_settings.trusted_account_key or (
-            application_settings.serverless_mode.enabled and application_settings.account_id
-        )
-        payload = vendors.pop(f"{trusted_account_key}@nr", "")
-        
-        otel_tracestate = W3CTraceState(NrTraceState.decode(payload, trusted_account_key)).text()
-        return otel_tracestate
-
-    def _convert_otel_to_nr(self, tracestate):
-        tracestate_dict = W3CTraceState.decode(tracestate)
-        # Convert sampled, priority, and timestamp data types
-        tracestate_dict["sa"] = True if tracestate_dict.get("sa").upper() == "TRUE" else False
-        tracestate_dict["pr"] = float(tracestate_dict.get("pr"))
-        tracestate_dict["ti"] = int(tracestate_dict.get("ti"))
-        
-        nr_tracestate = NrTraceState(tracestate_dict).text()
-        return nr_tracestate
+    HEADER_KEY_MAPPING = dict((LIST_OF_TRACEPARENT_KEYS, LIST_OF_TRACESTATE_KEYS, ("newrelic", "HTTP_NEWRELIC")))
 
     def extract(self, carrier, context=None, getter=None):
-        # We need to make sure that the carrier goes out
-        # in OTel format.  However, we want to convert this to
-        # NR to use the `accept_distributed_trace_headers` API
-        transaction = current_transaction()
-        tracestate_key = None
-        tracestate_headers = None
-        for key in self.LIST_OF_TRACESTATE_KEYS:
-            if key in carrier:
-                tracestate_key = key
-                tracestate_headers = carrier[tracestate_key]
-                break
-        # If we are passing into New Relic, traceparent and/or tracestate's keys also need to be NR compatible.
-        if tracestate_headers:
-            # Check to see if in NR or OTel format
-            if "@nr=" in tracestate_headers:
-                # NR format
-                # Reformatting DT keys in case they are in the HTTP_* format:
-                nr_headers = carrier.copy()
-                for header_type in ("traceparent", "tracestate", "newrelic"):
-                    if (header_type not in nr_headers) and (f"HTTP_{header_type.upper()}" in nr_headers):
-                        nr_headers[header_type] = nr_headers.pop(f"HTTP_{header_type.upper()}")
-                transaction.accept_distributed_trace_headers(nr_headers)
-                # Convert NR format to OTel format for OTel extract function
-                tracestate = self._convert_nr_to_otel(tracestate_headers)
-                carrier[tracestate_key] = tracestate
-            else:
-                # OTel format
-                if transaction:
-                    # Convert to NR format to use the
-                    # `accept_distributed_trace_headers` API
-                    nr_tracestate = self._convert_otel_to_nr(tracestate_headers)
-                    nr_headers = {key: value for key, value in carrier.items()}
-                    nr_headers.pop("HTTP_TRACESTATE", None)
-                    nr_headers["tracestate"] = nr_tracestate
-                    for header_type in ("traceparent", "newrelic"):
-                        if header_type not in nr_headers:
-                            nr_headers[header_type] = nr_headers.pop(f"HTTP_{header_type.upper()}", None)
-                    transaction.accept_distributed_trace_headers(nr_headers)
-        elif ("traceparent" in carrier) and transaction:
-            transaction.accept_distributed_trace_headers(carrier)
-
+        # If we are passing into New Relic, traceparent 
+        # and/or tracestate's keys also need to be NR compatible.
+        nr_headers = {lowercase_name: carrier.get(lowercase_name, carrier.get(http_name, "")) for lowercase_name, http_name in self.HEADER_KEY_MAPPING.items()}
+        accept_distributed_trace_headers(nr_headers)
+        
         return super().extract(carrier=carrier, context=context, getter=getter)
     
 
@@ -121,37 +61,26 @@ class NRTraceContextPropagator(TraceContextTextMapPropagator):
         #   2 if inserted but not accepted
 
         if transaction and not transaction._distributed_trace_state:
-            try:
-                nr_headers = [(key, value) for key, value in carrier.items()]
-                transaction.insert_distributed_trace_headers(nr_headers)
-                # Convert back, now with new headers
-                carrier.update(dict(nr_headers))
-                carrier["tracestate"] = self._convert_nr_to_otel(carrier["tracestate"])
-                
-            except AttributeError:
-                # Already in list form.
-                transaction.insert_distributed_trace_headers(carrier)
+            if isinstance(carrier, dict):
+                nr_headers = list(carrier.items())
+                insert_distributed_trace_headers(nr_headers)
 
-                # If it came in list form, we likely want to keep it in that format.
-                # Convert to dict to modify NR format of tracestate to Otel's format
-                # and then convert back to the list of tuples.
-                otel_headers = dict(carrier)
-                otel_headers["tracestate"] = self._convert_nr_to_otel(otel_headers["tracestate"])
-                
-                # This is done instead of assigning the result of a list
-                # comprehension to preserve the ID of the carrier in
-                # order to allow propagation.
-                for header in otel_headers.items():
-                    if header not in carrier:
-                        carrier.append(header)
+            elif isinstance(carrier, list):
+                insert_distributed_trace_headers(carrier)
+
+
+            else:
+                raise TypeError("Unsupported carrier type")
+            
+            return super().inject(carrier=carrier, context=context, setter=setter)
         
         elif not transaction:
-            # Convert carrier's tracestate to Otel format if not already
-            # This assumes that carrier is a dict but tracestate is in NR format.
-            if ("tracestate" in carrier) and ("@nr=" in carrier["tracestate"]):
-                # Needs to be converted to OTel before running original function
-                carrier["tracestate"] = self._convert_nr_to_otel(carrier["tracestate"])
             return super().inject(carrier=carrier, context=context, setter=setter)
+        
+        else:
+            # Do NOT call inject in this case.  Transaction has already received
+            # and/or received and inserted distributed trace headers.
+            pass
 
 
 # Context and Context Propagator Setup
@@ -271,6 +200,9 @@ class Span(otel_api_trace.Span):
         self.nr_trace.__enter__()
 
     def _sampled(self):
+        # NOTE: This logic is using the old logic from before
+        # the various samplers had been implemented.
+        #
         # Uses NR to determine if the trace is sampled
         #
         # transaction.sampled can be `None`, `True`, `False`.
@@ -284,6 +216,12 @@ class Span(otel_api_trace.Span):
         # The primary reason for this behavior is because Otel expects to
         # only be able to record information like events and attributes
         # when `is_recording()` == `True`
+        # TODO: Provided that the trace has not already ended, 
+        # configure based on sampler configuration.
+        #   sampler==always_on => return True
+        #   sampler==always_off => return False
+        #   sampler in (default, adaptive, trace_id_ratio_based) 
+        #       => return (if remote parent, parent._sampled(), else transaction.sampled)
 
         if self.otel_parent:
             return bool(self.otel_parent.trace_flags)
@@ -348,7 +286,10 @@ class Span(otel_api_trace.Span):
             self.nr_trace.name = self._name
 
     def is_recording(self):
-        return self._sampled() and not (getattr(self.nr_trace, None), "end_time", None)
+        # TODO: Similar to self._sampled, we need to
+        # implement a compatible method now that
+        # samplers have been implemented.
+        return self._sampled() and not (getattr(self.nr_trace, "end_time", None))
 
     def set_status(self, status, description=None):
         # TODO: not implemented yet
@@ -417,6 +358,10 @@ class Tracer(otel_api_trace.Tracer):
         self.nr_application = application_instance()
         self.attributes = attributes or {}
 
+        if not self.nr_application.active:
+            # Force application registration if not already active
+            self.nr_application.activate()
+
         if not self.nr_application.settings.otel_bridge.enabled:
             return otel_api_trace.INVALID_SPAN
 
@@ -447,9 +392,8 @@ class Tracer(otel_api_trace.Tracer):
                 request_method = self.attributes.get("http.method")
                 request_path = self.attributes.get("http.route")
 
-                if not headers:
-                    headers = _headers
-                    update_sampled_flag = True
+                update_sampled_flag = False if headers else True
+                headers = headers if headers else _headers
 
                 transaction = WebTransaction(
                     self.nr_application,
@@ -499,9 +443,8 @@ class Tracer(otel_api_trace.Tracer):
                     request_method = self.attributes.get("http.method")
                     request_path = self.attributes.get("http.route")
 
-                    if not headers:
-                        headers = _headers
-                        update_GUID_flag = True
+                    update_GUID_flag = False if headers else True
+                    headers = headers if headers else _headers
 
                     transaction = WebTransaction(
                         self.nr_application,

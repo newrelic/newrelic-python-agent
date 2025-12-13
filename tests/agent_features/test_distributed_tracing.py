@@ -945,7 +945,8 @@ def test_partial_granularity_max_compressed_spans():
     @validate_span_events(
         count=1,  # Entry span.
         exact_intrinsics={
-            "name": "Function/test_distributed_tracing:test_partial_granularity_max_compressed_spans.<locals>._test"
+            "name": "Function/test_distributed_tracing:test_partial_granularity_max_compressed_spans.<locals>._test",
+            "nr.pg": True,
         },
         expected_intrinsics=["duration", "timestamp"],
     )
@@ -1000,6 +1001,7 @@ def test_partial_granularity_compressed_span_attributes_in_series():
         count=1,  # Entry span.
         exact_intrinsics={
             "name": "Function/test_distributed_tracing:test_partial_granularity_compressed_span_attributes_in_series.<locals>._test"
+            "nr.pg": True,
         },
         expected_intrinsics=["duration", "timestamp"],
     )
@@ -1044,6 +1046,7 @@ def test_partial_granularity_compressed_span_attributes_overlapping():
         count=1,  # Entry span.
         exact_intrinsics={
             "name": "Function/test_distributed_tracing:test_partial_granularity_compressed_span_attributes_overlapping.<locals>._test"
+            "nr.pg": True,
         },
         expected_intrinsics=["duration", "timestamp"],
     )
@@ -1098,6 +1101,7 @@ def test_partial_granularity_reduced_span_attributes():
         count=1,  # Entry span.
         exact_intrinsics={
             "name": "Function/test_distributed_tracing:test_partial_granularity_reduced_span_attributes.<locals>._test"
+            "nr.pg": True,
         },
         expected_intrinsics=["duration", "timestamp"],
         expected_agents=["code.function", "code.lineno", "code.namespace"],
@@ -1152,6 +1156,7 @@ def test_partial_granularity_essential_span_attributes():
         count=1,  # Entry span.
         exact_intrinsics={
             "name": "Function/test_distributed_tracing:test_partial_granularity_essential_span_attributes.<locals>._test"
+            "nr.pg": True,
         },
         expected_intrinsics=["duration", "timestamp"],
         unexpected_agents=["code.function", "code.lineno", "code.namespace"],

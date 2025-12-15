@@ -36,7 +36,7 @@ _override_settings = {
 
 @pytest.mark.parametrize("telemetry", ["newrelic", "otel"])
 @pytest.mark.parametrize("propagation", [accept_distributed_trace_headers, PROPAGATOR.extract])
-def test_distributed_trace_tracestate_compatibility_full_granularity(
+def test_distributed_trace_header_compatibility_full_granularity(
     telemetry, propagation
 ):
     """
@@ -45,7 +45,7 @@ def test_distributed_trace_tracestate_compatibility_full_granularity(
             Denotes which propagation function was used to 
             insert/inject the distributed trace headers.
             "newrelic" => `insert_distributed_trace_headers`
-            "otel" => `PROPAGATOR.inject` from OTel SDK
+            "otel" => `PROPAGATOR.inject` from OTel API
         propagation (func): The propagation function to use.
             Either `accept_distributed_trace_headers`
             or `PROPAGATOR.extract`.
@@ -78,7 +78,7 @@ def test_distributed_trace_tracestate_compatibility_full_granularity(
 
 @pytest.mark.parametrize("telemetry", ["newrelic", "otel"])
 @pytest.mark.parametrize("propagation", [accept_distributed_trace_headers, PROPAGATOR.extract])
-def test_distributed_trace_tracestate_compatibility_partial_granularity(
+def test_distributed_trace_header_compatibility_partial_granularity(
     telemetry, propagation
 ):
     """
@@ -87,7 +87,7 @@ def test_distributed_trace_tracestate_compatibility_partial_granularity(
             Denotes which propagation function was used to 
             insert/inject the distributed trace headers.
             "newrelic" => `insert_distributed_trace_headers`
-            "otel" => `PROPAGATOR.inject` from Hybrid Agent
+            "otel" => `PROPAGATOR.inject` from Otel API
         propagation (func): The propagation function to use.
             Either `accept_distributed_trace_headers`
             or `PROPAGATOR.extract`.

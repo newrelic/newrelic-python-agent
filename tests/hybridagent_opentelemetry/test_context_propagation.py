@@ -34,102 +34,40 @@ _override_settings = {
     "span_events.enabled": True,
 }
 
-
-@pytest.mark.parametrize(
-    "telemetry,web_headers,propagation",
-    (
-        (
-            "newrelic",
-            False,
-            accept_distributed_trace_headers,
-        ),
-        (
-            "newrelic",
-            True,
-            PROPAGATOR.extract,
-        ),
-        (
-            "newrelic",
-            False,
-            PROPAGATOR.extract,
-        ),
-        (
-            "hybrid_otel",
-            False,
-            accept_distributed_trace_headers,
-        ),
-        (
-            "hybrid_otel",
-            True,
-            PROPAGATOR.extract,
-        ),
-        (
-            "hybrid_otel",
-            False,
-            PROPAGATOR.extract,
-        ),
-        (
-            "pure_otel",
-            False,
-            accept_distributed_trace_headers,
-        ),
-        (
-            "pure_otel",
-            True,
-            PROPAGATOR.extract,
-        ),
-        (
-            "pure_otel",
-            False,
-            PROPAGATOR.extract,
-        ),
-    )
-)
+@pytest.mark.parametrize("telemetry", ["newrelic", "otel"])
+@pytest.mark.parametrize("propagation", [accept_distributed_trace_headers, PROPAGATOR.extract])
 def test_distributed_trace_tracestate_compatibility_full_granularity(
-    telemetry, web_headers, propagation
+    telemetry, propagation
 ):
     """
     Args:
-        telemetry (str): either "newrelic", "hybrid_otel", or "pure_otel"
+        telemetry (str): either "newrelic", or "otel"
             Denotes which propagation function was used to 
             insert/inject the distributed trace headers.
             "newrelic" => `insert_distributed_trace_headers`
-            "hybrid_otel" => `PROPAGATOR.inject` from Hybrid Agent
-            "pure_otel" => `PROPAGATOR.inject` from OTel SDK
-        web_headers (bool): For OTel web framework instrumentation, 
-            header keys will be captalized and prepended with "HTTP_".
-            Only applicable for headers coming from OTel
+            "otel" => `PROPAGATOR.inject` from OTel SDK
         propagation (func): The propagation function to use.
             Either `accept_distributed_trace_headers`
-            or `PROPAGATOR.extract`.  Note: If using 
-            `accept_distributed_trace_headers`, the web_headers
-            flag must be false.
-            
+            or `PROPAGATOR.extract`.
     """
     @override_application_settings(_override_settings)
-    @background_task(name="test_distributed_trace_attributes")
+    @background_task()
     def _test():
         transaction = current_transaction()
         
         headers = {
-            f"{'HTTP_TRACEPARENT' if web_headers else 'traceparent'}": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01",
-            f"{'HTTP_NEWRELIC' if web_headers else 'newrelic'}": '{"v":[0,1],"d":{"ty":"Mobile","ac":"123","ap":"51424","id":"5f474d64b9cc9b2a","tr":"6e2fea0b173fdad0","pr":0.1234,"sa":True,"ti":1482959525577,"tx":"27856f70d3d314b7"}}',  # This header should be ignored.
+            "traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01",
+            "newrelic": '{"v":[0,1],"d":{"ty":"Mobile","ac":"123","ap":"51424","id":"5f474d64b9cc9b2a","tr":"6e2fea0b173fdad0","pr":0.1234,"sa":True,"ti":1482959525577,"tx":"27856f70d3d314b7"}}',  # This header should be ignored.
         }
         if telemetry == "newrelic":
-            headers[
-                f"{'HTTP_TRACESTATE' if web_headers else 'tracestate'}"
-            ] = "1@nr=0-0-1-2827902-0af7651916cd43dd-00f067aa0ba902b7-1-1.23456-1518469636035"
-        elif telemetry == "hybrid_otel":
-            headers[
-                f"{'HTTP_TRACESTATE' if web_headers else 'tracestate'}"
-            ] = "ac=1,ap=2827902,tx=0af7651916cd43dd,id=00f067aa0ba902b7,sa=True,pr=1.23456,ti=1518469636035,tr=0af7651916cd43dd8448eb211c80319c"
-        # "pure_otel" has no tracestate headers
+            headers["tracestate"] = "1@nr=0-0-1-2827902-0af7651916cd43dd-00f067aa0ba902b7-1-1.23456-1518469636035"
+        # "otel" does not generate tracestate headers
         
         propagation(headers)
         current_span = otel_api_trace.get_current_span()
         assert transaction.parent_span == "00f067aa0ba902b7"
         assert transaction.trace_id == "0af7651916cd43dd8448eb211c80319c"
-        current_span.get_span_context().trace_id == int("0af7651916cd43dd8448eb211c80319c", 16)
+        assert current_span.get_span_context().trace_id == int("0af7651916cd43dd8448eb211c80319c", 16)
         
         # Ensure that priority gets set despite having
         # the sample flag set but no priority set
@@ -138,75 +76,21 @@ def test_distributed_trace_tracestate_compatibility_full_granularity(
     _test()
     
 
-@pytest.mark.parametrize(
-    "telemetry,web_headers,propagation",
-    (
-        (
-            "newrelic",
-            False,
-            accept_distributed_trace_headers,
-        ),
-        (
-            "newrelic",
-            True,
-            PROPAGATOR.extract,
-        ),
-        (
-            "newrelic",
-            False,
-            PROPAGATOR.extract,
-        ),
-        (
-            "hybrid_otel",
-            False,
-            accept_distributed_trace_headers,
-        ),
-        (
-            "hybrid_otel",
-            True,
-            PROPAGATOR.extract,
-        ),
-        (
-            "hybrid_otel",
-            False,
-            PROPAGATOR.extract,
-        ),
-        (
-            "pure_otel",
-            False,
-            accept_distributed_trace_headers,
-        ),
-        (
-            "pure_otel",
-            True,
-            PROPAGATOR.extract,
-        ),
-        (
-            "pure_otel",
-            False,
-            PROPAGATOR.extract,
-        ),
-    )
-)
+@pytest.mark.parametrize("telemetry", ["newrelic", "otel"])
+@pytest.mark.parametrize("propagation", [accept_distributed_trace_headers, PROPAGATOR.extract])
 def test_distributed_trace_tracestate_compatibility_partial_granularity(
-    telemetry, web_headers, propagation
+    telemetry, propagation
 ):
     """
     Args:
-        telemetry (str): either "newrelic", "hybrid_otel", or "pure_otel"
+        telemetry (str): either "newrelic" or "otel"
             Denotes which propagation function was used to 
             insert/inject the distributed trace headers.
             "newrelic" => `insert_distributed_trace_headers`
-            "hybrid_otel" => `PROPAGATOR.inject` from Hybrid Agent
-            "pure_otel" => `PROPAGATOR.inject` from OTel SDK
-        web_headers (bool): For OTel web framework instrumentation, 
-            header keys will be captalized and prepended with "HTTP_".
-            Only applicable for headers coming from OTel
+            "otel" => `PROPAGATOR.inject` from Hybrid Agent
         propagation (func): The propagation function to use.
             Either `accept_distributed_trace_headers`
-            or `PROPAGATOR.extract`.  Note: If using 
-            `accept_distributed_trace_headers`, the web_headers
-            flag must be false.
+            or `PROPAGATOR.extract`.
             
     """
     test_settings = _override_settings.copy()
@@ -217,29 +101,22 @@ def test_distributed_trace_tracestate_compatibility_partial_granularity(
         }
     )
     @override_application_settings(test_settings)
-    @background_task(name="test_distributed_trace_attributes")
+    @background_task()
     def _test():
         transaction = current_transaction()
-        
         headers = {
-            f"{'HTTP_TRACEPARENT' if web_headers else 'traceparent'}": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01",
-            f"{'HTTP_NEWRELIC' if web_headers else 'newrelic'}": '{"v":[0,1],"d":{"ty":"Mobile","ac":"123","ap":"51424","id":"5f474d64b9cc9b2a","tr":"6e2fea0b173fdad0","pr":0.1234,"sa":True,"ti":1482959525577,"tx":"27856f70d3d314b7"}}',  # This header should be ignored.
+            "traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01",
+            "newrelic": '{"v":[0,1],"d":{"ty":"Mobile","ac":"123","ap":"51424","id":"5f474d64b9cc9b2a","tr":"6e2fea0b173fdad0","pr":0.1234,"sa":True,"ti":1482959525577,"tx":"27856f70d3d314b7"}}',  # This header should be ignored.
         }
         if telemetry == "newrelic":
-            headers[
-                f"{'HTTP_TRACESTATE' if web_headers else 'tracestate'}"
-            ] = "1@nr=0-0-1-2827902-0af7651916cd43dd-00f067aa0ba902b7-1-1.23456-1518469636035"
-        elif telemetry == "hybrid_otel":
-            headers[
-                f"{'HTTP_TRACESTATE' if web_headers else 'tracestate'}"
-            ] = "ac=1,ap=2827902,tx=0af7651916cd43dd,id=00f067aa0ba902b7,sa=True,pr=1.23456,ti=1518469636035,tr=0af7651916cd43dd8448eb211c80319c"
-        # "pure_otel" has no tracestate headers
+            headers["tracestate"] = "1@nr=0-0-1-2827902-0af7651916cd43dd-00f067aa0ba902b7-1-1.23456-1518469636035"
+        # "otel" does not generate tracestate headers
         
         propagation(headers)
         current_span = otel_api_trace.get_current_span()
         assert transaction.parent_span == "00f067aa0ba902b7"
         assert transaction.trace_id == "0af7651916cd43dd8448eb211c80319c"
-        current_span.get_span_context().trace_id == int("0af7651916cd43dd8448eb211c80319c", 16)
+        assert current_span.get_span_context().trace_id == int("0af7651916cd43dd8448eb211c80319c", 16)
         
         # Ensure that priority gets set despite having
         # the sample flag set but no priority set

@@ -164,24 +164,17 @@ def wrap_get_current_span(wrapped, instance, args, kwargs):
             transaction._trace_id = f'{span.get_span_context().trace_id:x}'
             guid = span.get_span_context().trace_id >> 64
             transaction.guid = f'{guid:x}'
+        elif not transaction.priority:
+            # This is a NonRecordingSpan and the transaction
+            # sample and priority have not been computed yet.
+            transaction._make_sampling_decision()
         
-        nr_tracestate_headers = (
-            transaction._create_distributed_trace_data()
-        )
-        transaction._distributed_trace_state = 0    # Make sure to reset DT state here
-        
-        otel_tracestate_headers = [
-            (key, str(value)) for key, value in nr_tracestate_headers.items()
-        ]
-    else:
-        otel_tracestate_headers = None
-
     span_context = otel_api_trace.SpanContext(
         trace_id=int(transaction.trace_id, 16),
         span_id=int(trace.guid, 16),
         is_remote=span.get_span_context().is_remote,
-        trace_flags=otel_api_trace.TraceFlags(0x01 if nr_tracestate_headers["sa"] else 0x00),
-        trace_state=otel_api_trace.TraceState(otel_tracestate_headers),
+        trace_flags=otel_api_trace.TraceFlags(0x01 if transaction.sampled else 0x00),
+        trace_state=otel_api_trace.TraceState(),
     )
 
     return LazySpan(span_context)

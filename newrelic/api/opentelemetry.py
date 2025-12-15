@@ -39,45 +39,53 @@ _logger = logging.getLogger(__name__)
 
 
 class NRTraceContextPropagator(TraceContextTextMapPropagator):
-    LIST_OF_TRACEPARENT_KEYS = ("traceparent", "HTTP_TRACEPARENT")
-    LIST_OF_TRACESTATE_KEYS = ("tracestate", "HTTP_TRACESTATE")
-    HEADER_KEY_MAPPING = dict((LIST_OF_TRACEPARENT_KEYS, LIST_OF_TRACESTATE_KEYS, ("newrelic", "HTTP_NEWRELIC")))
+    HEADER_KEYS = ("traceparent", "tracestate", "newrelic")
 
     def extract(self, carrier, context=None, getter=None):
+        transaction = current_transaction()
         # If we are passing into New Relic, traceparent 
         # and/or tracestate's keys also need to be NR compatible.
-        nr_headers = {lowercase_name: carrier.get(lowercase_name, carrier.get(http_name, "")) for lowercase_name, http_name in self.HEADER_KEY_MAPPING.items()}
-        accept_distributed_trace_headers(nr_headers)
         
+        if transaction:
+            nr_headers = {header_key: ("" if not getter.get(carrier, header_key) else getter.get(carrier, header_key)[0]) for header_key in self.HEADER_KEYS}
+            transaction.accept_distributed_trace_headers(nr_headers)
         return super().extract(carrier=carrier, context=context, getter=getter)
     
 
     def inject(self, carrier, context=None, setter=None):
         transaction = current_transaction()
         # Only insert headers if we have not done so already this transaction
-        # Distributed Trace State will have the following states:
-        #   0 if not set
-        #   1 if already accepted
-        #   2 if inserted but not accepted
+        # New Relic's Distributed Trace State will have the following states:
+        #   0 (00) if not set:
+        #       Transaction has not inserted any outbound headers nor has
+        #       it accepted any inbound headers (yet).
+        #   1 (01) if already accepted:
+        #       Transaction has accepted inbound headers and is able to 
+        #       insert outbound headers to the next app if needed.
+        #   2 (10) if inserted but not accepted:
+        #       Transaction has inserted outbound headers already.
+        #       Do not insert outbound headers multiple times. This is
+        #       a fundamental difference in OTel vs NR behavior: if
+        #       headers are inserted by OTel multiple times, it will
+        #       propagate the last set of data that was inserted. NR
+        #       will not allow more than one header insertion per
+        #       transaction.
+        #   3 (11) if accepted, then inserted:
+        #       Transaction has accepted inbound headers and has inserted
+        #       outbound headers.
 
-        if transaction and not transaction._distributed_trace_state:
-            if isinstance(carrier, dict):
-                nr_headers = list(carrier.items())
-                insert_distributed_trace_headers(nr_headers)
-            elif isinstance(carrier, list):
-                insert_distributed_trace_headers(carrier)
-            else:
-                raise TypeError("Unsupported carrier type")
+        if not transaction:
+            return super().inject(carrier=carrier, context=context, setter=setter)
+        
+        if transaction._distributed_trace_state < 2:
+            nr_headers = []
+            transaction.insert_distributed_trace_headers(nr_headers)
+            for key, value in nr_headers:
+                setter.set(carrier, key, value)
             
             return super().inject(carrier=carrier, context=context, setter=setter)
         
-        elif not transaction:
-            return super().inject(carrier=carrier, context=context, setter=setter)
-        
-        else:
-            # Do NOT call inject in this case.  Transaction has already received
-            # and/or received and inserted distributed trace headers.
-            pass
+        # If distributed_trace_state == 2 or 3, do not inject headers.
 
 
 # Context and Context Propagator Setup
@@ -144,7 +152,7 @@ class Span(otel_api_trace.Span):
             _logger.error(
                 "OpenTelemetry span (%s) and NR trace (%s) do not match nor correspond to a remote span. Open Telemetry span will not be reported to New Relic. Please report this problem to New Relic.",
                 self.otel_parent,
-                current_nr_trace,
+                current_nr_trace,   # NR parent trace
             )
             return
 
@@ -185,33 +193,20 @@ class Span(otel_api_trace.Span):
         self.nr_trace.__enter__()
 
     def _sampled(self):
-        # NOTE: This logic is using the old logic from before
-        # the various samplers had been implemented.
-        #
-        # Uses NR to determine if the trace is sampled
-        #
-        # transaction.sampled can be `None`, `True`, `False`.
-        # If `None`, this has not been computed by NR which
-        # can also mean the following:
-        # 1. There was not a context passed in that explicitly has sampling disabled.
-        #   This flag would be found in the traceparent or traceparent and tracespan headers.
-        # 2. Transaction was not created where DT headers are accepted during __init__
-        #   Therefore, we will treat a value of `None` as `True` for now.
-        #
-        # The primary reason for this behavior is because Otel expects to
-        # only be able to record information like events and attributes
-        # when `is_recording()` == `True`
-        # TODO: Provided that the trace has not already ended, 
-        # configure based on sampler configuration.
-        #   sampler==always_on => return True
-        #   sampler==always_off => return False
-        #   sampler in (default, adaptive, trace_id_ratio_based) 
-        #       => return (if remote parent, parent._sampled(), else transaction.sampled)
+        # TODO: Refine this logic to respect the parent
+        # trace/span, even if the parent is from OTel.
+        # priority: except for always_on or always off, 
+        # sampled flag from parent if parent exists takes
+        # precedence over whatever sampling algorithm is
+        # enabled.
 
         if self.otel_parent:
             return bool(self.otel_parent.trace_flags)
+        elif self.nr_transaction:
+            self.nr_transaction._make_sampling_decision()
+            return self.nr_transaction.sampled
         else:
-            return bool(self.nr_transaction and (self.nr_transaction.sampled or (self.nr_transaction.sampled is None)))
+            return False
 
     def _remote(self):
         # Remote span denotes if propagated from a remote parent
@@ -221,24 +216,12 @@ class Span(otel_api_trace.Span):
         if not getattr(self, "nr_trace", False):
             return otel_api_trace.INVALID_SPAN_CONTEXT
 
-        if self.nr_transaction.settings.distributed_tracing.enabled:
-            nr_tracestate_headers = (
-                self.nr_transaction._create_distributed_trace_data()
-            )
-            
-            nr_tracestate_headers["sa"] = self._sampled()
-            otel_tracestate_headers = [
-                (key, str(value)) for key, value in nr_tracestate_headers.items()
-            ]
-        else:
-            otel_tracestate_headers = None
-
         return otel_api_trace.SpanContext(
             trace_id=int(self.nr_transaction.trace_id, 16),
             span_id=int(self.nr_trace.guid, 16),
             is_remote=self._remote(),
             trace_flags=otel_api_trace.TraceFlags(0x01 if self._sampled() else 0x00),
-            trace_state=otel_api_trace.TraceState(otel_tracestate_headers),
+            trace_state=otel_api_trace.TraceState(),
         )
 
     def set_attribute(self, key, value):
@@ -271,10 +254,13 @@ class Span(otel_api_trace.Span):
             self.nr_trace.name = self._name
 
     def is_recording(self):
-        # TODO: Similar to self._sampled, we need to
-        # implement a compatible method now that
-        # samplers have been implemented.
-        return self._sampled() and not (getattr(self.nr_trace, "end_time", None))
+        # TODO: Refine this logic along with `_sampled()`
+        if getattr(self.nr_trace, "end_time", None):
+            return False
+        if not getattr(self.nr_transaction, "priority", None):
+            self.nr_transaction._make_sampling_decision()
+
+        return self.nr_transaction.priority > 0
 
     def set_status(self, status, description=None):
         # TODO: not implemented yet
@@ -361,10 +347,8 @@ class Tracer(otel_api_trace.Tracer):
         _headers = {}
         if parent_span_context and self.nr_application.settings.distributed_tracing.enabled:
             parent_span_trace_id = parent_span_context.trace_id
-            parent_span_span_id = parent_span_context.span_id
             parent_span_trace_flags = parent_span_context.trace_flags
-            
-            
+
         # If remote_parent, transaction must be created, regardless of kind type
         # Make sure we transfer DT headers when we are here, if DT is enabled
         if parent_span_context and parent_span_context.is_remote:
@@ -395,7 +379,7 @@ class Tracer(otel_api_trace.Tracer):
                 # the sampled flag needs to be updated to that of the
                 # parent span.
                 if update_sampled_flag and parent_span_context:
-                    transaction._sampled = bool(parent_span_trace_flags)
+                    transaction._remote_parent_sampled = bool(parent_span_trace_flags)
             elif kind in (
                 otel_api_trace.SpanKind.PRODUCER,
                 otel_api_trace.SpanKind.INTERNAL,

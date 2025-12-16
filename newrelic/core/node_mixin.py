@@ -96,7 +96,7 @@ class GenericNodeMixin:
                 if partial_granularity_type == "reduced":
                     return [i_attrs, u_attrs, a_attrs]
                 else:
-                    return [i_attrs, {}, {}]
+                    return [i_attrs, {}, {key:a_attrs.get(key) for key in exit_span_error_attrs_present | {"nr.pg"}}]
             # If the span is not an exit span, skip it by returning None.
             if not exit_span_attrs_present:
                 return None
@@ -127,7 +127,7 @@ class GenericNodeMixin:
                 # (last occurring error takes precedence), add it's guid to the list
                 # of ids on the seen span, compute the new duration & start time, and
                 # return None.
-                ct_exit_spans[span_attrs][1].update(attr_class({key: a_minimized_attrs[key] for key in a_error_attrs}))
+                ct_exit_spans[span_attrs][1].update(attr_class({key: a_minimized_attrs[key] for key in exit_span_error_attrs_present}))
                 # Max size for `nr.ids` = 1024. Max length = 63 (each span id is 16 bytes + 8 bytes for list type).
                 if len(ct_exit_spans[span_attrs][1]["nr.ids"]) < 63:
                     ct_exit_spans[span_attrs][1]["nr.ids"].append(self.guid)

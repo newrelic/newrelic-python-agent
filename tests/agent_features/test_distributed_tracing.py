@@ -28,6 +28,7 @@ from testing_support.validators.validate_transaction_event_attributes import val
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.validators.validate_transaction_object_attributes import validate_transaction_object_attributes
 
+from newrelic.common.object_names import callable_name
 from newrelic.api.application import application_instance
 from newrelic.api.function_trace import function_trace
 from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
@@ -946,6 +947,8 @@ def test_partial_granularity_max_compressed_spans():
         count=1,  # Entry span.
         exact_intrinsics={
             "name": "Function/test_distributed_tracing:test_partial_granularity_max_compressed_spans.<locals>._test",
+        },
+        exact_agents={
             "nr.pg": True,
         },
         expected_intrinsics=["duration", "timestamp"],
@@ -1000,7 +1003,9 @@ def test_partial_granularity_compressed_span_attributes_in_series():
     @validate_span_events(
         count=1,  # Entry span.
         exact_intrinsics={
-            "name": "Function/test_distributed_tracing:test_partial_granularity_compressed_span_attributes_in_series.<locals>._test"
+            "name": "Function/test_distributed_tracing:test_partial_granularity_compressed_span_attributes_in_series.<locals>._test",
+        },
+        exact_agents={
             "nr.pg": True,
         },
         expected_intrinsics=["duration", "timestamp"],
@@ -1045,7 +1050,9 @@ def test_partial_granularity_compressed_span_attributes_overlapping():
     @validate_span_events(
         count=1,  # Entry span.
         exact_intrinsics={
-            "name": "Function/test_distributed_tracing:test_partial_granularity_compressed_span_attributes_overlapping.<locals>._test"
+            "name": "Function/test_distributed_tracing:test_partial_granularity_compressed_span_attributes_overlapping.<locals>._test",
+        },
+        exact_agents={
             "nr.pg": True,
         },
         expected_intrinsics=["duration", "timestamp"],
@@ -1100,7 +1107,9 @@ def test_partial_granularity_reduced_span_attributes():
     @validate_span_events(
         count=1,  # Entry span.
         exact_intrinsics={
-            "name": "Function/test_distributed_tracing:test_partial_granularity_reduced_span_attributes.<locals>._test"
+            "name": "Function/test_distributed_tracing:test_partial_granularity_reduced_span_attributes.<locals>._test",
+        },
+        exact_agents={
             "nr.pg": True,
         },
         expected_intrinsics=["duration", "timestamp"],
@@ -1155,7 +1164,9 @@ def test_partial_granularity_essential_span_attributes():
     @validate_span_events(
         count=1,  # Entry span.
         exact_intrinsics={
-            "name": "Function/test_distributed_tracing:test_partial_granularity_essential_span_attributes.<locals>._test"
+            "name": "Function/test_distributed_tracing:test_partial_granularity_essential_span_attributes.<locals>._test",
+        },
+        exact_agents={
             "nr.pg": True,
         },
         expected_intrinsics=["duration", "timestamp"],
@@ -1463,5 +1474,127 @@ def test_distributed_trace_priority_set_when_only_sampled_set_in_tracestate_head
             "tracestate": "1@nr=0-0-1-2827902-0af7651916cd43dd-00f067aa0ba902b7-1--1518469636035",
         }
         accept_distributed_trace_headers(headers)
+
+    _test()
+
+
+def test_partial_granularity_errors_on_compressed_spans():
+
+    @function_trace()
+    def call_tests():
+        with ExternalTrace("requests", "http://localhost:3000/", method="GET") as trace:
+            time.sleep(0.1)
+            transaction = current_transaction()
+            try:
+                raise Exception("Exception 1")
+            except:
+                transaction.notice_error()
+        with ExternalTrace("requests", "http://localhost:3000/", method="GET") as trace:
+            time.sleep(0.1)
+        with ExternalTrace("requests", "http://localhost:3000/", method="GET") as trace:
+            time.sleep(0.1)
+            transaction = current_transaction()
+            try:
+                raise Exception("Exception 2")
+            except:
+                transaction.notice_error(expected=True)
+
+    @validate_span_events(
+        count=1,  # Entry span.
+        exact_intrinsics={
+            "name": "Function/test_distributed_tracing:test_partial_granularity_errors_on_compressed_spans.<locals>._test",
+        },
+        exact_agents={
+            "nr.pg": True,
+        },
+        expected_intrinsics=["duration", "timestamp"],
+    )
+    @validate_span_events(
+        count=1,  # 1 external compressed span.
+        exact_intrinsics={"name": "External/localhost:3000/requests/GET"},
+        exact_agents={"http.url": "http://localhost:3000/", "error.class": callable_name(Exception), "error.message": "Exception 2", "error.expected": True},
+        expected_agents=["nr.durations", "nr.ids"],
+    )
+    @validate_compact_span_event(
+        name="External/localhost:3000/requests/GET",
+        compressed_span_count=3,
+        expected_nr_durations_low_bound=.3,
+        expected_nr_durations_high_bound=.4,
+    )
+    @background_task()
+    def _test():
+        headers = {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01"}
+        accept_distributed_trace_headers(headers)
+        call_tests()
+
+    _test = override_application_settings(
+        {
+            "distributed_tracing.sampler.full_granularity.enabled": False,
+            "distributed_tracing.sampler.partial_granularity.enabled": True,
+            "distributed_tracing.sampler.partial_granularity.type": "compact",
+            "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "always_on",
+            "span_events.enabled": True,
+        }
+    )(_test)
+
+    _test()
+
+def test_partial_granularity_errors_on_compressed_spans_status_overriden():
+
+    @function_trace()
+    def call_tests():
+        transaction = current_transaction()
+        with ExternalTrace("requests", "http://localhost:3000/", method="GET") as trace:
+            time.sleep(0.1)
+            try:
+                raise Exception("Exception 1")
+            except:
+                transaction.notice_error(expected=True)
+        with ExternalTrace("requests", "http://localhost:3000/", method="GET") as trace:
+            time.sleep(0.1)
+        with ExternalTrace("requests", "http://localhost:3000/", method="GET") as trace:
+            time.sleep(0.1)
+            try:
+                raise Exception("Exception 2")
+            except:
+                transaction.notice_error()
+
+    @validate_span_events(
+        count=1,  # Entry span.
+        exact_intrinsics={
+            "name": "Function/test_distributed_tracing:test_partial_granularity_errors_on_compressed_spans_status_overriden.<locals>._test",
+        },
+        exact_agents={
+            "nr.pg": True,
+        },
+        expected_intrinsics=["duration", "timestamp"],
+    )
+    @validate_span_events(
+        count=1,  # 1 external compressed span.
+        exact_intrinsics={"name": "External/localhost:3000/requests/GET"},
+        exact_agents={"http.url": "http://localhost:3000/", "error.class": callable_name(Exception), "error.message": "Exception 2", "error.expected": False},
+        expected_agents=["nr.durations", "nr.ids"],
+    )
+    @validate_compact_span_event(
+        name="External/localhost:3000/requests/GET",
+        compressed_span_count=3,
+        expected_nr_durations_low_bound=.3,
+        expected_nr_durations_high_bound=.4,
+    )
+    @background_task()
+    def _test():
+        headers = {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01"}
+        accept_distributed_trace_headers(headers)
+        call_tests()
+
+    _test = override_application_settings(
+        {
+            "distributed_tracing.sampler.full_granularity.enabled": False,
+            "distributed_tracing.sampler.partial_granularity.enabled": True,
+            "distributed_tracing.sampler.partial_granularity.type": "compact",
+            "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "always_on",
+            "span_events.enabled": True,
+        }
+    )(_test)
 
     _test()

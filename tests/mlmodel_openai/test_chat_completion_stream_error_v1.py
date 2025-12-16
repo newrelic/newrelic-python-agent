@@ -45,6 +45,7 @@ expected_events_on_no_model_error = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,  # UUID that varies with each run
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "span_id": None,
             "trace_id": "trace-id",
@@ -61,6 +62,7 @@ expected_events_on_no_model_error = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "span_id": None,
             "trace_id": "trace-id",
@@ -76,6 +78,7 @@ expected_events_on_no_model_error = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "span_id": None,
             "trace_id": "trace-id",
@@ -219,6 +222,7 @@ expected_events_on_invalid_model_error = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,  # UUID that varies with each run
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "span_id": None,
             "trace_id": "trace-id",
@@ -236,6 +240,7 @@ expected_events_on_invalid_model_error = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "span_id": None,
             "trace_id": "trace-id",
@@ -392,6 +397,7 @@ expected_events_on_wrong_api_key_error = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,  # UUID that varies with each run
+            "timestamp": None,
             "span_id": None,
             "trace_id": "trace-id",
             "duration": None,  # Response time varies each test run
@@ -408,6 +414,7 @@ expected_events_on_wrong_api_key_error = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
+            "timestamp": None,
             "span_id": None,
             "trace_id": "trace-id",
             "content": "Invalid API key.",

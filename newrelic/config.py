@@ -2084,6 +2084,10 @@ def _process_module_builtin_defaults():
         "asyncio.base_events", "newrelic.hooks.coroutines_asyncio", "instrument_asyncio_base_events"
     )
 
+    _process_module_definition("asyncio.events", "newrelic.hooks.coroutines_asyncio", "instrument_asyncio_events")
+
+    _process_module_definition("asyncio.runners", "newrelic.hooks.coroutines_asyncio", "instrument_asyncio_runners")
+
     _process_module_definition(
         "langchain_core.runnables.base",
         "newrelic.hooks.mlmodel_langchain",
@@ -2671,8 +2675,6 @@ def _process_module_builtin_defaults():
         "langchain_core.callbacks.manager", "newrelic.hooks.mlmodel_langchain", "instrument_langchain_callbacks_manager"
     )
 
-    _process_module_definition("asyncio.events", "newrelic.hooks.coroutines_asyncio", "instrument_asyncio_events")
-
     _process_module_definition("asgiref.sync", "newrelic.hooks.adapter_asgiref", "instrument_asgiref_sync")
 
     _process_module_definition(
@@ -2946,6 +2948,27 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.mlmodel_autogen",
         "instrument_autogen_agentchat_agents__assistant_agent",
     )
+    _process_module_definition(
+        "strands.agent.agent", "newrelic.hooks.mlmodel_strands", "instrument_strands_agent_agent"
+    )
+    _process_module_definition(
+        "strands.multiagent.graph", "newrelic.hooks.mlmodel_strands", "instrument_strands_multiagent_graph"
+    )
+    _process_module_definition(
+        "strands.multiagent.swarm", "newrelic.hooks.mlmodel_strands", "instrument_strands_multiagent_swarm"
+    )
+    _process_module_definition(
+        "strands.tools.executors._executor",
+        "newrelic.hooks.mlmodel_strands",
+        "instrument_strands_tools_executors__executor",
+    )
+    _process_module_definition(
+        "strands.tools.registry", "newrelic.hooks.mlmodel_strands", "instrument_strands_tools_registry"
+    )
+    _process_module_definition(
+        "strands.models.bedrock", "newrelic.hooks.mlmodel_strands", "instrument_strands_models_bedrock"
+    )
+
     _process_module_definition("mcp.client.session", "newrelic.hooks.adapter_mcp", "instrument_mcp_client_session")
     _process_module_definition(
         "mcp.server.fastmcp.tools.tool_manager",

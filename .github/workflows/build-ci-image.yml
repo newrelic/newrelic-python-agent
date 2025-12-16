@@ -43,7 +43,7 @@ jobs:
     name: Docker Build ${{ matrix.platform }}
 
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # 5.0.1
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # 6.0.1
         with:
           persist-credentials: false
           fetch-depth: 0
@@ -60,7 +60,7 @@ jobs:
 
       - name: Generate Docker Metadata (Tags and Labels)
         id: meta
-        uses: docker/metadata-action@318604b99e75e41977312d83839a89be02ca4893 # 5.9.0
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # 5.10.0
         with:
           images: ghcr.io/${{ steps.image-name.outputs.IMAGE_NAME }}
           flavor: |
@@ -97,7 +97,7 @@ jobs:
           touch "${{ runner.temp }}/digests/${digest#sha256:}"
 
       - name: Upload Digest
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         with:
           name: digests-${{ matrix.cache_tag }}
           path: ${{ runner.temp }}/digests/*
@@ -114,7 +114,7 @@ jobs:
 
     steps:
       - name: Download Digests
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # 6.0.0
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # 7.0.0
         with:
           path: ${{ runner.temp }}/digests
           pattern: digests-*
@@ -139,7 +139,7 @@ jobs:
 
       - name: Generate Docker Metadata (Tags and Labels)
         id: meta
-        uses: docker/metadata-action@318604b99e75e41977312d83839a89be02ca4893 # 5.9.0
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # 5.10.0
         with:
           images: ghcr.io/${{ steps.image-name.outputs.IMAGE_NAME }}
           flavor: |

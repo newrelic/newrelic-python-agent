@@ -14,6 +14,7 @@
 
 import logging
 import sys
+import time
 import traceback
 import uuid
 
@@ -549,6 +550,7 @@ async def wrap_chain_async_run(wrapped, instance, args, kwargs):
     transaction._add_agent_attribute("llm", True)
 
     run_args = bind_args(wrapped, args, kwargs)
+    run_args["timestamp"] = int(1000.0 * time.time())
     completion_id = str(uuid.uuid4())
     add_nr_completion_id(run_args, completion_id)
     # Check to see if launched from agent or directly from chain.
@@ -593,6 +595,7 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
     transaction._add_agent_attribute("llm", True)
 
     run_args = bind_args(wrapped, args, kwargs)
+    run_args["timestamp"] = int(1000.0 * time.time())
     completion_id = str(uuid.uuid4())
     add_nr_completion_id(run_args, completion_id)
     # Check to see if launched from agent or directly from chain.
@@ -658,12 +661,21 @@ def _create_error_chain_run_events(transaction, instance, run_args, completion_i
             "response.number_of_messages": len(input_message_list),
             "tags": tags,
             "error": True,
+            "timestamp": run_args.get("timestamp") or None,
         }
     )
     full_chat_completion_summary_dict.update(llm_metadata_dict)
     transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
     create_chat_completion_message_event(
-        transaction, input_message_list, completion_id, span_id, trace_id, run_id, llm_metadata_dict, []
+        transaction,
+        input_message_list,
+        completion_id,
+        span_id,
+        trace_id,
+        run_id,
+        llm_metadata_dict,
+        [],
+        run_args["timestamp"] or None,
     )
 
 
@@ -728,8 +740,13 @@ def _create_successful_chain_run_events(
             "duration": duration,
             "response.number_of_messages": len(input_message_list) + len(output_message_list),
             "tags": tags,
+            "timestamp": run_args.get("timestamp") or None,
         }
     )
+
+    if run_args.get("timestamp"):
+        full_chat_completion_summary_dict["timestamp"] = run_args.get("timestamp")
+
     full_chat_completion_summary_dict.update(llm_metadata_dict)
     transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
     create_chat_completion_message_event(
@@ -741,6 +758,7 @@ def _create_successful_chain_run_events(
         run_id,
         llm_metadata_dict,
         output_message_list,
+        run_args["timestamp"] or None,
     )
 
 
@@ -753,6 +771,7 @@ def create_chat_completion_message_event(
     run_id,
     llm_metadata_dict,
     output_message_list,
+    request_timestamp=None,
 ):
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
@@ -768,9 +787,12 @@ def create_chat_completion_message_event(
             "vendor": "langchain",
             "ingest_source": "Python",
             "virtual_llm": True,
+            "role": "user",  # default role for input messages, overridden by values in llm_metadata_dict
         }
         if settings.ai_monitoring.record_content.enabled:
             chat_completion_input_message_dict["content"] = message
+        if request_timestamp:
+            chat_completion_input_message_dict["timestamp"] = request_timestamp
         chat_completion_input_message_dict.update(llm_metadata_dict)
         transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_input_message_dict)
 
@@ -791,9 +813,12 @@ def create_chat_completion_message_event(
                 "ingest_source": "Python",
                 "is_response": True,
                 "virtual_llm": True,
+                "role": "assistant",  # default role for output messages, overridden by values in llm_metadata_dict
             }
             if settings.ai_monitoring.record_content.enabled:
                 chat_completion_output_message_dict["content"] = message
+            if request_timestamp:
+                chat_completion_output_message_dict["timestamp"] = request_timestamp
             chat_completion_output_message_dict.update(llm_metadata_dict)
             transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_output_message_dict)
 

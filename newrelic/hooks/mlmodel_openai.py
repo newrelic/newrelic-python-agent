@@ -15,6 +15,7 @@
 import json
 import logging
 import sys
+import time
 import traceback
 import uuid
 
@@ -84,6 +85,8 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     if (kwargs.get("extra_headers") or {}).get("X-Stainless-Raw-Response") == "stream":
         return wrapped(*args, **kwargs)
 
+    request_timestamp = int(1000.0 * time.time())
+
     settings = transaction.settings if transaction.settings is not None else global_settings()
     if not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
@@ -100,9 +103,10 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     try:
         return_val = wrapped(*args, **kwargs)
     except Exception as exc:
-        _record_completion_error(transaction, linking_metadata, completion_id, kwargs, ft, exc)
+        _record_completion_error(transaction, linking_metadata, completion_id, kwargs, ft, exc, request_timestamp)
         raise
-    _handle_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val)
+
+    _handle_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val, request_timestamp)
     return return_val
 
 
@@ -134,6 +138,7 @@ def create_chat_completion_message_event(
     request_id,
     llm_metadata,
     output_message_list,
+    request_timestamp=None,
 ):
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
@@ -168,6 +173,8 @@ def create_chat_completion_message_event(
 
         if settings.ai_monitoring.record_content.enabled:
             chat_completion_input_message_dict["content"] = message_content
+        if request_timestamp:
+            chat_completion_input_message_dict["timestamp"] = request_timestamp
 
         chat_completion_input_message_dict.update(llm_metadata)
 
@@ -209,6 +216,8 @@ def create_chat_completion_message_event(
 
             if settings.ai_monitoring.record_content.enabled:
                 chat_completion_output_message_dict["content"] = message_content
+            if request_timestamp:
+                chat_completion_output_message_dict["timestamp"] = request_timestamp
 
             chat_completion_output_message_dict.update(llm_metadata)
 
@@ -403,6 +412,8 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
     if (kwargs.get("extra_headers") or {}).get("X-Stainless-Raw-Response") == "stream":
         return await wrapped(*args, **kwargs)
 
+    request_timestamp = int(1000.0 * time.time())
+
     settings = transaction.settings if transaction.settings is not None else global_settings()
     if not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
@@ -419,14 +430,16 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
     try:
         return_val = await wrapped(*args, **kwargs)
     except Exception as exc:
-        _record_completion_error(transaction, linking_metadata, completion_id, kwargs, ft, exc)
+        _record_completion_error(transaction, linking_metadata, completion_id, kwargs, ft, exc, request_timestamp)
         raise
 
-    _handle_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val)
+    _handle_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val, request_timestamp)
     return return_val
 
 
-def _handle_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val):
+def _handle_completion_success(
+    transaction, linking_metadata, completion_id, kwargs, ft, return_val, request_timestamp=None
+):
     settings = transaction.settings if transaction.settings is not None else global_settings()
     stream = kwargs.get("stream", False)
     # Only if streaming and streaming monitoring is enabled and the response is not empty
@@ -469,12 +482,16 @@ def _handle_completion_success(transaction, linking_metadata, completion_id, kwa
                 # openai._legacy_response.LegacyAPIResponse
                 response = json.loads(response.http_response.text.strip())
 
-        _record_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, response_headers, response)
+        _record_completion_success(
+            transaction, linking_metadata, completion_id, kwargs, ft, response_headers, response, request_timestamp
+        )
     except Exception:
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
 
-def _record_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, response_headers, response):
+def _record_completion_success(
+    transaction, linking_metadata, completion_id, kwargs, ft, response_headers, response, request_timestamp=None
+):
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
     try:
@@ -552,6 +569,7 @@ def _record_completion_success(transaction, linking_metadata, completion_id, kwa
                 response_headers, "x-ratelimit-remaining-tokens_usage_based", True
             ),
             "response.number_of_messages": len(input_message_list) + len(output_message_list),
+            "timestamp": request_timestamp,
         }
         llm_metadata = _get_llm_attributes(transaction)
         full_chat_completion_summary_dict.update(llm_metadata)
@@ -569,12 +587,13 @@ def _record_completion_success(transaction, linking_metadata, completion_id, kwa
             request_id,
             llm_metadata,
             output_message_list,
+            request_timestamp,
         )
     except Exception:
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
 
-def _record_completion_error(transaction, linking_metadata, completion_id, kwargs, ft, exc):
+def _record_completion_error(transaction, linking_metadata, completion_id, kwargs, ft, exc, request_timestamp=None):
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
     request_message_list = kwargs.get("messages", None) or []
@@ -635,6 +654,7 @@ def _record_completion_error(transaction, linking_metadata, completion_id, kwarg
             "response.organization": exc_organization,
             "duration": ft.duration * 1000,
             "error": True,
+            "timestamp": request_timestamp,
         }
         llm_metadata = _get_llm_attributes(transaction)
         error_chat_completion_dict.update(llm_metadata)
@@ -655,6 +675,7 @@ def _record_completion_error(transaction, linking_metadata, completion_id, kwarg
             request_id,
             llm_metadata,
             output_message_list,
+            request_timestamp,
         )
     except Exception:
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
@@ -719,6 +740,7 @@ async def wrap_base_client_process_response_async(wrapped, instance, args, kwarg
 class GeneratorProxy(ObjectProxy):
     def __init__(self, wrapped):
         super().__init__(wrapped)
+        self._nr_request_timestamp = int(1000.0 * time.time())
 
     def __iter__(self):
         return self
@@ -733,10 +755,10 @@ class GeneratorProxy(ObjectProxy):
             return_val = self.__wrapped__.__next__()
             _record_stream_chunk(self, return_val)
         except StopIteration:
-            _record_events_on_stop_iteration(self, transaction)
+            _record_events_on_stop_iteration(self, transaction, self._nr_request_timestamp)
             raise
         except Exception as exc:
-            _handle_streaming_completion_error(self, transaction, exc)
+            _handle_streaming_completion_error(self, transaction, exc, self._nr_request_timestamp)
             raise
         return return_val
 
@@ -770,7 +792,7 @@ def _record_stream_chunk(self, return_val):
             _logger.warning(STREAM_PARSING_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
 
-def _record_events_on_stop_iteration(self, transaction):
+def _record_events_on_stop_iteration(self, transaction, request_timestamp=None):
     if hasattr(self, "_nr_ft"):
         # We first check for our saved linking metadata before making a new call to get_trace_linking_metadata
         # Directly calling get_trace_linking_metadata() causes the incorrect span ID to be captured and associated with the LLM call
@@ -787,7 +809,14 @@ def _record_events_on_stop_iteration(self, transaction):
             completion_id = str(uuid.uuid4())
             response_headers = openai_attrs.get("response_headers") or {}
             _record_completion_success(
-                transaction, linking_metadata, completion_id, openai_attrs, self._nr_ft, response_headers, None
+                transaction,
+                linking_metadata,
+                completion_id,
+                openai_attrs,
+                self._nr_ft,
+                response_headers,
+                None,
+                request_timestamp,
             )
         except Exception:
             _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
@@ -802,7 +831,7 @@ def _record_events_on_stop_iteration(self, transaction):
                 self._nr_openai_attrs.clear()
 
 
-def _handle_streaming_completion_error(self, transaction, exc):
+def _handle_streaming_completion_error(self, transaction, exc, request_timestamp=None):
     if hasattr(self, "_nr_ft"):
         openai_attrs = getattr(self, "_nr_openai_attrs", {})
 
@@ -812,12 +841,15 @@ def _handle_streaming_completion_error(self, transaction, exc):
             return
         linking_metadata = get_trace_linking_metadata()
         completion_id = str(uuid.uuid4())
-        _record_completion_error(transaction, linking_metadata, completion_id, openai_attrs, self._nr_ft, exc)
+        _record_completion_error(
+            transaction, linking_metadata, completion_id, openai_attrs, self._nr_ft, exc, request_timestamp
+        )
 
 
 class AsyncGeneratorProxy(ObjectProxy):
     def __init__(self, wrapped):
         super().__init__(wrapped)
+        self._nr_request_timestamp = int(1000.0 * time.time())
 
     def __aiter__(self):
         self._nr_wrapped_iter = self.__wrapped__.__aiter__()
@@ -833,10 +865,10 @@ class AsyncGeneratorProxy(ObjectProxy):
             return_val = await self._nr_wrapped_iter.__anext__()
             _record_stream_chunk(self, return_val)
         except StopAsyncIteration:
-            _record_events_on_stop_iteration(self, transaction)
+            _record_events_on_stop_iteration(self, transaction, self._nr_request_timestamp)
             raise
         except Exception as exc:
-            _handle_streaming_completion_error(self, transaction, exc)
+            _handle_streaming_completion_error(self, transaction, exc, self._nr_request_timestamp)
             raise
         return return_val
 

@@ -14,13 +14,13 @@
 
 import botocore.exceptions
 import pytest
-from conftest import BOTOCORE_VERSION
-from external_botocore._test_bedrock_chat_completion_converse import (
+from _test_bedrock_chat_completion_converse import (
     chat_completion_expected_events,
     chat_completion_expected_streaming_events,
     chat_completion_invalid_access_key_error_events,
     chat_completion_invalid_model_error_events,
 )
+from conftest import BOTOCORE_VERSION
 from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     add_token_count_to_events,
@@ -59,33 +59,27 @@ def expected_events(response_streaming):
 
 
 @pytest.fixture(scope="module")
-def exercise_model(loop, bedrock_converse_server, response_streaming):
+def exercise_model(bedrock_converse_server, response_streaming):
     def _exercise_model(message):
-        async def coro():
-            inference_config = {"temperature": 0.7, "maxTokens": 100}
+        inference_config = {"temperature": 0.7, "maxTokens": 100}
 
-            _response = await bedrock_converse_server.converse(
-                modelId="anthropic.claude-3-sonnet-20240229-v1:0",
-                messages=message,
-                system=[{"text": "You are a scientist."}],
-                inferenceConfig=inference_config,
-            )
-
-        return loop.run_until_complete(coro())
+        _response = bedrock_converse_server.converse(
+            modelId="anthropic.claude-3-sonnet-20240229-v1:0",
+            messages=message,
+            system=[{"text": "You are a scientist."}],
+            inferenceConfig=inference_config,
+        )
 
     def _exercise_model_streaming(message):
-        async def coro():
-            inference_config = {"temperature": 0.7, "maxTokens": 100}
+        inference_config = {"temperature": 0.7, "maxTokens": 100}
 
-            response = await bedrock_converse_server.converse_stream(
-                modelId="anthropic.claude-3-sonnet-20240229-v1:0",
-                messages=message,
-                system=[{"text": "You are a scientist."}],
-                inferenceConfig=inference_config,
-            )
-            _responses = [r async for r in response["stream"]]  # Consume the response stream
-
-        return loop.run_until_complete(coro())
+        response = bedrock_converse_server.converse_stream(
+            modelId="anthropic.claude-3-sonnet-20240229-v1:0",
+            messages=message,
+            system=[{"text": "You are a scientist."}],
+            inferenceConfig=inference_config,
+        )
+        _responses = list(response["stream"])  # Consume the response stream
 
     return _exercise_model_streaming if response_streaming else _exercise_model
 
@@ -213,25 +207,18 @@ _client_error_name = callable_name(_client_error)
 
 
 @pytest.fixture
-def exercise_converse_incorrect_access_key(loop, bedrock_converse_server, response_streaming, monkeypatch):
+def exercise_converse_incorrect_access_key(bedrock_converse_server, response_streaming, monkeypatch):
     def _exercise_converse_incorrect_access_key():
-        async def _coro():
-            monkeypatch.setattr(
-                bedrock_converse_server._request_signer._credentials, "access_key", "INVALID-ACCESS-KEY"
-            )
+        monkeypatch.setattr(bedrock_converse_server._request_signer._credentials, "access_key", "INVALID-ACCESS-KEY")
 
-            message = [{"role": "user", "content": [{"text": "Invalid Token"}]}]
-            request = (
-                bedrock_converse_server.converse_stream if response_streaming else bedrock_converse_server.converse
+        message = [{"role": "user", "content": [{"text": "Invalid Token"}]}]
+        request = bedrock_converse_server.converse_stream if response_streaming else bedrock_converse_server.converse
+        with pytest.raises(_client_error):
+            request(
+                modelId="anthropic.claude-3-sonnet-20240229-v1:0",
+                messages=message,
+                inferenceConfig={"temperature": 0.7, "maxTokens": 100},
             )
-            with pytest.raises(_client_error):
-                await request(
-                    modelId="anthropic.claude-3-sonnet-20240229-v1:0",
-                    messages=message,
-                    inferenceConfig={"temperature": 0.7, "maxTokens": 100},
-                )
-
-        loop.run_until_complete(_coro())
 
     return _exercise_converse_incorrect_access_key
 
@@ -322,23 +309,14 @@ def test_bedrock_chat_completion_error_incorrect_access_key_with_token_count(
 
 
 @pytest.fixture
-def exercise_converse_invalid_model(loop, bedrock_converse_server, response_streaming, monkeypatch):
+def exercise_converse_invalid_model(bedrock_converse_server, response_streaming, monkeypatch):
     def _exercise_converse_invalid_model():
-        async def _coro():
-            monkeypatch.setattr(
-                bedrock_converse_server._request_signer._credentials, "access_key", "INVALID-ACCESS-KEY"
-            )
+        monkeypatch.setattr(bedrock_converse_server._request_signer._credentials, "access_key", "INVALID-ACCESS-KEY")
 
-            message = [{"role": "user", "content": [{"text": "Model does not exist."}]}]
-            request = (
-                bedrock_converse_server.converse_stream if response_streaming else bedrock_converse_server.converse
-            )
-            with pytest.raises(_client_error):
-                await request(
-                    modelId="does-not-exist", messages=message, inferenceConfig={"temperature": 0.7, "maxTokens": 100}
-                )
-
-        loop.run_until_complete(_coro())
+        message = [{"role": "user", "content": [{"text": "Model does not exist."}]}]
+        request = bedrock_converse_server.converse_stream if response_streaming else bedrock_converse_server.converse
+        with pytest.raises(_client_error):
+            request(modelId="does-not-exist", messages=message, inferenceConfig={"temperature": 0.7, "maxTokens": 100})
 
     return _exercise_converse_invalid_model
 

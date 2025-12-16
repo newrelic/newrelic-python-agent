@@ -114,6 +114,23 @@ async def normal_asgi_application(scope, receive, send):
     await send({"type": "http.response.body", "body": output})
 
 
+@ASGIApplicationWrapper
+async def asgi_application_generator_headers(scope, receive, send):
+    if scope["type"] == "lifespan":
+        return await handle_lifespan(scope, receive, send)
+
+    if scope["type"] != "http":
+        raise ValueError("unsupported")
+
+    def headers():
+        yield (b"x-my-header", b"myvalue")
+
+    await send({"type": "http.response.start", "status": 200, "headers": headers()})
+    await send({"type": "http.response.body"})
+
+    assert current_transaction() is None
+
+
 async def handle_lifespan(scope, receive, send):
     """Handle lifespan protocol with no-ops to allow more compatibility."""
     while True:

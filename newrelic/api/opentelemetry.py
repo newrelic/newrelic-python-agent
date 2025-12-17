@@ -47,7 +47,7 @@ class NRTraceContextPropagator(TraceContextTextMapPropagator):
         # and/or tracestate's keys also need to be NR compatible.
         
         if transaction:
-            nr_headers = {header_key: ("" if not getter.get(carrier, header_key) else getter.get(carrier, header_key)[0]) for header_key in self.HEADER_KEYS}
+            nr_headers = {header_key: getter.get(carrier, header_key)[0] for header_key in self.HEADER_KEYS if getter.get(carrier, header_key)}
             transaction.accept_distributed_trace_headers(nr_headers)
         return super().extract(carrier=carrier, context=context, getter=getter)
     

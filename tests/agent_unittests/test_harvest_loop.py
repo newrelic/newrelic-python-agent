@@ -27,8 +27,8 @@ from newrelic.core.application import Application
 from newrelic.core.config import finalize_application_settings, global_settings
 from newrelic.core.custom_event import create_custom_event
 from newrelic.core.error_node import ErrorNode
-from newrelic.core.function_node import FunctionNode
 from newrelic.core.external_node import ExternalNode
+from newrelic.core.function_node import FunctionNode
 from newrelic.core.log_event_node import LogEventNode
 from newrelic.core.root_node import RootNode
 from newrelic.core.stats_engine import CustomMetrics, DimensionalMetrics, SampledDataSet

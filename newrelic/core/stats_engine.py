@@ -1198,8 +1198,7 @@ class StatsEngine:
                 if transaction.partial_granularity_sampled:
                     partial_gran_type = settings.distributed_tracing.sampler.partial_granularity.type
                     self.record_custom_metric(
-                        f"Supportability/Python/PartialGranularity/{partial_gran_type}",
-                        {"count": 1},
+                        f"Supportability/Python/PartialGranularity/{partial_gran_type}", {"count": 1}
                     )
                     instrumented = getattr(transaction, "instrumented", 0)
                     if instrumented:
@@ -1216,8 +1215,7 @@ class StatsEngine:
                     dropped_ids = getattr(transaction, "dropped_ids", 0)
                     if dropped_ids:
                         self.record_custom_metric(
-                            "Supportability/Python/PartialGranularity/NrIds/Dropped",
-                            {"count": dropped_ids},
+                            "Supportability/Python/PartialGranularity/NrIds/Dropped", {"count": dropped_ids}
                         )
 
         # Merge in log events

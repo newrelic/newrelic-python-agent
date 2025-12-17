@@ -82,8 +82,9 @@ class NRTraceContextPropagator(TraceContextTextMapPropagator):
             transaction.insert_distributed_trace_headers(nr_headers)
             for key, value in nr_headers:
                 setter.set(carrier, key, value)
-            
-            return super().inject(carrier=carrier, context=context, setter=setter)
+            # Do NOT call super().inject() since we have already
+            # inserted the headers here.  It will not cause harm,
+            # but it is redundant logic.
         
         # If distributed_trace_state == 2 or 3, do not inject headers.
 
@@ -124,12 +125,7 @@ class Span(otel_api_trace.Span):
         )  # This attribute is purely to prevent garbage collection
         self.nr_trace = None
         self.instrumenting_module = instrumenting_module
-
-        # Do not create a New Relic trace if parent
-        # is a remote span and it is not sampled
-        if self._remote() and not self._sampled():
-            return
-
+        
         self.nr_parent = None
         current_nr_trace = current_trace()
         if (
@@ -192,22 +188,6 @@ class Span(otel_api_trace.Span):
 
         self.nr_trace.__enter__()
 
-    def _sampled(self):
-        # TODO: Refine this logic to respect the parent
-        # trace/span, even if the parent is from OTel.
-        # priority: except for always_on or always off, 
-        # sampled flag from parent if parent exists takes
-        # precedence over whatever sampling algorithm is
-        # enabled.
-
-        if self.otel_parent:
-            return bool(self.otel_parent.trace_flags)
-        elif self.nr_transaction:
-            self.nr_transaction._make_sampling_decision()
-            return self.nr_transaction.sampled
-        else:
-            return False
-
     def _remote(self):
         # Remote span denotes if propagated from a remote parent
         return bool(self.otel_parent and self.otel_parent.is_remote)
@@ -220,7 +200,7 @@ class Span(otel_api_trace.Span):
             trace_id=int(self.nr_transaction.trace_id, 16),
             span_id=int(self.nr_trace.guid, 16),
             is_remote=self._remote(),
-            trace_flags=otel_api_trace.TraceFlags(0x01 if self._sampled() else 0x00),
+            trace_flags=otel_api_trace.TraceFlags(0x01),
             trace_state=otel_api_trace.TraceState(),
         )
 
@@ -239,8 +219,7 @@ class Span(otel_api_trace.Span):
 
     def add_event(self, name, attributes=None, timestamp=None):
         # TODO: Not implemented yet.
-        # We can implement this as a log event
-        raise NotImplementedError("TODO: We can implement this as a log event.")
+        raise NotImplementedError("Events are not implemented yet.")
 
     def add_link(self, context=None, attributes=None):
         # TODO: Not implemented yet.
@@ -254,7 +233,7 @@ class Span(otel_api_trace.Span):
             self.nr_trace.name = self._name
 
     def is_recording(self):
-        # TODO: Refine this logic along with `_sampled()`
+        # TODO: Refine this logic further if needed.
         if getattr(self.nr_trace, "end_time", None):
             return False
         if not getattr(self.nr_transaction, "priority", None):
@@ -342,12 +321,8 @@ class Tracer(otel_api_trace.Tracer):
         if parent_span_context is None or not parent_span_context.is_valid:
             parent_span_context = None
 
-        # If parent_span_context exists, we can create traceparent
-        # and tracestate headers
-        _headers = {}
         if parent_span_context and self.nr_application.settings.distributed_tracing.enabled:
             parent_span_trace_id = parent_span_context.trace_id
-            parent_span_trace_flags = parent_span_context.trace_flags
 
         # If remote_parent, transaction must be created, regardless of kind type
         # Make sure we transfer DT headers when we are here, if DT is enabled
@@ -361,9 +336,6 @@ class Tracer(otel_api_trace.Tracer):
                 request_method = self.attributes.get("http.method")
                 request_path = self.attributes.get("http.route")
 
-                update_sampled_flag = False if headers else True
-                headers = headers if headers else _headers
-
                 transaction = WebTransaction(
                     self.nr_application,
                     name=name,
@@ -374,12 +346,7 @@ class Tracer(otel_api_trace.Tracer):
                     request_path=request_path,
                     headers=headers,
                 )
-                
-                # If headers do not contain the traceparent/tracestate
-                # the sampled flag needs to be updated to that of the
-                # parent span.
-                if update_sampled_flag and parent_span_context:
-                    transaction._remote_parent_sampled = bool(parent_span_trace_flags)
+
             elif kind in (
                 otel_api_trace.SpanKind.PRODUCER,
                 otel_api_trace.SpanKind.INTERNAL,
@@ -392,7 +359,7 @@ class Tracer(otel_api_trace.Tracer):
                     destination_name=name,
                     application=self.nr_application,
                     transport_type=self.instrumentation_library,
-                    headers=headers,
+                    headers=None,
                 )
 
             transaction.__enter__()
@@ -415,9 +382,6 @@ class Tracer(otel_api_trace.Tracer):
                     request_method = self.attributes.get("http.method")
                     request_path = self.attributes.get("http.route")
 
-                    update_GUID_flag = False if headers else True
-                    headers = headers if headers else _headers
-
                     transaction = WebTransaction(
                         self.nr_application,
                         name=name,
@@ -429,10 +393,12 @@ class Tracer(otel_api_trace.Tracer):
                         headers=headers,
                     )
 
-                    # If headers do not contain the traceparent/tracestate
-                    # the transaction GUID needs to be updated to that of
-                    # the parent span.
-                    if update_GUID_flag and parent_span_context:
+                    # If incoming headers do not exist, the transaction
+                    # GUID needs to be updated to that of the parent span.
+                    if not headers and parent_span_context:
+                        # Only update trace_id if this is the first transaction in the trace.
+                        transaction._trace_id = f"{parent_span_trace_id:x}" if (transaction.guid == transaction.trace_id[:16]) else transaction._trace_id
+
                         guid = parent_span_trace_id >> 64
                         transaction.guid = f"{guid:x}"
                         
@@ -460,7 +426,7 @@ class Tracer(otel_api_trace.Tracer):
                         destination_name=name,
                         application=self.nr_application,
                         transport_type=self.instrumentation_library,
-                        headers=headers,
+                        headers=None,
                     )
                     transaction.__enter__()
             elif kind == otel_api_trace.SpanKind.PRODUCER:

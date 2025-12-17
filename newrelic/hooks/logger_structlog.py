@@ -22,7 +22,7 @@ from newrelic.core.config import global_settings
 from newrelic.hooks.logger_logging import add_nr_linking_metadata
 
 
-@functools.lru_cache(maxsize=None)
+@functools.cache
 def normalize_level_name(method_name):
     # Look up level number for method name, using result to look up level name for that level number.
     # Convert result to upper case, and default to UNKNOWN in case of errors or missing values.

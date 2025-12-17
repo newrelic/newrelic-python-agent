@@ -59,9 +59,9 @@ def test_pandas_df_categorical_feature_event():
     _test()
 
 
-label_type = "bool" if sys.version_info < (3, 8) else "numeric"
-true_label_value = "True" if sys.version_info < (3, 8) else "1.0"
-false_label_value = "False" if sys.version_info < (3, 8) else "0.0"
+label_type = "numeric"
+true_label_value = "1.0"
+false_label_value = "0.0"
 pandas_df_bool_recorded_custom_events = [
     (
         {"type": "InferenceData"},
@@ -87,7 +87,7 @@ def test_pandas_df_bool_feature_event():
     def _test():
         import sklearn.tree
 
-        dtype_name = "bool" if sys.version_info < (3, 8) else "boolean"
+        dtype_name = "boolean"
         x_train = pd.DataFrame({"col1": [True, False], "col2": [True, False]}, dtype=dtype_name)
         y_train = pd.DataFrame({"label": [True, False]}, dtype=dtype_name)
         x_test = pd.DataFrame({"col1": [True], "col2": [True]}, dtype=dtype_name)

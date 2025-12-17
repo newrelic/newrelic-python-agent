@@ -17,11 +17,9 @@ import sys
 
 python_version = sys.version_info[:2]
 
-if python_version >= (3, 8):
-    pass
-else:
+if python_version < (3, 9):
     error_msg = (
-        "The New Relic Python agent only supports Python 3.8+. We recommend upgrading to a newer version of Python."
+        "The New Relic Python agent only supports Python 3.9+. We recommend upgrading to a newer version of Python."
     )
 
     try:
@@ -34,6 +32,7 @@ else:
             (3, 5): "5.24.0.153",
             (3, 6): "7.16.0.178",
             (3, 7): "10.17.0",
+            (3, 8): "11.2.0",
         }
         last_supported_version = last_supported_version_lookup.get(python_version, None)
 
@@ -128,7 +127,7 @@ if not with_setuptools:
 
     kwargs.update(
         {
-            "python_requires": ">=3.8",  # python_requires is also located in pyproject.toml
+            "python_requires": ">=3.9",  # python_requires is also located in pyproject.toml
             "zip_safe": False,
             "packages": packages,
             "package_data": {

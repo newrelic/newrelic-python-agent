@@ -29,8 +29,6 @@ jobs:
       matrix:
         include:
           # Linux glibc
-          - wheel: cp38-manylinux
-            os: ubuntu-24.04
           - wheel: cp39-manylinux
             os: ubuntu-24.04
           - wheel: cp310-manylinux
@@ -48,8 +46,6 @@ jobs:
           - wheel: cp314t-manylinux
             os: ubuntu-24.04
           # Linux musllibc
-          - wheel: cp38-musllinux
-            os: ubuntu-24.04
           - wheel: cp39-musllinux
             os: ubuntu-24.04
           - wheel: cp310-musllinux

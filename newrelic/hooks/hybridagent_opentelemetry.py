@@ -13,16 +13,67 @@
 # limitations under the License.
 
 import logging
+import os
 
 from newrelic.api.application import application_instance
 from newrelic.api.time_trace import add_custom_span_attribute, current_trace
-from newrelic.api.transaction import Sentinel, current_transaction
+from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.signature import bind_args
 from newrelic.core.config import global_settings
 
 _logger = logging.getLogger(__name__)
 _TRACER_PROVIDER = None
+
+# Enable OpenTelemetry Bridge to capture HTTP
+# request/response headers as span attributes:
+os.environ["OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST"] = ".*"
+os.environ["OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE"] = ".*"
+
+
+###########################################
+#   Context Instrumentation
+###########################################
+
+
+def wrap__load_runtime_context(wrapped, instance, args, kwargs):
+    settings = global_settings()
+
+    if not settings.otel_bridge.enabled:
+        return wrapped(*args, **kwargs)
+
+    from opentelemetry.context.contextvars_context import ContextVarsRuntimeContext
+
+    context = ContextVarsRuntimeContext()
+    return context
+
+
+def wrap_get_global_response_propagator(wrapped, instance, args, kwargs):
+    settings = global_settings()
+
+    if not settings.otel_bridge.enabled:
+        return wrapped(*args, **kwargs)
+
+    from opentelemetry.instrumentation.propagators import set_global_response_propagator
+
+    from newrelic.api.opentelemetry import otel_context_propagator
+
+    set_global_response_propagator(otel_context_propagator)
+
+    return otel_context_propagator
+
+
+def instrument_context_api(module):
+    if hasattr(module, "_load_runtime_context"):
+        wrap_function_wrapper(module, "_load_runtime_context", wrap__load_runtime_context)
+
+
+def instrument_global_propagators_api(module):
+    # Need to disable this instrumentation if settings.otel_bridge is disabled
+
+    if hasattr(module, "get_global_response_propagator"):
+        wrap_function_wrapper(module, "get_global_response_propagator", wrap_get_global_response_propagator)
+
 
 ###########################################
 #   Trace Instrumentation
@@ -31,7 +82,6 @@ _TRACER_PROVIDER = None
 
 def wrap_set_tracer_provider(wrapped, instance, args, kwargs):
     settings = global_settings()
-
     if not settings.otel_bridge.enabled:
         return wrapped(*args, **kwargs)
 
@@ -46,17 +96,19 @@ def wrap_set_tracer_provider(wrapped, instance, args, kwargs):
 
 
 def wrap_get_tracer_provider(wrapped, instance, args, kwargs):
+    # This needs to act as a singleton, like the agent instance.
+    # We should initialize the agent here as well, if there is
+    # not an instance already.
+
+    application = application_instance()
+    if not application.active:
+        # Force application registration if not already active
+        application.activate()
+
     settings = global_settings()
 
     if not settings.otel_bridge.enabled:
         return wrapped(*args, **kwargs)
-
-    # This needs to act as a singleton, like the agent instance.
-    # We should initialize the agent here as well, if there is
-    # not an instance already.
-    application = application_instance(activate=False)
-    if not application or (application and not application.active):
-        application_instance().activate()
 
     global _TRACER_PROVIDER
 
@@ -71,24 +123,18 @@ def wrap_get_tracer_provider(wrapped, instance, args, kwargs):
 def wrap_get_current_span(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     trace = current_trace()
+    span = wrapped(*args, **kwargs)
 
-    # If a NR trace does not exist (aside from the Sentinel
-    # trace), return the original function's result.
-    if not transaction or isinstance(trace, Sentinel):
-        return wrapped(*args, **kwargs)
+    if not transaction:
+        return span
 
-    # Do not allow the wrapper to continue if
-    # the Hybrid Agent setting is not enabled
     settings = transaction.settings or global_settings()
-
     if not settings.otel_bridge.enabled:
-        return wrapped(*args, **kwargs)
+        return span
 
     # If a NR trace does exist, check to see if the current
     # OTel span corresponds to the current NR trace.  If so,
     # return the original function's result.
-    span = wrapped(*args, **kwargs)
-
     if span.get_span_context().span_id == int(trace.guid, 16):
         return span
 
@@ -112,14 +158,20 @@ def wrap_get_current_span(wrapped, instance, args, kwargs):
             for key, value in attributes.items():
                 add_custom_span_attribute(key, value)
 
-    otel_tracestate_headers = None
+    if transaction.settings.distributed_tracing.enabled:
+        if not isinstance(span, otel_api_trace.NonRecordingSpan):
+            # Use the Otel trace and span ids if current span
+            # is not a NonRecordingSpan.  Otherwise, we need to
+            # override the current span with the transaction
+            # and trace guids.
+            transaction._trace_id = f"{span.get_span_context().trace_id:x}"
 
     span_context = otel_api_trace.SpanContext(
         trace_id=int(transaction.trace_id, 16),
         span_id=int(trace.guid, 16),
         is_remote=span.get_span_context().is_remote,
-        trace_flags=otel_api_trace.TraceFlags(span.get_span_context().trace_flags),
-        trace_state=otel_api_trace.TraceState(otel_tracestate_headers),
+        trace_flags=otel_api_trace.TraceFlags(0x01),
+        trace_state=otel_api_trace.TraceState(),
     )
 
     return LazySpan(span_context)
@@ -144,12 +196,10 @@ def wrap_start_internal_or_server_span(wrapped, instance, args, kwargs):
     if context_carrier:
         if ("HTTP_HOST" in context_carrier) or ("http_version" in context_carrier):
             # This is an HTTP request (WSGI, ASGI, or otherwise)
-            nr_environ = context_carrier.copy()
-            attributes["nr.http.headers"] = nr_environ
+            attributes["nr.http.headers"] = context_carrier
 
         else:
-            nr_headers = context_carrier.copy()
-            attributes["nr.nonhttp.headers"] = nr_headers
+            attributes["nr.nonhttp.headers"] = context_carrier
 
         bound_args["attributes"] = attributes
 

@@ -1145,10 +1145,6 @@ class Transaction:
             self._sampling_decision_made = True
             if self._sampled:
                 self.partial_granularity_sampled = True
-                self.record_custom_metric(
-                    f"Supportability/Python/PartialGranularity/{self._settings.distributed_tracing.sampler.partial_granularity.type}",
-                    1,
-                )
             return
 
         # This is only reachable if both full and partial granularity tracing are off.

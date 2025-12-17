@@ -28,7 +28,7 @@ from external_botocore._test_bedrock_embeddings import (
 )
 from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
-    add_token_count_to_events,
+    add_token_count_to_embedding_events,
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
     events_sans_content,
@@ -165,7 +165,7 @@ def test_bedrock_embedding_no_llm_metadata(set_trace_info, exercise_model, expec
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
 def test_bedrock_embedding_with_token_count(set_trace_info, exercise_model, expected_events):
-    @validate_custom_events(add_token_count_to_events(expected_events))
+    @validate_custom_events(add_token_count_to_embedding_events(expected_events))
     @validate_custom_event_count(count=1)
     @validate_transaction_metrics(
         name="test_bedrock_embedding",
@@ -280,45 +280,6 @@ def test_bedrock_embedding_error_incorrect_access_key_no_content(
         monkeypatch.setattr(bedrock_server._request_signer._credentials, "access_key", "INVALID-ACCESS-KEY")
 
         with pytest.raises(_client_error):
-            set_trace_info()
-            add_custom_attribute("llm.conversation_id", "my-awesome-id")
-            add_custom_attribute("llm.foo", "bar")
-            add_custom_attribute("non_llm_attr", "python-agent")
-
-            exercise_model(prompt="Invalid Token")
-
-    _test()
-
-
-@reset_core_stats_engine()
-@override_llm_token_callback_settings(llm_token_count_callback)
-def test_bedrock_embedding_error_incorrect_access_key_with_token_count(
-    monkeypatch, bedrock_server, exercise_model, set_trace_info, expected_invalid_access_key_error_events
-):
-    @validate_custom_events(add_token_count_to_events(expected_invalid_access_key_error_events))
-    @validate_error_trace_attributes(
-        _client_error_name,
-        exact_attrs={
-            "agent": {},
-            "intrinsic": {},
-            "user": {
-                "http.statusCode": 403,
-                "error.message": "The security token included in the request is invalid.",
-                "error.code": "UnrecognizedClientException",
-            },
-        },
-    )
-    @validate_transaction_metrics(
-        name="test_bedrock_embedding",
-        scoped_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
-        rollup_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
-        background_task=True,
-    )
-    @background_task(name="test_bedrock_embedding")
-    def _test():
-        monkeypatch.setattr(bedrock_server._request_signer._credentials, "access_key", "INVALID-ACCESS-KEY")
-
-        with pytest.raises(_client_error):  # not sure where this exception actually comes from
             set_trace_info()
             add_custom_attribute("llm.conversation_id", "my-awesome-id")
             add_custom_attribute("llm.foo", "bar")

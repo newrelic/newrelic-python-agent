@@ -98,9 +98,11 @@ def wrap_get_tracer_provider(wrapped, instance, args, kwargs):
     # This needs to act as a singleton, like the agent instance.
     # We should initialize the agent here as well, if there is
     # not an instance already.
-    application = application_instance(activate=False)
-    if not application or (application and not application.active):
-        application_instance().activate()
+    
+    application = application_instance()
+    if not application.active:
+        # Force application registration if not already active
+        application.activate()
         
     settings = global_settings()
 
@@ -162,18 +164,12 @@ def wrap_get_current_span(wrapped, instance, args, kwargs):
             # override the current span with the transaction
             # and trace guids.
             transaction._trace_id = f'{span.get_span_context().trace_id:x}'
-            guid = span.get_span_context().trace_id >> 64
-            transaction.guid = f'{guid:x}'
-        elif not transaction.priority:
-            # This is a NonRecordingSpan and the transaction
-            # sample and priority have not been computed yet.
-            transaction._make_sampling_decision()
         
     span_context = otel_api_trace.SpanContext(
         trace_id=int(transaction.trace_id, 16),
         span_id=int(trace.guid, 16),
         is_remote=span.get_span_context().is_remote,
-        trace_flags=otel_api_trace.TraceFlags(0x01 if transaction.sampled else 0x00),
+        trace_flags=otel_api_trace.TraceFlags(0x01),
         trace_state=otel_api_trace.TraceState(),
     )
 

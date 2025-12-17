@@ -394,15 +394,8 @@ class Tracer(otel_api_trace.Tracer):
                         request_path=request_path,
                         headers=headers,
                     )
-
-                    # If incoming headers do not exist, the transaction
-                    # GUID needs to be updated to that of the parent span.
-                    if not headers and parent_span_trace_id:
-                        # Only update trace_id if this is the first transaction in the trace.
-                        transaction._trace_id = f"{parent_span_trace_id:x}" if (transaction.guid == transaction.trace_id[:16]) else transaction._trace_id
-
-                        guid = parent_span_trace_id >> 64
-                        transaction.guid = f"{guid:x}"
+                    
+                    transaction._trace_id = f"{parent_span_trace_id:x}" if parent_span_trace_id else transaction.trace_id
                         
                 transaction.__enter__()
             elif kind == otel_api_trace.SpanKind.INTERNAL:

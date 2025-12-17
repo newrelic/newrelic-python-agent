@@ -22,6 +22,9 @@ from newrelic.api.transaction import (
 )
 from newrelic.api.background_task import background_task
 
+from testing_support.validators.validate_transaction_event_attributes import (
+    validate_transaction_event_attributes,
+)
 from testing_support.fixtures import (
     override_application_settings,
 )
@@ -34,6 +37,7 @@ _override_settings = {
     "span_events.enabled": True,
 }
 
+# @dt_enabled
 @pytest.mark.parametrize("telemetry", ["newrelic", "otel"])
 @pytest.mark.parametrize("propagation", [accept_distributed_trace_headers, PROPAGATOR.extract])
 def test_distributed_trace_header_compatibility_full_granularity(
@@ -42,7 +46,7 @@ def test_distributed_trace_header_compatibility_full_granularity(
     """
     Args:
         telemetry (str): either "newrelic", or "otel"
-            Denotes which propagation function was used to 
+            Denotes which propagation function was used to
             insert/inject the distributed trace headers.
             "newrelic" => `insert_distributed_trace_headers`
             "otel" => `PROPAGATOR.inject` from OTel API
@@ -51,6 +55,15 @@ def test_distributed_trace_header_compatibility_full_granularity(
             or `PROPAGATOR.extract`.
     """
     @override_application_settings(_override_settings)
+    @validate_transaction_event_attributes(
+        required_params={
+            "agent": [],
+            "user": [],
+            "intrinsic": [
+                "priority",     # Ensure that priority is set, even if only traceparent is passed.
+            ],
+        },
+    )
     @background_task()
     def _test():
         transaction = current_transaction()
@@ -68,10 +81,6 @@ def test_distributed_trace_header_compatibility_full_granularity(
         assert transaction.parent_span == "00f067aa0ba902b7"
         assert transaction.trace_id == "0af7651916cd43dd8448eb211c80319c"
         assert current_span.get_span_context().trace_id == int("0af7651916cd43dd8448eb211c80319c", 16)
-        
-        # Ensure that priority gets set despite having
-        # the sample flag set but no priority set
-        assert transaction.priority
 
     _test()
     
@@ -84,14 +93,13 @@ def test_distributed_trace_header_compatibility_partial_granularity(
     """
     Args:
         telemetry (str): either "newrelic" or "otel"
-            Denotes which propagation function was used to 
+            Denotes which propagation function was used to
             insert/inject the distributed trace headers.
             "newrelic" => `insert_distributed_trace_headers`
             "otel" => `PROPAGATOR.inject` from Otel API
         propagation (func): The propagation function to use.
             Either `accept_distributed_trace_headers`
             or `PROPAGATOR.extract`.
-            
     """
     test_settings = _override_settings.copy()
     test_settings.update(
@@ -101,6 +109,15 @@ def test_distributed_trace_header_compatibility_partial_granularity(
         }
     )
     @override_application_settings(test_settings)
+    @validate_transaction_event_attributes(
+        required_params={
+            "agent": [],
+            "user": [],
+            "intrinsic": [
+                "priority",     # Ensure that priority is set, even if only traceparent is passed.
+            ],
+        },
+    )
     @background_task()
     def _test():
         transaction = current_transaction()
@@ -117,10 +134,6 @@ def test_distributed_trace_header_compatibility_partial_granularity(
         assert transaction.parent_span == "00f067aa0ba902b7"
         assert transaction.trace_id == "0af7651916cd43dd8448eb211c80319c"
         assert current_span.get_span_context().trace_id == int("0af7651916cd43dd8448eb211c80319c", 16)
-        
-        # Ensure that priority gets set despite having
-        # the sample flag set but no priority set
-        assert transaction.priority
 
     _test()
     

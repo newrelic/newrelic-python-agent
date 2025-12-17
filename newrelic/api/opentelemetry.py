@@ -231,12 +231,12 @@ class Span(otel_api_trace.Span):
             self.nr_trace.name = self._name
 
     def is_recording(self):
-        # TODO: Refine this logic further if needed.
-        # If the trace has an end time set then it is done recording. Otherwise, if it does not have an end time set and the transaction's priority has not been set yet or it is set to something other than 0 then it is also still recording.
+        # If the trace has an end time set then it is done recording. Otherwise,
+        # if it does not have an end time set and the transaction's priority
+        # has not been set yet or it is set to something other than 0 then it
+        # is also still recording.
         if getattr(self.nr_trace, "end_time", None):
             return False
-        if not getattr(self.nr_transaction, "priority", None):
-            self.nr_transaction._make_sampling_decision()
 
         return getattr(self.nr_transaction, "priority", 1) > 0
 

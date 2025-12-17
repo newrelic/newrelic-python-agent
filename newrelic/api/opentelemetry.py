@@ -321,6 +321,7 @@ class Tracer(otel_api_trace.Tracer):
         if parent_span_context is None or not parent_span_context.is_valid:
             parent_span_context = None
 
+        parent_span_trace_id = None
         if parent_span_context and self.nr_application.settings.distributed_tracing.enabled:
             parent_span_trace_id = parent_span_context.trace_id
 
@@ -395,7 +396,7 @@ class Tracer(otel_api_trace.Tracer):
 
                     # If incoming headers do not exist, the transaction
                     # GUID needs to be updated to that of the parent span.
-                    if not headers and parent_span_context:
+                    if not headers and parent_span_trace_id:
                         # Only update trace_id if this is the first transaction in the trace.
                         transaction._trace_id = f"{parent_span_trace_id:x}" if (transaction.guid == transaction.trace_id[:16]) else transaction._trace_id
 

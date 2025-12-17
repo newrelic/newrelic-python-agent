@@ -13,36 +13,23 @@
 # limitations under the License.
 
 import pytest
+from opentelemetry import propagate as otel_api_propagate
+from opentelemetry import trace as otel_api_trace
+from testing_support.fixtures import override_application_settings
+from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
 
-from opentelemetry import trace as otel_api_trace, propagate as otel_api_propagate
-
-from newrelic.api.transaction import (
-    accept_distributed_trace_headers,
-    current_transaction,
-)
 from newrelic.api.background_task import background_task
-
-from testing_support.validators.validate_transaction_event_attributes import (
-    validate_transaction_event_attributes,
-)
-from testing_support.fixtures import (
-    override_application_settings,
-)
+from newrelic.api.transaction import accept_distributed_trace_headers, current_transaction
 
 PROPAGATOR = otel_api_propagate.get_global_textmap()
 
-_override_settings = {
-    "trusted_account_key": "1",
-    "distributed_tracing.enabled": True,
-    "span_events.enabled": True,
-}
+_override_settings = {"trusted_account_key": "1", "distributed_tracing.enabled": True, "span_events.enabled": True}
+
 
 # @dt_enabled
 @pytest.mark.parametrize("telemetry", ["newrelic", "otel"])
 @pytest.mark.parametrize("propagation", [accept_distributed_trace_headers, PROPAGATOR.extract])
-def test_distributed_trace_header_compatibility_full_granularity(
-    telemetry, propagation
-):
+def test_distributed_trace_header_compatibility_full_granularity(telemetry, propagation):
     """
     Args:
         telemetry (str): either "newrelic", or "otel"
@@ -54,20 +41,21 @@ def test_distributed_trace_header_compatibility_full_granularity(
             Either `accept_distributed_trace_headers`
             or `PROPAGATOR.extract`.
     """
+
     @override_application_settings(_override_settings)
     @validate_transaction_event_attributes(
         required_params={
             "agent": [],
             "user": [],
             "intrinsic": [
-                "priority",     # Ensure that priority is set, even if only traceparent is passed.
+                "priority"  # Ensure that priority is set, even if only traceparent is passed.
             ],
-        },
+        }
     )
     @background_task()
     def _test():
         transaction = current_transaction()
-        
+
         headers = {
             "traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01",
             "newrelic": '{"v":[0,1],"d":{"ty":"Mobile","ac":"123","ap":"51424","id":"5f474d64b9cc9b2a","tr":"6e2fea0b173fdad0","pr":0.1234,"sa":True,"ti":1482959525577,"tx":"27856f70d3d314b7"}}',  # This header should be ignored.
@@ -75,7 +63,7 @@ def test_distributed_trace_header_compatibility_full_granularity(
         if telemetry == "newrelic":
             headers["tracestate"] = "1@nr=0-0-1-2827902-0af7651916cd43dd-00f067aa0ba902b7-1-1.23456-1518469636035"
         # "otel" does not generate tracestate headers
-        
+
         propagation(headers)
         current_span = otel_api_trace.get_current_span()
         assert transaction.parent_span == "00f067aa0ba902b7"
@@ -83,13 +71,11 @@ def test_distributed_trace_header_compatibility_full_granularity(
         assert current_span.get_span_context().trace_id == int("0af7651916cd43dd8448eb211c80319c", 16)
 
     _test()
-    
+
 
 @pytest.mark.parametrize("telemetry", ["newrelic", "otel"])
 @pytest.mark.parametrize("propagation", [accept_distributed_trace_headers, PROPAGATOR.extract])
-def test_distributed_trace_header_compatibility_partial_granularity(
-    telemetry, propagation
-):
+def test_distributed_trace_header_compatibility_partial_granularity(telemetry, propagation):
     """
     Args:
         telemetry (str): either "newrelic" or "otel"
@@ -108,15 +94,16 @@ def test_distributed_trace_header_compatibility_partial_granularity(
             "distributed_tracing.sampler.partial_granularity.enabled": True,
         }
     )
+
     @override_application_settings(test_settings)
     @validate_transaction_event_attributes(
         required_params={
             "agent": [],
             "user": [],
             "intrinsic": [
-                "priority",     # Ensure that priority is set, even if only traceparent is passed.
+                "priority"  # Ensure that priority is set, even if only traceparent is passed.
             ],
-        },
+        }
     )
     @background_task()
     def _test():
@@ -128,7 +115,7 @@ def test_distributed_trace_header_compatibility_partial_granularity(
         if telemetry == "newrelic":
             headers["tracestate"] = "1@nr=0-0-1-2827902-0af7651916cd43dd-00f067aa0ba902b7-1-1.23456-1518469636035"
         # "otel" does not generate tracestate headers
-        
+
         propagation(headers)
         current_span = otel_api_trace.get_current_span()
         assert transaction.parent_span == "00f067aa0ba902b7"
@@ -136,4 +123,3 @@ def test_distributed_trace_header_compatibility_partial_granularity(
         assert current_span.get_span_context().trace_id == int("0af7651916cd43dd8448eb211c80319c", 16)
 
     _test()
-    

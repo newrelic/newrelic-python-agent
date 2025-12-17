@@ -13,36 +13,22 @@
 # limitations under the License.
 
 import pytest
+from testing_support.fixtures import dt_enabled, override_application_settings
+from testing_support.validators.validate_span_events import validate_span_events
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
 
-from testing_support.validators.validate_span_events import validate_span_events
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from testing_support.fixtures import override_application_settings, dt_enabled
 
-
-@pytest.mark.parametrize(
-    "enabled", 
-    [True, False]
-)
+@pytest.mark.parametrize("enabled", [True, False])
 def test_opentelemetry_bridge_enabled(tracer, enabled):
     @override_application_settings({"otel_bridge.enabled": enabled})
     @dt_enabled
     @validate_transaction_metrics(name="Foo", background_task=True)
-    @validate_span_events(
-        count=1 if enabled else 0,
-        exact_intrinsics={
-            "name": "Function/Bar"
-        }
-    )
-    @validate_span_events(
-        count=1 if enabled else 0,
-        exact_intrinsics={
-            "name": "Function/Baz"
-        }
-    )
+    @validate_span_events(count=1 if enabled else 0, exact_intrinsics={"name": "Function/Bar"})
+    @validate_span_events(count=1 if enabled else 0, exact_intrinsics={"name": "Function/Baz"})
     @background_task(name="Foo")
     def _test():
         with tracer.start_as_current_span(name="Bar") as bar_span:

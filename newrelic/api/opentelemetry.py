@@ -17,10 +17,10 @@ import sys
 from contextlib import contextmanager
 
 from opentelemetry import trace as otel_api_trace
-from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 from opentelemetry.baggage.propagation import W3CBaggagePropagator
-from opentelemetry.propagators.composite import CompositePropagator
 from opentelemetry.propagate import set_global_textmap
+from opentelemetry.propagators.composite import CompositePropagator
+from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import BackgroundTask
@@ -30,9 +30,8 @@ from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.message_trace import MessageTrace
 from newrelic.api.message_transaction import MessageTransaction
 from newrelic.api.time_trace import current_trace, notice_error
-from newrelic.api.transaction import Sentinel, current_transaction, accept_distributed_trace_headers, insert_distributed_trace_headers
+from newrelic.api.transaction import Sentinel, current_transaction
 from newrelic.api.web_transaction import WebTransaction
-
 from newrelic.core.otlp_utils import create_resource
 
 _logger = logging.getLogger(__name__)
@@ -43,14 +42,17 @@ class NRTraceContextPropagator(TraceContextTextMapPropagator):
 
     def extract(self, carrier, context=None, getter=None):
         transaction = current_transaction()
-        # If we are passing into New Relic, traceparent 
+        # If we are passing into New Relic, traceparent
         # and/or tracestate's keys also need to be NR compatible.
-        
+
         if transaction:
-            nr_headers = {header_key: getter.get(carrier, header_key)[0] for header_key in self.HEADER_KEYS if getter.get(carrier, header_key)}
+            nr_headers = {
+                header_key: getter.get(carrier, header_key)[0]
+                for header_key in self.HEADER_KEYS
+                if getter.get(carrier, header_key)
+            }
             transaction.accept_distributed_trace_headers(nr_headers)
         return super().extract(carrier=carrier, context=context, getter=getter)
-    
 
     def inject(self, carrier, context=None, setter=None):
         transaction = current_transaction()
@@ -60,7 +62,7 @@ class NRTraceContextPropagator(TraceContextTextMapPropagator):
         #       Transaction has not inserted any outbound headers nor has
         #       it accepted any inbound headers (yet).
         #   1 (01) if already accepted:
-        #       Transaction has accepted inbound headers and is able to 
+        #       Transaction has accepted inbound headers and is able to
         #       insert outbound headers to the next app if needed.
         #   2 (10) if inserted but not accepted:
         #       Transaction has inserted outbound headers already.
@@ -76,7 +78,7 @@ class NRTraceContextPropagator(TraceContextTextMapPropagator):
 
         if not transaction:
             return super().inject(carrier=carrier, context=context, setter=setter)
-        
+
         if transaction._distributed_trace_state < 2:
             nr_headers = []
             transaction.insert_distributed_trace_headers(nr_headers)
@@ -85,22 +87,18 @@ class NRTraceContextPropagator(TraceContextTextMapPropagator):
             # Do NOT call super().inject() since we have already
             # inserted the headers here.  It will not cause harm,
             # but it is redundant logic.
-        
+
         # If distributed_trace_state == 2 or 3, do not inject headers.
 
 
 # Context and Context Propagator Setup
-otel_context_propagator = CompositePropagator(
-    propagators=[
-        NRTraceContextPropagator(),
-        W3CBaggagePropagator(),
-    ]
-)
+otel_context_propagator = CompositePropagator(propagators=[NRTraceContextPropagator(), W3CBaggagePropagator()])
 set_global_textmap(otel_context_propagator)
 
 # ----------------------------------------------
 # Custom OTel Spans and Traces
 # ----------------------------------------------
+
 
 class Span(otel_api_trace.Span):
     def __init__(
@@ -125,7 +123,7 @@ class Span(otel_api_trace.Span):
         )  # This attribute is purely to prevent garbage collection
         self.nr_trace = None
         self.instrumenting_module = instrumenting_module
-        
+
         self.nr_parent = None
         current_nr_trace = current_trace()
         if (
@@ -148,7 +146,7 @@ class Span(otel_api_trace.Span):
             _logger.error(
                 "OpenTelemetry span (%s) and NR trace (%s) do not match nor correspond to a remote span. Open Telemetry span will not be reported to New Relic. Please report this problem to New Relic.",
                 self.otel_parent,
-                current_nr_trace,   # NR parent trace
+                current_nr_trace,  # NR parent trace
             )
             return
 
@@ -349,10 +347,7 @@ class Tracer(otel_api_trace.Tracer):
                     headers=headers,
                 )
 
-            elif kind in (
-                otel_api_trace.SpanKind.PRODUCER,
-                otel_api_trace.SpanKind.INTERNAL,
-            ):
+            elif kind in (otel_api_trace.SpanKind.PRODUCER, otel_api_trace.SpanKind.INTERNAL):
                 transaction = BackgroundTask(self.nr_application, name=name)
             elif kind == otel_api_trace.SpanKind.CONSUMER:
                 transaction = MessageTransaction(
@@ -394,9 +389,11 @@ class Tracer(otel_api_trace.Tracer):
                         request_path=request_path,
                         headers=headers,
                     )
-                    
-                    transaction._trace_id = f"{parent_span_trace_id:x}" if parent_span_trace_id else transaction.trace_id
-                        
+
+                    transaction._trace_id = (
+                        f"{parent_span_trace_id:x}" if parent_span_trace_id else transaction.trace_id
+                    )
+
                 transaction.__enter__()
             elif kind == otel_api_trace.SpanKind.INTERNAL:
                 if transaction:

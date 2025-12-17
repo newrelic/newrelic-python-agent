@@ -25,7 +25,7 @@ from newrelic.core.config import global_settings
 _logger = logging.getLogger(__name__)
 _TRACER_PROVIDER = None
 
-# Enable OpenTelemetry Bridge to capture HTTP 
+# Enable OpenTelemetry Bridge to capture HTTP
 # request/response headers as span attributes:
 os.environ["OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST"] = ".*"
 os.environ["OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE"] = ".*"
@@ -35,12 +35,13 @@ os.environ["OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE"] = ".*"
 #   Context Instrumentation
 ###########################################
 
+
 def wrap__load_runtime_context(wrapped, instance, args, kwargs):
     settings = global_settings()
-    
+
     if not settings.otel_bridge.enabled:
         return wrapped(*args, **kwargs)
-        
+
     from opentelemetry.context.contextvars_context import ContextVarsRuntimeContext
 
     context = ContextVarsRuntimeContext()
@@ -49,20 +50,20 @@ def wrap__load_runtime_context(wrapped, instance, args, kwargs):
 
 def wrap_get_global_response_propagator(wrapped, instance, args, kwargs):
     settings = global_settings()
-    
+
     if not settings.otel_bridge.enabled:
         return wrapped(*args, **kwargs)
 
-    from newrelic.api.opentelemetry import otel_context_propagator
     from opentelemetry.instrumentation.propagators import set_global_response_propagator
-    
+
+    from newrelic.api.opentelemetry import otel_context_propagator
+
     set_global_response_propagator(otel_context_propagator)
-    
+
     return otel_context_propagator
 
 
 def instrument_context_api(module):
-
     if hasattr(module, "_load_runtime_context"):
         wrap_function_wrapper(module, "_load_runtime_context", wrap__load_runtime_context)
 
@@ -98,12 +99,12 @@ def wrap_get_tracer_provider(wrapped, instance, args, kwargs):
     # This needs to act as a singleton, like the agent instance.
     # We should initialize the agent here as well, if there is
     # not an instance already.
-    
+
     application = application_instance()
     if not application.active:
         # Force application registration if not already active
         application.activate()
-        
+
     settings = global_settings()
 
     if not settings.otel_bridge.enabled:
@@ -123,7 +124,7 @@ def wrap_get_current_span(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     trace = current_trace()
     span = wrapped(*args, **kwargs)
-    
+
     if not transaction:
         return span
 
@@ -160,11 +161,11 @@ def wrap_get_current_span(wrapped, instance, args, kwargs):
     if transaction.settings.distributed_tracing.enabled:
         if not isinstance(span, otel_api_trace.NonRecordingSpan):
             # Use the Otel trace and span ids if current span
-            # is not a NonRecordingSpan.  Otherwise, we need to 
+            # is not a NonRecordingSpan.  Otherwise, we need to
             # override the current span with the transaction
             # and trace guids.
-            transaction._trace_id = f'{span.get_span_context().trace_id:x}'
-        
+            transaction._trace_id = f"{span.get_span_context().trace_id:x}"
+
     span_context = otel_api_trace.SpanContext(
         trace_id=int(transaction.trace_id, 16),
         span_id=int(trace.guid, 16),

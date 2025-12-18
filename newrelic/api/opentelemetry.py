@@ -31,10 +31,7 @@ from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.message_trace import MessageTrace
 from newrelic.api.message_transaction import MessageTransaction
 from newrelic.api.time_trace import current_trace, notice_error
-from newrelic.api.transaction import (
-    Sentinel,
-    current_transaction,
-)
+from newrelic.api.transaction import Sentinel, current_transaction
 from newrelic.api.web_transaction import WebTransaction
 from newrelic.core.otlp_utils import create_resource
 
@@ -91,7 +88,7 @@ class NRTraceContextPropagator(TraceContextTextMapPropagator):
             # Do NOT call super().inject() since we have already
             # inserted the headers here.  It will not cause harm,
             # but it is redundant logic.
-        
+
         # If distributed_trace_state == 2 or 3, do not inject headers.
 
 

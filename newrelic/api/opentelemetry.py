@@ -257,7 +257,7 @@ class Span(otel_api_trace.Span):
         This code is modeled after the OpenTelemetry SDK's
         status implementation:
         https://github.com/open-telemetry/opentelemetry-python/blob/main/opentelemetry-sdk/src/opentelemetry/sdk/trace/__init__.py#L979
-        
+
         Additional Notes:
         1. Ignore future calls if status is already set to OK
             since span should be completed if status is OK.

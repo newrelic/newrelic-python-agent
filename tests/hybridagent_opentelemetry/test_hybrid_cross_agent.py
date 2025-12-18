@@ -12,23 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from opentelemetry import propagate as otel_api_propagate
-from opentelemetry import trace as otel_api_trace
+from opentelemetry import trace as otel_api_trace, propagate as otel_api_propagate
+
+from newrelic.api.application import application_instance
+from newrelic.api.transaction import current_transaction
+from newrelic.api.time_trace import current_trace
+from newrelic.api.background_task import BackgroundTask
+from newrelic.api.external_trace import ExternalTrace
+from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.external_trace import ExternalTrace
+
 from testing_support.fixtures import dt_enabled, override_application_settings
 from testing_support.validators.validate_error_event_attributes import validate_error_event_attributes
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_count import validate_transaction_count
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
-from newrelic.api.application import application_instance
-from newrelic.api.background_task import BackgroundTask
-from newrelic.api.external_trace import ExternalTrace
-from newrelic.api.function_trace import FunctionTrace
-from newrelic.api.time_trace import current_trace
-from newrelic.api.transaction import current_transaction
-
 PROPAGATOR = otel_api_propagate.get_global_textmap()
-
 
 # Does not create segment without a transaction
 @validate_transaction_count(0)

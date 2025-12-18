@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from opentelemetry import trace
+from testing_support.fixtures import dt_enabled
 from testing_support.validators.validate_span_events import validate_span_events
 
 from newrelic.api.background_task import background_task
@@ -22,6 +23,7 @@ from newrelic.api.transaction import add_custom_attribute
 
 
 def test_trace_with_span_attributes(tracer):
+    @dt_enabled
     @validate_span_events(
         count=1,
         exact_intrinsics={
@@ -69,6 +71,7 @@ def test_trace_with_otel_to_newrelic(tracer):
         otel_span = trace.get_current_span()
         otel_span.set_attribute("otel_span_attribute_FT", "OTel span attribute from FT")
 
+    @dt_enabled
     @validate_span_events(
         count=1,
         exact_intrinsics={

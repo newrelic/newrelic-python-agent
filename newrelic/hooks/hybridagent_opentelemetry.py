@@ -30,7 +30,6 @@ _TRACER_PROVIDER = None
 os.environ["OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST"] = ".*"
 os.environ["OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE"] = ".*"
 
-
 ###########################################
 #   Context Instrumentation
 ###########################################

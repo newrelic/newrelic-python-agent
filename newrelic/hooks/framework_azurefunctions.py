@@ -21,7 +21,10 @@ from newrelic.api.transaction import current_transaction
 from newrelic.api.web_transaction import WebTransaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.signature import bind_args
-from newrelic.common.utilization import AZURE_RESOURCE_GROUP_NAME_PARTIAL_RE, AZURE_RESOURCE_GROUP_NAME_RE
+from newrelic.common.utilization import AzureFunctionUtilization
+
+RESOURCE_GROUP_NAME_PARTIAL_RE = AzureFunctionUtilization.RESOURCE_GROUP_NAME_PARTIAL_RE
+RESOURCE_GROUP_NAME_RE = AzureFunctionUtilization.RESOURCE_GROUP_NAME_RE
 
 
 def original_agent_instance():
@@ -42,9 +45,9 @@ def intrinsics_populator(application, context):
             r"(?:(?!\+).)*", website_owner_name
         ).group(0)
     if website_owner_name and website_owner_name.endswith("-Linux"):
-        resource_group_name = AZURE_RESOURCE_GROUP_NAME_RE.search(website_owner_name).group(1)
+        resource_group_name = RESOURCE_GROUP_NAME_RE.search(website_owner_name).group(1)
     elif website_owner_name:
-        resource_group_name = AZURE_RESOURCE_GROUP_NAME_PARTIAL_RE.search(website_owner_name).group(1)
+        resource_group_name = RESOURCE_GROUP_NAME_PARTIAL_RE.search(website_owner_name).group(1)
     else:
         resource_group_name = os.environ.get("WEBSITE_RESOURCE_GROUP", "Unknown")
     azure_function_app_name = os.environ.get("WEBSITE_SITE_NAME", getattr(application, "name", "Azure Function App"))

@@ -37,7 +37,7 @@ Distributed under the following license(s):
 
 ## [urllib3](https://pypi.org/project/urllib3)
 
-Copyright (c) 2008-2019 Andrey Petrov and contributors (see CONTRIBUTORS.txt)
+Copyright (c) 2008-2020 Andrey Petrov and contributors.
 
 Distributed under the following license(s):
 
@@ -46,7 +46,7 @@ Distributed under the following license(s):
 
 ## [wrapt](https://pypi.org/project/wrapt)
 
-Copyright (c) 2013-2019, Graham Dumpleton
+Copyright (c) 2013-2025, Graham Dumpleton
 All rights reserved.
 
 Distributed under the following license(s):

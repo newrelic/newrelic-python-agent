@@ -284,7 +284,7 @@ class Span(otel_api_trace.Span):
         # `escaped` indicates whether the exception has not
         # been unhandled by the time the span has ended.
         if attributes:
-            attributes.update({"exception.escaped": escaped})
+            attributes["exception.escaped"] = escaped
         else:
             attributes = {"exception.escaped": escaped}
 

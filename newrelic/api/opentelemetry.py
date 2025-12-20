@@ -262,17 +262,21 @@ class Span(otel_api_trace.Span):
             since this will be either invalid or unnecessary.
         """
         if isinstance(status, Status):
-            if (self.status and self.status.status_code is StatusCode.OK) or status.is_unset:
+            if (self.status.status_code is StatusCode.OK) or status.is_unset:
                 return
             if description is not None:
+                # `description` should only exist if status is StatusCode.ERROR
                 _logger.warning(
                     "Description %s ignored. Use either `Status` or `(StatusCode, Description)`", description
                 )
             self.status = status
         elif isinstance(status, StatusCode):
-            if (self.status and self.status.status_code is StatusCode.OK) or status is StatusCode.UNSET:
+            if (self.status.status_code is StatusCode.OK) or (status is StatusCode.UNSET):
                 return
             self.status = Status(status, description)
+        else:
+            _logger.warning("Invalid status type %s. Expected Status or StatusCode.", type(status))
+            return
 
         # Add status as attribute
         self.set_attribute("status_code", self.status.status_code.name)

@@ -13,13 +13,12 @@
 # limitations under the License.
 
 import pytest
-
 from opentelemetry.trace.status import Status, StatusCode
-from newrelic.api.background_task import background_task
-
 from testing_support.fixtures import dt_enabled
-from testing_support.validators.validate_error_event_attributes import validate_error_event_attributes
 from testing_support.util import conditional_decorator
+from testing_support.validators.validate_error_event_attributes import validate_error_event_attributes
+
+from newrelic.api.background_task import background_task
 
 
 # `set_status` takes in a status argument that can be either
@@ -150,13 +149,37 @@ def test_set_status_with_start_span(tracer, _record_exception, _set_status_on_ex
     "status_to_set,description,expected_status_code",
     [
         (Status(StatusCode.OK), None, StatusCode.OK),  # OK_Status_no_description, no description
-        (Status(StatusCode.OK), "I will be ignored in set_status", StatusCode.OK),  # OK_Status_no_description, description
-        (Status(StatusCode.OK, "I will be ignored in Status"), None, StatusCode.OK),  # OK_Status_with_description, no description
-        (Status(StatusCode.OK, "I will be ignored in Status"), "I will be ignored in set_status", StatusCode.OK),  # OK_Status_with_description, description
+        (
+            Status(StatusCode.OK),
+            "I will be ignored in set_status",
+            StatusCode.OK,
+        ),  # OK_Status_no_description, description
+        (
+            Status(StatusCode.OK, "I will be ignored in Status"),
+            None,
+            StatusCode.OK,
+        ),  # OK_Status_with_description, no description
+        (
+            Status(StatusCode.OK, "I will be ignored in Status"),
+            "I will be ignored in set_status",
+            StatusCode.OK,
+        ),  # OK_Status_with_description, description
         (Status(StatusCode.ERROR), None, StatusCode.ERROR),  # Error_Status_no_description, no description
-        (Status(StatusCode.ERROR), "I will be ignored in set_status", StatusCode.ERROR),  # Error_Status_no_description, description
-        (Status(StatusCode.ERROR, "This is where I belong"), None, StatusCode.ERROR),  # Error_Status_with_description, no description
-        (Status(StatusCode.ERROR, "This is where I belong"), "I will be ignored in set_status", StatusCode.ERROR),  # Error_Status_with_description, description
+        (
+            Status(StatusCode.ERROR),
+            "I will be ignored in set_status",
+            StatusCode.ERROR,
+        ),  # Error_Status_no_description, description
+        (
+            Status(StatusCode.ERROR, "This is where I belong"),
+            None,
+            StatusCode.ERROR,
+        ),  # Error_Status_with_description, no description
+        (
+            Status(StatusCode.ERROR, "This is where I belong"),
+            "I will be ignored in set_status",
+            StatusCode.ERROR,
+        ),  # Error_Status_with_description, description
         (StatusCode.OK, None, StatusCode.OK),  # OK_StatusCode, no description
         (StatusCode.OK, "I will be ignored in Status", StatusCode.OK),  # OK_StatusCode, description
         (StatusCode.ERROR, None, StatusCode.ERROR),  # Error_StatusCode, no description
@@ -183,16 +206,15 @@ def test_status_setting(tracer, status_to_set, description, expected_status_code
         with tracer.start_as_current_span(name="TestSpan") as span:
             # Set the new status
             span.set_status(status_to_set, description)
-            
+
             # If status code is OK, do not have description
             # if expected_status_code == StatusCode.OK:
             if span.status.status_code == StatusCode.OK:
-                 assert span.status.description is None
-                
+                assert span.status.description is None
+
             # If status code is ERROR, make sure description
             # is set correctly (if provided):
             if span.status.status_code == StatusCode.ERROR:
                 assert span.status.description in [None, "This is where I belong"]
-
 
     _test()

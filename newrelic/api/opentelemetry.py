@@ -334,8 +334,9 @@ class Span(otel_api_trace.Span):
             and isinstance(current_trace(), Sentinel)
         ):
             # We need to end the transaction as well
-            self.nr_transaction.__exit__(*sys.exc_info())
-
+            self.nr_transaction.__exit__(*error)
+        
+        
     def __exit__(self, exc_type, exc_val, exc_tb):
         """
         Ends context manager and calls `end` on the `Span`.
@@ -422,7 +423,6 @@ class Tracer(otel_api_trace.Tracer):
                         request_path=request_path,
                         headers=headers,
                     )
-
             elif kind in (otel_api_trace.SpanKind.PRODUCER, otel_api_trace.SpanKind.INTERNAL):
                 transaction = BackgroundTask(self.nr_application, name=name)
             elif kind == otel_api_trace.SpanKind.CONSUMER:

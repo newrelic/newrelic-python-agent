@@ -182,12 +182,12 @@ def test_status_setting(tracer, status_to_set, description, expected_status_code
         with tracer.start_as_current_span(name="TestSpan") as span:
             # Set the new status
             span.set_status(status_to_set, description)
-            
+
             # If status code is OK, do not have description
             # if expected_status_code == StatusCode.OK:
             if span.status.status_code == StatusCode.OK:
                  assert span.status.description is None
-                
+
             # If status code is ERROR, make sure description
             # is set correctly (if provided):
             if span.status.status_code == StatusCode.ERROR:

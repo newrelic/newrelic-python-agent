@@ -59,8 +59,8 @@ def target_application():
 _exact_intrinsics = {"type": "Span"}
 _exact_root_intrinsics = _exact_intrinsics.copy().update({"nr.entryPoint": True})
 _expected_intrinsics = ["traceId", "transactionId", "sampled", "priority", "timestamp", "duration", "name", "category", "guid"]
-_expected_root_intrinsics = _expected_intrinsics.copy() + ["transaction.name"]
-_expected_child_intrinsics = _expected_intrinsics.copy() + ["parentId"]
+_expected_root_intrinsics = [*_expected_intrinsics.copy(), "transaction.name"]
+_expected_child_intrinsics = [*_expected_intrinsics.copy(), "parentId"]
 _unexpected_root_intrinsics = ["parentId"]
 _unexpected_child_intrinsics = ["nr.entryPoint", "transaction.name"]
 

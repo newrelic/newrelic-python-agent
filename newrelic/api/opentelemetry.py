@@ -335,8 +335,7 @@ class Span(otel_api_trace.Span):
         ):
             # We need to end the transaction as well
             self.nr_transaction.__exit__(*error)
-        
-        
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         """
         Ends context manager and calls `end` on the `Span`.

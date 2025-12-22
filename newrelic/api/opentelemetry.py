@@ -415,7 +415,7 @@ class Tracer(otel_api_trace.Tracer):
         self._record_exception = record_exception
         self.set_status_on_exception = set_status_on_exception
 
-        if not self.nr_application.settings.otel_bridge.enabled:
+        if not self.nr_application.settings.opentelemetry.enabled:
             return otel_api_trace.INVALID_SPAN
 
         # Retrieve parent span

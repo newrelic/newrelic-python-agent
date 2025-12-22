@@ -39,7 +39,7 @@ def wrap__load_runtime_context(wrapped, instance, args, kwargs):
     application = application_instance(activate=False)
     settings = global_settings() if not application else application.settings
     
-    if not settings.otel_bridge.enabled:
+    if not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
     from opentelemetry.context.contextvars_context import ContextVarsRuntimeContext
@@ -52,7 +52,7 @@ def wrap_get_global_response_propagator(wrapped, instance, args, kwargs):
     application = application_instance(activate=False)
     settings = global_settings() if not application else application.settings
     
-    if not settings.otel_bridge.enabled:
+    if not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
     from newrelic.api.opentelemetry import otel_context_propagator
@@ -81,7 +81,7 @@ def instrument_global_propagators_api(module):
 def wrap_set_tracer_provider(wrapped, instance, args, kwargs):
     application = application_instance(activate=False)
     settings = global_settings() if not application else application.settings
-    if not settings.otel_bridge.enabled:
+    if not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
     global _TRACER_PROVIDER
@@ -106,7 +106,7 @@ def wrap_get_tracer_provider(wrapped, instance, args, kwargs):
 
     settings = global_settings()
 
-    if not settings.otel_bridge.enabled:
+    if not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
     global _TRACER_PROVIDER
@@ -133,8 +133,7 @@ def wrap_get_current_span(wrapped, instance, args, kwargs):
     app_settings = global_settings() if not application else application.settings
     settings = transaction.settings or app_settings
 
-    settings = transaction.settings or global_settings()
-    if not settings.otel_bridge.enabled:
+    if not settings.opentelemetry.enabled:
         return span
 
     # If a NR trace does exist, check to see if the current
@@ -192,7 +191,7 @@ def wrap_start_internal_or_server_span(wrapped, instance, args, kwargs):
     application = application_instance(activate=False)
     settings = global_settings() if not application else application.settings
 
-    if not settings.otel_bridge.enabled:
+    if not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
     bound_args = bind_args(wrapped, args, kwargs)

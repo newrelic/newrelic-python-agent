@@ -24,7 +24,7 @@ from newrelic.api.transaction import current_transaction
 
 @pytest.mark.parametrize("enabled", [True, False])
 def test_opentelemetry_bridge_enabled(tracer, enabled):
-    @override_application_settings({"otel_bridge.enabled": enabled})
+    @override_application_settings({"opentelemetry.enabled": enabled})
     @dt_enabled
     @validate_transaction_metrics(name="Foo", background_task=True)
     @validate_span_events(count=1 if enabled else 0, exact_intrinsics={"name": "Function/Bar"})

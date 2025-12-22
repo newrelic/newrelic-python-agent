@@ -384,6 +384,20 @@ class Span(otel_api_trace.Span):
 
         super().__exit__(exc_type, exc_val, exc_tb)
 
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """
+        Ends context manager and calls `end` on the `Span`.
+        This is used when span is called as a context manager
+        i.e. `with tracer.start_span() as span:`
+        """
+        if exc_val and self.is_recording():
+            if self._record_exception:
+                self.record_exception(exception=exc_val, escaped=True)
+            if self.set_status_on_exception:
+                self.set_status(Status(status_code=StatusCode.ERROR, description=f"{exc_type.__name__}: {exc_val}"))
+
+        super().__exit__(exc_type, exc_val, exc_tb)
+
 
 class Tracer(otel_api_trace.Tracer):
     def __init__(self, resource=None, instrumentation_library=None, *args, **kwargs):

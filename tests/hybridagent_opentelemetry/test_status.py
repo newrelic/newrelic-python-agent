@@ -193,5 +193,4 @@ def test_status_setting(tracer, status_to_set, description, expected_status_code
             if span.status.status_code == StatusCode.ERROR:
                 assert span.status.description in [None, "This is where I belong"]
 
-
     _test()

@@ -12,16 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 import os
 from pathlib import Path
 
+import pytest
 from conftest import async_handler_support, skip_if_not_async_handler_support
-from testing_support.validators.validate_transaction_errors import validate_transaction_errors
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.fixtures import dt_enabled
 from testing_support.validators.validate_error_event_attributes import validate_error_event_attributes
 from testing_support.validators.validate_span_events import validate_span_events
-from testing_support.fixtures import dt_enabled
+from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 os.environ["NEW_RELIC_CONFIG_FILE"] = str(Path(__file__).parent / "newrelic_flask.ini")
 
@@ -42,6 +42,7 @@ except ImportError:
 
 requires_endpoint_decorator = pytest.mark.skipif(not is_gt_flask060, reason="The endpoint decorator is not supported.")
 
+
 def target_application():
     # We need to delay Flask application creation because of ordering
     # issues whereby the agent needs to be initialised before Flask is
@@ -58,7 +59,17 @@ def target_application():
 
 _exact_intrinsics = {"type": "Span"}
 _exact_root_intrinsics = _exact_intrinsics.copy().update({"nr.entryPoint": True})
-_expected_intrinsics = ["traceId", "transactionId", "sampled", "priority", "timestamp", "duration", "name", "category", "guid"]
+_expected_intrinsics = [
+    "traceId",
+    "transactionId",
+    "sampled",
+    "priority",
+    "timestamp",
+    "duration",
+    "name",
+    "category",
+    "guid",
+]
 _expected_root_intrinsics = [*_expected_intrinsics.copy(), "transaction.name"]
 _expected_child_intrinsics = [*_expected_intrinsics.copy(), "parentId"]
 _unexpected_root_intrinsics = ["parentId"]
@@ -81,9 +92,7 @@ _test_application_rollup_metrics = [
     ("WebTransactionTotalTime", 1),
 ]
 
-_test_application_index_scoped_metrics = [
-    ("Function/GET /index", 1),
-]
+_test_application_index_scoped_metrics = [("Function/GET /index", 1)]
 
 
 @dt_enabled
@@ -110,9 +119,8 @@ def test_otel_application_index():
     response.mustcontain("INDEX RESPONSE")
 
 
-_test_application_async_scoped_metrics = [
-    ("Function/GET /async", 1),
-]
+_test_application_async_scoped_metrics = [("Function/GET /async", 1)]
+
 
 @skip_if_not_async_handler_support
 @dt_enabled
@@ -139,9 +147,8 @@ def test_otel_application_async():
     response.mustcontain("ASYNC RESPONSE")
 
 
-_test_application_endpoint_scoped_metrics = [
-    ("Function/GET /endpoint", 1),
-]
+_test_application_endpoint_scoped_metrics = [("Function/GET /endpoint", 1)]
+
 
 @dt_enabled
 @validate_transaction_errors(errors=[])
@@ -167,16 +174,19 @@ def test_otel_application_endpoint():
     response.mustcontain("ENDPOINT RESPONSE")
 
 
-_test_application_error_scoped_metrics = [
-    ("Function/GET /error", 1),
-]
+_test_application_error_scoped_metrics = [("Function/GET /error", 1)]
+
 
 @dt_enabled
 @validate_transaction_errors(errors=["builtins:RuntimeError"])
 @validate_error_event_attributes(
     exact_attrs={
         "agent": {},
-        "intrinsic": {"error.message": "RUNTIME ERROR", "error.class": "builtins:RuntimeError", "error.expected": False},
+        "intrinsic": {
+            "error.message": "RUNTIME ERROR",
+            "error.class": "builtins:RuntimeError",
+            "error.expected": False,
+        },
         "user": {"exception.escaped": False},
     }
 )
@@ -201,9 +211,8 @@ def test_otel_application_error():
     application.get("/error", status=500, expect_errors=True)
 
 
-_test_application_abort_404_scoped_metrics = [
-    ("Function/GET /abort_404", 1),
-]
+_test_application_abort_404_scoped_metrics = [("Function/GET /abort_404", 1)]
+
 
 @dt_enabled
 @validate_transaction_errors(errors=[])
@@ -228,9 +237,8 @@ def test_otel_application_abort_404():
     application.get("/abort_404", status=404)
 
 
-_test_application_exception_404_scoped_metrics = [
-    ("Function/GET /exception_404", 1),
-]
+_test_application_exception_404_scoped_metrics = [("Function/GET /exception_404", 1)]
+
 
 @dt_enabled
 @validate_transaction_errors(errors=[])
@@ -255,9 +263,8 @@ def test_application_exception_404():
     application.get("/exception_404", status=404)
 
 
-_test_application_not_found_scoped_metrics = [
-    ("Function/GET /missing", 1),
-]
+_test_application_not_found_scoped_metrics = [("Function/GET /missing", 1)]
+
 
 @dt_enabled
 @validate_transaction_errors(errors=[])
@@ -288,6 +295,7 @@ _test_application_render_template_string_scoped_metrics = [
     ("Template/Render/<template>", 1),
 ]
 
+
 @dt_enabled
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(
@@ -312,9 +320,7 @@ def test_application_render_template_string():
     application.get("/template_string")
 
 
-_test_application_render_template_not_found_scoped_metrics = [
-    ("Function/GET /template_not_found", 1),
-]
+_test_application_render_template_not_found_scoped_metrics = [("Function/GET /template_not_found", 1)]
 
 
 @dt_enabled
@@ -322,7 +328,11 @@ _test_application_render_template_not_found_scoped_metrics = [
 @validate_error_event_attributes(
     exact_attrs={
         "agent": {},
-        "intrinsic": {"error.message": "not_found", "error.class": "jinja2.exceptions:TemplateNotFound", "error.expected": False},
+        "intrinsic": {
+            "error.message": "not_found",
+            "error.class": "jinja2.exceptions:TemplateNotFound",
+            "error.expected": False,
+        },
         "user": {"exception.escaped": False},
     }
 )
@@ -345,4 +355,3 @@ _test_application_render_template_not_found_scoped_metrics = [
 def test_application_render_template_not_found():
     application = target_application()
     application.get("/template_not_found", status=500, expect_errors=True)
-

@@ -595,7 +595,7 @@ class Application:
             # Note: This environment variable will be set by the Azure Functions runtime
             if os.environ.get("FUNCTIONS_WORKER_RUNTIME", None):
                 internal_metric("Supportability/Python/AzureFunctionMode/enabled", 1)
-                
+
             # OpenTelemetry Bridge toggle metric
             opentelemetry_bridge = configuration.opentelemetry.enabled
             internal_metric(

@@ -45,19 +45,9 @@ def test_does_not_create_segment_without_a_transaction(tracer):
 @dt_enabled
 @validate_transaction_metrics(name="Foo", background_task=True)
 @validate_span_events(
-    exact_intrinsics={
-        "name": "Function/Bar",
-        "category": "generic",
-    },
-    expected_intrinsics=("parentId",)
+    exact_intrinsics={"name": "Function/Bar", "category": "generic"}, expected_intrinsics=("parentId",)
 )
-@validate_span_events(
-    exact_intrinsics={
-          "name": "Function/Foo",
-          "category": "generic",
-          "nr.entryPoint": True
-    },
-)
+@validate_span_events(exact_intrinsics={"name": "Function/Foo", "category": "generic", "nr.entryPoint": True})
 @validate_span_events(exact_intrinsics={"name": "Function/Foo", "category": "generic", "nr.entryPoint": True})
 def test_creates_opentelemetry_segment_in_a_transaction(tracer):
     application = application_instance(activate=False)
@@ -77,18 +67,10 @@ def test_creates_opentelemetry_segment_in_a_transaction(tracer):
 @dt_enabled
 @validate_transaction_metrics(name="Foo", background_task=True)
 @validate_span_events(
-    exact_intrinsics={
-        "name": "Function/Baz",
-        "category": "generic",
-    },
-    expected_intrinsics=("parentId",)
+    exact_intrinsics={"name": "Function/Baz", "category": "generic"}, expected_intrinsics=("parentId",)
 )
 @validate_span_events(
-    exact_intrinsics={
-        "name": "Function/Bar",
-        "category": "generic",
-    },
-    expected_intrinsics=("parentId",)
+    exact_intrinsics={"name": "Function/Bar", "category": "generic"}, expected_intrinsics=("parentId",)
 )
 @validate_span_events(exact_intrinsics={"name": "Function/Foo", "category": "generic", "nr.entryPoint": True})
 @validate_span_events(exact_intrinsics={"name": "Function/Foo", "category": "generic"})

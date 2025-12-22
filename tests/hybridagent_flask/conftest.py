@@ -12,7 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import platform 
+import platform
+
 import pytest
 from opentelemetry import trace
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
@@ -43,6 +44,7 @@ _default_settings = {
 collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (Hybrid Agent, Flask)", default_settings=_default_settings
 )
+
 
 @pytest.fixture(scope="session")
 def tracer():

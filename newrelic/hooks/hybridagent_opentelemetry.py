@@ -38,7 +38,7 @@ os.environ["OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE"] = ".*"
 def wrap__load_runtime_context(wrapped, instance, args, kwargs):
     application = application_instance(activate=False)
     settings = global_settings() if not application else application.settings
-    
+
     if not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
@@ -51,15 +51,16 @@ def wrap__load_runtime_context(wrapped, instance, args, kwargs):
 def wrap_get_global_response_propagator(wrapped, instance, args, kwargs):
     application = application_instance(activate=False)
     settings = global_settings() if not application else application.settings
-    
+
     if not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
-    from newrelic.api.opentelemetry import otel_context_propagator
     from opentelemetry.instrumentation.propagators import set_global_response_propagator
-    
+
+    from newrelic.api.opentelemetry import otel_context_propagator
+
     set_global_response_propagator(otel_context_propagator)
-    
+
     return otel_context_propagator
 
 

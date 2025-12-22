@@ -31,10 +31,7 @@ from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.message_trace import MessageTrace
 from newrelic.api.message_transaction import MessageTransaction
 from newrelic.api.time_trace import current_trace, notice_error
-from newrelic.api.transaction import (
-    Sentinel,
-    current_transaction,
-)
+from newrelic.api.transaction import Sentinel, current_transaction
 from newrelic.api.web_transaction import WebTransaction, WSGIWebTransaction
 from newrelic.core.otlp_utils import create_resource
 
@@ -331,12 +328,14 @@ class Span(otel_api_trace.Span):
         error = sys.exc_info()
         self.nr_trace.__exit__(*error)
         self.set_status(StatusCode.OK if not error[0] else StatusCode.ERROR)
-        
-        if ("exception.escaped" in self.attributes) or (self.kind in (otel_api_trace.SpanKind.SERVER, otel_api_trace.SpanKind.CONSUMER) and isinstance(current_trace(), Sentinel)):
+
+        if ("exception.escaped" in self.attributes) or (
+            self.kind in (otel_api_trace.SpanKind.SERVER, otel_api_trace.SpanKind.CONSUMER)
+            and isinstance(current_trace(), Sentinel)
+        ):
             # We need to end the transaction as well
             self.nr_transaction.__exit__(*sys.exc_info())
-        
-        
+
     def __exit__(self, exc_type, exc_val, exc_tb):
         """
         Ends context manager and calls `end` on the `Span`.
@@ -347,14 +346,10 @@ class Span(otel_api_trace.Span):
             if self._record_exception:
                 self.record_exception(exception=exc_val, escaped=True)
             if self.set_status_on_exception:
-                self.set_status(
-                    Status(
-                        status_code=StatusCode.ERROR,
-                        description=f"{exc_type.__name__}: {exc_val}",
-                    )
-                )
+                self.set_status(Status(status_code=StatusCode.ERROR, description=f"{exc_type.__name__}: {exc_val}"))
 
         super().__exit__(exc_type, exc_val, exc_tb)
+
 
 class Tracer(otel_api_trace.Tracer):
     def __init__(self, resource=None, instrumentation_library=None, *args, **kwargs):
@@ -405,7 +400,9 @@ class Tracer(otel_api_trace.Tracer):
             if kind in (otel_api_trace.SpanKind.SERVER, otel_api_trace.SpanKind.CLIENT):
                 if "nr.wsgi.environ" in self.attributes:
                     # This is a WSGI request
-                    transaction = WSGIWebTransaction(self.nr_application, environ=self.attributes.pop("nr.wsgi.environ"))
+                    transaction = WSGIWebTransaction(
+                        self.nr_application, environ=self.attributes.pop("nr.wsgi.environ")
+                    )
                 else:
                     # This is a web request
                     headers = self.attributes.pop("nr.http.headers", None)
@@ -452,7 +449,9 @@ class Tracer(otel_api_trace.Tracer):
                 elif not transaction:
                     if "nr.wsgi.environ" in self.attributes:
                         # This is a WSGI request
-                        transaction = WSGIWebTransaction(self.nr_application, environ=self.attributes.pop("nr.wsgi.environ"))
+                        transaction = WSGIWebTransaction(
+                            self.nr_application, environ=self.attributes.pop("nr.wsgi.environ")
+                        )
                     else:
                         # This is a web request
                         headers = self.attributes.pop("nr.http.headers", None)
@@ -549,7 +548,12 @@ class Tracer(otel_api_trace.Tracer):
             set_status_on_exception=set_status_on_exception,
         )
 
-        with otel_api_trace.use_span(span, end_on_exit=end_on_exit, record_exception=record_exception, set_status_on_exception=set_status_on_exception) as current_span:
+        with otel_api_trace.use_span(
+            span,
+            end_on_exit=end_on_exit,
+            record_exception=record_exception,
+            set_status_on_exception=set_status_on_exception,
+        ) as current_span:
             yield current_span
 
 

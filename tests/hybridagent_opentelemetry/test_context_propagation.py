@@ -26,7 +26,6 @@ PROPAGATOR = otel_api_propagate.get_global_textmap()
 _override_settings = {"trusted_account_key": "1", "distributed_tracing.enabled": True, "span_events.enabled": True}
 
 
-# @dt_enabled
 @pytest.mark.parametrize("telemetry", ["newrelic", "otel"])
 @pytest.mark.parametrize("propagation", [accept_distributed_trace_headers, PROPAGATOR.extract])
 def test_distributed_trace_header_compatibility_full_granularity(telemetry, propagation):

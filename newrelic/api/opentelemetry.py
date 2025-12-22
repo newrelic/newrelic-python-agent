@@ -21,6 +21,7 @@ from opentelemetry.baggage.propagation import W3CBaggagePropagator
 from opentelemetry.propagate import set_global_textmap
 from opentelemetry.propagators.composite import CompositePropagator
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
+from opentelemetry.trace.status import Status, StatusCode
 
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import BackgroundTask
@@ -111,6 +112,8 @@ class Span(otel_api_trace.Span):
         nr_transaction=None,
         nr_trace_type=FunctionTrace,
         instrumenting_module=None,
+        record_exception=True,
+        set_status_on_exception=True,
         *args,
         **kwargs,
     ):
@@ -123,6 +126,9 @@ class Span(otel_api_trace.Span):
         )  # This attribute is purely to prevent garbage collection
         self.nr_trace = None
         self.instrumenting_module = instrumenting_module
+        self.status = Status(StatusCode.UNSET)
+        self._record_exception = record_exception
+        self.set_status_on_exception = set_status_on_exception
 
         self.nr_parent = None
         current_nr_trace = current_trace()
@@ -238,19 +244,57 @@ class Span(otel_api_trace.Span):
         if getattr(self.nr_trace, "end_time", None):
             return False
 
-        return getattr(self.nr_transaction, "priority", 1) > 0
+        # If priority is either not set at this point
+        # or greater than 0, we are recording.
+        priority = self.nr_transaction.priority
+        return (priority is None) or (priority > 0)
 
     def set_status(self, status, description=None):
-        # TODO: not implemented yet
-        raise NotImplementedError("Not implemented yet")
+        """
+        This code is modeled after the OpenTelemetry SDK's
+        status implementation:
+        https://github.com/open-telemetry/opentelemetry-python/blob/main/opentelemetry-sdk/src/opentelemetry/sdk/trace/__init__.py#L979
+
+        Additional Notes:
+        1. Ignore future calls if status is already set to OK
+            since span should be completed if status is OK.
+        2. Similarly, ignore calls to set to StatusCode.UNSET
+            since this will be either invalid or unnecessary.
+        """
+        if isinstance(status, Status):
+            if (self.status.status_code is StatusCode.OK) or status.is_unset:
+                return
+            if description is not None:
+                # `description` should only exist if status is StatusCode.ERROR
+                _logger.warning(
+                    "Description %s ignored. Use either `Status` or `(StatusCode, Description)`", description
+                )
+            self.status = status
+        elif isinstance(status, StatusCode):
+            if (self.status.status_code is StatusCode.OK) or (status is StatusCode.UNSET):
+                return
+            self.status = Status(status, description)
+        else:
+            _logger.warning("Invalid status type %s. Expected Status or StatusCode.", type(status))
+            return
+
+        # Add status as attribute
+        self.set_attribute("status_code", self.status.status_code.name)
+        self.set_attribute("status_description", self.status.description)
 
     def record_exception(self, exception, attributes=None, timestamp=None, escaped=False):
         error_args = sys.exc_info() if not exception else (type(exception), exception, exception.__traceback__)
 
-        if not hasattr(self, "nr_trace"):
-            notice_error(error_args, attributes=attributes)
+        # `escaped` indicates whether the exception has not
+        # been unhandled by the time the span has ended.
+        if attributes:
+            attributes["exception.escaped"] = escaped
         else:
-            self.nr_trace.notice_error(error_args, attributes=attributes)
+            attributes = {"exception.escaped": escaped}
+
+        self.set_attributes(attributes)
+
+        notice_error(error_args, attributes=attributes)
 
     def end(self, end_time=None, *args, **kwargs):
         # We will ignore the end_time parameter and use NR's end_time
@@ -283,6 +327,20 @@ class Span(otel_api_trace.Span):
 
         self.nr_trace.__exit__(*sys.exc_info())
 
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """
+        Ends context manager and calls `end` on the `Span`.
+        This is used when span is called as a context manager
+        i.e. `with tracer.start_span() as span:`
+        """
+        if exc_val and self.is_recording():
+            if self._record_exception:
+                self.record_exception(exception=exc_val, escaped=True)
+            if self.set_status_on_exception:
+                self.set_status(Status(status_code=StatusCode.ERROR, description=f"{exc_type.__name__}: {exc_val}"))
+
+        super().__exit__(exc_type, exc_val, exc_tb)
+
 
 class Tracer(otel_api_trace.Tracer):
     def __init__(self, resource=None, instrumentation_library=None, *args, **kwargs):
@@ -310,6 +368,9 @@ class Tracer(otel_api_trace.Tracer):
         if not self.nr_application.active:
             # Force application registration if not already active
             self.nr_application.activate()
+
+        self._record_exception = record_exception
+        self.set_status_on_exception = set_status_on_exception
 
         if not self.nr_application.settings.otel_bridge.enabled:
             return otel_api_trace.INVALID_SPAN
@@ -439,6 +500,8 @@ class Tracer(otel_api_trace.Tracer):
             nr_transaction=transaction,
             nr_trace_type=nr_trace_type,
             instrumenting_module=self.instrumentation_library,
+            record_exception=self._record_exception,
+            set_status_on_exception=self.set_status_on_exception,
         )
 
         return span

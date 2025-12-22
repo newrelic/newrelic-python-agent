@@ -85,7 +85,7 @@ STREAMED_RESPONSES = {
         404,
         {
             "error": {
-                "message": "The model `does-not-exist` does not exist",
+                "message": "The model `does-not-exist` does not exist or you do not have access to it.",
                 "type": "invalid_request_error",
                 "param": None,
                 "code": "model_not_found",
@@ -233,98 +233,139 @@ RESPONSES_V1 = {
         },
     ],
     "Invalid API key.": [
-        {"content-type": "application/json; charset=utf-8", "x-request-id": "req_7ffd0e41c0d751be15275b1df6b2644c"},
+        {
+            "content-type": "application/json; charset=utf-8",
+            "x-request-id": "req_444007a576dc4971a009b0de4967fb60"
+        },
         401,
         {
             "error": {
                 "message": "Incorrect API key provided: DEADBEEF. You can find your API key at https://platform.openai.com/account/api-keys.",
                 "type": "invalid_request_error",
                 "param": None,
-                "code": "invalid_api_key",
+                "code": "invalid_api_key"
             }
-        },
+        }
     ],
     "You are a scientist.": [
         {
             "content-type": "application/json",
-            "openai-organization": "new-relic-nkmd8b",
-            "openai-processing-ms": "1676",
+            "openai-organization": "nr-test-org",
+            "openai-processing-ms": "978",
+            "openai-project": "proj_id",
             "openai-version": "2020-10-01",
-            "x-ratelimit-limit-requests": "10000",
-            "x-ratelimit-limit-tokens": "60000",
-            "x-ratelimit-remaining-requests": "9993",
-            "x-ratelimit-remaining-tokens": "59880",
-            "x-ratelimit-reset-requests": "54.889s",
-            "x-ratelimit-reset-tokens": "120ms",
-            "x-request-id": "req_25be7e064e0c590cd65709c85385c796",
+            "x-ratelimit-limit-requests": "15000",
+            "x-ratelimit-limit-tokens": "40000000",
+            "x-ratelimit-remaining-requests": "14999",
+            "x-ratelimit-remaining-tokens": "39999979",
+            "x-ratelimit-reset-requests": "4ms",
+            "x-ratelimit-reset-tokens": "0s",
+            "x-request-id": "req_983c5abb07aa4f51b858f855fc614d08"
         },
         200,
         {
-            "id": "chatcmpl-9NPYxI4Zk5ztxNwW5osYdpevgoiBQ",
+            "id": "chatcmpl-CoLlpfFdbk9D0AbjizzpQ8hMwX9AY",
             "object": "chat.completion",
-            "created": 1715366835,
-            "model": "gpt-3.5-turbo-0125",
+            "created": 1766116121,
+            "model": "gpt-5.1-2025-11-13",
             "choices": [
                 {
                     "index": 0,
                     "message": {
                         "role": "assistant",
-                        "content": "212 degrees Fahrenheit is equivalent to 100 degrees Celsius. \n\nThe formula to convert Fahrenheit to Celsius is: \n\n\\[Celsius = (Fahrenheit - 32) \\times \\frac{5}{9}\\]\n\nSo, for 212 degrees Fahrenheit:\n\n\\[Celsius = (212 - 32) \\times \\frac{5}{9} = 100\\]",
+                        "content": "212\u00b0F is 100\u00b0C.",
+                        "refusal": None,
+                        "annotations": []
                     },
-                    "logprobs": None,
-                    "finish_reason": "stop",
+                    "finish_reason": "stop"
                 }
             ],
-            "usage": {"prompt_tokens": 26, "completion_tokens": 75, "total_tokens": 101},
-            "system_fingerprint": None,
-        },
+            "usage": {
+                "prompt_tokens": 25,
+                "completion_tokens": 16,
+                "total_tokens": 41,
+                "prompt_tokens_details": {
+                    "cached_tokens": 0,
+                    "audio_tokens": 0
+                },
+                "completion_tokens_details": {
+                    "reasoning_tokens": 0,
+                    "audio_tokens": 0,
+                    "accepted_prediction_tokens": 0,
+                    "rejected_prediction_tokens": 0
+                }
+            },
+            "service_tier": "default",
+            "system_fingerprint": None
+        }
     ],
     "No usage data": [
         {
             "content-type": "application/json",
-            "openai-organization": "new-relic-nkmd8b",
-            "openai-processing-ms": "324",
+            "openai-organization": "nr-test-org",
+            "openai-processing-ms": "2108",
+            "openai-project": "proj_id",
             "openai-version": "2020-10-01",
-            "x-ratelimit-limit-requests": "10000",
-            "x-ratelimit-limit-tokens": "60000",
-            "x-ratelimit-remaining-requests": "9986",
-            "x-ratelimit-remaining-tokens": "59895",
-            "x-ratelimit-reset-requests": "1m55.869s",
-            "x-ratelimit-reset-tokens": "105ms",
-            "x-request-id": "req_2c8bb96fe67d2ccfa8305923f04759a2",
+            "x-ratelimit-limit-requests": "15000",
+            "x-ratelimit-limit-tokens": "40000000",
+            "x-ratelimit-remaining-requests": "14999",
+            "x-ratelimit-remaining-tokens": "39999994",
+            "x-ratelimit-reset-requests": "4ms",
+            "x-ratelimit-reset-tokens": "0s",
+            "x-request-id": "req_ed0c7fcff6954a85ab0956c448163b9f"
         },
         200,
         {
-            "id": "chatcmpl-9NPZEmq5Loals5BA3Uw2GsSLhmlNH",
+            "id": "chatcmpl-CobAB9gf7iGzucSqbtQZCUKWQolUq",
             "object": "chat.completion",
-            "created": 1715366852,
-            "model": "gpt-3.5-turbo-0125",
+            "created": 1766175291,
+            "model": "gpt-5.1-2025-11-13",
             "choices": [
                 {
                     "index": 0,
-                    "message": {"role": "assistant", "content": "Hello! How can I assist you today?"},
-                    "logprobs": None,
-                    "finish_reason": "stop",
+                    "message": {
+                        "role": "assistant",
+                        "content": "",
+                        "refusal": None,
+                        "annotations": []
+                    },
+                    "finish_reason": "length"
                 }
             ],
-            "usage": {"prompt_tokens": 10, "completion_tokens": 9, "total_tokens": 19},
-            "system_fingerprint": None,
-        },
+            "usage": {
+                "prompt_tokens": 9,
+                "completion_tokens": 100,
+                "total_tokens": 109,
+                "prompt_tokens_details": {
+                    "cached_tokens": 0,
+                    "audio_tokens": 0
+                },
+                "completion_tokens_details": {
+                    "reasoning_tokens": 100,
+                    "audio_tokens": 0,
+                    "accepted_prediction_tokens": 0,
+                    "rejected_prediction_tokens": 0
+                }
+            },
+            "service_tier": "default",
+            "system_fingerprint": None
+        }
     ],
     "This is an embedding test.": [
         {
             "content-type": "application/json",
-            "openai-model": "text-embedding-ada-002",
-            "openai-organization": "new-relic-nkmd8b",
-            "openai-processing-ms": "17",
+            "openai-model": "text-embedding-3-small",
+            "openai-organization": "nr-test-org",
+            "openai-processing-ms": "147",
+            "openai-project": "proj_id",
             "openai-version": "2020-10-01",
-            "x-ratelimit-limit-requests": "3000",
-            "x-ratelimit-limit-tokens": "1000000",
-            "x-ratelimit-remaining-requests": "2999",
-            "x-ratelimit-remaining-tokens": "999994",
-            "x-ratelimit-reset-requests": "20ms",
+            "x-ratelimit-limit-requests": "10000",
+            "x-ratelimit-limit-tokens": "10000000",
+            "x-ratelimit-remaining-requests": "9999",
+            "x-ratelimit-remaining-tokens": "9999994",
+            "x-ratelimit-reset-requests": "6ms",
             "x-ratelimit-reset-tokens": "0s",
-            "x-request-id": "req_eb2b9f2d23a671ad0d69545044437d68",
+            "x-request-id": "req_215501af84244a0891dc2c7828e36c28"
         },
         200,
         {
@@ -333,12 +374,15 @@ RESPONSES_V1 = {
                 {
                     "object": "embedding",
                     "index": 0,
-                    "embedding": "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",
+                    "embedding": "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"
                 }
             ],
-            "model": "text-embedding-ada-002",
-            "usage": {"prompt_tokens": 6, "total_tokens": 6},
-        },
+            "model": "text-embedding-3-small",
+            "usage": {
+                "prompt_tokens": 6,
+                "total_tokens": 6
+            }
+        }
     ],
 }
 
@@ -360,7 +404,7 @@ STREAMED_RESPONSES_V1 = {
         404,
         {
             "error": {
-                "message": "The model `does-not-exist` does not exist",
+                "message": "The model `does-not-exist` does not exist or you do not have access to it.",
                 "type": "invalid_request_error",
                 "param": None,
                 "code": "model_not_found",
@@ -369,128 +413,184 @@ STREAMED_RESPONSES_V1 = {
     ],
     "You are a scientist.": [
         {
-            "content-type": "text/event-stream",
-            "openai-model": "gpt-3.5-turbo-0613",
-            "openai-organization": "new-relic-nkmd8b",
-            "openai-processing-ms": "6326",
+            "content-type": "text/event-stream; charset=utf-8",
+            "openai-organization": "nr-test-org",
+            "openai-processing-ms": "386",
+            "openai-project": "proj_id",
             "openai-version": "2020-10-01",
-            "x-ratelimit-limit-requests": "200",
+            "x-ratelimit-limit-requests": "15000",
             "x-ratelimit-limit-tokens": "40000",
-            "x-ratelimit-remaining-requests": "198",
-            "x-ratelimit-remaining-tokens": "39880",
-            "x-ratelimit-reset-requests": "11m32.334s",
-            "x-ratelimit-reset-tokens": "180ms",
-            "x-request-id": "f8d0f53b6881c5c0a3698e55f8f410ac",
+            "x-ratelimit-remaining-requests": "14999",
+            "x-ratelimit-remaining-tokens": "39999978",
+            "x-ratelimit-reset-requests": "4ms",
+            "x-ratelimit-reset-tokens": "0s",
+            "x-request-id": "req_f821c73df45f4e30821a81a2d751fe64"
         },
         200,
         [
             {
-                "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug",
+                "id": "chatcmpl-CocmvmDih6DGKIgPUbrzKFxGnMyco",
                 "object": "chat.completion.chunk",
-                "created": 1707867026,
-                "model": "gpt-3.5-turbo-0613",
+                "created": 1766181537,
+                "model": "gpt-5.1-2025-11-13",
+                "service_tier": "default",
                 "system_fingerprint": None,
                 "choices": [
-                    {"index": 0, "delta": {"role": "assistant", "content": ""}, "logprobs": None, "finish_reason": None}
+                    {
+                        "index": 0,
+                        "delta": {
+                            "role": "assistant",
+                            "content": "",
+                            "refusal": None
+                        },
+                        "finish_reason": None
+                    }
                 ],
+                "obfuscation": "7AdzF"
             },
             {
-                "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug",
+                "id": "chatcmpl-CocmvmDih6DGKIgPUbrzKFxGnMyco",
                 "object": "chat.completion.chunk",
-                "created": 1707867026,
-                "model": "gpt-3.5-turbo-0613",
+                "created": 1766181537,
+                "model": "gpt-5.1-2025-11-13",
+                "service_tier": "default",
                 "system_fingerprint": None,
-                "choices": [{"index": 0, "delta": {"content": "212"}, "logprobs": None, "finish_reason": None}],
+                "choices": [
+                    {
+                        "index": 0,
+                        "delta": {
+                            "content": "212"
+                        },
+                        "finish_reason": None
+                    }
+                ],
+                "obfuscation": "4FR1"
             },
             {
-                "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug",
+                "id": "chatcmpl-CocmvmDih6DGKIgPUbrzKFxGnMyco",
                 "object": "chat.completion.chunk",
-                "created": 1707867026,
-                "model": "gpt-3.5-turbo-0613",
+                "created": 1766181537,
+                "model": "gpt-5.1-2025-11-13",
+                "service_tier": "default",
                 "system_fingerprint": None,
-                "choices": [{"index": 0, "delta": {"content": " degrees"}, "logprobs": None, "finish_reason": None}],
+                "choices": [
+                    {
+                        "index": 0,
+                        "delta": {
+                            "content": "\u00b0F"
+                        },
+                        "finish_reason": None
+                    }
+                ],
+                "obfuscation": "BIIOg"
             },
             {
-                "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug",
+                "id": "chatcmpl-CocmvmDih6DGKIgPUbrzKFxGnMyco",
                 "object": "chat.completion.chunk",
-                "created": 1707867026,
-                "model": "gpt-3.5-turbo-0613",
+                "created": 1766181537,
+                "model": "gpt-5.1-2025-11-13",
+                "service_tier": "default",
                 "system_fingerprint": None,
-                "choices": [{"index": 0, "delta": {"content": " Fahrenheit"}, "logprobs": None, "finish_reason": None}],
+                "choices": [
+                    {
+                        "index": 0,
+                        "delta": {
+                            "content": " is"
+                        },
+                        "finish_reason": None
+                    }
+                ],
+                "obfuscation": "lp2C"
             },
             {
-                "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug",
+                "id": "chatcmpl-CocmvmDih6DGKIgPUbrzKFxGnMyco",
                 "object": "chat.completion.chunk",
-                "created": 1707867026,
-                "model": "gpt-3.5-turbo-0613",
+                "created": 1766181537,
+                "model": "gpt-5.1-2025-11-13",
+                "service_tier": "default",
                 "system_fingerprint": None,
-                "choices": [{"index": 0, "delta": {"content": " is"}, "logprobs": None, "finish_reason": None}],
+                "choices": [
+                    {
+                        "index": 0,
+                        "delta": {
+                            "content": " "
+                        },
+                        "finish_reason": None
+                    }
+                ],
+                "obfuscation": "UCIK6d"
             },
             {
-                "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug",
+                "id": "chatcmpl-CocmvmDih6DGKIgPUbrzKFxGnMyco",
                 "object": "chat.completion.chunk",
-                "created": 1707867026,
-                "model": "gpt-3.5-turbo-0613",
+                "created": 1766181537,
+                "model": "gpt-5.1-2025-11-13",
+                "service_tier": "default",
                 "system_fingerprint": None,
-                "choices": [{"index": 0, "delta": {"content": " equal"}, "logprobs": None, "finish_reason": None}],
+                "choices": [
+                    {
+                        "index": 0,
+                        "delta": {
+                            "content": "100"
+                        },
+                        "finish_reason": None
+                    }
+                ],
+                "obfuscation": "VIpm"
             },
             {
-                "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug",
+                "id": "chatcmpl-CocmvmDih6DGKIgPUbrzKFxGnMyco",
                 "object": "chat.completion.chunk",
-                "created": 1707867026,
-                "model": "gpt-3.5-turbo-0613",
+                "created": 1766181537,
+                "model": "gpt-5.1-2025-11-13",
+                "service_tier": "default",
                 "system_fingerprint": None,
-                "choices": [{"index": 0, "delta": {"content": " to"}, "logprobs": None, "finish_reason": None}],
+                "choices": [
+                    {
+                        "index": 0,
+                        "delta": {
+                            "content": "\u00b0C"
+                        },
+                        "finish_reason": None
+                    }
+                ],
+                "obfuscation": "uHzcW"
             },
             {
-                "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug",
+                "id": "chatcmpl-CocmvmDih6DGKIgPUbrzKFxGnMyco",
                 "object": "chat.completion.chunk",
-                "created": 1707867026,
-                "model": "gpt-3.5-turbo-0613",
+                "created": 1766181537,
+                "model": "gpt-5.1-2025-11-13",
+                "service_tier": "default",
                 "system_fingerprint": None,
-                "choices": [{"index": 0, "delta": {"content": " "}, "logprobs": None, "finish_reason": None}],
+                "choices": [
+                    {
+                        "index": 0,
+                        "delta": {
+                            "content": "."
+                        },
+                        "finish_reason": None
+                    }
+                ],
+                "obfuscation": "WDub1R"
             },
             {
-                "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug",
+                "id": "chatcmpl-CocmvmDih6DGKIgPUbrzKFxGnMyco",
                 "object": "chat.completion.chunk",
-                "created": 1707867026,
-                "model": "gpt-3.5-turbo-0613",
+                "created": 1766181537,
+                "model": "gpt-5.1-2025-11-13",
+                "service_tier": "default",
                 "system_fingerprint": None,
-                "choices": [{"index": 0, "delta": {"content": "100"}, "logprobs": None, "finish_reason": None}],
-            },
-            {
-                "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug",
-                "object": "chat.completion.chunk",
-                "created": 1707867026,
-                "model": "gpt-3.5-turbo-0613",
-                "system_fingerprint": None,
-                "choices": [{"index": 0, "delta": {"content": " degrees"}, "logprobs": None, "finish_reason": None}],
-            },
-            {
-                "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug",
-                "object": "chat.completion.chunk",
-                "created": 1707867026,
-                "model": "gpt-3.5-turbo-0613",
-                "system_fingerprint": None,
-                "choices": [{"index": 0, "delta": {"content": " Celsius"}, "logprobs": None, "finish_reason": None}],
-            },
-            {
-                "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug",
-                "object": "chat.completion.chunk",
-                "created": 1707867026,
-                "model": "gpt-3.5-turbo-0613",
-                "system_fingerprint": None,
-                "choices": [{"index": 0, "delta": {"content": "."}, "logprobs": None, "finish_reason": None}],
-            },
-            {
-                "id": "chatcmpl-8TJ9dS50zgQM7XicE8PLnCyEihRug",
-                "object": "chat.completion.chunk",
-                "created": 1707867026,
-                "model": "gpt-3.5-turbo-0613",
-                "system_fingerprint": None,
-                "choices": [{"index": 0, "delta": {}, "logprobs": None, "finish_reason": "stop"}],
-            },
-        ],
+                "choices": [
+                    {
+                        "index": 0,
+                        "delta": {},
+                        "finish_reason": "stop"
+                    }
+                ],
+                "obfuscation": "2"
+            }
+        ]
     ],
 }
 RESPONSES = {

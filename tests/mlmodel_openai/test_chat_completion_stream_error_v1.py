@@ -261,7 +261,7 @@ expected_events_on_invalid_model_error = [
     callable_name(openai.NotFoundError),
     exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.code": "model_not_found", "http.statusCode": 404}},
 )
-@validate_span_events(exact_agents={"error.message": "The model `does-not-exist` does not exist"})
+@validate_span_events(exact_agents={"error.message": "The model `does-not-exist` does not exist or you do not have access to it."})
 @validate_transaction_metrics(
     "test_chat_completion_stream_error_v1:test_chat_completion_invalid_request_error_invalid_model",
     scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
@@ -293,7 +293,7 @@ def test_chat_completion_invalid_request_error_invalid_model(set_trace_info, syn
     callable_name(openai.NotFoundError),
     exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.code": "model_not_found", "http.statusCode": 404}},
 )
-@validate_span_events(exact_agents={"error.message": "The model `does-not-exist` does not exist"})
+@validate_span_events(exact_agents={"error.message":"The model `does-not-exist` does not exist or you do not have access to it."})
 @validate_transaction_metrics(
     "test_chat_completion_stream_error_v1:test_chat_completion_invalid_request_error_invalid_model_with_token_count",
     scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
@@ -326,7 +326,7 @@ def test_chat_completion_invalid_request_error_invalid_model_with_token_count(se
     callable_name(openai.NotFoundError),
     exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.code": "model_not_found", "http.statusCode": 404}},
 )
-@validate_span_events(exact_agents={"error.message": "The model `does-not-exist` does not exist"})
+@validate_span_events(exact_agents={"error.message": "The model `does-not-exist` does not exist or you do not have access to it."})
 @validate_transaction_metrics(
     "test_chat_completion_stream_error_v1:test_chat_completion_invalid_request_error_invalid_model_async_with_token_count",
     scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
@@ -363,7 +363,7 @@ def test_chat_completion_invalid_request_error_invalid_model_async_with_token_co
     callable_name(openai.NotFoundError),
     exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.code": "model_not_found", "http.statusCode": 404}},
 )
-@validate_span_events(exact_agents={"error.message": "The model `does-not-exist` does not exist"})
+@validate_span_events(exact_agents={"error.message": "The model `does-not-exist` does not exist or you do not have access to it."})
 @validate_transaction_metrics(
     "test_chat_completion_stream_error_v1:test_chat_completion_invalid_request_error_invalid_model_async",
     scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
@@ -401,7 +401,7 @@ expected_events_on_wrong_api_key_error = [
             "span_id": None,
             "trace_id": "trace-id",
             "duration": None,  # Response time varies each test run
-            "request.model": "gpt-3.5-turbo",
+            "request.model": "gpt-5.1",
             "request.temperature": 0.7,
             "request.max_tokens": 100,
             "response.number_of_messages": 1,
@@ -453,7 +453,7 @@ def test_chat_completion_wrong_api_key_error(monkeypatch, set_trace_info, sync_o
     monkeypatch.setattr(sync_openai_client, "api_key", "DEADBEEF")
     with pytest.raises(openai.AuthenticationError):
         generator = sync_openai_client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-5.1",
             messages=({"role": "user", "content": "Invalid API key."},),
             temperature=0.7,
             max_tokens=100,
@@ -490,7 +490,7 @@ def test_chat_completion_wrong_api_key_error_async(loop, monkeypatch, set_trace_
 
         async def consumer():
             generator = await async_openai_client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model="gpt-5.1",
                 messages=({"role": "user", "content": "Invalid API key."},),
                 temperature=0.7,
                 max_tokens=100,

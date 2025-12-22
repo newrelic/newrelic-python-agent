@@ -69,7 +69,7 @@ embedding_recorded_events = [
 @background_task()
 def test_openai_embedding_sync(set_trace_info, sync_openai_client):
     set_trace_info()
-    sync_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-ada-002")
+    sync_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-3-small")
 
 
 @reset_core_stats_engine()

@@ -378,7 +378,7 @@ expected_events_on_wrong_api_key_error = [
             "span_id": None,
             "trace_id": "trace-id",
             "duration": None,  # Response time varies each test run
-            "request.model": "gpt-3.5-turbo",
+            "request.model": "gpt-5.1",
             "request.temperature": 0.7,
             "request.max_tokens": 100,
             "response.number_of_messages": 1,
@@ -430,7 +430,7 @@ def test_chat_completion_wrong_api_key_error(monkeypatch, set_trace_info, sync_o
     monkeypatch.setattr(sync_openai_client, "api_key", "DEADBEEF")
     with pytest.raises(openai.AuthenticationError):
         sync_openai_client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-5.1",
             messages=({"role": "user", "content": "Invalid API key."},),
             temperature=0.7,
             max_tokens=100,
@@ -463,7 +463,7 @@ def test_chat_completion_wrong_api_key_error_async(loop, monkeypatch, set_trace_
     with pytest.raises(openai.AuthenticationError):
         loop.run_until_complete(
             async_openai_client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model="gpt-5.1",
                 messages=({"role": "user", "content": "Invalid API key."},),
                 temperature=0.7,
                 max_tokens=100,
@@ -744,7 +744,7 @@ def test_chat_completion_wrong_api_key_error_with_raw_response(monkeypatch, set_
     monkeypatch.setattr(sync_openai_client, "api_key", "DEADBEEF")
     with pytest.raises(openai.AuthenticationError):
         sync_openai_client.chat.completions.with_raw_response.create(
-            model="gpt-3.5-turbo",
+            model="gpt-5.1",
             messages=({"role": "user", "content": "Invalid API key."},),
             temperature=0.7,
             max_tokens=100,
@@ -779,7 +779,7 @@ def test_chat_completion_wrong_api_key_error_async_with_raw_response(
     with pytest.raises(openai.AuthenticationError):
         loop.run_until_complete(
             async_openai_client.chat.completions.with_raw_response.create(
-                model="gpt-3.5-turbo",
+                model="gpt-5.1",
                 messages=({"role": "user", "content": "Invalid API key."},),
                 temperature=0.7,
                 max_tokens=100,

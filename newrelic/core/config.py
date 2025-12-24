@@ -334,48 +334,48 @@ class DistributedTracingSettings(Settings):
 
 
 class DistributedTracingSamplerSettings(Settings):
-    pass
-
-
-class DistributedTracingSamplerFullGranularitySettings(Settings):
     _root = "default"
     _remote_parent_sampled = "default"
     _remote_parent_not_sampled = "default"
 
 
-class DistributedTracingSamplerFullGranularityRootSettings:
+class DistributedTracingSamplerFullGranularitySettings(Settings):
     pass
 
 
-class DistributedTracingSamplerFullGranularityRootAdaptiveSettings:
+class DistributedTracingSamplerRootSettings:
     pass
 
 
-class DistributedTracingSamplerFullGranularityRootTraceIdRatioBasedSettings:
+class DistributedTracingSamplerRootAdaptiveSettings:
     pass
 
 
-class DistributedTracingSamplerFullGranularityRemoteParentSampledSettings:
+class DistributedTracingSamplerRootTraceIdRatioBasedSettings:
     pass
 
 
-class DistributedTracingSamplerFullGranularityRemoteParentSampledAdaptiveSettings:
+class DistributedTracingSamplerRemoteParentSampledSettings:
     pass
 
 
-class DistributedTracingSamplerFullGranularityRemoteParentSampledTraceIdRatioBasedSettings:
+class DistributedTracingSamplerRemoteParentSampledAdaptiveSettings:
     pass
 
 
-class DistributedTracingSamplerFullGranularityRemoteParentNotSampledSettings:
+class DistributedTracingSamplerRemoteParentSampledTraceIdRatioBasedSettings:
     pass
 
 
-class DistributedTracingSamplerFullGranularityRemoteParentNotSampledAdaptiveSettings:
+class DistributedTracingSamplerRemoteParentNotSampledSettings:
     pass
 
 
-class DistributedTracingSamplerFullGranularityRemoteParentNotSampledTraceIdRatioBasedSettings:
+class DistributedTracingSamplerRemoteParentNotSampledAdaptiveSettings:
+    pass
+
+
+class DistributedTracingSamplerRemoteParentNotSampledTraceIdRatioBasedSettings:
     pass
 
 
@@ -596,30 +596,26 @@ _settings.debug = DebugSettings()
 _settings.distributed_tracing = DistributedTracingSettings()
 _settings.distributed_tracing.sampler = DistributedTracingSamplerSettings()
 _settings.distributed_tracing.sampler.full_granularity = DistributedTracingSamplerFullGranularitySettings()
-_settings.distributed_tracing.sampler.full_granularity.root = DistributedTracingSamplerFullGranularityRootSettings()
-_settings.distributed_tracing.sampler.full_granularity.root.adaptive = (
-    DistributedTracingSamplerFullGranularityRootAdaptiveSettings()
+_settings.distributed_tracing.sampler.root = DistributedTracingSamplerRootSettings()
+_settings.distributed_tracing.sampler.root.adaptive = DistributedTracingSamplerRootAdaptiveSettings()
+_settings.distributed_tracing.sampler.root.trace_id_ratio_based = (
+    DistributedTracingSamplerRootTraceIdRatioBasedSettings()
 )
-_settings.distributed_tracing.sampler.full_granularity.root.trace_id_ratio_based = (
-    DistributedTracingSamplerFullGranularityRootTraceIdRatioBasedSettings()
+_settings.distributed_tracing.sampler.remote_parent_sampled = DistributedTracingSamplerRemoteParentSampledSettings()
+_settings.distributed_tracing.sampler.remote_parent_sampled.adaptive = (
+    DistributedTracingSamplerRemoteParentSampledAdaptiveSettings()
 )
-_settings.distributed_tracing.sampler.full_granularity.remote_parent_sampled = (
-    DistributedTracingSamplerFullGranularityRemoteParentSampledSettings()
+_settings.distributed_tracing.sampler.remote_parent_sampled.trace_id_ratio_based = (
+    DistributedTracingSamplerRemoteParentSampledTraceIdRatioBasedSettings()
 )
-_settings.distributed_tracing.sampler.full_granularity.remote_parent_sampled.adaptive = (
-    DistributedTracingSamplerFullGranularityRemoteParentSampledAdaptiveSettings()
+_settings.distributed_tracing.sampler.remote_parent_not_sampled = (
+    DistributedTracingSamplerRemoteParentNotSampledSettings()
 )
-_settings.distributed_tracing.sampler.full_granularity.remote_parent_sampled.trace_id_ratio_based = (
-    DistributedTracingSamplerFullGranularityRemoteParentSampledTraceIdRatioBasedSettings()
+_settings.distributed_tracing.sampler.remote_parent_not_sampled.adaptive = (
+    DistributedTracingSamplerRemoteParentNotSampledAdaptiveSettings()
 )
-_settings.distributed_tracing.sampler.full_granularity.remote_parent_not_sampled = (
-    DistributedTracingSamplerFullGranularityRemoteParentNotSampledSettings()
-)
-_settings.distributed_tracing.sampler.full_granularity.remote_parent_not_sampled.adaptive = (
-    DistributedTracingSamplerFullGranularityRemoteParentNotSampledAdaptiveSettings()
-)
-_settings.distributed_tracing.sampler.full_granularity.remote_parent_not_sampled.trace_id_ratio_based = (
-    DistributedTracingSamplerFullGranularityRemoteParentNotSampledTraceIdRatioBasedSettings()
+_settings.distributed_tracing.sampler.remote_parent_not_sampled.trace_id_ratio_based = (
+    DistributedTracingSamplerRemoteParentNotSampledTraceIdRatioBasedSettings()
 )
 _settings.distributed_tracing.sampler.partial_granularity = DistributedTracingSamplerPartialGranularitySettings()
 _settings.distributed_tracing.sampler.partial_granularity.root = (
@@ -1020,86 +1016,68 @@ _settings.distributed_tracing.sampler.adaptive_sampling_target = _environ_as_int
 _settings.distributed_tracing.sampler.full_granularity.enabled = _environ_as_bool(
     "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_ENABLED", default=True
 )
-_settings.distributed_tracing.sampler.full_granularity._root = (
+_settings.distributed_tracing.sampler._root = (
+    (
+        "trace_id_ratio_based"
+        if _environ_as_ratio("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_ROOT_TRACE_ID_RATIO_BASED_RATIO", None)
+        else None
+    )
+    or (
+        "adaptive"
+        if os.environ.get("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_ROOT_ADAPTIVE_SAMPLING_TARGET", None)
+        else None
+    )
+    or _environ_as_sampler("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_ROOT", "default")
+)
+_settings.distributed_tracing.sampler.root.adaptive.sampling_target = _environ_as_int(
+    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_ROOT_ADAPTIVE_SAMPLING_TARGET", None
+)
+_settings.distributed_tracing.sampler.root.trace_id_ratio_based.ratio = _environ_as_ratio(
+    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_ROOT_TRACE_ID_RATIO_BASED_RATIO", None
+)
+_settings.distributed_tracing.sampler._remote_parent_sampled = (
     (
         "trace_id_ratio_based"
         if _environ_as_ratio(
-            "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_ROOT_TRACE_ID_RATIO_BASED_RATIO", None
+            "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_REMOTE_PARENT_SAMPLED_TRACE_ID_RATIO_BASED_RATIO", None
         )
         else None
     )
     or (
         "adaptive"
-        if os.environ.get("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_ROOT_ADAPTIVE_SAMPLING_TARGET", None)
+        if os.environ.get("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_REMOTE_PARENT_SAMPLED_ADAPTIVE_SAMPLING_TARGET", None)
         else None
     )
-    or _environ_as_sampler("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_ROOT", "default")
+    or _environ_as_sampler("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_REMOTE_PARENT_SAMPLED", "default")
 )
-_settings.distributed_tracing.sampler.full_granularity.root.adaptive.sampling_target = _environ_as_int(
-    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_ROOT_ADAPTIVE_SAMPLING_TARGET", None
+_settings.distributed_tracing.sampler.remote_parent_sampled.adaptive.sampling_target = _environ_as_int(
+    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_REMOTE_PARENT_SAMPLED_ADAPTIVE_SAMPLING_TARGET", None
 )
-_settings.distributed_tracing.sampler.full_granularity.root.trace_id_ratio_based.ratio = _environ_as_ratio(
-    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_ROOT_TRACE_ID_RATIO_BASED_RATIO", None
+_settings.distributed_tracing.sampler.remote_parent_sampled.trace_id_ratio_based.ratio = _environ_as_ratio(
+    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_REMOTE_PARENT_SAMPLED_TRACE_ID_RATIO_BASED_RATIO", None
 )
-_settings.distributed_tracing.sampler.full_granularity._remote_parent_sampled = (
+_settings.distributed_tracing.sampler._remote_parent_not_sampled = (
     (
         "trace_id_ratio_based"
         if _environ_as_ratio(
-            "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_REMOTE_PARENT_SAMPLED_TRACE_ID_RATIO_BASED_RATIO",
-            None,
-        )
-        else None
-    )
-    or (
-        "adaptive"
-        if os.environ.get(
-            "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_REMOTE_PARENT_SAMPLED_ADAPTIVE_SAMPLING_TARGET",
-            None,
-        )
-        else None
-    )
-    or _environ_as_sampler("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_REMOTE_PARENT_SAMPLED", None)
-    or os.environ.get("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_REMOTE_PARENT_SAMPLED", "default")
-)
-_settings.distributed_tracing.sampler.full_granularity.remote_parent_sampled.adaptive.sampling_target = _environ_as_int(
-    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_REMOTE_PARENT_SAMPLED_ADAPTIVE_SAMPLING_TARGET", None
-)
-_settings.distributed_tracing.sampler.full_granularity.remote_parent_sampled.trace_id_ratio_based.ratio = (
-    _environ_as_ratio(
-        "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_REMOTE_PARENT_SAMPLED_TRACE_ID_RATIO_BASED_RATIO", None
-    )
-)
-_settings.distributed_tracing.sampler.full_granularity._remote_parent_not_sampled = (
-    (
-        "trace_id_ratio_based"
-        if _environ_as_ratio(
-            "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_REMOTE_PARENT_NOT_SAMPLED_TRACE_ID_RATIO_BASED_RATIO",
-            None,
+            "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_REMOTE_PARENT_NOT_SAMPLED_TRACE_ID_RATIO_BASED_RATIO", None
         )
         else None
     )
     or (
         "adaptive"
         if os.environ.get(
-            "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_REMOTE_PARENT_NOT_SAMPLED_ADAPTIVE_SAMPLING_TARGET",
-            None,
+            "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_REMOTE_PARENT_NOT_SAMPLED_ADAPTIVE_SAMPLING_TARGET", None
         )
         else None
     )
-    or _environ_as_sampler("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_REMOTE_PARENT_NOT_SAMPLED", None)
-    or os.environ.get("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_REMOTE_PARENT_NOT_SAMPLED", "default")
+    or _environ_as_sampler("NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_REMOTE_PARENT_NOT_SAMPLED", "default")
 )
-_settings.distributed_tracing.sampler.full_granularity.remote_parent_not_sampled.adaptive.sampling_target = (
-    _environ_as_int(
-        "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_REMOTE_PARENT_NOT_SAMPLED_ADAPTIVE_SAMPLING_TARGET",
-        None,
-    )
+_settings.distributed_tracing.sampler.remote_parent_not_sampled.adaptive.sampling_target = _environ_as_int(
+    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_REMOTE_PARENT_NOT_SAMPLED_ADAPTIVE_SAMPLING_TARGET", None
 )
-_settings.distributed_tracing.sampler.full_granularity.remote_parent_not_sampled.trace_id_ratio_based.ratio = (
-    _environ_as_ratio(
-        "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_FULL_GRANULARITY_REMOTE_PARENT_NOT_SAMPLED_TRACE_ID_RATIO_BASED_RATIO",
-        None,
-    )
+_settings.distributed_tracing.sampler.remote_parent_not_sampled.trace_id_ratio_based.ratio = _environ_as_ratio(
+    "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_REMOTE_PARENT_NOT_SAMPLED_TRACE_ID_RATIO_BASED_RATIO", None
 )
 _settings.distributed_tracing.sampler.partial_granularity.enabled = _environ_as_bool(
     "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_ENABLED", default=False

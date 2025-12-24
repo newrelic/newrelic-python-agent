@@ -329,51 +329,6 @@ def _process_setting(section, option, getter, mapper):
         _raise_configuration_error(section, option)
 
 
-def _process_dt_setting(section, option_p1, option_p2, getter):
-    try:
-        # The type of a value is dictated by the getter
-        # function supplied.
-
-        value1 = getattr(_config_object, getter)(section, option_p1)
-        value2 = getattr(_config_object, getter)(section, option_p2)
-
-        # Now need to apply the option from the
-        # configuration file to the internal settings
-        # object. Walk the object path and assign it.
-
-        target = _settings
-        fields = option_p1.split(".", 1)
-
-        while True:
-            if len(fields) == 1:
-                value = value1 or value2 or "default"
-                # Store the value at the underscored location so if option_p1 is
-                # distributed_tracing.sampler.full_granularity.remote_parent_sampled
-                # store it at location
-                # distributed_tracing.sampler.full_granularity._remote_parent_sampled
-                setattr(target, f"_{fields[0]}", value)
-                break
-            target = getattr(target, fields[0])
-            fields = fields[1].split(".", 1)
-
-        # Cache the configuration so can be dumped out to
-        # log file when whole main configuration has been
-        # processed. This ensures that the log file and log
-        # level entries have been set.
-
-        _cache_object.append((option_p1, value1))
-        _cache_object.append((option_p2, value2))
-
-    except configparser.NoSectionError:
-        pass
-
-    except configparser.NoOptionError:
-        pass
-
-    except Exception:
-        _raise_configuration_error(section, option_p1)
-
-
 def _process_dt_hidden_setting(section, option, getter):
     try:
         # The type of a value is dictated by the getter
@@ -546,42 +501,22 @@ def _process_configuration(section):
     _process_setting(section, "distributed_tracing.enabled", "getboolean", None)
     _process_setting(section, "distributed_tracing.exclude_newrelic_header", "getboolean", None)
     _process_setting(section, "distributed_tracing.sampler.adaptive_sampling_target", "getint", None)
-    _process_dt_hidden_setting(section, "distributed_tracing.sampler.full_granularity.root", "get")
+    _process_dt_hidden_setting(section, "distributed_tracing.sampler.root", "get")
+    _process_dt_sampler_setting(section, "distributed_tracing.sampler.root.adaptive.sampling_target", "getint")
+    _process_dt_sampler_setting(section, "distributed_tracing.sampler.root.trace_id_ratio_based.ratio", "getratio")
+    _process_dt_hidden_setting(section, "distributed_tracing.sampler.remote_parent_sampled", "get")
     _process_dt_sampler_setting(
-        section, "distributed_tracing.sampler.full_granularity.root.adaptive.sampling_target", "getint"
-    )
-    _process_dt_sampler_setting(
-        section, "distributed_tracing.sampler.full_granularity.root.trace_id_ratio_based.ratio", "getratio"
-    )
-    _process_dt_setting(
-        section,
-        "distributed_tracing.sampler.full_granularity.remote_parent_sampled",
-        "distributed_tracing.sampler.remote_parent_sampled",
-        "get",
+        section, "distributed_tracing.sampler.remote_parent_sampled.adaptive.sampling_target", "getint"
     )
     _process_dt_sampler_setting(
-        section, "distributed_tracing.sampler.full_granularity.remote_parent_sampled.adaptive.sampling_target", "getint"
+        section, "distributed_tracing.sampler.remote_parent_sampled.trace_id_ratio_based.ratio", "getratio"
+    )
+    _process_dt_hidden_setting(section, "distributed_tracing.sampler.remote_parent_not_sampled", "get")
+    _process_dt_sampler_setting(
+        section, "distributed_tracing.sampler.remote_parent_not_sampled.adaptive.sampling_target", "getint"
     )
     _process_dt_sampler_setting(
-        section,
-        "distributed_tracing.sampler.full_granularity.remote_parent_sampled.trace_id_ratio_based.ratio",
-        "getratio",
-    )
-    _process_dt_setting(
-        section,
-        "distributed_tracing.sampler.full_granularity.remote_parent_not_sampled",
-        "distributed_tracing.sampler.remote_parent_not_sampled",
-        "get",
-    )
-    _process_dt_sampler_setting(
-        section,
-        "distributed_tracing.sampler.full_granularity.remote_parent_not_sampled.adaptive.sampling_target",
-        "getint",
-    )
-    _process_dt_sampler_setting(
-        section,
-        "distributed_tracing.sampler.full_granularity.remote_parent_not_sampled.trace_id_ratio_based.ratio",
-        "getratio",
+        section, "distributed_tracing.sampler.remote_parent_not_sampled.trace_id_ratio_based.ratio", "getratio"
     )
     _process_setting(section, "distributed_tracing.sampler.full_granularity.enabled", "getboolean", None)
     _process_setting(section, "distributed_tracing.sampler.partial_granularity.enabled", "getboolean", None)

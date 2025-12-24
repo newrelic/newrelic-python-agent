@@ -1117,9 +1117,9 @@ class Transaction:
                 priority,
                 sampled,
                 full_granularity=True,
-                root_setting=self.settings.distributed_tracing.sampler.full_granularity._root,
-                remote_parent_sampled_setting=self.settings.distributed_tracing.sampler.full_granularity._remote_parent_sampled,
-                remote_parent_not_sampled_setting=self.settings.distributed_tracing.sampler.full_granularity._remote_parent_not_sampled,
+                root_setting=self.settings.distributed_tracing.sampler._root,
+                remote_parent_sampled_setting=self.settings.distributed_tracing.sampler._remote_parent_sampled,
+                remote_parent_not_sampled_setting=self.settings.distributed_tracing.sampler._remote_parent_not_sampled,
             )
             _logger.debug("Full granularity sampling decision was %s with priority=%s.", sampled, priority)
             if computed_sampled or not self.settings.distributed_tracing.sampler.partial_granularity.enabled:

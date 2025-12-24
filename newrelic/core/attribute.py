@@ -87,6 +87,9 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = {
     "message.routingKey",
     "messaging.destination.name",
     "messaging.system",
+    "nr.durations",
+    "nr.ids",
+    "nr.pg",
     "peer.address",
     "peer.hostname",
     "request.headers.accept",
@@ -124,6 +127,8 @@ SPAN_ENTITY_RELATIONSHIP_ATTRIBUTES = {
     "server.port",
     "span.kind",
 }
+
+SPAN_ERROR_ATTRIBUTES = {"error.class", "error.message", "error.expected"}
 
 
 MAX_NUM_USER_ATTRIBUTES = 128

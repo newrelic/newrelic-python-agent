@@ -635,14 +635,29 @@ class TransactionNode(_TransactionNode):
             )
         )
         ct_exit_spans = {"instrumented": 0, "kept": 0, "dropped_ids": 0}
-        yield from self.root.span_events(
-            settings,
-            base_attrs,
-            parent_guid=self.parent_span,
-            attr_class=attr_class,
-            partial_granularity_sampled=self.partial_granularity_sampled,
-            ct_exit_spans=ct_exit_spans,
-        )
+        # In corner case scenarios where there is a harvest while spans are being added
+        # to the reservoir, a compact span may be sent before its agent attributes have
+        # been updated. This is solved by cacheing all spans in compact mode and not
+        # adding them to the reservoir until all spans are touched.
+        if self.partial_granularity_sampled and settings.distributed_tracing.sampler.partial_granularity.type == "compact":
+            events = list(self.root.span_events(
+                settings,
+                base_attrs,
+                parent_guid=self.parent_span,
+                attr_class=attr_class,
+                partial_granularity_sampled=self.partial_granularity_sampled,
+                ct_exit_spans=ct_exit_spans,
+            ))
+            yield from events
+        else:
+            yield from self.root.span_events(
+                settings,
+                base_attrs,
+                parent_guid=self.parent_span,
+                attr_class=attr_class,
+                partial_granularity_sampled=self.partial_granularity_sampled,
+                ct_exit_spans=ct_exit_spans,
+            )
         # If this transaction is partial granularity sampled, record the number of spans
         # instrumented and the number of spans kept to monitor cost savings of partial
         # granularity tracing.

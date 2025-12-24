@@ -634,7 +634,7 @@ class TransactionNode(_TransactionNode):
                 ("priority", self.priority),
             )
         )
-        ct_exit_spans = {"instrumented": 0, "kept": 0}
+        ct_exit_spans = {"instrumented": 0, "kept": 0, "dropped_ids": 0}
         yield from self.root.span_events(
             settings,
             base_attrs,
@@ -646,6 +646,8 @@ class TransactionNode(_TransactionNode):
         # If this transaction is partial granularity sampled, record the number of spans
         # instrumented and the number of spans kept to monitor cost savings of partial
         # granularity tracing.
+        # Also record the number of span ids dropped (fragmentation) in compact mode.
         if self.partial_granularity_sampled:
             self.instrumented = ct_exit_spans["instrumented"]
             self.kept = ct_exit_spans["kept"]
+            self.dropped_ids = ct_exit_spans["dropped_ids"]

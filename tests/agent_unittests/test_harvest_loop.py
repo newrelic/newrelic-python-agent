@@ -27,6 +27,7 @@ from newrelic.core.application import Application
 from newrelic.core.config import finalize_application_settings, global_settings
 from newrelic.core.custom_event import create_custom_event
 from newrelic.core.error_node import ErrorNode
+from newrelic.core.external_node import ExternalNode
 from newrelic.core.function_node import FunctionNode
 from newrelic.core.log_event_node import LogEventNode
 from newrelic.core.root_node import RootNode
@@ -88,7 +89,24 @@ def transaction_node(request):
             user_attributes={},
         )
 
-        children = tuple(function for _ in range(num_events))
+        children = [function for _ in range(num_events)]
+
+        function = ExternalNode(
+            library="requests",
+            url="http:localhost:3000",
+            method="GET",
+            children=(),
+            start_time=0,
+            end_time=1,
+            duration=1,
+            exclusive=1,
+            params={},
+            guid="GUID",
+            agent_attributes={},
+            user_attributes={},
+        )
+
+        children.extend([function for _ in range(num_events)])
 
         root = RootNode(
             name="Function/main",
@@ -362,8 +380,6 @@ def test_application_harvest_with_spans(
     spans_required_metrics.extend(
         [("Supportability/SpanEvent/TotalEventsSeen", seen), ("Supportability/SpanEvent/TotalEventsSent", sent)]
     )
-    if partial_granularity_enabled:
-        spans_required_metrics.extend([("Supportability/Python/PartialGranularity/essential", 1)])
 
     @validate_metric_payload(metrics=spans_required_metrics, endpoints_called=span_endpoints_called)
     @override_generic_settings(
@@ -511,6 +527,7 @@ def test_transaction_count(transaction_node):
         "application_logging.forwarding.enabled": False,
         "distributed_tracing.sampler.full_granularity.enabled": False,
         "distributed_tracing.sampler.partial_granularity.enabled": True,
+        "distributed_tracing.sampler.partial_granularity.type": "compact",
     },
 )
 def test_partial_granularity_metrics(transaction_node):
@@ -523,10 +540,14 @@ def test_partial_granularity_metrics(transaction_node):
     # Harvest has not run yet
     assert app._transaction_count == 1
 
-    instrumented = "Supportability/DistributedTrace/PartialGranularity/essential/Span/Instrumented"
-    kept = "Supportability/DistributedTrace/PartialGranularity/essential/Span/Kept"
-    assert app._stats_engine.stats_table[(instrumented, "")][0] == 102
-    assert app._stats_engine.stats_table[(kept, "")][0] == 1
+    instrumented = "Supportability/DistributedTrace/PartialGranularity/compact/Span/Instrumented"
+    kept = "Supportability/DistributedTrace/PartialGranularity/compact/Span/Kept"
+    pg = "Supportability/Python/PartialGranularity/compact"
+    dropped_ids = "Supportability/Python/PartialGranularity/NrIds/Dropped"
+    assert app._stats_engine.stats_table[(instrumented, "")][0] == 203
+    assert app._stats_engine.stats_table[(kept, "")][0] == 2
+    assert app._stats_engine.stats_table[(pg, "")][0] == 1
+    assert app._stats_engine.stats_table[(dropped_ids, "")][0] == 37
 
     app.harvest()
 

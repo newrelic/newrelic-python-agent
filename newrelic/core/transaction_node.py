@@ -639,15 +639,20 @@ class TransactionNode(_TransactionNode):
         # to the reservoir, a compact span may be sent before its agent attributes have
         # been updated. This is solved by cacheing all spans in compact mode and not
         # adding them to the reservoir until all spans are touched.
-        if self.partial_granularity_sampled and settings.distributed_tracing.sampler.partial_granularity.type == "compact":
-            events = list(self.root.span_events(
-                settings,
-                base_attrs,
-                parent_guid=self.parent_span,
-                attr_class=attr_class,
-                partial_granularity_sampled=self.partial_granularity_sampled,
-                ct_exit_spans=ct_exit_spans,
-            ))
+        if (
+            self.partial_granularity_sampled
+            and settings.distributed_tracing.sampler.partial_granularity.type == "compact"
+        ):
+            events = list(
+                self.root.span_events(
+                    settings,
+                    base_attrs,
+                    parent_guid=self.parent_span,
+                    attr_class=attr_class,
+                    partial_granularity_sampled=self.partial_granularity_sampled,
+                    ct_exit_spans=ct_exit_spans,
+                )
+            )
             yield from events
         else:
             yield from self.root.span_events(

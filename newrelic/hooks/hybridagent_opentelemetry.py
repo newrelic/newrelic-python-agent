@@ -91,12 +91,12 @@ def wrap_set_tracer_provider(wrapped, instance, args, kwargs):
         application.activate()
 
     settings = global_settings() if not application else application.settings
-    
+
     if not settings:
         # The application may need more time to start up
         time.sleep(0.5)
         settings = global_settings() if not application else application.settings
-        
+
     if not settings or not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
@@ -121,12 +121,12 @@ def wrap_get_tracer_provider(wrapped, instance, args, kwargs):
         application.activate()
 
     settings = global_settings() if not application else application.settings
-    
+
     if not settings:
         # The application may need more time to start up
         time.sleep(0.5)
         settings = global_settings() if not application else application.settings
-        
+
     if not settings or not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 

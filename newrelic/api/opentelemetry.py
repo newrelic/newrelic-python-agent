@@ -359,9 +359,7 @@ class Tracer(otel_api_trace.Tracer):
     def _web_transaction_calls(self):
         if "nr.wsgi.environ" in self.attributes:
             # This is a WSGI request
-            transaction = WSGIWebTransaction(
-                self.nr_application, environ=self.attributes.pop("nr.wsgi.environ")
-            )
+            transaction = WSGIWebTransaction(self.nr_application, environ=self.attributes.pop("nr.wsgi.environ"))
         else:
             # This is a web request
             headers = self.attributes.pop("nr.http.headers", None)
@@ -382,7 +380,6 @@ class Tracer(otel_api_trace.Tracer):
                 headers=headers,
             )
         return transaction
-
 
     def start_span(
         self,

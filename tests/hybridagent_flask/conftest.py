@@ -14,9 +14,9 @@
 
 import os
 import platform
-import pytest
 from pathlib import Path
 
+import pytest
 from opentelemetry import trace
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
@@ -48,6 +48,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 )
 
 os.environ["NEW_RELIC_CONFIG_FILE"] = str(Path(__file__).parent / "newrelic_flask.ini")
+
 
 @pytest.fixture(scope="session")
 def tracer():

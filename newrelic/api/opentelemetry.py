@@ -34,6 +34,7 @@ from newrelic.api.time_trace import current_trace, notice_error
 from newrelic.api.transaction import Sentinel, current_transaction
 from newrelic.api.web_transaction import WebTransaction, WSGIWebTransaction
 from newrelic.core.otlp_utils import create_resource
+from newrelic.core.database_utils import _parse_operation, _parse_target
 
 _logger = logging.getLogger(__name__)
 
@@ -304,7 +305,62 @@ class Span(otel_api_trace.Span):
         notice_error(error_args, attributes=attributes)
 
     def _database_attribute_mapping(self):
-        pass
+        def _host():
+            return self.attributes.get("net.peer.name") or self.attributes.get("server.address")
+        
+        def _database_name():
+            return self.attributes.get("db.name")
+        
+        def _port_path_or_id():
+            return self.attributes.get("net.peer.port") or self.attributes.get("server.port")
+        
+        def _product():
+            return self.attributes.get("db.system").capitalize()
+        
+        def _dynamodb_attribute_mapping():
+            host = _host()
+            region = self.attributes.get("cloud.region")
+            operation = self.attributes.get("db.operation")
+            target = self.attributes.get("aws.dynamodb.table_names", [None])[-1]
+            account_id = self.nr_transaction.settings.cloud.aws.account_id
+
+            if region and account_id and target:
+                partition = "aws"
+                if "amazonaws.cn" in host:
+                    partition = "aws-cn"
+                elif "amazonaws-us-gov.com" in host:
+                    partition = "aws-us-gov"
+                resource_id = f"arn:{partition}:dynamodb:{region}:{account_id:012d}:table/{target}"
+                self.nr_trace._add_agent_attribute("cloud.resource_id", resource_id)
+                
+            self.nr_trace.operation = operation
+            self.nr_trace.target = target
+            self.nr_trace._add_agent_attribute("cloud.region", region)
+            self.nr_trace._add_agent_attribute("aws.requestId", self.attributes.get("aws.request_id"))
+            self.nr_trace._add_agent_attribute("aws.operation", self.nr_trace.operation)
+            self.nr_trace._add_agent_attribute("http.statusCode", self.attributes.get("http.status_code"))
+            self.nr_trace._add_agent_attribute("cloud.account.id", account_id)
+        
+        self.nr_trace.database_name = _database_name() or self.nr_trace.database_name
+        self.nr_trace.host = _host() or self.nr_trace.host
+        self.nr_trace.port_path_or_id = _port_path_or_id() or self.nr_trace.port_path_or_id
+        self.nr_trace.product = _product() or self.nr_trace.product.capitalize()
+
+        db_statement = self.attributes.get("db.statement")
+        
+        if isinstance(db_statement, (str, bytes)):
+            operation = _parse_operation(db_statement)
+            target = _parse_target(db_statement, operation) or self.attributes.get("db.mongodb.collection")
+            self.nr_trace.target = target
+        elif hasattr(db_statement, "string"):
+            operation = _parse_operation(db_statement.string)
+            target = _parse_target(db_statement.string, operation)
+            self.nr_trace.operation = operation
+            self.nr_trace.target = target
+        elif _product() == "Dynamodb":
+            _dynamodb_attribute_mapping()
+
+
     def end(self, end_time=None, *args, **kwargs):
         # We will ignore the end_time parameter and use NR's end_time
 

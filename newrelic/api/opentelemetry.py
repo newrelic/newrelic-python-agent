@@ -356,6 +356,34 @@ class Tracer(otel_api_trace.Tracer):
         self.resource = resource
         self.instrumentation_library = instrumentation_library.split(".")[-1].capitalize()
 
+    def _web_transaction_calls(self):
+        if "nr.wsgi.environ" in self.attributes:
+            # This is a WSGI request
+            transaction = WSGIWebTransaction(
+                self.nr_application, environ=self.attributes.pop("nr.wsgi.environ")
+            )
+        else:
+            # This is a web request
+            headers = self.attributes.pop("nr.http.headers", None)
+            scheme = self.attributes.get("http.scheme")
+            host = self.attributes.get("http.server_name")
+            port = self.attributes.get("net.host.port")
+            request_method = self.attributes.get("http.method")
+            request_path = self.attributes.get("http.route")
+
+            transaction = WebTransaction(
+                self.nr_application,
+                name=self.name,
+                scheme=scheme,
+                host=host,
+                port=port,
+                request_method=request_method,
+                request_path=request_path,
+                headers=headers,
+            )
+        return transaction
+
+
     def start_span(
         self,
         name,
@@ -373,6 +401,7 @@ class Tracer(otel_api_trace.Tracer):
         transaction = current_transaction()
         self.nr_application = application_instance()
         self.attributes = attributes or {}
+        self.name = name
 
         if not self.nr_application.active:
             # Force application registration if not already active
@@ -398,37 +427,14 @@ class Tracer(otel_api_trace.Tracer):
         # Make sure we transfer DT headers when we are here, if DT is enabled
         if parent_span_context and parent_span_context.is_remote:
             if kind in (otel_api_trace.SpanKind.SERVER, otel_api_trace.SpanKind.CLIENT):
-                if "nr.wsgi.environ" in self.attributes:
-                    # This is a WSGI request
-                    transaction = WSGIWebTransaction(
-                        self.nr_application, environ=self.attributes.pop("nr.wsgi.environ")
-                    )
-                else:
-                    # This is a web request
-                    headers = self.attributes.pop("nr.http.headers", None)
-                    scheme = self.attributes.get("http.scheme")
-                    host = self.attributes.get("http.server_name")
-                    port = self.attributes.get("net.host.port")
-                    request_method = self.attributes.get("http.method")
-                    request_path = self.attributes.get("http.route")
-
-                    transaction = WebTransaction(
-                        self.nr_application,
-                        name=name,
-                        scheme=scheme,
-                        host=host,
-                        port=port,
-                        request_method=request_method,
-                        request_path=request_path,
-                        headers=headers,
-                    )
+                transaction = self._web_transaction_calls()
             elif kind in (otel_api_trace.SpanKind.PRODUCER, otel_api_trace.SpanKind.INTERNAL):
-                transaction = BackgroundTask(self.nr_application, name=name)
+                transaction = BackgroundTask(self.nr_application, name=self.name)
             elif kind == otel_api_trace.SpanKind.CONSUMER:
                 transaction = MessageTransaction(
                     library=self.instrumentation_library,
                     destination_type="Topic",
-                    destination_name=name,
+                    destination_name=self.name,
                     application=self.nr_application,
                     transport_type=self.instrumentation_library,
                     headers=None,
@@ -446,30 +452,7 @@ class Tracer(otel_api_trace.Tracer):
                 if transaction:
                     nr_trace_type = FunctionTrace
                 elif not transaction:
-                    if "nr.wsgi.environ" in self.attributes:
-                        # This is a WSGI request
-                        transaction = WSGIWebTransaction(
-                            self.nr_application, environ=self.attributes.pop("nr.wsgi.environ")
-                        )
-                    else:
-                        # This is a web request
-                        headers = self.attributes.pop("nr.http.headers", None)
-                        scheme = self.attributes.get("http.scheme")
-                        host = self.attributes.get("http.server_name")
-                        port = self.attributes.get("net.host.port")
-                        request_method = self.attributes.get("http.method")
-                        request_path = self.attributes.get("http.route")
-
-                        transaction = WebTransaction(
-                            self.nr_application,
-                            name=name,
-                            scheme=scheme,
-                            host=host,
-                            port=port,
-                            request_method=request_method,
-                            request_path=request_path,
-                            headers=headers,
-                        )
+                    transaction = self._web_transaction_calls()
 
                     transaction._trace_id = (
                         f"{parent_span_trace_id:x}" if parent_span_trace_id else transaction.trace_id
@@ -496,7 +479,7 @@ class Tracer(otel_api_trace.Tracer):
                     transaction = MessageTransaction(
                         library=self.instrumentation_library,
                         destination_type="Topic",
-                        destination_name=name,
+                        destination_name=self.name,
                         application=self.nr_application,
                         transport_type=self.instrumentation_library,
                         headers=None,
@@ -512,7 +495,7 @@ class Tracer(otel_api_trace.Tracer):
         # in Span.  Span function will take in some Span args
         # as well as info for NR applications/transactions
         span = Span(
-            name=name,
+            name=self.name,
             parent=parent_span_context,
             resource=self.resource,
             attributes=attributes,
@@ -539,7 +522,7 @@ class Tracer(otel_api_trace.Tracer):
         set_status_on_exception=True,
     ):
         span = self.start_span(
-            name,
+            self.name,
             context=context,
             kind=kind,
             attributes=attributes,

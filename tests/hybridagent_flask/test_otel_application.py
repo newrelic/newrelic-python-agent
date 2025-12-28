@@ -12,9 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-from pathlib import Path
-
 import pytest
 from conftest import async_handler_support, skip_if_not_async_handler_support
 from testing_support.fixtures import dt_enabled
@@ -22,8 +19,6 @@ from testing_support.validators.validate_error_event_attributes import validate_
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-
-os.environ["NEW_RELIC_CONFIG_FILE"] = str(Path(__file__).parent / "newrelic_flask.ini")
 
 try:
     # The __version__ attribute was only added in 0.7.0.

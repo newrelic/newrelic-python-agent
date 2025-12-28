@@ -131,8 +131,7 @@ def wrap_get_current_span(wrapped, instance, args, kwargs):
     # Do not allow the wrapper to continue if
     # the Hybrid Agent setting is not enabled
     application = application_instance(activate=False)
-    app_settings = global_settings() if not application else application.settings
-    settings = transaction.settings or app_settings
+    settings = global_settings() if not application else application.settings
 
     if not settings.opentelemetry.enabled:
         return span

@@ -519,7 +519,7 @@ class Tracer(otel_api_trace.Tracer):
         set_status_on_exception=True,
     ):
         span = self.start_span(
-            self.name,
+            name,
             context=context,
             kind=kind,
             attributes=attributes,

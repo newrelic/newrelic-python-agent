@@ -14,6 +14,7 @@
 
 import logging
 import os
+import time
 
 from newrelic.api.application import application_instance
 from newrelic.api.time_trace import add_custom_span_attribute, current_trace
@@ -80,9 +81,23 @@ def instrument_global_propagators_api(module):
 
 
 def wrap_set_tracer_provider(wrapped, instance, args, kwargs):
-    application = application_instance(activate=False)
+    # This needs to act as a singleton, like the agent instance.
+    # We should initialize the agent here as well, if there is
+    # not an instance already.
+
+    application = application_instance()
+    if not application.active:
+        # Force application registration if not already active
+        application.activate()
+
     settings = global_settings() if not application else application.settings
-    if not settings.opentelemetry.enabled:
+    
+    if not settings:
+        # The application may need more time to start up
+        time.sleep(0.5)
+        settings = global_settings() if not application else application.settings
+        
+    if not settings or not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
     global _TRACER_PROVIDER
@@ -105,7 +120,15 @@ def wrap_get_tracer_provider(wrapped, instance, args, kwargs):
         # Force application registration if not already active
         application.activate()
 
-    settings = global_settings()
+    settings = global_settings() if not application else application.settings
+    
+    if not settings:
+        # The application may need more time to start up
+        time.sleep(0.5)
+        settings = global_settings() if not application else application.settings
+        
+    if not settings or not settings.opentelemetry.enabled:
+        return wrapped(*args, **kwargs)
 
     if not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)

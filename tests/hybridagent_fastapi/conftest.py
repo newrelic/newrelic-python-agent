@@ -13,25 +13,15 @@
 # limitations under the License.
 
 import os
-import platform
 from pathlib import Path
-
 import pytest
 from opentelemetry import trace
+
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
+from testing_support.fixtures import newrelic_caplog as caplog
 
 from newrelic.api.opentelemetry import TracerProvider
-from newrelic.common.package_version_utils import get_package_version_tuple
 
-FLASK_VERSION = get_package_version_tuple("flask")
-
-is_flask_v2 = FLASK_VERSION[0] >= 2
-is_not_flask_v2_3 = FLASK_VERSION < (2, 3, 0)
-is_pypy = platform.python_implementation() == "PyPy"
-async_handler_support = is_flask_v2 and not is_pypy
-skip_if_not_async_handler_support = pytest.mark.skipif(
-    not async_handler_support, reason="Requires async handler support. (Flask >=v2.0.0, CPython)"
-)
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
@@ -40,14 +30,22 @@ _default_settings = {
     "transaction_tracer.stack_trace_threshold": 0.0,
     "debug.log_data_collector_payloads": True,
     "debug.record_transaction_failure": True,
+    "debug.log_autorum_middleware": True,
     "opentelemetry.enabled": True,
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
-    app_name="Python Agent Test (Hybrid Agent, Flask)", default_settings=_default_settings
+    app_name="Python Agent Test (Hybrid Agent, FastAPI)", default_settings=_default_settings
 )
 
-os.environ["NEW_RELIC_CONFIG_FILE"] = str(Path(__file__).parent / "newrelic_flask.ini")
+os.environ["NEW_RELIC_CONFIG_FILE"] = str(Path(__file__).parent / "newrelic_fastapi.ini")
+
+@pytest.fixture(scope="session")
+def app():
+    import _target_otel_application
+
+    return _target_otel_application.target_application
+
 
 @pytest.fixture(scope="session")
 def tracer():

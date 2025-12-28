@@ -603,6 +603,13 @@ class Application:
                 1,
             )
 
+            # OpenTelemetry Bridge toggle metric
+            opentelemetry_bridge = configuration.opentelemetry.enabled
+            internal_metric(
+                f"Supportability/Tracing/Python/OpenTelemetryBridge/{'enabled' if opentelemetry_bridge else 'disabled'}",
+                1,
+            )
+
         self._stats_engine.merge_custom_metrics(internal_metrics.metrics())
 
         # Update the active session in this object. This will the

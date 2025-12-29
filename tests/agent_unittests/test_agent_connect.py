@@ -76,15 +76,19 @@ def test_ml_streaming_disabled_supportability_metrics():
     assert app._active_session
 
 
-@override_generic_settings(SETTINGS, {"developer_mode": True, "distributed_tracing.sampler.partial_granularity.enabled": True})
-@validate_internal_metrics([
-    ("Supportability/Python/FullGranularity/Root/default", 1),
-    ("Supportability/Python/FullGranularity/RemoteParentSampled/default", 1),
-    ("Supportability/Python/FullGranularity/RemoteParentNotSampled/default", 1),
-    ("Supportability/Python/PartialGranularity/Root/default", 1),
-    ("Supportability/Python/PartialGranularity/RemoteParentSampled/default", 1),
-    ("Supportability/Python/PartialGranularity/RemoteParentNotSampled/default", 1),
-])
+@override_generic_settings(
+    SETTINGS, {"developer_mode": True, "distributed_tracing.sampler.partial_granularity.enabled": True}
+)
+@validate_internal_metrics(
+    [
+        ("Supportability/Python/FullGranularity/Root/default", 1),
+        ("Supportability/Python/FullGranularity/RemoteParentSampled/default", 1),
+        ("Supportability/Python/FullGranularity/RemoteParentNotSampled/default", 1),
+        ("Supportability/Python/PartialGranularity/Root/default", 1),
+        ("Supportability/Python/PartialGranularity/RemoteParentSampled/default", 1),
+        ("Supportability/Python/PartialGranularity/RemoteParentNotSampled/default", 1),
+    ]
+)
 def test_sampler_supportability_metrics():
     app = Application("Python Agent Test (agent_unittests-connect)")
     app.connect_to_data_collector(None)

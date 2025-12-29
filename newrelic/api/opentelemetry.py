@@ -170,9 +170,9 @@ class Span(otel_api_trace.Span):
             self.nr_trace = nr_trace_type(**trace_kwargs)
         elif nr_trace_type == ExternalTrace:
             trace_kwargs = {
-                "library": self.name or self.instrumenting_module,
+                "library": self.instrumenting_module,
                 "url": self.attributes.get("http.url"),
-                "method": self.attributes.get("http.method"),
+                "method": self.attributes.get("http.method") or self.name,
                 "parent": self.nr_parent,
             }
             self.nr_trace = nr_trace_type(**trace_kwargs)
@@ -370,9 +370,6 @@ class Span(otel_api_trace.Span):
         if not nr_trace or (nr_trace and getattr(nr_trace, "end_time", None)):
             return
 
-        # Add OTel attributes as custom NR trace attributes
-        self._set_attributes_in_nr(self.attributes)
-
         # We will need to add specific attributes to the
         # NR trace before the node creation because the
         # attributes were likely not available at the time
@@ -382,6 +379,12 @@ class Span(otel_api_trace.Span):
         # Database/Datastore specific attributes
         if self.attributes.get("db.system"):
             self._database_attribute_mapping()
+            
+        # External specific attributes
+        self.nr_trace._add_agent_attribute("http.statusCode", self.attributes.get("http.status_code"))
+
+        # Add OTel attributes as custom NR trace attributes
+        self._set_attributes_in_nr(self.attributes)
 
         error = sys.exc_info()
         self.nr_trace.__exit__(*error)

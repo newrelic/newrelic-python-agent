@@ -23,6 +23,8 @@ mkdir -p ${BUILD_DIR}
 
 # Clone repository
 git clone https://github.com/Azure/azure-functions-python-worker.git ${BUILD_DIR}
+LATEST_VERSION=$(git fetch --tags && git -C ${BUILD_DIR} tag --list --sort=-version:refname | grep -E '^[0-9]+\.[0-9]+\.[0-9].*' | head -n 1)
+cd ${BUILD_DIR} && git checkout ${LATEST_VERSION}
 
 # Setup virtual environment and install dependencies
 python -m venv "${BUILD_DIR}/.venv"

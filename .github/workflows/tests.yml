@@ -93,14 +93,14 @@ jobs:
       - tests
 
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # 6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # 6.0.1
       - uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # 6.1.0
         with:
           python-version: "3.13"
           architecture: x64
 
       - name: Download Coverage Artifacts
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # 6.0.0
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # 7.0.0
         with:
           pattern: coverage-*
           path: ./
@@ -113,7 +113,7 @@ jobs:
           coverage xml
 
       - name: Upload Coverage to Codecov
-        uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # 5.5.1
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # 5.5.2
         with:
           files: coverage.xml
           fail_ci_if_error: true
@@ -127,14 +127,14 @@ jobs:
       - tests
 
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # 6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # 6.0.1
       - uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # 6.1.0
         with:
           python-version: "3.13"
           architecture: x64
 
       - name: Download Results Artifacts
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # 6.0.0
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # 7.0.0
         with:
           pattern: results-*
           path: ./
@@ -166,7 +166,7 @@ jobs:
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # 6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # 6.0.1
 
       - name: Fetch git tags
         run: |
@@ -196,7 +196,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -206,7 +206,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -231,7 +231,7 @@ jobs:
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # 6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # 6.0.1
 
       - name: Fetch git tags
         run: |
@@ -261,7 +261,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -271,7 +271,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -294,14 +294,14 @@ jobs:
     runs-on: windows-2025
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # 6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # 6.0.1
 
       - name: Fetch git tags
         run: |
           git fetch --tags origin
 
       - name: Install uv
-        uses: astral-sh/setup-uv@1e862dfacbd1d6d858c55d9b792c756523627244 # 7.1.4
+        uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867 # 7.1.6
 
       - name: Install Python
         run: |
@@ -330,7 +330,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -340,7 +340,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -363,14 +363,14 @@ jobs:
     runs-on: windows-11-arm
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # 6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # 6.0.1
 
       - name: Fetch git tags
         run: |
           git fetch --tags origin
 
       - name: Install uv
-        uses: astral-sh/setup-uv@1e862dfacbd1d6d858c55d9b792c756523627244 # 7.1.4
+        uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867 # 7.1.6
 
       - name: Install Python
         run: |
@@ -403,7 +403,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -413,7 +413,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -443,7 +443,7 @@ jobs:
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # 6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # 6.0.1
 
       - name: Fetch git tags
         run: |
@@ -473,7 +473,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -483,7 +483,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -526,7 +526,7 @@ jobs:
           --health-retries 10
 
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # 6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # 6.0.1
 
       - name: Fetch git tags
         run: |
@@ -556,7 +556,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -566,7 +566,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -606,7 +606,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # 6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # 6.0.1
 
       - name: Fetch git tags
         run: |
@@ -636,7 +636,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -646,7 +646,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -687,7 +687,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # 6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # 6.0.1
 
       - name: Fetch git tags
         run: |
@@ -717,7 +717,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -727,7 +727,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -772,7 +772,7 @@ jobs:
         # from every being executed as bash commands.
 
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # 6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # 6.0.1
 
       - name: Fetch git tags
         run: |
@@ -802,7 +802,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -812,7 +812,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -837,7 +837,7 @@ jobs:
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # 6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # 6.0.1
 
       - name: Fetch git tags
         run: |
@@ -867,7 +867,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -877,7 +877,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -927,7 +927,7 @@ jobs:
           KAFKA_CFG_INTER_BROKER_LISTENER_NAME: L3
 
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # 6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # 6.0.1
 
       - name: Fetch git tags
         run: |
@@ -957,7 +957,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -967,7 +967,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -1005,7 +1005,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # 6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # 6.0.1
 
       - name: Fetch git tags
         run: |
@@ -1035,7 +1035,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1045,7 +1045,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -1083,7 +1083,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # 6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # 6.0.1
 
       - name: Fetch git tags
         run: |
@@ -1113,7 +1113,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1123,7 +1123,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -1161,7 +1161,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # 6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # 6.0.1
 
       - name: Fetch git tags
         run: |
@@ -1191,7 +1191,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1201,7 +1201,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -1244,7 +1244,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # 6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # 6.0.1
 
       - name: Fetch git tags
         run: |
@@ -1274,7 +1274,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1284,7 +1284,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -1327,7 +1327,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # 6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # 6.0.1
 
       - name: Fetch git tags
         run: |
@@ -1357,7 +1357,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1367,7 +1367,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -1406,7 +1406,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # 6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # 6.0.1
 
       - name: Fetch git tags
         run: |
@@ -1436,7 +1436,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1446,7 +1446,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -1487,7 +1487,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # 6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # 6.0.1
 
       - name: Fetch git tags
         run: |
@@ -1517,7 +1517,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1527,7 +1527,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -1567,7 +1567,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # 6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # 6.0.1
 
       - name: Fetch git tags
         run: |
@@ -1597,7 +1597,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1607,7 +1607,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -1647,7 +1647,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # 6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # 6.0.1
 
       - name: Fetch git tags
         run: |
@@ -1677,7 +1677,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1687,7 +1687,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -1726,7 +1726,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # 6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # 6.0.1
 
       - name: Fetch git tags
         run: |
@@ -1756,7 +1756,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1766,7 +1766,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -1804,7 +1804,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # 6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # 6.0.1
 
       - name: Fetch git tags
         run: |
@@ -1834,7 +1834,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1844,7 +1844,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -1923,7 +1923,7 @@ jobs:
           --add-host=host.docker.internal:host-gateway
 
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # 6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # 6.0.1
 
       - name: Fetch git tags
         run: |
@@ -1953,7 +1953,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1963,7 +1963,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -2003,7 +2003,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # 6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # 6.0.1
 
       - name: Fetch git tags
         run: |
@@ -2033,7 +2033,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -2043,7 +2043,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -2081,7 +2081,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # 6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # 6.0.1
 
       - name: Fetch git tags
         run: |
@@ -2111,7 +2111,7 @@ jobs:
           FORCE_COLOR: "true"
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -2121,7 +2121,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}

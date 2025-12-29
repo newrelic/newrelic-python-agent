@@ -588,13 +588,31 @@ class Application:
                 )
             if configuration.distributed_tracing.enabled:
                 if configuration.distributed_tracing.sampler.full_granularity.enabled:
-                    internal_metric(f"Supportability/Python/FullGranularity/Root/{configuration.distributed_tracing.sampler._root}", 1)
-                    internal_metric(f"Supportability/Python/FullGranularity/RemoteParentSampled/{configuration.distributed_tracing.sampler._remote_parent_sampled}", 1)
-                    internal_metric(f"Supportability/Python/FullGranularity/RemoteParentNotSampled/{configuration.distributed_tracing.sampler._remote_parent_not_sampled}", 1)
+                    internal_metric(
+                        f"Supportability/Python/FullGranularity/Root/{configuration.distributed_tracing.sampler._root}",
+                        1,
+                    )
+                    internal_metric(
+                        f"Supportability/Python/FullGranularity/RemoteParentSampled/{configuration.distributed_tracing.sampler._remote_parent_sampled}",
+                        1,
+                    )
+                    internal_metric(
+                        f"Supportability/Python/FullGranularity/RemoteParentNotSampled/{configuration.distributed_tracing.sampler._remote_parent_not_sampled}",
+                        1,
+                    )
                 if configuration.distributed_tracing.sampler.partial_granularity.enabled:
-                    internal_metric(f"Supportability/Python/PartialGranularity/Root/{configuration.distributed_tracing.sampler.partial_granularity._root}", 1)
-                    internal_metric(f"Supportability/Python/PartialGranularity/RemoteParentSampled/{configuration.distributed_tracing.sampler.partial_granularity._remote_parent_sampled}", 1)
-                    internal_metric(f"Supportability/Python/PartialGranularity/RemoteParentNotSampled/{configuration.distributed_tracing.sampler.partial_granularity._remote_parent_not_sampled}", 1)
+                    internal_metric(
+                        f"Supportability/Python/PartialGranularity/Root/{configuration.distributed_tracing.sampler.partial_granularity._root}",
+                        1,
+                    )
+                    internal_metric(
+                        f"Supportability/Python/PartialGranularity/RemoteParentSampled/{configuration.distributed_tracing.sampler.partial_granularity._remote_parent_sampled}",
+                        1,
+                    )
+                    internal_metric(
+                        f"Supportability/Python/PartialGranularity/RemoteParentNotSampled/{configuration.distributed_tracing.sampler.partial_granularity._remote_parent_not_sampled}",
+                        1,
+                    )
 
             # Agent Control health check metric
             if self._agent_control.health_check_enabled:

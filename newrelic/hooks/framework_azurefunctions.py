@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import os
-import re
 import urllib.parse as urlparse
 
 from newrelic.api.application import application_instance
@@ -21,10 +20,6 @@ from newrelic.api.transaction import current_transaction
 from newrelic.api.web_transaction import WebTransaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.signature import bind_args
-from newrelic.common.utilization import AzureFunctionUtilization
-
-RESOURCE_GROUP_NAME_PARTIAL_RE = AzureFunctionUtilization.RESOURCE_GROUP_NAME_PARTIAL_RE
-RESOURCE_GROUP_NAME_RE = AzureFunctionUtilization.RESOURCE_GROUP_NAME_RE
 
 
 def original_agent_instance():
@@ -38,18 +33,12 @@ def intrinsics_populator(application, context):
     trigger_type = "http"
 
     website_owner_name = os.environ.get("WEBSITE_OWNER_NAME", None)
-    if not website_owner_name:
-        subscription_id = "Unknown"
-    else:
-        subscription_id = re.search(r"(?:(?!\+).)*", website_owner_name) and re.search(
-            r"(?:(?!\+).)*", website_owner_name
-        ).group(0)
-    if website_owner_name and website_owner_name.endswith("-Linux"):
-        resource_group_name = RESOURCE_GROUP_NAME_RE.search(website_owner_name).group(1)
-    elif website_owner_name:
-        resource_group_name = RESOURCE_GROUP_NAME_PARTIAL_RE.search(website_owner_name).group(1)
-    else:
-        resource_group_name = os.environ.get("WEBSITE_RESOURCE_GROUP", "Unknown")
+
+    subscription_id = "Unknown"
+    if website_owner_name and "+" in website_owner_name:
+        subscription_id = website_owner_name.split("+")[0] or "Unknown"
+
+    resource_group_name = os.environ.get("WEBSITE_RESOURCE_GROUP", "Unknown")
     azure_function_app_name = os.environ.get("WEBSITE_SITE_NAME", getattr(application, "name", "Azure Function App"))
 
     cloud_resource_id = f"/subscriptions/{subscription_id}/resourceGroups/{resource_group_name}/providers/Microsoft.Web/sites/{azure_function_app_name}/functions/{getattr(context, 'function_name', 'Unknown')}"

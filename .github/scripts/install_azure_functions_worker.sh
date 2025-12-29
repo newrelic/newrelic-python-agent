@@ -36,6 +36,29 @@ ${PIP} install pip-tools build invoke
 $( cd ${BUILD_DIR}/workers/ && ${PIPCOMPILE} -o ${BUILD_DIR}/requirements.txt )
 ${PIP} install -r ${BUILD_DIR}/requirements.txt
 
+# Patch proto generation script
+cd ${BUILD_DIR}/workers/tests && patch -Rp1 <<EOF
+*** test_setup.py	Mon Dec 29 13:33:06 2025
+--- test_setup.cp	Mon Dec 29 13:32:57 2025
+***************
+*** 37,43 ****
+  WEBHOST_GITHUB_API = "https://api.github.com/repos/Azure/azure-functions-host"
+  WEBHOST_GIT_REPO = "https://github.com/Azure/azure-functions-host/archive"
+  WEBHOST_TAG_PREFIX = "v4."
+! WORKER_DIR = "azure_functions_worker"
+  
+  
+  def get_webhost_version() -> str:
+--- 37,43 ----
+  WEBHOST_GITHUB_API = "https://api.github.com/repos/Azure/azure-functions-host"
+  WEBHOST_GIT_REPO = "https://github.com/Azure/azure-functions-host/archive"
+  WEBHOST_TAG_PREFIX = "v4."
+! WORKER_DIR = "azure_functions_worker" if sys.version_info.minor < 13 else "proxy_worker"
+  
+  
+  def get_webhost_version() -> str:
+EOF
+
 # Build proto files into pb2 files (invoke handles fixing include paths for the protos)
 cd ${BUILD_DIR}/workers/tests && ${INVOKE} -c test_setup build-protos
 

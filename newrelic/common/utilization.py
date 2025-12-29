@@ -231,36 +231,19 @@ class AzureFunctionUtilization(CommonUtilization):
     HEADERS = {"Metadata": "true"}  # noqa: RUF012
     VENDOR_NAME = "azurefunction"
 
-    RESOURCE_GROUP_NAME_RE = re.compile(r"\+([a-zA-Z0-9\-]+)-[a-zA-Z0-9]+(?:-Linux)")
-    RESOURCE_GROUP_NAME_PARTIAL_RE = re.compile(r"\+([a-zA-Z0-9\-]+)(?:-Linux)?-[a-zA-Z0-9]+")
-    SUBSCRIPTION_ID_RE = re.compile(r"(?:(?!\+).)*")
-
     @classmethod
     def fetch(cls):
         cloud_region = os.environ.get("REGION_NAME")
         website_owner_name = os.environ.get("WEBSITE_OWNER_NAME")
         azure_function_app_name = os.environ.get("WEBSITE_SITE_NAME")
+        resource_group_name = os.environ.get("WEBSITE_RESOURCE_GROUP")
 
-        if all((cloud_region, website_owner_name, azure_function_app_name)):
-            resource_group_name_re = (
-                cls.RESOURCE_GROUP_NAME_RE
-                if website_owner_name.endswith("-Linux")
-                else cls.RESOURCE_GROUP_NAME_PARTIAL_RE
-            )
-            match = resource_group_name_re.search(website_owner_name)
-            if match:
-                resource_group_name = match.group(1)
-            else:
-                _logger.debug(
-                    "Unable to determine Azure Functions resource group name from WEBSITE_OWNER_NAME. %r",
-                    website_owner_name,
-                )
-                return None
-
-            match = cls.SUBSCRIPTION_ID_RE.search(website_owner_name)
-            if match:
-                subscription_id = match.group(0)
-            else:
+        if all((cloud_region, website_owner_name, azure_function_app_name, resource_group_name)):
+            subscription_id = ""
+            if "+" in website_owner_name:
+                subscription_id = website_owner_name.split("+")[0]
+            # Catch missing subscription_id or missing +
+            if not subscription_id:
                 _logger.debug(
                     "Unable to determine Azure Functions subscription id from WEBSITE_OWNER_NAME. %r",
                     website_owner_name,

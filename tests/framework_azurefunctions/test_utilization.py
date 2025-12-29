@@ -17,6 +17,7 @@ from newrelic.common.utilization import AzureFunctionUtilization
 
 def test_utilization(monkeypatch):
     monkeypatch.setenv("REGION_NAME", "EastUS2")
+    monkeypatch.setenv("WEBSITE_RESOURCE_GROUP", "testing-rg")
     monkeypatch.setenv("WEBSITE_OWNER_NAME", "b999997b-cb91-49e0-b922-c9188372bdba+testing-rg-EastUS2webspace-Linux")
     monkeypatch.setenv("WEBSITE_SITE_NAME", "test-func-linux")
 

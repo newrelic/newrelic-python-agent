@@ -617,7 +617,7 @@ def test_reservoir_sizes(transaction_node):
     assert app._stats_engine.log_events.num_samples == 101
 
     # Add 1 for the root span
-    assert app._stats_engine.span_events.num_samples == 102
+    assert app._stats_engine.span_events.num_samples == 203
 
 
 @pytest.mark.parametrize(

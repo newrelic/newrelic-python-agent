@@ -14,6 +14,7 @@
 
 import logging
 import os
+import time
 
 from newrelic.api.application import application_instance
 from newrelic.api.time_trace import add_custom_span_attribute, current_trace
@@ -36,9 +37,10 @@ os.environ["OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE"] = ".*"
 
 
 def wrap__load_runtime_context(wrapped, instance, args, kwargs):
-    settings = global_settings()
+    application = application_instance(activate=False)
+    settings = global_settings() if not application else application.settings
 
-    if not settings.otel_bridge.enabled:
+    if not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
     from opentelemetry.context.contextvars_context import ContextVarsRuntimeContext
@@ -48,9 +50,10 @@ def wrap__load_runtime_context(wrapped, instance, args, kwargs):
 
 
 def wrap_get_global_response_propagator(wrapped, instance, args, kwargs):
-    settings = global_settings()
+    application = application_instance(activate=False)
+    settings = global_settings() if not application else application.settings
 
-    if not settings.otel_bridge.enabled:
+    if not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
     from opentelemetry.instrumentation.propagators import set_global_response_propagator
@@ -68,8 +71,6 @@ def instrument_context_api(module):
 
 
 def instrument_global_propagators_api(module):
-    # Need to disable this instrumentation if settings.otel_bridge is disabled
-
     if hasattr(module, "get_global_response_propagator"):
         wrap_function_wrapper(module, "get_global_response_propagator", wrap_get_global_response_propagator)
 
@@ -80,8 +81,23 @@ def instrument_global_propagators_api(module):
 
 
 def wrap_set_tracer_provider(wrapped, instance, args, kwargs):
-    settings = global_settings()
-    if not settings.otel_bridge.enabled:
+    # This needs to act as a singleton, like the agent instance.
+    # We should initialize the agent here as well, if there is
+    # not an instance already.
+
+    application = application_instance()
+    if not application.active:
+        # Force application registration if not already active
+        application.activate()
+
+    settings = global_settings() if not application else application.settings
+
+    if not settings:
+        # The application may need more time to start up
+        time.sleep(0.5)
+        settings = global_settings() if not application else application.settings
+
+    if not settings or not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
     global _TRACER_PROVIDER
@@ -104,9 +120,17 @@ def wrap_get_tracer_provider(wrapped, instance, args, kwargs):
         # Force application registration if not already active
         application.activate()
 
-    settings = global_settings()
+    settings = global_settings() if not application else application.settings
 
-    if not settings.otel_bridge.enabled:
+    if not settings:
+        # The application may need more time to start up
+        time.sleep(0.5)
+        settings = global_settings() if not application else application.settings
+
+    if not settings or not settings.opentelemetry.enabled:
+        return wrapped(*args, **kwargs)
+
+    if not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
     global _TRACER_PROVIDER
@@ -127,8 +151,12 @@ def wrap_get_current_span(wrapped, instance, args, kwargs):
     if not transaction:
         return span
 
-    settings = transaction.settings or global_settings()
-    if not settings.otel_bridge.enabled:
+    # Do not allow the wrapper to continue if
+    # the Hybrid Agent setting is not enabled
+    application = application_instance(activate=False)
+    settings = global_settings() if not application else application.settings
+
+    if not settings.opentelemetry.enabled:
         return span
 
     # If a NR trace does exist, check to see if the current
@@ -183,9 +211,10 @@ def wrap_start_internal_or_server_span(wrapped, instance, args, kwargs):
 
     # Do not allow the wrapper to continue if
     # the Hybrid Agent setting is not enabled
-    settings = global_settings()
+    application = application_instance(activate=False)
+    settings = global_settings() if not application else application.settings
 
-    if not settings.otel_bridge.enabled:
+    if not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
     bound_args = bind_args(wrapped, args, kwargs)
@@ -195,8 +224,10 @@ def wrap_start_internal_or_server_span(wrapped, instance, args, kwargs):
     if context_carrier:
         if ("HTTP_HOST" in context_carrier) or ("http_version" in context_carrier):
             # This is an HTTP request (WSGI, ASGI, or otherwise)
-            attributes["nr.http.headers"] = context_carrier
-
+            if "wsgi.version" in context_carrier:
+                attributes["nr.wsgi.environ"] = context_carrier
+            else:
+                attributes["nr.http.headers"] = context_carrier
         else:
             attributes["nr.nonhttp.headers"] = context_carrier
 

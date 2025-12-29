@@ -75,7 +75,6 @@ def test_status_setting(tracer, current_status, status_to_set, expected_status_c
         with tracer.start_as_current_span(name="TestSpan") as span:
             # First, set to the current status to simulate the initial state
             span.set_status(current_status)
-
             # Then, attempt to set the new status
             span.set_status(status_to_set)
             assert span.status.status_code == expected_status_code

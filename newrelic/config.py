@@ -729,7 +729,7 @@ def _process_configuration(section):
     _process_setting(section, "instrumentation.middleware.django.enabled", "getboolean", None)
     _process_setting(section, "instrumentation.middleware.django.exclude", "get", _map_inc_excl_middleware)
     _process_setting(section, "instrumentation.middleware.django.include", "get", _map_inc_excl_middleware)
-    _process_setting(section, "otel_bridge.enabled", "getboolean", None)
+    _process_setting(section, "opentelemetry.enabled", "getboolean", None)
 
 
 # Loading of configuration from specified file and for specified

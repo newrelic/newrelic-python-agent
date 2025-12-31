@@ -51,15 +51,15 @@ def test_application(caplog, app, endpoint):
         unexpected_intrinsics=_unexpected_root_intrinsics,
     )
     @validate_span_events(
-        count=3,    # "asgi.event.type": "http.response.start", "http.response.body", and the function/SERVER span
+        count=2,    # "asgi.event.type": "http.response.start" and "http.response.body"
         exact_intrinsics=_exact_intrinsics,
         expected_intrinsics=_expected_child_intrinsics,
         unexpected_intrinsics=_unexpected_child_intrinsics,
     )
     @validate_transaction_metrics(
         transaction_name,
-        scoped_metrics=[(f"Function/{transaction_name}", 1)],
-        rollup_metrics=_test_application_rollup_metrics + [(f"Function/{transaction_name}", 1)],
+        scoped_metrics=[(f"Function/{transaction_name} http send", 2)],
+        rollup_metrics=_test_application_rollup_metrics + [(f"Function/{transaction_name} http send", 2)],
     )
     def _test():
         response = app.get(endpoint)

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
+
 from opentelemetry import propagate as otel_api_propagate
 from opentelemetry import trace as otel_api_trace
 from testing_support.fixtures import dt_enabled, override_application_settings
@@ -135,12 +137,10 @@ def test_opentelemetry_api_can_add_custom_attributes_to_spans(tracer):
 def test_opentelemetry_api_can_record_errors(tracer):
     application = application_instance(activate=False)
 
-    with BackgroundTask(application, name="Foo"):
-        with tracer.start_as_current_span(name="Bar", kind=otel_api_trace.SpanKind.INTERNAL):
-            try:
+    with pytest.raises(Exception):
+        with BackgroundTask(application, name="Foo"):
+            with tracer.start_as_current_span(name="Bar", kind=otel_api_trace.SpanKind.INTERNAL):
                 raise Exception("Test exception message")
-            except Exception as e:
-                otel_api_trace.get_current_span().record_exception(e)
 
 
 # OpenTelemetry API and New Relic API can inject outbound trace context
@@ -255,7 +255,7 @@ def test_starting_transaction_tests(tracer):
         trace_id=0x1234567890ABCDEF1234567890ABCDEF,
         span_id=0x1234567890ABCDEF,
         is_remote=True,
-        trace_flags=otel_api_trace.TraceFlags.SAMPLED,
+        trace_flags=0x01,
         trace_state=otel_api_trace.TraceState(),
     )
     remote_context = otel_api_trace.set_span_in_context(otel_api_trace.NonRecordingSpan(remote_span_context))

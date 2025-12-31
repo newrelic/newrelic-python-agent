@@ -86,34 +86,23 @@ _test_application_rollup_metrics = [
     ("WebTransactionTotalTime", 1),
 ]
 
-_test_application_index_scoped_metrics = [("Function/GET /index", 1)]
-
 
 @dt_enabled
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(
     "index",
     group="Uri",
-    scoped_metrics=_test_application_index_scoped_metrics,
-    rollup_metrics=_test_application_rollup_metrics + _test_application_index_scoped_metrics,
+    rollup_metrics=_test_application_rollup_metrics,
 )
 @validate_span_events(
     exact_intrinsics=_exact_root_intrinsics,
     expected_intrinsics=_expected_root_intrinsics,
     unexpected_intrinsics=_unexpected_root_intrinsics,
 )
-@validate_span_events(
-    exact_intrinsics=_exact_intrinsics,
-    expected_intrinsics=_expected_child_intrinsics,
-    unexpected_intrinsics=_unexpected_child_intrinsics,
-)
 def test_otel_application_index():
     application = target_application()
     response = application.get("/index")
     response.mustcontain("INDEX RESPONSE")
-
-
-_test_application_async_scoped_metrics = [("Function/GET /async", 1)]
 
 
 @skip_if_not_async_handler_support
@@ -122,18 +111,12 @@ _test_application_async_scoped_metrics = [("Function/GET /async", 1)]
 @validate_transaction_metrics(
     "async",
     group="Uri",
-    scoped_metrics=_test_application_async_scoped_metrics,
-    rollup_metrics=_test_application_rollup_metrics + _test_application_async_scoped_metrics,
+    rollup_metrics=_test_application_rollup_metrics,
 )
 @validate_span_events(
     exact_intrinsics=_exact_root_intrinsics,
     expected_intrinsics=_expected_root_intrinsics,
     unexpected_intrinsics=_unexpected_root_intrinsics,
-)
-@validate_span_events(
-    exact_intrinsics=_exact_intrinsics,
-    expected_intrinsics=_expected_child_intrinsics,
-    unexpected_intrinsics=_unexpected_child_intrinsics,
 )
 def test_otel_application_async():
     application = target_application()
@@ -141,34 +124,22 @@ def test_otel_application_async():
     response.mustcontain("ASYNC RESPONSE")
 
 
-_test_application_endpoint_scoped_metrics = [("Function/GET /endpoint", 1)]
-
-
 @dt_enabled
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(
     "endpoint",
     group="Uri",
-    scoped_metrics=_test_application_endpoint_scoped_metrics,
-    rollup_metrics=_test_application_rollup_metrics + _test_application_endpoint_scoped_metrics,
+    rollup_metrics=_test_application_rollup_metrics,
 )
 @validate_span_events(
     exact_intrinsics=_exact_root_intrinsics,
     expected_intrinsics=_expected_root_intrinsics,
     unexpected_intrinsics=_unexpected_root_intrinsics,
 )
-@validate_span_events(
-    exact_intrinsics=_exact_intrinsics,
-    expected_intrinsics=_expected_child_intrinsics,
-    unexpected_intrinsics=_unexpected_child_intrinsics,
-)
 def test_otel_application_endpoint():
     application = target_application()
     response = application.get("/endpoint")
     response.mustcontain("ENDPOINT RESPONSE")
-
-
-_test_application_error_scoped_metrics = [("Function/GET /error", 1)]
 
 
 @dt_enabled
@@ -187,25 +158,16 @@ _test_application_error_scoped_metrics = [("Function/GET /error", 1)]
 @validate_transaction_metrics(
     "error",
     group="Uri",
-    scoped_metrics=_test_application_error_scoped_metrics,
-    rollup_metrics=_test_application_rollup_metrics + _test_application_error_scoped_metrics,
+    rollup_metrics=_test_application_rollup_metrics,
 )
 @validate_span_events(
     exact_intrinsics=_exact_root_intrinsics,
     expected_intrinsics=_expected_root_intrinsics,
     unexpected_intrinsics=_unexpected_root_intrinsics,
 )
-@validate_span_events(
-    exact_intrinsics=_exact_intrinsics,
-    expected_intrinsics=_expected_child_intrinsics,
-    unexpected_intrinsics=_unexpected_child_intrinsics,
-)
 def test_otel_application_error():
     application = target_application()
     application.get("/error", status=500, expect_errors=True)
-
-
-_test_application_abort_404_scoped_metrics = [("Function/GET /abort_404", 1)]
 
 
 @dt_enabled
@@ -213,25 +175,16 @@ _test_application_abort_404_scoped_metrics = [("Function/GET /abort_404", 1)]
 @validate_transaction_metrics(
     "abort_404",
     group="Uri",
-    scoped_metrics=_test_application_abort_404_scoped_metrics,
-    rollup_metrics=_test_application_rollup_metrics + _test_application_abort_404_scoped_metrics,
+    rollup_metrics=_test_application_rollup_metrics,
 )
 @validate_span_events(
     exact_intrinsics=_exact_root_intrinsics,
     expected_intrinsics=_expected_root_intrinsics,
     unexpected_intrinsics=_unexpected_root_intrinsics,
 )
-@validate_span_events(
-    exact_intrinsics=_exact_intrinsics,
-    expected_intrinsics=_expected_child_intrinsics,
-    unexpected_intrinsics=_unexpected_child_intrinsics,
-)
 def test_otel_application_abort_404():
     application = target_application()
     application.get("/abort_404", status=404)
-
-
-_test_application_exception_404_scoped_metrics = [("Function/GET /exception_404", 1)]
 
 
 @dt_enabled
@@ -239,25 +192,16 @@ _test_application_exception_404_scoped_metrics = [("Function/GET /exception_404"
 @validate_transaction_metrics(
     "exception_404",
     group="Uri",
-    scoped_metrics=_test_application_exception_404_scoped_metrics,
-    rollup_metrics=_test_application_rollup_metrics + _test_application_exception_404_scoped_metrics,
+    rollup_metrics=_test_application_rollup_metrics,
 )
 @validate_span_events(
     exact_intrinsics=_exact_root_intrinsics,
     expected_intrinsics=_expected_root_intrinsics,
     unexpected_intrinsics=_unexpected_root_intrinsics,
 )
-@validate_span_events(
-    exact_intrinsics=_exact_intrinsics,
-    expected_intrinsics=_expected_child_intrinsics,
-    unexpected_intrinsics=_unexpected_child_intrinsics,
-)
 def test_application_exception_404():
     application = target_application()
     application.get("/exception_404", status=404)
-
-
-_test_application_not_found_scoped_metrics = [("Function/GET /missing", 1)]
 
 
 @dt_enabled
@@ -265,18 +209,12 @@ _test_application_not_found_scoped_metrics = [("Function/GET /missing", 1)]
 @validate_transaction_metrics(
     "missing",
     group="Uri",
-    scoped_metrics=_test_application_not_found_scoped_metrics,
-    rollup_metrics=_test_application_rollup_metrics + _test_application_not_found_scoped_metrics,
+    rollup_metrics=_test_application_rollup_metrics,
 )
 @validate_span_events(
     exact_intrinsics=_exact_root_intrinsics,
     expected_intrinsics=_expected_root_intrinsics,
     unexpected_intrinsics=_unexpected_root_intrinsics,
-)
-@validate_span_events(
-    exact_intrinsics=_exact_intrinsics,
-    expected_intrinsics=_expected_child_intrinsics,
-    unexpected_intrinsics=_unexpected_child_intrinsics,
 )
 def test_application_not_found():
     application = target_application()
@@ -284,7 +222,6 @@ def test_application_not_found():
 
 
 _test_application_render_template_string_scoped_metrics = [
-    ("Function/GET /template_string", 1),
     ("Template/Compile/<template>", 1),
     ("Template/Render/<template>", 1),
 ]
@@ -303,7 +240,7 @@ _test_application_render_template_string_scoped_metrics = [
     unexpected_intrinsics=_unexpected_root_intrinsics,
 )
 @validate_span_events(
-    count=3,
+    count=2,
     exact_intrinsics=_exact_intrinsics,
     expected_intrinsics=_expected_child_intrinsics,
     unexpected_intrinsics=_unexpected_child_intrinsics,
@@ -311,9 +248,6 @@ _test_application_render_template_string_scoped_metrics = [
 def test_application_render_template_string():
     application = target_application()
     application.get("/template_string")
-
-
-_test_application_render_template_not_found_scoped_metrics = [("Function/GET /template_not_found", 1)]
 
 
 @dt_enabled
@@ -332,18 +266,12 @@ _test_application_render_template_not_found_scoped_metrics = [("Function/GET /te
 @validate_transaction_metrics(
     "template_not_found",
     group="Uri",
-    scoped_metrics=_test_application_render_template_not_found_scoped_metrics,
-    rollup_metrics=_test_application_rollup_metrics + _test_application_render_template_not_found_scoped_metrics,
+    rollup_metrics=_test_application_rollup_metrics,
 )
 @validate_span_events(
     exact_intrinsics=_exact_root_intrinsics,
     expected_intrinsics=_expected_root_intrinsics,
     unexpected_intrinsics=_unexpected_root_intrinsics,
-)
-@validate_span_events(
-    exact_intrinsics=_exact_intrinsics,
-    expected_intrinsics=_expected_child_intrinsics,
-    unexpected_intrinsics=_unexpected_child_intrinsics,
 )
 def test_application_render_template_not_found():
     application = target_application()

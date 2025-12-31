@@ -15,6 +15,7 @@
 import logging
 import sys
 from contextlib import contextmanager
+import ast
 
 from opentelemetry import trace as otel_api_trace
 from opentelemetry.baggage.propagation import W3CBaggagePropagator
@@ -394,6 +395,17 @@ class Span(otel_api_trace.Span):
 
         # External/Web specific attributes
         self.nr_trace._add_agent_attribute("http.statusCode", self.attributes.get("http.status_code"))
+
+        # Message specific attributes
+        if self.attributes.get("messaging.system"):
+            destination_name = self.attributes.get("messaging.destination")
+            self.nr_transaction.destination_name = destination_name
+            bootstrap_servers = ast.literal_eval(self.attributes.get("messaging.url", "[]"))
+            for server_name in bootstrap_servers:
+                produce_or_consume = "Produce" if self.kind == otel_api_trace.SpanKind.PRODUCER else "Consume"
+                self.nr_transaction.record_custom_metric(
+                    f"MessageBroker/Kafka/Nodes/{server_name}/{produce_or_consume}/{destination_name}", 1
+                )
 
         # Add OTel attributes as custom NR trace attributes
         self._set_attributes_in_nr(self.attributes)

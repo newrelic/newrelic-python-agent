@@ -23,6 +23,7 @@ from opentelemetry.propagators.composite import CompositePropagator
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 from opentelemetry.trace.status import Status, StatusCode
 
+from newrelic.core.database_utils import generate_dynamodb_arn, get_database_operation_target_from_statement
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import BackgroundTask
 from newrelic.api.datastore_trace import DatastoreTrace
@@ -219,7 +220,7 @@ class Span(otel_api_trace.Span):
     def _set_attributes_in_nr(self, otel_attributes=None):
         if not otel_attributes or not getattr(self, "nr_trace"):
             return
-        
+
         # If these attributes already exist in NR's intrinsic or agent
         # attributes, keep the attributes in the OTel span, but do not
         # add them to NR's user attributes to avoid sending the same
@@ -305,61 +306,45 @@ class Span(otel_api_trace.Span):
         notice_error(error_args, attributes=attributes)
 
     def _database_attribute_mapping(self):
-        def _host():
-            return self.attributes.get("net.peer.name") or self.attributes.get("server.address")
-        
-        def _database_name():
-            return self.attributes.get("db.name")
-        
-        def _port_path_or_id():
-            return self.attributes.get("net.peer.port") or self.attributes.get("server.port")
-        
-        def _product():
-            return self.attributes.get("db.system").capitalize()
-        
-        def _dynamodb_attribute_mapping():
-            host = _host()
-            region = self.attributes.get("cloud.region")
-            operation = self.attributes.get("db.operation")
-            target = self.attributes.get("aws.dynamodb.table_names", [None])[-1]
-            account_id = self.nr_transaction.settings.cloud.aws.account_id
-
-            if region and account_id and target:
-                partition = "aws"
-                if "amazonaws.cn" in host:
-                    partition = "aws-cn"
-                elif "amazonaws-us-gov.com" in host:
-                    partition = "aws-us-gov"
-                resource_id = f"arn:{partition}:dynamodb:{region}:{account_id:012d}:table/{target}"
-                self.nr_trace._add_agent_attribute("cloud.resource_id", resource_id)
-                
-            self.nr_trace.operation = operation
-            self.nr_trace.target = target
-            self.nr_trace._add_agent_attribute("cloud.region", region)
-            self.nr_trace._add_agent_attribute("aws.requestId", self.attributes.get("aws.request_id"))
-            self.nr_trace._add_agent_attribute("aws.operation", self.nr_trace.operation)
-            self.nr_trace._add_agent_attribute("http.statusCode", self.attributes.get("http.status_code"))
-            self.nr_trace._add_agent_attribute("cloud.account.id", account_id)
-        
-        self.nr_trace.database_name = _database_name() or self.nr_trace.database_name
-        self.nr_trace.host = _host() or self.nr_trace.host
-        self.nr_trace.port_path_or_id = _port_path_or_id() or self.nr_trace.port_path_or_id
-        self.nr_trace.product = _product() or self.nr_trace.product.capitalize()
+        span_obj_attrs = {
+            "host": self.attributes.get("net.peer.name") or self.attributes.get("server.address"),
+            "database_name": self.attributes.get("db.name"),
+            "port_path_or_id": self.attributes.get("net.peer.port") or self.attributes.get("server.port"),
+            "product": self.attributes.get("db.system").capitalize(),
+        }
 
         db_statement = self.attributes.get("db.statement")
-        
-        if isinstance(db_statement, (str, bytes)):
-            operation = _parse_operation(db_statement)
-            target = _parse_target(db_statement, operation) or self.attributes.get("db.mongodb.collection")
-            self.nr_trace.target = target
-        elif hasattr(db_statement, "string"):
-            operation = _parse_operation(db_statement.string)
-            target = _parse_target(db_statement.string, operation)
-            self.nr_trace.operation = operation
-            self.nr_trace.target = target
-        elif _product() == "Dynamodb":
-            _dynamodb_attribute_mapping()
+        if db_statment:
+            if hasattr(db_statement, "string"):
+                db_statement = db_statement.string
+            operation, target = get_database_operation_target_from_statement(db_statement)
+            target = target or self.attributes.get("db.mongodb.collection")
+            span_obj_attrs.update({
+                "operation": operation,
+                "target": target,
+            })
+        elif span_obj_attrs["product"] == "Dynamodb":
+            region = self.attributes.get("cloud.region"),
+            target = self.attributes.get("aws.dynamodb.table_names", [None])[-1]
+            account_id = self.nr_transaction.settings.cloud.aws.account_id
+            resource_id = generate_dynamodb_arn(region, account_id, target)
+            agent_attrs = {
+                "aws.operation": self.attributes.get("db.operation"),
+                "cloud.resource_id": resource_id,
+                "cloud.region": region,
+                "aws.requestId": self.attributes.get("aws.request_id"),
+                "http.statusCode", self.attributes.get("http.status_code"))
+                "cloud.account.id", account_id)
+            }
+            span_obj_attrs.update({
+                "target": target,
+                "operation": operation,
+            })
 
+        for key, value in span_obj_attrs.items() if value:
+            setattr(self.nr_trace, key, value)
+        for key, value in agent_attrs.items() if value:
+            self.nr_trace._add_agent_attribute(key, value)
 
     def end(self, end_time=None, *args, **kwargs):
         # We will ignore the end_time parameter and use NR's end_time
@@ -375,11 +360,11 @@ class Span(otel_api_trace.Span):
         # attributes were likely not available at the time
         # of the trace's creation but eventually populated
         # throughout the span's lifetime.
-        
+
         # Database/Datastore specific attributes
         if self.attributes.get("db.system"):
             self._database_attribute_mapping()
-            
+
         # External specific attributes
         self.nr_trace._add_agent_attribute("http.statusCode", self.attributes.get("http.status_code"))
 
@@ -389,11 +374,11 @@ class Span(otel_api_trace.Span):
         error = sys.exc_info()
         self.nr_trace.__exit__(*error)
         self.set_status(StatusCode.OK if not error[0] else StatusCode.ERROR)
-        
+
         if ("exception.escaped" in self.attributes) or (self.kind in (otel_api_trace.SpanKind.SERVER, otel_api_trace.SpanKind.CONSUMER) and isinstance(current_trace(), Sentinel)):
             # We need to end the transaction as well
             self.nr_transaction.__exit__(*sys.exc_info())
-        
+
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """

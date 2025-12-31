@@ -898,5 +898,23 @@ def sql_statement(sql, dbapi2_module):
     result = SQLStatement(sql, database)
 
     _sql_statements[key] = result
-
     return result
+
+
+def generate_dynamodb_arn(host, region, account_id, target):
+    # There are 3 different partition options.
+    # See  https://docs.aws.amazon.com/IAM/latest/UserGuide/reference-arns.html for details.
+    partition = "aws"
+    if "amazonaws.cn" in host:
+        partition = "aws-cn"
+    elif "amazonaws-us-gov.com" in host:
+        partition = "aws-us-gov"
+
+    if partition and region and account_id and target:
+        return f"arn:{partition}:dynamodb:{region}:{account_id:012d}:table/{_target}"
+
+
+def get_database_operation_target_from_statement(db_statement):
+    operation = _parse_operation(db_statement)
+    target = _parse_target(db_statement, operation)
+    return target

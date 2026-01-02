@@ -597,17 +597,9 @@ class Application:
                 internal_metric("Supportability/Python/AzureFunctionMode/enabled", 1)
 
             # OpenTelemetry Bridge toggle metric
-            opentelemetry_bridge = configuration.opentelemetry.enabled
-            internal_metric(
-                f"Supportability/Tracing/Python/OpenTelemetryBridge/{'enabled' if opentelemetry_bridge else 'disabled'}",
-                1,
-            )
-
-            # OpenTelemetry Bridge toggle metric
             opentelemetry_bridge = "enabled" if configuration.opentelemetry.enabled else "disabled"
-            f"Supportability/Tracing/Python/OpenTelemetryBridge/{opentelemetry_bridge}"
             internal_metric(
-                f"Supportability/Tracing/Python/OpenTelemetryBridge/{'enabled' if opentelemetry_bridge else 'disabled'}",
+                f"Supportability/Tracing/Python/OpenTelemetryBridge/{opentelemetry_bridge}",
                 1,
             )
 

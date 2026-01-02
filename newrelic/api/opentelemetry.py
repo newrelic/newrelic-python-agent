@@ -35,7 +35,6 @@ from newrelic.api.time_trace import current_trace, notice_error
 from newrelic.api.transaction import Sentinel, current_transaction
 from newrelic.api.web_transaction import WebTransaction, WSGIWebTransaction
 from newrelic.core.otlp_utils import create_resource
-from newrelic.core.database_utils import _parse_operation, _parse_target
 
 _logger = logging.getLogger(__name__)
 
@@ -218,16 +217,15 @@ class Span(otel_api_trace.Span):
             self.set_attribute(key, value)
 
     def _set_attributes_in_nr(self, otel_attributes=None):
-        if not otel_attributes or not getattr(self, "nr_trace"):
+        if not otel_attributes or not getattr(self, "nr_trace", None):
             return
 
-        # If these attributes already exist in NR's intrinsic or agent
-        # attributes, keep the attributes in the OTel span, but do not
-        # add them to NR's user attributes to avoid sending the same
-        # data multiple times.
-        combined_attrs = {**self.nr_trace.agent_attributes, **self.nr_trace.user_attributes}
+        # If these attributes already exist in NR's agent attributes,
+        # keep the attributes in the OTel span, but do not add them
+        # to NR's user attributes to avoid sending the same data
+        # multiple times.
         for key, value in otel_attributes.items():
-            if key not in combined_attrs:
+            if key not in self.nr_trace.agent_attributes:
                 self.nr_trace.add_custom_attribute(key, value)
 
     def add_event(self, name, attributes=None, timestamp=None):
@@ -312,9 +310,10 @@ class Span(otel_api_trace.Span):
             "port_path_or_id": self.attributes.get("net.peer.port") or self.attributes.get("server.port"),
             "product": self.attributes.get("db.system").capitalize(),
         }
+        agent_attrs = {}
 
         db_statement = self.attributes.get("db.statement")
-        if db_statment:
+        if db_statement:
             if hasattr(db_statement, "string"):
                 db_statement = db_statement.string
             operation, target = get_database_operation_target_from_statement(db_statement)
@@ -324,27 +323,32 @@ class Span(otel_api_trace.Span):
                 "target": target,
             })
         elif span_obj_attrs["product"] == "Dynamodb":
-            region = self.attributes.get("cloud.region"),
+            region = self.attributes.get("cloud.region")
+            operation = self.attributes.get("db.operation")
             target = self.attributes.get("aws.dynamodb.table_names", [None])[-1]
             account_id = self.nr_transaction.settings.cloud.aws.account_id
-            resource_id = generate_dynamodb_arn(region, account_id, target)
-            agent_attrs = {
+            resource_id = generate_dynamodb_arn(span_obj_attrs["host"], region, account_id, target)
+            agent_attrs.update({
                 "aws.operation": self.attributes.get("db.operation"),
                 "cloud.resource_id": resource_id,
                 "cloud.region": region,
                 "aws.requestId": self.attributes.get("aws.request_id"),
-                "http.statusCode", self.attributes.get("http.status_code"))
-                "cloud.account.id", account_id)
-            }
+                "http.statusCode": self.attributes.get("http.status_code"),
+                "cloud.account.id": account_id,
+            })
             span_obj_attrs.update({
                 "target": target,
                 "operation": operation,
             })
 
-        for key, value in span_obj_attrs.items() if value:
-            setattr(self.nr_trace, key, value)
-        for key, value in agent_attrs.items() if value:
-            self.nr_trace._add_agent_attribute(key, value)
+        # We do not want to override any agent attributes
+        # with `None` if `value` does not exist.
+        for key, value in span_obj_attrs.items():
+            if value:
+                setattr(self.nr_trace, key, value)
+        for key, value in agent_attrs.items():
+            if value:
+                self.nr_trace._add_agent_attribute(key, value)
 
     def end(self, end_time=None, *args, **kwargs):
         # We will ignore the end_time parameter and use NR's end_time

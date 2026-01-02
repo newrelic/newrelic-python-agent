@@ -39,8 +39,7 @@ _test_execute_via_cursor_scoped_metrics = [
     (f"Datastore/statement/Mysql/datastore_mysql_{DB_NAMESPACE}/update", 1),
     (f"Datastore/statement/Mysql/datastore_mysql_{DB_NAMESPACE}/delete", 1),
     ("Datastore/operation/Mysql/drop", 2),
-    ("Datastore/operation/Mysql/create", 1),
-    ("Datastore/operation/Mysql/CREATE", 1),
+    ("Datastore/operation/Mysql/create", 2),
     (f"Datastore/operation/Mysql/{DB_PROCEDURE}", 1),
 ]
 
@@ -59,8 +58,7 @@ _test_execute_via_cursor_rollup_metrics = [
     (f"Datastore/statement/Mysql/datastore_mysql_{DB_NAMESPACE}/delete", 1),
     (f"Datastore/operation/Mysql/{DB_PROCEDURE}", 1),
     ("Datastore/operation/Mysql/drop", 2),
-    ("Datastore/operation/Mysql/create", 1),
-    ("Datastore/operation/Mysql/CREATE", 1),
+    ("Datastore/operation/Mysql/create", 2),
     (f"Datastore/instance/Mysql/{instance_hostname(DB_SETTINGS['host'])}/{DB_SETTINGS['port']}", 9),
 ]
 
@@ -133,8 +131,7 @@ _test_connect_using_alias_scoped_metrics = [
     (f"Datastore/statement/Mysql/datastore_mysql_{DB_NAMESPACE}/update", 1),
     (f"Datastore/statement/Mysql/datastore_mysql_{DB_NAMESPACE}/delete", 1),
     ("Datastore/operation/Mysql/drop", 2),
-    ("Datastore/operation/Mysql/create", 1),
-    ("Datastore/operation/Mysql/CREATE", 1),
+    ("Datastore/operation/Mysql/create", 2),
     (f"Datastore/operation/Mysql/{DB_PROCEDURE}", 1),
 ]
 
@@ -153,8 +150,7 @@ _test_connect_using_alias_rollup_metrics = [
     (f"Datastore/statement/Mysql/datastore_mysql_{DB_NAMESPACE}/delete", 1),
     (f"Datastore/operation/Mysql/{DB_PROCEDURE}", 1),
     ("Datastore/operation/Mysql/drop", 2),
-    ("Datastore/operation/Mysql/create", 1),
-    ("Datastore/operation/Mysql/CREATE", 1),
+    ("Datastore/operation/Mysql/create", 2),
     (f"Datastore/instance/Mysql/{instance_hostname(DB_SETTINGS['host'])}/{DB_SETTINGS['port']}", 9),
 ]
 

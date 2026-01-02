@@ -47,7 +47,7 @@ def wrap_invoke(wrapped, instance, args, kwargs):
     agent_name = getattr(transaction, "_nr_agent_name", "agent")
     agent_id = str(uuid.uuid4())
     agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
-    func_name = callable_name(wrapped)
+    func_name = wrapped.__name__
     function_trace_name = f"{func_name}/{agent_name}"
 
     ft = FunctionTrace(name=function_trace_name, group="Llm/agent/LangGraph")
@@ -86,7 +86,7 @@ async def wrap_ainvoke(wrapped, instance, args, kwargs):
     agent_name = getattr(transaction, "_nr_agent_name", "agent")
     agent_id = str(uuid.uuid4())
     agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
-    func_name = callable_name(wrapped)
+    func_name = wrapped.__name__
     function_trace_name = f"{func_name}/{agent_name}"
 
     ft = FunctionTrace(name=function_trace_name, group="Llm/agent/LangGraph")
@@ -125,7 +125,7 @@ def wrap_stream(wrapped, instance, args, kwargs):
     agent_name = getattr(transaction, "_nr_agent_name", "agent")
     agent_id = str(uuid.uuid4())
     agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
-    func_name = callable_name(wrapped)
+    func_name = wrapped.__name__
     function_trace_name = f"{func_name}/{agent_name}"
 
     ft = FunctionTrace(name=function_trace_name, group="Llm/agent/LangGraph")
@@ -164,7 +164,7 @@ async def wrap_astream(wrapped, instance, args, kwargs):
     agent_name = getattr(transaction, "_nr_agent_name", "agent")
     agent_id = str(uuid.uuid4())
     agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
-    func_name = callable_name(wrapped)
+    func_name = wrapped.__name__
     function_trace_name = f"{func_name}/{agent_name}"
 
     ft = FunctionTrace(name=function_trace_name, group="Llm/agent/LangGraph")

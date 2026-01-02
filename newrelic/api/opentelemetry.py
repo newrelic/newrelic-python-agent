@@ -417,7 +417,8 @@ class Tracer(otel_api_trace.Tracer):
             # This is an ASGI request
             scope = self.attributes.pop("nr.asgi.scope")
             scheme = scope.get("scheme", "http")
-            if "server" in scope and scope["server"] is not None:
+            server = scope.get("server") or (None, None)
+            host, port = scope["server"] = tuple(server)
                 host, port = scope["server"] = tuple(scope["server"])
             else:
                 host, port = None, None

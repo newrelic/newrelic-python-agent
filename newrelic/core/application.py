@@ -604,7 +604,8 @@ class Application:
             )
 
             # OpenTelemetry Bridge toggle metric
-            opentelemetry_bridge = configuration.opentelemetry.enabled
+            opentelemetry_bridge = "enabled" if configuration.opentelemetry.enabled else "disabled"
+            f"Supportability/Tracing/Python/OpenTelemetryBridge/{opentelemetry_bridge}"
             internal_metric(
                 f"Supportability/Tracing/Python/OpenTelemetryBridge/{'enabled' if opentelemetry_bridge else 'disabled'}",
                 1,

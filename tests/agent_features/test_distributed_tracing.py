@@ -665,9 +665,9 @@ def test_distributed_trace_remote_parent_sampling_decision_full_granularity(
     test_settings = _override_settings.copy()
     test_settings.update(
         {
-            "distributed_tracing.sampler.full_granularity._root": root_setting,
-            "distributed_tracing.sampler.full_granularity._remote_parent_sampled": remote_parent_sampled_setting,
-            "distributed_tracing.sampler.full_granularity._remote_parent_not_sampled": remote_parent_not_sampled_setting,
+            "distributed_tracing.sampler._root": root_setting,
+            "distributed_tracing.sampler._remote_parent_sampled": remote_parent_sampled_setting,
+            "distributed_tracing.sampler._remote_parent_not_sampled": remote_parent_not_sampled_setting,
             "span_events.enabled": True,
         }
     )
@@ -904,7 +904,7 @@ def test_distributed_trace_remote_parent_sampling_decision_between_full_and_part
         {
             "distributed_tracing.sampler.full_granularity.enabled": full_granularity_enabled,
             "distributed_tracing.sampler.partial_granularity.enabled": partial_granularity_enabled,
-            "distributed_tracing.sampler.full_granularity._remote_parent_sampled": full_granularity_remote_parent_sampled_setting,
+            "distributed_tracing.sampler._remote_parent_sampled": full_granularity_remote_parent_sampled_setting,
             "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": partial_granularity_remote_parent_sampled_setting,
             "span_events.enabled": True,
         }
@@ -1248,8 +1248,8 @@ def test_partial_granularity_essential_span_attributes():
             {
                 "distributed_tracing.sampler.full_granularity.enabled": True,
                 "distributed_tracing.sampler.partial_granularity.enabled": False,
-                "distributed_tracing.sampler.full_granularity._root": "default",
-                "distributed_tracing.sampler.full_granularity.root.adaptive.sampling_target": 5,
+                "distributed_tracing.sampler._root": "default",
+                "distributed_tracing.sampler.root.adaptive.sampling_target": 5,
             },
             {},
             (True, 0),
@@ -1261,10 +1261,10 @@ def test_partial_granularity_essential_span_attributes():
             {
                 "distributed_tracing.sampler.full_granularity.enabled": True,
                 "distributed_tracing.sampler.partial_granularity.enabled": False,
-                "distributed_tracing.sampler.full_granularity._remote_parent_sampled": "default",
-                "distributed_tracing.sampler.full_granularity.remote_parent_sampled.adaptive.sampling_target": 5,
-                "distributed_tracing.sampler.full_granularity._remote_parent_not_sampled": "default",
-                "distributed_tracing.sampler.full_granularity.remote_parent_not_sampled.adaptive.sampling_target": 6,
+                "distributed_tracing.sampler._remote_parent_sampled": "default",
+                "distributed_tracing.sampler.remote_parent_sampled.adaptive.sampling_target": 5,
+                "distributed_tracing.sampler._remote_parent_not_sampled": "default",
+                "distributed_tracing.sampler.remote_parent_not_sampled.adaptive.sampling_target": 6,
             },
             {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01"},
             (True, 1),
@@ -1276,10 +1276,10 @@ def test_partial_granularity_essential_span_attributes():
             {
                 "distributed_tracing.sampler.full_granularity.enabled": True,
                 "distributed_tracing.sampler.partial_granularity.enabled": False,
-                "distributed_tracing.sampler.full_granularity._remote_parent_sampled": "default",
-                "distributed_tracing.sampler.full_granularity.remote_parent_sampled.adaptive.sampling_target": 5,
-                "distributed_tracing.sampler.full_granularity._remote_parent_not_sampled": "default",
-                "distributed_tracing.sampler.full_granularity.remote_parent_not_sampled.adaptive.sampling_target": 6,
+                "distributed_tracing.sampler._remote_parent_sampled": "default",
+                "distributed_tracing.sampler.remote_parent_sampled.adaptive.sampling_target": 5,
+                "distributed_tracing.sampler._remote_parent_not_sampled": "default",
+                "distributed_tracing.sampler.remote_parent_not_sampled.adaptive.sampling_target": 6,
             },
             {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-00"},
             (True, 2),
@@ -1340,8 +1340,8 @@ def test_distributed_trace_uses_adaptive_sampling_instance(
             {
                 "distributed_tracing.sampler.full_granularity.enabled": True,
                 "distributed_tracing.sampler.partial_granularity.enabled": True,
-                "distributed_tracing.sampler.full_granularity.remote_parent_sampled.trace_id_ratio_based.ratio": 0.5,
-                "distributed_tracing.sampler.full_granularity._remote_parent_sampled": "trace_id_ratio_based",
+                "distributed_tracing.sampler.remote_parent_sampled.trace_id_ratio_based.ratio": 0.5,
+                "distributed_tracing.sampler._remote_parent_sampled": "trace_id_ratio_based",
                 "distributed_tracing.sampler.partial_granularity.remote_parent_sampled.trace_id_ratio_based.ratio": 0.7,
                 "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "trace_id_ratio_based",
             },
@@ -1353,8 +1353,8 @@ def test_distributed_trace_uses_adaptive_sampling_instance(
             {
                 "distributed_tracing.sampler.full_granularity.enabled": True,
                 "distributed_tracing.sampler.partial_granularity.enabled": True,
-                "distributed_tracing.sampler.full_granularity.remote_parent_sampled.trace_id_ratio_based.ratio": 0.5,
-                "distributed_tracing.sampler.full_granularity._remote_parent_sampled": "trace_id_ratio_based",
+                "distributed_tracing.sampler.remote_parent_sampled.trace_id_ratio_based.ratio": 0.5,
+                "distributed_tracing.sampler._remote_parent_sampled": "trace_id_ratio_based",
                 "distributed_tracing.sampler.partial_granularity.remote_parent_sampled.trace_id_ratio_based.ratio": 0.5,
                 "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "trace_id_ratio_based",
             },
@@ -1366,8 +1366,8 @@ def test_distributed_trace_uses_adaptive_sampling_instance(
             {
                 "distributed_tracing.sampler.full_granularity.enabled": True,
                 "distributed_tracing.sampler.partial_granularity.enabled": False,
-                "distributed_tracing.sampler.full_granularity.remote_parent_sampled.trace_id_ratio_based.ratio": 1,
-                "distributed_tracing.sampler.full_granularity._remote_parent_sampled": "trace_id_ratio_based",
+                "distributed_tracing.sampler.remote_parent_sampled.trace_id_ratio_based.ratio": 1,
+                "distributed_tracing.sampler._remote_parent_sampled": "trace_id_ratio_based",
             },
             {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01"},
             (True, 1),
@@ -1420,7 +1420,7 @@ def test_distributed_trace_uses_ratio_sampling_instance(
             False,
         ),
         (  # Verify when full granularity sampled +2 is added to the priority.
-            {"distributed_tracing.sampler.full_granularity.root.trace_id_ratio_based.ratio": 1},
+            {"distributed_tracing.sampler.root.trace_id_ratio_based.ratio": 1},
             2.123,  # random + 2
             True,
         ),

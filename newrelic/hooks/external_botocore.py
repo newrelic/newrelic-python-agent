@@ -1298,7 +1298,7 @@ def dynamodb_datastore_trace(
 
             _db_host = getattr(getattr(instance, "_endpoint", None), "host", None)
             resource_id = generate_dynamodb_arn(_db_host, region, account_id, _target)
-            if resouce_id:
+            if resource_id:
                 agent_attrs["cloud.resource_id"] = resource_id
 
         except Exception:

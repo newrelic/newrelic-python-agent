@@ -419,6 +419,12 @@ def _parse_operation(sql):
     return operation if operation in _operation_table else ""
 
 
+def _parse_operation_otel(sql):
+    match = _parse_operation_re.search(sql)
+    operation = (match and match.group(1).lower()) or ""
+    return operation or ""
+
+
 def _parse_target(sql, operation):
     sql = sql.rstrip(";")
     parse = _operation_table.get(operation, None)
@@ -901,7 +907,7 @@ def sql_statement(sql, dbapi2_module):
     return result
 
 
-def generate_dynamodb_arn(host, region, account_id, target):
+def generate_dynamodb_arn(host, region=None, account_id=None, target=None):
     # There are 3 different partition options.
     # See  https://docs.aws.amazon.com/IAM/latest/UserGuide/reference-arns.html for details.
     partition = "aws"
@@ -911,10 +917,10 @@ def generate_dynamodb_arn(host, region, account_id, target):
         partition = "aws-us-gov"
 
     if partition and region and account_id and target:
-        return f"arn:{partition}:dynamodb:{region}:{account_id:012d}:table/{_target}"
+        return f"arn:{partition}:dynamodb:{region}:{account_id:012d}:table/{target}"
 
 
 def get_database_operation_target_from_statement(db_statement):
-    operation = _parse_operation(db_statement)
+    operation = _parse_operation_otel(db_statement)
     target = _parse_target(db_statement, operation)
-    return target
+    return operation, target

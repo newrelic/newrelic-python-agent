@@ -381,7 +381,7 @@ class Span(otel_api_trace.Span):
 
         if ("exception.escaped" in self.attributes) or (self.kind in (otel_api_trace.SpanKind.SERVER, otel_api_trace.SpanKind.CONSUMER) and isinstance(current_trace(), Sentinel)):
             # We need to end the transaction as well
-            self.nr_transaction.__exit__(*sys.exc_info())
+            self.nr_transaction.__exit__(*error)
 
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -419,13 +419,10 @@ class Tracer(otel_api_trace.Tracer):
             scheme = scope.get("scheme", "http")
             server = scope.get("server") or (None, None)
             host, port = scope["server"] = tuple(server)
-                host, port = scope["server"] = tuple(scope["server"])
-            else:
-                host, port = None, None
-            request_method = scope["method"]
-            request_path = scope["path"]
-            query_string = scope["query_string"]
-            headers = scope["headers"] = tuple(scope["headers"])
+            request_method = scope.get("method")
+            request_path = scope.get("path")
+            query_string = scope.get("query_string")
+            headers = scope["headers"] = tuple(scope.get("headers", ()))
             transaction = WebTransaction(
                 application=self.nr_application,
                 name=self.name,

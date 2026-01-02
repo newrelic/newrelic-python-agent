@@ -37,14 +37,14 @@ REDIS_PY_VERSION = get_package_version_tuple("redis")
 
 # Metrics for publish test
 
-_base_scoped_metrics = [("Datastore/operation/Redis/PUBLISH", 3)]
+_base_scoped_metrics = [("Datastore/operation/Redis/publish", 3)]
 
 _base_rollup_metrics = [
     ("Datastore/all", 3),
     ("Datastore/allOther", 3),
     ("Datastore/Redis/all", 3),
     ("Datastore/Redis/allOther", 3),
-    ("Datastore/operation/Redis/PUBLISH", 3),
+    ("Datastore/operation/Redis/publish", 3),
     (
         f"Datastore/instance/Redis/{instance_hostname(DB_SETTINGS['host'])}/{DB_SETTINGS['port']}",
         3,
@@ -54,9 +54,9 @@ _base_rollup_metrics = [
 # Metrics for connection pool test
 
 _base_pool_scoped_metrics = [
-    ("Datastore/operation/Redis/GET", 1),
-    ("Datastore/operation/Redis/SET", 1),
-    ("Datastore/operation/Redis/CLIENT", 1),
+    ("Datastore/operation/Redis/get", 1),
+    ("Datastore/operation/Redis/set", 1),
+    ("Datastore/operation/Redis/client", 1),
 ]
 
 _base_pool_rollup_metrics = [
@@ -64,9 +64,9 @@ _base_pool_rollup_metrics = [
     ("Datastore/allOther", 3),
     ("Datastore/Redis/all", 3),
     ("Datastore/Redis/allOther", 3),
-    ("Datastore/operation/Redis/GET", 1),
-    ("Datastore/operation/Redis/SET", 1),
-    ("Datastore/operation/Redis/CLIENT", 1),
+    ("Datastore/operation/Redis/get", 1),
+    ("Datastore/operation/Redis/set", 1),
+    ("Datastore/operation/Redis/client", 1),
     (
         f"Datastore/instance/Redis/{instance_hostname(DB_SETTINGS['host'])}/{DB_SETTINGS['port']}",
         3,
@@ -214,7 +214,7 @@ def test_async_pipeline(client, loop):
     unexpected_intrinsics=_unexpected_root_intrinsics,
 )
 @validate_span_events(
-    count=3,  # PUBLISH x 3
+    count=3,  # publish x 3
     exact_intrinsics=_exact_intrinsics,
     expected_intrinsics=_expected_child_intrinsics,
     unexpected_intrinsics=_unexpected_child_intrinsics,

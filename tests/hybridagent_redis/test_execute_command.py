@@ -107,13 +107,13 @@ def exercise_redis_single_arg(client):
 )
 @validate_transaction_metrics(
     "test_execute_command:test_strict_redis_execute_command_two_args_enable",
-    scoped_metrics=[("Datastore/operation/Redis/CLIENT", 1)],
+    scoped_metrics=[("Datastore/operation/Redis/client", 1)],
     rollup_metrics=[
         ("Datastore/all", 1),
         ("Datastore/allOther", 1),
         ("Datastore/Redis/all", 1),
         ("Datastore/Redis/allOther", 1),
-        ("Datastore/operation/Redis/CLIENT", 1),
+        ("Datastore/operation/Redis/client", 1),
         (_instance_metric_name, 1),
     ],
     background_task=True,
@@ -143,13 +143,13 @@ def test_strict_redis_execute_command_two_args_enable():
 )
 @validate_transaction_metrics(
     "test_execute_command:test_strict_redis_execute_command_two_args_disabled",
-    scoped_metrics=[("Datastore/operation/Redis/CLIENT", 1)],
+    scoped_metrics=[("Datastore/operation/Redis/client", 1)],
     rollup_metrics=[
         ("Datastore/all", 1),
         ("Datastore/allOther", 1),
         ("Datastore/Redis/all", 1),
         ("Datastore/Redis/allOther", 1),
-        ("Datastore/operation/Redis/CLIENT", 1),
+        ("Datastore/operation/Redis/client", 1),
         (_instance_metric_name, None),
     ],
     background_task=True,
@@ -178,13 +178,13 @@ def test_strict_redis_execute_command_two_args_disabled():
 )
 @validate_transaction_metrics(
     "test_execute_command:test_redis_execute_command_two_args_enable",
-    scoped_metrics=[("Datastore/operation/Redis/CLIENT", 1)],
+    scoped_metrics=[("Datastore/operation/Redis/client", 1)],
     rollup_metrics=[
         ("Datastore/all", 1),
         ("Datastore/allOther", 1),
         ("Datastore/Redis/all", 1),
         ("Datastore/Redis/allOther", 1),
-        ("Datastore/operation/Redis/CLIENT", 1),
+        ("Datastore/operation/Redis/client", 1),
         (_instance_metric_name, 1),
     ],
     background_task=True,
@@ -214,13 +214,13 @@ def test_redis_execute_command_two_args_enable():
 )
 @validate_transaction_metrics(
     "test_execute_command:test_redis_execute_command_two_args_disabled",
-    scoped_metrics=[("Datastore/operation/Redis/CLIENT", 1)],
+    scoped_metrics=[("Datastore/operation/Redis/client", 1)],
     rollup_metrics=[
         ("Datastore/all", 1),
         ("Datastore/allOther", 1),
         ("Datastore/Redis/all", 1),
         ("Datastore/Redis/allOther", 1),
-        ("Datastore/operation/Redis/CLIENT", 1),
+        ("Datastore/operation/Redis/client", 1),
         (_instance_metric_name, None),
     ],
     background_task=True,
@@ -250,13 +250,13 @@ def test_redis_execute_command_two_args_disabled():
 )
 @validate_transaction_metrics(
     "test_execute_command:test_strict_redis_execute_command_as_one_arg_enable",
-    scoped_metrics=[("Datastore/operation/Redis/CLIENT LIST", 1)],
+    scoped_metrics=[("Datastore/operation/Redis/client", 1)],
     rollup_metrics=[
         ("Datastore/all", 1),
         ("Datastore/allOther", 1),
         ("Datastore/Redis/all", 1),
         ("Datastore/Redis/allOther", 1),
-        ("Datastore/operation/Redis/CLIENT LIST", 1),
+        ("Datastore/operation/Redis/client", 1),
         (_instance_metric_name, 1),
     ],
     background_task=True,
@@ -287,13 +287,13 @@ def test_strict_redis_execute_command_as_one_arg_enable():
 )
 @validate_transaction_metrics(
     "test_execute_command:test_strict_redis_execute_command_as_one_arg_disabled",
-    scoped_metrics=[("Datastore/operation/Redis/CLIENT LIST", 1)],
+    scoped_metrics=[("Datastore/operation/Redis/client", 1)],
     rollup_metrics=[
         ("Datastore/all", 1),
         ("Datastore/allOther", 1),
         ("Datastore/Redis/all", 1),
         ("Datastore/Redis/allOther", 1),
-        ("Datastore/operation/Redis/CLIENT LIST", 1),
+        ("Datastore/operation/Redis/client", 1),
         (_instance_metric_name, None),
     ],
     background_task=True,
@@ -323,13 +323,13 @@ def test_strict_redis_execute_command_as_one_arg_disabled():
 )
 @validate_transaction_metrics(
     "test_execute_command:test_redis_execute_command_as_one_arg_enable",
-    scoped_metrics=[("Datastore/operation/Redis/CLIENT LIST", 1)],
+    scoped_metrics=[("Datastore/operation/Redis/client", 1)],
     rollup_metrics=[
         ("Datastore/all", 1),
         ("Datastore/allOther", 1),
         ("Datastore/Redis/all", 1),
         ("Datastore/Redis/allOther", 1),
-        ("Datastore/operation/Redis/CLIENT LIST", 1),
+        ("Datastore/operation/Redis/client", 1),
         (_instance_metric_name, 1),
     ],
     background_task=True,
@@ -360,13 +360,13 @@ def test_redis_execute_command_as_one_arg_enable():
 )
 @validate_transaction_metrics(
     "test_execute_command:test_redis_execute_command_as_one_arg_disabled",
-    scoped_metrics=[("Datastore/operation/Redis/CLIENT LIST", 1)],
+    scoped_metrics=[("Datastore/operation/Redis/client", 1)],
     rollup_metrics=[
         ("Datastore/all", 1),
         ("Datastore/allOther", 1),
         ("Datastore/Redis/all", 1),
         ("Datastore/Redis/allOther", 1),
-        ("Datastore/operation/Redis/CLIENT LIST", 1),
+        ("Datastore/operation/Redis/client", 1),
         (_instance_metric_name, None),
     ],
     background_task=True,

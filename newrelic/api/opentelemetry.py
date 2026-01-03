@@ -23,6 +23,7 @@ from opentelemetry.propagators.composite import CompositePropagator
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 from opentelemetry.trace.status import Status, StatusCode
 
+from newrelic.core.database_utils import generate_dynamodb_arn, get_database_operation_target_from_statement
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import BackgroundTask
 from newrelic.api.datastore_trace import DatastoreTrace
@@ -169,9 +170,9 @@ class Span(otel_api_trace.Span):
             self.nr_trace = nr_trace_type(**trace_kwargs)
         elif nr_trace_type == ExternalTrace:
             trace_kwargs = {
-                "library": self.name or self.instrumenting_module,
+                "library": self.instrumenting_module,
                 "url": self.attributes.get("http.url"),
-                "method": self.attributes.get("http.method"),
+                "method": self.attributes.get("http.method") or self.name,
                 "parent": self.nr_parent,
             }
             self.nr_trace = nr_trace_type(**trace_kwargs)
@@ -216,10 +217,16 @@ class Span(otel_api_trace.Span):
             self.set_attribute(key, value)
 
     def _set_attributes_in_nr(self, otel_attributes=None):
-        if not (otel_attributes and hasattr(self, "nr_trace") and self.nr_trace):
+        if not otel_attributes or not getattr(self, "nr_trace", None):
             return
+
+        # If these attributes already exist in NR's agent attributes,
+        # keep the attributes in the OTel span, but do not add them
+        # to NR's user attributes to avoid sending the same data
+        # multiple times.
         for key, value in otel_attributes.items():
-            self.nr_trace.add_custom_attribute(key, value)
+            if key not in self.nr_trace.agent_attributes:
+                self.nr_trace.add_custom_attribute(key, value)
 
     def add_event(self, name, attributes=None, timestamp=None):
         # TODO: Not implemented yet.
@@ -296,6 +303,53 @@ class Span(otel_api_trace.Span):
 
         notice_error(error_args, attributes=attributes)
 
+    def _database_attribute_mapping(self):
+        span_obj_attrs = {
+            "host": self.attributes.get("net.peer.name") or self.attributes.get("server.address"),
+            "database_name": self.attributes.get("db.name"),
+            "port_path_or_id": self.attributes.get("net.peer.port") or self.attributes.get("server.port"),
+            "product": self.attributes.get("db.system").capitalize(),
+        }
+        agent_attrs = {}
+
+        db_statement = self.attributes.get("db.statement")
+        if db_statement:
+            if hasattr(db_statement, "string"):
+                db_statement = db_statement.string
+            operation, target = get_database_operation_target_from_statement(db_statement)
+            target = target or self.attributes.get("db.mongodb.collection")
+            span_obj_attrs.update({
+                "operation": operation,
+                "target": target,
+            })
+        elif span_obj_attrs["product"] == "Dynamodb":
+            region = self.attributes.get("cloud.region")
+            operation = self.attributes.get("db.operation")
+            target = self.attributes.get("aws.dynamodb.table_names", [None])[-1]
+            account_id = self.nr_transaction.settings.cloud.aws.account_id
+            resource_id = generate_dynamodb_arn(span_obj_attrs["host"], region, account_id, target)
+            agent_attrs.update({
+                "aws.operation": self.attributes.get("db.operation"),
+                "cloud.resource_id": resource_id,
+                "cloud.region": region,
+                "aws.requestId": self.attributes.get("aws.request_id"),
+                "http.statusCode": self.attributes.get("http.status_code"),
+                "cloud.account.id": account_id,
+            })
+            span_obj_attrs.update({
+                "target": target,
+                "operation": operation,
+            })
+
+        # We do not want to override any agent attributes
+        # with `None` if `value` does not exist.
+        for key, value in span_obj_attrs.items():
+            if value:
+                setattr(self.nr_trace, key, value)
+        for key, value in agent_attrs.items():
+            if value:
+                self.nr_trace._add_agent_attribute(key, value)
+
     def end(self, end_time=None, *args, **kwargs):
         # We will ignore the end_time parameter and use NR's end_time
 
@@ -305,36 +359,30 @@ class Span(otel_api_trace.Span):
         if not nr_trace or (nr_trace and getattr(nr_trace, "end_time", None)):
             return
 
-        # Add attributes as Trace parameters
+        # We will need to add specific attributes to the
+        # NR trace before the node creation because the
+        # attributes were likely not available at the time
+        # of the trace's creation but eventually populated
+        # throughout the span's lifetime.
+
+        # Database/Datastore specific attributes
+        if self.attributes.get("db.system"):
+            self._database_attribute_mapping()
+
+        # External specific attributes
+        self.nr_trace._add_agent_attribute("http.statusCode", self.attributes.get("http.status_code"))
+
+        # Add OTel attributes as custom NR trace attributes
         self._set_attributes_in_nr(self.attributes)
-
-        # For each kind of NR Trace, we will need to add
-        # specific attributes since they were likely not
-        # available at the time of the trace's creation.
-        if self.instrumenting_module in ("Redis", "Mongodb"):
-            self.nr_trace.host = self.attributes.get("net.peer.name", self.attributes.get("server.address"))
-            self.nr_trace.port_path_or_id = self.attributes.get("net.peer.port", self.attributes.get("server.port"))
-            self.nr_trace.database_name = self.attributes.get("db.name")
-            self.nr_trace.product = self.attributes.get("db.system")
-        elif self.instrumenting_module == "Dynamodb":
-            self.nr_trace.database_name = self.attributes.get("db.name")
-            self.nr_trace.product = self.attributes.get("db.system")
-            self.nr_trace.port_path_or_id = self.attributes.get("net.peer.port")
-            self.nr_trace.host = self.attributes.get("dynamodb.{region}.amazonaws.com")
-
-        # Set SpanKind attribute
-        self._set_attributes_in_nr({"span.kind": self.kind})
 
         error = sys.exc_info()
         self.nr_trace.__exit__(*error)
         self.set_status(StatusCode.OK if not error[0] else StatusCode.ERROR)
 
-        if ("exception.escaped" in self.attributes) or (
-            self.kind in (otel_api_trace.SpanKind.SERVER, otel_api_trace.SpanKind.CONSUMER)
-            and isinstance(current_trace(), Sentinel)
-        ):
+        if ("exception.escaped" in self.attributes) or (self.kind in (otel_api_trace.SpanKind.SERVER, otel_api_trace.SpanKind.CONSUMER) and isinstance(current_trace(), Sentinel)):
             # We need to end the transaction as well
             self.nr_transaction.__exit__(*error)
+
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """
@@ -346,7 +394,12 @@ class Span(otel_api_trace.Span):
             if self._record_exception:
                 self.record_exception(exception=exc_val, escaped=True)
             if self.set_status_on_exception:
-                self.set_status(Status(status_code=StatusCode.ERROR, description=f"{exc_type.__name__}: {exc_val}"))
+                self.set_status(
+                    Status(
+                        status_code=StatusCode.ERROR,
+                        description=f"{exc_type.__name__}: {exc_val}",
+                    )
+                )
 
         super().__exit__(exc_type, exc_val, exc_tb)
 
@@ -360,6 +413,27 @@ class Tracer(otel_api_trace.Tracer):
         if "nr.wsgi.environ" in self.attributes:
             # This is a WSGI request
             transaction = WSGIWebTransaction(self.nr_application, environ=self.attributes.pop("nr.wsgi.environ"))
+        elif "nr.asgi.scope" in self.attributes:
+            # This is an ASGI request
+            scope = self.attributes.pop("nr.asgi.scope")
+            scheme = scope.get("scheme", "http")
+            server = scope.get("server") or (None, None)
+            host, port = scope["server"] = tuple(server)
+            request_method = scope.get("method")
+            request_path = scope.get("path")
+            query_string = scope.get("query_string")
+            headers = scope["headers"] = tuple(scope.get("headers", ()))
+            transaction = WebTransaction(
+                application=self.nr_application,
+                name=self.name,
+                scheme=scheme,
+                host=host,
+                port=port,
+                request_method=request_method,
+                request_path=request_path,
+                query_string=query_string,
+                headers=headers,
+            )
         else:
             # This is a web request
             headers = self.attributes.pop("nr.http.headers", None)
@@ -549,4 +623,12 @@ class TracerProvider(otel_api_trace.TracerProvider):
         *args,
         **kwargs,
     ):
-        return Tracer(*args, resource=self._resource, instrumentation_library=instrumenting_module_name, **kwargs)
+        return Tracer(
+            *args,
+            instrumentation_library=instrumenting_module_name,
+            instrumenting_library_version=instrumenting_library_version,
+            schema_url=schema_url,
+            attributes=attributes,
+            resource=self._resource,
+            **kwargs
+        )

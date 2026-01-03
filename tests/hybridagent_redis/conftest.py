@@ -13,25 +13,13 @@
 # limitations under the License.
 
 import os
-import platform
 from pathlib import Path
-
 import pytest
 from opentelemetry import trace
-from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
-
 from newrelic.api.opentelemetry import TracerProvider
-from newrelic.common.package_version_utils import get_package_version_tuple
 
-FLASK_VERSION = get_package_version_tuple("flask")
-
-is_flask_v2 = FLASK_VERSION[0] >= 2
-is_not_flask_v2_3 = FLASK_VERSION < (2, 3, 0)
-is_pypy = platform.python_implementation() == "PyPy"
-async_handler_support = is_flask_v2 and not is_pypy
-skip_if_not_async_handler_support = pytest.mark.skipif(
-    not async_handler_support, reason="Requires async handler support. (Flask >=v2.0.0, CPython)"
-)
+from testing_support.fixture.event_loop import event_loop as loop
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
@@ -44,14 +32,16 @@ _default_settings = {
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
-    app_name="Python Agent Test (Hybrid Agent, Flask)", default_settings=_default_settings
+    app_name="Python Agent Test (Hybrid Agent, Redis)",
+    default_settings=_default_settings,
+    linked_applications=["Python Agent Test (datastore)"],
 )
 
-os.environ["NEW_RELIC_CONFIG_FILE"] = str(Path(__file__).parent / "newrelic_flask.ini")
+os.environ["NEW_RELIC_CONFIG_FILE"] = str(Path(__file__).parent / "newrelic_redis.ini")
 
 @pytest.fixture(scope="session")
-def tracer():
+def tracer_provider():
     trace_provider = TracerProvider()
     trace.set_tracer_provider(trace_provider)
 
-    return trace.get_tracer(__name__)
+    return trace_provider

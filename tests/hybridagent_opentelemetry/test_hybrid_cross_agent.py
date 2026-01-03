@@ -45,8 +45,20 @@ def test_does_not_create_segment_without_a_transaction(tracer):
 @dt_enabled
 @validate_transaction_metrics(name="Foo", background_task=True)
 @validate_span_events(
-    exact_intrinsics={"name": "Function/Bar", "category": "generic"}, expected_intrinsics=("parentId",)
+    exact_intrinsics={
+        "name": "Function/Bar",
+        "category": "generic",
+    },
+    expected_intrinsics=("parentId",)
 )
+@validate_span_events(
+    exact_intrinsics={
+          "name": "Function/Foo",
+          "category": "generic",
+          "nr.entryPoint": True
+    },
+)
+@validate_span_events(exact_intrinsics={"name": "Function/Foo", "category": "generic", "nr.entryPoint": True})
 @validate_span_events(exact_intrinsics={"name": "Function/Foo", "category": "generic", "nr.entryPoint": True})
 @validate_span_events(exact_intrinsics={"name": "Function/Foo", "category": "generic", "nr.entryPoint": True})
 def test_creates_opentelemetry_segment_in_a_transaction(tracer):
@@ -67,10 +79,18 @@ def test_creates_opentelemetry_segment_in_a_transaction(tracer):
 @dt_enabled
 @validate_transaction_metrics(name="Foo", background_task=True)
 @validate_span_events(
-    exact_intrinsics={"name": "Function/Baz", "category": "generic"}, expected_intrinsics=("parentId",)
+    exact_intrinsics={
+        "name": "Function/Baz",
+        "category": "generic",
+    },
+    expected_intrinsics=("parentId",)
 )
 @validate_span_events(
-    exact_intrinsics={"name": "Function/Bar", "category": "generic"}, expected_intrinsics=("parentId",)
+    exact_intrinsics={
+        "name": "Function/Bar",
+        "category": "generic",
+    },
+    expected_intrinsics=("parentId",)
 )
 @validate_span_events(exact_intrinsics={"name": "Function/Foo", "category": "generic", "nr.entryPoint": True})
 @validate_span_events(exact_intrinsics={"name": "Function/Foo", "category": "generic"})
@@ -126,9 +146,9 @@ def test_opentelemetry_api_can_record_errors(tracer):
 # OpenTelemetry API and New Relic API can inject outbound trace context
 @dt_enabled
 @validate_transaction_metrics(name="Foo", background_task=True)
-@validate_span_events(exact_intrinsics={"name": "External/url1/OtelSpan1/GET"}, expected_intrinsics=("parentId",))
+@validate_span_events(exact_intrinsics={"name": "External/url1/Default/GET"}, expected_intrinsics=("parentId",))
 @validate_span_events(exact_intrinsics={"name": "External/url2/segment1/GET"}, expected_intrinsics=("parentId",))
-@validate_span_events(exact_intrinsics={"name": "External/url3/OtelSpan2/GET"}, expected_intrinsics=("parentId",))
+@validate_span_events(exact_intrinsics={"name": "External/url3/Default/GET"}, expected_intrinsics=("parentId",))
 @validate_span_events(exact_intrinsics={"name": "External/url4/segment2/GET"}, expected_intrinsics=("parentId",))
 def test_opentelemetry_api_and_new_relic_api_can_inject_outbound_trace_context(tracer):
     application = application_instance(activate=False)
@@ -139,7 +159,7 @@ def test_opentelemetry_api_and_new_relic_api_can_inject_outbound_trace_context(t
             name="OtelSpan1",
             kind=otel_api_trace.SpanKind.CLIENT,
             attributes={"http.url": "http://url1", "http.method": "GET"},
-        ):
+        ) as span1:
             headers = {}
             PROPAGATOR.inject(carrier=headers)
             _, trace_id, span_id, sampled = headers["traceparent"].split("-")
@@ -152,6 +172,10 @@ def test_opentelemetry_api_and_new_relic_api_can_inject_outbound_trace_context(t
 
             # Correct sampled flag was injected
             assert transaction.sampled == (sampled == "01")
+            
+            # Assert that the span name is correct even though
+            # ExternalTrace types do not have a name attribute
+            assert span1.name == "OtelSpan1"
 
         # Reset the distributed trace state for the purposes of this test
         transaction._distributed_trace_state = 0
@@ -177,7 +201,7 @@ def test_opentelemetry_api_and_new_relic_api_can_inject_outbound_trace_context(t
             name="OtelSpan2",
             kind=otel_api_trace.SpanKind.CLIENT,
             attributes={"http.url": "http://url3", "http.method": "GET"},
-        ):
+        ) as span2:
             headers = []
             transaction.insert_distributed_trace_headers(headers)
             _, trace_id, span_id, sampled = headers[0][1].split("-")
@@ -190,6 +214,10 @@ def test_opentelemetry_api_and_new_relic_api_can_inject_outbound_trace_context(t
 
             # Correct sampled flag was injected
             assert transaction.sampled == (sampled == "01")
+
+            # Assert that the span name is correct even though
+            # ExternalTrace types do not have a name attribute
+            assert span2.name == "OtelSpan2"
 
         # Reset the distributed trace state for the purposes of this test
         transaction._distributed_trace_state = 0

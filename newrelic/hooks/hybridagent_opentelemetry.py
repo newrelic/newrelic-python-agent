@@ -39,7 +39,6 @@ os.environ["OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE"] = ".*"
 def wrap__load_runtime_context(wrapped, instance, args, kwargs):
     application = application_instance(activate=False)
     settings = global_settings() if not application else application.settings
-
     if not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
@@ -52,16 +51,14 @@ def wrap__load_runtime_context(wrapped, instance, args, kwargs):
 def wrap_get_global_response_propagator(wrapped, instance, args, kwargs):
     application = application_instance(activate=False)
     settings = global_settings() if not application else application.settings
-
     if not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
-    from opentelemetry.instrumentation.propagators import set_global_response_propagator
-
     from newrelic.api.opentelemetry import otel_context_propagator
-
+    from opentelemetry.instrumentation.propagators import set_global_response_propagator
+    
     set_global_response_propagator(otel_context_propagator)
-
+    
     return otel_context_propagator
 
 
@@ -91,12 +88,10 @@ def wrap_set_tracer_provider(wrapped, instance, args, kwargs):
         application.activate()
 
     settings = global_settings() if not application else application.settings
-
     if not settings:
         # The application may need more time to start up
         time.sleep(0.5)
         settings = global_settings() if not application else application.settings
-
     if not settings or not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
@@ -137,9 +132,8 @@ def wrap_get_tracer_provider(wrapped, instance, args, kwargs):
 
     if _TRACER_PROVIDER is None:
         from newrelic.api.opentelemetry import TracerProvider
-
-        hybrid_agent_tracer_provider = TracerProvider("hybrid_agent_tracer_provider")
-        _TRACER_PROVIDER = hybrid_agent_tracer_provider
+        _TRACER_PROVIDER = TracerProvider()
+        
     return _TRACER_PROVIDER
 
 
@@ -226,6 +220,8 @@ def wrap_start_internal_or_server_span(wrapped, instance, args, kwargs):
             # This is an HTTP request (WSGI, ASGI, or otherwise)
             if "wsgi.version" in context_carrier:
                 attributes["nr.wsgi.environ"] = context_carrier
+            elif "asgi" in context_carrier:
+                attributes["nr.asgi.scope"] = context_carrier
             else:
                 attributes["nr.http.headers"] = context_carrier
         else:

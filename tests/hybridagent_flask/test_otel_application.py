@@ -37,7 +37,6 @@ except ImportError:
 
 requires_endpoint_decorator = pytest.mark.skipif(not is_gt_flask060, reason="The endpoint decorator is not supported.")
 
-
 def target_application():
     # We need to delay Flask application creation because of ordering
     # issues whereby the agent needs to be initialised before Flask is
@@ -289,7 +288,6 @@ _test_application_render_template_string_scoped_metrics = [
     ("Template/Compile/<template>", 1),
     ("Template/Render/<template>", 1),
 ]
-
 
 @dt_enabled
 @validate_transaction_errors(errors=[])

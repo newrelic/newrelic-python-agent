@@ -2107,7 +2107,7 @@ def _process_module_builtin_defaults():
     _process_module_definition(
         "langchain.agents.factory",
         "newrelic.hooks.mlmodel_langchain",
-        "instrument_factory",
+        "instrument_langchain_agents_factory",
     )
     _process_module_definition(
         "langchain.chains.base", "newrelic.hooks.mlmodel_langchain", "instrument_langchain_chains_base"

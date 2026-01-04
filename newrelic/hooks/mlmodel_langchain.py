@@ -21,7 +21,7 @@ import uuid
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import current_trace, get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.common.object_wrapper import ObjectProxy, wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
 from newrelic.core.config import global_settings
@@ -130,8 +130,134 @@ VECTORSTORE_CLASSES = {
 }
 
 
-def bind_submit(func, *args, **kwargs):
-    return {"func": func, "args": args, "kwargs": kwargs}
+def _construct_base_agent_event_dict(agent_name, agent_id, transaction):
+    try:
+        linking_metadata = get_trace_linking_metadata()
+
+        agent_event_dict = {
+            "id": agent_id,
+            "name": agent_name,
+            "span_id": linking_metadata.get("span.id"),
+            "trace_id": linking_metadata.get("trace.id"),
+            "vendor": "langgraph",
+            "ingest_source": "Python",
+        }
+        agent_event_dict.update(_get_llm_metadata(transaction))
+    except Exception:
+        agent_event_dict = {}
+        _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
+
+    return agent_event_dict
+
+class AgentObjectProxy(ObjectProxy):
+    def invoke(self, *args, **kwargs):
+        transaction = current_transaction()
+
+        agent_name = getattr(transaction, "_nr_agent_name", "agent")
+        agent_id = str(uuid.uuid4())
+        agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
+        function_trace_name = f"invoke/{agent_name}"
+
+        ft = FunctionTrace(name=function_trace_name, group="Llm/agent/LangChain")
+        ft.__enter__()
+        try:
+            return_val = self.__wrapped__.invoke(*args, **kwargs)
+        except Exception:
+            ft.notice_error(attributes={"agent_id": agent_id})
+            ft.__exit__(*sys.exc_info())
+            # If we hit an exception, append the error attribute and duration from the exited function trace
+            agent_event_dict.update({"duration": ft.duration * 1000, "error": True})
+            transaction.record_custom_event("LlmAgent", agent_event_dict)
+            raise
+
+        ft.__exit__(None, None, None)
+        agent_event_dict.update({"duration": ft.duration * 1000})
+
+        transaction.record_custom_event("LlmAgent", agent_event_dict)
+
+        return return_val
+
+    async def ainvoke(self, *args, **kwargs):
+        transaction = current_transaction()
+
+        agent_name = getattr(transaction, "_nr_agent_name", "agent")
+        agent_id = str(uuid.uuid4())
+        agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
+        function_trace_name = f"ainvoke/{agent_name}"
+
+        ft = FunctionTrace(name=function_trace_name, group="Llm/agent/LangChain")
+        ft.__enter__()
+        try:
+            return_val = await self.__wrapped__.ainvoke(*args, **kwargs)
+        except Exception:
+            ft.notice_error(attributes={"agent_id": agent_id})
+            ft.__exit__(*sys.exc_info())
+            # If we hit an exception, append the error attribute and duration from the exited function trace
+            agent_event_dict.update({"duration": ft.duration * 1000, "error": True})
+            transaction.record_custom_event("LlmAgent", agent_event_dict)
+            raise
+
+        ft.__exit__(None, None, None)
+        agent_event_dict.update({"duration": ft.duration * 1000})
+
+        transaction.record_custom_event("LlmAgent", agent_event_dict)
+
+        return return_val
+
+    def stream(func, *args, **kwargs):
+        transaction = current_transaction()
+
+        agent_name = getattr(transaction, "_nr_agent_name", "agent")
+        agent_id = str(uuid.uuid4())
+        agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
+        function_trace_name = f"stream/{agent_name}"
+
+        ft = FunctionTrace(name=function_trace_name, group="Llm/agent/LangChain")
+        ft.__enter__()
+        try:
+            return_val = self.__wrapped__.stream(*args, **kwargs)
+        except Exception:
+            ft.notice_error(attributes={"agent_id": agent_id})
+            ft.__exit__(*sys.exc_info())
+            # If we hit an exception, append the error attribute and duration from the exited function trace
+            agent_event_dict.update({"duration": ft.duration * 1000, "error": True})
+            transaction.record_custom_event("LlmAgent", agent_event_dict)
+            raise
+
+        ft.__exit__(None, None, None)
+        agent_event_dict.update({"duration": ft.duration * 1000})
+
+        transaction.record_custom_event("LlmAgent", agent_event_dict)
+
+        return return_val
+
+
+    async def astream(self, *args, **kwargs):
+        transaction = current_transaction()
+
+        agent_name = getattr(transaction, "_nr_agent_name", "agent")
+        agent_id = str(uuid.uuid4())
+        agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
+        function_trace_name = f"stream/{agent_name}"
+
+        ft = FunctionTrace(name=function_trace_name, group="Llm/agent/LangChain")
+        ft.__enter__()
+        try:
+            return_val = self.__wrapped__.stream(*args, **kwargs)
+        except Exception:
+            ft.notice_error(attributes={"agent_id": agent_id})
+            ft.__exit__(*sys.exc_info())
+            # If we hit an exception, append the error attribute and duration from the exited function trace
+            agent_event_dict.update({"duration": ft.duration * 1000, "error": True})
+            transaction.record_custom_event("LlmAgent", agent_event_dict)
+            raise
+
+        ft.__exit__(None, None, None)
+        agent_event_dict.update({"duration": ft.duration * 1000})
+
+        transaction.record_custom_event("LlmAgent", agent_event_dict)
+
+        return return_val
 
 
 def wrap_ContextThreadPoolExecutor_submit(wrapped, instance, args, kwargs):
@@ -924,10 +1050,20 @@ def wrap_create_agent(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
+    settings = transaction.settings or global_settings()
+    if not settings.ai_monitoring.enabled:
+        return wrapped(*args, **kwargs)
+
+        # Framework metric also used for entity tagging in the UI
+    transaction.add_ml_model_info("LangChain", LANGCHAIN_VERSION)
+    transaction._add_agent_attribute("llm", True)
+
     agent_name = kwargs.get("name", None)
     transaction._nr_agent_name = agent_name
 
-    return wrapped(*args, **kwargs)
+    return_val = wrapped(*args, **kwargs)
 
-def instrument_factory(module):
+    return AgentObjectProxy(return_val)
+
+def instrument_langchain_agents_factory(module):
     wrap_function_wrapper(module, "create_agent", wrap_create_agent)

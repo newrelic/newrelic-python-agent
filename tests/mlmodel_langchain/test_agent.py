@@ -191,16 +191,15 @@ PROMPT = {"messages": [HumanMessage('Use a tool to add an exclamation to the wor
 @background_task()
 def test_agent_invoke(set_trace_info, create_agent_runnable):
     set_trace_info()
-    my_agent = create_agent_runnable(
-        name="my_agent", tools=[add_exclamation], system_prompt="You are a text manipulation algorithm."
-    )
+    my_agent = create_agent_runnable(tools=[add_exclamation], system_prompt="You are a text manipulation algorithm.")
 
     with WithLlmCustomAttributes({"context": "attr"}):
         response = my_agent.invoke(PROMPT)
 
     messages = response["messages"]
-    assert len(messages) == 4
-    assert messages[-1].content == 'The word "Hello" with an exclamation mark added is "Hello!"'
+    err_msg = "Conversation should be 4 or 5 messages (5 if called in a StateGraph or RunnableSequence)"
+    assert 4 <= len(messages) <= 5, err_msg
+    assert messages[3].content == 'The word "Hello" with an exclamation mark added is "Hello!"'
 
 
 # @reset_core_stats_engine()

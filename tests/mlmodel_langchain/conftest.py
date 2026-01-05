@@ -90,49 +90,53 @@ def chat_openai_client(openai_clients):
     return chat_client
 
 
+def state_function_step(state):
+    return {"messages": [f"The real agent said: {state['messages'][-1].content}"]}
+
+
+def append_function_step(state):
+    state["messages"].append(f"The real agent said: {state['messages'][-1].content}")
+    return state
+
+
 @pytest.fixture(scope="session", params=["create_agent", "StateGraph", "RunnableSeq", "RunnableSequence"])
 def create_agent_runnable(request, chat_openai_client):
-    def _create_agent(model="gpt-5.1", tools=None, system_prompt=None, name="openai agent"):
+    """Create different runnable forms of the same agent and model as a fixture."""
+
+    def _create_agent(model="gpt-5.1", tools=None, system_prompt=None, name="my_agent"):
         from langchain.agents import create_agent
 
         client = chat_openai_client.with_config(model=model, timeout=30)
 
         return create_agent(model=client, tools=tools, system_prompt=system_prompt, name=name)
 
-    def function_step(state):
-        return {"output": f"The real agent said: {state['output']}"}
-
     def _create_state_graph(*args, **kwargs):
-        from langgraph import END, START, MessagesState, StateGraph
+        from langgraph.graph import END, START, MessagesState, StateGraph
 
         agent = _create_agent(*args, **kwargs)
 
-        class State(MessagesState):
-            input: str
-            output: str
-
-        graph = StateGraph(State)
+        graph = StateGraph(MessagesState)
         graph.add_node(agent)
-        graph.add_node(function_step)
-        graph.add_edge(START, "agent_executor")
-        graph.add_edge("agent_executor", "function_step")
-        graph.add_edge("function_step", END)
+        graph.add_node(state_function_step)
+        graph.add_edge(START, "my_agent")
+        graph.add_edge("my_agent", "state_function_step")
+        graph.add_edge("state_function_step", END)
 
         return graph.compile()
 
     def _create_runnable_seq(*args, **kwargs):
-        from langgraph.runnables import RunnableSeq
+        from langgraph._internal._runnable import RunnableSeq
 
         agent = _create_agent(*args, **kwargs)
 
-        return RunnableSeq(agent, function_step)
+        return RunnableSeq(agent, append_function_step)
 
     def _create_runnable_sequence(*args, **kwargs):
-        from langchain.runnables import RunnableSequence
+        from langchain_core.runnables import RunnableSequence
 
         agent = _create_agent(*args, **kwargs)
 
-        return RunnableSequence(agent, function_step)
+        return RunnableSequence(agent, append_function_step)
 
     if request.param == "create_agent":
         return _create_agent

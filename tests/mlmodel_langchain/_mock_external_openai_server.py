@@ -162,7 +162,7 @@ def simple_get():
             mocked_responses = STREAMED_RESPONSES_V1
 
         for k, v in mocked_responses.items():
-            if prompt.startswith(k):
+            if prompt == k:
                 headers, status_code, response = v
                 break
         else:  # If no matches found

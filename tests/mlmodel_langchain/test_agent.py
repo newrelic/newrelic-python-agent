@@ -162,6 +162,15 @@ def add_exclamation(message: str) -> str:
     return f"{message}!"
 
 
+@tool
+async def add_exclamation_async(message: str) -> str:
+    """Adds an exclamation mark to the given message."""
+    return f"{message}!"
+
+
+PROMPT = {"messages": [HumanMessage('Use a tool to add an exclamation to the word "Hello"')]}
+
+
 @reset_core_stats_engine()
 # @validate_custom_events(events_with_context_attrs(tool_recorded_event))
 # @validate_custom_events(events_with_context_attrs(agent_recorded_event))
@@ -187,11 +196,11 @@ def test_agent_invoke(set_trace_info, create_agent_runnable):
     )
 
     with WithLlmCustomAttributes({"context": "attr"}):
-        response = my_agent.invoke({"messages": [HumanMessage('Use a tool to add an exclamation to the word "Hello"')]})
+        response = my_agent.invoke(PROMPT)
 
-    assert response["message"]
-    # assert response.message["content"][0]["text"] == "Success!"
-    # assert response.metrics.tool_metrics["add_exclamation"].success_count == 1
+    messages = response["messages"]
+    assert len(messages) == 4
+    assert messages[-1].content == 'The word "Hello" with an exclamation mark added is "Hello!"'
 
 
 # @reset_core_stats_engine()

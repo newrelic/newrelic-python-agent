@@ -30,7 +30,6 @@ from newrelic.common.package_version_utils import get_package_version_tuple
 #    created by an external call.
 # 3) This app runs on a separate thread meaning it won't block the test app.
 STREAMED_RESPONSES_V1 = {}
-   
 RESPONSES_V1 = {
     'system: You are a text manipulation algorithm. | user: Use a tool to add an exclamation to the word "Hello"': [
         {

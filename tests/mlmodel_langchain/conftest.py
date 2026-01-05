@@ -17,11 +17,7 @@ import os
 from pathlib import Path
 
 import pytest
-from _mock_external_openai_server import (
-    MockExternalOpenAIServer,
-    extract_shortened_prompt,
-    simple_get,
-)
+from _mock_external_openai_server import MockExternalOpenAIServer, extract_shortened_prompt, simple_get
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import (
@@ -94,7 +90,7 @@ def chat_openai_client(openai_clients):
     return chat_client
 
 
-@pytest.fixture(scope="session", params=["Agent", "StateGraph", "RunnableSeq", "RunnableSequence"])
+@pytest.fixture(scope="session", params=["create_agent", "StateGraph", "RunnableSeq", "RunnableSequence"])
 def create_agent_runnable(request, chat_openai_client):
     def _create_agent(model="gpt-5.1", tools=None, system_prompt=None, name="openai agent"):
         from langchain.agents import create_agent
@@ -138,7 +134,7 @@ def create_agent_runnable(request, chat_openai_client):
 
         return RunnableSequence(agent, function_step)
 
-    if request.param == "Agent":
+    if request.param == "create_agent":
         return _create_agent
     elif request.param == "StateGraph":
         return _create_state_graph

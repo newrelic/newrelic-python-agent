@@ -15,9 +15,7 @@
 import psycopg2
 import psycopg2.extras
 import pytest
-
 from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
-
 from testing_support.db_settings import postgresql_settings
 from testing_support.fixtures import override_application_settings, validate_stats_engine_explain_plan_output_is_none
 from testing_support.util import instance_hostname

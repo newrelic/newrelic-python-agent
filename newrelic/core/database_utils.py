@@ -421,7 +421,7 @@ def _parse_operation(sql):
 
 def _parse_operation_otel(sql):
     match = _parse_operation_re.search(sql)
-    operation = (match and match.group(1).lower())
+    operation = match and match.group(1).lower()
     return operation or ""
 
 

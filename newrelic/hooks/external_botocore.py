@@ -23,7 +23,6 @@ from io import BytesIO
 
 from botocore.response import StreamingBody
 
-from newrelic.core.database_utils import generate_dynamodb_arn
 from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.function_trace import FunctionTrace
@@ -35,6 +34,7 @@ from newrelic.common.object_wrapper import ObjectProxy, function_wrapper, wrap_f
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
 from newrelic.core.config import global_settings
+from newrelic.core.database_utils import generate_dynamodb_arn
 
 QUEUE_URL_PATTERN = re.compile(r"https://sqs.([\w\d-]+).amazonaws.com/(\d+)/([^/]+)")
 BOTOCORE_VERSION = get_package_version("botocore")

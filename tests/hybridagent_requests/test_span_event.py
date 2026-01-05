@@ -14,13 +14,13 @@
 
 import pytest
 import requests
+from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from testing_support.fixtures import override_application_settings
 from testing_support.mock_external_http_server import MockExternalHTTPServer
 from testing_support.validators.validate_span_events import validate_span_events
 
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import current_transaction
-from opentelemetry.instrumentation.requests import RequestsInstrumentor
 
 # RequestsInstrumentor().instrument()
 
@@ -28,7 +28,7 @@ from opentelemetry.instrumentation.requests import RequestsInstrumentor
 @pytest.fixture(scope="module", autouse=True)
 def server(tracer_provider):
     RequestsInstrumentor().instrument(tracer_provider=tracer_provider)
-    
+
     with MockExternalHTTPServer() as _server:
         yield _server
 

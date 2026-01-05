@@ -37,6 +37,7 @@ except ImportError:
 
 requires_endpoint_decorator = pytest.mark.skipif(not is_gt_flask060, reason="The endpoint decorator is not supported.")
 
+
 def target_application():
     # We need to delay Flask application creation because of ordering
     # issues whereby the agent needs to be initialised before Flask is
@@ -89,11 +90,7 @@ _test_application_rollup_metrics = [
 
 @dt_enabled
 @validate_transaction_errors(errors=[])
-@validate_transaction_metrics(
-    "index",
-    group="Uri",
-    rollup_metrics=_test_application_rollup_metrics,
-)
+@validate_transaction_metrics("index", group="Uri", rollup_metrics=_test_application_rollup_metrics)
 @validate_span_events(
     exact_intrinsics=_exact_root_intrinsics,
     expected_intrinsics=_expected_root_intrinsics,
@@ -108,11 +105,7 @@ def test_otel_application_index():
 @skip_if_not_async_handler_support
 @dt_enabled
 @validate_transaction_errors(errors=[])
-@validate_transaction_metrics(
-    "async",
-    group="Uri",
-    rollup_metrics=_test_application_rollup_metrics,
-)
+@validate_transaction_metrics("async", group="Uri", rollup_metrics=_test_application_rollup_metrics)
 @validate_span_events(
     exact_intrinsics=_exact_root_intrinsics,
     expected_intrinsics=_expected_root_intrinsics,
@@ -126,11 +119,7 @@ def test_otel_application_async():
 
 @dt_enabled
 @validate_transaction_errors(errors=[])
-@validate_transaction_metrics(
-    "endpoint",
-    group="Uri",
-    rollup_metrics=_test_application_rollup_metrics,
-)
+@validate_transaction_metrics("endpoint", group="Uri", rollup_metrics=_test_application_rollup_metrics)
 @validate_span_events(
     exact_intrinsics=_exact_root_intrinsics,
     expected_intrinsics=_expected_root_intrinsics,
@@ -155,11 +144,7 @@ def test_otel_application_endpoint():
         "user": {"exception.escaped": False},
     }
 )
-@validate_transaction_metrics(
-    "error",
-    group="Uri",
-    rollup_metrics=_test_application_rollup_metrics,
-)
+@validate_transaction_metrics("error", group="Uri", rollup_metrics=_test_application_rollup_metrics)
 @validate_span_events(
     exact_intrinsics=_exact_root_intrinsics,
     expected_intrinsics=_expected_root_intrinsics,
@@ -172,11 +157,7 @@ def test_otel_application_error():
 
 @dt_enabled
 @validate_transaction_errors(errors=[])
-@validate_transaction_metrics(
-    "abort_404",
-    group="Uri",
-    rollup_metrics=_test_application_rollup_metrics,
-)
+@validate_transaction_metrics("abort_404", group="Uri", rollup_metrics=_test_application_rollup_metrics)
 @validate_span_events(
     exact_intrinsics=_exact_root_intrinsics,
     expected_intrinsics=_expected_root_intrinsics,
@@ -189,11 +170,7 @@ def test_otel_application_abort_404():
 
 @dt_enabled
 @validate_transaction_errors(errors=[])
-@validate_transaction_metrics(
-    "exception_404",
-    group="Uri",
-    rollup_metrics=_test_application_rollup_metrics,
-)
+@validate_transaction_metrics("exception_404", group="Uri", rollup_metrics=_test_application_rollup_metrics)
 @validate_span_events(
     exact_intrinsics=_exact_root_intrinsics,
     expected_intrinsics=_expected_root_intrinsics,
@@ -206,11 +183,7 @@ def test_application_exception_404():
 
 @dt_enabled
 @validate_transaction_errors(errors=[])
-@validate_transaction_metrics(
-    "missing",
-    group="Uri",
-    rollup_metrics=_test_application_rollup_metrics,
-)
+@validate_transaction_metrics("missing", group="Uri", rollup_metrics=_test_application_rollup_metrics)
 @validate_span_events(
     exact_intrinsics=_exact_root_intrinsics,
     expected_intrinsics=_expected_root_intrinsics,
@@ -225,6 +198,7 @@ _test_application_render_template_string_scoped_metrics = [
     ("Template/Compile/<template>", 1),
     ("Template/Render/<template>", 1),
 ]
+
 
 @dt_enabled
 @validate_transaction_errors(errors=[])
@@ -263,11 +237,7 @@ def test_application_render_template_string():
         "user": {"exception.escaped": False},
     }
 )
-@validate_transaction_metrics(
-    "template_not_found",
-    group="Uri",
-    rollup_metrics=_test_application_rollup_metrics,
-)
+@validate_transaction_metrics("template_not_found", group="Uri", rollup_metrics=_test_application_rollup_metrics)
 @validate_span_events(
     exact_intrinsics=_exact_root_intrinsics,
     expected_intrinsics=_expected_root_intrinsics,

@@ -124,10 +124,10 @@ def test_update_name(tracer):
     def _test():
         span = tracer.start_span("initial_span_name")
         assert span.name == "initial_span_name"
-        
+
         span.update_name("updated_span_name")
         assert span.name == "updated_span_name"
-        
+
         span.end()
 
     _test()

@@ -23,6 +23,7 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
 
+
 def get_requests_version():
     return get_package_version_tuple("requests")
 
@@ -107,9 +108,7 @@ _test_requests_none_url_rollup_metrics = [
 
 @validate_transaction_errors(errors=[])
 @validate_transaction_metrics(
-    "test_requests:test_none_url_get",
-    rollup_metrics=_test_requests_none_url_rollup_metrics,
-    background_task=True,
+    "test_requests:test_none_url_get", rollup_metrics=_test_requests_none_url_rollup_metrics, background_task=True
 )
 @background_task()
 def test_none_url_get():
@@ -133,7 +132,7 @@ _test_requests_wrong_datatype_url_rollup_metrics = [
 ]
 
 
-@validate_transaction_errors(errors=['requests.exceptions:InvalidSchema'])
+@validate_transaction_errors(errors=["requests.exceptions:InvalidSchema"])
 @validate_transaction_metrics(
     "test_requests:test_wrong_datatype_url_get",
     scoped_metrics=_test_requests_wrong_datatype_url_scoped_metrics,
@@ -157,10 +156,7 @@ def test_requests_cross_process_request(distributed_tracing, span_events, server
         requests.get(f"http://localhost:{server.port}/")
 
     _test = override_application_settings(
-        {
-            "distributed_tracing.enabled": distributed_tracing,
-            "span_events.enabled": span_events,
-        }
+        {"distributed_tracing.enabled": distributed_tracing, "span_events.enabled": span_events}
     )(_test)
 
     _test()

@@ -14,6 +14,7 @@
 
 import os
 from pathlib import Path
+
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 _default_settings = {

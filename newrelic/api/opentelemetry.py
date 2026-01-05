@@ -15,7 +15,7 @@
 import logging
 import sys
 from contextlib import contextmanager
-import ast
+import json
 
 from opentelemetry import trace as otel_api_trace
 from opentelemetry.baggage.propagation import W3CBaggagePropagator
@@ -400,7 +400,7 @@ class Span(otel_api_trace.Span):
         if self.attributes.get("messaging.system"):
             destination_name = self.attributes.get("messaging.destination")
             self.nr_transaction.destination_name = destination_name
-            bootstrap_servers = ast.literal_eval(self.attributes.get("messaging.url", "[]"))
+            bootstrap_servers = json.loads(self.attributes.get("messaging.url", "[]"))
             for server_name in bootstrap_servers:
                 produce_or_consume = "Produce" if self.kind == otel_api_trace.SpanKind.PRODUCER else "Consume"
                 self.nr_transaction.record_custom_metric(

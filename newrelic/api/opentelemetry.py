@@ -264,9 +264,9 @@ class Span(otel_api_trace.Span):
     def update_name(self, name):
         # NOTE: Sentinel, MessageTrace, DatastoreTrace, and
         # ExternalTrace types do not have a name attribute.
-        self._name = name
+        self.name = name
         if hasattr(self, "nr_trace") and hasattr(self.nr_trace, "name"):
-            self.nr_trace.name = self._name
+            self.nr_trace.name = self.name
 
     def is_recording(self):
         # If the trace has an end time set then it is done recording. Otherwise,
@@ -380,7 +380,7 @@ class Span(otel_api_trace.Span):
 
         # Check to see if New Relic trace ever existed
         # or, if it does, that trace has already ended
-        if getattr(self.nr_trace, "end_time", None):
+        if not self.nr_trace or getattr(self.nr_trace, "end_time", None):
             return
 
         # We will need to add specific attributes to the
@@ -398,7 +398,7 @@ class Span(otel_api_trace.Span):
 
         # Message specific attributes
         if self.attributes.get("messaging.system"):
-            self.nr_transaction.destination_name = self.attributes.get("messaging.destination")
+            destination_name = self.attributes.get("messaging.destination")
             self.nr_transaction.destination_name = destination_name
             bootstrap_servers = ast.literal_eval(self.attributes.get("messaging.url", "[]"))
             for server_name in bootstrap_servers:

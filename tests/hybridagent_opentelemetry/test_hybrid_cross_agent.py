@@ -137,7 +137,7 @@ def test_opentelemetry_api_can_add_custom_attributes_to_spans(tracer):
 def test_opentelemetry_api_can_record_errors(tracer):
     application = application_instance(activate=False)
 
-    with pytest.raises(Exception):
+    with pytest.raises(Exception, match="Test exception message"):
         with BackgroundTask(application, name="Foo"):
             with tracer.start_as_current_span(name="Bar", kind=otel_api_trace.SpanKind.INTERNAL):
                 raise Exception("Test exception message")

@@ -171,7 +171,7 @@ class Span(otel_api_trace.Span):
         if not create_nr_trace:
             # Do not create a New Relic trace for this OTel span.
             # While this OTel span exists it will not be explicitly
-            # translate to a NR trace.  This may occur during the
+            # translated to a NR trace.  This may occur during the
             # creation of a Transaction, which will create the root
             # span.  This may also occur during special cases, such
             # as back to back calls to a message queue's consumer.
@@ -398,7 +398,7 @@ class Span(otel_api_trace.Span):
 
         # Message specific attributes
         if self.attributes.get("messaging.system"):
-            destination_name = self.attributes.get("messaging.destination")
+            self.nr_transaction.destination_name = self.attributes.get("messaging.destination")
             self.nr_transaction.destination_name = destination_name
             bootstrap_servers = ast.literal_eval(self.attributes.get("messaging.url", "[]"))
             for server_name in bootstrap_servers:
@@ -418,7 +418,7 @@ class Span(otel_api_trace.Span):
         if getattr(self.attributes, "exception.escaped", False) or (self.kind in (otel_api_trace.SpanKind.SERVER, otel_api_trace.SpanKind.CONSUMER) and isinstance(current_trace(), Sentinel)):
             # We need to end the transaction, which will
             # end the sentinel trace as well.
-            self.nr_transaction.__exit__(*sys.exc_info())
+            self.nr_transaction.__exit__(*error)
         else:
             # Just end the existing trace
             self.nr_trace.__exit__(*error)

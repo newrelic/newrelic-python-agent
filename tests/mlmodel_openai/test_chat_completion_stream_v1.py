@@ -71,7 +71,7 @@ chat_completion_recorded_events = [
             "response.headers.llmVersion": "2020-10-01",
             "response.headers.ratelimitLimitRequests": 15000,
             "response.headers.ratelimitLimitTokens": 40000,
-            "response.headers.ratelimitResetTokens":  "0s",
+            "response.headers.ratelimitResetTokens": "0s",
             "response.headers.ratelimitResetRequests": "4ms",
             "response.headers.ratelimitRemainingTokens": 39999978,
             "response.headers.ratelimitRemainingRequests": 14999,
@@ -144,7 +144,7 @@ chat_completion_recorded_events = [
 @reset_core_stats_engine()
 @validate_custom_events(events_with_context_attrs(chat_completion_recorded_events))
 # One summary event, one system message, one user message, and one response message from the assistant
-#@validate_custom_event_count(count=4)
+# @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
     name="test_chat_completion_stream_v1:test_openai_chat_completion_sync_with_llm_metadata",
     custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],

@@ -30,9 +30,7 @@ def test_custom_metrics(get_consumer_record, topic, expected_broker_metrics):
     @validate_transaction_metrics(
         f"Named/{topic} receive",
         group="Message/Kafka/Topic",
-        custom_metrics=[
-            *expected_broker_metrics,
-        ],
+        custom_metrics=[*expected_broker_metrics],
         background_task=True,
     )
     def _test():
@@ -50,14 +48,12 @@ def test_multiple_transactions(get_consumer_record, topic):
     _test()
 
 
-def test_custom_metrics_on_existing_transaction(get_consumer_record, topic, expected_broker_metrics, expected_producer_broker_metrics):
-
+def test_custom_metrics_on_existing_transaction(
+    get_consumer_record, topic, expected_broker_metrics, expected_producer_broker_metrics
+):
     @validate_transaction_metrics(
         "test_consumer:test_custom_metrics_on_existing_transaction.<locals>._test",
-        custom_metrics=[
-            *expected_broker_metrics,
-            *expected_producer_broker_metrics,
-        ],
+        custom_metrics=[*expected_broker_metrics, *expected_producer_broker_metrics],
         background_task=True,
     )
     @validate_transaction_count(1)
@@ -71,9 +67,7 @@ def test_custom_metrics_on_existing_transaction(get_consumer_record, topic, expe
 def test_custom_metrics_inactive_transaction(get_consumer_record, topic, expected_missing_broker_metrics):
     @validate_transaction_metrics(
         "test_consumer:test_custom_metrics_inactive_transaction.<locals>._test",
-        custom_metrics=[
-            *expected_missing_broker_metrics,
-        ],
+        custom_metrics=[*expected_missing_broker_metrics],
         background_task=True,
     )
     @validate_transaction_count(1)

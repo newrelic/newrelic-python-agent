@@ -16,9 +16,8 @@ import uuid
 
 import botocore.session
 import pytest
-from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
-
 from moto import mock_aws
+from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
 from testing_support.fixtures import dt_enabled, override_application_settings
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics

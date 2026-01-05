@@ -14,14 +14,14 @@
 
 import os
 from pathlib import Path
-from opentelemetry import trace
-from newrelic.api.opentelemetry import TracerProvider
 
 import pytest
+from opentelemetry import trace
+from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 from testing_support.mock_external_http_server import MockExternalHTTPHResponseHeadersServer
-from opentelemetry.instrumentation.requests import RequestsInstrumentor
 
+from newrelic.api.opentelemetry import TracerProvider
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
@@ -38,6 +38,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 )
 
 os.environ["NEW_RELIC_CONFIG_FILE"] = str(Path(__file__).parent / "newrelic_requests.ini")
+
 
 @pytest.fixture(scope="session")
 def server(tracer_provider):

@@ -12,21 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 import json
 import logging
+import os
 import uuid
 from pathlib import Path
 
 import kafka
 import pytest
+from opentelemetry.instrumentation.kafka import KafkaInstrumentor
 from testing_support.db_settings import kafka_settings
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
+from newrelic.api.opentelemetry import TracerProvider
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import transient_function_wrapper
-from newrelic.api.opentelemetry import TracerProvider
-from opentelemetry.instrumentation.kafka import KafkaInstrumentor
 
 _logger = logging.getLogger(__name__)
 
@@ -34,6 +34,7 @@ DB_SETTINGS = kafka_settings()[0]
 
 os.environ["NEW_RELIC_CONFIG_FILE"] = str(Path(__file__).parent / "newrelic_kafkapython.ini")
 KafkaInstrumentor().instrument(tracer_provider=TracerProvider())
+
 
 @pytest.fixture(scope="session")
 def broker():

@@ -37,5 +37,5 @@ collector_agent_registration = collector_agent_registration_fixture(
 def tracer():
     trace_provider = TracerProvider()
     trace.set_tracer_provider(trace_provider)
-    
+
     return trace_provider.get_tracer()

@@ -14,12 +14,13 @@
 
 import os
 from pathlib import Path
+
 import pytest
 from opentelemetry import trace
-from newrelic.api.opentelemetry import TracerProvider
-
 from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
+
+from newrelic.api.opentelemetry import TracerProvider
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
@@ -38,6 +39,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 )
 
 os.environ["NEW_RELIC_CONFIG_FILE"] = str(Path(__file__).parent / "newrelic_redis.ini")
+
 
 @pytest.fixture(scope="session")
 def tracer_provider():

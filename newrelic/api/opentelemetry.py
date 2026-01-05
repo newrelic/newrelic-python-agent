@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import logging
 import sys
 from contextlib import contextmanager
-import json
 
 from opentelemetry import trace as otel_api_trace
 from opentelemetry.baggage.propagation import W3CBaggagePropagator
@@ -24,7 +24,6 @@ from opentelemetry.propagators.composite import CompositePropagator
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 from opentelemetry.trace.status import Status, StatusCode
 
-from newrelic.core.database_utils import generate_dynamodb_arn, get_database_operation_target_from_statement
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import BackgroundTask
 from newrelic.api.datastore_trace import DatastoreTrace
@@ -35,6 +34,7 @@ from newrelic.api.message_transaction import MessageTransaction
 from newrelic.api.time_trace import current_trace, notice_error
 from newrelic.api.transaction import Sentinel, current_transaction
 from newrelic.api.web_transaction import WebTransaction, WSGIWebTransaction
+from newrelic.core.database_utils import generate_dynamodb_arn, get_database_operation_target_from_statement
 from newrelic.core.otlp_utils import create_resource
 
 _logger = logging.getLogger(__name__)
@@ -55,16 +55,15 @@ class NRTraceContextPropagator(TraceContextTextMapPropagator):
         }
 
         extracted_context = super().extract(carrier=carrier, context=context, getter=getter)
-        
+
         if transaction:
             transaction.accept_distributed_trace_headers(nr_headers)
         else:
             # A situation where extract() is called BEFORE a span
             # creation (such as in the kafka consumer instrumentation)
             extracted_context._nr_headers_outside_transaction = nr_headers
-            
+
         return extracted_context
-        
 
     def inject(self, carrier, context=None, setter=None):
         transaction = current_transaction()
@@ -343,28 +342,24 @@ class Span(otel_api_trace.Span):
                 db_statement = db_statement.string
             operation, target = get_database_operation_target_from_statement(db_statement)
             target = target or self.attributes.get("db.mongodb.collection")
-            span_obj_attrs.update({
-                "operation": operation,
-                "target": target,
-            })
+            span_obj_attrs.update({"operation": operation, "target": target})
         elif span_obj_attrs["product"] == "Dynamodb":
             region = self.attributes.get("cloud.region")
             operation = self.attributes.get("db.operation")
             target = self.attributes.get("aws.dynamodb.table_names", [None])[-1]
             account_id = self.nr_transaction.settings.cloud.aws.account_id
             resource_id = generate_dynamodb_arn(span_obj_attrs["host"], region, account_id, target)
-            agent_attrs.update({
-                "aws.operation": self.attributes.get("db.operation"),
-                "cloud.resource_id": resource_id,
-                "cloud.region": region,
-                "aws.requestId": self.attributes.get("aws.request_id"),
-                "http.statusCode": self.attributes.get("http.status_code"),
-                "cloud.account.id": account_id,
-            })
-            span_obj_attrs.update({
-                "target": target,
-                "operation": operation,
-            })
+            agent_attrs.update(
+                {
+                    "aws.operation": self.attributes.get("db.operation"),
+                    "cloud.resource_id": resource_id,
+                    "cloud.region": region,
+                    "aws.requestId": self.attributes.get("aws.request_id"),
+                    "http.statusCode": self.attributes.get("http.status_code"),
+                    "cloud.account.id": account_id,
+                }
+            )
+            span_obj_attrs.update({"target": target, "operation": operation})
 
         # We do not want to override any agent attributes
         # with `None` if `value` does not exist.
@@ -412,17 +407,19 @@ class Span(otel_api_trace.Span):
 
         error = sys.exc_info()
         self.set_status(StatusCode.OK if not error[0] else StatusCode.ERROR)
-        
+
         # Only if unhandled exception do we want to abruptly end.
         # Otherwise, ensure that the span is the last one to end.
-        if getattr(self.attributes, "exception.escaped", False) or (self.kind in (otel_api_trace.SpanKind.SERVER, otel_api_trace.SpanKind.CONSUMER) and isinstance(current_trace(), Sentinel)):
+        if getattr(self.attributes, "exception.escaped", False) or (
+            self.kind in (otel_api_trace.SpanKind.SERVER, otel_api_trace.SpanKind.CONSUMER)
+            and isinstance(current_trace(), Sentinel)
+        ):
             # We need to end the transaction, which will
             # end the sentinel trace as well.
             self.nr_transaction.__exit__(*error)
         else:
             # Just end the existing trace
             self.nr_trace.__exit__(*error)
-        
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """
@@ -434,12 +431,7 @@ class Span(otel_api_trace.Span):
             if self._record_exception:
                 self.record_exception(exception=exc_val, escaped=True)
             if self.set_status_on_exception:
-                self.set_status(
-                    Status(
-                        status_code=StatusCode.ERROR,
-                        description=f"{exc_type.__name__}: {exc_val}",
-                    )
-                )
+                self.set_status(Status(status_code=StatusCode.ERROR, description=f"{exc_type.__name__}: {exc_val}"))
 
         super().__exit__(exc_type, exc_val, exc_tb)
 
@@ -531,7 +523,7 @@ class Tracer(otel_api_trace.Tracer):
         nr_headers = getattr(context, "_nr_headers_outside_transaction", None)
         if nr_headers:
             del context._nr_headers_outside_transaction
-        
+
         # Set default value for whether the span
         # should create an analogous NR trace.
         create_nr_trace = True
@@ -549,7 +541,7 @@ class Tracer(otel_api_trace.Tracer):
             if kind in (otel_api_trace.SpanKind.SERVER, otel_api_trace.SpanKind.CLIENT):
                 transaction = self._create_web_transaction(nr_headers)
                 transaction.__enter__()
-                # If a transaction was already active, we want to create 
+                # If a transaction was already active, we want to create
                 # an NR trace under the existing transaction.  Otherwise,
                 # do not create a new NR trace, aside from the transaction's
                 # root span.
@@ -558,7 +550,7 @@ class Tracer(otel_api_trace.Tracer):
             elif kind in (otel_api_trace.SpanKind.PRODUCER, otel_api_trace.SpanKind.INTERNAL):
                 transaction = BackgroundTask(self.nr_application, name=self.name)
                 transaction.__enter__()
-                # If a transaction was already active, we want to create 
+                # If a transaction was already active, we want to create
                 # an NR trace under the existing transaction.  Otherwise,
                 # do not create a new NR trace, aside from the transaction's
                 # root span.
@@ -620,7 +612,7 @@ class Tracer(otel_api_trace.Tracer):
                     return otel_api_trace.INVALID_SPAN
             elif kind == otel_api_trace.SpanKind.CONSUMER:
                 # If a transaction already exists, do not create a new one
-                # nor should we create a MessageTrace under it.  We do, 
+                # nor should we create a MessageTrace under it.  We do,
                 # however, want to add additional attributes from this span
                 # into the existing transaction.
                 if not transaction:
@@ -711,5 +703,5 @@ class TracerProvider(otel_api_trace.TracerProvider):
             schema_url=schema_url,
             attributes=attributes,
             resource=self._resource,
-            **kwargs
+            **kwargs,
         )

@@ -13,8 +13,9 @@
 # limitations under the License.
 
 import sqlite3
-import pymongo
 
+import pymongo
+from opentelemetry.instrumentation.pymongo import PymongoInstrumentor
 from testing_support.db_settings import mongodb_settings
 from testing_support.validators.validate_database_duration import validate_database_duration
 from testing_support.validators.validate_span_events import validate_span_events
@@ -23,8 +24,6 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
 
 from newrelic.api.background_task import background_task
 from newrelic.common import system_info
-from opentelemetry.instrumentation.pymongo import PymongoInstrumentor
-
 
 DB_SETTINGS = mongodb_settings()[0]
 MONGODB_HOST = DB_SETTINGS["host"]
@@ -125,10 +124,13 @@ _test_pymongo_client_scoped_metrics = [
     (f"Datastore/statement/Mongodb/{MONGODB_COLLECTION}/createindexes", 2),
     (f"Datastore/statement/Mongodb/{MONGODB_COLLECTION}/listindexes", 2),
     (f"Datastore/statement/Mongodb/{MONGODB_COLLECTION}/dropindexes", 2),
-    (f"Datastore/operation/Mongodb/getmore", 1),
+    ("Datastore/operation/Mongodb/getmore", 1),
     (f"Datastore/statement/Mongodb/{MONGODB_COLLECTION}/findandmodify", 3),
-    (f"Datastore/operation/Mongodb/listcollections", 1),
-    (f"Datastore/statement/Mongodb/test.{MONGODB_COLLECTION}/renamecollection", 1), # admin commands use name given by OTel
+    ("Datastore/operation/Mongodb/listcollections", 1),
+    (
+        f"Datastore/statement/Mongodb/test.{MONGODB_COLLECTION}/renamecollection",
+        1,
+    ),  # admin commands use name given by OTel
     (f"Datastore/statement/Mongodb/{MONGODB_COLLECTION}_renamed/drop", 1),
 ]
 
@@ -155,7 +157,6 @@ _test_pymongo_client_rollup_metrics.extend(_test_pymongo_client_scoped_metrics)
 
 
 def test_collection_operations(tracer_provider):
-
     @validate_transaction_errors(errors=[])
     @validate_transaction_metrics(
         "test_collection_operations",

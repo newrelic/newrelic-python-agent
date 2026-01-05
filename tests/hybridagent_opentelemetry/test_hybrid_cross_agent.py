@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import pytest
-
 from opentelemetry import propagate as otel_api_propagate
 from opentelemetry import trace as otel_api_trace
 from testing_support.fixtures import dt_enabled, override_application_settings
@@ -47,19 +46,9 @@ def test_does_not_create_segment_without_a_transaction(tracer):
 @dt_enabled
 @validate_transaction_metrics(name="Foo", background_task=True)
 @validate_span_events(
-    exact_intrinsics={
-        "name": "Function/Bar",
-        "category": "generic",
-    },
-    expected_intrinsics=("parentId",)
+    exact_intrinsics={"name": "Function/Bar", "category": "generic"}, expected_intrinsics=("parentId",)
 )
-@validate_span_events(
-    exact_intrinsics={
-          "name": "Function/Foo",
-          "category": "generic",
-          "nr.entryPoint": True
-    },
-)
+@validate_span_events(exact_intrinsics={"name": "Function/Foo", "category": "generic", "nr.entryPoint": True})
 @validate_span_events(exact_intrinsics={"name": "Function/Foo", "category": "generic", "nr.entryPoint": True})
 @validate_span_events(exact_intrinsics={"name": "Function/Foo", "category": "generic", "nr.entryPoint": True})
 @validate_span_events(exact_intrinsics={"name": "Function/Foo", "category": "generic", "nr.entryPoint": True})
@@ -81,18 +70,10 @@ def test_creates_opentelemetry_segment_in_a_transaction(tracer):
 @dt_enabled
 @validate_transaction_metrics(name="Foo", background_task=True)
 @validate_span_events(
-    exact_intrinsics={
-        "name": "Function/Baz",
-        "category": "generic",
-    },
-    expected_intrinsics=("parentId",)
+    exact_intrinsics={"name": "Function/Baz", "category": "generic"}, expected_intrinsics=("parentId",)
 )
 @validate_span_events(
-    exact_intrinsics={
-        "name": "Function/Bar",
-        "category": "generic",
-    },
-    expected_intrinsics=("parentId",)
+    exact_intrinsics={"name": "Function/Bar", "category": "generic"}, expected_intrinsics=("parentId",)
 )
 @validate_span_events(exact_intrinsics={"name": "Function/Foo", "category": "generic", "nr.entryPoint": True})
 @validate_span_events(exact_intrinsics={"name": "Function/Foo", "category": "generic"})
@@ -172,7 +153,7 @@ def test_opentelemetry_api_and_new_relic_api_can_inject_outbound_trace_context(t
 
             # Correct sampled flag was injected
             assert transaction.sampled == (sampled == "01")
-            
+
             # Assert that the span name is correct even though
             # ExternalTrace types do not have a name attribute
             assert span1.name == "OtelSpan1"

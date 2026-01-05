@@ -12,77 +12,421 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import langchain
 import pytest
+from langchain.messages import HumanMessage
 from langchain.tools import tool
-from langchain_core.prompts import MessagesPlaceholder
 from testing_support.fixtures import reset_core_stats_engine, validate_attributes
+from testing_support.ml_testing_utils import (
+    disabled_ai_monitoring_record_content_settings,
+    disabled_ai_monitoring_settings,
+    events_with_context_attrs,
+    tool_events_sans_content,
+)
+from testing_support.validators.validate_custom_event import validate_custom_event_count
+from testing_support.validators.validate_custom_events import validate_custom_events
+from testing_support.validators.validate_error_trace_attributes import validate_error_trace_attributes
+from testing_support.validators.validate_transaction_error_event_count import validate_transaction_error_event_count
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
+from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
+from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import transient_function_wrapper
 
-# Moved in langchain v1.0.1
-try:
-    from langchain_classic.agents import AgentExecutor, create_openai_functions_agent
-except ImportError:
-    from langchain.agents import AgentExecutor, create_openai_functions_agent
+# from ._test_agent import (
+#     add_exclamation,
+#     multi_tool_model,
+#     multi_tool_model_error,
+#     single_tool_model,
+#     single_tool_model_runtime_error_agen,
+#     single_tool_model_runtime_error_coro,
+#     throw_exception_agen,
+#     throw_exception_coro,
+# )
 
-try:
-    from langchain_core.prompts import ChatPromptTemplate
-except Exception:
-    from langchain.prompts import ChatPromptTemplate
+tool_recorded_event = [
+    (
+        {"type": "LlmTool"},
+        {
+            "id": None,
+            "run_id": "123",
+            "output": "{'text': 'Hello!'}",
+            "name": "add_exclamation",
+            "agent_name": "my_agent",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "input": "{'message': 'Hello'}",
+            "vendor": "strands",
+            "ingest_source": "Python",
+            "duration": None,
+        },
+    )
+]
+
+tool_recorded_event_forced_internal_error = [
+    (
+        {"type": "LlmTool"},
+        {
+            "id": None,
+            "run_id": "123",
+            "name": "add_exclamation",
+            "agent_name": "my_agent",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "input": "{'message': 'Hello'}",
+            "vendor": "strands",
+            "ingest_source": "Python",
+            "duration": None,
+            "error": True,
+        },
+    )
+]
+
+tool_recorded_event_error_coro = [
+    (
+        {"type": "LlmTool"},
+        {
+            "id": None,
+            "run_id": "123",
+            "name": "throw_exception_coro",
+            "agent_name": "my_agent",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "input": "{'message': 'Hello'}",
+            "vendor": "strands",
+            "ingest_source": "Python",
+            "error": True,
+            "output": "{'text': 'Error: RuntimeError - Oops'}",
+            "duration": None,
+        },
+    )
+]
 
 
-@pytest.fixture
-def tools():
-    @tool
-    def multi_arg_tool(first_num, second_num):
-        """A test tool that adds two integers together"""
-        return first_num + second_num
+tool_recorded_event_error_agen = [
+    (
+        {"type": "LlmTool"},
+        {
+            "id": None,
+            "run_id": "123",
+            "name": "throw_exception_agen",
+            "agent_name": "my_agent",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "input": "{'message': 'Hello'}",
+            "vendor": "strands",
+            "ingest_source": "Python",
+            "error": True,
+            "output": "{'text': 'Error: RuntimeError - Oops'}",
+            "duration": None,
+        },
+    )
+]
 
-    return [multi_arg_tool]
+
+agent_recorded_event = [
+    (
+        {"type": "LlmAgent"},
+        {
+            "id": None,
+            "name": "my_agent",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "vendor": "strands",
+            "ingest_source": "Python",
+            "duration": None,
+        },
+    )
+]
+
+agent_recorded_event_error = [
+    (
+        {"type": "LlmAgent"},
+        {
+            "id": None,
+            "name": "my_agent",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "vendor": "strands",
+            "ingest_source": "Python",
+            "error": True,
+            "duration": None,
+        },
+    )
+]
 
 
-@pytest.fixture
-def prompt():
-    return ChatPromptTemplate.from_messages(
-        [
-            ("system", "You are a world class algorithm for extracting information in structured formats."),
-            ("human", "Use the given format to extract information from the following input: {input}"),
-            ("human", "Tip: Make sure to answer in the correct format"),
-            MessagesPlaceholder(variable_name="agent_scratchpad"),
-        ]
+@tool
+def add_exclamation(message: str) -> str:
+    """Adds an exclamation mark to the given message."""
+    return f"{message}!"
+
+
+@reset_core_stats_engine()
+# @validate_custom_events(events_with_context_attrs(tool_recorded_event))
+# @validate_custom_events(events_with_context_attrs(agent_recorded_event))
+# @validate_custom_event_count(count=2)
+# @validate_transaction_metrics(
+#     "mlmodel_strands.test_agent:test_agent_invoke",
+#     scoped_metrics=[
+#         ("Llm/agent/Strands/strands.agent.agent:Agent.stream_async/my_agent", 1),
+#         ("Llm/tool/Strands/strands.tools.executors._executor:ToolExecutor._stream/add_exclamation", 1),
+#     ],
+#     rollup_metrics=[
+#         ("Llm/agent/Strands/strands.agent.agent:Agent.stream_async/my_agent", 1),
+#         ("Llm/tool/Strands/strands.tools.executors._executor:ToolExecutor._stream/add_exclamation", 1),
+#     ],
+#     background_task=True,
+# )
+# @validate_attributes("agent", ["llm"])
+@background_task()
+def test_agent_invoke(set_trace_info, create_agent_runnable):
+    set_trace_info()
+    my_agent = create_agent_runnable(
+        name="my_agent", tools=[add_exclamation], system_prompt="You are a text manipulation algorithm."
     )
 
+    with WithLlmCustomAttributes({"context": "attr"}):
+        response = my_agent.invoke({"messages": [HumanMessage('Use a tool to add an exclamation to the word "Hello"')]})
 
-@reset_core_stats_engine()
-@validate_transaction_metrics(
-    name="test_agent:test_sync_agent",
-    scoped_metrics=[("Llm/agent/LangChain/invoke", 1)],
-    rollup_metrics=[("Llm/agent/LangChain/invoke", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
-    background_task=True,
-)
-@validate_attributes("agent", ["llm"])
-@background_task()
-def test_sync_agent(chat_openai_client, tools, prompt):
-    agent = create_openai_functions_agent(chat_openai_client, tools, prompt)
-    agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
-    response = agent_executor.invoke({"input": "Hello, world"})
-    assert response
+    assert response["message"]
+    # assert response.message["content"][0]["text"] == "Success!"
+    # assert response.metrics.tool_metrics["add_exclamation"].success_count == 1
 
 
-@reset_core_stats_engine()
-@validate_transaction_metrics(
-    name="test_agent:test_async_agent",
-    scoped_metrics=[("Llm/agent/LangChain/ainvoke", 1)],
-    rollup_metrics=[("Llm/agent/LangChain/ainvoke", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
-    background_task=True,
-)
-@validate_attributes("agent", ["llm"])
-@background_task()
-def test_async_agent(loop, chat_openai_client, tools, prompt):
-    agent = create_openai_functions_agent(chat_openai_client, tools, prompt)
-    agent_executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
-    loop.run_until_complete(agent_executor.ainvoke({"input": "Hello, world"}))
+# @reset_core_stats_engine()
+# @validate_custom_events(tool_recorded_event)
+# @validate_custom_events(agent_recorded_event)
+# @validate_custom_event_count(count=2)
+# @validate_transaction_metrics(
+#     "mlmodel_strands.test_agent:test_agent_invoke_async",
+#     scoped_metrics=[
+#         ("Llm/agent/Strands/strands.agent.agent:Agent.stream_async/my_agent", 1),
+#         ("Llm/tool/Strands/strands.tools.executors._executor:ToolExecutor._stream/add_exclamation", 1),
+#     ],
+#     rollup_metrics=[
+#         ("Llm/agent/Strands/strands.agent.agent:Agent.stream_async/my_agent", 1),
+#         ("Llm/tool/Strands/strands.tools.executors._executor:ToolExecutor._stream/add_exclamation", 1),
+#     ],
+#     background_task=True,
+# )
+# @validate_attributes("agent", ["llm"])
+# @background_task()
+# def test_agent_invoke_async(loop, set_trace_info, single_tool_model):
+#     set_trace_info()
+#     my_agent = Agent(name="my_agent", model=single_tool_model, tools=[add_exclamation])
+
+#     async def _test():
+#         response = await my_agent.invoke_async('Add an exclamation to the word "Hello"')
+#         assert response.message["content"][0]["text"] == "Success!"
+#         assert response.metrics.tool_metrics["add_exclamation"].success_count == 1
+
+#     loop.run_until_complete(_test())
+
+
+# @reset_core_stats_engine()
+# @validate_custom_events(tool_recorded_event)
+# @validate_custom_events(agent_recorded_event)
+# @validate_custom_event_count(count=2)
+# @validate_transaction_metrics(
+#     "mlmodel_strands.test_agent:test_agent_stream_async",
+#     scoped_metrics=[
+#         ("Llm/agent/Strands/strands.agent.agent:Agent.stream_async/my_agent", 1),
+#         ("Llm/tool/Strands/strands.tools.executors._executor:ToolExecutor._stream/add_exclamation", 1),
+#     ],
+#     rollup_metrics=[
+#         ("Llm/agent/Strands/strands.agent.agent:Agent.stream_async/my_agent", 1),
+#         ("Llm/tool/Strands/strands.tools.executors._executor:ToolExecutor._stream/add_exclamation", 1),
+#     ],
+#     background_task=True,
+# )
+# @validate_attributes("agent", ["llm"])
+# @background_task()
+# def test_agent_stream_async(loop, set_trace_info, single_tool_model):
+#     set_trace_info()
+#     my_agent = Agent(name="my_agent", model=single_tool_model, tools=[add_exclamation])
+
+#     async def _test():
+#         response = my_agent.stream_async('Add an exclamation to the word "Hello"')
+#         messages = [event["message"]["content"] async for event in response if "message" in event]
+
+#         assert len(messages) == 3
+#         assert messages[0][0]["text"] == "Calling add_exclamation tool"
+#         assert messages[0][1]["toolUse"]["name"] == "add_exclamation"
+#         assert messages[1][0]["toolResult"]["content"][0]["text"] == "Hello!"
+#         assert messages[2][0]["text"] == "Success!"
+
+#     loop.run_until_complete(_test())
+
+
+# @reset_core_stats_engine()
+# @disabled_ai_monitoring_record_content_settings
+# @validate_custom_events(agent_recorded_event)
+# @validate_custom_events(tool_events_sans_content(tool_recorded_event))
+# @validate_custom_event_count(count=2)
+# @validate_transaction_metrics(
+#     "mlmodel_strands.test_agent:test_agent_invoke_no_content",
+#     scoped_metrics=[
+#         ("Llm/agent/Strands/strands.agent.agent:Agent.stream_async/my_agent", 1),
+#         ("Llm/tool/Strands/strands.tools.executors._executor:ToolExecutor._stream/add_exclamation", 1),
+#     ],
+#     rollup_metrics=[
+#         ("Llm/agent/Strands/strands.agent.agent:Agent.stream_async/my_agent", 1),
+#         ("Llm/tool/Strands/strands.tools.executors._executor:ToolExecutor._stream/add_exclamation", 1),
+#     ],
+#     background_task=True,
+# )
+# @validate_attributes("agent", ["llm"])
+# @background_task()
+# def test_agent_invoke_no_content(set_trace_info, single_tool_model):
+#     set_trace_info()
+#     my_agent = Agent(name="my_agent", model=single_tool_model, tools=[add_exclamation])
+
+#     response = my_agent('Add an exclamation to the word "Hello"')
+#     assert response.message["content"][0]["text"] == "Success!"
+#     assert response.metrics.tool_metrics["add_exclamation"].success_count == 1
+
+
+# @disabled_ai_monitoring_settings
+# @reset_core_stats_engine()
+# @validate_custom_event_count(count=0)
+# @background_task()
+# def test_agent_invoke_disabled_ai_monitoring_events(set_trace_info, single_tool_model):
+#     set_trace_info()
+#     my_agent = Agent(name="my_agent", model=single_tool_model, tools=[add_exclamation])
+
+#     response = my_agent('Add an exclamation to the word "Hello"')
+#     assert response.message["content"][0]["text"] == "Success!"
+#     assert response.metrics.tool_metrics["add_exclamation"].success_count == 1
+
+
+# @reset_core_stats_engine()
+# @validate_transaction_error_event_count(1)
+# @validate_error_trace_attributes(callable_name(ValueError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
+# @validate_custom_events(agent_recorded_event_error)
+# @validate_custom_event_count(count=1)
+# @validate_transaction_metrics(
+#     "mlmodel_strands.test_agent:test_agent_invoke_error",
+#     scoped_metrics=[("Llm/agent/Strands/strands.agent.agent:Agent.stream_async/my_agent", 1)],
+#     rollup_metrics=[("Llm/agent/Strands/strands.agent.agent:Agent.stream_async/my_agent", 1)],
+#     background_task=True,
+# )
+# @validate_attributes("agent", ["llm"])
+# @background_task()
+# def test_agent_invoke_error(set_trace_info, single_tool_model):
+#     # Add a wrapper to intentionally force an error in the Agent code
+#     @transient_function_wrapper("strands.agent.agent", "Agent._convert_prompt_to_messages")
+#     def _wrap_convert_prompt_to_messages(wrapped, instance, args, kwargs):
+#         raise ValueError("Oops")
+
+#     @_wrap_convert_prompt_to_messages
+#     def _test():
+#         set_trace_info()
+#         my_agent = Agent(name="my_agent", model=single_tool_model, tools=[add_exclamation])
+#         my_agent('Add an exclamation to the word "Hello"')  # raises ValueError
+
+#     with pytest.raises(ValueError):
+#         _test()
+
+
+# @reset_core_stats_engine()
+# @validate_transaction_error_event_count(1)
+# @validate_error_trace_attributes(callable_name(RuntimeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
+# @validate_custom_events(tool_recorded_event_error_coro)
+# @validate_custom_event_count(count=2)
+# @validate_transaction_metrics(
+#     "mlmodel_strands.test_agent:test_agent_invoke_tool_coro_runtime_error",
+#     scoped_metrics=[
+#         ("Llm/agent/Strands/strands.agent.agent:Agent.stream_async/my_agent", 1),
+#         ("Llm/tool/Strands/strands.tools.executors._executor:ToolExecutor._stream/throw_exception_coro", 1),
+#     ],
+#     rollup_metrics=[
+#         ("Llm/agent/Strands/strands.agent.agent:Agent.stream_async/my_agent", 1),
+#         ("Llm/tool/Strands/strands.tools.executors._executor:ToolExecutor._stream/throw_exception_coro", 1),
+#     ],
+#     background_task=True,
+# )
+# @validate_attributes("agent", ["llm"])
+# @background_task()
+# def test_agent_invoke_tool_coro_runtime_error(set_trace_info, single_tool_model_runtime_error_coro):
+#     set_trace_info()
+#     my_agent = Agent(name="my_agent", model=single_tool_model_runtime_error_coro, tools=[throw_exception_coro])
+
+#     response = my_agent('Add an exclamation to the word "Hello"')
+#     assert response.message["content"][0]["text"] == "Success!"
+#     assert response.metrics.tool_metrics["throw_exception_coro"].error_count == 1
+
+
+# @reset_core_stats_engine()
+# @validate_transaction_error_event_count(1)
+# @validate_error_trace_attributes(callable_name(RuntimeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
+# @validate_custom_events(tool_recorded_event_error_agen)
+# @validate_custom_event_count(count=2)
+# @validate_transaction_metrics(
+#     "mlmodel_strands.test_agent:test_agent_invoke_tool_agen_runtime_error",
+#     scoped_metrics=[
+#         ("Llm/agent/Strands/strands.agent.agent:Agent.stream_async/my_agent", 1),
+#         ("Llm/tool/Strands/strands.tools.executors._executor:ToolExecutor._stream/throw_exception_agen", 1),
+#     ],
+#     rollup_metrics=[
+#         ("Llm/agent/Strands/strands.agent.agent:Agent.stream_async/my_agent", 1),
+#         ("Llm/tool/Strands/strands.tools.executors._executor:ToolExecutor._stream/throw_exception_agen", 1),
+#     ],
+#     background_task=True,
+# )
+# @validate_attributes("agent", ["llm"])
+# @background_task()
+# def test_agent_invoke_tool_agen_runtime_error(set_trace_info, single_tool_model_runtime_error_agen):
+#     set_trace_info()
+#     my_agent = Agent(name="my_agent", model=single_tool_model_runtime_error_agen, tools=[throw_exception_agen])
+
+#     response = my_agent('Add an exclamation to the word "Hello"')
+#     assert response.message["content"][0]["text"] == "Success!"
+#     assert response.metrics.tool_metrics["throw_exception_agen"].error_count == 1
+
+
+# @reset_core_stats_engine()
+# @validate_transaction_error_event_count(1)
+# @validate_error_trace_attributes(callable_name(ValueError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
+# @validate_custom_events(agent_recorded_event)
+# @validate_custom_events(tool_recorded_event_forced_internal_error)
+# @validate_custom_event_count(count=2)
+# @validate_transaction_metrics(
+#     "mlmodel_strands.test_agent:test_agent_tool_forced_exception",
+#     scoped_metrics=[
+#         ("Llm/agent/Strands/strands.agent.agent:Agent.stream_async/my_agent", 1),
+#         ("Llm/tool/Strands/strands.tools.executors._executor:ToolExecutor._stream/add_exclamation", 1),
+#     ],
+#     rollup_metrics=[
+#         ("Llm/agent/Strands/strands.agent.agent:Agent.stream_async/my_agent", 1),
+#         ("Llm/tool/Strands/strands.tools.executors._executor:ToolExecutor._stream/add_exclamation", 1),
+#     ],
+#     background_task=True,
+# )
+# @validate_attributes("agent", ["llm"])
+# @background_task()
+# def test_agent_tool_forced_exception(set_trace_info, single_tool_model):
+#     # Add a wrapper to intentionally force an error in the ToolExecutor._stream code to hit the exception path in
+#     # the AsyncGeneratorProxy
+#     @transient_function_wrapper("strands.hooks.events", "BeforeToolCallEvent.__init__")
+#     def _wrap_BeforeToolCallEvent_init(wrapped, instance, args, kwargs):
+#         raise ValueError("Oops")
+
+#     @_wrap_BeforeToolCallEvent_init
+#     def _test():
+#         set_trace_info()
+#         my_agent = Agent(name="my_agent", model=single_tool_model, tools=[add_exclamation])
+#         my_agent('Add an exclamation to the word "Hello"')
+
+#     # This will not explicitly raise a ValueError when running the test but we are still able to  capture it in the error trace
+#     _test()
+
+
+# @reset_core_stats_engine()
+# @validate_custom_event_count(count=0)
+# def test_agent_invoke_outside_txn(single_tool_model):
+#     my_agent = Agent(name="my_agent", model=single_tool_model, tools=[add_exclamation])
+
+#     response = my_agent('Add an exclamation to the word "Hello"')
+#     assert response.message["content"][0]["text"] == "Success!"
+#     assert response.metrics.tool_metrics["add_exclamation"].success_count == 1

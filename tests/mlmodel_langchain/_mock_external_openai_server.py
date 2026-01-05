@@ -143,7 +143,7 @@ RESPONSES_V1 = {
 
 
 @pytest.fixture(scope="session")
-def simple_get(openai_version, extract_shortened_prompt):
+def simple_get():
     def _simple_get(self):
         content_len = int(self.headers.get("content-length"))
         content = json.loads(self.rfile.read(content_len).decode("utf-8"))
@@ -208,32 +208,15 @@ def MockExternalOpenAIServer(simple_get):
     return _MockExternalOpenAIServer
 
 
-@pytest.fixture(scope="session")
-def extract_shortened_prompt(openai_version):
-    def _extract_shortened_prompt(content):
-        _input = content.get("input", None)
-        if _input:
-            return str(_input[0][0])
+def extract_shortened_prompt(content):
+    _input = content.get("input", None)
+    if _input:
+        return str(_input[0][0])
 
-        # Transform all input messages into a single prompt
-        messages = content.get("messages")
-        prompt = [f"{message['role']}: {message['content']}" for message in messages]
-        return " | ".join(prompt)
-
-    return _extract_shortened_prompt
-
-
-def get_openai_version():
-    # Import OpenAI so that get package version can catpure the version from the
-    # system module. OpenAI does not have a package version in v0.
-    import openai
-
-    return get_package_version_tuple("openai")
-
-
-@pytest.fixture(scope="session")
-def openai_version():
-    return get_openai_version()
+    # Transform all input messages into a single prompt
+    messages = content.get("messages")
+    prompt = [f"{message['role']}: {message['content']}" for message in messages]
+    return " | ".join(prompt)
 
 
 if __name__ == "__main__":

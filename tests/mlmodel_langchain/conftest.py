@@ -20,8 +20,6 @@ import pytest
 from _mock_external_openai_server import (
     MockExternalOpenAIServer,
     extract_shortened_prompt,
-    get_openai_version,
-    openai_version,
     simple_get,
 )
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
@@ -61,7 +59,7 @@ RECORDED_HEADERS = {"x-request-id", "content-type"}
 
 
 @pytest.fixture(scope="session")
-def openai_clients(openai_version, MockExternalOpenAIServer):
+def openai_clients(MockExternalOpenAIServer):
     """
     This configures the openai client and returns it for openai v1 and only configures
     openai for v0 since there is no client.
@@ -153,7 +151,7 @@ def create_agent_runnable(request, chat_openai_client):
 
 
 @pytest.fixture(autouse=True, scope="session")
-def openai_server(openai_version, openai_clients, wrap_httpx_client_send, wrap_stream_iter_events):
+def openai_server(wrap_httpx_client_send, wrap_stream_iter_events):
     """
     This fixture will either create a mocked backend for testing purposes, or will
     set up an audit log file to log responses of the real OpenAI backend to a file.
@@ -175,7 +173,7 @@ def openai_server(openai_version, openai_clients, wrap_httpx_client_send, wrap_s
 
 
 @pytest.fixture(scope="session")
-def wrap_httpx_client_send(extract_shortened_prompt):
+def wrap_httpx_client_send():
     def _wrap_httpx_client_send(wrapped, instance, args, kwargs):
         bound_args = bind_args(wrapped, args, kwargs)
         stream = bound_args.get("stream", False)
@@ -217,7 +215,7 @@ def wrap_httpx_client_send(extract_shortened_prompt):
 
 
 @pytest.fixture(scope="session")
-def generator_proxy(openai_version):
+def generator_proxy():
     class GeneratorProxy(ObjectProxy):
         def __init__(self, wrapped):
             super().__init__(wrapped)
@@ -242,22 +240,10 @@ def generator_proxy(openai_version):
                 return_val = self.__wrapped__.__next__()
                 if return_val:
                     prompt = list(OPENAI_AUDIT_LOG_CONTENTS.keys())[-1]
-                    if openai_version < (1, 0):
-                        headers = dict(
-                            filter(
-                                lambda k: k[0].lower() in RECORDED_HEADERS
-                                or k[0].lower().startswith("openai")
-                                or k[0].lower().startswith("x-ratelimit"),
-                                return_val._nr_response_headers.items(),
-                            )
-                        )
-                        OPENAI_AUDIT_LOG_CONTENTS[prompt][0] = headers
-                        OPENAI_AUDIT_LOG_CONTENTS[prompt][2].append(return_val.to_dict_recursive())
-                    else:
-                        if not getattr(return_val, "data", "").startswith("[DONE]"):
-                            OPENAI_AUDIT_LOG_CONTENTS[prompt][2].append(return_val.json())
+                    if not getattr(return_val, "data", "").startswith("[DONE]"):
+                        OPENAI_AUDIT_LOG_CONTENTS[prompt][2].append(return_val.json())
                 return return_val
-            except Exception as e:
+            except Exception:
                 raise
 
         def close(self):

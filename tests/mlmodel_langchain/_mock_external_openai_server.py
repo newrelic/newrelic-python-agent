@@ -546,8 +546,13 @@ def MockExternalOpenAIServer(simple_get):
 def extract_shortened_prompt(openai_version):
     def _extract_shortened_prompt(content):
         _input = content.get("input", None)
-        prompt = (_input and str(_input[0][0])) or content.get("messages")[0]["content"]
-        return prompt
+        if _input:
+            return str(_input[0][0])
+
+        # Transform all input messages into a single prompt
+        messages = content.get("messages")
+        prompt = [f"{message['role']}: {message['content']}" for message in messages]
+        return " | ".join(prompt)
 
     return _extract_shortened_prompt
 

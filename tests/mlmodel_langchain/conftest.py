@@ -31,6 +31,7 @@ from testing_support.fixtures import (
     collector_available_fixture,
     override_application_settings,
 )
+from testing_support.ml_testing_utils import set_trace_info
 
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import ObjectProxy, wrap_function_wrapper
@@ -95,6 +96,62 @@ def chat_openai_client(openai_clients):
     return chat_client
 
 
+@pytest.fixture(scope="session", params=["Agent", "StateGraph", "RunnableSeq", "RunnableSequence"])
+def create_agent_runnable(request, chat_openai_client):
+    def _create_agent(model="gpt-5.1", tools=None, system_prompt=None, name="openai agent"):
+        from langchain.agents import create_agent
+
+        client = chat_openai_client.with_config(model=model, timeout=30)
+
+        return create_agent(model=client, tools=tools, system_prompt=system_prompt, name=name)
+
+    def function_step(state):
+        return {"output": f"The real agent said: {state['output']}"}
+
+    def _create_state_graph(*args, **kwargs):
+        from langgraph import END, START, MessagesState, StateGraph
+
+        agent = _create_agent(*args, **kwargs)
+
+        class State(MessagesState):
+            input: str
+            output: str
+
+        graph = StateGraph(State)
+        graph.add_node(agent)
+        graph.add_node(function_step)
+        graph.add_edge(START, "agent_executor")
+        graph.add_edge("agent_executor", "function_step")
+        graph.add_edge("function_step", END)
+
+        return graph.compile()
+
+    def _create_runnable_seq(*args, **kwargs):
+        from langgraph.runnables import RunnableSeq
+
+        agent = _create_agent(*args, **kwargs)
+
+        return RunnableSeq(agent, function_step)
+
+    def _create_runnable_sequence(*args, **kwargs):
+        from langchain.runnables import RunnableSequence
+
+        agent = _create_agent(*args, **kwargs)
+
+        return RunnableSequence(agent, function_step)
+
+    if request.param == "Agent":
+        return _create_agent
+    elif request.param == "StateGraph":
+        return _create_state_graph
+    elif request.param == "RunnableSeq":
+        return _create_runnable_seq
+    elif request.param == "RunnableSequence":
+        return _create_runnable_sequence
+    else:
+        raise NotImplementedError
+
+
 @pytest.fixture(autouse=True, scope="session")
 def openai_server(openai_version, openai_clients, wrap_httpx_client_send, wrap_stream_iter_events):
     """
@@ -123,6 +180,7 @@ def wrap_httpx_client_send(extract_shortened_prompt):
         bound_args = bind_args(wrapped, args, kwargs)
         stream = bound_args.get("stream", False)
         request = bound_args["request"]
+
         if not request:
             return wrapped(*args, **kwargs)
 

@@ -85,7 +85,7 @@ STREAMED_RESPONSES = {
         404,
         {
             "error": {
-                "message": "The model `does-not-exist` does not exist or you do not have access to it.",
+                "message": "The model `does-not-exist` does not exist",
                 "type": "invalid_request_error",
                 "param": None,
                 "code": "model_not_found",

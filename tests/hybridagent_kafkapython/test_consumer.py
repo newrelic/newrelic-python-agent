@@ -50,12 +50,13 @@ def test_multiple_transactions(get_consumer_record, topic):
     _test()
 
 
-def test_custom_metrics_on_existing_transaction(get_consumer_record, topic, expected_broker_metrics):
+def test_custom_metrics_on_existing_transaction(get_consumer_record, topic, expected_broker_metrics, expected_producer_broker_metrics):
 
     @validate_transaction_metrics(
         "test_consumer:test_custom_metrics_on_existing_transaction.<locals>._test",
         custom_metrics=[
             *expected_broker_metrics,
+            *expected_producer_broker_metrics,
         ],
         background_task=True,
     )
@@ -168,6 +169,11 @@ def consumer_next_raises(consumer):
 @pytest.fixture
 def expected_broker_metrics(broker, topic):
     return [(f"MessageBroker/Kafka/Nodes/{server}/Consume/{topic}", 1) for server in broker]
+
+
+@pytest.fixture
+def expected_producer_broker_metrics(broker, topic):
+    return [(f"MessageBroker/Kafka/Nodes/{server}/Produce/{topic}", 1) for server in broker]
 
 
 @pytest.fixture

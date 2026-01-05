@@ -16,6 +16,7 @@ import pytest
 from conftest import cache_kafka_producer_headers
 from testing_support.validators.validate_messagebroker_headers import validate_messagebroker_headers
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_transaction_count import validate_transaction_count
 
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import FunctionTrace
@@ -34,6 +35,14 @@ def test_trace_metrics(topic, send_producer_message, expected_broker_metrics):
         background_task=True,
     )
     @background_task()
+    def test():
+        send_producer_message()
+
+    test()
+
+
+def test_trace_not_being_created(send_producer_message):
+    @validate_transaction_count(0)
     def test():
         send_producer_message()
 

@@ -59,7 +59,7 @@ def test_application(caplog, app, endpoint):
     @validate_transaction_metrics(
         transaction_name,
         scoped_metrics=[(f"Function/{transaction_name} http send", 2)],
-        rollup_metrics=_test_application_rollup_metrics + [(f"Function/{transaction_name} http send", 2)],
+        rollup_metrics=[(f"Function/{transaction_name} http send", 2), *_test_application_rollup_metrics],
     )
     def _test():
         response = app.get(endpoint)

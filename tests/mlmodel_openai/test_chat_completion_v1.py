@@ -336,10 +336,7 @@ def test_openai_chat_completion_async_with_llm_metadata(loop, set_trace_info, as
     with WithLlmCustomAttributes({"context": "attr"}):
         loop.run_until_complete(
             async_openai_client.chat.completions.create(
-                model="gpt-5.1",
-                messages=_test_openai_chat_completion_messages,
-                temperature=0.7,
-                max_tokens=100,
+                model="gpt-5.1", messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
             )
         )
 
@@ -449,10 +446,7 @@ def test_openai_chat_completion_no_usage_data(set_trace_info, sync_openai_client
     # Only testing that there are events, and there was no exception raised
     set_trace_info()
     sync_openai_client.chat.completions.create(
-        model="gpt-5.1",
-        messages=({"role": "user", "content": "No usage data"},),
-        temperature=0.7,
-        max_tokens=100,
+        model="gpt-5.1", messages=({"role": "user", "content": "No usage data"},), temperature=0.7, max_tokens=100
     )
 
 
@@ -466,9 +460,6 @@ def test_openai_chat_completion_async_no_usage_data(set_trace_info, async_openai
     set_trace_info()
     loop.run_until_complete(
         async_openai_client.chat.completions.create(
-            model="gpt-5.1",
-            messages=({"role": "user", "content": "No usage data"},),
-            temperature=0.7,
-            max_tokens=100,
+            model="gpt-5.1", messages=({"role": "user", "content": "No usage data"},), temperature=0.7, max_tokens=100
         )
     )

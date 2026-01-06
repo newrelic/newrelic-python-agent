@@ -16,7 +16,6 @@ import psycopg2
 import psycopg2.extensions
 import psycopg2.extras
 import pytest
-
 from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
 
 try:
@@ -24,11 +23,11 @@ try:
 except ImportError:
     sql = None
 
+from testing_support.db_settings import postgresql_settings
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
 from testing_support.validators.validate_database_trace_inputs import validate_database_trace_inputs
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from testing_support.db_settings import postgresql_settings
 
 from newrelic.api.background_task import background_task
 
@@ -105,7 +104,6 @@ def _execute(connection, cursor, row_type, wrapper):
     psycopg2.extensions.register_type(unicode_type, connection)
     psycopg2.extensions.register_type(unicode_type, cursor)
 
-
     sql = f"""drop table if exists {DB_SETTINGS["table_name"]}"""
     cursor.execute(wrapper(sql))
 
@@ -153,7 +151,7 @@ def _exercise_db(cursor_factory=None, use_cur_context=False, row_type=tuple, wra
     }
     if cursor_factory:
         kwargs["cursor_factory"] = cursor_factory
-    
+
     connection = psycopg2.connect(**kwargs)
 
     try:

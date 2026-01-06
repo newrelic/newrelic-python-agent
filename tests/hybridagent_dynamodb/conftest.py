@@ -17,7 +17,7 @@ from pathlib import Path
 
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
-from newrelic.common.package_version_utils import get_package_version 
+from newrelic.common.package_version_utils import get_package_version
 
 BOTOCORE_VERSION = get_package_version("botocore")
 

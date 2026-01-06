@@ -54,11 +54,12 @@ def wrap_get_global_response_propagator(wrapped, instance, args, kwargs):
     if not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
-    from newrelic.api.opentelemetry import otel_context_propagator
     from opentelemetry.instrumentation.propagators import set_global_response_propagator
-    
+
+    from newrelic.api.opentelemetry import otel_context_propagator
+
     set_global_response_propagator(otel_context_propagator)
-    
+
     return otel_context_propagator
 
 
@@ -132,8 +133,9 @@ def wrap_get_tracer_provider(wrapped, instance, args, kwargs):
 
     if _TRACER_PROVIDER is None:
         from newrelic.api.opentelemetry import TracerProvider
+
         _TRACER_PROVIDER = TracerProvider()
-        
+
     return _TRACER_PROVIDER
 
 

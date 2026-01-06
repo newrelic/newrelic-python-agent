@@ -14,7 +14,6 @@
 
 import mysql.connector
 from opentelemetry.instrumentation.mysql import MySQLInstrumentor
-
 from testing_support.db_settings import mysql_settings
 from testing_support.util import instance_hostname
 from testing_support.validators.validate_database_trace_inputs import validate_database_trace_inputs

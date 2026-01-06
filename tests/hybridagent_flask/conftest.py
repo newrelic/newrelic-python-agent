@@ -49,6 +49,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 
 os.environ["NEW_RELIC_CONFIG_FILE"] = str(Path(__file__).parent / "newrelic_flask.ini")
 
+
 @pytest.fixture(scope="session")
 def tracer():
     trace_provider = TracerProvider()

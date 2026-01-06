@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import logging
 import sys
 from contextlib import contextmanager
@@ -23,7 +24,6 @@ from opentelemetry.propagators.composite import CompositePropagator
 from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 from opentelemetry.trace.status import Status, StatusCode
 
-from newrelic.core.database_utils import generate_dynamodb_arn, get_database_operation_target_from_statement
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import BackgroundTask
 from newrelic.api.datastore_trace import DatastoreTrace
@@ -34,6 +34,7 @@ from newrelic.api.message_transaction import MessageTransaction
 from newrelic.api.time_trace import current_trace, notice_error
 from newrelic.api.transaction import Sentinel, current_transaction
 from newrelic.api.web_transaction import WebTransaction, WSGIWebTransaction
+from newrelic.core.database_utils import generate_dynamodb_arn, get_database_operation_target_from_statement
 from newrelic.core.otlp_utils import create_resource
 
 _logger = logging.getLogger(__name__)
@@ -47,14 +48,22 @@ class NRTraceContextPropagator(TraceContextTextMapPropagator):
         # If we are passing into New Relic, traceparent
         # and/or tracestate's keys also need to be NR compatible.
 
+        nr_headers = {
+            header_key: getter.get(carrier, header_key)[0]
+            for header_key in self.HEADER_KEYS
+            if getter.get(carrier, header_key)
+        }
+
+        extracted_context = super().extract(carrier=carrier, context=context, getter=getter)
+
         if transaction:
-            nr_headers = {
-                header_key: getter.get(carrier, header_key)[0]
-                for header_key in self.HEADER_KEYS
-                if getter.get(carrier, header_key)
-            }
             transaction.accept_distributed_trace_headers(nr_headers)
-        return super().extract(carrier=carrier, context=context, getter=getter)
+        else:
+            # A situation where extract() is called BEFORE a span
+            # creation (such as in the kafka consumer instrumentation)
+            extracted_context._nr_headers_outside_transaction = nr_headers
+
+        return extracted_context
 
     def inject(self, carrier, context=None, setter=None):
         transaction = current_transaction()
@@ -115,6 +124,7 @@ class Span(otel_api_trace.Span):
         instrumenting_module=None,
         record_exception=True,
         set_status_on_exception=True,
+        create_nr_trace=True,
         *args,
         **kwargs,
     ):
@@ -148,8 +158,8 @@ class Span(otel_api_trace.Span):
             #    point). This covers cases where span is remote.
             self.nr_parent = current_nr_trace
         else:
-            # Not sure if there is a usecase where we could get in here
-            # but for debug purposes, we will log this with details
+            # This should not occur, but if it does, we need to
+            # log an error and not create a New Relic trace.
             _logger.error(
                 "OpenTelemetry span (%s) and NR trace (%s) do not match nor correspond to a remote span. Open Telemetry span will not be reported to New Relic. Please report this problem to New Relic.",
                 self.otel_parent,
@@ -157,7 +167,19 @@ class Span(otel_api_trace.Span):
             )
             return
 
-        if nr_trace_type == FunctionTrace:
+        if not create_nr_trace:
+            # Do not create a New Relic trace for this OTel span.
+            # While this OTel span exists it will not be explicitly
+            # translated to a NR trace.  This may occur during the
+            # creation of a Transaction, which will create the root
+            # span.  This may also occur during special cases, such
+            # as back to back calls to a message queue's consumer.
+            # If a transaction already exists, we do not want to
+            # create another transaction or trace, but rather just
+            # append existing attributes to the existing transaction.
+            self.nr_trace = current_nr_trace
+            return
+        elif nr_trace_type == FunctionTrace:
             trace_kwargs = {"name": self.name, "params": self.attributes, "parent": self.nr_parent}
             self.nr_trace = nr_trace_type(**trace_kwargs)
         elif nr_trace_type == DatastoreTrace:
@@ -194,7 +216,9 @@ class Span(otel_api_trace.Span):
         self.nr_trace.__enter__()
 
     def _remote(self):
-        # Remote span denotes if propagated from a remote parent
+        """
+        Remote span denotes if propagated from a remote parent
+        """
         return bool(self.otel_parent and self.otel_parent.is_remote)
 
     def get_span_context(self):
@@ -237,11 +261,11 @@ class Span(otel_api_trace.Span):
         raise NotImplementedError("Not implemented yet.")
 
     def update_name(self, name):
-        # Sentinel, MessageTrace, DatastoreTrace, and ExternalTrace
-        # types do not have a name attribute
-        self._name = name
+        # NOTE: Sentinel, MessageTrace, DatastoreTrace, and
+        # ExternalTrace types do not have a name attribute.
+        self.name = name
         if hasattr(self, "nr_trace") and hasattr(self.nr_trace, "name"):
-            self.nr_trace.name = self._name
+            self.nr_trace.name = self.name
 
     def is_recording(self):
         # If the trace has an end time set then it is done recording. Otherwise,
@@ -318,28 +342,24 @@ class Span(otel_api_trace.Span):
                 db_statement = db_statement.string
             operation, target = get_database_operation_target_from_statement(db_statement)
             target = target or self.attributes.get("db.mongodb.collection")
-            span_obj_attrs.update({
-                "operation": operation,
-                "target": target,
-            })
+            span_obj_attrs.update({"operation": operation, "target": target})
         elif span_obj_attrs["product"] == "Dynamodb":
             region = self.attributes.get("cloud.region")
             operation = self.attributes.get("db.operation")
             target = self.attributes.get("aws.dynamodb.table_names", [None])[-1]
             account_id = self.nr_transaction.settings.cloud.aws.account_id
             resource_id = generate_dynamodb_arn(span_obj_attrs["host"], region, account_id, target)
-            agent_attrs.update({
-                "aws.operation": self.attributes.get("db.operation"),
-                "cloud.resource_id": resource_id,
-                "cloud.region": region,
-                "aws.requestId": self.attributes.get("aws.request_id"),
-                "http.statusCode": self.attributes.get("http.status_code"),
-                "cloud.account.id": account_id,
-            })
-            span_obj_attrs.update({
-                "target": target,
-                "operation": operation,
-            })
+            agent_attrs.update(
+                {
+                    "aws.operation": self.attributes.get("db.operation"),
+                    "cloud.resource_id": resource_id,
+                    "cloud.region": region,
+                    "aws.requestId": self.attributes.get("aws.request_id"),
+                    "http.statusCode": self.attributes.get("http.status_code"),
+                    "cloud.account.id": account_id,
+                }
+            )
+            span_obj_attrs.update({"target": target, "operation": operation})
 
         # We do not want to override any agent attributes
         # with `None` if `value` does not exist.
@@ -353,10 +373,9 @@ class Span(otel_api_trace.Span):
     def end(self, end_time=None, *args, **kwargs):
         # We will ignore the end_time parameter and use NR's end_time
 
-        # Check to see if New Relic trace ever existed or,
-        # if it does, that trace has already ended
-        nr_trace = hasattr(self, "nr_trace")
-        if not nr_trace or (nr_trace and getattr(nr_trace, "end_time", None)):
+        # Check to see if New Relic trace ever existed
+        # or, if it does, that trace has already ended
+        if not self.nr_trace or getattr(self.nr_trace, "end_time", None):
             return
 
         # We will need to add specific attributes to the
@@ -369,20 +388,38 @@ class Span(otel_api_trace.Span):
         if self.attributes.get("db.system"):
             self._database_attribute_mapping()
 
-        # External specific attributes
+        # External/Web specific attributes
         self.nr_trace._add_agent_attribute("http.statusCode", self.attributes.get("http.status_code"))
+
+        # Message specific attributes
+        if self.attributes.get("messaging.system"):
+            destination_name = self.attributes.get("messaging.destination")
+            self.nr_transaction.destination_name = destination_name
+            bootstrap_servers = json.loads(self.attributes.get("messaging.url", "[]"))
+            for server_name in bootstrap_servers:
+                produce_or_consume = "Produce" if self.kind == otel_api_trace.SpanKind.PRODUCER else "Consume"
+                self.nr_transaction.record_custom_metric(
+                    f"MessageBroker/Kafka/Nodes/{server_name}/{produce_or_consume}/{destination_name}", 1
+                )
 
         # Add OTel attributes as custom NR trace attributes
         self._set_attributes_in_nr(self.attributes)
 
         error = sys.exc_info()
-        self.nr_trace.__exit__(*error)
         self.set_status(StatusCode.OK if not error[0] else StatusCode.ERROR)
 
-        if ("exception.escaped" in self.attributes) or (self.kind in (otel_api_trace.SpanKind.SERVER, otel_api_trace.SpanKind.CONSUMER) and isinstance(current_trace(), Sentinel)):
-            # We need to end the transaction as well
+        # Only if unhandled exception do we want to abruptly end.
+        # Otherwise, ensure that the span is the last one to end.
+        if getattr(self.attributes, "exception.escaped", False) or (
+            self.kind in (otel_api_trace.SpanKind.SERVER, otel_api_trace.SpanKind.CONSUMER)
+            and isinstance(current_trace(), Sentinel)
+        ):
+            # We need to end the transaction, which will
+            # end the sentinel trace as well.
             self.nr_transaction.__exit__(*error)
-
+        else:
+            # Just end the existing trace
+            self.nr_trace.__exit__(*error)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         """
@@ -394,12 +431,7 @@ class Span(otel_api_trace.Span):
             if self._record_exception:
                 self.record_exception(exception=exc_val, escaped=True)
             if self.set_status_on_exception:
-                self.set_status(
-                    Status(
-                        status_code=StatusCode.ERROR,
-                        description=f"{exc_type.__name__}: {exc_val}",
-                    )
-                )
+                self.set_status(Status(status_code=StatusCode.ERROR, description=f"{exc_type.__name__}: {exc_val}"))
 
         super().__exit__(exc_type, exc_val, exc_tb)
 
@@ -409,7 +441,7 @@ class Tracer(otel_api_trace.Tracer):
         self.resource = resource
         self.instrumentation_library = instrumentation_library.split(".")[-1].capitalize()
 
-    def _create_web_transaction(self):
+    def _create_web_transaction(self, nr_headers=None):
         if "nr.wsgi.environ" in self.attributes:
             # This is a WSGI request
             transaction = WSGIWebTransaction(self.nr_application, environ=self.attributes.pop("nr.wsgi.environ"))
@@ -436,7 +468,8 @@ class Tracer(otel_api_trace.Tracer):
             )
         else:
             # This is a web request
-            headers = self.attributes.pop("nr.http.headers", None)
+            nr_headers = nr_headers or {}
+            headers = self.attributes.pop("nr.http.headers", nr_headers)
             scheme = self.attributes.get("http.scheme")
             host = self.attributes.get("http.server_name")
             port = self.attributes.get("net.host.port")
@@ -486,6 +519,14 @@ class Tracer(otel_api_trace.Tracer):
 
         # Retrieve parent span
         parent_span_context = otel_api_trace.get_current_span(context).get_span_context()
+        # For cases where `extract()` was called before span/transaction creation
+        nr_headers = getattr(context, "_nr_headers_outside_transaction", None)
+        if nr_headers:
+            del context._nr_headers_outside_transaction
+
+        # Set default value for whether the span
+        # should create an analogous NR trace.
+        create_nr_trace = True
 
         if parent_span_context is None or not parent_span_context.is_valid:
             parent_span_context = None
@@ -498,9 +539,23 @@ class Tracer(otel_api_trace.Tracer):
         # Make sure we transfer DT headers when we are here, if DT is enabled
         if parent_span_context and parent_span_context.is_remote:
             if kind in (otel_api_trace.SpanKind.SERVER, otel_api_trace.SpanKind.CLIENT):
-                transaction = self._create_web_transaction()
+                transaction = self._create_web_transaction(nr_headers)
+                transaction.__enter__()
+                # If a transaction was already active, we want to create
+                # an NR trace under the existing transaction.  Otherwise,
+                # do not create a new NR trace, aside from the transaction's
+                # root span.
+                if transaction.enabled:
+                    create_nr_trace = False
             elif kind in (otel_api_trace.SpanKind.PRODUCER, otel_api_trace.SpanKind.INTERNAL):
                 transaction = BackgroundTask(self.nr_application, name=self.name)
+                transaction.__enter__()
+                # If a transaction was already active, we want to create
+                # an NR trace under the existing transaction.  Otherwise,
+                # do not create a new NR trace, aside from the transaction's
+                # root span.
+                if transaction.enabled:
+                    create_nr_trace = False
             elif kind == otel_api_trace.SpanKind.CONSUMER:
                 transaction = MessageTransaction(
                     library=self.instrumentation_library,
@@ -508,10 +563,21 @@ class Tracer(otel_api_trace.Tracer):
                     destination_name=self.name,
                     application=self.nr_application,
                     transport_type=self.instrumentation_library,
-                    headers=None,
+                    headers=nr_headers,
                 )
+                transaction.__enter__()
+                # In the case of a consumer span, we do not want to create
+                # a trace regardless of whether a transaction already existed.
+                # This scenario should either create a transaction or use
+                # the existing transaction and add additional attributes to it.
+                create_nr_trace = False
 
-            transaction.__enter__()
+            if not transaction.enabled:
+                # We will reach this if there already was a transaction
+                # active.  The attempt at creating a transaction will
+                # create one where transaction.enabled == False, so
+                # we do not want to pass an inactive transaction along.
+                transaction = current_transaction()
 
         # If not parent_span_context or not parent_span_context.is_remote
         # To simplify calculation logic, we will use DeMorgan's Theorem:
@@ -523,13 +589,14 @@ class Tracer(otel_api_trace.Tracer):
                 if transaction:
                     nr_trace_type = FunctionTrace
                 elif not transaction:
-                    transaction = self._create_web_transaction()
+                    transaction = self._create_web_transaction(nr_headers)
 
                     transaction._trace_id = (
                         f"{parent_span_trace_id:x}" if parent_span_trace_id else transaction.trace_id
                     )
 
                     transaction.__enter__()
+                    create_nr_trace = False
             elif kind == otel_api_trace.SpanKind.INTERNAL:
                 if transaction:
                     nr_trace_type = FunctionTrace
@@ -544,18 +611,23 @@ class Tracer(otel_api_trace.Tracer):
                 else:
                     return otel_api_trace.INVALID_SPAN
             elif kind == otel_api_trace.SpanKind.CONSUMER:
-                if transaction:
-                    nr_trace_type = FunctionTrace
-                elif not transaction:
+                # If a transaction already exists, do not create a new one
+                # nor should we create a MessageTrace under it.  We do,
+                # however, want to add additional attributes from this span
+                # into the existing transaction.
+                if not transaction:
                     transaction = MessageTransaction(
                         library=self.instrumentation_library,
                         destination_type="Topic",
                         destination_name=self.name,
                         application=self.nr_application,
                         transport_type=self.instrumentation_library,
-                        headers=None,
+                        headers=nr_headers,
                     )
                     transaction.__enter__()
+                # Whether a transaction exists or not, do not create a NR
+                # trace for the case of a consumer span.
+                create_nr_trace = False
             elif kind == otel_api_trace.SpanKind.PRODUCER:
                 if transaction:
                     nr_trace_type = MessageTrace
@@ -576,6 +648,7 @@ class Tracer(otel_api_trace.Tracer):
             instrumenting_module=self.instrumentation_library,
             record_exception=self._record_exception,
             set_status_on_exception=self.set_status_on_exception,
+            create_nr_trace=create_nr_trace,
         )
 
         return span
@@ -630,5 +703,5 @@ class TracerProvider(otel_api_trace.TracerProvider):
             schema_url=schema_url,
             attributes=attributes,
             resource=self._resource,
-            **kwargs
+            **kwargs,
         )

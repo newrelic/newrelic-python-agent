@@ -13,21 +13,20 @@
 # limitations under the License.
 
 import pytest
-
 import redis
 from opentelemetry.instrumentation.redis import RedisInstrumentor
-
 from testing_support.db_settings import redis_settings
-from testing_support.fixtures import override_application_settings, dt_enabled
+from testing_support.fixtures import dt_enabled, override_application_settings
 from testing_support.util import instance_hostname
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.validators.validate_span_events import validate_span_events
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
 
 DB_SETTINGS = redis_settings()[0]
 REDIS_PY_VERSION = get_package_version_tuple("redis")
+
 
 @pytest.fixture(scope="module", autouse=True)
 def instrument_otel_redis(tracer_provider):
@@ -48,38 +47,34 @@ _instance_metric_name = f"Datastore/instance/Redis/{_host}/{_port}"
 
 _exact_intrinsics = {"type": "Span"}
 _exact_root_intrinsics = _exact_intrinsics.copy().update({"nr.entryPoint": True})
-_expected_intrinsics = ["traceId", "transactionId", "sampled", "priority", "timestamp", "duration", "name", "category", "guid"]
+_expected_intrinsics = [
+    "traceId",
+    "transactionId",
+    "sampled",
+    "priority",
+    "timestamp",
+    "duration",
+    "name",
+    "category",
+    "guid",
+]
 _expected_root_intrinsics = [*_expected_intrinsics, "transaction.name"]
 _expected_child_intrinsics = [*_expected_intrinsics, "parentId"]
 _unexpected_root_intrinsics = ["parentId"]
 _unexpected_child_intrinsics = ["nr.entryPoint", "transaction.name"]
 
-_exact_agents_instance_enabled = {
-    "db.system": "Redis",
-    "server.port": DB_SETTINGS["port"],
-}
-_exact_agents_instance_disabled = {
-    "db.system": "Redis",
-}
-_expected_agents = [
-    "db.operation",
-    "peer.hostname",
-    "server.address",
-    "peer.address",
-]
-_unexpected_agents_instance_disabled = [
-    "server.port",
-]
+_exact_agents_instance_enabled = {"db.system": "Redis", "server.port": DB_SETTINGS["port"]}
+_exact_agents_instance_disabled = {"db.system": "Redis"}
+_expected_agents = ["db.operation", "peer.hostname", "server.address", "peer.address"]
+_unexpected_agents_instance_disabled = ["server.port"]
 _exact_users = {
     "db.system": "redis",
     "db.redis.database_index": 0,
     "net.peer.port": DB_SETTINGS["port"],
     "net.transport": "ip_tcp",
 }
-_expected_users = [
-    "db.statement",
-    "net.peer.name",
-]
+_expected_users = ["db.statement", "net.peer.name"]
+
 
 def exercise_redis_multi_args(client):
     client.execute_command("CLIENT", "LIST", parse="LIST")

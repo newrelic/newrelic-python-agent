@@ -31,7 +31,7 @@ from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import transient_function_wrapper
 
-from ._test_agent_tools import add_exclamation, single_tool_model
+from ._test_agents import add_exclamation, single_tool_model
 
 agent_recorded_event = [
     (

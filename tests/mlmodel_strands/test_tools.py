@@ -31,14 +31,7 @@ from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import transient_function_wrapper
 
-from ._test_agent_tools import (
-    add_exclamation,
-    single_tool_model,
-    single_tool_model_runtime_error_agen,
-    single_tool_model_runtime_error_coro,
-    throw_exception_agen,
-    throw_exception_coro,
-)
+from ._test_tools import add_exclamation, single_tool_model, single_tool_model_error
 
 tool_recorded_event = [
     (
@@ -84,32 +77,11 @@ tool_recorded_event_error_coro = [
         {
             "id": None,
             "run_id": "123",
-            "name": "throw_exception_coro",
+            "name": "add_exclamation",
             "agent_name": "my_agent",
             "span_id": None,
             "trace_id": "trace-id",
-            "input": "{'message': 'Hello'}",
-            "vendor": "strands",
-            "ingest_source": "Python",
-            "error": True,
-            "output": "{'text': 'Error: RuntimeError - Oops'}",
-            "duration": None,
-        },
-    )
-]
-
-
-tool_recorded_event_error_agen = [
-    (
-        {"type": "LlmTool"},
-        {
-            "id": None,
-            "run_id": "123",
-            "name": "throw_exception_agen",
-            "agent_name": "my_agent",
-            "span_id": None,
-            "trace_id": "trace-id",
-            "input": "{'message': 'Hello'}",
+            "input": "{'message': 'exc'}",
             "vendor": "strands",
             "ingest_source": "Python",
             "error": True,
@@ -131,7 +103,7 @@ tool_recorded_event_error_agen = [
 )
 @validate_attributes("agent", ["llm"])
 @background_task()
-def test_tool_invoke(set_trace_info, single_tool_model):
+def test_tool_invoke(set_trace_info, single_tool_model, add_exclamation):
     set_trace_info()
     my_agent = Agent(name="my_agent", model=single_tool_model, tools=[add_exclamation])
 
@@ -152,7 +124,7 @@ def test_tool_invoke(set_trace_info, single_tool_model):
 )
 @validate_attributes("agent", ["llm"])
 @background_task()
-def test_tool_invoke_async(loop, set_trace_info, single_tool_model):
+def test_tool_invoke_async(loop, set_trace_info, single_tool_model, add_exclamation):
     set_trace_info()
     my_agent = Agent(name="my_agent", model=single_tool_model, tools=[add_exclamation])
 
@@ -175,7 +147,7 @@ def test_tool_invoke_async(loop, set_trace_info, single_tool_model):
 )
 @validate_attributes("agent", ["llm"])
 @background_task()
-def test_tool_stream_async(loop, set_trace_info, single_tool_model):
+def test_tool_stream_async(loop, set_trace_info, single_tool_model, add_exclamation):
     set_trace_info()
     my_agent = Agent(name="my_agent", model=single_tool_model, tools=[add_exclamation])
 
@@ -204,7 +176,7 @@ def test_tool_stream_async(loop, set_trace_info, single_tool_model):
 )
 @validate_attributes("agent", ["llm"])
 @background_task()
-def test_tool_no_content(set_trace_info, single_tool_model):
+def test_tool_no_content(set_trace_info, single_tool_model, add_exclamation):
     set_trace_info()
     my_agent = Agent(name="my_agent", model=single_tool_model, tools=[add_exclamation])
 
@@ -219,50 +191,20 @@ def test_tool_no_content(set_trace_info, single_tool_model):
 @validate_custom_events(tool_recorded_event_error_coro)
 @validate_custom_event_count(count=2)
 @validate_transaction_metrics(
-    "mlmodel_strands.test_tools:test_tool_coro_runtime_error",
-    scoped_metrics=[
-        ("Llm/tool/Strands/strands.tools.executors._executor:ToolExecutor._stream/throw_exception_coro", 1)
-    ],
-    rollup_metrics=[
-        ("Llm/tool/Strands/strands.tools.executors._executor:ToolExecutor._stream/throw_exception_coro", 1)
-    ],
+    "mlmodel_strands.test_tools:test_tool_execution_error",
+    scoped_metrics=[("Llm/tool/Strands/strands.tools.executors._executor:ToolExecutor._stream/add_exclamation", 1)],
+    rollup_metrics=[("Llm/tool/Strands/strands.tools.executors._executor:ToolExecutor._stream/add_exclamation", 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
 @background_task()
-def test_tool_coro_runtime_error(set_trace_info, single_tool_model_runtime_error_coro):
+def test_tool_execution_error(set_trace_info, single_tool_model_error, add_exclamation):
     set_trace_info()
-    my_agent = Agent(name="my_agent", model=single_tool_model_runtime_error_coro, tools=[throw_exception_coro])
+    my_agent = Agent(name="my_agent", model=single_tool_model_error, tools=[add_exclamation])
 
-    response = my_agent('Add an exclamation to the word "Hello"')
+    response = my_agent('Add an exclamation to the word "exc"')
     assert response.message["content"][0]["text"] == "Success!"
-    assert response.metrics.tool_metrics["throw_exception_coro"].error_count == 1
-
-
-@reset_core_stats_engine()
-@validate_transaction_error_event_count(1)
-@validate_error_trace_attributes(callable_name(RuntimeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
-@validate_custom_events(tool_recorded_event_error_agen)
-@validate_custom_event_count(count=2)
-@validate_transaction_metrics(
-    "mlmodel_strands.test_tools:test_tool_agen_runtime_error",
-    scoped_metrics=[
-        ("Llm/tool/Strands/strands.tools.executors._executor:ToolExecutor._stream/throw_exception_agen", 1)
-    ],
-    rollup_metrics=[
-        ("Llm/tool/Strands/strands.tools.executors._executor:ToolExecutor._stream/throw_exception_agen", 1)
-    ],
-    background_task=True,
-)
-@validate_attributes("agent", ["llm"])
-@background_task()
-def test_tool_agen_runtime_error(set_trace_info, single_tool_model_runtime_error_agen):
-    set_trace_info()
-    my_agent = Agent(name="my_agent", model=single_tool_model_runtime_error_agen, tools=[throw_exception_agen])
-
-    response = my_agent('Add an exclamation to the word "Hello"')
-    assert response.message["content"][0]["text"] == "Success!"
-    assert response.metrics.tool_metrics["throw_exception_agen"].error_count == 1
+    assert response.metrics.tool_metrics["add_exclamation"].error_count == 1
 
 
 @reset_core_stats_engine()
@@ -271,14 +213,14 @@ def test_tool_agen_runtime_error(set_trace_info, single_tool_model_runtime_error
 @validate_custom_events(tool_recorded_event_forced_internal_error)
 @validate_custom_event_count(count=2)
 @validate_transaction_metrics(
-    "mlmodel_strands.test_tools:test_tool_forced_exception",
+    "mlmodel_strands.test_tools:test_tool_pre_execution_exception",
     scoped_metrics=[("Llm/tool/Strands/strands.tools.executors._executor:ToolExecutor._stream/add_exclamation", 1)],
     rollup_metrics=[("Llm/tool/Strands/strands.tools.executors._executor:ToolExecutor._stream/add_exclamation", 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
 @background_task()
-def test_tool_forced_exception(set_trace_info, single_tool_model):
+def test_tool_pre_execution_exception(set_trace_info, single_tool_model, add_exclamation):
     # Add a wrapper to intentionally force an error in the ToolExecutor._stream code to hit the exception path in
     # the AsyncGeneratorProxy
     @transient_function_wrapper("strands.hooks.events", "BeforeToolCallEvent.__init__")

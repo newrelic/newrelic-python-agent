@@ -176,7 +176,10 @@ def test_chat_completion_invalid_request_error_no_model_async(loop, set_trace_in
 
             async def consumer():
                 generator = await async_openai_client.chat.completions.create(
-                    messages=_test_openai_chat_completion_messages, temperature=0.7, max_completion_tokens=100, stream=True
+                    messages=_test_openai_chat_completion_messages,
+                    temperature=0.7,
+                    max_completion_tokens=100,
+                    stream=True,
                 )
                 async for resp in generator:
                     assert resp

@@ -57,7 +57,7 @@ def prompt():
 
 @reset_core_stats_engine()
 @validate_transaction_metrics(
-    name="test_agent_legacy:test_sync_agent",
+    name="mlmodel_langchain.test_agents_legacy:test_sync_agent",
     scoped_metrics=[("Llm/agent/LangChain/invoke", 1)],
     rollup_metrics=[("Llm/agent/LangChain/invoke", 1)],
     custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
@@ -74,7 +74,7 @@ def test_sync_agent(chat_openai_client, tools, prompt):
 
 @reset_core_stats_engine()
 @validate_transaction_metrics(
-    name="test_agent_legacy:test_async_agent",
+    name="mlmodel_langchain.test_agents_legacy:test_async_agent",
     scoped_metrics=[("Llm/agent/LangChain/ainvoke", 1)],
     rollup_metrics=[("Llm/agent/LangChain/ainvoke", 1)],
     custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],

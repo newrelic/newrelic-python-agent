@@ -29,7 +29,100 @@ from newrelic.common.package_version_utils import get_package_version_tuple
 #    transactions to separate the ones created in the test app and the ones
 #    created by an external call.
 # 3) This app runs on a separate thread meaning it won't block the test app.
-STREAMED_RESPONSES_V1 = {}
+STREAMED_RESPONSES_V1 = {
+    "system: You are a world class algorithm for extracting information in structured formats. | user: Use the given format to extract information from the following input: Hello, world | user: Tip: Make sure to answer in the correct format": [
+        {
+            "content-type": "text/event-stream; charset=utf-8",
+            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-processing-ms": "440",
+            "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
+            "openai-version": "2020-10-01",
+            "x-ratelimit-limit-requests": "10000",
+            "x-ratelimit-limit-tokens": "50000000",
+            "x-ratelimit-remaining-requests": "9999",
+            "x-ratelimit-remaining-tokens": "49999942",
+            "x-ratelimit-reset-requests": "6ms",
+            "x-ratelimit-reset-tokens": "0s",
+            "x-request-id": "req_1addfc2e713648af834cb9992fd417d7",
+        },
+        200,
+        [
+            {
+                "id": "chatcmpl-CvUIm4qNNuiHpumRpuX0HISeNKViC",
+                "object": "chat.completion.chunk",
+                "created": 1767817212,
+                "model": "gpt-3.5-turbo-0125",
+                "service_tier": "default",
+                "system_fingerprint": None,
+                "choices": [
+                    {
+                        "index": 0,
+                        "delta": {"role": "assistant", "content": "", "refusal": None},
+                        "logprobs": None,
+                        "finish_reason": None,
+                    }
+                ],
+                "usage": None,
+                "obfuscation": "HeQWMY8H",
+            },
+            {
+                "id": "chatcmpl-CvUIm4qNNuiHpumRpuX0HISeNKViC",
+                "object": "chat.completion.chunk",
+                "created": 1767817212,
+                "model": "gpt-3.5-turbo-0125",
+                "service_tier": "default",
+                "system_fingerprint": None,
+                "choices": [{"index": 0, "delta": {"content": "Hello,"}, "logprobs": None, "finish_reason": None}],
+                "usage": None,
+                "obfuscation": "DferQO2zD",
+            },
+            {
+                "id": "chatcmpl-CvUIm4qNNuiHpumRpuX0HISeNKViC",
+                "object": "chat.completion.chunk",
+                "created": 1767817212,
+                "model": "gpt-3.5-turbo-0125",
+                "service_tier": "default",
+                "system_fingerprint": None,
+                "choices": [{"index": 0, "delta": {"content": " world!"}, "logprobs": None, "finish_reason": None}],
+                "usage": None,
+                "obfuscation": "LlLJvKqz",
+            },
+            {
+                "id": "chatcmpl-CvUIm4qNNuiHpumRpuX0HISeNKViC",
+                "object": "chat.completion.chunk",
+                "created": 1767817212,
+                "model": "gpt-3.5-turbo-0125",
+                "service_tier": "default",
+                "system_fingerprint": None,
+                "choices": [{"index": 0, "delta": {}, "logprobs": None, "finish_reason": "stop"}],
+                "usage": None,
+                "obfuscation": "Qzvy",
+            },
+            {
+                "id": "chatcmpl-CvUIm4qNNuiHpumRpuX0HISeNKViC",
+                "object": "chat.completion.chunk",
+                "created": 1767817212,
+                "model": "gpt-3.5-turbo-0125",
+                "service_tier": "default",
+                "system_fingerprint": None,
+                "choices": [],
+                "usage": {
+                    "prompt_tokens": 96,
+                    "completion_tokens": 24,
+                    "total_tokens": 120,
+                    "prompt_tokens_details": {"cached_tokens": 0, "audio_tokens": 0},
+                    "completion_tokens_details": {
+                        "reasoning_tokens": 0,
+                        "audio_tokens": 0,
+                        "accepted_prediction_tokens": 0,
+                        "rejected_prediction_tokens": 0,
+                    },
+                },
+                "obfuscation": "NzeDrNhe",
+            },
+        ],
+    ]
+}
 RESPONSES_V1 = {
     'system: You are a text manipulation algorithm. | user: Use a tool to add an exclamation to the word "Hello"': [
         {

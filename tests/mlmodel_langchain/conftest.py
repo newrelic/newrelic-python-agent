@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import itertools
 import json
 import os
 from pathlib import Path
 
 import pytest
-from _mock_external_openai_server import MockExternalOpenAIServer, extract_shortened_prompt, simple_get
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import (
@@ -30,6 +30,8 @@ from testing_support.ml_testing_utils import set_trace_info
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import ObjectProxy, wrap_function_wrapper
 from newrelic.common.signature import bind_args
+
+from ._mock_external_openai_server import MockExternalOpenAIServer, extract_shortened_prompt, simple_get
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
@@ -52,6 +54,8 @@ OPENAI_AUDIT_LOG_FILE = Path(__file__).parent / "openai_audit.log"
 OPENAI_AUDIT_LOG_CONTENTS = {}
 # Intercept outgoing requests and log to file for mocking
 RECORDED_HEADERS = {"x-request-id", "content-type"}
+EXPECTED_AGENT_RESPONSE = 'The word "Hello" with an exclamation mark added is "Hello!"'
+EXPECTED_TOOL_OUTPUT = "Hello!"
 
 
 @pytest.fixture(scope="session")
@@ -95,12 +99,20 @@ def state_function_step(state):
 
 
 def append_function_step(state):
-    state["messages"].append(f"The real agent said: {state['messages'][-1].content}")
+    from langchain.messages import ToolMessage
+
+    messages = state["messages"] if "messages" in state else state["model"]["messages"]
+    messages.append(ToolMessage(f"The real agent said: {messages[-1].content}", tool_call_id=123))
     return state
 
 
 @pytest.fixture(scope="session", params=["create_agent", "StateGraph", "RunnableSeq", "RunnableSequence"])
-def create_agent_runnable(request, chat_openai_client):
+def agent_runnable_type(request):
+    return request.param
+
+
+@pytest.fixture(scope="session")
+def create_agent_runnable(agent_runnable_type, chat_openai_client):
     """Create different runnable forms of the same agent and model as a fixture."""
 
     def _create_agent(model="gpt-5.1", tools=None, system_prompt=None, name="my_agent"):
@@ -138,16 +150,113 @@ def create_agent_runnable(request, chat_openai_client):
 
         return RunnableSequence(agent, append_function_step)
 
-    if request.param == "create_agent":
+    if agent_runnable_type == "create_agent":
         return _create_agent
-    elif request.param == "StateGraph":
+    elif agent_runnable_type == "StateGraph":
         return _create_state_graph
-    elif request.param == "RunnableSeq":
+    elif agent_runnable_type == "RunnableSeq":
         return _create_runnable_seq
-    elif request.param == "RunnableSequence":
+    elif agent_runnable_type == "RunnableSequence":
         return _create_runnable_sequence
     else:
         raise NotImplementedError
+
+
+@pytest.fixture(scope="session")
+def validate_agent_output(agent_runnable_type):
+    def _unpack_messages(response):
+        if isinstance(response, list) and not any(response):
+            # Only None are returned from RunnableSeq.stream(), avoid the crash
+            return []
+        elif isinstance(response, list):
+            # stream returns a list of events
+            # Messages are packaged into nested dicts with a "model" or "tool_call" key, a "message" key,
+            # which contains a list with one or more messages in order. To unpack everything,
+            # we need to unpack the dictionaries values and extract the messasges lists, then flatten them.
+            messages_packed = [next(iter(event.values()))["messages"] for event in response]
+            return list(itertools.chain.from_iterable(messages_packed))
+
+        # invoke returns a Response object that contains the messages directly
+        return response["messages"]
+
+    def _validate_agent_output(response):
+        is_streaming = isinstance(response, list)
+        messages = _unpack_messages(response)
+        if agent_runnable_type == "create_agent":
+            if is_streaming:
+                # Events: agent calling tool, tool return value, agent output
+                assert len(messages) == 3
+                assert messages[0].tool_calls
+                assert messages[1].content == EXPECTED_TOOL_OUTPUT
+                assert messages[2].content == EXPECTED_AGENT_RESPONSE
+            else:
+                # Events: input prompt, agent calling tool, tool return value, agent output
+                assert len(messages) == 4
+                assert messages[1].tool_calls
+                assert messages[2].content == EXPECTED_TOOL_OUTPUT
+                assert messages[3].content == EXPECTED_AGENT_RESPONSE
+
+        elif agent_runnable_type == "StateGraph":
+            # Events: input prompt, agent calling tool, tool return value, agent output, function_step output
+            assert len(messages) == 5
+            assert messages[1].tool_calls
+            assert messages[2].content == EXPECTED_TOOL_OUTPUT
+            assert messages[3].content == EXPECTED_AGENT_RESPONSE
+
+        elif agent_runnable_type == "RunnableSeq":
+            # stream and astream do not directly output anything for RunnableSeq, and can't be validated.
+            if not is_streaming:
+                # Events: input prompt, agent calling tool, tool return value, agent output, function_step output
+                assert len(messages) == 5
+                assert messages[1].tool_calls
+                assert messages[2].content == EXPECTED_TOOL_OUTPUT
+                assert messages[3].content == EXPECTED_AGENT_RESPONSE
+
+        elif agent_runnable_type == "RunnableSequence":
+            if is_streaming:
+                # Events: agent output, function_step output
+                assert len(messages) == 2
+                assert messages[0].content == EXPECTED_AGENT_RESPONSE
+            else:
+                # Events: input prompt, agent calling tool, tool return value, agent output, function_step output
+                assert len(messages) == 5
+                assert messages[1].tool_calls
+                assert messages[2].content == EXPECTED_TOOL_OUTPUT
+                assert messages[3].content == EXPECTED_AGENT_RESPONSE
+
+        else:
+            raise NotImplementedError
+
+    return _validate_agent_output
+
+
+@pytest.fixture(scope="session", params=["invoke", "ainvoke", "stream", "astream"])
+def exercise_agent(request, loop, validate_agent_output):
+    def _exercise_agent(agent, prompt):
+        if request.param == "invoke":
+            response = agent.invoke(prompt)
+            validate_agent_output(response)
+            return response
+        elif request.param == "ainvoke":
+            response = loop.run_until_complete(agent.ainvoke(prompt))
+            validate_agent_output(response)
+            return response
+        elif request.param == "stream":
+            response = list(agent.stream(prompt))
+            validate_agent_output(response)
+            return response
+        elif request.param == "astream":
+
+            async def _exercise_agen():
+                return [event async for event in agent.astream(prompt)]
+
+            response = loop.run_until_complete(_exercise_agen())
+            validate_agent_output(response)
+            return response
+        else:
+            raise NotImplementedError
+
+    return _exercise_agent
 
 
 @pytest.fixture(autouse=True, scope="session")
@@ -201,6 +310,7 @@ def wrap_httpx_client_send():
                 rheaders.items(),
             )
         )
+
         # Append response data to log
         if stream:
             OPENAI_AUDIT_LOG_CONTENTS[prompt] = [headers, response.status_code, []]

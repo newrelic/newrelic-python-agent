@@ -163,7 +163,7 @@ def test_openai_chat_completion_sync_with_llm_metadata(set_trace_info, sync_open
             model="gpt-5.1",
             messages=_test_openai_chat_completion_messages,
             temperature=0.7,
-            max_tokens=100,
+            max_completion_tokens=100,
             stream=True,
         )
 
@@ -195,7 +195,7 @@ def test_openai_chat_completion_sync_with_llm_metadata_with_streaming_response_l
         "model": "gpt-5.1",
         "messages": _test_openai_chat_completion_messages,
         "temperature": 0.7,
-        "max_tokens": 100,
+        "max_completion_tokens": 100,
     }
     if stream_set:
         create_dict["stream"] = stream_val
@@ -229,7 +229,7 @@ def test_openai_chat_completion_sync_with_llm_metadata_with_streaming_response_b
         "model": "gpt-5.1",
         "messages": _test_openai_chat_completion_messages,
         "temperature": 0.7,
-        "max_tokens": 100,
+        "max_completion_tokens": 100,
     }
     if stream_set:
         create_dict["stream"] = stream_val
@@ -263,7 +263,7 @@ def test_openai_chat_completion_sync_with_llm_metadata_with_streaming_response_t
         "model": "gpt-5.1",
         "messages": _test_openai_chat_completion_messages,
         "temperature": 0.7,
-        "max_tokens": 100,
+        "max_completion_tokens": 100,
     }
     if stream_set:
         create_dict["stream"] = stream_val
@@ -294,7 +294,7 @@ def test_openai_chat_completion_sync_no_content(set_trace_info, sync_openai_clie
         model="gpt-5.1",
         messages=_test_openai_chat_completion_messages,
         temperature=0.7,
-        max_tokens=100,
+        max_completion_tokens=100,
         stream=True,
     )
 
@@ -323,7 +323,7 @@ def test_openai_chat_completion_sync_in_txn_with_llm_metadata_with_token_count(s
         model="gpt-5.1",
         messages=_test_openai_chat_completion_messages,
         temperature=0.7,
-        max_tokens=100,
+        max_completion_tokens=100,
         stream=True,
     )
     for resp in generator:
@@ -348,7 +348,7 @@ def test_openai_chat_completion_sync_no_llm_metadata(set_trace_info, sync_openai
         model="gpt-5.1",
         messages=_test_openai_chat_completion_messages,
         temperature=0.7,
-        max_tokens=100,
+        max_completion_tokens=100,
         stream=True,
     )
 
@@ -372,7 +372,7 @@ def test_openai_chat_completion_sync_ai_monitoring_streaming_disabled(sync_opena
         model="gpt-5.1",
         messages=_test_openai_chat_completion_messages,
         temperature=0.7,
-        max_tokens=100,
+        max_completion_tokens=100,
         stream=True,
     )
 
@@ -387,7 +387,7 @@ def test_openai_chat_completion_sync_outside_txn(sync_openai_client):
         model="gpt-5.1",
         messages=_test_openai_chat_completion_messages,
         temperature=0.7,
-        max_tokens=100,
+        max_completion_tokens=100,
         stream=True,
     )
 
@@ -404,7 +404,7 @@ def test_openai_chat_completion_sync_ai_monitoring_disabled(sync_openai_client):
         model="gpt-5.1",
         messages=_test_openai_chat_completion_messages,
         temperature=0.7,
-        max_tokens=100,
+        max_completion_tokens=100,
         stream=True,
     )
 
@@ -430,7 +430,7 @@ def test_openai_chat_completion_async_no_llm_metadata(loop, set_trace_info, asyn
             model="gpt-5.1",
             messages=_test_openai_chat_completion_messages,
             temperature=0.7,
-            max_tokens=100,
+            max_completion_tokens=100,
             stream=True,
         )
         async for resp in generator:
@@ -462,7 +462,7 @@ def test_openai_chat_completion_async_with_llm_metadata(loop, set_trace_info, as
             model="gpt-5.1",
             messages=_test_openai_chat_completion_messages,
             temperature=0.7,
-            max_tokens=100,
+            max_completion_tokens=100,
             stream=True,
         )
         async for resp in generator:
@@ -499,7 +499,7 @@ def test_openai_chat_completion_async_with_llm_metadata_with_streaming_response_
         "model": "gpt-5.1",
         "messages": _test_openai_chat_completion_messages,
         "temperature": 0.7,
-        "max_tokens": 100,
+        "max_completion_tokens": 100,
     }
     if stream_set:
         create_dict["stream"] = stream_val
@@ -539,7 +539,7 @@ def test_openai_chat_completion_async_with_llm_metadata_with_streaming_response_
         "model": "gpt-5.1",
         "messages": _test_openai_chat_completion_messages,
         "temperature": 0.7,
-        "max_tokens": 100,
+        "max_completion_tokens": 100,
     }
     if stream_set:
         create_dict["stream"] = stream_val
@@ -579,7 +579,7 @@ def test_openai_chat_completion_async_with_llm_metadata_with_streaming_response_
         "model": "gpt-5.1",
         "messages": _test_openai_chat_completion_messages,
         "temperature": 0.7,
-        "max_tokens": 100,
+        "max_completion_tokens": 100,
     }
     if stream_set:
         create_dict["stream"] = stream_val
@@ -615,7 +615,7 @@ def test_openai_chat_completion_async_no_content(loop, set_trace_info, async_ope
             model="gpt-5.1",
             messages=_test_openai_chat_completion_messages,
             temperature=0.7,
-            max_tokens=100,
+            max_completion_tokens=100,
             stream=True,
         )
         async for resp in generator:
@@ -646,7 +646,7 @@ def test_openai_chat_completion_async_with_token_count(set_trace_info, loop, asy
             model="gpt-5.1",
             messages=_test_openai_chat_completion_messages,
             temperature=0.7,
-            max_tokens=100,
+            max_completion_tokens=100,
             stream=True,
         )
         async for resp in generator:
@@ -672,7 +672,7 @@ def test_openai_chat_completion_async_ai_monitoring_streaming_disabled(loop, asy
             model="gpt-5.1",
             messages=_test_openai_chat_completion_messages,
             temperature=0.7,
-            max_tokens=100,
+            max_completion_tokens=100,
             stream=True,
         )
         async for resp in generator:
@@ -689,7 +689,7 @@ def test_openai_chat_completion_async_outside_transaction(loop, async_openai_cli
             model="gpt-5.1",
             messages=_test_openai_chat_completion_messages,
             temperature=0.7,
-            max_tokens=100,
+            max_completion_tokens=100,
             stream=True,
         )
         async for resp in generator:
@@ -708,7 +708,7 @@ def test_openai_chat_completion_async_disabled_ai_monitoring_settings(loop, asyn
             model="gpt-5.1",
             messages=_test_openai_chat_completion_messages,
             temperature=0.7,
-            max_tokens=100,
+            max_completion_tokens=100,
             stream=True,
         )
         async for resp in generator:

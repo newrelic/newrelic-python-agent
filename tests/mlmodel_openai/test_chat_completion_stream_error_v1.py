@@ -116,7 +116,7 @@ def test_chat_completion_invalid_request_error_no_model(set_trace_info, sync_ope
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         with WithLlmCustomAttributes({"context": "attr"}):
             generator = sync_openai_client.chat.completions.create(
-                messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100, stream=True
+                messages=_test_openai_chat_completion_messages, temperature=0.7, max_completion_tokens=100, stream=True
             )
             for resp in generator:
                 assert resp
@@ -145,7 +145,7 @@ def test_chat_completion_invalid_request_error_no_model_no_content(set_trace_inf
     with pytest.raises(TypeError):
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         generator = sync_openai_client.chat.completions.create(
-            messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100, stream=True
+            messages=_test_openai_chat_completion_messages, temperature=0.7, max_completion_tokens=100, stream=True
         )
         for resp in generator:
             assert resp
@@ -176,7 +176,7 @@ def test_chat_completion_invalid_request_error_no_model_async(loop, set_trace_in
 
             async def consumer():
                 generator = await async_openai_client.chat.completions.create(
-                    messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100, stream=True
+                    messages=_test_openai_chat_completion_messages, temperature=0.7, max_completion_tokens=100, stream=True
                 )
                 async for resp in generator:
                     assert resp
@@ -209,7 +209,7 @@ def test_chat_completion_invalid_request_error_no_model_async_no_content(loop, s
 
         async def consumer():
             generator = await async_openai_client.chat.completions.create(
-                messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100, stream=True
+                messages=_test_openai_chat_completion_messages, temperature=0.7, max_completion_tokens=100, stream=True
             )
             async for resp in generator:
                 assert resp
@@ -281,7 +281,7 @@ def test_chat_completion_invalid_request_error_invalid_model(set_trace_info, syn
             model="does-not-exist",
             messages=({"role": "user", "content": "Model does not exist."},),
             temperature=0.7,
-            max_tokens=100,
+            max_completion_tokens=100,
             stream=True,
         )
         for resp in generator:
@@ -316,7 +316,7 @@ def test_chat_completion_invalid_request_error_invalid_model_with_token_count(se
             model="does-not-exist",
             messages=({"role": "user", "content": "Model does not exist."},),
             temperature=0.7,
-            max_tokens=100,
+            max_completion_tokens=100,
             stream=True,
         )
         for resp in generator:
@@ -354,7 +354,7 @@ def test_chat_completion_invalid_request_error_invalid_model_async_with_token_co
                 model="does-not-exist",
                 messages=({"role": "user", "content": "Model does not exist."},),
                 temperature=0.7,
-                max_tokens=100,
+                max_completion_tokens=100,
                 stream=True,
             )
             async for resp in generator:
@@ -391,7 +391,7 @@ def test_chat_completion_invalid_request_error_invalid_model_async(loop, set_tra
                 model="does-not-exist",
                 messages=({"role": "user", "content": "Model does not exist."},),
                 temperature=0.7,
-                max_tokens=100,
+                max_completion_tokens=100,
                 stream=True,
             )
             async for resp in generator:
@@ -464,7 +464,7 @@ def test_chat_completion_wrong_api_key_error(monkeypatch, set_trace_info, sync_o
             model="gpt-5.1",
             messages=({"role": "user", "content": "Invalid API key."},),
             temperature=0.7,
-            max_tokens=100,
+            max_completion_tokens=100,
             stream=True,
         )
         for resp in generator:
@@ -501,7 +501,7 @@ def test_chat_completion_wrong_api_key_error_async(loop, monkeypatch, set_trace_
                 model="gpt-5.1",
                 messages=({"role": "user", "content": "Invalid API key."},),
                 temperature=0.7,
-                max_tokens=100,
+                max_completion_tokens=100,
                 stream=True,
             )
             async for resp in generator:

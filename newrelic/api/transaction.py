@@ -1025,6 +1025,8 @@ class Transaction:
             _logger.debug("No trusted account id found. Sampling decision will be made by adaptive sampling algorithm.")
             sampled = self._application.compute_sampled(**sampler_kwargs)
         if adjust_priority and sampled:
+            # Make sure priority is <1 so we don't end up with priorities >3.
+            priority = priority - int(priority)
             # Increment the priority + 2 for full and + 1 for partial granularity.
             priority += 1 + int(sampler_kwargs.get("full_granularity"))
         return priority, sampled
@@ -1041,7 +1043,7 @@ class Transaction:
         if self._remote_parent_sampled is None:
             section = 0
             setting_path = (
-                f"distributed_tracing.sampler.{'full_granularity' if full_granularity else 'partial_granularity'}.root"
+                f"distributed_tracing.sampler{'' if full_granularity else '.partial_granularity'}.root"
             )
             config = root_setting
             _logger.debug(
@@ -1051,7 +1053,7 @@ class Transaction:
             )
         elif self._remote_parent_sampled:
             section = 1
-            setting_path = f"distributed_tracing.sampler.{'full_granularity' if full_granularity else 'partial_granularity'}.remote_parent_sampled"
+            setting_path = f"distributed_tracing.sampler{'' if full_granularity else '.partial_granularity'}.remote_parent_sampled"
             config = remote_parent_sampled_setting
             _logger.debug(
                 "Sampling decision made based on remote_parent_sampled=%s and %s=%s.",
@@ -1061,7 +1063,7 @@ class Transaction:
             )
         else:  # self._remote_parent_sampled is False.
             section = 2
-            setting_path = f"distributed_tracing.sampler.{'full_granularity' if full_granularity else 'partial_granularity'}.remote_parent_not_sampled"
+            setting_path = f"distributed_tracing.sampler{'' if full_granularity else '.partial_granularity'}.remote_parent_not_sampled"
             config = remote_parent_not_sampled_setting
             _logger.debug(
                 "Sampling decision made based on remote_parent_sampled=%s and %s=%s.",
@@ -1073,30 +1075,40 @@ class Transaction:
             sampled = True
             # priority=3 for full granularity and priority=2 for partial granularity.
             priority = 2.0 + int(full_granularity)
+            return priority, sampled
         elif config == "always_off":
             sampled = False
             priority = 0
+            return priority, sampled
         elif config == "trace_id_ratio_based":
             _logger.debug("Let trace id ratio based sampler algorithm decide based on trace_id = %s.", self._trace_id)
-            priority, sampled = self.sampling_algo_compute_sampled_and_priority(
-                priority,
-                sampled,
-                {
-                    "full_granularity": full_granularity,
-                    "section": section,
-                    "trace_id": int(self._trace_id.lower().zfill(32), 16),
-                },
-            )
-        else:
-            if config not in ("default", "adaptive"):
-                _logger.warning("%s=%s is not a recognized value. Using 'default' instead.", setting_path, config)
+            # If ratio is not set fall back on adaptive sampler.
+            ratio_path = self.settings
+            for name in setting_path.split("."):
+                ratio_path = getattr(ratio_path, name)
+            if ratio_path.trace_id_ratio_based.ratio is not None:
+                priority, sampled = self.sampling_algo_compute_sampled_and_priority(
+                    priority,
+                    None,  # The sampled value from the parent is not used in this case and should always be overridden.
+                    {
+                        "full_granularity": full_granularity,
+                        "section": section,
+                        "trace_id": int(self._trace_id.lower().zfill(32), 16),
+                    },
+                )
+                return priority, sampled
+            else:
+                _logger.warning("Configured to %s='trace_id_ratio_based' but no ratio was set. Using 'adaptive' instead.", setting_path)
+                config = "adaptive"
+        if config not in ("default", "adaptive"):
+            _logger.warning("%s=%s is not a recognized value. Using 'adaptive' instead.", setting_path, config)
 
-            _logger.debug(
-                "Let adaptive sampler algorithm decide based on sampled=%s and priority=%s.", sampled, priority
-            )
-            priority, sampled = self.sampling_algo_compute_sampled_and_priority(
-                priority, sampled, {"full_granularity": full_granularity, "section": section}
-            )
+        _logger.debug(
+            "Let adaptive sampler algorithm decide based on sampled=%s and priority=%s.", sampled, priority
+        )
+        priority, sampled = self.sampling_algo_compute_sampled_and_priority(
+            priority, sampled, {"full_granularity": full_granularity, "section": section}
+        )
         return priority, sampled
 
     def _make_sampling_decision(self):
@@ -1295,6 +1307,10 @@ class Transaction:
     def _accept_distributed_trace_payload(self, payload, transport_type="HTTP"):
         if not payload:
             self._record_supportability("Supportability/DistributedTrace/AcceptPayload/Ignored/Null")
+            # Still set the transport type before early exit.
+            if transport_type not in DISTRIBUTED_TRACE_TRANSPORT_TYPES:
+                transport_type = "Unknown"
+            self.parent_transport_type = transport_type
             return False
 
         payload = DistributedTracePayload.decode(payload)

@@ -37,17 +37,17 @@ embedding_recorded_events = [
             "trace_id": "trace-id",
             "input": "This is an embedding test.",
             "duration": None,  # Response time varies each test run
-            "response.model": "text-embedding-ada-002",
-            "request.model": "text-embedding-ada-002",
-            "request_id": "req_eb2b9f2d23a671ad0d69545044437d68",
-            "response.organization": "new-relic-nkmd8b",
+            "response.model": "text-embedding-3-small",
+            "request.model": "text-embedding-3-small",
+            "request_id": "req_215501af84244a0891dc2c7828e36c28",
+            "response.organization": "nr-test-org",
             "response.headers.llmVersion": "2020-10-01",
-            "response.headers.ratelimitLimitRequests": 3000,
-            "response.headers.ratelimitLimitTokens": 1000000,
+            "response.headers.ratelimitLimitRequests": 10000,
+            "response.headers.ratelimitLimitTokens": 10000000,
             "response.headers.ratelimitResetTokens": "0s",
-            "response.headers.ratelimitResetRequests": "20ms",
-            "response.headers.ratelimitRemainingTokens": 999994,
-            "response.headers.ratelimitRemainingRequests": 2999,
+            "response.headers.ratelimitResetRequests": "6ms",
+            "response.headers.ratelimitRemainingTokens": 9999994,
+            "response.headers.ratelimitRemainingRequests": 9999,
             "vendor": "openai",
             "ingest_source": "Python",
         },
@@ -69,7 +69,7 @@ embedding_recorded_events = [
 @background_task()
 def test_openai_embedding_sync(set_trace_info, sync_openai_client):
     set_trace_info()
-    sync_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-ada-002")
+    sync_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-3-small")
 
 
 @reset_core_stats_engine()
@@ -87,7 +87,7 @@ def test_openai_embedding_sync(set_trace_info, sync_openai_client):
 def test_openai_embedding_sync_with_raw_response(set_trace_info, sync_openai_client):
     set_trace_info()
     sync_openai_client.embeddings.with_raw_response.create(
-        input="This is an embedding test.", model="text-embedding-ada-002"
+        input="This is an embedding test.", model="text-embedding-3-small"
     )
 
 
@@ -106,7 +106,7 @@ def test_openai_embedding_sync_with_raw_response(set_trace_info, sync_openai_cli
 @background_task()
 def test_openai_embedding_sync_no_content(set_trace_info, sync_openai_client):
     set_trace_info()
-    sync_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-ada-002")
+    sync_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-3-small")
 
 
 @reset_core_stats_engine()
@@ -124,13 +124,13 @@ def test_openai_embedding_sync_no_content(set_trace_info, sync_openai_client):
 @background_task()
 def test_openai_embedding_sync_with_token_count(set_trace_info, sync_openai_client):
     set_trace_info()
-    sync_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-ada-002")
+    sync_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-3-small")
 
 
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 def test_openai_embedding_sync_outside_txn(sync_openai_client):
-    sync_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-ada-002")
+    sync_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-3-small")
 
 
 @disabled_ai_monitoring_settings
@@ -138,7 +138,7 @@ def test_openai_embedding_sync_outside_txn(sync_openai_client):
 @validate_custom_event_count(count=0)
 @background_task()
 def test_openai_embedding_sync_ai_monitoring_disabled(sync_openai_client):
-    sync_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-ada-002")
+    sync_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-3-small")
 
 
 @reset_core_stats_engine()
@@ -157,7 +157,7 @@ def test_openai_embedding_async(loop, set_trace_info, async_openai_client):
     set_trace_info()
 
     loop.run_until_complete(
-        async_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-ada-002")
+        async_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-3-small")
     )
 
 
@@ -178,7 +178,7 @@ def test_openai_embedding_async_with_raw_response(loop, set_trace_info, async_op
 
     loop.run_until_complete(
         async_openai_client.embeddings.with_raw_response.create(
-            input="This is an embedding test.", model="text-embedding-ada-002"
+            input="This is an embedding test.", model="text-embedding-3-small"
         )
     )
 
@@ -200,7 +200,7 @@ def test_openai_embedding_async_no_content(loop, set_trace_info, async_openai_cl
     set_trace_info()
 
     loop.run_until_complete(
-        async_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-ada-002")
+        async_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-3-small")
     )
 
 
@@ -220,7 +220,7 @@ def test_openai_embedding_async_no_content(loop, set_trace_info, async_openai_cl
 def test_openai_embedding_async_with_token_count(set_trace_info, loop, async_openai_client):
     set_trace_info()
     loop.run_until_complete(
-        async_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-ada-002")
+        async_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-3-small")
     )
 
 
@@ -228,7 +228,7 @@ def test_openai_embedding_async_with_token_count(set_trace_info, loop, async_ope
 @validate_custom_event_count(count=0)
 def test_openai_embedding_async_outside_transaction(loop, async_openai_client):
     loop.run_until_complete(
-        async_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-ada-002")
+        async_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-3-small")
     )
 
 
@@ -238,5 +238,5 @@ def test_openai_embedding_async_outside_transaction(loop, async_openai_client):
 @background_task()
 def test_openai_embedding_async_ai_monitoring_disabled(loop, async_openai_client):
     loop.run_until_complete(
-        async_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-ada-002")
+        async_openai_client.embeddings.create(input="This is an embedding test.", model="text-embedding-3-small")
     )

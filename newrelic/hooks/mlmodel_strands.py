@@ -418,13 +418,21 @@ def wrap_ToolRegister_register_tool(wrapped, instance, args, kwargs):
     try:
         from strands.tools.decorator import DecoratedFunctionTool
     except ImportError:
-        DecoratedFunctionTool = type(None)
+        # If we can't import this to check for double wrapping, return early
+        return wrapped(*args, **kwargs)
 
-    bound_args = bind_args(wrapped, args, kwargs)
+    try:
+        bound_args = bind_args(wrapped, args, kwargs)
+    except Exception:
+        return wrapped(*args, **kwargs)
+
     tool = bound_args.get("tool")
 
+    # Ensure we don't double capture exceptions by not touching DecoratedFunctionTool instances here.
+    # Those should be captured with specific instrumentation that properly handles the thread boundaries.
     if hasattr(tool, "stream") and not isinstance(tool, DecoratedFunctionTool):
         tool.stream = ErrorTraceWrapper(tool.stream)
+
     return wrapped(*args, **kwargs)
 
 

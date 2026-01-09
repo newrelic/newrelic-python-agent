@@ -52,6 +52,26 @@ tool_recorded_event = [
     )
 ]
 
+tool_recorded_event_execution_error = [
+    (
+        {"type": "LlmTool"},
+        {
+            "id": None,
+            "run_id": "123",
+            "name": "add_exclamation",
+            "agent_name": "my_agent",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "input": "{'message': 'exc'}",
+            "vendor": "strands",
+            "ingest_source": "Python",
+            "error": True,
+            "output": "{'text': 'Error: RuntimeError - Oops'}",
+            "duration": None,
+        },
+    )
+]
+
 tool_recorded_event_forced_internal_error = [
     (
         {"type": "LlmTool"},
@@ -71,25 +91,7 @@ tool_recorded_event_forced_internal_error = [
     )
 ]
 
-tool_recorded_event_error_coro = [
-    (
-        {"type": "LlmTool"},
-        {
-            "id": None,
-            "run_id": "123",
-            "name": "add_exclamation",
-            "agent_name": "my_agent",
-            "span_id": None,
-            "trace_id": "trace-id",
-            "input": "{'message': 'exc'}",
-            "vendor": "strands",
-            "ingest_source": "Python",
-            "error": True,
-            "output": "{'text': 'Error: RuntimeError - Oops'}",
-            "duration": None,
-        },
-    )
-]
+EXPECTED_ERROR_MESSAGES = ["Error: RuntimeError - Oops", "Error: Oops"]
 
 
 @reset_core_stats_engine()
@@ -157,36 +159,46 @@ def test_tool_no_content(exercise_agent, set_trace_info, single_tool_model, add_
 
 
 @reset_core_stats_engine()
-@validate_transaction_error_event_count(1)
-@validate_error_trace_attributes(callable_name(RuntimeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
-@validate_custom_events(tool_recorded_event_error_coro)
-@validate_custom_event_count(count=2)
-@validate_transaction_metrics(
-    "mlmodel_strands.test_tools:test_tool_execution_error",
-    scoped_metrics=[("Llm/tool/Strands/strands.tools.executors._executor:ToolExecutor._stream/add_exclamation", 1)],
-    rollup_metrics=[("Llm/tool/Strands/strands.tools.executors._executor:ToolExecutor._stream/add_exclamation", 1)],
-    background_task=True,
-)
-@validate_attributes("agent", ["llm"])
-@background_task()
 def test_tool_execution_error(exercise_agent, set_trace_info, single_tool_model_error, add_exclamation):
-    set_trace_info()
-    my_agent = Agent(name="my_agent", model=single_tool_model_error, tools=[add_exclamation])
+    from strands.tools import PythonAgentTool
 
-    response = exercise_agent(my_agent, 'Add an exclamation to the word "exc"')
+    err_msg = EXPECTED_ERROR_MESSAGES[1] if isinstance(add_exclamation, PythonAgentTool) else EXPECTED_ERROR_MESSAGES[0]
+    tool_recorded_event_execution_error[0][1]["output"] = f"{{'text': '{err_msg}'}}"
 
-    if isinstance(response, list):
-        # Streaming returns a list of events
-        messages = [event["message"]["content"] for event in response if "message" in event]
-        assert len(messages) == 3
-        assert messages[0][0]["text"] == "Calling add_exclamation tool"
-        assert messages[0][1]["toolUse"]["name"] == "add_exclamation"
-        assert messages[1][0]["toolResult"]["content"][0]["text"] == "Error: RuntimeError - Oops"
-        assert messages[2][0]["text"] == "Success!"
-    else:
-        # Invoke returns a response object
-        assert response.message["content"][0]["text"] == "Success!"
-        assert response.metrics.tool_metrics["add_exclamation"].error_count == 1
+    @validate_transaction_error_event_count(1)
+    @validate_error_trace_attributes(
+        callable_name(RuntimeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}}
+    )
+    @validate_custom_events(tool_recorded_event_execution_error)
+    @validate_custom_event_count(count=2)
+    @validate_transaction_metrics(
+        "test_tool_execution_error",
+        scoped_metrics=[("Llm/tool/Strands/strands.tools.executors._executor:ToolExecutor._stream/add_exclamation", 1)],
+        rollup_metrics=[("Llm/tool/Strands/strands.tools.executors._executor:ToolExecutor._stream/add_exclamation", 1)],
+        background_task=True,
+    )
+    @validate_attributes("agent", ["llm"])
+    @background_task(name="test_tool_execution_error")
+    def _test():
+        set_trace_info()
+        my_agent = Agent(name="my_agent", model=single_tool_model_error, tools=[add_exclamation])
+
+        response = exercise_agent(my_agent, 'Add an exclamation to the word "exc"')
+
+        if isinstance(response, list):
+            # Streaming returns a list of events
+            messages = [event["message"]["content"] for event in response if "message" in event]
+            assert len(messages) == 3
+            assert messages[0][0]["text"] == "Calling add_exclamation tool"
+            assert messages[0][1]["toolUse"]["name"] == "add_exclamation"
+            assert messages[1][0]["toolResult"]["content"][0]["text"] in EXPECTED_ERROR_MESSAGES
+            assert messages[2][0]["text"] == "Success!"
+        else:
+            # Invoke returns a response object
+            assert response.message["content"][0]["text"] == "Success!"
+            assert response.metrics.tool_metrics["add_exclamation"].error_count == 1
+
+    _test()
 
 
 @reset_core_stats_engine()

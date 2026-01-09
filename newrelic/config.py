@@ -2958,6 +2958,9 @@ def _process_module_builtin_defaults():
         "strands.multiagent.swarm", "newrelic.hooks.mlmodel_strands", "instrument_strands_multiagent_swarm"
     )
     _process_module_definition(
+        "strands.tools.decorator", "newrelic.hooks.mlmodel_strands", "instrument_strands_tools_decorator"
+    )
+    _process_module_definition(
         "strands.tools.executors._executor",
         "newrelic.hooks.mlmodel_strands",
         "instrument_strands_tools_executors__executor",

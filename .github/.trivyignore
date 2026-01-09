@@ -6,6 +6,7 @@
 CVE-2025-50181  # Requires misconfiguration of urllib3, which agent does not do without intervention
 CVE-2025-66418  # Malicious servers could cause high resource consumption
 CVE-2025-66471  # Malicious servers could cause high resource consumption
+CVE-2026-21441  # Improper Handling of Highly Compressed Data (Data Amplification)
 
 # =======================
 # Ignored Vulnerabilities

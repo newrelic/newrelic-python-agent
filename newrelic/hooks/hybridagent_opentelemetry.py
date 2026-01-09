@@ -181,14 +181,6 @@ def wrap_get_current_span(wrapped, instance, args, kwargs):
             for key, value in attributes.items():
                 add_custom_span_attribute(key, value)
 
-    if transaction.settings.distributed_tracing.enabled:
-        if not isinstance(span, otel_api_trace.NonRecordingSpan):
-            # Use the Otel trace and span ids if current span
-            # is not a NonRecordingSpan.  Otherwise, we need to
-            # override the current span with the transaction
-            # and trace guids.
-            transaction._trace_id = f"{span.get_span_context().trace_id:x}"
-
     span_context = otel_api_trace.SpanContext(
         trace_id=int(transaction.trace_id, 16),
         span_id=int(trace.guid, 16),
@@ -234,6 +226,56 @@ def wrap_start_internal_or_server_span(wrapped, instance, args, kwargs):
     return wrapped(**bound_args)
 
 
+def wrap__get_span(wrapped, instance, args, kwargs):
+    # Do not allow the wrapper to continue if
+    # the Hybrid Agent setting is not enabled
+    application = application_instance(activate=False)
+    settings = global_settings() if not application else application.settings
+
+    if not settings.opentelemetry.enabled:
+        return wrapped(*args, **kwargs)
+
+    bound_args = bind_args(wrapped, args, kwargs)
+    channel = bound_args.get("channel")
+    properties = bound_args.get("properties")
+    span_kind = bound_args.get("span_kind")
+    task_name = bound_args.get("task_name")
+    tracer = bound_args.get("tracer")
+    
+    properties_to_extract = (
+        "correlation_id",
+        "reply_to",
+        "headers",
+    )
+    
+    if span_kind == span_kind.PRODUCER:
+        # Do nothing special for producer spans
+        pass
+    elif channel:
+        # This is a callback related consumer call
+        # if transaction already exists, create trace
+        # for callback; else, do not do anything
+        tracer._create_consumer_trace = True
+    elif not channel:
+        # This is a consumer generator call
+        # Create a new transaction only.
+        # if transaction already exists, a new one
+        # will not be created and nothing will occur.
+        # This is the current behavior that Kafka has
+        tracer._create_consumer_trace = False
+    
+    params = {"task_name": task_name}
+    for property in properties_to_extract:
+        value = getattr(properties, property, None)
+        if properties and value:
+            params[property] = value
+    
+    span = wrapped(*args, **kwargs)
+    span.set_attributes(params)
+    
+    return span
+
+
 def instrument_trace_api(module):
     if hasattr(module, "set_tracer_provider"):
         wrap_function_wrapper(module, "set_tracer_provider", wrap_set_tracer_provider)
@@ -248,3 +290,8 @@ def instrument_trace_api(module):
 def instrument_utils(module):
     if hasattr(module, "_start_internal_or_server_span"):
         wrap_function_wrapper(module, "_start_internal_or_server_span", wrap_start_internal_or_server_span)
+
+
+def instrument_pika_utils(module):
+    if hasattr(module, "_get_span"):
+        wrap_function_wrapper(module, "_get_span", wrap__get_span)

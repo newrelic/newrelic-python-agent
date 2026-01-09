@@ -28,7 +28,7 @@ from newrelic.common.object_names import callable_name
 
 def test_custom_metrics(get_consumer_record, topic, expected_broker_metrics):
     @validate_transaction_metrics(
-        f"Named/{topic} receive",
+        f"Named/{topic}",
         group="Message/Kafka/Topic",
         custom_metrics=[*expected_broker_metrics],
         background_task=True,
@@ -110,7 +110,7 @@ def test_distributed_tracing_headers(topic, producer, consumer, serialize, expec
         producer.flush()
 
     @validate_transaction_metrics(
-        f"Named/{topic} receive",
+        f"Named/{topic}",
         group="Message/Kafka/Topic",
         rollup_metrics=[
             ("Supportability/DistributedTrace/AcceptPayload/Success", None),

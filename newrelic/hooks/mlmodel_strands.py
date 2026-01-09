@@ -415,11 +415,16 @@ class AsyncGeneratorProxy(ObjectProxy):
 
 
 def wrap_ToolRegister_register_tool(wrapped, instance, args, kwargs):
+    try:
+        from strands.tools.decorator import DecoratedFunctionTool
+    except ImportError:
+        DecoratedFunctionTool = type(None)
+
     bound_args = bind_args(wrapped, args, kwargs)
     tool = bound_args.get("tool")
 
-    if hasattr(tool, "_tool_func"):
-        tool._tool_func = ErrorTraceWrapper(tool._tool_func)
+    if hasattr(tool, "stream") and not isinstance(tool, DecoratedFunctionTool):
+        tool.stream = ErrorTraceWrapper(tool.stream)
     return wrapped(*args, **kwargs)
 
 
@@ -464,6 +469,15 @@ def wrap_bedrock_model__stream(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
+def wrap_decorated_function_tool__wrap_tool_result(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if transaction:
+        # notice_error will handle pulling from sys.exc_info() if there's an active exception.
+        transaction.notice_error()
+
+    return wrapped(*args, **kwargs)
+
+
 def instrument_strands_agent_agent(module):
     if hasattr(module, "Agent"):
         if hasattr(module.Agent, "__call__"):  # noqa: B004
@@ -488,6 +502,14 @@ def instrument_strands_multiagent_swarm(module):
             wrap_function_wrapper(module, "Swarm.__call__", wrap_agent__call__)
         if hasattr(module.Swarm, "invoke_async"):
             wrap_function_wrapper(module, "Swarm.invoke_async", wrap_agent_invoke_async)
+
+
+def instrument_strands_tools_decorator(module):
+    # This instrumentation only exists to pass trace context due to bedrock models using a separate thread.
+    if hasattr(module, "DecoratedFunctionTool") and hasattr(module.DecoratedFunctionTool, "_wrap_tool_result"):
+        wrap_function_wrapper(
+            module, "DecoratedFunctionTool._wrap_tool_result", wrap_decorated_function_tool__wrap_tool_result
+        )
 
 
 def instrument_strands_tools_executors__executor(module):

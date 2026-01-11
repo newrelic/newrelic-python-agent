@@ -258,11 +258,11 @@ def wrap__get_span(wrapped, instance, args, kwargs):
         tracer._create_consumer_trace = False
     
     params = {"task_name": task_name}
-    for property in properties_to_extract:
-        value = getattr(properties, property, None)
+    for _property in properties_to_extract:
+        value = getattr(properties, _property, None)
         if properties and value:
-            params[property] = value
-    
+            params[_property] = value
+
     span = wrapped(*args, **kwargs)
     span.set_attributes(params)
     

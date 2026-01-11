@@ -38,8 +38,8 @@ _unexpected_root_intrinsics = ["parentId"]
 _unexpected_child_intrinsics = ["nr.entryPoint", "transaction.name"]
 
 _test_application_rollup_metrics = [
-    ("Supportability/DistributedTrace/CreatePayload/Success", 1),
-    ("Supportability/TraceContext/Create/Success", 1),
+    ("Supportability/DistributedTrace/CreatePayload/Success", 2),
+    ("Supportability/TraceContext/Create/Success", 2),
     ("HttpDispatcher", 1),
     ("WebTransaction", 1),
     ("WebTransactionTotalTime", 1),

@@ -47,59 +47,31 @@ class NRTraceContextPropagator(TraceContextTextMapPropagator):
         transaction = current_transaction()
         # If we are passing into New Relic, traceparent
         # and/or tracestate's keys also need to be NR compatible.
-
-        nr_headers = {
-            header_key: getter.get(carrier, header_key)[0]
-            for header_key in self.HEADER_KEYS
-            if getter.get(carrier, header_key)
-        }
-
-        extracted_context = super().extract(carrier=carrier, context=context, getter=getter)
-
+        
         if transaction:
+            nr_headers = {
+                header_key: getter.get(carrier, header_key)[0]
+                for header_key in self.HEADER_KEYS
+                if getter.get(carrier, header_key)
+            }
             transaction.accept_distributed_trace_headers(nr_headers)
-        else:
-            # A situation where extract() is called BEFORE a span
-            # creation (such as in the kafka consumer instrumentation)
-            extracted_context._nr_headers_outside_transaction = nr_headers
-
+        
+        extracted_context = super().extract(carrier=carrier, context=context, getter=getter)
+        
         return extracted_context
 
     def inject(self, carrier, context=None, setter=None):
         transaction = current_transaction()
-        # Only insert headers if we have not done so already this transaction
-        # New Relic's Distributed Trace State will have the following states:
-        #   0 (00) if not set:
-        #       Transaction has not inserted any outbound headers nor has
-        #       it accepted any inbound headers (yet).
-        #   1 (01) if already accepted:
-        #       Transaction has accepted inbound headers and is able to
-        #       insert outbound headers to the next app if needed.
-        #   2 (10) if inserted but not accepted:
-        #       Transaction has inserted outbound headers already.
-        #       Do not insert outbound headers multiple times. This is
-        #       a fundamental difference in OTel vs NR behavior: if
-        #       headers are inserted by OTel multiple times, it will
-        #       propagate the last set of data that was inserted. NR
-        #       will not allow more than one header insertion per
-        #       transaction.
-        #   3 (11) if accepted, then inserted:
-        #       Transaction has accepted inbound headers and has inserted
-        #       outbound headers.
-
         if not transaction:
             return super().inject(carrier=carrier, context=context, setter=setter)
 
-        if transaction._distributed_trace_state < 2:
-            nr_headers = []
-            transaction.insert_distributed_trace_headers(nr_headers)
-            for key, value in nr_headers:
-                setter.set(carrier, key, value)
-            # Do NOT call super().inject() since we have already
-            # inserted the headers here.  It will not cause harm,
-            # but it is redundant logic.
-
-        # If distributed_trace_state == 2 or 3, do not inject headers.
+        nr_headers = []
+        transaction.insert_distributed_trace_headers(nr_headers)
+        for key, value in nr_headers:
+            setter.set(carrier, key, value)
+        # Do NOT call super().inject() since we have already
+        # inserted the headers here.  It will not cause harm,
+        # but it is redundant logic.
 
 
 # Context and Context Propagator Setup
@@ -173,7 +145,7 @@ class Span(otel_api_trace.Span):
             # translated to a NR trace.  This may occur during the
             # creation of a Transaction, which will create the root
             # span.  This may also occur during special cases, such
-            # as back to back calls to a message queue's consumer.
+            # as back to back calls to Kafka's queue's consumer.
             # If a transaction already exists, we do not want to
             # create another transaction or trace, but rather just
             # append existing attributes to the existing transaction.
@@ -201,8 +173,8 @@ class Span(otel_api_trace.Span):
         elif nr_trace_type == MessageTrace:
             trace_kwargs = {
                 "library": self.instrumenting_module,
-                "operation": "Produce",
-                "destination_type": "Topic",
+                "operation": "Produce" if self.kind == otel_api_trace.SpanKind.PRODUCER else "Consume",
+                "destination_type": "Exchange", # For Kafka, this will be overridden
                 "destination_name": self.name,
                 "params": self.attributes,
                 "parent": self.nr_parent,
@@ -327,6 +299,75 @@ class Span(otel_api_trace.Span):
 
         notice_error(error_args, attributes=attributes)
 
+    def _messagequeue_attribute_mapping(self):
+        host = self.attributes.get("net.peer.name") or self.attributes.get("server.address")
+        port = self.attributes.get("net.peer.port") or self.attributes.get("server.port")
+        name = self.name.split()[0] # OTel's format for this is "name operation"
+        
+        # Logic for Pika/RabbitMQ
+        span_obj_attrs = {
+            "library": self.attributes.get("messaging.system").capitalize(),
+            "destination_name": name,   # OTel's format for this is "name operation"
+        }
+        
+        # Keep this to simplify Transaction naming logic later on
+        if span_obj_attrs["library"] == "Rabbitmq":
+            # In RabbitMQ, destination_type is always Exchange and
+            # destination_name is actually stored in the span name.
+            # messaging.destination stores the task_name (such as
+            # consumer tag)
+            span_obj_attrs["destination_type"] = "Exchange"
+
+        agent_attrs = {
+            "host": host,
+            "port": port,
+            "server.address": host,
+            "server.port": port,
+        }
+        
+        # Kafka Specific Logic
+        if span_obj_attrs["library"] == "Kafka":
+            span_obj_attrs.update({
+                "transport_type": "Kafka",
+                "destination_type": "Topic",
+                "destination_name": name if (name != "unknown") else "Default",   # OTel's format for this is "name operation"
+            })  
+            if isinstance(self.nr_transaction, MessageTransaction):
+                self.nr_transaction.transport_type = "Kafka"
+                self.nr_transaction.destination_type = "Topic"
+
+                if self.nr_transaction.destination_name.startswith("unknown") and span_obj_attrs["destination_name"] != "unknown":
+                    self.nr_transaction.destination_name = span_obj_attrs["destination_name"]
+                else:
+                    self.nr_transaction.destination_name = "Default"
+
+            bootstrap_servers = json.loads(self.attributes.get("messaging.url", "[]"))
+            for server_name in bootstrap_servers:
+                produce_or_consume = "Produce" if self.kind == otel_api_trace.SpanKind.PRODUCER else "Consume"
+                self.nr_transaction.record_custom_metric(
+                    f"MessageBroker/Kafka/Nodes/{server_name}/{produce_or_consume}/{span_obj_attrs['destination_name']}", 1
+                )
+
+        # Even if the attribute is set to None, it should rename
+        # the transaction destination_name attribute as well:
+        if isinstance(self.nr_transaction, MessageTransaction):
+            name, group = self.nr_transaction.get_transaction_name(
+                span_obj_attrs["library"],
+                span_obj_attrs["destination_type"],
+                span_obj_attrs["destination_name"],
+            )
+            self.nr_transaction.set_transaction_name(name, group)
+
+        # We do not want to override any agent attributes
+        # with `None` if `value` does not exist.
+        for key, value in span_obj_attrs.items():
+            if value:
+                setattr(self.nr_trace, key, value)
+        for key, value in agent_attrs.items():
+            if value:
+                self.nr_trace._add_agent_attribute(key, value)
+
+
     def _database_attribute_mapping(self):
         span_obj_attrs = {
             "host": self.attributes.get("net.peer.name") or self.attributes.get("server.address"),
@@ -393,14 +434,7 @@ class Span(otel_api_trace.Span):
 
         # Message specific attributes
         if self.attributes.get("messaging.system"):
-            destination_name = self.attributes.get("messaging.destination")
-            self.nr_transaction.destination_name = destination_name
-            bootstrap_servers = json.loads(self.attributes.get("messaging.url", "[]"))
-            for server_name in bootstrap_servers:
-                produce_or_consume = "Produce" if self.kind == otel_api_trace.SpanKind.PRODUCER else "Consume"
-                self.nr_transaction.record_custom_metric(
-                    f"MessageBroker/Kafka/Nodes/{server_name}/{produce_or_consume}/{destination_name}", 1
-                )
+            self._messagequeue_attribute_mapping()
 
         # Add OTel attributes as custom NR trace attributes
         self._set_attributes_in_nr(self.attributes)
@@ -519,11 +553,7 @@ class Tracer(otel_api_trace.Tracer):
 
         # Retrieve parent span
         parent_span_context = otel_api_trace.get_current_span(context).get_span_context()
-        # For cases where `extract()` was called before span/transaction creation
-        nr_headers = getattr(context, "_nr_headers_outside_transaction", None)
-        if nr_headers:
-            del context._nr_headers_outside_transaction
-
+        
         # Set default value for whether the span
         # should create an analogous NR trace.
         create_nr_trace = True
@@ -532,8 +562,17 @@ class Tracer(otel_api_trace.Tracer):
             parent_span_context = None
 
         parent_span_trace_id = None
+        nr_headers = {}
         if parent_span_context and self.nr_application.settings.distributed_tracing.enabled:
             parent_span_trace_id = parent_span_context.trace_id
+            if len(parent_span_context.trace_state) > 0:
+                # If headers did not propagate from an existing transaction due
+                # to no transaction existing at the time of extraction, the
+                # traceparent and tracestate will still be available in the context.
+                nr_headers["tracestate"] = parent_span_context.trace_state.to_header()
+                parent_span_span_id = parent_span_context.span_id
+                parent_span_trace_flag = parent_span_context.trace_flags
+                nr_headers["traceparent"] = f"00-{parent_span_trace_id:032x}-{parent_span_span_id:016x}-{'01' if parent_span_trace_flag else '00'}"
 
         # If remote_parent, transaction must be created, regardless of kind type
         # Make sure we transfer DT headers when we are here, if DT is enabled
@@ -566,7 +605,7 @@ class Tracer(otel_api_trace.Tracer):
                     headers=nr_headers,
                 )
                 transaction.__enter__()
-                # In the case of a consumer span, we do not want to create
+                # In the case of a Kafka consumer span, we do not want to create
                 # a trace regardless of whether a transaction already existed.
                 # This scenario should either create a transaction or use
                 # the existing transaction and add additional attributes to it.
@@ -611,23 +650,38 @@ class Tracer(otel_api_trace.Tracer):
                 else:
                     return otel_api_trace.INVALID_SPAN
             elif kind == otel_api_trace.SpanKind.CONSUMER:
+                # NOTE for instrumenting a Kafka consumer span: 
                 # If a transaction already exists, do not create a new one
                 # nor should we create a MessageTrace under it.  We do,
                 # however, want to add additional attributes from this span
                 # into the existing transaction.
-                if not transaction:
+                if transaction and (getattr(self, "_create_consumer_trace", False) or (self.instrumentation_library != "Kafka")):
+                    # If transaction already exists and the 
+                    # _create_consumer_trace flag is set to True,
+                    # then create a MessageTrace under it.
+                    # Note that for Kafka, this flag will not be
+                    # set, so we will not create a MessageTrace
+                    nr_trace_type = MessageTrace
+                else:
                     transaction = MessageTransaction(
                         library=self.instrumentation_library,
-                        destination_type="Topic",
+                        destination_type="Exchange",    # For Kafka, this will be overridden
                         destination_name=self.name,
                         application=self.nr_application,
-                        transport_type=self.instrumentation_library,
                         headers=nr_headers,
                     )
                     transaction.__enter__()
-                # Whether a transaction exists or not, do not create a NR
-                # trace for the case of a consumer span.
-                create_nr_trace = False
+                    # In the case of a Kafka consumer span, we do not want to create
+                    # a trace regardless of whether a transaction already existed.
+                    # This scenario should either create a transaction or use
+                    # the existing transaction and add additional attributes to it.
+                    if (self.instrumentation_library == "Kafka") or not getattr(self, "_create_consumer_trace", False):
+                        create_nr_trace = False
+                    
+                if self.instrumentation_library == "Kafka":
+                    # Whether a transaction exists or not, do not create a NR
+                    # trace for the case of a consumer span.
+                    create_nr_trace = False
             elif kind == otel_api_trace.SpanKind.PRODUCER:
                 if transaction:
                     nr_trace_type = MessageTrace
@@ -650,6 +704,11 @@ class Tracer(otel_api_trace.Tracer):
             set_status_on_exception=self.set_status_on_exception,
             create_nr_trace=create_nr_trace,
         )
+
+        # Remove the tracer._create_consumer_trace flag since
+        # the span is created now.
+        if hasattr(self, "_create_consumer_trace"):
+            delattr(self, "_create_consumer_trace")
 
         return span
 

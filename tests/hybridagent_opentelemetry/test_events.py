@@ -14,15 +14,16 @@
 
 import pytest
 from testing_support.fixtures import override_application_settings, reset_core_stats_engine
-from testing_support.validators.validate_error_event_attributes import validate_error_event_attributes
-from testing_support.validators.validate_log_events import validate_log_events
-from testing_support.validators.validate_log_event_count import validate_log_event_count
 from testing_support.validators.validate_custom_event import validate_custom_event_count
 from testing_support.validators.validate_custom_events import validate_custom_events
+from testing_support.validators.validate_error_event_attributes import validate_error_event_attributes
+from testing_support.validators.validate_log_event_count import validate_log_event_count
+from testing_support.validators.validate_log_events import validate_log_events
 
 from newrelic.api.background_task import background_task
 
 # Log Event Tests
+
 
 @override_application_settings({"application_logging.forwarding.enabled": True})
 @validate_log_events([{"message": "otel_event"}])
@@ -31,6 +32,7 @@ def test_events_as_logs(tracer):
     def _test():
         with tracer.start_as_current_span("otelspan") as otel_span:
             otel_span.add_event("otel_event")
+
     _test()
 
 
@@ -40,7 +42,7 @@ def test_events_as_logs(tracer):
 def test_events_as_logs_with_bad_name_argument(tracer, name):
     _exact_attrs = {
         "agent": {},
-        "user": {'exception.escaped': False},
+        "user": {"exception.escaped": False},
         "intrinsic": {
             "error.class": "builtins:ValueError",
             "error.message": "Event name is required and must be a string.",
@@ -48,13 +50,14 @@ def test_events_as_logs_with_bad_name_argument(tracer, name):
             "transactionName": "OtherTransaction/Function/test_events:test_events_as_logs_with_bad_name_argument.<locals>._test",
         },
     }
-    
+
     @validate_error_event_attributes(exact_attrs=_exact_attrs)
     @background_task()
     def _test():
         with pytest.raises(ValueError):
             with tracer.start_as_current_span("otelspan") as otel_span:
                 otel_span.add_event(name)
+
     _test()
 
 
@@ -68,14 +71,14 @@ def test_events_as_logs_outside_transaction(tracer):
     def _test():
         with tracer.start_as_current_span("otelspan") as otel_span:
             otel_span.add_event("otel_event")
+
     _test()
+
 
 # Custom Event Tests
 
-_event_attributes = {
-    "key1": "value1",
-    "key2": 42,
-}
+_event_attributes = {"key1": "value1", "key2": 42}
+
 
 @reset_core_stats_engine()
 @validate_custom_events([({"type": "otel_event"}, _event_attributes)])
@@ -84,6 +87,7 @@ def test_events_as_custom_events(tracer):
     def _test():
         with tracer.start_as_current_span("otelspan") as otel_span:
             otel_span.add_event("otel_event", attributes=_event_attributes)
+
     _test()
 
 
@@ -98,7 +102,7 @@ def test_events_as_custom_events(tracer):
 def test_events_as_custom_events_with_bad_attributes_argument(tracer, attributes):
     _exact_attrs = {
         "agent": {},
-        "user": {'exception.escaped': False},
+        "user": {"exception.escaped": False},
         "intrinsic": {
             "error.class": "builtins:ValueError",
             "error.message": "Event attributes must be a dictionary.",
@@ -106,13 +110,14 @@ def test_events_as_custom_events_with_bad_attributes_argument(tracer, attributes
             "transactionName": "OtherTransaction/Function/test_events:test_events_as_custom_events_with_bad_attributes_argument.<locals>._test",
         },
     }
-    
+
     @validate_error_event_attributes(exact_attrs=_exact_attrs)
     @background_task()
     def _test():
         with pytest.raises(ValueError):
             with tracer.start_as_current_span("otelspan") as otel_span:
                 otel_span.add_event("otel_event", attributes=attributes)
+
     _test()
 
 
@@ -126,5 +131,5 @@ def test_events_as_custom_events_outside_transaction(tracer):
     def _test():
         with tracer.start_as_current_span("otelspan") as otel_span:
             otel_span.add_event("otel_event", attributes=_event_attributes)
-    _test()
 
+    _test()

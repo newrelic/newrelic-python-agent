@@ -36,6 +36,5 @@ collector_agent_registration = collector_agent_registration_fixture(
 @pytest.fixture(scope="session")
 def tracer():
     trace.set_tracer_provider(TracerProvider())
-    
-    return trace.get_tracer_provider().get_tracer()
 
+    return trace.get_tracer_provider().get_tracer()

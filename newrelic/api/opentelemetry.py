@@ -32,7 +32,7 @@ from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.message_trace import MessageTrace
 from newrelic.api.message_transaction import MessageTransaction
 from newrelic.api.time_trace import current_trace, notice_error
-from newrelic.api.transaction import Sentinel, current_transaction
+from newrelic.api.transaction import Sentinel, current_transaction, record_log_event, record_custom_event
 from newrelic.api.web_transaction import WebTransaction, WSGIWebTransaction
 from newrelic.core.database_utils import generate_dynamodb_arn, get_database_operation_target_from_statement
 from newrelic.core.otlp_utils import create_resource
@@ -225,8 +225,32 @@ class Span(otel_api_trace.Span):
                 self.nr_trace.add_custom_attribute(key, value)
 
     def add_event(self, name, attributes=None, timestamp=None):
-        # TODO: Not implemented yet.
-        raise NotImplementedError("Events are not implemented yet.")
+        if not name or not isinstance(name, str):
+            raise ValueError("Event name is required and must be a string.")
+        
+        log_kwargs = {"message": name}
+        event_kwargs = {"event_type": name}
+        
+        # Not sure if we reach this point without a transaction
+        if not self.nr_transaction:
+            application = application_instance(activate=False)
+            event_kwargs["application"] = application
+        if timestamp and isinstance(timestamp, (int, float)):
+            # Convert OTel timestamp (ns) to NR timestamp (ms)
+            # If not valid timestamp, ignore it, and NR will
+            # use its own timestamp.
+            log_kwargs["timestamp"] = int(timestamp * 1e6)
+            
+        if not attributes:
+            # Log event
+            record_log_event(**log_kwargs)
+        elif isinstance(attributes, dict):
+            # Custom event
+            event_kwargs["params"] = attributes
+            record_custom_event(**event_kwargs)
+        else:
+            raise ValueError("Event attributes must be a dictionary.")
+
 
     def add_link(self, context=None, attributes=None):
         # TODO: Not implemented yet.

@@ -96,14 +96,10 @@ def wrap_set_tracer_provider(wrapped, instance, args, kwargs):
     if not settings or not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
+    from newrelic.api.opentelemetry import TracerProvider
     global _TRACER_PROVIDER
-
-    if _TRACER_PROVIDER is None:
-        bound_args = bind_args(wrapped, args, kwargs)
-        tracer_provider = bound_args.get("tracer_provider")
-        _TRACER_PROVIDER = tracer_provider
-    else:
-        _logger.warning("TracerProvider has already been set.")
+    
+    _TRACER_PROVIDER = TracerProvider()
 
 
 def wrap_get_tracer_provider(wrapped, instance, args, kwargs):
@@ -129,13 +125,10 @@ def wrap_get_tracer_provider(wrapped, instance, args, kwargs):
     if not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
+    from newrelic.api.opentelemetry import TracerProvider
     global _TRACER_PROVIDER
 
-    if _TRACER_PROVIDER is None:
-        from newrelic.api.opentelemetry import TracerProvider
-
-        _TRACER_PROVIDER = TracerProvider()
-
+    _TRACER_PROVIDER = TracerProvider()
     return _TRACER_PROVIDER
 
 

@@ -20,8 +20,6 @@ from opentelemetry import trace
 from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
-from newrelic.api.opentelemetry import TracerProvider
-
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
     "transaction_tracer.explain_threshold": 0.0,
@@ -43,7 +41,4 @@ os.environ["NEW_RELIC_CONFIG_FILE"] = str(Path(__file__).parent / "newrelic_pymo
 
 @pytest.fixture(scope="session")
 def tracer_provider():
-    trace_provider = TracerProvider()
-    trace.set_tracer_provider(trace_provider)
-
-    return trace_provider
+    return trace.get_tracer_provider()

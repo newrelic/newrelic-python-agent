@@ -176,7 +176,7 @@ class Span(otel_api_trace.Span):
                 "operation": "Produce" if self.kind == otel_api_trace.SpanKind.PRODUCER else "Consume",
                 "destination_type": "Exchange", # For Kafka, this will be overridden
                 "destination_name": self.name,
-                "params": self.attributes, 
+                "params": self.attributes,
                 "parent": self.nr_parent,
                 "terminal": False,
             }
@@ -302,7 +302,7 @@ class Span(otel_api_trace.Span):
     def _messagequeue_attribute_mapping(self):
         host = self.attributes.get("net.peer.name") or self.attributes.get("server.address")
         port = self.attributes.get("net.peer.port") or self.attributes.get("server.port")
-        name = self.name.split()[0] # OTel's format for this is "name operation"
+        name = self.name.split(maxsplit=1)[0] # OTel's format for this is "name operation"
         
         # Logic for Pika/RabbitMQ
         span_obj_attrs = {

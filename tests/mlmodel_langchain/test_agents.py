@@ -152,8 +152,8 @@ def test_agent_disabled_ai_monitoring_events(exercise_agent, create_agent_runnab
 # @validate_custom_event_count(count=1)
 # @validate_transaction_metrics(
 #     "mlmodel_langchain.test_agents:test_agent_execution_error",
-#     scoped_metrics=[("Llm/agent/LangChain/langchain.agent.agent:Agent.stream_async/my_agent", 1)],
-#     rollup_metrics=[("Llm/agent/LangChain/langchain.agent.agent:Agent.stream_async/my_agent", 1)],
+# scoped_metrics=[(f"Llm/agent/LangChain/{method_name}/my_agent", 1)],
+# rollup_metrics=[(f"Llm/agent/LangChain/{method_name}/my_agent", 1)],
 #     background_task=True,
 # )
 # @validate_attributes("agent", ["llm"])

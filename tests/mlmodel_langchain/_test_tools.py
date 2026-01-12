@@ -13,14 +13,12 @@
 # limitations under the License.
 
 import pytest
-from strands import tool
-
-from ._mock_model_provider import MockedModelProvider
+from langchain.tools import tool
 
 
 # add_exclamation is implemented 4 different ways, but aliased to the same name.
 # The agent will end up reporting identical data for all of them.
-@tool(name="add_exclamation")
+@tool("add_exclamation")
 def add_exclamation_sync(message: str) -> str:
     """Adds an exclamation mark to the input message."""
     if "exc" in message:
@@ -28,7 +26,7 @@ def add_exclamation_sync(message: str) -> str:
     return f"{message}!"
 
 
-@tool(name="add_exclamation")
+@tool("add_exclamation")
 async def add_exclamation_async(message: str) -> str:
     """Adds an exclamation mark to the input message."""
     if "exc" in message:
@@ -54,38 +52,3 @@ def add_exclamation(request):
         return add_exclamation_agen
     else:
         raise NotImplementedError
-
-
-@pytest.fixture
-def single_tool_model():
-    model = MockedModelProvider(
-        [
-            {
-                "role": "assistant",
-                "content": [
-                    {"text": "Calling add_exclamation tool"},
-                    {"toolUse": {"name": "add_exclamation", "toolUseId": "123", "input": {"message": "Hello"}}},
-                ],
-            },
-            {"role": "assistant", "content": [{"text": "Success!"}]},
-        ]
-    )
-    return model
-
-
-@pytest.fixture
-def single_tool_model_error():
-    model = MockedModelProvider(
-        [
-            {
-                "role": "assistant",
-                "content": [
-                    {"text": "Calling add_exclamation tool"},
-                    # Set arguments to an invalid type to trigger error in tool
-                    {"toolUse": {"name": "add_exclamation", "toolUseId": "123", "input": {"message": "exc"}}},
-                ],
-            },
-            {"role": "assistant", "content": [{"text": "Success!"}]},
-        ]
-    )
-    return model

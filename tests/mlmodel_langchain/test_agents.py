@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 from langchain.messages import HumanMessage
 from langchain.tools import tool
 from testing_support.fixtures import reset_core_stats_engine, validate_attributes
@@ -34,6 +33,7 @@ from newrelic.common.object_wrapper import transient_function_wrapper
 
 PROMPT = {"messages": [HumanMessage('Use a tool to add an exclamation to the word "Hello"')]}
 ERROR_PROMPT = {"messages": [HumanMessage('Use a tool to add an exclamation to the word "exc"')]}
+SYNC_METHODS = {"invoke", "stream"}
 
 agent_recorded_event = [
     (
@@ -66,8 +66,6 @@ agent_recorded_event_error = [
     )
 ]
 
-SYNC_METHODS = {"invoke", "stream"}
-
 
 @tool
 def add_exclamation(message: str) -> str:
@@ -79,10 +77,8 @@ def add_exclamation(message: str) -> str:
 
 @reset_core_stats_engine()
 def test_agent(exercise_agent, create_agent_runnable, set_trace_info, method_name):
-    num_events = 11 if method_name in SYNC_METHODS else 10  # TODO: Why?
-
     @validate_custom_events(events_with_context_attrs(agent_recorded_event))
-    @validate_custom_event_count(count=num_events)
+    @validate_custom_event_count(count=11)
     @validate_transaction_metrics(
         "test_agent",
         scoped_metrics=[(f"Llm/agent/LangChain/{method_name}/my_agent", 1)],
@@ -106,10 +102,8 @@ def test_agent(exercise_agent, create_agent_runnable, set_trace_info, method_nam
 @reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
 def test_agent_no_content(exercise_agent, create_agent_runnable, set_trace_info, method_name):
-    num_events = 11 if method_name in SYNC_METHODS else 10  # TODO: Why?
-
     @validate_custom_events(agent_recorded_event)
-    @validate_custom_event_count(count=num_events)
+    @validate_custom_event_count(count=11)
     @validate_transaction_metrics(
         "test_agent_no_content",
         scoped_metrics=[(f"Llm/agent/LangChain/{method_name}/my_agent", 1)],

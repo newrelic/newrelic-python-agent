@@ -204,7 +204,7 @@ class AgentObjectProxy(ObjectProxy):
 
         return return_val
 
-    def stream(func, *args, **kwargs):
+    def stream(self, *args, **kwargs):
         transaction = current_transaction()
 
         agent_name = getattr(transaction, "_nr_agent_name", "agent")
@@ -243,7 +243,7 @@ class AgentObjectProxy(ObjectProxy):
         ft = FunctionTrace(name=function_trace_name, group="Llm/agent/LangChain")
         ft.__enter__()
         try:
-            return_val = self.__wrapped__.stream(*args, **kwargs)
+            return_val = await self.__wrapped__.stream(*args, **kwargs)
         except Exception:
             ft.notice_error(attributes={"agent_id": agent_id})
             ft.__exit__(*sys.exc_info())
@@ -258,6 +258,9 @@ class AgentObjectProxy(ObjectProxy):
         transaction.record_custom_event("LlmAgent", agent_event_dict)
 
         return return_val
+
+def bind_submit(func, *args, **kwargs):
+    return {"func": func, "args": args, "kwargs": kwargs}
 
 
 def wrap_ContextThreadPoolExecutor_submit(wrapped, instance, args, kwargs):

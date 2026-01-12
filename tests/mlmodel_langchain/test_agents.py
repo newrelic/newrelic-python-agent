@@ -66,6 +66,8 @@ agent_recorded_event_error = [
     )
 ]
 
+SYNC_METHODS = {"invoke", "stream"}
+
 
 @tool
 def add_exclamation(message: str) -> str:
@@ -76,40 +78,54 @@ def add_exclamation(message: str) -> str:
 
 
 @reset_core_stats_engine()
-# @validate_custom_events(events_with_context_attrs(agent_recorded_event))
-# @validate_custom_event_count(count=2)
-# @validate_transaction_metrics(
-#     "mlmodel_langchain.test_agents:test_agent",
-#     scoped_metrics=[("Llm/agent/LangChain/langchain.agent.agent:Agent.stream_async/my_agent", 1)],
-#     rollup_metrics=[("Llm/agent/LangChain/langchain.agent.agent:Agent.stream_async/my_agent", 1)],
-#     background_task=True,
-# )
-# @validate_attributes("agent", ["llm"])
-@background_task()
-def test_agent(exercise_agent, create_agent_runnable, set_trace_info):
-    set_trace_info()
-    my_agent = create_agent_runnable(tools=[add_exclamation], system_prompt="You are a text manipulation algorithm.")
+def test_agent(exercise_agent, create_agent_runnable, set_trace_info, method_name):
+    num_events = 11 if method_name in SYNC_METHODS else 10  # TODO: Why?
 
-    with WithLlmCustomAttributes({"context": "attr"}):
-        _response = exercise_agent(my_agent, PROMPT)
+    @validate_custom_events(events_with_context_attrs(agent_recorded_event))
+    @validate_custom_event_count(count=num_events)
+    @validate_transaction_metrics(
+        "test_agent",
+        scoped_metrics=[(f"Llm/agent/LangChain/{method_name}/my_agent", 1)],
+        rollup_metrics=[(f"Llm/agent/LangChain/{method_name}/my_agent", 1)],
+        background_task=True,
+    )
+    @validate_attributes("agent", ["llm"])
+    @background_task(name="test_agent")
+    def _test():
+        set_trace_info()
+        my_agent = create_agent_runnable(
+            tools=[add_exclamation], system_prompt="You are a text manipulation algorithm."
+        )
+
+        with WithLlmCustomAttributes({"context": "attr"}):
+            _response = exercise_agent(my_agent, PROMPT)
+
+    _test()
 
 
 @reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
-# @validate_custom_events(agent_recorded_event)
-# @validate_custom_event_count(count=2)
-# @validate_transaction_metrics(
-#     "mlmodel_langchain.test_agents:test_agent_no_content",
-#     scoped_metrics=[("Llm/agent/LangChain/langchain.agent.agent:Agent.stream_async/my_agent", 1)],
-#     rollup_metrics=[("Llm/agent/LangChain/langchain.agent.agent:Agent.stream_async/my_agent", 1)],
-#     background_task=True,
-# )
-# @validate_attributes("agent", ["llm"])
-@background_task()
-def test_agent_no_content(exercise_agent, create_agent_runnable, set_trace_info):
-    set_trace_info()
-    my_agent = create_agent_runnable(tools=[add_exclamation], system_prompt="You are a text manipulation algorithm.")
-    _response = exercise_agent(my_agent, PROMPT)
+def test_agent_no_content(exercise_agent, create_agent_runnable, set_trace_info, method_name):
+    num_events = 11 if method_name in SYNC_METHODS else 10  # TODO: Why?
+
+    @validate_custom_events(agent_recorded_event)
+    @validate_custom_event_count(count=num_events)
+    @validate_transaction_metrics(
+        "test_agent_no_content",
+        scoped_metrics=[(f"Llm/agent/LangChain/{method_name}/my_agent", 1)],
+        rollup_metrics=[(f"Llm/agent/LangChain/{method_name}/my_agent", 1)],
+        background_task=True,
+    )
+    @validate_attributes("agent", ["llm"])
+    @background_task(name="test_agent_no_content")
+    def _test():
+        set_trace_info()
+        my_agent = create_agent_runnable(
+            tools=[add_exclamation], system_prompt="You are a text manipulation algorithm."
+        )
+        _response = exercise_agent(my_agent, PROMPT)
+
+    _test()
 
 
 @reset_core_stats_engine()

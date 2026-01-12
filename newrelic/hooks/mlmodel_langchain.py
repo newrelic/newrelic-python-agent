@@ -139,7 +139,7 @@ def _construct_base_agent_event_dict(agent_name, agent_id, transaction):
             "name": agent_name,
             "span_id": linking_metadata.get("span.id"),
             "trace_id": linking_metadata.get("trace.id"),
-            "vendor": "langgraph",
+            "vendor": "langchain",
             "ingest_source": "Python",
         }
         agent_event_dict.update(_get_llm_metadata(transaction))
@@ -148,6 +148,7 @@ def _construct_base_agent_event_dict(agent_name, agent_id, transaction):
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
 
     return agent_event_dict
+
 
 class AgentObjectProxy(ObjectProxy):
     def invoke(self, *args, **kwargs):
@@ -231,19 +232,18 @@ class AgentObjectProxy(ObjectProxy):
 
         return return_val
 
-
-    async def astream(self, *args, **kwargs):
+    def astream(self, *args, **kwargs):
         transaction = current_transaction()
 
         agent_name = getattr(transaction, "_nr_agent_name", "agent")
         agent_id = str(uuid.uuid4())
         agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
-        function_trace_name = f"stream/{agent_name}"
+        function_trace_name = f"astream/{agent_name}"
 
         ft = FunctionTrace(name=function_trace_name, group="Llm/agent/LangChain")
         ft.__enter__()
         try:
-            return_val = await self.__wrapped__.stream(*args, **kwargs)
+            return_val = self.__wrapped__.astream(*args, **kwargs)
         except Exception:
             ft.notice_error(attributes={"agent_id": agent_id})
             ft.__exit__(*sys.exc_info())
@@ -258,6 +258,7 @@ class AgentObjectProxy(ObjectProxy):
         transaction.record_custom_event("LlmAgent", agent_event_dict)
 
         return return_val
+
 
 def bind_submit(func, *args, **kwargs):
     return {"func": func, "args": args, "kwargs": kwargs}
@@ -1048,6 +1049,7 @@ def instrument_langchain_core_runnables_config(module):
     if hasattr(module, "ContextThreadPoolExecutor"):
         wrap_function_wrapper(module, "ContextThreadPoolExecutor.submit", wrap_ContextThreadPoolExecutor_submit)
 
+
 def wrap_create_agent(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
@@ -1067,6 +1069,7 @@ def wrap_create_agent(wrapped, instance, args, kwargs):
     return_val = wrapped(*args, **kwargs)
 
     return AgentObjectProxy(return_val)
+
 
 def instrument_langchain_agents_factory(module):
     wrap_function_wrapper(module, "create_agent", wrap_create_agent)

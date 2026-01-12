@@ -257,7 +257,15 @@ def exercise_agent(request, loop, validate_agent_output):
         else:
             raise NotImplementedError
 
+    _exercise_agent._called_method = request.param  # Used for metric names
     return _exercise_agent
+
+
+@pytest.fixture(scope="session")
+def method_name(exercise_agent, agent_runnable_type):
+    if agent_runnable_type == "StateGraph":
+        return "invoke" if exercise_agent._called_method in {"invoke", "stream"} else "ainvoke"
+    return exercise_agent._called_method
 
 
 @pytest.fixture(autouse=True, scope="session")

@@ -288,6 +288,165 @@ RESPONSES_V1 = {
             "system_fingerprint": None,
         },
     ],
+    "system: You are a helpful assistant who generates a random first name. A user will pass in a first letter, and you should generate a name that starts with that first letter. | user: M": [
+        {
+            "content-type": "application/json",
+            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-processing-ms": "236",
+            "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
+            "openai-version": "2020-10-01",
+            "x-ratelimit-limit-requests": "10000",
+            "x-ratelimit-limit-tokens": "50000000",
+            "x-ratelimit-remaining-requests": "9999",
+            "x-ratelimit-remaining-tokens": "49999955",
+            "x-ratelimit-reset-requests": "6ms",
+            "x-ratelimit-reset-tokens": "0s",
+            "x-request-id": "req_58e5f91c0c3d4c2c9b6ee9ad8c4e8961",
+        },
+        200,
+        {
+            "id": "chatcmpl-CxGtBIjrsLMSkCUPSLOlAiHFxLz7A",
+            "object": "chat.completion",
+            "created": 1768242309,
+            "model": "gpt-3.5-turbo-0125",
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {"role": "assistant", "content": "Milo", "refusal": None, "annotations": []},
+                    "logprobs": None,
+                    "finish_reason": "stop",
+                }
+            ],
+            "usage": {
+                "prompt_tokens": 46,
+                "completion_tokens": 2,
+                "total_tokens": 48,
+                "prompt_tokens_details": {"cached_tokens": 0, "audio_tokens": 0},
+                "completion_tokens_details": {
+                    "reasoning_tokens": 0,
+                    "audio_tokens": 0,
+                    "accepted_prediction_tokens": 0,
+                    "rejected_prediction_tokens": 0,
+                },
+            },
+            "service_tier": "default",
+            "system_fingerprint": None,
+        },
+    ],
+    "system: You are a helpful assistant who generates comma separated lists.\n    A user will pass in a category, and you should generate 5 objects in that category in a comma separated list.\n    ONLY return a comma separated list, and nothing more. | user: colors": [
+        {
+            "content-type": "application/json",
+            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-processing-ms": "289",
+            "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
+            "openai-version": "2020-10-01",
+            "x-ratelimit-limit-requests": "10000",
+            "x-ratelimit-limit-tokens": "50000000",
+            "x-ratelimit-remaining-requests": "9999",
+            "x-ratelimit-remaining-tokens": "49999935",
+            "x-ratelimit-reset-requests": "6ms",
+            "x-ratelimit-reset-tokens": "0s",
+            "x-request-id": "req_fbc7bb2ab3e149c1845699cfea9403d4",
+        },
+        200,
+        {
+            "id": "chatcmpl-CxGyV8CzGN80ByzFb4wN1hwGktOKD",
+            "object": "chat.completion",
+            "created": 1768242639,
+            "model": "gpt-3.5-turbo-0125",
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": "red, blue, green, yellow, orange",
+                        "refusal": None,
+                        "annotations": [],
+                    },
+                    "logprobs": None,
+                    "finish_reason": "stop",
+                }
+            ],
+            "usage": {
+                "prompt_tokens": 60,
+                "completion_tokens": 9,
+                "total_tokens": 69,
+                "prompt_tokens_details": {"cached_tokens": 0, "audio_tokens": 0},
+                "completion_tokens_details": {
+                    "reasoning_tokens": 0,
+                    "audio_tokens": 0,
+                    "accepted_prediction_tokens": 0,
+                    "rejected_prediction_tokens": 0,
+                },
+            },
+            "service_tier": "default",
+            "system_fingerprint": None,
+        },
+    ],
+    "system: You are a world class algorithm for extracting information in structured formats. | user: Use the given format to extract information from the following input: Sally is 13 | user: Tip: Make sure to answer in the correct format": [
+        {
+            "content-type": "application/json",
+            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-processing-ms": "201",
+            "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
+            "openai-version": "2020-10-01",
+            "x-ratelimit-limit-requests": "10000",
+            "x-ratelimit-limit-tokens": "50000000",
+            "x-ratelimit-remaining-requests": "9999",
+            "x-ratelimit-remaining-tokens": "49999944",
+            "x-ratelimit-reset-requests": "6ms",
+            "x-ratelimit-reset-tokens": "0s",
+            "x-request-id": "req_40a68eb08b684844b1e1f2253c85f00c",
+        },
+        200,
+        {
+            "id": "chatcmpl-CxGyZUlLnBXQkOnJyJNSlshVXdOwQ",
+            "object": "chat.completion",
+            "created": 1768242643,
+            "model": "gpt-3.5-turbo-0125",
+            "choices": [
+                {
+                    "index": 0,
+                    "message": {
+                        "role": "assistant",
+                        "content": None,
+                        "function_call": {"name": "output_formatter", "arguments": '{"name":"Sally","age":13}'},
+                        "refusal": None,
+                        "annotations": [],
+                    },
+                    "logprobs": None,
+                    "finish_reason": "stop",
+                }
+            ],
+            "usage": {
+                "prompt_tokens": 159,
+                "completion_tokens": 10,
+                "total_tokens": 169,
+                "prompt_tokens_details": {"cached_tokens": 0, "audio_tokens": 0},
+                "completion_tokens_details": {
+                    "reasoning_tokens": 0,
+                    "audio_tokens": 0,
+                    "accepted_prediction_tokens": 0,
+                    "rejected_prediction_tokens": 0,
+                },
+            },
+            "service_tier": "default",
+            "system_fingerprint": None,
+        },
+    ],
+    "system: You are a world class algorithm for extracting information in structured formats with openai failures. | user: Use the given format to extract information from the following input: Sally is 13 | user: Tip: Make sure to answer in the correct format": [
+        {"content-type": "application/json; charset=utf-8", "x-request-id": "e58911d54d574647d36237e4e53c0f1a"},
+        401,
+        {
+            "error": {
+                "message": "Incorrect API key provided: No-exist. You can find your API key at https://platform.openai.com/account/api-keys.",
+                "type": "invalid_request_error",
+                "param": None,
+                "code": "invalid_api_key",
+            }
+        },
+    ],
+    # Embedding Responses
     "9906": [
         {
             "content-type": "application/json",

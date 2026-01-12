@@ -918,3 +918,16 @@ def instrument_langchain_callbacks_manager(module):
 def instrument_langchain_core_runnables_config(module):
     if hasattr(module, "ContextThreadPoolExecutor"):
         wrap_function_wrapper(module, "ContextThreadPoolExecutor.submit", wrap_ContextThreadPoolExecutor_submit)
+
+def wrap_create_agent(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return wrapped(*args, **kwargs)
+
+    agent_name = kwargs.get("name", None)
+    transaction._nr_agent_name = agent_name
+
+    return wrapped(*args, **kwargs)
+
+def instrument_factory(module):
+    wrap_function_wrapper(module, "create_agent", wrap_create_agent)

@@ -2089,6 +2089,11 @@ def _process_module_builtin_defaults():
     _process_module_definition("asyncio.runners", "newrelic.hooks.coroutines_asyncio", "instrument_asyncio_runners")
 
     _process_module_definition(
+        "langgraph._internal._runnable",
+        "newrelic.hooks.mlmodel_langgraph",
+        "instrument_langgraph__internal__runnable",
+    )
+    _process_module_definition(
         "langchain_core.runnables.base",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_runnables_chains_base",
@@ -2097,6 +2102,12 @@ def _process_module_builtin_defaults():
         "langchain_core.runnables.config",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_core_runnables_config",
+    )
+
+    _process_module_definition(
+        "langchain.agents.factory",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_factory",
     )
     _process_module_definition(
         "langchain.chains.base", "newrelic.hooks.mlmodel_langchain", "instrument_langchain_chains_base"

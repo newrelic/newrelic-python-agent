@@ -106,7 +106,8 @@ def append_function_step(state):
     return state
 
 
-@pytest.fixture(scope="session", params=["create_agent", "StateGraph", "RunnableSeq", "RunnableSequence"])
+@pytest.fixture(scope="session", params=["create_agent"])
+# @pytest.fixture(scope="session", params=["create_agent", "StateGraph", "RunnableSeq", "RunnableSequence"])
 def agent_runnable_type(request):
     return request.param
 

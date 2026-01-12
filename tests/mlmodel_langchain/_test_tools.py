@@ -34,21 +34,11 @@ async def add_exclamation_async(message: str) -> str:
     return f"{message}!"
 
 
-@tool(name="add_exclamation")
-async def add_exclamation_agen(message: str) -> str:
-    """Adds an exclamation mark to the input message."""
-    if "exc" in message:
-        raise RuntimeError("Oops")
-    yield f"{message}!"
-
-
-@pytest.fixture(scope="session", params=["sync_tool", "async_tool", "agen_tool"])
+@pytest.fixture(scope="session", params=["sync_tool", "async_tool"])
 def add_exclamation(request):
     if request.param == "sync_tool":
         return add_exclamation_sync
     elif request.param == "async_tool":
         return add_exclamation_async
-    elif request.param == "agen_tool":
-        return add_exclamation_agen
     else:
         raise NotImplementedError

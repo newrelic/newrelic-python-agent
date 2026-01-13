@@ -1070,7 +1070,7 @@ class GeneratorProxy(BedrockRecordEventMixin, ObjectProxy):
         return return_val
 
     def close(self):
-        return super().close()
+        return self.__wrapped__.close()
 
 
 class AsyncEventStreamWrapper(ObjectProxy):
@@ -1108,7 +1108,7 @@ class AsyncGeneratorProxy(BedrockRecordEventMixin, ObjectProxy):
         return return_val
 
     async def aclose(self):
-        return await super().aclose()
+        return await self.__wrapped__.aclose()
 
 
 def handle_embedding_event(transaction, bedrock_attrs):

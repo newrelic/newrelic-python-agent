@@ -20,9 +20,9 @@ from newrelic.api.error_trace import ErrorTraceWrapper
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import current_trace, get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
-from newrelic.common.llm_utils import _get_llm_metadata
+from newrelic.common.llm_utils import AsyncGeneratorProxy, _get_llm_metadata
 from newrelic.common.object_names import callable_name
-from newrelic.common.object_wrapper import ObjectProxy, wrap_function_wrapper
+from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
 from newrelic.core.config import global_settings
@@ -382,36 +382,6 @@ def wrap_tool_executor__stream(wrapped, instance, args, kwargs):
         # If proxy creation fails, clean up the function trace and return original value
         ft.__exit__(*sys.exc_info())
         return return_val
-
-
-class AsyncGeneratorProxy(ObjectProxy):
-    def __init__(self, wrapped, on_stop_iteration, on_error):
-        super().__init__(wrapped)
-        self._nr_on_stop_iteration = on_stop_iteration
-        self._nr_on_error = on_error
-
-    def __aiter__(self):
-        self._nr_wrapped_iter = self.__wrapped__.__aiter__()
-        return self
-
-    async def __anext__(self):
-        transaction = current_transaction()
-        if not transaction:
-            return await self._nr_wrapped_iter.__anext__()
-
-        return_val = None
-        try:
-            return_val = await self._nr_wrapped_iter.__anext__()
-        except StopAsyncIteration:
-            self._nr_on_stop_iteration(self, transaction)
-            raise
-        except Exception:
-            self._nr_on_error(self, transaction)
-            raise
-        return return_val
-
-    async def aclose(self):
-        return await super().aclose()
 
 
 def wrap_ToolRegister_register_tool(wrapped, instance, args, kwargs):

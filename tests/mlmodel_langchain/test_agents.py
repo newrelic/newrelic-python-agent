@@ -143,18 +143,11 @@ def test_agent_disabled_ai_monitoring_events(exercise_agent, create_agent_runnab
 @reset_core_stats_engine()
 def test_agent_execution_error(exercise_agent, create_agent_runnable, set_trace_info, method_name):
     # Add a wrapper to intentionally force an error in the Agent code
-    def _inject_exception(wrapped, instance, args, kwargs):
+    @transient_function_wrapper("langchain_openai.chat_models.base", "ChatOpenAI._get_request_payload")
+    def inject_exception(wrapped, instance, args, kwargs):
         raise ValueError("Oops")
 
-    inject_exception = transient_function_wrapper("langchain_core.callbacks.manager", "CallbackManager.on_chain_start")(
-        _inject_exception
-    )
-    inject_exception_async = transient_function_wrapper(
-        "langchain_core.callbacks.manager", "AsyncCallbackManager.on_chain_start"
-    )(_inject_exception)
-
     @inject_exception
-    @inject_exception_async
     @validate_transaction_error_event_count(1)
     @validate_error_trace_attributes(callable_name(ValueError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
     @validate_custom_events(agent_recorded_event_error)

@@ -169,32 +169,34 @@ def test_tool_execution_error(exercise_agent, set_trace_info, create_agent_runna
     _test()
 
 
-# @reset_core_stats_engine()
-# @validate_transaction_error_event_count(1)
-# @validate_error_trace_attributes(callable_name(ValueError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
-# @validate_custom_events(tool_recorded_event_forced_internal_error)
-# @validate_custom_event_count(count=2)
-# @validate_transaction_metrics(
-#     "mlmodel_langchain.test_tools:test_tool_pre_execution_exception",
-#     scoped_metrics=[("Llm/tool/LangChain/langchain.tools.executors._executor:ToolExecutor._stream/add_exclamation", 1)],
-#     rollup_metrics=[("Llm/tool/LangChain/langchain.tools.executors._executor:ToolExecutor._stream/add_exclamation", 1)],
-#     background_task=True,
-# )
-# @validate_attributes("agent", ["llm"])
-# @background_task()
-# def test_tool_pre_execution_exception(exercise_agent, set_trace_info, create_agent_runnable, add_exclamation):
-#     # Add a wrapper to intentionally force an error in the ToolExecutor._stream code to hit the exception path in
-#     # the AsyncGeneratorProxy
-#     # TODO: Find somewhere to inject this in langchain. This was from langchain.
-#     @transient_function_wrapper("langchain.hooks.events", "BeforeToolCallEvent.__init__")
-#     def _wrap_BeforeToolCallEvent_init(wrapped, instance, args, kwargs):
-#         raise ValueError("Oops")
+@reset_core_stats_engine()
+def test_tool_pre_execution_exception(
+    exercise_agent, set_trace_info, create_agent_runnable, add_exclamation, tool_method_name
+):
+    # Add a wrapper to intentionally force an error in the setup logic of BaseTool
+    @transient_function_wrapper("langchain_core.tools.base", "BaseTool._parse_input")
+    def inject_exception(wrapped, instance, args, kwargs):
+        raise ValueError("Oops")
 
-#     @_wrap_BeforeToolCallEvent_init
-#     def _test():
-#         set_trace_info()
-#         my_agent = create_agent_runnable(tools=[add_exclamation], system_prompt="You are a text manipulation algorithm.")
-#         return exercise_agent(my_agent, PROMPT)
+    @inject_exception
+    @validate_transaction_error_event_count(1)
+    @validate_error_trace_attributes(callable_name(ValueError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
+    @validate_custom_events(tool_recorded_event_forced_internal_error)
+    @validate_custom_event_count(count=5)
+    @validate_transaction_metrics(
+        "test_tool_pre_execution_exception",
+        scoped_metrics=[(f"Llm/tool/LangChain/{tool_method_name}/add_exclamation", 1)],
+        rollup_metrics=[(f"Llm/tool/LangChain/{tool_method_name}/add_exclamation", 1)],
+        background_task=True,
+    )
+    @validate_attributes("agent", ["llm"])
+    @background_task(name="test_tool_pre_execution_exception")
+    def _test():
+        set_trace_info()
+        my_agent = create_agent_runnable(
+            tools=[add_exclamation], system_prompt="You are a text manipulation algorithm."
+        )
+        with pytest.raises(ValueError):
+            exercise_agent(my_agent, PROMPT)
 
-#     # This will not explicitly raise a ValueError when running the test but we are still able to  capture it in the error trace
-#     _response = _test()
+    _test()

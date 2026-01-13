@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
 from langchain.messages import HumanMessage
 from langchain.tools import tool
 from testing_support.fixtures import reset_core_stats_engine, validate_attributes
@@ -139,35 +140,35 @@ def test_agent_disabled_ai_monitoring_events(exercise_agent, create_agent_runnab
     _response = exercise_agent(my_agent, PROMPT)
 
 
-# @reset_core_stats_engine()
-# @validate_transaction_error_event_count(1)
-# @validate_error_trace_attributes(callable_name(ValueError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
-# @validate_custom_events(agent_recorded_event_error)
-# @validate_custom_event_count(count=1)
-# @validate_transaction_metrics(
-#     "mlmodel_langchain.test_agents:test_agent_execution_error",
-# scoped_metrics=[(f"Llm/agent/LangChain/{method_name}/my_agent", 1)],
-# rollup_metrics=[(f"Llm/agent/LangChain/{method_name}/my_agent", 1)],
-#     background_task=True,
-# )
-# @validate_attributes("agent", ["llm"])
-# @background_task()
-# def test_agent_execution_error(exercise_agent, create_agent_runnable, set_trace_info):
-#     # Add a wrapper to intentionally force an error in the Agent code
-#     raise NotImplementedError
+@reset_core_stats_engine()
+def test_agent_execution_error(exercise_agent, create_agent_runnable, set_trace_info, method_name):
+    # Add a wrapper to intentionally force an error in the Agent code
+    def _inject_exception(wrapped, instance, args, kwargs):
+        raise ValueError("Oops")
 
-#     # TODO: Find somewhere to inject this in langchain. This was from strands.
-#     @transient_function_wrapper("langchain.agent.agent", "Agent._convert_prompt_to_messages")
-#     def _wrap_convert_prompt_to_messages(wrapped, instance, args, kwargs):
-#         raise ValueError("Oops")
+    inject_exception = transient_function_wrapper("langchain_core.callbacks.manager", "CallbackManager.on_chain_start")(_inject_exception)
+    inject_exception_async = transient_function_wrapper("langchain_core.callbacks.manager", "AsyncCallbackManager.on_chain_start")(_inject_exception)
 
-#     @_wrap_convert_prompt_to_messages
-#     def _test():
-#         set_trace_info()
-#         my_agent = create_agent_runnable(
-#             tools=[add_exclamation], system_prompt="You are a text manipulation algorithm."
-#         )
-#         exercise_agent(my_agent, PROMPT)  # raises ValueError
+    @inject_exception
+    @inject_exception_async
+    @validate_transaction_error_event_count(1)
+    @validate_error_trace_attributes(callable_name(ValueError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
+    @validate_custom_events(agent_recorded_event_error)
+    @validate_custom_event_count(count=1)
+    @validate_transaction_metrics(
+        "test_agent_execution_error",
+        scoped_metrics=[(f"Llm/agent/LangChain/{method_name}/my_agent", 1)],
+        rollup_metrics=[(f"Llm/agent/LangChain/{method_name}/my_agent", 1)],
+        background_task=True,
+    )
+    @validate_attributes("agent", ["llm"])
+    @background_task(name="test_agent_execution_error")
+    def _test():
+        set_trace_info()
+        my_agent = create_agent_runnable(
+            tools=[add_exclamation], system_prompt="You are a text manipulation algorithm."
+        )
+        with pytest.raises(ValueError):
+            exercise_agent(my_agent, PROMPT)  # raises ValueError
 
-#     with pytest.raises(ValueError):
-#         _test()  # No output to validate
+    _test()  # No output to validate

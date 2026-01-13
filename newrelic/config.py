@@ -2103,13 +2103,19 @@ def _process_module_builtin_defaults():
         "instrument_langchain_core_runnables_config",
     )
     _process_module_definition(
+        "langchain_core.tools.structured",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_core_tools_structured",
+    )
+
+    _process_module_definition(
+        "langchain.agents.factory", "newrelic.hooks.mlmodel_langchain", "instrument_langchain_agents_factory"
+    )
+    _process_module_definition(
         "langchain.chains.base", "newrelic.hooks.mlmodel_langchain", "instrument_langchain_chains_base"
     )
     _process_module_definition(
         "langchain_classic.chains.base", "newrelic.hooks.mlmodel_langchain", "instrument_langchain_chains_base"
-    )
-    _process_module_definition(
-        "langchain_core.callbacks.manager", "newrelic.hooks.mlmodel_langchain", "instrument_langchain_callbacks_manager"
     )
 
     # VectorStores with similarity_search method
@@ -2673,10 +2679,6 @@ def _process_module_builtin_defaults():
 
     _process_module_definition(
         "langchain_core.tools", "newrelic.hooks.mlmodel_langchain", "instrument_langchain_core_tools"
-    )
-
-    _process_module_definition(
-        "langchain_core.callbacks.manager", "newrelic.hooks.mlmodel_langchain", "instrument_langchain_callbacks_manager"
     )
 
     _process_module_definition("asgiref.sync", "newrelic.hooks.adapter_asgiref", "instrument_asgiref_sync")

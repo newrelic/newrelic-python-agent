@@ -502,7 +502,7 @@ def simple_get(openai_version, extract_shortened_prompt):
         else:  # If no matches found
             self.send_response(500)
             self.end_headers()
-            self.wfile.write(f"Unknown Prompt:\n{prompt}".encode())
+            self.wfile.write(f"Unknown Prompt ({'Streaming' if stream else 'Non-Streaming'}):\n{prompt}".encode())
             return
 
         # Send response code

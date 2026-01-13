@@ -42,7 +42,7 @@ tool_recorded_event = [
         {"type": "LlmTool"},
         {
             "id": None,
-            # "run_id": None,  # TODO
+            "run_id": None,
             "output": "Hello!",
             "name": "add_exclamation",
             "agent_name": "my_agent",
@@ -61,7 +61,7 @@ tool_recorded_event_execution_error = [
         {"type": "LlmTool"},
         {
             "id": None,
-            # "run_id": None, # TODO
+            "run_id": None,
             "name": "add_exclamation",
             "agent_name": "my_agent",
             "span_id": None,
@@ -80,7 +80,7 @@ tool_recorded_event_forced_internal_error = [
         {"type": "LlmTool"},
         {
             "id": None,
-            # "run_id": None, # TODO
+            "run_id": None,
             "name": "add_exclamation",
             "agent_name": "my_agent",
             "span_id": None,

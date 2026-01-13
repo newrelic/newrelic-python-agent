@@ -12,9 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import asyncio
-import uuid
-from unittest.mock import patch
 
 import langchain
 import langchain_core
@@ -53,11 +50,6 @@ except ImportError:
     from langchain.chains.combine_documents import create_stuff_documents_chain
     from langchain.chains.openai_functions import create_structured_output_chain, create_structured_output_runnable
     from langchain.schema import BaseOutputParser
-
-_test_openai_chat_completion_messages = (
-    {"role": "system", "content": "You are a scientist."},
-    {"role": "user", "content": "What is 212 degrees Fahrenheit converted to Celsius?"},
-)
 
 
 chat_completion_recorded_events_invoke_langchain_error = [

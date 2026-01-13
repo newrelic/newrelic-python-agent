@@ -817,8 +817,7 @@ def create_chat_completion_message_event(
             }
             if settings.ai_monitoring.record_content.enabled:
                 chat_completion_output_message_dict["content"] = message
-            if request_timestamp:
-                chat_completion_output_message_dict["timestamp"] = request_timestamp
+
             chat_completion_output_message_dict.update(llm_metadata_dict)
             transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_output_message_dict)
 

@@ -559,7 +559,8 @@ def _capture_tool_info(instance, wrapped, args, kwargs):
     agent_name = metadata.pop("_nr_agent_name", None)
     tool_input = run_args.get("tool_input")
     tool_name = getattr(instance, "name", None)
-    tool_run_id = run_args.get("tool_call_id", None)
+    # Checking multiple places for an acceptable tool run ID, fallback to creating our own.
+    tool_run_id = run_args.get("run_id", None) or run_args.get("tool_call_id", None) or str(uuid.uuid4())
 
     return tool_id, agent_name, tool_input, tool_name, tool_run_id, run_args
 

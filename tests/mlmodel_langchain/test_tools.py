@@ -114,7 +114,7 @@ def test_tool(exercise_agent, set_trace_info, create_agent_runnable, add_exclama
         )
 
         with WithLlmCustomAttributes({"context": "attr"}):
-            _response = exercise_agent(my_agent, PROMPT)
+            exercise_agent(my_agent, PROMPT)
 
     _test()
 
@@ -137,7 +137,7 @@ def test_tool_no_content(exercise_agent, set_trace_info, create_agent_runnable, 
         my_agent = create_agent_runnable(
             tools=[add_exclamation], system_prompt="You are a text manipulation algorithm."
         )
-        _response = exercise_agent(my_agent, PROMPT)
+        exercise_agent(my_agent, PROMPT)
 
     _test()
 
@@ -164,7 +164,7 @@ def test_tool_execution_error(exercise_agent, set_trace_info, create_agent_runna
             tools=[add_exclamation], system_prompt="You are a text manipulation algorithm."
         )
         with pytest.raises(RuntimeError):
-            _response = exercise_agent(my_agent, ERROR_PROMPT)
+            exercise_agent(my_agent, ERROR_PROMPT)
 
     _test()
 

@@ -95,7 +95,7 @@ def test_agent(exercise_agent, create_agent_runnable, set_trace_info, method_nam
         )
 
         with WithLlmCustomAttributes({"context": "attr"}):
-            _response = exercise_agent(my_agent, PROMPT)
+            exercise_agent(my_agent, PROMPT)
 
     _test()
 
@@ -118,7 +118,7 @@ def test_agent_no_content(exercise_agent, create_agent_runnable, set_trace_info,
         my_agent = create_agent_runnable(
             tools=[add_exclamation], system_prompt="You are a text manipulation algorithm."
         )
-        _response = exercise_agent(my_agent, PROMPT)
+        exercise_agent(my_agent, PROMPT)
 
     _test()
 
@@ -127,7 +127,7 @@ def test_agent_no_content(exercise_agent, create_agent_runnable, set_trace_info,
 @validate_custom_event_count(count=0)
 def test_agent_outside_txn(exercise_agent, create_agent_runnable):
     my_agent = create_agent_runnable(tools=[add_exclamation], system_prompt="You are a text manipulation algorithm.")
-    _response = exercise_agent(my_agent, PROMPT)
+    exercise_agent(my_agent, PROMPT)
 
 
 @disabled_ai_monitoring_settings
@@ -137,7 +137,7 @@ def test_agent_outside_txn(exercise_agent, create_agent_runnable):
 def test_agent_disabled_ai_monitoring_events(exercise_agent, create_agent_runnable, set_trace_info):
     set_trace_info()
     my_agent = create_agent_runnable(tools=[add_exclamation], system_prompt="You are a text manipulation algorithm.")
-    _response = exercise_agent(my_agent, PROMPT)
+    exercise_agent(my_agent, PROMPT)
 
 
 @reset_core_stats_engine()

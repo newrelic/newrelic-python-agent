@@ -2117,9 +2117,6 @@ def _process_module_builtin_defaults():
     _process_module_definition(
         "langchain_classic.chains.base", "newrelic.hooks.mlmodel_langchain", "instrument_langchain_chains_base"
     )
-    _process_module_definition(
-        "langchain_core.callbacks.manager", "newrelic.hooks.mlmodel_langchain", "instrument_langchain_callbacks_manager"
-    )
 
     # VectorStores with similarity_search method
     _process_module_definition(
@@ -2682,10 +2679,6 @@ def _process_module_builtin_defaults():
 
     _process_module_definition(
         "langchain_core.tools", "newrelic.hooks.mlmodel_langchain", "instrument_langchain_core_tools"
-    )
-
-    _process_module_definition(
-        "langchain_core.callbacks.manager", "newrelic.hooks.mlmodel_langchain", "instrument_langchain_callbacks_manager"
     )
 
     _process_module_definition("asgiref.sync", "newrelic.hooks.adapter_asgiref", "instrument_asgiref_sync")

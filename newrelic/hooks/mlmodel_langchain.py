@@ -908,49 +908,6 @@ def create_chat_completion_message_event(
             transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_output_message_dict)
 
 
-def wrap_on_chain_start(wrapped, instance, args, kwargs):
-    transaction = current_transaction()
-    if not transaction:
-        return wrapped(*args, **kwargs)
-
-    settings = transaction.settings if transaction.settings is not None else global_settings()
-    if not settings.ai_monitoring.enabled:
-        return wrapped(*args, **kwargs)
-
-    completion_id = _get_completion_id(instance)
-    run_manager = wrapped(*args, **kwargs)
-    _capture_chain_run_id(transaction, run_manager, completion_id)
-    return run_manager
-
-
-async def wrap_async_on_chain_start(wrapped, instance, args, kwargs):
-    transaction = current_transaction()
-    if not transaction:
-        return await wrapped(*args, **kwargs)
-
-    settings = transaction.settings if transaction.settings is not None else global_settings()
-    if not settings.ai_monitoring.enabled:
-        return await wrapped(*args, **kwargs)
-
-    completion_id = _get_completion_id(instance)
-    run_manager = await wrapped(*args, **kwargs)
-    _capture_chain_run_id(transaction, run_manager, completion_id)
-    return run_manager
-
-
-def _get_completion_id(instance):
-    return (getattr(instance, "metadata", None) or {}).pop("nr_completion_id", None)
-
-
-def _capture_chain_run_id(transaction, run_manager, completion_id):
-    if completion_id:
-        if not hasattr(transaction, "_nr_chain_run_ids"):
-            transaction._nr_chain_run_ids = {}
-        # Only capture the first run_id.
-        if completion_id not in transaction._nr_chain_run_ids:
-            transaction._nr_chain_run_ids[completion_id] = getattr(run_manager, "run_id", "")
-
-
 def wrap_create_agent(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
@@ -1039,15 +996,6 @@ def instrument_langchain_core_tools(module):
         wrap_function_wrapper(module, "BaseTool.run", wrap_tool_sync_run)
     if hasattr(module.BaseTool, "arun"):
         wrap_function_wrapper(module, "BaseTool.arun", wrap_tool_async_run)
-
-
-def instrument_langchain_callbacks_manager(module):
-    if hasattr(module, "CallbackManager"):
-        if hasattr(module.CallbackManager, "on_chain_start"):
-            wrap_function_wrapper(module, "CallbackManager.on_chain_start", wrap_on_chain_start)
-    if hasattr(module, "AsyncCallbackManager"):
-        if hasattr(module.AsyncCallbackManager, "on_chain_start"):
-            wrap_function_wrapper(module, "AsyncCallbackManager.on_chain_start", wrap_async_on_chain_start)
 
 
 def instrument_langchain_core_runnables_config(module):

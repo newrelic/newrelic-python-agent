@@ -190,14 +190,14 @@ def test_agent_disabled_ai_monitoring_events(exercise_agent, set_trace_info, sin
 def test_agent_execution_error(exercise_agent, set_trace_info, single_tool_model):
     # Add a wrapper to intentionally force an error in the Agent code
     @transient_function_wrapper("strands.agent.agent", "Agent._convert_prompt_to_messages")
-    def _wrap_convert_prompt_to_messages(wrapped, instance, args, kwargs):
+    def inject_exception(wrapped, instance, args, kwargs):
         raise ValueError("Oops")
 
-    @_wrap_convert_prompt_to_messages
+    @inject_exception
     def _test():
         set_trace_info()
         my_agent = Agent(name="my_agent", model=single_tool_model, tools=[add_exclamation])
-        exercise_agent(my_agent, 'Add an exclamation to the word "Hello"')  # raises ValueError
+        with pytest.raises(ValueError):
+            exercise_agent(my_agent, 'Add an exclamation to the word "Hello"')  # raises ValueError
 
-    with pytest.raises(ValueError):
-        _test()  # No output to validate
+    _test()  # No output to validate

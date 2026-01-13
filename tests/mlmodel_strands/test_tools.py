@@ -218,10 +218,10 @@ def test_tool_pre_execution_exception(exercise_agent, set_trace_info, single_too
     # Add a wrapper to intentionally force an error in the ToolExecutor._stream code to hit the exception path in
     # the AsyncGeneratorProxy
     @transient_function_wrapper("strands.hooks.events", "BeforeToolCallEvent.__init__")
-    def _wrap_BeforeToolCallEvent_init(wrapped, instance, args, kwargs):
+    def inject_exception(wrapped, instance, args, kwargs):
         raise ValueError("Oops")
 
-    @_wrap_BeforeToolCallEvent_init
+    @inject_exception
     def _test():
         set_trace_info()
         my_agent = Agent(name="my_agent", model=single_tool_model, tools=[add_exclamation])

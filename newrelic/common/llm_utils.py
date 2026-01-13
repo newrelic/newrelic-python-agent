@@ -54,7 +54,7 @@ class GeneratorProxy(ObjectProxy):
         return return_val
 
     def close(self):
-        return super().close()
+        return self.__wrapped__.close()
 
 
 class AsyncGeneratorProxy(ObjectProxy):
@@ -84,4 +84,4 @@ class AsyncGeneratorProxy(ObjectProxy):
         return return_val
 
     async def aclose(self):
-        return await super().aclose()
+        return await self.__wrapped__.aclose()

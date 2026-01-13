@@ -318,7 +318,7 @@ def generator_proxy(openai_version):
                 raise
 
         def close(self):
-            return super().close()
+            return self.__wrapped__.close()
 
     return GeneratorProxy
 

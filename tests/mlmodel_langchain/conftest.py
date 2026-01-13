@@ -365,7 +365,7 @@ def generator_proxy():
                 raise
 
         def close(self):
-            return super().close()
+            return self.__wrapped__.close()
 
     return GeneratorProxy
 

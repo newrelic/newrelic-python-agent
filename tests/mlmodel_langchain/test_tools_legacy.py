@@ -373,54 +373,32 @@ def test_langchain_tool_disabled_ai_monitoring_events_async(set_trace_info, sing
     )
 
 
-# def test_langchain_multiple_async_calls(set_trace_info, single_arg_tool, multi_arg_tool, loop):
-#     call1 = single_arg_tool_recorded_events.copy()
-#     call1[0][1]["run_id"] = "b1883d9d-10d6-4b67-a911-f72849704e92"
-#     call2 = multi_arg_tool_recorded_events.copy()
-#     call2[0][1]["run_id"] = "a58aa0c0-c854-4657-9e7b-4cce442f3b61"
-#     expected_events = call1 + call2
+def test_langchain_multiple_async_calls(set_trace_info, single_arg_tool, multi_arg_tool, loop):
+    call1 = single_arg_tool_recorded_events.copy()
+    call2 = multi_arg_tool_recorded_events.copy()
+    expected_events = call1 + call2
 
-#     @reset_core_stats_engine()
-#     @validate_custom_events(expected_events)
-#     @validate_custom_event_count(count=2)
-#     @validate_transaction_metrics(
-#         name="mlmodel_langchain.test_tools_legacy:test_langchain_multiple_async_calls.<locals>._test",
-#         custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
-#         background_task=True,
-#     )
-#     @background_task()
-#     def _test():
-#         import langchain_core.callbacks.manager as module
+    @reset_core_stats_engine()
+    @validate_custom_events(expected_events)
+    @validate_custom_event_count(count=2)
+    @validate_transaction_metrics(
+        name="mlmodel_langchain.test_tools_legacy:test_langchain_multiple_async_calls.<locals>._test",
+        custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
+        background_task=True,
+    )
+    @background_task()
+    def _test():
+        set_trace_info()
 
-#         # uuid function name changed between versions
-#         patch_func = "uuid7" if hasattr(module, "uuid7") else "uuid"
-#         with patch(f"langchain_core.callbacks.manager.{patch_func}", autospec=True) as mock_uuid:
-#             uuids = [
-#                 uuid.UUID("b1883d9d-10d6-4b67-a911-f72849704e92"),  # first call
-#                 uuid.UUID("a58aa0c0-c854-4657-9e7b-4cce442f3b61"),
-#                 uuid.UUID("a58aa0c0-c854-4657-9e7b-4cce442f3b61"),  # second call
-#                 uuid.UUID("a58aa0c0-c854-4657-9e7b-4cce442f3b63"),
-#                 uuid.UUID("b1883d9d-10d6-4b67-a911-f72849704e93"),
-#                 uuid.UUID("a58aa0c0-c854-4657-9e7b-4cce442f3b64"),
-#                 uuid.UUID("a58aa0c0-c854-4657-9e7b-4cce442f3b65"),
-#                 uuid.UUID("a58aa0c0-c854-4657-9e7b-4cce442f3b66"),
-#             ]
-#             if hasattr(module, "uuid7"):
-#                 mock_uuid.side_effect = uuids
-#             else:
-#                 mock_uuid.uuid4.side_effect = uuids
+        loop.run_until_complete(
+            asyncio.gather(
+                single_arg_tool.arun({"query": "Python Agent"}),
+                multi_arg_tool.arun(
+                    {"first_num": 53, "second_num": 28},
+                    tags=["python", "test_tags"],
+                    metadata={"test": "langchain", "test_run": True},
+                ),
+            )
+        )
 
-#             set_trace_info()
-
-#             loop.run_until_complete(
-#                 asyncio.gather(
-#                     single_arg_tool.arun({"query": "Python Agent"}),
-#                     multi_arg_tool.arun(
-#                         {"first_num": 53, "second_num": 28},
-#                         tags=["python", "test_tags"],
-#                         metadata={"test": "langchain", "test_run": True},
-#                     ),
-#                 )
-#             )
-
-#     _test()
+    _test()

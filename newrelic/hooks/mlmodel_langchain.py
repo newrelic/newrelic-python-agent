@@ -217,6 +217,7 @@ class AgentObjectProxy(ObjectProxy):
         ft.__enter__()
         try:
             return_val = self.__wrapped__.stream(*args, **kwargs)
+            # TODO Wrap this in a generator proxy
         except Exception:
             ft.notice_error(attributes={"agent_id": agent_id})
             ft.__exit__(*sys.exc_info())
@@ -244,6 +245,7 @@ class AgentObjectProxy(ObjectProxy):
         ft.__enter__()
         try:
             return_val = self.__wrapped__.astream(*args, **kwargs)
+            # TODO Wrap this in a generator proxy
         except Exception:
             ft.notice_error(attributes={"agent_id": agent_id})
             ft.__exit__(*sys.exc_info())

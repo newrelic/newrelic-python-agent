@@ -146,8 +146,12 @@ def test_agent_execution_error(exercise_agent, create_agent_runnable, set_trace_
     def _inject_exception(wrapped, instance, args, kwargs):
         raise ValueError("Oops")
 
-    inject_exception = transient_function_wrapper("langchain_core.callbacks.manager", "CallbackManager.on_chain_start")(_inject_exception)
-    inject_exception_async = transient_function_wrapper("langchain_core.callbacks.manager", "AsyncCallbackManager.on_chain_start")(_inject_exception)
+    inject_exception = transient_function_wrapper("langchain_core.callbacks.manager", "CallbackManager.on_chain_start")(
+        _inject_exception
+    )
+    inject_exception_async = transient_function_wrapper(
+        "langchain_core.callbacks.manager", "AsyncCallbackManager.on_chain_start"
+    )(_inject_exception)
 
     @inject_exception
     @inject_exception_async

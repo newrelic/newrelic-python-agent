@@ -42,7 +42,7 @@ from newrelic.common.object_names import callable_name
 
 @pytest.fixture
 def single_arg_tool():
-    @tool
+    @tool("single_arg_tool")
     def _single_arg_tool(query: str):
         """A test tool that returns query string"""
         return query
@@ -52,7 +52,7 @@ def single_arg_tool():
 
 @pytest.fixture
 def multi_arg_tool():
-    @tool
+    @tool("multi_arg_tool")
     def _multi_arg_tool(first_num: int, second_num: int):
         """A test tool that adds two integers together"""
         return first_num + second_num
@@ -67,8 +67,7 @@ single_arg_tool_recorded_events = [
             "id": None,  # UUID that varies with each run
             "run_id": None,
             "output": "Python Agent",
-            "name": "_single_arg_tool",
-            "description": "A test tool that returns query string",
+            "name": "single_arg_tool",
             "span_id": None,
             "trace_id": "trace-id",
             "input": "{'query': 'Python Agent'}",
@@ -84,9 +83,9 @@ single_arg_tool_recorded_events = [
 @validate_custom_events(events_with_context_attrs(single_arg_tool_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
-    name="test_tool:test_langchain_single_arg_tool",
-    scoped_metrics=[("Llm/tool/LangChain/run", 1)],
-    rollup_metrics=[("Llm/tool/LangChain/run", 1)],
+    name="mlmodel_langchain.test_tools_legacy:test_langchain_single_arg_tool",
+    scoped_metrics=[("Llm/tool/LangChain/run/single_arg_tool", 1)],
+    rollup_metrics=[("Llm/tool/LangChain/run/single_arg_tool", 1)],
     custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
     background_task=True,
 )
@@ -103,9 +102,9 @@ def test_langchain_single_arg_tool(set_trace_info, single_arg_tool):
 @validate_custom_events(tool_events_sans_content(single_arg_tool_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
-    name="test_tool:test_langchain_single_arg_tool_no_content",
-    scoped_metrics=[("Llm/tool/LangChain/run", 1)],
-    rollup_metrics=[("Llm/tool/LangChain/run", 1)],
+    name="mlmodel_langchain.test_tools_legacy:test_langchain_single_arg_tool_no_content",
+    scoped_metrics=[("Llm/tool/LangChain/run/single_arg_tool", 1)],
+    rollup_metrics=[("Llm/tool/LangChain/run/single_arg_tool", 1)],
     custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
     background_task=True,
 )
@@ -120,9 +119,9 @@ def test_langchain_single_arg_tool_no_content(set_trace_info, single_arg_tool):
 @validate_custom_events(events_with_context_attrs(single_arg_tool_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
-    name="test_tool:test_langchain_single_arg_tool_async",
-    scoped_metrics=[("Llm/tool/LangChain/arun", 1)],
-    rollup_metrics=[("Llm/tool/LangChain/arun", 1)],
+    name="mlmodel_langchain.test_tools_legacy:test_langchain_single_arg_tool_async",
+    scoped_metrics=[("Llm/tool/LangChain/arun/single_arg_tool", 1)],
+    rollup_metrics=[("Llm/tool/LangChain/arun/single_arg_tool", 1)],
     custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
     background_task=True,
 )
@@ -139,9 +138,9 @@ def test_langchain_single_arg_tool_async(set_trace_info, single_arg_tool, loop):
 @validate_custom_events(tool_events_sans_content(single_arg_tool_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
-    name="test_tool:test_langchain_single_arg_tool_async_no_content",
-    scoped_metrics=[("Llm/tool/LangChain/arun", 1)],
-    rollup_metrics=[("Llm/tool/LangChain/arun", 1)],
+    name="mlmodel_langchain.test_tools_legacy:test_langchain_single_arg_tool_async_no_content",
+    scoped_metrics=[("Llm/tool/LangChain/arun/single_arg_tool", 1)],
+    rollup_metrics=[("Llm/tool/LangChain/arun/single_arg_tool", 1)],
     custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
     background_task=True,
 )
@@ -159,17 +158,13 @@ multi_arg_tool_recorded_events = [
             "id": None,  # UUID that varies with each run
             "run_id": None,
             "output": "81",
-            "name": "_multi_arg_tool",
-            "description": "A test tool that adds two integers together",
+            "name": "multi_arg_tool",
             "span_id": None,
             "trace_id": "trace-id",
             "input": "{'first_num': 53, 'second_num': 28}",
             "vendor": "langchain",
             "ingest_source": "Python",
             "duration": None,
-            "tags": "['python', 'test_tags']",
-            "metadata.test": "langchain",
-            "metadata.test_run": True,
         },
     )
 ]
@@ -179,9 +174,9 @@ multi_arg_tool_recorded_events = [
 @validate_custom_events(multi_arg_tool_recorded_events)
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
-    name="test_tool:test_langchain_multi_arg_tool",
-    scoped_metrics=[("Llm/tool/LangChain/run", 1)],
-    rollup_metrics=[("Llm/tool/LangChain/run", 1)],
+    name="mlmodel_langchain.test_tools_legacy:test_langchain_multi_arg_tool",
+    scoped_metrics=[("Llm/tool/LangChain/run/multi_arg_tool", 1)],
+    rollup_metrics=[("Llm/tool/LangChain/run/multi_arg_tool", 1)],
     custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
     background_task=True,
 )
@@ -197,9 +192,9 @@ def test_langchain_multi_arg_tool(set_trace_info, multi_arg_tool):
 @validate_custom_events(multi_arg_tool_recorded_events)
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
-    name="test_tool:test_langchain_multi_arg_tool_async",
-    scoped_metrics=[("Llm/tool/LangChain/arun", 1)],
-    rollup_metrics=[("Llm/tool/LangChain/arun", 1)],
+    name="mlmodel_langchain.test_tools_legacy:test_langchain_multi_arg_tool_async",
+    scoped_metrics=[("Llm/tool/LangChain/arun/multi_arg_tool", 1)],
+    rollup_metrics=[("Llm/tool/LangChain/arun/multi_arg_tool", 1)],
     custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
     background_task=True,
 )
@@ -219,17 +214,13 @@ multi_arg_error_recorded_events = [
         {
             "id": None,  # UUID that varies with each run
             "run_id": None,  # No run ID created on error
-            "name": "_multi_arg_tool",
-            "description": "A test tool that adds two integers together",
+            "name": "multi_arg_tool",
             "span_id": None,
             "trace_id": "trace-id",
             "input": "{'first_num': 53}",
             "vendor": "langchain",
             "ingest_source": "Python",
             "duration": None,
-            "tags": "['test_tags', 'python']",
-            "metadata.test": "langchain",
-            "metadata.test_run": True,
             "error": True,
         },
     )
@@ -244,9 +235,9 @@ multi_arg_error_recorded_events = [
 @validate_custom_events(events_with_context_attrs(multi_arg_error_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
-    name="test_tool:test_langchain_error_in_run",
-    scoped_metrics=[("Llm/tool/LangChain/run", 1)],
-    rollup_metrics=[("Llm/tool/LangChain/run", 1)],
+    name="mlmodel_langchain.test_tools_legacy:test_langchain_error_in_run",
+    scoped_metrics=[("Llm/tool/LangChain/run/multi_arg_tool", 1)],
+    rollup_metrics=[("Llm/tool/LangChain/run/multi_arg_tool", 1)],
     custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
     background_task=True,
 )
@@ -270,9 +261,9 @@ def test_langchain_error_in_run(set_trace_info, multi_arg_tool):
 @validate_custom_events(tool_events_sans_content(multi_arg_error_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
-    name="test_tool:test_langchain_error_in_run_no_content",
-    scoped_metrics=[("Llm/tool/LangChain/run", 1)],
-    rollup_metrics=[("Llm/tool/LangChain/run", 1)],
+    name="mlmodel_langchain.test_tools_legacy:test_langchain_error_in_run_no_content",
+    scoped_metrics=[("Llm/tool/LangChain/run/multi_arg_tool", 1)],
+    rollup_metrics=[("Llm/tool/LangChain/run/multi_arg_tool", 1)],
     custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
     background_task=True,
 )
@@ -294,9 +285,9 @@ def test_langchain_error_in_run_no_content(set_trace_info, multi_arg_tool):
 @validate_custom_events(events_with_context_attrs(multi_arg_error_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
-    name="test_tool:test_langchain_error_in_run_async",
-    scoped_metrics=[("Llm/tool/LangChain/arun", 1)],
-    rollup_metrics=[("Llm/tool/LangChain/arun", 1)],
+    name="mlmodel_langchain.test_tools_legacy:test_langchain_error_in_run_async",
+    scoped_metrics=[("Llm/tool/LangChain/arun/multi_arg_tool", 1)],
+    rollup_metrics=[("Llm/tool/LangChain/arun/multi_arg_tool", 1)],
     custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
     background_task=True,
 )
@@ -322,9 +313,9 @@ def test_langchain_error_in_run_async(set_trace_info, multi_arg_tool, loop):
 @validate_custom_events(tool_events_sans_content(multi_arg_error_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
-    name="test_tool:test_langchain_error_in_run_async_no_content",
-    scoped_metrics=[("Llm/tool/LangChain/arun", 1)],
-    rollup_metrics=[("Llm/tool/LangChain/arun", 1)],
+    name="mlmodel_langchain.test_tools_legacy:test_langchain_error_in_run_async_no_content",
+    scoped_metrics=[("Llm/tool/LangChain/arun/multi_arg_tool", 1)],
+    rollup_metrics=[("Llm/tool/LangChain/arun/multi_arg_tool", 1)],
     custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
     background_task=True,
 )
@@ -384,16 +375,14 @@ def test_langchain_tool_disabled_ai_monitoring_events_async(set_trace_info, sing
 
 def test_langchain_multiple_async_calls(set_trace_info, single_arg_tool, multi_arg_tool, loop):
     call1 = single_arg_tool_recorded_events.copy()
-    call1[0][1]["run_id"] = "b1883d9d-10d6-4b67-a911-f72849704e92"
     call2 = multi_arg_tool_recorded_events.copy()
-    call2[0][1]["run_id"] = "a58aa0c0-c854-4657-9e7b-4cce442f3b61"
     expected_events = call1 + call2
 
     @reset_core_stats_engine()
     @validate_custom_events(expected_events)
     @validate_custom_event_count(count=2)
     @validate_transaction_metrics(
-        name="test_tool:test_langchain_multiple_async_calls.<locals>._test",
+        name="mlmodel_langchain.test_tools_legacy:test_langchain_multiple_async_calls.<locals>._test",
         custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
         background_task=True,
     )
@@ -401,27 +390,15 @@ def test_langchain_multiple_async_calls(set_trace_info, single_arg_tool, multi_a
     def _test():
         set_trace_info()
 
-        with patch("langchain_core.callbacks.manager.uuid", autospec=True) as mock_uuid:
-            mock_uuid.uuid4.side_effect = [
-                uuid.UUID("b1883d9d-10d6-4b67-a911-f72849704e92"),  # first call
-                uuid.UUID("a58aa0c0-c854-4657-9e7b-4cce442f3b61"),
-                uuid.UUID("a58aa0c0-c854-4657-9e7b-4cce442f3b61"),  # second call
-                uuid.UUID("a58aa0c0-c854-4657-9e7b-4cce442f3b63"),
-                uuid.UUID("b1883d9d-10d6-4b67-a911-f72849704e93"),
-                uuid.UUID("a58aa0c0-c854-4657-9e7b-4cce442f3b64"),
-                uuid.UUID("a58aa0c0-c854-4657-9e7b-4cce442f3b65"),
-                uuid.UUID("a58aa0c0-c854-4657-9e7b-4cce442f3b66"),
-            ]
-
-            loop.run_until_complete(
-                asyncio.gather(
-                    single_arg_tool.arun({"query": "Python Agent"}),
-                    multi_arg_tool.arun(
-                        {"first_num": 53, "second_num": 28},
-                        tags=["python", "test_tags"],
-                        metadata={"test": "langchain", "test_run": True},
-                    ),
-                )
+        loop.run_until_complete(
+            asyncio.gather(
+                single_arg_tool.arun({"query": "Python Agent"}),
+                multi_arg_tool.arun(
+                    {"first_num": 53, "second_num": 28},
+                    tags=["python", "test_tags"],
+                    metadata={"test": "langchain", "test_run": True},
+                ),
             )
+        )
 
     _test()

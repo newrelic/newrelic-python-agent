@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from newrelic.api.transaction import current_transaction
+from newrelic.common.object_wrapper import ObjectProxy
+
 
 def _get_llm_metadata(transaction):
     # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
@@ -22,3 +25,63 @@ def _get_llm_metadata(transaction):
         llm_metadata_dict.update(llm_context_attrs)
 
     return llm_metadata_dict
+
+
+class GeneratorProxy(ObjectProxy):
+    def __init__(self, wrapped, on_stop_iteration, on_error):
+        super().__init__(wrapped)
+        self._nr_on_stop_iteration = on_stop_iteration
+        self._nr_on_error = on_error
+
+    def __iter__(self):
+        self._nr_wrapped_iter = self.__wrapped__.__iter__()
+        return self
+
+    def __next__(self):
+        transaction = current_transaction()
+        if not transaction:
+            return self._nr_wrapped_iter.__next__()
+
+        return_val = None
+        try:
+            return_val = self._nr_wrapped_iter.__next__()
+        except StopIteration:
+            self._nr_on_stop_iteration(self, transaction)
+            raise
+        except Exception:
+            self._nr_on_error(self, transaction)
+            raise
+        return return_val
+
+    def close(self):
+        return super().close()
+
+
+class AsyncGeneratorProxy(ObjectProxy):
+    def __init__(self, wrapped, on_stop_iteration, on_error):
+        super().__init__(wrapped)
+        self._nr_on_stop_iteration = on_stop_iteration
+        self._nr_on_error = on_error
+
+    def __aiter__(self):
+        self._nr_wrapped_iter = self.__wrapped__.__aiter__()
+        return self
+
+    async def __anext__(self):
+        transaction = current_transaction()
+        if not transaction:
+            return await self._nr_wrapped_iter.__anext__()
+
+        return_val = None
+        try:
+            return_val = await self._nr_wrapped_iter.__anext__()
+        except StopAsyncIteration:
+            self._nr_on_stop_iteration(self, transaction)
+            raise
+        except Exception:
+            self._nr_on_error(self, transaction)
+            raise
+        return return_val
+
+    async def aclose(self):
+        return await super().aclose()

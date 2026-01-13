@@ -512,6 +512,7 @@ recorded_events_retrieval_chain_response = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
+            "timestamp": None,
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",

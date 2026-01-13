@@ -21,11 +21,12 @@ import uuid
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import current_trace, get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.common.llm_utils import AsyncGeneratorProxy, GeneratorProxy
+from newrelic.common.object_wrapper import ObjectProxy, wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
 from newrelic.core.config import global_settings
-from newrelic.core.context import context_wrapper
+from newrelic.core.context import ContextOf, context_wrapper
 
 _logger = logging.getLogger(__name__)
 LANGCHAIN_VERSION = get_package_version("langchain")
@@ -128,6 +129,146 @@ VECTORSTORE_CLASSES = {
     "langchain_community.vectorstores.zep": "ZepVectorStore",
     "langchain_community.vectorstores.docarray": ["DocArrayHnswSearch", "DocArrayInMemorySearch"],
 }
+
+
+def _construct_base_agent_event_dict(agent_name, agent_id, transaction):
+    try:
+        linking_metadata = get_trace_linking_metadata()
+
+        agent_event_dict = {
+            "id": agent_id,
+            "name": agent_name,
+            "span_id": linking_metadata.get("span.id"),
+            "trace_id": linking_metadata.get("trace.id"),
+            "vendor": "langchain",
+            "ingest_source": "Python",
+        }
+        agent_event_dict.update(_get_llm_metadata(transaction))
+    except Exception:
+        agent_event_dict = {}
+        _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
+
+    return agent_event_dict
+
+
+class AgentObjectProxy(ObjectProxy):
+    def invoke(self, *args, **kwargs):
+        transaction = current_transaction()
+
+        agent_name = getattr(transaction, "_nr_agent_name", "agent")
+        agent_id = str(uuid.uuid4())
+        agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
+        function_trace_name = f"invoke/{agent_name}"
+
+        ft = FunctionTrace(name=function_trace_name, group="Llm/agent/LangChain")
+        ft.__enter__()
+        try:
+            return_val = self.__wrapped__.invoke(*args, **kwargs)
+        except Exception:
+            ft.notice_error(attributes={"agent_id": agent_id})
+            ft.__exit__(*sys.exc_info())
+            # If we hit an exception, append the error attribute and duration from the exited function trace
+            agent_event_dict.update({"duration": ft.duration * 1000, "error": True})
+            transaction.record_custom_event("LlmAgent", agent_event_dict)
+            raise
+
+        ft.__exit__(None, None, None)
+        agent_event_dict.update({"duration": ft.duration * 1000})
+
+        transaction.record_custom_event("LlmAgent", agent_event_dict)
+
+        return return_val
+
+    async def ainvoke(self, *args, **kwargs):
+        transaction = current_transaction()
+
+        agent_name = getattr(transaction, "_nr_agent_name", "agent")
+        agent_id = str(uuid.uuid4())
+        agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
+        function_trace_name = f"ainvoke/{agent_name}"
+
+        ft = FunctionTrace(name=function_trace_name, group="Llm/agent/LangChain")
+        ft.__enter__()
+        try:
+            return_val = await self.__wrapped__.ainvoke(*args, **kwargs)
+        except Exception:
+            ft.notice_error(attributes={"agent_id": agent_id})
+            ft.__exit__(*sys.exc_info())
+            # If we hit an exception, append the error attribute and duration from the exited function trace
+            agent_event_dict.update({"duration": ft.duration * 1000, "error": True})
+            transaction.record_custom_event("LlmAgent", agent_event_dict)
+            raise
+
+        ft.__exit__(None, None, None)
+        agent_event_dict.update({"duration": ft.duration * 1000})
+
+        transaction.record_custom_event("LlmAgent", agent_event_dict)
+
+        return return_val
+
+    def stream(self, *args, **kwargs):
+        transaction = current_transaction()
+
+        agent_name = getattr(transaction, "_nr_agent_name", "agent")
+        agent_id = str(uuid.uuid4())
+        agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
+        function_trace_name = f"stream/{agent_name}"
+
+        ft = FunctionTrace(name=function_trace_name, group="Llm/agent/LangChain")
+        ft.__enter__()
+        try:
+            return_val = self.__wrapped__.stream(*args, **kwargs)
+            return_val = GeneratorProxy(
+                return_val,
+                on_stop_iteration=self.on_stop_iteration(ft, agent_event_dict),
+                on_error=self.on_error(ft, agent_event_dict, agent_id),
+            )
+        except Exception:
+            self.on_error(ft, agent_event_dict, agent_id)(transaction)
+            raise
+
+        return return_val
+
+    def astream(self, *args, **kwargs):
+        transaction = current_transaction()
+
+        agent_name = getattr(transaction, "_nr_agent_name", "agent")
+        agent_id = str(uuid.uuid4())
+        agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
+        function_trace_name = f"astream/{agent_name}"
+
+        ft = FunctionTrace(name=function_trace_name, group="Llm/agent/LangChain")
+        ft.__enter__()
+        try:
+            return_val = self.__wrapped__.astream(*args, **kwargs)
+            return_val = AsyncGeneratorProxy(
+                return_val,
+                on_stop_iteration=self.on_stop_iteration(ft, agent_event_dict),
+                on_error=self.on_error(ft, agent_event_dict, agent_id),
+            )
+        except Exception:
+            self.on_error(ft, agent_event_dict, agent_id)(transaction)
+            raise
+
+        return return_val
+
+    def on_stop_iteration(self, ft, agent_event_dict):
+        def _on_stop_iteration(proxy, transaction):
+            ft.__exit__(None, None, None)
+            agent_event_dict.update({"duration": ft.duration * 1000})
+            transaction.record_custom_event("LlmAgent", agent_event_dict)
+
+        return _on_stop_iteration
+
+    def on_error(self, ft, agent_event_dict, agent_id):
+        def _on_error(proxy, transaction):
+            ft.notice_error(attributes={"agent_id": agent_id})
+            ft.__exit__(*sys.exc_info())
+            # If we hit an exception, append the error attribute and duration from the exited function trace
+            agent_event_dict.update({"duration": ft.duration * 1000, "error": True})
+            transaction.record_custom_event("LlmAgent", agent_event_dict)
+
+        return _on_error
 
 
 def bind_submit(func, *args, **kwargs):
@@ -301,27 +442,32 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
     transaction.add_ml_model_info("LangChain", LANGCHAIN_VERSION)
     transaction._add_agent_attribute("llm", True)
 
-    tool_id, metadata, tags, tool_input, tool_name, tool_description, run_args = _capture_tool_info(
+    tool_id, agent_name, tool_input, tool_name, tool_run_id, run_args = _capture_tool_info(
         instance, wrapped, args, kwargs
     )
 
-    ft = FunctionTrace(name=wrapped.__name__, group="Llm/tool/LangChain")
+    # Filter out injected State or ToolRuntime arguments that would clog up the input
+    try:
+        filtered_tool_input = instance._filter_injected_args(tool_input)
+    except Exception:
+        filtered_tool_input = tool_input
+
+    ft = FunctionTrace(name=f"{wrapped.__name__}/{tool_name}", group="Llm/tool/LangChain")
     ft.__enter__()
     linking_metadata = get_trace_linking_metadata()
     try:
         return_val = wrapped(**run_args)
     except Exception:
         _record_tool_error(
-            instance,
-            transaction,
-            linking_metadata,
-            tags,
-            metadata,
-            tool_id,
-            tool_input,
-            tool_name,
-            tool_description,
-            ft,
+            instance=instance,
+            transaction=transaction,
+            linking_metadata=linking_metadata,
+            agent_name=agent_name,
+            tool_id=tool_id,
+            tool_input=filtered_tool_input,
+            tool_name=tool_name,
+            tool_run_id=tool_run_id,
+            ft=ft,
         )
         raise
     ft.__exit__(None, None, None)
@@ -330,17 +476,16 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
         return return_val
 
     _record_tool_success(
-        instance,
-        transaction,
-        linking_metadata,
-        tags,
-        metadata,
-        tool_id,
-        tool_input,
-        tool_name,
-        tool_description,
-        ft,
-        return_val,
+        instance=instance,
+        transaction=transaction,
+        linking_metadata=linking_metadata,
+        agent_name=agent_name,
+        tool_id=tool_id,
+        tool_input=filtered_tool_input,
+        tool_name=tool_name,
+        tool_run_id=tool_run_id,
+        ft=ft,
+        response=return_val,
     )
     return return_val
 
@@ -358,27 +503,32 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
     transaction.add_ml_model_info("LangChain", LANGCHAIN_VERSION)
     transaction._add_agent_attribute("llm", True)
 
-    tool_id, metadata, tags, tool_input, tool_name, tool_description, run_args = _capture_tool_info(
+    tool_id, agent_name, tool_input, tool_name, tool_run_id, run_args = _capture_tool_info(
         instance, wrapped, args, kwargs
     )
 
-    ft = FunctionTrace(name=wrapped.__name__, group="Llm/tool/LangChain")
+    # Filter out injected State or ToolRuntime arguments that would clog up the input
+    try:
+        filtered_tool_input = instance._filter_injected_args(tool_input)
+    except Exception:
+        filtered_tool_input = tool_input
+
+    ft = FunctionTrace(name=f"{wrapped.__name__}/{tool_name}", group="Llm/tool/LangChain")
     ft.__enter__()
     linking_metadata = get_trace_linking_metadata()
     try:
         return_val = await wrapped(**run_args)
     except Exception:
         _record_tool_error(
-            instance,
-            transaction,
-            linking_metadata,
-            tags,
-            metadata,
-            tool_id,
-            tool_input,
-            tool_name,
-            tool_description,
-            ft,
+            instance=instance,
+            transaction=transaction,
+            linking_metadata=linking_metadata,
+            agent_name=agent_name,
+            tool_id=tool_id,
+            tool_input=filtered_tool_input,
+            tool_name=tool_name,
+            tool_run_id=tool_run_id,
+            ft=ft,
         )
         raise
     ft.__exit__(None, None, None)
@@ -387,17 +537,16 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
         return return_val
 
     _record_tool_success(
-        instance,
-        transaction,
-        linking_metadata,
-        tags,
-        metadata,
-        tool_id,
-        tool_input,
-        tool_name,
-        tool_description,
-        ft,
-        return_val,
+        instance=instance,
+        transaction=transaction,
+        linking_metadata=linking_metadata,
+        agent_name=agent_name,
+        tool_id=tool_id,
+        tool_input=filtered_tool_input,
+        tool_name=tool_name,
+        tool_run_id=tool_run_id,
+        ft=ft,
+        response=return_val,
     )
     return return_val
 
@@ -407,51 +556,35 @@ def _capture_tool_info(instance, wrapped, args, kwargs):
 
     tool_id = str(uuid.uuid4())
     metadata = run_args.get("metadata") or {}
-    metadata["nr_tool_id"] = tool_id
-    run_args["metadata"] = metadata
-    tags = run_args.get("tags") or []
+    agent_name = metadata.pop("_nr_agent_name", None)
     tool_input = run_args.get("tool_input")
     tool_name = getattr(instance, "name", None)
-    tool_description = getattr(instance, "description", None)
-    return tool_id, metadata, tags, tool_input, tool_name, tool_description, run_args
+    # Checking multiple places for an acceptable tool run ID, fallback to creating our own.
+    tool_run_id = run_args.get("run_id", None) or run_args.get("tool_call_id", None) or str(uuid.uuid4())
+
+    return tool_id, agent_name, tool_input, tool_name, tool_run_id, run_args
 
 
 def _record_tool_success(
-    instance,
-    transaction,
-    linking_metadata,
-    tags,
-    metadata,
-    tool_id,
-    tool_input,
-    tool_name,
-    tool_description,
-    ft,
-    response,
+    instance, transaction, linking_metadata, agent_name, tool_id, tool_input, tool_name, tool_run_id, ft, response
 ):
     settings = transaction.settings if transaction.settings is not None else global_settings()
-    run_id = getattr(transaction, "_nr_tool_run_ids", {}).pop(tool_id, None)
-    # Update tags and metadata previously obtained from run_args with instance values
-    metadata.update(getattr(instance, "metadata", None) or {})
-    tags.extend(getattr(instance, "tags", None) or [])
-    full_tool_event_dict = {f"metadata.{key}": value for key, value in metadata.items() if key != "nr_tool_id"}
-    full_tool_event_dict.update(
-        {
-            "id": tool_id,
-            "run_id": run_id,
-            "name": tool_name,
-            "description": tool_description,
-            "span_id": linking_metadata.get("span.id"),
-            "trace_id": linking_metadata.get("trace.id"),
-            "vendor": "langchain",
-            "ingest_source": "Python",
-            "duration": ft.duration * 1000,
-            "tags": tags or None,
-        }
-    )
+
+    full_tool_event_dict = {
+        "id": tool_id,
+        "run_id": tool_run_id,
+        "name": tool_name,
+        "agent_name": agent_name,
+        "span_id": linking_metadata.get("span.id"),
+        "trace_id": linking_metadata.get("trace.id"),
+        "vendor": "langchain",
+        "ingest_source": "Python",
+        "duration": ft.duration * 1000,
+    }
+
     result = None
     try:
-        result = str(response)
+        result = str(response.content) if hasattr(response, "content") else str(response)
     except Exception:
         _logger.debug("Failed to convert tool response into a string.\n%s", traceback.format_exception(*sys.exc_info()))
     if settings.ai_monitoring.record_content.enabled:
@@ -461,79 +594,31 @@ def _record_tool_success(
 
 
 def _record_tool_error(
-    instance, transaction, linking_metadata, tags, metadata, tool_id, tool_input, tool_name, tool_description, ft
+    instance, transaction, linking_metadata, agent_name, tool_id, tool_input, tool_name, tool_run_id, ft
 ):
     settings = transaction.settings if transaction.settings is not None else global_settings()
     ft.notice_error(attributes={"tool_id": tool_id})
     ft.__exit__(*sys.exc_info())
-    run_id = getattr(transaction, "_nr_tool_run_ids", {}).pop(tool_id, None)
-    # Update tags and metadata previously obtained from run_args with instance values
-    metadata.update(getattr(instance, "metadata", None) or {})
-    tags.extend(getattr(instance, "tags", None) or [])
 
     # Make sure the builtin attributes take precedence over metadata attributes.
-    error_tool_event_dict = {f"metadata.{key}": value for key, value in metadata.items() if key != "nr_tool_id"}
-    error_tool_event_dict.update(
-        {
-            "id": tool_id,
-            "run_id": run_id,
-            "name": tool_name,
-            "description": tool_description,
-            "span_id": linking_metadata.get("span.id"),
-            "trace_id": linking_metadata.get("trace.id"),
-            "vendor": "langchain",
-            "ingest_source": "Python",
-            "duration": ft.duration * 1000,
-            "tags": tags or None,
-            "error": True,
-        }
-    )
+    error_tool_event_dict = {
+        "id": tool_id,
+        "run_id": tool_run_id,
+        "name": tool_name,
+        "agent_name": agent_name,
+        "span_id": linking_metadata.get("span.id"),
+        "trace_id": linking_metadata.get("trace.id"),
+        "vendor": "langchain",
+        "ingest_source": "Python",
+        "duration": ft.duration * 1000,
+        "error": True,
+    }
+
     if settings.ai_monitoring.record_content.enabled:
         error_tool_event_dict["input"] = tool_input
     error_tool_event_dict.update(_get_llm_metadata(transaction))
+
     transaction.record_custom_event("LlmTool", error_tool_event_dict)
-
-
-def wrap_on_tool_start_sync(wrapped, instance, args, kwargs):
-    transaction = current_transaction()
-    if not transaction:
-        return wrapped(*args, **kwargs)
-
-    settings = transaction.settings if transaction.settings is not None else global_settings()
-    if not settings.ai_monitoring.enabled:
-        return wrapped(*args, **kwargs)
-
-    tool_id = _get_tool_id(instance)
-    run_manager = wrapped(*args, **kwargs)
-    _capture_tool_run_id(transaction, run_manager, tool_id)
-    return run_manager
-
-
-async def wrap_on_tool_start_async(wrapped, instance, args, kwargs):
-    transaction = current_transaction()
-    if not transaction:
-        return await wrapped(*args, **kwargs)
-
-    settings = transaction.settings if transaction.settings is not None else global_settings()
-    if not settings.ai_monitoring.enabled:
-        return await wrapped(*args, **kwargs)
-
-    tool_id = _get_tool_id(instance)
-    run_manager = await wrapped(*args, **kwargs)
-    _capture_tool_run_id(transaction, run_manager, tool_id)
-    return run_manager
-
-
-def _get_tool_id(instance):
-    return (getattr(instance, "metadata", None) or {}).pop("nr_tool_id", None)
-
-
-def _capture_tool_run_id(transaction, run_manager, tool_id):
-    if tool_id:
-        if not hasattr(transaction, "_nr_tool_run_ids"):
-            transaction._nr_tool_run_ids = {}
-        if tool_id not in transaction._nr_tool_run_ids:
-            transaction._nr_tool_run_ids[tool_id] = getattr(run_manager, "run_id", None)
 
 
 async def wrap_chain_async_run(wrapped, instance, args, kwargs):
@@ -822,47 +907,56 @@ def create_chat_completion_message_event(
             transaction.record_custom_event("LlmChatCompletionMessage", chat_completion_output_message_dict)
 
 
-def wrap_on_chain_start(wrapped, instance, args, kwargs):
+def wrap_create_agent(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
+    settings = transaction.settings or global_settings()
     if not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
-    completion_id = _get_completion_id(instance)
-    run_manager = wrapped(*args, **kwargs)
-    _capture_chain_run_id(transaction, run_manager, completion_id)
-    return run_manager
+        # Framework metric also used for entity tagging in the UI
+    transaction.add_ml_model_info("LangChain", LANGCHAIN_VERSION)
+    transaction._add_agent_attribute("llm", True)
+
+    agent_name = kwargs.get("name", None)
+
+    transaction._nr_agent_name = agent_name
+
+    return_val = wrapped(*args, **kwargs)
+
+    return AgentObjectProxy(return_val)
 
 
-async def wrap_async_on_chain_start(wrapped, instance, args, kwargs):
-    transaction = current_transaction()
-    if not transaction:
+def wrap_StructuredTool_invoke(wrapped, instance, args, kwargs):
+    """If StructuredTool.invoke is being run inside a ThreadPoolExecutor, propagate context from StructuredTool.ainvoke."""
+    trace = current_trace()
+    if trace:
+        return wrapped(*args, **kwargs)
+
+    metadata = bind_args(wrapped, args, kwargs).get("config", {}).get("metadata", {})
+    trace = metadata.get("_nr_trace")
+    if not trace:
+        return wrapped(*args, **kwargs)
+
+    with ContextOf(trace=trace):
+        return wrapped(*args, **kwargs)
+
+
+async def wrap_StructuredTool_ainvoke(wrapped, instance, args, kwargs):
+    """Save a copy of the current trace if we're about to run StructuredTool.invoke inside a ThreadPoolExecutor."""
+    trace = current_trace()
+    if not trace or instance.coroutine:
         return await wrapped(*args, **kwargs)
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
-    if not settings.ai_monitoring.enabled:
+    metadata = bind_args(wrapped, args, kwargs).get("config", {}).get("metadata", {})
+    metadata["_nr_trace"] = trace
+
+    try:
         return await wrapped(*args, **kwargs)
-
-    completion_id = _get_completion_id(instance)
-    run_manager = await wrapped(*args, **kwargs)
-    _capture_chain_run_id(transaction, run_manager, completion_id)
-    return run_manager
-
-
-def _get_completion_id(instance):
-    return (getattr(instance, "metadata", None) or {}).pop("nr_completion_id", None)
-
-
-def _capture_chain_run_id(transaction, run_manager, completion_id):
-    if completion_id:
-        if not hasattr(transaction, "_nr_chain_run_ids"):
-            transaction._nr_chain_run_ids = {}
-        # Only capture the first run_id.
-        if completion_id not in transaction._nr_chain_run_ids:
-            transaction._nr_chain_run_ids[completion_id] = getattr(run_manager, "run_id", "")
+    finally:
+        metadata.pop("_nr_trace", None)
 
 
 def instrument_langchain_runnables_chains_base(module):
@@ -903,17 +997,19 @@ def instrument_langchain_core_tools(module):
         wrap_function_wrapper(module, "BaseTool.arun", wrap_tool_async_run)
 
 
-def instrument_langchain_callbacks_manager(module):
-    if hasattr(module.CallbackManager, "on_tool_start"):
-        wrap_function_wrapper(module, "CallbackManager.on_tool_start", wrap_on_tool_start_sync)
-    if hasattr(module.AsyncCallbackManager, "on_tool_start"):
-        wrap_function_wrapper(module, "AsyncCallbackManager.on_tool_start", wrap_on_tool_start_async)
-    if hasattr(module.CallbackManager, "on_chain_start"):
-        wrap_function_wrapper(module, "CallbackManager.on_chain_start", wrap_on_chain_start)
-    if hasattr(module.AsyncCallbackManager, "on_chain_start"):
-        wrap_function_wrapper(module, "AsyncCallbackManager.on_chain_start", wrap_async_on_chain_start)
-
-
 def instrument_langchain_core_runnables_config(module):
     if hasattr(module, "ContextThreadPoolExecutor"):
         wrap_function_wrapper(module, "ContextThreadPoolExecutor.submit", wrap_ContextThreadPoolExecutor_submit)
+
+
+def instrument_langchain_core_tools_structured(module):
+    if hasattr(module, "StructuredTool"):
+        if hasattr(module.StructuredTool, "invoke"):
+            wrap_function_wrapper(module, "StructuredTool.invoke", wrap_StructuredTool_invoke)
+        if hasattr(module.StructuredTool, "ainvoke"):
+            wrap_function_wrapper(module, "StructuredTool.ainvoke", wrap_StructuredTool_ainvoke)
+
+
+def instrument_langchain_agents_factory(module):
+    if hasattr(module, "create_agent"):
+        wrap_function_wrapper(module, "create_agent", wrap_create_agent)

@@ -77,9 +77,9 @@ def add_exclamation(message: str) -> str:
 
 
 @reset_core_stats_engine()
-def test_agent(exercise_agent, create_agent_runnable, set_trace_info, method_name):
+def test_agent(exercise_agent, create_agent_runnable, set_trace_info, method_name, agent_runnable_type):
     @validate_custom_events(events_with_context_attrs(agent_recorded_event))
-    @validate_custom_event_count(count=11)
+    @validate_custom_event_count(count=11 if agent_runnable_type != "RunnableSequence" else 14)
     @validate_transaction_metrics(
         "test_agent",
         scoped_metrics=[(f"Llm/agent/LangChain/{method_name}/my_agent", 1)],
@@ -102,9 +102,9 @@ def test_agent(exercise_agent, create_agent_runnable, set_trace_info, method_nam
 
 @reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
-def test_agent_no_content(exercise_agent, create_agent_runnable, set_trace_info, method_name):
+def test_agent_no_content(exercise_agent, create_agent_runnable, set_trace_info, method_name, agent_runnable_type):
     @validate_custom_events(agent_recorded_event)
-    @validate_custom_event_count(count=11)
+    @validate_custom_event_count(count=11 if agent_runnable_type != "RunnableSequence" else 14)
     @validate_transaction_metrics(
         "test_agent_no_content",
         scoped_metrics=[(f"Llm/agent/LangChain/{method_name}/my_agent", 1)],
@@ -141,7 +141,7 @@ def test_agent_disabled_ai_monitoring_events(exercise_agent, create_agent_runnab
 
 
 @reset_core_stats_engine()
-def test_agent_execution_error(exercise_agent, create_agent_runnable, set_trace_info, method_name):
+def test_agent_execution_error(exercise_agent, create_agent_runnable, set_trace_info, method_name, agent_runnable_type):
     # Add a wrapper to intentionally force an error in the Agent code
     @transient_function_wrapper("langchain_openai.chat_models.base", "ChatOpenAI._get_request_payload")
     def inject_exception(wrapped, instance, args, kwargs):
@@ -151,7 +151,7 @@ def test_agent_execution_error(exercise_agent, create_agent_runnable, set_trace_
     @validate_transaction_error_event_count(1)
     @validate_error_trace_attributes(callable_name(ValueError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
     @validate_custom_events(agent_recorded_event_error)
-    @validate_custom_event_count(count=1)
+    @validate_custom_event_count(count=1 if agent_runnable_type != "RunnableSequence" else 3)
     @validate_transaction_metrics(
         "test_agent_execution_error",
         scoped_metrics=[(f"Llm/agent/LangChain/{method_name}/my_agent", 1)],

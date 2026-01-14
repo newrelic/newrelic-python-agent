@@ -220,11 +220,11 @@ class AgentObjectProxy(ObjectProxy):
             return_val = self.__wrapped__.stream(*args, **kwargs)
             return_val = GeneratorProxy(
                 return_val,
-                on_stop_iteration=self.on_stop_iteration(ft, agent_event_dict),
-                on_error=self.on_error(ft, agent_event_dict, agent_id),
+                on_stop_iteration=self._nr_on_stop_iteration(ft, agent_event_dict),
+                on_error=self._nr_on_error(ft, agent_event_dict, agent_id),
             )
         except Exception:
-            self.on_error(ft, agent_event_dict, agent_id)(transaction)
+            self._nr_on_error(ft, agent_event_dict, agent_id)(transaction)
             raise
 
         return return_val
@@ -243,30 +243,80 @@ class AgentObjectProxy(ObjectProxy):
             return_val = self.__wrapped__.astream(*args, **kwargs)
             return_val = AsyncGeneratorProxy(
                 return_val,
-                on_stop_iteration=self.on_stop_iteration(ft, agent_event_dict),
-                on_error=self.on_error(ft, agent_event_dict, agent_id),
+                on_stop_iteration=self._nr_on_stop_iteration(ft, agent_event_dict),
+                on_error=self._nr_on_error(ft, agent_event_dict, agent_id),
             )
         except Exception:
-            self.on_error(ft, agent_event_dict, agent_id)(transaction)
+            self._nr_on_error(ft, agent_event_dict, agent_id)(transaction)
             raise
 
         return return_val
 
-    def on_stop_iteration(self, ft, agent_event_dict):
+    def transform(self, *args, **kwargs):
+        transaction = current_transaction()
+
+        agent_name = getattr(transaction, "_nr_agent_name", "agent")
+        agent_id = str(uuid.uuid4())
+        agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
+        function_trace_name = f"stream/{agent_name}"
+
+        ft = FunctionTrace(name=function_trace_name, group="Llm/agent/LangChain")
+        ft.__enter__()
+        try:
+            return_val = self.__wrapped__.transform(*args, **kwargs)
+            return_val = GeneratorProxy(
+                return_val,
+                on_stop_iteration=self._nr_on_stop_iteration(ft, agent_event_dict),
+                on_error=self._nr_on_error(ft, agent_event_dict, agent_id),
+            )
+        except Exception:
+            self._nr_on_error(ft, agent_event_dict, agent_id)(transaction)
+            raise
+
+        return return_val
+
+    def atransform(self, *args, **kwargs):
+        transaction = current_transaction()
+
+        agent_name = getattr(transaction, "_nr_agent_name", "agent")
+        agent_id = str(uuid.uuid4())
+        agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
+        function_trace_name = f"astream/{agent_name}"
+
+        ft = FunctionTrace(name=function_trace_name, group="Llm/agent/LangChain")
+        ft.__enter__()
+        try:
+            return_val = self.__wrapped__.atransform(*args, **kwargs)
+            return_val = AsyncGeneratorProxy(
+                return_val,
+                on_stop_iteration=self._nr_on_stop_iteration(ft, agent_event_dict),
+                on_error=self._nr_on_error(ft, agent_event_dict, agent_id),
+            )
+        except Exception:
+            self._nr_on_error(ft, agent_event_dict, agent_id)(transaction)
+            raise
+
+        return return_val
+
+    def _nr_on_stop_iteration(self, ft, agent_event_dict):
         def _on_stop_iteration(proxy, transaction):
             ft.__exit__(None, None, None)
-            agent_event_dict.update({"duration": ft.duration * 1000})
-            transaction.record_custom_event("LlmAgent", agent_event_dict)
+            if agent_event_dict:
+                agent_event_dict.update({"duration": ft.duration * 1000})
+                transaction.record_custom_event("LlmAgent", agent_event_dict)
+                agent_event_dict.clear()
 
         return _on_stop_iteration
 
-    def on_error(self, ft, agent_event_dict, agent_id):
+    def _nr_on_error(self, ft, agent_event_dict, agent_id):
         def _on_error(proxy, transaction):
             ft.notice_error(attributes={"agent_id": agent_id})
             ft.__exit__(*sys.exc_info())
-            # If we hit an exception, append the error attribute and duration from the exited function trace
-            agent_event_dict.update({"duration": ft.duration * 1000, "error": True})
-            transaction.record_custom_event("LlmAgent", agent_event_dict)
+            if agent_event_dict:
+                # If we hit an exception, append the error attribute and duration from the exited function trace
+                agent_event_dict.update({"duration": ft.duration * 1000, "error": True})
+                transaction.record_custom_event("LlmAgent", agent_event_dict)
+                agent_event_dict.clear()
 
         return _on_error
 

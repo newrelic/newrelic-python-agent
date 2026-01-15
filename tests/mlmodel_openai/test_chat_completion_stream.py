@@ -112,7 +112,6 @@ chat_completion_recorded_events = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": "chatcmpl-87sb95K4EF2nuJRcTs43Tm9ntTemv-2",
-            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": "49dbbffbd3c3f4612aa48def69059ccd",

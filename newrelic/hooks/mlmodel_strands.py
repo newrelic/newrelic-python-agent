@@ -35,6 +35,7 @@ RECORD_EVENTS_FAILURE_LOG_MESSAGE = "Exception occurred in Strands instrumentati
 TOOL_OUTPUT_FAILURE_LOG_MESSAGE = "Exception occurred in Strands instrumentation: Failed to record output of tool call. Please report this issue to New Relic Support."
 AGENT_EVENT_FAILURE_LOG_MESSAGE = "Exception occurred in Strands instrumentation: Failed to record agent data. Please report this issue to New Relic Support."
 TOOL_EXTRACTOR_FAILURE_LOG_MESSAGE = "Exception occurred in Strands instrumentation: Failed to extract tool information. If the issue persists, report this issue to New Relic support.\n"
+DECORATOR_IMPORT_FAILURE_LOG_MESSAGE = "Exception occurred in Strands instrumentation: Failed to import DecoratedFunctionTool from strands.tools.decorator. Please report this issue to New Relic Support."
 
 
 def wrap_agent__call__(wrapped, instance, args, kwargs):
@@ -418,6 +419,7 @@ def wrap_ToolRegister_register_tool(wrapped, instance, args, kwargs):
     try:
         from strands.tools.decorator import DecoratedFunctionTool
     except ImportError:
+        _logger.exception(DECORATOR_IMPORT_FAILURE_LOG_MESSAGE)
         # If we can't import this to check for double wrapping, return early
         return wrapped(*args, **kwargs)
 

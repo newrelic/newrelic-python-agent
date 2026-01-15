@@ -44,7 +44,7 @@ def do_basic_publish(channel, queue_name, properties=None):
         ("DurationByCaller/Unknown/Unknown/Unknown/Unknown/all", 1),
         ("DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther", 1),
     ]
-    
+
     @validate_transaction_metrics(
         "test_distributed_tracing:do_basic_publish.<locals>._test",
         rollup_metrics=_test_distributed_tracing_basic_publish_metrics,
@@ -52,7 +52,9 @@ def do_basic_publish(channel, queue_name, properties=None):
     )
     @background_task()
     def _test():
-        channel.basic_publish(exchange="", routing_key=queue_name, body="Testing distributed_tracing 123", properties=properties)
+        channel.basic_publish(
+            exchange="", routing_key=queue_name, body="Testing distributed_tracing 123", properties=properties
+        )
 
     _test()
 
@@ -68,12 +70,12 @@ def do_basic_consume(channel, queue_name):
         ("Supportability/DistributedTrace/AcceptPayload/Success", None),
         ("Supportability/TraceContext/TraceParent/Accept/Success", 1),
         ("Supportability/TraceContext/Accept/Success", 1),
-        ("DurationByCaller/App/33/12345/Unknown/all", 1),
-        ("TransportDuration/App/33/12345/Unknown/all", 1),
-        ("DurationByCaller/App/33/12345/Unknown/allOther", 1),
-        ("TransportDuration/App/33/12345/Unknown/allOther", 1),
+        ("DurationByCaller/App/33/12345/AMQP/all", 1),
+        ("TransportDuration/App/33/12345/AMQP/all", 1),
+        ("DurationByCaller/App/33/12345/AMQP/allOther", 1),
+        ("TransportDuration/App/33/12345/AMQP/allOther", 1),
     ]
-    
+
     @validate_transaction_metrics(
         f"{queue_name}",
         rollup_metrics=_test_distributed_tracing_basic_consume_rollup_metrics,
@@ -82,7 +84,7 @@ def do_basic_consume(channel, queue_name):
     )
     def _test():
         channel.start_consuming()
-        
+
     _test()
 
 
@@ -146,7 +148,7 @@ def do_basic_get(channel, QUEUE):
 
     assert headers
     assert msg == b"Testing distributed_tracing 123"
-    
+
     assert "traceparent" in headers
     assert "tracestate" in headers
 

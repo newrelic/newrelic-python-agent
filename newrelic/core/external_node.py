@@ -35,6 +35,8 @@ _ExternalNode = namedtuple(
         "guid",
         "agent_attributes",
         "user_attributes",
+        "span_link_events",
+        "span_event_events",
     ],
 )
 
@@ -188,7 +190,7 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
         if self.method:
             _, i_attrs["http.method"] = attribute.process_user_attribute("http.method", self.method)
 
-        return super().span_event(
+        base_span_event = super().span_event(
             settings,
             base_attrs=i_attrs,
             parent_guid=parent_guid,
@@ -196,3 +198,7 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
             partial_granularity_sampled=partial_granularity_sampled,
             ct_exit_spans=ct_exit_spans,
         )
+
+        if self.span_link_events or self.span_event_events:
+            return [base_span_event, self.span_link_events, self.span_event_events]
+        return base_span_event

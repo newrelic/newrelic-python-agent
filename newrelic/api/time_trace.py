@@ -51,6 +51,8 @@ class TimeTrace:
         self.guid = f"{random.getrandbits(64):016x}"
         self.agent_attributes = {}
         self.user_attributes = {}
+        self.span_link_events = []
+        self.span_event_events = []
 
         self._source = source
 
@@ -214,6 +216,71 @@ class TimeTrace:
                     source,
                     exc,
                 )
+
+    def _add_span_link_event(self, span_id, trace_id, linked_span_id, linked_trace_id, timestamp=None, attributes=None):
+        settings = self.settings
+        if not settings:
+            return
+
+        if not settings.opentelemetry.enabled:
+            return
+
+        if len(self.span_link_events) >= 100:
+            _logger.debug(
+                "Maximum number of SpanLink events already added. Dropping SpanLink event: linkedSpanId=%r, linkedTraceId=%r",
+                linked_span_id,
+                linked_trace_id,
+            )
+            return
+        attributes = dict(attributes) or {}
+
+        event = [
+            {
+                "type": "SpanLink",
+                "timestamp": timestamp or int(time.time() * 1e3),
+                "id": span_id,
+                "trace.id": trace_id,
+                "linkedSpanId": linked_span_id,
+                "linkedTraceId": linked_trace_id,
+            },
+            attributes,
+            {},
+        ]
+
+        self.span_link_events.append(event)
+
+    def _add_span_event_event(self, name, span_id, trace_id, timestamp=None, attributes=None):
+        settings = self.settings
+        if not settings:
+            return
+
+        if not settings.opentelemetry.enabled:
+            return
+
+        if len(self.span_event_events) >= 100:
+            _logger.debug(
+                "Maximum number of SpanEvent events already added. Dropping SpanEvent event: name=%r, spanId=%r, traceId=%r",
+                name,
+                span_id,
+                trace_id,
+            )
+            return
+
+        attributes = dict(attributes) or {}
+
+        event = [
+            {
+                "type": "SpanEvent",
+                "timestamp": timestamp or int(time.time() * 1e3),
+                "span.id": span_id,
+                "trace.id": trace_id,
+                "name": name,
+            },
+            attributes,
+            {},
+        ]
+
+        self.span_event_events.append(event)
 
     def _observe_exception(self, exc_info=None, ignore=None, expected=None, status_code=None):
         # Bail out if the transaction is not active or

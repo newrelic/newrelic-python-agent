@@ -13,10 +13,10 @@
 # limitations under the License.
 
 import pytest
-from opentelemetry import trace
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 from newrelic.api.opentelemetry import TracerProvider
+from opentelemetry import trace
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
@@ -35,7 +35,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 
 @pytest.fixture(scope="session")
 def tracer():
-    trace_provider = TracerProvider()
-    trace.set_tracer_provider(trace_provider)
-
-    return trace_provider.get_tracer()
+    tracer_provider = TracerProvider()
+    
+    trace.set_tracer_provider(tracer_provider=tracer_provider)
+    return tracer_provider.get_tracer()

@@ -1075,6 +1075,26 @@ class StatsEngine:
         if len(self.__synthetics_transactions) < maximum:
             self.__synthetics_transactions.append(transaction)
 
+    def _add_spanlink_and_spanevent_events(self, event, priority):
+        """Add SpanLink and SpanEvent events into their
+        own queue within the span_events' SampledDataSet.
+        """
+        if not self.__settings.opentelemetry.enabled or isinstance(event[-1], dict):
+            return event
+
+        span, span_link, span_event = event
+
+        span_link_queue = []
+        span_event_queue = []
+
+        for span_link_event in span_link:
+            span_link_queue.append(span_link_event)
+
+        for span_event_event in span_event:
+            span_event_queue.append(span_event_event)
+
+        return list(filter(bool, [span, span_link_queue, span_event_queue]))
+
     def record_transaction(self, transaction):
         """Record any apdex and time metrics for the transaction as
         well as any errors which occurred for the transaction. If the
@@ -1189,7 +1209,8 @@ class StatsEngine:
                     self._span_stream.put(event)
             elif transaction.sampled:
                 for event in transaction.span_events(self.__settings):
-                    self._span_events.add(event, priority=transaction.priority)
+                    new_event = self._add_spanlink_and_spanevent_events(event, transaction.priority)
+                    self._span_events.add(new_event, priority=transaction.priority)
                 if transaction.partial_granularity_sampled:
                     partial_gran_type = settings.distributed_tracing.sampler.partial_granularity.type
                     self.record_custom_metric(

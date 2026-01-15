@@ -30,13 +30,13 @@ def get_requests_version():
 
 @pytest.fixture(scope="session")
 def metrics(server):
-    scoped = [(f"External/localhost:{server.port}/Requests/GET", 1)]
+    scoped = [(f"External/localhost:{server.port}/requests/GET", 1)]
 
     rollup = [
         ("External/all", 1),
         ("External/allOther", 1),
         (f"External/localhost:{server.port}/all", 1),
-        (f"External/localhost:{server.port}/Requests/GET", 1),
+        (f"External/localhost:{server.port}/requests/GET", 1),
     ]
 
     return scoped, rollup
@@ -102,7 +102,7 @@ _test_requests_none_url_rollup_metrics = [
     ("External/all", None),
     ("External/allOther", None),
     ("External/unknown/all", None),
-    ("External/unknown/Requests/", None),
+    ("External/unknown/requests/", None),
 ]
 
 
@@ -122,13 +122,13 @@ def test_none_url_get():
         pass
 
 
-_test_requests_wrong_datatype_url_scoped_metrics = [("External/unknown/Requests/GET", 1)]
+_test_requests_wrong_datatype_url_scoped_metrics = [("External/unknown/requests/GET", 1)]
 
 _test_requests_wrong_datatype_url_rollup_metrics = [
     ("External/all", 1),
     ("External/allOther", 1),
     ("External/unknown/all", 1),
-    ("External/unknown/Requests/GET", 1),
+    ("External/unknown/requests/GET", 1),
 ]
 
 

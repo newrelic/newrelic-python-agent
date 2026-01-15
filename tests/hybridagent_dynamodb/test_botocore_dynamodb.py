@@ -37,21 +37,21 @@ TEST_TABLE = f"python-agent-test-{uuid.uuid4()}"
 
 
 _dynamodb_scoped_metrics = [
-    (f"Datastore/statement/Dynamodb/{TEST_TABLE}/CreateTable", 1),
-    (f"Datastore/statement/Dynamodb/{TEST_TABLE}/PutItem", 1),
-    (f"Datastore/statement/Dynamodb/{TEST_TABLE}/GetItem", 1),
-    (f"Datastore/statement/Dynamodb/{TEST_TABLE}/UpdateItem", 1),
-    (f"Datastore/statement/Dynamodb/{TEST_TABLE}/Query", 1),
-    (f"Datastore/statement/Dynamodb/{TEST_TABLE}/Scan", 1),
-    (f"Datastore/statement/Dynamodb/{TEST_TABLE}/DeleteItem", 1),
-    (f"Datastore/statement/Dynamodb/{TEST_TABLE}/DeleteTable", 1),
+    (f"Datastore/statement/dynamodb/{TEST_TABLE}/CreateTable", 1),
+    (f"Datastore/statement/dynamodb/{TEST_TABLE}/PutItem", 1),
+    (f"Datastore/statement/dynamodb/{TEST_TABLE}/GetItem", 1),
+    (f"Datastore/statement/dynamodb/{TEST_TABLE}/UpdateItem", 1),
+    (f"Datastore/statement/dynamodb/{TEST_TABLE}/Query", 1),
+    (f"Datastore/statement/dynamodb/{TEST_TABLE}/Scan", 1),
+    (f"Datastore/statement/dynamodb/{TEST_TABLE}/DeleteItem", 1),
+    (f"Datastore/statement/dynamodb/{TEST_TABLE}/DeleteTable", 1),
 ]
 
 _dynamodb_rollup_metrics = [
     ("Datastore/all", 8),
     ("Datastore/allOther", 8),
-    ("Datastore/Dynamodb/all", 8),
-    ("Datastore/Dynamodb/allOther", 8),
+    ("Datastore/dynamodb/all", 8),
+    ("Datastore/dynamodb/allOther", 8),
 ]
 
 
@@ -61,7 +61,7 @@ def test_dynamodb(account_id):
     if account_id:
         expected_aws_agent_attrs = {
             "cloud.resource_id": f"arn:aws:dynamodb:{AWS_REGION}:{account_id:012d}:table/{TEST_TABLE}",
-            "db.system": "Dynamodb",
+            "db.system": "dynamodb",
         }
 
     @override_application_settings({"cloud.aws.account_id": account_id})

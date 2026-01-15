@@ -40,7 +40,7 @@ def do_basic_publish(channel, queue_name, properties=None):
     _test_distributed_tracing_basic_publish_metrics = [
         ("Supportability/TraceContext/Create/Success", 2),
         ("Supportability/DistributedTrace/CreatePayload/Success", 2),
-        (f"MessageBroker/Rabbitmq/Exchange/Produce/Named/{queue_name}", 2),
+        (f"MessageBroker/rabbitmq/Exchange/Produce/Named/{queue_name}", 2),
         ("DurationByCaller/Unknown/Unknown/Unknown/Unknown/all", 1),
         ("DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther", 1),
     ]
@@ -63,8 +63,8 @@ def do_basic_consume(channel, queue_name):
     # and not a MessageTransaction (from the channel.basic_consume call)
     # BG task to AMQP will make parent app an unknown transport_type.
     _test_distributed_tracing_basic_consume_rollup_metrics = [
-        (f"MessageBroker/Rabbitmq/Exchange/Produce/Named/{queue_name}", None),
-        (f"MessageBroker/Rabbitmq/Exchange/Consume/Named/{queue_name}", None),
+        (f"MessageBroker/rabbitmq/Exchange/Produce/Named/{queue_name}", None),
+        (f"MessageBroker/rabbitmq/Exchange/Consume/Named/{queue_name}", None),
         ("Supportability/DistributedTrace/AcceptPayload/Success", None),
         ("Supportability/TraceContext/TraceParent/Accept/Success", 1),
         ("Supportability/TraceContext/Accept/Success", 1),
@@ -78,7 +78,7 @@ def do_basic_consume(channel, queue_name):
         f"{queue_name}",
         rollup_metrics=_test_distributed_tracing_basic_consume_rollup_metrics,
         background_task=True,
-        group="Message/Rabbitmq/Exchange/Named",
+        group="Message/rabbitmq/Exchange/Named",
     )
     def _test():
         channel.start_consuming()
@@ -125,8 +125,8 @@ def test_basic_consume_distributed_tracing_headers():
 
 
 _test_distributed_tracing_basic_get_metrics = [
-    ("MessageBroker/Rabbitmq/Exchange/Produce/Named/Default", None),
-    ("MessageBroker/Rabbitmq/Exchange/Consume/Named/Default", None),
+    ("MessageBroker/rabbitmq/Exchange/Produce/Named/Default", None),
+    ("MessageBroker/rabbitmq/Exchange/Consume/Named/Default", None),
     ("DurationByCaller/Unknown/Unknown/Unknown/Unknown/all", 1),
     ("DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther", 1),
 ]

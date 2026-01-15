@@ -57,8 +57,8 @@ _message_broker_tt_included_params = {"server.address": DB_SETTINGS["host"]}
 _message_broker_tt_forgone_params = ["correlation_id", "reply_to"]
 
 _test_blocking_connection_metrics = [
-    (f"MessageBroker/Rabbitmq/Exchange/Produce/Named/{QUEUE}", 2),
-    (f"MessageBroker/Rabbitmq/Exchange/Consume/Named/{QUEUE}", None),
+    (f"MessageBroker/rabbitmq/Exchange/Produce/Named/{QUEUE}", 2),
+    (f"MessageBroker/rabbitmq/Exchange/Consume/Named/{QUEUE}", None),
 ]
 
 
@@ -76,7 +76,7 @@ _test_blocking_connection_metrics = [
 )
 @validate_span_events(
     count=2,
-    exact_intrinsics={"name": f"MessageBroker/Rabbitmq/Exchange/Produce/Named/{QUEUE}"},
+    exact_intrinsics={"name": f"MessageBroker/rabbitmq/Exchange/Produce/Named/{QUEUE}"},
     exact_agents={"server.address": DB_SETTINGS["host"]},
 )
 @background_task()
@@ -225,10 +225,10 @@ def test_blocking_connection_headers_reuse_properties():
 
 
 _test_blocking_connection_two_exchanges_metrics = [
-    ("MessageBroker/Rabbitmq/Exchange/Produce/Named/exchange-1", 2),
-    ("MessageBroker/Rabbitmq/Exchange/Produce/Named/exchange-2", 2),
-    ("MessageBroker/Rabbitmq/Exchange/Consume/Named/exchange-1", None),
-    ("MessageBroker/Rabbitmq/Exchange/Consume/Named/exchange-2", None),
+    ("MessageBroker/rabbitmq/Exchange/Produce/Named/exchange-1", 2),
+    ("MessageBroker/rabbitmq/Exchange/Produce/Named/exchange-2", 2),
+    ("MessageBroker/rabbitmq/Exchange/Consume/Named/exchange-1", None),
+    ("MessageBroker/rabbitmq/Exchange/Consume/Named/exchange-2", None),
 ]
 
 
@@ -260,8 +260,8 @@ def test_blocking_connection_two_exchanges():
 
 
 _test_select_connection_metrics = [
-    ("MessageBroker/Rabbitmq/Exchange/Produce/Named/test-pika-queue", 1),
-    ("MessageBroker/Rabbitmq/Exchange/Consume/Named/test-pika-queue", None),
+    ("MessageBroker/rabbitmq/Exchange/Produce/Named/test-pika-queue", 1),
+    ("MessageBroker/rabbitmq/Exchange/Consume/Named/test-pika-queue", None),
 ]
 
 
@@ -278,7 +278,7 @@ _test_select_connection_metrics = [
 )
 @validate_span_events(
     count=1,
-    exact_intrinsics={"name": "MessageBroker/Rabbitmq/Exchange/Produce/Named/test-pika-queue"},
+    exact_intrinsics={"name": "MessageBroker/rabbitmq/Exchange/Produce/Named/test-pika-queue"},
     exact_agents={"server.address": DB_SETTINGS["host"]},
 )
 @background_task()
@@ -307,8 +307,8 @@ def test_select_connection():
 
 
 _test_tornado_connection_metrics = [
-    ("MessageBroker/Rabbitmq/Exchange/Produce/Named/test-pika-queue", 1),
-    ("MessageBroker/Rabbitmq/Exchange/Consume/Named/test-pika-queue", None),
+    ("MessageBroker/rabbitmq/Exchange/Produce/Named/test-pika-queue", 1),
+    ("MessageBroker/rabbitmq/Exchange/Consume/Named/test-pika-queue", None),
 ]
 
 
@@ -325,7 +325,7 @@ _test_tornado_connection_metrics = [
 )
 @validate_span_events(
     count=1,
-    exact_intrinsics={"name": "MessageBroker/Rabbitmq/Exchange/Produce/Named/test-pika-queue"},
+    exact_intrinsics={"name": "MessageBroker/rabbitmq/Exchange/Produce/Named/test-pika-queue"},
     exact_agents={"server.address": DB_SETTINGS["host"]},
 )
 @background_task()

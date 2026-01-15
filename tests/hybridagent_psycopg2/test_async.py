@@ -38,23 +38,23 @@ _disable_instance_settings = {"datastore_tracer.instance_reporting.enabled": Fal
 # Metrics
 
 _base_scoped_metrics = (
-    (f"Datastore/statement/Postgresql/{DB_SETTINGS['table_name']}/select", 1),
-    (f"Datastore/statement/Postgresql/{DB_SETTINGS['table_name']}/insert", 1),
-    ("Datastore/operation/Postgresql/drop", 1),
-    ("Datastore/operation/Postgresql/create", 1),
+    (f"Datastore/statement/postgresql/{DB_SETTINGS['table_name']}/select", 1),
+    (f"Datastore/statement/postgresql/{DB_SETTINGS['table_name']}/insert", 1),
+    ("Datastore/operation/postgresql/drop", 1),
+    ("Datastore/operation/postgresql/create", 1),
 )
 
 _base_rollup_metrics = (
     ("Datastore/all", 4),
     ("Datastore/allOther", 4),
-    ("Datastore/Postgresql/all", 4),
-    ("Datastore/Postgresql/allOther", 4),
-    ("Datastore/operation/Postgresql/select", 1),
-    (f"Datastore/statement/Postgresql/{DB_SETTINGS['table_name']}/select", 1),
-    ("Datastore/operation/Postgresql/insert", 1),
-    (f"Datastore/statement/Postgresql/{DB_SETTINGS['table_name']}/insert", 1),
-    ("Datastore/operation/Postgresql/drop", 1),
-    ("Datastore/operation/Postgresql/create", 1),
+    ("Datastore/postgresql/all", 4),
+    ("Datastore/postgresql/allOther", 4),
+    ("Datastore/operation/postgresql/select", 1),
+    (f"Datastore/statement/postgresql/{DB_SETTINGS['table_name']}/select", 1),
+    ("Datastore/operation/postgresql/insert", 1),
+    (f"Datastore/statement/postgresql/{DB_SETTINGS['table_name']}/insert", 1),
+    ("Datastore/operation/postgresql/drop", 1),
+    ("Datastore/operation/postgresql/create", 1),
 )
 
 _disable_scoped_metrics = list(_base_scoped_metrics)
@@ -66,7 +66,7 @@ _enable_rollup_metrics = list(_base_rollup_metrics)
 _host = instance_hostname(DB_SETTINGS["host"])
 _port = DB_SETTINGS["port"]
 
-_instance_metric_name = f"Datastore/instance/Postgresql/{_host}/{_port}"
+_instance_metric_name = f"Datastore/instance/postgresql/{_host}/{_port}"
 
 _enable_rollup_metrics.append((_instance_metric_name, 4))
 

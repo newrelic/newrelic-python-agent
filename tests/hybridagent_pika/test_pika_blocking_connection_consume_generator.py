@@ -49,9 +49,9 @@ _message_broker_tt_params = {
 }
 
 _test_blocking_connection_consume_metrics = [
-    (f"MessageBroker/Rabbitmq/Exchange/Produce/Named/{EXCHANGE}", None),
-    (f"MessageBroker/Rabbitmq/Exchange/Consume/Named/{EXCHANGE}", 1),
-    ("MessageBroker/Rabbitmq/Exchange/Consume/Named/Unknown", None),
+    (f"MessageBroker/rabbitmq/Exchange/Produce/Named/{EXCHANGE}", None),
+    (f"MessageBroker/rabbitmq/Exchange/Consume/Named/{EXCHANGE}", 1),
+    ("MessageBroker/rabbitmq/Exchange/Consume/Named/Unknown", None),
 ]
 
 
@@ -147,9 +147,9 @@ def test_blocking_connection_consume_exception_in_for_loop(producer):
 
 
 _test_blocking_connection_consume_empty_metrics = [
-    (f"MessageBroker/Rabbitmq/Exchange/Produce/Named/{EXCHANGE}", None),
-    (f"MessageBroker/Rabbitmq/Exchange/Consume/Named/{EXCHANGE}", None),
-    ("MessageBroker/Rabbitmq/Exchange/Consume/Named/Unknown", None),
+    (f"MessageBroker/rabbitmq/Exchange/Produce/Named/{EXCHANGE}", None),
+    (f"MessageBroker/rabbitmq/Exchange/Consume/Named/{EXCHANGE}", None),
+    ("MessageBroker/rabbitmq/Exchange/Consume/Named/Unknown", None),
 ]
 
 
@@ -179,8 +179,8 @@ def test_blocking_connection_consume_exception_in_generator():
 
 
 _test_blocking_connection_consume_many_metrics = [
-    (f"MessageBroker/Rabbitmq/Exchange/Produce/Named/{EXCHANGE}", None),
-    (f"MessageBroker/Rabbitmq/Exchange/Consume/Named/{EXCHANGE}", 5),
+    (f"MessageBroker/rabbitmq/Exchange/Produce/Named/{EXCHANGE}", None),
+    (f"MessageBroker/rabbitmq/Exchange/Consume/Named/{EXCHANGE}", 5),
 ]
 
 
@@ -248,7 +248,7 @@ def test_blocking_connection_consume_using_methods(producer):
 @validate_transaction_metrics(
     f"Named/{EXCHANGE}",
     background_task=True,
-    group="Message/Rabbitmq/Exchange",
+    group="Message/rabbitmq/Exchange",
 )
 @validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 def test_blocking_connection_consume_outside_txn(producer):
@@ -276,7 +276,7 @@ def test_blocking_connection_consume_many_outside_txn(produce_five):
     @validate_transaction_metrics(
         f"Named/{EXCHANGE}",
         background_task=True,
-        group="Message/Rabbitmq/Exchange",
+        group="Message/rabbitmq/Exchange",
     )
     @validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
     def consume_it(consumer, up_next=None):
@@ -311,7 +311,7 @@ def test_blocking_connection_consume_many_outside_txn(produce_five):
 @validate_transaction_metrics(
     f"Named/{EXCHANGE}",
     background_task=True,
-    group="Message/Rabbitmq/Exchange",
+    group="Message/rabbitmq/Exchange",
 )
 @validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 def test_blocking_connection_consume_using_methods_outside_txn(producer):

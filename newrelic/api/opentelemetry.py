@@ -306,12 +306,12 @@ class Span(otel_api_trace.Span):
         
         # Logic for Pika/RabbitMQ
         span_obj_attrs = {
-            "library": self.attributes.get("messaging.system").capitalize(),
+            "library": self.attributes.get("messaging.system"),
             "destination_name": name,   # OTel's format for this is "name operation"
         }
         
         # Keep this to simplify Transaction naming logic later on
-        if span_obj_attrs["library"] == "Rabbitmq":
+        if span_obj_attrs["library"] == "rabbitmq":
             # In RabbitMQ, destination_type is always Exchange and
             # destination_name is actually stored in the span name.
             # messaging.destination stores the task_name (such as
@@ -326,7 +326,7 @@ class Span(otel_api_trace.Span):
         }
         
         # Kafka Specific Logic
-        if span_obj_attrs["library"] == "Kafka":
+        if span_obj_attrs["library"] == "kafka":
             span_obj_attrs.update({
                 "transport_type": "Kafka",
                 "destination_type": "Topic",
@@ -345,7 +345,7 @@ class Span(otel_api_trace.Span):
             for server_name in bootstrap_servers:
                 produce_or_consume = "Produce" if self.kind == otel_api_trace.SpanKind.PRODUCER else "Consume"
                 self.nr_transaction.record_custom_metric(
-                    f"MessageBroker/Kafka/Nodes/{server_name}/{produce_or_consume}/{span_obj_attrs['destination_name']}", 1
+                    f"MessageBroker/kafka/Nodes/{server_name}/{produce_or_consume}/{span_obj_attrs['destination_name']}", 1
                 )
 
         # Even if the attribute is set to None, it should rename
@@ -373,7 +373,7 @@ class Span(otel_api_trace.Span):
             "host": self.attributes.get("net.peer.name") or self.attributes.get("server.address"),
             "database_name": self.attributes.get("db.name"),
             "port_path_or_id": self.attributes.get("net.peer.port") or self.attributes.get("server.port"),
-            "product": self.attributes.get("db.system").capitalize(),
+            "product": self.attributes.get("db.system"),
         }
         agent_attrs = {}
 
@@ -384,7 +384,7 @@ class Span(otel_api_trace.Span):
             operation, target = get_database_operation_target_from_statement(db_statement)
             target = target or self.attributes.get("db.mongodb.collection")
             span_obj_attrs.update({"operation": operation, "target": target})
-        elif span_obj_attrs["product"] == "Dynamodb":
+        elif span_obj_attrs["product"] == "dynamodb":
             region = self.attributes.get("cloud.region")
             operation = self.attributes.get("db.operation")
             target = self.attributes.get("aws.dynamodb.table_names", [None])[-1]
@@ -473,7 +473,7 @@ class Span(otel_api_trace.Span):
 class Tracer(otel_api_trace.Tracer):
     def __init__(self, resource=None, instrumentation_library=None, *args, **kwargs):
         self.resource = resource
-        self.instrumentation_library = instrumentation_library.split(".")[-1].capitalize()
+        self.instrumentation_library = instrumentation_library.split(".")[-1]
 
     def _create_web_transaction(self, nr_headers=None):
         if "nr.wsgi.environ" in self.attributes:
@@ -655,7 +655,7 @@ class Tracer(otel_api_trace.Tracer):
                 # nor should we create a MessageTrace under it.  We do,
                 # however, want to add additional attributes from this span
                 # into the existing transaction.
-                if transaction and (getattr(self, "_create_consumer_trace", False) or (self.instrumentation_library != "Kafka")):
+                if transaction and (getattr(self, "_create_consumer_trace", False) or (self.instrumentation_library != "kafka")):
                     # If transaction already exists and the 
                     # _create_consumer_trace flag is set to True,
                     # then create a MessageTrace under it.
@@ -675,10 +675,10 @@ class Tracer(otel_api_trace.Tracer):
                     # a trace regardless of whether a transaction already existed.
                     # This scenario should either create a transaction or use
                     # the existing transaction and add additional attributes to it.
-                    if (self.instrumentation_library == "Kafka") or not getattr(self, "_create_consumer_trace", False):
+                    if (self.instrumentation_library == "kafka") or not getattr(self, "_create_consumer_trace", False):
                         create_nr_trace = False
                     
-                if self.instrumentation_library == "Kafka":
+                if self.instrumentation_library == "kafka":
                     # Whether a transaction exists or not, do not create a NR
                     # trace for the case of a consumer span.
                     create_nr_trace = False

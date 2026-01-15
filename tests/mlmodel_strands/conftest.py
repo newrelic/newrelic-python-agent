@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
 from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 from testing_support.ml_testing_utils import set_trace_info
@@ -29,3 +30,22 @@ _default_settings = {
 collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (mlmodel_strands)", default_settings=_default_settings
 )
+
+
+@pytest.fixture(scope="session", params=["invoke", "invoke_async", "stream_async"])
+def exercise_agent(request, loop):
+    def _exercise_agent(agent, prompt):
+        if request.param == "invoke":
+            return agent(prompt)
+        elif request.param == "invoke_async":
+            return loop.run_until_complete(agent.invoke_async(prompt))
+        elif request.param == "stream_async":
+
+            async def _exercise_agen():
+                return [event async for event in agent.stream_async(prompt)]
+
+            return loop.run_until_complete(_exercise_agen())
+        else:
+            raise NotImplementedError
+
+    return _exercise_agent

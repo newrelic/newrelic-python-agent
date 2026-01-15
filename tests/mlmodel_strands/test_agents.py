@@ -1,0 +1,203 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import pytest
+from strands import Agent
+from testing_support.fixtures import reset_core_stats_engine, validate_attributes
+from testing_support.ml_testing_utils import (
+    disabled_ai_monitoring_record_content_settings,
+    disabled_ai_monitoring_settings,
+    events_with_context_attrs,
+)
+from testing_support.validators.validate_custom_event import validate_custom_event_count
+from testing_support.validators.validate_custom_events import validate_custom_events
+from testing_support.validators.validate_error_trace_attributes import validate_error_trace_attributes
+from testing_support.validators.validate_transaction_error_event_count import validate_transaction_error_event_count
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+
+from newrelic.api.background_task import background_task
+from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
+from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import transient_function_wrapper
+
+from ._test_agents import add_exclamation, single_tool_model
+
+agent_recorded_event = [
+    (
+        {"type": "LlmAgent"},
+        {
+            "id": None,
+            "name": "my_agent",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "vendor": "strands",
+            "ingest_source": "Python",
+            "duration": None,
+        },
+    )
+]
+
+agent_recorded_event_error = [
+    (
+        {"type": "LlmAgent"},
+        {
+            "id": None,
+            "name": "my_agent",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "vendor": "strands",
+            "ingest_source": "Python",
+            "error": True,
+            "duration": None,
+        },
+    )
+]
+
+
+@reset_core_stats_engine()
+@validate_custom_events(events_with_context_attrs(agent_recorded_event))
+@validate_custom_event_count(count=2)
+@validate_transaction_metrics(
+    "mlmodel_strands.test_agents:test_agent",
+    scoped_metrics=[("Llm/agent/Strands/strands.agent.agent:Agent.stream_async/my_agent", 1)],
+    rollup_metrics=[("Llm/agent/Strands/strands.agent.agent:Agent.stream_async/my_agent", 1)],
+    background_task=True,
+)
+@validate_attributes("agent", ["llm"])
+@background_task()
+def test_agent(exercise_agent, set_trace_info, single_tool_model):
+    set_trace_info()
+    my_agent = Agent(name="my_agent", model=single_tool_model, tools=[add_exclamation])
+
+    with WithLlmCustomAttributes({"context": "attr"}):
+        response = exercise_agent(my_agent, 'Add an exclamation to the word "Hello"')
+
+    if isinstance(response, list):
+        # Streaming returns a list of events
+        messages = [event["message"]["content"] for event in response if "message" in event]
+        assert len(messages) == 3
+        assert messages[0][0]["text"] == "Calling add_exclamation tool"
+        assert messages[0][1]["toolUse"]["name"] == "add_exclamation"
+        assert messages[1][0]["toolResult"]["content"][0]["text"] == "Hello!"
+        assert messages[2][0]["text"] == "Success!"
+    else:
+        # Invoke returns a response object
+        assert response.message["content"][0]["text"] == "Success!"
+        assert response.metrics.tool_metrics["add_exclamation"].success_count == 1
+
+
+@reset_core_stats_engine()
+@disabled_ai_monitoring_record_content_settings
+@validate_custom_events(agent_recorded_event)
+@validate_custom_event_count(count=2)
+@validate_transaction_metrics(
+    "mlmodel_strands.test_agents:test_agent_no_content",
+    scoped_metrics=[("Llm/agent/Strands/strands.agent.agent:Agent.stream_async/my_agent", 1)],
+    rollup_metrics=[("Llm/agent/Strands/strands.agent.agent:Agent.stream_async/my_agent", 1)],
+    background_task=True,
+)
+@validate_attributes("agent", ["llm"])
+@background_task()
+def test_agent_no_content(exercise_agent, set_trace_info, single_tool_model):
+    set_trace_info()
+    my_agent = Agent(name="my_agent", model=single_tool_model, tools=[add_exclamation])
+
+    response = exercise_agent(my_agent, 'Add an exclamation to the word "Hello"')
+
+    if isinstance(response, list):
+        # Streaming returns a list of events
+        messages = [event["message"]["content"] for event in response if "message" in event]
+        assert len(messages) == 3
+        assert messages[0][0]["text"] == "Calling add_exclamation tool"
+        assert messages[0][1]["toolUse"]["name"] == "add_exclamation"
+        assert messages[1][0]["toolResult"]["content"][0]["text"] == "Hello!"
+        assert messages[2][0]["text"] == "Success!"
+    else:
+        # Invoke returns a response object
+        assert response.message["content"][0]["text"] == "Success!"
+        assert response.metrics.tool_metrics["add_exclamation"].success_count == 1
+
+
+@reset_core_stats_engine()
+@validate_custom_event_count(count=0)
+def test_agent_outside_txn(exercise_agent, single_tool_model):
+    my_agent = Agent(name="my_agent", model=single_tool_model, tools=[add_exclamation])
+
+    response = exercise_agent(my_agent, 'Add an exclamation to the word "Hello"')
+
+    if isinstance(response, list):
+        # Streaming returns a list of events
+        messages = [event["message"]["content"] for event in response if "message" in event]
+        assert len(messages) == 3
+        assert messages[0][0]["text"] == "Calling add_exclamation tool"
+        assert messages[0][1]["toolUse"]["name"] == "add_exclamation"
+        assert messages[1][0]["toolResult"]["content"][0]["text"] == "Hello!"
+        assert messages[2][0]["text"] == "Success!"
+    else:
+        # Invoke returns a response object
+        assert response.message["content"][0]["text"] == "Success!"
+        assert response.metrics.tool_metrics["add_exclamation"].success_count == 1
+
+
+@disabled_ai_monitoring_settings
+@reset_core_stats_engine()
+@validate_custom_event_count(count=0)
+@background_task()
+def test_agent_disabled_ai_monitoring_events(exercise_agent, set_trace_info, single_tool_model):
+    set_trace_info()
+    my_agent = Agent(name="my_agent", model=single_tool_model, tools=[add_exclamation])
+
+    response = exercise_agent(my_agent, 'Add an exclamation to the word "Hello"')
+
+    if isinstance(response, list):
+        # Streaming returns a list of events
+        messages = [event["message"]["content"] for event in response if "message" in event]
+        assert len(messages) == 3
+        assert messages[0][0]["text"] == "Calling add_exclamation tool"
+        assert messages[0][1]["toolUse"]["name"] == "add_exclamation"
+        assert messages[1][0]["toolResult"]["content"][0]["text"] == "Hello!"
+        assert messages[2][0]["text"] == "Success!"
+    else:
+        # Invoke returns a response object
+        assert response.message["content"][0]["text"] == "Success!"
+        assert response.metrics.tool_metrics["add_exclamation"].success_count == 1
+
+
+@reset_core_stats_engine()
+@validate_transaction_error_event_count(1)
+@validate_error_trace_attributes(callable_name(ValueError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
+@validate_custom_events(agent_recorded_event_error)
+@validate_custom_event_count(count=1)
+@validate_transaction_metrics(
+    "mlmodel_strands.test_agents:test_agent_execution_error",
+    scoped_metrics=[("Llm/agent/Strands/strands.agent.agent:Agent.stream_async/my_agent", 1)],
+    rollup_metrics=[("Llm/agent/Strands/strands.agent.agent:Agent.stream_async/my_agent", 1)],
+    background_task=True,
+)
+@validate_attributes("agent", ["llm"])
+@background_task()
+def test_agent_execution_error(exercise_agent, set_trace_info, single_tool_model):
+    # Add a wrapper to intentionally force an error in the Agent code
+    @transient_function_wrapper("strands.agent.agent", "Agent._convert_prompt_to_messages")
+    def inject_exception(wrapped, instance, args, kwargs):
+        raise ValueError("Oops")
+
+    @inject_exception
+    def _test():
+        set_trace_info()
+        my_agent = Agent(name="my_agent", model=single_tool_model, tools=[add_exclamation])
+        with pytest.raises(ValueError):
+            exercise_agent(my_agent, 'Add an exclamation to the word "Hello"')  # raises ValueError
+
+    _test()  # No output to validate

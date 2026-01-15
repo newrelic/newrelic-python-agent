@@ -24,6 +24,13 @@ from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
+import newrelic.agent
+from newrelic.common.encoding_utils import (
+    NrTraceState,
+    W3CTraceParent,
+    W3CTraceState,
+    PARENT_TYPE
+)
 from newrelic.api.transaction import current_transaction
 from newrelic.api.wsgi_application import wsgi_application
 from newrelic.common.encoding_utils import DistributedTracePayload
@@ -40,7 +47,7 @@ def load_tests():
         _id = test.pop("test_name", None)
         test_desc = test.pop("comment", None)
         settings = {
-            "distributed_tracing.sampler.full_granularity.enabled": test.pop("full_granularity_enabled", False),
+            "distributed_tracing.sampler.full_granularity.enabled": test.pop("full_granularity_enabled", True),
             "distributed_tracing.enabled": test.pop("distributed_tracing_enabled", True),
             "span_events.enabled": test.pop("span_events_enabled", True),
             "distributed_tracing.sampler._root": test.pop("root", "adaptive"),
@@ -70,34 +77,84 @@ def load_tests():
             if settings["distributed_tracing.sampler.partial_granularity._remote_parent_not_sampled"] == "trace_id_ratio_based":
                 settings["distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.trace_id_ratio_based.ratio"] = partial_gran_ratio
 
-        force_adaptive_sampled = test.pop("force_adaptive_sampled", None)
+        force_adaptive_sampled = test.pop("force_sampled_true", None)
+        expected_metrics = test.pop("expected_metrics", [])
         raises_exception = test.pop("raises_exception", False)
         web_transaction = test.pop("web_transaction", False)
-        inbound_headers = test.pop("inbound_headers", [])
+        inbound_headers = (test.pop("inbound_headers", None) or [{}])[0]
         expected_priority = test.pop("expected_priority_between", None)
-        intrinsics = test.pop("intrinsics")
-        exact_intrinsics = intrinsics["common"].get("exact", {})
-        expected_intrinsics = intrinsics["common"].get("expected", [])
-        unexpected_intrinsics = intrinsics["common"].get("unexpected", [])
-        outbound_payloads = test.pop("outbound_payloads", [])
+        intrinsics = test.pop("intrinsics", {})
+        common_exact_intrinsics = intrinsics.get("common", {}).get("exact", {})
+        common_expected_intrinsics = intrinsics.get("common", {}).get("expected", [])
+        common_unexpected_intrinsics = intrinsics.get("common", {}).get("unexpected", [])
+        span_exact_intrinsics = intrinsics.get("Span", {}).get("exact", {})
+        span_expected_intrinsics = intrinsics.get("Span", {}).get("expected", [])
+        span_unexpected_intrinsics = intrinsics.get("Span", {}).get("unexpected", [])
+        transaction_exact_intrinsics = intrinsics.get("Transaction", {}).get("exact", {})
+        transaction_expected_intrinsics = intrinsics.get("Transaction", {}).get("expected", [])
+        transaction_unexpected_intrinsics = intrinsics.get("Transaction", {}).get("unexpected", [])
+        if "Transaction" in intrinsics.get("target_events", []):
+            transaction_exact_intrinsics.update(common_exact_intrinsics)
+            transaction_expected_intrinsics.extend(common_expected_intrinsics)
+            transaction_unexpected_intrinsics.extend(common_unexpected_intrinsics)
+        check_span_events = False
+        if "Span" in intrinsics.get("target_events", []):
+            check_span_events = True
+            span_exact_intrinsics.update(common_exact_intrinsics)
+            span_expected_intrinsics.extend(common_expected_intrinsics)
+            span_unexpected_intrinsics.extend(common_unexpected_intrinsics)
+
+        payload = (test.pop("outbound_payloads", None) or [{}])[0]
+        traceparent_key_map = {"trace_id": "tr", "parent_id": "id", "version": "v", "trace_flags": "sa"}
+        tracestate_key_map = {
+          "tenant_id": "ac",
+          "version": "v",
+          "parent_type": "ty",
+          "parent_account_id": "ac",
+          "sampled": "sa",
+          "priority": "pr",
+          "parent_id": "pi",
+          "timestamp": "ti",
+          "parent_application_id": "ap",
+          "span_id": "id",
+          "transaction_id": "tx",
+        }
+        expected_traceparent_exact = dict({traceparent_key_map[key.split(".")[1]]: value for key, value in payload.get("exact", {}).items() if "traceparent" in key})
+        expected_tracestate_exact = dict({tracestate_key_map[key.split(".")[1]]: value for key, value in payload.get("exact", {}).items() if "tracestate" in key})
+        expected_traceparent = [traceparent_key_map[key.split(".")[1]] for key in payload.get("expected", []) if "traceparent" in key]
+        expected_tracestate = [tracestate_key_map[key.split(".")[1]] for key in payload.get("expected", []) if "tracestate" in key]
+        outbound_payloads = (
+            expected_traceparent_exact,
+            expected_tracestate_exact,
+            expected_traceparent,
+            expected_tracestate,
+        )
+
         transport_type = test.pop("transport_type", "HTTP")
 
         assert not test, f"{test} has not been fully parsed"
 
         param = pytest.param(
-            {
-                "settings": settings,
-                "force_adaptive_sampled": force_adaptive_sampled,
-                "raises_exception": raises_exception,
-                "web_transaction": web_transaction,
-                "inbound_headers": inbound_headers,
-                "expected_priority": expected_priority,
-                "exact_intrinsics": exact_intrinsics,
-                "expected_intrinsics": expected_intrinsics,
-                "unexpected_intrinsics": unexpected_intrinsics,
-                "outbound_payloads": outbound_payloads,
-            },
-            id=test.get("test_name")
+            settings,
+            force_adaptive_sampled,
+            transport_type,
+            raises_exception,
+            web_transaction,
+            inbound_headers,
+            expected_priority,
+            common_exact_intrinsics,
+            common_expected_intrinsics,
+            common_unexpected_intrinsics,
+            transaction_exact_intrinsics,
+            transaction_expected_intrinsics,
+            transaction_unexpected_intrinsics,
+            check_span_events,
+            span_exact_intrinsics,
+            span_expected_intrinsics,
+            span_unexpected_intrinsics,
+            outbound_payloads,
+            expected_metrics,
+            id=_id
         )
         result.append(param)
 
@@ -107,12 +164,10 @@ def load_tests():
 def override_compute_sampled(override):
     @transient_function_wrapper("newrelic.core.samplers.adaptive_sampler", "AdaptiveSampler.compute_sampled")
     def _override_compute_sampled(wrapped, instance, args, kwargs):
+        sampled = wrapped(*args, **kwargs)
         if override is None:
-            return wrapped(*args, **kwargs)
-        if override:
-            return True
-        else:
-            return False
+            return sampled
+        return override
 
     return _override_compute_sampled
 
@@ -141,56 +196,75 @@ def assert_payload(payload, payload_assertions, major_version, minor_version):
     assert payload["v"][0] == major_version
     assert payload["v"][1] == minor_version
 
+@pytest.fixture
+def create_transaction():
+    def _create_transaction(test_name, web_transaction, transport_type, raises_exception, inbound_headers, outbound_payloads):
 
-@wsgi_application()
-def target_wsgi_application(environ, start_response):
-    status = "200 OK"
-    output = b"hello world"
-    response_headers = [("Content-type", "text/html; charset=utf-8"), ("Content-Length", str(len(output)))]
+        def _task():
+            txn = current_transaction()
+            #txn.set_transaction_name(test_name)
 
-    txn = current_transaction()
-    txn.set_transaction_name(test_settings["test_name"])
+            if raises_exception:
+                try:
+                    1 / 0  # noqa: B018
+                except ZeroDivisionError:
+                    txn.notice_error()
 
-    if not test_settings["web_transaction"]:
-        txn.background_task = True
+            txn.accept_distributed_trace_headers(inbound_headers, transport_type)
 
-    if test_settings["raises_exception"]:
-        try:
-            1 / 0  # noqa: B018
-        except ZeroDivisionError:
-            txn.notice_error()
+            if outbound_payloads:
+                headers = []
+                txn.insert_distributed_trace_headers(headers)
+                if test_name == "multiple_create_calls":
+                    txn.insert_distributed_trace_headers(headers)
+                headers = dict(headers)
 
-    extra_inbound_payloads = test_settings["extra_inbound_payloads"]
-    for payload, expected_result in extra_inbound_payloads:
-        headers = {"newrelic": payload}
-        result = txn.accept_distributed_trace_headers(headers, test_settings["transport_type"])
-        assert result is expected_result
+                expected_traceparent_exact, expected_tracestate_exact, expected_traceparent, expected_tracestate = outbound_payloads
 
-    outbound_payloads = test_settings["outbound_payloads"]
-    if outbound_payloads:
-        for payload_assertions in outbound_payloads:
-            headers = []
-            txn.insert_distributed_trace_headers(headers)
-            # To revert to the dict format of the payload, use this:
-            payload = json.loads(
-                base64.b64decode([value for key, value in headers if key == "newrelic"][0]).decode("utf-8")
-            )
-            payload_version = payload.get("v")
-            if payload_version and isinstance(payload_version, list):
-                payload["v"] = tuple(payload_version)
-            assert_payload(payload, payload_assertions, test_settings["major_version"], test_settings["minor_version"])
+                if expected_traceparent_exact or expected_traceparent:
+                    traceparent = W3CTraceParent.decode(headers["traceparent"])
+                    for key, value in expected_traceparent_exact.items():
+                        if key == "sa":
+                            assert traceparent.get(key, None) == bool(int(value, 2))
+                            continue
+                        assert traceparent.get(key, None) == value
+                    for key in expected_traceparent:
+                        assert key in traceparent
 
-    start_response(status, response_headers)
-    return [output]
+                if expected_tracestate_exact or expected_tracestate:
+                    vendors = W3CTraceState.decode(headers["tracestate"])
+                    trusted_account_key = txn.settings.trusted_account_key
+                    newrelic = vendors.pop(f"{trusted_account_key}@nr", "")
+                    tracestate = NrTraceState.decode(newrelic, trusted_account_key)
+                    for key, value in expected_tracestate_exact.items():
+                        if key == "v":
+                            assert int(tracestate.get(key, None)) == value
+                            continue
+                        if key == "ty":
+                            assert tracestate.get(key, None) == PARENT_TYPE[str(value)]
+                            continue
+                        assert tracestate.get(key, None) == value
+                    for key in expected_tracestate:
+                        assert key in tracestate
+
+        if web_transaction:
+            request = newrelic.agent.WebTransactionWrapper(_task, name=test_name)
+        else:
+            request = newrelic.agent.BackgroundTaskWrapper(_task, name=test_name)
+
+        return request
+
+    return _create_transaction
 
 
-test_application = webtest.TestApp(target_wsgi_application)
-
-
-@pytest.mark.parametrize(_parameters, load_tests())
+@pytest.mark.parametrize(
+    "settings,force_adaptive_sampled,transport_type,raises_exception,web_transaction,inbound_headers,expected_priority,exact_intrinsics,expected_intrinsics,unexpected_intrinsics,transaction_exact_intrinsics,transaction_expected_intrinsics,transaction_unexpected_intrinsics,check_span_events,span_exact_intrinsics,span_expected_intrinsics,span_unexpected_intrinsics,outbound_payloads,expected_metrics",
+    load_tests(),
+)
 def test_distributed_tracing(
     settings,
     force_adaptive_sampled,
+    transport_type,
     raises_exception,
     web_transaction,
     inbound_headers,
@@ -198,23 +272,45 @@ def test_distributed_tracing(
     exact_intrinsics,
     expected_intrinsics,
     unexpected_intrinsics,
+    transaction_exact_intrinsics,
+    transaction_expected_intrinsics,
+    transaction_unexpected_intrinsics,
+    check_span_events,
+    span_exact_intrinsics,
+    span_expected_intrinsics,
+    span_unexpected_intrinsics,
     outbound_payloads,
+    expected_metrics,
+    request,
+    create_transaction,
 ):
-    txn_event_required = {"agent": [], "user": [], "intrinsic": expected_intrinsics}
-    txn_event_forgone = {"agent": [], "user": [], "intrinsic": unexpected_intrinsics}
-    txn_event_exact = {"agent": {}, "user": {}, "intrinsic": exact_intrinsics}
+    test_name = request.node.callspec.id
+    txn_event_required = {"agent": [], "user": [], "intrinsic": transaction_expected_intrinsics}
+    txn_event_forgone = {"agent": [], "user": [], "intrinsic": transaction_unexpected_intrinsics}
+    txn_event_exact = {"agent": {}, "user": {}, "intrinsic": transaction_exact_intrinsics}
+
 
     @validate_transaction_metrics(test_name, rollup_metrics=expected_metrics, background_task=not web_transaction)
     @validate_transaction_event_attributes(txn_event_required, txn_event_forgone, txn_event_exact)
     @override_compute_sampled(force_adaptive_sampled)
     @override_application_settings(settings)
     def _test():
-        response = test_application.get("/", headers=inbound_headers)
+        transaction = create_transaction(test_name, web_transaction, transport_type, raises_exception, inbound_headers, outbound_payloads)
+
+        transaction()
 
     if raises_exception:
-        error_event_required = {"agent": [], "user": [], "intrinsic": common_required}
-        error_event_forgone = {"agent": [], "user": [], "intrinsic": common_forgone}
-        error_event_exact = {"agent": {}, "user": {}, "intrinsic": common_exact}
+        error_event_required = {"agent": [], "user": [], "intrinsic": expected_intrinsics}
+        error_event_forgone = {"agent": [], "user": [], "intrinsic": unexpected_intrinsics}
+        error_event_exact = {"agent": {}, "user": {}, "intrinsic": exact_intrinsics}
         _test = validate_error_event_attributes(error_event_required, error_event_forgone, error_event_exact)(_test)
+
+    if settings["span_events.enabled"]:
+        if check_span_events:
+            _test = validate_span_events(
+                exact_intrinsics=span_exact_intrinsics, expected_intrinsics=span_expected_intrinsics, unexpected_intrinsics=span_unexpected_intrinsics
+            )(_test)
+    else:
+        _test = validate_span_events(count=0)(_test)
 
     _test()

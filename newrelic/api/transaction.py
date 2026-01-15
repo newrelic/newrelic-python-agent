@@ -1041,7 +1041,7 @@ class Transaction:
         if self._remote_parent_sampled is None:
             section = 0
             setting_path = (
-                f"distributed_tracing.sampler.{'full_granularity' if full_granularity else 'partial_granularity'}.root"
+                f"distributed_tracing.sampler.{'' if full_granularity else 'partial_granularity'}.root"
             )
             config = root_setting
             _logger.debug(
@@ -1051,7 +1051,7 @@ class Transaction:
             )
         elif self._remote_parent_sampled:
             section = 1
-            setting_path = f"distributed_tracing.sampler.{'full_granularity' if full_granularity else 'partial_granularity'}.remote_parent_sampled"
+            setting_path = f"distributed_tracing.sampler.{'' if full_granularity else 'partial_granularity'}.remote_parent_sampled"
             config = remote_parent_sampled_setting
             _logger.debug(
                 "Sampling decision made based on remote_parent_sampled=%s and %s=%s.",
@@ -1061,7 +1061,7 @@ class Transaction:
             )
         else:  # self._remote_parent_sampled is False.
             section = 2
-            setting_path = f"distributed_tracing.sampler.{'full_granularity' if full_granularity else 'partial_granularity'}.remote_parent_not_sampled"
+            setting_path = f"distributed_tracing.sampler.{'' if full_granularity else 'partial_granularity'}.remote_parent_not_sampled"
             config = remote_parent_not_sampled_setting
             _logger.debug(
                 "Sampling decision made based on remote_parent_sampled=%s and %s=%s.",
@@ -1295,6 +1295,10 @@ class Transaction:
     def _accept_distributed_trace_payload(self, payload, transport_type="HTTP"):
         if not payload:
             self._record_supportability("Supportability/DistributedTrace/AcceptPayload/Ignored/Null")
+            # Still set the transport type before early exit.
+            if transport_type not in DISTRIBUTED_TRACE_TRANSPORT_TYPES:
+                transport_type = "Unknown"
+            self.parent_transport_type = transport_type
             return False
 
         payload = DistributedTracePayload.decode(payload)

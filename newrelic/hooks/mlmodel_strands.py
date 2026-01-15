@@ -480,8 +480,15 @@ def wrap_bedrock_model__stream(wrapped, instance, args, kwargs):
 def wrap_decorated_function_tool__wrap_tool_result(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if transaction:
-        # notice_error will handle pulling from sys.exc_info() if there's an active exception.
-        transaction.notice_error()
+        exc = sys.exc_info()
+        try:
+            if exc:
+                bound_args = bind_args(wrapped, args, kwargs)
+                tool_id = bound_args.get("tool_id")
+                transaction.notice_error(exc, attributes={"tool_id": tool_id})
+        finally:
+            # Delete exc to avoid reference cycles
+            del exc
 
     return wrapped(*args, **kwargs)
 

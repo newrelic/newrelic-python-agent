@@ -31,7 +31,7 @@ MONGODB_PORT = DB_SETTINGS["port"]
 MONGODB_COLLECTION = DB_SETTINGS["collection"]
 
 INSTANCE_METRIC_HOST = system_info.gethostname() if MONGODB_HOST == "127.0.0.1" else MONGODB_HOST
-INSTANCE_METRIC_NAME = f"Datastore/instance/Mongodb/{INSTANCE_METRIC_HOST}/{MONGODB_PORT}"
+INSTANCE_METRIC_NAME = f"Datastore/instance/mongodb/{INSTANCE_METRIC_HOST}/{MONGODB_PORT}"
 
 
 # Find correct metric name based on import availability.
@@ -97,7 +97,7 @@ def _exercise_mongo(db):
         "peer.hostname": INSTANCE_METRIC_HOST,
         "peer.address": f"{INSTANCE_METRIC_HOST}:{MONGODB_PORT}",
     },
-    exact_intrinsics={"name": f"Datastore/statement/Mongodb/{MONGODB_COLLECTION}/insert"},
+    exact_intrinsics={"name": f"Datastore/statement/mongodb/{MONGODB_COLLECTION}/insert"},
 )
 @validate_transaction_metrics(
     "test_motor_instance_info", rollup_metrics=[(INSTANCE_METRIC_NAME, 1)], background_task=True
@@ -114,44 +114,44 @@ def test_collection_instance_info(loop, tracer_provider):
 # Common Metrics for tests that use _exercise_mongo().
 
 _test_pymongo_client_scoped_metrics = [
-    (f"Datastore/statement/Mongodb/{MONGODB_COLLECTION}/insert", 6),
-    (f"Datastore/statement/Mongodb/{MONGODB_COLLECTION}/find", 5),
-    (f"Datastore/statement/Mongodb/{MONGODB_COLLECTION}/aggregate", 3),
-    (f"Datastore/statement/Mongodb/{MONGODB_COLLECTION}/count", 1),
-    (f"Datastore/statement/Mongodb/{MONGODB_COLLECTION}/update", 3),
-    (f"Datastore/statement/Mongodb/{MONGODB_COLLECTION}/delete", 2),
-    (f"Datastore/statement/Mongodb/{MONGODB_COLLECTION}/distinct", 1),
-    (f"Datastore/statement/Mongodb/{MONGODB_COLLECTION}/createindexes", 2),
-    (f"Datastore/statement/Mongodb/{MONGODB_COLLECTION}/listindexes", 2),
-    (f"Datastore/statement/Mongodb/{MONGODB_COLLECTION}/dropindexes", 2),
-    ("Datastore/operation/Mongodb/getmore", 1),
-    (f"Datastore/statement/Mongodb/{MONGODB_COLLECTION}/findandmodify", 3),
-    ("Datastore/operation/Mongodb/listcollections", 1),
+    (f"Datastore/statement/mongodb/{MONGODB_COLLECTION}/insert", 6),
+    (f"Datastore/statement/mongodb/{MONGODB_COLLECTION}/find", 5),
+    (f"Datastore/statement/mongodb/{MONGODB_COLLECTION}/aggregate", 3),
+    (f"Datastore/statement/mongodb/{MONGODB_COLLECTION}/count", 1),
+    (f"Datastore/statement/mongodb/{MONGODB_COLLECTION}/update", 3),
+    (f"Datastore/statement/mongodb/{MONGODB_COLLECTION}/delete", 2),
+    (f"Datastore/statement/mongodb/{MONGODB_COLLECTION}/distinct", 1),
+    (f"Datastore/statement/mongodb/{MONGODB_COLLECTION}/createindexes", 2),
+    (f"Datastore/statement/mongodb/{MONGODB_COLLECTION}/listindexes", 2),
+    (f"Datastore/statement/mongodb/{MONGODB_COLLECTION}/dropindexes", 2),
+    ("Datastore/operation/mongodb/getmore", 1),
+    (f"Datastore/statement/mongodb/{MONGODB_COLLECTION}/findandmodify", 3),
+    ("Datastore/operation/mongodb/listcollections", 1),
     (
-        f"Datastore/statement/Mongodb/test.{MONGODB_COLLECTION}/renamecollection",
+        f"Datastore/statement/mongodb/test.{MONGODB_COLLECTION}/renamecollection",
         1,
     ),  # admin commands use name given by OTel
-    (f"Datastore/statement/Mongodb/{MONGODB_COLLECTION}_renamed/drop", 1),
+    (f"Datastore/statement/mongodb/{MONGODB_COLLECTION}_renamed/drop", 1),
 ]
 
 _test_pymongo_client_rollup_metrics = [
     ("Datastore/all", 35),
     ("Datastore/allOther", 35),
-    ("Datastore/Mongodb/all", 35),
-    ("Datastore/Mongodb/allOther", 35),
+    ("Datastore/mongodb/all", 35),
+    ("Datastore/mongodb/allOther", 35),
     (INSTANCE_METRIC_NAME, 35),
-    ("Datastore/operation/Mongodb/insert", 6),
-    ("Datastore/operation/Mongodb/find", 5),
-    ("Datastore/operation/Mongodb/aggregate", 3),
-    ("Datastore/operation/Mongodb/count", 1),
-    ("Datastore/operation/Mongodb/update", 3),
-    ("Datastore/operation/Mongodb/delete", 2),
-    ("Datastore/operation/Mongodb/distinct", 1),
-    ("Datastore/operation/Mongodb/createindexes", 2),
-    ("Datastore/operation/Mongodb/listindexes", 2),
-    ("Datastore/operation/Mongodb/dropindexes", 2),
-    ("Datastore/operation/Mongodb/findandmodify", 3),
-    ("Datastore/operation/Mongodb/renamecollection", 1),
+    ("Datastore/operation/mongodb/insert", 6),
+    ("Datastore/operation/mongodb/find", 5),
+    ("Datastore/operation/mongodb/aggregate", 3),
+    ("Datastore/operation/mongodb/count", 1),
+    ("Datastore/operation/mongodb/update", 3),
+    ("Datastore/operation/mongodb/delete", 2),
+    ("Datastore/operation/mongodb/distinct", 1),
+    ("Datastore/operation/mongodb/createindexes", 2),
+    ("Datastore/operation/mongodb/listindexes", 2),
+    ("Datastore/operation/mongodb/dropindexes", 2),
+    ("Datastore/operation/mongodb/findandmodify", 3),
+    ("Datastore/operation/mongodb/renamecollection", 1),
 ]
 _test_pymongo_client_rollup_metrics.extend(_test_pymongo_client_scoped_metrics)
 

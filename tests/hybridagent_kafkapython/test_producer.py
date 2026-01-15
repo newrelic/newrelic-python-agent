@@ -23,7 +23,8 @@ from newrelic.api.function_trace import FunctionTrace
 
 
 def test_trace_metrics(topic, send_producer_message, expected_broker_metrics):
-    scoped_metrics = [(f"MessageBroker/Kafka/Topic/Produce/Named/{topic} send", 1)]
+
+    scoped_metrics = [(f"MessageBroker/kafka/Topic/Produce/Named/{topic}", 1)]
     unscoped_metrics = scoped_metrics
 
     @validate_transaction_metrics(
@@ -89,4 +90,4 @@ def test_distributed_tracing_headers_under_terminal(topic, send_producer_message
 
 @pytest.fixture
 def expected_broker_metrics(broker, topic):
-    return [(f"MessageBroker/Kafka/Nodes/{server}/Produce/{topic}", 1) for server in broker]
+    return [(f"MessageBroker/kafka/Nodes/{server}/Produce/{topic}", 1) for server in broker]

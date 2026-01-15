@@ -28,8 +28,8 @@ from newrelic.common.object_names import callable_name
 
 def test_custom_metrics(get_consumer_record, topic, expected_broker_metrics):
     @validate_transaction_metrics(
-        f"Named/{topic} receive",
-        group="Message/Kafka/Topic",
+        f"Named/{topic}",
+        group="Message/kafka/Topic",
         custom_metrics=[*expected_broker_metrics],
         background_task=True,
     )
@@ -110,8 +110,8 @@ def test_distributed_tracing_headers(topic, producer, consumer, serialize, expec
         producer.flush()
 
     @validate_transaction_metrics(
-        f"Named/{topic} receive",
-        group="Message/Kafka/Topic",
+        f"Named/{topic}",
+        group="Message/kafka/Topic",
         rollup_metrics=[
             ("Supportability/DistributedTrace/AcceptPayload/Success", None),
             ("Supportability/TraceContext/TraceParent/Accept/Success", 1),
@@ -162,14 +162,14 @@ def consumer_next_raises(consumer):
 
 @pytest.fixture
 def expected_broker_metrics(broker, topic):
-    return [(f"MessageBroker/Kafka/Nodes/{server}/Consume/{topic}", 1) for server in broker]
+    return [(f"MessageBroker/kafka/Nodes/{server}/Consume/{topic}", 1) for server in broker]
 
 
 @pytest.fixture
 def expected_producer_broker_metrics(broker, topic):
-    return [(f"MessageBroker/Kafka/Nodes/{server}/Produce/{topic}", 1) for server in broker]
+    return [(f"MessageBroker/kafka/Nodes/{server}/Produce/{topic}", 1) for server in broker]
 
 
 @pytest.fixture
 def expected_missing_broker_metrics(broker, topic):
-    return [(f"MessageBroker/Kafka/Nodes/{server}/Consume/{topic}", None) for server in broker]
+    return [(f"MessageBroker/kafka/Nodes/{server}/Consume/{topic}", None) for server in broker]

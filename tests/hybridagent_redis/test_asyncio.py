@@ -34,34 +34,34 @@ REDIS_PY_VERSION = get_package_version_tuple("redis")
 
 # Metrics for publish test
 
-_base_scoped_metrics = [("Datastore/operation/Redis/publish", 3)]
+_base_scoped_metrics = [("Datastore/operation/redis/publish", 3)]
 
 _base_rollup_metrics = [
     ("Datastore/all", 3),
     ("Datastore/allOther", 3),
-    ("Datastore/Redis/all", 3),
-    ("Datastore/Redis/allOther", 3),
-    ("Datastore/operation/Redis/publish", 3),
-    (f"Datastore/instance/Redis/{instance_hostname(DB_SETTINGS['host'])}/{DB_SETTINGS['port']}", 3),
+    ("Datastore/redis/all", 3),
+    ("Datastore/redis/allOther", 3),
+    ("Datastore/operation/redis/publish", 3),
+    (f"Datastore/instance/redis/{instance_hostname(DB_SETTINGS['host'])}/{DB_SETTINGS['port']}", 3),
 ]
 
 # Metrics for connection pool test
 
 _base_pool_scoped_metrics = [
-    ("Datastore/operation/Redis/get", 1),
-    ("Datastore/operation/Redis/set", 1),
-    ("Datastore/operation/Redis/client", 1),
+    ("Datastore/operation/redis/get", 1),
+    ("Datastore/operation/redis/set", 1),
+    ("Datastore/operation/redis/client", 1),
 ]
 
 _base_pool_rollup_metrics = [
     ("Datastore/all", 3),
     ("Datastore/allOther", 3),
-    ("Datastore/Redis/all", 3),
-    ("Datastore/Redis/allOther", 3),
-    ("Datastore/operation/Redis/get", 1),
-    ("Datastore/operation/Redis/set", 1),
-    ("Datastore/operation/Redis/client", 1),
-    (f"Datastore/instance/Redis/{instance_hostname(DB_SETTINGS['host'])}/{DB_SETTINGS['port']}", 3),
+    ("Datastore/redis/all", 3),
+    ("Datastore/redis/allOther", 3),
+    ("Datastore/operation/redis/get", 1),
+    ("Datastore/operation/redis/set", 1),
+    ("Datastore/operation/redis/client", 1),
+    (f"Datastore/instance/redis/{instance_hostname(DB_SETTINGS['host'])}/{DB_SETTINGS['port']}", 3),
 ]
 
 # Expected intrinsic, agent, and user metrics
@@ -84,7 +84,7 @@ _expected_child_intrinsics = [*_expected_intrinsics, "parentId"]
 _unexpected_root_intrinsics = ["parentId"]
 _unexpected_child_intrinsics = ["nr.entryPoint", "transaction.name"]
 
-_exact_agents = {"db.system": "Redis", "server.port": DB_SETTINGS["port"]}
+_exact_agents = {"db.system": "redis", "server.port": DB_SETTINGS["port"]}
 _expected_agents = ["db.operation", "peer.hostname", "server.address", "peer.address"]
 _exact_users = {
     "db.system": "redis",

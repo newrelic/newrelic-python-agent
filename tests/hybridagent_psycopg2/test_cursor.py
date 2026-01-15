@@ -52,33 +52,33 @@ _disable_instance_settings = {"datastore_tracer.instance_reporting.enabled": Fal
 
 # Metrics
 _base_scoped_metrics = (
-    (f"Datastore/statement/Postgresql/{DB_SETTINGS['table_name']}/select", 1),
-    (f"Datastore/statement/Postgresql/{DB_SETTINGS['table_name']}/insert", 1),
-    (f"Datastore/statement/Postgresql/{DB_SETTINGS['table_name']}/update", 1),
-    (f"Datastore/statement/Postgresql/{DB_SETTINGS['table_name']}/delete", 1),
-    ("Datastore/operation/Postgresql/now", 1),
-    ("Datastore/operation/Postgresql/pg_sleep", 1),
-    ("Datastore/operation/Postgresql/drop", 1),
-    ("Datastore/operation/Postgresql/create", 1),
+    (f"Datastore/statement/postgresql/{DB_SETTINGS['table_name']}/select", 1),
+    (f"Datastore/statement/postgresql/{DB_SETTINGS['table_name']}/insert", 1),
+    (f"Datastore/statement/postgresql/{DB_SETTINGS['table_name']}/update", 1),
+    (f"Datastore/statement/postgresql/{DB_SETTINGS['table_name']}/delete", 1),
+    ("Datastore/operation/postgresql/now", 1),
+    ("Datastore/operation/postgresql/pg_sleep", 1),
+    ("Datastore/operation/postgresql/drop", 1),
+    ("Datastore/operation/postgresql/create", 1),
 )
 
 _base_rollup_metrics = (
     ("Datastore/all", 8),
     ("Datastore/allOther", 8),
-    ("Datastore/Postgresql/all", 8),
-    ("Datastore/Postgresql/allOther", 8),
-    (f"Datastore/statement/Postgresql/{DB_SETTINGS['table_name']}/select", 1),
-    (f"Datastore/statement/Postgresql/{DB_SETTINGS['table_name']}/insert", 1),
-    (f"Datastore/statement/Postgresql/{DB_SETTINGS['table_name']}/update", 1),
-    (f"Datastore/statement/Postgresql/{DB_SETTINGS['table_name']}/delete", 1),
-    ("Datastore/operation/Postgresql/select", 1),
-    ("Datastore/operation/Postgresql/insert", 1),
-    ("Datastore/operation/Postgresql/update", 1),
-    ("Datastore/operation/Postgresql/delete", 1),
-    ("Datastore/operation/Postgresql/drop", 1),
-    ("Datastore/operation/Postgresql/create", 1),
-    ("Datastore/operation/Postgresql/now", 1),
-    ("Datastore/operation/Postgresql/pg_sleep", 1),
+    ("Datastore/postgresql/all", 8),
+    ("Datastore/postgresql/allOther", 8),
+    (f"Datastore/statement/postgresql/{DB_SETTINGS['table_name']}/select", 1),
+    (f"Datastore/statement/postgresql/{DB_SETTINGS['table_name']}/insert", 1),
+    (f"Datastore/statement/postgresql/{DB_SETTINGS['table_name']}/update", 1),
+    (f"Datastore/statement/postgresql/{DB_SETTINGS['table_name']}/delete", 1),
+    ("Datastore/operation/postgresql/select", 1),
+    ("Datastore/operation/postgresql/insert", 1),
+    ("Datastore/operation/postgresql/update", 1),
+    ("Datastore/operation/postgresql/delete", 1),
+    ("Datastore/operation/postgresql/drop", 1),
+    ("Datastore/operation/postgresql/create", 1),
+    ("Datastore/operation/postgresql/now", 1),
+    ("Datastore/operation/postgresql/pg_sleep", 1),
 )
 
 _disable_scoped_metrics = list(_base_scoped_metrics)
@@ -90,7 +90,7 @@ _enable_rollup_metrics = list(_base_rollup_metrics)
 _host = instance_hostname(DB_SETTINGS["host"])
 _port = DB_SETTINGS["port"]
 
-_instance_metric_name = f"Datastore/instance/Postgresql/{_host}/{_port}"
+_instance_metric_name = f"Datastore/instance/postgresql/{_host}/{_port}"
 
 _enable_rollup_metrics.append((_instance_metric_name, 8))
 

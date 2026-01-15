@@ -22,8 +22,6 @@ from testing_support.validators.validate_span_events import validate_span_events
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import current_transaction
 
-# RequestsInstrumentor().instrument()
-
 
 @pytest.fixture(scope="module", autouse=True)
 def server(tracer_provider):
@@ -45,13 +43,13 @@ def test_span_events(server, path):
     expected_uri = uri[:255]
 
     exact_intrinsics = {
-        "name": f"External/localhost:{server.port}/Requests/GET",
+        "name": f"External/localhost:{server.port}/requests/GET",
         "type": "Span",
         "sampled": True,
         "priority": 0.5,
         "category": "http",
         "span.kind": "client",
-        "component": "Requests",
+        "component": "requests",
     }
     exact_agents = {"http.url": expected_uri}
     expected_intrinsics = ("timestamp", "duration", "transactionId")

@@ -4390,6 +4390,12 @@ def _process_module_builtin_defaults():
         "opentelemetry.instrumentation.utils", "newrelic.hooks.hybridagent_opentelemetry", "instrument_utils"
     )
 
+    _process_module_definition(
+        "opentelemetry.instrumentation.pika.utils",
+        "newrelic.hooks.hybridagent_opentelemetry",
+        "instrument_pika_utils",
+    )
+
 
 def _process_module_entry_points():
     try:

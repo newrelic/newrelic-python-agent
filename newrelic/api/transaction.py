@@ -1025,6 +1025,8 @@ class Transaction:
             _logger.debug("No trusted account id found. Sampling decision will be made by adaptive sampling algorithm.")
             sampled = self._application.compute_sampled(**sampler_kwargs)
         if adjust_priority and sampled:
+            # Make sure priority is <1 so we don't end up with priorities >3.
+            priority = priority - int(priority)
             # Increment the priority + 2 for full and + 1 for partial granularity.
             priority += 1 + int(sampler_kwargs.get("full_granularity"))
         return priority, sampled
@@ -1080,7 +1082,7 @@ class Transaction:
             _logger.debug("Let trace id ratio based sampler algorithm decide based on trace_id = %s.", self._trace_id)
             priority, sampled = self.sampling_algo_compute_sampled_and_priority(
                 priority,
-                sampled,
+                None,  # The sampled value from the parent is not used in this case and should always be overridden.
                 {
                     "full_granularity": full_granularity,
                     "section": section,

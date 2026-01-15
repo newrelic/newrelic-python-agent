@@ -50,6 +50,7 @@ def load_tests():
             "distributed_tracing.sampler.full_granularity.enabled": test.pop("full_granularity_enabled", True),
             "distributed_tracing.enabled": test.pop("distributed_tracing_enabled", True),
             "span_events.enabled": test.pop("span_events_enabled", True),
+            "transaction_events.enabled": test.pop("transaction_events_enabled", True),
             "distributed_tracing.sampler._root": test.pop("root", "adaptive"),
             "distributed_tracing.sampler._remote_parent_sampled": test.pop("remote_parent_sampled", "adaptive"),
             "distributed_tracing.sampler._remote_parent_not_sampled": test.pop("remote_parent_not_sampled", "adaptive"),
@@ -61,7 +62,7 @@ def load_tests():
             "distributed_tracing.sampler.partial_granularity._remote_parent_not_sampled": test.pop("partial_granularity_remote_parent_not_sampled", "adaptive"),
         }
         full_gran_ratio = test.pop("full_granularity_ratio", None)
-        if full_gran_ratio:
+        if full_gran_ratio is not None:
             if settings["distributed_tracing.sampler._root"] == "trace_id_ratio_based":
                 settings["distributed_tracing.sampler.root.trace_id_ratio_based.ratio"] = full_gran_ratio
             if settings["distributed_tracing.sampler._remote_parent_sampled"] == "trace_id_ratio_based":
@@ -69,7 +70,7 @@ def load_tests():
             if settings["distributed_tracing.sampler._remote_parent_not_sampled"] == "trace_id_ratio_based":
                 settings["distributed_tracing.sampler.remote_parent_not_sampled.trace_id_ratio_based.ratio"] = full_gran_ratio
         partial_gran_ratio = test.pop("partial_granularity_ratio", None)
-        if partial_gran_ratio:
+        if partial_gran_ratio is not None:
             if settings["distributed_tracing.sampler.partial_granularity._root"] == "trace_id_ratio_based":
                 settings["distributed_tracing.sampler.partial_granularity.root.trace_id_ratio_based.ratio"] = partial_gran_ratio
             if settings["distributed_tracing.sampler.partial_granularity._remote_parent_sampled"] == "trace_id_ratio_based":
@@ -77,12 +78,12 @@ def load_tests():
             if settings["distributed_tracing.sampler.partial_granularity._remote_parent_not_sampled"] == "trace_id_ratio_based":
                 settings["distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.trace_id_ratio_based.ratio"] = partial_gran_ratio
 
-        force_adaptive_sampled = test.pop("force_sampled_true", None)
+        force_adaptive_sampled = test.pop("force_adaptive_sampled", None)
         expected_metrics = test.pop("expected_metrics", [])
         raises_exception = test.pop("raises_exception", False)
         web_transaction = test.pop("web_transaction", False)
         inbound_headers = (test.pop("inbound_headers", None) or [{}])[0]
-        expected_priority = test.pop("expected_priority_between", None)
+        expected_priority_between = test.pop("expected_priority_between", None)
         intrinsics = test.pop("intrinsics", {})
         common_exact_intrinsics = intrinsics.get("common", {}).get("exact", {})
         common_expected_intrinsics = intrinsics.get("common", {}).get("expected", [])
@@ -141,7 +142,7 @@ def load_tests():
             raises_exception,
             web_transaction,
             inbound_headers,
-            expected_priority,
+            expected_priority_between,
             common_exact_intrinsics,
             common_expected_intrinsics,
             common_unexpected_intrinsics,
@@ -172,37 +173,15 @@ def override_compute_sampled(override):
     return _override_compute_sampled
 
 
-def assert_payload(payload, payload_assertions, major_version, minor_version):
-    assert payload
-
-    # flatten payload so it matches the test:
-    #   payload['d']['ac'] -> payload['d.ac']
-    d = payload.pop("d")
-    for key, value in d.items():
-        payload[f"d.{key}"] = value
-
-    for expected in payload_assertions.get("expected", []):
-        assert expected in payload
-
-    for unexpected in payload_assertions.get("unexpected", []):
-        assert unexpected not in payload
-
-    for key, value in payload_assertions.get("exact", {}).items():
-        assert key in payload
-        if isinstance(value, list):
-            value = tuple(value)
-        assert payload[key] == value
-
-    assert payload["v"][0] == major_version
-    assert payload["v"][1] == minor_version
-
 @pytest.fixture
 def create_transaction():
-    def _create_transaction(test_name, web_transaction, transport_type, raises_exception, inbound_headers, outbound_payloads):
+    def _create_transaction(test_name, web_transaction, transport_type, raises_exception, inbound_headers, outbound_payloads, expected_priority_between):
 
         def _task():
             txn = current_transaction()
-            #txn.set_transaction_name(test_name)
+            application = txn._application._agent._applications.get(txn.settings.app_name)
+            # Re-initialize sampler proxy after overriding settings.
+            application.sampler.__init__(txn.settings)
 
             if raises_exception:
                 try:
@@ -238,14 +217,23 @@ def create_transaction():
                     tracestate = NrTraceState.decode(newrelic, trusted_account_key)
                     for key, value in expected_tracestate_exact.items():
                         if key == "v":
-                            assert int(tracestate.get(key, None)) == value
+                            assert tracestate.get(key, None) == value
                             continue
                         if key == "ty":
                             assert tracestate.get(key, None) == PARENT_TYPE[str(value)]
                             continue
+                        if key == "sa":
+                            assert tracestate.get(key, None) == bool(int(value))
+                            continue
+                        if key == "pr":
+                            assert f"{tracestate.get(key, None):.6f}".rstrip("0") == value
+                            continue
                         assert tracestate.get(key, None) == value
                     for key in expected_tracestate:
                         assert key in tracestate
+
+                    if expected_priority_between:
+                        assert expected_priority_between[0] < tracestate[key] < expected_priority_between[1]
 
         if web_transaction:
             request = newrelic.agent.WebTransactionWrapper(_task, name=test_name)
@@ -258,7 +246,7 @@ def create_transaction():
 
 
 @pytest.mark.parametrize(
-    "settings,force_adaptive_sampled,transport_type,raises_exception,web_transaction,inbound_headers,expected_priority,exact_intrinsics,expected_intrinsics,unexpected_intrinsics,transaction_exact_intrinsics,transaction_expected_intrinsics,transaction_unexpected_intrinsics,check_span_events,span_exact_intrinsics,span_expected_intrinsics,span_unexpected_intrinsics,outbound_payloads,expected_metrics",
+    "settings,force_adaptive_sampled,transport_type,raises_exception,web_transaction,inbound_headers,expected_priority_between,exact_intrinsics,expected_intrinsics,unexpected_intrinsics,transaction_exact_intrinsics,transaction_expected_intrinsics,transaction_unexpected_intrinsics,check_span_events,span_exact_intrinsics,span_expected_intrinsics,span_unexpected_intrinsics,outbound_payloads,expected_metrics",
     load_tests(),
 )
 def test_distributed_tracing(
@@ -268,7 +256,7 @@ def test_distributed_tracing(
     raises_exception,
     web_transaction,
     inbound_headers,
-    expected_priority,
+    expected_priority_between,
     exact_intrinsics,
     expected_intrinsics,
     unexpected_intrinsics,
@@ -289,13 +277,12 @@ def test_distributed_tracing(
     txn_event_forgone = {"agent": [], "user": [], "intrinsic": transaction_unexpected_intrinsics}
     txn_event_exact = {"agent": {}, "user": {}, "intrinsic": transaction_exact_intrinsics}
 
-
     @validate_transaction_metrics(test_name, rollup_metrics=expected_metrics, background_task=not web_transaction)
     @validate_transaction_event_attributes(txn_event_required, txn_event_forgone, txn_event_exact)
     @override_compute_sampled(force_adaptive_sampled)
     @override_application_settings(settings)
     def _test():
-        transaction = create_transaction(test_name, web_transaction, transport_type, raises_exception, inbound_headers, outbound_payloads)
+        transaction = create_transaction(test_name, web_transaction, transport_type, raises_exception, inbound_headers, outbound_payloads, expected_priority_between)
 
         transaction()
 

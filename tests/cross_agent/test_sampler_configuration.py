@@ -18,6 +18,8 @@ import json
 import random
 import time
 
+from newrelic.core.samplers.adaptive_sampler import AdaptiveSampler
+from newrelic.core.samplers.trace_id_ratio_based_sampler import TraceIdRatioBasedSampler
 from pathlib import Path
 import pytest
 import webtest
@@ -68,7 +70,29 @@ def load_tests():
     for test in tests:
         _id = test.pop("test_name", None)
         test_desc = test.pop("comment", None)
-        settings = test.pop("config", {})
+        config = test.pop("config", {})
+        settings = {
+            "distributed_tracing.sampler.full_granularity.enabled": config.get("sampler", {}).get("full_granularity", {}).get("enabled", True),
+            "distributed_tracing.sampler._root": list(config.get("sampler", {}).get("root", {"adaptive": {}}).keys())[0],
+            "distributed_tracing.sampler.root.adaptive.sampling_target": config.get("sampler", {}).get("root", {"adaptive": {}}).get("adaptive", {}).get("sampling_target"),
+            "distributed_tracing.sampler.root.trace_id_ratio_based.ratio": config.get("sampler", {}).get("root", {"trace_id_ratio_based": {}}).get("trace_id_ratio_based", {}).get("ratio"),
+            "distributed_tracing.sampler._remote_parent_sampled": list(config.get("sampler", {}).get("remote_parent_sampled", {"adaptive": {}}).keys())[0],
+            "distributed_tracing.sampler.remote_parent_sampled.adaptive.sampling_target": config.get("sampler", {}).get("remote_parent_sampled", {"adaptive": {}}).get("adaptive", {}).get("sampling_target"),
+            "distributed_tracing.sampler.remote_parent_sampled.trace_id_ratio_based.ratio": config.get("sampler", {}).get("remote_parent_sampled", {"trace_id_ratio_based": {}}).get("trace_id_ratio_based", {}).get("ratio"),
+            "distributed_tracing.sampler._remote_parent_not_sampled": list(config.get("sampler", {}).get("remote_parent_not_sampled", {"adaptive": {}}).keys())[0],
+            "distributed_tracing.sampler.remote_parent_not_sampled.adaptive.sampling_target": config.get("sampler", {}).get("remote_parent_not_sampled", {"adaptive": {}}).get("adaptive", {}).get("sampling_target"),
+            "distributed_tracing.sampler.remote_parent_not_sampled.trace_id_ratio_based.ratio": config.get("sampler", {}).get("remote_parent_not_sampled", {"trace_id_ratio_based": {}}).get("trace_id_ratio_based", {}).get("ratio"),
+            "distributed_tracing.sampler.partial_granularity.enabled": config.get("sampler", {}).get("partial_granularity", {}).get("enabled", False),
+            "distributed_tracing.sampler.partial_granularity._root": list(config.get("sampler", {}).get("partial_granularity", {}).get("root", {"adaptive": {}}).keys())[0],
+            "distributed_tracing.sampler.partial_granularity.root.adaptive.sampling_target": config.get("sampler", {}).get("partial_granularity", {}).get("root", {"adaptive": {}}).get("adaptive", {}).get("sampling_target"),
+            "distributed_tracing.sampler.partial_granularity.root.trace_id_ratio_based.ratio": config.get("sampler", {}).get("partial_granularity", {}).get("root", {"trace_id_ratio_based": {}}).get("trace_id_ratio_based", {}).get("ratio"),
+            "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": list(config.get("sampler", {}).get("partial_granularity", {}).get("remote_parent_sampled", {"adaptive": {}}).keys())[0],
+            "distributed_tracing.sampler.partial_granularity.remote_parent_sampled.adaptive.sampling_target": config.get("sampler", {}).get("partial_granularity", {}).get("remote_parent_sampled", {"adaptive": {}}).get("adaptive", {}).get("sampling_target"),
+            "distributed_tracing.sampler.partial_granularity.remote_parent_sampled.trace_id_ratio_based.ratio": config.get("sampler", {}).get("partial_granularity", {}).get("remote_parent_sampled", {"trace_id_ratio_based": {}}).get("trace_id_ratio_based", {}).get("ratio"),
+            "distributed_tracing.sampler.partial_granularity._remote_parent_not_sampled": list(config.get("sampler", {}).get("partial_granularity", {}).get("remote_parent_not_sampled", {"adaptive": {}}).keys())[0],
+            "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.adaptive.sampling_target": config.get("sampler", {}).get("partial_granularity", {}).get("remote_parent_not_sampled", {"adaptive": {}}).get("adaptive", {}).get("sampling_target"),
+            "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.trace_id_ratio_based.ratio": config.get("sampler", {}).get("partial_granularity", {}).get("remote_parent_not_sampled", {"trace_id_ratio_based": {}}).get("trace_id_ratio_based", {}).get("ratio"),
+        }
         expected_samplers = test.pop("expected_samplers", {})
         param = pytest.param(
             settings,
@@ -95,7 +119,6 @@ SECTIONS = {
 def test_sampler_configuration(
     settings,
     expected_samplers,
-    expected_sampling_instance_called,
 ):
     @override_application_settings(settings)
     @background_task()
@@ -105,14 +128,16 @@ def test_sampler_configuration(
         # Re-initialize sampler proxy after overriding settings.
         application.sampler.__init__(txn.settings)
 
-        #accept_distributed_trace_headers([])
-
-        for sampler, attributes in expected_sampler.items():
+        for sampler, attributes in expected_samplers.items():
             instance = SECTIONS[sampler]
-            sampler_instance = application.sampler.get_sampler(instance)
+            sampler_instance = application.sampler.get_sampler(*instance)
             if attributes["type"] == "adaptive":
                 assert isinstance(sampler_instance, AdaptiveSampler)
+            elif attributes["type"] == "trace_id_ratio_based":
+                assert isinstance(sampler_instance, TraceIdRatioBasedSampler)
+                if "ratio" in attributes:
+                    assert sampler_instance.ratio == attributes["ratio"]
             if attributes.get("is_global_adaptive_sampler", False):
-                assert sampler_instance is application.sampler._samplers[0]
+                assert sampler_instance is application.sampler._samplers["global"]
 
     _test()

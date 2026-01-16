@@ -35,7 +35,9 @@
             "sampling_target" : 10
           }
         },
-        "remote_parent_not_sampled" : "adaptive",
+        "remote_parent_not_sampled" : {
+            "adaptive": {}
+        },
         "partial_granularity": {
           "enabled": true,
           "root" : {
@@ -86,9 +88,7 @@
           "trace_id_ratio_based": {}
         },
         "remote_parent_sampled": {
-          "trace_id_ratio_based": {
-            "ratio": ""
-          }
+          "trace_id_ratio_based": {}
         },
         "remote_parent_not_sampled": {
           "trace_id_ratio_based": {
@@ -184,7 +184,9 @@
               "ratio": 0.2
             }
           },
-          "remote_parent_sampled": "always_on" 
+          "remote_parent_sampled": {
+            "always_on": {} 
+          }
         }
       }
     },

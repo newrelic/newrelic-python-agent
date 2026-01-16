@@ -32,6 +32,8 @@ _RootNode = namedtuple(
         "path",
         "trusted_parent_span",
         "tracing_vendors",
+        "span_link_events",
+        "span_event_events",
     ],
 )
 
@@ -54,7 +56,7 @@ class RootNode(_RootNode, GenericNodeMixin):
         if self.tracing_vendors:
             i_attrs["tracingVendors"] = self.tracing_vendors
 
-        return super().span_event(
+        base_span_event = super().span_event(
             settings,
             base_attrs=i_attrs,
             parent_guid=parent_guid,
@@ -62,6 +64,9 @@ class RootNode(_RootNode, GenericNodeMixin):
             partial_granularity_sampled=partial_granularity_sampled,
             ct_exit_spans=ct_exit_spans,
         )
+        if self.span_link_events or self.span_event_events:
+            return [base_span_event, self.span_link_events, self.span_event_events]
+        return base_span_event
 
     def trace_node(self, stats, root, connections):
         name = self.path

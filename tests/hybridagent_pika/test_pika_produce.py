@@ -159,9 +159,7 @@ def test_blocking_connection_reply_to():
 
 @pytest.mark.parametrize("enable_distributed_tracing", [True, False])
 def test_blocking_connection_headers(enable_distributed_tracing):
-    override_settings = {
-        "distributed_tracing.enabled": enable_distributed_tracing,
-    }
+    override_settings = {"distributed_tracing.enabled": enable_distributed_tracing}
     rollup_metrics = list(_test_blocking_connection_metrics)
     if enable_distributed_tracing:
         rollup_metrics += [
@@ -179,10 +177,7 @@ def test_blocking_connection_headers(enable_distributed_tracing):
         background_task=True,
     )
     @background_task(name="test_blocking_connection_headers")
-    @conditional_decorator(
-        condition=enable_distributed_tracing,
-        decorator=validate_messagebroker_headers,
-    )
+    @conditional_decorator(condition=enable_distributed_tracing, decorator=validate_messagebroker_headers)
     @cache_pika_headers
     def _test():
         with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:

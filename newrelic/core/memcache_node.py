@@ -30,6 +30,8 @@ _MemcacheNode = namedtuple(
         "guid",
         "agent_attributes",
         "user_attributes",
+        "span_link_events",
+        "span_event_events",
     ],
 )
 
@@ -74,3 +76,20 @@ class MemcacheNode(_MemcacheNode, GenericNodeMixin):
         return newrelic.core.trace_node.TraceNode(
             start_time=start_time, end_time=end_time, name=name, params=params, children=children, label=None
         )
+
+    def span_event(
+        self,
+        settings,
+        base_attrs=None,
+        parent_guid=None,
+        attr_class=dict,
+        partial_granularity_sampled=False,
+        ct_exit_spans=None,
+    ):
+        base_span_event = super().span_event(
+            settings, base_attrs, parent_guid, attr_class, partial_granularity_sampled, ct_exit_spans
+        )
+
+        if self.span_link_events or self.span_event_events:
+            return [base_span_event, self.span_link_events, self.span_event_events]
+        return base_span_event

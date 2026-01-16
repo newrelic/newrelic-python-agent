@@ -405,7 +405,7 @@ class DatastoreNodeMixin(GenericNodeMixin):
         except Exception:
             pass
 
-        return super().span_event(
+        base_span_event = super().span_event(
             settings,
             base_attrs=i_attrs,
             parent_guid=parent_guid,
@@ -413,3 +413,7 @@ class DatastoreNodeMixin(GenericNodeMixin):
             partial_granularity_sampled=partial_granularity_sampled,
             ct_exit_spans=ct_exit_spans,
         )
+
+        if self.span_link_events or self.span_event_events:
+            return [base_span_event, self.span_link_events, self.span_event_events]
+        return base_span_event

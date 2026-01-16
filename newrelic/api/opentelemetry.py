@@ -15,6 +15,7 @@
 import json
 import logging
 import sys
+import time
 from contextlib import contextmanager
 
 from opentelemetry import trace as otel_api_trace
@@ -34,6 +35,7 @@ from newrelic.api.message_transaction import MessageTransaction
 from newrelic.api.time_trace import current_trace, notice_error
 from newrelic.api.transaction import Sentinel, current_transaction
 from newrelic.api.web_transaction import WebTransaction, WSGIWebTransaction
+from newrelic.core.attribute import sanitize
 from newrelic.core.database_utils import generate_dynamodb_arn, get_database_operation_target_from_statement
 from newrelic.core.otlp_utils import create_resource
 
@@ -47,7 +49,7 @@ class NRTraceContextPropagator(TraceContextTextMapPropagator):
         transaction = current_transaction()
         # If we are passing into New Relic, traceparent
         # and/or tracestate's keys also need to be NR compatible.
-        
+
         if transaction:
             nr_headers = {
                 header_key: getter.get(carrier, header_key)[0]
@@ -55,9 +57,9 @@ class NRTraceContextPropagator(TraceContextTextMapPropagator):
                 if getter.get(carrier, header_key)
             }
             transaction.accept_distributed_trace_headers(nr_headers)
-        
+
         extracted_context = super().extract(carrier=carrier, context=context, getter=getter)
-        
+
         return extracted_context
 
     def inject(self, carrier, context=None, setter=None):
@@ -91,12 +93,13 @@ class Span(otel_api_trace.Span):
         resource=None,
         attributes=None,
         kind=otel_api_trace.SpanKind.INTERNAL,
+        record_exception=True,
+        set_status_on_exception=True,
         nr_transaction=None,
         nr_trace_type=FunctionTrace,
         instrumenting_module=None,
-        record_exception=True,
-        set_status_on_exception=True,
         create_nr_trace=True,
+        links=None,
         *args,
         **kwargs,
     ):
@@ -112,6 +115,7 @@ class Span(otel_api_trace.Span):
         self.status = Status(StatusCode.UNSET)
         self._record_exception = record_exception
         self.set_status_on_exception = set_status_on_exception
+        self.links = links or []
 
         self.nr_parent = None
         current_nr_trace = current_trace()
@@ -174,7 +178,7 @@ class Span(otel_api_trace.Span):
             trace_kwargs = {
                 "library": self.instrumenting_module,
                 "operation": "Produce" if self.kind == otel_api_trace.SpanKind.PRODUCER else "Consume",
-                "destination_type": "Exchange", # For Kafka, this will be overridden
+                "destination_type": "Exchange",  # For Kafka, this will be overridden
                 "destination_name": self.name,
                 "params": self.attributes,
                 "parent": self.nr_parent,
@@ -186,6 +190,10 @@ class Span(otel_api_trace.Span):
             self.nr_trace = nr_trace_type(**trace_kwargs)
 
         self.nr_trace.__enter__()
+
+        # Process Links that were passed in upon span creation
+        for link in self.links:
+            self.add_link(context=link.context, attributes=link.attributes, timestamp=self.nr_trace.start_time)
 
     def _remote(self):
         """
@@ -225,12 +233,58 @@ class Span(otel_api_trace.Span):
                 self.nr_trace.add_custom_attribute(key, value)
 
     def add_event(self, name, attributes=None, timestamp=None):
-        # TODO: Not implemented yet.
-        raise NotImplementedError("Events are not implemented yet.")
+        """Add an event to the current span.
 
-    def add_link(self, context=None, attributes=None):
-        # TODO: Not implemented yet.
-        raise NotImplementedError("Not implemented yet.")
+        If timestamp is None, this will get set to the current time.
+        """
+        current_span_context = self.get_span_context()
+        current_trace_id = f"{current_span_context.trace_id:032x}"
+        current_span_id = f"{current_span_context.span_id:016x}"
+
+        # Sanitize name, if not already a string.
+        try:
+            name = sanitize(name)
+        except Exception as e:
+            _logger.error("Invalid event name %s passed to add_event; event will not be created. Error: %s", name, e)
+            return
+
+        self.nr_trace._add_span_event_event(
+            span_id=current_span_id, trace_id=current_trace_id, name=name, timestamp=timestamp, attributes=attributes
+        )
+
+    def add_link(self, context=None, attributes=None, timestamp=None):
+        """Add a link to another span.
+
+        NOTE: `timestamp` is not an OTel specific value.  This is
+        a Hybrid Agent specific argument that allows us to set the
+        time of the link based on when the NR trace was created
+        (if the link was passed in during the span's creation), or
+        if added later on (the time when the link was added).
+        """
+        if not context or not context.is_valid:
+            _logger.error("Invalid span context passed to add_link; link will not be created.")
+            return
+
+        # If timestamp is None, use the current time
+        if timestamp:
+            timestamp = int(timestamp * 1e3)
+        else:
+            timestamp = int(time.time() * 1e3)
+
+        link_trace_id = f"{context.trace_id:032x}"
+        link_span_id = f"{context.span_id:016x}"
+        current_span_context = self.get_span_context()
+        current_trace_id = f"{current_span_context.trace_id:032x}"
+        current_span_id = f"{current_span_context.span_id:016x}"
+
+        self.nr_trace._add_span_link_event(
+            span_id=current_span_id,
+            trace_id=current_trace_id,
+            linked_span_id=link_span_id,
+            linked_trace_id=link_trace_id,
+            timestamp=timestamp,
+            attributes=attributes,
+        )
 
     def update_name(self, name):
         # NOTE: Sentinel, MessageTrace, DatastoreTrace, and
@@ -309,7 +363,7 @@ class Span(otel_api_trace.Span):
             "library": self.attributes.get("messaging.system"),
             "destination_name": name,   # OTel's format for this is "name operation"
         }
-        
+
         # Keep this to simplify Transaction naming logic later on
         if span_obj_attrs["library"] == "rabbitmq":
             # In RabbitMQ, destination_type is always Exchange and
@@ -318,13 +372,8 @@ class Span(otel_api_trace.Span):
             # consumer tag)
             span_obj_attrs["destination_type"] = "Exchange"
 
-        agent_attrs = {
-            "host": host,
-            "port": port,
-            "server.address": host,
-            "server.port": port,
-        }
-        
+        agent_attrs = {"host": host, "port": port, "server.address": host, "server.port": port}
+
         # Kafka Specific Logic
         if span_obj_attrs["library"] == "kafka":
             span_obj_attrs.update({
@@ -336,7 +385,10 @@ class Span(otel_api_trace.Span):
                 self.nr_transaction.transport_type = "Kafka"
                 self.nr_transaction.destination_type = "Topic"
 
-                if self.nr_transaction.destination_name.startswith("unknown") and span_obj_attrs["destination_name"] != "unknown":
+                if (
+                    self.nr_transaction.destination_name.startswith("unknown")
+                    and span_obj_attrs["destination_name"] != "unknown"
+                ):
                     self.nr_transaction.destination_name = span_obj_attrs["destination_name"]
                 else:
                     self.nr_transaction.destination_name = "Default"
@@ -352,9 +404,7 @@ class Span(otel_api_trace.Span):
         # the transaction destination_name attribute as well:
         if isinstance(self.nr_transaction, MessageTransaction):
             name, group = self.nr_transaction.get_transaction_name(
-                span_obj_attrs["library"],
-                span_obj_attrs["destination_type"],
-                span_obj_attrs["destination_name"],
+                span_obj_attrs["library"], span_obj_attrs["destination_type"], span_obj_attrs["destination_name"]
             )
             self.nr_transaction.set_transaction_name(name, group)
 
@@ -366,7 +416,6 @@ class Span(otel_api_trace.Span):
         for key, value in agent_attrs.items():
             if value:
                 self.nr_trace._add_agent_attribute(key, value)
-
 
     def _database_attribute_mapping(self):
         span_obj_attrs = {
@@ -540,6 +589,7 @@ class Tracer(otel_api_trace.Tracer):
         self.nr_application = application_instance()
         self.attributes = attributes or {}
         self.name = name
+        self.links = links or []
 
         if not self.nr_application.active:
             # Force application registration if not already active
@@ -553,7 +603,7 @@ class Tracer(otel_api_trace.Tracer):
 
         # Retrieve parent span
         parent_span_context = otel_api_trace.get_current_span(context).get_span_context()
-        
+
         # Set default value for whether the span
         # should create an analogous NR trace.
         create_nr_trace = True
@@ -572,7 +622,9 @@ class Tracer(otel_api_trace.Tracer):
                 nr_headers["tracestate"] = parent_span_context.trace_state.to_header()
                 parent_span_span_id = parent_span_context.span_id
                 parent_span_trace_flag = parent_span_context.trace_flags
-                nr_headers["traceparent"] = f"00-{parent_span_trace_id:032x}-{parent_span_span_id:016x}-{'01' if parent_span_trace_flag else '00'}"
+                nr_headers["traceparent"] = (
+                    f"00-{parent_span_trace_id:032x}-{parent_span_span_id:016x}-{'01' if parent_span_trace_flag else '00'}"
+                )
 
         # If remote_parent, transaction must be created, regardless of kind type
         # Make sure we transfer DT headers when we are here, if DT is enabled
@@ -598,10 +650,9 @@ class Tracer(otel_api_trace.Tracer):
             elif kind == otel_api_trace.SpanKind.CONSUMER:
                 transaction = MessageTransaction(
                     library=self.instrumentation_library,
-                    destination_type="Topic",
+                    destination_type="Exchange",  # For Kafka, this will be overridden
                     destination_name=self.name,
                     application=self.nr_application,
-                    transport_type=self.instrumentation_library,
                     headers=nr_headers,
                 )
                 transaction.__enter__()
@@ -650,7 +701,7 @@ class Tracer(otel_api_trace.Tracer):
                 else:
                     return otel_api_trace.INVALID_SPAN
             elif kind == otel_api_trace.SpanKind.CONSUMER:
-                # NOTE for instrumenting a Kafka consumer span: 
+                # NOTE for instrumenting a Kafka consumer span:
                 # If a transaction already exists, do not create a new one
                 # nor should we create a MessageTrace under it.  We do,
                 # however, want to add additional attributes from this span
@@ -665,7 +716,7 @@ class Tracer(otel_api_trace.Tracer):
                 else:
                     transaction = MessageTransaction(
                         library=self.instrumentation_library,
-                        destination_type="Exchange",    # For Kafka, this will be overridden
+                        destination_type="Exchange",  # For Kafka, this will be overridden
                         destination_name=self.name,
                         application=self.nr_application,
                         headers=nr_headers,
@@ -703,6 +754,7 @@ class Tracer(otel_api_trace.Tracer):
             record_exception=self._record_exception,
             set_status_on_exception=self.set_status_on_exception,
             create_nr_trace=create_nr_trace,
+            links=links,
         )
 
         # Remove the tracer._create_consumer_trace flag since
@@ -731,6 +783,7 @@ class Tracer(otel_api_trace.Tracer):
             attributes=attributes,
             record_exception=record_exception,
             set_status_on_exception=set_status_on_exception,
+            links=links,
         )
 
         with otel_api_trace.use_span(

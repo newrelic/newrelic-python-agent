@@ -16,6 +16,7 @@ import pytest
 from opentelemetry.trace import Link, SpanContext, TraceState
 from testing_support.fixtures import dt_enabled
 from testing_support.validators.validate_spanlink_spanevent_events import validate_spanlink_or_spanevent_events
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
@@ -160,5 +161,62 @@ def test_spanlink_and_spanevent_events(tracer):
             "otelspan", links=[Link(linked_span_context, attributes={"key1": "value1", "key2": 42})]
         ) as otel_span:
             otel_span.add_event("otelevent", attributes={"key99": "value99", "universe": 42})
+
+    _test()
+
+
+@dt_enabled
+@validate_spanlink_or_spanevent_events(
+    count=100,
+    exact_intrinsics={"name": "otelevent", "type": "SpanEvent"},
+    expected_intrinsics=["timestamp", "span.id", "trace.id", "name"],
+    exact_users={"key1": "value1", "key2": 42},
+)
+@validate_transaction_metrics(
+    "test_spanevent_spanlinks:test_spanevent_events_over_limit.<locals>._test",
+    rollup_metrics=[
+        ("Supportability/SpanEvent/Events/Dropped", 3),
+    ],
+    background_task=True,
+)
+def test_spanevent_events_over_limit(tracer):
+    @background_task()
+    def _test():
+        with tracer.start_as_current_span("otelspan") as otel_span:
+            for _ in range(103):
+                otel_span.add_event("otelevent", attributes={"key1": "value1", "key2": 42})
+
+    _test()
+
+
+@dt_enabled
+@validate_spanlink_or_spanevent_events(
+    count=100,
+    exact_intrinsics={
+        "type": "SpanLink",
+    },
+    expected_intrinsics=["timestamp", "id", "trace.id", "linkedSpanId", "linkedTraceId"],
+    exact_users={"key1": "value1", "key2": 42},
+)
+@validate_transaction_metrics(
+    "test_spanevent_spanlinks:test_spanlink_events_over_limit.<locals>._test",
+    rollup_metrics=[
+        ("Supportability/SpanEvent/Links/Dropped", 3),
+    ],
+    background_task=True,
+)
+def test_spanlink_events_over_limit(tracer):  
+    @background_task()
+    def _test():
+        with tracer.start_as_current_span("otelspan") as otel_span:
+            for incrementer in range(103):
+                linked_span_context = SpanContext(
+                    trace_id=0x1234567890ABCDEF1234567890ABCDEF + incrementer,
+                    span_id=0x1234567890ABCDEF + incrementer,
+                    is_remote=True,
+                    trace_flags=0x01,
+                    trace_state=TraceState(),
+                )  
+                otel_span.add_link(linked_span_context, attributes={"key1": "value1", "key2": 42})
 
     _test()

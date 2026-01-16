@@ -226,6 +226,7 @@ class TimeTrace:
             return
 
         if len(self.span_link_events) >= 100:
+            self.transaction._record_supportability("Supportability/SpanEvent/Links/Dropped")
             _logger.debug(
                 "Maximum number of SpanLink events already added. Dropping SpanLink event: linkedSpanId=%r, linkedTraceId=%r",
                 linked_span_id,
@@ -258,6 +259,7 @@ class TimeTrace:
             return
 
         if len(self.span_event_events) >= 100:
+            self.transaction._record_supportability("Supportability/SpanEvent/Events/Dropped")
             _logger.debug(
                 "Maximum number of SpanEvent events already added. Dropping SpanEvent event: name=%r, spanId=%r, traceId=%r",
                 name,

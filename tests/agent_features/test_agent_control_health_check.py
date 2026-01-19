@@ -29,6 +29,10 @@ from newrelic.core.application import Application
 from newrelic.core.config import finalize_application_settings, global_settings
 from newrelic.network.exceptions import DiscardDataForRequest
 
+def mock_get_service_linking_metadata():
+    """Mock function that returns static entity GUID."""
+    metadata["entity.guid"] = "ABC123"
+    return metadata
 
 def get_health_file_contents(tmp_path):
     # Grab the file we just wrote to and read its contents

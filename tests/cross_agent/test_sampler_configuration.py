@@ -82,7 +82,7 @@ def parse_to_config_paths(settings, setting, config):
                 new_setting = ".".join([setting, f"_{key}"])
                 v = list(value.keys())[0] if isinstance(value, dict) else value
                 settings[new_setting] = v
-            new_setting = ".".join([setting, key])
+            new_setting = f"{setting}.{key}"
             parse_to_config_paths(settings, new_setting, value)
     else:
         new_setting = replace_section(setting)

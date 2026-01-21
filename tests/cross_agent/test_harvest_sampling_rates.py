@@ -60,7 +60,7 @@ def parse_to_config_paths(settings, setting, config):
             # need to set _root = "adaptive". This usually happens in the config or
             # env var parsing so this is special handling only needed for tests.
             if key in ("root", "remote_parent_sampled", "remote_parent_not_sampled"):
-                new_setting = ".".join([setting, f"_{key}"])
+                new_setting = f"{setting}._{key}"
                 v = list(value.keys())[0] if isinstance(value, dict) else value
                 settings[new_setting] = v
             new_setting = ".".join([setting, key])
@@ -159,10 +159,10 @@ def test_harvest_sampling_rates(
 
             txn.accept_distributed_trace_headers(headers, "HTTP")
 
-        for n in range(root):
+        for _ in range(root):
             _transaction({})
 
-        for n in range(parent_sampled_no_matching_acct_id):
+        for _ in range(parent_sampled_no_matching_acct_id):
             trace_id = f"{random.getrandbits(128):032x}"
             _transaction(
                 {
@@ -171,7 +171,7 @@ def test_harvest_sampling_rates(
                 }
             )
 
-        for n in range(parent_not_sampled_no_matching_acct_id):
+        for _ in range(parent_not_sampled_no_matching_acct_id):
             trace_id = f"{random.getrandbits(128):032x}"
             _transaction(
                 {
@@ -180,7 +180,7 @@ def test_harvest_sampling_rates(
                 }
             )
 
-        for n in range(parent_sampled_matching_acct_id_sampled_true):
+        for _ in range(parent_sampled_matching_acct_id_sampled_true):
             trace_id = f"{random.getrandbits(128):032x}"
             _transaction(
                 {
@@ -189,7 +189,7 @@ def test_harvest_sampling_rates(
                 }
             )
 
-        for n in range(parent_not_sampled_matching_acct_id_sampled_true):
+        for _ in range(parent_not_sampled_matching_acct_id_sampled_true):
             trace_id = f"{random.getrandbits(128):032x}"
             _transaction(
                 {

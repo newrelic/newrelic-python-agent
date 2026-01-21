@@ -120,8 +120,8 @@ def load_tests():
           "span_id": "id",
           "transaction_id": "tx",
         }
-        expected_traceparent_exact = dict({traceparent_key_map[key.split(".")[1]]: value for key, value in payload.get("exact", {}).items() if "traceparent" in key})
-        expected_tracestate_exact = dict({tracestate_key_map[key.split(".")[1]]: value for key, value in payload.get("exact", {}).items() if "tracestate" in key})
+        expected_traceparent_exact = {traceparent_key_map[key.split(".")[1]]: value for key, value in payload.get("exact", {}).items() if "traceparent" in key}
+        expected_tracestate_exact = {tracestate_key_map[key.split(".")[1]]: value for key, value in payload.get("exact", {}).items() if "tracestate" in key}
         expected_traceparent = [traceparent_key_map[key.split(".")[1]] for key in payload.get("expected", []) if "traceparent" in key]
         expected_tracestate = [tracestate_key_map[key.split(".")[1]] for key in payload.get("expected", []) if "tracestate" in key]
         outbound_payloads = (

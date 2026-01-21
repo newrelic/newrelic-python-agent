@@ -77,9 +77,9 @@ def add_exclamation(message: str) -> str:
 
 
 @reset_core_stats_engine()
-def test_agent(exercise_agent, create_agent_runnable, set_trace_info, method_name, agent_runnable_type):
+def test_agent(exercise_agent, create_agent_runnable, set_trace_info, method_name):
     @validate_custom_events(events_with_context_attrs(agent_recorded_event))
-    @validate_custom_event_count(count=11 if agent_runnable_type != "RunnableSequence" else 14)
+    @validate_custom_event_count(count=exercise_agent._expected_event_count)
     @validate_transaction_metrics(
         "test_agent",
         scoped_metrics=[(f"Llm/agent/LangChain/{method_name}/my_agent", 1)],
@@ -102,9 +102,9 @@ def test_agent(exercise_agent, create_agent_runnable, set_trace_info, method_nam
 
 @reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
-def test_agent_no_content(exercise_agent, create_agent_runnable, set_trace_info, method_name, agent_runnable_type):
+def test_agent_no_content(exercise_agent, create_agent_runnable, set_trace_info, method_name):
     @validate_custom_events(agent_recorded_event)
-    @validate_custom_event_count(count=11 if agent_runnable_type != "RunnableSequence" else 14)
+    @validate_custom_event_count(count=exercise_agent._expected_event_count)
     @validate_transaction_metrics(
         "test_agent_no_content",
         scoped_metrics=[(f"Llm/agent/LangChain/{method_name}/my_agent", 1)],

@@ -96,11 +96,9 @@ tool_recorded_event_forced_internal_error = [
 
 
 @reset_core_stats_engine()
-def test_tool(
-    exercise_agent, set_trace_info, create_agent_runnable, add_exclamation, tool_method_name, agent_runnable_type
-):
+def test_tool(exercise_agent, set_trace_info, create_agent_runnable, add_exclamation, tool_method_name):
     @validate_custom_events(events_with_context_attrs(tool_recorded_event))
-    @validate_custom_event_count(count=11 if agent_runnable_type != "RunnableSequence" else 14)
+    @validate_custom_event_count(count=exercise_agent._expected_event_count)
     @validate_transaction_metrics(
         "test_tool",
         scoped_metrics=[(f"Llm/tool/LangChain/{tool_method_name}/add_exclamation", 1)],
@@ -123,11 +121,9 @@ def test_tool(
 
 @reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
-def test_tool_no_content(
-    exercise_agent, set_trace_info, create_agent_runnable, add_exclamation, tool_method_name, agent_runnable_type
-):
+def test_tool_no_content(exercise_agent, set_trace_info, create_agent_runnable, add_exclamation, tool_method_name):
     @validate_custom_events(tool_events_sans_content(tool_recorded_event))
-    @validate_custom_event_count(count=11 if agent_runnable_type != "RunnableSequence" else 14)
+    @validate_custom_event_count(count=exercise_agent._expected_event_count)
     @validate_transaction_metrics(
         "test_tool_no_content",
         scoped_metrics=[(f"Llm/tool/LangChain/{tool_method_name}/add_exclamation", 1)],

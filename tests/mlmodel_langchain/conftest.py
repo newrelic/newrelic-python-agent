@@ -231,7 +231,7 @@ def validate_agent_output(agent_runnable_type):
 
 
 @pytest.fixture(scope="session", params=["invoke", "ainvoke", "stream", "astream"])
-def exercise_agent(request, loop, validate_agent_output):
+def exercise_agent(request, loop, validate_agent_output, agent_runnable_type):
     def _exercise_agent(agent, prompt):
         if request.param == "invoke":
             response = agent.invoke(prompt)
@@ -257,6 +257,15 @@ def exercise_agent(request, loop, validate_agent_output):
             raise NotImplementedError
 
     _exercise_agent._called_method = request.param  # Used for metric names
+
+    # Expected number of events for a full run of the agent
+    if agent_runnable_type != "RunnableSequence":
+        _exercise_agent._expected_event_count = 11
+    elif request.param in {"invoke", "ainvoke"}:
+        _exercise_agent._expected_event_count = 14
+    else:
+        _exercise_agent._expected_event_count = 13
+
     return _exercise_agent
 
 

@@ -24,8 +24,9 @@ def wrap_ToolNode__execute_tool_sync(wrapped, instance, args, kwargs):
     try:
         bound_args = bind_args(wrapped, args, kwargs)
         agent_name = bound_args["request"].state["messages"][-1].name
-        metadata = bound_args["config"]["metadata"]
-        metadata["_nr_agent_name"] = agent_name
+        if agent_name:
+            metadata = bound_args["config"]["metadata"]
+            metadata["_nr_agent_name"] = agent_name
     except Exception:
         pass
 
@@ -39,8 +40,9 @@ async def wrap_ToolNode__execute_tool_async(wrapped, instance, args, kwargs):
     try:
         bound_args = bind_args(wrapped, args, kwargs)
         agent_name = bound_args["request"].state["messages"][-1].name
-        metadata = bound_args["config"]["metadata"]
-        metadata["_nr_agent_name"] = agent_name
+        if agent_name:
+            metadata = bound_args["config"]["metadata"]
+            metadata["_nr_agent_name"] = agent_name
     except Exception:
         pass
 

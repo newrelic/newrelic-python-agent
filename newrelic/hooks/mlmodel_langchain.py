@@ -606,7 +606,8 @@ def _capture_tool_info(instance, wrapped, args, kwargs):
 
     tool_id = str(uuid.uuid4())
     metadata = run_args.get("metadata") or {}
-    agent_name = metadata.pop("_nr_agent_name", None)
+    # lc_agent_name was added to metadata in LangChain 1.2.4
+    agent_name = metadata.pop("_nr_agent_name", None) or metadata.get("lc_agent_name", None)
     tool_input = run_args.get("tool_input")
     tool_name = getattr(instance, "name", None)
     # Checking multiple places for an acceptable tool run ID, fallback to creating our own.

@@ -155,7 +155,7 @@ class AgentObjectProxy(ObjectProxy):
     def invoke(self, *args, **kwargs):
         transaction = current_transaction()
 
-        agent_name = getattr(transaction, "_nr_agent_name", "agent")
+        agent_name = getattr(self.__wrapped__, "name", None)
         agent_id = str(uuid.uuid4())
         agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
         function_trace_name = f"invoke/{agent_name}"
@@ -182,7 +182,7 @@ class AgentObjectProxy(ObjectProxy):
     async def ainvoke(self, *args, **kwargs):
         transaction = current_transaction()
 
-        agent_name = getattr(transaction, "_nr_agent_name", "agent")
+        agent_name = getattr(self.__wrapped__, "name", None)
         agent_id = str(uuid.uuid4())
         agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
         function_trace_name = f"ainvoke/{agent_name}"
@@ -209,7 +209,7 @@ class AgentObjectProxy(ObjectProxy):
     def stream(self, *args, **kwargs):
         transaction = current_transaction()
 
-        agent_name = getattr(transaction, "_nr_agent_name", "agent")
+        agent_name = getattr(self.__wrapped__, "name", None)
         agent_id = str(uuid.uuid4())
         agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
         function_trace_name = f"stream/{agent_name}"
@@ -232,7 +232,7 @@ class AgentObjectProxy(ObjectProxy):
     def astream(self, *args, **kwargs):
         transaction = current_transaction()
 
-        agent_name = getattr(transaction, "_nr_agent_name", "agent")
+        agent_name = getattr(self.__wrapped__, "name", None)
         agent_id = str(uuid.uuid4())
         agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
         function_trace_name = f"astream/{agent_name}"
@@ -255,7 +255,7 @@ class AgentObjectProxy(ObjectProxy):
     def transform(self, *args, **kwargs):
         transaction = current_transaction()
 
-        agent_name = getattr(transaction, "_nr_agent_name", "agent")
+        agent_name = getattr(self.__wrapped__, "name", None)
         agent_id = str(uuid.uuid4())
         agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
         function_trace_name = f"stream/{agent_name}"
@@ -278,7 +278,7 @@ class AgentObjectProxy(ObjectProxy):
     def atransform(self, *args, **kwargs):
         transaction = current_transaction()
 
-        agent_name = getattr(transaction, "_nr_agent_name", "agent")
+        agent_name = getattr(self.__wrapped__, "name", None)
         agent_id = str(uuid.uuid4())
         agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
         function_trace_name = f"astream/{agent_name}"
@@ -991,10 +991,6 @@ def wrap_create_agent(wrapped, instance, args, kwargs):
         # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("LangChain", LANGCHAIN_VERSION)
     transaction._add_agent_attribute("llm", True)
-
-    agent_name = kwargs.get("name", None)
-
-    transaction._nr_agent_name = agent_name
 
     return_val = wrapped(*args, **kwargs)
 

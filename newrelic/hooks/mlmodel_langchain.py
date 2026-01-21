@@ -702,7 +702,12 @@ async def wrap_chain_async_run(wrapped, instance, args, kwargs):
         ft.notice_error(attributes={"completion_id": completion_id})
         ft.__exit__(*sys.exc_info())
         _create_error_chain_run_events(
-            transaction, instance, run_args, completion_id, linking_metadata, ft.duration * 1000
+            transaction=transaction,
+            instance=instance,
+            run_args=run_args,
+            completion_id=completion_id,
+            linking_metadata=linking_metadata,
+            duration=ft.duration * 1000,
         )
         raise
     ft.__exit__(None, None, None)
@@ -711,7 +716,13 @@ async def wrap_chain_async_run(wrapped, instance, args, kwargs):
         return response
 
     _create_successful_chain_run_events(
-        transaction, instance, run_args, completion_id, response, linking_metadata, ft.duration * 1000
+        transaction=transaction,
+        instance=instance,
+        run_args=run_args,
+        completion_id=completion_id,
+        response=response,
+        linking_metadata=linking_metadata,
+        duration=ft.duration * 1000,
     )
     return response
 
@@ -747,7 +758,12 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
         ft.notice_error(attributes={"completion_id": completion_id})
         ft.__exit__(*sys.exc_info())
         _create_error_chain_run_events(
-            transaction, instance, run_args, completion_id, linking_metadata, ft.duration * 1000
+            transaction=transaction,
+            instance=instance,
+            run_args=run_args,
+            completion_id=completion_id,
+            linking_metadata=linking_metadata,
+            duration=ft.duration * 1000,
         )
         raise
     ft.__exit__(None, None, None)
@@ -756,7 +772,13 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
         return response
 
     _create_successful_chain_run_events(
-        transaction, instance, run_args, completion_id, response, linking_metadata, ft.duration * 1000
+        transaction=transaction,
+        instance=instance,
+        run_args=run_args,
+        completion_id=completion_id,
+        response=response,
+        linking_metadata=linking_metadata,
+        duration=ft.duration * 1000,
     )
     return response
 

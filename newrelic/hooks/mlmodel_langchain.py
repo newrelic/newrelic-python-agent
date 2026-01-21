@@ -783,6 +783,146 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
     return response
 
 
+def wrap_RunnableSequence_stream(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return wrapped(*args, **kwargs)
+
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    if not settings.ai_monitoring.enabled:
+        return wrapped(*args, **kwargs)
+
+    # Framework metric also used for entity tagging in the UI
+    transaction.add_ml_model_info("LangChain", LANGCHAIN_VERSION)
+    transaction._add_agent_attribute("llm", True)
+
+    run_args = bind_args(wrapped, args, kwargs)
+    run_args["timestamp"] = int(1000.0 * time.time())
+    completion_id = str(uuid.uuid4())
+    add_nr_completion_id(run_args, completion_id)
+    # Check to see if launched from agent or directly from chain.
+    # The trace group will reflect from where it has started.
+    # The AgentExecutor class has an attribute "agent" that does
+    # not exist within the Chain class
+    group_name = "Llm/agent/LangChain" if hasattr(instance, "agent") else "Llm/chain/LangChain"
+    ft = FunctionTrace(name=wrapped.__name__, group=group_name)
+    ft.__enter__()
+    linking_metadata = get_trace_linking_metadata()
+    try:
+        return_val = wrapped(input=run_args["input"], config=run_args["config"], **run_args.get("kwargs", {}))
+        return_val = GeneratorProxy(
+            return_val,
+            on_stop_iteration=_on_chain_stop_iteration(
+                ft=ft,
+                instance=instance,
+                run_args=run_args,
+                completion_id=completion_id,
+                response=[],
+                linking_metadata=linking_metadata,
+            ),
+            on_error=_on_chain_error(
+                ft=ft,
+                instance=instance,
+                run_args=run_args,
+                completion_id=completion_id,
+                linking_metadata=linking_metadata,
+            ),
+        )
+    except Exception:
+        _on_chain_error(
+            ft=ft, instance=instance, run_args=run_args, completion_id=completion_id, linking_metadata=linking_metadata
+        )(transaction)
+        raise
+
+    return return_val
+
+
+def wrap_RunnableSequence_astream(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return wrapped(*args, **kwargs)
+
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    if not settings.ai_monitoring.enabled:
+        return wrapped(*args, **kwargs)
+
+    # Framework metric also used for entity tagging in the UI
+    transaction.add_ml_model_info("LangChain", LANGCHAIN_VERSION)
+    transaction._add_agent_attribute("llm", True)
+
+    run_args = bind_args(wrapped, args, kwargs)
+    run_args["timestamp"] = int(1000.0 * time.time())
+    completion_id = str(uuid.uuid4())
+    add_nr_completion_id(run_args, completion_id)
+    # Check to see if launched from agent or directly from chain.
+    # The trace group will reflect from where it has started.
+    # The AgentExecutor class has an attribute "agent" that does
+    # not exist within the Chain class
+    group_name = "Llm/agent/LangChain" if hasattr(instance, "agent") else "Llm/chain/LangChain"
+    ft = FunctionTrace(name=wrapped.__name__, group=group_name)
+    ft.__enter__()
+    linking_metadata = get_trace_linking_metadata()
+    try:
+        return_val = wrapped(input=run_args["input"], config=run_args["config"], **run_args.get("kwargs", {}))
+        return_val = AsyncGeneratorProxy(
+            return_val,
+            on_stop_iteration=_on_chain_stop_iteration(
+                ft=ft,
+                instance=instance,
+                run_args=run_args,
+                completion_id=completion_id,
+                response=[],
+                linking_metadata=linking_metadata,
+            ),
+            on_error=_on_chain_error(
+                ft=ft,
+                instance=instance,
+                run_args=run_args,
+                completion_id=completion_id,
+                linking_metadata=linking_metadata,
+            ),
+        )
+    except Exception:
+        _on_chain_error(
+            ft=ft, instance=instance, run_args=run_args, completion_id=completion_id, linking_metadata=linking_metadata
+        )(transaction)
+        raise
+
+    return return_val
+
+
+def _on_chain_stop_iteration(ft, instance, run_args, completion_id, response, linking_metadata):
+    def _on_stop_iteration(proxy, transaction):
+        ft.__exit__(None, None, None)
+        _create_successful_chain_run_events(
+            transaction=transaction,
+            instance=instance,
+            run_args=run_args,
+            completion_id=completion_id,
+            response=response,
+            linking_metadata=linking_metadata,
+            duration=ft.duration * 1000,
+        )
+
+    return _on_stop_iteration
+
+
+def _on_chain_error(ft, instance, run_args, completion_id, linking_metadata):
+    def _on_error(proxy, transaction):
+        ft.notice_error(attributes={"completion_id": completion_id})
+        ft.__exit__(*sys.exc_info())
+        _create_error_chain_run_events(
+            transaction=transaction,
+            instance=instance,
+            run_args=run_args,
+            completion_id=completion_id,
+            linking_metadata=linking_metadata,
+            duration=ft.duration * 1000,
+        )
+
+    return _on_error
+
+
 def add_nr_completion_id(run_args, completion_id):
     # invoke has an argument named "config" that contains metadata and tags.
     # Add the nr_completion_id into the metadata to be used as the function call
@@ -1032,6 +1172,10 @@ def instrument_langchain_runnables_chains_base(module):
         wrap_function_wrapper(module, "RunnableSequence.invoke", wrap_chain_sync_run)
     if hasattr(module.RunnableSequence, "ainvoke"):
         wrap_function_wrapper(module, "RunnableSequence.ainvoke", wrap_chain_async_run)
+    if hasattr(module.RunnableSequence, "stream"):
+        wrap_function_wrapper(module, "RunnableSequence.stream", wrap_RunnableSequence_stream)
+    if hasattr(module.RunnableSequence, "astream"):
+        wrap_function_wrapper(module, "RunnableSequence.astream", wrap_RunnableSequence_astream)
 
 
 def instrument_langchain_chains_base(module):

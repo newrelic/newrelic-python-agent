@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import itertools
+
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import ObjectProxy
 
@@ -56,6 +58,11 @@ class GeneratorProxy(ObjectProxy):
     def close(self):
         return self.__wrapped__.close()
 
+    def __copy__(self):
+        # Required to properly interface with itertool.tee, which can be called by LangChain on generators
+        self.__wrapped__, copy = itertools.tee(self.__wrapped__, 2)
+        return GeneratorProxy(copy, self._nr_on_stop_iteration, self._nr_on_error)
+
 
 class AsyncGeneratorProxy(ObjectProxy):
     def __init__(self, wrapped, on_stop_iteration, on_error):
@@ -85,3 +92,8 @@ class AsyncGeneratorProxy(ObjectProxy):
 
     async def aclose(self):
         return await self.__wrapped__.aclose()
+
+    def __copy__(self):
+        # Required to properly interface with itertool.tee, which can be called by LangChain on generators
+        self.__wrapped__, copy = itertools.tee(self.__wrapped__, n=2)
+        return AsyncGeneratorProxy(copy, self._nr_on_stop_iteration, self._nr_on_error)

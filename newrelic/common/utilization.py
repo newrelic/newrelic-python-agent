@@ -27,8 +27,6 @@ from newrelic.packages import urllib3
 
 _logger = logging.getLogger(__name__)
 VALID_CHARS_RE = re.compile(r"[0-9a-zA-Z_ ./-]")
-AZURE_RESOURCE_GROUP_NAME_RE = re.compile(r"\+([a-zA-Z0-9\-]+)-[a-zA-Z0-9]+(?:-Linux)")
-AZURE_RESOURCE_GROUP_NAME_PARTIAL_RE = re.compile(r"\+([a-zA-Z0-9\-]+)(?:-Linux)?-[a-zA-Z0-9]+")
 
 
 class UtilizationHttpClient(InsecureHttpClient):
@@ -233,18 +231,25 @@ class AzureFunctionUtilization(CommonUtilization):
     HEADERS = {"Metadata": "true"}  # noqa: RUF012
     VENDOR_NAME = "azurefunction"
 
-    @staticmethod
-    def fetch():
+    @classmethod
+    def fetch(cls):
         cloud_region = os.environ.get("REGION_NAME")
         website_owner_name = os.environ.get("WEBSITE_OWNER_NAME")
         azure_function_app_name = os.environ.get("WEBSITE_SITE_NAME")
+        resource_group_name = os.environ.get("WEBSITE_RESOURCE_GROUP")
 
-        if all((cloud_region, website_owner_name, azure_function_app_name)):
-            if website_owner_name.endswith("-Linux"):
-                resource_group_name = AZURE_RESOURCE_GROUP_NAME_RE.search(website_owner_name).group(1)
-            else:
-                resource_group_name = AZURE_RESOURCE_GROUP_NAME_PARTIAL_RE.search(website_owner_name).group(1)
-            subscription_id = re.search(r"(?:(?!\+).)*", website_owner_name).group(0)
+        if all((cloud_region, website_owner_name, azure_function_app_name, resource_group_name)):
+            subscription_id = ""
+            if "+" in website_owner_name:
+                subscription_id = website_owner_name.split("+")[0]
+            # Catch missing subscription_id or missing +
+            if not subscription_id:
+                _logger.debug(
+                    "Unable to determine Azure Functions subscription id from WEBSITE_OWNER_NAME. %r",
+                    website_owner_name,
+                )
+                return None
+
             faas_app_name = f"/subscriptions/{subscription_id}/resourceGroups/{resource_group_name}/providers/Microsoft.Web/sites/{azure_function_app_name}"
             # Only send if all values are present
             return (faas_app_name, cloud_region)

@@ -233,21 +233,29 @@ class AzureFunctionUtilization(CommonUtilization):
     HEADERS = {"Metadata": "true"}  # noqa: RUF012
     VENDOR_NAME = "azurefunction"
 
-    @staticmethod
-    def fetch():
+    @classmethod
+    def fetch(cls):
         cloud_region = os.environ.get("REGION_NAME")
         website_owner_name = os.environ.get("WEBSITE_OWNER_NAME")
         azure_function_app_name = os.environ.get("WEBSITE_SITE_NAME")
 
         if all((cloud_region, website_owner_name, azure_function_app_name)):
-            if website_owner_name.endswith("-Linux"):
-                resource_group_name = AZURE_RESOURCE_GROUP_NAME_RE.search(website_owner_name).group(1)
-            else:
-                resource_group_name = AZURE_RESOURCE_GROUP_NAME_PARTIAL_RE.search(website_owner_name).group(1)
-            subscription_id = re.search(r"(?:(?!\+).)*", website_owner_name).group(0)
-            faas_app_name = f"/subscriptions/{subscription_id}/resourceGroups/{resource_group_name}/providers/Microsoft.Web/sites/{azure_function_app_name}"
-            # Only send if all values are present
-            return (faas_app_name, cloud_region)
+            try:
+                if website_owner_name.endswith("-Linux"):
+                    resource_group_name = AZURE_RESOURCE_GROUP_NAME_RE.search(website_owner_name).group(1)
+                else:
+                    resource_group_name = AZURE_RESOURCE_GROUP_NAME_PARTIAL_RE.search(website_owner_name).group(1)
+                subscription_id = re.search(r"(?:(?!\+).)*", website_owner_name).group(0)
+                faas_app_name = f"/subscriptions/{subscription_id}/resourceGroups/{resource_group_name}/providers/Microsoft.Web/sites/{azure_function_app_name}"
+                # Only send if all values are present
+                return (faas_app_name, cloud_region)
+            except Exception:
+                _logger.debug(
+                    "Unable to determine Azure Functions subscription id from WEBSITE_OWNER_NAME. %r",
+                    website_owner_name,
+                )
+
+        return None
 
     @classmethod
     def get_values(cls, response):

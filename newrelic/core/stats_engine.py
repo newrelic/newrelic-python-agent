@@ -1188,14 +1188,13 @@ class StatsEngine:
                 for event in transaction.span_protos(settings):
                     self._span_stream.put(event)
             elif transaction.sampled:
-                if not settings.opentelemetry.enabled:
-                    for event in transaction.span_events(self.__settings):
+                for event in transaction.span_events(self.__settings):
+                    if not settings.opentelemetry.enabled or isinstance(event[-1], dict):
                         self._span_events.add(event, priority=transaction.priority)
-                else:
-                    # When opentelemetry is enabled, the event may contain
-                    # SpanLinks and/or SpanEvents. One or both may also be
-                    # empty lists. A filter is used to remove any empty lists.
-                    for event in transaction.span_events(self.__settings):
+                    else:
+                        # When opentelemetry is enabled, the event may contain
+                        # SpanLinks and/or SpanEvents. One or both may also be
+                        # empty lists. A filter is used to remove any empty lists.
                         new_event = list(filter(bool, event))
                         self._span_events.add(new_event, priority=transaction.priority)
                 if transaction.partial_granularity_sampled:

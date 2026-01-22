@@ -167,14 +167,25 @@ def wrap_get_current_span(wrapped, instance, args, kwargs):
     # with the ability to add custom attributes.
 
     from opentelemetry import trace as otel_api_trace
+    from newrelic.api.opentelemetry import Span as HybridSpan
 
-    class LazySpan(otel_api_trace.NonRecordingSpan):
+    class LazySpan(otel_api_trace.NonRecordingSpan, HybridSpan):
+        def __init__(self, context):
+            super().__init__(context)
+            self.nr_trace = trace
+        
         def set_attribute(self, key, value):
             add_custom_span_attribute(key, value)
 
         def set_attributes(self, attributes):
             for key, value in attributes.items():
                 add_custom_span_attribute(key, value)
+
+        def add_event(self, name, attributes=None, timestamp=None):
+            return HybridSpan.add_event(self, name, attributes, timestamp)
+        
+        def add_link(self, span_context, attributes=None):
+            return HybridSpan.add_link(self, span_context, attributes)
 
     span_context = otel_api_trace.SpanContext(
         trace_id=int(transaction.trace_id, 16),

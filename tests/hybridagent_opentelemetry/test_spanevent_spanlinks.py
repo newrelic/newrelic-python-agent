@@ -19,8 +19,8 @@ from testing_support.validators.validate_spanlink_spanevent_events import valida
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
-from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.database_trace import DatabaseTrace
+from newrelic.api.datastore_trace import DatastoreTrace
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.message_trace import MessageTrace
 
@@ -214,19 +214,23 @@ def test_spanlink_events_over_limit(tracer):
                     is_remote=True,
                     trace_flags=0x01,
                     trace_state=trace.TraceState(),
-                )  
+                )
                 otel_span.add_link(linked_span_context, attributes={"key1": "value1", "key2": 42})
 
     _test()
 
 
-@pytest.mark.parametrize("NR_trace_class,kwargs", 
+@pytest.mark.parametrize(
+    "NR_trace_class,kwargs",
     [
         (DatabaseTrace, {"sql": "SELECT * FROM my_table"}),
         (DatastoreTrace, {"product": "postgres", "target": "my_table", "operation": "SELECT"}),
         (ExternalTrace, {"library": "requests", "url": "http://example.com", "method": "GET"}),
-        (MessageTrace, {"library": "Kafka", "operation": "Produce", "destination_type": "Topic", "destination_name": "my_queue"}),
-    ]
+        (
+            MessageTrace,
+            {"library": "Kafka", "operation": "Produce", "destination_type": "Topic", "destination_name": "my_queue"},
+        ),
+    ],
 )
 @dt_enabled
 @validate_spanlink_or_spanevent_events(
@@ -257,7 +261,7 @@ def test_spanevent_and_spanlinks_inside_other_trace_types(tracer, NR_trace_class
         with NR_trace_class(**kwargs) as nr_trace:
             otel_span = trace.get_current_span()
             assert int(nr_trace.guid, 16) == otel_span.get_span_context().span_id
-            
+
             otel_span.add_event("otelevent", attributes={"key1": "value1", "key2": 42})
             otel_span.add_link(linked_span_context, attributes={"key1": "value1", "key2": 42})
 

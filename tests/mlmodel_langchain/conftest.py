@@ -261,10 +261,13 @@ def exercise_agent(request, loop, validate_agent_output, agent_runnable_type):
     # Expected number of events for a full run of the agent
     if agent_runnable_type != "RunnableSequence":
         _exercise_agent._expected_event_count = 11
+        _exercise_agent._expected_event_count_error = 5
     elif request.param in {"invoke", "ainvoke"}:
         _exercise_agent._expected_event_count = 14
+        _exercise_agent._expected_event_count_error = 7
     else:
         _exercise_agent._expected_event_count = 13
+        _exercise_agent._expected_event_count_error = 7
 
     return _exercise_agent
 

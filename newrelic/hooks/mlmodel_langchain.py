@@ -1145,7 +1145,8 @@ def wrap_StructuredTool_invoke(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     metadata = bind_args(wrapped, args, kwargs).get("config", {}).get("metadata", {})
-    trace = metadata.get("_nr_trace")
+    # Delete the reference after grabbing it to avoid it ending up in LangChain attributes
+    trace = metadata.pop("_nr_trace", None)
     if not trace:
         return wrapped(*args, **kwargs)
 
@@ -1156,6 +1157,7 @@ def wrap_StructuredTool_invoke(wrapped, instance, args, kwargs):
 async def wrap_StructuredTool_ainvoke(wrapped, instance, args, kwargs):
     """Save a copy of the current trace if we're about to run StructuredTool.invoke inside a ThreadPoolExecutor."""
     trace = current_trace()
+    # We only need to propagate for synchronous calls with an active trace
     if not trace or instance.coroutine:
         return await wrapped(*args, **kwargs)
 

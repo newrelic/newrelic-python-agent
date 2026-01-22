@@ -143,15 +143,13 @@ def test_tool_no_content(exercise_agent, set_trace_info, create_agent_runnable, 
 
 
 @reset_core_stats_engine()
-def test_tool_execution_error(
-    exercise_agent, set_trace_info, create_agent_runnable, add_exclamation, tool_method_name, agent_runnable_type
-):
+def test_tool_execution_error(exercise_agent, set_trace_info, create_agent_runnable, add_exclamation, tool_method_name):
     @validate_transaction_error_event_count(1)
     @validate_error_trace_attributes(
         callable_name(RuntimeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}}
     )
     @validate_custom_events(tool_recorded_event_execution_error)
-    @validate_custom_event_count(count=5 if agent_runnable_type != "RunnableSequence" else 7)
+    @validate_custom_event_count(exercise_agent._expected_event_count_error)
     @validate_transaction_metrics(
         "test_tool_execution_error",
         scoped_metrics=[(f"Llm/tool/LangChain/{tool_method_name}/add_exclamation", 1)],
@@ -173,7 +171,7 @@ def test_tool_execution_error(
 
 @reset_core_stats_engine()
 def test_tool_pre_execution_exception(
-    exercise_agent, set_trace_info, create_agent_runnable, add_exclamation, tool_method_name, agent_runnable_type
+    exercise_agent, set_trace_info, create_agent_runnable, add_exclamation, tool_method_name
 ):
     # Add a wrapper to intentionally force an error in the setup logic of BaseTool
     @transient_function_wrapper("langchain_core.tools.base", "BaseTool._parse_input")
@@ -184,7 +182,7 @@ def test_tool_pre_execution_exception(
     @validate_transaction_error_event_count(1)
     @validate_error_trace_attributes(callable_name(ValueError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
     @validate_custom_events(tool_recorded_event_forced_internal_error)
-    @validate_custom_event_count(count=5 if agent_runnable_type != "RunnableSequence" else 7)
+    @validate_custom_event_count(exercise_agent._expected_event_count_error)
     @validate_transaction_metrics(
         "test_tool_pre_execution_exception",
         scoped_metrics=[(f"Llm/tool/LangChain/{tool_method_name}/add_exclamation", 1)],

@@ -35,6 +35,7 @@ RECORD_EVENTS_FAILURE_LOG_MESSAGE = "Exception occurred in Strands instrumentati
 TOOL_OUTPUT_FAILURE_LOG_MESSAGE = "Exception occurred in Strands instrumentation: Failed to record output of tool call. Please report this issue to New Relic Support."
 AGENT_EVENT_FAILURE_LOG_MESSAGE = "Exception occurred in Strands instrumentation: Failed to record agent data. Please report this issue to New Relic Support."
 TOOL_EXTRACTOR_FAILURE_LOG_MESSAGE = "Exception occurred in Strands instrumentation: Failed to extract tool information. If the issue persists, report this issue to New Relic support.\n"
+DECORATOR_IMPORT_FAILURE_LOG_MESSAGE = "Exception occurred in Strands instrumentation: Failed to import DecoratedFunctionTool from strands.tools.decorator. Please report this issue to New Relic Support."
 
 
 def wrap_agent__call__(wrapped, instance, args, kwargs):
@@ -415,11 +416,25 @@ class AsyncGeneratorProxy(ObjectProxy):
 
 
 def wrap_ToolRegister_register_tool(wrapped, instance, args, kwargs):
-    bound_args = bind_args(wrapped, args, kwargs)
+    try:
+        from strands.tools.decorator import DecoratedFunctionTool
+    except ImportError:
+        _logger.exception(DECORATOR_IMPORT_FAILURE_LOG_MESSAGE)
+        # If we can't import this to check for double wrapping, return early
+        return wrapped(*args, **kwargs)
+
+    try:
+        bound_args = bind_args(wrapped, args, kwargs)
+    except Exception:
+        return wrapped(*args, **kwargs)
+
     tool = bound_args.get("tool")
 
-    if hasattr(tool, "_tool_func"):
-        tool._tool_func = ErrorTraceWrapper(tool._tool_func)
+    # Ensure we don't double capture exceptions by not touching DecoratedFunctionTool instances here.
+    # Those should be captured with specific instrumentation that properly handles the thread boundaries.
+    if hasattr(tool, "stream") and not isinstance(tool, DecoratedFunctionTool):
+        tool.stream = ErrorTraceWrapper(tool.stream)
+
     return wrapped(*args, **kwargs)
 
 
@@ -464,6 +479,22 @@ def wrap_bedrock_model__stream(wrapped, instance, args, kwargs):
     return wrapped(*args, **kwargs)
 
 
+def wrap_decorated_function_tool__wrap_tool_result(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if transaction:
+        exc = sys.exc_info()
+        try:
+            if exc:
+                bound_args = bind_args(wrapped, args, kwargs)
+                tool_id = bound_args.get("tool_id")
+                transaction.notice_error(exc, attributes={"tool_id": tool_id})
+        finally:
+            # Delete exc to avoid reference cycles
+            del exc
+
+    return wrapped(*args, **kwargs)
+
+
 def instrument_strands_agent_agent(module):
     if hasattr(module, "Agent"):
         if hasattr(module.Agent, "__call__"):  # noqa: B004
@@ -488,6 +519,14 @@ def instrument_strands_multiagent_swarm(module):
             wrap_function_wrapper(module, "Swarm.__call__", wrap_agent__call__)
         if hasattr(module.Swarm, "invoke_async"):
             wrap_function_wrapper(module, "Swarm.invoke_async", wrap_agent_invoke_async)
+
+
+def instrument_strands_tools_decorator(module):
+    # This instrumentation only exists to pass trace context due to bedrock models using a separate thread.
+    if hasattr(module, "DecoratedFunctionTool") and hasattr(module.DecoratedFunctionTool, "_wrap_tool_result"):
+        wrap_function_wrapper(
+            module, "DecoratedFunctionTool._wrap_tool_result", wrap_decorated_function_tool__wrap_tool_result
+        )
 
 
 def instrument_strands_tools_executors__executor(module):

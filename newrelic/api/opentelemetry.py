@@ -356,12 +356,12 @@ class Span(otel_api_trace.Span):
     def _messagequeue_attribute_mapping(self):
         host = self.attributes.get("net.peer.name") or self.attributes.get("server.address")
         port = self.attributes.get("net.peer.port") or self.attributes.get("server.port")
-        name = self.name.split(maxsplit=1)[0] # OTel's format for this is "name operation"
-        
+        name = self.name.split(maxsplit=1)[0]  # OTel's format for this is "name operation"
+
         # Logic for Pika/RabbitMQ
         span_obj_attrs = {
             "library": self.attributes.get("messaging.system"),
-            "destination_name": name,   # OTel's format for this is "name operation"
+            "destination_name": name,  # OTel's format for this is "name operation"
         }
 
         # Keep this to simplify Transaction naming logic later on
@@ -376,11 +376,15 @@ class Span(otel_api_trace.Span):
 
         # Kafka Specific Logic
         if span_obj_attrs["library"] == "kafka":
-            span_obj_attrs.update({
-                "transport_type": "Kafka",
-                "destination_type": "Topic",
-                "destination_name": name if (name != "unknown") else "Default",   # OTel's format for this is "name operation"
-            })  
+            span_obj_attrs.update(
+                {
+                    "transport_type": "Kafka",
+                    "destination_type": "Topic",
+                    "destination_name": name
+                    if (name != "unknown")
+                    else "Default",  # OTel's format for this is "name operation"
+                }
+            )
             if isinstance(self.nr_transaction, MessageTransaction):
                 self.nr_transaction.transport_type = "Kafka"
                 self.nr_transaction.destination_type = "Topic"
@@ -397,7 +401,8 @@ class Span(otel_api_trace.Span):
             for server_name in bootstrap_servers:
                 produce_or_consume = "Produce" if self.kind == otel_api_trace.SpanKind.PRODUCER else "Consume"
                 self.nr_transaction.record_custom_metric(
-                    f"MessageBroker/kafka/Nodes/{server_name}/{produce_or_consume}/{span_obj_attrs['destination_name']}", 1
+                    f"MessageBroker/kafka/Nodes/{server_name}/{produce_or_consume}/{span_obj_attrs['destination_name']}",
+                    1,
                 )
 
         # Even if the attribute is set to None, it should rename
@@ -706,8 +711,10 @@ class Tracer(otel_api_trace.Tracer):
                 # nor should we create a MessageTrace under it.  We do,
                 # however, want to add additional attributes from this span
                 # into the existing transaction.
-                if transaction and (getattr(self, "_create_consumer_trace", False) or (self.instrumentation_library != "kafka")):
-                    # If transaction already exists and the 
+                if transaction and (
+                    getattr(self, "_create_consumer_trace", False) or (self.instrumentation_library != "kafka")
+                ):
+                    # If transaction already exists and the
                     # _create_consumer_trace flag is set to True,
                     # then create a MessageTrace under it.
                     # Note that for Kafka, this flag will not be
@@ -728,7 +735,7 @@ class Tracer(otel_api_trace.Tracer):
                     # the existing transaction and add additional attributes to it.
                     if (self.instrumentation_library == "kafka") or not getattr(self, "_create_consumer_trace", False):
                         create_nr_trace = False
-                    
+
                 if self.instrumentation_library == "kafka":
                     # Whether a transaction exists or not, do not create a NR
                     # trace for the case of a consumer span.

@@ -242,11 +242,7 @@ def test_blocking_connection_consume_using_methods(producer):
 # a new MessageTransaction for the consume generator.  However,
 # if a transaction is already in progress, Hybrid Agent will
 # not do anything.
-@validate_transaction_metrics(
-    f"Named/{EXCHANGE}",
-    background_task=True,
-    group="Message/rabbitmq/Exchange",
-)
+@validate_transaction_metrics(f"Named/{EXCHANGE}", background_task=True, group="Message/rabbitmq/Exchange")
 @validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 def test_blocking_connection_consume_outside_txn(producer):
     with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
@@ -270,11 +266,7 @@ def test_blocking_connection_consume_outside_txn(producer):
 # if a transaction is already in progress, Hybrid Agent will
 # not do anything.
 def test_blocking_connection_consume_many_outside_txn(produce_five):
-    @validate_transaction_metrics(
-        f"Named/{EXCHANGE}",
-        background_task=True,
-        group="Message/rabbitmq/Exchange",
-    )
+    @validate_transaction_metrics(f"Named/{EXCHANGE}", background_task=True, group="Message/rabbitmq/Exchange")
     @validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
     def consume_it(consumer, up_next=None):
         if up_next is None:
@@ -305,11 +297,7 @@ def test_blocking_connection_consume_many_outside_txn(produce_five):
 # a new MessageTransaction for the consume generator.  However,
 # if a transaction is already in progress, Hybrid Agent will
 # not do anything.
-@validate_transaction_metrics(
-    f"Named/{EXCHANGE}",
-    background_task=True,
-    group="Message/rabbitmq/Exchange",
-)
+@validate_transaction_metrics(f"Named/{EXCHANGE}", background_task=True, group="Message/rabbitmq/Exchange")
 @validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
 def test_blocking_connection_consume_using_methods_outside_txn(producer):
     with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:

@@ -929,6 +929,46 @@ def test_distributed_trace_remote_parent_sampling_decision_between_full_and_part
     _test()
 
 
+def test_partial_granularity_entity_synthesis_attr_none_in_compact():
+    """
+    Tests no crash happens when an entity synthesis attribute is set to None.
+    """
+    @validate_span_events(
+        count=1,  # Entry span.
+        exact_intrinsics={
+            "name": "Function/test_distributed_tracing:test_partial_granularity_entity_synthesis_attr_none_in_compact.<locals>._test",
+            "nr.pg": True,
+        },
+        expected_intrinsics=["duration", "timestamp"],
+    )
+    @validate_span_events(
+        count=1,  # 1 external compressed span.
+        exact_intrinsics={"name": "External/localhost:3000/requests/GET"},
+        expected_intrinsics=["nr.durations", "nr.ids"],
+        exact_agents={"http.url": "http://localhost:3000/"},
+        unexpected_agents=["db.instance"],
+    )
+    @background_task()
+    def _test():
+        headers = {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01"}
+        accept_distributed_trace_headers(headers)
+        with ExternalTrace("requests", "http://localhost:3000/", method="GET") as trace:
+            trace._add_agent_attribute("db.instance", None)
+            time.sleep(0.1)
+
+    _test = override_application_settings(
+        {
+            "distributed_tracing.sampler.full_granularity.enabled": False,
+            "distributed_tracing.sampler.partial_granularity.enabled": True,
+            "distributed_tracing.sampler.partial_granularity.type": "compact",
+            "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "always_on",
+            "span_events.enabled": True,
+        }
+    )(_test)
+
+    _test()
+
+
 def test_partial_granularity_max_compressed_spans():
     """
     Tests `nr.ids` does not exceed 1024 byte limit.

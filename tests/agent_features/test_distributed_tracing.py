@@ -148,9 +148,9 @@ def validate_compact_span_event(
             # Find the span by name.
             if not check_value_equals(intrinsics, "name", name):
                 continue
-            assert check_value_length(agent_attrs, "nr.ids", compressed_span_count - 1, mismatches), _span_details()
+            assert check_value_length(intrinsics, "nr.ids", compressed_span_count - 1, mismatches), _span_details()
             assert check_value_between(
-                agent_attrs,
+                intrinsics,
                 "nr.durations",
                 expected_nr_durations_low_bound,
                 expected_nr_durations_high_bound,
@@ -946,16 +946,16 @@ def test_partial_granularity_max_compressed_spans():
     @validate_span_events(
         count=1,  # Entry span.
         exact_intrinsics={
-            "name": "Function/test_distributed_tracing:test_partial_granularity_max_compressed_spans.<locals>._test"
+            "name": "Function/test_distributed_tracing:test_partial_granularity_max_compressed_spans.<locals>._test",
+            "nr.pg": True,
         },
-        exact_agents={"nr.pg": True},
         expected_intrinsics=["duration", "timestamp"],
     )
     @validate_span_events(
         count=1,  # 1 external compressed span.
         exact_intrinsics={"name": "External/localhost:3000/requests/GET"},
+        expected_intrinsics=["nr.durations", "nr.ids"],
         exact_agents={"http.url": "http://localhost:3000/"},
-        expected_agents=["nr.durations", "nr.ids"],
     )
     @validate_compact_span_event(
         name="External/localhost:3000/requests/GET",
@@ -1001,16 +1001,16 @@ def test_partial_granularity_compressed_span_attributes_in_series():
     @validate_span_events(
         count=1,  # Entry span.
         exact_intrinsics={
-            "name": "Function/test_distributed_tracing:test_partial_granularity_compressed_span_attributes_in_series.<locals>._test"
+            "name": "Function/test_distributed_tracing:test_partial_granularity_compressed_span_attributes_in_series.<locals>._test",
+            "nr.pg": True,
         },
-        exact_agents={"nr.pg": True},
         expected_intrinsics=["duration", "timestamp"],
     )
     @validate_span_events(
         count=1,  # 1 external compressed span.
         exact_intrinsics={"name": "External/localhost:3000/requests/GET"},
+        expected_intrinsics=["nr.durations", "nr.ids"],
         exact_agents={"http.url": "http://localhost:3000/"},
-        expected_agents=["nr.durations", "nr.ids"],
     )
     @validate_compact_span_event(
         name="External/localhost:3000/requests/GET",
@@ -1046,16 +1046,16 @@ def test_partial_granularity_compressed_span_attributes_overlapping():
     @validate_span_events(
         count=1,  # Entry span.
         exact_intrinsics={
-            "name": "Function/test_distributed_tracing:test_partial_granularity_compressed_span_attributes_overlapping.<locals>._test"
+            "name": "Function/test_distributed_tracing:test_partial_granularity_compressed_span_attributes_overlapping.<locals>._test",
+            "nr.pg": True,
         },
-        exact_agents={"nr.pg": True},
         expected_intrinsics=["duration", "timestamp"],
     )
     @validate_span_events(
         count=1,  # 1 external compressed span.
         exact_intrinsics={"name": "External/localhost:3000/requests/GET"},
+        expected_intrinsics=["nr.durations", "nr.ids"],
         exact_agents={"http.url": "http://localhost:3000/"},
-        expected_agents=["nr.durations", "nr.ids"],
     )
     @validate_compact_span_event(
         name="External/localhost:3000/requests/GET",
@@ -1101,9 +1101,9 @@ def test_partial_granularity_reduced_span_attributes():
     @validate_span_events(
         count=1,  # Entry span.
         exact_intrinsics={
-            "name": "Function/test_distributed_tracing:test_partial_granularity_reduced_span_attributes.<locals>._test"
+            "name": "Function/test_distributed_tracing:test_partial_granularity_reduced_span_attributes.<locals>._test",
+            "nr.pg": True,
         },
-        exact_agents={"nr.pg": True},
         expected_intrinsics=["duration", "timestamp"],
         expected_agents=["code.function", "code.lineno", "code.namespace"],
     )
@@ -1156,9 +1156,9 @@ def test_partial_granularity_essential_span_attributes():
     @validate_span_events(
         count=1,  # Entry span.
         exact_intrinsics={
-            "name": "Function/test_distributed_tracing:test_partial_granularity_essential_span_attributes.<locals>._test"
+            "name": "Function/test_distributed_tracing:test_partial_granularity_essential_span_attributes.<locals>._test",
+            "nr.pg": True,
         },
-        exact_agents={"nr.pg": True},
         expected_intrinsics=["duration", "timestamp"],
         unexpected_agents=["code.function", "code.lineno", "code.namespace"],
     )
@@ -1491,21 +1491,21 @@ def test_partial_granularity_errors_on_compressed_spans():
     @validate_span_events(
         count=1,  # Entry span.
         exact_intrinsics={
-            "name": "Function/test_distributed_tracing:test_partial_granularity_errors_on_compressed_spans.<locals>._test"
+            "name": "Function/test_distributed_tracing:test_partial_granularity_errors_on_compressed_spans.<locals>._test",
+            "nr.pg": True,
         },
-        exact_agents={"nr.pg": True},
         expected_intrinsics=["duration", "timestamp"],
     )
     @validate_span_events(
         count=1,  # 1 external compressed span.
         exact_intrinsics={"name": "External/localhost:3000/requests/GET"},
+        expected_intrinsics=["nr.durations", "nr.ids"],
         exact_agents={
             "http.url": "http://localhost:3000/",
             "error.class": callable_name(Exception),
             "error.message": "Exception 2",
             "error.expected": True,
         },
-        expected_agents=["nr.durations", "nr.ids"],
     )
     @validate_compact_span_event(
         name="External/localhost:3000/requests/GET",
@@ -1554,21 +1554,21 @@ def test_partial_granularity_errors_on_compressed_spans_status_overriden():
     @validate_span_events(
         count=1,  # Entry span.
         exact_intrinsics={
-            "name": "Function/test_distributed_tracing:test_partial_granularity_errors_on_compressed_spans_status_overriden.<locals>._test"
+            "name": "Function/test_distributed_tracing:test_partial_granularity_errors_on_compressed_spans_status_overriden.<locals>._test",
+            "nr.pg": True,
         },
-        exact_agents={"nr.pg": True},
         expected_intrinsics=["duration", "timestamp"],
     )
     @validate_span_events(
         count=1,  # 1 external compressed span.
         exact_intrinsics={"name": "External/localhost:3000/requests/GET"},
+        expected_intrinsics=["nr.durations", "nr.ids"],
         exact_agents={
             "http.url": "http://localhost:3000/",
             "error.class": callable_name(Exception),
             "error.message": "Exception 2",
             "error.expected": False,
         },
-        expected_agents=["nr.durations", "nr.ids"],
     )
     @validate_compact_span_event(
         name="External/localhost:3000/requests/GET",

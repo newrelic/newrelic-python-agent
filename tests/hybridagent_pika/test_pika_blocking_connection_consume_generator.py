@@ -66,7 +66,7 @@ _test_blocking_connection_consume_metrics = [
 def test_blocking_connection_consume_break(producer):
     with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
         channel = connection.channel()
-        for method_frame, _properties, body in channel.consume(QUEUE):
+        for _, _properties, body in channel.consume(QUEUE):
             assert _properties.headers == HEADERS
             assert body == BODY
             break
@@ -85,7 +85,7 @@ def test_blocking_connection_consume_connection_close(producer):
     channel = connection.channel()
 
     try:
-        for method_frame, _properties, body in channel.consume(QUEUE):
+        for _, _properties, body in channel.consume(QUEUE):
             assert _properties.headers == HEADERS
             assert body == BODY
             channel.close()
@@ -219,7 +219,7 @@ def test_blocking_connection_consume_using_methods(producer):
 
         consumer = channel.consume(QUEUE, inactivity_timeout=0.01)
 
-        method, _properties, body = next(consumer)
+        _, _properties, body = next(consumer)
         assert _properties.headers == HEADERS
         assert body == BODY
 
@@ -257,7 +257,7 @@ def test_blocking_connection_consume_outside_txn(producer):
         consumer = channel.consume(QUEUE)
 
         try:
-            for method_frame, _properties, body in consumer:
+            for _, _properties, body in consumer:
                 assert _properties.headers == HEADERS
                 assert body == BODY
                 break
@@ -281,9 +281,9 @@ def test_blocking_connection_consume_many_outside_txn(produce_five):
     @validate_tt_collector_json(message_broker_params=_message_broker_tt_params)
     def consume_it(consumer, up_next=None):
         if up_next is None:
-            method_frame, _properties, body = next(consumer)
+            _, _properties, body = next(consumer)
         else:
-            method_frame, _properties, body = up_next
+            _, _properties, body = up_next
         assert _properties.headers == HEADERS
         assert body == BODY
         return next(consumer)
@@ -320,7 +320,7 @@ def test_blocking_connection_consume_using_methods_outside_txn(producer):
 
         consumer = channel.consume(QUEUE, inactivity_timeout=0.01)
 
-        method, _properties, body = next(consumer)
+        _, _properties, body = next(consumer)
         assert _properties.headers == HEADERS
         assert body == BODY
 

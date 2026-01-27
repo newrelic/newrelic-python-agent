@@ -143,7 +143,7 @@ def validate_compact_span_event(
                 user_attrs = captured_event.user_attributes
                 agent_attrs = captured_event.agent_attributes
             else:
-                intrinsics, _, agent_attrs = captured_event
+                intrinsics, _, _ = captured_event
 
             # Find the span by name.
             if not check_value_equals(intrinsics, "name", name):

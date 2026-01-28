@@ -220,7 +220,6 @@ class AgentControlHealth:
         status_time_unix_nano = time.time_ns()
         service_metadata = get_linking_metadata()
         entity_guid = service_metadata.get("entity.guid", "") if service_metadata else ""
-
         try:
             health_dir_path = self.health_delivery_location
             if health_dir_path is None:

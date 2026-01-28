@@ -22,6 +22,7 @@ import pytest
 from testing_support.fixtures import initialize_agent
 from testing_support.http_client_recorder import HttpClientRecorder
 
+from newrelic.common.object_wrapper import transient_function_wrapper
 from newrelic.config import _reset_configuration_done, initialize
 from newrelic.core.agent_control_health import HealthStatus, agent_control_health_instance
 from newrelic.core.agent_protocol import AgentProtocol
@@ -29,10 +30,18 @@ from newrelic.core.application import Application
 from newrelic.core.config import finalize_application_settings, global_settings
 from newrelic.network.exceptions import DiscardDataForRequest
 
-def mock_get_service_linking_metadata():
-    """Mock function that returns static entity GUID."""
-    metadata["entity.guid"] = "ABC123"
+
+@transient_function_wrapper("newrelic.api.time_trace", "get_service_linking_metadata")
+def _wrap_get_service_linking_metadata(wrapped, instance, args, kwargs):
+    metadata = {"entity.type": "SERVICE"}
+
+    # Set hardcoded values for testing so we can verify the correct entity guid was written to the health file
+    metadata["entity.name"] = "test-app"
+    metadata["entity.guid"] = "mock-entity-guid-12345"
+    metadata["hostname"] = "test-hostname"
+
     return metadata
+
 
 def get_health_file_contents(tmp_path):
     # Grab the file we just wrote to and read its contents
@@ -94,6 +103,7 @@ def test_agent_control_not_enabled(monkeypatch, tmp_path):
     assert not agent_control_health_instance().health_check_enabled
 
 
+@_wrap_get_service_linking_metadata
 def test_write_to_file_healthy_status(monkeypatch, tmp_path):
     # Setup expected env vars to run agent control health check
     monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_ENABLED", "True")
@@ -108,12 +118,14 @@ def test_write_to_file_healthy_status(monkeypatch, tmp_path):
     contents = get_health_file_contents(tmp_path)
 
     # Assert on contents of health file
-    assert len(contents) == 4
-    assert contents[0] == "healthy: True\n"
-    assert contents[1] == "status: Healthy\n"
-    assert int(re.search(r"status_time_unix_nano: (\d+)", contents[3]).group(1)) > 0
+    assert len(contents) == 5
+    assert contents[0] == "entity_guid: mock-entity-guid-12345\n"
+    assert contents[1] == "healthy: True\n"
+    assert contents[2] == "status: Healthy\n"
+    assert int(re.search(r"status_time_unix_nano: (\d+)", contents[4]).group(1)) > 0
 
 
+@_wrap_get_service_linking_metadata
 def test_write_to_file_unhealthy_status(monkeypatch, tmp_path):
     # Setup expected env vars to run agent control health check
     monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_ENABLED", "True")
@@ -130,14 +142,16 @@ def test_write_to_file_unhealthy_status(monkeypatch, tmp_path):
     contents = get_health_file_contents(tmp_path)
 
     # Assert on contents of health file
-    assert len(contents) == 5
-    assert contents[0] == "healthy: False\n"
-    assert contents[1] == "status: Invalid license key (HTTP status code 401)\n"
-    assert contents[2] == "start_time_unix_nano: 1234567890\n"
-    assert int(re.search(r"status_time_unix_nano: (\d+)", contents[3]).group(1)) > 0
-    assert contents[4] == "last_error: NR-APM-001\n"
+    assert len(contents) == 6
+    assert contents[0] == "entity_guid: mock-entity-guid-12345\n"
+    assert contents[1] == "healthy: False\n"
+    assert contents[2] == "status: Invalid license key (HTTP status code 401)\n"
+    assert contents[3] == "start_time_unix_nano: 1234567890\n"
+    assert int(re.search(r"status_time_unix_nano: (\d+)", contents[4]).group(1)) > 0
+    assert contents[5] == "last_error: NR-APM-001\n"
 
 
+@_wrap_get_service_linking_metadata
 def test_no_override_on_unhealthy_shutdown(monkeypatch, tmp_path):
     # Setup expected env vars to run agent control health check
     monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_ENABLED", "True")
@@ -156,10 +170,11 @@ def test_no_override_on_unhealthy_shutdown(monkeypatch, tmp_path):
     contents = get_health_file_contents(tmp_path)
 
     # Assert on contents of health file
-    assert len(contents) == 5
-    assert contents[0] == "healthy: False\n"
-    assert contents[1] == "status: Invalid license key (HTTP status code 401)\n"
-    assert contents[4] == "last_error: NR-APM-001\n"
+    assert len(contents) == 6
+    assert contents[0] == "entity_guid: mock-entity-guid-12345\n"
+    assert contents[1] == "healthy: False\n"
+    assert contents[2] == "status: Invalid license key (HTTP status code 401)\n"
+    assert contents[5] == "last_error: NR-APM-001\n"
 
 
 def test_health_check_running_threads(monkeypatch, tmp_path):
@@ -190,6 +205,7 @@ def test_health_check_running_threads(monkeypatch, tmp_path):
     assert running_threads[1].name == "Agent-Control-Health-Main-Thread"
 
 
+@_wrap_get_service_linking_metadata
 def test_proxy_error_status(monkeypatch, tmp_path):
     # Setup expected env vars to run agent control health check
     monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_ENABLED", "True")
@@ -214,10 +230,11 @@ def test_proxy_error_status(monkeypatch, tmp_path):
     contents = get_health_file_contents(tmp_path)
 
     # Assert on contents of health file
-    assert len(contents) == 5
-    assert contents[0] == "healthy: False\n"
-    assert contents[1] == "status: HTTP Proxy configuration error; response code 407\n"
-    assert contents[4] == "last_error: NR-APM-007\n"
+    assert len(contents) == 6
+    assert contents[0] == "entity_guid: mock-entity-guid-12345\n"
+    assert contents[1] == "healthy: False\n"
+    assert contents[2] == "status: HTTP Proxy configuration error; response code 407\n"
+    assert contents[5] == "last_error: NR-APM-007\n"
 
 
 def test_multiple_activations_running_threads(monkeypatch, tmp_path):
@@ -270,10 +287,11 @@ def test_update_to_healthy(monkeypatch, tmp_path):
     contents = get_health_file_contents(tmp_path)
 
     # Assert on contents of health file
-    assert contents[0] == "healthy: True\n"
-    assert contents[1] == "status: Healthy\n"
+    assert contents[1] == "healthy: True\n"
+    assert contents[2] == "status: Healthy\n"
 
 
+@_wrap_get_service_linking_metadata
 def test_max_app_name_status(monkeypatch, tmp_path):
     # Setup expected env vars to run agent control health check
     monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_ENABLED", "True")
@@ -289,7 +307,8 @@ def test_max_app_name_status(monkeypatch, tmp_path):
     contents = get_health_file_contents(tmp_path)
 
     # Assert on contents of health file
-    assert len(contents) == 5
-    assert contents[0] == "healthy: False\n"
-    assert contents[1] == "status: The maximum number of configured app names (3) exceeded\n"
-    assert contents[4] == "last_error: NR-APM-006\n"
+    assert len(contents) == 6
+    assert contents[0] == "entity_guid: mock-entity-guid-12345\n"
+    assert contents[1] == "healthy: False\n"
+    assert contents[2] == "status: The maximum number of configured app names (3) exceeded\n"
+    assert contents[5] == "last_error: NR-APM-006\n"

@@ -21,7 +21,7 @@ import uuid
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import current_trace, get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
-from newrelic.common.llm_utils import AsyncGeneratorProxy, GeneratorProxy
+from newrelic.common.llm_utils import AsyncGeneratorProxy, GeneratorProxy, _get_llm_metadata
 from newrelic.common.object_wrapper import ObjectProxy, wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
@@ -154,8 +154,10 @@ def _construct_base_agent_event_dict(agent_name, agent_id, transaction):
 class AgentObjectProxy(ObjectProxy):
     def invoke(self, *args, **kwargs):
         transaction = current_transaction()
+        if not transaction:
+            return self.__wrapped__.invoke(*args, **kwargs)
 
-        agent_name = getattr(self.__wrapped__, "name", None)
+        agent_name = getattr(self.__wrapped__, "name", "agent")
         agent_id = str(uuid.uuid4())
         agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
         function_trace_name = f"invoke/{agent_name}"
@@ -174,15 +176,16 @@ class AgentObjectProxy(ObjectProxy):
 
         ft.__exit__(None, None, None)
         agent_event_dict.update({"duration": ft.duration * 1000})
-
         transaction.record_custom_event("LlmAgent", agent_event_dict)
 
         return return_val
 
     async def ainvoke(self, *args, **kwargs):
         transaction = current_transaction()
+        if not transaction:
+            return await self.__wrapped__.ainvoke(*args, **kwargs)
 
-        agent_name = getattr(self.__wrapped__, "name", None)
+        agent_name = getattr(self.__wrapped__, "name", "agent")
         agent_id = str(uuid.uuid4())
         agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
         function_trace_name = f"ainvoke/{agent_name}"
@@ -201,15 +204,16 @@ class AgentObjectProxy(ObjectProxy):
 
         ft.__exit__(None, None, None)
         agent_event_dict.update({"duration": ft.duration * 1000})
-
         transaction.record_custom_event("LlmAgent", agent_event_dict)
 
         return return_val
 
     def stream(self, *args, **kwargs):
         transaction = current_transaction()
+        if not transaction:
+            return self.__wrapped__.stream(*args, **kwargs)
 
-        agent_name = getattr(self.__wrapped__, "name", None)
+        agent_name = getattr(self.__wrapped__, "name", "agent")
         agent_id = str(uuid.uuid4())
         agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
         function_trace_name = f"stream/{agent_name}"
@@ -231,8 +235,10 @@ class AgentObjectProxy(ObjectProxy):
 
     def astream(self, *args, **kwargs):
         transaction = current_transaction()
+        if not transaction:
+            return self.__wrapped__.astream(*args, **kwargs)
 
-        agent_name = getattr(self.__wrapped__, "name", None)
+        agent_name = getattr(self.__wrapped__, "name", "agent")
         agent_id = str(uuid.uuid4())
         agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
         function_trace_name = f"astream/{agent_name}"
@@ -254,8 +260,10 @@ class AgentObjectProxy(ObjectProxy):
 
     def transform(self, *args, **kwargs):
         transaction = current_transaction()
+        if not transaction:
+            return self.__wrapped__.transform(*args, **kwargs)
 
-        agent_name = getattr(self.__wrapped__, "name", None)
+        agent_name = getattr(self.__wrapped__, "name", "agent")
         agent_id = str(uuid.uuid4())
         agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
         function_trace_name = f"stream/{agent_name}"
@@ -277,8 +285,10 @@ class AgentObjectProxy(ObjectProxy):
 
     def atransform(self, *args, **kwargs):
         transaction = current_transaction()
+        if not transaction:
+            return self.__wrapped__.atransform(*args, **kwargs)
 
-        agent_name = getattr(self.__wrapped__, "name", None)
+        agent_name = getattr(self.__wrapped__, "name", "agent")
         agent_id = str(uuid.uuid4())
         agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
         function_trace_name = f"astream/{agent_name}"
@@ -987,17 +997,6 @@ def _get_run_manager_info(transaction, run_args, instance, completion_id):
     tags = []
     tags.extend((run_args.get("config") or {}).get("tags") or [])
     return run_id, metadata, tags or None
-
-
-def _get_llm_metadata(transaction):
-    # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
-    custom_attrs_dict = transaction._custom_params
-    llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
-    llm_context_attrs = getattr(transaction, "_llm_context_attrs", None)
-    if llm_context_attrs:
-        llm_metadata_dict.update(llm_context_attrs)
-
-    return llm_metadata_dict
 
 
 def _create_successful_chain_run_events(

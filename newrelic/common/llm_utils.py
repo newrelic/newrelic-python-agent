@@ -13,18 +13,27 @@
 # limitations under the License.
 
 import itertools
+import logging
 
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import ObjectProxy
 
+_logger = logging.getLogger(__name__)
+
 
 def _get_llm_metadata(transaction):
-    # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
-    custom_attrs_dict = transaction._custom_params
-    llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
-    llm_context_attrs = getattr(transaction, "_llm_context_attrs", None)
-    if llm_context_attrs:
-        llm_metadata_dict.update(llm_context_attrs)
+    if not transaction:
+        return {}
+    try:
+        # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
+        custom_attrs_dict = getattr(transaction, "_custom_params", {})
+        llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
+        llm_context_attrs = getattr(transaction, "_llm_context_attrs", None)
+        if llm_context_attrs:
+            llm_metadata_dict.update(llm_context_attrs)
+    except Exception:
+        _logger.warning("Unable to capture custom metadata attributes to record on LLM events.")
+        return {}
 
     return llm_metadata_dict
 

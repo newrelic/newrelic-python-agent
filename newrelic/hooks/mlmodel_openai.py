@@ -170,8 +170,7 @@ def create_chat_completion_message_event(
             "vendor": "openai",
             "ingest_source": "Python",
         }
-
-        if settings.ai_monitoring.record_content.enabled:
+        if settings.ai_monitoring.record_content.enabled and message_content:
             chat_completion_input_message_dict["content"] = message_content
         if request_timestamp:
             chat_completion_input_message_dict["timestamp"] = request_timestamp
@@ -214,7 +213,7 @@ def create_chat_completion_message_event(
                 "is_response": True,
             }
 
-            if settings.ai_monitoring.record_content.enabled:
+            if settings.ai_monitoring.record_content.enabled and message_content:
                 chat_completion_output_message_dict["content"] = message_content
 
             chat_completion_output_message_dict.update(llm_metadata)
@@ -492,6 +491,7 @@ def _record_completion_success(
 ):
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
+
     try:
         if response:
             response_model = response.get("model")

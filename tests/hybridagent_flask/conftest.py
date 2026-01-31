@@ -17,10 +17,8 @@ import platform
 from pathlib import Path
 
 import pytest
-from opentelemetry import trace
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
-from newrelic.api.opentelemetry import TracerProvider
 from newrelic.common.package_version_utils import get_package_version_tuple
 
 FLASK_VERSION = get_package_version_tuple("flask")
@@ -48,11 +46,3 @@ collector_agent_registration = collector_agent_registration_fixture(
 )
 
 os.environ["NEW_RELIC_CONFIG_FILE"] = str(Path(__file__).parent / "newrelic_flask.ini")
-
-
-@pytest.fixture(scope="session")
-def tracer():
-    trace_provider = TracerProvider()
-    trace.set_tracer_provider(trace_provider)
-
-    return trace.get_tracer(__name__)

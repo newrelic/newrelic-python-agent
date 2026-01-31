@@ -16,11 +16,8 @@ import os
 from pathlib import Path
 
 import pytest
-from opentelemetry import trace
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 from testing_support.fixtures import newrelic_caplog as caplog
-
-from newrelic.api.opentelemetry import TracerProvider
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
@@ -45,11 +42,3 @@ def app():
     import _target_otel_application
 
     return _target_otel_application.target_application
-
-
-@pytest.fixture(scope="session")
-def tracer():
-    trace_provider = TracerProvider()
-    trace.set_tracer_provider(trace_provider)
-
-    return trace.get_tracer(__name__)

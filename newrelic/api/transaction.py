@@ -536,6 +536,8 @@ class Transaction:
             path=self.path,
             trusted_parent_span=self.trusted_parent_span,
             tracing_vendors=self.tracing_vendors,
+            span_link_events=root.span_link_events,
+            span_event_events=root.span_event_events,
         )
 
         # Add transaction exclusive time to total exclusive time

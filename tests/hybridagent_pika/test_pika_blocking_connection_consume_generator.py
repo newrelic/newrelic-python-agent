@@ -132,7 +132,7 @@ def test_blocking_connection_consume_exception_in_for_loop(producer):
         try:
             # We should still create the metric in this case even if there is
             # an exception
-            for _result in channel.consume(QUEUE):
+            for _ in channel.consume(QUEUE):
                 1 / 0  # noqa: B018
         except ZeroDivisionError:
             # Expected error
@@ -164,7 +164,7 @@ def test_blocking_connection_consume_exception_in_generator():
 
         try:
             # Since the pytest fixture is not used, the QUEUE will not exist
-            for _result in channel.consume(QUEUE):
+            for _ in channel.consume(QUEUE):
                 pass
         except pika.exceptions.ChannelClosed:
             # Expected error

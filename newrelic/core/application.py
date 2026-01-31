@@ -162,6 +162,18 @@ class Application:
 
         return self.sampler.compute_sampled(full_granularity, section, *args, **kwargs)
 
+    def _flattened_span_samples(self, spans, flattened_list=None):
+        if flattened_list is None:
+            flattened_list = []
+
+        if isinstance(spans[-1], dict):
+            flattened_list.append(spans)
+        elif isinstance(spans[-1], list):
+            for span in spans:
+                self._flattened_span_samples(span, flattened_list)
+
+        return flattened_list
+
     def dump(self, file):
         """Dumps details about the application to the file object."""
 
@@ -1388,8 +1400,11 @@ class Application:
                             if spans:
                                 if spans.num_samples > 0:
                                     span_samples = list(spans)
+                                    flattened_list = self._flattened_span_samples(span_samples)
 
-                                    _logger.debug("Sending span event data for harvest of %r.", self._app_name)
+                                    span_samples = flattened_list
+
+                                    _logger.debug("Sending Span event data for harvest of %r.", self._app_name)
 
                                     self._active_session.send_span_events(spans.sampling_info, span_samples)
                                     span_samples = None

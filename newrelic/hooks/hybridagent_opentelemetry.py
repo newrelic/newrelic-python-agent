@@ -241,13 +241,9 @@ def wrap__get_span(wrapped, instance, args, kwargs):
     span_kind = bound_args.get("span_kind")
     task_name = bound_args.get("task_name")
     tracer = bound_args.get("tracer")
-    
-    properties_to_extract = (
-        "correlation_id",
-        "reply_to",
-        "headers",
-    )
-    
+
+    properties_to_extract = ("correlation_id", "reply_to", "headers")
+
     if span_kind == span_kind.PRODUCER:
         # Do nothing special for producer spans
         pass
@@ -263,16 +259,16 @@ def wrap__get_span(wrapped, instance, args, kwargs):
         # will not be created and nothing will occur.
         # This is the current behavior that Kafka has
         tracer._create_consumer_trace = False
-    
+
     params = {"task_name": task_name}
     for _property in properties_to_extract:
         value = getattr(properties, _property, None)
         if properties and value:
             params[_property] = value
-    
+
     span = wrapped(*args, **kwargs)
     span.set_attributes(params)
-    
+
     return span
 
 

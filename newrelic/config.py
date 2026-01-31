@@ -4391,9 +4391,7 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
-        "opentelemetry.instrumentation.pika.utils",
-        "newrelic.hooks.hybridagent_opentelemetry",
-        "instrument_pika_utils",
+        "opentelemetry.instrumentation.pika.utils", "newrelic.hooks.hybridagent_opentelemetry", "instrument_pika_utils"
     )
 
 

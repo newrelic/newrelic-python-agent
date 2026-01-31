@@ -23,7 +23,6 @@ from newrelic.api.function_trace import FunctionTrace
 
 
 def test_trace_metrics(topic, send_producer_message, expected_broker_metrics):
-
     scoped_metrics = [(f"MessageBroker/kafka/Topic/Produce/Named/{topic}", 1)]
     unscoped_metrics = scoped_metrics
 

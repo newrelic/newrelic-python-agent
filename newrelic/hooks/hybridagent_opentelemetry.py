@@ -96,14 +96,11 @@ def wrap_set_tracer_provider(wrapped, instance, args, kwargs):
     if not settings or not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
+    from newrelic.api.opentelemetry import TracerProvider
+
     global _TRACER_PROVIDER
 
-    if _TRACER_PROVIDER is None:
-        bound_args = bind_args(wrapped, args, kwargs)
-        tracer_provider = bound_args.get("tracer_provider")
-        _TRACER_PROVIDER = tracer_provider
-    else:
-        _logger.warning("TracerProvider has already been set.")
+    _TRACER_PROVIDER = TracerProvider()
 
 
 def wrap_get_tracer_provider(wrapped, instance, args, kwargs):
@@ -129,13 +126,11 @@ def wrap_get_tracer_provider(wrapped, instance, args, kwargs):
     if not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
+    from newrelic.api.opentelemetry import TracerProvider
+
     global _TRACER_PROVIDER
 
-    if _TRACER_PROVIDER is None:
-        from newrelic.api.opentelemetry import TracerProvider
-
-        _TRACER_PROVIDER = TracerProvider()
-
+    _TRACER_PROVIDER = TracerProvider()
     return _TRACER_PROVIDER
 
 
@@ -173,13 +168,25 @@ def wrap_get_current_span(wrapped, instance, args, kwargs):
 
     from opentelemetry import trace as otel_api_trace
 
-    class LazySpan(otel_api_trace.NonRecordingSpan):
+    from newrelic.api.opentelemetry import Span as HybridSpan
+
+    class LazySpan(otel_api_trace.NonRecordingSpan, HybridSpan):
+        def __init__(self, context):
+            super().__init__(context)
+            self.nr_trace = trace
+
         def set_attribute(self, key, value):
             add_custom_span_attribute(key, value)
 
         def set_attributes(self, attributes):
             for key, value in attributes.items():
                 add_custom_span_attribute(key, value)
+
+        def add_event(self, name, attributes=None, timestamp=None):
+            return HybridSpan.add_event(self, name, attributes, timestamp)
+
+        def add_link(self, span_context, attributes=None):
+            return HybridSpan.add_link(self, span_context, attributes)
 
     span_context = otel_api_trace.SpanContext(
         trace_id=int(transaction.trace_id, 16),

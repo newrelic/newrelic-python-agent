@@ -70,10 +70,10 @@ def do_basic_consume(channel, queue_name):
         ("Supportability/DistributedTrace/AcceptPayload/Success", None),
         ("Supportability/TraceContext/TraceParent/Accept/Success", 1),
         ("Supportability/TraceContext/Accept/Success", 1),
-        ("DurationByCaller/App/33/12345/Unknown/all", 1),
-        ("TransportDuration/App/33/12345/Unknown/all", 1),
-        ("DurationByCaller/App/33/12345/Unknown/allOther", 1),
-        ("TransportDuration/App/33/12345/Unknown/allOther", 1),
+        ("DurationByCaller/App/33/12345/AMQP/all", 1),
+        ("TransportDuration/App/33/12345/AMQP/all", 1),
+        ("DurationByCaller/App/33/12345/AMQP/allOther", 1),
+        ("TransportDuration/App/33/12345/AMQP/allOther", 1),
     ]
 
     @validate_transaction_metrics(

@@ -272,6 +272,7 @@ def wrap__get_span(wrapped, instance, args, kwargs):
         value = getattr(properties, _property, None)
         if properties and value:
             params[_property] = value
+
     span = wrapped(*args, **kwargs)
     span.set_attributes(params)
 

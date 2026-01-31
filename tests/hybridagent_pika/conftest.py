@@ -12,17 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import uuid
 import os
+import uuid
 from pathlib import Path
 
 import pika
 import pytest
+from opentelemetry.instrumentation.pika import PikaInstrumentor
 from testing_support.db_settings import rabbitmq_settings
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
-from newrelic.api.opentelemetry import TracerProvider
-from opentelemetry.instrumentation.pika import PikaInstrumentor
 
+from newrelic.api.opentelemetry import TracerProvider
 from newrelic.common.package_version_utils import get_package_version_tuple
 
 PIKA_VERSION_INFO = get_package_version_tuple("pika")

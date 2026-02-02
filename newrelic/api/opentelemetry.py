@@ -538,6 +538,9 @@ class Span(otel_api_trace.Span):
             target = target or self.attributes.get("db.mongodb.collection")
             span_obj_attrs.update({"operation": operation, "target": target})
             if self.nr_transaction.application.settings.transaction_tracer.record_sql == "obfuscated":
+                db_statement = self._obfuscate_query(db_statement, span_obj_attrs["product"])
+            if self.nr_transaction.application.settings.transaction_tracer.record_sql != "off":
+                agent_attrs["db.statement"] = db_statement
         elif span_obj_attrs["product"] == "dynamodb":
             region = self.attributes.get("cloud.region")
             operation = self.attributes.get("db.operation", self.attributes.get("db.operation.name"))

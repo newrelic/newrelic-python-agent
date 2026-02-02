@@ -16,7 +16,6 @@ import psycopg2
 import psycopg2.extensions
 import psycopg2.extras
 import pytest
-from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
 
 try:
     from psycopg2 import sql
@@ -30,8 +29,6 @@ from testing_support.validators.validate_database_trace_inputs import validate_d
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
-
-Psycopg2Instrumentor().instrument()
 
 DB_SETTINGS = postgresql_settings()[0]
 

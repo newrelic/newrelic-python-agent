@@ -14,12 +14,10 @@
 
 import webtest
 from flask import Flask, abort, render_template, render_template_string
-from opentelemetry.instrumentation.flask import FlaskInstrumentor
 from werkzeug.exceptions import NotFound
 from werkzeug.routing import Rule
 
 application = Flask(__name__)
-FlaskInstrumentor().instrument_app(application)
 
 
 @application.route("/index")

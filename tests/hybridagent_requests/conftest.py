@@ -13,8 +13,6 @@
 # limitations under the License.
 
 import pytest
-from opentelemetry import trace
-from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 from testing_support.mock_external_http_server import MockExternalHTTPHResponseHeadersServer
 
@@ -26,6 +24,7 @@ _default_settings = {
     "debug.log_data_collector_payloads": True,
     "debug.record_transaction_failure": True,
     "opentelemetry.enabled": True,
+    "opentelemetry.traces.enabled": True,
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
@@ -33,12 +32,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 )
 
 @pytest.fixture(scope="session")
-def server(tracer_provider):
+def server():
     with MockExternalHTTPHResponseHeadersServer() as _server:
-        RequestsInstrumentor().instrument(tracer_provider=tracer_provider)
         yield _server
 
-
-@pytest.fixture(scope="session")
-def tracer_provider():
-    return trace.get_tracer_provider()

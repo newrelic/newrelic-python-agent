@@ -13,12 +13,9 @@
 # limitations under the License.
 
 import os
-from pathlib import Path
-
 import pytest
-from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
-os.environ["NEW_RELIC_CONFIG_FILE"] = str(Path(__file__).parent / "newrelic_mysql.ini")
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 
 _default_settings = {

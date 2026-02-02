@@ -25,6 +25,7 @@ _default_settings = {
     "debug.log_data_collector_payloads": True,
     "debug.record_transaction_failure": True,
     "opentelemetry.enabled": True,
+    "opentelemetry.traces.enabled": True,
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
@@ -33,7 +34,3 @@ collector_agent_registration = collector_agent_registration_fixture(
     linked_applications=["Python Agent Test (datastore)"],
 )
 
-
-@pytest.fixture(scope="session")
-def tracer_provider():
-    return trace.get_tracer_provider()

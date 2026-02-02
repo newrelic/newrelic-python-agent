@@ -28,6 +28,7 @@ _default_settings = {
     "custom_insights_events.max_attribute_value": 4096,
     "ai_monitoring.enabled": True,
     "opentelemetry.enabled": True,
+    "opentelemetry.traces.enabled": True,
 }
 collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (Hybrid Agent, botocore)",

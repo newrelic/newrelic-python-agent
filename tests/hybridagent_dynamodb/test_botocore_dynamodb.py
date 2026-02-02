@@ -17,7 +17,6 @@ import uuid
 import botocore.session
 import pytest
 from moto import mock_aws
-from opentelemetry.instrumentation.botocore import BotocoreInstrumentor
 from testing_support.fixtures import dt_enabled, override_application_settings
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
@@ -25,8 +24,6 @@ from testing_support.validators.validate_tt_segment_params import validate_tt_se
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
-
-BotocoreInstrumentor().instrument()
 
 MOTO_VERSION = get_package_version_tuple("moto")
 AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"

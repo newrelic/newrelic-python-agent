@@ -25,6 +25,7 @@ _default_settings = {
     "debug.record_transaction_failure": True,
     "debug.log_autorum_middleware": True,
     "opentelemetry.enabled": True,
+    "opentelemetry.traces.enabled": True,
 }
 
 collector_agent_registration = collector_agent_registration_fixture(

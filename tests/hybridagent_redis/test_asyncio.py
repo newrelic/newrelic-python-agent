@@ -16,7 +16,6 @@ import asyncio
 from uuid import uuid4
 
 import pytest
-from opentelemetry.instrumentation.redis import RedisInstrumentor
 from testing_support.db_settings import redis_settings
 from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import dt_enabled
@@ -98,19 +97,15 @@ _expected_users = ["db.statement", "net.peer.name"]
 
 
 @pytest.fixture
-def client(loop, tracer_provider):
+def client(loop):
     import redis.asyncio
-
-    RedisInstrumentor().instrument(tracer_provider=tracer_provider)
 
     return loop.run_until_complete(redis.asyncio.Redis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0))
 
 
 @pytest.fixture
-def client_pool(loop, tracer_provider):
+def client_pool(loop):
     import redis.asyncio
-
-    RedisInstrumentor().instrument(tracer_provider=tracer_provider)
 
     connection_pool = redis.asyncio.ConnectionPool(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
     return loop.run_until_complete(redis.asyncio.Redis(connection_pool=connection_pool))

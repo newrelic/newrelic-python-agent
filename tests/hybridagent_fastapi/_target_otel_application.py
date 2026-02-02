@@ -13,13 +13,11 @@
 # limitations under the License.
 
 from fastapi import FastAPI
-from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from testing_support.asgi_testing import AsgiTest
 
 from newrelic.api.transaction import current_transaction
 
 app = FastAPI()
-FastAPIInstrumentor().instrument_app(app)
 
 
 @app.get("/sync")

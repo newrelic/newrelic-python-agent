@@ -16,11 +16,9 @@ import uuid
 
 import pika
 import pytest
-from opentelemetry.instrumentation.pika import PikaInstrumentor
 from testing_support.db_settings import rabbitmq_settings
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
-from newrelic.api.opentelemetry import TracerProvider
 from newrelic.common.package_version_utils import get_package_version_tuple
 
 PIKA_VERSION_INFO = get_package_version_tuple("pika")
@@ -38,8 +36,6 @@ BODY = b"test_body"
 
 DB_SETTINGS = rabbitmq_settings()[0]
 
-PikaInstrumentor().instrument(tracer_provider=TracerProvider())
-
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
@@ -49,6 +45,7 @@ _default_settings = {
     "debug.log_data_collector_payloads": True,
     "debug.record_transaction_failure": True,
     "opentelemetry.enabled": True,
+    "opentelemetry.traces.enabled": True,
 }
 
 collector_agent_registration = collector_agent_registration_fixture(

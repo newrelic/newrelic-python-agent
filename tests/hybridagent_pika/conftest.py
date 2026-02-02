@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 import uuid
-from pathlib import Path
 
 import pika
 import pytest
@@ -40,7 +38,6 @@ BODY = b"test_body"
 
 DB_SETTINGS = rabbitmq_settings()[0]
 
-os.environ["NEW_RELIC_CONFIG_FILE"] = str(Path(__file__).parent / "newrelic_pika.ini")
 PikaInstrumentor().instrument(tracer_provider=TracerProvider())
 
 

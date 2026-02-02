@@ -12,9 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-from pathlib import Path
-
 import pytest
 from opentelemetry import trace
 from opentelemetry.instrumentation.requests import RequestsInstrumentor
@@ -34,9 +31,6 @@ _default_settings = {
 collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (Hybrid Agent, Requests)", default_settings=_default_settings
 )
-
-os.environ["NEW_RELIC_CONFIG_FILE"] = str(Path(__file__).parent / "newrelic_requests.ini")
-
 
 @pytest.fixture(scope="session")
 def server(tracer_provider):

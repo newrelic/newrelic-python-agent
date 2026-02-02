@@ -14,9 +14,7 @@
 
 import json
 import logging
-import os
 import uuid
-from pathlib import Path
 
 import kafka
 import pytest
@@ -32,7 +30,6 @@ _logger = logging.getLogger(__name__)
 
 DB_SETTINGS = kafka_settings()[0]
 
-os.environ["NEW_RELIC_CONFIG_FILE"] = str(Path(__file__).parent / "newrelic_kafkapython.ini")
 KafkaInstrumentor().instrument(tracer_provider=TracerProvider())
 
 

@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 import platform
-from pathlib import Path
 
 import pytest
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
@@ -44,5 +42,3 @@ _default_settings = {
 collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (Hybrid Agent, Flask)", default_settings=_default_settings
 )
-
-os.environ["NEW_RELIC_CONFIG_FILE"] = str(Path(__file__).parent / "newrelic_flask.ini")

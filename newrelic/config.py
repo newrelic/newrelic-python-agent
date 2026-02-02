@@ -43,6 +43,9 @@ import newrelic.core.agent
 import newrelic.core.config
 from newrelic.common.log_file import initialize_logging
 from newrelic.common.object_names import callable_name, expand_builtin_exception_name
+from newrelic.common.otel_tracers import HYBRID_AGENT_DEFAULT_INCLUDED_TRACERS_TO_NR_HOOKS
+from newrelic.common.package_version_utils import get_package_version
+
 from newrelic.core import trace_cache
 from newrelic.core.agent_control_health import (
     HealthStatus,
@@ -665,6 +668,7 @@ def _process_configuration(section):
     _process_setting(section, "instrumentation.middleware.django.exclude", "get", _map_inc_excl_middleware)
     _process_setting(section, "instrumentation.middleware.django.include", "get", _map_inc_excl_middleware)
     _process_setting(section, "opentelemetry.enabled", "getboolean", None)
+    _process_setting(section, "opentelemetry.traces.enabled", "getboolean", None)
 
 
 # Loading of configuration from specified file and for specified
@@ -2152,6 +2156,9 @@ def _process_module_definition(target, module, function="instrument"):
         pass
     except Exception:
         _raise_configuration_error(section)
+
+    if target in otel_instrumentation:
+        enabled = False
 
     try:
         if _config_object.has_option(section, "execute"):
@@ -4434,6 +4441,94 @@ def _reset_instrumentation_done():
     _instrumentation_done = False
 
 
+def _is_installed(req):
+    version = get_package_version(req)
+    
+    if version:
+        return True
+    return False
+
+
+def _process_otel_instrumentation_entry_points(final_include_dict=HYBRID_AGENT_DEFAULT_INCLUDED_TRACERS_TO_NR_HOOKS):
+    if not _settings.opentelemetry.enabled or not _is_installed("opentelemetry-api"):
+        return
+    
+    try:
+        # importlib.metadata was introduced into the standard library starting in Python 3.8.
+        from importlib.metadata import entry_points
+    except ImportError:
+        try:
+            # importlib_metadata is a backport library installable from PyPI.
+            from importlib_metadata import entry_points
+        except ImportError:
+            try:
+                # Fallback to pkg_resources, which is available in older versions of setuptools.
+                from pkg_resources import iter_entry_points as entry_points
+            except ImportError:
+                return
+
+    group = "opentelemetry_instrumentor"
+
+    try:
+        # group kwarg was only added to importlib.metadata.entry_points in Python 3.10.
+        _entry_points = entry_points(group=group)
+    except TypeError:
+        # Grab entire entry_points dictionary and select group from it.
+        _entry_points = entry_points().get(group, ())
+
+    for entrypoint in _entry_points:
+        tracer_name = entrypoint.name
+
+        if tracer_name not in final_include_dict:
+            continue
+        
+        # list of currently disabled OTel instrumentation frameworks:
+        if tracer_name in [
+            "boto",
+            "boto3",
+            "botocore",
+            "aws-lambda",
+            "grpc_aio_client",
+            "grpc_aio_server",
+            "grpc_client",
+            "grpc_server"
+        ]:
+            continue
+        
+        otel_entrypoints.append(entrypoint)
+        otel_instrumentation.extend(final_include_dict[tracer_name])
+        
+    # Check for native installations
+    # NOTE: This logic will change once enabled and disabled
+    # functionality is implemented for opentelemetry.traces setting.
+    # NOTE: elasticsearch is instrumented both with libs and natively.
+    # To handle this case: If lib is installed, the library itself
+    # will check for native instrumentation and switch to that on its
+    # own, but if not, native instrumentation could still be used and
+    # we would not know.  We handle this as we are with strawberry-graphql
+    # and ariadne where we check to see if opentelemetry-api and the
+    # specific library are installed on the system.
+    for lib in ["strawberry-graphql", "ariadne", "elasticsearch"]:
+        if _is_installed(lib):
+            otel_instrumentation.extend(final_include_dict[lib])
+
+
+def _process_otel_instrumentors():
+    if not _settings.opentelemetry.enabled or not _is_installed("opentelemetry-api"):
+        return
+
+    for entrypoint in otel_entrypoints:
+        try:
+            instrumentor_class = entrypoint.load()
+            instrumentor = instrumentor_class()
+            instrumentor.instrument(tracer_provider=newrelic.core.agent.otel_tracer_provider())
+            _logger.debug("Successfully instrumented OpenTelemetry tracer '%s' via entry point.", entrypoint.name)
+        except Exception as e:
+            _logger.warning(
+                "Failed to instrument OpenTelemetry tracer '%s' via entry point: %s", entrypoint.name, str(e)
+            )
+
+
 def _setup_instrumentation():
     global _instrumentation_done
 
@@ -4444,6 +4539,10 @@ def _setup_instrumentation():
 
     _process_module_configuration()
     _process_module_entry_points()
+    # Collection of NR disabled hooks must happen before _process_module_builtin_defaults()
+    # but the loading of the entrypoints must not happen until after the NR hooks are registered.   
+    _process_otel_instrumentation_entry_points() 
+    
     _process_trace_cache_import_hooks()
     _process_module_builtin_defaults()
 
@@ -4464,6 +4563,8 @@ def _setup_instrumentation():
     _process_data_source_configuration()
 
     _process_function_profile_configuration()
+     
+    _process_otel_instrumentors()
 
 
 def _setup_extensions():

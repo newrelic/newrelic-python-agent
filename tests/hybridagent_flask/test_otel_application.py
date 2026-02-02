@@ -95,6 +95,8 @@ _test_application_rollup_metrics = [
     exact_intrinsics=_exact_root_intrinsics,
     expected_intrinsics=_expected_root_intrinsics,
     unexpected_intrinsics=_unexpected_root_intrinsics,
+    exact_agents={"otel.scope.name": "flask", "otel.scope.version": "0.60b1", "otel.library.name": "flask", "otel.library.version": "0.60b1"},
+    exact_users={"library_name": "flask", "library_version": "0.60b1", "schema_url": "https://opentelemetry.io/schemas/1.11.0"},
 )
 def test_otel_application_index():
     application = target_application()

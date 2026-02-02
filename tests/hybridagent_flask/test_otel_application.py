@@ -19,6 +19,7 @@ from testing_support.validators.validate_error_event_attributes import validate_
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
 
 try:
     # The __version__ attribute was only added in 0.7.0.
@@ -90,6 +91,25 @@ _test_application_rollup_metrics = [
 
 @dt_enabled
 @validate_transaction_errors(errors=[])
+@validate_transaction_event_attributes(
+    required_params={
+        "agent": ["request.headers.host", "response.headers.contentType"],
+        "intrinsic": [],
+        "user": [],
+    },
+    exact_attrs={
+        "agent": {
+            "request.method": "GET",
+            "request.uri": "/index",
+            "response.headers.contentLength": 14,
+            "response.status": "200",
+        },
+        "intrinsic": {
+            "name": "WebTransaction/Uri/index",
+        },
+        "user": {},
+    }
+)
 @validate_transaction_metrics("index", group="Uri", rollup_metrics=_test_application_rollup_metrics)
 @validate_span_events(
     exact_intrinsics=_exact_root_intrinsics,

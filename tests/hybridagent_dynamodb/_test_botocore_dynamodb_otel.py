@@ -25,6 +25,10 @@ from testing_support.validators.validate_tt_segment_params import validate_tt_se
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
 
+"""
+Disable this test suite for now.
+"""
+
 MOTO_VERSION = get_package_version_tuple("moto")
 AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"
 AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"
@@ -32,30 +36,23 @@ AWS_REGION = "us-east-1"
 
 TEST_TABLE = f"python-agent-test-{uuid.uuid4()}"
 
-"""
-This is taken directly from New Relic's external_botocore tests to ensure that
-the hybrid agent setup is working as expected.  In this case, we are verifying
-that DynamoDB operations default to New Relic's instrumentation even when 
-using the Hybrid Agent because we have temporarily disabled that instrumentation.
-"""
-
 
 _dynamodb_scoped_metrics = [
-    (f"Datastore/statement/DynamoDB/{TEST_TABLE}/create_table", 1),
-    (f"Datastore/statement/DynamoDB/{TEST_TABLE}/put_item", 1),
-    (f"Datastore/statement/DynamoDB/{TEST_TABLE}/get_item", 1),
-    (f"Datastore/statement/DynamoDB/{TEST_TABLE}/update_item", 1),
-    (f"Datastore/statement/DynamoDB/{TEST_TABLE}/query", 1),
-    (f"Datastore/statement/DynamoDB/{TEST_TABLE}/scan", 1),
-    (f"Datastore/statement/DynamoDB/{TEST_TABLE}/delete_item", 1),
-    (f"Datastore/statement/DynamoDB/{TEST_TABLE}/delete_table", 1),
+    (f"Datastore/statement/dynamodb/{TEST_TABLE}/CreateTable", 1),
+    (f"Datastore/statement/dynamodb/{TEST_TABLE}/PutItem", 1),
+    (f"Datastore/statement/dynamodb/{TEST_TABLE}/GetItem", 1),
+    (f"Datastore/statement/dynamodb/{TEST_TABLE}/UpdateItem", 1),
+    (f"Datastore/statement/dynamodb/{TEST_TABLE}/Query", 1),
+    (f"Datastore/statement/dynamodb/{TEST_TABLE}/Scan", 1),
+    (f"Datastore/statement/dynamodb/{TEST_TABLE}/DeleteItem", 1),
+    (f"Datastore/statement/dynamodb/{TEST_TABLE}/DeleteTable", 1),
 ]
 
 _dynamodb_rollup_metrics = [
     ("Datastore/all", 8),
     ("Datastore/allOther", 8),
-    ("Datastore/DynamoDB/all", 8),
-    ("Datastore/DynamoDB/allOther", 8),
+    ("Datastore/dynamodb/all", 8),
+    ("Datastore/dynamodb/allOther", 8),
 ]
 
 
@@ -65,7 +62,7 @@ def test_dynamodb(account_id):
     if account_id:
         expected_aws_agent_attrs = {
             "cloud.resource_id": f"arn:aws:dynamodb:{AWS_REGION}:{account_id:012d}:table/{TEST_TABLE}",
-            "db.system": "DynamoDB",
+            "db.system": "dynamodb",
         }
 
     @override_application_settings({"cloud.aws.account_id": account_id})
@@ -107,20 +104,12 @@ def test_dynamodb(account_id):
             ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
         )
         assert resp["TableDescription"]["TableName"] == TEST_TABLE
-        # moto response is ACTIVE, AWS response is CREATING
-        # assert resp['TableDescription']['TableStatus'] == 'ACTIVE'
-
-        # # AWS needs time to create the table
-        # import time
-        # time.sleep(15)
 
         # Put item
         resp = client.put_item(
             TableName=TEST_TABLE,
             Item={"Id": {"N": "101"}, "Foo": {"S": "hello_world"}, "SomeValue": {"S": "some_random_attribute"}},
         )
-        # No checking response, due to inconsistent return values.
-        # moto returns resp['Attributes']. AWS returns resp['ResponseMetadata']
 
         # Get item
         resp = client.get_item(TableName=TEST_TABLE, Key={"Id": {"N": "101"}, "Foo": {"S": "hello_world"}})
@@ -152,14 +141,10 @@ def test_dynamodb(account_id):
 
         # Delete item
         resp = client.delete_item(TableName=TEST_TABLE, Key={"Id": {"N": "101"}, "Foo": {"S": "hello_world"}})
-        # No checking response, due to inconsistent return values.
-        # moto returns resp['Attributes']. AWS returns resp['ResponseMetadata']
 
         # Delete table
         resp = client.delete_table(TableName=TEST_TABLE)
         assert resp["TableDescription"]["TableName"] == TEST_TABLE
-        # moto response is ACTIVE, AWS response is DELETING
-        # assert resp['TableDescription']['TableStatus'] == 'DELETING'
 
     if account_id:
 

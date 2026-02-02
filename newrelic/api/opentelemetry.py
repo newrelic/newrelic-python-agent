@@ -548,7 +548,6 @@ class Span(otel_api_trace.Span):
             )
             agent_attrs.update(
                 {
-                    # "aws.operation": self.attributes.get("db.operation"),
                     "aws.operation": operation,
                     "cloud.resource_id": resource_id,
                     "cloud.region": region,

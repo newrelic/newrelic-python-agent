@@ -540,7 +540,7 @@ class Span(otel_api_trace.Span):
             if self.nr_transaction.application.settings.transaction_tracer.record_sql == "obfuscated":
         elif span_obj_attrs["product"] == "dynamodb":
             region = self.attributes.get("cloud.region")
-            operation = self.attributes.get("db.operation")
+            operation = self.attributes.get("db.operation", self.attributes.get("db.operation.name"))
             target = self.attributes.get("aws.dynamodb.table_names", [None])[-1]
             account_id = self.nr_transaction.settings.cloud.aws.account_id
             resource_id = generate_dynamodb_arn(

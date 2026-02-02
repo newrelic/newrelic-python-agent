@@ -36,7 +36,12 @@ from newrelic.api.time_trace import current_trace, notice_error
 from newrelic.api.transaction import Sentinel, current_transaction
 from newrelic.api.web_transaction import WebTransaction, WSGIWebTransaction
 from newrelic.core.attribute import sanitize
-from newrelic.core.database_utils import generate_dynamodb_arn, get_database_operation_target_from_statement
+from newrelic.core.database_utils import (
+    generate_dynamodb_arn,
+    get_database_operation_target_from_statement,
+    _all_literals_re,
+    _quotes_table,
+)
 from newrelic.core.otlp_utils import create_resource
 
 _logger = logging.getLogger(__name__)
@@ -407,6 +412,24 @@ class Span(otel_api_trace.Span):
 
         notice_error(error_args, attributes=attributes)
 
+    def _obfuscate_query(self, sql, database):
+        database_to_quote_style_mapping = {
+            "postgresql": "single+dollar",
+            "psycopg2": "single+dollar",
+            "graphql": "single+double",
+            "mysql": "single+double",
+        }
+        
+        quotes_re, quotes_cleanup_re = _quotes_table.get(
+            database_to_quote_style_mapping.get(database), _quotes_table.get("single")
+        )
+        sql = quotes_re.sub("?", sql)
+        sql = _all_literals_re.sub("?", sql)
+        if quotes_cleanup_re.search(sql):
+            sql = "?"
+
+        return sql
+
     def _messagequeue_attribute_mapping(self):
         host = self.attributes.get("net.peer.name") or self.attributes.get(
             "server.address"
@@ -545,6 +568,34 @@ class Span(otel_api_trace.Span):
             if value:
                 self.nr_trace._add_agent_attribute(key, value)
 
+    def _strawberry_operation_name_parser(self, span_name):
+        if ": " in span_name:
+            return span_name.split(": ")[1]
+        return self.nr_trace.agent_attributes.get("graphql.operation.name")
+    
+    def _graphql_attribute_mapping(self):
+        if self.nr_transaction.application.settings.transaction_tracer.record_sql == "obfuscated":
+            sql_orig = self.attributes.get("query", "")
+            sql = self._obfuscate_query(sql_orig, "graphql")
+            
+            if sql_orig:
+                self.attributes["query"] = sql
+            
+            for key in self.attributes.keys():
+                if ("graphql.arg" in key) or ("graphql.param." in key):
+                    self.attributes[key] = "?"
+        elif self.nr_transaction.application.settings.transaction_tracer.record_sql == "off":
+            self.attributes.pop("query", None)
+            for key in self.attributes.keys():
+                if ("graphql.arg" in key) or ("graphql.param." in key):
+                    self.attributes[key] = ""
+        
+        self.nr_trace._add_agent_attribute("graphql.field.path", self.attributes.get("graphql.path", self.nr_trace.agent_attributes.get("graphql.field.path")))
+        self.nr_trace._add_agent_attribute("graphql.field.parentType", self.attributes.get("graphql.parentType", self.nr_trace.agent_attributes.get("graphql.field.parentType")))
+        self.nr_trace._add_agent_attribute("graphql.operation.name", self.attributes.get("graphql.operation.name", self._strawberry_operation_name_parser(self.name)))
+        self.nr_trace._add_agent_attribute("graphql.operation.query", self.attributes.get("query", self.nr_trace.agent_attributes.get("graphql.operation.query")))
+
+
     def end(self, end_time=None, *args, **kwargs):
         # We will ignore the end_time parameter and use NR's end_time
 
@@ -560,7 +611,7 @@ class Span(otel_api_trace.Span):
         # throughout the span's lifetime.
 
         # Database/Datastore specific attributes
-        if self.attributes.get("db.system"):
+        if self.attributes.get("db.system", self.attributes.get("db.system.name")):
             self._database_attribute_mapping()
 
         # Message specific attributes
@@ -576,6 +627,10 @@ class Span(otel_api_trace.Span):
             "http.statusCode", self.attributes.get("http.status_code")
         )
 
+        # GraphQL specific attributes
+        if self.attributes.get("component") and self.attributes.get("component").lower() == "graphql":
+            self._graphql_attribute_mapping()
+            
         # Add OTel attributes as custom NR trace attributes
         self._set_attributes_in_nr(self.attributes)
 

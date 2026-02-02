@@ -18,6 +18,7 @@ import pytest
 from testing_support.fixtures import dt_enabled
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
 
 _exact_intrinsics = {"type": "Span"}
 _exact_root_intrinsics = _exact_intrinsics.copy().update({"nr.entryPoint": True})
@@ -57,6 +58,21 @@ def test_application(caplog, app, endpoint):
         expected_intrinsics=_expected_root_intrinsics,
         unexpected_intrinsics=_unexpected_root_intrinsics,
     )
+    @validate_transaction_event_attributes(
+        exact_attrs={
+            "agent": {
+                "response.headers.contentType": "application/json",
+                "request.method": "GET",
+                "request.uri": endpoint,
+                "response.headers.contentLength": 2,
+                "response.status": "200",
+            },
+            "intrinsic": {
+                "name": f"WebTransaction/Uri/{transaction_name}",
+            },
+            "user": {},
+        }
+    )
     @validate_span_events(
         count=2,  # "asgi.event.type": "http.response.start" and "http.response.body"
         exact_intrinsics=_exact_intrinsics,
@@ -65,6 +81,7 @@ def test_application(caplog, app, endpoint):
     )
     @validate_transaction_metrics(
         transaction_name,
+        group="Uri",
         scoped_metrics=[(f"Function/{transaction_name} http send", 2)],
         rollup_metrics=[(f"Function/{transaction_name} http send", 2), *_test_application_rollup_metrics],
     )

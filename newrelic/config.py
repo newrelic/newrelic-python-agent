@@ -2137,6 +2137,9 @@ def _process_function_profile_configuration():
             _raise_configuration_error(section)
 
 
+otel_instrumentation = []
+otel_entrypoints = []
+
 def _process_module_definition(target, module, function="instrument"):
     enabled = True
     execute = None

@@ -162,7 +162,11 @@ class Span(otel_api_trace.Span):
             # create another transaction or trace, but rather just
             # append existing attributes to the existing transaction.
             self.nr_trace = current_nr_trace
-
+            # Add Instrumentation Scope Attributes
+            self.nr_trace._add_agent_attribute("otel.scope.name", self.attributes.get("library_name"))
+            self.nr_trace._add_agent_attribute("otel.scope.version", self.attributes.get("library_version"))
+            self.nr_trace._add_agent_attribute("otel.library.name", self.attributes.get("library_name"))
+            self.nr_trace._add_agent_attribute("otel.library.version", self.attributes.get("library_version"))
             return
         elif nr_trace_type == FunctionTrace:
             trace_kwargs = {
@@ -209,6 +213,12 @@ class Span(otel_api_trace.Span):
             self.nr_trace = nr_trace_type(**trace_kwargs)
 
         self.nr_trace.__enter__()
+
+        # Add Instrumentation Scope Attributes
+        self.nr_trace._add_agent_attribute("otel.scope.name", self.attributes.get("library_name"))
+        self.nr_trace._add_agent_attribute("otel.scope.version", self.attributes.get("library_version"))
+        self.nr_trace._add_agent_attribute("otel.library.name", self.attributes.get("library_name"))
+        self.nr_trace._add_agent_attribute("otel.library.version", self.attributes.get("library_version"))
 
         # Process Links that were passed in upon span creation
         for link in self.links:
@@ -607,9 +617,12 @@ class Span(otel_api_trace.Span):
 
 
 class Tracer(otel_api_trace.Tracer):
-    def __init__(self, resource=None, instrumentation_library=None, *args, **kwargs):
-        self.resource = resource
+    def __init__(self, instrumentation_library=None, instrumenting_library_version=None, schema_url=None, attributes=None, resource=None, *args, **kwargs):
         self.instrumentation_library = instrumentation_library.split(".")[-1]
+        self.instrumenting_library_version = instrumenting_library_version
+        self.schema_url = schema_url
+        self.tracer_attributes = attributes or {}
+        self.resource = resource
 
     def _create_web_transaction(self, nr_headers=None):
         if "nr.wsgi.environ" in self.attributes:
@@ -677,7 +690,7 @@ class Tracer(otel_api_trace.Tracer):
         nr_trace_type = FunctionTrace
         transaction = current_transaction()
         self.nr_application = application_instance()
-        self.attributes = attributes or {}
+        self.attributes = {**(attributes or {}), **self.tracer_attributes, "schema_url": self.schema_url, "library_name": self.instrumentation_library, "library_version": self.instrumenting_library_version}
         self.name = name
         self.links = links or []
 

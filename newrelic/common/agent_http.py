@@ -290,7 +290,7 @@ class HttpClient(BaseClient):
                     connection_kwargs["ca_certs"] = ca_bundle_path
 
             if disable_certificate_validation:
-                connection_kwargs["cert_reqs"] = "NONE"
+                connection_kwargs["cert_reqs"] = ssl.CERT_NONE
 
         proxy = self._parse_proxy(proxy_scheme, proxy_host, proxy_port, proxy_user, proxy_pass)
         proxy_headers = proxy and proxy.auth and urllib3.make_headers(proxy_basic_auth=proxy.auth)
@@ -355,7 +355,7 @@ class HttpClient(BaseClient):
 
         retries = urllib3.Retry(total=False, connect=None, read=None, redirect=0, status=None)
         self._connection_attr = self.CONNECTION_CLS(
-            self._host, self._port, strict=True, retries=retries, **self._connection_kwargs
+            self._host, self._port, retries=retries, **self._connection_kwargs
         )
         return self._connection_attr
 

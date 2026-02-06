@@ -84,14 +84,14 @@ _unexpected_root_intrinsics = ["parentId"]
 _unexpected_child_intrinsics = ["nr.entryPoint", "transaction.name"]
 
 _exact_agents = {"db.system": "redis", "server.port": DB_SETTINGS["port"]}
-_expected_agents = ["db.operation", "peer.hostname", "server.address", "peer.address"]
+_expected_agents = ["db.operation", "peer.hostname", "server.address", "peer.address", "db.statement"]
 _exact_users = {
     "db.system": "redis",
     "db.redis.database_index": 0,
     "net.peer.port": DB_SETTINGS["port"],
     "net.transport": "ip_tcp",
 }
-_expected_users = ["db.statement", "net.peer.name"]
+_expected_users = ["net.peer.name"]
 
 # Tests
 

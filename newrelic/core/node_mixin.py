@@ -221,7 +221,9 @@ class GenericNodeMixin:
         # we need to check for uniqueness before returning it.
         # Combine all the entity relationship attr values into a string to be
         # used as the hash to check for uniqueness.
-        span_attrs = "".join([str(a_minimized_attrs[key]) for key in exit_span_attrs_present if key in a_minimized_attrs])
+        span_attrs = "".join(
+            [str(a_minimized_attrs[key]) for key in exit_span_attrs_present if key in a_minimized_attrs]
+        )
         new_exit_span = span_attrs not in ct_exit_spans
         # If this is a new exit span, add it to the known ct_exit_spans and
         # return it.
@@ -238,7 +240,9 @@ class GenericNodeMixin:
         # of ids on the seen span, compute the new duration & start time, and
         # return None.
         ct_exit_spans[span_attrs][1].update(
-            attr_class({key: a_minimized_attrs[key] for key in exit_span_error_attrs_present if key in a_minimized_attrs})
+            attr_class(
+                {key: a_minimized_attrs[key] for key in exit_span_error_attrs_present if key in a_minimized_attrs}
+            )
         )
         # Max size for `nr.ids` = 1024. Max length = 63 (each span id is 16 bytes + 8 bytes for list type).
         if len(ct_exit_spans[span_attrs][0]["nr.ids"]) < 63:

@@ -933,6 +933,7 @@ def test_partial_granularity_entity_synthesis_attr_none_in_compact():
     """
     Tests no crash happens when an entity synthesis attribute is set to None.
     """
+
     @validate_span_events(
         count=1,  # Entry span.
         exact_intrinsics={

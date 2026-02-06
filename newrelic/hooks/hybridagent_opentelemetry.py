@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import time
-
 from newrelic.api.application import application_instance
 from newrelic.api.time_trace import add_custom_span_attribute, current_trace
 from newrelic.api.transaction import current_transaction
@@ -39,22 +37,19 @@ def wrap__load_runtime_context(wrapped, instance, args, kwargs):
 
 
 def wrap_get_global_response_propagator(wrapped, instance, args, kwargs):
+    from newrelic.api.opentelemetry import retry_application_activation, otel_context_propagator
+    
     application = application_instance()
     if not application.active:
         # Force application registration if not already active
-        application.activate()
+        retry_application_activation(application)
 
     settings = global_settings() if not application else application.settings
-    if not settings:
-        # The application may need more time to start up
-        time.sleep(0.5)
-        settings = global_settings() if not application else application.settings
         
     if not settings or not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
     from opentelemetry.instrumentation.propagators import set_global_response_propagator
-    from newrelic.api.opentelemetry import otel_context_propagator
 
     set_global_response_propagator(otel_context_propagator)
 
@@ -80,17 +75,15 @@ def wrap_set_tracer_provider(wrapped, instance, args, kwargs):
     # This needs to act as a singleton, like the agent instance.
     # We should initialize the agent here as well, if there is
     # not an instance already.
+    
+    from newrelic.api.opentelemetry import retry_application_activation
 
     application = application_instance()
     if not application.active:
         # Force application registration if not already active
-        application.activate()
+        retry_application_activation(application)
 
     settings = global_settings() if not application else application.settings
-    if not settings:
-        # The application may need more time to start up
-        time.sleep(0.5)
-        settings = global_settings() if not application else application.settings
     if not settings or not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
@@ -103,17 +96,14 @@ def wrap_get_tracer_provider(wrapped, instance, args, kwargs):
     # We should initialize the agent here as well, if there is
     # not an instance already.
 
+    from newrelic.api.opentelemetry import retry_application_activation
+
     application = application_instance()
     if not application.active:
         # Force application registration if not already active
-        application.activate()
+        retry_application_activation(application)
 
     settings = global_settings() if not application else application.settings
-
-    if not settings:
-        # The application may need more time to start up
-        time.sleep(0.5)
-        settings = global_settings() if not application else application.settings
 
     if not settings or not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)

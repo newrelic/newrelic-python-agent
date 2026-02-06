@@ -154,7 +154,7 @@ _test_pymongo_client_rollup_metrics = [
 _test_pymongo_client_rollup_metrics.extend(_test_pymongo_client_scoped_metrics)
 
 
-def test_collection_operations(tracer_provider):
+def test_collection_operations():
     @validate_transaction_errors(errors=[])
     @validate_transaction_metrics(
         "test_collection_operations",

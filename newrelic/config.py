@@ -60,6 +60,16 @@ _logger = logging.getLogger(__name__)
 
 DEPRECATED_MODULES = {"aioredis": datetime(2022, 2, 22, 0, 0, tzinfo=timezone.utc)}
 
+TEMPORARILY_DISABLED_OTEL_FRAMEWORKS = {
+    "boto",
+    "boto3",
+    "botocore",
+    "aws-lambda",
+    "grpc_aio_client",
+    "grpc_aio_server",
+    "grpc_client",
+    "grpc_server",
+}
 
 def _map_aws_account_id(s):
     return newrelic.core.config._map_aws_account_id(s, _logger)
@@ -4483,27 +4493,11 @@ def _process_otel_instrumentation_entry_points(final_include_dict=HYBRID_AGENT_D
         # Grab entire entry_points dictionary and select group from it.
         _entry_points = entry_points().get(group, ())
 
-    for entrypoint in _entry_points:
-        tracer_name = entrypoint.name
-
-        if tracer_name not in final_include_dict:
-            continue
-        
-        # list of currently disabled OTel instrumentation frameworks:
-        if tracer_name in [
-            "boto",
-            "boto3",
-            "botocore",
-            "aws-lambda",
-            "grpc_aio_client",
-            "grpc_aio_server",
-            "grpc_client",
-            "grpc_server"
-        ]:
-            continue
-        
+    entry_points_generator = (entrypoint for entrypoint in _entry_points if entrypoint.name in final_include_dict and entrypoint.name not in TEMPORARILY_DISABLED_OTEL_FRAMEWORKS)
+    
+    for entrypoint in entry_points_generator:
         otel_entrypoints.append(entrypoint)
-        otel_instrumentation.extend(final_include_dict[tracer_name])
+        otel_instrumentation.extend(final_include_dict[entrypoint.name])
         
     # Check for native installations
     # NOTE: This logic will change once enabled and disabled
@@ -4530,9 +4524,9 @@ def _process_otel_instrumentors():
             instrumentor = instrumentor_class()
             instrumentor.instrument(tracer_provider=newrelic.core.agent.otel_tracer_provider())
             _logger.debug("Successfully instrumented OpenTelemetry tracer '%s' via entry point.", entrypoint.name)
-        except Exception as e:
+        except Exception as exc:
             _logger.warning(
-                "Failed to instrument OpenTelemetry tracer '%s' via entry point: %s", entrypoint.name, str(e)
+                "Failed to instrument OpenTelemetry tracer '%s' via entry point: %s", entrypoint.name, exc
             )
 
 

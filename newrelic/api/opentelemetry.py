@@ -46,6 +46,21 @@ from newrelic.core.otlp_utils import create_resource
 
 _logger = logging.getLogger(__name__)
 
+
+def retry_application_activation(application, retries=10):
+    count = 0
+    while (not application.active) and count < retries:
+        # Force application registration if not already active
+        activation_wait = 0.5 + count*0.5
+        application.activate()
+        _logger.debug(f"Attempt #{count+1} to active application.  Waiting for {activation_wait} seconds.")
+        time.sleep(activation_wait)
+        count += 1
+        
+    if not application.active:
+        raise RuntimeError("Failed to activate application after retries")
+
+
 class NRTraceContextPropagator(TraceContextTextMapPropagator):
     HEADER_KEYS = ("traceparent", "tracestate", "newrelic")
 
@@ -92,7 +107,6 @@ set_global_textmap(otel_context_propagator)
 # ----------------------------------------------
 # Custom OTel Spans and Traces
 # ----------------------------------------------
-
 
 class Span(otel_api_trace.Span):
     def __init__(
@@ -528,7 +542,7 @@ class Span(otel_api_trace.Span):
         }
         agent_attrs = {}
 
-        db_statement = self.attributes.get("db.statement")
+        db_statement = self.attributes.pop("db.statement", None)
         if db_statement:
             if hasattr(db_statement, "string"):
                 db_statement = db_statement.string
@@ -537,9 +551,9 @@ class Span(otel_api_trace.Span):
             )
             target = target or self.attributes.get("db.mongodb.collection")
             span_obj_attrs.update({"operation": operation, "target": target})
-            if self.nr_transaction.application.settings.transaction_tracer.record_sql == "obfuscated":
-                db_statement = self._obfuscate_query(db_statement, span_obj_attrs["product"])
             if self.nr_transaction.application.settings.transaction_tracer.record_sql != "off":
+                if self.nr_transaction.application.settings.transaction_tracer.record_sql == "obfuscated":
+                    db_statement = self._obfuscate_query(db_statement, span_obj_attrs["product"])
                 agent_attrs["db.statement"] = db_statement
         elif span_obj_attrs["product"] == "dynamodb":
             region = self.attributes.get("cloud.region")
@@ -753,8 +767,8 @@ class Tracer(otel_api_trace.Tracer):
 
         if not self.nr_application.active:
             # Force application registration if not already active
-            self.nr_application.activate()
-    
+            retry_application_activation(self.nr_application)
+
         self._record_exception = record_exception
         self.set_status_on_exception = set_status_on_exception
 

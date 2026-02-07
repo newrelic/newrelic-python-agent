@@ -1088,7 +1088,7 @@ class Transaction:
             ratio_path = self.settings
             for name in setting_path.split("."):
                 ratio_path = getattr(ratio_path, name)
-            if ratio_path.trace_id_ratio_based.ratio is not None:
+            if ratio_path.trace_id_ratio_based.ratio:
                 priority, sampled = self.sampling_algo_compute_sampled_and_priority(
                     priority,
                     None,  # The sampled value from the parent is not used in this case and should always be overridden.

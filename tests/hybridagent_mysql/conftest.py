@@ -13,13 +13,9 @@
 # limitations under the License.
 
 import os
-from pathlib import Path
 
 import pytest
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
-
-os.environ["NEW_RELIC_CONFIG_FILE"] = str(Path(__file__).parent / "newrelic_mysql.ini")
-
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
@@ -30,6 +26,7 @@ _default_settings = {
     "debug.record_transaction_failure": True,
     "debug.log_explain_plan_queries": True,
     "opentelemetry.enabled": True,
+    "opentelemetry.traces.enabled": True,
 }
 
 collector_agent_registration = collector_agent_registration_fixture(

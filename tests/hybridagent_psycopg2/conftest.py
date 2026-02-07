@@ -12,9 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-from pathlib import Path
-
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 _default_settings = {
@@ -26,6 +23,7 @@ _default_settings = {
     "debug.record_transaction_failure": True,
     "debug.log_explain_plan_queries": True,
     "opentelemetry.enabled": True,
+    "opentelemetry.traces.enabled": True,
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
@@ -33,5 +31,3 @@ collector_agent_registration = collector_agent_registration_fixture(
     default_settings=_default_settings,
     linked_applications=["Python Agent Test (datastore)"],
 )
-
-os.environ["NEW_RELIC_CONFIG_FILE"] = str(Path(__file__).parent / "newrelic_psycopg2.ini")

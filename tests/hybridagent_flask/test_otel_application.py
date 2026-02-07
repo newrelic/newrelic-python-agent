@@ -18,6 +18,7 @@ from testing_support.fixtures import dt_enabled
 from testing_support.validators.validate_error_event_attributes import validate_error_event_attributes
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
+from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 try:
@@ -90,11 +91,28 @@ _test_application_rollup_metrics = [
 
 @dt_enabled
 @validate_transaction_errors(errors=[])
+@validate_transaction_event_attributes(
+    required_params={"agent": ["request.headers.host", "response.headers.contentType"], "intrinsic": [], "user": []},
+    exact_attrs={
+        "agent": {
+            "request.method": "GET",
+            "request.uri": "/index",
+            "response.headers.contentLength": 14,
+            "response.status": "200",
+        },
+        "intrinsic": {"name": "WebTransaction/Uri/index"},
+        "user": {},
+    },
+)
 @validate_transaction_metrics("index", group="Uri", rollup_metrics=_test_application_rollup_metrics)
 @validate_span_events(
     exact_intrinsics=_exact_root_intrinsics,
     expected_intrinsics=_expected_root_intrinsics,
     unexpected_intrinsics=_unexpected_root_intrinsics,
+    exact_agents={"otel.scope.name": "flask", "otel.library.name": "flask"},
+    expected_agents=["otel.scope.version", "otel.library.version"],
+    exact_users={"library_name": "flask", "schema_url": "https://opentelemetry.io/schemas/1.11.0"},
+    expected_users=["library_version"],
 )
 def test_otel_application_index():
     application = target_application()

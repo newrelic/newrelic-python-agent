@@ -14,7 +14,6 @@
 
 import pytest
 import requests
-from opentelemetry.instrumentation.requests import RequestsInstrumentor
 from testing_support.fixtures import override_application_settings
 from testing_support.mock_external_http_server import MockExternalHTTPServer
 from testing_support.validators.validate_span_events import validate_span_events
@@ -24,9 +23,7 @@ from newrelic.api.transaction import current_transaction
 
 
 @pytest.fixture(scope="module", autouse=True)
-def server(tracer_provider):
-    RequestsInstrumentor().instrument(tracer_provider=tracer_provider)
-
+def server():
     with MockExternalHTTPServer() as _server:
         yield _server
 

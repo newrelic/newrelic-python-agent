@@ -228,7 +228,11 @@ class TimeTrace:
         if len(self.span_link_events) >= 100:
             self.transaction._record_supportability("Supportability/SpanEvent/Links/Dropped")
             return
-        attributes = dict(attributes) or {}
+
+        if attributes:
+            attributes = dict(attributes)
+        else:
+            attributes = {}
 
         event = [
             {

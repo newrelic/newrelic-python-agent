@@ -12,24 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from fastapi import FastAPI
-from testing_support.asgi_testing import AsgiTest
-
-from newrelic.api.transaction import current_transaction
-
-app = FastAPI()
+from inspect import isawaitable
 
 
-@app.get("/sync")
-def sync():
-    assert current_transaction() is not None
-    return {}
+# Async Functions not allowed in Py2
+async def example_middleware_async(next, root, info, **args):  # noqa: A002
+    return_value = next(root, info, **args)
+    if isawaitable(return_value):
+        return await return_value
+    return return_value
 
 
-@app.get("/async")
-async def non_sync():
-    assert current_transaction() is not None
-    return {}
-
-
-target_application = AsgiTest(app)
+async def error_middleware_async(next, root, info, **args):  # noqa: A002
+    raise RuntimeError("Runtime Error!")

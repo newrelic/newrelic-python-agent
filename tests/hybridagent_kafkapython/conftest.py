@@ -14,26 +14,19 @@
 
 import json
 import logging
-import os
 import uuid
-from pathlib import Path
 
 import kafka
 import pytest
-from opentelemetry.instrumentation.kafka import KafkaInstrumentor
 from testing_support.db_settings import kafka_settings
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
-from newrelic.api.opentelemetry import TracerProvider
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import transient_function_wrapper
 
 _logger = logging.getLogger(__name__)
 
 DB_SETTINGS = kafka_settings()[0]
-
-os.environ["NEW_RELIC_CONFIG_FILE"] = str(Path(__file__).parent / "newrelic_kafkapython.ini")
-KafkaInstrumentor().instrument(tracer_provider=TracerProvider())
 
 
 @pytest.fixture(scope="session")
@@ -50,6 +43,7 @@ _default_settings = {
     "debug.log_data_collector_payloads": True,
     "debug.record_transaction_failure": True,
     "opentelemetry.enabled": True,
+    "opentelemetry.traces.enabled": True,
 }
 
 collector_agent_registration = collector_agent_registration_fixture(

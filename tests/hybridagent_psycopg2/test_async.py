@@ -15,7 +15,6 @@
 import psycopg2
 import psycopg2.extras
 import pytest
-from opentelemetry.instrumentation.psycopg2 import Psycopg2Instrumentor
 from testing_support.db_settings import postgresql_settings
 from testing_support.fixtures import override_application_settings, validate_stats_engine_explain_plan_output_is_none
 from testing_support.util import instance_hostname
@@ -24,8 +23,6 @@ from testing_support.validators.validate_transaction_errors import validate_tran
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
-
-Psycopg2Instrumentor().instrument()
 
 DB_SETTINGS = postgresql_settings()[0]
 

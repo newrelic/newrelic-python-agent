@@ -14,6 +14,7 @@
 
 import pytest
 from testing_support.fixtures import dt_enabled
+from testing_support.util import conditional_decorator
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
@@ -23,9 +24,9 @@ from newrelic.api.background_task import background_task
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.package_version_utils import get_package_version
-from testing_support.util import conditional_decorator
 
 graphql_version = get_package_version("graphql-core")
+
 
 def to_graphql_source(query):
     def delay_import():
@@ -79,10 +80,7 @@ def test_basic(target_application):
     elif framework == "Ariadne":
         transaction_name = "ariadne.asgi.graphql:GraphQL.__call__"
 
-    @validate_transaction_metrics(
-        transaction_name,
-        background_task=not is_wsgi_or_asgi,
-    )
+    @validate_transaction_metrics(transaction_name, background_task=not is_wsgi_or_asgi)
     @conditional_decorator(decorator=background_task(), condition=(not is_wsgi_or_asgi))
     def _test():
         response = target_application("{ hello }")
@@ -95,8 +93,7 @@ def test_transaction_empty_settings(target_application):
     _, target_application, _, _ = target_application
 
     @validate_transaction_metrics(
-        "hybridagent_graphql.test_application:test_transaction_empty_settings.<locals>._test",
-        background_task=True,
+        "hybridagent_graphql.test_application:test_transaction_empty_settings.<locals>._test", background_task=True
     )
     @background_task()
     def _test():
@@ -119,7 +116,7 @@ def test_query_and_mutation(target_application):
     if not is_wsgi_or_asgi:
         mutation_transaction_name = "hybridagent_graphql.test_application:test_query_and_mutation.<locals>._mutation"
         query_transaction_name = "hybridagent_graphql.test_application:test_query_and_mutation.<locals>._query"
-    elif framework=="Strawberry":
+    elif framework == "Strawberry":
         mutation_transaction_name = query_transaction_name = "strawberry.asgi:GraphQL.__call__"
     elif (framework == "Ariadne") and (is_wsgi_or_asgi == "wsgi"):
         mutation_transaction_name = query_transaction_name = "ariadne.wsgi:GraphQL.__call__"
@@ -127,26 +124,24 @@ def test_query_and_mutation(target_application):
         mutation_transaction_name = query_transaction_name = "ariadne.asgi.graphql:GraphQL.__call__"
 
     _expected_mutation_operation_attributes = {
-        "graphql.operation.name": "storage_add" if framework == "Strawberry" else "GraphQL Operation",    # Otel changes it to whatever was in the path if there is no name
+        "graphql.operation.name": "storage_add"
+        if framework == "Strawberry"
+        else "GraphQL Operation"  # Otel changes it to whatever was in the path if there is no name
     }
     _expected_mutation_resolver_attributes = {
         "graphql.field.parentType": "Mutation",
         "graphql.field.path": "storage_add",
     }
     _expected_query_operation_attributes = {
-        "graphql.operation.name": "storage" if framework == "Strawberry" else "GraphQL Operation",     # Otel changes it to whatever was in the path if there is no name
+        "graphql.operation.name": "storage"
+        if framework == "Strawberry"
+        else "GraphQL Operation"  # Otel changes it to whatever was in the path if there is no name
     }
-    _expected_query_resolver_attributes = {
-        "graphql.field.parentType": "Query",
-        "graphql.field.path": "storage",
-    }
+    _expected_query_resolver_attributes = {"graphql.field.parentType": "Query", "graphql.field.path": "storage"}
 
     @validate_span_events(exact_agents=_expected_mutation_resolver_attributes)
     @validate_span_events(exact_agents=_expected_mutation_operation_attributes)
-    @validate_transaction_metrics(
-        mutation_transaction_name,
-        background_task=not is_wsgi_or_asgi,
-    )
+    @validate_transaction_metrics(mutation_transaction_name, background_task=not is_wsgi_or_asgi)
     @conditional_decorator(decorator=background_task(), condition=(not is_wsgi_or_asgi))
     def _mutation():
         query = 'mutation { storage_add(string: "abc") }'
@@ -154,10 +149,7 @@ def test_query_and_mutation(target_application):
         assert response["storage_add"] == "abc" or response["storage_add"]["string"] == "abc"
 
     @validate_span_events(exact_agents={**_expected_query_operation_attributes, **_expected_query_resolver_attributes})
-    @validate_transaction_metrics(
-        query_transaction_name,
-        background_task=not is_wsgi_or_asgi,
-    )
+    @validate_transaction_metrics(query_transaction_name, background_task=not is_wsgi_or_asgi)
     @conditional_decorator(decorator=background_task(), condition=(not is_wsgi_or_asgi))
     def _query():
         response = target_application("query { storage }")
@@ -177,17 +169,14 @@ def test_middleware(target_application, middleware):
     elif is_wsgi_or_asgi == "wsgi":
         transaction_name = "ariadne.wsgi:GraphQL.__call__"
     elif is_wsgi_or_asgi == "asgi":
-        transaction_name = "ariadne.asgi.graphql:GraphQL.__call__" 
-        
+        transaction_name = "ariadne.asgi.graphql:GraphQL.__call__"
+
     name = f"{middleware.__module__}:{middleware.__name__}"
     if "async" in name:
         if schema_type != "async":
             pytest.skip("Async middleware not supported in sync applications.")
 
-    @validate_transaction_metrics(
-        transaction_name,
-        background_task=not is_wsgi_or_asgi,
-    )
+    @validate_transaction_metrics(transaction_name, background_task=not is_wsgi_or_asgi)
     @conditional_decorator(decorator=background_task(), condition=(not is_wsgi_or_asgi))
     def _test():
         response = target_application("{ hello }", middleware=[middleware])
@@ -213,27 +202,19 @@ def test_exception_in_middleware(target_application, middleware):
         transaction_name = "ariadne.wsgi:GraphQL.__call__"
     elif is_wsgi_or_asgi == "asgi":
         transaction_name = "ariadne.asgi.graphql:GraphQL.__call__"
-        
+
     if "async" in transaction_name:
         if schema_type != "async":
             pytest.skip("Async middleware not supported in sync applications.")
 
     # Attributes
-    _expected_exception_resolver_attributes = {
-        "graphql.field.parentType": "Query",
-        "graphql.field.path": field,
-    }
-    _expected_exception_operation_attributes = {
-        "graphql.operation.name": "MyQuery",
-    }
+    _expected_exception_resolver_attributes = {"graphql.field.parentType": "Query", "graphql.field.path": field}
+    _expected_exception_operation_attributes = {"graphql.operation.name": "MyQuery"}
 
     if framework == "Strawberry":
         _expected_exception_operation_attributes["graphql.operation.query"] = query
 
-    @validate_transaction_metrics(
-        transaction_name,
-        background_task=not is_wsgi_or_asgi,
-    )
+    @validate_transaction_metrics(transaction_name, background_task=not is_wsgi_or_asgi)
     @validate_span_events(exact_agents=_expected_exception_operation_attributes)
     @validate_span_events(exact_agents=_expected_exception_resolver_attributes)
     @conditional_decorator(decorator=background_task(), condition=(not is_wsgi_or_asgi))
@@ -250,7 +231,7 @@ def test_exception_in_resolver(target_application, field):
     query = f"query MyQuery {{ {field} }}"
 
     if not is_wsgi_or_asgi:
-        transaction_name = f"hybridagent_graphql.test_application:test_exception_in_resolver.<locals>._test"
+        transaction_name = "hybridagent_graphql.test_application:test_exception_in_resolver.<locals>._test"
     elif framework == "Strawberry":
         transaction_name = "strawberry.asgi:GraphQL.__call__"
     elif (framework == "Ariadne") and (is_wsgi_or_asgi == "wsgi"):
@@ -259,22 +240,13 @@ def test_exception_in_resolver(target_application, field):
         transaction_name = "ariadne.asgi.graphql:GraphQL.__call__"
 
     # Attributes
-    _expected_exception_resolver_attributes = {
+    _expected_exception_resolver_attributes = {"graphql.field.parentType": "Query", "graphql.field.path": field}
+    _expected_exception_operation_attributes = {"graphql.operation.name": "MyQuery"}
 
-        "graphql.field.parentType": "Query",
-        "graphql.field.path": field,
-    }
-    _expected_exception_operation_attributes = {
-        "graphql.operation.name": "MyQuery",
-    }
-    
     if framework == "Strawberry":
         _expected_exception_operation_attributes["graphql.operation.query"] = query
 
-    @validate_transaction_metrics(
-        transaction_name,
-        background_task=not is_wsgi_or_asgi,
-    )
+    @validate_transaction_metrics(transaction_name, background_task=not is_wsgi_or_asgi)
     @validate_span_events(exact_agents=_expected_exception_operation_attributes)
     @validate_span_events(exact_agents=_expected_exception_resolver_attributes)
     @validate_transaction_errors(errors=_test_runtime_error)
@@ -299,14 +271,14 @@ def test_exception_in_resolver(target_application, field):
 )
 def test_exception_in_validation(target_application, query, exc_class):
     framework, target_application, is_wsgi_or_asgi, _ = target_application
-    
+
     if not is_wsgi_or_asgi:
         transaction_name = "hybridagent_graphql.test_application:test_exception_in_validation.<locals>._test"
-    elif framework=="Strawberry":
+    elif framework == "Strawberry":
         transaction_name = "strawberry.asgi:GraphQL.__call__"
-    elif (framework=="Ariadne") and (is_wsgi_or_asgi == "wsgi"):
+    elif (framework == "Ariadne") and (is_wsgi_or_asgi == "wsgi"):
         transaction_name = "ariadne.wsgi:GraphQL.__call__"
-    elif framework=="Ariadne":
+    elif framework == "Ariadne":
         transaction_name = "ariadne.asgi.graphql:GraphQL.__call__"
 
     # Import path differs between versions
@@ -316,17 +288,12 @@ def test_exception_in_validation(target_application, query, exc_class):
         exc_class = callable_name(GraphQLError)
 
     # Attributes
-    _expected_exception_operation_attributes = {
-        "graphql.operation.query": query,
-    }
+    _expected_exception_operation_attributes = {"graphql.operation.query": query}
 
-    @validate_transaction_metrics(
-        transaction_name,
-        background_task=not is_wsgi_or_asgi,
-    )
+    @validate_transaction_metrics(transaction_name, background_task=not is_wsgi_or_asgi)
     @conditional_decorator(
         condition=(framework == "Strawberry"),
-        decorator=validate_span_events(exact_agents=_expected_exception_operation_attributes)
+        decorator=validate_span_events(exact_agents=_expected_exception_operation_attributes),
     )
     @conditional_decorator(decorator=background_task(), condition=(not is_wsgi_or_asgi))
     def _test():
@@ -339,20 +306,17 @@ def test_exception_in_validation(target_application, query, exc_class):
 def test_operation_metrics_and_attrs(target_application):
     framework, target_application, is_wsgi_or_asgi, _ = target_application
     operation_attrs = {"graphql.operation.name": "MyQuery"}
-    
+
     if not is_wsgi_or_asgi:
-        transaction_name = f"hybridagent_graphql.test_application:test_operation_metrics_and_attrs.<locals>._test"
-    elif framework=="Strawberry":
+        transaction_name = "hybridagent_graphql.test_application:test_operation_metrics_and_attrs.<locals>._test"
+    elif framework == "Strawberry":
         transaction_name = "strawberry.asgi:GraphQL.__call__"
-    elif (framework=="Ariadne") and (is_wsgi_or_asgi == "wsgi"):
+    elif (framework == "Ariadne") and (is_wsgi_or_asgi == "wsgi"):
         transaction_name = "ariadne.wsgi:GraphQL.__call__"
-    elif framework=="Ariadne":
+    elif framework == "Ariadne":
         transaction_name = "ariadne.asgi.graphql:GraphQL.__call__"
 
-    @validate_transaction_metrics(
-        transaction_name,
-        background_task=not is_wsgi_or_asgi,
-    )
+    @validate_transaction_metrics(transaction_name, background_task=not is_wsgi_or_asgi)
     @validate_span_events(exact_agents=operation_attrs)
     @conditional_decorator(decorator=background_task(), condition=(not is_wsgi_or_asgi))
     def _test():
@@ -366,23 +330,17 @@ def test_field_resolver_metrics_and_attrs(target_application):
     framework, target_application, is_wsgi_or_asgi, _ = target_application
 
     if not is_wsgi_or_asgi:
-        transaction_name = f"hybridagent_graphql.test_application:test_field_resolver_metrics_and_attrs.<locals>._test"
-    elif framework=="Strawberry":
+        transaction_name = "hybridagent_graphql.test_application:test_field_resolver_metrics_and_attrs.<locals>._test"
+    elif framework == "Strawberry":
         transaction_name = "strawberry.asgi:GraphQL.__call__"
-    elif (framework=="Ariadne") and (is_wsgi_or_asgi == "wsgi"):
+    elif (framework == "Ariadne") and (is_wsgi_or_asgi == "wsgi"):
         transaction_name = "ariadne.wsgi:GraphQL.__call__"
-    elif framework=="Ariadne":
+    elif framework == "Ariadne":
         transaction_name = "ariadne.asgi.graphql:GraphQL.__call__"
 
-    graphql_attrs = {
-        "graphql.field.parentType": "Query",
-        "graphql.field.path": "hello",
-    }
+    graphql_attrs = {"graphql.field.parentType": "Query", "graphql.field.path": "hello"}
 
-    @validate_transaction_metrics(
-        transaction_name,
-        background_task=not is_wsgi_or_asgi,
-    )
+    @validate_transaction_metrics(transaction_name, background_task=not is_wsgi_or_asgi)
     @validate_span_events(exact_agents=graphql_attrs)
     @conditional_decorator(decorator=background_task(), condition=(not is_wsgi_or_asgi))
     def _test():
@@ -420,7 +378,7 @@ def test_query_obfuscation(target_application, query, obfuscated, key):
     elif framework == "Strawberry":
         graphql_attrs = {"graphql.operation.query": obfuscated}
         user_attrs = {f"graphql.param.{key}": "?"} if key else {}
-        
+
     if callable(query):
         if framework != "GraphQL":
             pytest.skip("Source query objects not tested outside of graphql-core")
@@ -438,5 +396,5 @@ def test_query_obfuscation(target_application, query, obfuscated, key):
 # NOTE: Opentelemetry has their own transaction naming convention.
 # The deepest unique path does not need to be tested here.
 
-# NOTE: Opentelemetry does not capture the field name, so the 
+# NOTE: Opentelemetry does not capture the field name, so the
 # `capture_introspection_setting` is a no-op

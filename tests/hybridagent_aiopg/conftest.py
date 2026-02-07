@@ -24,7 +24,6 @@ there is no conflict with OpenTelemetry instrumentation.
 that traces are created or not created as expected.
 """
 
-
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 _default_settings = {
@@ -40,4 +39,3 @@ _default_settings = {
 collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (Hybrid Agent)", default_settings=_default_settings
 )
-

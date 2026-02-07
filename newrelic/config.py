@@ -45,7 +45,6 @@ from newrelic.common.log_file import initialize_logging
 from newrelic.common.object_names import callable_name, expand_builtin_exception_name
 from newrelic.common.otel_tracers import HYBRID_AGENT_DEFAULT_INCLUDED_TRACERS_TO_NR_HOOKS
 from newrelic.common.package_version_utils import get_package_version
-
 from newrelic.core import trace_cache
 from newrelic.core.agent_control_health import (
     HealthStatus,
@@ -70,6 +69,7 @@ TEMPORARILY_DISABLED_OTEL_FRAMEWORKS = {
     "grpc_client",
     "grpc_server",
 }
+
 
 def _map_aws_account_id(s):
     return newrelic.core.config._map_aws_account_id(s, _logger)
@@ -2149,6 +2149,7 @@ def _process_function_profile_configuration():
 
 otel_instrumentation = []
 otel_entrypoints = []
+
 
 def _process_module_definition(target, module, function="instrument"):
     enabled = True
@@ -4460,7 +4461,7 @@ def _reset_instrumentation_done():
 
 def _is_installed(req):
     version = get_package_version(req)
-    
+
     if version:
         return True
     return False
@@ -4469,7 +4470,7 @@ def _is_installed(req):
 def _process_otel_instrumentation_entry_points(final_include_dict=HYBRID_AGENT_DEFAULT_INCLUDED_TRACERS_TO_NR_HOOKS):
     if not _settings.opentelemetry.enabled or not _is_installed("opentelemetry-api"):
         return
-    
+
     try:
         # importlib.metadata was introduced into the standard library starting in Python 3.8.
         from importlib.metadata import entry_points
@@ -4493,12 +4494,16 @@ def _process_otel_instrumentation_entry_points(final_include_dict=HYBRID_AGENT_D
         # Grab entire entry_points dictionary and select group from it.
         _entry_points = entry_points().get(group, ())
 
-    entry_points_generator = (entrypoint for entrypoint in _entry_points if entrypoint.name in final_include_dict and entrypoint.name not in TEMPORARILY_DISABLED_OTEL_FRAMEWORKS)
-    
+    entry_points_generator = (
+        entrypoint
+        for entrypoint in _entry_points
+        if entrypoint.name in final_include_dict and entrypoint.name not in TEMPORARILY_DISABLED_OTEL_FRAMEWORKS
+    )
+
     for entrypoint in entry_points_generator:
         otel_entrypoints.append(entrypoint)
         otel_instrumentation.extend(final_include_dict[entrypoint.name])
-        
+
     # Check for native installations
     # NOTE: This logic will change once enabled and disabled
     # functionality is implemented for opentelemetry.traces setting.
@@ -4525,9 +4530,7 @@ def _process_otel_instrumentors():
             instrumentor.instrument(tracer_provider=newrelic.core.agent.otel_tracer_provider())
             _logger.debug("Successfully instrumented OpenTelemetry tracer '%s' via entry point.", entrypoint.name)
         except Exception as exc:
-            _logger.warning(
-                "Failed to instrument OpenTelemetry tracer '%s' via entry point: %s", entrypoint.name, exc
-            )
+            _logger.warning("Failed to instrument OpenTelemetry tracer '%s' via entry point: %s", entrypoint.name, exc)
 
 
 def _setup_instrumentation():
@@ -4541,9 +4544,9 @@ def _setup_instrumentation():
     _process_module_configuration()
     _process_module_entry_points()
     # Collection of NR disabled hooks must happen before _process_module_builtin_defaults()
-    # but the loading of the entrypoints must not happen until after the NR hooks are registered.   
-    _process_otel_instrumentation_entry_points() 
-    
+    # but the loading of the entrypoints must not happen until after the NR hooks are registered.
+    _process_otel_instrumentation_entry_points()
+
     _process_trace_cache_import_hooks()
     _process_module_builtin_defaults()
 
@@ -4564,7 +4567,7 @@ def _setup_instrumentation():
     _process_data_source_configuration()
 
     _process_function_profile_configuration()
-     
+
     _process_otel_instrumentors()
 
 

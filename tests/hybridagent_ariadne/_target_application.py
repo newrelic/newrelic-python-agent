@@ -36,7 +36,9 @@ def run_sync(schema):
     def _run_sync(query, middleware=None):
         from ariadne import graphql_sync
 
-        success, response = graphql_sync(schema, {"query": query}, middleware=middleware, extensions=[opentelemetry_extension()])
+        success, response = graphql_sync(
+            schema, {"query": query}, middleware=middleware, extensions=[opentelemetry_extension()]
+        )
         check_response(query, success, response)
 
         return response.get("data", {})
@@ -52,12 +54,9 @@ def run_async(schema):
     def _run_async(query, middleware=None):
         from ariadne import graphql
 
-        success, response = loop.run_until_complete(graphql(
-            schema,
-            {"query": query},
-            middleware=middleware,
-            extensions=[opentelemetry_extension()],
-        ))
+        success, response = loop.run_until_complete(
+            graphql(schema, {"query": query}, middleware=middleware, extensions=[opentelemetry_extension()])
+        )
         check_response(query, success, response)
 
         return response.get("data", {})

@@ -1,120 +1,52 @@
-### Trace Context test details
+# Cross Agent Tests
 
-The Trace Context test cases in `trace_context.json` are meant to be used to verify the
-creation and forwarding of W3C Trace Context headers within the agent and the attributes
-and metrics that get created during that process.
+### Data Policy
 
-Each test case should correspond to a simulated inbound header or creation of a header in
-the agent under test. Here's what the various fields in each test case mean:
+None of these tests should contain customer data such as SQL strings.
+Please be careful when adding new tests from real world failures.
+
+### Tests
+
+| Test Files    | Description   |
+| ------------- |-------------|
+| [rum_loader_insertion_location](rum_loader_insertion_location) | Describe where the RUM loader (formerly known as header) should be inserted. |
+| [rum_footer_insertion_location](rum_footer_insertion_location) | Describe where the RUM footer (aka "client config") should be inserted.  These tests do not apply to agents which insert the footer directly after the loader. |
+| [rules.json](rules.json) | Describe how url/metric/txn-name rules should be applied. |
+| [rum_client_config.json](rum_client_config.json) | These tests dictate the format and contents of the browser monitoring client configuration.  For more information see: [SPEC](https://newrelic.atlassian.net/wiki/display/eng/JavaScript+Agent+Auto-Instrumentation) |
+| [rum_cookie.json](rum_cookie.json)      | These tests indicate the format requirements of a valid RUM cookie. |
+| [sql_parsing.json](sql_parsing.json) | These tests show how an SQL string should be parsed for the operation and table name. |
+| [url_clean.json](url_clean.json) | These tests show how URLs should be cleaned before putting them into a trace segment's parameter hash (under the key 'uri'). |
+| [url_domain_extraction.json](url_domain_extraction.json) | These tests show how the domain of a URL should be extracted (for the purpose of creating external metrics). |
+| [postgres_explain_obfuscation](postgres_explain_obfuscation) | These tests show how plain-text explain plan output from PostgreSQL should be obfuscated when SQL obfuscation is enabled. |
+| [sql_obfuscation](sql_obfuscation) | Describe how agents should obfuscate SQL queries before transmission to the collector. |
+| [attribute_configuration](attribute_configuration.json) | These tests show how agents should respond to the various attribute configuration settings.  For more information see: [Attributes SPEC](https://newrelic.atlassian.net/wiki/display/eng/Agent+Attributes) |
+| [cat_map](cat_map.json) | These tests cover the new Dirac attributes that are added for the CAT Map project. See the [CAT Map Spec](https://newrelic.jiveon.com/docs/DOC-1798) and the section below for details.|
+| [labels](labels.json) | These tests cover the Labels for Language Agents project. See the [Labels for Language Agents Spec](https://newrelic.atlassian.net/wiki/display/eng/Labels+for+Language+Agents+-+draft+spec) for details.|
+| [proc_cpuinfo](proc_cpuinfo) | These test correct processing of `/proc/cpuinfo` output on Linux hosts. |
+
+### CAT Map test details
+
+The CAT map test cases in `cat_map.json` are meant to be used to verify the
+attributes that agents collect and attach to analytics transaction events for
+the CAT map project.
+
+Each test case should correspond to a simulated transaction in the agent under
+test. Here's what the various fields in each test case mean:
 
 | Name | Meaning |
 | ---- | ------- |
-| `test_name` | A human-meaningful name for the test case. |
-| `trusted_account_key` | The account ids the agent can trust. |
-| `account_id` | The account id the agent would receive on connect. |
-| `web_transaction` | Whether the transaction that's tested is a web transaction or not. |
-| `raises_exception` | Whether to simulate an exception happening within the transaction or not, resulting in a transaction error event. |
-| `root` | The sampler to use for transactions at the root of a trace. |
-| `remote_parent_sampled` | The sampler to use for transactions with a remote parent. |
-| `remote_parent_not_sampled` | The sampler to use for transactions with a remote parent that is not sampled. |
-| `expected_priority_between` | The inclusive range of the expected priority value on the generated transaction event. |
-| `force_adaptive_sampled` | The sampling decision to force on a transaction whenever the adaptive sampler is used. |
-| `ratio` | The ratio to use for all of the trace ID ratio samplers defined in the test. For testing purposes we are not defining different ratios for each trace ID ratio sampler instance. If that is necessary, we will need a different way to configure the ratios. |
-| `transport_type` | The transport type for the inbound request. |
-| `inbound_headers` | The headers you should mock coming into the agent. |
-| `outbound_payloads` | The exact/expected/unexpected values for outbound `w3c` headers. |
-| `intrinsics` | The exact/expected/unexpected attributes for events. |
-| `expected_metrics` | The expected metrics and associated counts as a result of the test. |
-| `span_events_enabled` | Whether span events are enabled in the agent or not. |
-| `transaction_events_enabled` | Whether transaction events are enabled in the agent or not. |
+| `name` | A human-meaningful name for the test case. |
+| `appName` | The name of the New Relic application for the simulated transaction. |
+| `transactionName` | The final name of the simulated transaction. |
+| `transactionGuid` | The GUID of the simulated transaction. |
+| `inboundPayload` | The (non-serialized) contents of the `X-NewRelic-Transaction` HTTP request header on the simulated transaction. Note that this value should be serialized to JSON, obfuscated using the CAT obfuscation algorithm, and Base64-encoded before being used in the header value. Note also that the `X-NewRelic-ID` header should be set on the simulated transaction, though its value is not specified in these tests. |
+| `expectedIntrinsicFields` | A set of key-value pairs that are expected to be present in the analytics event generated for the simulated transaction. These fields should be present in the first hash of the analytic event payload (built-in agent-supplied fields). |
+| `nonExpectedIntrinsicFields` | An array of attribute names that should *not* be present in the analytics event generated for the simulated transaction. |
+| `outboundRequests` | An array of objects representing outbound requests that should be made in the context of the simulated transaction. See the table below for details. Only present if the test case involves making outgoing requests from the simulated transaction. |
 
-The samplers that can referenced in the `root`, `remote_parent_sampled`, and `remote_parent_not_sampled` fields are:
+Here's what the fields of each entry in the `outboundRequests` array mean:
 
-- `default`: Use the adaptive sampler.
-- `adaptive`: Use the adaptive sampler.
-- `trace_id_ratio_based`: Use the trace ID ratio sampler.
-- `always_on`: Use the always on sampler.
-- `always_off`: Use the always off sampler.
-
-The `outbound_payloads` and `intrinsics` field can have nested values, for example:
-```javascript
-...
-    "intrinsics": {
-       "target_events": ["Transaction", "Span"],
-       "common":{
-         "exact": {
-           "traceId": "da8bc8cc6d062849b0efcf3c169afb5a"
-         },
-         "expected": ["guid"],
-         "unexpected": ["grandparentId"]
-       },
-       "Transaction": {
-         "exact": {
-           "parent.type": "App",
-           "parent.app": "2827902",
-           "parent.account": "33",
-           "parent.transportType": "HTTP",
-           "parentId": "e8b91a159289ff74",
-           "parentSpanId": "7d3efb1b173fecfa"
-         },
-         "expected": ["parent.transportDuration"]
-       },
-       "Span": {
-         "exact": {
-           "parentId": "7d3efb1b173fecfa",
-           "trustedParentId": "7d3efb1b173fecfa",
-           "tracingVendors": ""
-         },
-         "expected": ["transactionId"],
-         "unexpected": ["parent.transportDuration", "parent.type", "parent.app", "parent.account", "parent.transportType"]
-       }
-     },
-    ...
-```
-
-`target_events` is paired with the `common` block. So anything in the common block should be checked for any event type in the
-`target_events` list. So for instance, this test should check that both the Transaction and Span events
-have a `guid`, both have `da8bc8cc6d062849b0efcf3c169afb5a` as the `traceId`, and both don't have a `grandparentId` attribute.
-The `Transaction` block means anything in there should only apply to the transaction object. Same for the `Span` block.
-
-The same idea goes for the `outbound_payloads` block but will apply specifically for the outbound `traceparent` header and `tracestate` header.
-
-`outbound_payloads` may also target `newrelic` headers and follow same basic structure inline with trace context headers, for example:
-```javascript
-  ...
-  "outbound_payloads": [
-    {
-      "exact": {
-        "traceparent.version": "00",
-        "traceparent.trace_id": "00000000000000006e2fea0b173fdad0",
-        "traceparent.trace_flags": "01",
-        "tracestate.tenant_id": "33",
-        "tracestate.version": 0,
-        "tracestate.parent_type": 0,
-        "tracestate.parent_account_id": "33",
-        "tracestate.sampled": true,
-        "tracestate.priority": 1.123432,
-        "newrelic.v": [0, 1],
-        "newrelic.d.ty": "App",
-        "newrelic.d.ac": "33",
-        "newrelic.d.ap": "2827902",
-        "newrelic.d.tr": "6E2fEA0B173FDAD0",
-        "newrelic.d.sa": true,
-        "newrelic.d.pr": 1.1234321
-      },
-      "expected": [
-        "traceparent.parent_id",
-        "tracestate.timestamp",
-        "tracestate.parent_application_id",
-        "tracestate.span_id",
-        "tracestate.transaction_id",
-        "newrelic.d.ap", 
-        "newrelic.d.tx", 
-        "newrelic.d.ti", 
-        "newrelic.d.id"
-      ],
-      "unexpected": ["newrelic.d.tk"]
-    }
-  ],
-  ...
-```
+| Name | Meaning |
+| ---- | ------- |
+| `outboundTxnName` | The name of the simulated transaction at the time this outbound request is made. Your test driver should set the transaction name to this value prior to simulating the outbound request. |
+| `expectedOutboundPayload` | The expected (un-obfuscated) content of the outbound `X-NewRelic-Transaction` request header for this request. |

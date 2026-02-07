@@ -48,17 +48,17 @@ _logger = logging.getLogger(__name__)
 
 
 def retry_application_activation(application, retries=10):
-    count = 0
-    while (not application.active) and count < retries:
+    count = 1
+    while (not application.active) and count < retries + 1:
         # Force application registration if not already active
-        activation_wait = 0.5 + count*0.5
+        activation_wait = count*0.5
         application.activate()
-        _logger.debug(f"Attempt #{count+1} to active application.  Waiting for {activation_wait} seconds.")
+        _logger.debug("Attempt #%s to active application.  Waiting for %s seconds.", count, activation_wait)
         time.sleep(activation_wait)
         count += 1
         
     if not application.active:
-        raise RuntimeError("Failed to activate application after retries")
+        raise RuntimeError(f"Failed to activate application after {count} retries")
 
 
 class NRTraceContextPropagator(TraceContextTextMapPropagator):

@@ -12,9 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
-from pathlib import Path
-
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 from newrelic.common.package_version_utils import get_package_version
@@ -31,11 +28,10 @@ _default_settings = {
     "custom_insights_events.max_attribute_value": 4096,
     "ai_monitoring.enabled": True,
     "opentelemetry.enabled": True,
+    "opentelemetry.traces.enabled": True,
 }
 collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (Hybrid Agent, botocore)",
     default_settings=_default_settings,
     linked_applications=["Python Agent Test (external_botocore)"],
 )
-
-os.environ["NEW_RELIC_CONFIG_FILE"] = str(Path(__file__).parent / "newrelic_dynamodb.ini")

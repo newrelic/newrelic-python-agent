@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import mysql.connector
-from opentelemetry.instrumentation.mysql import MySQLInstrumentor
 from testing_support.db_settings import mysql_settings
 from testing_support.util import instance_hostname
 from testing_support.validators.validate_database_trace_inputs import validate_database_trace_inputs
@@ -21,8 +20,6 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
-
-MySQLInstrumentor().instrument()
 
 DB_SETTINGS = mysql_settings()
 DB_SETTINGS = DB_SETTINGS[0]

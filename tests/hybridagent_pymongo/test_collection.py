@@ -15,7 +15,6 @@
 import sqlite3
 
 import pymongo
-from opentelemetry.instrumentation.pymongo import PymongoInstrumentor
 from testing_support.db_settings import mongodb_settings
 from testing_support.validators.validate_database_duration import validate_database_duration
 from testing_support.validators.validate_span_events import validate_span_events
@@ -103,9 +102,8 @@ def _exercise_mongo(db):
     "test_motor_instance_info", rollup_metrics=[(INSTANCE_METRIC_NAME, 1)], background_task=True
 )
 @background_task(name="test_motor_instance_info")
-def test_collection_instance_info(loop, tracer_provider):
+def test_collection_instance_info(loop):
     # Make mongodb query
-    PymongoInstrumentor().instrument(tracer_provider=tracer_provider)
     client = MongoClient(MONGODB_HOST, MONGODB_PORT)
     db = client["test"]
     db[MONGODB_COLLECTION].insert_one({"x": 300})
@@ -156,7 +154,7 @@ _test_pymongo_client_rollup_metrics = [
 _test_pymongo_client_rollup_metrics.extend(_test_pymongo_client_scoped_metrics)
 
 
-def test_collection_operations(tracer_provider):
+def test_collection_operations():
     @validate_transaction_errors(errors=[])
     @validate_transaction_metrics(
         "test_collection_operations",
@@ -166,7 +164,6 @@ def test_collection_operations(tracer_provider):
     )
     @background_task(name="test_collection_operations")
     def _test():
-        PymongoInstrumentor().instrument(tracer_provider=tracer_provider)
         client = MongoClient(MONGODB_HOST, MONGODB_PORT)
         db = client.test
         _exercise_mongo(db)
@@ -176,8 +173,7 @@ def test_collection_operations(tracer_provider):
 
 @validate_database_duration()
 @background_task()
-def test_collection_mongodb_database_duration(tracer_provider):
-    PymongoInstrumentor().instrument(tracer_provider=tracer_provider)
+def test_collection_mongodb_database_duration():
     client = MongoClient(MONGODB_HOST, MONGODB_PORT)
     db = client.test
     _exercise_mongo(db)
@@ -185,10 +181,9 @@ def test_collection_mongodb_database_duration(tracer_provider):
 
 @validate_database_duration()
 @background_task()
-def test_collection_mongodb_and_sqlite_database_duration(tracer_provider):
+def test_collection_mongodb_and_sqlite_database_duration():
     # Make mongodb queries
 
-    PymongoInstrumentor().instrument(tracer_provider=tracer_provider)
     client = MongoClient(MONGODB_HOST, MONGODB_PORT)
     db = client.test
     _exercise_mongo(db)

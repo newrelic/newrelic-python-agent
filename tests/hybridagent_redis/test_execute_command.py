@@ -14,7 +14,6 @@
 
 import pytest
 import redis
-from opentelemetry.instrumentation.redis import RedisInstrumentor
 from testing_support.db_settings import redis_settings
 from testing_support.fixtures import dt_enabled, override_application_settings
 from testing_support.util import instance_hostname
@@ -26,11 +25,6 @@ from newrelic.common.package_version_utils import get_package_version_tuple
 
 DB_SETTINGS = redis_settings()[0]
 REDIS_PY_VERSION = get_package_version_tuple("redis")
-
-
-@pytest.fixture(scope="module", autouse=True)
-def instrument_otel_redis(tracer_provider):
-    RedisInstrumentor().instrument(tracer_provider=tracer_provider)
 
 
 # Settings
@@ -65,7 +59,7 @@ _unexpected_child_intrinsics = ["nr.entryPoint", "transaction.name"]
 
 _exact_agents_instance_enabled = {"db.system": "redis", "server.port": DB_SETTINGS["port"]}
 _exact_agents_instance_disabled = {"db.system": "redis"}
-_expected_agents = ["db.operation", "peer.hostname", "server.address", "peer.address"]
+_expected_agents = ["db.operation", "peer.hostname", "server.address", "peer.address", "db.statement"]
 _unexpected_agents_instance_disabled = ["server.port"]
 _exact_users = {
     "db.system": "redis",
@@ -73,7 +67,7 @@ _exact_users = {
     "net.peer.port": DB_SETTINGS["port"],
     "net.transport": "ip_tcp",
 }
-_expected_users = ["db.statement", "net.peer.name"]
+_expected_users = ["net.peer.name"]
 
 
 def exercise_redis_multi_args(client):

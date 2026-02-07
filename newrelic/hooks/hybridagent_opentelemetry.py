@@ -12,24 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import logging
-import os
-import time
-
 from newrelic.api.application import application_instance
 from newrelic.api.time_trace import add_custom_span_attribute, current_trace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.signature import bind_args
 from newrelic.core.config import global_settings
-
-_logger = logging.getLogger(__name__)
-_TRACER_PROVIDER = None
-
-# Enable OpenTelemetry Bridge to capture HTTP
-# request/response headers as span attributes:
-os.environ["OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_REQUEST"] = ".*"
-os.environ["OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE"] = ".*"
 
 ###########################################
 #   Context Instrumentation
@@ -49,14 +37,19 @@ def wrap__load_runtime_context(wrapped, instance, args, kwargs):
 
 
 def wrap_get_global_response_propagator(wrapped, instance, args, kwargs):
-    application = application_instance(activate=False)
+    from newrelic.api.opentelemetry import otel_context_propagator, retry_application_activation
+
+    application = application_instance()
+    if not application.active:
+        # Force application registration if not already active
+        retry_application_activation(application)
+
     settings = global_settings() if not application else application.settings
-    if not settings.opentelemetry.enabled:
+
+    if not settings or not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
     from opentelemetry.instrumentation.propagators import set_global_response_propagator
-
-    from newrelic.api.opentelemetry import otel_context_propagator
 
     set_global_response_propagator(otel_context_propagator)
 
@@ -83,24 +76,19 @@ def wrap_set_tracer_provider(wrapped, instance, args, kwargs):
     # We should initialize the agent here as well, if there is
     # not an instance already.
 
+    from newrelic.api.opentelemetry import retry_application_activation
+
     application = application_instance()
     if not application.active:
         # Force application registration if not already active
-        application.activate()
+        retry_application_activation(application)
 
     settings = global_settings() if not application else application.settings
-    if not settings:
-        # The application may need more time to start up
-        time.sleep(0.5)
-        settings = global_settings() if not application else application.settings
     if not settings or not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
-    from newrelic.api.opentelemetry import TracerProvider
-
-    global _TRACER_PROVIDER
-
-    _TRACER_PROVIDER = TracerProvider()
+    nr_tracer_provider = application._agent.otel_tracer_provider()
+    return wrapped(nr_tracer_provider)
 
 
 def wrap_get_tracer_provider(wrapped, instance, args, kwargs):
@@ -108,30 +96,37 @@ def wrap_get_tracer_provider(wrapped, instance, args, kwargs):
     # We should initialize the agent here as well, if there is
     # not an instance already.
 
+    from newrelic.api.opentelemetry import retry_application_activation
+
     application = application_instance()
     if not application.active:
         # Force application registration if not already active
-        application.activate()
+        retry_application_activation(application)
 
     settings = global_settings() if not application else application.settings
-
-    if not settings:
-        # The application may need more time to start up
-        time.sleep(0.5)
-        settings = global_settings() if not application else application.settings
 
     if not settings or not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
-    if not settings.opentelemetry.enabled:
-        return wrapped(*args, **kwargs)
+    return application._agent.otel_tracer_provider()
 
-    from newrelic.api.opentelemetry import TracerProvider
 
-    global _TRACER_PROVIDER
+def wrap_get_custom_headers(wrapped, instance, args, kwargs):
+    # Capture all headers now and let New Relic handle
+    # filtering, either through attribute filtering or
+    # settings like HSM.
 
-    _TRACER_PROVIDER = TracerProvider()
-    return _TRACER_PROVIDER
+    capture_header_env_vars = [
+        "OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE",
+        "OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_CLIENT_RESPONSE",
+    ]
+
+    bound_args = bind_args(wrapped, args, kwargs)
+    env_var = bound_args.get("env_var")
+    if env_var and (env_var in capture_header_env_vars):
+        return [".*"]
+
+    return wrapped(*args, **kwargs)
 
 
 def wrap_get_current_span(wrapped, instance, args, kwargs):
@@ -298,3 +293,7 @@ def instrument_utils(module):
 def instrument_pika_utils(module):
     if hasattr(module, "_get_span"):
         wrap_function_wrapper(module, "_get_span", wrap__get_span)
+
+
+def instrument_util_http(module):
+    wrap_function_wrapper(module, "get_custom_headers", wrap_get_custom_headers)

@@ -12,22 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import platform
+"""
+This test suite tests the following scenarios:
+1. Hybrid Agent with a framework that is instrumented by OpenTelemetry (aiopg)
+but not New Relic.
+2. Despite New Relic not having instrumentation support for aiopg, there are
+framework  dependencies that are present in this library (psycopg2) that New
+Relic does instrument, so this ensures that these hooks are disabled so that
+there is no conflict with OpenTelemetry instrumentation.
+3. `opentelemetry.traces.enabled` setting is toggled on and off to ensure
+that traces are created or not created as expected.
+"""
 
-import pytest
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
-
-from newrelic.common.package_version_utils import get_package_version_tuple
-
-FLASK_VERSION = get_package_version_tuple("flask")
-
-is_flask_v2 = FLASK_VERSION[0] >= 2
-is_not_flask_v2_3 = FLASK_VERSION < (2, 3, 0)
-is_pypy = platform.python_implementation() == "PyPy"
-async_handler_support = is_flask_v2 and not is_pypy
-skip_if_not_async_handler_support = pytest.mark.skipif(
-    not async_handler_support, reason="Requires async handler support. (Flask >=v2.0.0, CPython)"
-)
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
@@ -37,9 +34,8 @@ _default_settings = {
     "debug.log_data_collector_payloads": True,
     "debug.record_transaction_failure": True,
     "opentelemetry.enabled": True,
-    "opentelemetry.traces.enabled": True,
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
-    app_name="Python Agent Test (Hybrid Agent, Flask)", default_settings=_default_settings
+    app_name="Python Agent Test (Hybrid Agent)", default_settings=_default_settings
 )

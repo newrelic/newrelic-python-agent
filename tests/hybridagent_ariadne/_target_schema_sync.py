@@ -16,9 +16,9 @@ from pathlib import Path
 
 import webtest
 from ariadne import MutationType, QueryType, UnionType, load_schema_from_path, make_executable_schema
-from ariadne.wsgi import GraphQL as GraphQLWSGI
 from ariadne.asgi.handlers import GraphQLHTTPHandler
 from ariadne.contrib.tracing.opentelemetry import OpenTelemetryExtension, opentelemetry_extension
+from ariadne.wsgi import GraphQL as GraphQLWSGI
 from hybridagent_graphql._target_schema_sync import books, libraries, magazines
 from testing_support.asgi_testing import AsgiTest
 
@@ -98,16 +98,6 @@ def resolve_error(self, info):
 
 target_schema = make_executable_schema(type_defs, query, mutation, item)
 target_asgi_application = AsgiTest(
-    GraphQLASGI(
-        target_schema,
-        http_handler=GraphQLHTTPHandler(
-            extensions=[OpenTelemetryExtension]
-        )
-    )
+    GraphQLASGI(target_schema, http_handler=GraphQLHTTPHandler(extensions=[OpenTelemetryExtension]))
 )
-target_wsgi_application = webtest.TestApp(
-    GraphQLWSGI(
-        target_schema,
-        extensions=[opentelemetry_extension()],
-    )
-)
+target_wsgi_application = webtest.TestApp(GraphQLWSGI(target_schema, extensions=[opentelemetry_extension()]))

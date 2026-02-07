@@ -31,8 +31,8 @@ collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (Hybrid Agent, Requests)", default_settings=_default_settings
 )
 
+
 @pytest.fixture(scope="session")
 def server():
     with MockExternalHTTPHResponseHeadersServer() as _server:
         yield _server
-

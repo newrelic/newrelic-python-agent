@@ -13,10 +13,9 @@
 # limitations under the License.
 
 import os
+
 import pytest
-
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
-
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.

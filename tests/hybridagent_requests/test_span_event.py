@@ -24,7 +24,6 @@ from newrelic.api.transaction import current_transaction
 
 @pytest.fixture(scope="module", autouse=True)
 def server():
-
     with MockExternalHTTPServer() as _server:
         yield _server
 

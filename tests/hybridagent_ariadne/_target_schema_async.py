@@ -86,4 +86,6 @@ async def resolve_error(self, info):
 
 
 target_schema = make_executable_schema(type_defs, query, mutation, item)
-target_asgi_application = AsgiTest(GraphQLASGI(target_schema, debug=True, http_handler=GraphQLHTTPHandler(extensions=[OpenTelemetryExtension])))
+target_asgi_application = AsgiTest(
+    GraphQLASGI(target_schema, debug=True, http_handler=GraphQLHTTPHandler(extensions=[OpenTelemetryExtension]))
+)

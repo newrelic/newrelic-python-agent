@@ -14,6 +14,7 @@
 
 import pytest
 from hybridagent_graphql.test_application import *  # noqa: F403
+
 from newrelic.common.package_version_utils import get_package_version
 
 STRAWBERRY_VERSION = get_package_version("strawberry-graphql")
@@ -32,5 +33,5 @@ def target_application(request):
     return "Strawberry", target_application, is_asgi, schema_type
 
 
-# NOTE: Opentelemetry does not capture the field name, so the 
+# NOTE: Opentelemetry does not capture the field name, so the
 # `capture_introspection_setting` is a no-op

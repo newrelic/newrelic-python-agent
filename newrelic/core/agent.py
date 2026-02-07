@@ -196,11 +196,11 @@ class Agent:
 
         """
         settings = newrelic.core.config.global_settings()
-        
+
         if not settings.opentelemetry.enabled:
             _logger.debug("OpenTelemetry mode is disabled.")
             return
-        
+
         if Agent._tracer_provider:
             return Agent._tracer_provider
 
@@ -208,6 +208,7 @@ class Agent:
             if not Agent._tracer_provider:
                 try:
                     from opentelemetry.trace import NoOpTracerProvider
+
                     from newrelic.api.opentelemetry import TracerProvider
 
                     if not settings.opentelemetry.traces.enabled:
@@ -218,7 +219,9 @@ class Agent:
                         Agent._tracer_provider = TracerProvider()
                 except ImportError:
                     # `opentelemetry-api` is not installed, so tracer provider cannot be created
-                    _logger.warning("OpenTelemetry mode has been enabled but `opentelemetry-api` is not installed, so no TracerProvider can be created.  Defaulting to New Relic specific monitoring.")
+                    _logger.warning(
+                        "OpenTelemetry mode has been enabled but `opentelemetry-api` is not installed, so no TracerProvider can be created.  Defaulting to New Relic specific monitoring."
+                    )
 
         return Agent._tracer_provider
 

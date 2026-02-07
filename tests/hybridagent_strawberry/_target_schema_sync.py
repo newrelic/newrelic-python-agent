@@ -25,9 +25,10 @@ except ImportError:
 
 from strawberry import Schema, field
 from strawberry.asgi import GraphQL
-from strawberry.schema.config import StrawberryConfig
 from strawberry.extensions.tracing import OpenTelemetryExtensionSync
+from strawberry.schema.config import StrawberryConfig
 from testing_support.asgi_testing import AsgiTest
+
 
 @strawberry.type
 class Author:
@@ -150,5 +151,10 @@ class Mutation:
     storage_add: str = strawberry.mutation(resolver=resolve_storage_add)
 
 
-target_schema = Schema(query=Query, mutation=Mutation, extensions=[OpenTelemetryExtensionSync], config=StrawberryConfig(auto_camel_case=False))
+target_schema = Schema(
+    query=Query,
+    mutation=Mutation,
+    extensions=[OpenTelemetryExtensionSync],
+    config=StrawberryConfig(auto_camel_case=False),
+)
 target_asgi_application = AsgiTest(GraphQL(target_schema))

@@ -65,13 +65,7 @@ HYBRID_AGENT_DEFAULT_INCLUDED_TRACERS_TO_NR_HOOKS = {
     # "boto3": [],    # this is boto3sqs
     # "botocore": [],
     "cassandra": ["cassandra", "cassandra.cluster"],
-    "celery": [
-        "celery.local",
-        "celery.app.trace",
-        "celery.worker",
-        "celery.concurrency.prefork",
-        "billiard.pool",
-    ],
+    "celery": ["celery.local", "celery.app.trace", "celery.worker", "celery.concurrency.prefork", "billiard.pool"],
     "click": [],
     "confluent_kafka": [
         "confluent_kafka.cimpl",
@@ -149,11 +143,7 @@ HYBRID_AGENT_DEFAULT_INCLUDED_TRACERS_TO_NR_HOOKS = {
     "flask": ["flask.app", "flask.templating", "flask.blueprints", "flask.views"],
     "httpx": ["httpx._client", "urllib.request"],
     "jinja2": ["jinja2.environment"],
-    "kafka": [
-        "kafka.consumer.group",
-        "kafka.producer.kafka",
-        "kafka.coordinator.heartbeat",
-    ],
+    "kafka": ["kafka.consumer.group", "kafka.producer.kafka", "kafka.coordinator.heartbeat"],
     "logging": ["logging"],
     "mysql": ["mysql.connector"],
     "mysqlclient": ["MySQLdb"],
@@ -181,12 +171,7 @@ HYBRID_AGENT_DEFAULT_INCLUDED_TRACERS_TO_NR_HOOKS = {
     ],
     "pymssql": ["pymssql"],
     "pymysql": ["pymysql"],
-    "pyramid": [
-        "pyramid.router",
-        "pyramid.config",
-        "pyramid.config.views",
-        "pyramid.config.tweens",
-    ],
+    "pyramid": ["pyramid.router", "pyramid.config", "pyramid.config.views", "pyramid.config.tweens"],
     "redis": [
         "redis.asyncio.client",
         "redis.asyncio.commands",
@@ -214,12 +199,7 @@ HYBRID_AGENT_DEFAULT_INCLUDED_TRACERS_TO_NR_HOOKS = {
         "httplib2",
     ],
     "sqlalchemy": [],
-    "sqlite3": [
-        "sqlite3",
-        "sqlite3.dbapi2",
-        "pysqlite2",
-        "pysqlite2.dbapi2",
-    ],
+    "sqlite3": ["sqlite3", "sqlite3.dbapi2", "pysqlite2", "pysqlite2.dbapi2"],
     "starlette": [
         "starlette.requests",
         "starlette.routing",
@@ -263,14 +243,6 @@ HYBRID_AGENT_DEFAULT_INCLUDED_TRACERS_TO_NR_HOOKS = {
         "http.client",
     ],
     "tortoiseorm": [],
-    "urllib": [
-        "urllib.request",
-        "http.client",
-    ],
-    "urllib3": [
-        "urllib3.connectionpool",
-        "urllib3.connection",
-        "requests.packages.urllib3.connection",
-        "http.client",
-    ],
+    "urllib": ["urllib.request", "http.client"],
+    "urllib3": ["urllib3.connectionpool", "urllib3.connection", "requests.packages.urllib3.connection", "http.client"],
 }

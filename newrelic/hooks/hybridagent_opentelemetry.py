@@ -37,15 +37,15 @@ def wrap__load_runtime_context(wrapped, instance, args, kwargs):
 
 
 def wrap_get_global_response_propagator(wrapped, instance, args, kwargs):
-    from newrelic.api.opentelemetry import retry_application_activation, otel_context_propagator
-    
+    from newrelic.api.opentelemetry import otel_context_propagator, retry_application_activation
+
     application = application_instance()
     if not application.active:
         # Force application registration if not already active
         retry_application_activation(application)
 
     settings = global_settings() if not application else application.settings
-        
+
     if not settings or not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
@@ -75,7 +75,7 @@ def wrap_set_tracer_provider(wrapped, instance, args, kwargs):
     # This needs to act as a singleton, like the agent instance.
     # We should initialize the agent here as well, if there is
     # not an instance already.
-    
+
     from newrelic.api.opentelemetry import retry_application_activation
 
     application = application_instance()
@@ -107,9 +107,9 @@ def wrap_get_tracer_provider(wrapped, instance, args, kwargs):
 
     if not settings or not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
-    
+
     return application._agent.otel_tracer_provider()
-    
+
 
 def wrap_get_custom_headers(wrapped, instance, args, kwargs):
     # Capture all headers now and let New Relic handle
@@ -120,7 +120,7 @@ def wrap_get_custom_headers(wrapped, instance, args, kwargs):
         "OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_SERVER_RESPONSE",
         "OTEL_INSTRUMENTATION_HTTP_CAPTURE_HEADERS_CLIENT_RESPONSE",
     ]
-    
+
     bound_args = bind_args(wrapped, args, kwargs)
     env_var = bound_args.get("env_var")
     if env_var and (env_var in capture_header_env_vars):

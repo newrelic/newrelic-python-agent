@@ -31,4 +31,3 @@ collector_agent_registration = collector_agent_registration_fixture(
     default_settings=_default_settings,
     linked_applications=["Python Agent Test (datastore)"],
 )
-

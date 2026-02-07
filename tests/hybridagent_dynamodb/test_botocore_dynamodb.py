@@ -35,7 +35,7 @@ TEST_TABLE = f"python-agent-test-{uuid.uuid4()}"
 """
 This is taken directly from New Relic's external_botocore tests to ensure that
 the hybrid agent setup is working as expected.  In this case, we are verifying
-that DynamoDB operations default to New Relic's instrumentation even when 
+that DynamoDB operations default to New Relic's instrumentation even when
 using the Hybrid Agent because we have temporarily disabled that instrumentation.
 """
 

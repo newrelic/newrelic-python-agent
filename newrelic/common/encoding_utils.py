@@ -418,7 +418,9 @@ class W3CTraceParent(dict):
         else:
             guid = f"{random.getrandbits(64):016x}"
 
-        return f"00-{self['tr'].lower().zfill(32)}-{guid}-{int(self.get('sa', 0)):02x}"
+        v = self.get("v", "00")
+
+        return f"{v}-{self['tr'].lower().zfill(32)}-{guid}-{int(self.get('sa', 0)):02x}"
 
     @classmethod
     def decode(cls, payload):
@@ -459,7 +461,7 @@ class W3CTraceParent(dict):
         # Sampled flag
         sa = bool(int(fields[3], 2) & FLAG_SAMPLED)
 
-        return cls(tr=trace_id, id=parent_id, sa=sa)
+        return cls(tr=trace_id, id=parent_id, sa=sa, v=version)
 
 
 class W3CTraceState(OrderedDict):
@@ -483,14 +485,15 @@ class W3CTraceState(OrderedDict):
 
 
 class NrTraceState(dict):
-    FIELDS = ("ty", "ac", "ap", "id", "tx", "sa", "pr")
+    FIELDS = ("v", "ty", "ac", "ap", "id", "tx", "sa", "pr")
 
     def text(self):
         pr = self.get("pr", "")
         if pr:
             pr = f"{pr:.6f}".rstrip("0").rstrip(".")
-
-        payload = f"0-0-{self['ac']}-{self['ap']}-{self.get('id', '')}-{self.get('tx', '')}-{'1' if self.get('sa') else '0'}-{pr}-{self['ti']!s}"
+        version = self.get("v", "0")
+        ty = "0"  # Hardcode this as it will always be App.
+        payload = f"{version}-{ty}-{self['ac']}-{self['ap']}-{self.get('id', '')}-{self.get('tx', '')}-{'1' if self.get('sa') else '0'}-{pr}-{self['ti']!s}"
         return f"{self.get('tk', self['ac'])}@nr={payload}"
 
     @classmethod
@@ -504,7 +507,7 @@ class NrTraceState(dict):
             except:
                 return
 
-            for name, value in zip(cls.FIELDS, fields[1:]):
+            for name, value in zip(cls.FIELDS, fields):
                 if value:
                     data[name] = value
 

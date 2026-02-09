@@ -1044,9 +1044,7 @@ class Transaction:
     ):
         if self._remote_parent_sampled is None:
             section = 0
-            setting_path = (
-                f"distributed_tracing.sampler{'' if full_granularity else '.partial_granularity'}.root"
-            )
+            setting_path = f"distributed_tracing.sampler{'' if full_granularity else '.partial_granularity'}.root"
             config = root_setting
             _logger.debug(
                 "Sampling decision made based on no remote parent sampling decision present and %s=%s.",
@@ -1055,7 +1053,9 @@ class Transaction:
             )
         elif self._remote_parent_sampled:
             section = 1
-            setting_path = f"distributed_tracing.sampler{'' if full_granularity else '.partial_granularity'}.remote_parent_sampled"
+            setting_path = (
+                f"distributed_tracing.sampler{'' if full_granularity else '.partial_granularity'}.remote_parent_sampled"
+            )
             config = remote_parent_sampled_setting
             _logger.debug(
                 "Sampling decision made based on remote_parent_sampled=%s and %s=%s.",
@@ -1100,14 +1100,15 @@ class Transaction:
                 )
                 return priority, sampled
             else:
-                _logger.warning("Configured to %s='trace_id_ratio_based' but no ratio was set. Using 'adaptive' instead.", setting_path)
+                _logger.warning(
+                    "Configured to %s='trace_id_ratio_based' but no ratio was set. Using 'adaptive' instead.",
+                    setting_path,
+                )
                 config = "adaptive"
         if config not in ("default", "adaptive"):
             _logger.warning("%s=%s is not a recognized value. Using 'adaptive' instead.", setting_path, config)
 
-        _logger.debug(
-            "Let adaptive sampler algorithm decide based on sampled=%s and priority=%s.", sampled, priority
-        )
+        _logger.debug("Let adaptive sampler algorithm decide based on sampled=%s and priority=%s.", sampled, priority)
         priority, sampled = self.sampling_algo_compute_sampled_and_priority(
             priority, sampled, {"full_granularity": full_granularity, "section": section}
         )

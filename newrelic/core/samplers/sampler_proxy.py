@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import logging
+
 from newrelic.core.samplers.adaptive_sampler import AdaptiveSampler
 from newrelic.core.samplers.trace_id_ratio_based_sampler import TraceIdRatioBasedSampler
 
@@ -161,5 +162,9 @@ class SamplerProxy:
             # This happens when there is a mismatch in the settings used to create the
             # samplers vs request a sampler inside a transaction. While this shouldn't
             # ever happen this is a safety guard.
-            _logger.warning("Attempted to access sampler (%s, %s) but encountered an error. Falling back on global adaptive sampler.", full_granularity, section)
+            _logger.warning(
+                "Attempted to access sampler (%s, %s) but encountered an error. Falling back on global adaptive sampler.",
+                full_granularity,
+                section,
+            )
             return self._samplers["global"].compute_sampled()

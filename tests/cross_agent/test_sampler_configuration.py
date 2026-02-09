@@ -17,10 +17,8 @@ import copy
 import json
 import random
 import time
-
-from newrelic.core.samplers.adaptive_sampler import AdaptiveSampler
-from newrelic.core.samplers.trace_id_ratio_based_sampler import TraceIdRatioBasedSampler
 from pathlib import Path
+
 import pytest
 import webtest
 from testing_support.fixtures import override_application_settings, validate_attributes, validate_attributes_complete
@@ -35,6 +33,8 @@ from newrelic.api.application import application_instance
 from newrelic.api.function_trace import function_trace
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
+from newrelic.core.samplers.adaptive_sampler import AdaptiveSampler
+from newrelic.core.samplers.trace_id_ratio_based_sampler import TraceIdRatioBasedSampler
 
 try:
     from newrelic.core.infinite_tracing_pb2 import AttributeValue, Span
@@ -62,11 +62,13 @@ from newrelic.core.attribute import Attribute
 
 FIXTURE = Path(__file__).parent / "fixtures" / "samplers" / "sampler_configuration.json"
 
+
 def replace_section(setting):
     end = setting.split(".")[-1]
     if end in ("root", "remote_parent_sampled", "remote_parent_not_sampled"):
         return ".".join([*setting.split(".")[:-1], f"_{end}"])
     return setting
+
 
 def parse_to_config_paths(settings, setting, config):
     if isinstance(config, dict):
@@ -88,6 +90,7 @@ def parse_to_config_paths(settings, setting, config):
         new_setting = replace_section(setting)
         settings[new_setting] = config
 
+
 def load_tests():
     result = []
     with FIXTURE.open(encoding="utf-8") as fh:
@@ -101,14 +104,11 @@ def load_tests():
         settings = {}
         parse_to_config_paths(settings, "distributed_tracing", config)
         expected_samplers = test.pop("expected_samplers", {})
-        param = pytest.param(
-            settings,
-            expected_samplers,
-            id=_id
-        )
+        param = pytest.param(settings, expected_samplers, id=_id)
         result.append(param)
 
     return result
+
 
 SECTIONS = {
     "full_root": (True, 0),
@@ -119,14 +119,9 @@ SECTIONS = {
     "partial_remote_parent_not_sampled": (False, 2),
 }
 
-@pytest.mark.parametrize(
-    "settings,expected_samplers",
-    load_tests(),
-)
-def test_sampler_configuration(
-    settings,
-    expected_samplers,
-):
+
+@pytest.mark.parametrize("settings,expected_samplers", load_tests())
+def test_sampler_configuration(settings, expected_samplers):
     @override_application_settings(settings)
     @background_task()
     def _test():

@@ -25,18 +25,19 @@ from testing_support.validators.validate_transaction_event_attributes import val
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 import newrelic.agent
+from newrelic.api.transaction import current_transaction
+from newrelic.api.wsgi_application import wsgi_application
 from newrelic.common.encoding_utils import (
+    PARENT_TYPE,
+    DistributedTracePayload,
     NrTraceState,
     W3CTraceParent,
     W3CTraceState,
-    PARENT_TYPE
 )
-from newrelic.api.transaction import current_transaction
-from newrelic.api.wsgi_application import wsgi_application
-from newrelic.common.encoding_utils import DistributedTracePayload
 from newrelic.common.object_wrapper import transient_function_wrapper
 
 FIXTURE = Path(__file__).parent / "fixtures" / "distributed_tracing" / "trace_context.json"
+
 
 def load_tests():
     result = []
@@ -58,25 +59,45 @@ def load_tests():
             "account_id": test.pop("account_id", None),
             "distributed_tracing.sampler.partial_granularity.enabled": test.pop("partial_granularity_enabled", False),
             "distributed_tracing.sampler.partial_granularity._root": test.pop("partial_granularity_root", "adaptive"),
-            "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": test.pop("partial_granularity_remote_parent_sampled", "adaptive"),
-            "distributed_tracing.sampler.partial_granularity._remote_parent_not_sampled": test.pop("partial_granularity_remote_parent_not_sampled", "adaptive"),
+            "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": test.pop(
+                "partial_granularity_remote_parent_sampled", "adaptive"
+            ),
+            "distributed_tracing.sampler.partial_granularity._remote_parent_not_sampled": test.pop(
+                "partial_granularity_remote_parent_not_sampled", "adaptive"
+            ),
         }
         full_gran_ratio = test.pop("full_granularity_ratio", None)
         if full_gran_ratio is not None:
             if settings["distributed_tracing.sampler._root"] == "trace_id_ratio_based":
                 settings["distributed_tracing.sampler.root.trace_id_ratio_based.ratio"] = full_gran_ratio
             if settings["distributed_tracing.sampler._remote_parent_sampled"] == "trace_id_ratio_based":
-                settings["distributed_tracing.sampler.remote_parent_sampled.trace_id_ratio_based.ratio"] = full_gran_ratio
+                settings["distributed_tracing.sampler.remote_parent_sampled.trace_id_ratio_based.ratio"] = (
+                    full_gran_ratio
+                )
             if settings["distributed_tracing.sampler._remote_parent_not_sampled"] == "trace_id_ratio_based":
-                settings["distributed_tracing.sampler.remote_parent_not_sampled.trace_id_ratio_based.ratio"] = full_gran_ratio
+                settings["distributed_tracing.sampler.remote_parent_not_sampled.trace_id_ratio_based.ratio"] = (
+                    full_gran_ratio
+                )
         partial_gran_ratio = test.pop("partial_granularity_ratio", None)
         if partial_gran_ratio is not None:
             if settings["distributed_tracing.sampler.partial_granularity._root"] == "trace_id_ratio_based":
-                settings["distributed_tracing.sampler.partial_granularity.root.trace_id_ratio_based.ratio"] = partial_gran_ratio
-            if settings["distributed_tracing.sampler.partial_granularity._remote_parent_sampled"] == "trace_id_ratio_based":
-                settings["distributed_tracing.sampler.partial_granularity.remote_parent_sampled.trace_id_ratio_based.ratio"] = partial_gran_ratio
-            if settings["distributed_tracing.sampler.partial_granularity._remote_parent_not_sampled"] == "trace_id_ratio_based":
-                settings["distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.trace_id_ratio_based.ratio"] = partial_gran_ratio
+                settings["distributed_tracing.sampler.partial_granularity.root.trace_id_ratio_based.ratio"] = (
+                    partial_gran_ratio
+                )
+            if (
+                settings["distributed_tracing.sampler.partial_granularity._remote_parent_sampled"]
+                == "trace_id_ratio_based"
+            ):
+                settings[
+                    "distributed_tracing.sampler.partial_granularity.remote_parent_sampled.trace_id_ratio_based.ratio"
+                ] = partial_gran_ratio
+            if (
+                settings["distributed_tracing.sampler.partial_granularity._remote_parent_not_sampled"]
+                == "trace_id_ratio_based"
+            ):
+                settings[
+                    "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.trace_id_ratio_based.ratio"
+                ] = partial_gran_ratio
 
         force_adaptive_sampled = test.pop("force_adaptive_sampled", None)
         expected_metrics = test.pop("expected_metrics", [])
@@ -108,22 +129,34 @@ def load_tests():
         payload = (test.pop("outbound_payloads", None) or [{}])[0]
         traceparent_key_map = {"trace_id": "tr", "parent_id": "id", "version": "v", "trace_flags": "sa"}
         tracestate_key_map = {
-          "tenant_id": "ac",
-          "version": "v",
-          "parent_type": "ty",
-          "parent_account_id": "ac",
-          "sampled": "sa",
-          "priority": "pr",
-          "parent_id": "pi",
-          "timestamp": "ti",
-          "parent_application_id": "ap",
-          "span_id": "id",
-          "transaction_id": "tx",
+            "tenant_id": "ac",
+            "version": "v",
+            "parent_type": "ty",
+            "parent_account_id": "ac",
+            "sampled": "sa",
+            "priority": "pr",
+            "parent_id": "pi",
+            "timestamp": "ti",
+            "parent_application_id": "ap",
+            "span_id": "id",
+            "transaction_id": "tx",
         }
-        expected_traceparent_exact = {traceparent_key_map[key.split(".")[1]]: value for key, value in payload.get("exact", {}).items() if "traceparent" in key}
-        expected_tracestate_exact = {tracestate_key_map[key.split(".")[1]]: value for key, value in payload.get("exact", {}).items() if "tracestate" in key}
-        expected_traceparent = [traceparent_key_map[key.split(".")[1]] for key in payload.get("expected", []) if "traceparent" in key]
-        expected_tracestate = [tracestate_key_map[key.split(".")[1]] for key in payload.get("expected", []) if "tracestate" in key]
+        expected_traceparent_exact = {
+            traceparent_key_map[key.split(".")[1]]: value
+            for key, value in payload.get("exact", {}).items()
+            if "traceparent" in key
+        }
+        expected_tracestate_exact = {
+            tracestate_key_map[key.split(".")[1]]: value
+            for key, value in payload.get("exact", {}).items()
+            if "tracestate" in key
+        }
+        expected_traceparent = [
+            traceparent_key_map[key.split(".")[1]] for key in payload.get("expected", []) if "traceparent" in key
+        ]
+        expected_tracestate = [
+            tracestate_key_map[key.split(".")[1]] for key in payload.get("expected", []) if "tracestate" in key
+        ]
         outbound_payloads = (
             expected_traceparent_exact,
             expected_tracestate_exact,
@@ -155,7 +188,7 @@ def load_tests():
             span_unexpected_intrinsics,
             outbound_payloads,
             expected_metrics,
-            id=_id
+            id=_id,
         )
         result.append(param)
 
@@ -175,8 +208,15 @@ def override_compute_sampled(override):
 
 @pytest.fixture
 def create_transaction():
-    def _create_transaction(test_name, web_transaction, transport_type, raises_exception, inbound_headers, outbound_payloads, expected_priority_between):
-
+    def _create_transaction(
+        test_name,
+        web_transaction,
+        transport_type,
+        raises_exception,
+        inbound_headers,
+        outbound_payloads,
+        expected_priority_between,
+    ):
         def _task():
             txn = current_transaction()
             application = txn._application._agent._applications.get(txn.settings.app_name)
@@ -198,7 +238,9 @@ def create_transaction():
                     txn.insert_distributed_trace_headers(headers)
                 headers = dict(headers)
 
-                expected_traceparent_exact, expected_tracestate_exact, expected_traceparent, expected_tracestate = outbound_payloads
+                expected_traceparent_exact, expected_tracestate_exact, expected_traceparent, expected_tracestate = (
+                    outbound_payloads
+                )
 
                 if expected_traceparent_exact or expected_traceparent:
                     traceparent = W3CTraceParent.decode(headers["traceparent"])
@@ -282,7 +324,15 @@ def test_distributed_tracing(
     @override_compute_sampled(force_adaptive_sampled)
     @override_application_settings(settings)
     def _test():
-        transaction = create_transaction(test_name, web_transaction, transport_type, raises_exception, inbound_headers, outbound_payloads, expected_priority_between)
+        transaction = create_transaction(
+            test_name,
+            web_transaction,
+            transport_type,
+            raises_exception,
+            inbound_headers,
+            outbound_payloads,
+            expected_priority_between,
+        )
 
         transaction()
 
@@ -295,7 +345,9 @@ def test_distributed_tracing(
     if settings["span_events.enabled"]:
         if check_span_events:
             _test = validate_span_events(
-                exact_intrinsics=span_exact_intrinsics, expected_intrinsics=span_expected_intrinsics, unexpected_intrinsics=span_unexpected_intrinsics
+                exact_intrinsics=span_exact_intrinsics,
+                expected_intrinsics=span_expected_intrinsics,
+                unexpected_intrinsics=span_unexpected_intrinsics,
             )(_test)
     else:
         _test = validate_span_events(count=0)(_test)

@@ -16,6 +16,7 @@ from testing_support.fixtures import reset_core_stats_engine, validate_attribute
 from testing_support.ml_testing_utils import disabled_ai_monitoring_settings, events_with_context_attrs
 from testing_support.validators.validate_custom_event import validate_custom_event_count
 from testing_support.validators.validate_custom_events import validate_custom_events
+from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
@@ -107,6 +108,10 @@ tool_recorded_events = [
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
+@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "math_agent"}'})
+@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "calculate_sum"}'})
+@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "analysis_agent"}'})
+@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "analyze_result"}'})
 @background_task()
 def test_multiagent_graph_invoke(set_trace_info, agent_graph):
     set_trace_info()
@@ -144,6 +149,10 @@ def test_multiagent_graph_invoke(set_trace_info, agent_graph):
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
+@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "math_agent"}'})
+@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "calculate_sum"}'})
+@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "analysis_agent"}'})
+@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "analyze_result"}'})
 @background_task()
 def test_multiagent_graph_invoke_async(loop, set_trace_info, agent_graph):
     set_trace_info()
@@ -183,6 +192,10 @@ def test_multiagent_graph_invoke_async(loop, set_trace_info, agent_graph):
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
+@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "math_agent"}'})
+@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "calculate_sum"}'})
+@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "analysis_agent"}'})
+@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "analyze_result"}'})
 @background_task()
 def test_multiagent_graph_stream_async(loop, set_trace_info, agent_graph):
     set_trace_info()

@@ -24,6 +24,7 @@ from testing_support.ml_testing_utils import (
     set_trace_info,
     tool_events_sans_content,
 )
+from testing_support.fixtures import dt_enabled
 from testing_support.validators.validate_custom_event import validate_custom_event_count
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import validate_error_trace_attributes
@@ -98,6 +99,7 @@ def add_exclamation(message: str) -> str:
     return f"{message}!"
 
 
+@dt_enabled
 @reset_core_stats_engine()
 @validate_custom_events(
     events_with_context_attrs(tool_recorded_event) + events_with_context_attrs(agent_recorded_event)
@@ -145,6 +147,7 @@ def test_run_assistant_agent(loop, set_trace_info, single_tool_model_client):
     loop.run_until_complete(_test())
 
 
+@dt_enabled
 @reset_core_stats_engine()
 @validate_custom_events(tool_recorded_event + agent_recorded_event)
 @validate_custom_event_count(count=2)
@@ -197,6 +200,7 @@ def test_run_stream_assistant_agent(loop, set_trace_info, single_tool_model_clie
     loop.run_until_complete(_test())
 
 
+@dt_enabled
 @reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
 @validate_custom_events(tool_events_sans_content(tool_recorded_event) + agent_recorded_event)
@@ -242,6 +246,7 @@ def test_run_assistant_agent_no_content(loop, set_trace_info, single_tool_model_
     loop.run_until_complete(_test())
 
 
+@dt_enabled
 @disabled_ai_monitoring_settings
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
@@ -266,6 +271,7 @@ SKIP_IF_AUTOGEN_062 = pytest.mark.skipif(
 
 
 @SKIP_IF_AUTOGEN_062
+@dt_enabled
 @reset_core_stats_engine()
 @validate_transaction_error_event_count(1)
 @validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
@@ -315,6 +321,7 @@ def test_run_assistant_agent_error(loop, set_trace_info, single_tool_model_clien
     loop.run_until_complete(_test())
 
 
+@dt_enabled
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 def test_run_assistant_agent_outside_txn(loop, single_tool_model_client):

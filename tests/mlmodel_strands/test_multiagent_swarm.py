@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from testing_support.fixtures import reset_core_stats_engine, validate_attributes
+from testing_support.fixtures import reset_core_stats_engine, validate_attributes, dt_enabled
 from testing_support.ml_testing_utils import disabled_ai_monitoring_settings, events_with_context_attrs
 from testing_support.validators.validate_custom_event import validate_custom_event_count
 from testing_support.validators.validate_custom_events import validate_custom_events
@@ -107,6 +107,7 @@ handoff_recorded_event = [
 ]
 
 
+@dt_enabled
 @reset_core_stats_engine()
 @validate_custom_events(events_with_context_attrs(tool_recorded_events))
 @validate_custom_events(events_with_context_attrs(agent_recorded_events))
@@ -150,6 +151,7 @@ def test_multiagent_swarm_invoke(set_trace_info, agent_swarm):
     )
 
 
+@dt_enabled
 @reset_core_stats_engine()
 @validate_custom_events(tool_recorded_events)
 @validate_custom_events(agent_recorded_events)
@@ -195,6 +197,7 @@ def test_multiagent_swarm_invoke_async(loop, set_trace_info, agent_swarm):
     loop.run_until_complete(_test())
 
 
+@dt_enabled
 @reset_core_stats_engine()
 @validate_custom_events(tool_recorded_events)
 @validate_custom_events(agent_recorded_events)
@@ -239,6 +242,7 @@ def test_multiagent_swarm_stream_async(loop, set_trace_info, agent_swarm):
     loop.run_until_complete(_test())
 
 
+@dt_enabled
 @disabled_ai_monitoring_settings
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
@@ -258,6 +262,7 @@ def test_multiagent_swarm_invoke_disabled_ai_monitoring_events(set_trace_info, a
     )
 
 
+@dt_enabled
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 def test_multiagent_swarm_invoke_outside_txn(agent_swarm):

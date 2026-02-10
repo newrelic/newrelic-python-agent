@@ -14,7 +14,7 @@
 
 import pytest
 from strands import Agent
-from testing_support.fixtures import reset_core_stats_engine, validate_attributes
+from testing_support.fixtures import reset_core_stats_engine, validate_attributes, dt_enabled
 from testing_support.ml_testing_utils import (
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
@@ -66,6 +66,7 @@ agent_recorded_event_error = [
 ]
 
 
+@dt_enabled
 @reset_core_stats_engine()
 @validate_custom_events(events_with_context_attrs(agent_recorded_event))
 @validate_custom_event_count(count=2)
@@ -100,6 +101,7 @@ def test_agent(exercise_agent, set_trace_info, single_tool_model):
         assert response.metrics.tool_metrics["add_exclamation"].success_count == 1
 
 
+@dt_enabled
 @reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
 @validate_custom_events(agent_recorded_event)
@@ -134,6 +136,7 @@ def test_agent_no_content(exercise_agent, set_trace_info, single_tool_model):
         assert response.metrics.tool_metrics["add_exclamation"].success_count == 1
 
 
+@dt_enabled
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 def test_agent_outside_txn(exercise_agent, single_tool_model):
@@ -155,6 +158,7 @@ def test_agent_outside_txn(exercise_agent, single_tool_model):
         assert response.metrics.tool_metrics["add_exclamation"].success_count == 1
 
 
+@dt_enabled
 @disabled_ai_monitoring_settings
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
@@ -179,6 +183,7 @@ def test_agent_disabled_ai_monitoring_events(exercise_agent, set_trace_info, sin
         assert response.metrics.tool_metrics["add_exclamation"].success_count == 1
 
 
+@dt_enabled
 @reset_core_stats_engine()
 @validate_transaction_error_event_count(1)
 @validate_error_trace_attributes(callable_name(ValueError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})

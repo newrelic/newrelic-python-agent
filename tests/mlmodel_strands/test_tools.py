@@ -14,7 +14,7 @@
 
 import pytest
 from strands import Agent
-from testing_support.fixtures import reset_core_stats_engine, validate_attributes
+from testing_support.fixtures import reset_core_stats_engine, validate_attributes, dt_enabled
 from testing_support.ml_testing_utils import (
     disabled_ai_monitoring_record_content_settings,
     events_with_context_attrs,
@@ -95,6 +95,7 @@ tool_recorded_event_forced_internal_error = [
 EXPECTED_ERROR_MESSAGES = ["Error: RuntimeError - Oops", "Error: Oops"]
 
 
+@dt_enabled
 @reset_core_stats_engine()
 @validate_custom_events(events_with_context_attrs(tool_recorded_event))
 @validate_custom_event_count(count=2)
@@ -129,6 +130,7 @@ def test_tool(exercise_agent, set_trace_info, single_tool_model, add_exclamation
         assert response.metrics.tool_metrics["add_exclamation"].success_count == 1
 
 
+@dt_enabled
 @reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
 @validate_custom_events(tool_events_sans_content(tool_recorded_event))
@@ -163,6 +165,7 @@ def test_tool_no_content(exercise_agent, set_trace_info, single_tool_model, add_
         assert response.metrics.tool_metrics["add_exclamation"].success_count == 1
 
 
+@dt_enabled
 @reset_core_stats_engine()
 def test_tool_execution_error(exercise_agent, set_trace_info, single_tool_model_error, add_exclamation):
     from strands.tools import PythonAgentTool
@@ -208,6 +211,7 @@ def test_tool_execution_error(exercise_agent, set_trace_info, single_tool_model_
     _test()
 
 
+@dt_enabled
 @reset_core_stats_engine()
 @validate_transaction_error_event_count(1)
 @validate_error_trace_attributes(callable_name(ValueError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})

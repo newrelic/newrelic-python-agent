@@ -351,12 +351,12 @@ def collector_available_fixture(collector_agent_registration):
     settings = global_settings()
 
     # Wait for the application to become active.
-    timeout = (settings.startup_timeout or 0) + 10.0
+    timeout = _timeout = (settings.startup_timeout or 0) + 10.0
     while not application.active and timeout > 0:
         time.sleep(0.1)
         timeout -= 0.1
 
-    assert application.active, f"Application failed to activate after {timeout} seconds."
+    assert application.active, f"Application failed to activate after {_timeout} seconds."
 
 
 def raise_background_exceptions(timeout=5.0):
@@ -797,7 +797,7 @@ def validate_error_event_sample_data(required_attrs=None, required_user_attrs=Tr
             transaction = _bind_params(*args, **kwargs)
 
             error_events = transaction.error_events(instance.stats_table)
-            assert len(error_events) == num_errors
+            assert len(error_events) == num_errors, f"Expected: {num_errors}, Got: {len(error_events)}"
             for sample in error_events:
                 assert isinstance(sample, list)
                 assert len(sample) == 3

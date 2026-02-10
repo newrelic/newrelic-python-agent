@@ -118,10 +118,14 @@ IGNORED_METHODS = {
     "get_node",
     "get_node_from_key",
     "get_nodes",
+    "get_nodes_from_slot",
     "get_primaries",
     "get_random_node",
+    "get_random_primary_node",
+    "get_random_primary_or_all_nodes",
     "get_redis_connection",
     "get_replicas",
+    "get_special_nodes",
     "keyslot",
     "mget_nonatomic",
     "monitor",
@@ -138,6 +142,7 @@ IGNORED_METHODS = {
     "result_callbacks",
     "set_default_node",
     "user_on_connect_func",
+    "startup_nodes",
 }
 
 REDIS_MODULES = {"bf", "cf", "cms", "ft", "graph", "json", "tdigest", "topk", "ts", "vset"}

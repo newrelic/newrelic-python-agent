@@ -22,6 +22,7 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import transient_function_wrapper
 
 
 def test_trace_metrics(send_producer_message, exchange):
@@ -105,3 +106,24 @@ def test_producer_tries_to_parse_args(exchange, producer, queue, monkeypatch):
             )
 
     test()
+
+
+def test_custom_properties(exchange, queue, events, get_consumer_record, producer):
+    validate_custom_properties_called = []
+
+    @transient_function_wrapper("kombu.messaging", "Producer._publish")
+    def validate_custom_properties(wrapped, instance, args, kwargs):
+        from newrelic.common.signature import bind_args
+
+        bound_args = bind_args(wrapped, args, kwargs)
+        properties = bound_args["properties"]
+        assert properties.get("custom_property", "") == "baz", "custom_property was deleted by instrumentation."
+        validate_custom_properties_called.append(True)
+
+    @background_task()
+    @validate_custom_properties
+    def test():
+        producer.publish({"foo": 123}, exchange=exchange, routing_key="bar", declare=[queue], custom_property="baz")
+
+    test()
+    assert validate_custom_properties_called, "validate_custom_properties was not called."

@@ -689,9 +689,8 @@ def default_otlp_host(host):
     }
     otlp_host = HOST_MAP.get(host, None)
     if not otlp_host:
-        default = HOST_MAP["collector.newrelic.com"]
-        _logger.warning("Unable to find corresponding OTLP host using default %s", default)
-        otlp_host = default
+        otlp_host = HOST_MAP["collector.newrelic.com"]
+        _logger.warning("Unable to find corresponding OTLP host using default %s", otlp_host)
     return otlp_host
 
 
@@ -804,9 +803,9 @@ _settings.sampling_target_period_in_seconds = 60
 _settings.compressed_content_encoding = "gzip"
 _settings.max_payload_size_in_bytes = 1000000
 
-_settings.attributes.enabled = True
-_settings.attributes.exclude = []
-_settings.attributes.include = []
+_settings.attributes.enabled = _environ_as_bool("NEW_RELIC_ATTRIBUTES_ENABLED", default=True)
+_settings.attributes.exclude = _environ_as_set(os.environ.get("NEW_RELIC_ATTRIBUTES_EXCLUDE", ""))
+_settings.attributes.include = _environ_as_set(os.environ.get("NEW_RELIC_ATTRIBUTES_INCLUDE", ""))
 
 _settings.thread_profiler.enabled = True
 _settings.cross_application_tracer.enabled = False
@@ -822,9 +821,15 @@ _settings.transaction_events.enabled = True
 _settings.event_harvest_config.harvest_limits.analytic_event_data = _environ_as_int(
     "NEW_RELIC_ANALYTICS_EVENTS_MAX_SAMPLES_STORED", default=DEFAULT_RESERVOIR_SIZE
 )
-_settings.transaction_events.attributes.enabled = True
-_settings.transaction_events.attributes.exclude = []
-_settings.transaction_events.attributes.include = []
+_settings.transaction_events.attributes.enabled = _environ_as_bool(
+    "NEW_RELIC_TRANSACTION_EVENTS_ATTRIBUTES_ENABLED", default=True
+)
+_settings.transaction_events.attributes.exclude = _environ_as_set(
+    os.environ.get("NEW_RELIC_TRANSACTION_EVENTS_ATTRIBUTES_EXCLUDE", "")
+)
+_settings.transaction_events.attributes.include = _environ_as_set(
+    os.environ.get("NEW_RELIC_TRANSACTION_EVENTS_ATTRIBUTES_INCLUDE", "")
+)
 
 _settings.custom_insights_events.enabled = True
 _settings.event_harvest_config.harvest_limits.custom_event_data = _environ_as_int(
@@ -848,13 +853,23 @@ _settings.span_events.enabled = _environ_as_bool("NEW_RELIC_SPAN_EVENTS_ENABLED"
 _settings.event_harvest_config.harvest_limits.span_event_data = _environ_as_int(
     "NEW_RELIC_SPAN_EVENTS_MAX_SAMPLES_STORED", default=SPAN_EVENT_RESERVOIR_SIZE
 )
-_settings.span_events.attributes.enabled = True
-_settings.span_events.attributes.exclude = []
-_settings.span_events.attributes.include = []
+_settings.span_events.attributes.enabled = _environ_as_bool("NEW_RELIC_SPAN_EVENTS_ATTRIBUTES_ENABLED", default=True)
+_settings.span_events.attributes.exclude = _environ_as_set(
+    os.environ.get("NEW_RELIC_SPAN_EVENTS_ATTRIBUTES_EXCLUDE", "")
+)
+_settings.span_events.attributes.include = _environ_as_set(
+    os.environ.get("NEW_RELIC_SPAN_EVENTS_ATTRIBUTES_INCLUDE", "")
+)
 
-_settings.transaction_segments.attributes.enabled = True
-_settings.transaction_segments.attributes.exclude = []
-_settings.transaction_segments.attributes.include = []
+_settings.transaction_segments.attributes.enabled = _environ_as_bool(
+    "NEW_RELIC_TRANSACTION_SEGMENTS_ATTRIBUTES_ENABLED", default=True
+)
+_settings.transaction_segments.attributes.exclude = _environ_as_set(
+    os.environ.get("NEW_RELIC_TRANSACTION_SEGMENTS_ATTRIBUTES_EXCLUDE", "")
+)
+_settings.transaction_segments.attributes.include = _environ_as_set(
+    os.environ.get("NEW_RELIC_TRANSACTION_SEGMENTS_ATTRIBUTES_INCLUDE", "")
+)
 
 _settings.transaction_tracer.enabled = True
 _settings.transaction_tracer.transaction_threshold = None
@@ -865,9 +880,15 @@ _settings.transaction_tracer.explain_threshold = 0.5
 _settings.transaction_tracer.function_trace = []
 _settings.transaction_tracer.generator_trace = []
 _settings.transaction_tracer.top_n = 20
-_settings.transaction_tracer.attributes.enabled = True
-_settings.transaction_tracer.attributes.exclude = []
-_settings.transaction_tracer.attributes.include = []
+_settings.transaction_tracer.attributes.enabled = _environ_as_bool(
+    "NEW_RELIC_TRANSACTION_TRACER_ATTRIBUTES_ENABLED", default=True
+)
+_settings.transaction_tracer.attributes.exclude = _environ_as_set(
+    os.environ.get("NEW_RELIC_TRANSACTION_TRACER_ATTRIBUTES_EXCLUDE", "")
+)
+_settings.transaction_tracer.attributes.include = _environ_as_set(
+    os.environ.get("NEW_RELIC_TRANSACTION_TRACER_ATTRIBUTES_INCLUDE", "")
+)
 
 _settings.error_collector.enabled = True
 _settings.error_collector.capture_events = True
@@ -880,9 +901,15 @@ _settings.event_harvest_config.harvest_limits.error_event_data = _environ_as_int
 )
 _settings.error_collector.expected_status_codes = set()
 _settings.error_collector._error_group_callback = None
-_settings.error_collector.attributes.enabled = True
-_settings.error_collector.attributes.exclude = []
-_settings.error_collector.attributes.include = []
+_settings.error_collector.attributes.enabled = _environ_as_bool(
+    "NEW_RELIC_ERROR_COLLECTOR_ATTRIBUTES_ENABLED", default=True
+)
+_settings.error_collector.attributes.exclude = _environ_as_set(
+    os.environ.get("NEW_RELIC_ERROR_COLLECTOR_ATTRIBUTES_EXCLUDE", "")
+)
+_settings.error_collector.attributes.include = _environ_as_set(
+    os.environ.get("NEW_RELIC_ERROR_COLLECTOR_ATTRIBUTES_INCLUDE", "")
+)
 
 _settings.browser_monitoring.enabled = True
 _settings.browser_monitoring.auto_instrument = True
@@ -891,9 +918,15 @@ _settings.browser_monitoring.loader_version = None
 _settings.browser_monitoring.debug = False
 _settings.browser_monitoring.ssl_for_http = None
 _settings.browser_monitoring.content_type = ["text/html"]
-_settings.browser_monitoring.attributes.enabled = False
-_settings.browser_monitoring.attributes.exclude = []
-_settings.browser_monitoring.attributes.include = []
+_settings.browser_monitoring.attributes.enabled = _environ_as_bool(
+    "NEW_RELIC_BROWSER_MONITORING_ATTRIBUTES_ENABLED", default=False
+)
+_settings.browser_monitoring.attributes.exclude = _environ_as_set(
+    os.environ.get("NEW_RELIC_BROWSER_MONITORING_ATTRIBUTES_EXCLUDE", "")
+)
+_settings.browser_monitoring.attributes.include = _environ_as_set(
+    os.environ.get("NEW_RELIC_BROWSER_MONITORING_ATTRIBUTES_INCLUDE", "")
+)
 
 _settings.transaction_name.limit = None
 _settings.transaction_name.naming_scheme = os.environ.get("NEW_RELIC_TRANSACTION_NAMING_SCHEME")

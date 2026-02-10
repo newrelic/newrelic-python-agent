@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import pytest
-from _test_bedrock_chat_completion import (
+from _test_bedrock_chat_completion_invoke_model import (
     chat_completion_langchain_expected_events,
     chat_completion_langchain_expected_streaming_events,
 )
@@ -37,6 +37,7 @@ UNSUPPORTED_LANGCHAIN_MODELS = ["ai21.j2-mid-v1", "cohere.command-text-v14"]
         "amazon.titan-text-express-v1",
         "ai21.j2-mid-v1",
         "anthropic.claude-instant-v1",
+        "anthropic.claude-3-sonnet-20240229-v1:0",
         "cohere.command-text-v14",
         "meta.llama2-13b-chat-v1",
     ],
@@ -57,10 +58,14 @@ def response_streaming(request):
 def exercise_model(bedrock_server, model_id, response_streaming):
     try:
         # These are only available in certain botocore environments.
-        from langchain.chains import ConversationChain
+        from langchain_classic.chains import ConversationChain
         from langchain_community.chat_models import BedrockChat
     except ImportError:
-        pytest.skip(reason="Langchain not installed.")
+        try:
+            from langchain.chains import ConversationChain
+            from langchain_community.chat_models import BedrockChat
+        except ImportError:
+            pytest.skip(reason="Langchain not installed.")
 
     def _exercise_model(prompt):
         bedrock_llm = BedrockChat(model_id=model_id, client=bedrock_server, streaming=response_streaming)

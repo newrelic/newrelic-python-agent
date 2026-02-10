@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import copy
 import re
 import sys
 import threading
@@ -35,6 +36,24 @@ def get_health_file_contents(tmp_path):
     with health_file.open() as f:
         contents = f.readlines()
         return contents
+
+
+@pytest.fixture(autouse=True)
+def restore_settings_fixture():
+    # Backup settings from before this test file runs
+    original_settings = global_settings()
+    backup = copy.deepcopy(original_settings.__dict__)
+
+    # Run tests
+    yield
+
+    # Restore settings after tests run
+    original_settings.__dict__.clear()
+    original_settings.__dict__.update(backup)
+
+    # Re-initialize the agent to restore the settings
+    _reset_configuration_done()
+    initialize()
 
 
 @pytest.mark.parametrize("file_uri", ["", "file://", "/test/dir", "foo:/test/dir"])
@@ -140,10 +159,18 @@ def test_no_override_on_unhealthy_shutdown(monkeypatch, tmp_path):
 
 
 def test_health_check_running_threads(monkeypatch, tmp_path):
-    running_threads = threading.enumerate()
-    # Only the main thread should be running since not agent control env vars are set
-    assert len(running_threads) == 1
+    # If the Activate-Session thread is still active, give it time to close before we proceed
+    timeout = 30.0
+    while len(threading.enumerate()) != 1 and timeout > 0:
+        time.sleep(0.1)
+        timeout -= 0.1
 
+    # Only the main thread should be running since no agent control env vars are set
+    assert len(threading.enumerate()) == 1, (
+        f"Expected only the main thread to be running before the test starts. Got: {threading.enumerate()}"
+    )
+
+    # Setup expected env vars to run agent control health check
     monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_ENABLED", "True")
     file_path = tmp_path.as_uri()
     monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", file_path)
@@ -165,6 +192,7 @@ def test_proxy_error_status(monkeypatch, tmp_path):
     file_path = tmp_path.as_uri()
     monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", file_path)
 
+    # Re-initialize the agent to allow the health check thread to start
     _reset_configuration_done()
     initialize()
 
@@ -194,6 +222,7 @@ def test_multiple_activations_running_threads(monkeypatch, tmp_path):
     file_path = tmp_path.as_uri()
     monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", file_path)
 
+    # Re-initialize the agent to allow the health check thread to start and assert that it did
     _reset_configuration_done()
     initialize()
 
@@ -247,6 +276,7 @@ def test_max_app_name_status(monkeypatch, tmp_path):
     file_path = tmp_path.as_uri()
     monkeypatch.setenv("NEW_RELIC_AGENT_CONTROL_HEALTH_DELIVERY_LOCATION", file_path)
 
+    # Set app name to exceed maximum allowed configured names
     _reset_configuration_done()
     initialize_agent(app_name="test1;test2;test3;test4")
     # Give time for the scheduler to kick in and write to the health file
@@ -259,7 +289,3 @@ def test_max_app_name_status(monkeypatch, tmp_path):
     assert contents[0] == "healthy: False\n"
     assert contents[1] == "status: The maximum number of configured app names (3) exceeded\n"
     assert contents[4] == "last_error: NR-APM-006\n"
-
-    # Set app name back to original name specific
-    settings = global_settings()
-    settings.app_name = "Python Agent Test (agent_features)"

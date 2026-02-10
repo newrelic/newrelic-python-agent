@@ -17,3 +17,4 @@ paths:
     ignore:
       # This runner exists, but is in beta and not known to actionlint.
       - 'label "windows-11-arm" is unknown\. .+'
+      - 'property "check_run_id" is not defined.+'

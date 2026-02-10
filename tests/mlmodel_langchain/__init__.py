@@ -11,24 +11,3 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from newrelic.agent import background_task, current_transaction
-
-from . import benchmark
-
-# This benchmark suite is a placeholder until actual benchmark suites can be added.
-# For now, this ensures the infrastructure works as intended.
-
-
-@benchmark
-class Suite:
-    def bench_application_active(self):
-        from newrelic.agent import application
-
-        assert application().active
-
-    @background_task()
-    def bench_transaction_active(self):
-        from newrelic.agent import application
-
-        assert current_transaction()

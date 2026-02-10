@@ -14,13 +14,13 @@
 import json
 import os
 from io import BytesIO
+from pprint import pformat
 
-import botocore.errorfactory
 import botocore.eventstream
 import botocore.exceptions
 import pytest
 from conftest import BOTOCORE_VERSION
-from external_botocore._test_bedrock_chat_completion import (
+from external_botocore._test_bedrock_chat_completion_invoke_model import (
     chat_completion_expected_events,
     chat_completion_expected_malformed_request_body_events,
     chat_completion_expected_malformed_response_body_events,
@@ -73,6 +73,7 @@ def request_streaming(request):
         "amazon.titan-text-express-v1",
         "ai21.j2-mid-v1",
         "anthropic.claude-instant-v1",
+        "anthropic.claude-3-sonnet-20240229-v1:0",
         "meta.llama2-13b-chat-v1",
         "mistral.mistral-7b-instruct-v0:2",
     ],
@@ -857,7 +858,12 @@ def test_bedrock_chat_completion_functions_marked_as_wrapped_for_sdk_compatibili
 def test_chat_models_instrumented(loop):
     import aiobotocore
 
-    SUPPORTED_MODELS = [model for model, _, _, _ in MODEL_EXTRACTORS if "embed" not in model]
+    def _is_supported_model(model):
+        supported_models = [model for model, _, _, _ in MODEL_EXTRACTORS if "embed" not in model]
+        for supported_model in supported_models:
+            if supported_model in model:
+                return True
+        return False
 
     _id = os.environ.get("AWS_ACCESS_KEY_ID")
     key = os.environ.get("AWS_SECRET_ACCESS_KEY")
@@ -870,12 +876,8 @@ def test_chat_models_instrumented(loop):
     try:
         response = loop.run_until_complete(client.list_foundation_models(byOutputModality="TEXT"))
         models = [model["modelId"] for model in response["modelSummaries"]]
-        not_supported = []
-        for model in models:
-            is_supported = any(model.startswith(supported_model) for supported_model in SUPPORTED_MODELS)
-            if not is_supported:
-                not_supported.append(model)
+        not_supported = [model for model in models if not _is_supported_model(model)]
 
-        assert not not_supported, f"The following unsupported models were found: {not_supported}"
+        assert not not_supported, f"The following unsupported models were found: {pformat(not_supported)}"
     finally:
         loop.run_until_complete(client.__aexit__(None, None, None))

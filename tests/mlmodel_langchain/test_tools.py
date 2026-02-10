@@ -23,6 +23,7 @@ from testing_support.ml_testing_utils import (
 from testing_support.validators.validate_custom_event import validate_custom_event_count
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import validate_error_trace_attributes
+from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_error_event_count import validate_transaction_error_event_count
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
@@ -106,6 +107,8 @@ def test_tool(exercise_agent, set_trace_info, create_agent_runnable, add_exclama
         background_task=True,
     )
     @validate_attributes("agent", ["llm"])
+    @validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "my_agent"}'})
+    @validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "add_exclamation"}'})
     @background_task(name="test_tool")
     def _test():
         set_trace_info()
@@ -131,6 +134,8 @@ def test_tool_no_content(exercise_agent, set_trace_info, create_agent_runnable, 
         background_task=True,
     )
     @validate_attributes("agent", ["llm"])
+    @validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "my_agent"}'})
+    @validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "add_exclamation"}'})
     @background_task(name="test_tool_no_content")
     def _test():
         set_trace_info()
@@ -157,6 +162,8 @@ def test_tool_execution_error(exercise_agent, set_trace_info, create_agent_runna
         background_task=True,
     )
     @validate_attributes("agent", ["llm"])
+    @validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "my_agent"}'})
+    @validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "add_exclamation"}'})
     @background_task(name="test_tool_execution_error")
     def _test():
         set_trace_info()
@@ -190,6 +197,8 @@ def test_tool_pre_execution_exception(
         background_task=True,
     )
     @validate_attributes("agent", ["llm"])
+    @validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "my_agent"}'})
+    @validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "add_exclamation"}'})
     @background_task(name="test_tool_pre_execution_exception")
     def _test():
         set_trace_info()

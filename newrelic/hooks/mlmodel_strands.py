@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import logging
 import sys
 import uuid
@@ -95,8 +96,12 @@ def wrap_stream_async(wrapped, instance, args, kwargs):
     agent_name = getattr(instance, "name", "agent")
     function_trace_name = f"{func_name}/{agent_name}"
 
+    agentic_subcomponent_data = {"type": "APM-AI_AGENT", "name": agent_name}
+
     ft = FunctionTrace(name=function_trace_name, group="Llm/agent/Strands")
     ft.__enter__()
+    ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
+
     linking_metadata = get_trace_linking_metadata()
     agent_id = str(uuid.uuid4())
 
@@ -353,8 +358,10 @@ def wrap_tool_executor__stream(wrapped, instance, args, kwargs):
     func_name = callable_name(wrapped)
     function_trace_name = f"{func_name}/{tool_name}"
 
+    agentic_subcomponent_data = {"type": "APM-AI_TOOL", "name": tool_name}
     ft = FunctionTrace(name=function_trace_name, group="Llm/tool/Strands")
     ft.__enter__()
+    ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
     linking_metadata = get_trace_linking_metadata()
     tool_id = str(uuid.uuid4())
 

@@ -192,7 +192,6 @@ async def wrap__execute_tool_call(wrapped, instance, args, kwargs):
     ft.__enter__()
     ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
 
-
     try:
         return_val = await wrapped(*args, **kwargs)
     except Exception:

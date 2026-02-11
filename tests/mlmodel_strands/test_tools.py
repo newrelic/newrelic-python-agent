@@ -14,7 +14,7 @@
 
 import pytest
 from strands import Agent
-from testing_support.fixtures import reset_core_stats_engine, validate_attributes, dt_enabled
+from testing_support.fixtures import dt_enabled, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     disabled_ai_monitoring_record_content_settings,
     events_with_context_attrs,

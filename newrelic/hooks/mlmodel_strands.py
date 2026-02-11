@@ -100,6 +100,7 @@ def wrap_stream_async(wrapped, instance, args, kwargs):
     ft = FunctionTrace(name=function_trace_name, group="Llm/agent/Strands")
     ft.__enter__()
     ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
+
     linking_metadata = get_trace_linking_metadata()
     agent_id = str(uuid.uuid4())
 

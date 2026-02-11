@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from testing_support.fixtures import reset_core_stats_engine, validate_attributes, dt_enabled
+from testing_support.fixtures import dt_enabled, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import disabled_ai_monitoring_settings, events_with_context_attrs
 from testing_support.validators.validate_custom_event import validate_custom_event_count
 from testing_support.validators.validate_custom_events import validate_custom_events

@@ -15,7 +15,7 @@
 import pytest
 from langchain.messages import HumanMessage
 from langchain.tools import tool
-from testing_support.fixtures import reset_core_stats_engine, validate_attributes
+from testing_support.fixtures import dt_enabled, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
@@ -77,6 +77,7 @@ def add_exclamation(message: str) -> str:
     return f"{message}!"
 
 
+@dt_enabled
 @reset_core_stats_engine()
 def test_agent(exercise_agent, create_agent_runnable, set_trace_info, method_name):
     @validate_custom_events(events_with_context_attrs(agent_recorded_event))
@@ -103,6 +104,7 @@ def test_agent(exercise_agent, create_agent_runnable, set_trace_info, method_nam
     _test()
 
 
+@dt_enabled
 @reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
 def test_agent_no_content(exercise_agent, create_agent_runnable, set_trace_info, method_name):
@@ -128,6 +130,7 @@ def test_agent_no_content(exercise_agent, create_agent_runnable, set_trace_info,
     _test()
 
 
+@dt_enabled
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 def test_agent_outside_txn(exercise_agent, create_agent_runnable):
@@ -135,6 +138,7 @@ def test_agent_outside_txn(exercise_agent, create_agent_runnable):
     exercise_agent(my_agent, PROMPT)
 
 
+@dt_enabled
 @disabled_ai_monitoring_settings
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
@@ -145,6 +149,7 @@ def test_agent_disabled_ai_monitoring_events(exercise_agent, create_agent_runnab
     exercise_agent(my_agent, PROMPT)
 
 
+@dt_enabled
 @reset_core_stats_engine()
 def test_agent_execution_error(exercise_agent, create_agent_runnable, set_trace_info, method_name, agent_runnable_type):
     # Add a wrapper to intentionally force an error in the Agent code
@@ -164,8 +169,8 @@ def test_agent_execution_error(exercise_agent, create_agent_runnable, set_trace_
         background_task=True,
     )
     @validate_attributes("agent", ["llm"])
+    # Only an agent span is expected here and not a tool because the error is injected before the tool is called
     @validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "my_agent"}'})
-    @validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "add_exclamation"}'})
     @background_task(name="test_agent_execution_error")
     def _test():
         set_trace_info()

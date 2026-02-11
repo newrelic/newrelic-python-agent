@@ -14,7 +14,7 @@
 
 import pytest
 from langchain.messages import HumanMessage
-from testing_support.fixtures import reset_core_stats_engine, validate_attributes
+from testing_support.fixtures import dt_enabled, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     disabled_ai_monitoring_record_content_settings,
     events_with_context_attrs,
@@ -96,6 +96,7 @@ tool_recorded_event_forced_internal_error = [
 ]
 
 
+@dt_enabled
 @reset_core_stats_engine()
 def test_tool(exercise_agent, set_trace_info, create_agent_runnable, add_exclamation, tool_method_name):
     @validate_custom_events(events_with_context_attrs(tool_recorded_event))
@@ -122,6 +123,7 @@ def test_tool(exercise_agent, set_trace_info, create_agent_runnable, add_exclama
     _test()
 
 
+@dt_enabled
 @reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
 def test_tool_no_content(exercise_agent, set_trace_info, create_agent_runnable, add_exclamation, tool_method_name):
@@ -147,6 +149,7 @@ def test_tool_no_content(exercise_agent, set_trace_info, create_agent_runnable, 
     _test()
 
 
+@dt_enabled
 @reset_core_stats_engine()
 def test_tool_execution_error(exercise_agent, set_trace_info, create_agent_runnable, add_exclamation, tool_method_name):
     @validate_transaction_error_event_count(1)
@@ -176,6 +179,7 @@ def test_tool_execution_error(exercise_agent, set_trace_info, create_agent_runna
     _test()
 
 
+@dt_enabled
 @reset_core_stats_engine()
 def test_tool_pre_execution_exception(
     exercise_agent, set_trace_info, create_agent_runnable, add_exclamation, tool_method_name

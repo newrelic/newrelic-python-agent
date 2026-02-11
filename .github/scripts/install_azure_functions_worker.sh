@@ -34,7 +34,7 @@ ${PIP} install pip-tools build invoke
 
 # Install proto build dependencies
 $( cd ${BUILD_DIR}/workers/ && ${PIPCOMPILE} -o ${BUILD_DIR}/requirements.txt )
-${PIP} install -r ${BUILD_DIR}/requirements.txt
+${PIP} install 'setuptools<82' -r ${BUILD_DIR}/requirements.txt
 
 # Build proto files into pb2 files (invoke handles fixing include paths for the protos)
 cd ${BUILD_DIR}/workers/tests && ${INVOKE} -c test_setup build-protos

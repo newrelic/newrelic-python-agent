@@ -74,18 +74,6 @@ RUN if [ "${TARGETPLATFORM}" = "linux/amd64" ]; then export ARCH="x86_64"; else 
     rm -rf /tmp/addlicense && \
     chmod +x /usr/local/bin/addlicense
 
-# Build librdkafka from source
-ARG LIBRDKAFKA_VERSION=2.1.1
-RUN cd /tmp && \
-    wget https://github.com/confluentinc/librdkafka/archive/refs/tags/v${LIBRDKAFKA_VERSION}.zip -O ./librdkafka.zip && \
-    unzip ./librdkafka.zip && \
-    rm ./librdkafka.zip && \
-    cd ./librdkafka-${LIBRDKAFKA_VERSION} && \
-    ./configure && \
-    make all install && \
-    cd /tmp && \
-    rm -rf ./librdkafka-${LIBRDKAFKA_VERSION}
-
 # Setup ODBC config
 RUN if [ "${TARGETPLATFORM}" = "linux/amd64" ]; then export ARCH="x86_64"; else export ARCH="aarch64"; fi && \
     sed -i "s|Driver=psqlodbca.so|Driver=/usr/lib/${ARCH}-linux-gnu/odbc/psqlodbca.so|g" /etc/odbcinst.ini && \

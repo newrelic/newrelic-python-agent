@@ -202,13 +202,10 @@ static PyObject *NRUtilization_new(PyTypeObject *type,
         return NULL;
 
     /*
-     * XXX Using a mutex for now just in case the calls to get
-     * the current thread are causing release of GIL in a
-     * multithreaded context. May explain why having issues with
-     * object referred to by weakrefs being corrupted. The GIL
-     * should technically be enough to protect us here.
+     * Using a mutex to ensure this is compatible with free threaded Python interpreters.
+     * In the past, this relied on the GIL for thread safety with weakrefs but that was
+     * not reliable enough anyway.
      */
-
     self->thread_mutex = PyThread_allocate_lock();
 
     self->set_of_all_threads = PyDict_New();
@@ -454,6 +451,10 @@ moduleinit(void)
     Py_INCREF(&NRUtilization_Type);
     PyModule_AddObject(module, "ThreadUtilization",
             (PyObject *)&NRUtilization_Type);
+
+#ifdef Py_GIL_DISABLED
+    PyUnstable_Module_SetGIL(module, Py_MOD_GIL_NOT_USED);
+#endif
 
     return module;
 }

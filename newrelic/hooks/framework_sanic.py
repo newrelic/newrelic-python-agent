@@ -178,7 +178,7 @@ async def _nr_sanic_response_send(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     result = wrapped(*args, **kwargs)
     if isawaitable(result):
-        await result
+        result = await result
 
     if transaction is None:
         return result

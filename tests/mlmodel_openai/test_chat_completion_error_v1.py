@@ -44,6 +44,7 @@ expected_events_on_no_model_error = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,  # UUID that varies with each run
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "span_id": None,
             "trace_id": "trace-id",
@@ -60,6 +61,7 @@ expected_events_on_no_model_error = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "span_id": None,
             "trace_id": "trace-id",
@@ -75,6 +77,7 @@ expected_events_on_no_model_error = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "span_id": None,
             "trace_id": "trace-id",
@@ -112,7 +115,7 @@ def test_chat_completion_invalid_request_error_no_model(set_trace_info, sync_ope
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         with WithLlmCustomAttributes({"context": "attr"}):
             sync_openai_client.chat.completions.create(
-                messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
+                messages=_test_openai_chat_completion_messages, temperature=0.7, max_completion_tokens=100
             )
 
 
@@ -138,7 +141,7 @@ def test_chat_completion_invalid_request_error_no_model_no_content(set_trace_inf
     with pytest.raises(TypeError):
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         sync_openai_client.chat.completions.create(
-            messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
+            messages=_test_openai_chat_completion_messages, temperature=0.7, max_completion_tokens=100
         )
 
 
@@ -167,7 +170,7 @@ def test_chat_completion_invalid_request_error_no_model_async(loop, set_trace_in
         with WithLlmCustomAttributes({"context": "attr"}):
             loop.run_until_complete(
                 async_openai_client.chat.completions.create(
-                    messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
+                    messages=_test_openai_chat_completion_messages, temperature=0.7, max_completion_tokens=100
                 )
             )
 
@@ -195,7 +198,7 @@ def test_chat_completion_invalid_request_error_no_model_async_no_content(loop, s
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         loop.run_until_complete(
             async_openai_client.chat.completions.create(
-                messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
+                messages=_test_openai_chat_completion_messages, temperature=0.7, max_completion_tokens=100
             )
         )
 
@@ -205,6 +208,7 @@ expected_events_on_invalid_model_error = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,  # UUID that varies with each run
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "span_id": None,
             "trace_id": "trace-id",
@@ -222,6 +226,7 @@ expected_events_on_invalid_model_error = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
+            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "span_id": None,
             "trace_id": "trace-id",
@@ -262,7 +267,7 @@ def test_chat_completion_invalid_request_error_invalid_model(set_trace_info, syn
             model="does-not-exist",
             messages=({"role": "user", "content": "Model does not exist."},),
             temperature=0.7,
-            max_tokens=100,
+            max_completion_tokens=100,
         )
 
 
@@ -293,7 +298,7 @@ def test_chat_completion_invalid_request_error_invalid_model_with_token_count(se
             model="does-not-exist",
             messages=({"role": "user", "content": "Model does not exist."},),
             temperature=0.7,
-            max_tokens=100,
+            max_completion_tokens=100,
         )
 
 
@@ -324,7 +329,7 @@ def test_chat_completion_invalid_request_error_invalid_model_async(loop, set_tra
                 model="does-not-exist",
                 messages=({"role": "user", "content": "Model does not exist."},),
                 temperature=0.7,
-                max_tokens=100,
+                max_completion_tokens=100,
             )
         )
 
@@ -359,7 +364,7 @@ def test_chat_completion_invalid_request_error_invalid_model_with_token_count_as
                 model="does-not-exist",
                 messages=({"role": "user", "content": "Model does not exist."},),
                 temperature=0.7,
-                max_tokens=100,
+                max_completion_tokens=100,
             )
         )
 
@@ -369,10 +374,11 @@ expected_events_on_wrong_api_key_error = [
         {"type": "LlmChatCompletionSummary"},
         {
             "id": None,  # UUID that varies with each run
+            "timestamp": None,
             "span_id": None,
             "trace_id": "trace-id",
             "duration": None,  # Response time varies each test run
-            "request.model": "gpt-3.5-turbo",
+            "request.model": "gpt-5.1",
             "request.temperature": 0.7,
             "request.max_tokens": 100,
             "response.number_of_messages": 1,
@@ -385,6 +391,7 @@ expected_events_on_wrong_api_key_error = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
+            "timestamp": None,
             "span_id": None,
             "trace_id": "trace-id",
             "content": "Invalid API key.",
@@ -423,10 +430,10 @@ def test_chat_completion_wrong_api_key_error(monkeypatch, set_trace_info, sync_o
     monkeypatch.setattr(sync_openai_client, "api_key", "DEADBEEF")
     with pytest.raises(openai.AuthenticationError):
         sync_openai_client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-5.1",
             messages=({"role": "user", "content": "Invalid API key."},),
             temperature=0.7,
-            max_tokens=100,
+            max_completion_tokens=100,
         )
 
 
@@ -456,10 +463,10 @@ def test_chat_completion_wrong_api_key_error_async(loop, monkeypatch, set_trace_
     with pytest.raises(openai.AuthenticationError):
         loop.run_until_complete(
             async_openai_client.chat.completions.create(
-                model="gpt-3.5-turbo",
+                model="gpt-5.1",
                 messages=({"role": "user", "content": "Invalid API key."},),
                 temperature=0.7,
-                max_tokens=100,
+                max_completion_tokens=100,
             )
         )
 
@@ -486,7 +493,7 @@ def test_chat_completion_invalid_request_error_no_model_with_raw_response(set_tr
     with pytest.raises(TypeError):
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         sync_openai_client.chat.completions.with_raw_response.create(
-            messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
+            messages=_test_openai_chat_completion_messages, temperature=0.7, max_completion_tokens=100
         )
 
 
@@ -515,7 +522,7 @@ def test_chat_completion_invalid_request_error_no_model_no_content_with_raw_resp
     with pytest.raises(TypeError):
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         sync_openai_client.chat.completions.with_raw_response.create(
-            messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
+            messages=_test_openai_chat_completion_messages, temperature=0.7, max_completion_tokens=100
         )
 
 
@@ -544,7 +551,7 @@ def test_chat_completion_invalid_request_error_no_model_async_with_raw_response(
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         loop.run_until_complete(
             async_openai_client.chat.completions.with_raw_response.create(
-                messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
+                messages=_test_openai_chat_completion_messages, temperature=0.7, max_completion_tokens=100
             )
         )
 
@@ -575,7 +582,7 @@ def test_chat_completion_invalid_request_error_no_model_async_no_content_with_ra
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         loop.run_until_complete(
             async_openai_client.chat.completions.with_raw_response.create(
-                messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
+                messages=_test_openai_chat_completion_messages, temperature=0.7, max_completion_tokens=100
             )
         )
 
@@ -606,7 +613,7 @@ def test_chat_completion_invalid_request_error_invalid_model_with_raw_response(s
             model="does-not-exist",
             messages=({"role": "user", "content": "Model does not exist."},),
             temperature=0.7,
-            max_tokens=100,
+            max_completion_tokens=100,
         )
 
 
@@ -639,7 +646,7 @@ def test_chat_completion_invalid_request_error_invalid_model_with_token_count_wi
             model="does-not-exist",
             messages=({"role": "user", "content": "Model does not exist."},),
             temperature=0.7,
-            max_tokens=100,
+            max_completion_tokens=100,
         )
 
 
@@ -672,7 +679,7 @@ def test_chat_completion_invalid_request_error_invalid_model_async_with_raw_resp
                 model="does-not-exist",
                 messages=({"role": "user", "content": "Model does not exist."},),
                 temperature=0.7,
-                max_tokens=100,
+                max_completion_tokens=100,
             )
         )
 
@@ -707,7 +714,7 @@ def test_chat_completion_invalid_request_error_invalid_model_with_token_count_as
                 model="does-not-exist",
                 messages=({"role": "user", "content": "Model does not exist."},),
                 temperature=0.7,
-                max_tokens=100,
+                max_completion_tokens=100,
             )
         )
 
@@ -737,10 +744,10 @@ def test_chat_completion_wrong_api_key_error_with_raw_response(monkeypatch, set_
     monkeypatch.setattr(sync_openai_client, "api_key", "DEADBEEF")
     with pytest.raises(openai.AuthenticationError):
         sync_openai_client.chat.completions.with_raw_response.create(
-            model="gpt-3.5-turbo",
+            model="gpt-5.1",
             messages=({"role": "user", "content": "Invalid API key."},),
             temperature=0.7,
-            max_tokens=100,
+            max_completion_tokens=100,
         )
 
 
@@ -772,9 +779,9 @@ def test_chat_completion_wrong_api_key_error_async_with_raw_response(
     with pytest.raises(openai.AuthenticationError):
         loop.run_until_complete(
             async_openai_client.chat.completions.with_raw_response.create(
-                model="gpt-3.5-turbo",
+                model="gpt-5.1",
                 messages=({"role": "user", "content": "Invalid API key."},),
                 temperature=0.7,
-                max_tokens=100,
+                max_completion_tokens=100,
             )
         )

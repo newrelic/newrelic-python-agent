@@ -29,8 +29,6 @@ jobs:
       matrix:
         include:
           # Linux glibc
-          - wheel: cp38-manylinux
-            os: ubuntu-24.04
           - wheel: cp39-manylinux
             os: ubuntu-24.04
           - wheel: cp310-manylinux
@@ -41,11 +39,13 @@ jobs:
             os: ubuntu-24.04
           - wheel: cp313-manylinux
             os: ubuntu-24.04
+          - wheel: cp313t-manylinux
+            os: ubuntu-24.04
           - wheel: cp314-manylinux
             os: ubuntu-24.04
-          # Linux musllibc
-          - wheel: cp38-musllinux
+          - wheel: cp314t-manylinux
             os: ubuntu-24.04
+          # Linux musllibc
           - wheel: cp39-musllinux
             os: ubuntu-24.04
           - wheel: cp310-musllinux
@@ -56,7 +56,11 @@ jobs:
             os: ubuntu-24.04
           - wheel: cp313-musllinux
             os: ubuntu-24.04
+          - wheel: cp313t-musllinux
+            os: ubuntu-24.04
           - wheel: cp314-musllinux
+            os: ubuntu-24.04
+          - wheel: cp314t-musllinux
             os: ubuntu-24.04
           # Windows
           # Windows wheels won't but published until the full release announcement.
@@ -69,7 +73,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # 5.0.1
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # 6.0.1
         with:
           persist-credentials: false
           fetch-depth: 0
@@ -89,6 +93,7 @@ jobs:
           CIBW_ARCHS_MACOS: native
           CIBW_ARCHS_WINDOWS: AMD64 ARM64
           CIBW_ENVIRONMENT_LINUX: "LD_LIBRARY_PATH=/opt/rh/devtoolset-8/root/usr/lib64:/opt/rh/devtoolset-8/root/usr/lib:/opt/rh/devtoolset-8/root/usr/lib64/dyninst:/opt/rh/devtoolset-8/root/usr/lib/dyninst:/usr/local/lib64:/usr/local/lib"
+          CIBW_ENABLE: cpython-freethreading
           CIBW_TEST_REQUIRES: pytest
           CIBW_TEST_COMMAND_LINUX: "export PYTHONPATH={project}/tests; pytest {project}/tests/agent_unittests -vx"
           CIBW_TEST_COMMAND_MACOS: "export PYTHONPATH={project}/tests; pytest {project}/tests/agent_unittests -vx"
@@ -97,7 +102,7 @@ jobs:
           CIBW_TEST_SKIP: "*-win_arm64"
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         with:
           name: ${{ github.job }}-${{ matrix.wheel }}
           path: ./wheelhouse/*.whl
@@ -109,12 +114,12 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # 5.0.1
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # 6.0.1
         with:
           persist-credentials: false
           fetch-depth: 0
 
-      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # 6.0.0
+      - uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # 6.1.0
         with:
           python-version: "3.13"
 
@@ -134,7 +139,7 @@ jobs:
           openssl md5 -binary "dist/${tarball}" | xxd -p | tr -d '\n' > "dist/${md5_file}"
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # 5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
         with:
           name: ${{ github.job }}-sdist
           path: |
@@ -166,7 +171,7 @@ jobs:
     environment: ${{ matrix.pypi-instance }}
 
     steps:
-      - uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # 6.0.0
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # 7.0.0
         with:
           path: ./dist/
           merge-multiple: true
@@ -196,7 +201,7 @@ jobs:
           repository-url: https://test.pypi.org/legacy/
 
       - name: Attest
-        uses: actions/attest-build-provenance@977bb373ede98d70efdf65b84cb5f73e068dcc2a # 3.0.0
+        uses: actions/attest-build-provenance@00014ed6ed5efc5b1ab7f7f34a39eb55d41aa4f8 # 3.1.0
         id: attest
         with:
           subject-path: |

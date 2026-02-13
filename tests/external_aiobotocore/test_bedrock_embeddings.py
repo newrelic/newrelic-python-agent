@@ -14,6 +14,7 @@
 import json
 import os
 from io import BytesIO
+from pprint import pformat
 
 import botocore.exceptions
 import pytest
@@ -414,7 +415,12 @@ def test_bedrock_embedding_error_malformed_response_body(loop, bedrock_server, s
 def test_embedding_models_instrumented(loop):
     import aiobotocore
 
-    SUPPORTED_MODELS = [model for model, _, _, _ in MODEL_EXTRACTORS if "embed" in model]
+    def _is_supported_model(model):
+        supported_models = [model for model, _, _, _ in MODEL_EXTRACTORS if "embed" in model]
+        for supported_model in supported_models:
+            if supported_model in model:
+                return True
+        return False
 
     _id = os.environ.get("AWS_ACCESS_KEY_ID")
     key = os.environ.get("AWS_SECRET_ACCESS_KEY")
@@ -427,12 +433,8 @@ def test_embedding_models_instrumented(loop):
     try:
         response = client.list_foundation_models(byOutputModality="EMBEDDING")
         models = [model["modelId"] for model in response["modelSummaries"]]
-        not_supported = []
-        for model in models:
-            is_supported = any(model.startswith(supported_model) for supported_model in SUPPORTED_MODELS)
-            if not is_supported:
-                not_supported.append(model)
+        not_supported = [model for model in models if not _is_supported_model(model)]
 
-        assert not not_supported, f"The following unsupported models were found: {not_supported}"
+        assert not not_supported, f"The following unsupported models were found: {pformat(not_supported)}"
     finally:
         loop.run_until_complete(client.__aexit__(None, None, None))

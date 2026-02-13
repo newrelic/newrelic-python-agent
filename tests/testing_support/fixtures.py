@@ -791,7 +791,7 @@ def validate_error_event_sample_data(required_attrs=None, required_user_attrs=Tr
             transaction = _bind_params(*args, **kwargs)
 
             error_events = transaction.error_events(instance.stats_table)
-            assert len(error_events) == num_errors
+            assert len(error_events) == num_errors, f"Expected: {num_errors}, Got: {len(error_events)}"
             for sample in error_events:
                 assert isinstance(sample, list)
                 assert len(sample) == 3

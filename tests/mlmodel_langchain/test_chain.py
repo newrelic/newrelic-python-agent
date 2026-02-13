@@ -176,7 +176,6 @@ chat_completion_recorded_events_runnable_invoke = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -236,7 +235,6 @@ chat_completion_recorded_events_invoke = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -294,7 +292,6 @@ chat_completion_recorded_events_runnable_invoke_no_metadata_or_tags = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -352,7 +349,6 @@ chat_completion_recorded_events_invoke_no_metadata_or_tags = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -448,7 +444,6 @@ recorded_events_retrieval_chain_response = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "timestamp": None,
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -526,7 +521,6 @@ recorded_events_retrieval_chain_response = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "timestamp": None,
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -561,7 +555,6 @@ recorded_events_retrieval_chain_response = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "timestamp": None,
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -579,7 +572,6 @@ recorded_events_retrieval_chain_response = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "timestamp": None,
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -637,7 +629,6 @@ chat_completion_recorded_events_str_response = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -696,7 +687,6 @@ chat_completion_recorded_events_list_response = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,

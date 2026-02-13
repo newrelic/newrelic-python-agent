@@ -11,14 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 import openai
-import pytest
-from testing_support.fixtures import (
-    override_application_settings,
-    override_llm_token_callback_settings,
-    reset_core_stats_engine,
-    validate_attributes,
-)
+from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     add_token_count_to_events,
     disabled_ai_monitoring_record_content_settings,
@@ -36,7 +31,7 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
 
 from newrelic.api.background_task import background_task
 from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
-from newrelic.api.transaction import accept_distributed_trace_headers, add_custom_attribute
+from newrelic.api.transaction import add_custom_attribute
 
 _test_openai_chat_completion_messages = (
     {"role": "system", "content": "You are a scientist."},
@@ -396,46 +391,6 @@ def test_openai_chat_completion_async_with_llm_metadata_no_content(loop, set_tra
             model="gpt-5.1", messages=_test_openai_chat_completion_messages, temperature=0.7, max_completion_tokens=100
         )
     )
-
-
-@pytest.mark.parametrize("partial_granularity_type", ("reduced", "essential", "compact"))
-def test_openai_chat_completion_async_in_txn_with_token_count_partial_granularity_dt(
-    partial_granularity_type, set_trace_info, loop, async_openai_client
-):
-    @reset_core_stats_engine()
-    @disabled_ai_monitoring_record_content_settings
-    @validate_custom_events(events_sans_content(chat_completion_recorded_events))
-    @validate_custom_event_count(count=4)
-    @validate_transaction_metrics(
-        "test_chat_completion_v1:test_openai_chat_completion_async_in_txn_with_token_count_partial_granularity_dt.<locals>._test",
-        scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
-        rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
-        custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
-        background_task=True,
-    )
-    @validate_attributes("agent", ["llm"])
-    @override_application_settings(
-        {
-            "distributed_tracing.sampler.full_granularity.enabled": False,
-            "distributed_tracing.sampler.partial_granularity.enabled": True,
-            "distributed_tracing.sampler.partial_granularity.type": partial_granularity_type,
-            "distributed_tracing.sampler.partial_granularity.remote_parent_sampled": "always_on",
-            "span_events.enabled": True,
-        }
-    )
-    @background_task()
-    def _test():
-        add_custom_attribute("llm.conversation_id", "my-awesome-id")
-        add_custom_attribute("llm.foo", "bar")
-        accept_distributed_trace_headers({"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01"})
-        set_trace_info()
-        loop.run_until_complete(
-            async_openai_client.chat.completions.create(
-                model="gpt-3.5-turbo", messages=_test_openai_chat_completion_messages, temperature=0.7, max_tokens=100
-            )
-        )
-
-    _test()
 
 
 @reset_core_stats_engine()

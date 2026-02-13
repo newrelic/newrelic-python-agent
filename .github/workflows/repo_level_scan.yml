@@ -1,0 +1,53 @@
+name: 'Repo Level Trivy Scan'
+
+on:
+  pull_request:
+
+jobs:
+  build:
+    name: 'Build and Push Docker Image'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    outputs:
+      image-name: ${{ steps.set-image-name.outputs.image-name }}
+
+    steps:
+      - name: 'Checkout code'
+        uses: actions/checkout@v4
+
+      - name: 'Log in to GitHub Container Registry'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: 'Build and push Docker image'
+        uses: docker/build-push-action@v6
+        with:
+          # --- FIX: The build context is now the correct directory ---
+          context: ./.github/containers
+          # The file path is also updated to be explicit
+          file: ./.github/containers/Dockerfile
+          push: true
+          tags: ghcr.io/${{ github.repository }}:${{ github.sha }}
+
+      - name: 'Set image name output'
+        id: set-image-name
+        run: echo "image-name=ghcr.io/${{ github.repository }}:${{ github.sha }}" >> $GITHUB_OUTPUT
+
+  scan:
+    name: 'Trigger Organization Scan'
+    needs: build
+    permissions:
+      actions: read
+      contents: read
+      packages: read
+      security-events: write
+    uses: newrelic-trivy/.github/.github/workflows/org-level-trivy-scan.yml@main
+    with:
+      image-name: ${{ needs.build.outputs.image-name }}
+    secrets: inherit

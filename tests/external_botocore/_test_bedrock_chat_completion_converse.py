@@ -79,7 +79,6 @@ chat_completion_expected_events = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,  # UUID that varies with each run
-            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": "c20d345e-6878-4778-b674-6b187bae8ecf",
@@ -161,7 +160,6 @@ chat_completion_expected_streaming_events = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,  # UUID that varies with each run
-            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": "f070b880-e0fb-4537-8093-796671c39239",

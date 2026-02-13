@@ -28,108 +28,108 @@ class SamplerProxy:
         adaptive_sampler = AdaptiveSampler(settings.sampling_target, sampling_target_period)
         self._samplers = {"global": adaptive_sampler}
 
-        full_gran_root_ratio = None
-        full_gran_parent_sampled_ratio = None
-        full_gran_parent_not_sampled_ratio = None
-        # Add sampler instances for each config section if configured.
-        if settings.distributed_tracing.sampler.full_granularity.enabled:
-            # If the ratio is not defined fallback to adaptive sampler.
-            if (
-                settings.distributed_tracing.sampler._root == "trace_id_ratio_based"
-                and settings.distributed_tracing.sampler.root.trace_id_ratio_based.ratio
-            ):
-                full_gran_root_ratio = settings.distributed_tracing.sampler.root.trace_id_ratio_based.ratio
-                self.add_trace_id_ratio_based_sampler((True, 0), full_gran_root_ratio)
-            else:
-                self.add_adaptive_sampler(
-                    (True, 0),
-                    settings.distributed_tracing.sampler.root.adaptive.sampling_target,
-                    sampling_target_period,
-                )
-            # If the ratio is not defined fallback to adaptive sampler.
-            if (
-                settings.distributed_tracing.sampler._remote_parent_sampled == "trace_id_ratio_based"
-                and settings.distributed_tracing.sampler.remote_parent_sampled.trace_id_ratio_based.ratio
-            ):
-                full_gran_parent_sampled_ratio = (
-                    settings.distributed_tracing.sampler.remote_parent_sampled.trace_id_ratio_based.ratio
-                )
-                self.add_trace_id_ratio_based_sampler((True, 1), full_gran_parent_sampled_ratio)
-            else:
-                self.add_adaptive_sampler(
-                    (True, 1),
-                    settings.distributed_tracing.sampler.remote_parent_sampled.adaptive.sampling_target,
-                    sampling_target_period,
-                )
-            # If the ratio is not defined fallback to adaptive sampler.
-            if (
-                settings.distributed_tracing.sampler._remote_parent_not_sampled == "trace_id_ratio_based"
-                and settings.distributed_tracing.sampler.remote_parent_not_sampled.trace_id_ratio_based.ratio
-            ):
-                full_gran_parent_not_sampled_ratio = (
-                    settings.distributed_tracing.sampler.remote_parent_not_sampled.trace_id_ratio_based.ratio
-                )
-                self.add_trace_id_ratio_based_sampler((True, 2), full_gran_parent_not_sampled_ratio)
-            else:
-                self.add_adaptive_sampler(
-                    (True, 2),
-                    settings.distributed_tracing.sampler.remote_parent_not_sampled.adaptive.sampling_target,
-                    sampling_target_period,
-                )
-        if settings.distributed_tracing.sampler.partial_granularity.enabled:
-            # If the ratio is not defined fallback to adaptive sampler.
-            if (
-                settings.distributed_tracing.sampler.partial_granularity._root == "trace_id_ratio_based"
-                and settings.distributed_tracing.sampler.partial_granularity.root.trace_id_ratio_based.ratio
-            ):
-                # If both full and partial are set to use the trace id ratio based sampler,
-                # set partial granularity ratio = full ratio + partial ratio.
-                ratio = settings.distributed_tracing.sampler.partial_granularity.root.trace_id_ratio_based.ratio
-                if full_gran_root_ratio:
-                    ratio = min(ratio + full_gran_root_ratio, 1)
-                self.add_trace_id_ratio_based_sampler((False, 0), ratio)
-            else:
-                self.add_adaptive_sampler(
-                    (False, 0),
-                    settings.distributed_tracing.sampler.partial_granularity.root.adaptive.sampling_target,
-                    sampling_target_period,
-                )
-            # If the ratio is not defined fallback to adaptive sampler.
-            if (
-                settings.distributed_tracing.sampler.partial_granularity._remote_parent_sampled
-                == "trace_id_ratio_based"
-                and settings.distributed_tracing.sampler.partial_granularity.remote_parent_sampled.trace_id_ratio_based.ratio
-            ):
-                # If both full and partial are set to use the trace id ratio based sampler,
-                # set partial granularity ratio = full ratio + partial ratio.
-                ratio = settings.distributed_tracing.sampler.partial_granularity.remote_parent_sampled.trace_id_ratio_based.ratio
-                if full_gran_parent_sampled_ratio:
-                    ratio = min(ratio + full_gran_parent_sampled_ratio, 1)
-                self.add_trace_id_ratio_based_sampler((False, 1), ratio)
-            else:
-                self.add_adaptive_sampler(
-                    (False, 1),
-                    settings.distributed_tracing.sampler.partial_granularity.remote_parent_sampled.adaptive.sampling_target,
-                    sampling_target_period,
-                )
-            # If the ratio is not defined fallback to adaptive sampler.
-            if (
-                settings.distributed_tracing.sampler.partial_granularity._remote_parent_not_sampled
-                == "trace_id_ratio_based"
-                and settings.distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.trace_id_ratio_based.ratio
-            ):
-                # If both full and partial are set to use the trace id ratio based sampler,
-                # set partial granularity ratio = full ratio + partial ratio.
-                ratio = settings.distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.trace_id_ratio_based.ratio
-                if full_gran_parent_not_sampled_ratio:
-                    ratio = min(ratio + full_gran_parent_not_sampled_ratio, 1)
-                self.add_trace_id_ratio_based_sampler((False, 2), ratio)
-            else:
-                self.add_adaptive_sampler(
-                    (False, 2),
-                    settings.distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.adaptive.sampling_target,
-                    sampling_target_period,
-                )
+        #full_gran_root_ratio = None
+        #full_gran_parent_sampled_ratio = None
+        #full_gran_parent_not_sampled_ratio = None
+        ## Add sampler instances for each config section if configured.
+        #if settings.distributed_tracing.sampler.full_granularity.enabled:
+        #    # If the ratio is not defined fallback to adaptive sampler.
+        #    if (
+        #        settings.distributed_tracing.sampler._root == "trace_id_ratio_based"
+        #        and settings.distributed_tracing.sampler.root.trace_id_ratio_based.ratio
+        #    ):
+        #        full_gran_root_ratio = settings.distributed_tracing.sampler.root.trace_id_ratio_based.ratio
+        #        self.add_trace_id_ratio_based_sampler((True, 0), full_gran_root_ratio)
+        #    else:
+        #        self.add_adaptive_sampler(
+        #            (True, 0),
+        #            settings.distributed_tracing.sampler.root.adaptive.sampling_target,
+        #            sampling_target_period,
+        #        )
+        #    # If the ratio is not defined fallback to adaptive sampler.
+        #    if (
+        #        settings.distributed_tracing.sampler._remote_parent_sampled == "trace_id_ratio_based"
+        #        and settings.distributed_tracing.sampler.remote_parent_sampled.trace_id_ratio_based.ratio
+        #    ):
+        #        full_gran_parent_sampled_ratio = (
+        #            settings.distributed_tracing.sampler.remote_parent_sampled.trace_id_ratio_based.ratio
+        #        )
+        #        self.add_trace_id_ratio_based_sampler((True, 1), full_gran_parent_sampled_ratio)
+        #    else:
+        #        self.add_adaptive_sampler(
+        #            (True, 1),
+        #            settings.distributed_tracing.sampler.remote_parent_sampled.adaptive.sampling_target,
+        #            sampling_target_period,
+        #        )
+        #    # If the ratio is not defined fallback to adaptive sampler.
+        #    if (
+        #        settings.distributed_tracing.sampler._remote_parent_not_sampled == "trace_id_ratio_based"
+        #        and settings.distributed_tracing.sampler.remote_parent_not_sampled.trace_id_ratio_based.ratio
+        #    ):
+        #        full_gran_parent_not_sampled_ratio = (
+        #            settings.distributed_tracing.sampler.remote_parent_not_sampled.trace_id_ratio_based.ratio
+        #        )
+        #        self.add_trace_id_ratio_based_sampler((True, 2), full_gran_parent_not_sampled_ratio)
+        #    else:
+        #        self.add_adaptive_sampler(
+        #            (True, 2),
+        #            settings.distributed_tracing.sampler.remote_parent_not_sampled.adaptive.sampling_target,
+        #            sampling_target_period,
+        #        )
+        #if settings.distributed_tracing.sampler.partial_granularity.enabled:
+        #    # If the ratio is not defined fallback to adaptive sampler.
+        #    if (
+        #        settings.distributed_tracing.sampler.partial_granularity._root == "trace_id_ratio_based"
+        #        and settings.distributed_tracing.sampler.partial_granularity.root.trace_id_ratio_based.ratio
+        #    ):
+        #        # If both full and partial are set to use the trace id ratio based sampler,
+        #        # set partial granularity ratio = full ratio + partial ratio.
+        #        ratio = settings.distributed_tracing.sampler.partial_granularity.root.trace_id_ratio_based.ratio
+        #        if full_gran_root_ratio:
+        #            ratio = min(ratio + full_gran_root_ratio, 1)
+        #        self.add_trace_id_ratio_based_sampler((False, 0), ratio)
+        #    else:
+        #        self.add_adaptive_sampler(
+        #            (False, 0),
+        #            settings.distributed_tracing.sampler.partial_granularity.root.adaptive.sampling_target,
+        #            sampling_target_period,
+        #        )
+        #    # If the ratio is not defined fallback to adaptive sampler.
+        #    if (
+        #        settings.distributed_tracing.sampler.partial_granularity._remote_parent_sampled
+        #        == "trace_id_ratio_based"
+        #        and settings.distributed_tracing.sampler.partial_granularity.remote_parent_sampled.trace_id_ratio_based.ratio
+        #    ):
+        #        # If both full and partial are set to use the trace id ratio based sampler,
+        #        # set partial granularity ratio = full ratio + partial ratio.
+        #        ratio = settings.distributed_tracing.sampler.partial_granularity.remote_parent_sampled.trace_id_ratio_based.ratio
+        #        if full_gran_parent_sampled_ratio:
+        #            ratio = min(ratio + full_gran_parent_sampled_ratio, 1)
+        #        self.add_trace_id_ratio_based_sampler((False, 1), ratio)
+        #    else:
+        #        self.add_adaptive_sampler(
+        #            (False, 1),
+        #            settings.distributed_tracing.sampler.partial_granularity.remote_parent_sampled.adaptive.sampling_target,
+        #            sampling_target_period,
+        #        )
+        #    # If the ratio is not defined fallback to adaptive sampler.
+        #    if (
+        #        settings.distributed_tracing.sampler.partial_granularity._remote_parent_not_sampled
+        #        == "trace_id_ratio_based"
+        #        and settings.distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.trace_id_ratio_based.ratio
+        #    ):
+        #        # If both full and partial are set to use the trace id ratio based sampler,
+        #        # set partial granularity ratio = full ratio + partial ratio.
+        #        ratio = settings.distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.trace_id_ratio_based.ratio
+        #        if full_gran_parent_not_sampled_ratio:
+        #            ratio = min(ratio + full_gran_parent_not_sampled_ratio, 1)
+        #        self.add_trace_id_ratio_based_sampler((False, 2), ratio)
+        #    else:
+        #        self.add_adaptive_sampler(
+        #            (False, 2),
+        #            settings.distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.adaptive.sampling_target,
+        #            sampling_target_period,
+        #        )
 
     def add_trace_id_ratio_based_sampler(self, key, ratio):
         """

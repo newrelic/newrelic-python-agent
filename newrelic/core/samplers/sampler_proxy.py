@@ -28,11 +28,11 @@ class SamplerProxy:
         adaptive_sampler = AdaptiveSampler(settings.sampling_target, sampling_target_period)
         self._samplers = {"global": adaptive_sampler}
 
-        #full_gran_root_ratio = None
-        #full_gran_parent_sampled_ratio = None
-        #full_gran_parent_not_sampled_ratio = None
+        # full_gran_root_ratio = None
+        # full_gran_parent_sampled_ratio = None
+        # full_gran_parent_not_sampled_ratio = None
         ## Add sampler instances for each config section if configured.
-        #if settings.distributed_tracing.sampler.full_granularity.enabled:
+        # if settings.distributed_tracing.sampler.full_granularity.enabled:
         #    # If the ratio is not defined fallback to adaptive sampler.
         #    if (
         #        settings.distributed_tracing.sampler._root == "trace_id_ratio_based"
@@ -76,7 +76,7 @@ class SamplerProxy:
         #            settings.distributed_tracing.sampler.remote_parent_not_sampled.adaptive.sampling_target,
         #            sampling_target_period,
         #        )
-        #if settings.distributed_tracing.sampler.partial_granularity.enabled:
+        # if settings.distributed_tracing.sampler.partial_granularity.enabled:
         #    # If the ratio is not defined fallback to adaptive sampler.
         #    if (
         #        settings.distributed_tracing.sampler.partial_granularity._root == "trace_id_ratio_based"

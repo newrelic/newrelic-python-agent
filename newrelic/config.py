@@ -4226,7 +4226,19 @@ def _process_module_builtin_defaults():
 
 
 def _process_module_entry_points():
-    from importlib.metadata import entry_points
+    try:
+        # importlib.metadata was introduced into the standard library starting in Python 3.8.
+        from importlib.metadata import entry_points
+    except ImportError:
+        try:
+            # importlib_metadata is a backport library installable from PyPI.
+            from importlib_metadata import entry_points
+        except ImportError:
+            try:
+                # Fallback to pkg_resources, which is available in older versions of setuptools.
+                from pkg_resources import iter_entry_points as entry_points
+            except ImportError:
+                return
 
     group = "newrelic.hooks"
 
@@ -4294,7 +4306,19 @@ def _setup_instrumentation():
 
 
 def _setup_extensions():
-    from importlib.metadata import entry_points
+    try:
+        # importlib.metadata was introduced into the standard library starting in Python 3.8.
+        from importlib.metadata import entry_points
+    except ImportError:
+        try:
+            # importlib_metadata is a backport library installable from PyPI.
+            from importlib_metadata import entry_points
+        except ImportError:
+            try:
+                # Fallback to pkg_resources, which is available in older versions of setuptools.
+                from pkg_resources import iter_entry_points as entry_points
+            except ImportError:
+                return
 
     group = "newrelic.extension"
 

@@ -28,9 +28,10 @@ readme = "README.md"
 #     "LICENSE",
 #     "THIRD_PARTY_NOTICES.md",
 # ]
-requires-python = ">=3.9"  # python_requires is also located in setup.py
+requires-python = ">=3.8"  # python_requires is also located in setup.py
 classifiers = [
     "Development Status :: 5 - Production/Stable",
+    "Programming Language :: Python :: 3.8",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
@@ -78,13 +79,14 @@ packages = [
     "newrelic.packages",
     "newrelic.packages.isort",
     "newrelic.packages.isort.stdlibs",
-    "newrelic.packages.opentelemetry_proto",
     "newrelic.packages.urllib3",
-    "newrelic.packages.urllib3.contrib",
-    "newrelic.packages.urllib3.contrib.emscripten",
-    "newrelic.packages.urllib3.http2",
     "newrelic.packages.urllib3.util",
+    "newrelic.packages.urllib3.contrib",
+    "newrelic.packages.urllib3.contrib._securetransport",
+    "newrelic.packages.urllib3.packages",
+    "newrelic.packages.urllib3.packages.backports",
     "newrelic.packages.wrapt",
+    "newrelic.packages.opentelemetry_proto",
     "newrelic.samplers",
 ]
 
@@ -103,6 +105,7 @@ git_describe_command = 'git describe --dirty --tags --long --match "*.*.*"'
 [tool.ruff]
 output-format = "grouped"
 line-length = 120
+target-version = "py38"
 force-exclude = true  # Fixes issue with megalinter config preventing exclusion of files
 extend-exclude = [
     "newrelic/packages/",
@@ -197,6 +200,7 @@ ignore = [
     "PT012",  # pytest-raises-with-multiple-statements (too many to fix all at once)
     # Permanently disabled rules
     "PLC0415",  # import-outside-top-level (intentionally used frequently)
+    "UP006",  # non-pep585-annotation (not compatible with Python 3.8)
     "D203",  # incorrect-blank-line-before-class
     "D213",  # multi-line-summary-second-line
     "ARG001",  # unused-argument

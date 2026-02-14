@@ -89,9 +89,6 @@ class CursorWrapper(ObjectProxy):
             else:
                 return self.__wrapped__.callproc(procname)
 
-    def __iter__(self):
-        return iter(self.__wrapped__)
-
 
 class ConnectionWrapper(ObjectProxy):
     __cursor_wrapper__ = CursorWrapper

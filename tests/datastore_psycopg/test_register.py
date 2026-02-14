@@ -32,7 +32,7 @@ def test_register_json(loop, connection):
         psycopg.types.json.set_json_loads(loads=lambda x: x, context=connection)
         psycopg.types.json.set_json_loads(loads=lambda x: x, context=cursor)
 
-    if hasattr(connection.__wrapped__, "__aenter__"):
+    if hasattr(connection, "__aenter__"):
 
         async def coro():
             async with connection:
@@ -69,7 +69,7 @@ def test_register_range(loop, connection):
 
         await maybe_await(cursor.execute(f"DROP TYPE if exists {type_name}"))
 
-    if hasattr(connection.__wrapped__, "__aenter__"):
+    if hasattr(connection, "__aenter__"):
 
         async def coro():
             async with connection:

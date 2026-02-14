@@ -57,7 +57,7 @@ _disable_rollup_metrics.append((_instance_metric_name, None))
 
 async def _exercise_db(connection):
     try:
-        if hasattr(connection.__wrapped__, "__aenter__"):
+        if hasattr(connection, "__aenter__"):
             async with connection:
                 raise RuntimeError("error")
         else:

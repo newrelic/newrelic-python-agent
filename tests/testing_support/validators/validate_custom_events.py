@@ -53,7 +53,9 @@ def validate_custom_events(events):
             for captured in found_events:
                 if _check_event_attributes(expected, captured, mismatches):
                     matching_custom_events += 1
-            assert matching_custom_events == 1, _event_details(matching_custom_events, found_events, mismatches)
+            assert matching_custom_events == 1, _event_details(
+                expected, matching_custom_events, found_events, mismatches
+            )
 
         return val
 
@@ -98,9 +100,10 @@ def _check_event_attributes(expected, captured, mismatches):
     return True
 
 
-def _event_details(matching_custom_events, captured, mismatches):
+def _event_details(expected_event, matching_custom_events, captured, mismatches):
     details = [
-        f"matching_custom_events={matching_custom_events}",
+        f"\nexpected_event={pformat(expected_event)}",
+        f"{matching_custom_events=}",
         f"mismatches={pformat(mismatches)}",
         f"captured_events={pformat(captured)}",
     ]

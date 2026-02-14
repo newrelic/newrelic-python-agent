@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import importlib.metadata as importlib_metadata
 import sys
 import warnings
 from functools import lru_cache
@@ -96,17 +95,37 @@ def _get_package_version(name):
             except Exception:
                 pass
 
-    try:
-        # In Python 3.10+ packages_distribution can be checked for as well.
-        if hasattr(importlib_metadata, "packages_distributions"):
-            distributions = importlib_metadata.packages_distributions()
-            distribution_name = distributions.get(name, name)
-            distribution_name = distribution_name[0] if isinstance(distribution_name, list) else distribution_name
-        else:
-            distribution_name = name
+    importlib_metadata = None
+    # importlib.metadata was introduced into the standard library starting in Python 3.8.
+    importlib_metadata = getattr(sys.modules.get("importlib", None), "metadata", None)
+    if importlib_metadata is None:
+        # importlib_metadata is a backport library installable from PyPI.
+        try:
+            import importlib_metadata
+        except ImportError:
+            pass
 
-        version = importlib_metadata.version(distribution_name)
-        if version not in NULL_VERSIONS:
-            return version
-    except Exception:
-        pass
+    if importlib_metadata is not None:
+        try:
+            # In Python 3.10+ packages_distribution can be checked for as well.
+            if hasattr(importlib_metadata, "packages_distributions"):
+                distributions = importlib_metadata.packages_distributions()
+                distribution_name = distributions.get(name, name)
+                distribution_name = distribution_name[0] if isinstance(distribution_name, list) else distribution_name
+            else:
+                distribution_name = name
+
+            version = importlib_metadata.version(distribution_name)
+            if version not in NULL_VERSIONS:
+                return version
+        except Exception:
+            pass
+
+    # Fallback to pkg_resources, which is available in older versions of setuptools.
+    if "pkg_resources" in sys.modules:
+        try:
+            version = sys.modules["pkg_resources"].get_distribution(name).version
+            if version not in NULL_VERSIONS:
+                return version
+        except Exception:
+            pass

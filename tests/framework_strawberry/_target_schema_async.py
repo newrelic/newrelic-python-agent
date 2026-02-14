@@ -14,6 +14,8 @@
 
 from __future__ import annotations
 
+from typing import List
+
 import strawberry
 
 try:
@@ -66,7 +68,7 @@ async def resolve_search(contains: str):
 class Query:
     library: Library = field(resolver=resolve_library)
     hello: str = field(resolver=resolve_hello)
-    search: list[Item] = field(resolver=resolve_search)
+    search: List[Item] = field(resolver=resolve_search)
     echo: str = field(resolver=resolve_echo)
     storage: Storage = field(resolver=resolve_storage)
     error: str | None = field(resolver=resolve_error)

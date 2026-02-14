@@ -1119,7 +1119,8 @@ def flatten_settings(settings):
         for key, value in vars(o).items():
             # Remove any leading underscores on keys accessed through
             # properties for reporting.
-            key = key.removeprefix("_")
+            if key.startswith("_"):
+                key = key[1:]
 
             if name:
                 key = f"{name}.{key}"

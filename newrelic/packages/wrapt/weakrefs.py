@@ -1,7 +1,7 @@
 import functools
 import weakref
 
-from .__wrapt__ import BaseObjectProxy, _FunctionWrapperBase
+from .__wrapt__ import ObjectProxy, _FunctionWrapperBase
 
 # A weak function proxy. This will work on instance methods, class
 # methods, static methods and regular functions. Special treatment is
@@ -11,7 +11,6 @@ from .__wrapt__ import BaseObjectProxy, _FunctionWrapperBase
 # reference is therefore applied to the instance the method is bound to
 # and the original function. The function is then rebound at the point
 # of a call via the weak function proxy.
-
 
 def _weak_function_proxy_callback(ref, proxy, callback):
     if proxy._self_expired:
@@ -26,25 +25,11 @@ def _weak_function_proxy_callback(ref, proxy, callback):
     if callback is not None:
         callback(proxy)
 
+class WeakFunctionProxy(ObjectProxy):
 
-class WeakFunctionProxy(BaseObjectProxy):
-    """A weak function proxy."""
-
-    __slots__ = ("_self_expired", "_self_instance")
+    __slots__ = ('_self_expired', '_self_instance')
 
     def __init__(self, wrapped, callback=None):
-        """Create a proxy to object which uses a weak reference. This is
-        similar to the `weakref.proxy` but is designed to work with functions
-        and methods. It will automatically rebind the function to the instance
-        when called if the function was originally a bound method. This is
-        necessary because bound methods are transient objects and applying a
-        weak reference to one will immediately result in it being destroyed
-        and the weakref callback called. The weak reference is therefore
-        applied to the instance the method is bound to and the original
-        function. The function is then rebound at the point of a call via the
-        weak function proxy.
-        """
-
         # We need to determine if the wrapped function is actually a
         # bound method. In the case of a bound method, we need to keep a
         # reference to the original unbound function and the instance.
@@ -58,23 +43,22 @@ class WeakFunctionProxy(BaseObjectProxy):
         # the callback here so as not to cause any odd reference cycles.
 
         _callback = callback and functools.partial(
-            _weak_function_proxy_callback, proxy=self, callback=callback
-        )
+                _weak_function_proxy_callback, proxy=self,
+                callback=callback)
 
         self._self_expired = False
 
         if isinstance(wrapped, _FunctionWrapperBase):
-            self._self_instance = weakref.ref(wrapped._self_instance, _callback)
+            self._self_instance = weakref.ref(wrapped._self_instance,
+                    _callback)
 
             if wrapped._self_parent is not None:
                 super(WeakFunctionProxy, self).__init__(
-                    weakref.proxy(wrapped._self_parent, _callback)
-                )
+                        weakref.proxy(wrapped._self_parent, _callback))
 
             else:
                 super(WeakFunctionProxy, self).__init__(
-                    weakref.proxy(wrapped, _callback)
-                )
+                        weakref.proxy(wrapped, _callback))
 
             return
 
@@ -82,13 +66,13 @@ class WeakFunctionProxy(BaseObjectProxy):
             self._self_instance = weakref.ref(wrapped.__self__, _callback)
 
             super(WeakFunctionProxy, self).__init__(
-                weakref.proxy(wrapped.__func__, _callback)
-            )
+                    weakref.proxy(wrapped.__func__, _callback))
 
         except AttributeError:
             self._self_instance = None
 
-            super(WeakFunctionProxy, self).__init__(weakref.proxy(wrapped, _callback))
+            super(WeakFunctionProxy, self).__init__(
+                    weakref.proxy(wrapped, _callback))
 
     def __call__(*args, **kwargs):
         def _unpack_self(self, *args):

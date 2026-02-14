@@ -115,7 +115,7 @@ RUN mv "${HOME}/.local/bin/python3.11" "${HOME}/.local/bin/pypy3.11" && \
     mv "${HOME}/.local/bin/python3.10" "${HOME}/.local/bin/pypy3.10"
 
 # Install CPython versions
-RUN uv python install -f cp3.14 cp3.14t cp3.13 cp3.12 cp3.11 cp3.10 cp3.9 cp3.8
+RUN uv python install -f cp3.14 cp3.14t cp3.13 cp3.12 cp3.11 cp3.10 cp3.9
 
 # Set default Python version to CPython 3.13
 RUN uv python install -f --default cp3.13

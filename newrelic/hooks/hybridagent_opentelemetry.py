@@ -87,7 +87,7 @@ def wrap_set_tracer_provider(wrapped, instance, args, kwargs):
     if not settings or not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
-    nr_tracer_provider = application._agent.otel_tracer_provider()
+    nr_tracer_provider = application._agent.opentelemetry_tracer_provider()
     return wrapped(nr_tracer_provider)
 
 
@@ -108,7 +108,7 @@ def wrap_get_tracer_provider(wrapped, instance, args, kwargs):
     if not settings or not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
-    return application._agent.otel_tracer_provider()
+    return application._agent.opentelemetry_tracer_provider()
 
 
 def wrap_get_custom_headers(wrapped, instance, args, kwargs):

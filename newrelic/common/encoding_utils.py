@@ -486,6 +486,18 @@ class W3CTraceState(OrderedDict):
 
 class NrTraceState(dict):
     FIELDS = ("v", "ty", "ac", "ap", "id", "tx", "sa", "pr")
+    # Fields Key:
+    # v: version
+    # ty: type; {"0": "App", "1": "Browser", "2": "Mobile"}
+    # ac: account ID
+    # ap: application ID
+    # id: span ID
+    # tx: transaction guid
+    # sa: sampled
+    # pr: priority
+    # tr: trace ID
+    # tk: trusted account key
+    # ti: time
 
     def text(self):
         pr = self.get("pr", "")

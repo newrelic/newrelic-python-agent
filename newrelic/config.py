@@ -43,7 +43,7 @@ import newrelic.core.agent
 import newrelic.core.config
 from newrelic.common.log_file import initialize_logging
 from newrelic.common.object_names import callable_name, expand_builtin_exception_name
-from newrelic.common.otel_tracers import HYBRID_AGENT_DEFAULT_INCLUDED_TRACERS_TO_NR_HOOKS
+from newrelic.common.opentelemetry_tracers import HYBRID_AGENT_DEFAULT_INCLUDED_TRACERS_TO_NR_HOOKS
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.core import trace_cache
 from newrelic.core.agent_control_health import (
@@ -4536,7 +4536,7 @@ def _process_otel_instrumentors():
         try:
             instrumentor_class = entrypoint.load()
             instrumentor = instrumentor_class()
-            instrumentor.instrument(tracer_provider=newrelic.core.agent.otel_tracer_provider())
+            instrumentor.instrument(tracer_provider=newrelic.core.agent.opentelemetry_tracer_provider())
             _logger.debug("Successfully instrumented OpenTelemetry tracer '%s' via entry point.", entrypoint.name)
         except Exception as exc:
             _logger.warning("Failed to instrument OpenTelemetry tracer '%s' via entry point: %s", entrypoint.name, exc)

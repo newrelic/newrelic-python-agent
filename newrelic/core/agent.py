@@ -190,7 +190,7 @@ class Agent:
         return Agent._instance
 
     @staticmethod
-    def otel_tracer_provider():
+    def opentelemetry_tracer_provider():
         """Used by the tracer_provider() function to access/create the
         single tracer provider object instance.
 
@@ -805,8 +805,8 @@ def agent_instance():
     return Agent.agent_singleton()
 
 
-def otel_tracer_provider():
-    return agent_instance().otel_tracer_provider()
+def opentelemetry_tracer_provider():
+    return agent_instance().opentelemetry_tracer_provider()
 
 
 def shutdown_agent(timeout=None):

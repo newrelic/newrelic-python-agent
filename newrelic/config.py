@@ -4532,11 +4532,12 @@ def _process_otel_instrumentors():
     if not _settings.opentelemetry.enabled or not _is_installed("opentelemetry-api"):
         return
 
+    tracer_provider = newrelic.core.agent.opentelemetry_tracer_provider()
     for entrypoint in otel_entrypoints:
         try:
             instrumentor_class = entrypoint.load()
             instrumentor = instrumentor_class()
-            instrumentor.instrument(tracer_provider=newrelic.core.agent.opentelemetry_tracer_provider())
+            instrumentor.instrument(tracer_provider=tracer_provider)
             _logger.debug("Successfully instrumented OpenTelemetry tracer '%s' via entry point.", entrypoint.name)
         except Exception as exc:
             _logger.warning("Failed to instrument OpenTelemetry tracer '%s' via entry point: %s", entrypoint.name, exc)

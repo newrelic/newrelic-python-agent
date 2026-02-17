@@ -300,20 +300,14 @@ class WebTransaction(Transaction):
         # the relevant details.
         if self._settings.distributed_tracing.enabled:
             self.accept_distributed_trace_headers(self._request_headers)
-        else:
-            client_cross_process_id = self._request_headers.get("x-newrelic-id")
-            txn_header = self._request_headers.get("x-newrelic-transaction")
-            self._process_incoming_cat_headers(client_cross_process_id, txn_header)
 
     def process_response(self, status_code, response_headers):
-        """Processes response status and headers, extracting any
-        details required and returning a set of additional headers
-        to merge into that being returned for the web transaction.
-
+        """
+        Processes response status and headers; extracting any details required.
         """
 
         if not self.enabled:
-            return []
+            return []  # Return empty list for backwards compatibility, as this used to return a list of headers
 
         # Extract response headers
         if response_headers:
@@ -330,23 +324,10 @@ class WebTransaction(Transaction):
         try:
             self._response_code = int(status_code)
 
-            # If response code is 304 do not insert CAT headers. See:
-            # https://www.w3.org/Protocols/rfc2616/rfc2616-sec10.html#sec10.3.5
-            if self._response_code == 304:
-                return []
         except Exception:
             pass
 
-        if self.client_cross_process_id is None:
-            return []
-
-        # Generate CAT response headers
-        try:
-            read_length = int(self._request_headers.get("content-length"))
-        except Exception:
-            read_length = -1
-
-        return self._generate_response_headers(read_length)
+        return []  # Return empty list for backwards compatibility, as this used to return a list of headers
 
     def _update_agent_attributes(self):
         if "accept" in self._request_headers:

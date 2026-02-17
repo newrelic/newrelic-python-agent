@@ -538,7 +538,6 @@ class DeveloperModeClient(SupportabilityMixin, BaseClient):
             "url_rules": [],
             "collect_errors": True,
             "account_id": "12345",
-            "cross_process_id": "12345#67890",
             "messages": [{"message": "Reporting to fake collector", "level": "INFO"}],
             "sampling_rate": 0,
             "collect_traces": True,

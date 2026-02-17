@@ -15,10 +15,9 @@
 import http.client as httplib
 
 import pytest
-from testing_support.external_fixtures import cache_outgoing_headers, insert_incoming_headers
-from testing_support.fixtures import cat_enabled, override_application_settings
-from testing_support.validators.validate_cross_process_headers import validate_cross_process_headers
-from testing_support.validators.validate_external_node_params import validate_external_node_params
+from testing_support.external_fixtures import cache_outgoing_headers
+from testing_support.fixtures import override_application_settings
+from testing_support.validators.validate_distributed_tracing_headers import validate_distributed_tracing_headers
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.validators.validate_tt_segment_params import validate_tt_segment_params
@@ -110,56 +109,13 @@ def test_httplib_http_with_port_request(server):
 
 
 @pytest.mark.parametrize("distributed_tracing,span_events", ((True, True), (True, False), (False, False)))
-def test_httplib_cross_process_request(server, distributed_tracing, span_events):
-    @background_task(name="test_httplib:test_httplib_cross_process_request")
+def test_httplib_distributed_tracing_request(server, distributed_tracing, span_events):
+    @override_application_settings(
+        {"distributed_tracing.enabled": distributed_tracing, "span_events.enabled": span_events}
+    )
+    @background_task(name="test_httplib:test_httplib_distributed_tracing_request")
     @cache_outgoing_headers
-    @validate_cross_process_headers
-    def _test():
-        connection = httplib.HTTPConnection("localhost", server.port)
-        connection.request("GET", "/")
-        response = connection.getresponse()
-        response.read()
-        connection.close()
-
-    _test = override_application_settings(
-        {
-            "distributed_tracing.enabled": distributed_tracing,
-            "cross_application_tracer.enabled": not distributed_tracing,
-            "span_events.enabled": span_events,
-        }
-    )(_test)
-
-    _test()
-
-
-_test_httplib_cross_process_response_external_node_params = [
-    ("cross_process_id", "1#2"),
-    ("external_txn_name", "test"),
-    ("transaction_guid", "0123456789012345"),
-]
-
-
-@cat_enabled
-@insert_incoming_headers
-def test_httplib_cross_process_response(server):
-    scoped = [(f"ExternalTransaction/localhost:{server.port}/1#2/test", 1)]
-
-    rollup = [
-        ("External/all", 1),
-        ("External/allOther", 1),
-        (f"External/localhost:{server.port}/all", 1),
-        (f"ExternalApp/localhost:{server.port}/1#2/all", 1),
-        (f"ExternalTransaction/localhost:{server.port}/1#2/test", 1),
-    ]
-
-    @validate_transaction_metrics(
-        "test_httplib:test_httplib_cross_process_response",
-        scoped_metrics=scoped,
-        rollup_metrics=rollup,
-        background_task=True,
-    )
-    @validate_external_node_params(params=_test_httplib_cross_process_response_external_node_params)
-    @background_task(name="test_httplib:test_httplib_cross_process_response")
+    @validate_distributed_tracing_headers
     def _test():
         connection = httplib.HTTPConnection("localhost", server.port)
         connection.request("GET", "/")
@@ -168,38 +124,6 @@ def test_httplib_cross_process_response(server):
         connection.close()
 
     _test()
-
-
-@cat_enabled
-def test_httplib_multiple_requests_cross_process_response(server):
-    connection = httplib.HTTPConnection("localhost", server.port)
-
-    scoped = [(f"ExternalTransaction/localhost:{server.port}/1#2/test", 1)]
-
-    rollup = [
-        ("External/all", 1),
-        ("External/allOther", 1),
-        (f"External/localhost:{server.port}/all", 1),
-        (f"ExternalApp/localhost:{server.port}/1#2/all", 1),
-        (f"ExternalTransaction/localhost:{server.port}/1#2/test", 1),
-    ]
-
-    @validate_transaction_metrics(
-        "test_httplib:test_transaction", scoped_metrics=scoped, rollup_metrics=rollup, background_task=True
-    )
-    @insert_incoming_headers
-    @validate_external_node_params(params=_test_httplib_cross_process_response_external_node_params)
-    @background_task(name="test_httplib:test_transaction")
-    def test_transaction():
-        connection.request("GET", "/")
-        response = connection.getresponse()
-        response.read()
-
-    # make multiple requests with the same connection
-    for _ in range(2):
-        test_transaction()
-
-    connection.close()
 
 
 def process_response(response):
@@ -256,7 +180,7 @@ def test_httplib_nr_headers_added(server):
     )(test_transaction)
     test_transaction()
     connection.close()
-    # verify newrelic headers already added do not get overrode
+    # verify newrelic headers already added do not get overridden
     assert headers[0][key] == value
 
 

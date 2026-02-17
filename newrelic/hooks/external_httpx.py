@@ -77,7 +77,7 @@ def sync_send_wrapper(wrapped, instance, args, kwargs):
             request._nr_trace = tracer
             outgoing_headers = tracer.generate_request_headers(tracer.transaction)
             for header_name, header_value in outgoing_headers:
-                # User headers should override our CAT headers
+                # User headers should override our DT headers
                 if header_name not in request.headers:
                     request.headers[header_name] = header_value
 
@@ -92,7 +92,7 @@ async def async_send_wrapper(wrapped, instance, args, kwargs):
             request._nr_trace = tracer
             outgoing_headers = tracer.generate_request_headers(tracer.transaction)
             for header_name, header_value in outgoing_headers:
-                # User headers should override our CAT headers
+                # User headers should override our DT headers
                 if header_name not in request.headers:
                     request.headers[header_name] = header_value
 

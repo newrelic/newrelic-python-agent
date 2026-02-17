@@ -18,12 +18,21 @@ import sys
 import time
 from contextlib import contextmanager
 
-from opentelemetry import trace as otel_api_trace
-from opentelemetry.baggage.propagation import W3CBaggagePropagator
-from opentelemetry.propagate import set_global_textmap
-from opentelemetry.propagators.composite import CompositePropagator
-from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
-from opentelemetry.trace.status import Status, StatusCode
+try:
+    from opentelemetry import trace as otel_api_trace
+    from opentelemetry.baggage.propagation import W3CBaggagePropagator
+    from opentelemetry.propagate import set_global_textmap
+    from opentelemetry.propagators.composite import CompositePropagator
+    from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
+    from opentelemetry.trace.status import Status, StatusCode
+except ImportError:
+    otel_api_trace = None
+    W3CBaggagePropagator = None
+    set_global_textmap = None
+    CompositePropagator = None
+    TraceContextTextMapPropagator = None
+    Status = None
+    StatusCode = None
 
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import BackgroundTask
@@ -96,9 +105,11 @@ class NRTraceContextPropagator(TraceContextTextMapPropagator):
 
 
 # Context and Context Propagator Setup
-otel_context_propagator = CompositePropagator(propagators=[NRTraceContextPropagator(), W3CBaggagePropagator()])
-
-set_global_textmap(otel_context_propagator)
+try:
+    otel_context_propagator = CompositePropagator(propagators=[NRTraceContextPropagator(), W3CBaggagePropagator()])
+    set_global_textmap(otel_context_propagator)
+except:
+    pass
 
 # ----------------------------------------------
 # Custom OTel Spans and Traces

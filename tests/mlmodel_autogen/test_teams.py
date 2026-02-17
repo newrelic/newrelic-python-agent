@@ -17,7 +17,7 @@ from autogen_agentchat.agents import AssistantAgent
 from autogen_agentchat.base import TaskResult
 from autogen_agentchat.teams import RoundRobinGroupChat
 from test_assistant_agent import SKIP_IF_AUTOGEN_062
-from testing_support.fixtures import reset_core_stats_engine, validate_attributes
+from testing_support.fixtures import dt_enabled, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
@@ -31,7 +31,6 @@ from testing_support.validators.validate_error_trace_attributes import validate_
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_error_event_count import validate_transaction_error_event_count
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from testing_support.fixtures import dt_enabled
 
 from newrelic.api.background_task import background_task
 from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes

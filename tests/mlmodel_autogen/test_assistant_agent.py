@@ -16,7 +16,7 @@
 import pytest
 from autogen_agentchat.agents import AssistantAgent
 from autogen_agentchat.base import TaskResult
-from testing_support.fixtures import reset_core_stats_engine, validate_attributes
+from testing_support.fixtures import dt_enabled, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
@@ -24,7 +24,6 @@ from testing_support.ml_testing_utils import (
     set_trace_info,
     tool_events_sans_content,
 )
-from testing_support.fixtures import dt_enabled
 from testing_support.validators.validate_custom_event import validate_custom_event_count
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import validate_error_trace_attributes

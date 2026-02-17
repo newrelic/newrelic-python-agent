@@ -2089,6 +2089,10 @@ def _process_module_builtin_defaults():
     _process_module_definition("asyncio.runners", "newrelic.hooks.coroutines_asyncio", "instrument_asyncio_runners")
 
     _process_module_definition(
+        "langgraph.prebuilt.tool_node", "newrelic.hooks.mlmodel_langgraph", "instrument_langgraph_prebuilt_tool_node"
+    )
+
+    _process_module_definition(
         "langchain_core.runnables.base",
         "newrelic.hooks.mlmodel_langchain",
         "instrument_langchain_runnables_chains_base",
@@ -2099,13 +2103,19 @@ def _process_module_builtin_defaults():
         "instrument_langchain_core_runnables_config",
     )
     _process_module_definition(
+        "langchain_core.tools.structured",
+        "newrelic.hooks.mlmodel_langchain",
+        "instrument_langchain_core_tools_structured",
+    )
+
+    _process_module_definition(
+        "langchain.agents.factory", "newrelic.hooks.mlmodel_langchain", "instrument_langchain_agents_factory"
+    )
+    _process_module_definition(
         "langchain.chains.base", "newrelic.hooks.mlmodel_langchain", "instrument_langchain_chains_base"
     )
     _process_module_definition(
         "langchain_classic.chains.base", "newrelic.hooks.mlmodel_langchain", "instrument_langchain_chains_base"
-    )
-    _process_module_definition(
-        "langchain_core.callbacks.manager", "newrelic.hooks.mlmodel_langchain", "instrument_langchain_callbacks_manager"
     )
 
     # VectorStores with similarity_search method
@@ -2671,10 +2681,6 @@ def _process_module_builtin_defaults():
         "langchain_core.tools", "newrelic.hooks.mlmodel_langchain", "instrument_langchain_core_tools"
     )
 
-    _process_module_definition(
-        "langchain_core.callbacks.manager", "newrelic.hooks.mlmodel_langchain", "instrument_langchain_callbacks_manager"
-    )
-
     _process_module_definition("asgiref.sync", "newrelic.hooks.adapter_asgiref", "instrument_asgiref_sync")
 
     _process_module_definition(
@@ -2956,6 +2962,9 @@ def _process_module_builtin_defaults():
     )
     _process_module_definition(
         "strands.multiagent.swarm", "newrelic.hooks.mlmodel_strands", "instrument_strands_multiagent_swarm"
+    )
+    _process_module_definition(
+        "strands.tools.decorator", "newrelic.hooks.mlmodel_strands", "instrument_strands_tools_decorator"
     )
     _process_module_definition(
         "strands.tools.executors._executor",

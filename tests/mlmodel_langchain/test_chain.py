@@ -12,9 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import asyncio
-import uuid
-from unittest.mock import patch
 
 import langchain
 import langchain_core
@@ -53,11 +50,6 @@ except ImportError:
     from langchain.chains.combine_documents import create_stuff_documents_chain
     from langchain.chains.openai_functions import create_structured_output_chain, create_structured_output_runnable
     from langchain.schema import BaseOutputParser
-
-_test_openai_chat_completion_messages = (
-    {"role": "system", "content": "You are a scientist."},
-    {"role": "user", "content": "What is 212 degrees Fahrenheit converted to Celsius?"},
-)
 
 
 chat_completion_recorded_events_invoke_langchain_error = [
@@ -184,7 +176,6 @@ chat_completion_recorded_events_runnable_invoke = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -244,7 +235,6 @@ chat_completion_recorded_events_invoke = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -302,7 +292,6 @@ chat_completion_recorded_events_runnable_invoke_no_metadata_or_tags = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -360,7 +349,6 @@ chat_completion_recorded_events_invoke_no_metadata_or_tags = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -388,15 +376,15 @@ recorded_events_retrieval_chain_response = [
             "request.model": "text-embedding-ada-002",
             "request_id": None,
             "duration": None,
-            "response.model": "text-embedding-ada-002",
-            "response.organization": "new-relic-nkmd8b",
+            "response.model": "text-embedding-ada-002-v2",
+            "response.organization": "user-rk8wq9voijy9sejrncvgi0iw",
             "response.headers.llmVersion": "2020-10-01",
-            "response.headers.ratelimitLimitRequests": 3000,
-            "response.headers.ratelimitLimitTokens": 1000000,
+            "response.headers.ratelimitLimitRequests": 10000,
+            "response.headers.ratelimitLimitTokens": 10000000,
+            "response.headers.ratelimitRemainingRequests": 9999,
+            "response.headers.ratelimitRemainingTokens": 9999992,
+            "response.headers.ratelimitResetRequests": "6ms",
             "response.headers.ratelimitResetTokens": "0s",
-            "response.headers.ratelimitResetRequests": "20ms",
-            "response.headers.ratelimitRemainingTokens": 999992,
-            "response.headers.ratelimitRemainingRequests": 2999,
             "vendor": "openai",
             "ingest_source": "Python",
             "input": "[[3923, 374, 220, 17, 489, 220, 19, 30]]",
@@ -411,15 +399,15 @@ recorded_events_retrieval_chain_response = [
             "request.model": "text-embedding-ada-002",
             "request_id": None,
             "duration": None,
-            "response.model": "text-embedding-ada-002",
-            "response.organization": "new-relic-nkmd8b",
+            "response.model": "text-embedding-ada-002-v2",
+            "response.organization": "user-rk8wq9voijy9sejrncvgi0iw",
             "response.headers.llmVersion": "2020-10-01",
-            "response.headers.ratelimitLimitRequests": 3000,
-            "response.headers.ratelimitLimitTokens": 1000000,
+            "response.headers.ratelimitLimitRequests": 10000,
+            "response.headers.ratelimitLimitTokens": 10000000,
+            "response.headers.ratelimitRemainingRequests": 9999,
+            "response.headers.ratelimitRemainingTokens": 9999998,
+            "response.headers.ratelimitResetRequests": "6ms",
             "response.headers.ratelimitResetTokens": "0s",
-            "response.headers.ratelimitResetRequests": "20ms",
-            "response.headers.ratelimitRemainingTokens": 999998,
-            "response.headers.ratelimitRemainingRequests": 2999,
             "vendor": "openai",
             "ingest_source": "Python",
             "input": "[[10590]]",
@@ -456,7 +444,6 @@ recorded_events_retrieval_chain_response = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "timestamp": None,
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -484,15 +471,15 @@ recorded_events_retrieval_chain_response = [
             "request_id": None,
             "duration": None,
             "response.model": "gpt-3.5-turbo-0125",
-            "response.organization": "new-relic-nkmd8b",
+            "response.organization": "user-rk8wq9voijy9sejrncvgi0iw",
             "response.choices.finish_reason": "stop",
             "response.headers.llmVersion": "2020-10-01",
             "response.headers.ratelimitLimitRequests": 10000,
-            "response.headers.ratelimitLimitTokens": 200000,
-            "response.headers.ratelimitResetTokens": "26ms",
-            "response.headers.ratelimitResetRequests": "8.64s",
-            "response.headers.ratelimitRemainingTokens": 199912,
+            "response.headers.ratelimitLimitTokens": 50000000,
             "response.headers.ratelimitRemainingRequests": 9999,
+            "response.headers.ratelimitRemainingTokens": 49999927,
+            "response.headers.ratelimitResetRequests": "6ms",
+            "response.headers.ratelimitResetTokens": "0s",
             "response.number_of_messages": 3,
         },
     ],
@@ -534,7 +521,6 @@ recorded_events_retrieval_chain_response = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "timestamp": None,
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -569,7 +555,6 @@ recorded_events_retrieval_chain_response = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "timestamp": None,
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -587,7 +572,6 @@ recorded_events_retrieval_chain_response = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "timestamp": None,
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
@@ -645,7 +629,6 @@ chat_completion_recorded_events_str_response = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -704,7 +687,6 @@ chat_completion_recorded_events_list_response = [
         {"type": "LlmChatCompletionMessage"},
         {
             "id": None,
-            "timestamp": None,
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "request_id": None,
@@ -806,7 +788,7 @@ chat_completion_recorded_events_error_in_langchain = [
 @validate_custom_events(events_with_context_attrs(chat_completion_recorded_events_str_response))
 @validate_custom_event_count(count=7)
 @validate_transaction_metrics(
-    name="test_chain:test_langchain_chain_str_response",
+    name="mlmodel_langchain.test_chain:test_langchain_chain_str_response",
     scoped_metrics=[("Llm/chain/LangChain/invoke", 1)],
     rollup_metrics=[("Llm/chain/LangChain/invoke", 1)],
     custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
@@ -835,7 +817,7 @@ def test_langchain_chain_str_response(set_trace_info, chat_openai_client):
 @validate_custom_events(events_with_context_attrs(chat_completion_recorded_events_list_response))
 @validate_custom_event_count(count=7)
 @validate_transaction_metrics(
-    name="test_chain:test_langchain_chain_list_response",
+    name="mlmodel_langchain.test_chain:test_langchain_chain_list_response",
     scoped_metrics=[("Llm/chain/LangChain/invoke", 1)],
     rollup_metrics=[("Llm/chain/LangChain/invoke", 1)],
     custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
@@ -934,7 +916,7 @@ def test_langchain_chain(
     # 3 langchain events and 5 openai events.
     @validate_custom_event_count(count=8)
     @validate_transaction_metrics(
-        name="test_chain:test_langchain_chain.<locals>._test",
+        name="mlmodel_langchain.test_chain:test_langchain_chain.<locals>._test",
         scoped_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         rollup_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
@@ -995,7 +977,7 @@ def test_langchain_chain_no_content(
     # 3 langchain events and 5 openai events.
     @validate_custom_event_count(count=8)
     @validate_transaction_metrics(
-        name="test_chain:test_langchain_chain_no_content.<locals>._test",
+        name="mlmodel_langchain.test_chain:test_langchain_chain_no_content.<locals>._test",
         scoped_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         rollup_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
@@ -1070,7 +1052,7 @@ def test_langchain_chain_error_in_openai(
     @validate_custom_events(events_with_context_attrs(expected_events))
     @validate_custom_event_count(count=6)
     @validate_transaction_metrics(
-        name="test_chain:test_langchain_chain_error_in_openai.<locals>._test",
+        name="mlmodel_langchain.test_chain:test_langchain_chain_error_in_openai.<locals>._test",
         scoped_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         rollup_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
@@ -1133,7 +1115,7 @@ def test_langchain_chain_error_in_langchain(
     @validate_custom_events(expected_events)
     @validate_custom_event_count(count=2)
     @validate_transaction_metrics(
-        name="test_chain:test_langchain_chain_error_in_langchain.<locals>._test",
+        name="mlmodel_langchain.test_chain:test_langchain_chain_error_in_langchain.<locals>._test",
         scoped_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         rollup_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
@@ -1196,7 +1178,7 @@ def test_langchain_chain_error_in_langchain_no_content(
     @validate_custom_events(expected_events)
     @validate_custom_event_count(count=2)
     @validate_transaction_metrics(
-        name="test_chain:test_langchain_chain_error_in_langchain_no_content.<locals>._test",
+        name="mlmodel_langchain.test_chain:test_langchain_chain_error_in_langchain_no_content.<locals>._test",
         scoped_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         rollup_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
@@ -1261,7 +1243,7 @@ def test_langchain_chain_ai_monitoring_disabled(
 @validate_custom_events(events_with_context_attrs(chat_completion_recorded_events_list_response))
 @validate_custom_event_count(count=7)
 @validate_transaction_metrics(
-    name="test_chain:test_async_langchain_chain_list_response",
+    name="mlmodel_langchain.test_chain:test_async_langchain_chain_list_response",
     scoped_metrics=[("Llm/chain/LangChain/ainvoke", 1)],
     rollup_metrics=[("Llm/chain/LangChain/ainvoke", 1)],
     custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
@@ -1294,7 +1276,7 @@ def test_async_langchain_chain_list_response(
 @validate_custom_events(events_sans_content(chat_completion_recorded_events_list_response))
 @validate_custom_event_count(count=7)
 @validate_transaction_metrics(
-    name="test_chain:test_async_langchain_chain_list_response_no_content",
+    name="mlmodel_langchain.test_chain:test_async_langchain_chain_list_response_no_content",
     scoped_metrics=[("Llm/chain/LangChain/ainvoke", 1)],
     rollup_metrics=[("Llm/chain/LangChain/ainvoke", 1)],
     custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
@@ -1396,7 +1378,7 @@ def test_async_langchain_chain(
     # 3 langchain events and 5 openai events.
     @validate_custom_event_count(count=8)
     @validate_transaction_metrics(
-        name="test_chain:test_async_langchain_chain.<locals>._test",
+        name="mlmodel_langchain.test_chain:test_async_langchain_chain.<locals>._test",
         scoped_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         rollup_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
@@ -1471,7 +1453,7 @@ def test_async_langchain_chain_error_in_openai(
     @validate_custom_events(events_with_context_attrs(expected_events))
     @validate_custom_event_count(count=6)
     @validate_transaction_metrics(
-        name="test_chain:test_async_langchain_chain_error_in_openai.<locals>._test",
+        name="mlmodel_langchain.test_chain:test_async_langchain_chain_error_in_openai.<locals>._test",
         scoped_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         rollup_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
@@ -1535,7 +1517,7 @@ def test_async_langchain_chain_error_in_langchain(
     @validate_custom_events(expected_events)
     @validate_custom_event_count(count=2)
     @validate_transaction_metrics(
-        name="test_chain:test_async_langchain_chain_error_in_langchain.<locals>._test",
+        name="mlmodel_langchain.test_chain:test_async_langchain_chain_error_in_langchain.<locals>._test",
         scoped_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         rollup_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
@@ -1599,7 +1581,7 @@ def test_async_langchain_chain_error_in_langchain_no_content(
     @validate_custom_events(expected_events)
     @validate_custom_event_count(count=2)
     @validate_transaction_metrics(
-        name="test_chain:test_async_langchain_chain_error_in_langchain_no_content.<locals>._test",
+        name="mlmodel_langchain.test_chain:test_async_langchain_chain_error_in_langchain_no_content.<locals>._test",
         scoped_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         rollup_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
@@ -1642,95 +1624,11 @@ def test_async_langchain_chain_outside_transaction(
     loop.run_until_complete(getattr(runnable, call_function)(input_))
 
 
-@pytest.mark.parametrize(
-    "create_function,call_function,call_function_args,call_function_kwargs,expected_events",
-    (
-        pytest.param(
-            create_structured_output_runnable,
-            "ainvoke",
-            ({"input": "Sally is 13"},),
-            {"config": {"tags": ["bar"], "metadata": {"id": "123"}}},
-            chat_completion_recorded_events_runnable_invoke,
-            id="runnable_chain.ainvoke-with-args-and-kwargs",
-        ),
-        pytest.param(
-            create_structured_output_chain,
-            "ainvoke",
-            ({"input": "Sally is 13"},),
-            {"config": {"tags": ["bar"], "metadata": {"id": "123"}}, "return_only_outputs": True},
-            chat_completion_recorded_events_invoke,
-            id="chain.ainvoke-with-args-and-kwargs",
-        ),
-    ),
-)
-def test_multiple_async_langchain_chain(
-    set_trace_info,
-    json_schema,
-    prompt,
-    chat_openai_client,
-    create_function,
-    call_function,
-    call_function_args,
-    call_function_kwargs,
-    expected_events,
-    loop,
-):
-    call1 = events_with_context_attrs(expected_events.copy())
-    call1[0][1]["request_id"] = "b1883d9d-10d6-4b67-a911-f72849704e92"
-    call1[1][1]["request_id"] = "b1883d9d-10d6-4b67-a911-f72849704e92"
-    call1[2][1]["request_id"] = "b1883d9d-10d6-4b67-a911-f72849704e92"
-    call2 = events_with_context_attrs(expected_events.copy())
-    call2[0][1]["request_id"] = "a58aa0c0-c854-4657-9e7b-4cce442f3b61"
-    call2[1][1]["request_id"] = "a58aa0c0-c854-4657-9e7b-4cce442f3b61"
-    call2[2][1]["request_id"] = "a58aa0c0-c854-4657-9e7b-4cce442f3b61"
-
-    @reset_core_stats_engine()
-    @validate_custom_events(call1 + call2)
-    # 3 langchain events and 5 openai events.
-    @validate_custom_event_count(count=16)
-    @validate_transaction_metrics(
-        name="test_chain:test_multiple_async_langchain_chain.<locals>._test",
-        scoped_metrics=[(f"Llm/chain/LangChain/{call_function}", 2)],
-        rollup_metrics=[(f"Llm/chain/LangChain/{call_function}", 2)],
-        custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
-        background_task=True,
-    )
-    @background_task()
-    def _test():
-        with patch("langchain_core.callbacks.manager.uuid", autospec=True) as mock_uuid:
-            mock_uuid.uuid4.side_effect = [
-                uuid.UUID("b1883d9d-10d6-4b67-a911-f72849704e92"),  # first call
-                uuid.UUID("a58aa0c0-c854-4657-9e7b-4cce442f3b61"),
-                uuid.UUID("a58aa0c0-c854-4657-9e7b-4cce442f3b61"),  # second call
-                uuid.UUID("a58aa0c0-c854-4657-9e7b-4cce442f3b63"),
-                uuid.UUID("b1883d9d-10d6-4b67-a911-f72849704e93"),
-                uuid.UUID("a58aa0c0-c854-4657-9e7b-4cce442f3b64"),
-                uuid.UUID("a58aa0c0-c854-4657-9e7b-4cce442f3b65"),
-                uuid.UUID("a58aa0c0-c854-4657-9e7b-4cce442f3b66"),
-            ]
-            set_trace_info()
-            add_custom_attribute("llm.conversation_id", "my-awesome-id")
-            add_custom_attribute("llm.foo", "bar")
-            add_custom_attribute("non_llm_attr", "python-agent")
-
-            runnable = create_function(json_schema, chat_openai_client, prompt)
-            with WithLlmCustomAttributes({"context": "attr"}):
-                call1 = asyncio.ensure_future(
-                    getattr(runnable, call_function)(*call_function_args, **call_function_kwargs), loop=loop
-                )
-                call2 = asyncio.ensure_future(
-                    getattr(runnable, call_function)(*call_function_args, **call_function_kwargs), loop=loop
-                )
-                loop.run_until_complete(asyncio.gather(call1, call2))
-
-    _test()
-
-
 @reset_core_stats_engine()
 @validate_custom_events(recorded_events_retrieval_chain_response)
 @validate_custom_event_count(count=17)
 @validate_transaction_metrics(
-    name="test_chain:test_retrieval_chains",
+    name="mlmodel_langchain.test_chain:test_retrieval_chains",
     scoped_metrics=[("Llm/chain/LangChain/invoke", 3)],
     rollup_metrics=[("Llm/chain/LangChain/invoke", 3)],
     custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],

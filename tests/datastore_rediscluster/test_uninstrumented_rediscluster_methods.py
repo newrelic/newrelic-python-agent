@@ -67,6 +67,7 @@ IGNORED_METHODS = {
     "load_document",
     "load_external_module",
     "lock",
+    "maint_notifications_config",
     "name",
     "nodes",
     "parse_response",

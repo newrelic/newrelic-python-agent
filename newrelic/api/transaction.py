@@ -1310,10 +1310,6 @@ class Transaction:
     def _accept_distributed_trace_payload(self, payload, transport_type="HTTP"):
         if not payload:
             self._record_supportability("Supportability/DistributedTrace/AcceptPayload/Ignored/Null")
-            # Still set the transport type before early exit.
-            if transport_type not in DISTRIBUTED_TRACE_TRANSPORT_TYPES:
-                transport_type = "Unknown"
-            self.parent_transport_type = transport_type
             return False
 
         payload = DistributedTracePayload.decode(payload)

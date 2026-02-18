@@ -198,9 +198,7 @@ def _on_messages_stream_instrumented(wrapped, instance, args, kwargs):
     # iteration. The FT is exited when the generator finishes (StopAsyncIteration)
     # or encounters an error. This ensures tool FTs created during iteration are
     # children of the agent FT, not siblings.
-    proxied_return_val = _AutogenAsyncGeneratorProxy(
-        return_val, _record_stream_agent_event, _handle_stream_agent_error
-    )
+    proxied_return_val = _AutogenAsyncGeneratorProxy(return_val, _record_stream_agent_event, _handle_stream_agent_error)
     proxied_return_val._nr_ft = ft
     proxied_return_val._nr_agent_name = agent_name
     proxied_return_val._nr_agent_id = agent_id

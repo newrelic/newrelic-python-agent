@@ -207,19 +207,52 @@ def _on_messages_stream_instrumented(wrapped, instance, args, kwargs):
 
 
 class _AutogenAsyncGeneratorProxy(AsyncGeneratorProxy):
-    """AsyncGeneratorProxy subclass that also exits the agent FT on aclose() and __del__.
+    """AsyncGeneratorProxy subclass that exits the agent FT proactively.
 
-    When the stream is fully consumed, the base class fires the
-    StopAsyncIteration callback which exits the FT.  When the user
-    calls aclose() explicitly, the override below exits the FT.
+    The agent FT stays open during generator iteration so that tool FTs
+    (which execute in separate asyncio tasks) become children of the
+    agent FT in the trace tree.
 
-    When the user breaks out of an outer ``async for`` (e.g. run_stream()),
-    Python throws GeneratorExit into the outer generator, but the inner
-    async generator's aclose() cannot be awaited in that context.  In
-    CPython, once the outer generator frame is torn down the proxy's
-    reference count drops to zero and __del__ fires synchronously,
-    giving us a last-resort opportunity to exit the agent FT.
+    The FT is exited as soon as all tool children have completed, which
+    happens after each ``__anext__`` call that returns an item following
+    tool execution.  This ensures the agent span is recorded even if the
+    consumer breaks out of the outer ``async for`` (e.g. on TaskResult)
+    before StopAsyncIteration fires.
+
+    Fallbacks:
+    - StopAsyncIteration callback: exits FT when stream fully exhausts
+      (handles the no-tool case where child_count stays 0).
+    - aclose(): exits FT when the generator is explicitly closed.
+    - __del__(): last-resort safety net.
     """
+
+    async def __anext__(self):
+        transaction = current_transaction()
+        if not transaction:
+            return await self._nr_wrapped_iter.__anext__()
+
+        return_val = None
+        try:
+            return_val = await self._nr_wrapped_iter.__anext__()
+        except StopAsyncIteration:
+            self._nr_on_stop_iteration(self, transaction)
+            raise
+        except Exception:
+            self._nr_on_error(self, transaction)
+            raise
+
+        # After each yielded item, check if all async tool children have
+        # completed.  If so, exit the agent FT now.  NR's trace system
+        # supports deferred completion: if the FT exits while children are
+        # still running, the last child's _complete_trace cascades to
+        # complete the parent.  By exiting here (after tools finish), we
+        # guarantee the agent span is recorded even if the consumer breaks
+        # before StopAsyncIteration.
+        ft = getattr(self, "_nr_ft", None)
+        if ft and not ft.exited and ft.child_count > 0 and not ft.has_outstanding_children():
+            _exit_stream_agent_ft(self)
+
+        return return_val
 
     async def aclose(self):
         try:

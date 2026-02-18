@@ -323,9 +323,8 @@ class GenericNodeMixin:
             ct_exit_spans=ct_exit_spans,
         )
         parent_id = parent_guid
-        if (
-            span
-        ):  # In partial granularity tracing, span will be None if the span is an inprocess span or repeated exit span.
+        # In partial granularity tracing, span will be None if the span is an inprocess span or repeated exit span.
+        if (span):  
             yield span
             # Compressed spans are always reparented onto the entry span.
             if settings.distributed_tracing.sampler.partial_granularity.type != "compact" or span[0].get(

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import contextvars
 import json
 import logging
 import sys
@@ -20,11 +21,13 @@ import uuid
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
+from newrelic.common.llm_utils import AsyncGeneratorProxy
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
 from newrelic.core.config import global_settings
+from newrelic.core.context import ContextOf
 
 # Check for the presence of the autogen-core, autogen-agentchat, or autogen-ext package as they should all have the
 # same version and one or multiple could be installed
@@ -34,6 +37,14 @@ AUTOGEN_VERSION = (
     or get_package_version("autogen-ext")
 )
 
+
+# ContextVar used to propagate trace context to tool functions that may run on thread pool threads.
+# This allows nested agents created inside tools to find the parent trace.
+_nr_tool_parent_trace = contextvars.ContextVar("_nr_tool_parent_trace", default=None)
+
+# Flag to indicate we're inside wrap_on_messages, so on_messages_stream can skip
+# creating a duplicate agent FT (on_messages internally calls on_messages_stream).
+_nr_in_on_messages = contextvars.ContextVar("_nr_in_on_messages", default=False)
 
 RECORD_EVENTS_FAILURE_LOG_MESSAGE = "Exception occurred in Autogen instrumentation: Failed to record LLM events. Please report this issue to New Relic Support.\n%s"
 
@@ -54,7 +65,97 @@ async def wrap_from_server_params(wrapped, instance, args, kwargs):
         return await wrapped(*args, **kwargs)
 
 
+async def wrap_on_messages(wrapped, instance, args, kwargs):
+    """Wrap on_messages (a regular async method) with an agent FunctionTrace.
+
+    on_messages is called by run() and internally iterates on_messages_stream.
+    Since on_messages is awaited (not an async generator), the FT can stay open
+    for the full execution, making tool FTs proper children of this agent FT.
+    """
+    transaction = current_transaction()
+    if not transaction:
+        # When a tool calls an inner agent on a different thread, NR's thread-local context is lost.
+        # The ContextVar is propagated by asyncio, so we can recover the parent trace from it.
+        parent_trace = _nr_tool_parent_trace.get(None)
+        if parent_trace:
+            with ContextOf(trace=parent_trace):
+                return await _on_messages_instrumented(wrapped, instance, args, kwargs)
+        return await wrapped(*args, **kwargs)
+
+    return await _on_messages_instrumented(wrapped, instance, args, kwargs)
+
+
+async def _on_messages_instrumented(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return await wrapped(*args, **kwargs)
+
+    settings = transaction.settings or global_settings()
+    if not settings.ai_monitoring.enabled:
+        return await wrapped(*args, **kwargs)
+
+    # Framework metric also used for entity tagging in the UI
+    transaction.add_ml_model_info("Autogen", AUTOGEN_VERSION)
+    transaction._add_agent_attribute("llm", True)
+
+    agent_name = getattr(instance, "name", "agent")
+    agent_id = str(uuid.uuid4())
+    func_name = callable_name(wrapped)
+    function_trace_name = f"{func_name}/{agent_name}"
+
+    agentic_subcomponent_data = {"type": "APM-AI_AGENT", "name": agent_name}
+
+    ft = FunctionTrace(name=function_trace_name, group="Llm/agent/Autogen")
+    ft.__enter__()
+    ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
+
+    # Set flag so on_messages_stream (called internally) skips creating a duplicate agent FT.
+    token = _nr_in_on_messages.set(True)
+
+    try:
+        return_val = await wrapped(*args, **kwargs)
+    except Exception:
+        ft.notice_error(attributes={"agent_id": agent_id})
+        ft.__exit__(*sys.exc_info())
+        agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
+        agent_event_dict.update({"duration": ft.duration * 1000, "error": True})
+        transaction.record_custom_event("LlmAgent", agent_event_dict)
+        raise
+    finally:
+        _nr_in_on_messages.reset(token)
+
+    ft.__exit__(None, None, None)
+
+    agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
+    agent_event_dict["duration"] = ft.duration * 1000
+    transaction.record_custom_event("LlmAgent", agent_event_dict)
+
+    return return_val
+
+
 def wrap_on_messages_stream(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        # When a tool calls an inner agent on a different thread, NR's thread-local context is lost.
+        # The ContextVar is propagated by asyncio, so we can recover the parent trace from it.
+        parent_trace = _nr_tool_parent_trace.get(None)
+        if parent_trace:
+            with ContextOf(trace=parent_trace):
+                return _on_messages_stream_instrumented(wrapped, instance, args, kwargs)
+        return wrapped(*args, **kwargs)
+
+    return _on_messages_stream_instrumented(wrapped, instance, args, kwargs)
+
+
+def _on_messages_stream_instrumented(wrapped, instance, args, kwargs):
+    """Wrap on_messages_stream with an agent FT.
+
+    on_messages_stream returns an AsyncGenerator. When called from on_messages
+    (the run() path), the agent FT is already created by wrap_on_messages, so
+    we skip creating a duplicate here. When called directly (the run_stream()
+    path), the agent FT stays open and is exited when the generator finishes
+    via AsyncGeneratorProxy callbacks, keeping tools as children of the agent.
+    """
     transaction = current_transaction()
     if not transaction:
         return wrapped(*args, **kwargs)
@@ -63,13 +164,17 @@ def wrap_on_messages_stream(wrapped, instance, args, kwargs):
     if not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
+    # If we're already inside wrap_on_messages, skip the agent FT here to avoid
+    # a duplicate span. The on_messages wrapper owns the agent FT in that case.
+    if _nr_in_on_messages.get(False):
+        return wrapped(*args, **kwargs)
+
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("Autogen", AUTOGEN_VERSION)
     transaction._add_agent_attribute("llm", True)
 
     agent_name = getattr(instance, "name", "agent")
     agent_id = str(uuid.uuid4())
-    agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
     func_name = callable_name(wrapped)
     function_trace_name = f"{func_name}/{agent_name}"
 
@@ -84,17 +189,122 @@ def wrap_on_messages_stream(wrapped, instance, args, kwargs):
     except Exception:
         ft.notice_error(attributes={"agent_id": agent_id})
         ft.__exit__(*sys.exc_info())
-        # If we hit an exception, append the error attribute and duration from the exited function trace
+        agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
         agent_event_dict.update({"duration": ft.duration * 1000, "error": True})
         transaction.record_custom_event("LlmAgent", agent_event_dict)
         raise
 
-    ft.__exit__(None, None, None)
-    agent_event_dict.update({"duration": ft.duration * 1000})
+    # Wrap the async generator with a proxy that keeps the agent FT open during
+    # iteration. The FT is exited when the generator finishes (StopAsyncIteration)
+    # or encounters an error. This ensures tool FTs created during iteration are
+    # children of the agent FT, not siblings.
+    proxied_return_val = _AutogenAsyncGeneratorProxy(return_val, _record_stream_agent_event, _handle_stream_agent_error)
+    proxied_return_val._nr_ft = ft
+    proxied_return_val._nr_agent_name = agent_name
+    proxied_return_val._nr_agent_id = agent_id
 
-    transaction.record_custom_event("LlmAgent", agent_event_dict)
+    return proxied_return_val
 
-    return return_val
+
+class _AutogenAsyncGeneratorProxy(AsyncGeneratorProxy):
+    """AsyncGeneratorProxy subclass that exits the agent FT proactively.
+
+    The agent FT stays open during generator iteration so that tool FTs
+    (which execute in separate asyncio tasks) become children of the
+    agent FT in the trace tree.
+
+    The FT is exited as soon as all tool children have completed, which
+    happens after each ``__anext__`` call that returns an item following
+    tool execution.  This ensures the agent span is recorded even if the
+    consumer breaks out of the outer ``async for`` (e.g. on TaskResult)
+    before StopAsyncIteration fires.
+
+    Fallbacks:
+    - StopAsyncIteration callback: exits FT when stream fully exhausts
+      (handles the no-tool case where child_count stays 0).
+    - aclose(): exits FT when the generator is explicitly closed.
+    - __del__(): last-resort safety net.
+    """
+
+    async def __anext__(self):
+        transaction = current_transaction()
+        if not transaction:
+            return await self._nr_wrapped_iter.__anext__()
+
+        return_val = None
+        try:
+            return_val = await self._nr_wrapped_iter.__anext__()
+        except StopAsyncIteration:
+            self._nr_on_stop_iteration(self, transaction)
+            raise
+        except Exception:
+            self._nr_on_error(self, transaction)
+            raise
+
+        # After each yielded item, check if all async tool children have
+        # completed.  If so, exit the agent FT now.  NR's trace system
+        # supports deferred completion: if the FT exits while children are
+        # still running, the last child's _complete_trace cascades to
+        # complete the parent.  By exiting here (after tools finish), we
+        # guarantee the agent span is recorded even if the consumer breaks
+        # before StopAsyncIteration.
+        ft = getattr(self, "_nr_ft", None)
+        if ft and not ft.exited and ft.child_count > 0 and not ft.has_outstanding_children():
+            _exit_stream_agent_ft(self)
+
+        return return_val
+
+    async def aclose(self):
+        try:
+            return await self.__wrapped__.aclose()
+        finally:
+            _exit_stream_agent_ft(self)
+
+    def __del__(self):
+        _exit_stream_agent_ft(self)
+
+
+def _exit_stream_agent_ft(proxy, error=False):
+    """Exit the agent FT stored on the proxy and record the LlmAgent event.
+
+    Guards against double-exit: if the FT was already exited (e.g. by
+    StopAsyncIteration firing before aclose), this is a no-op.
+    """
+    ft = getattr(proxy, "_nr_ft", None)
+    if not ft or ft.exited:
+        return
+
+    agent_name = getattr(proxy, "_nr_agent_name", "agent")
+    agent_id = getattr(proxy, "_nr_agent_id", None)
+
+    if error:
+        ft.notice_error(attributes={"agent_id": agent_id})
+        ft.__exit__(*sys.exc_info())
+    else:
+        ft.__exit__(None, None, None)
+
+    transaction = current_transaction()
+    if not transaction:
+        return
+
+    try:
+        agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
+        agent_event_dict["duration"] = ft.duration * 1000
+        if error:
+            agent_event_dict["error"] = True
+        transaction.record_custom_event("LlmAgent", agent_event_dict)
+    except Exception:
+        _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
+
+
+def _record_stream_agent_event(proxy, _transaction):
+    """Callback for AsyncGeneratorProxy when the stream finishes normally (StopAsyncIteration)."""
+    _exit_stream_agent_ft(proxy, error=False)
+
+
+def _handle_stream_agent_error(proxy, _transaction):
+    """Callback for AsyncGeneratorProxy when the stream encounters an error."""
+    _exit_stream_agent_ft(proxy, error=True)
 
 
 def _get_llm_metadata(transaction):
@@ -192,6 +402,10 @@ async def wrap__execute_tool_call(wrapped, instance, args, kwargs):
     ft.__enter__()
     ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
 
+    # Store the tool's trace in a ContextVar so that nested agents created inside tool functions
+    # (which may run on thread pool threads) can find the parent trace.
+    _nr_tool_parent_trace.set(ft)
+
     try:
         return_val = await wrapped(*args, **kwargs)
     except Exception:
@@ -217,6 +431,8 @@ async def wrap__execute_tool_call(wrapped, instance, args, kwargs):
 
 def instrument_autogen_agentchat_agents__assistant_agent(module):
     if hasattr(module, "AssistantAgent"):
+        if hasattr(module.AssistantAgent, "on_messages"):
+            wrap_function_wrapper(module, "AssistantAgent.on_messages", wrap_on_messages)
         if hasattr(module.AssistantAgent, "on_messages_stream"):
             wrap_function_wrapper(module, "AssistantAgent.on_messages_stream", wrap_on_messages_stream)
         if hasattr(module.AssistantAgent, "_execute_tool_call"):

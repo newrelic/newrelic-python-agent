@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import webtest
-from _test_otel_application import application
+from _test_application import application
 from conftest import async_handler_support
 
 # Async handlers only supported in Flask >2.0.0

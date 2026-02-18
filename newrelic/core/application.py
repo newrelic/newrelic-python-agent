@@ -1399,10 +1399,7 @@ class Application:
                             spans = stats.span_events
                             if spans:
                                 if spans.num_samples > 0:
-                                    span_samples = list(spans)
-                                    flattened_list = self._flattened_span_samples(span_samples)
-
-                                    span_samples = flattened_list
+                                    span_samples = self._flattened_span_samples(list(spans))
 
                                     _logger.debug("Sending Span event data for harvest of %r.", self._app_name)
 

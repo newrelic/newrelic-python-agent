@@ -35,6 +35,6 @@ collector_agent_registration = collector_agent_registration_fixture(
 
 @pytest.fixture(scope="session")
 def app():
-    import _target_otel_application
+    import _target_opentelemetry_application
 
-    return _target_otel_application.target_application
+    return _target_opentelemetry_application.target_application

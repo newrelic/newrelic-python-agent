@@ -26,16 +26,16 @@ PROPAGATOR = otel_api_propagate.get_global_textmap()
 _override_settings = {"trusted_account_key": "1", "distributed_tracing.enabled": True, "span_events.enabled": True}
 
 
-@pytest.mark.parametrize("telemetry", ["newrelic", "otel"])
+@pytest.mark.parametrize("telemetry", ["newrelic", "opentelemetry"])
 @pytest.mark.parametrize("propagation", [accept_distributed_trace_headers, PROPAGATOR.extract])
 def test_distributed_trace_header_compatibility_full_granularity(telemetry, propagation):
     """
     Args:
-        telemetry (str): either "newrelic", or "otel"
+        telemetry (str): either "newrelic", or "opentelemetry"
             Denotes which propagation function was used to
             insert/inject the distributed trace headers.
             "newrelic" => `insert_distributed_trace_headers`
-            "otel" => `PROPAGATOR.inject` from OTel API
+            "opentelemetry" => `PROPAGATOR.inject` from OpenTelemetry API
         propagation (func): The propagation function to use.
             Either `accept_distributed_trace_headers`
             or `PROPAGATOR.extract`.
@@ -61,7 +61,7 @@ def test_distributed_trace_header_compatibility_full_granularity(telemetry, prop
         }
         if telemetry == "newrelic":
             headers["tracestate"] = "1@nr=0-0-1-2827902-0af7651916cd43dd-00f067aa0ba902b7-1-1.23456-1518469636035"
-        # "otel" does not generate tracestate headers
+        # "opentelemetry" does not generate tracestate headers
 
         propagation(headers)
         current_span = otel_api_trace.get_current_span()
@@ -72,16 +72,16 @@ def test_distributed_trace_header_compatibility_full_granularity(telemetry, prop
     _test()
 
 
-@pytest.mark.parametrize("telemetry", ["newrelic", "otel"])
+@pytest.mark.parametrize("telemetry", ["newrelic", "opentelemetry"])
 @pytest.mark.parametrize("propagation", [accept_distributed_trace_headers, PROPAGATOR.extract])
 def test_distributed_trace_header_compatibility_partial_granularity(telemetry, propagation):
     """
     Args:
-        telemetry (str): either "newrelic" or "otel"
+        telemetry (str): either "newrelic" or "opentelemetry"
             Denotes which propagation function was used to
             insert/inject the distributed trace headers.
             "newrelic" => `insert_distributed_trace_headers`
-            "otel" => `PROPAGATOR.inject` from Otel API
+            "opentelemetry" => `PROPAGATOR.inject` from Otel API
         propagation (func): The propagation function to use.
             Either `accept_distributed_trace_headers`
             or `PROPAGATOR.extract`.
@@ -113,7 +113,7 @@ def test_distributed_trace_header_compatibility_partial_granularity(telemetry, p
         }
         if telemetry == "newrelic":
             headers["tracestate"] = "1@nr=0-0-1-2827902-0af7651916cd43dd-00f067aa0ba902b7-1-1.23456-1518469636035"
-        # "otel" does not generate tracestate headers
+        # "opentelemetry" does not generate tracestate headers
 
         propagation(headers)
         current_span = otel_api_trace.get_current_span()

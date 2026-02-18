@@ -107,11 +107,8 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = {
     "response.headers.contentType",
     "response.status",
     "server.address",
-<<<<<<< hybrid-core-tracing-rebased
     "server.port",
-=======
     "subcomponent",
->>>>>>> main
     "zeebe.client.bpmnProcessId",
     "zeebe.client.messageName",
     "zeebe.client.correlationKey",

@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import logging
 import sys
 import uuid
@@ -94,9 +95,12 @@ def wrap_stream_async(wrapped, instance, args, kwargs):
     func_name = callable_name(wrapped)
     agent_name = getattr(instance, "name", "agent")
     function_trace_name = f"{func_name}/{agent_name}"
+    agentic_subcomponent_data = {"type": "APM-AI_AGENT", "name": agent_name}
 
     ft = FunctionTrace(name=function_trace_name, group="Llm/agent/Strands")
     ft.__enter__()
+    ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
+
     linking_metadata = get_trace_linking_metadata()
     agent_id = str(uuid.uuid4())
 
@@ -105,7 +109,6 @@ def wrap_stream_async(wrapped, instance, args, kwargs):
     except Exception:
         raise
 
-    # For streaming responses, wrap with proxy and attach metadata
     try:
         # For streaming responses, wrap with proxy and attach metadata
         proxied_return_val = AsyncGeneratorProxy(
@@ -126,7 +129,6 @@ def _record_agent_event_on_stop_iteration(self, transaction):
         # Use saved linking metadata to maintain correct span association
         linking_metadata = self._nr_metadata or get_trace_linking_metadata()
         self._nr_ft.__exit__(None, None, None)
-
         try:
             strands_attrs = getattr(self, "_nr_strands_attrs", {})
 
@@ -352,9 +354,11 @@ def wrap_tool_executor__stream(wrapped, instance, args, kwargs):
 
     func_name = callable_name(wrapped)
     function_trace_name = f"{func_name}/{tool_name}"
+    agentic_subcomponent_data = {"type": "APM-AI_TOOL", "name": tool_name}
 
     ft = FunctionTrace(name=function_trace_name, group="Llm/tool/Strands")
     ft.__enter__()
+    ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
     linking_metadata = get_trace_linking_metadata()
     tool_id = str(uuid.uuid4())
 

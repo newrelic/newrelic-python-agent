@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import logging
 import sys
 import time
@@ -161,9 +162,11 @@ class AgentObjectProxy(ObjectProxy):
         agent_id = str(uuid.uuid4())
         agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
         function_trace_name = f"invoke/{agent_name}"
+        agentic_subcomponent_data = {"type": "APM-AI_AGENT", "name": agent_name}
 
         ft = FunctionTrace(name=function_trace_name, group="Llm/agent/LangChain")
         ft.__enter__()
+        ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
         try:
             return_val = self.__wrapped__.invoke(*args, **kwargs)
         except Exception:
@@ -189,9 +192,11 @@ class AgentObjectProxy(ObjectProxy):
         agent_id = str(uuid.uuid4())
         agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
         function_trace_name = f"ainvoke/{agent_name}"
+        agentic_subcomponent_data = {"type": "APM-AI_AGENT", "name": agent_name}
 
         ft = FunctionTrace(name=function_trace_name, group="Llm/agent/LangChain")
         ft.__enter__()
+        ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
         try:
             return_val = await self.__wrapped__.ainvoke(*args, **kwargs)
         except Exception:
@@ -217,9 +222,11 @@ class AgentObjectProxy(ObjectProxy):
         agent_id = str(uuid.uuid4())
         agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
         function_trace_name = f"stream/{agent_name}"
+        agentic_subcomponent_data = {"type": "APM-AI_AGENT", "name": agent_name}
 
         ft = FunctionTrace(name=function_trace_name, group="Llm/agent/LangChain")
         ft.__enter__()
+        ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
         try:
             return_val = self.__wrapped__.stream(*args, **kwargs)
             return_val = GeneratorProxy(
@@ -242,9 +249,11 @@ class AgentObjectProxy(ObjectProxy):
         agent_id = str(uuid.uuid4())
         agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
         function_trace_name = f"astream/{agent_name}"
+        agentic_subcomponent_data = {"type": "APM-AI_AGENT", "name": agent_name}
 
         ft = FunctionTrace(name=function_trace_name, group="Llm/agent/LangChain")
         ft.__enter__()
+        ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
         try:
             return_val = self.__wrapped__.astream(*args, **kwargs)
             return_val = AsyncGeneratorProxy(
@@ -267,9 +276,11 @@ class AgentObjectProxy(ObjectProxy):
         agent_id = str(uuid.uuid4())
         agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
         function_trace_name = f"stream/{agent_name}"
+        agentic_subcomponent_data = {"type": "APM-AI_AGENT", "name": agent_name}
 
         ft = FunctionTrace(name=function_trace_name, group="Llm/agent/LangChain")
         ft.__enter__()
+        ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
         try:
             return_val = self.__wrapped__.transform(*args, **kwargs)
             return_val = GeneratorProxy(
@@ -292,9 +303,11 @@ class AgentObjectProxy(ObjectProxy):
         agent_id = str(uuid.uuid4())
         agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
         function_trace_name = f"astream/{agent_name}"
+        agentic_subcomponent_data = {"type": "APM-AI_AGENT", "name": agent_name}
 
         ft = FunctionTrace(name=function_trace_name, group="Llm/agent/LangChain")
         ft.__enter__()
+        ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
         try:
             return_val = self.__wrapped__.atransform(*args, **kwargs)
             return_val = AsyncGeneratorProxy(
@@ -512,8 +525,11 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
     except Exception:
         filtered_tool_input = tool_input
 
+    agentic_subcomponent_data = {"type": "APM-AI_TOOL", "name": tool_name}
+
     ft = FunctionTrace(name=f"{wrapped.__name__}/{tool_name}", group="Llm/tool/LangChain")
     ft.__enter__()
+    ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
     linking_metadata = get_trace_linking_metadata()
     try:
         return_val = wrapped(**run_args)
@@ -573,8 +589,11 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
     except Exception:
         filtered_tool_input = tool_input
 
+    agentic_subcomponent_data = {"type": "APM-AI_TOOL", "name": tool_name}
+
     ft = FunctionTrace(name=f"{wrapped.__name__}/{tool_name}", group="Llm/tool/LangChain")
     ft.__enter__()
+    ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
     linking_metadata = get_trace_linking_metadata()
     try:
         return_val = await wrapped(**run_args)

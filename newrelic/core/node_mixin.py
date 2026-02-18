@@ -221,7 +221,9 @@ class GenericNodeMixin:
         # we need to check for uniqueness before returning it.
         # Combine all the entity relationship attr values into a frozenset of tuples to be
         # used as the hash to check for uniqueness.
-        span_attrs_hash = hash(frozenset((key, a_minimized_attrs[key]) for key in exit_span_attrs_present if key in a_minimized_attrs))
+        span_attrs_hash = hash(
+            frozenset((key, a_minimized_attrs[key]) for key in exit_span_attrs_present if key in a_minimized_attrs)
+        )
         # If this is a new exit span, add it to the known ct_exit_spans and
         # return it.
         if span_attrs_hash not in ct_exit_spans:
@@ -251,9 +253,7 @@ class GenericNodeMixin:
         # Compute the new start and end time for all compressed spans and use
         # that to set the duration for all compressed spans.
         current_start_time = exit_span[0]["timestamp"]
-        current_end_time = (
-            exit_span[0]["timestamp"] / 1000 + exit_span[0]["nr.durations"]
-        )
+        current_end_time = exit_span[0]["timestamp"] / 1000 + exit_span[0]["nr.durations"]
         new_start_time = i_attrs["timestamp"]
         new_end_time = i_attrs["timestamp"] / 1000 + i_attrs["duration"]
         set_start_time = min(new_start_time, current_start_time)
@@ -286,7 +286,9 @@ class GenericNodeMixin:
     ):
         if partial_granularity_sampled:
             partial_type = settings.distributed_tracing.sampler.partial_granularity.type
-            return self.PARTIAL_GRANULARITY_SPAN_EVENT_METHODS.get(partial_type, self.PARTIAL_GRANULARITY_SPAN_EVENT_METHODS["essential"])(
+            return self.PARTIAL_GRANULARITY_SPAN_EVENT_METHODS.get(
+                partial_type, self.PARTIAL_GRANULARITY_SPAN_EVENT_METHODS["essential"]
+            )(
                 self=self,
                 settings=settings,
                 base_attrs=base_attrs,
@@ -321,7 +323,9 @@ class GenericNodeMixin:
             ct_exit_spans=ct_exit_spans,
         )
         parent_id = parent_guid
-        if span:  # In partial granularity tracing, span will be None if the span is an inprocess span or repeated exit span.
+        if (
+            span
+        ):  # In partial granularity tracing, span will be None if the span is an inprocess span or repeated exit span.
             yield span
             # Compressed spans are always reparented onto the entry span.
             if settings.distributed_tracing.sampler.partial_granularity.type != "compact" or span[0].get(

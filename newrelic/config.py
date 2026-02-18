@@ -43,7 +43,10 @@ import newrelic.core.agent
 import newrelic.core.config
 from newrelic.common.log_file import initialize_logging
 from newrelic.common.object_names import callable_name, expand_builtin_exception_name
-from newrelic.common.opentelemetry_tracers import HYBRID_AGENT_DEFAULT_INCLUDED_TRACERS_TO_NR_HOOKS, TEMPORARILY_DISABLED_OPENTELEMETRY_FRAMEWORKS
+from newrelic.common.opentelemetry_tracers import (
+    HYBRID_AGENT_DEFAULT_INCLUDED_TRACERS_TO_NR_HOOKS,
+    TEMPORARILY_DISABLED_OPENTELEMETRY_FRAMEWORKS,
+)
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.core import trace_cache
 from newrelic.core.agent_control_health import (

@@ -4476,7 +4476,9 @@ def _is_installed(req):
     return False
 
 
-def _process_opentelemetry_instrumentation_entry_points(final_include_dict=HYBRID_AGENT_DEFAULT_INCLUDED_TRACERS_TO_NR_HOOKS):
+def _process_opentelemetry_instrumentation_entry_points(
+    final_include_dict=HYBRID_AGENT_DEFAULT_INCLUDED_TRACERS_TO_NR_HOOKS,
+):
     if not _settings.opentelemetry.enabled or not _is_installed("opentelemetry-api"):
         return
 
@@ -4506,7 +4508,8 @@ def _process_opentelemetry_instrumentation_entry_points(final_include_dict=HYBRI
     entry_points_generator = (
         entrypoint
         for entrypoint in _entry_points
-        if entrypoint.name in final_include_dict and entrypoint.name not in TEMPORARILY_DISABLED_OPENTELEMETRY_FRAMEWORKS
+        if entrypoint.name in final_include_dict
+        and entrypoint.name not in TEMPORARILY_DISABLED_OPENTELEMETRY_FRAMEWORKS
     )
 
     for entrypoint in entry_points_generator:

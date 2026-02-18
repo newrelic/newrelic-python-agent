@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 import json
 import logging
+import os
 import sys
 import time
 from contextlib import contextmanager
@@ -93,7 +93,9 @@ class NRTraceContextPropagator(TraceContextTextMapPropagator):
 
 # Context and Context Propagator Setup
 try:
-    opentelemetry_context_propagator = CompositePropagator(propagators=[NRTraceContextPropagator(), W3CBaggagePropagator()])
+    opentelemetry_context_propagator = CompositePropagator(
+        propagators=[NRTraceContextPropagator(), W3CBaggagePropagator()]
+    )
     set_global_textmap(opentelemetry_context_propagator)
 except:
     pass
@@ -724,7 +726,9 @@ class Tracer(otel_api_trace.Tracer):
         self._record_exception = record_exception
         self.set_status_on_exception = set_status_on_exception
 
-        if not (self.nr_application.settings and self.nr_application.settings.opentelemetry.enabled) and not os.environ.get("NEW_RELIC_OPENTELEMETRY_ENABLED"):
+        if not (
+            self.nr_application.settings and self.nr_application.settings.opentelemetry.enabled
+        ) and not os.environ.get("NEW_RELIC_OPENTELEMETRY_ENABLED"):
             return otel_api_trace.INVALID_SPAN
 
         # Retrieve parent span

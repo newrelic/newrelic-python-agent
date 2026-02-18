@@ -77,7 +77,7 @@ def wrap_set_tracer_provider(wrapped, instance, args, kwargs):
     # This needs to act as a singleton, like the agent instance.
     # We should initialize the agent here as well, if there is
     # not an instance already.
-    
+
     application = application_instance()
     if not application.active:
         # Force application registration if not already active

@@ -59,7 +59,7 @@ _logger = logging.getLogger(__name__)
 
 DEPRECATED_MODULES = {"aioredis": datetime(2022, 2, 22, 0, 0, tzinfo=timezone.utc)}
 
-TEMPORARILY_DISABLED_OTEL_FRAMEWORKS = {
+TEMPORARILY_DISABLED_OPENTELEMETRY_FRAMEWORKS = {
     "boto",
     "boto3",
     "botocore",
@@ -2147,8 +2147,8 @@ def _process_function_profile_configuration():
             _raise_configuration_error(section)
 
 
-otel_instrumentation = []
-otel_entrypoints = []
+opentelemetry_instrumentation = []
+opentelemetry_entrypoints = []
 
 
 def _process_module_definition(target, module, function="instrument"):
@@ -2171,7 +2171,7 @@ def _process_module_definition(target, module, function="instrument"):
     except Exception:
         _raise_configuration_error(section)
 
-    if target in otel_instrumentation:
+    if target in opentelemetry_instrumentation:
         enabled = False
 
     try:
@@ -4476,7 +4476,7 @@ def _is_installed(req):
     return False
 
 
-def _process_otel_instrumentation_entry_points(final_include_dict=HYBRID_AGENT_DEFAULT_INCLUDED_TRACERS_TO_NR_HOOKS):
+def _process_opentelemetry_instrumentation_entry_points(final_include_dict=HYBRID_AGENT_DEFAULT_INCLUDED_TRACERS_TO_NR_HOOKS):
     if not _settings.opentelemetry.enabled or not _is_installed("opentelemetry-api"):
         return
 
@@ -4506,12 +4506,12 @@ def _process_otel_instrumentation_entry_points(final_include_dict=HYBRID_AGENT_D
     entry_points_generator = (
         entrypoint
         for entrypoint in _entry_points
-        if entrypoint.name in final_include_dict and entrypoint.name not in TEMPORARILY_DISABLED_OTEL_FRAMEWORKS
+        if entrypoint.name in final_include_dict and entrypoint.name not in TEMPORARILY_DISABLED_OPENTELEMETRY_FRAMEWORKS
     )
 
     for entrypoint in entry_points_generator:
-        otel_entrypoints.append(entrypoint)
-        otel_instrumentation.extend(final_include_dict[entrypoint.name])
+        opentelemetry_entrypoints.append(entrypoint)
+        opentelemetry_instrumentation.extend(final_include_dict[entrypoint.name])
 
     # Check for native installations
     # NOTE: This logic will change once enabled and disabled
@@ -4525,15 +4525,15 @@ def _process_otel_instrumentation_entry_points(final_include_dict=HYBRID_AGENT_D
     # specific library are installed on the system.
     for lib in ["strawberry-graphql", "ariadne", "elasticsearch"]:
         if _is_installed(lib):
-            otel_instrumentation.extend(final_include_dict[lib])
+            opentelemetry_instrumentation.extend(final_include_dict[lib])
 
 
-def _process_otel_instrumentors():
+def _process_opentelemetry_instrumentors():
     if not _settings.opentelemetry.enabled or not _is_installed("opentelemetry-api"):
         return
 
     tracer_provider = newrelic.core.agent.opentelemetry_tracer_provider()
-    for entrypoint in otel_entrypoints:
+    for entrypoint in opentelemetry_entrypoints:
         try:
             instrumentor_class = entrypoint.load()
             instrumentor = instrumentor_class()
@@ -4555,7 +4555,7 @@ def _setup_instrumentation():
     _process_module_entry_points()
     # Collection of NR disabled hooks must happen before _process_module_builtin_defaults()
     # but the loading of the entrypoints must not happen until after the NR hooks are registered.
-    _process_otel_instrumentation_entry_points()
+    _process_opentelemetry_instrumentation_entry_points()
 
     _process_trace_cache_import_hooks()
     _process_module_builtin_defaults()
@@ -4578,7 +4578,7 @@ def _setup_instrumentation():
 
     _process_function_profile_configuration()
 
-    _process_otel_instrumentors()
+    _process_opentelemetry_instrumentors()
 
 
 def _setup_extensions():

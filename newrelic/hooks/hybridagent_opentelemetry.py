@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+
 from newrelic.api.application import application_instance
 from newrelic.api.time_trace import add_custom_span_attribute, current_trace
 from newrelic.api.transaction import current_transaction
@@ -37,23 +39,23 @@ def wrap__load_runtime_context(wrapped, instance, args, kwargs):
 
 
 def wrap_get_global_response_propagator(wrapped, instance, args, kwargs):
-    from newrelic.api.opentelemetry import otel_context_propagator, retry_application_activation
+    from newrelic.api.opentelemetry import opentelemetry_context_propagator
 
     application = application_instance()
     if not application.active:
         # Force application registration if not already active
-        retry_application_activation(application)
+        application.activate()
 
-    settings = global_settings() if not application else application.settings
+    settings = global_settings()
 
-    if not settings or not settings.opentelemetry.enabled:
+    if not (settings and settings.opentelemetry.enabled) and not os.environ.get("NEW_RELIC_OPENTELEMETRY_ENABLED"):
         return wrapped(*args, **kwargs)
 
     from opentelemetry.instrumentation.propagators import set_global_response_propagator
 
-    set_global_response_propagator(otel_context_propagator)
+    set_global_response_propagator(opentelemetry_context_propagator)
 
-    return otel_context_propagator
+    return opentelemetry_context_propagator
 
 
 def instrument_context_api(module):
@@ -75,16 +77,15 @@ def wrap_set_tracer_provider(wrapped, instance, args, kwargs):
     # This needs to act as a singleton, like the agent instance.
     # We should initialize the agent here as well, if there is
     # not an instance already.
-
-    from newrelic.api.opentelemetry import retry_application_activation
-
+    
     application = application_instance()
     if not application.active:
         # Force application registration if not already active
-        retry_application_activation(application)
+        application.activate()
 
-    settings = global_settings() if not application else application.settings
-    if not settings or not settings.opentelemetry.enabled:
+    settings = global_settings()
+
+    if not (settings and settings.opentelemetry.enabled) and not os.environ.get("NEW_RELIC_OPENTELEMETRY_ENABLED"):
         return wrapped(*args, **kwargs)
 
     nr_tracer_provider = application._agent.opentelemetry_tracer_provider()
@@ -96,16 +97,14 @@ def wrap_get_tracer_provider(wrapped, instance, args, kwargs):
     # We should initialize the agent here as well, if there is
     # not an instance already.
 
-    from newrelic.api.opentelemetry import retry_application_activation
-
     application = application_instance()
     if not application.active:
         # Force application registration if not already active
-        retry_application_activation(application)
+        application.activate()
 
-    settings = global_settings() if not application else application.settings
+    settings = global_settings()
 
-    if not settings or not settings.opentelemetry.enabled:
+    if not (settings and settings.opentelemetry.enabled) and not os.environ.get("NEW_RELIC_OPENTELEMETRY_ENABLED"):
         return wrapped(*args, **kwargs)
 
     return application._agent.opentelemetry_tracer_provider()
@@ -146,18 +145,18 @@ def wrap_get_current_span(wrapped, instance, args, kwargs):
         return span
 
     # If a NR trace does exist, check to see if the current
-    # OTel span corresponds to the current NR trace.  If so,
+    # OpenTelemetry span corresponds to the current NR trace.  If so,
     # return the original function's result.
     if span.get_span_context().span_id == int(trace.guid, 16):
         return span
 
-    # If the current OTel span does not match the current NR
+    # If the current OpenTelemetry span does not match the current NR
     # trace, this means that a NR trace was created either
-    # manually or through the NR agent.  Either way, the OTel
+    # manually or through the NR agent.  Either way, the OpenTelemetry
     # API was not used to create a span object.  The Hybrid
     # Agent's Span object creates a NR trace but since the NR
     # trace has already been created, we just need a symbolic
-    # OTel span to represent it the span object.  A LazySpan
+    # OpenTelemetry span to represent it the span object.  A LazySpan
     # will be created.  It will effectively be a NonRecordingSpan
     # with the ability to add custom attributes.
 

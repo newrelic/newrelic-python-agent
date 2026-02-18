@@ -14,8 +14,8 @@
 
 
 # This is a mapping of the entry_point name of the
-# OTel instrumentor and the list of targets in the
-# NR hooks that need to be disabled if the OTel
+# OpenTelemetry instrumentor and the list of targets in the
+# NR hooks that need to be disabled if the OpenTelemetry
 # instrumentor is to be used instead.
 HYBRID_AGENT_DEFAULT_INCLUDED_TRACERS_TO_NR_HOOKS = {
     "aio-pika": [],

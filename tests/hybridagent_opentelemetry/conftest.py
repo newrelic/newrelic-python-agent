@@ -16,7 +16,7 @@ import pytest
 from opentelemetry import propagate, trace
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
-from newrelic.api.opentelemetry import otel_context_propagator
+from newrelic.api.opentelemetry import opentelemetry_context_propagator
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
@@ -36,7 +36,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 
 @pytest.fixture(scope="session")
 def tracer():
-    propagate.set_global_textmap(otel_context_propagator)
+    propagate.set_global_textmap(opentelemetry_context_propagator)
 
     tracer_provider = trace.get_tracer_provider()
     return tracer_provider.get_tracer()

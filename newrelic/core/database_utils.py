@@ -419,7 +419,7 @@ def _parse_operation(sql):
     return operation if operation in _operation_table else ""
 
 
-def _parse_operation_otel(sql):
+def _parse_operation_opentelemetry(sql):
     match = _parse_operation_re.search(sql)
     operation = match and match.group(1).lower()
     return operation or ""
@@ -921,6 +921,6 @@ def generate_dynamodb_arn(host, region=None, account_id=None, target=None):
 
 
 def get_database_operation_target_from_statement(db_statement):
-    operation = _parse_operation_otel(db_statement)
+    operation = _parse_operation_opentelemetry(db_statement)
     target = _parse_target(db_statement, operation)
     return operation, target

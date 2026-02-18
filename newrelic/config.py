@@ -59,6 +59,7 @@ from newrelic.core.config import Settings, apply_config_setting, default_host
 __all__ = ["filter_app_factory", "initialize"]
 
 
+# Add trace log level to logging module
 def trace(self, message, *args, **kws):
     self._log(logging.TRACE, message, args, **kws)
 

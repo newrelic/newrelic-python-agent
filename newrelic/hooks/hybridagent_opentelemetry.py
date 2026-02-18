@@ -129,8 +129,8 @@ def wrap_get_custom_headers(wrapped, instance, args, kwargs):
 
 
 def wrap_get_current_span(wrapped, instance, args, kwargs):
-    transaction = current_transaction()
     trace = current_trace()
+    transaction = trace.transaction
     span = wrapped(*args, **kwargs)
 
     if not transaction:

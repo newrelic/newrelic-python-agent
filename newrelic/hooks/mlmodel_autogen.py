@@ -19,7 +19,7 @@ import sys
 import uuid
 
 from newrelic.api.function_trace import FunctionTrace
-from newrelic.api.time_trace import current_trace, get_trace_linking_metadata
+from newrelic.api.time_trace import get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
@@ -41,6 +41,10 @@ AUTOGEN_VERSION = (
 # This allows nested agents created inside tools to find the parent trace.
 _nr_tool_parent_trace = contextvars.ContextVar("_nr_tool_parent_trace", default=None)
 
+# Flag to indicate we're inside wrap_on_messages, so on_messages_stream can skip
+# creating a duplicate agent FT (on_messages internally calls on_messages_stream).
+_nr_in_on_messages = contextvars.ContextVar("_nr_in_on_messages", default=False)
+
 RECORD_EVENTS_FAILURE_LOG_MESSAGE = "Exception occurred in Autogen instrumentation: Failed to record LLM events. Please report this issue to New Relic Support.\n%s"
 
 
@@ -60,6 +64,74 @@ async def wrap_from_server_params(wrapped, instance, args, kwargs):
         return await wrapped(*args, **kwargs)
 
 
+async def wrap_on_messages(wrapped, instance, args, kwargs):
+    """Wrap on_messages (a regular async method) with an agent FunctionTrace.
+
+    on_messages is called by run() and internally iterates on_messages_stream.
+    Since on_messages is awaited (not an async generator), the FT can stay open
+    for the full execution, making tool FTs proper children of this agent FT.
+    """
+    transaction = current_transaction()
+    if not transaction:
+        # When a tool calls an inner agent on a different thread, NR's thread-local context is lost.
+        # The ContextVar is propagated by asyncio, so we can recover the parent trace from it.
+        parent_trace = _nr_tool_parent_trace.get(None)
+        if parent_trace:
+            with ContextOf(trace=parent_trace):
+                return await _on_messages_instrumented(wrapped, instance, args, kwargs)
+        return await wrapped(*args, **kwargs)
+
+    return await _on_messages_instrumented(wrapped, instance, args, kwargs)
+
+
+async def _on_messages_instrumented(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return await wrapped(*args, **kwargs)
+
+    settings = transaction.settings or global_settings()
+    if not settings.ai_monitoring.enabled:
+        return await wrapped(*args, **kwargs)
+
+    # Framework metric also used for entity tagging in the UI
+    transaction.add_ml_model_info("Autogen", AUTOGEN_VERSION)
+    transaction._add_agent_attribute("llm", True)
+
+    agent_name = getattr(instance, "name", "agent")
+    agent_id = str(uuid.uuid4())
+    func_name = callable_name(wrapped)
+    function_trace_name = f"{func_name}/{agent_name}"
+
+    agentic_subcomponent_data = {"type": "APM-AI_AGENT", "name": agent_name}
+
+    ft = FunctionTrace(name=function_trace_name, group="Llm/agent/Autogen")
+    ft.__enter__()
+    ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
+
+    # Set flag so on_messages_stream (called internally) skips creating a duplicate agent FT.
+    token = _nr_in_on_messages.set(True)
+
+    try:
+        return_val = await wrapped(*args, **kwargs)
+    except Exception:
+        ft.notice_error(attributes={"agent_id": agent_id})
+        ft.__exit__(*sys.exc_info())
+        agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
+        agent_event_dict.update({"duration": ft.duration * 1000, "error": True})
+        transaction.record_custom_event("LlmAgent", agent_event_dict)
+        raise
+    finally:
+        _nr_in_on_messages.reset(token)
+
+    ft.__exit__(None, None, None)
+
+    agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
+    agent_event_dict["duration"] = ft.duration * 1000
+    transaction.record_custom_event("LlmAgent", agent_event_dict)
+
+    return return_val
+
+
 def wrap_on_messages_stream(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
@@ -75,6 +147,15 @@ def wrap_on_messages_stream(wrapped, instance, args, kwargs):
 
 
 def _on_messages_stream_instrumented(wrapped, instance, args, kwargs):
+    """Wrap on_messages_stream with an agent FT.
+
+    on_messages_stream returns an AsyncGenerator. When called from on_messages
+    (the run() path), the agent FT is already created by wrap_on_messages, so
+    we skip creating a duplicate here. When called directly (the run_stream()
+    path), we create the agent FT with immediate exit since async generators
+    cannot reliably keep the FT open (callers exit the loop early without
+    closing the generator).
+    """
     transaction = current_transaction()
     if not transaction:
         return wrapped(*args, **kwargs)
@@ -83,18 +164,26 @@ def _on_messages_stream_instrumented(wrapped, instance, args, kwargs):
     if not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
+    # If we're already inside wrap_on_messages, skip the agent FT here to avoid
+    # a duplicate span. The on_messages wrapper owns the agent FT in that case.
+    if _nr_in_on_messages.get(False):
+        return wrapped(*args, **kwargs)
+
     # Framework metric also used for entity tagging in the UI
     transaction.add_ml_model_info("Autogen", AUTOGEN_VERSION)
     transaction._add_agent_attribute("llm", True)
 
     agent_name = getattr(instance, "name", "agent")
     agent_id = str(uuid.uuid4())
-    agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
     func_name = callable_name(wrapped)
     function_trace_name = f"{func_name}/{agent_name}"
 
     agentic_subcomponent_data = {"type": "APM-AI_AGENT", "name": agent_name}
 
+    # on_messages_stream returns an AsyncGenerator. The FT is entered and exited
+    # immediately around the sync call to create the generator. AutoGen's callers
+    # exit the async for loop early via return without closing the generator,
+    # which would leave an open FT on the trace stack.
     ft = FunctionTrace(name=function_trace_name, group="Llm/agent/Autogen")
     ft.__enter__()
     ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
@@ -104,14 +193,15 @@ def _on_messages_stream_instrumented(wrapped, instance, args, kwargs):
     except Exception:
         ft.notice_error(attributes={"agent_id": agent_id})
         ft.__exit__(*sys.exc_info())
-        # If we hit an exception, append the error attribute and duration from the exited function trace
+        agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
         agent_event_dict.update({"duration": ft.duration * 1000, "error": True})
         transaction.record_custom_event("LlmAgent", agent_event_dict)
         raise
 
     ft.__exit__(None, None, None)
-    agent_event_dict.update({"duration": ft.duration * 1000})
 
+    agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
+    agent_event_dict["duration"] = ft.duration * 1000
     transaction.record_custom_event("LlmAgent", agent_event_dict)
 
     return return_val
@@ -241,6 +331,8 @@ async def wrap__execute_tool_call(wrapped, instance, args, kwargs):
 
 def instrument_autogen_agentchat_agents__assistant_agent(module):
     if hasattr(module, "AssistantAgent"):
+        if hasattr(module.AssistantAgent, "on_messages"):
+            wrap_function_wrapper(module, "AssistantAgent.on_messages", wrap_on_messages)
         if hasattr(module.AssistantAgent, "on_messages_stream"):
             wrap_function_wrapper(module, "AssistantAgent.on_messages_stream", wrap_on_messages_stream)
         if hasattr(module.AssistantAgent, "_execute_tool_call"):

@@ -1239,6 +1239,61 @@ def test_partial_granularity_essential_span_attributes():
     _test()
 
 
+def test_partial_granularity_unknown_type_falls_back_on_essential():
+    """
+    In essential mode, inprocess spans are dropped and non-entity synthesis attributes.
+    """
+
+    @function_trace()
+    def foo():
+        with ExternalTrace("requests", "http://localhost:3000/", method="GET") as trace:
+            trace.add_custom_attribute("custom", "bar")
+
+    @validate_span_events(
+        count=1,  # Entry span.
+        exact_intrinsics={
+            "name": "Function/test_distributed_tracing:test_partial_granularity_unknown_type_falls_back_on_essential.<locals>._test",
+            "nr.pg": True,
+        },
+        expected_intrinsics=["duration", "timestamp"],
+        unexpected_agents=["code.function", "code.lineno", "code.namespace"],
+    )
+    @validate_span_events(
+        count=0,  # Function foo span should not be present.
+        exact_intrinsics={
+            "name": "Function/test_distributed_tracing:test_partial_granularity_unknown_type_falls_back_on_essential.<locals>.foo"
+        },
+        expected_intrinsics=["duration", "timestamp"],
+    )
+    @validate_span_events(
+        count=2,  # 2 external spans.
+        exact_intrinsics={"name": "External/localhost:3000/requests/GET"},
+        exact_agents={"http.url": "http://localhost:3000/"},
+        unexpected_users=["custom"],
+    )
+    @background_task()
+    def _test():
+        headers = {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01"}
+        accept_distributed_trace_headers(headers)
+        with ExternalTrace("requests", "http://localhost:3000/", method="GET") as trace:
+            # Override terminal_node so we can create a nested exit span.
+            trace.terminal_node = lambda: False
+            trace.add_custom_attribute("custom", "bar")
+            foo()
+
+    _test = override_application_settings(
+        {
+            "distributed_tracing.sampler.full_granularity.enabled": False,
+            "distributed_tracing.sampler.partial_granularity.enabled": True,
+            "distributed_tracing.sampler.partial_granularity.type": "unknown",
+            "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "always_on",
+            "span_events.enabled": True,
+        }
+    )(_test)
+
+    _test()
+
+
 @pytest.mark.parametrize(
     "dt_settings,dt_headers,expected_sampling_instance_called,expected_adaptive_computed_count,expected_adaptive_sampled_count,expected_adaptive_sampling_target",
     (

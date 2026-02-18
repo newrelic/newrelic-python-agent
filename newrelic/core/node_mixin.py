@@ -286,7 +286,7 @@ class GenericNodeMixin:
     ):
         if partial_granularity_sampled:
             partial_type = settings.distributed_tracing.sampler.partial_granularity.type
-            return self.PARTIAL_GRANULARITY_SPAN_EVENT_METHODS.get(partial_type, PARTIAL_GRANULARITY_SPAN_EVENT_METHODS["essential"])(
+            return self.PARTIAL_GRANULARITY_SPAN_EVENT_METHODS.get(partial_type, self.PARTIAL_GRANULARITY_SPAN_EVENT_METHODS["essential"])(
                 self=self,
                 settings=settings,
                 base_attrs=base_attrs,

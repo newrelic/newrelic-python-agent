@@ -208,7 +208,7 @@ def test_harvest_sampling_rates(
         global total
         total += application._stats_engine.span_events.num_samples
         global partial
-        partial += len([event for event in application._stats_engine.span_events.samples if event[2].get("nr.pg")])
+        partial += len([event for event in application._stats_engine.span_events.samples if event[0].get("nr.pg")])
 
         if test_totals:
             if expected_sampled is not None:

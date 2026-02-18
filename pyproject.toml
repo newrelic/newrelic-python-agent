@@ -71,6 +71,7 @@ packages = [
     "newrelic.bootstrap",
     "newrelic.common",
     "newrelic.core",
+    "newrelic.core.samplers",
     "newrelic.extras",
     "newrelic.extras.framework_django",
     "newrelic.extras.framework_django.templatetags",

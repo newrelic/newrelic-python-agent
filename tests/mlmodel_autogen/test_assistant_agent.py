@@ -16,7 +16,7 @@
 import pytest
 from autogen_agentchat.agents import AssistantAgent
 from autogen_agentchat.base import TaskResult
-from testing_support.fixtures import dt_enabled, reset_core_stats_engine, validate_attributes
+from testing_support.fixtures import reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
@@ -27,7 +27,6 @@ from testing_support.ml_testing_utils import (
 from testing_support.validators.validate_custom_event import validate_custom_event_count
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import validate_error_trace_attributes
-from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_error_event_count import validate_transaction_error_event_count
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
@@ -98,7 +97,6 @@ def add_exclamation(message: str) -> str:
     return f"{message}!"
 
 
-@dt_enabled
 @reset_core_stats_engine()
 @validate_custom_events(
     events_with_context_attrs(tool_recorded_event) + events_with_context_attrs(agent_recorded_event)
@@ -129,8 +127,6 @@ def add_exclamation(message: str) -> str:
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
-@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "pirate_agent"}'})
-@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "add_exclamation"}'})
 @background_task()
 def test_run_assistant_agent(loop, set_trace_info, single_tool_model_client):
     set_trace_info()
@@ -146,7 +142,6 @@ def test_run_assistant_agent(loop, set_trace_info, single_tool_model_client):
     loop.run_until_complete(_test())
 
 
-@dt_enabled
 @reset_core_stats_engine()
 @validate_custom_events(tool_recorded_event + agent_recorded_event)
 @validate_custom_event_count(count=2)
@@ -175,8 +170,6 @@ def test_run_assistant_agent(loop, set_trace_info, single_tool_model_client):
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
-@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "pirate_agent"}'})
-@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "add_exclamation"}'})
 @background_task()
 def test_run_stream_assistant_agent(loop, set_trace_info, single_tool_model_client):
     set_trace_info()
@@ -199,7 +192,6 @@ def test_run_stream_assistant_agent(loop, set_trace_info, single_tool_model_clie
     loop.run_until_complete(_test())
 
 
-@dt_enabled
 @reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
 @validate_custom_events(tool_events_sans_content(tool_recorded_event) + agent_recorded_event)
@@ -229,8 +221,6 @@ def test_run_stream_assistant_agent(loop, set_trace_info, single_tool_model_clie
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
-@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "pirate_agent"}'})
-@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "add_exclamation"}'})
 @background_task()
 def test_run_assistant_agent_no_content(loop, set_trace_info, single_tool_model_client):
     set_trace_info()
@@ -245,7 +235,6 @@ def test_run_assistant_agent_no_content(loop, set_trace_info, single_tool_model_
     loop.run_until_complete(_test())
 
 
-@dt_enabled
 @disabled_ai_monitoring_settings
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
@@ -270,7 +259,6 @@ SKIP_IF_AUTOGEN_062 = pytest.mark.skipif(
 
 
 @SKIP_IF_AUTOGEN_062
-@dt_enabled
 @reset_core_stats_engine()
 @validate_transaction_error_event_count(1)
 @validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
@@ -301,8 +289,6 @@ SKIP_IF_AUTOGEN_062 = pytest.mark.skipif(
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
-@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "pirate_agent"}'})
-@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "add_exclamation"}'})
 @background_task()
 def test_run_assistant_agent_error(loop, set_trace_info, single_tool_model_client_error):
     set_trace_info()
@@ -320,7 +306,6 @@ def test_run_assistant_agent_error(loop, set_trace_info, single_tool_model_clien
     loop.run_until_complete(_test())
 
 
-@dt_enabled
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 def test_run_assistant_agent_outside_txn(loop, single_tool_model_client):

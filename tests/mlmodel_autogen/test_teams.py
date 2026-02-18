@@ -17,7 +17,7 @@ from autogen_agentchat.agents import AssistantAgent
 from autogen_agentchat.base import TaskResult
 from autogen_agentchat.teams import RoundRobinGroupChat
 from test_assistant_agent import SKIP_IF_AUTOGEN_062
-from testing_support.fixtures import dt_enabled, reset_core_stats_engine, validate_attributes
+from testing_support.fixtures import reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
@@ -28,7 +28,6 @@ from testing_support.ml_testing_utils import (
 from testing_support.validators.validate_custom_event import validate_custom_event_count
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import validate_error_trace_attributes
-from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_error_event_count import validate_transaction_error_event_count
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
@@ -176,7 +175,6 @@ def compute_sum(a: int, b: int) -> int:
     return a + b
 
 
-@dt_enabled
 @reset_core_stats_engine()
 @validate_custom_event_count(count=8)
 @validate_transaction_metrics(
@@ -215,10 +213,6 @@ def compute_sum(a: int, b: int) -> int:
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
-@validate_span_events(count=2, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "pirate_agent"}'})
-@validate_span_events(count=2, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "add_exclamation"}'})
-@validate_span_events(count=2, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "robot_agent"}'})
-@validate_span_events(count=2, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "compute_sum"}'})
 @background_task()
 def test_run_stream_round_robin_group(loop, set_trace_info, multi_tool_model_client):
     set_trace_info()
@@ -256,7 +250,6 @@ def test_run_stream_round_robin_group(loop, set_trace_info, multi_tool_model_cli
     loop.run_until_complete(_test())
 
 
-@dt_enabled
 @reset_core_stats_engine()
 @validate_custom_event_count(count=8)
 @validate_transaction_metrics(
@@ -294,10 +287,6 @@ def test_run_stream_round_robin_group(loop, set_trace_info, multi_tool_model_cli
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
-@validate_span_events(count=2, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "pirate_agent"}'})
-@validate_span_events(count=2, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "add_exclamation"}'})
-@validate_span_events(count=2, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "robot_agent"}'})
-@validate_span_events(count=2, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "compute_sum"}'})
 @background_task()
 def test_run_round_robin_group(loop, set_trace_info, multi_tool_model_client):
     set_trace_info()
@@ -330,7 +319,6 @@ def test_run_round_robin_group(loop, set_trace_info, multi_tool_model_client):
     loop.run_until_complete(_test())
 
 
-@dt_enabled
 @reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
 @validate_custom_events(tool_events_sans_content(team_tools_recorded_events) + team_agent_recorded_events)
@@ -370,10 +358,6 @@ def test_run_round_robin_group(loop, set_trace_info, multi_tool_model_client):
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
-@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "pirate_agent"}'})
-@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "add_exclamation"}'})
-@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "robot_agent"}'})
-@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "compute_sum"}'})
 @background_task()
 def test_run_round_robin_group_no_content(loop, set_trace_info, multi_tool_model_client):
     set_trace_info()
@@ -401,7 +385,6 @@ def test_run_round_robin_group_no_content(loop, set_trace_info, multi_tool_model
     loop.run_until_complete(_test())
 
 
-@dt_enabled
 @disabled_ai_monitoring_settings
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
@@ -433,7 +416,6 @@ def test_run_round_robin_group_disabled_ai_events(loop, set_trace_info, multi_to
 
 
 @SKIP_IF_AUTOGEN_062
-@dt_enabled
 @reset_core_stats_engine()
 @validate_transaction_error_event_count(1)
 @validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
@@ -474,10 +456,6 @@ def test_run_round_robin_group_disabled_ai_events(loop, set_trace_info, multi_to
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
-@validate_span_events(count=2, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "pirate_agent"}'})
-@validate_span_events(count=2, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "add_exclamation"}'})
-@validate_span_events(count=2, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "robot_agent"}'})
-@validate_span_events(count=2, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "compute_sum"}'})
 @background_task()
 def test_run_round_robin_group_error(loop, set_trace_info, multi_tool_model_client_error):
     set_trace_info()
@@ -507,7 +485,6 @@ def test_run_round_robin_group_error(loop, set_trace_info, multi_tool_model_clie
     loop.run_until_complete(_test())
 
 
-@dt_enabled
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 def test_run_round_robin_group_outside_txn(loop, multi_tool_model_client):

@@ -58,6 +58,13 @@ from newrelic.core.config import Settings, apply_config_setting, default_host
 
 __all__ = ["filter_app_factory", "initialize"]
 
+
+def trace(self, message, *args, **kws):
+    self._log(logging.TRACE, message, args, **kws)
+
+logging.TRACE = 5
+logging.addLevelName(logging.TRACE, "TRACE")
+logging.Logger.trace = trace
 _logger = logging.getLogger(__name__)
 
 DEPRECATED_MODULES = {"aioredis": datetime(2022, 2, 22, 0, 0, tzinfo=timezone.utc)}
@@ -165,6 +172,7 @@ _LOG_LEVEL = {
     "WARNING": logging.WARNING,
     "INFO": logging.INFO,
     "DEBUG": logging.DEBUG,
+    "TRACE": logging.TRACE,
 }
 
 _RECORD_SQL = {

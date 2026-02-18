@@ -12,19 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import contextvars
 import json
 import logging
 import sys
 import uuid
 
 from newrelic.api.function_trace import FunctionTrace
-from newrelic.api.time_trace import get_trace_linking_metadata
+from newrelic.api.time_trace import current_trace, get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
 from newrelic.core.config import global_settings
+from newrelic.core.context import ContextOf
 
 # Check for the presence of the autogen-core, autogen-agentchat, or autogen-ext package as they should all have the
 # same version and one or multiple could be installed
@@ -34,6 +36,10 @@ AUTOGEN_VERSION = (
     or get_package_version("autogen-ext")
 )
 
+
+# ContextVar used to propagate trace context to tool functions that may run on thread pool threads.
+# This allows nested agents created inside tools to find the parent trace.
+_nr_tool_parent_trace = contextvars.ContextVar("_nr_tool_parent_trace", default=None)
 
 RECORD_EVENTS_FAILURE_LOG_MESSAGE = "Exception occurred in Autogen instrumentation: Failed to record LLM events. Please report this issue to New Relic Support.\n%s"
 
@@ -55,6 +61,20 @@ async def wrap_from_server_params(wrapped, instance, args, kwargs):
 
 
 def wrap_on_messages_stream(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        # When a tool calls an inner agent on a different thread, NR's thread-local context is lost.
+        # The ContextVar is propagated by asyncio, so we can recover the parent trace from it.
+        parent_trace = _nr_tool_parent_trace.get(None)
+        if parent_trace:
+            with ContextOf(trace=parent_trace):
+                return _on_messages_stream_instrumented(wrapped, instance, args, kwargs)
+        return wrapped(*args, **kwargs)
+
+    return _on_messages_stream_instrumented(wrapped, instance, args, kwargs)
+
+
+def _on_messages_stream_instrumented(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
         return wrapped(*args, **kwargs)
@@ -191,6 +211,10 @@ async def wrap__execute_tool_call(wrapped, instance, args, kwargs):
     ft = FunctionTrace(name=f"{func_name}/{tool_name}", group="Llm/tool/Autogen")
     ft.__enter__()
     ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
+
+    # Store the tool's trace in a ContextVar so that nested agents created inside tool functions
+    # (which may run on thread pool threads) can find the parent trace.
+    _nr_tool_parent_trace.set(ft)
 
     try:
         return_val = await wrapped(*args, **kwargs)

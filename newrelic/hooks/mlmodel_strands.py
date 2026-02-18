@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import contextvars
 import json
 import logging
 import sys
@@ -32,6 +33,10 @@ from newrelic.core.context import ContextOf
 _logger = logging.getLogger(__name__)
 STRANDS_VERSION = get_package_version("strands-agents")
 
+# ContextVar used to propagate trace context to sync @tool functions that run on thread pool threads
+# (via asyncio.to_thread). This allows nested agents created inside sync tools to find the parent trace.
+_nr_tool_parent_trace = contextvars.ContextVar("_nr_tool_parent_trace", default=None)
+
 RECORD_EVENTS_FAILURE_LOG_MESSAGE = "Exception occurred in Strands instrumentation: Failed to record LLM events. Please report this issue to New Relic Support."
 TOOL_OUTPUT_FAILURE_LOG_MESSAGE = "Exception occurred in Strands instrumentation: Failed to record output of tool call. Please report this issue to New Relic Support."
 AGENT_EVENT_FAILURE_LOG_MESSAGE = "Exception occurred in Strands instrumentation: Failed to record agent data. Please report this issue to New Relic Support."
@@ -41,6 +46,11 @@ DECORATOR_IMPORT_FAILURE_LOG_MESSAGE = "Exception occurred in Strands instrument
 
 def wrap_agent__call__(wrapped, instance, args, kwargs):
     trace = current_trace()
+    if not trace:
+        # When a sync @tool function creates an inner agent, the tool runs on a thread pool thread
+        # (via asyncio.to_thread) where NR's thread-local context is lost. The ContextVar is propagated
+        # by asyncio.to_thread, so we can recover the parent trace from it.
+        trace = _nr_tool_parent_trace.get(None)
     if not trace:
         return wrapped(*args, **kwargs)
 
@@ -359,6 +369,11 @@ def wrap_tool_executor__stream(wrapped, instance, args, kwargs):
     ft = FunctionTrace(name=function_trace_name, group="Llm/tool/Strands")
     ft.__enter__()
     ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
+
+    # Store the tool's trace in a ContextVar so that nested agents created inside sync @tool functions
+    # (which run on thread pool threads via asyncio.to_thread) can find the parent trace.
+    _nr_tool_parent_trace.set(ft)
+
     linking_metadata = get_trace_linking_metadata()
     tool_id = str(uuid.uuid4())
 

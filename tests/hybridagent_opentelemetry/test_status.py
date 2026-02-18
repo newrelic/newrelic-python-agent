@@ -188,7 +188,12 @@ def test_set_status_with_start_span(tracer, _record_exception, _set_status_on_ex
         (StatusCode.OK, None, StatusCode.OK, None),  # OK_StatusCode, no description
         (StatusCode.OK, "I will be ignored in Status", StatusCode.OK, None),  # OK_StatusCode, description
         (StatusCode.ERROR, None, StatusCode.ERROR, None),  # Error_StatusCode, no description
-        (StatusCode.ERROR, "This is where I belong", StatusCode.ERROR, "This is where I belong"),  # Error_StatusCode, description
+        (
+            StatusCode.ERROR,
+            "This is where I belong",
+            StatusCode.ERROR,
+            "This is where I belong",
+        ),  # Error_StatusCode, description
     ],
     ids=(
         "ok_status_no_description-no_description",

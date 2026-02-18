@@ -229,3 +229,15 @@ HYBRID_AGENT_DEFAULT_INCLUDED_TRACERS_TO_NR_HOOKS = {
     "urllib": ["urllib.request", "http.client"],
     "urllib3": ["urllib3.connectionpool", "urllib3.connection", "requests.packages.urllib3.connection", "http.client"],
 }
+
+
+TEMPORARILY_DISABLED_OPENTELEMETRY_FRAMEWORKS = {
+    "boto",
+    "boto3",
+    "botocore",
+    "aws-lambda",
+    "grpc_aio_client",
+    "grpc_aio_server",
+    "grpc_client",
+    "grpc_server",
+}

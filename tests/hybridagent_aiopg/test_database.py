@@ -90,11 +90,11 @@ async def _create_pool_db():
 
 # Tests
 @pytest.mark.parametrize(
-    "db_instance_reporting,otel_traces_enabled", [(True, True), (True, False), (False, True), (False, False)]
+    "db_instance_reporting,opentelemetry_traces_enabled", [(True, True), (True, False), (False, True), (False, False)]
 )
-def test_connect(db_instance_reporting, otel_traces_enabled):
+def test_connect(db_instance_reporting, opentelemetry_traces_enabled):
     kwargs = {}
-    if otel_traces_enabled:
+    if opentelemetry_traces_enabled:
         kwargs = {
             "scoped_metrics": _enable_scoped_metrics if db_instance_reporting else _disable_scoped_metrics,
             "rollup_metrics": _enable_rollup_metrics if db_instance_reporting else _disable_rollup_metrics,
@@ -103,7 +103,7 @@ def test_connect(db_instance_reporting, otel_traces_enabled):
     @override_application_settings(
         {
             "datastore_tracer.instance_reporting.enabled": db_instance_reporting,
-            "opentelemetry.traces.enabled": otel_traces_enabled,
+            "opentelemetry.traces.enabled": opentelemetry_traces_enabled,
         }
     )
     @validate_transaction_metrics("test_database:test_connect.<locals>._test", background_task=True, **kwargs)
@@ -118,7 +118,7 @@ def test_connect(db_instance_reporting, otel_traces_enabled):
 
 
 @pytest.mark.parametrize("db_instance_reporting", (True, False))
-def test_connect_disable_otel_traces(db_instance_reporting):
+def test_connect_disable_opentelemetry_traces(db_instance_reporting):
     with pytest.raises(AssertionError):
         # This will expectedly fail when the metrics are not recorded
         @override_application_settings(
@@ -144,11 +144,11 @@ def test_connect_disable_otel_traces(db_instance_reporting):
 
 
 @pytest.mark.parametrize(
-    "db_instance_reporting,otel_traces_enabled", [(True, True), (True, False), (False, True), (False, False)]
+    "db_instance_reporting,opentelemetry_traces_enabled", [(True, True), (True, False), (False, True), (False, False)]
 )
-def test_create_pool(db_instance_reporting, otel_traces_enabled):
+def test_create_pool(db_instance_reporting, opentelemetry_traces_enabled):
     kwargs = {}
-    if otel_traces_enabled:
+    if opentelemetry_traces_enabled:
         kwargs = {
             "scoped_metrics": _enable_scoped_metrics if db_instance_reporting else _disable_scoped_metrics,
             "rollup_metrics": _enable_rollup_metrics if db_instance_reporting else _disable_rollup_metrics,
@@ -157,7 +157,7 @@ def test_create_pool(db_instance_reporting, otel_traces_enabled):
     @override_application_settings(
         {
             "datastore_tracer.instance_reporting.enabled": db_instance_reporting,
-            "opentelemetry.traces.enabled": otel_traces_enabled,
+            "opentelemetry.traces.enabled": opentelemetry_traces_enabled,
         }
     )
     @validate_transaction_metrics("test_database:test_create_pool.<locals>._test", background_task=True, **kwargs)
@@ -172,7 +172,7 @@ def test_create_pool(db_instance_reporting, otel_traces_enabled):
 
 
 @pytest.mark.parametrize("db_instance_reporting", (True, False))
-def test_create_pool_disable_otel_traces(db_instance_reporting):
+def test_create_pool_disable_opentelemetry_traces(db_instance_reporting):
     with pytest.raises(AssertionError):
         # This will expectedly fail when the metrics are not recorded
         @override_application_settings(

@@ -525,11 +525,9 @@ class Span(otel_api_trace.Span):
 
     def _graphql_attribute_mapping(self):
         if self.nr_transaction.application.settings.transaction_tracer.record_sql == "obfuscated":
-            sql_orig = self.attributes.get("query", "")
-            sql = self._obfuscate_query(sql_orig, "graphql")
-
-            if sql_orig:
-                self.attributes["query"] = sql
+            sql = self.attributes.get("query", "")
+            if sql:
+                self.attributes["query"] = self._obfuscate_query(sql, "graphql")
 
             for key in self.attributes.keys():
                 if ("graphql.arg" in key) or ("graphql.param." in key):

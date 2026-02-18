@@ -34,19 +34,19 @@ def test_trace_with_span_attributes(tracer):
     )
     @validate_span_events(
         count=1,
-        exact_intrinsics={"name": "Function/otelspan", "sampled": True},
+        exact_intrinsics={"name": "Function/opentelemetry_span", "sampled": True},
         expected_intrinsics={"priority": None, "traceId": None, "guid": None},
-        exact_users={"otel_attribute": "bar", "nr_attribute": "foo"},
+        exact_users={"opentelemetry_attribute": "bar", "nr_attribute": "foo"},
     )
     @background_task()
     def _test():
-        with tracer.start_as_current_span("otelspan", attributes={"otel_attribute": "bar"}):
+        with tracer.start_as_current_span("opentelemetry_span", attributes={"opentelemetry_attribute": "bar"}):
             add_custom_span_attribute("nr_attribute", "foo")
 
     _test()
 
 
-def test_trace_with_otel_to_newrelic(tracer):
+def test_trace_with_opentelemetry_to_newrelic(tracer):
     """
     This test adds custom attributes to the transaction and trace.
     * `add_custom_attribute` adds custom attributes to the transaction.
@@ -59,7 +59,7 @@ def test_trace_with_otel_to_newrelic(tracer):
     2. Notation for attributes:
        - NR trace attributes: "NR_trace_attribute_<context>"
        - NR span attributes: "NR_span_attribute_<context>"
-       - OTel span attributes: "otel_span_attribute_<context>"
+       - OpenTelemetry span attributes: "opentelemetry_span_attribute_<context>"
     Where <context> is either `FT` or `BG`, for FunctionTrace
     or BackgroundTask, respectively.
     """
@@ -68,15 +68,15 @@ def test_trace_with_otel_to_newrelic(tracer):
     def newrelic_function_trace():
         add_custom_attribute("NR_trace_attribute_FT", "NR trace attribute from FT")
         add_custom_span_attribute("NR_span_attribute_FT", "NR span attribute from FT")
-        otel_span = trace.get_current_span()
-        otel_span.set_attribute("otel_span_attribute_FT", "OTel span attribute from FT")
+        opentelemetry_span = trace.get_current_span()
+        opentelemetry_span.set_attribute("opentelemetry_span_attribute_FT", "OpenTelemetry span attribute from FT")
 
     @dt_enabled
     @validate_span_events(
         count=1,
         exact_intrinsics={
-            "name": "Function/test_attributes:test_trace_with_otel_to_newrelic.<locals>.newrelic_background_task",
-            "transaction.name": "OtherTransaction/Function/test_attributes:test_trace_with_otel_to_newrelic.<locals>.newrelic_background_task",
+            "name": "Function/test_attributes:test_trace_with_opentelemetry_to_newrelic.<locals>.newrelic_background_task",
+            "transaction.name": "OtherTransaction/Function/test_attributes:test_trace_with_opentelemetry_to_newrelic.<locals>.newrelic_background_task",
             "sampled": True,
         },
         exact_users={"NR_trace_attribute_FT": "NR trace attribute from FT"},
@@ -87,25 +87,25 @@ def test_trace_with_otel_to_newrelic(tracer):
         expected_intrinsics={"priority": None, "traceId": None, "guid": None},
         exact_users={
             "NR_span_attribute_BG": "NR span attribute from BG",
-            "otel_span_attribute_BG": "OTel span attribute from BG",
+            "opentelemetry_span_attribute_BG": "OpenTelemetry span attribute from BG",
         },
     )
     @validate_span_events(
         count=1,
         exact_intrinsics={
-            "name": "Function/test_attributes:test_trace_with_otel_to_newrelic.<locals>.newrelic_function_trace",
+            "name": "Function/test_attributes:test_trace_with_opentelemetry_to_newrelic.<locals>.newrelic_function_trace",
             "sampled": True,
         },
         exact_users={
             "NR_span_attribute_FT": "NR span attribute from FT",
-            "otel_span_attribute_FT": "OTel span attribute from FT",
+            "opentelemetry_span_attribute_FT": "OpenTelemetry span attribute from FT",
         },
     )
     @background_task()
     def newrelic_background_task():
-        with tracer.start_as_current_span("foo") as otel_span:
+        with tracer.start_as_current_span("foo") as opentelemetry_span:
             add_custom_span_attribute("NR_span_attribute_BG", "NR span attribute from BG")
-            otel_span.set_attribute("otel_span_attribute_BG", "OTel span attribute from BG")
+            opentelemetry_span.set_attribute("opentelemetry_span_attribute_BG", "OpenTelemetry span attribute from BG")
             newrelic_function_trace()
 
     newrelic_background_task()

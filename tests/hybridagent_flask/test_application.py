@@ -47,9 +47,9 @@ def target_application():
     # file is imported, which is too late.
 
     if not async_handler_support:
-        from _test_otel_application import _test_application
+        from _test_application import _test_application
     else:
-        from _test_otel_application_async import _test_application
+        from _test_application_async import _test_application
     return _test_application
 
 
@@ -114,7 +114,7 @@ _test_application_rollup_metrics = [
     exact_users={"library_name": "flask", "schema_url": "https://opentelemetry.io/schemas/1.11.0"},
     expected_users=["library_version"],
 )
-def test_otel_application_index():
+def test_opentelemetry_application_index():
     application = target_application()
     response = application.get("/index")
     response.mustcontain("INDEX RESPONSE")
@@ -129,7 +129,7 @@ def test_otel_application_index():
     expected_intrinsics=_expected_root_intrinsics,
     unexpected_intrinsics=_unexpected_root_intrinsics,
 )
-def test_otel_application_async():
+def test_opentelemetry_application_async():
     application = target_application()
     response = application.get("/async")
     response.mustcontain("ASYNC RESPONSE")
@@ -143,7 +143,7 @@ def test_otel_application_async():
     expected_intrinsics=_expected_root_intrinsics,
     unexpected_intrinsics=_unexpected_root_intrinsics,
 )
-def test_otel_application_endpoint():
+def test_opentelemetry_application_endpoint():
     application = target_application()
     response = application.get("/endpoint")
     response.mustcontain("ENDPOINT RESPONSE")
@@ -168,7 +168,7 @@ def test_otel_application_endpoint():
     expected_intrinsics=_expected_root_intrinsics,
     unexpected_intrinsics=_unexpected_root_intrinsics,
 )
-def test_otel_application_error():
+def test_opentelemetry_application_error():
     application = target_application()
     application.get("/error", status=500, expect_errors=True)
 
@@ -181,7 +181,7 @@ def test_otel_application_error():
     expected_intrinsics=_expected_root_intrinsics,
     unexpected_intrinsics=_unexpected_root_intrinsics,
 )
-def test_otel_application_abort_404():
+def test_opentelemetry_application_abort_404():
     application = target_application()
     application.get("/abort_404", status=404)
 

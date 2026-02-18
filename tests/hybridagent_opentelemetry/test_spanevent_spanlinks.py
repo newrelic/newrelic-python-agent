@@ -27,21 +27,21 @@ from newrelic.api.message_trace import MessageTrace
 
 @dt_enabled
 @validate_spanlink_or_spanevent_events(
-    exact_intrinsics={"name": "otelevent2", "type": "SpanEvent"},
+    exact_intrinsics={"name": "opentelemetry_event2", "type": "SpanEvent"},
     expected_intrinsics=["timestamp", "span.id", "trace.id", "name"],
     exact_users={"key99": "value99", "universe": 42},
 )
 @validate_spanlink_or_spanevent_events(
-    exact_intrinsics={"name": "otelevent1", "type": "SpanEvent"},
+    exact_intrinsics={"name": "opentelemetry_event1", "type": "SpanEvent"},
     expected_intrinsics=["timestamp", "span.id", "trace.id", "name"],
     exact_users={"key1": "value1", "key2": 42},
 )
 def test_spanevent_events(tracer):
     @background_task()
     def _test():
-        with tracer.start_as_current_span("otelspan") as otel_span:
-            otel_span.add_event("otelevent1", attributes={"key1": "value1", "key2": 42})
-            otel_span.add_event("otelevent2", attributes={"key99": "value99", "universe": 42})
+        with tracer.start_as_current_span("opentelemetry_span") as opentelemetry_span:
+            opentelemetry_span.add_event("opentelemetry_event1", attributes={"key1": "value1", "key2": 42})
+            opentelemetry_span.add_event("opentelemetry_event2", attributes={"key99": "value99", "universe": 42})
 
     _test()
 
@@ -51,8 +51,8 @@ def test_spanevent_events(tracer):
 def test_spanevent_events_missing_name(tracer):
     @background_task()
     def _test():
-        with tracer.start_as_current_span("otelspan") as otel_span:
-            otel_span.add_event(name=None, attributes={"key1": "value1", "key2": 42})
+        with tracer.start_as_current_span("opentelemetry_span") as opentelemetry_span:
+            opentelemetry_span.add_event(name=None, attributes={"key1": "value1", "key2": 42})
 
     _test()
 
@@ -79,7 +79,7 @@ def test_spanlink_events_upon_creation(tracer):
     @background_task()
     def _test():
         with tracer.start_as_current_span(
-            "otelspan", links=[trace.Link(linked_span_context, attributes={"key1": "value1", "key2": 42})]
+            "opentelemetry_span", links=[trace.Link(linked_span_context, attributes={"key1": "value1", "key2": 42})]
         ):
             pass
 
@@ -107,8 +107,8 @@ def test_spanlink_events_within_span(tracer):
 
     @background_task()
     def _test():
-        with tracer.start_as_current_span("otelspan") as otel_span:
-            otel_span.add_link(linked_span_context, attributes={"key1": "value1", "key2": 42})
+        with tracer.start_as_current_span("opentelemetry_span") as opentelemetry_span:
+            opentelemetry_span.add_link(linked_span_context, attributes={"key1": "value1", "key2": 42})
 
     _test()
 
@@ -126,18 +126,18 @@ def test_spanlink_events_with_invalid_span_context(tracer, trace_id, span_id, sp
 
     @background_task()
     def _test():
-        with tracer.start_as_current_span("otelspan") as otel_span:
+        with tracer.start_as_current_span("opentelemetry_span") as opentelemetry_span:
             if span_context:
-                otel_span.add_link(linked_span_context, attributes={"key1": "value1", "key2": 42})
+                opentelemetry_span.add_link(linked_span_context, attributes={"key1": "value1", "key2": 42})
             else:
-                otel_span.add_link(None, attributes={"key1": "value1", "key2": 42})
+                opentelemetry_span.add_link(None, attributes={"key1": "value1", "key2": 42})
 
     _test()
 
 
 @dt_enabled
 @validate_spanlink_or_spanevent_events(
-    exact_intrinsics={"type": "SpanEvent", "name": "otelevent"},
+    exact_intrinsics={"type": "SpanEvent", "name": "opentelemetry_event"},
     expected_intrinsics=["timestamp", "span.id", "trace.id", "name"],
     exact_users={"key99": "value99", "universe": 42},
 )
@@ -162,9 +162,9 @@ def test_spanlink_and_spanevent_events(tracer):
     @background_task()
     def _test():
         with tracer.start_as_current_span(
-            "otelspan", links=[trace.Link(linked_span_context, attributes={"key1": "value1", "key2": 42})]
-        ) as otel_span:
-            otel_span.add_event("otelevent", attributes={"key99": "value99", "universe": 42})
+            "opentelemetry_span", links=[trace.Link(linked_span_context, attributes={"key1": "value1", "key2": 42})]
+        ) as opentelemetry_span:
+            opentelemetry_span.add_event("opentelemetry_event", attributes={"key99": "value99", "universe": 42})
 
     _test()
 
@@ -172,7 +172,7 @@ def test_spanlink_and_spanevent_events(tracer):
 @dt_enabled
 @validate_spanlink_or_spanevent_events(
     count=100,
-    exact_intrinsics={"name": "otelevent", "type": "SpanEvent"},
+    exact_intrinsics={"name": "opentelemetry_event", "type": "SpanEvent"},
     expected_intrinsics=["timestamp", "span.id", "trace.id", "name"],
     exact_users={"key1": "value1", "key2": 42},
 )
@@ -184,9 +184,9 @@ def test_spanlink_and_spanevent_events(tracer):
 def test_spanevent_events_over_limit(tracer):
     @background_task()
     def _test():
-        with tracer.start_as_current_span("otelspan") as otel_span:
+        with tracer.start_as_current_span("opentelemetry_span") as opentelemetry_span:
             for _ in range(103):
-                otel_span.add_event("otelevent", attributes={"key1": "value1", "key2": 42})
+                opentelemetry_span.add_event("opentelemetry_event", attributes={"key1": "value1", "key2": 42})
 
     _test()
 
@@ -206,7 +206,7 @@ def test_spanevent_events_over_limit(tracer):
 def test_spanlink_events_over_limit(tracer):
     @background_task()
     def _test():
-        with tracer.start_as_current_span("otelspan") as otel_span:
+        with tracer.start_as_current_span("opentelemetry_span") as opentelemetry_span:
             for incrementer in range(103):
                 linked_span_context = trace.SpanContext(
                     trace_id=0x1234567890ABCDEF1234567890ABCDEF + incrementer,
@@ -215,7 +215,7 @@ def test_spanlink_events_over_limit(tracer):
                     trace_flags=0x01,
                     trace_state=trace.TraceState(),
                 )
-                otel_span.add_link(linked_span_context, attributes={"key1": "value1", "key2": 42})
+                opentelemetry_span.add_link(linked_span_context, attributes={"key1": "value1", "key2": 42})
 
     _test()
 
@@ -243,7 +243,7 @@ def test_spanlink_events_over_limit(tracer):
     exact_users={"key1": "value1", "key2": 42},
 )
 @validate_spanlink_or_spanevent_events(
-    exact_intrinsics={"name": "otelevent", "type": "SpanEvent"},
+    exact_intrinsics={"name": "opentelemetry_event", "type": "SpanEvent"},
     expected_intrinsics=["timestamp", "span.id", "trace.id", "name"],
     exact_users={"key1": "value1", "key2": 42},
 )
@@ -259,10 +259,10 @@ def test_spanevent_and_spanlinks_inside_other_trace_types(tracer, NR_trace_class
     @background_task()
     def _test():
         with NR_trace_class(**kwargs) as nr_trace:
-            otel_span = trace.get_current_span()
-            assert int(nr_trace.guid, 16) == otel_span.get_span_context().span_id
+            opentelemetry_span = trace.get_current_span()
+            assert int(nr_trace.guid, 16) == opentelemetry_span.get_span_context().span_id
 
-            otel_span.add_event("otelevent", attributes={"key1": "value1", "key2": 42})
-            otel_span.add_link(linked_span_context, attributes={"key1": "value1", "key2": 42})
+            opentelemetry_span.add_event("opentelemetry_event", attributes={"key1": "value1", "key2": 42})
+            opentelemetry_span.add_link(linked_span_context, attributes={"key1": "value1", "key2": 42})
 
     _test()

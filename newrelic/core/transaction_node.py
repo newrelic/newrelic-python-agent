@@ -668,6 +668,6 @@ class TransactionNode(_TransactionNode):
         # granularity tracing.
         # Also record the number of span ids dropped (fragmentation) in compact mode.
         if self.partial_granularity_sampled:
-            self.instrumented = ct_exit_spans["instrumented"]
-            self.kept = ct_exit_spans["kept"]
-            self.dropped_ids = ct_exit_spans["dropped_ids"]
+            self.spans_instrumented = ct_exit_spans["instrumented"]
+            self.spans_kept = ct_exit_spans["kept"]
+            self.partial_granularity_dropped_ids = ct_exit_spans["dropped_ids"]

@@ -1207,19 +1207,19 @@ class StatsEngine:
                     self.record_custom_metric(
                         f"Supportability/Python/PartialGranularity/{partial_gran_type}", {"count": 1}
                     )
-                    instrumented = getattr(transaction, "instrumented", 0)
+                    instrumented = getattr(transaction, "spans_instrumented", 0)
                     if instrumented:
                         self.record_custom_metric(
                             f"Supportability/DistributedTrace/PartialGranularity/{partial_gran_type}/Span/Instrumented",
                             {"count": instrumented},
                         )
-                    kept = getattr(transaction, "kept", 0)
+                    kept = getattr(transaction, "spans_kept", 0)
                     if instrumented:
                         self.record_custom_metric(
                             f"Supportability/DistributedTrace/PartialGranularity/{partial_gran_type}/Span/Kept",
                             {"count": kept},
                         )
-                    dropped_ids = getattr(transaction, "dropped_ids", 0)
+                    dropped_ids = getattr(transaction, "partial_granularity_dropped_ids", 0)
                     if dropped_ids:
                         self.record_custom_metric(
                             "Supportability/Python/PartialGranularity/NrIds/Dropped", {"count": dropped_ids}

@@ -145,44 +145,50 @@ def test_set_status_with_start_span(tracer, _record_exception, _set_status_on_ex
 # Only StatusCode.ERROR should have a description, so if StatusCode.OK is passed
 # in with a description, the description will be ignored within the Status object.
 @pytest.mark.parametrize(
-    "status_to_set,description,expected_status_code",
+    "status_to_set,description,expected_status_code,expected_description",
     [
-        (Status(StatusCode.OK), None, StatusCode.OK),  # OK_Status_no_description, no description
+        (Status(StatusCode.OK), None, StatusCode.OK, None),  # OK_Status_no_description, no description
         (
             Status(StatusCode.OK),
             "I will be ignored in set_status",
             StatusCode.OK,
+            None,
         ),  # OK_Status_no_description, description
         (
             Status(StatusCode.OK, "I will be ignored in Status"),
             None,
             StatusCode.OK,
+            None,
         ),  # OK_Status_with_description, no description
         (
             Status(StatusCode.OK, "I will be ignored in Status"),
             "I will be ignored in set_status",
             StatusCode.OK,
+            None,
         ),  # OK_Status_with_description, description
-        (Status(StatusCode.ERROR), None, StatusCode.ERROR),  # Error_Status_no_description, no description
+        (Status(StatusCode.ERROR), None, StatusCode.ERROR, None),  # Error_Status_no_description, no description
         (
             Status(StatusCode.ERROR),
             "I will be ignored in set_status",
             StatusCode.ERROR,
+            None,
         ),  # Error_Status_no_description, description
         (
             Status(StatusCode.ERROR, "This is where I belong"),
             None,
             StatusCode.ERROR,
+            "This is where I belong",
         ),  # Error_Status_with_description, no description
         (
             Status(StatusCode.ERROR, "This is where I belong"),
             "I will be ignored in set_status",
             StatusCode.ERROR,
+            "This is where I belong",
         ),  # Error_Status_with_description, description
-        (StatusCode.OK, None, StatusCode.OK),  # OK_StatusCode, no description
-        (StatusCode.OK, "I will be ignored in Status", StatusCode.OK),  # OK_StatusCode, description
-        (StatusCode.ERROR, None, StatusCode.ERROR),  # Error_StatusCode, no description
-        (StatusCode.ERROR, "This is where I belong", StatusCode.ERROR),  # Error_StatusCode, description
+        (StatusCode.OK, None, StatusCode.OK, None),  # OK_StatusCode, no description
+        (StatusCode.OK, "I will be ignored in Status", StatusCode.OK, None),  # OK_StatusCode, description
+        (StatusCode.ERROR, None, StatusCode.ERROR, None),  # Error_StatusCode, no description
+        (StatusCode.ERROR, "This is where I belong", StatusCode.ERROR, "This is where I belong"),  # Error_StatusCode, description
     ],
     ids=(
         "ok_status_no_description-no_description",
@@ -199,7 +205,7 @@ def test_set_status_with_start_span(tracer, _record_exception, _set_status_on_ex
         "error_status_code-description",
     ),
 )
-def test_status_setting(tracer, status_to_set, description, expected_status_code):
+def test_status_setting(tracer, status_to_set, description, expected_status_code, expected_description):
     @background_task()
     def _test():
         with tracer.start_as_current_span(name="TestSpan") as span:
@@ -214,6 +220,6 @@ def test_status_setting(tracer, status_to_set, description, expected_status_code
             # If status code is ERROR, make sure description
             # is set correctly (if provided):
             if span.status.status_code == StatusCode.ERROR:
-                assert span.status.description in [None, "This is where I belong"]
+                assert span.status.description is expected_description
 
     _test()

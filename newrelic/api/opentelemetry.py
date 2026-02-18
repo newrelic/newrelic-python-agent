@@ -42,7 +42,7 @@ from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.message_trace import MessageTrace
 from newrelic.api.message_transaction import MessageTransaction
-from newrelic.api.time_trace import current_trace, notice_error, add_custom_span_attribute
+from newrelic.api.time_trace import add_custom_span_attribute, current_trace, notice_error
 from newrelic.api.transaction import Sentinel, current_transaction
 from newrelic.api.web_transaction import WebTransaction, WSGIWebTransaction
 from newrelic.core.attribute import sanitize

@@ -219,19 +219,16 @@ class GenericNodeMixin:
 
         # If the span is an exit span but span compression (compact) is enabled,
         # we need to check for uniqueness before returning it.
-        # Combine all the entity relationship attr values into a string to be
+        # Combine all the entity relationship attr values into a frozenset of tuples to be
         # used as the hash to check for uniqueness.
-        span_attrs = "".join(
-            [str(a_minimized_attrs[key]) for key in exit_span_attrs_present if key in a_minimized_attrs]
-        )
-        new_exit_span = span_attrs not in ct_exit_spans
+        span_attrs_hash = hash(frozenset((key, a_minimized_attrs[key]) for key in exit_span_attrs_present if key in a_minimized_attrs))
         # If this is a new exit span, add it to the known ct_exit_spans and
         # return it.
-        if new_exit_span:
+        if span_attrs_hash not in ct_exit_spans:
             # nr.ids is the list of span guids that share this unqiue exit span.
             i_attrs["nr.ids"] = []
             i_attrs["nr.durations"] = self.duration
-            ct_exit_spans[span_attrs] = [i_attrs, a_minimized_attrs]
+            ct_exit_spans[span_attrs_hash] = [i_attrs, a_minimized_attrs]
             ct_exit_spans["kept"] += 1
             # Only keep entity-synthesis, and error agent attributes, and intrinsics.
             return [i_attrs, {}, a_minimized_attrs]
@@ -239,22 +236,23 @@ class GenericNodeMixin:
         # (last occurring error takes precedence), add it's guid to the list
         # of ids on the seen span, compute the new duration & start time, and
         # return None.
-        ct_exit_spans[span_attrs][1].update(
+        exit_span = ct_exit_spans[span_attrs_hash]
+        exit_span[1].update(
             attr_class(
                 {key: a_minimized_attrs[key] for key in exit_span_error_attrs_present if key in a_minimized_attrs}
             )
         )
         # Max size for `nr.ids` = 1024. Max length = 63 (each span id is 16 bytes + 8 bytes for list type).
-        if len(ct_exit_spans[span_attrs][0]["nr.ids"]) < 63:
-            ct_exit_spans[span_attrs][0]["nr.ids"].append(self.guid)
+        if len(exit_span[0]["nr.ids"]) < 63:
+            exit_span[0]["nr.ids"].append(self.guid)
         else:
             ct_exit_spans["dropped_ids"] += 1
 
         # Compute the new start and end time for all compressed spans and use
         # that to set the duration for all compressed spans.
-        current_start_time = ct_exit_spans[span_attrs][0]["timestamp"]
+        current_start_time = exit_span[0]["timestamp"]
         current_end_time = (
-            ct_exit_spans[span_attrs][0]["timestamp"] / 1000 + ct_exit_spans[span_attrs][0]["nr.durations"]
+            exit_span[0]["timestamp"] / 1000 + exit_span[0]["nr.durations"]
         )
         new_start_time = i_attrs["timestamp"]
         new_end_time = i_attrs["timestamp"] / 1000 + i_attrs["duration"]
@@ -262,14 +260,14 @@ class GenericNodeMixin:
         # If the new span starts after the old span's end time or the new span
         # ends before the current span starts; add the durations.
         if current_end_time < new_start_time / 1000 or new_end_time < current_start_time / 1000:
-            set_duration = ct_exit_spans[span_attrs][0]["nr.durations"] + i_attrs["duration"]
+            set_duration = exit_span[0]["nr.durations"] + i_attrs["duration"]
         # Otherwise, if the new and old span's overlap in time, use the newest
         # end time and subtract the start time from it to calculate the new
         # duration.
         else:
             set_duration = max(current_end_time, new_end_time) - set_start_time / 1000
-        ct_exit_spans[span_attrs][0]["timestamp"] = set_start_time
-        ct_exit_spans[span_attrs][0]["nr.durations"] = set_duration
+        exit_span[0]["timestamp"] = set_start_time
+        exit_span[0]["nr.durations"] = set_duration
 
     PARTIAL_GRANULARITY_SPAN_EVENT_METHODS = {  # noqa: RUF012
         "reduced": _span_event_partial_granularity_reduced,
@@ -288,7 +286,7 @@ class GenericNodeMixin:
     ):
         if partial_granularity_sampled:
             partial_type = settings.distributed_tracing.sampler.partial_granularity.type
-            return self.PARTIAL_GRANULARITY_SPAN_EVENT_METHODS.get(partial_type, "essential")(
+            return self.PARTIAL_GRANULARITY_SPAN_EVENT_METHODS.get(partial_type, PARTIAL_GRANULARITY_SPAN_EVENT_METHODS["essential"])(
                 self=self,
                 settings=settings,
                 base_attrs=base_attrs,
@@ -323,7 +321,7 @@ class GenericNodeMixin:
             ct_exit_spans=ct_exit_spans,
         )
         parent_id = parent_guid
-        if span:  # span will be None if the span is an inprocess span or repeated exit span.
+        if span:  # In partial granularity tracing, span will be None if the span is an inprocess span or repeated exit span.
             yield span
             # Compressed spans are always reparented onto the entry span.
             if settings.distributed_tracing.sampler.partial_granularity.type != "compact" or span[0].get(

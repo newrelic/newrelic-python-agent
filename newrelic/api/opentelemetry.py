@@ -14,16 +14,26 @@
 
 import json
 import logging
+import os
 import sys
 import time
 from contextlib import contextmanager
 
-from opentelemetry import trace as otel_api_trace
-from opentelemetry.baggage.propagation import W3CBaggagePropagator
-from opentelemetry.propagate import set_global_textmap
-from opentelemetry.propagators.composite import CompositePropagator
-from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
-from opentelemetry.trace.status import Status, StatusCode
+try:
+    from opentelemetry import trace as otel_api_trace
+    from opentelemetry.baggage.propagation import W3CBaggagePropagator
+    from opentelemetry.propagate import set_global_textmap
+    from opentelemetry.propagators.composite import CompositePropagator
+    from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
+    from opentelemetry.trace.status import Status, StatusCode
+except ImportError:
+    otel_api_trace = None
+    W3CBaggagePropagator = None
+    set_global_textmap = None
+    CompositePropagator = None
+    TraceContextTextMapPropagator = None
+    Status = None
+    StatusCode = None
 
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import BackgroundTask
@@ -45,20 +55,6 @@ from newrelic.core.database_utils import (
 from newrelic.core.otlp_utils import create_resource
 
 _logger = logging.getLogger(__name__)
-
-
-def retry_application_activation(application, retries=10):
-    count = 1
-    while (not application.active) and count < retries + 1:
-        # Force application registration if not already active
-        activation_wait = count * 0.5
-        application.activate()
-        _logger.debug("Attempt #%s to active application.  Waiting for %s seconds.", count, activation_wait)
-        time.sleep(activation_wait)
-        count += 1
-
-    if not application.active:
-        raise RuntimeError(f"Failed to activate application after {count} retries")
 
 
 class NRTraceContextPropagator(TraceContextTextMapPropagator):
@@ -96,12 +92,16 @@ class NRTraceContextPropagator(TraceContextTextMapPropagator):
 
 
 # Context and Context Propagator Setup
-otel_context_propagator = CompositePropagator(propagators=[NRTraceContextPropagator(), W3CBaggagePropagator()])
-
-set_global_textmap(otel_context_propagator)
+try:
+    opentelemetry_context_propagator = CompositePropagator(
+        propagators=[NRTraceContextPropagator(), W3CBaggagePropagator()]
+    )
+    set_global_textmap(opentelemetry_context_propagator)
+except:
+    pass
 
 # ----------------------------------------------
-# Custom OTel Spans and Traces
+# Custom OpenTelemetry Spans and Traces
 # ----------------------------------------------
 
 
@@ -124,7 +124,7 @@ class Span(otel_api_trace.Span):
         **kwargs,
     ):
         self.name = name
-        self.otel_parent = parent
+        self.opentelemetry_parent = parent
         self.attributes = attributes or {}
         self.kind = kind
         self.nr_transaction = (
@@ -141,16 +141,16 @@ class Span(otel_api_trace.Span):
         self.nr_parent = None
         current_nr_trace = current_trace()
         if (
-            not self.otel_parent
-            or (self.otel_parent and self.otel_parent.span_id == int(current_nr_trace.guid, 16))
-            or (self.otel_parent and isinstance(current_nr_trace, Sentinel))
+            not self.opentelemetry_parent
+            or (self.opentelemetry_parent and self.opentelemetry_parent.span_id == int(current_nr_trace.guid, 16))
+            or (self.opentelemetry_parent and isinstance(current_nr_trace, Sentinel))
         ):
             # Expected to come here if one of three scenarios have occured:
             # 1. `start_as_current_span` was used.
             # 2. `start_span` was used and the current span was explicitly set
             #    to the newly created one.
             # 3. Only a Sentinel Trace exists so far while still having a
-            #    remote parent. From OTel's end, this will be represented
+            #    remote parent. From OpenTelemetry's end, this will be represented
             #    as a `NonRecordingSpan` (and be seen as `None` at this
             #    point). This covers cases where span is remote.
             self.nr_parent = current_nr_trace
@@ -159,14 +159,14 @@ class Span(otel_api_trace.Span):
             # log an error and not create a New Relic trace.
             _logger.error(
                 "OpenTelemetry span (%s) and NR trace (%s) do not match nor correspond to a remote span. Open Telemetry span will not be reported to New Relic. Please report this problem to New Relic.",
-                self.otel_parent,
+                self.opentelemetry_parent,
                 current_nr_trace,  # NR parent trace
             )
             return
 
         if not self.create_nr_trace:
-            # Do not create a New Relic trace for this OTel span.
-            # While this OTel span exists it will not be explicitly
+            # Do not create a New Relic trace for this OpenTelemetry span.
+            # While this OpenTelemetry span exists it will not be explicitly
             # translated to a NR trace.  This may occur during the
             # creation of a Transaction, which will create the root
             # span.  This may also occur during special cases, such
@@ -231,7 +231,7 @@ class Span(otel_api_trace.Span):
         """
         Remote span denotes if propagated from a remote parent
         """
-        return bool(self.otel_parent and self.otel_parent.is_remote)
+        return bool(self.opentelemetry_parent and self.opentelemetry_parent.is_remote)
 
     def get_span_context(self):
         if not getattr(self, "nr_trace", False):
@@ -252,15 +252,15 @@ class Span(otel_api_trace.Span):
         for key, value in attributes.items():
             self.set_attribute(key, value)
 
-    def _set_attributes_in_nr(self, otel_attributes=None):
-        if not otel_attributes or not getattr(self, "nr_trace", None):
+    def _set_attributes_in_nr(self, opentelemetry_attributes=None):
+        if not opentelemetry_attributes or not getattr(self, "nr_trace", None):
             return
 
         # If these attributes already exist in NR's agent attributes,
-        # keep the attributes in the OTel span, but do not add them
+        # keep the attributes in the OpenTelemetry span, but do not add them
         # to NR's user attributes to avoid sending the same data
         # multiple times.
-        for key, value in otel_attributes.items():
+        for key, value in opentelemetry_attributes.items():
             if key not in self.nr_trace.agent_attributes:
                 self.nr_trace.add_custom_attribute(key, value)
 
@@ -287,7 +287,7 @@ class Span(otel_api_trace.Span):
     def add_link(self, context=None, attributes=None, timestamp=None):
         """Add a link to another span.
 
-        NOTE: `timestamp` is not an OTel specific value.  This is
+        NOTE: `timestamp` is not an OpenTelemetry specific value.  This is
         a Hybrid Agent specific argument that allows us to set the
         time of the link based on when the NR trace was created
         (if the link was passed in during the span's creation), or
@@ -406,12 +406,12 @@ class Span(otel_api_trace.Span):
     def _messagequeue_attribute_mapping(self):
         host = self.attributes.get("net.peer.name") or self.attributes.get("server.address")
         port = self.attributes.get("net.peer.port") or self.attributes.get("server.port")
-        name = self.name.split(maxsplit=1)[0]  # OTel's format for this is "name operation"
+        name = self.name.split(maxsplit=1)[0]  # OpenTelemetry's format for this is "name operation"
 
         # Logic for Pika/RabbitMQ
         span_obj_attrs = {
             "library": self.attributes.get("messaging.system"),
-            "destination_name": name,  # OTel's format for this is "name operation"
+            "destination_name": name,  # OpenTelemetry's format for this is "name operation"
         }
 
         if span_obj_attrs["library"] == "rabbitmq":
@@ -431,7 +431,7 @@ class Span(otel_api_trace.Span):
                     "destination_type": "Topic",
                     "destination_name": name
                     if (name != "unknown")
-                    else "Default",  # OTel's format for this is "name operation"
+                    else "Default",  # OpenTelemetry's format for this is "name operation"
                 }
             )
             if isinstance(self.nr_transaction, MessageTransaction):
@@ -594,7 +594,7 @@ class Span(otel_api_trace.Span):
         if self.attributes.get("component") and self.attributes.get("component").lower() == "graphql":
             self._graphql_attribute_mapping()
 
-        # Add OTel attributes as custom NR trace attributes
+        # Add OpenTelemetry attributes as custom NR trace attributes
         self._set_attributes_in_nr(self.attributes)
 
         error = sys.exc_info()
@@ -721,12 +721,14 @@ class Tracer(otel_api_trace.Tracer):
 
         if not self.nr_application.active:
             # Force application registration if not already active
-            retry_application_activation(self.nr_application)
+            self.nr_application.activate()
 
         self._record_exception = record_exception
         self.set_status_on_exception = set_status_on_exception
 
-        if not self.nr_application.settings.opentelemetry.enabled:
+        if not (
+            self.nr_application.settings and self.nr_application.settings.opentelemetry.enabled
+        ) and not os.environ.get("NEW_RELIC_OPENTELEMETRY_ENABLED"):
             return otel_api_trace.INVALID_SPAN
 
         # Retrieve parent span

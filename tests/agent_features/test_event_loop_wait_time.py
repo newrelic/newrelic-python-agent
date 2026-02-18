@@ -29,6 +29,7 @@ from newrelic.core.trace_cache import trace_cache
 
 @pytest.fixture
 def event_loop():
+    # Redefined fixture with function scope instead of session.
     from asyncio import new_event_loop, set_event_loop
 
     loop = new_event_loop()

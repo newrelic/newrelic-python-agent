@@ -21,6 +21,7 @@ import uuid
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
+from newrelic.common.llm_utils import AsyncGeneratorProxy
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
@@ -152,9 +153,8 @@ def _on_messages_stream_instrumented(wrapped, instance, args, kwargs):
     on_messages_stream returns an AsyncGenerator. When called from on_messages
     (the run() path), the agent FT is already created by wrap_on_messages, so
     we skip creating a duplicate here. When called directly (the run_stream()
-    path), we create the agent FT with immediate exit since async generators
-    cannot reliably keep the FT open (callers exit the loop early without
-    closing the generator).
+    path), the agent FT stays open and is exited when the generator finishes
+    via AsyncGeneratorProxy callbacks, keeping tools as children of the agent.
     """
     transaction = current_transaction()
     if not transaction:
@@ -180,10 +180,6 @@ def _on_messages_stream_instrumented(wrapped, instance, args, kwargs):
 
     agentic_subcomponent_data = {"type": "APM-AI_AGENT", "name": agent_name}
 
-    # on_messages_stream returns an AsyncGenerator. The FT is entered and exited
-    # immediately around the sync call to create the generator. AutoGen's callers
-    # exit the async for loop early via return without closing the generator,
-    # which would leave an open FT on the trace stack.
     ft = FunctionTrace(name=function_trace_name, group="Llm/agent/Autogen")
     ft.__enter__()
     ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
@@ -198,13 +194,86 @@ def _on_messages_stream_instrumented(wrapped, instance, args, kwargs):
         transaction.record_custom_event("LlmAgent", agent_event_dict)
         raise
 
-    ft.__exit__(None, None, None)
+    # Wrap the async generator with a proxy that keeps the agent FT open during
+    # iteration. The FT is exited when the generator finishes (StopAsyncIteration)
+    # or encounters an error. This ensures tool FTs created during iteration are
+    # children of the agent FT, not siblings.
+    proxied_return_val = _AutogenAsyncGeneratorProxy(
+        return_val, _record_stream_agent_event, _handle_stream_agent_error
+    )
+    proxied_return_val._nr_ft = ft
+    proxied_return_val._nr_agent_name = agent_name
+    proxied_return_val._nr_agent_id = agent_id
 
-    agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
-    agent_event_dict["duration"] = ft.duration * 1000
-    transaction.record_custom_event("LlmAgent", agent_event_dict)
+    return proxied_return_val
 
-    return return_val
+
+class _AutogenAsyncGeneratorProxy(AsyncGeneratorProxy):
+    """AsyncGeneratorProxy subclass that also exits the agent FT on aclose() and __del__.
+
+    When the stream is fully consumed, the base class fires the
+    StopAsyncIteration callback which exits the FT.  When the user
+    calls aclose() explicitly, the override below exits the FT.
+
+    When the user breaks out of an outer ``async for`` (e.g. run_stream()),
+    Python throws GeneratorExit into the outer generator, but the inner
+    async generator's aclose() cannot be awaited in that context.  In
+    CPython, once the outer generator frame is torn down the proxy's
+    reference count drops to zero and __del__ fires synchronously,
+    giving us a last-resort opportunity to exit the agent FT.
+    """
+
+    async def aclose(self):
+        try:
+            return await self.__wrapped__.aclose()
+        finally:
+            _exit_stream_agent_ft(self)
+
+    def __del__(self):
+        _exit_stream_agent_ft(self)
+
+
+def _exit_stream_agent_ft(proxy, error=False):
+    """Exit the agent FT stored on the proxy and record the LlmAgent event.
+
+    Guards against double-exit: if the FT was already exited (e.g. by
+    StopAsyncIteration firing before aclose), this is a no-op.
+    """
+    ft = getattr(proxy, "_nr_ft", None)
+    if not ft or ft.exited:
+        return
+
+    agent_name = getattr(proxy, "_nr_agent_name", "agent")
+    agent_id = getattr(proxy, "_nr_agent_id", None)
+
+    if error:
+        ft.notice_error(attributes={"agent_id": agent_id})
+        ft.__exit__(*sys.exc_info())
+    else:
+        ft.__exit__(None, None, None)
+
+    transaction = current_transaction()
+    if not transaction:
+        return
+
+    try:
+        agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
+        agent_event_dict["duration"] = ft.duration * 1000
+        if error:
+            agent_event_dict["error"] = True
+        transaction.record_custom_event("LlmAgent", agent_event_dict)
+    except Exception:
+        _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
+
+
+def _record_stream_agent_event(proxy, _transaction):
+    """Callback for AsyncGeneratorProxy when the stream finishes normally (StopAsyncIteration)."""
+    _exit_stream_agent_ft(proxy, error=False)
+
+
+def _handle_stream_agent_error(proxy, _transaction):
+    """Callback for AsyncGeneratorProxy when the stream encounters an error."""
+    _exit_stream_agent_ft(proxy, error=True)
 
 
 def _get_llm_metadata(transaction):

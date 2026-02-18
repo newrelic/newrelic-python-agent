@@ -645,7 +645,7 @@ class Transaction:
             trace_id=self.trace_id,
             loop_time=self._loop_time,
             root=root_node,
-            partial_granularity_sampled=hasattr(self, "partial_granularity_sampled"),
+            partial_granularity_sampled=getattr(self, "partial_granularity_sampled", False),
         )
 
         # Clear settings as we are all done and don't need it

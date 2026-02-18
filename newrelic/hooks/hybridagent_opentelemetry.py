@@ -15,7 +15,7 @@
 import os
 
 from newrelic.api.application import application_instance
-from newrelic.api.time_trace import add_custom_span_attribute, current_trace
+from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.signature import bind_args
@@ -162,25 +162,7 @@ def wrap_get_current_span(wrapped, instance, args, kwargs):
 
     from opentelemetry import trace as otel_api_trace
 
-    from newrelic.api.opentelemetry import Span as HybridSpan
-
-    class LazySpan(otel_api_trace.NonRecordingSpan, HybridSpan):
-        def __init__(self, context):
-            super().__init__(context)
-            self.nr_trace = trace
-
-        def set_attribute(self, key, value):
-            add_custom_span_attribute(key, value)
-
-        def set_attributes(self, attributes):
-            for key, value in attributes.items():
-                add_custom_span_attribute(key, value)
-
-        def add_event(self, name, attributes=None, timestamp=None):
-            return HybridSpan.add_event(self, name, attributes, timestamp)
-
-        def add_link(self, span_context, attributes=None):
-            return HybridSpan.add_link(self, span_context, attributes)
+    from newrelic.api.opentelemetry import LazySpan
 
     span_context = otel_api_trace.SpanContext(
         trace_id=int(transaction.trace_id, 16),
@@ -190,7 +172,7 @@ def wrap_get_current_span(wrapped, instance, args, kwargs):
         trace_state=otel_api_trace.TraceState(),
     )
 
-    return LazySpan(span_context)
+    return LazySpan(span_context, trace)
 
 
 def wrap_start_internal_or_server_span(wrapped, instance, args, kwargs):

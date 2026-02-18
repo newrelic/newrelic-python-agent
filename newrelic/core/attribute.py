@@ -108,6 +108,7 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = {
     "response.status",
     "server.address",
     "server.port",
+    "subcomponent",
     "zeebe.client.bpmnProcessId",
     "zeebe.client.messageName",
     "zeebe.client.correlationKey",

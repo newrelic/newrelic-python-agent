@@ -42,7 +42,7 @@ from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.message_trace import MessageTrace
 from newrelic.api.message_transaction import MessageTransaction
-from newrelic.api.time_trace import current_trace, notice_error
+from newrelic.api.time_trace import add_custom_span_attribute, current_trace, notice_error
 from newrelic.api.transaction import Sentinel, current_transaction
 from newrelic.api.web_transaction import WebTransaction, WSGIWebTransaction
 from newrelic.core.attribute import sanitize
@@ -624,6 +624,22 @@ class Span(otel_api_trace.Span):
                 self.set_status(Status(status_code=StatusCode.ERROR, description=f"{exc_type.__name__}: {exc_val}"))
 
         super().__exit__(exc_type, exc_val, exc_tb)
+
+
+class LazySpan(otel_api_trace.NonRecordingSpan, Span):
+    def __init__(self, context, trace):
+        super().__init__(context)
+        self.nr_trace = trace
+
+    def set_attribute(self, key, value):
+        add_custom_span_attribute(key, value)
+
+    def set_attributes(self, attributes):
+        for key, value in attributes.items():
+            add_custom_span_attribute(key, value)
+
+    add_event = Span.add_event
+    add_link = Span.add_link
 
 
 class Tracer(otel_api_trace.Tracer):

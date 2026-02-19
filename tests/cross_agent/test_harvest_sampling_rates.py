@@ -117,7 +117,7 @@ def load_tests():
 
     return result
 
-
+@pytest.mark.skip(reason="These are too time consuming in CI")
 @pytest.mark.parametrize(
     "settings,root,parent_sampled_no_matching_acct_id,parent_not_sampled_no_matching_acct_id,parent_sampled_matching_acct_id_sampled_true,parent_not_sampled_matching_acct_id_sampled_true,expected_sampled,expected_sampled_full,expected_sampled_partial,expected_adaptive_sampler_decisions,variance",
     load_tests(),

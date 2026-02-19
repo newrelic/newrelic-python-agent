@@ -4558,7 +4558,7 @@ def _setup_instrumentation():
     _process_module_entry_points()
     # Collection of NR disabled hooks must happen before _process_module_builtin_defaults()
     # but the loading of the entrypoints must not happen until after the NR hooks are registered.
-    #_process_opentelemetry_instrumentation_entry_points()
+    _process_opentelemetry_instrumentation_entry_points()
 
     _process_trace_cache_import_hooks()
     _process_module_builtin_defaults()
@@ -4581,7 +4581,7 @@ def _setup_instrumentation():
 
     _process_function_profile_configuration()
 
-    #_process_opentelemetry_instrumentors()
+    _process_opentelemetry_instrumentors()
 
 
 def _setup_extensions():

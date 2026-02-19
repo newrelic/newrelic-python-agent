@@ -34,8 +34,6 @@ _FunctionNode = namedtuple(
         "guid",
         "agent_attributes",
         "user_attributes",
-        "span_link_events",
-        "span_event_events",
     ],
 )
 
@@ -120,4 +118,4 @@ class FunctionNode(_FunctionNode, GenericNodeMixin):
         i_attrs = (base_attrs and base_attrs.copy()) or attr_class()
         i_attrs["name"] = f"{self.group}/{self.name}"
 
-        return i_attrs, attr_class, self.span_link_events, self.span_event_events
+        return i_attrs, attr_class, None, None

@@ -141,6 +141,7 @@ def test_outbound_distributed_trace(mock_grpc_server, method_type, method_name, 
             # Round priority of newrelic header to 6 decimal places so it match tracestate.
             decoded["d"]["pr"] = f"{decoded['d']['pr']:.6f}"
             w3c_data["pr"] = f"{w3c_data['pr']:.6f}"
+            del(w3c_data["v"])  # Remove the version before comparing.
 
             assert decoded["d"] == w3c_data
 

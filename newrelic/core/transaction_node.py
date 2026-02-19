@@ -622,7 +622,7 @@ class TransactionNode(_TransactionNode):
         return intrinsics
 
     def span_protos(self, settings):
-        for i_attrs, u_attrs, a_attrs in self.span_events_full_granularity(settings, attr_class=SpanProtoAttrs):
+        for i_attrs, u_attrs, a_attrs in self.span_events(settings, attr_class=SpanProtoAttrs):
             yield Span(trace_id=self.trace_id, intrinsics=i_attrs, user_attributes=u_attrs, agent_attributes=a_attrs)
 
     def span_events(self, settings, attr_class=dict):

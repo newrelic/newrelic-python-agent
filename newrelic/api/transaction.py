@@ -1024,7 +1024,7 @@ class Transaction:
             # Truncate priority field to 6 digits past the decimal.
             priority = float(f"{random.random():.6f}")  # noqa: S311
         if sampled is None:
-            _logger.trace("No trusted account id found. Sampling decision will be made by adaptive sampling algorithm.")
+            # _logger.trace("No trusted account id found. Sampling decision will be made by adaptive sampling algorithm.")
             sampled = self._application.compute_sampled(**sampler_kwargs)
         if adjust_priority and sampled:
             # Make sure priority is <1 so we don't end up with priorities >3.
@@ -1046,33 +1046,33 @@ class Transaction:
             section = 0
             setting_path = f"distributed_tracing.sampler{'' if full_granularity else '.partial_granularity'}.root"
             config = root_setting
-            _logger.trace(
-                "Sampling decision made based on no remote parent sampling decision present and %s=%s.",
-                setting_path,
-                config,
-            )
+            # _logger.trace(
+            #     "Sampling decision made based on no remote parent sampling decision present and %s=%s.",
+            #     setting_path,
+            #     config,
+            # )
         elif self._remote_parent_sampled:
             section = 1
             setting_path = (
                 f"distributed_tracing.sampler{'' if full_granularity else '.partial_granularity'}.remote_parent_sampled"
             )
             config = remote_parent_sampled_setting
-            _logger.trace(
-                "Sampling decision made based on remote_parent_sampled=%s and %s=%s.",
-                self._remote_parent_sampled,
-                setting_path,
-                config,
-            )
+            # _logger.trace(
+            #     "Sampling decision made based on remote_parent_sampled=%s and %s=%s.",
+            #     self._remote_parent_sampled,
+            #     setting_path,
+            #     config,
+            # )
         else:  # self._remote_parent_sampled is False.
             section = 2
             setting_path = f"distributed_tracing.sampler{'' if full_granularity else '.partial_granularity'}.remote_parent_not_sampled"
             config = remote_parent_not_sampled_setting
-            _logger.trace(
-                "Sampling decision made based on remote_parent_sampled=%s and %s=%s.",
-                self._remote_parent_sampled,
-                setting_path,
-                config,
-            )
+            # _logger.trace(
+            #     "Sampling decision made based on remote_parent_sampled=%s and %s=%s.",
+            #     self._remote_parent_sampled,
+            #     setting_path,
+            #     config,
+            # )
         if config == "always_on":
             sampled = True
             # priority=3 for full granularity and priority=2 for partial granularity.
@@ -1083,7 +1083,7 @@ class Transaction:
             priority = 0
             return priority, sampled
         elif config == "trace_id_ratio_based":
-            _logger.trace("Let trace id ratio based sampler algorithm decide based on trace_id = %s.", self._trace_id)
+            # _logger.trace("Let trace id ratio based sampler algorithm decide based on trace_id = %s.", self._trace_id)
             # If ratio is not set fall back on adaptive sampler.
             ratio_path = self.settings
             for name in setting_path.split("."):
@@ -1108,7 +1108,7 @@ class Transaction:
         if config not in ("default", "adaptive"):
             _logger.warning("%s=%s is not a recognized value. Using 'adaptive' instead.", setting_path, config)
 
-        _logger.trace("Let adaptive sampler algorithm decide based on sampled=%s and priority=%s.", sampled, priority)
+        # _logger.trace("Let adaptive sampler algorithm decide based on sampled=%s and priority=%s.", sampled, priority)
         priority, sampled = self.sampling_algo_compute_sampled_and_priority(
             priority, sampled, {"full_granularity": full_granularity, "section": section}
         )
@@ -1123,11 +1123,11 @@ class Transaction:
         sampled = self._sampled
         # Compute sampling decision for full granularity.
         if self.settings.distributed_tracing.sampler.full_granularity.enabled:
-            _logger.trace(
-                "Full granularity tracing is enabled. Asking if full granularity wants to sample. priority=%s, sampled=%s",
-                priority,
-                sampled,
-            )
+            # _logger.trace(
+            #     "Full granularity tracing is enabled. Asking if full granularity wants to sample. priority=%s, sampled=%s",
+            #     priority,
+            #     sampled,
+            # )
             computed_priority, computed_sampled = self._compute_sampled_and_priority(
                 priority,
                 sampled,
@@ -1145,7 +1145,7 @@ class Transaction:
 
         # If full granularity is not going to sample, let partial granularity decide.
         if self.settings.distributed_tracing.sampler.partial_granularity.enabled:
-            _logger.trace("Partial granularity tracing is enabled. Asking if partial granularity wants to sample.")
+            # _logger.trace("Partial granularity tracing is enabled. Asking if partial granularity wants to sample.")
             self._priority, self._sampled = self._compute_sampled_and_priority(
                 priority,
                 sampled,
@@ -1154,9 +1154,9 @@ class Transaction:
                 remote_parent_sampled_setting=self.settings.distributed_tracing.sampler.partial_granularity._remote_parent_sampled,
                 remote_parent_not_sampled_setting=self.settings.distributed_tracing.sampler.partial_granularity._remote_parent_not_sampled,
             )
-            _logger.trace(
-                "Partial granularity sampling decision was %s with priority=%s.", self._sampled, self._priority
-            )
+            # _logger.trace(
+            #     "Partial granularity sampling decision was %s with priority=%s.", self._sampled, self._priority
+            # )
             self._sampling_decision_made = True
             if self._sampled:
                 self.partial_granularity_sampled = True

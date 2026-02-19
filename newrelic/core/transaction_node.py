@@ -636,10 +636,7 @@ class TransactionNode(_TransactionNode):
         )
         if not self.partial_granularity_sampled:
             yield from self.root.span_events_full_granularity(
-                settings,
-                base_attrs,
-                parent_guid=self.parent_span,
-                attr_class=attr_class,
+                settings, base_attrs, parent_guid=self.parent_span, attr_class=attr_class
             )
         else:
             ct_exit_spans = {"instrumented": 0, "kept": 0, "dropped_ids": 0}

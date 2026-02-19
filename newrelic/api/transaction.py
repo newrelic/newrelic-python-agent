@@ -1044,7 +1044,7 @@ class Transaction:
     ):
         if self._remote_parent_sampled is None:
             section = 0
-            #setting_path = f"distributed_tracing.sampler{'' if full_granularity else '.partial_granularity'}.root"
+            # setting_path = f"distributed_tracing.sampler{'' if full_granularity else '.partial_granularity'}.root"
             config = root_setting
             # _logger.trace(
             #     "Sampling decision made based on no remote parent sampling decision present and %s=%s.",
@@ -1053,9 +1053,9 @@ class Transaction:
             # )
         elif self._remote_parent_sampled:
             section = 1
-            #setting_path = (
+            # setting_path = (
             #    f"distributed_tracing.sampler{'' if full_granularity else '.partial_granularity'}.remote_parent_sampled"
-            #)
+            # )
             config = remote_parent_sampled_setting
             # _logger.trace(
             #     "Sampling decision made based on remote_parent_sampled=%s and %s=%s.",
@@ -1065,7 +1065,7 @@ class Transaction:
             # )
         else:  # self._remote_parent_sampled is False.
             section = 2
-            #setting_path = f"distributed_tracing.sampler{'' if full_granularity else '.partial_granularity'}.remote_parent_not_sampled"
+            # setting_path = f"distributed_tracing.sampler{'' if full_granularity else '.partial_granularity'}.remote_parent_not_sampled"
             config = remote_parent_not_sampled_setting
             # _logger.trace(
             #     "Sampling decision made based on remote_parent_sampled=%s and %s=%s.",
@@ -1085,10 +1085,10 @@ class Transaction:
         elif config == "trace_id_ratio_based":
             # _logger.trace("Let trace id ratio based sampler algorithm decide based on trace_id = %s.", self._trace_id)
             # If ratio is not set fall back on adaptive sampler.
-            #ratio_path = self.settings
-            #for name in setting_path.split("."):
+            # ratio_path = self.settings
+            # for name in setting_path.split("."):
             #    ratio_path = getattr(ratio_path, name)
-            #if ratio_path.trace_id_ratio_based.ratio:
+            # if ratio_path.trace_id_ratio_based.ratio:
             priority, sampled = self.sampling_algo_compute_sampled_and_priority(
                 priority,
                 None,  # The sampled value from the parent is not used in this case and should always be overridden.
@@ -1130,7 +1130,7 @@ class Transaction:
                 remote_parent_sampled_setting=self.settings.distributed_tracing.sampler._remote_parent_sampled,
                 remote_parent_not_sampled_setting=self.settings.distributed_tracing.sampler._remote_parent_not_sampled,
             )
-            #_logger.trace("Full granularity sampling decision was %s with priority=%s.", sampled, priority)
+            # _logger.trace("Full granularity sampling decision was %s with priority=%s.", sampled, priority)
             if computed_sampled or not self.settings.distributed_tracing.sampler.partial_granularity.enabled:
                 self._priority = computed_priority
                 self._sampled = computed_sampled

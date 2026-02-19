@@ -49,10 +49,10 @@ class GenericNodeMixin:
         _params["exclusive_duration_millis"] = 1000.0 * self.exclusive
         return _params
 
-    def _span_event_full_granularity(
-        self, settings, base_attrs=None, parent_guid=None, attr_class=dict
-    ):
-        base_attrs, attr_class, span_link_events, span_event_events = self.span_event(settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class)
+    def _span_event_full_granularity(self, settings, base_attrs=None, parent_guid=None, attr_class=dict):
+        base_attrs, attr_class, span_link_events, span_event_events = self.span_event(
+            settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class
+        )
         i_attrs = (base_attrs and base_attrs.copy()) or attr_class()
         i_attrs["type"] = "Span"
         i_attrs["name"] = i_attrs.get("name") or self.name
@@ -80,7 +80,9 @@ class GenericNodeMixin:
     def _span_event_partial_granularity_reduced(
         self, settings, base_attrs=None, parent_guid=None, attr_class=dict, ct_exit_spans=None
     ):
-        base_attrs, attr_class, span_link_events, span_event_events = self.span_event(settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class)
+        base_attrs, attr_class, span_link_events, span_event_events = self.span_event(
+            settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class
+        )
         if ct_exit_spans is None:
             ct_exit_spans = {"instrumented": 0, "kept": 0, "dropped_ids": 0}
 
@@ -130,7 +132,9 @@ class GenericNodeMixin:
     def _span_event_partial_granularity_essential(
         self, settings, base_attrs=None, parent_guid=None, attr_class=dict, ct_exit_spans=None
     ):
-        base_attrs, attr_class, span_link_events, span_event_events = self.span_event(settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class)
+        base_attrs, attr_class, span_link_events, span_event_events = self.span_event(
+            settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class
+        )
         if ct_exit_spans is None:
             ct_exit_spans = {"instrumented": 0, "kept": 0, "dropped_ids": 0}
 
@@ -189,7 +193,9 @@ class GenericNodeMixin:
     def _span_event_partial_granularity_compact(
         self, settings, base_attrs=None, parent_guid=None, attr_class=dict, ct_exit_spans=None
     ):
-        base_attrs, attr_class, span_link_events, span_event_events = self.span_event(settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class)
+        base_attrs, attr_class, span_link_events, span_event_events = self.span_event(
+            settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class
+        )
         if ct_exit_spans is None:
             ct_exit_spans = {"instrumented": 0, "kept": 0, "dropped_ids": 0}
 
@@ -300,45 +306,21 @@ class GenericNodeMixin:
         "compact": _span_event_partial_granularity_compact,
     }
 
-    def span_event(
-        self,
-        settings,
-        base_attrs=None,
-        parent_guid=None,
-        attr_class=dict,
-    ):
+    def span_event(self, settings, base_attrs=None, parent_guid=None, attr_class=dict):
         return base_attrs, attr_class, None, None
 
-    def span_events_full_granularity(
-        self,
-        settings,
-        base_attrs=None,
-        parent_guid=None,
-        attr_class=dict,
-    ):
+    def span_events_full_granularity(self, settings, base_attrs=None, parent_guid=None, attr_class=dict):
         yield self._span_event_full_granularity(
-            settings,
-            base_attrs=base_attrs,
-            parent_guid=parent_guid,
-            attr_class=attr_class,
+            settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class
         )
 
         for child in self.children:
             yield from child.span_events_full_granularity(
-                settings,
-                base_attrs=base_attrs,
-                parent_guid=self.guid,
-                attr_class=attr_class,
+                settings, base_attrs=base_attrs, parent_guid=self.guid, attr_class=attr_class
             )
 
     def span_events_partial_granularity(
-        self,
-        settings,
-        span_event_method,
-        base_attrs=None,
-        parent_guid=None,
-        attr_class=dict,
-        ct_exit_spans=None,
+        self, settings, span_event_method, base_attrs=None, parent_guid=None, attr_class=dict, ct_exit_spans=None
     ):
         span = span_event_method(
             self=self,
@@ -397,13 +379,7 @@ class DatastoreNodeMixin(GenericNodeMixin):
         self._db_instance = db_instance_attr
         return db_instance_attr
 
-    def span_event(
-        self,
-        settings,
-        base_attrs=None,
-        parent_guid=None,
-        attr_class=dict,
-    ):
+    def span_event(self, settings, base_attrs=None, parent_guid=None, attr_class=dict):
         a_attrs = self.agent_attributes
         a_attrs["db.instance"] = self.db_instance
         i_attrs = (base_attrs and base_attrs.copy()) or attr_class()

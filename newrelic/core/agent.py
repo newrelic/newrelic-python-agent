@@ -197,7 +197,9 @@ class Agent:
         """
         settings = newrelic.core.config.global_settings()
 
-        if not settings.opentelemetry.enabled and not newrelic.core.config._environ_as_bool("NEW_RELIC_OPENTELEMETRY_ENABLED"):
+        if not settings.opentelemetry.enabled and not newrelic.core.config._environ_as_bool(
+            "NEW_RELIC_OPENTELEMETRY_ENABLED"
+        ):
             _logger.debug("OpenTelemetry mode is disabled.")
             return
 

@@ -80,7 +80,7 @@ def _map_aws_account_id(s):
 # triggering of callbacks to monkey patch modules before import
 # returns them to caller.
 
-sys.meta_path.insert(0, newrelic.api.import_hook.ImportHookFinder())
+newrelic.api.import_hook.enable_import_hook_finder()
 
 # The set of valid feature flags that the agent currently uses.
 # This will be used to validate what is provided and issue warnings

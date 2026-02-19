@@ -514,7 +514,7 @@ def check_event_attributes(event_data, required_params=None, forgone_params=None
         intrinsics, user_attributes, agent_attributes = next(iter(event_data))
     except StopIteration:
         # If this happens it means there are no events.
-        raise ValueError("No event captured")
+        intrinsics, user_attributes, agent_attributes = {}, {}, {}
 
     if required_params:
         for param in required_params["agent"]:

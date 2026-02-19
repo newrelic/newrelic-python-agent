@@ -1084,11 +1084,7 @@ class Transaction:
             return priority, sampled
         elif config == "trace_id_ratio_based":
             # _logger.trace("Let trace id ratio based sampler algorithm decide based on trace_id = %s.", self._trace_id)
-            # If ratio is not set fall back on adaptive sampler.
-            # ratio_path = self.settings
-            # for name in setting_path.split("."):
-            #    ratio_path = getattr(ratio_path, name)
-            # if ratio_path.trace_id_ratio_based.ratio:
+            # If the ratio is not set the sampler proxy will fall back on the global adaptive sampler.
             priority, sampled = self.sampling_algo_compute_sampled_and_priority(
                 priority,
                 None,  # The sampled value from the parent is not used in this case and should always be overridden.

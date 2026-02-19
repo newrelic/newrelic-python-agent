@@ -324,13 +324,12 @@ class GenericNodeMixin:
         )
 
         for child in self.children:
-            for event in child.span_events_full_granularity(
+            yield from child.span_events_full_granularity(
                 settings,
                 base_attrs=base_attrs,
                 parent_guid=self.guid,
                 attr_class=attr_class,
-            ):
-                yield event
+            )
 
     def span_events_partial_granularity(
         self,

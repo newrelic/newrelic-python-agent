@@ -60,7 +60,7 @@ __all__ = ["filter_app_factory", "initialize"]
 
 
 def trace(self, message, *args, **kws):
-    self._log(logging.TRACE, message, args, **kws)
+    self.log(logging.TRACE, message, args, **kws)
 
 logging.TRACE = 5
 logging.addLevelName(logging.TRACE, "TRACE")

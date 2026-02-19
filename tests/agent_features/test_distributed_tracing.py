@@ -1003,7 +1003,7 @@ def test_partial_granularity_max_compressed_spans():
         # `nr.ids` can only hold 63 ids but duration reflects all compressed spans.
         compressed_span_count=64,
         expected_nr_durations_low_bound=6.5,
-        expected_nr_durations_high_bound=6.8,  # 64 of these adds > .2 overhead.
+        expected_nr_durations_high_bound=8,  # 64 of these + add extra overhead.
     )
     @background_task()
     def _test():

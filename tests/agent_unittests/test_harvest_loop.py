@@ -87,6 +87,8 @@ def transaction_node(request):
             guid="GUID",
             agent_attributes={},
             user_attributes={},
+            span_link_events=None,
+            span_event_events=None,
         )
 
         children = [function for _ in range(num_events)]
@@ -104,6 +106,8 @@ def transaction_node(request):
             guid="GUID",
             agent_attributes={},
             user_attributes={},
+            span_link_events=None,
+            span_event_events=None,
         )
 
         children.extend([function for _ in range(num_events)])
@@ -121,6 +125,8 @@ def transaction_node(request):
             path="OtherTransaction/Function/main",
             trusted_parent_span=None,
             tracing_vendors=None,
+            span_link_events=None,
+            span_event_events=None,
         )
 
         node = TransactionNode(

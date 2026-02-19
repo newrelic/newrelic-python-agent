@@ -1193,8 +1193,27 @@ class StatsEngine:
                 for event in transaction.span_protos(settings):
                     self._span_stream.put(event)
             elif transaction.sampled:
+                opentelemetry_enabled = settings.opentelemetry.enabled
+                if not opentelemetry_enabled:
+                    # When opentelemetry is not enabled, the event will not contain SpanLinks or SpanEvents,
+                    # so we can add the spans directly without filtering.
+                    for event in transaction.span_events(self.__settings):
+                        self._span_events.add(event, priority=transaction.priority)
+                else:
+                    for event in transaction.span_events(self.__settings):
+                        # When opentelemetry is enabled, the event may contain
+                        # SpanLinks and/or SpanEvents.
+                        if isinstance(event[-1], dict):
+                            # No SpanLinks or SpanEvents to consider, add spans directly
+                            self._span_events.add(event, priority=transaction.priority)
+                        else:
+                            # SpanLinks or SpanEvents are possible, one or both may also be empty lists.
+                            # A filter is used to remove any empty lists.
+                            new_event = list(filter(bool, event))
+                            self._span_events.add(new_event, priority=transaction.priority)
+
                 for event in transaction.span_events(self.__settings):
-                    if not settings.opentelemetry.enabled or isinstance(event[-1], dict):
+                    if not opentelemetry_enabled or isinstance(event[-1], dict):
                         self._span_events.add(event, priority=transaction.priority)
                     else:
                         # When opentelemetry is enabled, the event may contain

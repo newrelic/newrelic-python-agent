@@ -197,7 +197,7 @@ class Agent:
         """
         settings = newrelic.core.config.global_settings()
 
-        if not settings.opentelemetry.enabled:
+        if not settings.opentelemetry.enabled and not os.environ.get("NEW_RELIC_OPENTELEMETRY_ENABLED"):
             _logger.debug("OpenTelemetry mode is disabled.")
             return
 
@@ -211,7 +211,7 @@ class Agent:
 
                     from newrelic.api.opentelemetry import TracerProvider
 
-                    if not settings.opentelemetry.traces.enabled:
+                    if not settings.opentelemetry.traces.enabled and not os.environ.get("NEW_RELIC_OPENTELEMETRY_TRACES_ENABLED"):
                         # Set this to prevent any potential crashes
                         _logger.debug("OpenTelemetry traces are disabled.")
                         Agent._tracer_provider = NoOpTracerProvider()

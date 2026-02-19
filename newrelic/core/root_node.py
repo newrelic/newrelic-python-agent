@@ -45,8 +45,6 @@ class RootNode(_RootNode, GenericNodeMixin):
         base_attrs=None,
         parent_guid=None,
         attr_class=dict,
-        partial_granularity_sampled=False,
-        ct_exit_spans=None,
     ):
         i_attrs = (base_attrs and base_attrs.copy()) or attr_class()
         i_attrs["transaction.name"] = self.path
@@ -56,17 +54,7 @@ class RootNode(_RootNode, GenericNodeMixin):
         if self.tracing_vendors:
             i_attrs["tracingVendors"] = self.tracing_vendors
 
-        base_span_event = super().span_event(
-            settings,
-            base_attrs=i_attrs,
-            parent_guid=parent_guid,
-            attr_class=attr_class,
-            partial_granularity_sampled=partial_granularity_sampled,
-            ct_exit_spans=ct_exit_spans,
-        )
-        if self.span_link_events or self.span_event_events:
-            return [base_span_event, self.span_link_events, self.span_event_events]
-        return base_span_event
+        return i_attrs, attr_class, self.span_link_events, self.span_event_events
 
     def trace_node(self, stats, root, connections):
         name = self.path

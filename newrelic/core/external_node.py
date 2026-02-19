@@ -177,8 +177,6 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
         base_attrs=None,
         parent_guid=None,
         attr_class=dict,
-        partial_granularity_sampled=False,
-        ct_exit_spans=None,
     ):
         self.agent_attributes["http.url"] = self.http_url
 
@@ -190,15 +188,4 @@ class ExternalNode(_ExternalNode, GenericNodeMixin):
         if self.method:
             _, i_attrs["http.method"] = attribute.process_user_attribute("http.method", self.method)
 
-        base_span_event = super().span_event(
-            settings,
-            base_attrs=i_attrs,
-            parent_guid=parent_guid,
-            attr_class=attr_class,
-            partial_granularity_sampled=partial_granularity_sampled,
-            ct_exit_spans=ct_exit_spans,
-        )
-
-        if self.span_link_events or self.span_event_events:
-            return [base_span_event, self.span_link_events, self.span_event_events]
-        return base_span_event
+        return i_attrs, attr_class, self.span_link_events, self.span_event_events

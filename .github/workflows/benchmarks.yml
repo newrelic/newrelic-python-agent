@@ -63,6 +63,7 @@ jobs:
 
       - name: Run Benchmark
         run: |
+          echo "Running continuous benchmarking between base commit ${BASE_SHA} and head commit ${GITHUB_SHA}"
           asv continuous \
             --show-stderr \
             --split \

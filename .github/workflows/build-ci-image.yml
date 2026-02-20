@@ -83,7 +83,7 @@ jobs:
 
       - name: Build and Push Image by Digest
         id: build
-        uses: docker/build-push-action@601a80b39c9405e50806ae38af30926f9d957c47 # 6.19.1
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # 6.19.2
         with:
           context: .github/containers
           platforms: ${{ matrix.platform }}

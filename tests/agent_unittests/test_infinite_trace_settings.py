@@ -14,6 +14,8 @@
 
 import pytest
 
+from newrelic.core.config import finalize_application_settings
+
 INI_FILE_EMPTY = b"""
 [newrelic]
 """
@@ -77,3 +79,18 @@ def test_infinite_tracing_port(ini, env, expected_port, global_settings):
 def test_infinite_tracing_span_queue_size(ini, env, expected_size, global_settings):
     settings = global_settings()
     assert settings.infinite_tracing.span_queue_size == expected_size
+
+
+@pytest.mark.parametrize(
+    "ini,env",
+    ((INI_FILE_INFINITE_TRACING, {"NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_ENABLED": "true"}),),
+)
+def test_partial_granularity_dissabled_when_infinite_tracing_enabled(ini, env, global_settings):
+    settings = global_settings()
+    assert settings.distributed_tracing.sampler.partial_granularity.enabled
+    assert settings.infinite_tracing.enabled
+
+    app_settings = finalize_application_settings(settings=settings)
+
+    assert not app_settings.distributed_tracing.sampler.partial_granularity.enabled
+    assert app_settings.infinite_tracing.enabled

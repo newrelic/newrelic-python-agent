@@ -14,7 +14,7 @@
 
 import pytest
 from strands import Agent
-from testing_support.fixtures import reset_core_stats_engine, validate_attributes
+from testing_support.fixtures import dt_enabled, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     disabled_ai_monitoring_record_content_settings,
     events_with_context_attrs,
@@ -23,6 +23,7 @@ from testing_support.ml_testing_utils import (
 from testing_support.validators.validate_custom_event import validate_custom_event_count
 from testing_support.validators.validate_custom_events import validate_custom_events
 from testing_support.validators.validate_error_trace_attributes import validate_error_trace_attributes
+from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_error_event_count import validate_transaction_error_event_count
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
@@ -94,6 +95,7 @@ tool_recorded_event_forced_internal_error = [
 EXPECTED_ERROR_MESSAGES = ["Error: RuntimeError - Oops", "Error: Oops"]
 
 
+@dt_enabled
 @reset_core_stats_engine()
 @validate_custom_events(events_with_context_attrs(tool_recorded_event))
 @validate_custom_event_count(count=2)
@@ -104,6 +106,8 @@ EXPECTED_ERROR_MESSAGES = ["Error: RuntimeError - Oops", "Error: Oops"]
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
+@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "my_agent"}'})
+@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "add_exclamation"}'})
 @background_task()
 def test_tool(exercise_agent, set_trace_info, single_tool_model, add_exclamation):
     set_trace_info()
@@ -126,6 +130,7 @@ def test_tool(exercise_agent, set_trace_info, single_tool_model, add_exclamation
         assert response.metrics.tool_metrics["add_exclamation"].success_count == 1
 
 
+@dt_enabled
 @reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
 @validate_custom_events(tool_events_sans_content(tool_recorded_event))
@@ -137,6 +142,8 @@ def test_tool(exercise_agent, set_trace_info, single_tool_model, add_exclamation
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
+@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "my_agent"}'})
+@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "add_exclamation"}'})
 @background_task()
 def test_tool_no_content(exercise_agent, set_trace_info, single_tool_model, add_exclamation):
     set_trace_info()
@@ -158,6 +165,7 @@ def test_tool_no_content(exercise_agent, set_trace_info, single_tool_model, add_
         assert response.metrics.tool_metrics["add_exclamation"].success_count == 1
 
 
+@dt_enabled
 @reset_core_stats_engine()
 def test_tool_execution_error(exercise_agent, set_trace_info, single_tool_model_error, add_exclamation):
     from strands.tools import PythonAgentTool
@@ -178,6 +186,8 @@ def test_tool_execution_error(exercise_agent, set_trace_info, single_tool_model_
         background_task=True,
     )
     @validate_attributes("agent", ["llm"])
+    @validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "my_agent"}'})
+    @validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "add_exclamation"}'})
     @background_task(name="test_tool_execution_error")
     def _test():
         set_trace_info()
@@ -201,6 +211,7 @@ def test_tool_execution_error(exercise_agent, set_trace_info, single_tool_model_
     _test()
 
 
+@dt_enabled
 @reset_core_stats_engine()
 @validate_transaction_error_event_count(1)
 @validate_error_trace_attributes(callable_name(ValueError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
@@ -213,6 +224,8 @@ def test_tool_execution_error(exercise_agent, set_trace_info, single_tool_model_
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
+@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "my_agent"}'})
+@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "add_exclamation"}'})
 @background_task()
 def test_tool_pre_execution_exception(exercise_agent, set_trace_info, single_tool_model, add_exclamation):
     # Add a wrapper to intentionally force an error in the ToolExecutor._stream code to hit the exception path in

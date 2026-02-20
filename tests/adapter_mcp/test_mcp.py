@@ -19,6 +19,7 @@ from fastmcp.server.server import FastMCP
 from mcp.server.fastmcp.tools import ToolManager
 from testing_support.ml_testing_utils import disabled_ai_monitoring_settings
 from testing_support.validators.validate_function_not_called import validate_function_not_called
+from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
@@ -57,6 +58,7 @@ def fastmcp_server():
     rollup_metrics=[("Llm/tool/MCP/mcp.client.session:ClientSession.call_tool/add_exclamation", 1)],
     background_task=True,
 )
+@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "add_exclamation"}'})
 @background_task()
 def test_tool_tracing_via_client_session(loop, fastmcp_server):
     async def _test():
@@ -75,6 +77,7 @@ def test_tool_tracing_via_client_session(loop, fastmcp_server):
     rollup_metrics=[("Llm/tool/MCP/mcp.server.fastmcp.tools.tool_manager:ToolManager.call_tool/add_exclamation", 1)],
     background_task=True,
 )
+@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "add_exclamation"}'})
 @background_task()
 def test_tool_tracing_via_tool_manager(loop):
     async def _test():

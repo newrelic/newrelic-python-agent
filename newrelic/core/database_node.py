@@ -40,6 +40,8 @@ _SlowSqlNode = namedtuple(
         "port_path_or_id",
         "database_name",
         "params",
+        "span_link_events",
+        "span_event_events",
     ],
 )
 
@@ -81,6 +83,8 @@ _DatabaseNode = namedtuple(
         "guid",
         "agent_attributes",
         "user_attributes",
+        "span_link_events",
+        "span_event_events",
     ],
 )
 
@@ -224,6 +228,8 @@ class DatabaseNode(_DatabaseNode, DatastoreNodeMixin):
             port_path_or_id=self.port_path_or_id,
             database_name=self.database_name,
             params=params,
+            span_link_events=self.span_link_events,
+            span_event_events=self.span_event_events,
         )
 
     def trace_node(self, stats, root, connections):
@@ -279,7 +285,7 @@ class DatabaseNode(_DatabaseNode, DatastoreNodeMixin):
             start_time=start_time, end_time=end_time, name=name, params=params, children=children, label=None
         )
 
-    def span_event(self, *args, **kwargs):
+    def span_event(self, settings, base_attrs=None, parent_guid=None, attr_class=dict):
         sql = self.formatted
 
         if sql:
@@ -288,4 +294,6 @@ class DatabaseNode(_DatabaseNode, DatastoreNodeMixin):
 
         self.agent_attributes["db.statement"] = sql
 
-        return super().span_event(*args, **kwargs)
+        return DatastoreNodeMixin.span_event(
+            self, settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class
+        )

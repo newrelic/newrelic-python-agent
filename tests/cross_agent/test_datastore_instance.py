@@ -86,6 +86,8 @@ def test_datastore_instance(
         guid=None,
         agent_attributes={},
         user_attributes={},
+        span_link_events={},
+        span_event_events={},
     )
 
     empty_stats = StatsEngine()

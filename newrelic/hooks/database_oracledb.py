@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.api.database_trace import register_database_client
+from newrelic.api.database_trace import DatabaseTrace, register_database_client
 from newrelic.common.object_wrapper import wrap_object
 from newrelic.hooks.database_dbapi2 import ConnectionFactory as DBAPI2ConnectionFactory
 from newrelic.hooks.database_dbapi2 import ConnectionWrapper as DBAPI2ConnectionWrapper
@@ -26,6 +26,16 @@ class CursorWrapper(DBAPI2CursorWrapper):
     def __enter__(self):
         self.__wrapped__.__enter__()
         return self
+
+    # Signature differs from DBAPI 2.0 spec
+    def callproc(self, name, parameters=None, keyword_parameters=None):
+        with DatabaseTrace(
+            sql=f"CALL {name}",
+            dbapi2_module=self._nr_dbapi2_module,
+            connect_params=self._nr_connect_params,
+            source=self.__wrapped__.callproc,
+        ):
+            return self.__wrapped__.callproc(name=name, parameters=parameters, keyword_parameters=keyword_parameters)
 
 
 class ConnectionWrapper(DBAPI2ConnectionWrapper):
@@ -44,6 +54,18 @@ class AsyncCursorWrapper(DBAPI2AsyncCursorWrapper):
     async def __aenter__(self):
         await self.__wrapped__.__aenter__()
         return self
+
+    # Signature differs from DBAPI 2.0 spec
+    async def callproc(self, name, parameters=None, keyword_parameters=None):
+        with DatabaseTrace(
+            sql=f"CALL {name}",
+            dbapi2_module=self._nr_dbapi2_module,
+            connect_params=self._nr_connect_params,
+            source=self.__wrapped__.callproc,
+        ):
+            return await self.__wrapped__.callproc(
+                name=name, parameters=parameters, keyword_parameters=keyword_parameters
+            )
 
 
 class AsyncConnectionWrapper(DBAPI2AsyncConnectionWrapper):

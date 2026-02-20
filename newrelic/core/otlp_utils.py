@@ -116,8 +116,9 @@ def create_key_values_from_iterable(iterable):
     return list(filter(lambda i: i is not None, (create_key_value(key, value) for key, value in iterable)))
 
 
-def create_resource(attributes=None, attach_apm_entity=True):
-    attributes = attributes or {"instrumentation.provider": "newrelic-opentelemetry-python-ml"}
+def create_resource(attributes=None, attach_apm_entity=True, hybrid_bridge=False):
+    instrumentation_provider = "newrelic-opentelemetry-bridge" if hybrid_bridge else "newrelic-opentelemetry-python-ml"
+    attributes = attributes or {"instrumentation.provider": instrumentation_provider}
     if attach_apm_entity:
         metadata = get_service_linking_metadata()
         attributes.update(metadata)

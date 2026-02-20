@@ -54,7 +54,8 @@ def execute_db_calls_with_cursor(cursor):
                 END;
         """
     )
-    cursor.callproc(PROCEDURE_NAME, [cursor.var(str)])  # Must specify a container for the OUT parameter
+    # Must specify a container for the OUT parameter
+    cursor.callproc(name=PROCEDURE_NAME, parameters=[cursor.var(str)])
 
 
 _test_execute_scoped_metrics = [

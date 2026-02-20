@@ -87,6 +87,13 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = {
     "message.routingKey",
     "messaging.destination.name",
     "messaging.system",
+    "nr.durations",
+    "nr.ids",
+    "nr.pg",
+    "otel.library.name",
+    "otel.library.version",
+    "otel.scope.name",
+    "otel.scope.version",
     "peer.address",
     "peer.hostname",
     "request.headers.accept",
@@ -100,6 +107,7 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = {
     "response.headers.contentType",
     "response.status",
     "server.address",
+    "server.port",
     "subcomponent",
     "zeebe.client.bpmnProcessId",
     "zeebe.client.messageName",
@@ -108,6 +116,25 @@ _TRANSACTION_EVENT_DEFAULT_ATTRIBUTES = {
     "zeebe.client.resourceCount",
     "zeebe.client.resourceFile",
 }
+
+SPAN_ENTITY_RELATIONSHIP_ATTRIBUTES = {
+    "cloud.account.id",
+    "cloud.platform",
+    "cloud.region",
+    "cloud.resource_id",
+    "db.instance",
+    "db.system",
+    "http.url",
+    "messaging.destination.name",
+    "messaging.system",
+    "peer.hostname",
+    "server.address",
+    "server.port",
+    "span.kind",
+}
+
+SPAN_ERROR_ATTRIBUTES = {"error.class", "error.message", "error.expected"}
+
 
 MAX_NUM_USER_ATTRIBUTES = 128
 MAX_ATTRIBUTE_LENGTH = 255

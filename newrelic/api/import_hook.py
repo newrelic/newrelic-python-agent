@@ -211,3 +211,15 @@ def import_hook(name):
 def import_module(name):
     __import__(name)
     return sys.modules[name]
+
+
+def enable_import_hook_finder():
+    if sys.meta_path and not isinstance(sys.meta_path[0], ImportHookFinder):
+        # If we don't hold the first position in sys.meta_path then we need to insert ourselves
+        # there and remove all other instances of ImportHookFinder.
+        sys.meta_path.insert(0, ImportHookFinder())
+
+        # Remove any duplicate instances of ImportHookFinder.
+        for finder in list(sys.meta_path[1:]):
+            if isinstance(finder, ImportHookFinder):
+                sys.meta_path.remove(finder)

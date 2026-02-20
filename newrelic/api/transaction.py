@@ -285,7 +285,8 @@ class Transaction:
         self.tracestate = ""
         self._priority = None
         self._sampled = None
-        self._traceparent_sampled = None
+        # Remote parent sampled is set from the W3C parent header or the Newrelic header if no W3C parent header is present.
+        self._remote_parent_sampled = None
 
         self._distributed_trace_state = 0
 
@@ -535,6 +536,8 @@ class Transaction:
             path=self.path,
             trusted_parent_span=self.trusted_parent_span,
             tracing_vendors=self.tracing_vendors,
+            span_link_events=root.span_link_events,
+            span_event_events=root.span_event_events,
         )
 
         # Add transaction exclusive time to total exclusive time
@@ -569,7 +572,13 @@ class Transaction:
         if self._settings.distributed_tracing.enabled:
             # Sampled and priority need to be computed at the end of the
             # transaction when distributed tracing or span events are enabled.
-            self._compute_sampled_and_priority()
+            self._make_sampling_decision()
+        else:
+            # If dt is disabled, set sampled=False and priority random number between 0 and 1.
+            # The priority of the transaction is used for other data like transaction
+            # events even when span events are not sent.
+            self._priority = float(f"{random.random():.6f}")  # noqa: S311
+            self._sampled = False
 
         self._cached_path._name = self.path
         agent_attributes = self.agent_attributes
@@ -636,6 +645,7 @@ class Transaction:
             trace_id=self.trace_id,
             loop_time=self._loop_time,
             root=root_node,
+            partial_granularity_sampled=getattr(self, "partial_granularity_sampled", False),
         )
 
         # Clear settings as we are all done and don't need it
@@ -1004,35 +1014,149 @@ class Transaction:
     def user_attributes(self):
         return create_attributes(self._custom_params, DST_ALL, self.attribute_filter)
 
-    def sampling_algo_compute_sampled_and_priority(self):
-        if self._priority is None:
+    def sampling_algo_compute_sampled_and_priority(self, priority, sampled, sampler_kwargs):
+        # self._priority and self._sampled are set when parsing the W3C tracestate
+        # or newrelic DT headers and may be overridden in _make_sampling_decision
+        # based on the configuration. The only time they are set in here is when the
+        # sampling decision must be made by the adaptive sampling algorithm.
+        adjust_priority = priority is None or sampled is None
+        if priority is None:
             # Truncate priority field to 6 digits past the decimal.
-            self._priority = float(f"{random.random():.6f}")  # noqa: S311
-        if self._sampled is None:
-            self._sampled = self._application.compute_sampled()
-            if self._sampled:
-                self._priority += 1
+            priority = float(f"{random.random():.6f}")  # noqa: S311
+        if sampled is None:
+            # _logger.trace("No trusted account id found. Sampling decision will be made by adaptive sampling algorithm.")
+            sampled = self._application.compute_sampled(**sampler_kwargs)
+        if adjust_priority and sampled:
+            # Make sure priority is <1 so we don't end up with priorities >3.
+            priority = priority - int(priority)
+            # Increment the priority + 2 for full and + 1 for partial granularity.
+            priority += 1 + int(sampler_kwargs.get("full_granularity"))
+        return priority, sampled
 
-    def _compute_sampled_and_priority(self):
-        if self._traceparent_sampled is None:
-            config = "default"  # Use sampling algo.
-        elif self._traceparent_sampled:
-            setting_path = "distributed_tracing.sampler.remote_parent_sampled"
-            config = self.settings.distributed_tracing.sampler.remote_parent_sampled
-        else:  # self._traceparent_sampled is False.
-            setting_path = "distributed_tracing.sampler.remote_parent_not_sampled"
-            config = self.settings.distributed_tracing.sampler.remote_parent_not_sampled
-
+    def _compute_sampled_and_priority(
+        self,
+        priority,
+        sampled,
+        full_granularity,
+        root_setting,
+        remote_parent_sampled_setting,
+        remote_parent_not_sampled_setting,
+    ):
+        if self._remote_parent_sampled is None:
+            section = 0
+            # setting_path = f"distributed_tracing.sampler{'' if full_granularity else '.partial_granularity'}.root"
+            config = root_setting
+            # _logger.trace(
+            #     "Sampling decision made based on no remote parent sampling decision present and %s=%s.",
+            #     setting_path,
+            #     config,
+            # )
+        elif self._remote_parent_sampled:
+            section = 1
+            # setting_path = (
+            #    f"distributed_tracing.sampler{'' if full_granularity else '.partial_granularity'}.remote_parent_sampled"
+            # )
+            config = remote_parent_sampled_setting
+            # _logger.trace(
+            #     "Sampling decision made based on remote_parent_sampled=%s and %s=%s.",
+            #     self._remote_parent_sampled,
+            #     setting_path,
+            #     config,
+            # )
+        else:  # self._remote_parent_sampled is False.
+            section = 2
+            # setting_path = f"distributed_tracing.sampler{'' if full_granularity else '.partial_granularity'}.remote_parent_not_sampled"
+            config = remote_parent_not_sampled_setting
+            # _logger.trace(
+            #     "Sampling decision made based on remote_parent_sampled=%s and %s=%s.",
+            #     self._remote_parent_sampled,
+            #     setting_path,
+            #     config,
+            # )
         if config == "always_on":
-            self._sampled = True
-            self._priority = 2.0
+            sampled = True
+            # priority=3 for full granularity and priority=2 for partial granularity.
+            priority = 2.0 + int(full_granularity)
+            return priority, sampled
         elif config == "always_off":
-            self._sampled = False
-            self._priority = 0
-        else:
-            if config != "default":
-                _logger.warning("%s=%s is not a recognized value. Using 'default' instead.", setting_path, config)
-            self.sampling_algo_compute_sampled_and_priority()
+            sampled = False
+            priority = 0
+            return priority, sampled
+        elif config == "trace_id_ratio_based":
+            # _logger.trace("Let trace id ratio based sampler algorithm decide based on trace_id = %s.", self._trace_id)
+            # If the ratio is not set the sampler proxy will fall back on the global adaptive sampler.
+            priority, sampled = self.sampling_algo_compute_sampled_and_priority(
+                priority,
+                None,  # The sampled value from the parent is not used in this case and should always be overridden.
+                {
+                    "full_granularity": full_granularity,
+                    "section": section,
+                    "trace_id": int(self._trace_id.lower().zfill(32), 16),
+                },
+            )
+            return priority, sampled
+        if config not in ("default", "adaptive"):
+            _logger.warning("%s is not a recognized value for a sampler type. Using 'adaptive' instead.", config)
+
+        # _logger.trace("Let adaptive sampler algorithm decide based on sampled=%s and priority=%s.", sampled, priority)
+        priority, sampled = self.sampling_algo_compute_sampled_and_priority(
+            priority, sampled, {"full_granularity": full_granularity, "section": section}
+        )
+        return priority, sampled
+
+    def _make_sampling_decision(self):
+        # The sampling decision is computed each time a DT header is generated for exit spans as it is needed
+        # to send the DT headers. Don't recompute the sampling decision multiple times as it is expensive.
+        if hasattr(self, "_sampling_decision_made"):
+            return
+        priority = self._priority
+        sampled = self._sampled
+        # Compute sampling decision for full granularity.
+        if self.settings.distributed_tracing.sampler.full_granularity.enabled:
+            # _logger.trace(
+            #     "Full granularity tracing is enabled. Asking if full granularity wants to sample. priority=%s, sampled=%s",
+            #     priority,
+            #     sampled,
+            # )
+            computed_priority, computed_sampled = self._compute_sampled_and_priority(
+                priority,
+                sampled,
+                full_granularity=True,
+                root_setting=self.settings.distributed_tracing.sampler._root,
+                remote_parent_sampled_setting=self.settings.distributed_tracing.sampler._remote_parent_sampled,
+                remote_parent_not_sampled_setting=self.settings.distributed_tracing.sampler._remote_parent_not_sampled,
+            )
+            # _logger.trace("Full granularity sampling decision was %s with priority=%s.", sampled, priority)
+            if computed_sampled or not self.settings.distributed_tracing.sampler.partial_granularity.enabled:
+                self._priority = computed_priority
+                self._sampled = computed_sampled
+                self._sampling_decision_made = True
+                return
+
+        # If full granularity is not going to sample, let partial granularity decide.
+        if self.settings.distributed_tracing.sampler.partial_granularity.enabled:
+            # _logger.trace("Partial granularity tracing is enabled. Asking if partial granularity wants to sample.")
+            self._priority, self._sampled = self._compute_sampled_and_priority(
+                priority,
+                sampled,
+                full_granularity=False,
+                root_setting=self.settings.distributed_tracing.sampler.partial_granularity._root,
+                remote_parent_sampled_setting=self.settings.distributed_tracing.sampler.partial_granularity._remote_parent_sampled,
+                remote_parent_not_sampled_setting=self.settings.distributed_tracing.sampler.partial_granularity._remote_parent_not_sampled,
+            )
+            # _logger.trace(
+            #     "Partial granularity sampling decision was %s with priority=%s.", self._sampled, self._priority
+            # )
+            self._sampling_decision_made = True
+            if self._sampled:
+                self.partial_granularity_sampled = True
+            return
+
+        # This is only reachable if both full and partial granularity tracing are off.
+        # Set priority to random number between 0 and 1 and do not sample. This enables
+        # DT headers to still be sent even if the trace is never sampled.
+        self._priority = float(f"{random.random():.6f}")  # noqa: S311
+        self._sampled = False
 
     def _freeze_path(self):
         if self._frozen_path is None:
@@ -1101,7 +1225,7 @@ class Transaction:
         if not (account_id and application_id and trusted_account_key and settings.distributed_tracing.enabled):
             return
 
-        self._compute_sampled_and_priority()
+        self._make_sampling_decision()
         data = {
             "ty": "App",
             "ac": account_id,
@@ -1204,7 +1328,7 @@ class Transaction:
             if not any(k in data for k in ("id", "tx")):
                 self._record_supportability("Supportability/DistributedTrace/AcceptPayload/ParseException")
                 return False
-
+            self._remote_parent_sampled = data.get("sa")
             settings = self._settings
             account_id = data.get("ac")
             trusted_account_key = settings.trusted_account_key or (
@@ -1254,10 +1378,8 @@ class Transaction:
 
         self._trace_id = data.get("tr")
 
-        priority = data.get("pr")
-        if priority is not None:
-            self._priority = priority
-            self._sampled = data.get("sa")
+        self._priority = data.get("pr")
+        self._sampled = data.get("sa")
 
         if "ti" in data:
             transport_start = data["ti"] / 1000.0
@@ -1297,6 +1419,7 @@ class Transaction:
             try:
                 traceparent = ensure_str(traceparent).strip()
                 data = W3CTraceParent.decode(traceparent)
+                self._remote_parent_sampled = data.pop("sa", None)
             except:
                 data = None
 
@@ -1332,7 +1455,6 @@ class Transaction:
                     else:
                         self._record_supportability("Supportability/TraceContext/TraceState/NoNrEntry")
 
-            self._traceparent_sampled = data.get("sa")
             self._accept_distributed_trace_data(data, transport_type)
             self._record_supportability("Supportability/TraceContext/Accept/Success")
             return True

@@ -354,9 +354,7 @@ class HttpClient(BaseClient):
             return self._connection_attr
 
         retries = urllib3.Retry(total=False, connect=None, read=None, redirect=0, status=None)
-        self._connection_attr = self.CONNECTION_CLS(
-            self._host, self._port, strict=True, retries=retries, **self._connection_kwargs
-        )
+        self._connection_attr = self.CONNECTION_CLS(self._host, self._port, retries=retries, **self._connection_kwargs)
         return self._connection_attr
 
     def close_connection(self):

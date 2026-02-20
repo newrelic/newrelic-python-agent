@@ -248,13 +248,7 @@ def _get_stdlib_builtin_module_names():
     # Since sys.stdlib_module_names is not available in versions of python below 3.10,
     # use isort's hardcoded stdlibs instead.
     python_version = sys.version_info[0:2]
-    if python_version < (3,):
-        stdlibs = isort_stdlibs.py27.stdlib
-    elif (3, 7) <= python_version < (3, 8):
-        stdlibs = isort_stdlibs.py37.stdlib
-    elif python_version < (3, 9):
-        stdlibs = isort_stdlibs.py38.stdlib
-    elif python_version < (3, 10):
+    if python_version < (3, 10):
         stdlibs = isort_stdlibs.py39.stdlib
     elif python_version >= (3, 10):
         stdlibs = sys.stdlib_module_names

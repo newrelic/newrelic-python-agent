@@ -98,7 +98,7 @@ async def _execute(connection, cursor, row_type, wrapper):
     # Consume inserted records to check that returning param functions
     records = []
     while True:
-        records.append(cursor.fetchone())
+        records.append(await maybe_await(cursor.fetchone()))
         if not cursor.nextset():
             break
     assert len(records) == len(params)
@@ -140,7 +140,7 @@ async def _exercise_db(connection, row_factory=None, use_cur_context=False, row_
     try:
         cursor = connection.cursor(**kwargs)
         if use_cur_context:
-            if hasattr(cursor, "__aenter__"):
+            if hasattr(cursor.__wrapped__, "__aenter__"):
                 async with cursor:
                     await _execute(connection, cursor, row_type, wrapper)
             else:

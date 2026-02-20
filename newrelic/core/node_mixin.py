@@ -49,14 +49,17 @@ class GenericNodeMixin:
         _params["exclusive_duration_millis"] = 1000.0 * self.exclusive
         return _params
 
-    def span_event(self, settings, base_attrs=None, parent_guid=None, attr_class=dict):
+    def _span_event_full_granularity(self, settings, base_attrs=None, parent_guid=None, attr_class=dict):
+        base_attrs, attr_class, span_link_events, span_event_events = self.span_event(
+            settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class
+        )
         i_attrs = (base_attrs and base_attrs.copy()) or attr_class()
         i_attrs["type"] = "Span"
-        i_attrs["name"] = self.name
+        i_attrs["name"] = i_attrs.get("name") or self.name
         i_attrs["guid"] = self.guid
         i_attrs["timestamp"] = int(self.start_time * 1000)
         i_attrs["duration"] = self.duration
-        i_attrs["category"] = "generic"
+        i_attrs["category"] = i_attrs.get("category") or "generic"
 
         if parent_guid:
             i_attrs["parentId"] = parent_guid
@@ -68,18 +71,286 @@ class GenericNodeMixin:
         u_attrs = attribute.resolve_user_attributes(
             self.processed_user_attributes, settings.attribute_filter, DST_SPAN_EVENTS, attr_class=attr_class
         )
-
         # intrinsics, user attrs, agent attrs
-        return [i_attrs, u_attrs, a_attrs]
+        base_span_event = [i_attrs, u_attrs, a_attrs]
+        if span_link_events or span_event_events:
+            return [base_span_event, span_link_events, span_event_events]
+        return base_span_event
 
-    def span_events(self, settings, base_attrs=None, parent_guid=None, attr_class=dict):
-        yield self.span_event(settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class)
+    def _span_event_partial_granularity_reduced(
+        self, settings, base_attrs=None, parent_guid=None, attr_class=dict, ct_exit_spans=None
+    ):
+        base_attrs, attr_class, span_link_events, span_event_events = self.span_event(
+            settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class
+        )
+        if ct_exit_spans is None:
+            ct_exit_spans = {"instrumented": 0, "kept": 0, "dropped_ids": 0}
+
+        ct_exit_spans["instrumented"] += 1
+
+        i_attrs = (base_attrs and base_attrs.copy()) or attr_class()
+        i_attrs["type"] = "Span"
+        i_attrs["name"] = i_attrs.get("name") or self.name
+        i_attrs["guid"] = self.guid
+        i_attrs["timestamp"] = int(self.start_time * 1000)
+        i_attrs["duration"] = self.duration
+        i_attrs["category"] = i_attrs.get("category") or "generic"
+
+        if parent_guid:
+            i_attrs["parentId"] = parent_guid
+
+        a_attrs = attribute.resolve_agent_attributes(
+            self.agent_attributes, settings.attribute_filter, DST_SPAN_EVENTS, attr_class=attr_class
+        )
+        u_attrs = attribute.resolve_user_attributes(
+            self.processed_user_attributes, settings.attribute_filter, DST_SPAN_EVENTS, attr_class=attr_class
+        )
+
+        # If this is an entry span, add `nr.pg` to indicate transaction is partial
+        # granularity sampled.
+        if i_attrs.get("nr.entryPoint"):
+            i_attrs["nr.pg"] = True
+        # If this is the entry node or an LLM span always return it.
+        if i_attrs.get("nr.entryPoint") or i_attrs["name"].startswith("Llm/"):
+            ct_exit_spans["kept"] += 1
+            base_span_event = [i_attrs, u_attrs, a_attrs]
+            if span_link_events or span_event_events:
+                return [base_span_event, span_link_events, span_event_events]
+            return base_span_event
+        exit_span_attrs_present = attribute.SPAN_ENTITY_RELATIONSHIP_ATTRIBUTES & set(a_attrs)
+        # If the span is not an exit span, skip it by returning None.
+        if not exit_span_attrs_present:
+            return None
+        # If the span is an exit span and we are in reduced mode (meaning no attribute dropping),
+        # just return the exit span as is.
+        ct_exit_spans["kept"] += 1
+        base_span_event = [i_attrs, u_attrs, a_attrs]
+        if span_link_events or span_event_events:
+            return [base_span_event, span_link_events, span_event_events]
+        return base_span_event
+
+    def _span_event_partial_granularity_essential(
+        self, settings, base_attrs=None, parent_guid=None, attr_class=dict, ct_exit_spans=None
+    ):
+        base_attrs, attr_class, span_link_events, span_event_events = self.span_event(
+            settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class
+        )
+        if ct_exit_spans is None:
+            ct_exit_spans = {"instrumented": 0, "kept": 0, "dropped_ids": 0}
+
+        ct_exit_spans["instrumented"] += 1
+
+        i_attrs = (base_attrs and base_attrs.copy()) or attr_class()
+        i_attrs["type"] = "Span"
+        i_attrs["name"] = i_attrs.get("name") or self.name
+        i_attrs["guid"] = self.guid
+        i_attrs["timestamp"] = int(self.start_time * 1000)
+        i_attrs["duration"] = self.duration
+        i_attrs["category"] = i_attrs.get("category") or "generic"
+
+        if parent_guid:
+            i_attrs["parentId"] = parent_guid
+
+        a_attrs = self.agent_attributes
+
+        a_attrs_set = set(a_attrs)
+        exit_span_attrs_present = attribute.SPAN_ENTITY_RELATIONSHIP_ATTRIBUTES & a_attrs_set
+        exit_span_error_attrs_present = attribute.SPAN_ERROR_ATTRIBUTES & a_attrs_set
+        # If this is an entry span, add `nr.pg` to indicate transaction is partial
+        # granularity sampled.
+        if i_attrs.get("nr.entryPoint"):
+            i_attrs["nr.pg"] = True
+        # If this is the entry node or an LLM span always return it.
+        if i_attrs.get("nr.entryPoint") or i_attrs["name"].startswith("Llm/"):
+            ct_exit_spans["kept"] += 1
+            # Only keep entity-synthesis and error agent attributes, and intrinsics.
+            a_minimized_attrs = attribute.resolve_agent_attributes(
+                {key: a_attrs[key] for key in exit_span_attrs_present | exit_span_error_attrs_present},
+                settings.attribute_filter,
+                DST_SPAN_EVENTS,
+                attr_class=attr_class,
+            )
+            base_span_event = [i_attrs, {}, a_minimized_attrs]
+            if span_link_events or span_event_events:
+                return [base_span_event, span_link_events, span_event_events]
+            return base_span_event
+        # If the span is not an exit span, skip it by returning None.
+        if not exit_span_attrs_present:
+            return None
+        ct_exit_spans["kept"] += 1
+        # Only keep entity-synthesis, and error agent attributes, and intrinsics.
+        a_minimized_attrs = attribute.resolve_agent_attributes(
+            {key: a_attrs[key] for key in exit_span_attrs_present | exit_span_error_attrs_present},
+            settings.attribute_filter,
+            DST_SPAN_EVENTS,
+            attr_class=attr_class,
+        )
+        base_span_event = [i_attrs, {}, a_minimized_attrs]
+        if span_link_events or span_event_events:
+            return [base_span_event, span_link_events, span_event_events]
+        return base_span_event
+
+    def _span_event_partial_granularity_compact(
+        self, settings, base_attrs=None, parent_guid=None, attr_class=dict, ct_exit_spans=None
+    ):
+        base_attrs, attr_class, span_link_events, span_event_events = self.span_event(
+            settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class
+        )
+        if ct_exit_spans is None:
+            ct_exit_spans = {"instrumented": 0, "kept": 0, "dropped_ids": 0}
+
+        ct_exit_spans["instrumented"] += 1
+
+        i_attrs = (base_attrs and base_attrs.copy()) or attr_class()
+        i_attrs["type"] = "Span"
+        i_attrs["name"] = i_attrs.get("name") or self.name
+        i_attrs["guid"] = self.guid
+        i_attrs["timestamp"] = int(self.start_time * 1000)
+        i_attrs["duration"] = self.duration
+        i_attrs["category"] = i_attrs.get("category") or "generic"
+
+        if parent_guid:
+            i_attrs["parentId"] = parent_guid
+
+        a_attrs = self.agent_attributes
+
+        a_attrs_set = set(a_attrs)
+        exit_span_attrs_present = attribute.SPAN_ENTITY_RELATIONSHIP_ATTRIBUTES & a_attrs_set
+        exit_span_error_attrs_present = attribute.SPAN_ERROR_ATTRIBUTES & a_attrs_set
+        # If this is an entry span, add `nr.pg` to indicate transaction is partial
+        # granularity sampled.
+        if i_attrs.get("nr.entryPoint"):
+            i_attrs["nr.pg"] = True
+        # If this is the entry node or an LLM span always return it.
+        if i_attrs.get("nr.entryPoint") or i_attrs["name"].startswith("Llm/"):
+            ct_exit_spans["kept"] += 1
+            # Only keep entity-synthesis and error agent attributes, and intrinsics.
+            a_minimized_attrs = attribute.resolve_agent_attributes(
+                {key: a_attrs[key] for key in exit_span_attrs_present | exit_span_error_attrs_present},
+                settings.attribute_filter,
+                DST_SPAN_EVENTS,
+                attr_class=attr_class,
+            )
+            base_span_event = [i_attrs, {}, a_minimized_attrs]
+            if span_link_events or span_event_events:
+                return [base_span_event, span_link_events, span_event_events]
+            return base_span_event
+        # If the span is not an exit span, skip it by returning None.
+        if not exit_span_attrs_present:
+            return None
+        a_minimized_attrs = attribute.resolve_agent_attributes(
+            {key: a_attrs[key] for key in exit_span_attrs_present | exit_span_error_attrs_present},
+            settings.attribute_filter,
+            DST_SPAN_EVENTS,
+            attr_class=attr_class,
+        )
+
+        # If the span is an exit span but span compression (compact) is enabled,
+        # we need to check for uniqueness before returning it.
+        # Combine all the entity relationship attr values into a frozenset of tuples to be
+        # used as the hash to check for uniqueness.
+        span_attrs_hash = hash(
+            frozenset((key, a_minimized_attrs[key]) for key in exit_span_attrs_present if key in a_minimized_attrs)
+        )
+        # If this is a new exit span, add it to the known ct_exit_spans and
+        # return it.
+        if span_attrs_hash not in ct_exit_spans:
+            # nr.ids is the list of span guids that share this unqiue exit span.
+            i_attrs["nr.ids"] = []
+            i_attrs["nr.durations"] = self.duration
+            ct_exit_spans[span_attrs_hash] = [i_attrs, a_minimized_attrs]
+            ct_exit_spans["kept"] += 1
+            # Only keep entity-synthesis, and error agent attributes, and intrinsics.
+            base_span_event = [i_attrs, {}, a_minimized_attrs]
+            if span_link_events or span_event_events:
+                return [base_span_event, span_link_events, span_event_events]
+            return base_span_event
+        # If this is an exit span we've already seen, add the error attributes
+        # (last occurring error takes precedence), add it's guid to the list
+        # of ids on the seen span, compute the new duration & start time, and
+        # return None.
+        exit_span = ct_exit_spans[span_attrs_hash]
+        exit_span[1].update(
+            attr_class(
+                {key: a_minimized_attrs[key] for key in exit_span_error_attrs_present if key in a_minimized_attrs}
+            )
+        )
+        # Max size for `nr.ids` = 1024. Max length = 63 (each span id is 16 bytes + 8 bytes for list type).
+        if len(exit_span[0]["nr.ids"]) < 63:
+            exit_span[0]["nr.ids"].append(self.guid)
+        else:
+            ct_exit_spans["dropped_ids"] += 1
+
+        # Compute the new start and end time for all compressed spans and use
+        # that to set the duration for all compressed spans.
+        current_start_time = exit_span[0]["timestamp"]
+        current_end_time = exit_span[0]["timestamp"] / 1000 + exit_span[0]["nr.durations"]
+        new_start_time = i_attrs["timestamp"]
+        new_end_time = i_attrs["timestamp"] / 1000 + i_attrs["duration"]
+        set_start_time = min(new_start_time, current_start_time)
+        # If the new span starts after the old span's end time or the new span
+        # ends before the current span starts; add the durations.
+        if current_end_time < new_start_time / 1000 or new_end_time < current_start_time / 1000:
+            set_duration = exit_span[0]["nr.durations"] + i_attrs["duration"]
+        # Otherwise, if the new and old span's overlap in time, use the newest
+        # end time and subtract the start time from it to calculate the new
+        # duration.
+        else:
+            set_duration = max(current_end_time, new_end_time) - set_start_time / 1000
+        exit_span[0]["timestamp"] = set_start_time
+        exit_span[0]["nr.durations"] = set_duration
+
+    PARTIAL_GRANULARITY_SPAN_EVENT_METHODS = {  # noqa: RUF012
+        "reduced": _span_event_partial_granularity_reduced,
+        "essential": _span_event_partial_granularity_essential,
+        "compact": _span_event_partial_granularity_compact,
+    }
+
+    def span_event(self, settings, base_attrs=None, parent_guid=None, attr_class=dict):
+        return base_attrs, attr_class, None, None
+
+    def span_events_full_granularity(self, settings, base_attrs=None, parent_guid=None, attr_class=dict):
+        yield self._span_event_full_granularity(
+            settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class
+        )
 
         for child in self.children:
-            for event in child.span_events(  # noqa: UP028
+            yield from child.span_events_full_granularity(
                 settings, base_attrs=base_attrs, parent_guid=self.guid, attr_class=attr_class
+            )
+
+    def span_events_partial_granularity(
+        self, settings, span_event_method, base_attrs=None, parent_guid=None, attr_class=dict, ct_exit_spans=None
+    ):
+        span = span_event_method(
+            self=self,
+            settings=settings,
+            base_attrs=base_attrs,
+            parent_guid=parent_guid,
+            attr_class=attr_class,
+            ct_exit_spans=ct_exit_spans,
+        )
+        parent_id = parent_guid
+        # In partial granularity tracing, span will be None if the span is an inprocess span or repeated exit span.
+        if span:
+            yield span
+            # Compressed spans are always reparented onto the entry span.
+            if settings.distributed_tracing.sampler.partial_granularity.type != "compact" or span[0].get(
+                "nr.entryPoint"
             ):
-                yield event
+                parent_id = self.guid
+        for child in self.children:
+            for event in child.span_events_partial_granularity(
+                settings,
+                span_event_method,
+                base_attrs=base_attrs,
+                parent_guid=parent_id,
+                attr_class=attr_class,
+                ct_exit_spans=ct_exit_spans,
+            ):
+                # In partial granularity tracing, event will be None if the span is an inprocess span or repeated exit span.
+                if event:
+                    yield event
 
 
 class DatastoreNodeMixin(GenericNodeMixin):
@@ -108,11 +379,10 @@ class DatastoreNodeMixin(GenericNodeMixin):
         self._db_instance = db_instance_attr
         return db_instance_attr
 
-    def span_event(self, *args, **kwargs):
-        self.agent_attributes["db.instance"] = self.db_instance
-        attrs = super().span_event(*args, **kwargs)
-        i_attrs = attrs[0]
-        a_attrs = attrs[2]
+    def span_event(self, settings, base_attrs=None, parent_guid=None, attr_class=dict):
+        a_attrs = self.agent_attributes
+        a_attrs["db.instance"] = self.db_instance
+        i_attrs = (base_attrs and base_attrs.copy()) or attr_class()
 
         i_attrs["category"] = "datastore"
         i_attrs["span.kind"] = "client"
@@ -141,4 +411,4 @@ class DatastoreNodeMixin(GenericNodeMixin):
         except Exception:
             pass
 
-        return attrs
+        return i_attrs, attr_class, self.span_link_events, self.span_event_events

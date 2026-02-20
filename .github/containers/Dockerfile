@@ -74,18 +74,6 @@ RUN if [ "${TARGETPLATFORM}" = "linux/amd64" ]; then export ARCH="x86_64"; else 
     rm -rf /tmp/addlicense && \
     chmod +x /usr/local/bin/addlicense
 
-# Build librdkafka from source
-ARG LIBRDKAFKA_VERSION=2.1.1
-RUN cd /tmp && \
-    wget https://github.com/confluentinc/librdkafka/archive/refs/tags/v${LIBRDKAFKA_VERSION}.zip -O ./librdkafka.zip && \
-    unzip ./librdkafka.zip && \
-    rm ./librdkafka.zip && \
-    cd ./librdkafka-${LIBRDKAFKA_VERSION} && \
-    ./configure && \
-    make all install && \
-    cd /tmp && \
-    rm -rf ./librdkafka-${LIBRDKAFKA_VERSION}
-
 # Setup ODBC config
 RUN if [ "${TARGETPLATFORM}" = "linux/amd64" ]; then export ARCH="x86_64"; else export ARCH="aarch64"; fi && \
     sed -i "s|Driver=psqlodbca.so|Driver=/usr/lib/${ARCH}-linux-gnu/odbc/psqlodbca.so|g" /etc/odbcinst.ini && \
@@ -109,13 +97,11 @@ ENV PATH="${HOME}/.local/bin:${PATH}"
 ENV UV_PYTHON_PREFERENCE="only-managed"
 ENV UV_LINK_MODE="copy"
 
-# Install PyPy versions and rename shims
-RUN uv python install -f pp3.11 pp3.10
-RUN mv "${HOME}/.local/bin/python3.11" "${HOME}/.local/bin/pypy3.11" && \
-    mv "${HOME}/.local/bin/python3.10" "${HOME}/.local/bin/pypy3.10"
-
-# Install CPython versions
-RUN uv python install -f cp3.14 cp3.14t cp3.13 cp3.12 cp3.11 cp3.10 cp3.9
+# Install CPython and PyPy versions
+RUN uv python install -f \
+        cp3.14 cp3.13 cp3.12 cp3.11 cp3.10 cp3.9 cp3.8 \
+        pp3.11 pp3.10 \
+        cp3.14t
 
 # Set default Python version to CPython 3.13
 RUN uv python install -f --default cp3.13
@@ -130,7 +116,7 @@ EOF
 ENV UV_PYTHON_DOWNLOADS=never
 
 # Install tools with uv in isolated environments
-RUN uv tool install tox==4.23.2 --with tox-uv && \
+RUN uv tool install tox --with tox-uv && \
     uv tool install ruff && \
     uv tool install pre-commit --with pre-commit-uv && \
     uv tool install asv --with virtualenv

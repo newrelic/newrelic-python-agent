@@ -32,11 +32,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python: ["3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
+        python: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14"]
 
     env:
       ASV_FACTOR: "1.1"
       BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # 6.0.2
@@ -63,9 +64,10 @@ jobs:
 
       - name: Run Benchmark
         run: |
+          echo "Running continuous benchmarking between base commit ${BASE_SHA} and head commit ${HEAD_SHA}"
           asv continuous \
             --show-stderr \
             --split \
             --factor "${ASV_FACTOR}" \
             --python=${{ matrix.python }} \
-            "${BASE_SHA}" "${GITHUB_SHA}"
+            "${BASE_SHA}" "${HEAD_SHA}"

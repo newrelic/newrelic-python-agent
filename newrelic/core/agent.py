@@ -120,6 +120,7 @@ class Agent:
 
     _instance_lock = threading.Lock()
     _instance = None
+    _tracer_provider = None
     _startup_callables = []  # noqa: RUF012
     _registration_callables = {}  # noqa: RUF012
 
@@ -187,6 +188,46 @@ class Agent:
                 Agent._instance = instance
 
         return Agent._instance
+
+    @staticmethod
+    def opentelemetry_tracer_provider():
+        """Used by the tracer_provider() function to access/create the
+        single tracer provider object instance.
+
+        """
+        settings = newrelic.core.config.global_settings()
+
+        if not settings.opentelemetry.enabled and not newrelic.core.config._environ_as_bool(
+            "NEW_RELIC_OPENTELEMETRY_ENABLED"
+        ):
+            _logger.debug("OpenTelemetry mode is disabled.")
+            return
+
+        if Agent._tracer_provider:
+            return Agent._tracer_provider
+
+        with Agent._instance_lock:
+            if not Agent._tracer_provider:
+                try:
+                    from opentelemetry.trace import NoOpTracerProvider
+
+                    from newrelic.api.opentelemetry import TracerProvider
+
+                    if not settings.opentelemetry.traces.enabled and not newrelic.core.config._environ_as_bool(
+                        "NEW_RELIC_OPENTELEMETRY_TRACES_ENABLED"
+                    ):
+                        # Set this to prevent any potential crashes
+                        _logger.debug("OpenTelemetry traces are disabled.")
+                        Agent._tracer_provider = NoOpTracerProvider()
+                    else:
+                        Agent._tracer_provider = TracerProvider()
+                except ImportError:
+                    # `opentelemetry-api` is not installed, so tracer provider cannot be created
+                    _logger.warning(
+                        "OpenTelemetry mode has been enabled but `opentelemetry-api` is not installed, so no TracerProvider can be created.  Defaulting to New Relic specific monitoring."
+                    )
+
+        return Agent._tracer_provider
 
     def __init__(self, config):
         """Initialises the agent and attempt to establish a connection
@@ -581,9 +622,9 @@ class Agent:
 
         return application.normalize_name(name, rule_type)
 
-    def compute_sampled(self, app_name):
+    def compute_sampled(self, app_name, full_granularity, section, *args, **kwargs):
         application = self._applications.get(app_name, None)
-        return application.compute_sampled()
+        return application.compute_sampled(full_granularity, section, *args, **kwargs)
 
     def _harvest_shutdown_is_set(self):
         try:
@@ -766,6 +807,10 @@ def agent_instance():
     """
 
     return Agent.agent_singleton()
+
+
+def opentelemetry_tracer_provider():
+    return agent_instance().opentelemetry_tracer_provider()
 
 
 def shutdown_agent(timeout=None):

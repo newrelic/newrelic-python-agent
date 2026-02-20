@@ -43,6 +43,11 @@ import newrelic.core.agent
 import newrelic.core.config
 from newrelic.common.log_file import initialize_logging
 from newrelic.common.object_names import callable_name, expand_builtin_exception_name
+from newrelic.common.opentelemetry_tracers import (
+    HYBRID_AGENT_DEFAULT_INCLUDED_TRACERS_TO_NR_HOOKS,
+    TEMPORARILY_DISABLED_OPENTELEMETRY_FRAMEWORKS,
+)
+from newrelic.common.package_version_utils import get_package_version
 from newrelic.core import trace_cache
 from newrelic.core.agent_control_health import (
     HealthStatus,
@@ -53,6 +58,15 @@ from newrelic.core.config import Settings, apply_config_setting, default_host
 
 __all__ = ["filter_app_factory", "initialize"]
 
+
+# Add trace log level to logging module
+def trace(self, message, *args, **kws):
+    self.log(logging.TRACE, message, args, **kws)
+
+
+logging.TRACE = 5
+logging.addLevelName(logging.TRACE, "TRACE")
+logging.Logger.trace = trace
 _logger = logging.getLogger(__name__)
 
 DEPRECATED_MODULES = {"aioredis": datetime(2022, 2, 22, 0, 0, tzinfo=timezone.utc)}
@@ -66,7 +80,7 @@ def _map_aws_account_id(s):
 # triggering of callbacks to monkey patch modules before import
 # returns them to caller.
 
-sys.meta_path.insert(0, newrelic.api.import_hook.ImportHookFinder())
+newrelic.api.import_hook.enable_import_hook_finder()
 
 # The set of valid feature flags that the agent currently uses.
 # This will be used to validate what is provided and issue warnings
@@ -95,7 +109,17 @@ _settings = newrelic.api.settings.settings()
 # modules to look up customised settings defined in the loaded
 # configuration file.
 
-_config_object = configparser.RawConfigParser()
+
+def ratio(value):
+    try:
+        val = float(value)
+        if 0 < val <= 1:
+            return val
+    except ValueError:
+        pass
+
+
+_config_object = configparser.RawConfigParser(converters={"ratio": ratio})
 
 # Cache of the parsed global settings found in the configuration
 # file. We cache these so can dump them out to the log file once
@@ -108,7 +132,7 @@ agent_control_health = agent_control_health_instance()
 def _reset_config_parser():
     global _config_object
     global _cache_object
-    _config_object = configparser.RawConfigParser()
+    _config_object = configparser.RawConfigParser(converters={"ratio": ratio})
     _cache_object = []
 
 
@@ -150,6 +174,7 @@ _LOG_LEVEL = {
     "WARNING": logging.WARNING,
     "INFO": logging.INFO,
     "DEBUG": logging.DEBUG,
+    "TRACE": logging.TRACE,
 }
 
 _RECORD_SQL = {
@@ -319,6 +344,92 @@ def _process_setting(section, option, getter, mapper):
         _raise_configuration_error(section, option)
 
 
+def _process_dt_hidden_setting(section, option, getter):
+    try:
+        # The type of a value is dictated by the getter
+        # function supplied.
+
+        value = getattr(_config_object, getter)(section, option)
+
+        # Now need to apply the option from the
+        # configuration file to the internal settings
+        # object. Walk the object path and assign it.
+
+        target = _settings
+        fields = option.split(".", 1)
+
+        if value == "trace_id_ratio_based":
+            raise configparser.NoOptionError("trace_id_ratio_sampler option can only be set by configuring the ratio")
+        while True:
+            if len(fields) == 1:
+                value = value or "default"
+                # Store the value at the underscored location so if option is
+                # distributed_tracing.sampler.full_granularity.remote_parent_sampled
+                # store it at location
+                # distributed_tracing.sampler.full_granularity._remote_parent_sampled
+                setattr(target, f"_{fields[0]}", value)
+                break
+            target = getattr(target, fields[0])
+            fields = fields[1].split(".", 1)
+
+        # Cache the configuration so can be dumped out to
+        # log file when whole main configuration has been
+        # processed. This ensures that the log file and log
+        # level entries have been set.
+
+        _cache_object.append((option, value))
+
+    except configparser.NoSectionError:
+        pass
+
+    except configparser.NoOptionError:
+        pass
+
+    except Exception:
+        _raise_configuration_error(section, option)
+
+
+def _process_dt_sampler_setting(section, option, getter):
+    try:
+        # The type of a value is dictated by the getter
+        # function supplied.
+
+        value = getattr(_config_object, getter)(section, option)
+
+        # Now need to apply the option from the
+        # configuration file to the internal settings
+        # object. Walk the object path and assign it.
+
+        target = _settings
+        fields = option.split(".", 1)
+
+        while True:
+            if len(fields) == 1:
+                setattr(target, f"{fields[0]}", value)
+                break
+            elif fields[0] in ("root", "remote_parent_sampled", "remote_parent_not_sampled"):
+                sampler = fields[1].split(".", 1)[0]
+                setattr(target, f"_{fields[0]}", sampler)
+            target = getattr(target, fields[0])
+            fields = fields[1].split(".", 1)
+
+        # Cache the configuration so can be dumped out to
+        # log file when whole main configuration has been
+        # processed. This ensures that the log file and log
+        # level entries have been set.
+
+        _cache_object.append((option, value))
+
+    except configparser.NoSectionError:
+        pass
+
+    except configparser.NoOptionError:
+        pass
+
+    except Exception:
+        _raise_configuration_error(section, option)
+
+
 # Processing of all the settings for specified section except
 # for log file and log level which are applied separately to
 # ensure they are set as soon as possible.
@@ -404,8 +515,58 @@ def _process_configuration(section):
     _process_setting(section, "ml_insights_events.enabled", "getboolean", None)
     _process_setting(section, "distributed_tracing.enabled", "getboolean", None)
     _process_setting(section, "distributed_tracing.exclude_newrelic_header", "getboolean", None)
-    _process_setting(section, "distributed_tracing.sampler.remote_parent_sampled", "get", None)
-    _process_setting(section, "distributed_tracing.sampler.remote_parent_not_sampled", "get", None)
+    _process_setting(section, "distributed_tracing.sampler.adaptive_sampling_target", "getint", None)
+    _process_dt_hidden_setting(section, "distributed_tracing.sampler.root", "get")
+    _process_dt_sampler_setting(section, "distributed_tracing.sampler.root.adaptive.sampling_target", "getint")
+    _process_dt_sampler_setting(section, "distributed_tracing.sampler.root.trace_id_ratio_based.ratio", "getratio")
+    _process_dt_hidden_setting(section, "distributed_tracing.sampler.remote_parent_sampled", "get")
+    _process_dt_sampler_setting(
+        section, "distributed_tracing.sampler.remote_parent_sampled.adaptive.sampling_target", "getint"
+    )
+    _process_dt_sampler_setting(
+        section, "distributed_tracing.sampler.remote_parent_sampled.trace_id_ratio_based.ratio", "getratio"
+    )
+    _process_dt_hidden_setting(section, "distributed_tracing.sampler.remote_parent_not_sampled", "get")
+    _process_dt_sampler_setting(
+        section, "distributed_tracing.sampler.remote_parent_not_sampled.adaptive.sampling_target", "getint"
+    )
+    _process_dt_sampler_setting(
+        section, "distributed_tracing.sampler.remote_parent_not_sampled.trace_id_ratio_based.ratio", "getratio"
+    )
+    _process_setting(section, "distributed_tracing.sampler.full_granularity.enabled", "getboolean", None)
+    _process_setting(section, "distributed_tracing.sampler.partial_granularity.enabled", "getboolean", None)
+    _process_setting(section, "distributed_tracing.sampler.partial_granularity.type", "get", None)
+    _process_dt_hidden_setting(section, "distributed_tracing.sampler.partial_granularity.root", "get")
+    _process_dt_sampler_setting(
+        section, "distributed_tracing.sampler.partial_granularity.root.adaptive.sampling_target", "getint"
+    )
+    _process_dt_sampler_setting(
+        section, "distributed_tracing.sampler.partial_granularity.root.trace_id_ratio_based.ratio", "getratio"
+    )
+    _process_dt_hidden_setting(section, "distributed_tracing.sampler.partial_granularity.remote_parent_sampled", "get")
+    _process_dt_sampler_setting(
+        section,
+        "distributed_tracing.sampler.partial_granularity.remote_parent_sampled.adaptive.sampling_target",
+        "getint",
+    )
+    _process_dt_sampler_setting(
+        section,
+        "distributed_tracing.sampler.partial_granularity.remote_parent_sampled.trace_id_ratio_based.ratio",
+        "getratio",
+    )
+    _process_dt_hidden_setting(
+        section, "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled", "get"
+    )
+    _process_dt_sampler_setting(
+        section,
+        "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.adaptive.sampling_target",
+        "getint",
+    )
+    _process_dt_sampler_setting(
+        section,
+        "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.trace_id_ratio_based.ratio",
+        "getratio",
+    )
     _process_setting(section, "span_events.enabled", "getboolean", None)
     _process_setting(section, "span_events.max_samples_stored", "getint", None)
     _process_setting(section, "span_events.attributes.enabled", "getboolean", None)
@@ -518,6 +679,8 @@ def _process_configuration(section):
     _process_setting(section, "instrumentation.middleware.django.enabled", "getboolean", None)
     _process_setting(section, "instrumentation.middleware.django.exclude", "get", _map_inc_excl_middleware)
     _process_setting(section, "instrumentation.middleware.django.include", "get", _map_inc_excl_middleware)
+    _process_setting(section, "opentelemetry.enabled", "getboolean", None)
+    _process_setting(section, "opentelemetry.traces.enabled", "getboolean", None)
 
 
 # Loading of configuration from specified file and for specified
@@ -1986,6 +2149,10 @@ def _process_function_profile_configuration():
             _raise_configuration_error(section)
 
 
+opentelemetry_instrumentation = []
+opentelemetry_entrypoints = []
+
+
 def _process_module_definition(target, module, function="instrument"):
     enabled = True
     execute = None
@@ -2005,6 +2172,9 @@ def _process_module_definition(target, module, function="instrument"):
         pass
     except Exception:
         _raise_configuration_error(section)
+
+    if target in opentelemetry_instrumentation:
+        enabled = False
 
     try:
         if _config_object.has_option(section, "execute"):
@@ -4224,9 +4394,48 @@ def _process_module_builtin_defaults():
         "pyzeebe.worker.job_executor", "newrelic.hooks.external_pyzeebe", "instrument_pyzeebe_worker_job_executor"
     )
 
+    # Hybrid Agent Hooks
+    _process_module_definition(
+        "opentelemetry.context", "newrelic.hooks.hybridagent_opentelemetry", "instrument_context_api"
+    )
+
+    _process_module_definition(
+        "opentelemetry.instrumentation.propagators",
+        "newrelic.hooks.hybridagent_opentelemetry",
+        "instrument_global_propagators_api",
+    )
+
+    _process_module_definition(
+        "opentelemetry.trace", "newrelic.hooks.hybridagent_opentelemetry", "instrument_trace_api"
+    )
+
+    _process_module_definition(
+        "opentelemetry.util.http", "newrelic.hooks.hybridagent_opentelemetry", "instrument_util_http"
+    )
+
+    _process_module_definition(
+        "opentelemetry.instrumentation.utils", "newrelic.hooks.hybridagent_opentelemetry", "instrument_utils"
+    )
+
+    _process_module_definition(
+        "opentelemetry.instrumentation.pika.utils", "newrelic.hooks.hybridagent_opentelemetry", "instrument_pika_utils"
+    )
+
 
 def _process_module_entry_points():
-    from importlib.metadata import entry_points
+    try:
+        # importlib.metadata was introduced into the standard library starting in Python 3.8.
+        from importlib.metadata import entry_points
+    except ImportError:
+        try:
+            # importlib_metadata is a backport library installable from PyPI.
+            from importlib_metadata import entry_points
+        except ImportError:
+            try:
+                # Fallback to pkg_resources, which is available in older versions of setuptools.
+                from pkg_resources import iter_entry_points as entry_points
+            except ImportError:
+                return
 
     group = "newrelic.hooks"
 
@@ -4261,6 +4470,84 @@ def _reset_instrumentation_done():
     _instrumentation_done = False
 
 
+def _is_installed(req):
+    version = get_package_version(req)
+
+    if version:
+        return True
+    return False
+
+
+def _process_opentelemetry_instrumentation_entry_points(
+    final_include_dict=HYBRID_AGENT_DEFAULT_INCLUDED_TRACERS_TO_NR_HOOKS,
+):
+    if not _settings.opentelemetry.enabled or not _is_installed("opentelemetry-api"):
+        return
+
+    try:
+        # importlib.metadata was introduced into the standard library starting in Python 3.8.
+        from importlib.metadata import entry_points
+    except ImportError:
+        try:
+            # importlib_metadata is a backport library installable from PyPI.
+            from importlib_metadata import entry_points
+        except ImportError:
+            try:
+                # Fallback to pkg_resources, which is available in older versions of setuptools.
+                from pkg_resources import iter_entry_points as entry_points
+            except ImportError:
+                return
+
+    group = "opentelemetry_instrumentor"
+
+    try:
+        # group kwarg was only added to importlib.metadata.entry_points in Python 3.10.
+        _entry_points = entry_points(group=group)
+    except TypeError:
+        # Grab entire entry_points dictionary and select group from it.
+        _entry_points = entry_points().get(group, ())
+
+    entry_points_generator = (
+        entrypoint
+        for entrypoint in _entry_points
+        if entrypoint.name in final_include_dict
+        and entrypoint.name not in TEMPORARILY_DISABLED_OPENTELEMETRY_FRAMEWORKS
+    )
+
+    for entrypoint in entry_points_generator:
+        opentelemetry_entrypoints.append(entrypoint)
+        opentelemetry_instrumentation.extend(final_include_dict[entrypoint.name])
+
+    # Check for native installations
+    # NOTE: This logic will change once enabled and disabled
+    # functionality is implemented for opentelemetry.traces setting.
+    # NOTE: elasticsearch is instrumented both with libs and natively.
+    # To handle this case: If lib is installed, the library itself
+    # will check for native instrumentation and switch to that on its
+    # own, but if not, native instrumentation could still be used and
+    # we would not know.  We handle this as we are with strawberry-graphql
+    # and ariadne where we check to see if opentelemetry-api and the
+    # specific library are installed on the system.
+    for lib in ["strawberry-graphql", "ariadne", "elasticsearch"]:
+        if _is_installed(lib):
+            opentelemetry_instrumentation.extend(final_include_dict[lib])
+
+
+def _process_opentelemetry_instrumentors():
+    if not _settings.opentelemetry.enabled or not _is_installed("opentelemetry-api"):
+        return
+
+    tracer_provider = newrelic.core.agent.opentelemetry_tracer_provider()
+    for entrypoint in opentelemetry_entrypoints:
+        try:
+            instrumentor_class = entrypoint.load()
+            instrumentor = instrumentor_class()
+            instrumentor.instrument(tracer_provider=tracer_provider)
+            _logger.debug("Successfully instrumented OpenTelemetry tracer '%s' via entry point.", entrypoint.name)
+        except Exception as exc:
+            _logger.warning("Failed to instrument OpenTelemetry tracer '%s' via entry point: %s", entrypoint.name, exc)
+
+
 def _setup_instrumentation():
     global _instrumentation_done
 
@@ -4271,6 +4558,10 @@ def _setup_instrumentation():
 
     _process_module_configuration()
     _process_module_entry_points()
+    # Collection of NR disabled hooks must happen before _process_module_builtin_defaults()
+    # but the loading of the entrypoints must not happen until after the NR hooks are registered.
+    _process_opentelemetry_instrumentation_entry_points()
+
     _process_trace_cache_import_hooks()
     _process_module_builtin_defaults()
 
@@ -4292,9 +4583,23 @@ def _setup_instrumentation():
 
     _process_function_profile_configuration()
 
+    _process_opentelemetry_instrumentors()
+
 
 def _setup_extensions():
-    from importlib.metadata import entry_points
+    try:
+        # importlib.metadata was introduced into the standard library starting in Python 3.8.
+        from importlib.metadata import entry_points
+    except ImportError:
+        try:
+            # importlib_metadata is a backport library installable from PyPI.
+            from importlib_metadata import entry_points
+        except ImportError:
+            try:
+                # Fallback to pkg_resources, which is available in older versions of setuptools.
+                from pkg_resources import iter_entry_points as entry_points
+            except ImportError:
+                return
 
     group = "newrelic.extension"
 

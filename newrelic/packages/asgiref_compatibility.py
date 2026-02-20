@@ -30,16 +30,6 @@ import asyncio
 import inspect
 
 
-# Python 3.12 deprecates asyncio.iscoroutinefunction() as an alias for
-# inspect.iscoroutinefunction(), whilst also removing the _is_coroutine marker.
-# The latter is replaced with the inspect.markcoroutinefunction decorator.
-# Until 3.12 is the minimum supported Python version, provide a shim.
-
-if hasattr(inspect, "iscoroutinefunction"):
-    iscoroutinefunction = inspect.iscoroutinefunction
-else:
-    iscoroutinefunction = asyncio.iscoroutinefunction  # type: ignore[assignment]
-
 def is_double_callable(application):
     """
     Tests to see if an application is a legacy-style (double-callable) application.
@@ -56,10 +46,10 @@ def is_double_callable(application):
     if hasattr(application, "__call__"):
         # We only check to see if its __call__ is a coroutine function -
         # if it's not, it still might be a coroutine function itself.
-        if iscoroutinefunction(application.__call__):
+        if asyncio.iscoroutinefunction(application.__call__):
             return False
     # Non-classes we just check directly
-    return not iscoroutinefunction(application)
+    return not asyncio.iscoroutinefunction(application)
 
 
 def double_to_single_callable(application):

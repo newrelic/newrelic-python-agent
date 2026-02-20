@@ -34,6 +34,7 @@ from newrelic.common.object_wrapper import ObjectProxy, function_wrapper, wrap_f
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
 from newrelic.core.config import global_settings
+from newrelic.core.database_utils import generate_dynamodb_arn
 
 QUEUE_URL_PATTERN = re.compile(r"https://sqs.([\w\d-]+).amazonaws.com/(\d+)/([^/]+)")
 BOTOCORE_VERSION = get_package_version("botocore")
@@ -1293,21 +1294,10 @@ def dynamodb_datastore_trace(
             settings = transaction.settings if transaction.settings else global_settings()
             account_id = settings.cloud.aws.account_id if settings and settings.cloud.aws.account_id else None
 
-            # There are 3 different partition options.
-            # See  https://docs.aws.amazon.com/IAM/latest/UserGuide/reference-arns.html for details.
-            partition = None
-            if hasattr(instance, "_endpoint") and hasattr(instance._endpoint, "host"):
-                _db_host = instance._endpoint.host
-                partition = "aws"
-                if "amazonaws.cn" in _db_host:
-                    partition = "aws-cn"
-                elif "amazonaws-us-gov.com" in _db_host:
-                    partition = "aws-us-gov"
-
-            if partition and region and account_id and _target:
-                agent_attrs["cloud.resource_id"] = (
-                    f"arn:{partition}:dynamodb:{region}:{account_id:012d}:table/{_target}"
-                )
+            _db_host = getattr(getattr(instance, "_endpoint", None), "host", None)
+            resource_id = generate_dynamodb_arn(_db_host, region, account_id, _target)
+            if resource_id:
+                agent_attrs["cloud.resource_id"] = resource_id
 
         except Exception:
             _logger.debug("Failed to capture AWS DynamoDB info.", exc_info=True)

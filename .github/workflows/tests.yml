@@ -152,12 +152,12 @@ jobs:
 
   linux:
     env:
-      TOTAL_GROUPS: 2
+      TOTAL_GROUPS: 3
 
     strategy:
       fail-fast: false
       matrix:
-        group-number: [1, 2]
+        group-number: [1, 2, 3]
 
     runs-on: ubuntu-24.04
     container:
@@ -217,12 +217,12 @@ jobs:
 
   linux_arm64:
     env:
-      TOTAL_GROUPS: 2
+      TOTAL_GROUPS: 3
 
     strategy:
       fail-fast: false
       matrix:
-        group-number: [1, 2]
+        group-number: [1, 2, 3]
 
     runs-on: ubuntu-24.04-arm
     container:

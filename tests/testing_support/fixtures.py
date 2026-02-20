@@ -510,7 +510,11 @@ def check_event_attributes(event_data, required_params=None, forgone_params=None
     forgone_params = forgone_params or {}
     exact_attrs = exact_attrs or {}
 
-    intrinsics, user_attributes, agent_attributes = next(iter(event_data))
+    try:
+        intrinsics, user_attributes, agent_attributes = next(iter(event_data))
+    except StopIteration:
+        # If this happens it means there are no events.
+        intrinsics, user_attributes, agent_attributes = {}, {}, {}
 
     if required_params:
         for param in required_params["agent"]:
@@ -1048,7 +1052,7 @@ def override_application_name(app_name):
 
 @function_wrapper
 def dt_enabled(wrapped, instance, args, kwargs):
-    @transient_function_wrapper("newrelic.core.adaptive_sampler", "AdaptiveSampler.compute_sampled")
+    @transient_function_wrapper("newrelic.core.samplers.adaptive_sampler", "AdaptiveSampler.compute_sampled")
     def force_sampled(wrapped, instance, args, kwargs):
         wrapped(*args, **kwargs)
         return True

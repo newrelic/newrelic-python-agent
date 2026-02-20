@@ -1193,8 +1193,47 @@ class StatsEngine:
                 for event in transaction.span_protos(settings):
                     self._span_stream.put(event)
             elif transaction.sampled:
-                for event in transaction.span_events(self.__settings):
-                    self._span_events.add(event, priority=transaction.priority)
+                opentelemetry_enabled = settings.opentelemetry.enabled
+                if not opentelemetry_enabled:
+                    # When opentelemetry is not enabled, the event will not contain SpanLinks or SpanEvents,
+                    # so we can add the spans directly without filtering.
+                    for event in transaction.span_events(self.__settings):
+                        self._span_events.add(event, priority=transaction.priority)
+                else:
+                    for event in transaction.span_events(self.__settings):
+                        # When opentelemetry is enabled, the event may contain
+                        # SpanLinks and/or SpanEvents.
+                        if isinstance(event[-1], dict):
+                            # No SpanLinks or SpanEvents to consider, add spans directly
+                            self._span_events.add(event, priority=transaction.priority)
+                        else:
+                            # SpanLinks or SpanEvents are possible, one or both may also be empty lists.
+                            # A filter is used to remove any empty lists.
+                            new_event = list(filter(bool, event))
+                            self._span_events.add(new_event, priority=transaction.priority)
+
+                if transaction.partial_granularity_sampled:
+                    partial_gran_type = settings.distributed_tracing.sampler.partial_granularity.type
+                    self.record_custom_metric(
+                        f"Supportability/Python/PartialGranularity/{partial_gran_type}", {"count": 1}
+                    )
+                    instrumented = getattr(transaction, "spans_instrumented", 0)
+                    if instrumented:
+                        self.record_custom_metric(
+                            f"Supportability/DistributedTrace/PartialGranularity/{partial_gran_type}/Span/Instrumented",
+                            {"count": instrumented},
+                        )
+                    kept = getattr(transaction, "spans_kept", 0)
+                    if instrumented:
+                        self.record_custom_metric(
+                            f"Supportability/DistributedTrace/PartialGranularity/{partial_gran_type}/Span/Kept",
+                            {"count": kept},
+                        )
+                    dropped_ids = getattr(transaction, "partial_granularity_dropped_ids", 0)
+                    if dropped_ids:
+                        self.record_custom_metric(
+                            "Supportability/Python/PartialGranularity/NrIds/Dropped", {"count": dropped_ids}
+                        )
 
         # Merge in log events
 

@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
+import json
 import logging
 import sys
 import uuid
@@ -20,6 +20,7 @@ import uuid
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
+from newrelic.common.llm_utils import AsyncGeneratorProxy, _get_llm_metadata
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
@@ -34,9 +35,7 @@ AUTOGEN_VERSION = (
     or get_package_version("autogen-ext")
 )
 
-
 RECORD_EVENTS_FAILURE_LOG_MESSAGE = "Exception occurred in Autogen instrumentation: Failed to record LLM events. Please report this issue to New Relic Support.\n%s"
-
 
 _logger = logging.getLogger(__name__)
 
@@ -69,40 +68,95 @@ def wrap_on_messages_stream(wrapped, instance, args, kwargs):
 
     agent_name = getattr(instance, "name", "agent")
     agent_id = str(uuid.uuid4())
-    agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
     func_name = callable_name(wrapped)
     function_trace_name = f"{func_name}/{agent_name}"
 
+    agentic_subcomponent_data = {"type": "APM-AI_AGENT", "name": agent_name}
+
     ft = FunctionTrace(name=function_trace_name, group="Llm/agent/Autogen")
     ft.__enter__()
+    ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
+    linking_metadata = get_trace_linking_metadata()
 
     try:
         return_val = wrapped(*args, **kwargs)
     except Exception:
-        ft.notice_error(attributes={"agent_id": agent_id})
-        ft.__exit__(*sys.exc_info())
-        # If we hit an exception, append the error attribute and duration from the exited function trace
-        agent_event_dict.update({"duration": ft.duration * 1000, "error": True})
-        transaction.record_custom_event("LlmAgent", agent_event_dict)
         raise
 
-    ft.__exit__(None, None, None)
-    agent_event_dict.update({"duration": ft.duration * 1000})
+    try:
+        # Wrap returned async generator in a generator proxy and attach metadata needed to create LlmAgent event
+        proxied_return_val = AsyncGeneratorProxy(
+            return_val, _record_agent_event_on_stop_iteration, _handle_agent_streaming_completion_error
+        )
 
-    transaction.record_custom_event("LlmAgent", agent_event_dict)
+        proxied_return_val._nr_ft = ft
+        proxied_return_val._nr_metadata = linking_metadata
+        proxied_return_val._nr_autogen_attrs = {"agent_name": agent_name, "agent_id": agent_id}
+        return proxied_return_val
 
-    return return_val
+    except Exception:
+        # If proxy creation fails, clean up the function trace and return original value
+        ft.__exit__(*sys.exc_info())
+        return return_val
 
 
-def _get_llm_metadata(transaction):
-    # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
-    custom_attrs_dict = transaction._custom_params
-    llm_metadata_dict = {key: value for key, value in custom_attrs_dict.items() if key.startswith("llm.")}
-    llm_context_attrs = getattr(transaction, "_llm_context_attrs", None)
-    if llm_context_attrs:
-        llm_metadata_dict.update(llm_context_attrs)
+def _record_agent_event_on_stop_iteration(self, transaction):
+    if hasattr(self, "_nr_ft"):
+        # Use saved linking metadata to maintain correct span association
+        linking_metadata = self._nr_metadata or get_trace_linking_metadata()
+        self._nr_ft.__exit__(None, None, None)
+        try:
+            autogen_attrs = getattr(self, "_nr_autogen_attrs", {})
 
-    return llm_metadata_dict
+            # If there are no autogen attrs exit early as there's no data to record.
+            if not autogen_attrs:
+                return
+
+            agent_name = autogen_attrs.get("agent_name", "agent")
+            agent_id = autogen_attrs.get("agent_id")
+            agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction, linking_metadata)
+            agent_event_dict["duration"] = self._nr_ft.duration * 1000
+            transaction.record_custom_event("LlmAgent", agent_event_dict)
+
+        except Exception:
+            _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
+        finally:
+            # Clear cached data to prevent memory leaks and duplicate reporting
+            if hasattr(self, "_nr_autogen_attrs"):
+                self._nr_autogen_attrs.clear()
+
+
+def _handle_agent_streaming_completion_error(self, transaction):
+    if hasattr(self, "_nr_ft"):
+        autogen_attrs = getattr(self, "_nr_autogen_attrs", {})
+
+        # If there are no autogen attrs exit early as there's no data to record.
+        if not autogen_attrs:
+            self._nr_ft.__exit__(*sys.exc_info())
+            return
+
+        # Use saved linking metadata to maintain correct span association
+        linking_metadata = self._nr_metadata or get_trace_linking_metadata()
+
+        try:
+            agent_name = autogen_attrs.get("agent_name", "agent")
+            agent_id = autogen_attrs.get("agent_id")
+
+            # Notice the error on the function trace
+            self._nr_ft.notice_error(attributes={"agent_id": agent_id})
+            self._nr_ft.__exit__(*sys.exc_info())
+
+            # Create error event
+            agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction, linking_metadata)
+            agent_event_dict.update({"duration": self._nr_ft.duration * 1000, "error": True})
+            transaction.record_custom_event("LlmAgent", agent_event_dict)
+
+        except Exception:
+            _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
+        finally:
+            # Clear cached data to prevent memory leaks
+            if hasattr(self, "_nr_autogen_attrs"):
+                self._nr_autogen_attrs.clear()
 
 
 def _extract_tool_output(return_val, tool_name):
@@ -143,10 +197,8 @@ def _construct_base_tool_event_dict(bound_args, tool_call_data, tool_id, transac
     return tool_event_dict
 
 
-def _construct_base_agent_event_dict(agent_name, agent_id, transaction):
+def _construct_base_agent_event_dict(agent_name, agent_id, transaction, linking_metadata):
     try:
-        linking_metadata = get_trace_linking_metadata()
-
         agent_event_dict = {
             "id": agent_id,
             "name": agent_name,
@@ -180,12 +232,13 @@ async def wrap__execute_tool_call(wrapped, instance, args, kwargs):
     bound_args = bind_args(wrapped, args, kwargs)
     tool_call_data = bound_args.get("tool_call")
     tool_event_dict = _construct_base_tool_event_dict(bound_args, tool_call_data, tool_id, transaction, settings)
-
     tool_name = getattr(tool_call_data, "name", "tool")
-
     func_name = callable_name(wrapped)
+
+    agentic_subcomponent_data = {"type": "APM-AI_TOOL", "name": tool_name}
     ft = FunctionTrace(name=f"{func_name}/{tool_name}", group="Llm/tool/Autogen")
     ft.__enter__()
+    ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
 
     try:
         return_val = await wrapped(*args, **kwargs)

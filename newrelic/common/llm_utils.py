@@ -38,7 +38,7 @@ def _get_llm_metadata(transaction):
     return llm_metadata_dict
 
 
-class GeneratorProxy(ObjectProxy):
+class LLMStreamProxy(ObjectProxy):
     def __init__(self, wrapped, on_stop_iteration, on_error):
         super().__init__(wrapped)
         self._nr_on_stop_iteration = on_stop_iteration
@@ -97,10 +97,10 @@ class GeneratorProxy(ObjectProxy):
     def __copy__(self):
         # Required to properly interface with itertool.tee, which can be called by LangChain on generators
         self.__wrapped__, copy = itertools.tee(self.__wrapped__, 2)
-        return GeneratorProxy(copy, self._nr_on_stop_iteration, self._nr_on_error)
+        return LLMStreamProxy(copy, self._nr_on_stop_iteration, self._nr_on_error)
 
 
-class AsyncGeneratorProxy(ObjectProxy):
+class AsyncLLMStreamProxy(ObjectProxy):
     def __init__(self, wrapped, on_stop_iteration, on_error):
         super().__init__(wrapped)
         self._nr_on_stop_iteration = on_stop_iteration
@@ -159,4 +159,4 @@ class AsyncGeneratorProxy(ObjectProxy):
     def __copy__(self):
         # Required to properly interface with itertool.tee, which can be called by LangChain on generators
         self.__wrapped__, copy = itertools.tee(self.__wrapped__, n=2)
-        return AsyncGeneratorProxy(copy, self._nr_on_stop_iteration, self._nr_on_error)
+        return AsyncLLMStreamProxy(copy, self._nr_on_stop_iteration, self._nr_on_error)

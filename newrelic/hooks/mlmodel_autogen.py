@@ -20,7 +20,7 @@ import uuid
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
-from newrelic.common.llm_utils import AsyncGeneratorProxy, _get_llm_metadata
+from newrelic.common.llm_utils import AsyncLLMStreamProxy, _get_llm_metadata
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
@@ -85,7 +85,7 @@ def wrap_on_messages_stream(wrapped, instance, args, kwargs):
 
     try:
         # Wrap returned async generator in a generator proxy and attach metadata needed to create LlmAgent event
-        proxied_return_val = AsyncGeneratorProxy(
+        proxied_return_val = AsyncLLMStreamProxy(
             return_val, _record_agent_event_on_stop_iteration, _handle_agent_streaming_completion_error
         )
 

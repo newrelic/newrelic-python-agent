@@ -51,22 +51,22 @@ class LLMStreamProxy(ObjectProxy):
         return self
 
     def __next__(self):
-        return_val = None
         try:
             return_val = self._nr_wrapped_iter.__next__()
         except StopIteration:
-            self._nr_closed = True
             transaction = current_transaction()
             if transaction:
+                self._nr_closed = True
                 self._nr_on_stop_iteration(self, transaction)
             raise
         except Exception:
-            self._nr_closed = True
             transaction = current_transaction()
             if transaction:
+                self._nr_closed = True
                 self._nr_on_error(self, transaction)
             raise
-        return return_val
+        else:
+            return return_val
 
     def close(self):
         if self._nr_closed:
@@ -113,22 +113,22 @@ class AsyncLLMStreamProxy(ObjectProxy):
         return self
 
     async def __anext__(self):
-        return_val = None
         try:
             return_val = await self._nr_wrapped_iter.__anext__()
         except StopAsyncIteration:
-            self._nr_closed = True
             transaction = current_transaction()
             if transaction:
+                self._nr_closed = True
                 self._nr_on_stop_iteration(self, transaction)
             raise
         except Exception:
-            self._nr_closed = True
             transaction = current_transaction()
             if transaction:
+                self._nr_closed = True
                 self._nr_on_error(self, transaction)
             raise
-        return return_val
+        else:
+            return return_val
 
     async def aclose(self):
         if self._nr_closed:

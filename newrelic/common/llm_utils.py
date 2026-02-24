@@ -51,20 +51,20 @@ class GeneratorProxy(ObjectProxy):
         return self
 
     def __next__(self):
-        transaction = current_transaction()
-        if not transaction:
-            return self._nr_wrapped_iter.__next__()
-
         return_val = None
         try:
             return_val = self._nr_wrapped_iter.__next__()
         except StopIteration:
             self._nr_closed = True
-            self._nr_on_stop_iteration(self, transaction)
+            transaction = current_transaction()
+            if transaction:
+                self._nr_on_stop_iteration(self, transaction)
             raise
         except Exception:
             self._nr_closed = True
-            self._nr_on_error(self, transaction)
+            transaction = current_transaction()
+            if transaction:
+                self._nr_on_error(self, transaction)
             raise
         return return_val
 
@@ -113,20 +113,20 @@ class AsyncGeneratorProxy(ObjectProxy):
         return self
 
     async def __anext__(self):
-        transaction = current_transaction()
-        if not transaction:
-            return await self._nr_wrapped_iter.__anext__()
-
         return_val = None
         try:
             return_val = await self._nr_wrapped_iter.__anext__()
         except StopAsyncIteration:
             self._nr_closed = True
-            self._nr_on_stop_iteration(self, transaction)
+            transaction = current_transaction()
+            if transaction:
+                self._nr_on_stop_iteration(self, transaction)
             raise
         except Exception:
             self._nr_closed = True
-            self._nr_on_error(self, transaction)
+            transaction = current_transaction()
+            if transaction:
+                self._nr_on_error(self, transaction)
             raise
         return return_val
 

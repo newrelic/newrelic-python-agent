@@ -1284,27 +1284,14 @@ class Application:
                                 data_sampler.name,
                             )
 
-                    # Send environment plugin list
-
-                    stopwatch_start = time.time()
-                    while (
-                        configuration
-                        and configuration.package_reporting.enabled
-                        and self._remaining_plugins
-                        and ((time.time() - stopwatch_start) < MAX_PACKAGE_CAPTURE_TIME_PER_SLOW_HARVEST)
-                    ):
+                    # Send environment plugin.
+                    # Send one per cycle to avoid time outs/
+                    # lost module info for larger module loading.
+                    if self.configuration and self.configuration.package_reporting.enabled:
                         try:
-                            module_info = next(self.plugins)
-                            self.modules.append(module_info)
+                            self._active_session.send_loaded_modules(next(self.plugins))
                         except StopIteration:
-                            self._remaining_plugins = False
-
-                    # Send the accumulated environment plugin list if not empty
-                    if self.modules:
-                        self._active_session.send_loaded_modules(self.modules)
-
-                        # Reset the modules list every harvest cycle
-                        self.modules = []
+                            pass
 
                     # Add a metric we can use to track how many harvest
                     # periods have occurred.
@@ -1745,15 +1732,12 @@ class Application:
         # if this has not been completed during harvest
         # lifetime of the application
 
-        while self.configuration and self.configuration.package_reporting.enabled and self._remaining_plugins:
-            try:
-                module_info = next(self.plugins)
-                self.modules.append(module_info)
-            except StopIteration:
-                self._remaining_plugins = False
-                if self.modules:
-                    self._active_session.send_loaded_modules(self.modules)
-                    self.modules = []
+        if self.configuration and self.configuration.package_reporting.enabled:
+            # Anything that was left in the plugins generator
+            # will be resolved here.
+            plugins_list = list(self.plugins)
+            if plugins_list:
+                self._active_session.send_loaded_modules(plugins_list)
 
         # Now shutdown the actual agent session.
 

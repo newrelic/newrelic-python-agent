@@ -42,6 +42,15 @@ _logger = logging.getLogger(__name__)
 
 
 class AsyncLLMStreamProxy(BaseAsyncLLMStreamProxy):
+    def __init__(self, *args, **kwargs):
+        global AutogenResponse
+        try:
+            from autogen_agentchat.base import Response as AutogenResponse
+        except ImportError:
+            AutogenResponse = None
+
+        super().__init__(*args, **kwargs)
+
     async def __anext__(self):
         try:
             return_val = await self._nr_wrapped_iter.__anext__()
@@ -62,16 +71,11 @@ class AsyncLLMStreamProxy(BaseAsyncLLMStreamProxy):
             # StopAsyncIteration won't be raised until the next call. If so, we can record the events
             # immediately instead of waiting to handle the case of calling break on the stream
             # without exhausting it.
-            try:
-                from autogen_agentchat.base import Response
-            except ImportError:
-                pass
-            else:
-                if isinstance(return_val, Response):
-                    transaction = current_transaction()
-                    if transaction:
-                        self._nr_closed = True
-                        self._nr_on_stop_iteration(self, transaction)
+            if AutogenResponse is not None and isinstance(return_val, AutogenResponse):
+                transaction = current_transaction()
+                if transaction:
+                    self._nr_closed = True
+                    self._nr_on_stop_iteration(self, transaction)
 
             return return_val
 

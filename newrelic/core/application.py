@@ -1289,7 +1289,7 @@ class Application:
                     # lost module info for larger module loading.
                     if self.configuration and self.configuration.package_reporting.enabled:
                         try:
-                            self._active_session.send_loaded_modules(next(self.plugins))
+                            self._active_session.send_loaded_modules([next(self.plugins)])
                         except StopIteration:
                             pass
 

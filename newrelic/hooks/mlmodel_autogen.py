@@ -20,7 +20,8 @@ import uuid
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
-from newrelic.common.llm_utils import AsyncLLMStreamProxy, _get_llm_metadata
+from newrelic.common.llm_utils import AsyncLLMStreamProxy as BaseAsyncLLMStreamProxy
+from newrelic.common.llm_utils import _get_llm_metadata
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
@@ -38,6 +39,41 @@ AUTOGEN_VERSION = (
 RECORD_EVENTS_FAILURE_LOG_MESSAGE = "Exception occurred in Autogen instrumentation: Failed to record LLM events. Please report this issue to New Relic Support.\n%s"
 
 _logger = logging.getLogger(__name__)
+
+
+class AsyncLLMStreamProxy(BaseAsyncLLMStreamProxy):
+    async def __anext__(self):
+        try:
+            return_val = await self._nr_wrapped_iter.__anext__()
+        except StopAsyncIteration:
+            transaction = current_transaction()
+            if transaction:
+                self._nr_closed = True
+                self._nr_on_stop_iteration(self, transaction)
+            raise
+        except Exception:
+            transaction = current_transaction()
+            if transaction:
+                self._nr_closed = True
+                self._nr_on_error(self, transaction)
+            raise
+        else:
+            # Check if the returned value is a TaskResult, which indicates the stream has completed but
+            # StopAsyncIteration won't be raised until the next call. If so, we can record the events
+            # immediately instead of waiting to handle the case of calling break on the stream
+            # without exhausting it.
+            try:
+                from autogen_agentchat.base import Response
+            except ImportError:
+                pass
+            else:
+                if isinstance(return_val, Response):
+                    transaction = current_transaction()
+                    if transaction:
+                        self._nr_closed = True
+                        self._nr_on_stop_iteration(self, transaction)
+
+            return return_val
 
 
 async def wrap_from_server_params(wrapped, instance, args, kwargs):

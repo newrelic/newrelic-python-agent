@@ -137,42 +137,6 @@ def test_async_llm_stream_proxy_on_close(event_loop, async_stream_proxy, on_stop
 
 
 @background_task()
-def test_llm_stream_proxy_on_delete(stream_proxy, on_stop_iteration_event, on_error_event):
-    def gen():
-        yield from range(4)
-
-    proxy = stream_proxy(gen())
-    iterator = iter(proxy)
-    next(iterator)  # Start the generator so we can manipulate it
-
-    del proxy, iterator  # Delete references to allow garbage collection
-    gc.collect()  # Force garbage collection to ensure __del__ is called
-
-    assert on_stop_iteration_event.is_set()
-    assert not on_error_event.is_set()
-
-
-@background_task()
-def test_async_llm_stream_proxy_on_delete(event_loop, async_stream_proxy, on_stop_iteration_event, on_error_event):
-    async def agen():
-        for i in range(4):
-            yield i
-
-    async def _test():
-        proxy = async_stream_proxy(agen())
-        iterator = proxy.__aiter__()
-        await iterator.__anext__()  # Start the generator so we can manipulate it
-
-        del proxy, iterator  # Delete references to allow garbage collection
-        gc.collect()  # Force garbage collection to ensure __del__ is called
-
-        assert on_stop_iteration_event.is_set()
-        assert not on_error_event.is_set()
-
-    event_loop.run_until_complete(_test())
-
-
-@background_task()
 def test_llm_stream_proxy_on_error(stream_proxy, on_stop_iteration_event, on_error_event):
     def gen():
         yield 1

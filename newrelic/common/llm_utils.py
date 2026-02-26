@@ -94,17 +94,6 @@ class LLMStreamProxy(ObjectProxy):
 
         return self.__wrapped__.throw(*args)
 
-    def __del__(self):
-        if self._nr_closed:
-            # If we already sent the related events there's nothing left to do.
-            return
-
-        transaction = current_transaction()
-        if transaction:
-            # Send the events as if we were hitting StopAsyncIteration.
-            self._nr_closed = True
-            self._nr_on_stop_iteration(self, transaction)
-
     def __copy__(self):
         # Required to properly interface with itertool.tee, which can be called by LangChain on generators
         self.__wrapped__, copy = itertools.tee(self.__wrapped__, 2)
@@ -166,17 +155,6 @@ class AsyncLLMStreamProxy(ObjectProxy):
             self._nr_on_error(self, transaction)
 
         return await self.__wrapped__.athrow(*args)
-
-    def __del__(self):
-        if self._nr_closed:
-            # If we already sent the related events there's nothing left to do.
-            return
-
-        transaction = current_transaction()
-        if transaction:
-            # Send the events as if we were hitting StopAsyncIteration.
-            self._nr_closed = True
-            self._nr_on_stop_iteration(self, transaction)
 
     def __copy__(self):
         # Required to properly interface with itertool.tee, which can be called by LangChain on generators

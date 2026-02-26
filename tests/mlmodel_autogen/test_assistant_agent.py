@@ -92,6 +92,12 @@ agent_recorded_event = [
 ]
 
 
+PIRATE_AGENT_METRICS = [
+    ("Llm/agent/Autogen/autogen_agentchat.agents._assistant_agent:AssistantAgent.on_messages_stream/pirate_agent", 1),
+    ("Llm/tool/Autogen/autogen_agentchat.agents._assistant_agent:AssistantAgent._execute_tool_call/add_exclamation", 1),
+]
+
+
 # Example tool for testing purposes
 def add_exclamation(message: str) -> str:
     return f"{message}!"
@@ -104,26 +110,8 @@ def add_exclamation(message: str) -> str:
 @validate_custom_event_count(count=2)
 @validate_transaction_metrics(
     "test_assistant_agent:test_run_assistant_agent",
-    scoped_metrics=[
-        (
-            "Llm/agent/Autogen/autogen_agentchat.agents._assistant_agent:AssistantAgent.on_messages_stream/pirate_agent",
-            1,
-        ),
-        (
-            "Llm/tool/Autogen/autogen_agentchat.agents._assistant_agent:AssistantAgent._execute_tool_call/add_exclamation",
-            1,
-        ),
-    ],
-    rollup_metrics=[
-        (
-            "Llm/agent/Autogen/autogen_agentchat.agents._assistant_agent:AssistantAgent.on_messages_stream/pirate_agent",
-            1,
-        ),
-        (
-            "Llm/tool/Autogen/autogen_agentchat.agents._assistant_agent:AssistantAgent._execute_tool_call/add_exclamation",
-            1,
-        ),
-    ],
+    scoped_metrics=PIRATE_AGENT_METRICS,
+    rollup_metrics=PIRATE_AGENT_METRICS,
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -147,31 +135,43 @@ def test_run_assistant_agent(loop, set_trace_info, single_tool_model_client):
 @validate_custom_event_count(count=2)
 @validate_transaction_metrics(
     "test_assistant_agent:test_run_stream_assistant_agent",
-    scoped_metrics=[
-        (
-            "Llm/agent/Autogen/autogen_agentchat.agents._assistant_agent:AssistantAgent.on_messages_stream/pirate_agent",
-            1,
-        ),
-        (
-            "Llm/tool/Autogen/autogen_agentchat.agents._assistant_agent:AssistantAgent._execute_tool_call/add_exclamation",
-            1,
-        ),
-    ],
-    rollup_metrics=[
-        (
-            "Llm/agent/Autogen/autogen_agentchat.agents._assistant_agent:AssistantAgent.on_messages_stream/pirate_agent",
-            1,
-        ),
-        (
-            "Llm/tool/Autogen/autogen_agentchat.agents._assistant_agent:AssistantAgent._execute_tool_call/add_exclamation",
-            1,
-        ),
-    ],
+    scoped_metrics=PIRATE_AGENT_METRICS,
+    rollup_metrics=PIRATE_AGENT_METRICS,
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
 @background_task()
 def test_run_stream_assistant_agent(loop, set_trace_info, single_tool_model_client):
+    set_trace_info()
+
+    pirate_agent = AssistantAgent(
+        name="pirate_agent", model_client=single_tool_model_client, tools=[add_exclamation], model_client_stream=True
+    )
+
+    async def _test():
+        response = pirate_agent.run_stream()
+        result = ""
+        async for message in response:
+            if not isinstance(message, TaskResult):
+                result += message.to_text()
+
+        assert "Hello!" in result
+
+    loop.run_until_complete(_test())
+
+
+@reset_core_stats_engine()
+@validate_custom_events(tool_recorded_event + agent_recorded_event)
+@validate_custom_event_count(count=2)
+@validate_transaction_metrics(
+    "test_assistant_agent:test_run_stream_assistant_agent_early_exit",
+    scoped_metrics=PIRATE_AGENT_METRICS,
+    rollup_metrics=PIRATE_AGENT_METRICS,
+    background_task=True,
+)
+@validate_attributes("agent", ["llm"])
+@background_task()
+def test_run_stream_assistant_agent_early_exit(loop, set_trace_info, single_tool_model_client):
     set_trace_info()
 
     pirate_agent = AssistantAgent(
@@ -193,31 +193,47 @@ def test_run_stream_assistant_agent(loop, set_trace_info, single_tool_model_clie
 
 
 @reset_core_stats_engine()
+@validate_custom_events(tool_recorded_event + agent_recorded_event)
+@validate_custom_event_count(count=2)
+@validate_transaction_metrics(
+    "test_assistant_agent:test_run_stream_assistant_agent_aclose",
+    scoped_metrics=PIRATE_AGENT_METRICS,
+    rollup_metrics=PIRATE_AGENT_METRICS,
+    background_task=True,
+)
+@validate_attributes("agent", ["llm"])
+@background_task()
+def test_run_stream_assistant_agent_aclose(loop, set_trace_info, single_tool_model_client):
+    set_trace_info()
+
+    pirate_agent = AssistantAgent(
+        name="pirate_agent", model_client=single_tool_model_client, tools=[add_exclamation], model_client_stream=True
+    )
+
+    async def _test():
+        response = pirate_agent.run_stream()
+        result = ""
+        async for message in response:
+            if not isinstance(message, TaskResult):
+                result += message.to_text()
+            else:
+                break
+
+        await response.aclose()
+
+        assert "Hello!" in result
+
+    loop.run_until_complete(_test())
+
+
+@reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
 @validate_custom_events(tool_events_sans_content(tool_recorded_event) + agent_recorded_event)
 @validate_custom_event_count(count=2)
 @validate_transaction_metrics(
     "test_assistant_agent:test_run_assistant_agent_no_content",
-    scoped_metrics=[
-        (
-            "Llm/agent/Autogen/autogen_agentchat.agents._assistant_agent:AssistantAgent.on_messages_stream/pirate_agent",
-            1,
-        ),
-        (
-            "Llm/tool/Autogen/autogen_agentchat.agents._assistant_agent:AssistantAgent._execute_tool_call/add_exclamation",
-            1,
-        ),
-    ],
-    rollup_metrics=[
-        (
-            "Llm/agent/Autogen/autogen_agentchat.agents._assistant_agent:AssistantAgent.on_messages_stream/pirate_agent",
-            1,
-        ),
-        (
-            "Llm/tool/Autogen/autogen_agentchat.agents._assistant_agent:AssistantAgent._execute_tool_call/add_exclamation",
-            1,
-        ),
-    ],
+    scoped_metrics=PIRATE_AGENT_METRICS,
+    rollup_metrics=PIRATE_AGENT_METRICS,
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -266,26 +282,8 @@ SKIP_IF_AUTOGEN_062 = pytest.mark.skipif(
 @validate_custom_event_count(count=2)
 @validate_transaction_metrics(
     "test_assistant_agent:test_run_assistant_agent_error",
-    scoped_metrics=[
-        (
-            "Llm/agent/Autogen/autogen_agentchat.agents._assistant_agent:AssistantAgent.on_messages_stream/pirate_agent",
-            1,
-        ),
-        (
-            "Llm/tool/Autogen/autogen_agentchat.agents._assistant_agent:AssistantAgent._execute_tool_call/add_exclamation",
-            1,
-        ),
-    ],
-    rollup_metrics=[
-        (
-            "Llm/agent/Autogen/autogen_agentchat.agents._assistant_agent:AssistantAgent.on_messages_stream/pirate_agent",
-            1,
-        ),
-        (
-            "Llm/tool/Autogen/autogen_agentchat.agents._assistant_agent:AssistantAgent._execute_tool_call/add_exclamation",
-            1,
-        ),
-    ],
+    scoped_metrics=PIRATE_AGENT_METRICS,
+    rollup_metrics=PIRATE_AGENT_METRICS,
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])

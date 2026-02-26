@@ -58,7 +58,7 @@ class AsyncLLMStreamProxy(BaseAsyncLLMStreamProxy):
                 self._nr_on_error(self, transaction)
             raise
         else:
-            # Check if the returned value is a TaskResult, which indicates the stream has completed but
+            # Check if the returned value is a Response, which indicates the stream has completed but
             # StopAsyncIteration won't be raised until the next call. If so, we can record the events
             # immediately instead of waiting to handle the case of calling break on the stream
             # without exhausting it.

@@ -12,8 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import asyncio
 import copy
 import json
+import random
+import time
 
 import pytest
 import webtest
@@ -23,6 +26,21 @@ from testing_support.validators.validate_function_called import validate_functio
 from testing_support.validators.validate_function_not_called import validate_function_not_called
 from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_transaction_object_attributes import validate_transaction_object_attributes
+
+from newrelic.api.application import application_instance
+from newrelic.api.function_trace import function_trace
+from newrelic.common.object_names import callable_name
+from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper
+
+try:
+    from newrelic.core.infinite_tracing_pb2 import AttributeValue, Span
+except:
+    AttributeValue = None
+    Span = None
+
+from testing_support.mock_external_http_server import MockExternalHTTPHResponseHeadersServer
+from testing_support.validators.validate_span_events import check_value_equals, validate_span_events
 
 from newrelic.api.application import application_instance
 from newrelic.api.background_task import BackgroundTask, background_task
@@ -39,6 +57,7 @@ from newrelic.api.web_transaction import WSGIWebTransaction
 from newrelic.api.wsgi_application import wsgi_application
 from newrelic.core.attribute import Attribute
 
+# ruff: noqa: UP031
 distributed_trace_intrinsics = ["guid", "traceId", "priority", "sampled"]
 inbound_payload_intrinsics = [
     "parent.type",
@@ -69,6 +88,110 @@ parent_info = {
     "parent_app": payload["d"]["ap"],
     "parent_transport_type": "HTTP",
 }
+
+
+def validate_compact_span_event(
+    name, compressed_span_count, expected_nr_durations_low_bound, expected_nr_durations_high_bound
+):
+    @function_wrapper
+    def _validate_wrapper(wrapped, instance, args, kwargs):
+        record_transaction_called = []
+        recorded_span_events = []
+
+        @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_transaction")
+        def capture_span_events(wrapped, instance, args, kwargs):
+            events = []
+
+            @transient_function_wrapper("newrelic.common.streaming_utils", "StreamBuffer.put")
+            def stream_capture(wrapped, instance, args, kwargs):
+                event = args[0]
+                events.append(event)
+                return wrapped(*args, **kwargs)
+
+            record_transaction_called.append(True)
+            try:
+                result = stream_capture(wrapped)(*args, **kwargs)
+            except:
+                raise
+            else:
+                if not instance.settings.infinite_tracing.enabled:
+                    events = [event for priority, seen_at, event in instance.span_events.pq]
+
+                recorded_span_events.append(events)
+
+            return result
+
+        _new_wrapper = capture_span_events(wrapped)
+        val = _new_wrapper(*args, **kwargs)
+        assert record_transaction_called
+        captured_events = recorded_span_events.pop(-1)
+
+        mismatches = []
+        matching_span_events = 0
+
+        def _span_details():
+            details = [
+                f"matching_span_events={matching_span_events}",
+                f"mismatches={mismatches}",
+                f"captured_events={captured_events}",
+            ]
+            return "\n".join(details)
+
+        for captured_event in captured_events:
+            if Span and isinstance(captured_event, Span):
+                intrinsics = captured_event.intrinsics
+                user_attrs = captured_event.user_attributes
+                agent_attrs = captured_event.agent_attributes
+            else:
+                intrinsics, _, _ = captured_event
+
+            # Find the span by name.
+            if not check_value_equals(intrinsics, "name", name):
+                continue
+            assert check_value_length(intrinsics, "nr.ids", compressed_span_count - 1, mismatches), _span_details()
+            assert check_value_between(
+                intrinsics,
+                "nr.durations",
+                expected_nr_durations_low_bound,
+                expected_nr_durations_high_bound,
+                mismatches,
+            ), _span_details()
+            matching_span_events += 1
+
+        assert matching_span_events == 1, _span_details()
+        return val
+
+    return _validate_wrapper
+
+
+def check_value_between(dictionary, key, expected_min, expected_max, mismatches):
+    value = dictionary.get(key)
+    if AttributeValue and isinstance(value, AttributeValue):
+        for _, val in value.ListFields():
+            if not (expected_min < val < expected_max):
+                mismatches.append(f"key: {key}, not {expected_min} < {val} < {expected_max}")
+                return False
+        return True
+    else:
+        if not (expected_min < value < expected_max):
+            mismatches.append(f"key: {key}, not {expected_min} < {value} < {expected_max}")
+            return False
+        return True
+
+
+def check_value_length(dictionary, key, expected_length, mismatches):
+    value = dictionary.get(key)
+    if AttributeValue and isinstance(value, AttributeValue):
+        for _, val in value.ListFields():
+            if len(val) != expected_length:
+                mismatches.append(f"key: {key}, not len({val}) == {expected_length}")
+                return False
+        return True
+    else:
+        if len(value) != expected_length:
+            mismatches.append(f"key: {key}, not len({value}) == {expected_length}")
+            return False
+        return True
 
 
 @wsgi_application()
@@ -419,24 +542,116 @@ def test_inbound_dt_payload_acceptance(trusted_account_key):
 
 
 @pytest.mark.parametrize(
-    "sampled,remote_parent_sampled,remote_parent_not_sampled,expected_sampled,expected_priority,expected_adaptive_sampling_algo_called",
+    "newrelic_header,traceparent_sampled,newrelic_sampled,root_setting,remote_parent_sampled_setting,remote_parent_not_sampled_setting,expected_sampled,expected_priority,expected_adaptive_sampling_algo_called",
     (
-        (True, "default", "default", None, None, True),  # Uses sampling algo.
-        (True, "always_on", "default", True, 2, False),  # Always sampled.
-        (True, "always_off", "default", False, 0, False),  # Never sampled.
-        (False, "default", "default", None, None, True),  # Uses sampling algo.
-        (False, "always_on", "default", None, None, True),  # Uses sampling alog.
-        (False, "always_off", "default", None, None, True),  # Uses sampling algo.
-        (True, "default", "always_on", None, None, True),  # Uses sampling algo.
-        (True, "default", "always_off", None, None, True),  # Uses sampling algo.
-        (False, "default", "always_on", True, 2, False),  # Always sampled.
-        (False, "default", "always_off", False, 0, False),  # Never sampled.
+        (False, None, None, "default", "default", "default", None, None, True),  # Uses adaptive sampling algo.
+        (False, None, None, "always_on", "default", "default", True, 3, False),  # Always sampled.
+        (False, None, None, "always_off", "default", "default", False, 0, False),  # Never sampled.
+        (True, True, None, "default", "default", "default", None, None, True),  # Uses adaptive sampling algo.
+        (True, True, None, "default", "always_on", "default", True, 3, False),  # Always sampled.
+        (True, True, None, "default", "always_off", "default", False, 0, False),  # Never sampled.
+        (True, False, None, "default", "default", "default", None, None, True),  # Uses adaptive sampling algo.
+        (True, False, None, "default", "always_on", "default", None, None, True),  # Uses adaptive sampling alog.
+        (True, False, None, "default", "always_off", "default", None, None, True),  # Uses adaptive sampling algo.
+        (True, True, None, "default", "default", "always_on", None, None, True),  # Uses adaptive sampling algo.
+        (True, True, None, "default", "default", "always_off", None, None, True),  # Uses adaptive sampling algo.
+        (True, False, None, "default", "default", "always_on", True, 3, False),  # Always sampled.
+        (True, False, None, "default", "default", "always_off", False, 0, False),  # Never sampled.
+        (
+            True,
+            True,
+            True,
+            "default",
+            "default",
+            "default",
+            True,
+            1.23456,
+            False,
+        ),  # Uses sampling decision in W3C TraceState header.
+        (
+            True,
+            True,
+            False,
+            "default",
+            "default",
+            "default",
+            False,
+            1.23456,
+            False,
+        ),  # Uses sampling decision in W3C TraceState header.
+        (
+            True,
+            False,
+            False,
+            "default",
+            "default",
+            "default",
+            False,
+            1.23456,
+            False,
+        ),  # Uses sampling decision in W3C TraceState header.
+        (True, True, False, "default", "always_on", "default", True, 3, False),  # Always sampled.
+        (True, True, True, "default", "always_off", "default", False, 0, False),  # Never sampled.
+        (True, False, False, "default", "default", "always_on", True, 3, False),  # Always sampled.
+        (True, False, True, "default", "default", "always_off", False, 0, False),  # Never sampled.
+        (
+            True,
+            None,
+            True,
+            "default",
+            "default",
+            "default",
+            True,
+            0.1234,
+            False,
+        ),  # Uses sampling and priority from newrelic header.
+        (True, None, True, "default", "always_on", "default", True, 3, False),  # Always sampled.
+        (True, None, True, "default", "always_off", "default", False, 0, False),  # Never sampled.
+        (
+            True,
+            None,
+            False,
+            "default",
+            "default",
+            "default",
+            False,
+            0.1234,
+            False,
+        ),  # Uses sampling and priority from newrelic header.
+        (
+            True,
+            None,
+            False,
+            "default",
+            "always_on",
+            "default",
+            False,
+            0.1234,
+            False,
+        ),  # Uses sampling and priority from newrelic header.
+        (
+            True,
+            None,
+            True,
+            "default",
+            "default",
+            "always_on",
+            True,
+            0.1234,
+            False,
+        ),  # Uses sampling and priority from newrelic header.
+        (True, None, False, "default", "default", "always_on", True, 3, False),  # Always sampled.
+        (True, None, False, "default", "default", "always_off", False, 0, False),  # Never sampled.
+        (True, None, None, "default", "default", "default", None, None, True),  # Uses adaptive sampling algo.
     ),
 )
-def test_distributed_trace_w3cparent_sampling_decision(
-    sampled,
-    remote_parent_sampled,
-    remote_parent_not_sampled,
+def test_distributed_trace_remote_parent_sampling_decision_full_granularity(
+    newrelic_header,
+    traceparent_sampled,
+    newrelic_sampled,
+    root_setting,
+    remote_parent_sampled_setting,
+    remote_parent_not_sampled_setting,
     expected_sampled,
     expected_priority,
     expected_adaptive_sampling_algo_called,
@@ -450,18 +665,19 @@ def test_distributed_trace_w3cparent_sampling_decision(
     test_settings = _override_settings.copy()
     test_settings.update(
         {
-            "distributed_tracing.sampler.remote_parent_sampled": remote_parent_sampled,
-            "distributed_tracing.sampler.remote_parent_not_sampled": remote_parent_not_sampled,
+            "distributed_tracing.sampler._root": root_setting,
+            "distributed_tracing.sampler._remote_parent_sampled": remote_parent_sampled_setting,
+            "distributed_tracing.sampler._remote_parent_not_sampled": remote_parent_not_sampled_setting,
             "span_events.enabled": True,
         }
     )
     if expected_adaptive_sampling_algo_called:
         function_called_decorator = validate_function_called(
-            "newrelic.api.transaction", "Transaction.sampling_algo_compute_sampled_and_priority"
+            "newrelic.core.samplers.adaptive_sampler", "AdaptiveSampler.compute_sampled"
         )
     else:
         function_called_decorator = validate_function_not_called(
-            "newrelic.api.transaction", "Transaction.sampling_algo_compute_sampled_and_priority"
+            "newrelic.core.samplers.adaptive_sampler", "AdaptiveSampler.compute_sampled"
         )
 
     @function_called_decorator
@@ -471,10 +687,1005 @@ def test_distributed_trace_w3cparent_sampling_decision(
     def _test():
         txn = current_transaction()
 
+        headers = {}
+        if traceparent_sampled is not None:
+            headers = {
+                "traceparent": f"00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-{int(traceparent_sampled):02x}",
+                "newrelic": '{"v":[0,1],"d":{"ty":"Mobile","ac":"123","ap":"51424","id":"5f474d64b9cc9b2a","tr":"6e2fea0b173fdad0","pr":0.1234,"sa":true,"ti":1482959525577,"tx":"27856f70d3d314b7"}}',  # This header should be ignored.
+            }
+            if newrelic_sampled is not None:
+                headers["tracestate"] = (
+                    f"1@nr=0-0-1-2827902-0af7651916cd43dd-00f067aa0ba902b7-{int(newrelic_sampled)}-1.23456-1518469636035"
+                )
+        elif newrelic_header:
+            headers = {
+                "newrelic": '{"v":[0,1],"d":{"ty":"Mobile","ac":"1","ap":"51424","id":"00f067aa0ba902b7","tr":"0af7651916cd43dd8448eb211c80319c","pr":0.1234,"sa":%s,"ti":1482959525577,"tx":"0af7651916cd43dd"}}'
+                % (str(newrelic_sampled).lower())
+            }
+        if headers:
+            accept_distributed_trace_headers(headers)
+
+    _test()
+
+
+@pytest.mark.parametrize(
+    "newrelic_header,traceparent_sampled,newrelic_sampled,root_setting,remote_parent_sampled_setting,remote_parent_not_sampled_setting,expected_sampled,expected_priority,expected_adaptive_sampling_algo_called",
+    (
+        (False, None, None, "default", "default", "default", None, None, True),  # Uses adaptive sampling algo.
+        (False, None, None, "always_on", "default", "default", True, 2, False),  # Always sampled.
+        (False, None, None, "always_off", "default", "default", False, 0, False),  # Never sampled.
+        (True, True, None, "default", "default", "default", None, None, True),  # Uses adaptive sampling algo.
+        (True, True, None, "default", "always_on", "default", True, 2, False),  # Always sampled.
+        (True, True, None, "default", "always_off", "default", False, 0, False),  # Never sampled.
+        (True, False, None, "default", "default", "default", None, None, True),  # Uses adaptive sampling algo.
+        (True, False, None, "default", "always_on", "default", None, None, True),  # Uses adaptive sampling alog.
+        (True, False, None, "default", "always_off", "default", None, None, True),  # Uses adaptive sampling algo.
+        (True, True, None, "default", "default", "always_on", None, None, True),  # Uses adaptive sampling algo.
+        (True, True, None, "default", "default", "always_off", None, None, True),  # Uses adaptive sampling algo.
+        (True, False, None, "default", "default", "always_on", True, 2, False),  # Always sampled.
+        (True, False, None, "default", "default", "always_off", False, 0, False),  # Never sampled.
+        (
+            True,
+            True,
+            True,
+            "default",
+            "default",
+            "default",
+            True,
+            1.23456,
+            False,
+        ),  # Uses sampling decision in W3C TraceState header.
+        (
+            True,
+            True,
+            False,
+            "default",
+            "default",
+            "default",
+            False,
+            1.23456,
+            False,
+        ),  # Uses sampling decision in W3C TraceState header.
+        (
+            True,
+            False,
+            False,
+            "default",
+            "default",
+            "default",
+            False,
+            1.23456,
+            False,
+        ),  # Uses sampling decision in W3C TraceState header.
+        (True, True, False, "default", "always_on", "default", True, 2, False),  # Always sampled.
+        (True, True, True, "default", "always_off", "default", False, 0, False),  # Never sampled.
+        (True, False, False, "default", "default", "always_on", True, 2, False),  # Always sampled.
+        (True, False, True, "default", "default", "always_off", False, 0, False),  # Never sampled.
+        (
+            True,
+            None,
+            True,
+            "default",
+            "default",
+            "default",
+            True,
+            0.1234,
+            False,
+        ),  # Uses sampling and priority from newrelic header.
+        (True, None, True, "default", "always_on", "default", True, 2, False),  # Always sampled.
+        (True, None, True, "default", "always_off", "default", False, 0, False),  # Never sampled.
+        (
+            True,
+            None,
+            False,
+            "default",
+            "default",
+            "default",
+            False,
+            0.1234,
+            False,
+        ),  # Uses sampling and priority from newrelic header.
+        (
+            True,
+            None,
+            False,
+            "default",
+            "always_on",
+            "default",
+            False,
+            0.1234,
+            False,
+        ),  # Uses sampling and priority from newrelic header.
+        (
+            True,
+            None,
+            True,
+            "default",
+            "default",
+            "always_on",
+            True,
+            0.1234,
+            False,
+        ),  # Uses sampling and priority from newrelic header.
+        (True, None, False, "default", "default", "always_on", True, 2, False),  # Always sampled.
+        (True, None, False, "default", "default", "always_off", False, 0, False),  # Never sampled.
+        (True, None, None, "default", "default", "default", None, None, True),  # Uses adaptive sampling algo.
+    ),
+)
+def test_distributed_trace_remote_parent_sampling_decision_partial_granularity(
+    newrelic_header,
+    traceparent_sampled,
+    newrelic_sampled,
+    root_setting,
+    remote_parent_sampled_setting,
+    remote_parent_not_sampled_setting,
+    expected_sampled,
+    expected_priority,
+    expected_adaptive_sampling_algo_called,
+):
+    required_intrinsics = []
+    if expected_sampled is not None:
+        required_intrinsics.append(Attribute(name="sampled", value=expected_sampled, destinations=0b110))
+    if expected_priority is not None:
+        required_intrinsics.append(Attribute(name="priority", value=expected_priority, destinations=0b110))
+
+    test_settings = _override_settings.copy()
+    test_settings.update(
+        {
+            "distributed_tracing.sampler.full_granularity.enabled": False,
+            "distributed_tracing.sampler.partial_granularity.enabled": True,
+            "distributed_tracing.sampler.partial_granularity._root": root_setting,
+            "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": remote_parent_sampled_setting,
+            "distributed_tracing.sampler.partial_granularity._remote_parent_not_sampled": remote_parent_not_sampled_setting,
+            "span_events.enabled": True,
+        }
+    )
+    if expected_adaptive_sampling_algo_called:
+        function_called_decorator = validate_function_called(
+            "newrelic.core.samplers.adaptive_sampler", "AdaptiveSampler.compute_sampled"
+        )
+    else:
+        function_called_decorator = validate_function_not_called(
+            "newrelic.core.samplers.adaptive_sampler", "AdaptiveSampler.compute_sampled"
+        )
+
+    @function_called_decorator
+    @override_application_settings(test_settings)
+    @validate_attributes_complete("intrinsic", required_intrinsics)
+    @background_task(name="test_distributed_trace_attributes")
+    def _test():
+        txn = current_transaction()
+
+        headers = {}
+        if traceparent_sampled is not None:
+            headers = {
+                "traceparent": f"00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-{int(traceparent_sampled):02x}",
+                "newrelic": '{"v":[0,1],"d":{"ty":"Mobile","ac":"123","ap":"51424","id":"5f474d64b9cc9b2a","tr":"6e2fea0b173fdad0","pr":0.1234,"sa":true,"ti":1482959525577,"tx":"27856f70d3d314b7"}}',  # This header should be ignored.
+            }
+            if newrelic_sampled is not None:
+                headers["tracestate"] = (
+                    f"1@nr=0-0-1-2827902-0af7651916cd43dd-00f067aa0ba902b7-{int(newrelic_sampled)}-1.23456-1518469636035"
+                )
+        elif newrelic_header:
+            headers = {
+                "newrelic": '{"v":[0,1],"d":{"ty":"Mobile","ac":"1","ap":"51424","id":"00f067aa0ba902b7","tr":"0af7651916cd43dd8448eb211c80319c","pr":0.1234,"sa":%s,"ti":1482959525577,"tx":"0af7651916cd43dd"}}'
+                % (str(newrelic_sampled).lower())
+            }
+        if headers:
+            accept_distributed_trace_headers(headers)
+
+    _test()
+
+
+@pytest.mark.parametrize(
+    "full_granularity_enabled,full_granularity_remote_parent_sampled_setting,partial_granularity_enabled,partial_granularity_remote_parent_sampled_setting,expected_sampled,expected_priority,expected_adaptive_sampling_algo_called",
+    (
+        (True, "always_off", True, "adaptive", None, None, True),  # Uses adaptive sampling algo.
+        (True, "always_on", True, "adaptive", True, 3, False),  # Always samples.
+    ),
+)
+def test_distributed_trace_remote_parent_sampling_decision_between_full_and_partial_granularity(
+    full_granularity_enabled,
+    full_granularity_remote_parent_sampled_setting,
+    partial_granularity_enabled,
+    partial_granularity_remote_parent_sampled_setting,
+    expected_sampled,
+    expected_priority,
+    expected_adaptive_sampling_algo_called,
+):
+    required_intrinsics = []
+    if expected_sampled is not None:
+        required_intrinsics.append(Attribute(name="sampled", value=expected_sampled, destinations=0b110))
+    if expected_priority is not None:
+        required_intrinsics.append(Attribute(name="priority", value=expected_priority, destinations=0b110))
+
+    test_settings = _override_settings.copy()
+    test_settings.update(
+        {
+            "distributed_tracing.sampler.full_granularity.enabled": full_granularity_enabled,
+            "distributed_tracing.sampler.partial_granularity.enabled": partial_granularity_enabled,
+            "distributed_tracing.sampler._remote_parent_sampled": full_granularity_remote_parent_sampled_setting,
+            "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": partial_granularity_remote_parent_sampled_setting,
+            "span_events.enabled": True,
+        }
+    )
+    if expected_adaptive_sampling_algo_called:
+        function_called_decorator = validate_function_called(
+            "newrelic.core.samplers.adaptive_sampler", "AdaptiveSampler.compute_sampled"
+        )
+    else:
+        function_called_decorator = validate_function_not_called(
+            "newrelic.core.samplers.adaptive_sampler", "AdaptiveSampler.compute_sampled"
+        )
+
+    @function_called_decorator
+    @override_application_settings(test_settings)
+    @validate_attributes_complete("intrinsic", required_intrinsics)
+    @background_task(name="test_distributed_trace_attributes")
+    def _test():
+        headers = {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01"}
+        accept_distributed_trace_headers(headers)
+
+    _test()
+
+
+def test_partial_granularity_entity_synthesis_attr_none_in_compact():
+    """
+    Tests no crash happens when an entity synthesis attribute is set to None.
+    """
+
+    @validate_span_events(
+        count=1,  # Entry span.
+        exact_intrinsics={
+            "name": "Function/test_distributed_tracing:test_partial_granularity_entity_synthesis_attr_none_in_compact.<locals>._test",
+            "nr.pg": True,
+        },
+        expected_intrinsics=["duration", "timestamp"],
+    )
+    @validate_span_events(
+        count=1,  # 1 external compressed span.
+        exact_intrinsics={"name": "External/localhost:3000/requests/GET"},
+        expected_intrinsics=["nr.durations", "nr.ids"],
+        exact_agents={"http.url": "http://localhost:3000/"},
+        unexpected_agents=["db.instance"],
+    )
+    @background_task()
+    def _test():
+        headers = {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01"}
+        accept_distributed_trace_headers(headers)
+        with ExternalTrace("requests", "http://localhost:3000/", method="GET") as trace:
+            trace._add_agent_attribute("db.instance", None)
+            time.sleep(0.1)
+
+    _test = override_application_settings(
+        {
+            "distributed_tracing.sampler.full_granularity.enabled": False,
+            "distributed_tracing.sampler.partial_granularity.enabled": True,
+            "distributed_tracing.sampler.partial_granularity.type": "compact",
+            "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "always_on",
+            "span_events.enabled": True,
+        }
+    )(_test)
+
+    _test()
+
+
+def test_partial_granularity_max_compressed_spans():
+    """
+    Tests `nr.ids` does not exceed 1024 byte limit.
+    """
+
+    async def test(index):
+        with ExternalTrace("requests", "http://localhost:3000/", method="GET") as trace:
+            time.sleep(0.1)
+
+    @function_trace()
+    async def call_tests():
+        tasks = [test(i) for i in range(65)]
+        await asyncio.gather(*tasks)
+
+    @validate_span_events(
+        count=1,  # Entry span.
+        exact_intrinsics={
+            "name": "Function/test_distributed_tracing:test_partial_granularity_max_compressed_spans.<locals>._test",
+            "nr.pg": True,
+        },
+        expected_intrinsics=["duration", "timestamp"],
+    )
+    @validate_span_events(
+        count=1,  # 1 external compressed span.
+        exact_intrinsics={"name": "External/localhost:3000/requests/GET"},
+        expected_intrinsics=["nr.durations", "nr.ids"],
+        exact_agents={"http.url": "http://localhost:3000/"},
+    )
+    @validate_compact_span_event(
+        name="External/localhost:3000/requests/GET",
+        # `nr.ids` can only hold 63 ids but duration reflects all compressed spans.
+        compressed_span_count=64,
+        expected_nr_durations_low_bound=6.5,
+        expected_nr_durations_high_bound=8,  # 64 of these + add extra overhead.
+    )
+    @background_task()
+    def _test():
+        headers = {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01"}
+        accept_distributed_trace_headers(headers)
+        asyncio.run(call_tests())
+
+    _test = override_application_settings(
+        {
+            "distributed_tracing.sampler.full_granularity.enabled": False,
+            "distributed_tracing.sampler.partial_granularity.enabled": True,
+            "distributed_tracing.sampler.partial_granularity.type": "compact",
+            "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "always_on",
+            "span_events.enabled": True,
+        }
+    )(_test)
+
+    _test()
+
+
+def test_partial_granularity_compressed_span_attributes_in_series():
+    """
+    Tests compressed span attributes when compressed span times are serial.
+    Aka: each span ends before the next compressed span begins.
+    """
+
+    async def test(index):
+        with ExternalTrace("requests", "http://localhost:3000/", method="GET") as trace:
+            time.sleep(0.1)
+
+    @function_trace()
+    async def call_tests():
+        tasks = [test(i) for i in range(3)]
+        await asyncio.gather(*tasks)
+
+    @validate_span_events(
+        count=1,  # Entry span.
+        exact_intrinsics={
+            "name": "Function/test_distributed_tracing:test_partial_granularity_compressed_span_attributes_in_series.<locals>._test",
+            "nr.pg": True,
+        },
+        expected_intrinsics=["duration", "timestamp"],
+    )
+    @validate_span_events(
+        count=1,  # 1 external compressed span.
+        exact_intrinsics={"name": "External/localhost:3000/requests/GET"},
+        expected_intrinsics=["nr.durations", "nr.ids"],
+        exact_agents={"http.url": "http://localhost:3000/"},
+    )
+    @validate_compact_span_event(
+        name="External/localhost:3000/requests/GET",
+        compressed_span_count=3,
+        expected_nr_durations_low_bound=0.3,
+        expected_nr_durations_high_bound=0.4,
+    )
+    @background_task()
+    def _test():
+        headers = {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01"}
+        accept_distributed_trace_headers(headers)
+        asyncio.run(call_tests())
+
+    _test = override_application_settings(
+        {
+            "distributed_tracing.sampler.full_granularity.enabled": False,
+            "distributed_tracing.sampler.partial_granularity.enabled": True,
+            "distributed_tracing.sampler.partial_granularity.type": "compact",
+            "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "always_on",
+            "span_events.enabled": True,
+        }
+    )(_test)
+
+    _test()
+
+
+def test_partial_granularity_compressed_span_attributes_overlapping():
+    """
+    Tests compressed span attributes when compressed span times overlap.
+    Aka: the next span begins in the middle of the first span.
+    """
+
+    @validate_span_events(
+        count=1,  # Entry span.
+        exact_intrinsics={
+            "name": "Function/test_distributed_tracing:test_partial_granularity_compressed_span_attributes_overlapping.<locals>._test",
+            "nr.pg": True,
+        },
+        expected_intrinsics=["duration", "timestamp"],
+    )
+    @validate_span_events(
+        count=1,  # 1 external compressed span.
+        exact_intrinsics={"name": "External/localhost:3000/requests/GET"},
+        expected_intrinsics=["nr.durations", "nr.ids"],
+        exact_agents={"http.url": "http://localhost:3000/"},
+    )
+    @validate_compact_span_event(
+        name="External/localhost:3000/requests/GET",
+        compressed_span_count=2,
+        expected_nr_durations_low_bound=0.1,
+        expected_nr_durations_high_bound=0.2,
+    )
+    @background_task()
+    def _test():
+        headers = {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01"}
+        accept_distributed_trace_headers(headers)
+        with ExternalTrace("requests", "http://localhost:3000/", method="GET") as trace1:
+            # Override terminal_node so we can create a nested exit span.
+            trace1.terminal_node = lambda: False
+            trace2 = ExternalTrace("requests", "http://localhost:3000/", method="GET")
+            trace2.__enter__()
+            time.sleep(0.1)
+        trace2.__exit__(None, None, None)
+
+    _test = override_application_settings(
+        {
+            "distributed_tracing.sampler.full_granularity.enabled": False,
+            "distributed_tracing.sampler.partial_granularity.enabled": True,
+            "distributed_tracing.sampler.partial_granularity.type": "compact",
+            "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "always_on",
+            "span_events.enabled": True,
+        }
+    )(_test)
+
+    _test()
+
+
+def test_partial_granularity_reduced_span_attributes():
+    """
+    In reduced mode, only inprocess spans are dropped.
+    """
+
+    @function_trace()
+    def foo():
+        with ExternalTrace("requests", "http://localhost:3000/", method="GET") as trace:
+            trace.add_custom_attribute("custom", "bar")
+
+    @validate_span_events(
+        count=1,  # Entry span.
+        exact_intrinsics={
+            "name": "Function/test_distributed_tracing:test_partial_granularity_reduced_span_attributes.<locals>._test",
+            "nr.pg": True,
+        },
+        expected_intrinsics=["duration", "timestamp"],
+        expected_agents=["code.function", "code.lineno", "code.namespace"],
+    )
+    @validate_span_events(
+        count=0,  # Function foo span should not be present.
+        exact_intrinsics={
+            "name": "Function/test_distributed_tracing:test_partial_granularity_reduced_span_attributes.<locals>.foo"
+        },
+        expected_intrinsics=["duration", "timestamp"],
+    )
+    @validate_span_events(
+        count=2,  # 2 external spans.
+        exact_intrinsics={"name": "External/localhost:3000/requests/GET"},
+        exact_agents={"http.url": "http://localhost:3000/"},
+        exact_users={"custom": "bar"},
+    )
+    @background_task()
+    def _test():
+        headers = {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01"}
+        accept_distributed_trace_headers(headers)
+        with ExternalTrace("requests", "http://localhost:3000/", method="GET") as trace:
+            # Override terminal_node so we can create a nested exit span.
+            trace.terminal_node = lambda: False
+            trace.add_custom_attribute("custom", "bar")
+            foo()
+
+    _test = override_application_settings(
+        {
+            "distributed_tracing.sampler.full_granularity.enabled": False,
+            "distributed_tracing.sampler.partial_granularity.enabled": True,
+            "distributed_tracing.sampler.partial_granularity.type": "reduced",
+            "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "always_on",
+            "span_events.enabled": True,
+        }
+    )(_test)
+
+    _test()
+
+
+def test_partial_granularity_essential_span_attributes():
+    """
+    In essential mode, inprocess spans are dropped and non-entity synthesis attributes.
+    """
+
+    @function_trace()
+    def foo():
+        with ExternalTrace("requests", "http://localhost:3000/", method="GET") as trace:
+            trace.add_custom_attribute("custom", "bar")
+
+    @validate_span_events(
+        count=1,  # Entry span.
+        exact_intrinsics={
+            "name": "Function/test_distributed_tracing:test_partial_granularity_essential_span_attributes.<locals>._test",
+            "nr.pg": True,
+        },
+        expected_intrinsics=["duration", "timestamp"],
+        unexpected_agents=["code.function", "code.lineno", "code.namespace"],
+    )
+    @validate_span_events(
+        count=0,  # Function foo span should not be present.
+        exact_intrinsics={
+            "name": "Function/test_distributed_tracing:test_partial_granularity_essential_span_attributes.<locals>.foo"
+        },
+        expected_intrinsics=["duration", "timestamp"],
+    )
+    @validate_span_events(
+        count=2,  # 2 external spans.
+        exact_intrinsics={"name": "External/localhost:3000/requests/GET"},
+        exact_agents={"http.url": "http://localhost:3000/"},
+        unexpected_users=["custom"],
+    )
+    @background_task()
+    def _test():
+        headers = {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01"}
+        accept_distributed_trace_headers(headers)
+        with ExternalTrace("requests", "http://localhost:3000/", method="GET") as trace:
+            # Override terminal_node so we can create a nested exit span.
+            trace.terminal_node = lambda: False
+            trace.add_custom_attribute("custom", "bar")
+            foo()
+
+    _test = override_application_settings(
+        {
+            "distributed_tracing.sampler.full_granularity.enabled": False,
+            "distributed_tracing.sampler.partial_granularity.enabled": True,
+            "distributed_tracing.sampler.partial_granularity.type": "essential",
+            "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "always_on",
+            "span_events.enabled": True,
+        }
+    )(_test)
+
+    _test()
+
+
+def test_partial_granularity_unknown_type_falls_back_on_essential():
+    """
+    In essential mode, inprocess spans are dropped and non-entity synthesis attributes.
+    """
+
+    @function_trace()
+    def foo():
+        with ExternalTrace("requests", "http://localhost:3000/", method="GET") as trace:
+            trace.add_custom_attribute("custom", "bar")
+
+    @validate_span_events(
+        count=1,  # Entry span.
+        exact_intrinsics={
+            "name": "Function/test_distributed_tracing:test_partial_granularity_unknown_type_falls_back_on_essential.<locals>._test",
+            "nr.pg": True,
+        },
+        expected_intrinsics=["duration", "timestamp"],
+        unexpected_agents=["code.function", "code.lineno", "code.namespace"],
+    )
+    @validate_span_events(
+        count=0,  # Function foo span should not be present.
+        exact_intrinsics={
+            "name": "Function/test_distributed_tracing:test_partial_granularity_unknown_type_falls_back_on_essential.<locals>.foo"
+        },
+        expected_intrinsics=["duration", "timestamp"],
+    )
+    @validate_span_events(
+        count=2,  # 2 external spans.
+        exact_intrinsics={"name": "External/localhost:3000/requests/GET"},
+        exact_agents={"http.url": "http://localhost:3000/"},
+        unexpected_users=["custom"],
+    )
+    @background_task()
+    def _test():
+        headers = {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01"}
+        accept_distributed_trace_headers(headers)
+        with ExternalTrace("requests", "http://localhost:3000/", method="GET") as trace:
+            # Override terminal_node so we can create a nested exit span.
+            trace.terminal_node = lambda: False
+            trace.add_custom_attribute("custom", "bar")
+            foo()
+
+    _test = override_application_settings(
+        {
+            "distributed_tracing.sampler.full_granularity.enabled": False,
+            "distributed_tracing.sampler.partial_granularity.enabled": True,
+            "distributed_tracing.sampler.partial_granularity.type": "unknown",
+            "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "always_on",
+            "span_events.enabled": True,
+        }
+    )(_test)
+
+    _test()
+
+
+@pytest.mark.parametrize(
+    "dt_settings,dt_headers,expected_sampling_instance_called,expected_adaptive_computed_count,expected_adaptive_sampled_count,expected_adaptive_sampling_target",
+    (
+        (
+            {
+                "distributed_tracing.sampler.full_granularity.enabled": False,
+                "distributed_tracing.sampler.partial_granularity.enabled": True,
+                "distributed_tracing.sampler.partial_granularity._root": "default",
+                "distributed_tracing.sampler.partial_granularity.root.adaptive.sampling_target": 5,
+            },
+            {},
+            (False, 0),
+            1,
+            1,
+            5,
+        ),
+        (
+            {
+                "distributed_tracing.sampler.full_granularity.enabled": False,
+                "distributed_tracing.sampler.partial_granularity.enabled": True,
+                "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "default",
+                "distributed_tracing.sampler.partial_granularity.remote_parent_sampled.adaptive.sampling_target": 5,
+                "distributed_tracing.sampler.partial_granularity._remote_parent_not_sampled": "default",
+                "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.adaptive.sampling_target": 6,
+            },
+            {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01"},
+            (False, 1),
+            1,
+            1,
+            5,
+        ),
+        (
+            {
+                "distributed_tracing.sampler.full_granularity.enabled": False,
+                "distributed_tracing.sampler.partial_granularity.enabled": True,
+                "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "default",
+                "distributed_tracing.sampler.partial_granularity.remote_parent_sampled.adaptive.sampling_target": 5,
+                "distributed_tracing.sampler.partial_granularity._remote_parent_not_sampled": "default",
+                "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.adaptive.sampling_target": 6,
+            },
+            {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-00"},
+            (False, 2),
+            1,
+            1,
+            6,
+        ),
+        (
+            {
+                "distributed_tracing.sampler.full_granularity.enabled": True,
+                "distributed_tracing.sampler.partial_granularity.enabled": False,
+                "distributed_tracing.sampler._root": "default",
+                "distributed_tracing.sampler.root.adaptive.sampling_target": 5,
+            },
+            {},
+            (True, 0),
+            1,
+            1,
+            5,
+        ),
+        (
+            {
+                "distributed_tracing.sampler.full_granularity.enabled": True,
+                "distributed_tracing.sampler.partial_granularity.enabled": False,
+                "distributed_tracing.sampler._remote_parent_sampled": "default",
+                "distributed_tracing.sampler.remote_parent_sampled.adaptive.sampling_target": 5,
+                "distributed_tracing.sampler._remote_parent_not_sampled": "default",
+                "distributed_tracing.sampler.remote_parent_not_sampled.adaptive.sampling_target": 6,
+            },
+            {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01"},
+            (True, 1),
+            1,
+            1,
+            5,
+        ),
+        (
+            {
+                "distributed_tracing.sampler.full_granularity.enabled": True,
+                "distributed_tracing.sampler.partial_granularity.enabled": False,
+                "distributed_tracing.sampler._remote_parent_sampled": "default",
+                "distributed_tracing.sampler.remote_parent_sampled.adaptive.sampling_target": 5,
+                "distributed_tracing.sampler._remote_parent_not_sampled": "default",
+                "distributed_tracing.sampler.remote_parent_not_sampled.adaptive.sampling_target": 6,
+            },
+            {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-00"},
+            (True, 2),
+            1,
+            1,
+            6,
+        ),
+    ),
+)
+def test_distributed_trace_uses_adaptive_sampling_instance(
+    dt_settings,
+    dt_headers,
+    expected_sampling_instance_called,
+    expected_adaptive_computed_count,
+    expected_adaptive_sampled_count,
+    expected_adaptive_sampling_target,
+):
+    test_settings = _override_settings.copy()
+    test_settings.update(dt_settings)
+    function_called_decorator = validate_function_called(
+        "newrelic.core.samplers.adaptive_sampler", "AdaptiveSampler.compute_sampled"
+    )
+
+    @function_called_decorator
+    @override_application_settings(test_settings)
+    @background_task(name="test_distributed_trace_attributes")
+    def _test():
+        txn = current_transaction()
+        application = txn._application._agent._applications.get(txn.settings.app_name)
+        # Re-initialize sampler proxy after overriding settings.
+        application.sampler.__init__(txn.settings)
+
+        accept_distributed_trace_headers(dt_headers)
+        # Explicitly call this so we can assert sampling decision during the transaction
+        # as opposed to after it ends and we lose the application context.
+        txn._make_sampling_decision()
+
+        assert (
+            application.sampler._samplers[expected_sampling_instance_called].computed_count
+            == expected_adaptive_computed_count
+        )
+        assert (
+            application.sampler._samplers[expected_sampling_instance_called].sampled_count
+            == expected_adaptive_sampled_count
+        )
+        assert (
+            application.sampler._samplers[expected_sampling_instance_called].sampling_target
+            == expected_adaptive_sampling_target
+        )
+
+    _test()
+
+
+@pytest.mark.parametrize(
+    "dt_settings,dt_headers,expected_sampling_instance_called,expected_ratio",
+    (
+        (  # Ratio for partial granularity does not exceed 1.
+            {
+                "distributed_tracing.sampler.full_granularity.enabled": True,
+                "distributed_tracing.sampler.partial_granularity.enabled": True,
+                "distributed_tracing.sampler.remote_parent_sampled.trace_id_ratio_based.ratio": 0.5,
+                "distributed_tracing.sampler._remote_parent_sampled": "trace_id_ratio_based",
+                "distributed_tracing.sampler.partial_granularity.remote_parent_sampled.trace_id_ratio_based.ratio": 0.7,
+                "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "trace_id_ratio_based",
+            },
+            {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01"},
+            (False, 1),
+            1,
+        ),
+        (  # Partial granularity ratio = full ratio + partial ratio.
+            {
+                "distributed_tracing.sampler.full_granularity.enabled": True,
+                "distributed_tracing.sampler.partial_granularity.enabled": True,
+                "distributed_tracing.sampler.remote_parent_sampled.trace_id_ratio_based.ratio": 0.5,
+                "distributed_tracing.sampler._remote_parent_sampled": "trace_id_ratio_based",
+                "distributed_tracing.sampler.partial_granularity.remote_parent_sampled.trace_id_ratio_based.ratio": 0.5,
+                "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "trace_id_ratio_based",
+            },
+            {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01"},
+            (False, 1),
+            1,
+        ),
+        (  # Trace ID ratio sampler is called for full granularity.
+            {
+                "distributed_tracing.sampler.full_granularity.enabled": True,
+                "distributed_tracing.sampler.partial_granularity.enabled": False,
+                "distributed_tracing.sampler.remote_parent_sampled.trace_id_ratio_based.ratio": 1,
+                "distributed_tracing.sampler._remote_parent_sampled": "trace_id_ratio_based",
+            },
+            {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01"},
+            (True, 1),
+            1,
+        ),
+    ),
+)
+def test_distributed_trace_uses_ratio_sampling_instance(
+    dt_settings, dt_headers, expected_sampling_instance_called, expected_ratio
+):
+    test_settings = _override_settings.copy()
+    test_settings.update(dt_settings)
+    function_called_decorator = validate_function_called(
+        "newrelic.core.samplers.trace_id_ratio_based_sampler", "TraceIdRatioBasedSampler.compute_sampled"
+    )
+
+    @function_called_decorator
+    @override_application_settings(test_settings)
+    @background_task(name="test_distributed_trace_attributes")
+    def _test():
+        txn = current_transaction()
+        application = txn._application._agent._applications.get(txn.settings.app_name)
+        # Re-initialize sampler proxy after overriding settings.
+        application.sampler.__init__(txn.settings)
+
+        accept_distributed_trace_headers(dt_headers)
+        # Explicitly call this so we can assert sampling decision during the transaction
+        # as opposed to after it ends and we lose the application context.
+        txn._make_sampling_decision()
+
+        assert application.sampler._samplers[expected_sampling_instance_called].ratio == expected_ratio
+
+    _test()
+
+
+@pytest.mark.parametrize(
+    "dt_settings,expected_priority,expected_sampled",
+    (
+        (  # When dt is enabled but full and partial are disabled.
+            {
+                "distributed_tracing.sampler.full_granularity.enabled": False,
+                "distributed_tracing.sampler.partial_granularity.enabled": False,
+            },
+            0.123,  # random
+            False,
+        ),
+        (  # When dt is disabled.
+            {"distributed_tracing.enabled": False},
+            0.123,  # random
+            False,
+        ),
+        (  # Verify when full granularity sampled +2 is added to the priority.
+            {"distributed_tracing.sampler.root.trace_id_ratio_based.ratio": 1},
+            2.123,  # random + 2
+            True,
+        ),
+        (  # Verify when partial granularity sampled +1 is added to the priority.
+            {
+                "distributed_tracing.sampler.full_granularity.enabled": False,
+                "distributed_tracing.sampler.partial_granularity.enabled": True,
+                "distributed_tracing.sampler.partial_granularity.root.trace_id_ratio_based.ratio": 1,
+            },
+            1.123,  # random + 1
+            True,
+        ),
+    ),
+)
+def test_distributed_trace_enabled_settings_set_correct_sampled_priority(
+    dt_settings, expected_priority, expected_sampled, monkeypatch
+):
+    monkeypatch.setattr(random, "random", lambda *args, **kwargs: 0.123)
+
+    test_settings = _override_settings.copy()
+    test_settings.update(dt_settings)
+
+    @override_application_settings(test_settings)
+    @validate_transaction_object_attributes({"sampled": expected_sampled, "priority": expected_priority})
+    @background_task(name="test_distributed_trace_attributes")
+    def _test():
+        pass
+
+    _test()
+
+
+def test_distributed_trace_priority_set_when_only_sampled_set_in_tracestate_header(monkeypatch):
+    monkeypatch.setattr(random, "random", lambda *args, **kwargs: 0.123)
+
+    @override_application_settings(_override_settings)
+    @validate_transaction_object_attributes({"sampled": True, "priority": 2.123})
+    @background_task()
+    def _test():
         headers = {
-            "traceparent": f"00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-{int(sampled):02x}",
-            "tracestate": "rojo=f06a0ba902b7,congo=t61rcWkgMzE",
+            "traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01",
+            "tracestate": "1@nr=0-0-1-2827902-0af7651916cd43dd-00f067aa0ba902b7-1--1518469636035",
         }
         accept_distributed_trace_headers(headers)
+
+    _test()
+
+
+def test_partial_granularity_errors_on_compressed_spans():
+    @function_trace()
+    def call_tests():
+        with ExternalTrace("requests", "http://localhost:3000/", method="GET") as trace:
+            time.sleep(0.1)
+            transaction = current_transaction()
+            try:
+                raise Exception("Exception 1")
+            except:
+                transaction.notice_error()
+        with ExternalTrace("requests", "http://localhost:3000/", method="GET") as trace:
+            time.sleep(0.1)
+        with ExternalTrace("requests", "http://localhost:3000/", method="GET") as trace:
+            time.sleep(0.1)
+            transaction = current_transaction()
+            try:
+                raise Exception("Exception 2")
+            except:
+                transaction.notice_error(expected=True)
+
+    @validate_span_events(
+        count=1,  # Entry span.
+        exact_intrinsics={
+            "name": "Function/test_distributed_tracing:test_partial_granularity_errors_on_compressed_spans.<locals>._test",
+            "nr.pg": True,
+        },
+        expected_intrinsics=["duration", "timestamp"],
+    )
+    @validate_span_events(
+        count=1,  # 1 external compressed span.
+        exact_intrinsics={"name": "External/localhost:3000/requests/GET"},
+        expected_intrinsics=["nr.durations", "nr.ids"],
+        exact_agents={
+            "http.url": "http://localhost:3000/",
+            "error.class": callable_name(Exception),
+            "error.message": "Exception 2",
+            "error.expected": True,
+        },
+    )
+    @validate_compact_span_event(
+        name="External/localhost:3000/requests/GET",
+        compressed_span_count=3,
+        expected_nr_durations_low_bound=0.3,
+        expected_nr_durations_high_bound=0.4,
+    )
+    @background_task()
+    def _test():
+        headers = {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01"}
+        accept_distributed_trace_headers(headers)
+        call_tests()
+
+    _test = override_application_settings(
+        {
+            "distributed_tracing.sampler.full_granularity.enabled": False,
+            "distributed_tracing.sampler.partial_granularity.enabled": True,
+            "distributed_tracing.sampler.partial_granularity.type": "compact",
+            "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "always_on",
+            "span_events.enabled": True,
+        }
+    )(_test)
+
+    _test()
+
+
+def test_partial_granularity_errors_on_compressed_spans_status_overriden():
+    @function_trace()
+    def call_tests():
+        transaction = current_transaction()
+        with ExternalTrace("requests", "http://localhost:3000/", method="GET") as trace:
+            time.sleep(0.1)
+            try:
+                raise Exception("Exception 1")
+            except:
+                transaction.notice_error(expected=True)
+        with ExternalTrace("requests", "http://localhost:3000/", method="GET") as trace:
+            time.sleep(0.1)
+        with ExternalTrace("requests", "http://localhost:3000/", method="GET") as trace:
+            time.sleep(0.1)
+            try:
+                raise Exception("Exception 2")
+            except:
+                transaction.notice_error()
+
+    @validate_span_events(
+        count=1,  # Entry span.
+        exact_intrinsics={
+            "name": "Function/test_distributed_tracing:test_partial_granularity_errors_on_compressed_spans_status_overriden.<locals>._test",
+            "nr.pg": True,
+        },
+        expected_intrinsics=["duration", "timestamp"],
+    )
+    @validate_span_events(
+        count=1,  # 1 external compressed span.
+        exact_intrinsics={"name": "External/localhost:3000/requests/GET"},
+        expected_intrinsics=["nr.durations", "nr.ids"],
+        exact_agents={
+            "http.url": "http://localhost:3000/",
+            "error.class": callable_name(Exception),
+            "error.message": "Exception 2",
+            "error.expected": False,
+        },
+    )
+    @validate_compact_span_event(
+        name="External/localhost:3000/requests/GET",
+        compressed_span_count=3,
+        expected_nr_durations_low_bound=0.3,
+        expected_nr_durations_high_bound=0.4,
+    )
+    @background_task()
+    def _test():
+        headers = {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01"}
+        accept_distributed_trace_headers(headers)
+        call_tests()
+
+    _test = override_application_settings(
+        {
+            "distributed_tracing.sampler.full_granularity.enabled": False,
+            "distributed_tracing.sampler.partial_granularity.enabled": True,
+            "distributed_tracing.sampler.partial_granularity.type": "compact",
+            "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": "always_on",
+            "span_events.enabled": True,
+        }
+    )(_test)
 
     _test()

@@ -25,7 +25,32 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Benchmarks
+  # ===========================
+  # Aggregate Benchmark Results
+  # ===========================
+  benchmarks:
+    runs-on: ubuntu-24.04
+    if: always() # Always run, even on cancellation or failure
+    needs:
+      - benchmark
+
+    steps:
+      - name: Status
+        run: |
+          if [[ "${{ contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+            echo "Workflow cancelled."
+            exit 1
+          elif [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
+            echo "One or more jobs failed."
+            exit 1
+          else
+            echo "All jobs completed successfully."
+            exit 0
+          fi
+
+  # ==================================
+  # Benchmarks Run Directly On Runners
+  # ==================================
   benchmark:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -37,6 +62,7 @@ jobs:
     env:
       ASV_FACTOR: "1.1"
       BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      HEAD_SHA: ${{ github.event.pull_request.head.sha }}
 
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # 6.0.2
@@ -63,9 +89,10 @@ jobs:
 
       - name: Run Benchmark
         run: |
+          echo "Running continuous benchmarking between base commit ${BASE_SHA} and head commit ${HEAD_SHA}"
           asv continuous \
             --show-stderr \
             --split \
             --factor "${ASV_FACTOR}" \
             --python=${{ matrix.python }} \
-            "${BASE_SHA}" "${GITHUB_SHA}"
+            "${BASE_SHA}" "${HEAD_SHA}"

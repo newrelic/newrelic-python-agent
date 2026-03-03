@@ -1762,7 +1762,7 @@ class Application:
         if restart:
             # Reset package/module generator
             self.plugins = plugins()
-            
+
             self._agent_restart += 1
             self.activate_session()
 

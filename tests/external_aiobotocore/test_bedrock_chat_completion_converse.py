@@ -43,6 +43,7 @@ from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.object_names import callable_name
 
+
 @pytest.fixture(scope="session", params=[False, True], ids=["ResponseStandard", "ResponseStreaming"])
 def response_streaming(request):
     return request.param

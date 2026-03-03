@@ -50,6 +50,7 @@ GitHub = "https://github.com/newrelic/newrelic-python-agent"
 
 [project.optional-dependencies]
 infinite-tracing = ["grpcio", "protobuf"]
+certificates = ["certifi"]
 
 [project.scripts]
 newrelic-admin = "newrelic.admin:main"

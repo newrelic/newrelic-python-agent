@@ -1285,8 +1285,8 @@ class Application:
                             )
 
                     # Send environment plugin.
-                    # Send one per cycle to avoid time outs/
-                    # lost module info for larger module loading.
+                    # Send one per cycle to avoid time outs/lost
+                    # module info for longer module loading times.
                     if self.configuration and self.configuration.package_reporting.enabled:
                         try:
                             self._active_session.send_loaded_modules([next(self.plugins)])

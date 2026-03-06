@@ -22,7 +22,7 @@ from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import current_trace, get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
 from newrelic.common.llm_utils import AsyncGeneratorProxy, _get_llm_metadata
-from newrelic.common.object_names import callable_name
+from newrelic.common.object_names import callable_name, parse_exc_info
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
@@ -262,7 +262,7 @@ def _handle_agent_streaming_completion_error(self, transaction):
             agent_id = strands_attrs.get("agent_id")
 
             # Notice the error on the function trace
-            self._nr_ft.notice_error(attributes={"agent_id": agent_id})
+            self._nr_ft.notice_error(attributes={"agent_id": agent_id}, ignore=ignore_strands_duplicate_exception)
             self._nr_ft.__exit__(*sys.exc_info())
 
             # Create error event
@@ -322,6 +322,30 @@ def _handle_tool_streaming_completion_error(self, transaction):
             # Clear cached data to prevent memory leaks
             if hasattr(self, "_nr_strands_attrs"):
                 self._nr_strands_attrs.clear()
+
+
+def ignore_strands_duplicate_exception(exc, val, tb):
+    from strands.types.exceptions import EventLoopException
+
+    if isinstance(val, EventLoopException):
+        transaction = current_transaction()
+
+        # Check that we have not recorded this exception
+        # previously for this transaction due to multiple
+        # error traces triggering. This happens if an exception
+        # is reraised by Strands as a new EventLoopException type
+        # after the original exception has already been recorded.
+
+        if transaction and hasattr(val, "original_exception"):
+            val = val.original_exception  # Unpack the original exception
+
+            _, _, fullnames, message = parse_exc_info((None, val, None))
+            fullname = fullnames[0]
+            for error in transaction._errors:
+                if error.type == fullname and error.message == message:
+                    return True
+
+    return None  # Follow original exception matching rules
 
 
 def wrap_tool_executor__stream(wrapped, instance, args, kwargs):

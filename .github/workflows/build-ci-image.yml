@@ -18,6 +18,19 @@ on:
   workflow_dispatch: # Allow manual trigger
   schedule:
     - cron: "15 16 * * 0" # At 16:15 UTC on Sunday
+  pull_request: # Trigger test builds on pull requests, but only when relevant files change.
+    paths:
+      - ".github/containers/**"
+      - ".github/workflows/build-ci-image.yml"
+  push: # Trigger rebuilds when pushing relevant files to main.
+    paths:
+      - ".github/containers/**"
+      - ".github/workflows/build-ci-image.yml"
+    branches:
+      - main
+    # Do not run when a tag is created.
+    tags-ignore:
+      - "**"
 
 permissions:
   contents: read
@@ -72,9 +85,9 @@ jobs:
             type=schedule,pattern={{date 'YYYY-MM-DD'}}
             type=sha,format=short,prefix=sha-
             type=sha,format=long,prefix=sha-
+            type=ref,event=pr
 
       - name: Login to GitHub Container Registry
-        if: github.event_name != 'pull_request'
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # 3.7.0
         with:
           registry: ghcr.io
@@ -106,7 +119,6 @@ jobs:
 
   merge:
     runs-on: ubuntu-latest
-    if: github.event_name != 'pull_request'
     needs:
       - build
 
@@ -121,7 +133,6 @@ jobs:
           merge-multiple: true
 
       - name: Login to GitHub Container Registry
-        if: github.event_name != 'pull_request'
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # 3.7.0
         with:
           registry: ghcr.io
@@ -151,6 +162,7 @@ jobs:
             type=schedule,pattern={{date 'YYYY-MM-DD'}}
             type=sha,format=short,prefix=sha-
             type=sha,format=long,prefix=sha-
+            type=ref,event=pr
 
       - name: Create Manifest List and Push
         working-directory: ${{ runner.temp }}/digests

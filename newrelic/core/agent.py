@@ -210,7 +210,6 @@ class Agent:
             if not Agent._tracer_provider:
                 try:
                     from opentelemetry.trace import NoOpTracerProvider
-
                     from newrelic.api.opentelemetry import TracerProvider
 
                     if not settings.opentelemetry.traces.enabled and not newrelic.core.config._environ_as_bool(

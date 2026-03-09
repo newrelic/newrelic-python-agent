@@ -26,7 +26,7 @@ _default_settings = {
     "debug.record_transaction_failure": True,
     "debug.log_explain_plan_queries": True,
     "opentelemetry.enabled": True,
-    "opentelemetry.traces.enabled": True,
+    "opentelemetry.traces.include": {"mysql"},
 }
 
 collector_agent_registration = collector_agent_registration_fixture(

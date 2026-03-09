@@ -17,8 +17,27 @@
 # OpenTelemetry instrumentor and the list of targets in the
 # NR hooks that need to be disabled if the OpenTelemetry
 # instrumentor is to be used instead.
-HYBRID_AGENT_DEFAULT_INCLUDED_TRACERS_TO_NR_HOOKS = {
+OPENTELEMETRY_ONLY_TRACERS_TO_NR_HOOKS = {
     "aio-pika": [],
+    "aiopg": [
+        "psycopg2",
+        "psycopg2._psycopg2",
+        "psycopg2.extensions",
+        "psycopg2._json",
+        "psycopg2._range",
+        "psycopg2.sql",
+    ],
+    "aiokafka": [],
+    "asyncclick": [],
+    "click": [],
+    "remoulade": [],
+    "sqlalchemy": [],
+    "system_metrics": [],
+    "threading": [],
+    "tortoiseorm": [],
+}
+
+NEW_RELIC_AND_OPENTELEMETRY_TRACERS_TO_NR_HOOKS = {
     "aiohttp_client": ["aiohttp.client", "aiohttp.client_reqrep"],
     "aiohttp_server": [
         "aiohttp.web",
@@ -27,15 +46,6 @@ HYBRID_AGENT_DEFAULT_INCLUDED_TRACERS_TO_NR_HOOKS = {
         "aiohttp.web_response",
         "aiohttp.web_urldispatcher",
         "aiohttp.protocol",
-    ],
-    "aiokafka": [],
-    "aiopg": [
-        "psycopg2",
-        "psycopg2._psycopg2",
-        "psycopg2.extensions",
-        "psycopg2._json",
-        "psycopg2._range",
-        "psycopg2.sql",
     ],
     "ariadne": [
         "ariadne.graphql",
@@ -50,14 +60,12 @@ HYBRID_AGENT_DEFAULT_INCLUDED_TRACERS_TO_NR_HOOKS = {
         "graphql.validation.validation",
         "graphql.type.schema",
     ],
-    "asyncclick": [],
     "asyncpg": ["asyncpg.connect_utils", "asyncpg.protocol"],
     # "boto": [], # this is boto3
     # "boto3": [],    # this is boto3sqs
     # "botocore": [],
     "cassandra": ["cassandra", "cassandra.cluster"],
     "celery": ["celery.local", "celery.app.trace", "celery.worker", "celery.concurrency.prefork", "billiard.pool"],
-    "click": [],
     "confluent_kafka": [
         "confluent_kafka.cimpl",
         "confluent_kafka.serializing_producer",
@@ -179,7 +187,6 @@ HYBRID_AGENT_DEFAULT_INCLUDED_TRACERS_TO_NR_HOOKS = {
         "redis.commands.graph.commands",
         "redis.commands.vectorset.commands",
     ],
-    "remoulade": [],
     "requests": [
         "requests.sessions",
         "requests.api",
@@ -189,7 +196,6 @@ HYBRID_AGENT_DEFAULT_INCLUDED_TRACERS_TO_NR_HOOKS = {
         "http.client",
         "httplib2",
     ],
-    "sqlalchemy": [],
     "sqlite3": ["sqlite3", "sqlite3.dbapi2", "pysqlite2", "pysqlite2.dbapi2"],
     "starlette": [
         "starlette.requests",
@@ -215,8 +221,6 @@ HYBRID_AGENT_DEFAULT_INCLUDED_TRACERS_TO_NR_HOOKS = {
         "graphql.validation.validation",
         "graphql.type.schema",
     ],
-    "system_metrics": [],
-    "threading": [],
     "tornado": [
         "tornado.httpserver",
         "tornado.httputil",
@@ -225,11 +229,11 @@ HYBRID_AGENT_DEFAULT_INCLUDED_TRACERS_TO_NR_HOOKS = {
         "tornado.web",
         "http.client",
     ],
-    "tortoiseorm": [],
     "urllib": ["urllib.request", "http.client"],
     "urllib3": ["urllib3.connectionpool", "urllib3.connection", "requests.packages.urllib3.connection", "http.client"],
 }
 
+ALL_LIBRARY_TRACERS_TO_NR_HOOKS = {**NEW_RELIC_AND_OPENTELEMETRY_TRACERS_TO_NR_HOOKS, **OPENTELEMETRY_ONLY_TRACERS_TO_NR_HOOKS}
 
 TEMPORARILY_DISABLED_OPENTELEMETRY_FRAMEWORKS = {
     "boto",

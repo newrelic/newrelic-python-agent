@@ -44,8 +44,9 @@ import newrelic.core.config
 from newrelic.common.log_file import initialize_logging
 from newrelic.common.object_names import callable_name, expand_builtin_exception_name
 from newrelic.common.opentelemetry_tracers import (
-    HYBRID_AGENT_DEFAULT_INCLUDED_TRACERS_TO_NR_HOOKS,
     TEMPORARILY_DISABLED_OPENTELEMETRY_FRAMEWORKS,
+    OPENTELEMETRY_ONLY_TRACERS_TO_NR_HOOKS,
+    ALL_LIBRARY_TRACERS_TO_NR_HOOKS,
 )
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.core import trace_cache
@@ -217,6 +218,10 @@ def _map_compressed_content_encoding(s):
 
 def _map_split_strings(s):
     return s.split()
+
+
+def _map_split_string_by_comma(s):
+    return newrelic.core.config.parse_comma_separated_into_set(s)
 
 
 def _map_console_listener_socket(s):
@@ -681,6 +686,8 @@ def _process_configuration(section):
     _process_setting(section, "instrumentation.middleware.django.include", "get", _map_inc_excl_middleware)
     _process_setting(section, "opentelemetry.enabled", "getboolean", None)
     _process_setting(section, "opentelemetry.traces.enabled", "getboolean", None)
+    _process_setting(section, "opentelemetry.traces.exclude", "get", _map_split_string_by_comma)
+    _process_setting(section, "opentelemetry.traces.include", "get", _map_split_string_by_comma)
 
 
 # Loading of configuration from specified file and for specified
@@ -4478,11 +4485,31 @@ def _is_installed(req):
     return False
 
 
-def _process_opentelemetry_instrumentation_entry_points(
-    final_include_dict=HYBRID_AGENT_DEFAULT_INCLUDED_TRACERS_TO_NR_HOOKS,
-):
+def _tracer_include_and_exclude_filter():
+    """Uses the values in `opentelemetry.traces.include` and
+    `opentelemetry.traces.exclude` settings, along with the
+    internal included defaults, to determine which tracers
+    should be used.
+    """
     if not _settings.opentelemetry.enabled or not _is_installed("opentelemetry-api"):
         return
+    
+    user_exclude = _settings.opentelemetry.traces.exclude or newrelic.core.config._environ_as_comma_separated_set("NEW_RELIC_OPENTELEMETRY_TRACES_EXCLUDE")
+    user_include = _settings.opentelemetry.traces.include or newrelic.core.config._environ_as_comma_separated_set("NEW_RELIC_OPENTELEMETRY_TRACES_INCLUDE")
+    
+    tracer_include_union = {*OPENTELEMETRY_ONLY_TRACERS_TO_NR_HOOKS.keys(), *user_include}
+    mask = tracer_include_union & user_exclude
+    final_include_set = tracer_include_union ^ mask
+    # final_exclude_set = user_exclude ^ mask
+    
+    return final_include_set    
+
+
+def _process_opentelemetry_instrumentation_entry_points():
+    if not _settings.opentelemetry.enabled or not _is_installed("opentelemetry-api"):
+        return
+
+    include_set = _tracer_include_and_exclude_filter()
 
     try:
         # importlib.metadata was introduced into the standard library starting in Python 3.8.
@@ -4510,27 +4537,20 @@ def _process_opentelemetry_instrumentation_entry_points(
     entry_points_generator = (
         entrypoint
         for entrypoint in _entry_points
-        if entrypoint.name in final_include_dict
+        if entrypoint.name in include_set
         and entrypoint.name not in TEMPORARILY_DISABLED_OPENTELEMETRY_FRAMEWORKS
     )
 
     for entrypoint in entry_points_generator:
         opentelemetry_entrypoints.append(entrypoint)
-        opentelemetry_instrumentation.extend(final_include_dict[entrypoint.name])
+        opentelemetry_instrumentation.extend(ALL_LIBRARY_TRACERS_TO_NR_HOOKS[entrypoint.name])
 
     # Check for native installations
-    # NOTE: This logic will change once enabled and disabled
-    # functionality is implemented for opentelemetry.traces setting.
-    # NOTE: elasticsearch is instrumented both with libs and natively.
-    # To handle this case: If lib is installed, the library itself
-    # will check for native instrumentation and switch to that on its
-    # own, but if not, native instrumentation could still be used and
-    # we would not know.  We handle this as we are with strawberry-graphql
-    # and ariadne where we check to see if opentelemetry-api and the
-    # specific library are installed on the system.
+    # NOTE: for native instrumentation to work, the tracer name must be
+    # explicitly included in the opentelemetry.traces.include setting.
     for lib in ["strawberry-graphql", "ariadne", "elasticsearch"]:
-        if _is_installed(lib):
-            opentelemetry_instrumentation.extend(final_include_dict[lib])
+        if _is_installed(lib) and (lib in include_set):
+            opentelemetry_instrumentation.extend(ALL_LIBRARY_TRACERS_TO_NR_HOOKS[lib])
 
 
 def _process_opentelemetry_instrumentors():

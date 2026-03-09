@@ -324,9 +324,11 @@ def wrap_httpx_client_send():
 
         headers = dict(
             filter(
-                lambda k: k[0].lower() in RECORDED_HEADERS
-                or k[0].lower().startswith("openai")
-                or k[0].lower().startswith("x-ratelimit"),
+                lambda k: (
+                    k[0].lower() in RECORDED_HEADERS
+                    or k[0].lower().startswith("openai")
+                    or k[0].lower().startswith("x-ratelimit")
+                ),
                 rheaders.items(),
             )
         )

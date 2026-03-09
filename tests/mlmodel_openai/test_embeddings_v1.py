@@ -48,6 +48,7 @@ embedding_recorded_events = [
             "response.headers.ratelimitResetRequests": "6ms",
             "response.headers.ratelimitRemainingTokens": 9999994,
             "response.headers.ratelimitRemainingRequests": 9999,
+            "response.usage.total_tokens": 6,
             "vendor": "openai",
             "ingest_source": "Python",
         },

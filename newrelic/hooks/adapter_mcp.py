@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import logging
 
 from newrelic.api.function_trace import FunctionTrace
@@ -37,8 +38,10 @@ async def wrap_call_tool(wrapped, instance, args, kwargs):
     bound_args = bind_args(wrapped, args, kwargs)
     tool_name = bound_args.get("name") or "tool"
     function_trace_name = f"{func_name}/{tool_name}"
+    agentic_subcomponent_data = {"type": "APM-AI_TOOL", "name": tool_name}
 
-    with FunctionTrace(name=function_trace_name, group="Llm/tool/MCP", source=wrapped):
+    with FunctionTrace(name=function_trace_name, group="Llm/tool/MCP", source=wrapped) as ft:
+        ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
         return await wrapped(*args, **kwargs)
 
 

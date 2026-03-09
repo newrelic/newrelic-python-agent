@@ -24,6 +24,7 @@ from pathlib import Path
 from urllib.parse import urlparse
 from urllib.request import url2pathname
 
+from newrelic.api.time_trace import get_linking_metadata
 from newrelic.core.config import _environ_as_bool, _environ_as_int
 
 _logger = logging.getLogger(__name__)
@@ -217,7 +218,8 @@ class AgentControlHealth:
 
     def write_to_health_file(self):
         status_time_unix_nano = time.time_ns()
-
+        service_metadata = get_linking_metadata()
+        entity_guid = service_metadata.get("entity.guid", "") if service_metadata else ""
         try:
             health_dir_path = self.health_delivery_location
             if health_dir_path is None:
@@ -229,6 +231,7 @@ class AgentControlHealth:
             is_healthy = self.is_healthy  # Cache property value to avoid multiple calls
 
             with health_file_path.open("w") as f:
+                f.write(f"entity_guid: {entity_guid}\n")
                 f.write(f"healthy: {is_healthy}\n")
                 f.write(f"status: {self.status_message}\n")
                 f.write(f"start_time_unix_nano: {self.start_time_unix_nano}\n")

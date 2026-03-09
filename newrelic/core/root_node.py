@@ -32,21 +32,23 @@ _RootNode = namedtuple(
         "path",
         "trusted_parent_span",
         "tracing_vendors",
+        "span_link_events",
+        "span_event_events",
     ],
 )
 
 
 class RootNode(_RootNode, GenericNodeMixin):
-    def span_event(self, *args, **kwargs):
-        span = super().span_event(*args, **kwargs)
-        i_attrs = span[0]
+    def span_event(self, settings, base_attrs=None, parent_guid=None, attr_class=dict):
+        i_attrs = (base_attrs and base_attrs.copy()) or attr_class()
         i_attrs["transaction.name"] = self.path
         i_attrs["nr.entryPoint"] = True
         if self.trusted_parent_span:
             i_attrs["trustedParentId"] = self.trusted_parent_span
         if self.tracing_vendors:
             i_attrs["tracingVendors"] = self.tracing_vendors
-        return span
+
+        return i_attrs, attr_class, self.span_link_events, self.span_event_events
 
     def trace_node(self, stats, root, connections):
         name = self.path

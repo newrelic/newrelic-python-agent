@@ -81,6 +81,8 @@ class MessageTrace(HeaderMixin, TimeTrace):
             guid=self.guid,
             agent_attributes=self.agent_attributes,
             user_attributes=self.user_attributes,
+            span_link_events=self.span_link_events,
+            span_event_events=self.span_event_events,
         )
 
 

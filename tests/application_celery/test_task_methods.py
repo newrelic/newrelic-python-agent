@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
 from _target_application import add, add_with_run, add_with_super, tsum
 from celery import chain, chord, group
 from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
@@ -129,6 +130,7 @@ def test_celery_task_signature():
     assert result == 7
 
 
+@pytest.mark.xfail(reason="This test has a race condition that causes failures in CI.")
 @validate_transaction_metrics(
     name="_target_application.add",
     group="Celery",

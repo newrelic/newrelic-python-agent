@@ -458,7 +458,11 @@ def extract_bedrock_claude_model_response(response_body, bedrock_attrs):
 
         bedrock_attrs["response.choices.finish_reason"] = response_body.get("stop_reason")
         bedrock_attrs["output_message_list"] = output_message_list
-        bedrock_attrs[""] = str(response_body.get("id"))
+
+        # Only set response_id if it exists and is not None
+        response_id = response_body.get("id")
+        if response_id:
+            bedrock_attrs["response_id"] = str(response_id)
 
         # Extract token information
         token_usage = response_body.get("usage", {})

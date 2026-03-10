@@ -1292,7 +1292,9 @@ class Application:
                     # harvest cycle before resuming.
                     if self._remaining_plugins and self.configuration and self.configuration.package_reporting.enabled:
                         start = stopwatch_start = time.time()
-                        while ((time.time() - stopwatch_start) < 0.5) and ((time.time() - start) < MAX_PACKAGE_CAPTURE_TIME_PER_SLOW_HARVEST):
+                        while ((time.time() - stopwatch_start) < 0.5) and (
+                            (time.time() - start) < MAX_PACKAGE_CAPTURE_TIME_PER_SLOW_HARVEST
+                        ):
                             try:
                                 self._active_session.send_loaded_modules([next(self.plugins)])
                                 stopwatch_start = time.time()

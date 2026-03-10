@@ -19,10 +19,7 @@ from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.signature import bind_args
-from newrelic.core.config import (
-    global_settings,
-    _environ_as_bool,
-)
+from newrelic.core.config import _environ_as_bool, global_settings
 
 ###########################################
 #   Context Instrumentation
@@ -142,9 +139,11 @@ def wrap_get_current_span(wrapped, instance, args, kwargs):
     # Do not allow the wrapper to continue if
     # the Hybrid Agent setting is not enabled
     application = application_instance(activate=False)
-    settings = global_settings() 
-    
-    if (hasattr(application, "settings") and not application.settings.opentelemetry.enabled) or (not settings.opentelemetry.enabled and not _environ_as_bool("NEW_RELIC_OPENTELEMETRY_ENABLED")):
+    settings = global_settings()
+
+    if (hasattr(application, "settings") and not application.settings.opentelemetry.enabled) or (
+        not settings.opentelemetry.enabled and not _environ_as_bool("NEW_RELIC_OPENTELEMETRY_ENABLED")
+    ):
         return span
 
     # If a NR trace does exist, check to see if the current

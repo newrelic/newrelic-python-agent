@@ -1430,8 +1430,12 @@ _settings.package_reporting.enabled = _environ_as_bool("NEW_RELIC_PACKAGE_REPORT
 _settings.ml_insights_events.enabled = _environ_as_bool("NEW_RELIC_ML_INSIGHTS_EVENTS_ENABLED", default=False)
 _settings.opentelemetry.enabled = _environ_as_bool("NEW_RELIC_OPENTELEMETRY_ENABLED", default=False)
 _settings.opentelemetry.traces.enabled = _environ_as_bool("NEW_RELIC_OPENTELEMETRY_TRACES_ENABLED", default=True)
-_settings.opentelemetry.traces.exclude = _environ_as_comma_separated_set("NEW_RELIC_OPENTELEMETRY_TRACES_EXCLUDE", default="")
-_settings.opentelemetry.traces.include = _environ_as_comma_separated_set("NEW_RELIC_OPENTELEMETRY_TRACES_INCLUDE", default="")
+_settings.opentelemetry.traces.exclude = _environ_as_comma_separated_set(
+    "NEW_RELIC_OPENTELEMETRY_TRACES_EXCLUDE", default=""
+)
+_settings.opentelemetry.traces.include = _environ_as_comma_separated_set(
+    "NEW_RELIC_OPENTELEMETRY_TRACES_INCLUDE", default=""
+)
 
 
 def global_settings():

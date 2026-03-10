@@ -44,9 +44,9 @@ import newrelic.core.config
 from newrelic.common.log_file import initialize_logging
 from newrelic.common.object_names import callable_name, expand_builtin_exception_name
 from newrelic.common.opentelemetry_tracers import (
-    TEMPORARILY_DISABLED_OPENTELEMETRY_FRAMEWORKS,
-    OPENTELEMETRY_ONLY_TRACERS_TO_NR_HOOKS,
     ALL_LIBRARY_TRACERS_TO_NR_HOOKS,
+    OPENTELEMETRY_ONLY_TRACERS_TO_NR_HOOKS,
+    TEMPORARILY_DISABLED_OPENTELEMETRY_FRAMEWORKS,
 )
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.core import trace_cache
@@ -4493,15 +4493,19 @@ def _tracer_include_and_exclude_filter():
     """
     if not _settings.opentelemetry.enabled or not _is_installed("opentelemetry-api"):
         return
-    
-    user_exclude = _settings.opentelemetry.traces.exclude or newrelic.core.config._environ_as_comma_separated_set("NEW_RELIC_OPENTELEMETRY_TRACES_EXCLUDE")
-    user_include = _settings.opentelemetry.traces.include or newrelic.core.config._environ_as_comma_separated_set("NEW_RELIC_OPENTELEMETRY_TRACES_INCLUDE")
-    
+
+    user_exclude = _settings.opentelemetry.traces.exclude or newrelic.core.config._environ_as_comma_separated_set(
+        "NEW_RELIC_OPENTELEMETRY_TRACES_EXCLUDE"
+    )
+    user_include = _settings.opentelemetry.traces.include or newrelic.core.config._environ_as_comma_separated_set(
+        "NEW_RELIC_OPENTELEMETRY_TRACES_INCLUDE"
+    )
+
     tracer_include_union = {*OPENTELEMETRY_ONLY_TRACERS_TO_NR_HOOKS.keys(), *user_include}
     mask = tracer_include_union & user_exclude
     final_include_set = tracer_include_union ^ mask
-    
-    return final_include_set    
+
+    return final_include_set
 
 
 def _process_opentelemetry_instrumentation_entry_points():
@@ -4536,8 +4540,7 @@ def _process_opentelemetry_instrumentation_entry_points():
     entry_points_generator = (
         entrypoint
         for entrypoint in _entry_points
-        if entrypoint.name in include_set
-        and entrypoint.name not in TEMPORARILY_DISABLED_OPENTELEMETRY_FRAMEWORKS
+        if entrypoint.name in include_set and entrypoint.name not in TEMPORARILY_DISABLED_OPENTELEMETRY_FRAMEWORKS
     )
 
     for entrypoint in entry_points_generator:

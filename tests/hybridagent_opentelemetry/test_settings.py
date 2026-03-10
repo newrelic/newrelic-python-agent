@@ -13,15 +13,13 @@
 # limitations under the License.
 
 import pytest
-
 from opentelemetry import trace
-
 from testing_support.fixtures import dt_enabled, override_application_settings
-from testing_support.validators.validate_span_events import validate_span_events
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from testing_support.validators.validate_transaction_count import validate_transaction_count
-
 from testing_support.util import conditional_decorator
+from testing_support.validators.validate_span_events import validate_span_events
+from testing_support.validators.validate_transaction_count import validate_transaction_count
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
 
@@ -29,39 +27,28 @@ from newrelic.api.transaction import current_transaction
 @pytest.mark.parametrize(
     "enabled,traces_enabled",
     [
-        (True, True),       # Create and record transaction and trace
-        (True, False),      # Do not create transaction
-        (False, True),      # Do not create transaction
-        (False, False),     # Do not create transaction
-    ]
+        (True, True),  # Create and record transaction and trace
+        (True, False),  # Do not create transaction
+        (False, True),  # Do not create transaction
+        (False, False),  # Do not create transaction
+    ],
 )
 def test_opentelemetry_bridge_enabled(enabled, traces_enabled):
-    @override_application_settings(
-        {
-            "opentelemetry.enabled": enabled,
-            "opentelemetry.traces.enabled": traces_enabled
-        }
-    )
+    @override_application_settings({"opentelemetry.enabled": enabled, "opentelemetry.traces.enabled": traces_enabled})
     @dt_enabled
+    @conditional_decorator(condition=(enabled and traces_enabled), decorator=validate_transaction_metrics(name="Bar"))
     @conditional_decorator(
         condition=(enabled and traces_enabled),
-        decorator=validate_transaction_metrics(name="Bar")
-    )
-    @conditional_decorator(
-        condition=(enabled and traces_enabled),
-        decorator=validate_span_events(count=1, exact_intrinsics={"name": "Function/Bar"})
+        decorator=validate_span_events(count=1, exact_intrinsics={"name": "Function/Bar"}),
     )
     @conditional_decorator(
         condition=(enabled and traces_enabled),
-        decorator=validate_span_events(count=1, exact_intrinsics={"name": "Function/Baz"})
+        decorator=validate_span_events(count=1, exact_intrinsics={"name": "Function/Baz"}),
     )
-    @conditional_decorator(
-        condition=(not enabled or not traces_enabled),
-        decorator=validate_transaction_count(count=0)
-    )
+    @conditional_decorator(condition=(not enabled or not traces_enabled), decorator=validate_transaction_count(count=0))
     def _test():
         tracer = trace.get_tracer_provider().get_tracer("Tracer")
-        
+
         with tracer.start_as_current_span(name="Bar", kind=trace.SpanKind.SERVER) as bar_span:
             bar_span_id = bar_span.get_span_context().span_id
             bar_trace_id = bar_span.get_span_context().trace_id
@@ -91,13 +78,13 @@ def test_opentelemetry_bridge_enabled(enabled, traces_enabled):
 @pytest.mark.parametrize(
     "enabled,include,exclude,expected_foo_span_count,expected_bar_span_count",
     [
-        (True, set(), {"some_tracer"}, 1, 1),                   # Invalid tracer name in exclude
-        (True, {"some_tracer"}, set(), 1, 1),                   # Invalid tracer name in include
-        (True, {"FirstTracer"}, {"FirstTracer"}, 0, 1),         # Exclude `FirstTracer` tracer.  Takes priority over include
-        (True, set(), {"SecondTracer"}, 1, 0),                  # Exclude `SecondTracer` tracer
-        (True, None, {"SecondTracer"}, 1, 0),                   # Exclude `SecondTracer` tracer, include set to `None`
-        (True, set(), {"FirstTracer","SecondTracer"}, 0, 0),    # Exclude both tracers
-        (False, {"FirstTracer"}, {"SecondTracer"}, 0, 0),       # Disabled
+        (True, set(), {"some_tracer"}, 1, 1),  # Invalid tracer name in exclude
+        (True, {"some_tracer"}, set(), 1, 1),  # Invalid tracer name in include
+        (True, {"FirstTracer"}, {"FirstTracer"}, 0, 1),  # Exclude `FirstTracer` tracer.  Takes priority over include
+        (True, set(), {"SecondTracer"}, 1, 0),  # Exclude `SecondTracer` tracer
+        (True, None, {"SecondTracer"}, 1, 0),  # Exclude `SecondTracer` tracer, include set to `None`
+        (True, set(), {"FirstTracer", "SecondTracer"}, 0, 0),  # Exclude both tracers
+        (False, {"FirstTracer"}, {"SecondTracer"}, 0, 0),  # Disabled
     ],
     ids=[
         "include=(empty set),exclude=(invalid name)",
@@ -109,10 +96,12 @@ def test_opentelemetry_bridge_enabled(enabled, traces_enabled):
         "disabled",
     ],
 )
-def test_opentelemetry_tracer_include_and_exclude(enabled, include, exclude, expected_foo_span_count, expected_bar_span_count):
+def test_opentelemetry_tracer_include_and_exclude(
+    enabled, include, exclude, expected_foo_span_count, expected_bar_span_count
+):
     tracer1 = trace.get_tracer_provider().get_tracer("FirstTracer")
     tracer2 = trace.get_tracer_provider().get_tracer("SecondTracer")
-    
+
     @override_application_settings(
         {
             "opentelemetry.traces.enabled": enabled,
@@ -123,11 +112,11 @@ def test_opentelemetry_tracer_include_and_exclude(enabled, include, exclude, exp
     @dt_enabled
     @conditional_decorator(
         condition=expected_foo_span_count,
-        decorator=validate_span_events(count=1, exact_intrinsics={"name": "Function/Foo"})
+        decorator=validate_span_events(count=1, exact_intrinsics={"name": "Function/Foo"}),
     )
     @conditional_decorator(
         condition=expected_bar_span_count,
-        decorator=validate_span_events(count=1, exact_intrinsics={"name": "Function/Bar"})
+        decorator=validate_span_events(count=1, exact_intrinsics={"name": "Function/Bar"}),
     )
     @validate_transaction_count(count=int(expected_foo_span_count or expected_bar_span_count))
     def _test():
@@ -141,12 +130,8 @@ def test_opentelemetry_tracer_include_and_exclude(enabled, include, exclude, exp
 def test_opentelemetry_tracer_nested_include_and_exclude():
     tracer1 = trace.get_tracer_provider().get_tracer("FirstTracer")
     tracer2 = trace.get_tracer_provider().get_tracer("SecondTracer")
-    
-    @override_application_settings(
-        {
-            "opentelemetry.traces.exclude": {"SecondTracer"},
-        }
-    )
+
+    @override_application_settings({"opentelemetry.traces.exclude": {"SecondTracer"}})
     @dt_enabled
     @validate_span_events(count=1, exact_intrinsics={"name": "Function/Foo"})
     @validate_span_events(count=1, exact_intrinsics={"name": "Function/Baz"})
@@ -156,7 +141,7 @@ def test_opentelemetry_tracer_nested_include_and_exclude():
             nr_foo_trace_guid = int(current_trace().guid, 16)
             foo_span_id = foo_span.get_span_context().span_id
             assert nr_foo_trace_guid == foo_span_id
-            
+
             with tracer2.start_as_current_span(name="Bar", kind=trace.SpanKind.SERVER) as bar_span:
                 nr_bar_trace_guid = int(current_trace().guid, 16)
                 bar_span_id = bar_span.get_span_context().span_id
@@ -164,7 +149,7 @@ def test_opentelemetry_tracer_nested_include_and_exclude():
                 # trace/span is actually the trace created above.
                 assert nr_foo_trace_guid == nr_bar_trace_guid
                 assert nr_bar_trace_guid == bar_span_id
-                
+
                 with tracer1.start_as_current_span(name="Baz", kind=trace.SpanKind.SERVER) as baz_span:
                     nr_baz_trace_guid = int(current_trace().guid, 16)
                     nr_parent_trace_guid = int(current_trace().parent.guid, 16)

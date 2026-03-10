@@ -539,9 +539,9 @@ def test_partial_granularity_metrics(transaction_node):
     # Harvest has not run yet
     assert app._transaction_count == 1
 
-    instrumented = "Supportability/DistributedTrace/PartialGranularity/compact/Span/Instrumented"
-    kept = "Supportability/DistributedTrace/PartialGranularity/compact/Span/Kept"
-    pg = "Supportability/Python/PartialGranularity/compact"
+    instrumented = "Supportability/DistributedTrace/PartialGranularity/Compact/Span/Instrumented"
+    kept = "Supportability/DistributedTrace/PartialGranularity/Compact/Span/Kept"
+    pg = "Supportability/Python/PartialGranularity/Compact"
     dropped_ids = "Supportability/Python/PartialGranularity/NrIds/Dropped"
     assert app._stats_engine.stats_table[(instrumented, "")][0] == 203
     assert app._stats_engine.stats_table[(kept, "")][0] == 2

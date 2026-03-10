@@ -37,7 +37,7 @@ def exercise(cluster):
             if is_async:
                 execute_query = lambda query, *args: session.execute_async(query, *args).result()
             else:
-                execute_query = lambda query, *args: session.execute(query, *args)
+                execute_query = lambda query, *args: session.execute(query, *args)  # noqa: PLW0108
 
             execute_query(
                 f"create keyspace if not exists {KEYSPACE} with replication = {REPLICATION_STRATEGY} and durable_writes = false;"

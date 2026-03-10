@@ -17,8 +17,6 @@ import asyncio
 import pytest
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
-from newrelic.common.object_wrapper import transient_function_wrapper
-
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
     "transaction_tracer.explain_threshold": 0.0,

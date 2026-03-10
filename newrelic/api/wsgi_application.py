@@ -634,9 +634,9 @@ def WSGIApplicationWrapper(wrapped, application=None, name=None, group=None, fra
             transaction.set_transaction_name(name, group, priority=1)
 
         def _start_response(status, response_headers, *args):
-            additional_headers = transaction.process_response(status, response_headers, *args)
+            transaction.process_response(status, response_headers, *args)
 
-            _write = start_response(status, response_headers + additional_headers, *args)
+            _write = start_response(status, response_headers, *args)
 
             def write(data):
                 if not transaction._sent_start:

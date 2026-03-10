@@ -193,9 +193,11 @@ def wrap_httpx_client_send(extract_shortened_prompt):
 
         headers = dict(
             filter(
-                lambda k: k[0].lower() in RECORDED_HEADERS
-                or k[0].lower().startswith("openai")
-                or k[0].lower().startswith("x-ratelimit"),
+                lambda k: (
+                    k[0].lower() in RECORDED_HEADERS
+                    or k[0].lower().startswith("openai")
+                    or k[0].lower().startswith("x-ratelimit")
+                ),
                 rheaders.items(),
             )
         )
@@ -217,9 +219,11 @@ def wrap_openai_api_requestor_interpret_response():
         rbody, rcode, rheaders = bind_request_interpret_response_params(*args, **kwargs)
         headers = dict(
             filter(
-                lambda k: k[0].lower() in RECORDED_HEADERS
-                or k[0].lower().startswith("openai")
-                or k[0].lower().startswith("x-ratelimit"),
+                lambda k: (
+                    k[0].lower() in RECORDED_HEADERS
+                    or k[0].lower().startswith("openai")
+                    or k[0].lower().startswith("x-ratelimit")
+                ),
                 rheaders.items(),
             )
         )
@@ -251,9 +255,11 @@ def wrap_openai_api_requestor_request(extract_shortened_prompt):
             headers = result[0]._headers
             headers = dict(
                 filter(
-                    lambda k: k[0].lower() in RECORDED_HEADERS
-                    or k[0].lower().startswith("openai")
-                    or k[0].lower().startswith("x-ratelimit"),
+                    lambda k: (
+                        k[0].lower() in RECORDED_HEADERS
+                        or k[0].lower().startswith("openai")
+                        or k[0].lower().startswith("x-ratelimit")
+                    ),
                     headers.items(),
                 )
             )
@@ -302,9 +308,11 @@ def generator_proxy(openai_version):
                     if openai_version < (1, 0):
                         headers = dict(
                             filter(
-                                lambda k: k[0].lower() in RECORDED_HEADERS
-                                or k[0].lower().startswith("openai")
-                                or k[0].lower().startswith("x-ratelimit"),
+                                lambda k: (
+                                    k[0].lower() in RECORDED_HEADERS
+                                    or k[0].lower().startswith("openai")
+                                    or k[0].lower().startswith("x-ratelimit")
+                                ),
                                 return_val._nr_response_headers.items(),
                             )
                         )

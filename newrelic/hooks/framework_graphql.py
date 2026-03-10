@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import functools
 import logging
 import sys
 import time
@@ -27,12 +28,6 @@ from newrelic.common.object_names import callable_name, parse_exc_info
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.core.graphql_utils import graphql_statement
-from newrelic.hooks.framework_graphql_py3 import (
-    nr_coro_execute_name_wrapper,
-    nr_coro_graphql_impl_wrapper,
-    nr_coro_resolver_error_wrapper,
-    nr_coro_resolver_wrapper,
-)
 
 _logger = logging.getLogger(__name__)
 
@@ -468,6 +463,56 @@ def wrap_graphql_impl(wrapped, instance, args, kwargs):
             # Execution finished synchronously, exit immediately.
             trace.__exit__(None, None, None)
             return result
+
+
+def nr_coro_execute_name_wrapper(wrapped, result, set_name):
+    @functools.wraps(wrapped)
+    async def _nr_coro_execute_name_wrapper():
+        result_ = await result
+        set_name()
+        return result_
+
+    return _nr_coro_execute_name_wrapper()
+
+
+def nr_coro_resolver_error_wrapper(wrapped, name, trace, ignore, result, transaction):
+    @functools.wraps(wrapped)
+    async def _nr_coro_resolver_error_wrapper():
+        with trace:
+            with ErrorTrace(ignore=ignore):
+                try:
+                    return await result
+                except Exception:
+                    transaction.set_transaction_name(name, "GraphQL", priority=15)
+                    raise
+
+    return _nr_coro_resolver_error_wrapper()
+
+
+def nr_coro_resolver_wrapper(wrapped, trace, ignore, result):
+    @functools.wraps(wrapped)
+    async def _nr_coro_resolver_wrapper():
+        with trace:
+            with ErrorTrace(ignore=ignore):
+                return await result
+
+    return _nr_coro_resolver_wrapper()
+
+
+def nr_coro_graphql_impl_wrapper(wrapped, trace, ignore, result):
+    @functools.wraps(wrapped)
+    async def _nr_coro_graphql_impl_wrapper():
+        try:
+            with ErrorTrace(ignore=ignore):
+                result_ = await result
+        except:
+            trace.__exit__(*sys.exc_info())
+            raise
+        else:
+            trace.__exit__(None, None, None)
+            return result_
+
+    return _nr_coro_graphql_impl_wrapper()
 
 
 def instrument_graphql_schema_get_field(module):

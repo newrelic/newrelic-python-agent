@@ -1213,7 +1213,7 @@ class StatsEngine:
                             self._span_events.add(new_event, priority=transaction.priority)
 
                 if transaction.partial_granularity_sampled:
-                    partial_gran_type = settings.distributed_tracing.sampler.partial_granularity.type
+                    partial_gran_type = settings.distributed_tracing.sampler.partial_granularity.type.capitalize()
                     self.record_custom_metric(
                         f"Supportability/Python/PartialGranularity/{partial_gran_type}", {"count": 1}
                     )

@@ -30,7 +30,7 @@ GRAPHENE_DJANGO_VERSION = get_package_version("graphene_django")
 graphene_django_version_tuple = tuple(map(int, GRAPHENE_DJANGO_VERSION.split(".")))
 
 
-# Implementation from `newrelic.hooks.framework_graphql_py3`
+# Implementation from `newrelic.hooks.framework_graphql`
 def nr_coro_execute_graphql_request_wrapper(wrapped, trace, ignore, result):
     @functools.wraps(wrapped)
     async def _nr_coro_execute_graphql_request_wrapper():

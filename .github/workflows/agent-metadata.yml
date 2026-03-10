@@ -22,16 +22,16 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version tag (needs to exactly match the GH tag for the release)'
+        description: "Version tag (needs to exactly match the GH tag for the release)"
         required: true
         type: string
       agent-type:
-        description: 'Agent type'
+        description: "Agent type"
         required: false
-        default: 'NRPythonAgent'
+        default: "NRPythonAgent"
         type: string
       use-cache:
-        description: 'Use cache'
+        description: "Use cache"
         required: false
         default: true
         type: boolean
@@ -40,16 +40,16 @@ on:
   workflow_call:
     inputs:
       version:
-        description: 'Version tag (needs to exactly match the GH tag for the release)'
+        description: "Version tag (needs to exactly match the GH tag for the release)"
         required: true
         type: string
       agent-type:
-        description: 'Agent type'
+        description: "Agent type"
         required: false
-        default: 'NRPythonAgent'
+        default: "NRPythonAgent"
         type: string
       use-cache:
-        description: 'Use cache'
+        description: "Use cache"
         required: false
         default: true
         type: boolean
@@ -60,7 +60,7 @@ on:
         required: true
       APM_CONTROL_NR_LICENSE_KEY_STAGING:
         required: false
-        
+
 jobs:
   send-agent-metadata:
     uses: newrelic/newrelic-agent-init-container/.github/workflows/agent-metadata.yml@main
@@ -71,4 +71,4 @@ jobs:
     secrets:
       FC_SYS_ID_CLIENT_ID: ${{ secrets.FC_SYS_ID_CLIENT_ID }}
       FC_SYS_ID_PR_KEY: ${{ secrets.FC_SYS_ID_PR_KEY }}
-      APM_CONTROL_NR_LICENSE_KEY_STAGING: ${{ secrets.APM_CONTROL_NR_LICENSE_KEY_STAGING }}  # action app is instrumented and supported by APM Control team
+      APM_CONTROL_NR_LICENSE_KEY_STAGING: ${{ secrets.APM_CONTROL_NR_LICENSE_KEY_STAGING }} # action app is instrumented and supported by APM Control team

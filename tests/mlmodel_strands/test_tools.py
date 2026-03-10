@@ -228,6 +228,8 @@ def test_tool_execution_error(exercise_agent, set_trace_info, single_tool_model_
 @validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "add_exclamation"}'})
 @background_task()
 def test_tool_pre_execution_exception(exercise_agent, set_trace_info, single_tool_model, add_exclamation):
+    from strands.types.exceptions import EventLoopException
+
     # Add a wrapper to intentionally force an error in the ToolExecutor._stream code to hit the exception path in
     # the AsyncGeneratorProxy
     @transient_function_wrapper("strands.hooks.events", "BeforeToolCallEvent.__init__")
@@ -238,20 +240,8 @@ def test_tool_pre_execution_exception(exercise_agent, set_trace_info, single_too
     def _test():
         set_trace_info()
         my_agent = Agent(name="my_agent", model=single_tool_model, tools=[add_exclamation])
-        return exercise_agent(my_agent, 'Add an exclamation to the word "Hello"')
+        with pytest.raises(EventLoopException, match="Oops"):
+            exercise_agent(my_agent, 'Add an exclamation to the word "Hello"')
 
-    # This will not explicitly raise a ValueError when running the test but we are still able to  capture it in the error trace
-    response = _test()
-
-    if isinstance(response, list):
-        # Streaming returns a list of events
-        messages = [event["message"]["content"] for event in response if "message" in event]
-        assert len(messages) == 3
-        assert messages[0][0]["text"] == "Calling add_exclamation tool"
-        assert messages[0][1]["toolUse"]["name"] == "add_exclamation"
-        assert not messages[1], "Failed tool invocation should return an empty message."
-        assert messages[2][0]["text"] == "Success!"
-    else:
-        # Invoke returns a response object
-        assert response.message["content"][0]["text"] == "Success!"
-        assert not response.metrics.tool_metrics
+    # This will raise a EventLoopException and we won't receive a response.
+    _test()

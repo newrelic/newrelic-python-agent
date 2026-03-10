@@ -91,23 +91,38 @@ RUN ln -fs "/usr/share/zoneinfo/${TZ}" /etc/localtime && \
 ENV HOME=/root
 WORKDIR "${HOME}"
 
+# Setup custom paths for uv
+ENV UV_PYTHON_INSTALL_DIR=/opt/uv/python
+ENV UV_PYTHON_BIN_DIR=/opt/uv/bin
+ENV UV_TOOL_DIR=/opt/uv/tools
+ENV UV_CACHE_DIR=/opt/uv/cache
+ENV UV_PYTHON_CACHE_DIR="${UV_CACHE_DIR}"
+ENV UV_TOOL_BIN_DIR="${UV_PYTHON_BIN_DIR}"
+ENV PATH="/opt/uv/bin:${PATH}"
+RUN mkdir -m 0755 -p \
+    "${UV_PYTHON_INSTALL_DIR}" \
+    "${UV_PYTHON_BIN_DIR}" \
+    "${UV_TOOL_DIR}" \
+    "${UV_CACHE_DIR}"
+
 # Install and configure uv
-RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="${HOME}/.local/bin:${PATH}"
+COPY --chmod=0755 --from=ghcr.io/astral-sh/uv:latest /uv /uvx /opt/uv/bin/
 ENV UV_PYTHON_PREFERENCE="only-managed"
+ENV UV_PYTHON_DOWNLOADS="manual"
 ENV UV_LINK_MODE="copy"
 
 # Install CPython and PyPy versions
 RUN uv python install -f \
-        cp3.14 cp3.13 cp3.12 cp3.11 cp3.10 cp3.9 cp3.8 \
+        cp3.14 cp3.13 cp3.12 cp3.11 cp3.10 cp3.9 \
         pp3.11 pp3.10 \
-        cp3.14t
+        cp3.14t && \
+    uv clean
 
 # Set default Python version to CPython 3.13
 RUN uv python install -f --default cp3.13
 
 # Add shim for pip to use 'uv pip'
-COPY --chmod=775 <<EOF "${HOME}/.local/bin/pip"
+COPY --chmod=0775 <<EOF "${UV_PYTHON_BIN_DIR}/pip"
 #!/bin/bash
 exec uv pip \$@
 EOF
@@ -116,7 +131,8 @@ EOF
 ENV UV_PYTHON_DOWNLOADS=never
 
 # Install tools with uv in isolated environments
-RUN uv tool install tox --with tox-uv && \
+RUN uv tool install tox --with tox-uv-bare && \
     uv tool install ruff && \
     uv tool install pre-commit --with pre-commit-uv && \
-    uv tool install asv --with virtualenv
+    uv tool install asv --with virtualenv && \
+    uv clean

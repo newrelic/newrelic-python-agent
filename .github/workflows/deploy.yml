@@ -29,8 +29,6 @@ jobs:
       matrix:
         include:
           # Linux glibc
-          - wheel: cp38-manylinux
-            os: ubuntu-24.04
           - wheel: cp39-manylinux
             os: ubuntu-24.04
           - wheel: cp310-manylinux
@@ -41,11 +39,13 @@ jobs:
             os: ubuntu-24.04
           - wheel: cp313-manylinux
             os: ubuntu-24.04
+          - wheel: cp313t-manylinux
+            os: ubuntu-24.04
           - wheel: cp314-manylinux
             os: ubuntu-24.04
-          # Linux musllibc
-          - wheel: cp38-musllinux
+          - wheel: cp314t-manylinux
             os: ubuntu-24.04
+          # Linux musllibc
           - wheel: cp39-musllinux
             os: ubuntu-24.04
           - wheel: cp310-musllinux
@@ -56,7 +56,11 @@ jobs:
             os: ubuntu-24.04
           - wheel: cp313-musllinux
             os: ubuntu-24.04
+          - wheel: cp313t-musllinux
+            os: ubuntu-24.04
           - wheel: cp314-musllinux
+            os: ubuntu-24.04
+          - wheel: cp314t-musllinux
             os: ubuntu-24.04
           # Windows
           # Windows wheels won't but published until the full release announcement.
@@ -76,7 +80,7 @@ jobs:
 
       - name: Setup QEMU
         if: runner.os == 'Linux'
-        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # 3.7.0
+        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # 4.0.0
         with:
           platforms: arm64
 
@@ -89,6 +93,7 @@ jobs:
           CIBW_ARCHS_MACOS: native
           CIBW_ARCHS_WINDOWS: AMD64 ARM64
           CIBW_ENVIRONMENT_LINUX: "LD_LIBRARY_PATH=/opt/rh/devtoolset-8/root/usr/lib64:/opt/rh/devtoolset-8/root/usr/lib:/opt/rh/devtoolset-8/root/usr/lib64/dyninst:/opt/rh/devtoolset-8/root/usr/lib/dyninst:/usr/local/lib64:/usr/local/lib"
+          CIBW_ENABLE: cpython-freethreading
           CIBW_TEST_REQUIRES: pytest
           CIBW_TEST_COMMAND_LINUX: "export PYTHONPATH={project}/tests; pytest {project}/tests/agent_unittests -vx"
           CIBW_TEST_COMMAND_MACOS: "export PYTHONPATH={project}/tests; pytest {project}/tests/agent_unittests -vx"
@@ -97,7 +102,7 @@ jobs:
           CIBW_TEST_SKIP: "*-win_arm64"
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # 7.0.0
         with:
           name: ${{ github.job }}-${{ matrix.wheel }}
           path: ./wheelhouse/*.whl
@@ -134,7 +139,7 @@ jobs:
           openssl md5 -binary "dist/${tarball}" | xxd -p | tr -d '\n' > "dist/${md5_file}"
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # 6.0.0
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # 7.0.0
         with:
           name: ${{ github.job }}-sdist
           path: |
@@ -166,7 +171,7 @@ jobs:
     environment: ${{ matrix.pypi-instance }}
 
     steps:
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # 7.0.0
+      - uses: actions/download-artifact@70fc10c6e5e1ce46ad2ea6f2b72d43f7d47b13c3 # 8.0.0
         with:
           path: ./dist/
           merge-multiple: true
@@ -196,7 +201,7 @@ jobs:
           repository-url: https://test.pypi.org/legacy/
 
       - name: Attest
-        uses: actions/attest-build-provenance@96278af6caaf10aea03fd8d33a09a777ca52d62f # 3.2.0
+        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # 4.1.0
         id: attest
         with:
           subject-path: |

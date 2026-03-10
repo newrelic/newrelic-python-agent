@@ -102,7 +102,7 @@ def extract_kinesis_agent_attrs(instance, *args, **kwargs):
         stream_name = kwargs.get("StreamName", None)
         if stream_name is not None:
             transaction = current_transaction()
-            settings = transaction.settings if transaction.settings else global_settings()
+            settings = transaction.settings or global_settings()
             account_id = settings.cloud.aws.account_id if settings and settings.cloud.aws.account_id else None
             region = None
             if hasattr(instance, "_client_config") and hasattr(instance._client_config, "region_name"):
@@ -131,7 +131,7 @@ def extract_firehose_agent_attrs(instance, *args, **kwargs):
         stream_name = kwargs.get("DeliveryStreamName", None)
         if stream_name:
             transaction = current_transaction()
-            settings = transaction.settings if transaction.settings else global_settings()
+            settings = transaction.settings or global_settings()
             account_id = settings.cloud.aws.account_id if settings and settings.cloud.aws.account_id else None
             region = None
             if hasattr(instance, "_client_config") and hasattr(instance._client_config, "region_name"):
@@ -1448,7 +1448,7 @@ def dynamodb_datastore_trace(
                 region = instance._client_config.region_name
 
             transaction = current_transaction()
-            settings = transaction.settings if transaction.settings else global_settings()
+            settings = transaction.settings or global_settings()
             account_id = settings.cloud.aws.account_id if settings and settings.cloud.aws.account_id else None
 
             _db_host = getattr(getattr(instance, "_endpoint", None), "host", None)

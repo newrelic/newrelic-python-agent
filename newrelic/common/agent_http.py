@@ -262,7 +262,7 @@ class HttpClient(BaseClient):
 
                 if not verify_path.cafile and not verify_path.capath:
                     if sys.platform != "win32":
-                        # If there is no resolved cafile on POSIX platforms, assume the bundled certs
+                        # If there is no resolved cafile on POSIX platforms, assume the certifi certs
                         # are required and report this condition as a supportability metric.
                         ca_bundle_path = certs.where()
                         internal_metric("Supportability/Python/Certificate/BundleRequired", 1)
@@ -276,7 +276,7 @@ class HttpClient(BaseClient):
                             system_certs = None
 
                         # If we still can't find any certs after loading the default ones,
-                        # then assume the bundled certs are required. If we do find them,
+                        # then assume the certifi certs are required. If we do find them,
                         # we don't have to do anything. We let urllib3 handle loading the
                         # default certs from Windows.
                         if not system_certs:
@@ -354,9 +354,7 @@ class HttpClient(BaseClient):
             return self._connection_attr
 
         retries = urllib3.Retry(total=False, connect=None, read=None, redirect=0, status=None)
-        self._connection_attr = self.CONNECTION_CLS(
-            self._host, self._port, strict=True, retries=retries, **self._connection_kwargs
-        )
+        self._connection_attr = self.CONNECTION_CLS(self._host, self._port, retries=retries, **self._connection_kwargs)
         return self._connection_attr
 
     def close_connection(self):
@@ -540,7 +538,6 @@ class DeveloperModeClient(SupportabilityMixin, BaseClient):
             "url_rules": [],
             "collect_errors": True,
             "account_id": "12345",
-            "cross_process_id": "12345#67890",
             "messages": [{"message": "Reporting to fake collector", "level": "INFO"}],
             "sampling_rate": 0,
             "collect_traces": True,

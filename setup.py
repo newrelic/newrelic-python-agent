@@ -129,14 +129,7 @@ if not with_setuptools:
             "python_requires": ">=3.9",  # python_requires is also located in pyproject.toml
             "zip_safe": False,
             "packages": packages,
-            "package_data": {
-                "newrelic": [
-                    "newrelic.ini",
-                    "packages/urllib3/LICENSE.txt",
-                    "common/cacert.pem",
-                    "scripts/azure-prebuild.sh",
-                ]
-            },
+            "package_data": {"newrelic": ["newrelic.ini", "packages/urllib3/LICENSE.txt", "scripts/azure-prebuild.sh"]},
         }
     )
 

@@ -49,7 +49,7 @@ from newrelic.samplers.data_sampler import DataSampler
 
 _logger = logging.getLogger(__name__)
 
-MAX_PACKAGE_CAPTURE_TIME_PER_SLOW_HARVEST = 2.0
+MAX_PACKAGE_CAPTURE_TIME_PER_SLOW_HARVEST = 5.0
 
 
 class Application:
@@ -1285,13 +1285,20 @@ class Application:
                             )
 
                     # Send environment plugin.
-                    # Send one per cycle to avoid time outs/lost
-                    # module info for longer module loading times.
-                    if self.configuration and self.configuration.package_reporting.enabled:
-                        try:
-                            self._active_session.send_loaded_modules([next(self.plugins)])
-                        except StopIteration:
-                            pass
+                    # If a module takes less than 0.5 seconds to load,
+                    # continue to upload.  Do this until we reach 5.0
+                    # seconds or until a module has taken more than
+                    # 0.5 seconds to upload.  Then, wait for the next
+                    # harvest cycle before resuming.
+                    if self._remaining_plugins and self.configuration and self.configuration.package_reporting.enabled:
+                        start = stopwatch_start = time.time()
+                        while ((time.time() - stopwatch_start) < 0.5) and ((time.time() - start) < MAX_PACKAGE_CAPTURE_TIME_PER_SLOW_HARVEST):
+                            try:
+                                self._active_session.send_loaded_modules([next(self.plugins)])
+                                stopwatch_start = time.time()
+                            except StopIteration:
+                                self._remaining_plugins = False
+                                break
 
                     # Add a metric we can use to track how many harvest
                     # periods have occurred.
@@ -1732,7 +1739,7 @@ class Application:
         # if this has not been completed during harvest
         # lifetime of the application
 
-        if self.configuration and self.configuration.package_reporting.enabled:
+        if self._remaining_plugins and self.configuration and self.configuration.package_reporting.enabled:
             # Anything that was left in the plugins generator
             # will be resolved here.
             plugins_list = list(self.plugins)
@@ -1762,6 +1769,7 @@ class Application:
         if restart:
             # Reset package/module generator
             self.plugins = plugins()
+            self._remaining_plugins = True
 
             self._agent_restart += 1
             self.activate_session()

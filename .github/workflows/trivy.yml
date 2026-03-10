@@ -39,7 +39,7 @@ jobs:
 
       - name: Run Trivy vulnerability scanner in repo mode
         if: ${{ github.event_name == 'pull_request' }}
-        uses: aquasecurity/trivy-action@e368e328979b113139d6f9068e03accaed98a518 # v0.34.1
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
         with:
           scan-type: "fs"
           ignore-unfixed: true
@@ -50,7 +50,7 @@ jobs:
 
       - name: Run Trivy vulnerability scanner in repo mode
         if: ${{ github.event_name == 'schedule' }}
-        uses: aquasecurity/trivy-action@e368e328979b113139d6f9068e03accaed98a518 # v0.34.1
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
         with:
           scan-type: "fs"
           ignore-unfixed: true
@@ -61,6 +61,6 @@ jobs:
 
       - name: Upload Trivy scan results to GitHub Security tab
         if: ${{ github.event_name == 'schedule' }}
-        uses: github/codeql-action/upload-sarif@89a39a4e59826350b863aa6b6252a07ad50cf83e # 4.32.4
+        uses: github/codeql-action/upload-sarif@0d579ffd059c29b07949a3cce3983f0780820c98 # 4.32.6
         with:
           sarif_file: "trivy-results.sarif"

@@ -4469,22 +4469,10 @@ def _is_installed(req):
 def _process_opentelemetry_instrumentation_entry_points(
     final_include_dict=HYBRID_AGENT_DEFAULT_INCLUDED_TRACERS_TO_NR_HOOKS,
 ):
+    from importlib.metadata import entry_points
+
     if not _settings.opentelemetry.enabled or not _is_installed("opentelemetry-api"):
         return
-
-    try:
-        # importlib.metadata was introduced into the standard library starting in Python 3.8.
-        from importlib.metadata import entry_points
-    except ImportError:
-        try:
-            # importlib_metadata is a backport library installable from PyPI.
-            from importlib_metadata import entry_points
-        except ImportError:
-            try:
-                # Fallback to pkg_resources, which is available in older versions of setuptools.
-                from pkg_resources import iter_entry_points as entry_points
-            except ImportError:
-                return
 
     group = "opentelemetry_instrumentor"
 

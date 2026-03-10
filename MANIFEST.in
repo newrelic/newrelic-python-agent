@@ -3,7 +3,6 @@ include README.md
 include LICENSE
 include THIRD_PARTY_NOTICES.md
 include newrelic/newrelic.ini
-include newrelic/common/cacert.pem
 include newrelic/packages/wrapt/LICENSE
 include newrelic/packages/urllib3/LICENSE.txt
 include newrelic/packages/isort/LICENSE

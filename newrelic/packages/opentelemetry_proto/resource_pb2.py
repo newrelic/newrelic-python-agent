@@ -22,7 +22,7 @@ _sym_db = _symbol_database.Default()
 from newrelic.packages.opentelemetry_proto import common_pb2 as newrelic_dot_packages_dot_opentelemetry__proto_dot_common__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n4newrelic/packages/opentelemetry_proto/resource.proto\x12%newrelic.packages.opentelemetry_proto\x1a\x32newrelic/packages/opentelemetry_proto/common.proto\"q\n\x08Resource\x12\x43\n\nattributes\x18\x01 \x03(\x0b\x32/.newrelic.packages.opentelemetry_proto.KeyValue\x12 \n\x18\x64ropped_attributes_count\x18\x02 \x01(\rB\x83\x01\n\"io.opentelemetry.proto.resource.v1B\rResourceProtoP\x01Z*go.opentelemetry.io/proto/otlp/resource/v1\xaa\x02\x1fOpenTelemetry.Proto.Resource.V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n4newrelic/packages/opentelemetry_proto/resource.proto\x12%newrelic.packages.opentelemetry_proto\x1a\x32newrelic/packages/opentelemetry_proto/common.proto\"\xb8\x01\n\x08Resource\x12\x43\n\nattributes\x18\x01 \x03(\x0b\x32/.newrelic.packages.opentelemetry_proto.KeyValue\x12 \n\x18\x64ropped_attributes_count\x18\x02 \x01(\r\x12\x45\n\x0b\x65ntity_refs\x18\x03 \x03(\x0b\x32\x30.newrelic.packages.opentelemetry_proto.EntityRefB\x83\x01\n\"io.opentelemetry.proto.resource.v1B\rResourceProtoP\x01Z*go.opentelemetry.io/proto/otlp/resource/v1\xaa\x02\x1fOpenTelemetry.Proto.Resource.V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -30,6 +30,6 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'newrelic.packages.opentelem
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'\n\"io.opentelemetry.proto.resource.v1B\rResourceProtoP\001Z*go.opentelemetry.io/proto/otlp/resource/v1\252\002\037OpenTelemetry.Proto.Resource.V1'
-  _globals['_RESOURCE']._serialized_start=147
-  _globals['_RESOURCE']._serialized_end=260
+  _globals['_RESOURCE']._serialized_start=148
+  _globals['_RESOURCE']._serialized_end=332
 # @@protoc_insertion_point(module_scope)

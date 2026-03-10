@@ -32,7 +32,7 @@ if python_version < (3, 9):
             (3, 5): "5.24.0.153",
             (3, 6): "7.16.0.178",
             (3, 7): "10.17.0",
-            (3, 8): "11.2.0",
+            (3, 8): "11.5.0",
         }
         last_supported_version = last_supported_version_lookup.get(python_version, None)
 

@@ -33,17 +33,6 @@ def aiohttp_version_info():
     return tuple(int(_) for _ in aiohttp.__version__.split(".")[:2])
 
 
-def headers_preserve_casing():
-    try:
-        from multidict import CIMultiDict
-    except:
-        return True
-
-    d = CIMultiDict()
-    d.update({"X-NewRelic-ID": "value"})
-    return "X-NewRelic-ID" in dict(d.items())
-
-
 def should_ignore(transaction):
     settings = transaction.settings
 
@@ -68,18 +57,6 @@ def is_expected(transaction):
             return is_expected_error((exc, value, tb), status_code, settings=settings)
 
     return _is_expected
-
-
-def _nr_process_response_proxy(response, transaction):
-    nr_headers = transaction.process_response(response.status, response.headers)
-
-    response._headers = HeaderProxy(response.headers, nr_headers)
-
-
-def _nr_process_response(response, transaction):
-    nr_headers = transaction.process_response(response.status, response.headers)
-
-    response._headers.update(nr_headers)
 
 
 @function_wrapper
@@ -214,18 +191,18 @@ class HeaderProxy(ObjectProxy):
         return itertools.chain(self.__wrapped__.items(), nr_headers.items())
 
 
-def _nr_aiohttp_add_cat_headers_(wrapped, instance, args, kwargs):
+def _nr_aiohttp_add_dt_headers_(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if transaction is None:
         return wrapped(*args, **kwargs)
 
     try:
-        cat_headers = ExternalTrace.generate_request_headers(transaction)
+        dt_headers = ExternalTrace.generate_request_headers(transaction)
     except:
         return wrapped(*args, **kwargs)
 
     tmp = instance.headers
-    instance.headers = HeaderProxy(tmp, cat_headers)
+    instance.headers = HeaderProxy(tmp, dt_headers)
 
     if is_coroutine_callable(wrapped):
 
@@ -244,21 +221,21 @@ def _nr_aiohttp_add_cat_headers_(wrapped, instance, args, kwargs):
             instance.headers = tmp
 
 
-def _nr_aiohttp_add_cat_headers_simple_(wrapped, instance, args, kwargs):
+def _nr_aiohttp_add_dt_headers_simple_(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if transaction is None:
         return wrapped(*args, **kwargs)
 
     try:
-        cat_headers = ExternalTrace.generate_request_headers(transaction)
+        dt_headers = ExternalTrace.generate_request_headers(transaction)
     except:
         return wrapped(*args, **kwargs)
 
-    for k, _ in cat_headers:
+    for k, _ in dt_headers:
         if k in instance.headers:
             return wrapped(*args, **kwargs)
 
-    instance.headers.update(cat_headers)
+    instance.headers.update(dt_headers)
     return wrapped(*args, **kwargs)
 
 
@@ -275,22 +252,14 @@ def _nr_aiohttp_request_wrapper_(wrapped, instance, args, kwargs):
     trace = ExternalTrace("aiohttp", str(url), method)
 
     async def _coro():
+        response = await wrapped(*args, **kwargs)
+
         try:
-            response = await wrapped(*args, **kwargs)
+            trace.process_response_headers(response.headers.items())
+        except:
+            pass
 
-            try:
-                trace.process_response_headers(response.headers.items())
-            except:
-                pass
-
-            return response
-        except Exception as e:
-            try:
-                trace.process_response_headers(e.headers.items())
-            except:
-                pass
-
-            raise
+        return response
 
     return async_wrapper(wrapped)(_coro, trace)()
 
@@ -303,16 +272,11 @@ def instrument_aiohttp_client_reqrep(module):
     version_info = aiohttp_version_info()
 
     if version_info >= (2, 0):
-        if headers_preserve_casing():
-            cat_wrapper = _nr_aiohttp_add_cat_headers_simple_
-        else:
-            cat_wrapper = _nr_aiohttp_add_cat_headers_
-
-        wrap_function_wrapper(module, "ClientRequest.send", cat_wrapper)
+        wrap_function_wrapper(module, "ClientRequest.send", _nr_aiohttp_add_dt_headers_simple_)
 
 
 def instrument_aiohttp_protocol(module):
-    wrap_function_wrapper(module, "Request.send_headers", _nr_aiohttp_add_cat_headers_)
+    wrap_function_wrapper(module, "Request.send_headers", _nr_aiohttp_add_dt_headers_)
 
 
 def instrument_aiohttp_web_urldispatcher(module):
@@ -359,14 +323,13 @@ def _nr_request_wrapper(wrapped, instance, args, kwargs):
         try:
             response = await coro
         except _web.HTTPException as e:
-            _nr_process_response(e, transaction)
+            transaction.process_response(e.status, e.headers)
             raise
         except Exception:
-            nr_headers = transaction.process_response(500, ())
-            request._nr_headers = dict(nr_headers)
+            transaction.process_response(500, ())
             raise
 
-        _nr_process_response(response, transaction)
+        transaction.process_response(response.status, response.headers)
         return response
 
     _coro = web_transaction(
@@ -380,10 +343,6 @@ def _nr_request_wrapper(wrapped, instance, args, kwargs):
 
 
 def instrument_aiohttp_web(module):
-    global _nr_process_response
-    if not headers_preserve_casing():
-        _nr_process_response = _nr_process_response_proxy
-
     wrap_function_wrapper(module, "Application._handle", _nr_request_wrapper)
     wrap_function_wrapper(module, "Application.__init__", _nr_aiohttp_wrap_application_init_)
 

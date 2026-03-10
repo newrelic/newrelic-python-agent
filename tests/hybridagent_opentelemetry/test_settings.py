@@ -97,7 +97,6 @@ def test_opentelemetry_bridge_enabled(enabled, traces_enabled):
         (True, set(), {"SecondTracer"}, 1, 0),                  # Exclude `SecondTracer` tracer
         (True, None, {"SecondTracer"}, 1, 0),                   # Exclude `SecondTracer` tracer, include set to `None`
         (True, set(), {"FirstTracer","SecondTracer"}, 0, 0),    # Exclude both tracers
-        (True, set(), {"FirstTracer","SecondTracer"}, 0, 0),    # Exclude both tracers but with space
         (False, {"FirstTracer"}, {"SecondTracer"}, 0, 0),       # Disabled
     ],
     ids=[
@@ -107,7 +106,6 @@ def test_opentelemetry_bridge_enabled(enabled, traces_enabled):
         "include=(empty set),exclude=SecondTracer",
         "include=None,exclude=SecondTracer",
         "include=(empty set),exclude=FirstTracer,SecondTracer",
-        "include=(empty set),exclude=FirstTracer, SecondTracer",
         "disabled",
     ],
 )

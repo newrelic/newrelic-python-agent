@@ -132,10 +132,7 @@ def wrap_write_headers(wrapped, instance, args, kwargs):
 
     if transaction:
         http_status, headers = _bind_response_headers(*args, **kwargs)
-        cat_headers = transaction.process_response(http_status, headers)
-
-        for name, value in cat_headers:
-            headers.add(name, value)
+        transaction.process_response(http_status, headers)
 
     return wrapped(*args, **kwargs)
 
@@ -253,7 +250,7 @@ def create_client_wrapper(wrapped, trace):
                 raise
             finally:
                 if response:
-                    trace.process_response_headers(response.headers.get_all())
+                    trace.process_response(response.code)
             return response
 
     return wrapper
@@ -269,7 +266,7 @@ def wrap_httpclient_fetch(wrapped, instance, args, kwargs):
 
     outgoing_headers = trace.generate_request_headers(current_transaction())
     for header_name, header_value in outgoing_headers:
-        # User headers should override our CAT headers
+        # User headers should override our headers
         if header_name in req.headers:
             continue
         req.headers[header_name] = header_value

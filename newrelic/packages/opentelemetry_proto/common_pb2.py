@@ -21,7 +21,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n2newrelic/packages/opentelemetry_proto/common.proto\x12%newrelic.packages.opentelemetry_proto\"\x9c\x02\n\x08\x41nyValue\x12\x16\n\x0cstring_value\x18\x01 \x01(\tH\x00\x12\x14\n\nbool_value\x18\x02 \x01(\x08H\x00\x12\x13\n\tint_value\x18\x03 \x01(\x03H\x00\x12\x16\n\x0c\x64ouble_value\x18\x04 \x01(\x01H\x00\x12H\n\x0b\x61rray_value\x18\x05 \x01(\x0b\x32\x31.newrelic.packages.opentelemetry_proto.ArrayValueH\x00\x12K\n\x0ckvlist_value\x18\x06 \x01(\x0b\x32\x33.newrelic.packages.opentelemetry_proto.KeyValueListH\x00\x12\x15\n\x0b\x62ytes_value\x18\x07 \x01(\x0cH\x00\x42\x07\n\x05value\"M\n\nArrayValue\x12?\n\x06values\x18\x01 \x03(\x0b\x32/.newrelic.packages.opentelemetry_proto.AnyValue\"O\n\x0cKeyValueList\x12?\n\x06values\x18\x01 \x03(\x0b\x32/.newrelic.packages.opentelemetry_proto.KeyValue\"W\n\x08KeyValue\x12\x0b\n\x03key\x18\x01 \x01(\t\x12>\n\x05value\x18\x02 \x01(\x0b\x32/.newrelic.packages.opentelemetry_proto.AnyValue\"\x9c\x01\n\x14InstrumentationScope\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0f\n\x07version\x18\x02 \x01(\t\x12\x43\n\nattributes\x18\x03 \x03(\x0b\x32/.newrelic.packages.opentelemetry_proto.KeyValue\x12 \n\x18\x64ropped_attributes_count\x18\x04 \x01(\rB{\n io.opentelemetry.proto.common.v1B\x0b\x43ommonProtoP\x01Z(go.opentelemetry.io/proto/otlp/common/v1\xaa\x02\x1dOpenTelemetry.Proto.Common.V1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n2newrelic/packages/opentelemetry_proto/common.proto\x12%newrelic.packages.opentelemetry_proto\"\xbd\x02\n\x08\x41nyValue\x12\x16\n\x0cstring_value\x18\x01 \x01(\tH\x00\x12\x14\n\nbool_value\x18\x02 \x01(\x08H\x00\x12\x13\n\tint_value\x18\x03 \x01(\x03H\x00\x12\x16\n\x0c\x64ouble_value\x18\x04 \x01(\x01H\x00\x12H\n\x0b\x61rray_value\x18\x05 \x01(\x0b\x32\x31.newrelic.packages.opentelemetry_proto.ArrayValueH\x00\x12K\n\x0ckvlist_value\x18\x06 \x01(\x0b\x32\x33.newrelic.packages.opentelemetry_proto.KeyValueListH\x00\x12\x15\n\x0b\x62ytes_value\x18\x07 \x01(\x0cH\x00\x12\x1f\n\x15string_value_strindex\x18\x08 \x01(\x05H\x00\x42\x07\n\x05value\"M\n\nArrayValue\x12?\n\x06values\x18\x01 \x03(\x0b\x32/.newrelic.packages.opentelemetry_proto.AnyValue\"O\n\x0cKeyValueList\x12?\n\x06values\x18\x01 \x03(\x0b\x32/.newrelic.packages.opentelemetry_proto.KeyValue\"m\n\x08KeyValue\x12\x0b\n\x03key\x18\x01 \x01(\t\x12>\n\x05value\x18\x02 \x01(\x0b\x32/.newrelic.packages.opentelemetry_proto.AnyValue\x12\x14\n\x0ckey_strindex\x18\x03 \x01(\x05\"\x9c\x01\n\x14InstrumentationScope\x12\x0c\n\x04name\x18\x01 \x01(\t\x12\x0f\n\x07version\x18\x02 \x01(\t\x12\x43\n\nattributes\x18\x03 \x03(\x0b\x32/.newrelic.packages.opentelemetry_proto.KeyValue\x12 \n\x18\x64ropped_attributes_count\x18\x04 \x01(\r\"X\n\tEntityRef\x12\x12\n\nschema_url\x18\x01 \x01(\t\x12\x0c\n\x04type\x18\x02 \x01(\t\x12\x0f\n\x07id_keys\x18\x03 \x03(\t\x12\x18\n\x10\x64\x65scription_keys\x18\x04 \x03(\tB{\n io.opentelemetry.proto.common.v1B\x0b\x43ommonProtoP\x01Z(go.opentelemetry.io/proto/otlp/common/v1\xaa\x02\x1dOpenTelemetry.Proto.Common.V1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -30,13 +30,15 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'\n io.opentelemetry.proto.common.v1B\013CommonProtoP\001Z(go.opentelemetry.io/proto/otlp/common/v1\252\002\035OpenTelemetry.Proto.Common.V1'
   _globals['_ANYVALUE']._serialized_start=94
-  _globals['_ANYVALUE']._serialized_end=378
-  _globals['_ARRAYVALUE']._serialized_start=380
-  _globals['_ARRAYVALUE']._serialized_end=457
-  _globals['_KEYVALUELIST']._serialized_start=459
-  _globals['_KEYVALUELIST']._serialized_end=538
-  _globals['_KEYVALUE']._serialized_start=540
-  _globals['_KEYVALUE']._serialized_end=627
-  _globals['_INSTRUMENTATIONSCOPE']._serialized_start=630
-  _globals['_INSTRUMENTATIONSCOPE']._serialized_end=786
+  _globals['_ANYVALUE']._serialized_end=411
+  _globals['_ARRAYVALUE']._serialized_start=413
+  _globals['_ARRAYVALUE']._serialized_end=490
+  _globals['_KEYVALUELIST']._serialized_start=492
+  _globals['_KEYVALUELIST']._serialized_end=571
+  _globals['_KEYVALUE']._serialized_start=573
+  _globals['_KEYVALUE']._serialized_end=682
+  _globals['_INSTRUMENTATIONSCOPE']._serialized_start=685
+  _globals['_INSTRUMENTATIONSCOPE']._serialized_end=841
+  _globals['_ENTITYREF']._serialized_start=843
+  _globals['_ENTITYREF']._serialized_end=931
 # @@protoc_insertion_point(module_scope)

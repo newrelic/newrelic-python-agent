@@ -12,10 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""This module returns the CA certificate bundle included with the agent."""
+"""This module returns the CA certificate bundle from certifi if installed."""
 
+import logging
 from pathlib import Path
+
+_logger = logging.getLogger(__name__)
+
+SSL_CERTS_ERROR_MESSAGE = (
+    "SSL certificates are required and could not be found, and certifi does not appear to be installed. "
+    "Please install SSL certificates using your system package manager or install "
+    "newrelic with the certificates extra using pip to resolve this issue. "
+    "(eg. pip install newrelic[certificates])"
+)
 
 
 def where():
-    return Path(__file__).parent / "cacert.pem"
+    try:
+        import certifi
+
+        return Path(certifi.where())
+    except Exception:
+        _logger.exception(SSL_CERTS_ERROR_MESSAGE)

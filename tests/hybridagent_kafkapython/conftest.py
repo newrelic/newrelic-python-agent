@@ -43,7 +43,7 @@ _default_settings = {
     "debug.log_data_collector_payloads": True,
     "debug.record_transaction_failure": True,
     "opentelemetry.enabled": True,
-    "opentelemetry.traces.enabled": {"kafka"},
+    "opentelemetry.traces.include": {"kafka"},
 }
 
 collector_agent_registration = collector_agent_registration_fixture(

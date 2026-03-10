@@ -4500,7 +4500,6 @@ def _tracer_include_and_exclude_filter():
     tracer_include_union = {*OPENTELEMETRY_ONLY_TRACERS_TO_NR_HOOKS.keys(), *user_include}
     mask = tracer_include_union & user_exclude
     final_include_set = tracer_include_union ^ mask
-    # final_exclude_set = user_exclude ^ mask
     
     return final_include_set    
 

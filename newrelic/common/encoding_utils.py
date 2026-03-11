@@ -19,7 +19,6 @@ of data.
 
 import base64
 import gzip
-import hashlib
 import io
 import itertools
 import json
@@ -232,23 +231,6 @@ def unpack_field(field):
     return data
 
 
-def generate_path_hash(name, seed):
-    """Algorithm for generating the path hash:
-    * Rotate Left the seed value and truncate to 32-bits.
-    * Compute the md5 digest of the name, take the last 4 bytes (32-bits).
-    * XOR the 4 bytes of digest with the seed and return the result.
-
-    """
-
-    rotated = ((seed << 1) | (seed >> 31)) & 0xFFFFFFFF
-
-    if not isinstance(name, bytes):
-        name = name.encode("UTF-8")
-
-    path_hash = rotated ^ int(hashlib.md5(name).hexdigest()[-8:], base=16)  # noqa: S324
-    return f"{path_hash:08x}"
-
-
 def base64_encode(text):
     """Base 64 encodes the UTF-8 encoded representation of the text. In Python
     2 either a byte string or Unicode string can be provided for the text
@@ -366,15 +348,6 @@ def decode_newrelic_header(encoded_header, encoding_key):
             pass
 
     return decoded_header
-
-
-def convert_to_cat_metadata_value(nr_headers):
-    if not nr_headers:
-        return None
-
-    payload = json_encode(nr_headers)
-    cat_linking_value = base64_encode(payload)
-    return cat_linking_value
 
 
 class DistributedTracePayload(dict):

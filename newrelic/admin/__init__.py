@@ -120,19 +120,7 @@ def load_internal_plugins():
 
 
 def load_external_plugins():
-    try:
-        # importlib.metadata was introduced into the standard library starting in Python 3.8.
-        from importlib.metadata import entry_points
-    except ImportError:
-        try:
-            # importlib_metadata is a backport library installable from PyPI.
-            from importlib_metadata import entry_points
-        except ImportError:
-            try:
-                # Fallback to pkg_resources, which is available in older versions of setuptools.
-                from pkg_resources import iter_entry_points as entry_points
-            except ImportError:
-                return
+    from importlib.metadata import entry_points
 
     group = "newrelic.admin"
 

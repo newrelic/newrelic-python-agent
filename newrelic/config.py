@@ -619,7 +619,6 @@ def _process_configuration(section):
     _process_setting(section, "debug.disable_harvest_until_shutdown", "getboolean", None)
     _process_setting(section, "debug.connect_span_stream_in_developer_mode", "getboolean", None)
     _process_setting(section, "debug.otlp_content_encoding", "get", None)
-    _process_setting(section, "cross_application_tracer.enabled", "getboolean", None)
     _process_setting(section, "message_tracer.segment_parameters_enabled", "getboolean", None)
     _process_setting(section, "process_host.display_name", "get", None)
     _process_setting(section, "utilization.detect_aws", "getboolean", None)
@@ -924,15 +923,6 @@ def translate_deprecated_settings(settings, cached_settings):
             "new setting: attributes.exclude. To disable capturing all "
             'request parameters, add "request.parameters.*" to '
             "attributes.exclude."
-        )
-
-    if "cross_application_tracer.enabled" in cached:
-        # CAT Deprecation Warning
-        _logger.info(
-            "Deprecated setting found: cross_application_tracer.enabled. Please replace Cross Application Tracing "
-            "(CAT) with the newer Distributed Tracing by setting 'distributed_tracing.enabled' to True in your agent "
-            "configuration. For further details on distributed tracing, please refer to our documentation: "
-            "https://docs.newrelic.com/docs/distributed-tracing/concepts/distributed-tracing-planning-guide/#changes."
         )
 
     return settings
@@ -4430,19 +4420,7 @@ def _process_module_builtin_defaults():
 
 
 def _process_module_entry_points():
-    try:
-        # importlib.metadata was introduced into the standard library starting in Python 3.8.
-        from importlib.metadata import entry_points
-    except ImportError:
-        try:
-            # importlib_metadata is a backport library installable from PyPI.
-            from importlib_metadata import entry_points
-        except ImportError:
-            try:
-                # Fallback to pkg_resources, which is available in older versions of setuptools.
-                from pkg_resources import iter_entry_points as entry_points
-            except ImportError:
-                return
+    from importlib.metadata import entry_points
 
     group = "newrelic.hooks"
 
@@ -4514,20 +4492,8 @@ def _process_opentelemetry_instrumentation_entry_points():
 
     include_set = _tracer_include_and_exclude_filter()
 
-    try:
-        # importlib.metadata was introduced into the standard library starting in Python 3.8.
-        from importlib.metadata import entry_points
-    except ImportError:
-        try:
-            # importlib_metadata is a backport library installable from PyPI.
-            from importlib_metadata import entry_points
-        except ImportError:
-            try:
-                # Fallback to pkg_resources, which is available in older versions of setuptools.
-                from pkg_resources import iter_entry_points as entry_points
-            except ImportError:
-                return
-
+    from importlib.metadata import entry_points
+    
     group = "opentelemetry_instrumentor"
 
     try:
@@ -4609,19 +4575,7 @@ def _setup_instrumentation():
 
 
 def _setup_extensions():
-    try:
-        # importlib.metadata was introduced into the standard library starting in Python 3.8.
-        from importlib.metadata import entry_points
-    except ImportError:
-        try:
-            # importlib_metadata is a backport library installable from PyPI.
-            from importlib_metadata import entry_points
-        except ImportError:
-            try:
-                # Fallback to pkg_resources, which is available in older versions of setuptools.
-                from pkg_resources import iter_entry_points as entry_points
-            except ImportError:
-                return
+    from importlib.metadata import entry_points
 
     group = "newrelic.extension"
 

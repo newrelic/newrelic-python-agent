@@ -4493,7 +4493,7 @@ def _process_opentelemetry_instrumentation_entry_points():
     include_set = _tracer_include_and_exclude_filter()
 
     from importlib.metadata import entry_points
-    
+
     group = "opentelemetry_instrumentor"
 
     try:

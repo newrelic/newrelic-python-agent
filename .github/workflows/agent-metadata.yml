@@ -1,0 +1,74 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Agent Metadata
+
+permissions:
+  contents: read
+
+on:
+  # Allows manual triggering with parameters
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version tag (needs to exactly match the GH tag for the release)"
+        required: true
+        type: string
+      agent-type:
+        description: "Agent type"
+        required: false
+        default: "NRPythonAgent"
+        type: string
+      use-cache:
+        description: "Use cache"
+        required: false
+        default: true
+        type: boolean
+
+  # Allows calling from another workflow
+  workflow_call:
+    inputs:
+      version:
+        description: "Version tag (needs to exactly match the GH tag for the release)"
+        required: true
+        type: string
+      agent-type:
+        description: "Agent type"
+        required: false
+        default: "NRPythonAgent"
+        type: string
+      use-cache:
+        description: "Use cache"
+        required: false
+        default: true
+        type: boolean
+    secrets:
+      FC_SYS_ID_CLIENT_ID:
+        required: true
+      FC_SYS_ID_PR_KEY:
+        required: true
+      APM_CONTROL_NR_LICENSE_KEY_STAGING:
+        required: false
+
+jobs:
+  send-agent-metadata:
+    uses: newrelic/newrelic-agent-init-container/.github/workflows/agent-metadata.yml@main
+    with:
+      agent-type: ${{ inputs.agent-type }}
+      version: ${{ inputs.version }}
+      use-cache: ${{ inputs.use-cache }}
+    secrets:
+      FC_SYS_ID_CLIENT_ID: ${{ secrets.FC_SYS_ID_CLIENT_ID }}
+      FC_SYS_ID_PR_KEY: ${{ secrets.FC_SYS_ID_PR_KEY }}
+      APM_CONTROL_NR_LICENSE_KEY_STAGING: ${{ secrets.APM_CONTROL_NR_LICENSE_KEY_STAGING }} # action app is instrumented and supported by APM Control team

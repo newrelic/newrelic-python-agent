@@ -49,7 +49,7 @@ from newrelic.samplers.data_sampler import DataSampler
 
 _logger = logging.getLogger(__name__)
 
-MAX_PACKAGE_CAPTURE_TIME_PER_SLOW_HARVEST = 5.0
+MAX_PACKAGE_CAPTURE_TIME_PER_SLOW_HARVEST = 3.0
 
 
 class Application:
@@ -104,8 +104,6 @@ class Application:
         self._agent_commands_lock = threading.Lock()
         self._data_samplers_lock = threading.Lock()
         self._data_samplers_started = False
-
-        self._remaining_plugins = True
 
         self._agent_control_health_thread = threading.Thread(
             name="Agent-Control-Health-Session-Thread", target=agent_control_healthcheck_loop
@@ -1290,16 +1288,13 @@ class Application:
                     # seconds or until a module has taken more than
                     # 0.5 seconds to upload.  Then, wait for the next
                     # harvest cycle before resuming.
-                    if self._remaining_plugins and self.configuration and self.configuration.package_reporting.enabled:
-                        start = stopwatch_start = time.time()
-                        while ((time.time() - stopwatch_start) < 0.5) and (
-                            (time.time() - start) < MAX_PACKAGE_CAPTURE_TIME_PER_SLOW_HARVEST
-                        ):
+                    if self.plugins and self.configuration and self.configuration.package_reporting.enabled:
+                        start = time.time()
+                        while (time.time() - start) < MAX_PACKAGE_CAPTURE_TIME_PER_SLOW_HARVEST:
                             try:
                                 self._active_session.send_loaded_modules([next(self.plugins)])
-                                stopwatch_start = time.time()
                             except StopIteration:
-                                self._remaining_plugins = False
+                                self.plugins = False
                                 break
 
                     # Add a metric we can use to track how many harvest
@@ -1737,16 +1732,13 @@ class Application:
 
         self.stop_data_samplers()
 
-        # Finishes collecting environment plugin information
-        # if this has not been completed during harvest
-        # lifetime of the application
-
-        if self._remaining_plugins and self.configuration and self.configuration.package_reporting.enabled:
-            # Anything that was left in the plugins generator
-            # will be resolved here.
+        # Finishes collecting environment plugin information if this has
+        # not been completed during harvest lifetime of the application.
+        if self.plugins and self.configuration and self.configuration.package_reporting.enabled:
+            # Anything that was left in the plugins
+            # generator will be resolved here.
             plugins_list = list(self.plugins)
-            if plugins_list:
-                self._active_session.send_loaded_modules(plugins_list)
+            self._active_session.send_loaded_modules(plugins_list)
 
         # Now shutdown the actual agent session.
 
@@ -1771,7 +1763,6 @@ class Application:
         if restart:
             # Reset package/module generator
             self.plugins = plugins()
-            self._remaining_plugins = True
 
             self._agent_restart += 1
             self.activate_session()

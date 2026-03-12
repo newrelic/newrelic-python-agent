@@ -72,6 +72,13 @@ _logger = logging.getLogger(__name__)
 _logger.addHandler(_NullHandler())
 
 
+def parse_comma_separated_into_set(string):
+    if string is None:
+        return set()
+    # Strip the string in case user has separated by string and space
+    return {item.strip() for item in string.split(",")}
+
+
 def parse_space_separated_into_list(string):
     return string.split()
 
@@ -753,6 +760,13 @@ def _environ_as_set(name, default=""):
     return set(value.split())
 
 
+def _environ_as_comma_separated_set(name, default=""):
+    value = os.environ.get(name, default)
+    if value in [None, ""]:
+        return set()
+    return parse_comma_separated_into_set(value)
+
+
 def _environ_as_mapping(name, default=""):
     result = []
     items = os.environ.get(name, default)
@@ -1409,6 +1423,12 @@ _settings.package_reporting.enabled = _environ_as_bool("NEW_RELIC_PACKAGE_REPORT
 _settings.ml_insights_events.enabled = _environ_as_bool("NEW_RELIC_ML_INSIGHTS_EVENTS_ENABLED", default=False)
 _settings.opentelemetry.enabled = _environ_as_bool("NEW_RELIC_OPENTELEMETRY_ENABLED", default=False)
 _settings.opentelemetry.traces.enabled = _environ_as_bool("NEW_RELIC_OPENTELEMETRY_TRACES_ENABLED", default=True)
+_settings.opentelemetry.traces.exclude = _environ_as_comma_separated_set(
+    "NEW_RELIC_OPENTELEMETRY_TRACES_EXCLUDE", default=""
+)
+_settings.opentelemetry.traces.include = _environ_as_comma_separated_set(
+    "NEW_RELIC_OPENTELEMETRY_TRACES_INCLUDE", default=""
+)
 
 
 def global_settings():

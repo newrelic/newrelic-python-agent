@@ -14,7 +14,6 @@
 
 import json
 import logging
-import os
 import sys
 import time
 from contextlib import contextmanager
@@ -46,6 +45,7 @@ from newrelic.api.time_trace import add_custom_span_attribute, current_trace, no
 from newrelic.api.transaction import Sentinel, current_transaction
 from newrelic.api.web_transaction import WebTransaction, WSGIWebTransaction
 from newrelic.core.attribute import sanitize
+from newrelic.core.config import _environ_as_bool, _environ_as_comma_separated_set, global_settings
 from newrelic.core.database_utils import (
     _all_literals_re,
     _quotes_table,
@@ -175,6 +175,9 @@ class Span(otel_api_trace.Span):
             # create another transaction or trace, but rather just
             # append existing attributes to the existing transaction.
             self.nr_trace = current_nr_trace
+            if not self.nr_trace:
+                return
+
             # Add Instrumentation Scope Attributes
             self.nr_trace._add_agent_attribute("otel.scope.name", self.attributes.get("library_name"))
             self.nr_trace._add_agent_attribute("otel.scope.version", self.attributes.get("library_version"))
@@ -658,6 +661,8 @@ class Tracer(otel_api_trace.Tracer):
         self.schema_url = schema_url
         self.tracer_attributes = attributes or {}
         self.resource = resource
+        self.settings = global_settings()
+        self.exclude_tracer = False
 
     def _create_web_transaction(self, nr_headers=None):
         if "nr.wsgi.environ" in self.attributes:
@@ -740,10 +745,32 @@ class Tracer(otel_api_trace.Tracer):
         self._record_exception = record_exception
         self.set_status_on_exception = set_status_on_exception
 
-        if not (
-            self.nr_application.settings and self.nr_application.settings.opentelemetry.enabled
-        ) and not os.environ.get("NEW_RELIC_OPENTELEMETRY_ENABLED"):
+        if (hasattr(self.nr_application, "settings") and not self.nr_application.settings.opentelemetry.enabled) or (
+            not self.settings.opentelemetry.enabled and not _environ_as_bool("NEW_RELIC_OPENTELEMETRY_ENABLED")
+        ):
             return otel_api_trace.INVALID_SPAN
+
+        if (
+            (
+                hasattr(self.nr_application, "settings")
+                and (
+                    not self.nr_application.settings.opentelemetry.traces.enabled
+                    or (self.instrumentation_library in self.nr_application.settings.opentelemetry.traces.exclude)
+                )
+            )
+            or (
+                not self.settings.opentelemetry.traces.enabled
+                and not _environ_as_bool("NEW_RELIC_OPENTELEMETRY_TRACES_ENABLED")
+            )
+            or (
+                (self.instrumentation_library in self.settings.opentelemetry.traces.exclude)
+                or (
+                    self.instrumentation_library
+                    in _environ_as_comma_separated_set("NEW_RELIC_OPENTELEMETRY_TRACES_EXCLUDE")
+                )
+            )
+        ):
+            self.exclude_tracer = True
 
         # Retrieve parent span
         parent_span_context = otel_api_trace.get_current_span(context).get_span_context()
@@ -757,7 +784,7 @@ class Tracer(otel_api_trace.Tracer):
 
         parent_span_trace_id = None
         nr_headers = {}
-        if parent_span_context and self.nr_application.settings.distributed_tracing.enabled:
+        if parent_span_context and self.settings.distributed_tracing.enabled:
             parent_span_trace_id = parent_span_context.trace_id
             if len(parent_span_context.trace_state) > 0:
                 # If headers did not propagate from an existing transaction due
@@ -770,16 +797,14 @@ class Tracer(otel_api_trace.Tracer):
                     f"00-{parent_span_trace_id:032x}-{parent_span_span_id:016x}-{'01' if parent_span_trace_flag else '00'}"
                 )
 
-        if not self.nr_application.settings.opentelemetry.traces.enabled:
+        if self.exclude_tracer:
             create_nr_trace = False
 
         # If remote_parent, transaction must be created, regardless of kind type
         # Make sure we transfer DT headers when we are here, if DT is enabled
-        if parent_span_context and parent_span_context.is_remote:
+        if parent_span_context and parent_span_context.is_remote and not self.exclude_tracer:
             if kind in (otel_api_trace.SpanKind.SERVER, otel_api_trace.SpanKind.CLIENT):
                 transaction = self._create_web_transaction(nr_headers)
-                if not self.nr_application.settings.opentelemetry.traces.enabled:
-                    transaction.ignore_transaction = True
                 transaction.__enter__()
                 # If a transaction was already active, we want to create
                 # an NR trace under the existing transaction.  Otherwise,
@@ -789,8 +814,6 @@ class Tracer(otel_api_trace.Tracer):
                     create_nr_trace = False
             elif kind in (otel_api_trace.SpanKind.PRODUCER, otel_api_trace.SpanKind.INTERNAL):
                 transaction = BackgroundTask(self.nr_application, name=self.name)
-                if not self.nr_application.settings.opentelemetry.traces.enabled:
-                    transaction.ignore_transaction = True
                 transaction.__enter__()
                 # If a transaction was already active, we want to create
                 # an NR trace under the existing transaction.  Otherwise,
@@ -806,8 +829,6 @@ class Tracer(otel_api_trace.Tracer):
                     application=self.nr_application,
                     headers=nr_headers,
                 )
-                if not self.nr_application.settings.opentelemetry.traces.enabled:
-                    transaction.ignore_transaction = True
                 transaction.__enter__()
                 # In the case of a Kafka consumer span, we do not want to create
                 # a trace regardless of whether a transaction already existed.
@@ -831,14 +852,12 @@ class Tracer(otel_api_trace.Tracer):
             if kind == otel_api_trace.SpanKind.SERVER:
                 if transaction:
                     nr_trace_type = FunctionTrace
-                elif not transaction:
+                elif not transaction and not self.exclude_tracer:
                     transaction = self._create_web_transaction(nr_headers)
 
                     transaction._trace_id = (
                         f"{parent_span_trace_id:x}" if parent_span_trace_id else transaction.trace_id
                     )
-                    if not self.nr_application.settings.opentelemetry.traces.enabled:
-                        transaction.ignore_transaction = True
                     transaction.__enter__()
                     create_nr_trace = False
             elif kind == otel_api_trace.SpanKind.INTERNAL:
@@ -869,7 +888,7 @@ class Tracer(otel_api_trace.Tracer):
                     # Note that for Kafka, this flag will not be
                     # set, so we will not create a MessageTrace
                     nr_trace_type = MessageTrace
-                else:
+                elif not self.exclude_tracer:
                     transaction = MessageTransaction(
                         library=self.instrumentation_library,
                         destination_type="Exchange",
@@ -877,8 +896,6 @@ class Tracer(otel_api_trace.Tracer):
                         application=self.nr_application,
                         headers=nr_headers,
                     )
-                    if not self.nr_application.settings.opentelemetry.traces.enabled:
-                        transaction.ignore_transaction = True
                     transaction.__enter__()
                     # In the case of a Kafka consumer span, we do not want to create
                     # a trace regardless of whether a transaction already existed.

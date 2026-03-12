@@ -346,46 +346,42 @@ def wrap_httpx_client_send():
     return _wrap_httpx_client_send
 
 
-@pytest.fixture(scope="session")
-def generator_proxy():
-    class GeneratorProxy(ObjectProxy):
-        def __init__(self, wrapped):
-            super().__init__(wrapped)
+class LLMStreamAuditLogProxy(ObjectProxy):
+    def __init__(self, wrapped):
+        super().__init__(wrapped)
 
-        def __iter__(self):
-            return self
+    def __iter__(self):
+        return self
 
-        # Make this Proxy a pass through to our instrumentation's proxy by passing along
-        # get attr and set attr calls to our instrumentation's proxy.
-        def __getattr__(self, attr):
-            return self.__wrapped__.__getattr__(attr)
+    # Make this Proxy a pass through to our instrumentation's proxy by passing along
+    # get attr and set attr calls to our instrumentation's proxy.
+    def __getattr__(self, attr):
+        return self.__wrapped__.__getattr__(attr)
 
-        def __setattr__(self, attr, value):
-            return self.__wrapped__.__setattr__(attr, value)
+    def __setattr__(self, attr, value):
+        return self.__wrapped__.__setattr__(attr, value)
 
-        def __next__(self):
-            transaction = current_transaction()
-            if not transaction:
-                return self.__wrapped__.__next__()
+    def __next__(self):
+        transaction = current_transaction()
+        if not transaction:
+            return self.__wrapped__.__next__()
 
-            try:
-                return_val = self.__wrapped__.__next__()
-                if return_val:
-                    prompt = list(OPENAI_AUDIT_LOG_CONTENTS.keys())[-1]
-                    if not getattr(return_val, "data", "").startswith("[DONE]"):
-                        OPENAI_AUDIT_LOG_CONTENTS[prompt][2].append(return_val.json())
-                return return_val
-            except Exception:
-                raise
+        try:
+            return_val = self.__wrapped__.__next__()
+            if return_val:
+                prompt = list(OPENAI_AUDIT_LOG_CONTENTS.keys())[-1]
+                if not getattr(return_val, "data", "").startswith("[DONE]"):
+                    OPENAI_AUDIT_LOG_CONTENTS[prompt][2].append(return_val.json())
+            return return_val
+        except Exception:
+            raise
 
-        def close(self):
-            return self.__wrapped__.close()
-
-    return GeneratorProxy
+    def close(self):
+        return self.__wrapped__.close()
 
 
 @pytest.fixture(scope="session")
-def wrap_stream_iter_events(generator_proxy):
+def wrap_stream_iter_events():
     def _wrap_stream_iter_events(wrapped, instance, args, kwargs):
         transaction = current_transaction()
 
@@ -393,7 +389,7 @@ def wrap_stream_iter_events(generator_proxy):
             return wrapped(*args, **kwargs)
 
         return_val = wrapped(*args, **kwargs)
-        proxied_return_val = generator_proxy(return_val)
+        proxied_return_val = LLMStreamAuditLogProxy(return_val)
         return proxied_return_val
 
     return _wrap_stream_iter_events

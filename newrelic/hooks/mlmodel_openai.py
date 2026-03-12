@@ -736,7 +736,7 @@ async def wrap_base_client_process_response_async(wrapped, instance, args, kwarg
     return return_val
 
 
-class GeneratorProxy(ObjectProxy):
+class LLMStreamProxy(ObjectProxy):
     def __init__(self, wrapped):
         super().__init__(wrapped)
         self._nr_request_timestamp = int(1000.0 * time.time())
@@ -845,7 +845,7 @@ def _handle_streaming_completion_error(self, transaction, exc, request_timestamp
         )
 
 
-class AsyncGeneratorProxy(ObjectProxy):
+class AsyncLLMStreamProxy(ObjectProxy):
     def __init__(self, wrapped):
         super().__init__(wrapped)
         self._nr_request_timestamp = int(1000.0 * time.time())
@@ -885,7 +885,7 @@ def wrap_stream_iter_events_sync(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     return_val = wrapped(*args, **kwargs)
-    proxied_return_val = GeneratorProxy(return_val)
+    proxied_return_val = LLMStreamProxy(return_val)
     set_attrs_on_generator_proxy(proxied_return_val, instance)
     return proxied_return_val
 
@@ -900,7 +900,7 @@ def wrap_stream_iter_events_async(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     return_val = wrapped(*args, **kwargs)
-    proxied_return_val = AsyncGeneratorProxy(return_val)
+    proxied_return_val = AsyncLLMStreamProxy(return_val)
     set_attrs_on_generator_proxy(proxied_return_val, instance)
     return proxied_return_val
 
@@ -929,7 +929,7 @@ def wrap_engine_api_resource_create_sync(wrapped, instance, args, kwargs):
     stream = is_stream(wrapped, args, kwargs)
     return_val = wrapped(*args, **kwargs)
     if stream and settings.ai_monitoring.streaming.enabled:
-        return GeneratorProxy(return_val)
+        return LLMStreamProxy(return_val)
     else:
         return return_val
 
@@ -946,7 +946,7 @@ async def wrap_engine_api_resource_create_async(wrapped, instance, args, kwargs)
     stream = is_stream(wrapped, args, kwargs)
     return_val = await wrapped(*args, **kwargs)
     if stream and settings.ai_monitoring.streaming.enabled:
-        return AsyncGeneratorProxy(return_val)
+        return AsyncLLMStreamProxy(return_val)
     else:
         return return_val
 

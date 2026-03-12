@@ -38,71 +38,125 @@ def _get_llm_metadata(transaction):
     return llm_metadata_dict
 
 
-class GeneratorProxy(ObjectProxy):
+class LLMStreamProxy(ObjectProxy):
     def __init__(self, wrapped, on_stop_iteration, on_error):
         super().__init__(wrapped)
         self._nr_on_stop_iteration = on_stop_iteration
         self._nr_on_error = on_error
+        # Track if we've sent the LLM events yet to avoid sending them multiple times
+        self._nr_closed = False
 
     def __iter__(self):
         self._nr_wrapped_iter = self.__wrapped__.__iter__()
         return self
 
     def __next__(self):
-        transaction = current_transaction()
-        if not transaction:
-            return self._nr_wrapped_iter.__next__()
-
-        return_val = None
         try:
             return_val = self._nr_wrapped_iter.__next__()
         except StopIteration:
-            self._nr_on_stop_iteration(self, transaction)
+            transaction = current_transaction()
+            if transaction:
+                self._nr_closed = True
+                self._nr_on_stop_iteration(self, transaction)
             raise
         except Exception:
-            self._nr_on_error(self, transaction)
+            transaction = current_transaction()
+            if transaction:
+                self._nr_closed = True
+                self._nr_on_error(self, transaction)
             raise
-        return return_val
+        else:
+            return return_val
 
     def close(self):
+        if self._nr_closed:
+            # If we already sent the related events, we can just call close as there's nothing left to do.
+            return self.__wrapped__.close()
+
+        transaction = current_transaction()
+        if transaction:
+            # Send the events as if we were hitting StopIteration.
+            self._nr_closed = True
+            self._nr_on_stop_iteration(self, transaction)
+
         return self.__wrapped__.close()
+
+    def throw(self, *args):
+        if self._nr_closed:
+            # If we already sent the related events, we can just call throw as there's nothing left to do.
+            return self.__wrapped__.throw(*args)
+
+        transaction = current_transaction()
+        if transaction:
+            # Send the events as if we were hitting an exception.
+            self._nr_closed = True
+            self._nr_on_error(self, transaction)
+
+        return self.__wrapped__.throw(*args)
 
     def __copy__(self):
         # Required to properly interface with itertool.tee, which can be called by LangChain on generators
         self.__wrapped__, copy = itertools.tee(self.__wrapped__, 2)
-        return GeneratorProxy(copy, self._nr_on_stop_iteration, self._nr_on_error)
+        return LLMStreamProxy(copy, self._nr_on_stop_iteration, self._nr_on_error)
 
 
-class AsyncGeneratorProxy(ObjectProxy):
+class AsyncLLMStreamProxy(ObjectProxy):
     def __init__(self, wrapped, on_stop_iteration, on_error):
         super().__init__(wrapped)
         self._nr_on_stop_iteration = on_stop_iteration
         self._nr_on_error = on_error
+        # Track if we've sent the LLM events yet to avoid sending them multiple times
+        self._nr_closed = False
 
     def __aiter__(self):
         self._nr_wrapped_iter = self.__wrapped__.__aiter__()
         return self
 
     async def __anext__(self):
-        transaction = current_transaction()
-        if not transaction:
-            return await self._nr_wrapped_iter.__anext__()
-
-        return_val = None
         try:
             return_val = await self._nr_wrapped_iter.__anext__()
         except StopAsyncIteration:
-            self._nr_on_stop_iteration(self, transaction)
+            transaction = current_transaction()
+            if transaction:
+                self._nr_closed = True
+                self._nr_on_stop_iteration(self, transaction)
             raise
         except Exception:
-            self._nr_on_error(self, transaction)
+            transaction = current_transaction()
+            if transaction:
+                self._nr_closed = True
+                self._nr_on_error(self, transaction)
             raise
-        return return_val
+        else:
+            return return_val
 
     async def aclose(self):
+        if self._nr_closed:
+            # If we already sent the related events, we can just call aclose as there's nothing left to do.
+            return await self.__wrapped__.aclose()
+
+        transaction = current_transaction()
+        if transaction:
+            # Send the events as if we were hitting StopAsyncIteration.
+            self._nr_closed = True
+            self._nr_on_stop_iteration(self, transaction)
+
         return await self.__wrapped__.aclose()
+
+    async def athrow(self, *args):
+        if self._nr_closed:
+            # If we already sent the related events, we can just call athrow as there's nothing left to do.
+            return await self.__wrapped__.athrow(*args)
+
+        transaction = current_transaction()
+        if transaction:
+            # Send the events as if we were hitting an exception.
+            self._nr_closed = True
+            self._nr_on_error(self, transaction)
+
+        return await self.__wrapped__.athrow(*args)
 
     def __copy__(self):
         # Required to properly interface with itertool.tee, which can be called by LangChain on generators
         self.__wrapped__, copy = itertools.tee(self.__wrapped__, n=2)
-        return AsyncGeneratorProxy(copy, self._nr_on_stop_iteration, self._nr_on_error)
+        return AsyncLLMStreamProxy(copy, self._nr_on_stop_iteration, self._nr_on_error)

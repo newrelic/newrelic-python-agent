@@ -22,7 +22,7 @@ import uuid
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import current_trace, get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
-from newrelic.common.llm_utils import AsyncGeneratorProxy, GeneratorProxy, _get_llm_metadata
+from newrelic.common.llm_utils import AsyncLLMStreamProxy, LLMStreamProxy, _get_llm_metadata
 from newrelic.common.object_wrapper import ObjectProxy, wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
@@ -229,7 +229,7 @@ class AgentObjectProxy(ObjectProxy):
         ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
         try:
             return_val = self.__wrapped__.stream(*args, **kwargs)
-            return_val = GeneratorProxy(
+            return_val = LLMStreamProxy(
                 return_val,
                 on_stop_iteration=self._nr_on_stop_iteration(ft, agent_event_dict),
                 on_error=self._nr_on_error(ft, agent_event_dict, agent_id),
@@ -256,7 +256,7 @@ class AgentObjectProxy(ObjectProxy):
         ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
         try:
             return_val = self.__wrapped__.astream(*args, **kwargs)
-            return_val = AsyncGeneratorProxy(
+            return_val = AsyncLLMStreamProxy(
                 return_val,
                 on_stop_iteration=self._nr_on_stop_iteration(ft, agent_event_dict),
                 on_error=self._nr_on_error(ft, agent_event_dict, agent_id),
@@ -283,7 +283,7 @@ class AgentObjectProxy(ObjectProxy):
         ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
         try:
             return_val = self.__wrapped__.transform(*args, **kwargs)
-            return_val = GeneratorProxy(
+            return_val = LLMStreamProxy(
                 return_val,
                 on_stop_iteration=self._nr_on_stop_iteration(ft, agent_event_dict),
                 on_error=self._nr_on_error(ft, agent_event_dict, agent_id),
@@ -310,7 +310,7 @@ class AgentObjectProxy(ObjectProxy):
         ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
         try:
             return_val = self.__wrapped__.atransform(*args, **kwargs)
-            return_val = AsyncGeneratorProxy(
+            return_val = AsyncLLMStreamProxy(
                 return_val,
                 on_stop_iteration=self._nr_on_stop_iteration(ft, agent_event_dict),
                 on_error=self._nr_on_error(ft, agent_event_dict, agent_id),
@@ -840,7 +840,7 @@ def wrap_RunnableSequence_stream(wrapped, instance, args, kwargs):
     linking_metadata = get_trace_linking_metadata()
     try:
         return_val = wrapped(input=run_args["input"], config=run_args["config"], **run_args.get("kwargs", {}))
-        return_val = GeneratorProxy(
+        return_val = LLMStreamProxy(
             return_val,
             on_stop_iteration=_on_chain_stop_iteration(
                 ft=ft,
@@ -894,7 +894,7 @@ def wrap_RunnableSequence_astream(wrapped, instance, args, kwargs):
     linking_metadata = get_trace_linking_metadata()
     try:
         return_val = wrapped(input=run_args["input"], config=run_args["config"], **run_args.get("kwargs", {}))
-        return_val = AsyncGeneratorProxy(
+        return_val = AsyncLLMStreamProxy(
             return_val,
             on_stop_iteration=_on_chain_stop_iteration(
                 ft=ft,

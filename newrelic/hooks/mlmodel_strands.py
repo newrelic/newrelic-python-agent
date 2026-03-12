@@ -21,7 +21,7 @@ from newrelic.api.error_trace import ErrorTraceWrapper
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import current_trace, get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
-from newrelic.common.llm_utils import AsyncGeneratorProxy, _get_llm_metadata
+from newrelic.common.llm_utils import AsyncLLMStreamProxy, _get_llm_metadata
 from newrelic.common.object_names import callable_name, parse_exc_info
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
@@ -111,7 +111,7 @@ def wrap_stream_async(wrapped, instance, args, kwargs):
 
     try:
         # For streaming responses, wrap with proxy and attach metadata
-        proxied_return_val = AsyncGeneratorProxy(
+        proxied_return_val = AsyncLLMStreamProxy(
             return_val, _record_agent_event_on_stop_iteration, _handle_agent_streaming_completion_error
         )
         proxied_return_val._nr_ft = ft
@@ -393,7 +393,7 @@ def wrap_tool_executor__stream(wrapped, instance, args, kwargs):
 
     try:
         # Wrap return value with proxy and attach metadata for later access
-        proxied_return_val = AsyncGeneratorProxy(
+        proxied_return_val = AsyncLLMStreamProxy(
             return_val, _record_tool_event_on_stop_iteration, _handle_tool_streaming_completion_error
         )
         proxied_return_val._nr_ft = ft

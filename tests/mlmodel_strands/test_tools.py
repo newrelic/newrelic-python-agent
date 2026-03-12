@@ -231,7 +231,7 @@ def test_tool_pre_execution_exception(exercise_agent, set_trace_info, single_too
     from strands.types.exceptions import EventLoopException
 
     # Add a wrapper to intentionally force an error in the ToolExecutor._stream code to hit the exception path in
-    # the AsyncGeneratorProxy
+    # the AsyncLLMStreamProxy
     @transient_function_wrapper("strands.hooks.events", "BeforeToolCallEvent.__init__")
     def inject_exception(wrapped, instance, args, kwargs):
         raise ValueError("Oops")

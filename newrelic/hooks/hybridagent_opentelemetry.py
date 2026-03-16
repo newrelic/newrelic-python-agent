@@ -19,7 +19,7 @@ from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.signature import bind_args
-from newrelic.core.config import _environ_as_bool, global_settings
+from newrelic.core.config import global_settings
 
 ###########################################
 #   Context Instrumentation
@@ -28,8 +28,8 @@ from newrelic.core.config import _environ_as_bool, global_settings
 
 def wrap__load_runtime_context(wrapped, instance, args, kwargs):
     application = application_instance(activate=False)
-    settings = global_settings() if not application else application.settings
-    if not settings.opentelemetry.enabled and not os.environ.get("NEW_RELIC_OPENTELEMETRY_ENABLED"):
+    settings = getattr(application, "settings", None) or global_settings()
+    if settings and not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
     from opentelemetry.context.contextvars_context import ContextVarsRuntimeContext
@@ -46,9 +46,9 @@ def wrap_get_global_response_propagator(wrapped, instance, args, kwargs):
         # Force application registration if not already active
         application.activate()
 
-    settings = global_settings()
+    settings = getattr(application, "settings", None) or global_settings()
 
-    if not (settings and settings.opentelemetry.enabled) and not os.environ.get("NEW_RELIC_OPENTELEMETRY_ENABLED"):
+    if settings and not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
     from opentelemetry.instrumentation.propagators import set_global_response_propagator
@@ -83,9 +83,9 @@ def wrap_set_tracer_provider(wrapped, instance, args, kwargs):
         # Force application registration if not already active
         application.activate()
 
-    settings = global_settings()
+    settings = getattr(application, "settings", None) or global_settings()
 
-    if not (settings and settings.opentelemetry.enabled) and not os.environ.get("NEW_RELIC_OPENTELEMETRY_ENABLED"):
+    if settings and not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
     nr_tracer_provider = application._agent.opentelemetry_tracer_provider()
@@ -102,9 +102,9 @@ def wrap_get_tracer_provider(wrapped, instance, args, kwargs):
         # Force application registration if not already active
         application.activate()
 
-    settings = global_settings()
+    settings = getattr(application, "settings", None) or global_settings()
 
-    if not (settings and settings.opentelemetry.enabled) and not os.environ.get("NEW_RELIC_OPENTELEMETRY_ENABLED"):
+    if settings and not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
     return application._agent.opentelemetry_tracer_provider()
@@ -139,11 +139,9 @@ def wrap_get_current_span(wrapped, instance, args, kwargs):
     # Do not allow the wrapper to continue if
     # the Hybrid Agent setting is not enabled
     application = application_instance(activate=False)
-    settings = global_settings()
+    settings = getattr(application, "settings", None) or global_settings()
 
-    if (hasattr(application, "settings") and not application.settings.opentelemetry.enabled) or (
-        not settings.opentelemetry.enabled and not _environ_as_bool("NEW_RELIC_OPENTELEMETRY_ENABLED")
-    ):
+    if settings and not settings.opentelemetry.enabled:
         return span
 
     # If a NR trace does exist, check to see if the current
@@ -185,9 +183,9 @@ def wrap_start_internal_or_server_span(wrapped, instance, args, kwargs):
     # Do not allow the wrapper to continue if
     # the Hybrid Agent setting is not enabled
     application = application_instance(activate=False)
-    settings = global_settings() if not application else application.settings
+    settings = getattr(application, "settings", None) or global_settings()
 
-    if not settings.opentelemetry.enabled:
+    if settings and not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
     bound_args = bind_args(wrapped, args, kwargs)
@@ -215,9 +213,9 @@ def wrap__get_span(wrapped, instance, args, kwargs):
     # Do not allow the wrapper to continue if
     # the Hybrid Agent setting is not enabled
     application = application_instance(activate=False)
-    settings = global_settings() if not application else application.settings
+    settings = getattr(application, "settings", None) or global_settings()
 
-    if not settings.opentelemetry.enabled:
+    if settings and not settings.opentelemetry.enabled:
         return wrapped(*args, **kwargs)
 
     bound_args = bind_args(wrapped, args, kwargs)

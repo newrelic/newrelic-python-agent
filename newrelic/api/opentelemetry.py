@@ -45,7 +45,7 @@ from newrelic.api.time_trace import add_custom_span_attribute, current_trace, no
 from newrelic.api.transaction import Sentinel, current_transaction
 from newrelic.api.web_transaction import WebTransaction, WSGIWebTransaction
 from newrelic.core.attribute import sanitize
-from newrelic.core.config import _environ_as_bool, _environ_as_comma_separated_set, global_settings
+from newrelic.core.config import global_settings
 from newrelic.core.database_utils import (
     _all_literals_re,
     _quotes_table,
@@ -661,7 +661,6 @@ class Tracer(otel_api_trace.Tracer):
         self.schema_url = schema_url
         self.tracer_attributes = attributes or {}
         self.resource = resource
-        self.settings = global_settings()
         self.exclude_tracer = False
 
     def _create_web_transaction(self, nr_headers=None):
@@ -744,32 +743,12 @@ class Tracer(otel_api_trace.Tracer):
 
         self._record_exception = record_exception
         self.set_status_on_exception = set_status_on_exception
+        self.settings = getattr(self.nr_application, "settings", None) or global_settings()
 
-        if (hasattr(self.nr_application, "settings") and not self.nr_application.settings.opentelemetry.enabled) or (
-            not self.settings.opentelemetry.enabled and not _environ_as_bool("NEW_RELIC_OPENTELEMETRY_ENABLED")
-        ):
+        if self.settings and not self.settings.opentelemetry.enabled:
             return otel_api_trace.INVALID_SPAN
 
-        if (
-            (
-                hasattr(self.nr_application, "settings")
-                and (
-                    not self.nr_application.settings.opentelemetry.traces.enabled
-                    or (self.instrumentation_library in self.nr_application.settings.opentelemetry.traces.exclude)
-                )
-            )
-            or (
-                not self.settings.opentelemetry.traces.enabled
-                and not _environ_as_bool("NEW_RELIC_OPENTELEMETRY_TRACES_ENABLED")
-            )
-            or (
-                (self.instrumentation_library in self.settings.opentelemetry.traces.exclude)
-                or (
-                    self.instrumentation_library
-                    in _environ_as_comma_separated_set("NEW_RELIC_OPENTELEMETRY_TRACES_EXCLUDE")
-                )
-            )
-        ):
+        if self.settings and (not self.settings.opentelemetry.traces.enabled or (self.instrumentation_library in self.settings.opentelemetry.traces.exclude)):
             self.exclude_tracer = True
 
         # Retrieve parent span

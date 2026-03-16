@@ -63,11 +63,14 @@ jobs:
           - wheel: cp314t-musllinux
             os: ubuntu-24.04
           # Windows
-          # Windows wheels won't but published until the full release announcement.
-          # - wheel: cp313-win
-          #   os: windows-2025
-          # - wheel: cp314-win
-          #   os: windows-2025
+          - wheel: cp313-win
+            os: windows-2025
+          - wheel: cp313t-win
+            os: windows-2025
+          - wheel: cp314-win
+            os: windows-2025
+          - wheel: cp314t-win
+            os: windows-2025
 
     name: Build wheels for ${{ matrix.wheel }}
     runs-on: ${{ matrix.os }}
@@ -94,7 +97,7 @@ jobs:
           CIBW_ARCHS_WINDOWS: AMD64 ARM64
           CIBW_ENVIRONMENT_LINUX: "LD_LIBRARY_PATH=/opt/rh/devtoolset-8/root/usr/lib64:/opt/rh/devtoolset-8/root/usr/lib:/opt/rh/devtoolset-8/root/usr/lib64/dyninst:/opt/rh/devtoolset-8/root/usr/lib/dyninst:/usr/local/lib64:/usr/local/lib"
           CIBW_ENABLE: cpython-freethreading
-          CIBW_TEST_REQUIRES: pytest
+          CIBW_TEST_REQUIRES: pytest certifi
           CIBW_TEST_COMMAND_LINUX: "export PYTHONPATH={project}/tests; pytest {project}/tests/agent_unittests -vx"
           CIBW_TEST_COMMAND_MACOS: "export PYTHONPATH={project}/tests; pytest {project}/tests/agent_unittests -vx"
           CIBW_TEST_COMMAND_WINDOWS: "set PYTHONPATH={project}/tests; pytest {project}/tests/agent_unittests -vx"

@@ -1050,7 +1050,7 @@ class BedrockRecordEventMixin:
 
 class EventStreamWrapper(ObjectProxy):
     def __iter__(self):
-        g = GeneratorProxy(self.__wrapped__.__iter__())
+        g = LLMStreamProxy(self.__wrapped__.__iter__())
         g._nr_ft = getattr(self, "_nr_ft", None)
         g._nr_bedrock_attrs = getattr(self, "_nr_bedrock_attrs", {})
         g._nr_model_extractor = getattr(self, "_nr_model_extractor", NULL_EXTRACTOR)
@@ -1058,7 +1058,7 @@ class EventStreamWrapper(ObjectProxy):
         return g
 
 
-class GeneratorProxy(BedrockRecordEventMixin, ObjectProxy):
+class LLMStreamProxy(BedrockRecordEventMixin, ObjectProxy):
     def __init__(self, wrapped):
         super().__init__(wrapped)
         self._nr_request_timestamp = int(1000.0 * time.time())
@@ -1089,7 +1089,7 @@ class GeneratorProxy(BedrockRecordEventMixin, ObjectProxy):
 
 class AsyncEventStreamWrapper(ObjectProxy):
     def __aiter__(self):
-        g = AsyncGeneratorProxy(self.__wrapped__.__aiter__())
+        g = AsyncLLMStreamProxy(self.__wrapped__.__aiter__())
         g._nr_ft = getattr(self, "_nr_ft", None)
         g._nr_bedrock_attrs = getattr(self, "_nr_bedrock_attrs", {})
         g._nr_model_extractor = getattr(self, "_nr_model_extractor", NULL_EXTRACTOR)
@@ -1097,7 +1097,7 @@ class AsyncEventStreamWrapper(ObjectProxy):
         return g
 
 
-class AsyncGeneratorProxy(BedrockRecordEventMixin, ObjectProxy):
+class AsyncLLMStreamProxy(BedrockRecordEventMixin, ObjectProxy):
     def __init__(self, wrapped):
         super().__init__(wrapped)
         self._nr_request_timestamp = int(1000.0 * time.time())

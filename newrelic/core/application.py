@@ -1283,18 +1283,11 @@ class Application:
                             )
 
                     # Send environment plugin.
-                    # If a module takes less than 0.5 seconds to load,
-                    # continue to upload.  Do this until we reach 5.0
-                    # seconds or until a module has taken more than
-                    # 0.5 seconds to upload.  Then, wait for the next
-                    # harvest cycle before resuming.
-                    if self.plugins and self.configuration and self.configuration.package_reporting.enabled:
+                    if self.configuration and self.configuration.package_reporting.enabled:
                         start = time.time()
-                        while (time.time() - start) < MAX_PACKAGE_CAPTURE_TIME_PER_SLOW_HARVEST:
-                            try:
-                                self._active_session.send_loaded_modules([next(self.plugins)])
-                            except StopIteration:
-                                self.plugins = False
+                        while (package := next(self.plugins, False)):
+                            self._active_session.send_loaded_modules([package])
+                            if (time.time() - start) < MAX_PACKAGE_CAPTURE_TIME_PER_SLOW_HARVEST:
                                 break
 
                     # Add a metric we can use to track how many harvest
@@ -1734,11 +1727,12 @@ class Application:
 
         # Finishes collecting environment plugin information if this has
         # not been completed during harvest lifetime of the application.
-        if self.plugins and self.configuration and self.configuration.package_reporting.enabled:
+        if self.configuration and self.configuration.package_reporting.enabled:
             # Anything that was left in the plugins
             # generator will be resolved here.
             plugins_list = list(self.plugins)
-            self._active_session.send_loaded_modules(plugins_list)
+            if plugins_list:
+                self._active_session.send_loaded_modules(plugins_list)
 
         # Now shutdown the actual agent session.
 

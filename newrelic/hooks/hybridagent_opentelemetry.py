@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 
 from newrelic.api.application import application_instance
 from newrelic.api.time_trace import current_trace

@@ -748,7 +748,10 @@ class Tracer(otel_api_trace.Tracer):
         if self.settings and not self.settings.opentelemetry.enabled:
             return otel_api_trace.INVALID_SPAN
 
-        if self.settings and (not self.settings.opentelemetry.traces.enabled or (self.instrumentation_library in self.settings.opentelemetry.traces.exclude)):
+        if self.settings and (
+            not self.settings.opentelemetry.traces.enabled
+            or (self.instrumentation_library in self.settings.opentelemetry.traces.exclude)
+        ):
             self.exclude_tracer = True
 
         # Retrieve parent span

@@ -1285,7 +1285,7 @@ class Application:
                     # Send environment plugin.
                     if self.configuration and self.configuration.package_reporting.enabled:
                         start = time.time()
-                        while (package := next(self.plugins, False)):
+                        while package := next(self.plugins, False):
                             self._active_session.send_loaded_modules([package])
                             if (time.time() - start) < MAX_PACKAGE_CAPTURE_TIME_PER_SLOW_HARVEST:
                                 break

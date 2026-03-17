@@ -17,9 +17,6 @@ from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
-from newrelic.common.package_version_utils import get_package_version_tuple
-
-SKLEARN_VERSION = get_package_version_tuple("sklearn")
 
 
 @pytest.mark.parametrize(
@@ -33,14 +30,19 @@ SKLEARN_VERSION = get_package_version_tuple("sklearn")
         "ExtraTreesRegressor",
         "GradientBoostingClassifier",
         "GradientBoostingRegressor",
+        "HistGradientBoostingClassifier",
+        "HistGradientBoostingRegressor",
         "IsolationForest",
         "RandomForestClassifier",
         "RandomForestRegressor",
         "RandomTreesEmbedding",
+        "StackingClassifier",
+        "StackingRegressor",
         "VotingClassifier",
+        "VotingRegressor",
     ],
 )
-def test_below_v1_0_model_methods_wrapped_in_function_trace(ensemble_model_name, run_ensemble_model):
+def test_model_methods_wrapped_in_function_trace(ensemble_model_name, run_ensemble_model):
     expected_scoped_metrics = {
         "AdaBoostClassifier": [
             ("Function/MLModel/Sklearn/Named/AdaBoostClassifier.fit", 1),
@@ -90,6 +92,16 @@ def test_below_v1_0_model_methods_wrapped_in_function_trace(ensemble_model_name,
             ("Function/MLModel/Sklearn/Named/GradientBoostingRegressor.predict", 2),
             ("Function/MLModel/Sklearn/Named/GradientBoostingRegressor.score", 1),
         ],
+        "HistGradientBoostingClassifier": [
+            ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.fit", 1),
+            ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.predict", 2),
+            ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.score", 1),
+        ],
+        "HistGradientBoostingRegressor": [
+            ("Function/MLModel/Sklearn/Named/HistGradientBoostingRegressor.fit", 1),
+            ("Function/MLModel/Sklearn/Named/HistGradientBoostingRegressor.predict", 2),
+            ("Function/MLModel/Sklearn/Named/HistGradientBoostingRegressor.score", 1),
+        ],
         "IsolationForest": [
             ("Function/MLModel/Sklearn/Named/IsolationForest.fit", 1),
             ("Function/MLModel/Sklearn/Named/IsolationForest.predict", 1),
@@ -110,88 +122,6 @@ def test_below_v1_0_model_methods_wrapped_in_function_trace(ensemble_model_name,
             ("Function/MLModel/Sklearn/Named/RandomTreesEmbedding.fit", 1),
             ("Function/MLModel/Sklearn/Named/RandomTreesEmbedding.transform", 1),
         ],
-        "VotingClassifier": [
-            ("Function/MLModel/Sklearn/Named/VotingClassifier.fit", 1),
-            ("Function/MLModel/Sklearn/Named/VotingClassifier.predict", 2),
-            ("Function/MLModel/Sklearn/Named/VotingClassifier.score", 1),
-            ("Function/MLModel/Sklearn/Named/VotingClassifier.transform", 1),
-            ("Function/MLModel/Sklearn/Named/VotingClassifier.predict_proba", 3),
-        ],
-    }
-
-    @validate_transaction_metrics(
-        "test_ensemble_models:test_below_v1_0_model_methods_wrapped_in_function_trace.<locals>._test",
-        scoped_metrics=expected_scoped_metrics[ensemble_model_name],
-        rollup_metrics=expected_scoped_metrics[ensemble_model_name],
-        background_task=True,
-    )
-    @background_task()
-    def _test():
-        run_ensemble_model(ensemble_model_name)
-
-    _test()
-
-
-@pytest.mark.skipif(SKLEARN_VERSION < (1, 0, 0) or SKLEARN_VERSION >= (1, 1, 0), reason="Requires 1.0 <= sklearn < 1.1")
-@pytest.mark.parametrize(
-    "ensemble_model_name",
-    [
-        "HistGradientBoostingClassifier",
-        "HistGradientBoostingRegressor",
-        "StackingClassifier",
-        "StackingRegressor",
-        "VotingRegressor",
-    ],
-)
-def test_between_v1_0_and_v1_1_model_methods_wrapped_in_function_trace(ensemble_model_name, run_ensemble_model):
-    expected_scoped_metrics = {
-        "HistGradientBoostingClassifier": [
-            ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.fit", 1),
-            ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.predict", 2),
-            ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.score", 1),
-            ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.predict_proba", 3),
-        ],
-        "HistGradientBoostingRegressor": [
-            ("Function/MLModel/Sklearn/Named/HistGradientBoostingRegressor.fit", 1),
-            ("Function/MLModel/Sklearn/Named/HistGradientBoostingRegressor.predict", 2),
-            ("Function/MLModel/Sklearn/Named/HistGradientBoostingRegressor.score", 1),
-        ],
-        "StackingClassifier": [("Function/MLModel/Sklearn/Named/StackingClassifier.fit", 1)],
-        "StackingRegressor": [("Function/MLModel/Sklearn/Named/StackingRegressor.fit", 1)],
-        "VotingRegressor": [
-            ("Function/MLModel/Sklearn/Named/VotingRegressor.fit", 1),
-            ("Function/MLModel/Sklearn/Named/VotingRegressor.predict", 2),
-            ("Function/MLModel/Sklearn/Named/VotingRegressor.score", 1),
-            ("Function/MLModel/Sklearn/Named/VotingRegressor.transform", 1),
-        ],
-    }
-
-    @validate_transaction_metrics(
-        "test_ensemble_models:test_between_v1_0_and_v1_1_model_methods_wrapped_in_function_trace.<locals>._test",
-        scoped_metrics=expected_scoped_metrics[ensemble_model_name],
-        rollup_metrics=expected_scoped_metrics[ensemble_model_name],
-        background_task=True,
-    )
-    @background_task()
-    def _test():
-        run_ensemble_model(ensemble_model_name)
-
-    _test()
-
-
-@pytest.mark.skipif(SKLEARN_VERSION < (1, 1, 0), reason="Requires sklearn >= 1.1")
-@pytest.mark.parametrize(
-    "ensemble_model_name",
-    [
-        "HistGradientBoostingClassifier",
-        "HistGradientBoostingRegressor",
-        "StackingClassifier",
-        "StackingRegressor",
-        "VotingRegressor",
-    ],
-)
-def test_above_v1_1_model_methods_wrapped_in_function_trace(ensemble_model_name, run_ensemble_model):
-    expected_scoped_metrics = {
         "StackingClassifier": [
             ("Function/MLModel/Sklearn/Named/StackingClassifier.fit", 1),
             ("Function/MLModel/Sklearn/Named/StackingClassifier.predict", 2),
@@ -204,31 +134,28 @@ def test_above_v1_1_model_methods_wrapped_in_function_trace(ensemble_model_name,
             ("Function/MLModel/Sklearn/Named/StackingRegressor.predict", 2),
             ("Function/MLModel/Sklearn/Named/StackingRegressor.score", 1),
         ],
+        "VotingClassifier": [
+            ("Function/MLModel/Sklearn/Named/VotingClassifier.fit", 1),
+            ("Function/MLModel/Sklearn/Named/VotingClassifier.predict", 2),
+            ("Function/MLModel/Sklearn/Named/VotingClassifier.score", 1),
+            ("Function/MLModel/Sklearn/Named/VotingClassifier.transform", 1),
+            ("Function/MLModel/Sklearn/Named/VotingClassifier.predict_proba", 3),
+        ],
         "VotingRegressor": [
             ("Function/MLModel/Sklearn/Named/VotingRegressor.fit", 1),
             ("Function/MLModel/Sklearn/Named/VotingRegressor.predict", 2),
             ("Function/MLModel/Sklearn/Named/VotingRegressor.score", 1),
             ("Function/MLModel/Sklearn/Named/VotingRegressor.transform", 1),
         ],
-        "HistGradientBoostingClassifier": [
-            ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.fit", 1),
-            ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.predict", 2),
-            ("Function/MLModel/Sklearn/Named/HistGradientBoostingClassifier.score", 1),
-        ],
-        "HistGradientBoostingRegressor": [
-            ("Function/MLModel/Sklearn/Named/HistGradientBoostingRegressor.fit", 1),
-            ("Function/MLModel/Sklearn/Named/HistGradientBoostingRegressor.predict", 2),
-            ("Function/MLModel/Sklearn/Named/HistGradientBoostingRegressor.score", 1),
-        ],
     }
 
     @validate_transaction_metrics(
-        "test_ensemble_models:test_above_v1_1_model_methods_wrapped_in_function_trace.<locals>._test",
+        "test_model_methods_wrapped_in_function_trace",
         scoped_metrics=expected_scoped_metrics[ensemble_model_name],
         rollup_metrics=expected_scoped_metrics[ensemble_model_name],
         background_task=True,
     )
-    @background_task()
+    @background_task(name="test_model_methods_wrapped_in_function_trace")
     def _test():
         run_ensemble_model(ensemble_model_name)
 

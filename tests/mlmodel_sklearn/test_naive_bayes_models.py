@@ -13,43 +13,34 @@
 # limitations under the License.
 
 import pytest
-from sklearn import __init__
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
-from newrelic.common.package_version_utils import get_package_version_tuple
-
-SKLEARN_VERSION = get_package_version_tuple("sklearn")
 
 
-@pytest.mark.skipif(SKLEARN_VERSION < (1, 0, 0), reason="Requires sklearn >= 1.0")
-@pytest.mark.parametrize("naive_bayes_model_name", ["CategoricalNB"])
-def test_above_v1_0_model_methods_wrapped_in_function_trace(naive_bayes_model_name, run_naive_bayes_model):
+@pytest.mark.parametrize(
+    "naive_bayes_model_name", ["BernoulliNB", "CategoricalNB", "ComplementNB", "GaussianNB", "MultinomialNB"]
+)
+def test_model_methods_wrapped_in_function_trace(naive_bayes_model_name, run_naive_bayes_model):
     expected_scoped_metrics = {
+        "BernoulliNB": [
+            ("Function/MLModel/Sklearn/Named/BernoulliNB.fit", 1),
+            ("Function/MLModel/Sklearn/Named/BernoulliNB.predict", 1),
+            ("Function/MLModel/Sklearn/Named/BernoulliNB.predict_log_proba", 2),
+            ("Function/MLModel/Sklearn/Named/BernoulliNB.predict_proba", 1),
+        ],
         "CategoricalNB": [
             ("Function/MLModel/Sklearn/Named/CategoricalNB.fit", 1),
             ("Function/MLModel/Sklearn/Named/CategoricalNB.predict", 1),
             ("Function/MLModel/Sklearn/Named/CategoricalNB.predict_log_proba", 2),
             ("Function/MLModel/Sklearn/Named/CategoricalNB.predict_proba", 1),
-        ]
-    }
-
-    @validate_transaction_metrics(
-        "test_naive_bayes_models:test_above_v1_0_model_methods_wrapped_in_function_trace.<locals>._test",
-        scoped_metrics=expected_scoped_metrics[naive_bayes_model_name],
-        rollup_metrics=expected_scoped_metrics[naive_bayes_model_name],
-        background_task=True,
-    )
-    @background_task()
-    def _test():
-        run_naive_bayes_model(naive_bayes_model_name)
-
-    _test()
-
-
-@pytest.mark.parametrize("naive_bayes_model_name", ["GaussianNB", "MultinomialNB", "ComplementNB", "BernoulliNB"])
-def test_model_methods_wrapped_in_function_trace(naive_bayes_model_name, run_naive_bayes_model):
-    expected_scoped_metrics = {
+        ],
+        "ComplementNB": [
+            ("Function/MLModel/Sklearn/Named/ComplementNB.fit", 1),
+            ("Function/MLModel/Sklearn/Named/ComplementNB.predict", 1),
+            ("Function/MLModel/Sklearn/Named/ComplementNB.predict_log_proba", 2),
+            ("Function/MLModel/Sklearn/Named/ComplementNB.predict_proba", 1),
+        ],
         "GaussianNB": [
             ("Function/MLModel/Sklearn/Named/GaussianNB.fit", 1),
             ("Function/MLModel/Sklearn/Named/GaussianNB.predict", 1),
@@ -62,27 +53,15 @@ def test_model_methods_wrapped_in_function_trace(naive_bayes_model_name, run_nai
             ("Function/MLModel/Sklearn/Named/MultinomialNB.predict_log_proba", 2),
             ("Function/MLModel/Sklearn/Named/MultinomialNB.predict_proba", 1),
         ],
-        "ComplementNB": [
-            ("Function/MLModel/Sklearn/Named/ComplementNB.fit", 1),
-            ("Function/MLModel/Sklearn/Named/ComplementNB.predict", 1),
-            ("Function/MLModel/Sklearn/Named/ComplementNB.predict_log_proba", 2),
-            ("Function/MLModel/Sklearn/Named/ComplementNB.predict_proba", 1),
-        ],
-        "BernoulliNB": [
-            ("Function/MLModel/Sklearn/Named/BernoulliNB.fit", 1),
-            ("Function/MLModel/Sklearn/Named/BernoulliNB.predict", 1),
-            ("Function/MLModel/Sklearn/Named/BernoulliNB.predict_log_proba", 2),
-            ("Function/MLModel/Sklearn/Named/BernoulliNB.predict_proba", 1),
-        ],
     }
 
     @validate_transaction_metrics(
-        "test_naive_bayes_models:test_model_methods_wrapped_in_function_trace.<locals>._test",
+        "test_model_methods_wrapped_in_function_trace",
         scoped_metrics=expected_scoped_metrics[naive_bayes_model_name],
         rollup_metrics=expected_scoped_metrics[naive_bayes_model_name],
         background_task=True,
     )
-    @background_task()
+    @background_task(name="test_model_methods_wrapped_in_function_trace")
     def _test():
         run_naive_bayes_model(naive_bayes_model_name)
 

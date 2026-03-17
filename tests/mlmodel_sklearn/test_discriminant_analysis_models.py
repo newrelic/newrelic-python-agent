@@ -16,10 +16,6 @@ import pytest
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
-from newrelic.common.package_version_utils import get_package_version_tuple
-
-SKLEARN_VERSION = get_package_version_tuple("sklearn")
-SKLEARN_VERSION_GT_1_6_0 = SKLEARN_VERSION >= (1, 6, 0)
 
 
 @pytest.mark.parametrize(
@@ -36,14 +32,8 @@ def test_model_methods_wrapped_in_function_trace(discriminant_analysis_model_nam
         "QuadraticDiscriminantAnalysis": [
             ("Function/MLModel/Sklearn/Named/QuadraticDiscriminantAnalysis.fit", 1),
             ("Function/MLModel/Sklearn/Named/QuadraticDiscriminantAnalysis.predict", 1),
-            (
-                "Function/MLModel/Sklearn/Named/QuadraticDiscriminantAnalysis.predict_proba",
-                1 if SKLEARN_VERSION_GT_1_6_0 else 2,
-            ),
-            (
-                "Function/MLModel/Sklearn/Named/QuadraticDiscriminantAnalysis.predict_log_proba",
-                2 if SKLEARN_VERSION_GT_1_6_0 else 1,
-            ),
+            ("Function/MLModel/Sklearn/Named/QuadraticDiscriminantAnalysis.predict_proba", 1),
+            ("Function/MLModel/Sklearn/Named/QuadraticDiscriminantAnalysis.predict_log_proba", 2),
         ],
     }
 

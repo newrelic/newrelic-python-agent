@@ -16,9 +16,6 @@ import pytest
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
-from newrelic.common.package_version_utils import get_package_version_tuple
-
-SKLEARN_VERSION = get_package_version_tuple("sklearn")
 
 
 @pytest.mark.parametrize("neural_network_model_name", ["MLPClassifier", "MLPRegressor", "BernoulliRBM"])

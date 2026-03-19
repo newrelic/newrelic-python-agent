@@ -13,26 +13,25 @@
 # limitations under the License.
 
 import pytest
-from sklearn.neighbors import __init__
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
-from newrelic.common.package_version_utils import get_package_version_tuple
-
-SKLEARN_VERSION = get_package_version_tuple("sklearn")
 
 
 @pytest.mark.parametrize(
     "neighbors_model_name",
     [
         "KNeighborsClassifier",
-        "RadiusNeighborsClassifier",
+        "KNeighborsRegressor",
+        "KNeighborsTransformer",
         "KernelDensity",
         "LocalOutlierFactor",
         "NearestCentroid",
-        "KNeighborsRegressor",
-        "RadiusNeighborsRegressor",
         "NearestNeighbors",
+        "NeighborhoodComponentsAnalysis",
+        "RadiusNeighborsClassifier",
+        "RadiusNeighborsRegressor",
+        "RadiusNeighborsTransformer",
     ],
 )
 def test_model_methods_wrapped_in_function_trace(neighbors_model_name, run_neighbors_model):
@@ -42,9 +41,13 @@ def test_model_methods_wrapped_in_function_trace(neighbors_model_name, run_neigh
             ("Function/MLModel/Sklearn/Named/KNeighborsClassifier.predict", 2),
             ("Function/MLModel/Sklearn/Named/KNeighborsClassifier.predict_proba", 1),
         ],
-        "RadiusNeighborsClassifier": [
-            ("Function/MLModel/Sklearn/Named/RadiusNeighborsClassifier.fit", 1),
-            ("Function/MLModel/Sklearn/Named/RadiusNeighborsClassifier.predict", 2),
+        "KNeighborsRegressor": [
+            ("Function/MLModel/Sklearn/Named/KNeighborsRegressor.fit", 1),
+            ("Function/MLModel/Sklearn/Named/KNeighborsRegressor.predict", 2),
+        ],
+        "KNeighborsTransformer": [
+            ("Function/MLModel/Sklearn/Named/KNeighborsTransformer.fit", 1),
+            ("Function/MLModel/Sklearn/Named/KNeighborsTransformer.transform", 1),
         ],
         "KernelDensity": [
             ("Function/MLModel/Sklearn/Named/KernelDensity.fit", 1),
@@ -58,50 +61,7 @@ def test_model_methods_wrapped_in_function_trace(neighbors_model_name, run_neigh
             ("Function/MLModel/Sklearn/Named/NearestCentroid.fit", 1),
             ("Function/MLModel/Sklearn/Named/NearestCentroid.predict", 2),
         ],
-        "KNeighborsRegressor": [
-            ("Function/MLModel/Sklearn/Named/KNeighborsRegressor.fit", 1),
-            ("Function/MLModel/Sklearn/Named/KNeighborsRegressor.predict", 2),
-        ],
-        "RadiusNeighborsRegressor": [
-            ("Function/MLModel/Sklearn/Named/RadiusNeighborsRegressor.fit", 1),
-            ("Function/MLModel/Sklearn/Named/RadiusNeighborsRegressor.predict", 2),
-        ],
         "NearestNeighbors": [("Function/MLModel/Sklearn/Named/NearestNeighbors.fit", 1)],
-    }
-
-    @validate_transaction_metrics(
-        "test_neighbors_models:test_model_methods_wrapped_in_function_trace.<locals>._test",
-        scoped_metrics=expected_scoped_metrics[neighbors_model_name],
-        rollup_metrics=expected_scoped_metrics[neighbors_model_name],
-        background_task=True,
-    )
-    @background_task()
-    def _test():
-        run_neighbors_model(neighbors_model_name)
-
-    _test()
-
-
-@pytest.mark.skipif(SKLEARN_VERSION < (1, 0, 0), reason="Requires sklearn >= 1.0")
-@pytest.mark.parametrize(
-    "neighbors_model_name",
-    [
-        "KNeighborsTransformer",
-        "RadiusNeighborsTransformer",
-        "NeighborhoodComponentsAnalysis",
-        "RadiusNeighborsClassifier",
-    ],
-)
-def test_above_v1_0_model_methods_wrapped_in_function_trace(neighbors_model_name, run_neighbors_model):
-    expected_scoped_metrics = {
-        "KNeighborsTransformer": [
-            ("Function/MLModel/Sklearn/Named/KNeighborsTransformer.fit", 1),
-            ("Function/MLModel/Sklearn/Named/KNeighborsTransformer.transform", 1),
-        ],
-        "RadiusNeighborsTransformer": [
-            ("Function/MLModel/Sklearn/Named/RadiusNeighborsTransformer.fit", 1),
-            ("Function/MLModel/Sklearn/Named/RadiusNeighborsTransformer.transform", 1),
-        ],
         "NeighborhoodComponentsAnalysis": [
             ("Function/MLModel/Sklearn/Named/NeighborhoodComponentsAnalysis.fit", 1),
             ("Function/MLModel/Sklearn/Named/NeighborhoodComponentsAnalysis.transform", 1),
@@ -109,17 +69,25 @@ def test_above_v1_0_model_methods_wrapped_in_function_trace(neighbors_model_name
         "RadiusNeighborsClassifier": [
             ("Function/MLModel/Sklearn/Named/RadiusNeighborsClassifier.fit", 1),
             ("Function/MLModel/Sklearn/Named/RadiusNeighborsClassifier.predict", 2),
-            ("Function/MLModel/Sklearn/Named/RadiusNeighborsClassifier.predict_proba", 3),  # Added in v1.0
+            ("Function/MLModel/Sklearn/Named/RadiusNeighborsClassifier.predict_proba", 3),
+        ],
+        "RadiusNeighborsRegressor": [
+            ("Function/MLModel/Sklearn/Named/RadiusNeighborsRegressor.fit", 1),
+            ("Function/MLModel/Sklearn/Named/RadiusNeighborsRegressor.predict", 2),
+        ],
+        "RadiusNeighborsTransformer": [
+            ("Function/MLModel/Sklearn/Named/RadiusNeighborsTransformer.fit", 1),
+            ("Function/MLModel/Sklearn/Named/RadiusNeighborsTransformer.transform", 1),
         ],
     }
 
     @validate_transaction_metrics(
-        "test_neighbors_models:test_above_v1_0_model_methods_wrapped_in_function_trace.<locals>._test",
+        "test_model_methods_wrapped_in_function_trace",
         scoped_metrics=expected_scoped_metrics[neighbors_model_name],
         rollup_metrics=expected_scoped_metrics[neighbors_model_name],
         background_task=True,
     )
-    @background_task()
+    @background_task(name="test_model_methods_wrapped_in_function_trace")
     def _test():
         run_neighbors_model(neighbors_model_name)
 

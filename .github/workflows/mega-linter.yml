@@ -19,6 +19,9 @@ name: MegaLinter
 
 on: # yamllint disable-line rule:truthy - false positive
   pull_request:
+  push:
+    branches:
+      - main
 
 permissions:
   contents: read

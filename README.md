@@ -9,6 +9,8 @@
 [![GitHub release](https://img.shields.io/github/v/release/newrelic/newrelic-python-agent?sort=semver)](https://github.com/newrelic/newrelic-python-agent/releases)
 [![image](https://img.shields.io/pypi/v/newrelic.svg)](https://pypi.python.org/pypi/newrelic)
 [![image](https://img.shields.io/pypi/pyversions/newrelic.svg)](https://pypi.python.org/pypi/newrelic)
+[![PyPI Downloads](https://static.pepy.tech/personalized-badge/newrelic?period=total&units=INTERNATIONAL_SYSTEM&left_color=BLACK&right_color=GREEN&left_text=Downloads)](https://pepy.tech/projects/newrelic)
+
 [![Tests](https://github.com/newrelic/newrelic-python-agent/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/newrelic/newrelic-python-agent/actions/workflows/tests.yml)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![MegaLinter](https://github.com/newrelic/newrelic-python-agent/actions/workflows/mega-linter.yml/badge.svg?branch=main)](https://github.com/newrelic/newrelic-python-agent/actions/workflows/mega-linter.yml)

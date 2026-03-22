@@ -14,19 +14,20 @@
 
 import base64
 import json
+import random
 from pathlib import Path
 
 import pytest
 import webtest
-import random
 from testing_support.fixtures import override_application_settings, validate_attributes
 from testing_support.validators.validate_error_event_attributes import validate_error_event_attributes
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
-from newrelic.api.background_task import background_task
 import newrelic.agent
+from newrelic.api.application import application_settings
+from newrelic.api.background_task import background_task
 from newrelic.api.transaction import current_transaction
 from newrelic.api.wsgi_application import wsgi_application
 from newrelic.common.encoding_utils import (
@@ -37,15 +38,15 @@ from newrelic.common.encoding_utils import (
     W3CTraceState,
 )
 from newrelic.common.object_wrapper import transient_function_wrapper
-from newrelic.core.root_node import RootNode
 from newrelic.core.external_node import ExternalNode
 from newrelic.core.function_node import FunctionNode
-from newrelic.api.application import application_settings
-
+from newrelic.core.root_node import RootNode
 
 FIXTURE_PARTIAL_GRANULARITY = Path(__file__).parent / "fixtures" / "distributed_tracing" / "partial_granularity.json"
 FIXTURE_TRACER_INFO_STANDARD = Path(__file__).parent / "fixtures" / "distributed_tracing" / "tracer_info_standard.json"
-FIXTURE_TRACER_INFO_TOO_MANY = Path(__file__).parent / "fixtures" / "distributed_tracing" / "tracer_info_compact_too_many.json"
+FIXTURE_TRACER_INFO_TOO_MANY = (
+    Path(__file__).parent / "fixtures" / "distributed_tracing" / "tracer_info_compact_too_many.json"
+)
 
 
 def load_tests():
@@ -64,12 +65,7 @@ def load_tests():
         assert not test, f"{test} has not been fully parsed"
 
         param = pytest.param(
-            partial_granularity_type,
-            tracer_info,
-            expected_spans,
-            unexpected_spans,
-            expected_metrics,
-            id=_id,
+            partial_granularity_type, tracer_info, expected_spans, unexpected_spans, expected_metrics, id=_id
         )
         result.append(param)
 
@@ -87,9 +83,9 @@ def tracer_info_standard():
                     url=agent_attrs.pop("http.url"),
                     method="GET",
                     children=[],
-                    start_time=span["timestamp"]/1000,  # Convert to seconds.
-                    end_time=span["timestamp"]/1000 + span["duration_millis"]/1000,
-                    duration=span["duration_millis"]/1000,  # Convert to seconds.
+                    start_time=span["timestamp"] / 1000,  # Convert to seconds.
+                    end_time=span["timestamp"] / 1000 + span["duration_millis"] / 1000,
+                    duration=span["duration_millis"] / 1000,  # Convert to seconds.
                     exclusive=0.1,
                     params={},
                     guid=span["name"],
@@ -98,7 +94,7 @@ def tracer_info_standard():
                     span_link_events=None,
                     span_event_events=None,
                 )
-                #node.name = span["name"]
+                # node.name = span["name"]
                 if "children" in span:
                     create_span_tree(node, span["children"])
             elif "inprocess" in span["name"].lower():
@@ -106,9 +102,9 @@ def tracer_info_standard():
                     group="Function",
                     name=span["name"],
                     children=[],
-                    start_time=span["timestamp"]/1000,  # Convert to seconds.
-                    end_time=span["timestamp"]/1000 + span["duration_millis"]/1000,
-                    duration=span["duration_millis"]/1000,  # Convert to seconds.
+                    start_time=span["timestamp"] / 1000,  # Convert to seconds.
+                    end_time=span["timestamp"] / 1000 + span["duration_millis"] / 1000,
+                    duration=span["duration_millis"] / 1000,  # Convert to seconds.
                     exclusive=0.1,
                     label=None,
                     params=None,
@@ -126,9 +122,9 @@ def tracer_info_standard():
                     group="Llm",
                     name=span["name"][4:],
                     children=[],
-                    start_time=span["timestamp"]/1000,  # Convert to seconds.
-                    end_time=span["timestamp"]/1000 + span["duration_millis"]/1000,
-                    duration=span["duration_millis"]/1000,  # Convert to seconds.
+                    start_time=span["timestamp"] / 1000,  # Convert to seconds.
+                    end_time=span["timestamp"] / 1000 + span["duration_millis"] / 1000,
+                    duration=span["duration_millis"] / 1000,  # Convert to seconds.
                     exclusive=0.1,
                     label=None,
                     params=None,
@@ -152,9 +148,9 @@ def tracer_info_standard():
     root_node = RootNode(
         name=root["name"],
         children=[],
-        start_time=root["timestamp"]/1000,  # Convert to seconds.
-        end_time=root["timestamp"]/1000 + root["duration_millis"]/1000,
-        duration=root["duration_millis"]/1000,  # Convert to seconds.
+        start_time=root["timestamp"] / 1000,  # Convert to seconds.
+        end_time=root["timestamp"] / 1000 + root["duration_millis"] / 1000,
+        duration=root["duration_millis"] / 1000,  # Convert to seconds.
         exclusive=0.1,
         guid=root["name"],
         agent_attributes={},
@@ -178,9 +174,9 @@ def tracer_info_too_many():
             url=agent_attrs["http.url"],
             method="GET",
             children=[],
-            start_time=span["timestamp"]/1000,  # Convert to seconds.
-            end_time=span["timestamp"]/1000 + span["duration_millis"]/1000,
-            duration=span["duration_millis"]/1000,  # Convert to seconds.
+            start_time=span["timestamp"] / 1000,  # Convert to seconds.
+            end_time=span["timestamp"] / 1000 + span["duration_millis"] / 1000,
+            duration=span["duration_millis"] / 1000,  # Convert to seconds.
             exclusive=0.1,
             params={},
             guid=span["name"],
@@ -189,7 +185,7 @@ def tracer_info_too_many():
             span_link_events=None,
             span_event_events=None,
         )
-        #node.name = span["name"]
+        # node.name = span["name"]
         return node
 
     data = []
@@ -199,9 +195,9 @@ def tracer_info_too_many():
     root_node = RootNode(
         name=root["name"],
         children=[],
-        start_time=root["timestamp"]/1000,  # Convert to seconds.
-        end_time=root["timestamp"]/1000 + root["duration_millis"]/1000,
-        duration=root["duration_millis"]/1000,  # Convert to seconds.
+        start_time=root["timestamp"] / 1000,  # Convert to seconds.
+        end_time=root["timestamp"] / 1000 + root["duration_millis"] / 1000,
+        duration=root["duration_millis"] / 1000,  # Convert to seconds.
         exclusive=0.1,
         guid=root["name"],
         agent_attributes={},
@@ -213,14 +209,24 @@ def tracer_info_too_many():
         span_event_events=None,
     )
     children_formula = root["children_formula"]
-    children = [create_external({"timestamp": child*children_formula["duration_millis"] + child*children_formula["duration_gap_millis"], "duration_millis": children_formula["duration_millis"], "name": f"{children_formula['name_prefix']}{child+1}", "agent_attrs": children_formula["agent_attrs"]}) for child in range(children_formula["num_children"])]
+    children = [
+        create_external(
+            {
+                "timestamp": child * children_formula["duration_millis"]
+                + child * children_formula["duration_gap_millis"],
+                "duration_millis": children_formula["duration_millis"],
+                "name": f"{children_formula['name_prefix']}{child + 1}",
+                "agent_attrs": children_formula["agent_attrs"],
+            }
+        )
+        for child in range(children_formula["num_children"])
+    ]
     root_node.children.extend(children)
     return root_node
 
 
 @pytest.mark.parametrize(
-    "partial_granularity_type,tracer_info,expected_spans,unexpected_spans,expected_metrics",
-    load_tests(),
+    "partial_granularity_type,tracer_info,expected_spans,unexpected_spans,expected_metrics", load_tests()
 )
 def test_distributed_tracing_partial_granularity(
     partial_granularity_type,
@@ -246,12 +252,20 @@ def test_distributed_tracing_partial_granularity(
         settings.distributed_tracing.sampler.partial_granularity.type = partial_granularity_type
 
         span_event_method = root.PARTIAL_GRANULARITY_SPAN_EVENT_METHODS.get(
-            settings.distributed_tracing.sampler.partial_granularity.type, root.PARTIAL_GRANULARITY_SPAN_EVENT_METHODS["essential"]
+            settings.distributed_tracing.sampler.partial_granularity.type,
+            root.PARTIAL_GRANULARITY_SPAN_EVENT_METHODS["essential"],
         )
         ct_exit_spans = {"instrumented": 0, "kept": 0, "dropped_ids": 0}
-        spans = list(root.span_events_partial_granularity(
-            settings, span_event_method, base_attrs=None, parent_guid=None, attr_class=dict, ct_exit_spans=ct_exit_spans
-        ))
+        spans = list(
+            root.span_events_partial_granularity(
+                settings,
+                span_event_method,
+                base_attrs=None,
+                parent_guid=None,
+                attr_class=dict,
+                ct_exit_spans=ct_exit_spans,
+            )
+        )
 
         for expected_span in expected_spans:
             expected_span_name = list(expected_span.keys())[0]

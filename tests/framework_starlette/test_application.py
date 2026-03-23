@@ -36,21 +36,17 @@ def target_application():
 
 FRAMEWORK_METRIC = (f"Python/Framework/Starlette/{starlette.__version__}", 1)
 
-if starlette_version >= (0, 20, 1):
-    DEFAULT_MIDDLEWARE_METRICS = [
-        ("Function/starlette.middleware.errors:ServerErrorMiddleware.__call__", 1),
-        ("Function/starlette.middleware.exceptions:ExceptionMiddleware.__call__", 1),
-    ]
+if starlette_version < (1, 0, 0):
+    # This style of middleware was removed
+    OLDER_MIDDLEWARE_METRICS = [("Function/_test_application:middleware_decorator", 1)]
 else:
-    DEFAULT_MIDDLEWARE_METRICS = [
-        ("Function/starlette.middleware.errors:ServerErrorMiddleware.__call__", 1),
-        ("Function/starlette.exceptions:ExceptionMiddleware.__call__", 1),
-    ]
+    OLDER_MIDDLEWARE_METRICS = []
 
 MIDDLEWARE_METRICS = [
     ("Function/_test_application:middleware_factory.<locals>.middleware", 2),
-    ("Function/_test_application:middleware_decorator", 1),
-    *DEFAULT_MIDDLEWARE_METRICS,
+    ("Function/starlette.middleware.errors:ServerErrorMiddleware.__call__", 1),
+    ("Function/starlette.middleware.exceptions:ExceptionMiddleware.__call__", 1),
+    *OLDER_MIDDLEWARE_METRICS,
 ]
 
 

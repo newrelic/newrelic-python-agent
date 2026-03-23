@@ -125,10 +125,6 @@ def middleware_factory(app):
     return middleware
 
 
-async def middleware_decorator(request, call_next):
-    return await call_next(request)
-
-
 # Generating target applications
 app_name_map = {
     "no_error_handler": (True, False, {}),
@@ -163,7 +159,12 @@ for app_name, flags in app_name_map.items():
             app.add_middleware(middleware_factory)
 
         app.add_middleware(middleware_factory)
-        app.middleware("http")(middleware_decorator)
+
+        if hasattr(app, "middleware"):
+            # Older style of decorator based middleware was removed in starlette 1.0.0
+            @app.middleware("http")
+            async def middleware_decorator(request, call_next):
+                return await call_next(request)
 
     # Adding custom exception handlers
     app.add_exception_handler(HandledError, async_error_handler)

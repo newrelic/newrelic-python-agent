@@ -94,7 +94,6 @@ def tracer_info_standard():
                     span_link_events=None,
                     span_event_events=None,
                 )
-                # node.name = span["name"]
                 if "children" in span:
                     create_span_tree(node, span["children"])
             elif "inprocess" in span["name"].lower():
@@ -185,7 +184,6 @@ def tracer_info_too_many():
             span_link_events=None,
             span_event_events=None,
         )
-        # node.name = span["name"]
         return node
 
     data = []

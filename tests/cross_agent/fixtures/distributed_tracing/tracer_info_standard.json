@@ -60,8 +60,7 @@
           "messaging.system": "MQS",
           "peer.hostname": "peer",
           "server.address": "server",
-          "server.port": 80,
-          "span.kind": "SPAN"
+          "server.port": 80
         }
       },
       {

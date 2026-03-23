@@ -90,10 +90,7 @@ DEFAULT_MIDDLEWARE_METRICS = [
 
 middleware_test = (
     ("no_error_handler", f"starlette{version_tweak_string}.exceptions:ExceptionMiddleware.__call__"),
-    (
-        "non_async_error_handler_no_middleware",
-        f"starlette{version_tweak_string}.exceptions:ExceptionMiddleware.__call__",
-    ),
+    ("sync_error_handler_no_middleware", f"starlette{version_tweak_string}.exceptions:ExceptionMiddleware.__call__"),
 )
 
 
@@ -138,7 +135,7 @@ def test_exception_in_middleware(target_application, app_name):
 @pytest.mark.parametrize(
     "app_name,transaction_name,path,scoped_metrics",
     (
-        ("non_async_error_handler_no_middleware", "_test_application:runtime_error", "/runtime_error", []),
+        ("sync_error_handler_no_middleware", "_test_application:runtime_error", "/runtime_error", []),
         (
             "async_error_handler_no_middleware",
             "_test_application:runtime_error",
@@ -185,9 +182,9 @@ def test_server_error_middleware(target_application, app_name, transaction_name,
             "_test_application:HandledError",
         ),
         (
-            "non_async_error_handler_no_middleware",
-            "_test_application:non_async_handled_error",
-            "/non_async_handled_error",
+            "sync_error_handler_no_middleware",
+            "_test_application:sync_handled_error",
+            "/sync_handled_error",
             "_test_application:NonAsyncHandledError",
         ),
     ),
@@ -209,11 +206,7 @@ def test_application_handled_error(target_application, app_name, transaction_nam
     "app_name,transaction_name,path",
     (
         ("async_error_handler_no_middleware", "_test_application:handled_error", "/handled_error"),
-        (
-            "non_async_error_handler_no_middleware",
-            "_test_application:non_async_handled_error",
-            "/non_async_handled_error",
-        ),
+        ("sync_error_handler_no_middleware", "_test_application:sync_handled_error", "/sync_handled_error"),
     ),
 )
 @override_ignore_status_codes({500})

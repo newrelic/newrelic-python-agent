@@ -54,7 +54,7 @@ async def handled_error(request):
     raise HandledError("Handled error")
 
 
-def non_async_handled_error(request):
+def sync_handled_error(request):
     raise NonAsyncHandledError("Non async handled error")
 
 
@@ -62,7 +62,7 @@ async def async_error_handler(request, exc):
     return PlainTextResponse("Async error handler", status_code=500)
 
 
-def non_async_error_handler(request, exc):
+def sync_error_handler(request, exc):
     return PlainTextResponse("Non async error handler", status_code=500)
 
 
@@ -109,7 +109,7 @@ routes = [
     Route("/non_async", non_async),
     Route("/runtime_error", runtime_error),
     Route("/handled_error", handled_error),
-    Route("/non_async_handled_error", non_async_handled_error),
+    Route("/sync_handled_error", sync_handled_error),
     Route("/raw_runtime_error", CustomRoute(runtime_error)),
     Route("/raw_http_error", CustomRoute(teapot)),
     Route("/run_bg_task", run_bg_task),
@@ -129,7 +129,7 @@ def middleware_factory(app):
 app_name_map = {
     "no_error_handler": (True, False, {}),
     "async_error_handler_no_middleware": (False, False, {Exception: async_error_handler}),
-    "non_async_error_handler_no_middleware": (False, False, {}),
+    "sync_error_handler_no_middleware": (False, False, {}),
     "no_middleware": (False, False, {}),
     "debug_no_middleware": (False, True, {}),
     "teapot_exception_handler_no_middleware": (False, False, {}),
@@ -170,11 +170,11 @@ for app_name, flags in app_name_map.items():
     app.add_exception_handler(HandledError, async_error_handler)
 
     # Add exception handler multiple times to verify the handler is not double wrapped
-    app.add_exception_handler(NonAsyncHandledError, non_async_error_handler)
-    app.add_exception_handler(NonAsyncHandledError, non_async_error_handler)
+    app.add_exception_handler(NonAsyncHandledError, sync_error_handler)
+    app.add_exception_handler(NonAsyncHandledError, sync_error_handler)
 
-    if app_name == "non_async_error_handler_no_middleware":
-        app.add_exception_handler(Exception, non_async_error_handler)
+    if app_name == "sync_error_handler_no_middleware":
+        app.add_exception_handler(Exception, sync_error_handler)
         app.add_exception_handler(404, missing_route_handler)
     elif app_name == "teapot_exception_handler_no_middleware":
         app.add_exception_handler(418, teapot_handler)

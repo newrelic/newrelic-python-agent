@@ -1011,19 +1011,26 @@ class BedrockRecordEventMixin:
                     return self.invoke_record_stream_chunk(event, transaction, request_timestamp)
             except Exception:
                 _logger.warning(RESPONSE_EXTRACTOR_FAILURE_LOG_MESSAGE, exc_info=True)
-                # If we can't parse the chunk, ensure time_to_first_token is not set
-                if hasattr(self, "_nr_time_to_first_token"):
-                    delattr(self, "_nr_time_to_first_token")
 
     def invoke_record_stream_chunk(self, event, transaction, request_timestamp=None):
         bedrock_attrs = getattr(self, "_nr_bedrock_attrs", {})
 
-        if not hasattr(self, "_nr_time_to_first_token"):
-            self._nr_time_to_first_token = int(1000.0 * time.time()) - self._nr_request_timestamp
+        # Store time to first token now, but only attach it if we successfully parse the chunk.
+        # Record the time here since parsing may be a bit slow, and can inflate the metric.
+        time_to_first_token = (
+            int(1000.0 * time.time()) - self._nr_request_timestamp
+            if not hasattr(self, "_nr_time_to_first_token")
+            else None
+        )
 
+        # Load and parse the chunk to extract model specific data
         chunk = json.loads(event["chunk"]["bytes"].decode("utf-8"))
-
         self._nr_model_extractor(chunk, bedrock_attrs)
+
+        # Attach time to first token after parsing to ensure there are no errors
+        if time_to_first_token is not None:
+            self._nr_time_to_first_token = time_to_first_token
+
         # In Langchain, the bedrock iterator exits early if type is "content_block_stop".
         # So we need to call the record events here since stop iteration will not be raised.
         _type = chunk.get("type")
@@ -1037,12 +1044,13 @@ class BedrockRecordEventMixin:
                 return
 
             content = ((event.get("contentBlockDelta") or {}).get("delta") or {}).get("text", "")
-            if content and not hasattr(self, "_nr_time_to_first_token"):
-                self._nr_time_to_first_token = int(1000.0 * time.time()) - self._nr_request_timestamp
 
             if "output_message_list" not in bedrock_attrs:
                 bedrock_attrs["output_message_list"] = [{"role": "assistant", "content": ""}]
             bedrock_attrs["output_message_list"][0]["content"] += content
+
+            if content and not hasattr(self, "_nr_time_to_first_token"):
+                self._nr_time_to_first_token = int(1000.0 * time.time()) - self._nr_request_timestamp
 
         if "messageStop" in event:
             bedrock_attrs["response.choices.finish_reason"] = (event.get("messageStop") or {}).get("stopReason", "")

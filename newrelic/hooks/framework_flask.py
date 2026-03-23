@@ -23,6 +23,7 @@ from newrelic.api.wsgi_application import wrap_wsgi_application
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
+from newrelic.common.signature import bind_args
 
 FLASK_VERSION = ("Flask", get_package_version("flask"))
 
@@ -74,15 +75,13 @@ def _nr_wrapper_handler_(wrapped, instance, args, kwargs):
 
 
 def _nr_wrapper_Flask_add_url_rule_input_(wrapped, instance, args, kwargs):
-    def _bind_params(rule, endpoint=None, view_func=None, **options):
-        return rule, endpoint, view_func, options
+    bound_args = bind_args(wrapped, args, kwargs)
+    options = bound_args.pop("options", {})
 
-    rule, endpoint, view_func, options = _bind_params(*args, **kwargs)
+    if bound_args["view_func"] is not None:
+        bound_args["view_func"] = _nr_wrapper_handler_(bound_args["view_func"])
 
-    if view_func is not None:
-        view_func = _nr_wrapper_handler_(view_func)
-
-    return wrapped(rule, endpoint, view_func, **options)
+    return wrapped(**bound_args, **options)
 
 
 def _nr_wrapper_Flask_views_View_as_view_(wrapped, instance, args, kwargs):

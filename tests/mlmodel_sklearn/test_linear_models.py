@@ -18,7 +18,6 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
 
-SKLEARN_VERSION = get_package_version_tuple("sklearn")
 SCIPY_VERSION = get_package_version_tuple("scipy")
 
 
@@ -29,6 +28,7 @@ SCIPY_VERSION = get_package_version_tuple("scipy")
         "BayesianRidge",
         "ElasticNet",
         "ElasticNetCV",
+        "GammaRegressor",
         "HuberRegressor",
         "Lars",
         "LarsCV",
@@ -49,12 +49,18 @@ SCIPY_VERSION = get_package_version_tuple("scipy")
         "PassiveAggressiveClassifier",
         "PassiveAggressiveRegressor",
         "Perceptron",
+        "PoissonRegressor",
+        "QuantileRegressor",
+        "RANSACRegressor",
         "Ridge",
-        "RidgeCV",
         "RidgeClassifier",
         "RidgeClassifierCV",
+        "RidgeCV",
+        "SGDClassifier",
+        "SGDOneClassSVM",
+        "SGDRegressor",
         "TheilSenRegressor",
-        "RANSACRegressor",
+        "TweedieRegressor",
     ],
 )
 def test_model_methods_wrapped_in_function_trace(linear_model_name, run_linear_model):
@@ -78,6 +84,11 @@ def test_model_methods_wrapped_in_function_trace(linear_model_name, run_linear_m
             ("Function/MLModel/Sklearn/Named/ElasticNetCV.fit", 1),
             ("Function/MLModel/Sklearn/Named/ElasticNetCV.predict", 2),
             ("Function/MLModel/Sklearn/Named/ElasticNetCV.score", 1),
+        ],
+        "GammaRegressor": [
+            ("Function/MLModel/Sklearn/Named/GammaRegressor.fit", 1),
+            ("Function/MLModel/Sklearn/Named/GammaRegressor.predict", 1),
+            ("Function/MLModel/Sklearn/Named/GammaRegressor.score", 1),
         ],
         "HuberRegressor": [
             ("Function/MLModel/Sklearn/Named/HuberRegressor.fit", 1),
@@ -179,6 +190,21 @@ def test_model_methods_wrapped_in_function_trace(linear_model_name, run_linear_m
             ("Function/MLModel/Sklearn/Named/Perceptron.predict", 2),
             ("Function/MLModel/Sklearn/Named/Perceptron.score", 1),
         ],
+        "PoissonRegressor": [
+            ("Function/MLModel/Sklearn/Named/PoissonRegressor.fit", 1),
+            ("Function/MLModel/Sklearn/Named/PoissonRegressor.predict", 1),
+            ("Function/MLModel/Sklearn/Named/PoissonRegressor.score", 1),
+        ],
+        "QuantileRegressor": [
+            ("Function/MLModel/Sklearn/Named/QuantileRegressor.fit", 1),
+            ("Function/MLModel/Sklearn/Named/QuantileRegressor.predict", 2),
+            ("Function/MLModel/Sklearn/Named/QuantileRegressor.score", 1),
+        ],
+        "RANSACRegressor": [
+            ("Function/MLModel/Sklearn/Named/RANSACRegressor.fit", 1),
+            ("Function/MLModel/Sklearn/Named/RANSACRegressor.predict", 1),
+            ("Function/MLModel/Sklearn/Named/RANSACRegressor.score", 1),
+        ],
         "Ridge": [
             ("Function/MLModel/Sklearn/Named/Ridge.fit", 1),
             ("Function/MLModel/Sklearn/Named/Ridge.predict", 2),
@@ -199,89 +225,39 @@ def test_model_methods_wrapped_in_function_trace(linear_model_name, run_linear_m
             ("Function/MLModel/Sklearn/Named/RidgeClassifierCV.predict", 2),
             ("Function/MLModel/Sklearn/Named/RidgeClassifierCV.score", 1),
         ],
-        "TheilSenRegressor": [
-            ("Function/MLModel/Sklearn/Named/TheilSenRegressor.fit", 1),
-            ("Function/MLModel/Sklearn/Named/TheilSenRegressor.predict", 2),
-            ("Function/MLModel/Sklearn/Named/TheilSenRegressor.score", 1),
-        ],
-        "RANSACRegressor": [
-            ("Function/MLModel/Sklearn/Named/RANSACRegressor.fit", 1),
-            ("Function/MLModel/Sklearn/Named/RANSACRegressor.predict", 1),
-            ("Function/MLModel/Sklearn/Named/RANSACRegressor.score", 1),
-        ],
-    }
-
-    @validate_transaction_metrics(
-        "test_linear_models:test_model_methods_wrapped_in_function_trace.<locals>._test",
-        scoped_metrics=expected_scoped_metrics[linear_model_name],
-        rollup_metrics=expected_scoped_metrics[linear_model_name],
-        background_task=True,
-    )
-    @background_task()
-    def _test():
-        run_linear_model(linear_model_name)
-
-    _test()
-
-
-@pytest.mark.skipif(SKLEARN_VERSION < (1, 1, 0), reason="Requires sklearn >= v1.1")
-@pytest.mark.parametrize(
-    "linear_model_name",
-    [
-        "PoissonRegressor",
-        "GammaRegressor",
-        "TweedieRegressor",
-        "QuantileRegressor",
-        "SGDClassifier",
-        "SGDRegressor",
-        "SGDOneClassSVM",
-    ],
-)
-def test_above_v1_1_model_methods_wrapped_in_function_trace(linear_model_name, run_linear_model):
-    expected_scoped_metrics = {
-        "PoissonRegressor": [
-            ("Function/MLModel/Sklearn/Named/PoissonRegressor.fit", 1),
-            ("Function/MLModel/Sklearn/Named/PoissonRegressor.predict", 1),
-            ("Function/MLModel/Sklearn/Named/PoissonRegressor.score", 1),
-        ],
-        "GammaRegressor": [
-            ("Function/MLModel/Sklearn/Named/GammaRegressor.fit", 1),
-            ("Function/MLModel/Sklearn/Named/GammaRegressor.predict", 1),
-            ("Function/MLModel/Sklearn/Named/GammaRegressor.score", 1),
-        ],
-        "TweedieRegressor": [
-            ("Function/MLModel/Sklearn/Named/TweedieRegressor.fit", 1),
-            ("Function/MLModel/Sklearn/Named/TweedieRegressor.predict", 1),
-            ("Function/MLModel/Sklearn/Named/TweedieRegressor.score", 1),
-        ],
-        "QuantileRegressor": [
-            ("Function/MLModel/Sklearn/Named/QuantileRegressor.fit", 1),
-            ("Function/MLModel/Sklearn/Named/QuantileRegressor.predict", 2),
-            ("Function/MLModel/Sklearn/Named/QuantileRegressor.score", 1),
-        ],
         "SGDClassifier": [
             ("Function/MLModel/Sklearn/Named/SGDClassifier.fit", 1),
             ("Function/MLModel/Sklearn/Named/SGDClassifier.predict", 2),
             ("Function/MLModel/Sklearn/Named/SGDClassifier.score", 1),
+        ],
+        "SGDOneClassSVM": [
+            ("Function/MLModel/Sklearn/Named/SGDOneClassSVM.fit", 1),
+            ("Function/MLModel/Sklearn/Named/SGDOneClassSVM.predict", 1),
         ],
         "SGDRegressor": [
             ("Function/MLModel/Sklearn/Named/SGDRegressor.fit", 1),
             ("Function/MLModel/Sklearn/Named/SGDRegressor.predict", 2),
             ("Function/MLModel/Sklearn/Named/SGDRegressor.score", 1),
         ],
-        "SGDOneClassSVM": [
-            ("Function/MLModel/Sklearn/Named/SGDOneClassSVM.fit", 1),
-            ("Function/MLModel/Sklearn/Named/SGDOneClassSVM.predict", 1),
+        "TheilSenRegressor": [
+            ("Function/MLModel/Sklearn/Named/TheilSenRegressor.fit", 1),
+            ("Function/MLModel/Sklearn/Named/TheilSenRegressor.predict", 2),
+            ("Function/MLModel/Sklearn/Named/TheilSenRegressor.score", 1),
+        ],
+        "TweedieRegressor": [
+            ("Function/MLModel/Sklearn/Named/TweedieRegressor.fit", 1),
+            ("Function/MLModel/Sklearn/Named/TweedieRegressor.predict", 1),
+            ("Function/MLModel/Sklearn/Named/TweedieRegressor.score", 1),
         ],
     }
 
     @validate_transaction_metrics(
-        "test_linear_models:test_above_v1_1_model_methods_wrapped_in_function_trace.<locals>._test",
+        "test_model_methods_wrapped_in_function_trace",
         scoped_metrics=expected_scoped_metrics[linear_model_name],
         rollup_metrics=expected_scoped_metrics[linear_model_name],
         background_task=True,
     )
-    @background_task()
+    @background_task(name="test_model_methods_wrapped_in_function_trace")
     def _test():
         run_linear_model(linear_model_name)
 

@@ -17,13 +17,13 @@ from sklearn.ensemble import AdaBoostClassifier
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
-from newrelic.common.package_version_utils import get_package_version_tuple
-
-SKLEARN_VERSION = get_package_version_tuple("sklearn")
 
 
-@pytest.mark.parametrize("feature_selection_model_name", ["VarianceThreshold", "RFE", "RFECV", "SelectFromModel"])
-def test_below_v1_0_model_methods_wrapped_in_function_trace(feature_selection_model_name, run_feature_selection_model):
+@pytest.mark.parametrize(
+    "feature_selection_model_name",
+    ["VarianceThreshold", "RFE", "RFECV", "SelectFromModel", "SequentialFeatureSelector"],
+)
+def test_model_methods_wrapped_in_function_trace(feature_selection_model_name, run_feature_selection_model):
     expected_scoped_metrics = {
         "VarianceThreshold": [("Function/MLModel/Sklearn/Named/VarianceThreshold.fit", 1)],
         "RFE": [
@@ -35,35 +35,16 @@ def test_below_v1_0_model_methods_wrapped_in_function_trace(feature_selection_mo
         ],
         "RFECV": [("Function/MLModel/Sklearn/Named/RFECV.fit", 1)],
         "SelectFromModel": [("Function/MLModel/Sklearn/Named/SelectFromModel.fit", 1)],
+        "SequentialFeatureSelector": [("Function/MLModel/Sklearn/Named/SequentialFeatureSelector.fit", 1)],
     }
 
     @validate_transaction_metrics(
-        "test_feature_selection_models:test_below_v1_0_model_methods_wrapped_in_function_trace.<locals>._test",
+        "test_model_methods_wrapped_in_function_trace",
         scoped_metrics=expected_scoped_metrics[feature_selection_model_name],
         rollup_metrics=expected_scoped_metrics[feature_selection_model_name],
         background_task=True,
     )
-    @background_task()
-    def _test():
-        run_feature_selection_model(feature_selection_model_name)
-
-    _test()
-
-
-@pytest.mark.skipif(SKLEARN_VERSION < (1, 0, 0), reason="Requires sklearn >= 1.0")
-@pytest.mark.parametrize("feature_selection_model_name", ["SequentialFeatureSelector"])
-def test_above_v1_0_model_methods_wrapped_in_function_trace(feature_selection_model_name, run_feature_selection_model):
-    expected_scoped_metrics = {
-        "SequentialFeatureSelector": [("Function/MLModel/Sklearn/Named/SequentialFeatureSelector.fit", 1)]
-    }
-
-    @validate_transaction_metrics(
-        "test_feature_selection_models:test_above_v1_0_model_methods_wrapped_in_function_trace.<locals>._test",
-        scoped_metrics=expected_scoped_metrics[feature_selection_model_name],
-        rollup_metrics=expected_scoped_metrics[feature_selection_model_name],
-        background_task=True,
-    )
-    @background_task()
+    @background_task(name="test_model_methods_wrapped_in_function_trace")
     def _test():
         run_feature_selection_model(feature_selection_model_name)
 

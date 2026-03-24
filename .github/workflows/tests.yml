@@ -113,7 +113,7 @@ jobs:
           coverage xml
 
       - name: Upload Coverage to Codecov
-        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # 5.5.2
+        uses: codecov/codecov-action@1af58845a975a7985b0beb0cbe6fbbb71a41dbad # 5.5.3
         with:
           files: coverage.xml
           fail_ci_if_error: true

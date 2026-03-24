@@ -21,6 +21,7 @@ from pathlib import Path
 
 import pytest
 import webtest
+from newrelic.api.application import application_instance, application_settings
 from testing_support.fixtures import override_application_settings, validate_attributes, validate_attributes_complete
 from testing_support.validators.validate_error_event_attributes import validate_error_event_attributes
 from testing_support.validators.validate_function_called import validate_function_called
@@ -123,23 +124,25 @@ SECTIONS = {
 @pytest.mark.parametrize("settings,expected_samplers", load_tests())
 def test_sampler_configuration(settings, expected_samplers):
     @override_application_settings(settings)
-    @background_task()
     def _test():
-        txn = current_transaction()
-        application = txn._application._agent._applications.get(txn.settings.app_name)
-        # Re-initialize sampler proxy after overriding settings.
-        application.sampler.__init__(txn.settings)
+        app_set = application_settings()
+        application = application_instance(app_set.app_name)
+        with BackgroundTask(application, name="test"):
+            txn = current_transaction()
+            application = txn._application._agent._applications.get(txn.settings.app_name)
+            # Re-initialize sampler proxy after overriding settings.
+            application.sampler.__init__(txn.settings)
 
-        for sampler, attributes in expected_samplers.items():
-            instance = SECTIONS[sampler]
-            sampler_instance = application.sampler.get_sampler(*instance)
-            if attributes["type"] == "adaptive":
-                assert isinstance(sampler_instance, AdaptiveSampler)
-            elif attributes["type"] == "trace_id_ratio_based":
-                assert isinstance(sampler_instance, TraceIdRatioBasedSampler)
-                if "ratio" in attributes:
-                    assert sampler_instance.ratio == attributes["ratio"]
-            if attributes.get("is_global_adaptive_sampler", False):
-                assert sampler_instance is application.sampler._samplers["global"]
+            for sampler, attributes in expected_samplers.items():
+                instance = SECTIONS[sampler]
+                sampler_instance = application.sampler.get_sampler(*instance)
+                if attributes["type"] == "adaptive":
+                    assert isinstance(sampler_instance, AdaptiveSampler)
+                elif attributes["type"] == "trace_id_ratio_based":
+                    assert isinstance(sampler_instance, TraceIdRatioBasedSampler)
+                    if "ratio" in attributes:
+                        assert sampler_instance.ratio == attributes["ratio"]
+                if attributes.get("is_global_adaptive_sampler", False):
+                    assert sampler_instance is application.sampler._samplers["global"]
 
     _test()

@@ -298,7 +298,7 @@ def test_distributed_tracing_partial_granularity(
 
         if expected_metrics:
             metric = expected_metrics.pop(0)
-            assert metric[0] == "Supportability/Java/PartialGranularity/NrIds/Dropped"
+            assert metric[0] == "Supportability/<LANG>/PartialGranularity/NrIds/Dropped"
             assert metric[1] == ct_exit_spans["dropped_ids"]
         assert not expected_metrics  # assert all expected_metrics have been asserted
 

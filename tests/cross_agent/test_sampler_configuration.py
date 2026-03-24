@@ -21,7 +21,6 @@ from pathlib import Path
 
 import pytest
 import webtest
-from newrelic.api.application import application_instance, application_settings
 from testing_support.fixtures import override_application_settings, validate_attributes, validate_attributes_complete
 from testing_support.validators.validate_error_event_attributes import validate_error_event_attributes
 from testing_support.validators.validate_function_called import validate_function_called
@@ -30,7 +29,7 @@ from testing_support.validators.validate_transaction_event_attributes import val
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from testing_support.validators.validate_transaction_object_attributes import validate_transaction_object_attributes
 
-from newrelic.api.application import application_instance
+from newrelic.api.application import application_instance, application_settings
 from newrelic.api.function_trace import function_trace
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import function_wrapper, transient_function_wrapper

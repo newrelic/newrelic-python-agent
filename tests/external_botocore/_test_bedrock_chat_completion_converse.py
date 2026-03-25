@@ -116,6 +116,7 @@ chat_completion_expected_streaming_events = [
             "vendor": "bedrock",
             "ingest_source": "Python",
             "response.number_of_messages": 3,
+            "time_to_first_token": None,  # Varies each test run
         },
     ),
     (

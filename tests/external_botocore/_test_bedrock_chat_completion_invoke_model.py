@@ -1073,6 +1073,7 @@ chat_completion_streaming_expected_events = {
                 "vendor": "bedrock",
                 "ingest_source": "Python",
                 "response.number_of_messages": 2,
+                "time_to_first_token": None,  # Varies each test run
             },
         ),
         (
@@ -1134,6 +1135,7 @@ chat_completion_streaming_expected_events = {
                 "vendor": "bedrock",
                 "ingest_source": "Python",
                 "response.number_of_messages": 2,
+                "time_to_first_token": None,  # Varies each test run
             },
         ),
         (
@@ -1195,6 +1197,7 @@ chat_completion_streaming_expected_events = {
                 "vendor": "bedrock",
                 "ingest_source": "Python",
                 "response.number_of_messages": 2,
+                "time_to_first_token": None,  # Varies each test run
             },
         ),
         (
@@ -1255,6 +1258,7 @@ chat_completion_streaming_expected_events = {
                 "vendor": "bedrock",
                 "ingest_source": "Python",
                 "response.number_of_messages": 2,
+                "time_to_first_token": None,  # Varies each test run
             },
         ),
         (
@@ -1317,6 +1321,7 @@ chat_completion_streaming_expected_events = {
                 "vendor": "bedrock",
                 "ingest_source": "Python",
                 "response.number_of_messages": 2,
+                "time_to_first_token": None,  # Varies each test run
             },
         ),
         (
@@ -1378,6 +1383,7 @@ chat_completion_streaming_expected_events = {
                 "vendor": "bedrock",
                 "ingest_source": "Python",
                 "response.number_of_messages": 2,
+                "time_to_first_token": None,  # Varies each test run
             },
         ),
         (

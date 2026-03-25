@@ -571,6 +571,10 @@ def _record_completion_success(
             "timestamp": request_timestamp,
         }
         llm_metadata = _get_llm_attributes(transaction)
+
+        if "time_to_first_token" in kwargs:
+            full_chat_completion_summary_dict["time_to_first_token"] = kwargs.get("time_to_first_token")
+
         full_chat_completion_summary_dict.update(llm_metadata)
         transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
 
@@ -782,6 +786,10 @@ def _record_stream_chunk(self, return_val):
             if choices:
                 delta = choices[0].get("delta") or {}
                 if delta:
+                    if delta.get("content") and "time_to_first_token" not in self._nr_openai_attrs:
+                        self._nr_openai_attrs["time_to_first_token"] = (
+                            int(1000.0 * time.time()) - self._nr_request_timestamp
+                        )
                     self._nr_openai_attrs["content"] = self._nr_openai_attrs.get("content", "") + (
                         delta.get("content") or ""
                     )

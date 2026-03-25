@@ -133,3 +133,76 @@ def wrap_httpx_client_send(extract_shortened_prompt):
         return response
 
     return _wrap_httpx_client_send
+
+
+# @pytest.fixture(scope="session", params=["invoke", "stream"])
+@pytest.fixture(scope="session", params=["invoke"])  # TODO Put this back
+def is_streaming(request):
+    return request.param == "stream"
+
+
+@pytest.fixture(scope="session", params=["sync", "async"])
+def is_async(request):
+    return request.param == "async"
+
+
+@pytest.fixture(scope="session", params=["chat", "model"])
+def is_chat(request):
+    return request.param == "chat"
+
+
+@pytest.fixture(scope="session")
+def exercise_text_model(loop, gemini_dev_client, is_async, is_chat, is_streaming):
+    # Pick the sync or async client before we make the chat object for convenience
+    client = gemini_dev_client.aio if is_async else gemini_dev_client
+
+    def _exercise_text_model(*args, **kwargs):
+        if is_chat:
+            chat = client.chats.create(model=kwargs.pop("model"))
+            kwargs["message"] = kwargs.pop("contents")  # Make the kwargs compatible
+
+            if not is_streaming:
+                if not is_async:
+                    return chat.send_message(*args, **kwargs)
+                else:
+                    return loop.run_until_complete(chat.send_message(*args, **kwargs))
+            else:
+                if not is_async:
+                    return list(chat.send_message_stream(*args, **kwargs))
+                else:
+
+                    async def _exercise_agen():
+                        return [event async for event in chat.send_message_stream(*args, **kwargs)]
+
+                    return loop.run_until_complete(_exercise_agen())
+        else:
+            if not is_streaming:
+                if not is_async:
+                    return client.models.generate_content(*args, **kwargs)
+                else:
+                    return loop.run_until_complete(client.models.generate_content(*args, **kwargs))
+            else:
+                if not is_async:
+                    return list(client.models.generate_content_stream(*args, **kwargs))
+                else:
+
+                    async def _exercise_agen():
+                        return [event async for event in client.models.generate_content_stream(*args, **kwargs)]
+
+                    return loop.run_until_complete(_exercise_agen())
+
+    return _exercise_text_model
+
+
+@pytest.fixture(scope="session")
+def exercise_embedding_model(loop, gemini_dev_client, is_async):
+    # Pick the sync or async client for convenience
+    client = gemini_dev_client.aio if is_async else gemini_dev_client
+
+    def _exercise_embedding_model(*args, **kwargs):
+        if not is_async:
+            return client.models.embed_content(*args, **kwargs)
+        else:
+            return loop.run_until_complete(client.models.embed_content(*args, **kwargs))
+
+    return _exercise_embedding_model

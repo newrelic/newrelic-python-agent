@@ -78,6 +78,7 @@ chat_completion_recorded_events = [
             "vendor": "openai",
             "ingest_source": "Python",
             "response.number_of_messages": 3,
+            "time_to_first_token": None,  # Varies each test run
         },
     ),
     (

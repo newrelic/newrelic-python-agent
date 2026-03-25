@@ -46,6 +46,9 @@ collector_agent_registration = collector_agent_registration_fixture(
     linked_applications=["Python Agent Test (mlmodel_gemini)"],
 )
 
+GEMINI_VERSION = google.genai.__version__
+GEMINI_VERSION_METRIC = f"Supportability/Python/ML/Gemini/{GEMINI_VERSION}"
+
 
 GEMINI_AUDIT_LOG_FILE = Path(__file__).parent / "gemini_audit.log"
 GEMINI_AUDIT_LOG_CONTENTS = {}

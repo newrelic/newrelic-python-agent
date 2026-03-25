@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import google.genai
+from conftest import GEMINI_VERSION_METRIC
 from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     add_token_count_to_events,
@@ -97,7 +98,7 @@ text_generation_recorded_events = [
 @validate_custom_event_count(count=6)
 @validate_transaction_metrics(
     name="test_text_generation:test_gemini_multi_text_generation",
-    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -119,7 +120,7 @@ def test_gemini_multi_text_generation(gemini_dev_client, set_trace_info):
 @validate_custom_event_count(count=3)
 @validate_transaction_metrics(
     name="test_text_generation:test_gemini_text_generation_sync_generate_content",
-    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -142,7 +143,7 @@ def test_gemini_text_generation_sync_generate_content(gemini_dev_client, set_tra
 @validate_custom_event_count(count=3)
 @validate_transaction_metrics(
     name="test_text_generation:test_gemini_text_generation_sync_with_llm_metadata",
-    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -166,7 +167,7 @@ def test_gemini_text_generation_sync_with_llm_metadata(gemini_dev_client, set_tr
 @validate_custom_event_count(count=3)
 @validate_transaction_metrics(
     name="test_text_generation:test_gemini_text_generation_sync_no_content",
-    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -189,7 +190,7 @@ def test_gemini_text_generation_sync_no_content(gemini_dev_client, set_trace_inf
 @validate_custom_event_count(count=3)
 @validate_transaction_metrics(
     name="test_text_generation:test_gemini_text_generation_sync_with_token_count",
-    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -214,6 +215,7 @@ def test_gemini_text_generation_sync_with_token_count(gemini_dev_client, set_tra
     "test_text_generation:test_gemini_text_generation_sync_no_llm_metadata",
     scoped_metrics=[("Llm/completion/Gemini/generate_content", 1)],
     rollup_metrics=[("Llm/completion/Gemini/generate_content", 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
     background_task=True,
 )
 @background_task()
@@ -254,7 +256,7 @@ def test_gemini_text_generation_sync_ai_monitoring_disabled(gemini_dev_client):
 @validate_custom_event_count(count=3)
 @validate_transaction_metrics(
     name="test_text_generation:test_gemini_text_generation_async_generate_content",
-    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -279,7 +281,7 @@ def test_gemini_text_generation_async_generate_content(gemini_dev_client, loop, 
 @validate_custom_event_count(count=3)
 @validate_transaction_metrics(
     name="test_text_generation:test_gemini_text_generation_async_with_llm_metadata",
-    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -305,7 +307,7 @@ def test_gemini_text_generation_async_with_llm_metadata(gemini_dev_client, loop,
 @validate_custom_event_count(count=3)
 @validate_transaction_metrics(
     name="test_text_generation:test_gemini_text_generation_async_no_content",
-    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -330,7 +332,7 @@ def test_gemini_text_generation_async_no_content(gemini_dev_client, loop, set_tr
 @validate_custom_event_count(count=3)
 @validate_transaction_metrics(
     name="test_text_generation:test_gemini_text_generation_async_with_token_count",
-    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -357,6 +359,7 @@ def test_gemini_text_generation_async_with_token_count(gemini_dev_client, loop, 
     "test_text_generation:test_gemini_text_generation_async_no_llm_metadata",
     scoped_metrics=[("Llm/completion/Gemini/generate_content", 1)],
     rollup_metrics=[("Llm/completion/Gemini/generate_content", 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
     background_task=True,
 )
 @background_task()

@@ -17,6 +17,7 @@ import sys
 
 import google.genai
 import pytest
+from conftest import GEMINI_VERSION_METRIC
 from testing_support.fixtures import dt_enabled, override_llm_token_callback_settings, reset_core_stats_engine
 from testing_support.ml_testing_utils import (
     add_token_count_to_events,
@@ -89,6 +90,7 @@ def test_text_generation_invalid_request_error_no_model(gemini_dev_client, set_t
         "test_text_generation_error:test_text_generation_invalid_request_error_no_model.<locals>._test",
         scoped_metrics=[("Llm/completion/Gemini/generate_content", 1)],
         rollup_metrics=[("Llm/completion/Gemini/generate_content", 1)],
+        custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
         background_task=True,
     )
     @validate_custom_events(events_with_context_attrs(expected_events_on_no_model_error))
@@ -123,6 +125,7 @@ def test_text_generation_invalid_request_error_no_model_no_content(gemini_dev_cl
         "test_text_generation_error:test_text_generation_invalid_request_error_no_model_no_content.<locals>._test",
         scoped_metrics=[("Llm/completion/Gemini/generate_content", 1)],
         rollup_metrics=[("Llm/completion/Gemini/generate_content", 1)],
+        custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
         background_task=True,
     )
     @validate_custom_events(events_sans_content(expected_events_on_no_model_error))
@@ -197,6 +200,7 @@ expected_events_on_invalid_model_error = [
     "test_text_generation_error:test_text_generation_invalid_request_error_invalid_model_with_token_count",
     scoped_metrics=[("Llm/completion/Gemini/generate_content", 1)],
     rollup_metrics=[("Llm/completion/Gemini/generate_content", 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
     background_task=True,
 )
 @validate_custom_events(add_token_count_to_events(expected_events_on_invalid_model_error))
@@ -229,6 +233,7 @@ def test_text_generation_invalid_request_error_invalid_model_with_token_count(ge
     "test_text_generation_error:test_text_generation_invalid_request_error_invalid_model_chat",
     scoped_metrics=[("Llm/completion/Gemini/generate_content", 1)],
     rollup_metrics=[("Llm/completion/Gemini/generate_content", 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
     background_task=True,
 )
 @validate_custom_events(add_token_count_to_events(expected_events_on_invalid_model_error))
@@ -294,6 +299,7 @@ expected_events_on_wrong_api_key_error = [
     "test_text_generation_error:test_text_generation_wrong_api_key_error",
     scoped_metrics=[("Llm/completion/Gemini/generate_content", 1)],
     rollup_metrics=[("Llm/completion/Gemini/generate_content", 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
     background_task=True,
 )
 @validate_custom_events(expected_events_on_wrong_api_key_error)
@@ -325,6 +331,7 @@ def test_text_generation_async_invalid_request_error_no_model(gemini_dev_client,
         "test_text_generation_error:test_text_generation_async_invalid_request_error_no_model.<locals>._test",
         scoped_metrics=[("Llm/completion/Gemini/generate_content", 1)],
         rollup_metrics=[("Llm/completion/Gemini/generate_content", 1)],
+        custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
         background_task=True,
     )
     @validate_custom_events(events_with_context_attrs(expected_events_on_no_model_error))
@@ -361,6 +368,7 @@ def test_text_generation_async_invalid_request_error_no_model_no_content(gemini_
         "test_text_generation_error:test_text_generation_async_invalid_request_error_no_model_no_content.<locals>._test",
         scoped_metrics=[("Llm/completion/Gemini/generate_content", 1)],
         rollup_metrics=[("Llm/completion/Gemini/generate_content", 1)],
+        custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
         background_task=True,
     )
     @validate_custom_events(events_sans_content(expected_events_on_no_model_error))
@@ -397,6 +405,7 @@ def test_text_generation_async_invalid_request_error_no_model_no_content(gemini_
     "test_text_generation_error:test_text_generation_async_invalid_request_error_invalid_model_with_token_count",
     scoped_metrics=[("Llm/completion/Gemini/generate_content", 1)],
     rollup_metrics=[("Llm/completion/Gemini/generate_content", 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
     background_task=True,
 )
 @validate_custom_events(add_token_count_to_events(expected_events_on_invalid_model_error))
@@ -433,6 +442,7 @@ def test_text_generation_async_invalid_request_error_invalid_model_with_token_co
     "test_text_generation_error:test_text_generation_async_invalid_request_error_invalid_model_chat",
     scoped_metrics=[("Llm/completion/Gemini/generate_content", 1)],
     rollup_metrics=[("Llm/completion/Gemini/generate_content", 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
     background_task=True,
 )
 @validate_custom_events(add_token_count_to_events(expected_events_on_invalid_model_error))
@@ -463,6 +473,7 @@ def test_text_generation_async_invalid_request_error_invalid_model_chat(gemini_d
     "test_text_generation_error:test_text_generation_async_wrong_api_key_error",
     scoped_metrics=[("Llm/completion/Gemini/generate_content", 1)],
     rollup_metrics=[("Llm/completion/Gemini/generate_content", 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
     background_task=True,
 )
 @validate_custom_events(expected_events_on_wrong_api_key_error)

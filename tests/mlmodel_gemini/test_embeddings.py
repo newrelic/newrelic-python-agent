@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import google.genai
+from conftest import GEMINI_VERSION_METRIC
 from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     add_token_count_to_events,
@@ -55,7 +55,7 @@ embedding_recorded_events = [
     name="test_embeddings:test_gemini_embedding_sync",
     scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
     rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -77,7 +77,7 @@ def test_gemini_embedding_sync(gemini_dev_client, set_trace_info):
     name="test_embeddings:test_gemini_embedding_sync_no_content",
     scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
     rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -99,7 +99,7 @@ def test_gemini_embedding_sync_no_content(gemini_dev_client, set_trace_info):
     name="test_embeddings:test_gemini_embedding_sync_with_token_count",
     scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
     rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -135,7 +135,7 @@ def test_gemini_embedding_sync_disabled_ai_monitoring_events(gemini_dev_client, 
     name="test_embeddings:test_gemini_embedding_async",
     scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
     rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -159,7 +159,7 @@ def test_gemini_embedding_async(gemini_dev_client, loop, set_trace_info):
     name="test_embeddings:test_gemini_embedding_async_no_content",
     scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
     rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -183,7 +183,7 @@ def test_gemini_embedding_async_no_content(gemini_dev_client, loop, set_trace_in
     name="test_embeddings:test_gemini_embedding_async_with_token_count",
     scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
     rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])

@@ -16,6 +16,7 @@ import sys
 
 import google.genai
 import pytest
+from conftest import GEMINI_VERSION_METRIC
 from testing_support.fixtures import dt_enabled, override_llm_token_callback_settings, reset_core_stats_engine
 from testing_support.ml_testing_utils import (
     add_token_count_to_events,
@@ -65,7 +66,7 @@ def test_embeddings_invalid_request_error_no_model(gemini_dev_client, set_trace_
         name="test_embeddings_error:test_embeddings_invalid_request_error_no_model.<locals>._test",
         scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
         rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-        custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
+        custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
         background_task=True,
     )
     @validate_custom_events(embedding_recorded_events)
@@ -97,7 +98,7 @@ def test_embeddings_invalid_request_error_no_model_no_content(gemini_dev_client,
         name="test_embeddings_error:test_embeddings_invalid_request_error_no_model_no_content.<locals>._test",
         scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
         rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-        custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
+        custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
         background_task=True,
     )
     @validate_custom_events(events_sans_content(embedding_recorded_events))
@@ -147,7 +148,7 @@ invalid_model_events = [
     name="test_embeddings_error:test_embeddings_invalid_request_error_invalid_model",
     scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
     rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
     background_task=True,
 )
 @validate_custom_events(invalid_model_events)
@@ -175,7 +176,7 @@ def test_embeddings_invalid_request_error_invalid_model(gemini_dev_client, set_t
     name="test_embeddings_error:test_embeddings_invalid_request_error_invalid_model_with_token_count",
     scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
     rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
     background_task=True,
 )
 @validate_custom_events(add_token_count_to_events(invalid_model_events))
@@ -217,7 +218,7 @@ embedding_invalid_key_error_events = [
     name="test_embeddings_error:test_embeddings_wrong_api_key_error",
     scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
     rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
     background_task=True,
 )
 @validate_custom_events(embedding_invalid_key_error_events)
@@ -244,7 +245,7 @@ def test_embeddings_async_invalid_request_error_no_model(gemini_dev_client, loop
         name="test_embeddings_error:test_embeddings_async_invalid_request_error_no_model.<locals>._test",
         scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
         rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-        custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
+        custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
         background_task=True,
     )
     @validate_custom_events(embedding_recorded_events)
@@ -278,7 +279,7 @@ def test_embeddings_async_invalid_request_error_no_model_no_content(gemini_dev_c
         name="test_embeddings_error:test_embeddings_async_invalid_request_error_no_model_no_content.<locals>._test",
         scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
         rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-        custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
+        custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
         background_task=True,
     )
     @validate_custom_events(events_sans_content(embedding_recorded_events))
@@ -312,7 +313,7 @@ def test_embeddings_async_invalid_request_error_no_model_no_content(gemini_dev_c
     name="test_embeddings_error:test_embeddings_async_invalid_request_error_invalid_model",
     scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
     rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
     background_task=True,
 )
 @validate_custom_events(invalid_model_events)
@@ -342,7 +343,7 @@ def test_embeddings_async_invalid_request_error_invalid_model(gemini_dev_client,
     name="test_embeddings_error:test_embeddings_async_invalid_request_error_invalid_model_with_token_count",
     scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
     rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
     background_task=True,
 )
 @validate_custom_events(add_token_count_to_events(invalid_model_events))
@@ -368,7 +369,7 @@ def test_embeddings_async_invalid_request_error_invalid_model_with_token_count(g
     name="test_embeddings_error:test_embeddings_async_wrong_api_key_error",
     scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
     rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
     background_task=True,
 )
 @validate_custom_events(embedding_invalid_key_error_events)

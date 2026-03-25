@@ -963,6 +963,8 @@ class BedrockRecordEventMixin:
 
             try:
                 bedrock_attrs["duration"] = self._nr_ft.duration * 1000
+                if hasattr(self, "_nr_time_to_first_token"):
+                    bedrock_attrs["time_to_first_token"] = self._nr_time_to_first_token
                 handle_chat_completion_event(transaction, bedrock_attrs, request_timestamp)
             except Exception:
                 _logger.warning(RESPONSE_PROCESSING_FAILURE_LOG_MESSAGE, exc_info=True)
@@ -1012,8 +1014,23 @@ class BedrockRecordEventMixin:
 
     def invoke_record_stream_chunk(self, event, transaction, request_timestamp=None):
         bedrock_attrs = getattr(self, "_nr_bedrock_attrs", {})
+
+        # Store time to first token now, but only attach it if we successfully parse the chunk.
+        # Record the time here since parsing may be a bit slow, and can inflate the metric.
+        time_to_first_token = (
+            int(1000.0 * time.time()) - self._nr_request_timestamp
+            if not hasattr(self, "_nr_time_to_first_token")
+            else None
+        )
+
+        # Load and parse the chunk to extract model specific data
         chunk = json.loads(event["chunk"]["bytes"].decode("utf-8"))
         self._nr_model_extractor(chunk, bedrock_attrs)
+
+        # Attach time to first token after parsing to ensure there are no errors
+        if time_to_first_token is not None:
+            self._nr_time_to_first_token = time_to_first_token
+
         # In Langchain, the bedrock iterator exits early if type is "content_block_stop".
         # So we need to call the record events here since stop iteration will not be raised.
         _type = chunk.get("type")
@@ -1027,9 +1044,13 @@ class BedrockRecordEventMixin:
                 return
 
             content = ((event.get("contentBlockDelta") or {}).get("delta") or {}).get("text", "")
+
             if "output_message_list" not in bedrock_attrs:
                 bedrock_attrs["output_message_list"] = [{"role": "assistant", "content": ""}]
             bedrock_attrs["output_message_list"][0]["content"] += content
+
+            if content and not hasattr(self, "_nr_time_to_first_token"):
+                self._nr_time_to_first_token = int(1000.0 * time.time()) - self._nr_request_timestamp
 
         if "messageStop" in event:
             bedrock_attrs["response.choices.finish_reason"] = (event.get("messageStop") or {}).get("stopReason", "")
@@ -1198,6 +1219,7 @@ def handle_chat_completion_event(transaction, bedrock_attrs, request_timestamp=N
         "response.choices.finish_reason": bedrock_attrs.get("response.choices.finish_reason", None),
         "error": bedrock_attrs.get("error", None),
         "timestamp": request_timestamp or None,
+        "time_to_first_token": bedrock_attrs.get("time_to_first_token", None),
     }
     chat_completion_summary_dict.update(llm_metadata_dict)
     chat_completion_summary_dict = {k: v for k, v in chat_completion_summary_dict.items() if v is not None}

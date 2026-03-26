@@ -230,3 +230,16 @@ jobs:
           gh release create "${RELEASE_TAG}" --title="${RELEASE_TITLE}" --repo=newrelic/newrelic-agent-init-container --notes="${RELEASE_NOTES}"
         env:
           GH_RELEASE_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
+
+  update-agent-metadata:
+    needs: [publish]
+    permissions:
+      contents: read
+    uses: ./.github/workflows/agent-metadata.yml
+    with:
+      version: ${{ github.ref_name }}
+      agent-type: "NRPythonAgent"
+    secrets:
+      FC_SYS_ID_CLIENT_ID: ${{ secrets.FC_SYS_ID_CLIENT_ID }}
+      FC_SYS_ID_PR_KEY: ${{ secrets.FC_SYS_ID_PR_KEY }}
+      APM_CONTROL_NR_LICENSE_KEY_STAGING: ${{ secrets.APM_CONTROL_NR_LICENSE_KEY_STAGING }}

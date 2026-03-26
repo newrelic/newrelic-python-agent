@@ -75,20 +75,25 @@ expected_events_on_no_model_error = [
 ]
 
 
-def test_text_generation_invalid_request_error_no_model(exercise_text_model, set_trace_info, is_chat, is_async):
+@pytest.fixture(scope="session")
+def model_error_msg(is_async, is_chat, is_streaming):
     if is_chat:
         pytest.skip("Only valid for direct model calls")
 
+    class_name = "AsyncModels" if is_async else "Models"
+    method = "generate_content" if not is_streaming else "generate_content_stream"
     if sys.version_info < (3, 10):
-        error_message = "generate_content() missing 1 required keyword-only argument: 'model'"
+        return f"{method}() missing 1 required keyword-only argument: 'model'"
     else:
-        error_message = f"{'AsyncModels' if is_async else 'Models'}.generate_content() missing 1 required keyword-only argument: 'model'"
+        return f"{class_name}.{method}() missing 1 required keyword-only argument: 'model'"
 
+
+def test_text_generation_invalid_request_error_no_model(exercise_text_model, set_trace_info, model_error_msg):
     # No model provided
     @dt_enabled
     @reset_core_stats_engine()
     @validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
-    @validate_span_events(exact_agents={"error.message": error_message})
+    @validate_span_events(exact_agents={"error.message": model_error_msg})
     @validate_transaction_metrics(
         "test_text_generation_error:test_text_generation_invalid_request_error_no_model.<locals>._test",
         scoped_metrics=[("Llm/completion/Gemini/generate_content", 1)],
@@ -114,21 +119,13 @@ def test_text_generation_invalid_request_error_no_model(exercise_text_model, set
 
 
 def test_text_generation_invalid_request_error_no_model_no_content(
-    exercise_text_model, set_trace_info, is_chat, is_async
+    exercise_text_model, set_trace_info, model_error_msg
 ):
-    if is_chat:
-        pytest.skip("Only valid for direct model calls")
-
-    if sys.version_info < (3, 10):
-        error_message = "generate_content() missing 1 required keyword-only argument: 'model'"
-    else:
-        error_message = f"{'AsyncModels' if is_async else 'Models'}.generate_content() missing 1 required keyword-only argument: 'model'"
-
     @dt_enabled
     @disabled_ai_monitoring_record_content_settings
     @reset_core_stats_engine()
     @validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
-    @validate_span_events(exact_agents={"error.message": error_message})
+    @validate_span_events(exact_agents={"error.message": model_error_msg})
     @validate_transaction_metrics(
         "test_text_generation_error:test_text_generation_invalid_request_error_no_model_no_content.<locals>._test",
         scoped_metrics=[("Llm/completion/Gemini/generate_content", 1)],

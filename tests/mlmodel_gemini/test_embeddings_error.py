@@ -51,17 +51,21 @@ embedding_recorded_events = [
 ]
 
 
-def test_embeddings_invalid_request_error_no_model(exercise_embedding_model, set_trace_info):
+@pytest.fixture(scope="session")
+def model_error_msg(is_async):
+    class_name = "AsyncModels" if is_async else "Models"
     if sys.version_info < (3, 10):
-        error_message = "embed_content() missing 1 required keyword-only argument: 'model'"
+        return "embed_content() missing 1 required keyword-only argument: 'model'"
     else:
-        error_message = "Models.embed_content() missing 1 required keyword-only argument: 'model'"
+        return f"{class_name}.embed_content() missing 1 required keyword-only argument: 'model'"
 
+
+def test_embeddings_invalid_request_error_no_model(exercise_embedding_model, set_trace_info, model_error_msg):
     # No model provided
     @dt_enabled
     @reset_core_stats_engine()
     @validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
-    @validate_span_events(exact_agents={"error.message": error_message})
+    @validate_span_events(exact_agents={"error.message": model_error_msg})
     @validate_transaction_metrics(
         name="test_embeddings_error:test_embeddings_invalid_request_error_no_model.<locals>._test",
         scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
@@ -83,17 +87,14 @@ def test_embeddings_invalid_request_error_no_model(exercise_embedding_model, set
     _test()
 
 
-def test_embeddings_invalid_request_error_no_model_no_content(exercise_embedding_model, set_trace_info):
-    if sys.version_info < (3, 10):
-        error_message = "embed_content() missing 1 required keyword-only argument: 'model'"
-    else:
-        error_message = "Models.embed_content() missing 1 required keyword-only argument: 'model'"
-
+def test_embeddings_invalid_request_error_no_model_no_content(
+    exercise_embedding_model, set_trace_info, model_error_msg
+):
     @dt_enabled
     @disabled_ai_monitoring_record_content_settings
     @reset_core_stats_engine()
     @validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
-    @validate_span_events(exact_agents={"error.message": error_message})
+    @validate_span_events(exact_agents={"error.message": model_error_msg})
     @validate_transaction_metrics(
         name="test_embeddings_error:test_embeddings_invalid_request_error_no_model_no_content.<locals>._test",
         scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
@@ -229,5 +230,3 @@ def test_embeddings_wrong_api_key_error(exercise_embedding_model, gemini_dev_cli
         set_trace_info()
         gemini_dev_client._api_client.api_key = "DEADBEEF"
         exercise_embedding_model(contents="Invalid API key.", model="text-embedding-004")
-
-

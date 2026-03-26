@@ -40,7 +40,7 @@ embedding_recorded_events = [
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "duration": None,  # Response time varies each test run
-            "request.model": "text-embedding-004",
+            "request.model": "gemini-embedding-001",
             "vendor": "gemini",
             "ingest_source": "Python",
         },
@@ -66,7 +66,7 @@ def test_gemini_embedding(exercise_embedding_model, set_trace_info):
     add_custom_attribute("llm.foo", "bar")
     add_custom_attribute("non_llm_attr", "python-agent")
 
-    exercise_embedding_model(contents="This is an embedding test.", model="text-embedding-004")
+    exercise_embedding_model(contents="This is an embedding test.", model="gemini-embedding-001")
 
 
 @reset_core_stats_engine()
@@ -88,7 +88,7 @@ def test_gemini_embedding_no_content(exercise_embedding_model, set_trace_info):
     add_custom_attribute("llm.foo", "bar")
     add_custom_attribute("non_llm_attr", "python-agent")
 
-    exercise_embedding_model(contents="This is an embedding test.", model="text-embedding-004")
+    exercise_embedding_model(contents="This is an embedding test.", model="gemini-embedding-001")
 
 
 @reset_core_stats_engine()
@@ -110,13 +110,13 @@ def test_gemini_embedding_with_token_count(exercise_embedding_model, set_trace_i
     add_custom_attribute("llm.foo", "bar")
     add_custom_attribute("non_llm_attr", "python-agent")
 
-    exercise_embedding_model(contents="This is an embedding test.", model="text-embedding-004")
+    exercise_embedding_model(contents="This is an embedding test.", model="gemini-embedding-001")
 
 
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 def test_gemini_embedding_outside_txn(exercise_embedding_model):
-    exercise_embedding_model(contents="This is an embedding test.", model="text-embedding-004")
+    exercise_embedding_model(contents="This is an embedding test.", model="gemini-embedding-001")
 
 
 @disabled_ai_monitoring_settings
@@ -125,4 +125,4 @@ def test_gemini_embedding_outside_txn(exercise_embedding_model):
 @background_task()
 def test_gemini_embedding_disabled_ai_monitoring_events(exercise_embedding_model, set_trace_info):
     set_trace_info()
-    exercise_embedding_model(contents="This is an embedding test.", model="text-embedding-004")
+    exercise_embedding_model(contents="This is an embedding test.", model="gemini-embedding-001")

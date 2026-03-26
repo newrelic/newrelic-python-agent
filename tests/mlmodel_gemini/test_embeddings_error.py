@@ -198,7 +198,7 @@ embedding_invalid_key_error_events = [
             "trace_id": "trace-id",
             "input": "Invalid API key.",
             "duration": None,  # Response time varies each test run
-            "request.model": "text-embedding-004",  # No model in this test case
+            "request.model": "gemini-embedding-001",  # No model in this test case
             "vendor": "gemini",
             "ingest_source": "Python",
             "error": True,
@@ -229,4 +229,4 @@ def test_embeddings_wrong_api_key_error(exercise_embedding_model, gemini_dev_cli
     with pytest.raises(google.genai.errors.ClientError):
         set_trace_info()
         gemini_dev_client._api_client.api_key = "DEADBEEF"
-        exercise_embedding_model(contents="Invalid API key.", model="text-embedding-004")
+        exercise_embedding_model(contents="Invalid API key.", model="gemini-embedding-001")

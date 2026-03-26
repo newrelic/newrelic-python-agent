@@ -238,7 +238,7 @@ jobs:
     uses: ./.github/workflows/agent-metadata.yml
     with:
       version: ${{ github.ref_name }}
-      agent-type: 'NRPythonAgent'
+      agent-type: "NRPythonAgent"
     secrets:
       FC_SYS_ID_CLIENT_ID: ${{ secrets.FC_SYS_ID_CLIENT_ID }}
       FC_SYS_ID_PR_KEY: ${{ secrets.FC_SYS_ID_PR_KEY }}

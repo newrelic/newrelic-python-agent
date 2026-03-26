@@ -80,7 +80,7 @@ text_generation_recorded_events = [
             "llm.foo": "bar",
             "span_id": None,
             "trace_id": "trace-id",
-            "content": 'There are **6** letters in the word "Python".\n',
+            "content": "There are 6 letters in the word Python.\n",
             "role": "model",
             "completion_id": None,
             "sequence": 1,
@@ -91,6 +91,29 @@ text_generation_recorded_events = [
         },
     ),
 ]
+
+
+@reset_core_stats_engine()
+@validate_custom_events(events_with_context_attrs(text_generation_recorded_events))
+@validate_custom_event_count(count=3)
+@validate_transaction_metrics(
+    name="test_text_generation:test_gemini_text_generation",
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
+    background_task=True,
+)
+@validate_attributes("agent", ["llm"])
+@background_task()
+def test_gemini_text_generation(exercise_text_model, set_trace_info):
+    set_trace_info()
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
+    add_custom_attribute("non_llm_attr", "python-agent")
+    with WithLlmCustomAttributes({"context": "attr"}):
+        exercise_text_model(
+            model="gemini-2.0-flash",
+            contents="How many letters are in the word Python?",
+            config=google.genai.types.GenerateContentConfig(max_output_tokens=100, temperature=0.7),
+        )
 
 
 @reset_core_stats_engine()
@@ -115,29 +138,6 @@ def test_gemini_multi_text_generation(exercise_text_model, set_trace_info):
         # contents="Who invented the Python programming language?",
         config=google.genai.types.GenerateContentConfig(max_output_tokens=100, temperature=0.7),
     )
-
-
-@reset_core_stats_engine()
-@validate_custom_events(events_with_context_attrs(text_generation_recorded_events))
-@validate_custom_event_count(count=3)
-@validate_transaction_metrics(
-    name="test_text_generation:test_gemini_text_generation",
-    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
-    background_task=True,
-)
-@validate_attributes("agent", ["llm"])
-@background_task()
-def test_gemini_text_generation(exercise_text_model, set_trace_info):
-    set_trace_info()
-    add_custom_attribute("llm.conversation_id", "my-awesome-id")
-    add_custom_attribute("llm.foo", "bar")
-    add_custom_attribute("non_llm_attr", "python-agent")
-    with WithLlmCustomAttributes({"context": "attr"}):
-        exercise_text_model(
-            model="gemini-2.0-flash",
-            contents="How many letters are in the word Python?",
-            config=google.genai.types.GenerateContentConfig(max_output_tokens=100, temperature=0.7),
-        )
 
 
 @reset_core_stats_engine()

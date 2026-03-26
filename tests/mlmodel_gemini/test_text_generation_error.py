@@ -230,7 +230,7 @@ expected_events_on_wrong_api_key_error = [
             "span_id": None,
             "trace_id": "trace-id",
             "duration": None,  # Response time varies each test run
-            "request.model": "gemini-flash-2.0",
+            "request.model": "gemini-2.0-flash",
             "request.temperature": 0.7,
             "request.max_tokens": 100,
             "response.number_of_messages": 1,
@@ -248,7 +248,7 @@ expected_events_on_wrong_api_key_error = [
             "trace_id": "trace-id",
             "content": "Invalid API key.",
             "role": "user",
-            "response.model": "gemini-flash-2.0",
+            "response.model": "gemini-2.0-flash",
             "completion_id": None,
             "sequence": 0,
             "vendor": "gemini",
@@ -281,7 +281,7 @@ def test_text_generation_wrong_api_key_error(gemini_dev_client, exercise_text_mo
         set_trace_info()
         gemini_dev_client._api_client.api_key = "DEADBEEF"
         exercise_text_model(
-            model="gemini-flash-2.0",
+            model="gemini-2.0-flash",
             contents=["Invalid API key."],
             config=google.genai.types.GenerateContentConfig(max_output_tokens=100, temperature=0.7),
         )

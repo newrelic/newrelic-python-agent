@@ -233,6 +233,7 @@ jobs:
 
   update-agent-metadata:
     needs: [publish]
+    continue-on-error: true
     permissions:
       contents: read
     uses: ./.github/workflows/agent-metadata.yml

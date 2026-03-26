@@ -73,7 +73,7 @@ _logger.addHandler(_NullHandler())
 
 
 def parse_comma_separated_into_set(string):
-    if string is None:
+    if not string:
         return set()
     # Strip the string in case user has separated by string and space
     return {item.strip() for item in string.split(",")}

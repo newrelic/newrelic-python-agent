@@ -762,8 +762,6 @@ def _environ_as_set(name, default=""):
 
 def _environ_as_comma_separated_set(name, default=""):
     value = os.environ.get(name, default)
-    if value in [None, ""]:
-        return set()
     return parse_comma_separated_into_set(value)
 
 

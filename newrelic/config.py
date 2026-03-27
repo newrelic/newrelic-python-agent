@@ -4469,8 +4469,6 @@ def _tracer_include_and_exclude_filter():
     internal included defaults, to determine which tracers
     should be used.
     """
-    if not _settings.opentelemetry.enabled or not _is_installed("opentelemetry-api"):
-        return
 
     user_exclude = _settings.opentelemetry.traces.exclude or newrelic.core.config._environ_as_comma_separated_set(
         "NEW_RELIC_OPENTELEMETRY_TRACES_EXCLUDE"

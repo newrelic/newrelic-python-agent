@@ -88,22 +88,24 @@ def model_error_msg(is_async, is_chat, is_streaming):
         return f"{class_name}.{method}() missing 1 required keyword-only argument: 'model'"
 
 
-def test_text_generation_invalid_request_error_no_model(exercise_text_model, set_trace_info, model_error_msg):
+def test_text_generation_invalid_request_error_no_model(
+    exercise_text_model, text_generation_metrics, set_trace_info, model_error_msg
+):
     # No model provided
     @dt_enabled
     @reset_core_stats_engine()
     @validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
     @validate_span_events(exact_agents={"error.message": model_error_msg})
     @validate_transaction_metrics(
-        "test_text_generation_error:test_text_generation_invalid_request_error_no_model.<locals>._test",
-        scoped_metrics=[("Llm/completion/Gemini/generate_content", 1)],
-        rollup_metrics=[("Llm/completion/Gemini/generate_content", 1)],
+        name="test_text_generation_invalid_request_error_no_model",
+        scoped_metrics=text_generation_metrics,
+        rollup_metrics=text_generation_metrics,
         custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
         background_task=True,
     )
     @validate_custom_events(events_with_context_attrs(expected_events_on_no_model_error))
     @validate_custom_event_count(count=2)
-    @background_task()
+    @background_task(name="test_text_generation_invalid_request_error_no_model")
     def _test():
         with pytest.raises(TypeError):
             set_trace_info()
@@ -119,7 +121,7 @@ def test_text_generation_invalid_request_error_no_model(exercise_text_model, set
 
 
 def test_text_generation_invalid_request_error_no_model_no_content(
-    exercise_text_model, set_trace_info, model_error_msg
+    exercise_text_model, text_generation_metrics, set_trace_info, model_error_msg
 ):
     @dt_enabled
     @disabled_ai_monitoring_record_content_settings
@@ -127,15 +129,15 @@ def test_text_generation_invalid_request_error_no_model_no_content(
     @validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
     @validate_span_events(exact_agents={"error.message": model_error_msg})
     @validate_transaction_metrics(
-        "test_text_generation_error:test_text_generation_invalid_request_error_no_model_no_content.<locals>._test",
-        scoped_metrics=[("Llm/completion/Gemini/generate_content", 1)],
-        rollup_metrics=[("Llm/completion/Gemini/generate_content", 1)],
+        name="test_text_generation_invalid_request_error_no_model_no_content",
+        scoped_metrics=text_generation_metrics,
+        rollup_metrics=text_generation_metrics,
         custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
         background_task=True,
     )
     @validate_custom_events(events_sans_content(expected_events_on_no_model_error))
     @validate_custom_event_count(count=2)
-    @background_task()
+    @background_task(name="test_text_generation_invalid_request_error_no_model_no_content")
     def _test():
         with pytest.raises(TypeError):
             set_trace_info()
@@ -191,34 +193,39 @@ expected_events_on_invalid_model_error = [
 @dt_enabled
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
-@validate_error_trace_attributes(
-    callable_name(google.genai.errors.ClientError),
-    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.code": "NOT_FOUND", "http.statusCode": 404}},
-)
-@validate_span_events(
-    exact_agents={
-        "error.message": "models/does-not-exist is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods."
-    }
-)
-@validate_transaction_metrics(
-    "test_text_generation_error:test_text_generation_invalid_request_error_invalid_model_with_token_count",
-    scoped_metrics=[("Llm/completion/Gemini/generate_content", 1)],
-    rollup_metrics=[("Llm/completion/Gemini/generate_content", 1)],
-    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
-    background_task=True,
-)
-@validate_custom_events(add_token_count_to_events(expected_events_on_invalid_model_error))
-@validate_custom_event_count(count=2)
-@background_task()
-def test_text_generation_invalid_request_error_invalid_model_with_token_count(exercise_text_model, set_trace_info):
-    with pytest.raises(google.genai.errors.ClientError):
-        set_trace_info()
-        add_custom_attribute("llm.conversation_id", "my-awesome-id")
-        exercise_text_model(
-            model="does-not-exist",
-            contents=["Model does not exist."],
-            config=google.genai.types.GenerateContentConfig(max_output_tokens=100, temperature=0.7),
-        )
+def test_text_generation_invalid_request_error_invalid_model_with_token_count(
+    exercise_text_model, text_generation_metrics, set_trace_info
+):
+    @validate_error_trace_attributes(
+        callable_name(google.genai.errors.ClientError),
+        exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.code": "NOT_FOUND", "http.statusCode": 404}},
+    )
+    @validate_span_events(
+        exact_agents={
+            "error.message": "models/does-not-exist is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods."
+        }
+    )
+    @validate_transaction_metrics(
+        name="test_text_generation_invalid_request_error_invalid_model_with_token_count",
+        scoped_metrics=text_generation_metrics,
+        rollup_metrics=text_generation_metrics,
+        custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
+        background_task=True,
+    )
+    @validate_custom_events(add_token_count_to_events(expected_events_on_invalid_model_error))
+    @validate_custom_event_count(count=2)
+    @background_task(name="test_text_generation_invalid_request_error_invalid_model_with_token_count")
+    def _test():
+        with pytest.raises(google.genai.errors.ClientError):
+            set_trace_info()
+            add_custom_attribute("llm.conversation_id", "my-awesome-id")
+            exercise_text_model(
+                model="does-not-exist",
+                contents=["Model does not exist."],
+                config=google.genai.types.GenerateContentConfig(max_output_tokens=100, temperature=0.7),
+            )
+
+    _test()
 
 
 expected_events_on_wrong_api_key_error = [
@@ -261,27 +268,32 @@ expected_events_on_wrong_api_key_error = [
 # Wrong api_key provided
 @dt_enabled
 @reset_core_stats_engine()
-@validate_error_trace_attributes(
-    callable_name(google.genai.errors.ClientError),
-    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.code": "INVALID_ARGUMENT", "http.statusCode": 400}},
-)
-@validate_span_events(exact_agents={"error.message": "API key not valid. Please pass a valid API key."})
-@validate_transaction_metrics(
-    "test_text_generation_error:test_text_generation_wrong_api_key_error",
-    scoped_metrics=[("Llm/completion/Gemini/generate_content", 1)],
-    rollup_metrics=[("Llm/completion/Gemini/generate_content", 1)],
-    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
-    background_task=True,
-)
-@validate_custom_events(expected_events_on_wrong_api_key_error)
-@validate_custom_event_count(count=2)
-@background_task()
-def test_text_generation_wrong_api_key_error(gemini_dev_client, exercise_text_model, set_trace_info):
-    with pytest.raises(google.genai.errors.ClientError):
-        set_trace_info()
-        gemini_dev_client._api_client.api_key = "DEADBEEF"
-        exercise_text_model(
-            model="gemini-2.0-flash",
-            contents=["Invalid API key."],
-            config=google.genai.types.GenerateContentConfig(max_output_tokens=100, temperature=0.7),
-        )
+def test_text_generation_wrong_api_key_error(
+    gemini_dev_client, exercise_text_model, text_generation_metrics, set_trace_info
+):
+    @validate_error_trace_attributes(
+        callable_name(google.genai.errors.ClientError),
+        exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.code": "INVALID_ARGUMENT", "http.statusCode": 400}},
+    )
+    @validate_span_events(exact_agents={"error.message": "API key not valid. Please pass a valid API key."})
+    @validate_transaction_metrics(
+        name="test_text_generation_wrong_api_key_error",
+        scoped_metrics=text_generation_metrics,
+        rollup_metrics=text_generation_metrics,
+        custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
+        background_task=True,
+    )
+    @validate_custom_events(expected_events_on_wrong_api_key_error)
+    @validate_custom_event_count(count=2)
+    @background_task(name="test_text_generation_wrong_api_key_error")
+    def _test():
+        with pytest.raises(google.genai.errors.ClientError):
+            set_trace_info()
+            gemini_dev_client._api_client.api_key = "DEADBEEF"
+            exercise_text_model(
+                model="gemini-2.0-flash",
+                contents=["Invalid API key."],
+                config=google.genai.types.GenerateContentConfig(max_output_tokens=100, temperature=0.7),
+            )
+
+    _test()

@@ -176,7 +176,7 @@ def exercise_text_model(loop, gemini_dev_client, is_async, is_chat, is_streaming
                 else:
 
                     async def _exercise_agen():
-                        return [event async for event in chat.send_message_stream(*args, **kwargs)]
+                        return [event async for event in await chat.send_message_stream(*args, **kwargs)]
 
                     return loop.run_until_complete(_exercise_agen())
         else:
@@ -191,7 +191,7 @@ def exercise_text_model(loop, gemini_dev_client, is_async, is_chat, is_streaming
                 else:
 
                     async def _exercise_agen():
-                        return [event async for event in client.models.generate_content_stream(*args, **kwargs)]
+                        return [event async for event in await client.models.generate_content_stream(*args, **kwargs)]
 
                     return loop.run_until_complete(_exercise_agen())
 
@@ -210,3 +210,11 @@ def exercise_embedding_model(loop, gemini_dev_client, is_async):
             return loop.run_until_complete(client.models.embed_content(*args, **kwargs))
 
     return _exercise_embedding_model
+
+
+@pytest.fixture(scope="session")
+def text_generation_metrics(is_streaming):
+    if is_streaming:
+        return [("Llm/completion/Gemini/generate_content_stream", 1)]
+    else:
+        return [("Llm/completion/Gemini/generate_content", 1)]

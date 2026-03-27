@@ -103,6 +103,14 @@ def text_generation_events(is_streaming):
     return events
 
 
+@pytest.fixture(scope="session")
+def text_generation_metrics(is_streaming):
+    if is_streaming:
+        return [("Llm/completion/Gemini/generate_content_stream", 1)]
+    else:
+        return [("Llm/completion/Gemini/generate_content", 1)]
+
+
 @reset_core_stats_engine()
 def test_gemini_text_generation(exercise_text_model, text_generation_metrics, set_trace_info, text_generation_events):
     # Expect one summary event, one message event for the input, and message event for the output

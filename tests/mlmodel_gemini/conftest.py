@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 import os
 from pathlib import Path
 
@@ -24,9 +23,6 @@ from testing_support.fixtures import (
     collector_available_fixture,
     override_application_settings,
 )
-
-from newrelic.common.object_wrapper import wrap_function_wrapper
-from newrelic.common.signature import bind_args
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow-downs.
@@ -47,30 +43,6 @@ collector_agent_registration = collector_agent_registration_fixture(
 
 GEMINI_VERSION = google.genai.__version__
 GEMINI_VERSION_METRIC = f"Supportability/Python/ML/Gemini/{GEMINI_VERSION}"
-
-
-GEMINI_AUDIT_LOG_FILE = Path(__file__).parent / "gemini_audit.log"
-GEMINI_AUDIT_LOG_CONTENTS = {}
-# Intercept outgoing requests and log to file for mocking
-RECORDED_HEADERS = {"content-type"}
-
-
-@pytest.fixture
-def replay_id():
-    pytest_name = os.environ.get("PYTEST_CURRENT_TEST").split("::")
-    test_module = Path(pytest_name[0]).with_suffix("").name
-    test_name, test_params = pytest_name[-1].split(" ")[0].split("[")
-
-    # Don't use the actual parameter string in the replay ID to avoid having different replays for certain parameters
-    # like is_async and to avoid issues with sorting. We also can't directly use the fixtures or we will cause the
-    # embedding tests to run despite not having streaming or chat parameters. Instead we will just infer the info
-    # from the test names and reproduce it in a standardized format.
-    is_streaming = "stream" in test_params
-    is_chat = "chat" in test_params
-    is_vertex = "vertex" in test_params
-    test_params_suffix = f"{'streaming' if is_streaming else 'invoke'}-{'chat' if is_chat else 'model'}-{'vertex' if is_vertex else 'standard'}"
-
-    return f"{test_module}/{test_name}/{test_params_suffix}"
 
 
 @pytest.fixture
@@ -118,32 +90,22 @@ def gemini_dev_client(gemini_clients):
     return gemini_dev_client
 
 
-@pytest.fixture(scope="session")
-def wrap_httpx_client_send(extract_shortened_prompt):
-    def _wrap_httpx_client_send(wrapped, instance, args, kwargs):
-        bound_args = bind_args(wrapped, args, kwargs)
-        request = bound_args["request"]
-        if not request:
-            return wrapped(*args, **kwargs)
+@pytest.fixture
+def replay_id():
+    pytest_name = os.environ.get("PYTEST_CURRENT_TEST").split("::")
+    test_module = Path(pytest_name[0]).with_suffix("").name
+    test_name, test_params = pytest_name[-1].split(" ")[0].split("[")
 
-        params = json.loads(request.content.decode("utf-8"))
-        prompt = extract_shortened_prompt(params)
+    # Don't use the actual parameter string in the replay ID to avoid having different replays for certain parameters
+    # like is_async and to avoid issues with sorting. We also can't directly use the fixtures or we will cause the
+    # embedding tests to run despite not having streaming or chat parameters. Instead we will just infer the info
+    # from the test names and reproduce it in a standardized format.
+    is_streaming = "stream" in test_params
+    is_chat = "chat" in test_params
+    is_vertex = "vertex" in test_params
+    test_params_suffix = f"{'streaming' if is_streaming else 'invoke'}-{'chat' if is_chat else 'model'}-{'vertex' if is_vertex else 'standard'}"
 
-        # Send request
-        response = wrapped(*args, **kwargs)
-
-        if response.status_code >= 500 or response.status_code < 200:
-            prompt = "error"
-
-        rheaders = response.headers
-        headers = dict(
-            filter(lambda k: k[0].lower() in RECORDED_HEADERS or k[0].lower().startswith("x-goog"), rheaders.items())
-        )
-        body = json.loads(response.content.decode("utf-8"))
-        GEMINI_AUDIT_LOG_CONTENTS[prompt] = headers, response.status_code, body  # Append response data to log
-        return response
-
-    return _wrap_httpx_client_send
+    return f"{test_module}/{test_name}/{test_params_suffix}"
 
 
 @pytest.fixture(scope="session", params=["standard"])  # "vertex" to be added
@@ -222,11 +184,3 @@ def exercise_embedding_model(loop, gemini_dev_client, is_async):
             return loop.run_until_complete(client.models.embed_content(*args, **kwargs))
 
     return _exercise_embedding_model
-
-
-@pytest.fixture(scope="session")
-def text_generation_metrics(is_streaming):
-    if is_streaming:
-        return [("Llm/completion/Gemini/generate_content_stream", 1)]
-    else:
-        return [("Llm/completion/Gemini/generate_content", 1)]

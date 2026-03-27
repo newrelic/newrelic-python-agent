@@ -76,6 +76,14 @@ expected_events_on_no_model_error = [
 
 
 @pytest.fixture(scope="session")
+def text_generation_metrics(is_streaming):
+    if is_streaming:
+        return [("Llm/completion/Gemini/generate_content_stream", 1)]
+    else:
+        return [("Llm/completion/Gemini/generate_content", 1)]
+
+
+@pytest.fixture(scope="session")
 def model_error_msg(is_async, is_chat, is_streaming):
     if is_chat:
         pytest.skip("Only valid for direct model calls")

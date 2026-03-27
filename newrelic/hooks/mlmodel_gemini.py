@@ -22,7 +22,7 @@ import google
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
-from newrelic.common.llm_utils import LLMStreamProxy
+from newrelic.common.llm_utils import AsyncLLMStreamProxy, LLMStreamProxy
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.core.config import global_settings
@@ -342,6 +342,65 @@ async def wrap_generate_content_async(wrapped, instance, args, kwargs):
     _handle_generation_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val, request_timestamp)
 
     return return_val
+
+
+async def wrap_generate_content_stream_async(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return await wrapped(*args, **kwargs)
+
+    settings = transaction.settings or global_settings()
+    if not settings.ai_monitoring.enabled:
+        return await wrapped(*args, **kwargs)
+
+    # Framework metric also used for entity tagging in the UI
+    transaction.add_ml_model_info("Gemini", GEMINI_VERSION)
+    transaction._add_agent_attribute("llm", True)
+
+    completion_id = str(uuid.uuid4())
+    request_timestamp = int(1000.0 * time.time())
+
+    ft = FunctionTrace(name=wrapped.__name__, group="Llm/completion/Gemini")
+    ft.__enter__()
+    # TODO: Subcomponent? TTFT?
+    linking_metadata = get_trace_linking_metadata()
+    try:
+        return_val = await wrapped(*args, **kwargs)
+    except Exception as exc:
+        # In error cases, exit the function trace in _record_generation_error before recording the LLM error event so
+        # that the duration is calculated correctly.
+        _record_generation_error(transaction, linking_metadata, completion_id, kwargs, ft, exc, request_timestamp)
+        raise
+
+    try:
+        streaming_events = []
+        # Wrap returned async generator in an async generator proxy
+        proxied_return_val = AsyncLLMStreamProxy(
+            return_val,
+            on_stream_chunk=_handle_stream_chunk(streaming_events=streaming_events),
+            on_stop_iteration=_handle_streaming_generation_success(
+                linking_metadata=linking_metadata,
+                completion_id=completion_id,
+                kwargs=kwargs,
+                ft=ft,
+                streaming_events=streaming_events,
+                request_timestamp=request_timestamp,
+            ),
+            on_error=_handle_streaming_generation_error(
+                linking_metadata=linking_metadata,
+                completion_id=completion_id,
+                kwargs=kwargs,
+                ft=ft,
+                request_timestamp=request_timestamp,
+            ),
+        )
+        proxied_return_val._nr_ft = ft
+        proxied_return_val._nr_metadata = linking_metadata
+        return proxied_return_val
+    except Exception:
+        # If proxy creation fails, clean up the function trace and return original value
+        ft.__exit__(*sys.exc_info())
+        return return_val
 
 
 def _record_generation_error(transaction, linking_metadata, completion_id, kwargs, ft, exc, request_timestamp=None):
@@ -714,4 +773,5 @@ def instrument_genai_models(module):
 
     if hasattr(module, "AsyncModels"):
         wrap_function_wrapper(module, "AsyncModels.generate_content", wrap_generate_content_async)
+        wrap_function_wrapper(module, "AsyncModels.generate_content_stream", wrap_generate_content_stream_async)
         wrap_function_wrapper(module, "AsyncModels.embed_content", wrap_embed_content_async)

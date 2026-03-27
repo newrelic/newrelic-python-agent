@@ -172,9 +172,6 @@ def exercise_text_model(loop, gemini_dev_client, is_async, is_chat, is_streaming
     # Pick the sync or async client before we make the chat object for convenience
     client = gemini_dev_client.aio if is_async else gemini_dev_client
 
-    if is_async and is_streaming:
-        pytest.skip("TODO IMPLEMENT THIS")
-
     def _exercise_text_model(*args, **kwargs):
         if is_chat:
             chat = client.chats.create(model=kwargs.pop("model"))

@@ -1,0 +1,474 @@
+{
+  "replay_id": "test_text_generation_error/test_text_generation_wrong_api_key_error/streaming-model-standard",
+  "interactions": [
+    {
+      "request": {
+        "method": "post",
+        "url": "{MLDEV_URL_PREFIX}/models/gemini-2.0-flash:streamGenerateContent?alt=sse",
+        "headers": {
+          "Content-Type": "application/json",
+          "x-goog-api-key": "{REDACTED}",
+          "user-agent": "google-genai-sdk/{VERSION_NUMBER} {LANGUAGE_LABEL}/{VERSION_NUMBER}",
+          "x-goog-api-client": "google-genai-sdk/{VERSION_NUMBER} {LANGUAGE_LABEL}/{VERSION_NUMBER}"
+        },
+        "body_segments": [
+          {
+            "contents": [
+              {
+                "parts": [
+                  {
+                    "text": "Invalid API key."
+                  }
+                ],
+                "role": "user"
+              }
+            ],
+            "generationConfig": {
+              "temperature": 0.7,
+              "maxOutputTokens": 100
+            }
+          }
+        ]
+      },
+      "response": {
+        "status_code": 200,
+        "headers": {
+          "content-type": "text/event-stream",
+          "content-disposition": "attachment",
+          "vary": "Origin, X-Origin, Referer",
+          "transfer-encoding": "chunked",
+          "date": "Fri, 27 Mar 2026 19:05:36 GMT",
+          "server": "scaffolding on HTTPServer2",
+          "x-xss-protection": "0",
+          "x-frame-options": "SAMEORIGIN",
+          "x-content-type-options": "nosniff",
+          "server-timing": "gfet4t7; dur=340",
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+        },
+        "body_segments": [
+          {
+            "candidates": [
+              {
+                "content": {
+                  "parts": [
+                    {
+                      "text": "Okay"
+                    }
+                  ],
+                  "role": "model"
+                }
+              }
+            ],
+            "usageMetadata": {
+              "promptTokenCount": 5,
+              "totalTokenCount": 5,
+              "promptTokensDetails": [
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 5
+                }
+              ]
+            },
+            "modelVersion": "gemini-2.0-flash",
+            "responseId": "_9TGac_zMPTChMIP54262QE"
+          },
+          {
+            "candidates": [
+              {
+                "content": {
+                  "parts": [
+                    {
+                      "text": ", I understand. The message \"Invalid API key\" means that the key I"
+                    }
+                  ],
+                  "role": "model"
+                }
+              }
+            ],
+            "usageMetadata": {
+              "promptTokenCount": 5,
+              "totalTokenCount": 5,
+              "promptTokensDetails": [
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 5
+                }
+              ]
+            },
+            "modelVersion": "gemini-2.0-flash",
+            "responseId": "_9TGac_zMPTChMIP54262QE"
+          },
+          {
+            "candidates": [
+              {
+                "content": {
+                  "parts": [
+                    {
+                      "text": "'m currently using to access an external service (like a database, a language"
+                    }
+                  ],
+                  "role": "model"
+                }
+              }
+            ],
+            "usageMetadata": {
+              "promptTokenCount": 5,
+              "totalTokenCount": 5,
+              "promptTokensDetails": [
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 5
+                }
+              ]
+            },
+            "modelVersion": "gemini-2.0-flash",
+            "responseId": "_9TGac_zMPTChMIP54262QE"
+          },
+          {
+            "candidates": [
+              {
+                "content": {
+                  "parts": [
+                    {
+                      "text": " model, or some other online resource) is not being recognized as valid.\n\nHere's a breakdown of what that means and what steps are typically taken to resolve the"
+                    }
+                  ],
+                  "role": "model"
+                }
+              }
+            ],
+            "usageMetadata": {
+              "promptTokenCount": 5,
+              "totalTokenCount": 5,
+              "promptTokensDetails": [
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 5
+                }
+              ]
+            },
+            "modelVersion": "gemini-2.0-flash",
+            "responseId": "_9TGac_zMPTChMIP54262QE"
+          },
+          {
+            "candidates": [
+              {
+                "content": {
+                  "parts": [
+                    {
+                      "text": " issue:\n\n**What it means:**\n\n*   **Incorrect Key:** The most common reason is a typo when the key was entered, or a copy/"
+                    }
+                  ],
+                  "role": "model"
+                }
+              }
+            ],
+            "usageMetadata": {
+              "promptTokenCount": 5,
+              "totalTokenCount": 5,
+              "promptTokensDetails": [
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 5
+                }
+              ]
+            },
+            "modelVersion": "gemini-2.0-flash",
+            "responseId": "_9TGac_zMPTChMIP54262QE"
+          },
+          {
+            "candidates": [
+              {
+                "content": {
+                  "parts": [
+                    {
+                      "text": "paste"
+                    }
+                  ],
+                  "role": "model"
+                },
+                "finishReason": "MAX_TOKENS"
+              }
+            ],
+            "usageMetadata": {
+              "promptTokenCount": 4,
+              "candidatesTokenCount": 100,
+              "totalTokenCount": 104,
+              "promptTokensDetails": [
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 4
+                }
+              ],
+              "candidatesTokensDetails": [
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 100
+                }
+              ]
+            },
+            "modelVersion": "gemini-2.0-flash",
+            "responseId": "_9TGac_zMPTChMIP54262QE"
+          }
+        ],
+        "byte_segments": [],
+        "sdk_response_segments": [
+          {
+            "sdk_http_response": {
+              "headers": {
+                "content-type": "text/event-stream",
+                "content-disposition": "attachment",
+                "vary": "Origin, X-Origin, Referer",
+                "transfer-encoding": "chunked",
+                "date": "Fri, 27 Mar 2026 19:05:36 GMT",
+                "server": "scaffolding on HTTPServer2",
+                "x-xss-protection": "0",
+                "x-frame-options": "SAMEORIGIN",
+                "x-content-type-options": "nosniff",
+                "server-timing": "gfet4t7; dur=340",
+                "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+              }
+            },
+            "candidates": [
+              {
+                "content": {
+                  "parts": [
+                    {
+                      "text": "Okay"
+                    }
+                  ],
+                  "role": "model"
+                }
+              }
+            ],
+            "model_version": "gemini-2.0-flash",
+            "response_id": "_9TGac_zMPTChMIP54262QE",
+            "usage_metadata": {
+              "prompt_token_count": 5,
+              "prompt_tokens_details": [
+                {
+                  "modality": "TEXT",
+                  "token_count": 5
+                }
+              ],
+              "total_token_count": 5
+            }
+          },
+          {
+            "sdk_http_response": {
+              "headers": {
+                "content-type": "text/event-stream",
+                "content-disposition": "attachment",
+                "vary": "Origin, X-Origin, Referer",
+                "transfer-encoding": "chunked",
+                "date": "Fri, 27 Mar 2026 19:05:36 GMT",
+                "server": "scaffolding on HTTPServer2",
+                "x-xss-protection": "0",
+                "x-frame-options": "SAMEORIGIN",
+                "x-content-type-options": "nosniff",
+                "server-timing": "gfet4t7; dur=340",
+                "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+              }
+            },
+            "candidates": [
+              {
+                "content": {
+                  "parts": [
+                    {
+                      "text": ", I understand. The message \"Invalid API key\" means that the key I"
+                    }
+                  ],
+                  "role": "model"
+                }
+              }
+            ],
+            "model_version": "gemini-2.0-flash",
+            "response_id": "_9TGac_zMPTChMIP54262QE",
+            "usage_metadata": {
+              "prompt_token_count": 5,
+              "prompt_tokens_details": [
+                {
+                  "modality": "TEXT",
+                  "token_count": 5
+                }
+              ],
+              "total_token_count": 5
+            }
+          },
+          {
+            "sdk_http_response": {
+              "headers": {
+                "content-type": "text/event-stream",
+                "content-disposition": "attachment",
+                "vary": "Origin, X-Origin, Referer",
+                "transfer-encoding": "chunked",
+                "date": "Fri, 27 Mar 2026 19:05:36 GMT",
+                "server": "scaffolding on HTTPServer2",
+                "x-xss-protection": "0",
+                "x-frame-options": "SAMEORIGIN",
+                "x-content-type-options": "nosniff",
+                "server-timing": "gfet4t7; dur=340",
+                "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+              }
+            },
+            "candidates": [
+              {
+                "content": {
+                  "parts": [
+                    {
+                      "text": "'m currently using to access an external service (like a database, a language"
+                    }
+                  ],
+                  "role": "model"
+                }
+              }
+            ],
+            "model_version": "gemini-2.0-flash",
+            "response_id": "_9TGac_zMPTChMIP54262QE",
+            "usage_metadata": {
+              "prompt_token_count": 5,
+              "prompt_tokens_details": [
+                {
+                  "modality": "TEXT",
+                  "token_count": 5
+                }
+              ],
+              "total_token_count": 5
+            }
+          },
+          {
+            "sdk_http_response": {
+              "headers": {
+                "content-type": "text/event-stream",
+                "content-disposition": "attachment",
+                "vary": "Origin, X-Origin, Referer",
+                "transfer-encoding": "chunked",
+                "date": "Fri, 27 Mar 2026 19:05:36 GMT",
+                "server": "scaffolding on HTTPServer2",
+                "x-xss-protection": "0",
+                "x-frame-options": "SAMEORIGIN",
+                "x-content-type-options": "nosniff",
+                "server-timing": "gfet4t7; dur=340",
+                "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+              }
+            },
+            "candidates": [
+              {
+                "content": {
+                  "parts": [
+                    {
+                      "text": " model, or some other online resource) is not being recognized as valid.\n\nHere's a breakdown of what that means and what steps are typically taken to resolve the"
+                    }
+                  ],
+                  "role": "model"
+                }
+              }
+            ],
+            "model_version": "gemini-2.0-flash",
+            "response_id": "_9TGac_zMPTChMIP54262QE",
+            "usage_metadata": {
+              "prompt_token_count": 5,
+              "prompt_tokens_details": [
+                {
+                  "modality": "TEXT",
+                  "token_count": 5
+                }
+              ],
+              "total_token_count": 5
+            }
+          },
+          {
+            "sdk_http_response": {
+              "headers": {
+                "content-type": "text/event-stream",
+                "content-disposition": "attachment",
+                "vary": "Origin, X-Origin, Referer",
+                "transfer-encoding": "chunked",
+                "date": "Fri, 27 Mar 2026 19:05:36 GMT",
+                "server": "scaffolding on HTTPServer2",
+                "x-xss-protection": "0",
+                "x-frame-options": "SAMEORIGIN",
+                "x-content-type-options": "nosniff",
+                "server-timing": "gfet4t7; dur=340",
+                "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+              }
+            },
+            "candidates": [
+              {
+                "content": {
+                  "parts": [
+                    {
+                      "text": " issue:\n\n**What it means:**\n\n*   **Incorrect Key:** The most common reason is a typo when the key was entered, or a copy/"
+                    }
+                  ],
+                  "role": "model"
+                }
+              }
+            ],
+            "model_version": "gemini-2.0-flash",
+            "response_id": "_9TGac_zMPTChMIP54262QE",
+            "usage_metadata": {
+              "prompt_token_count": 5,
+              "prompt_tokens_details": [
+                {
+                  "modality": "TEXT",
+                  "token_count": 5
+                }
+              ],
+              "total_token_count": 5
+            }
+          },
+          {
+            "sdk_http_response": {
+              "headers": {
+                "content-type": "text/event-stream",
+                "content-disposition": "attachment",
+                "vary": "Origin, X-Origin, Referer",
+                "transfer-encoding": "chunked",
+                "date": "Fri, 27 Mar 2026 19:05:36 GMT",
+                "server": "scaffolding on HTTPServer2",
+                "x-xss-protection": "0",
+                "x-frame-options": "SAMEORIGIN",
+                "x-content-type-options": "nosniff",
+                "server-timing": "gfet4t7; dur=340",
+                "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+              }
+            },
+            "candidates": [
+              {
+                "content": {
+                  "parts": [
+                    {
+                      "text": "paste"
+                    }
+                  ],
+                  "role": "model"
+                },
+                "finish_reason": "MAX_TOKENS"
+              }
+            ],
+            "model_version": "gemini-2.0-flash",
+            "response_id": "_9TGac_zMPTChMIP54262QE",
+            "usage_metadata": {
+              "candidates_token_count": 100,
+              "candidates_tokens_details": [
+                {
+                  "modality": "TEXT",
+                  "token_count": 100
+                }
+              ],
+              "prompt_token_count": 4,
+              "prompt_tokens_details": [
+                {
+                  "modality": "TEXT",
+                  "token_count": 4
+                }
+              ],
+              "total_token_count": 104
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

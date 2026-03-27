@@ -1,0 +1,143 @@
+{
+  "replay_id": "test_text_generation_error/test_text_generation_wrong_api_key_error/invoke-model-standard",
+  "interactions": [
+    {
+      "request": {
+        "method": "post",
+        "url": "{MLDEV_URL_PREFIX}/models/gemini-2.0-flash:generateContent",
+        "headers": {
+          "Content-Type": "application/json",
+          "x-goog-api-key": "{REDACTED}",
+          "user-agent": "google-genai-sdk/{VERSION_NUMBER} {LANGUAGE_LABEL}/{VERSION_NUMBER}",
+          "x-goog-api-client": "google-genai-sdk/{VERSION_NUMBER} {LANGUAGE_LABEL}/{VERSION_NUMBER}"
+        },
+        "body_segments": [
+          {
+            "contents": [
+              {
+                "parts": [
+                  {
+                    "text": "Invalid API key."
+                  }
+                ],
+                "role": "user"
+              }
+            ],
+            "generationConfig": {
+              "temperature": 0.7,
+              "maxOutputTokens": 100
+            }
+          }
+        ]
+      },
+      "response": {
+        "status_code": 200,
+        "headers": {
+          "x-gemini-service-tier": "standard",
+          "content-type": "application/json; charset=UTF-8",
+          "vary": "Origin, X-Origin, Referer",
+          "content-encoding": "gzip",
+          "date": "Fri, 27 Mar 2026 19:05:26 GMT",
+          "server": "scaffolding on HTTPServer2",
+          "x-xss-protection": "0",
+          "x-frame-options": "SAMEORIGIN",
+          "x-content-type-options": "nosniff",
+          "server-timing": "gfet4t7; dur=1078",
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+          "transfer-encoding": "chunked"
+        },
+        "body_segments": [
+          {
+            "candidates": [
+              {
+                "content": {
+                  "parts": [
+                    {
+                      "text": "Okay, I understand you're seeing an \"Invalid API key\" error. This is a common issue, and here's a breakdown of what it means and how to troubleshoot it:\n\n**What does \"Invalid API key\" mean?**\n\nIt means that the API key you're providing to access a service (like a software program, a website's features, or a data feed) is not being recognized as valid by the service's authentication system. The API key is"
+                    }
+                  ],
+                  "role": "model"
+                },
+                "finishReason": "MAX_TOKENS",
+                "avgLogprobs": -0.2534553718566894
+              }
+            ],
+            "usageMetadata": {
+              "promptTokenCount": 4,
+              "candidatesTokenCount": 100,
+              "totalTokenCount": 104,
+              "promptTokensDetails": [
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 4
+                }
+              ],
+              "candidatesTokensDetails": [
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 100
+                }
+              ]
+            },
+            "modelVersion": "gemini-2.0-flash",
+            "responseId": "9dTGaYiNAqaf-8YPs9WNoQ0"
+          }
+        ],
+        "byte_segments": [],
+        "sdk_response_segments": [
+          {
+            "sdk_http_response": {
+              "headers": {
+                "x-gemini-service-tier": "standard",
+                "content-type": "application/json; charset=UTF-8",
+                "vary": "Origin, X-Origin, Referer",
+                "content-encoding": "gzip",
+                "date": "Fri, 27 Mar 2026 19:05:26 GMT",
+                "server": "scaffolding on HTTPServer2",
+                "x-xss-protection": "0",
+                "x-frame-options": "SAMEORIGIN",
+                "x-content-type-options": "nosniff",
+                "server-timing": "gfet4t7; dur=1078",
+                "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+                "transfer-encoding": "chunked"
+              }
+            },
+            "candidates": [
+              {
+                "content": {
+                  "parts": [
+                    {
+                      "text": "Okay, I understand you're seeing an \"Invalid API key\" error. This is a common issue, and here's a breakdown of what it means and how to troubleshoot it:\n\n**What does \"Invalid API key\" mean?**\n\nIt means that the API key you're providing to access a service (like a software program, a website's features, or a data feed) is not being recognized as valid by the service's authentication system. The API key is"
+                    }
+                  ],
+                  "role": "model"
+                },
+                "finish_reason": "MAX_TOKENS",
+                "avg_logprobs": -0.2534553718566894
+              }
+            ],
+            "model_version": "gemini-2.0-flash",
+            "response_id": "9dTGaYiNAqaf-8YPs9WNoQ0",
+            "usage_metadata": {
+              "candidates_token_count": 100,
+              "candidates_tokens_details": [
+                {
+                  "modality": "TEXT",
+                  "token_count": 100
+                }
+              ],
+              "prompt_token_count": 4,
+              "prompt_tokens_details": [
+                {
+                  "modality": "TEXT",
+                  "token_count": 4
+                }
+              ],
+              "total_token_count": 104
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

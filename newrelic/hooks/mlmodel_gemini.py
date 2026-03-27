@@ -67,14 +67,23 @@ def wrap_embed_content_sync(wrapped, instance, args, kwargs):
     except Exception as exc:
         # In error cases, exit the function trace in _record_embedding_error before recording the LLM error event so
         # that the duration is calculated correctly.
-        _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs, ft, exc)
+        _record_embedding_error(
+            transaction=transaction,
+            embedding_id=embedding_id,
+            linking_metadata=linking_metadata,
+            kwargs=kwargs,
+            ft=ft,
+            exc=exc,
+        )
         raise
     ft.__exit__(None, None, None)
 
     if not response:
         return response
 
-    _record_embedding_success(transaction, embedding_id, linking_metadata, kwargs, ft)
+    _record_embedding_success(
+        transaction=transaction, embedding_id=embedding_id, linking_metadata=linking_metadata, kwargs=kwargs, ft=ft
+    )
     return response
 
 
@@ -102,18 +111,27 @@ async def wrap_embed_content_async(wrapped, instance, args, kwargs):
     except Exception as exc:
         # In error cases, exit the function trace in _record_embedding_error before recording the LLM error event so
         # that the duration is calculated correctly.
-        _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs, ft, exc)
+        _record_embedding_error(
+            transaction=transaction,
+            embedding_id=embedding_id,
+            linking_metadata=linking_metadata,
+            kwargs=kwargs,
+            ft=ft,
+            exc=exc,
+        )
         raise
     ft.__exit__(None, None, None)
 
     if not response:
         return response
 
-    _record_embedding_success(transaction, embedding_id, linking_metadata, kwargs, ft)
+    _record_embedding_success(
+        transaction=transaction, embedding_id=embedding_id, linking_metadata=linking_metadata, kwargs=kwargs, ft=ft
+    )
     return response
 
 
-def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs, ft, exc):
+def _record_embedding_error(*, transaction, embedding_id, linking_metadata, kwargs, ft, exc):
     settings = transaction.settings or global_settings()
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
@@ -168,7 +186,7 @@ def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs,
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
 
 
-def _record_embedding_success(transaction, embedding_id, linking_metadata, kwargs, ft):
+def _record_embedding_success(*, transaction, embedding_id, linking_metadata, kwargs, ft):
     settings = transaction.settings or global_settings()
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
@@ -241,12 +259,28 @@ def wrap_generate_content_sync(wrapped, instance, args, kwargs):
     except Exception as exc:
         # In error cases, exit the function trace in _record_generation_error before recording the LLM error event so
         # that the duration is calculated correctly.
-        _record_generation_error(transaction, linking_metadata, completion_id, kwargs, ft, exc, request_timestamp)
+        _record_generation_error(
+            transaction=transaction,
+            linking_metadata=linking_metadata,
+            completion_id=completion_id,
+            kwargs=kwargs,
+            ft=ft,
+            exc=exc,
+            request_timestamp=request_timestamp,
+        )
         raise
 
     ft.__exit__(None, None, None)
 
-    _handle_generation_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val, request_timestamp)
+    _handle_generation_success(
+        transaction=transaction,
+        linking_metadata=linking_metadata,
+        completion_id=completion_id,
+        kwargs=kwargs,
+        ft=ft,
+        return_val=return_val,
+        request_timestamp=request_timestamp,
+    )
 
     return return_val
 
@@ -275,7 +309,15 @@ def wrap_generate_content_stream_sync(wrapped, instance, args, kwargs):
     except Exception as exc:
         # In error cases, exit the function trace in _record_generation_error before recording the LLM error event so
         # that the duration is calculated correctly.
-        _record_generation_error(transaction, linking_metadata, completion_id, kwargs, ft, exc, request_timestamp)
+        _record_generation_error(
+            transaction=transaction,
+            linking_metadata=linking_metadata,
+            completion_id=completion_id,
+            kwargs=kwargs,
+            ft=ft,
+            exc=exc,
+            request_timestamp=request_timestamp,
+        )
         raise
 
     try:
@@ -335,12 +377,28 @@ async def wrap_generate_content_async(wrapped, instance, args, kwargs):
     except Exception as exc:
         # In error cases, exit the function trace in _record_generation_error before recording the LLM error event so
         # that the duration is calculated correctly.
-        _record_generation_error(transaction, linking_metadata, completion_id, kwargs, ft, exc, request_timestamp)
+        _record_generation_error(
+            transaction=transaction,
+            linking_metadata=linking_metadata,
+            completion_id=completion_id,
+            kwargs=kwargs,
+            ft=ft,
+            exc=exc,
+            request_timestamp=request_timestamp,
+        )
         raise
 
     ft.__exit__(None, None, None)
 
-    _handle_generation_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val, request_timestamp)
+    _handle_generation_success(
+        transaction=transaction,
+        linking_metadata=linking_metadata,
+        completion_id=completion_id,
+        kwargs=kwargs,
+        ft=ft,
+        return_val=return_val,
+        request_timestamp=request_timestamp,
+    )
 
     return return_val
 
@@ -369,7 +427,15 @@ async def wrap_generate_content_stream_async(wrapped, instance, args, kwargs):
     except Exception as exc:
         # In error cases, exit the function trace in _record_generation_error before recording the LLM error event so
         # that the duration is calculated correctly.
-        _record_generation_error(transaction, linking_metadata, completion_id, kwargs, ft, exc, request_timestamp)
+        _record_generation_error(
+            transaction=transaction,
+            linking_metadata=linking_metadata,
+            completion_id=completion_id,
+            kwargs=kwargs,
+            ft=ft,
+            exc=exc,
+            request_timestamp=request_timestamp,
+        )
         raise
 
     try:
@@ -405,7 +471,7 @@ async def wrap_generate_content_stream_async(wrapped, instance, args, kwargs):
         return return_val
 
 
-def _record_generation_error(transaction, linking_metadata, completion_id, kwargs, ft, exc, request_timestamp=None):
+def _record_generation_error(*, transaction, linking_metadata, completion_id, kwargs, ft, exc, request_timestamp=None):
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
 
@@ -490,7 +556,7 @@ def _record_generation_error(transaction, linking_metadata, completion_id, kwarg
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
 
 
-def _handle_streaming_generation_error(linking_metadata, completion_id, kwargs, ft, request_timestamp=None):
+def _handle_streaming_generation_error(*, linking_metadata, completion_id, kwargs, ft, request_timestamp=None):
     def _on_stop_iteration(self, transaction):
         exc = sys.exc_info()[1]
         _record_generation_error(
@@ -507,7 +573,7 @@ def _handle_streaming_generation_error(linking_metadata, completion_id, kwargs, 
 
 
 def _handle_generation_success(
-    transaction, linking_metadata, completion_id, kwargs, ft, return_val, request_timestamp=None
+    *, transaction, linking_metadata, completion_id, kwargs, ft, return_val, request_timestamp=None
 ):
     if not return_val:
         return
@@ -533,6 +599,7 @@ def _handle_generation_success(
 
 
 def _record_generation_success(
+    *,
     transaction,
     linking_metadata,
     completion_id,
@@ -626,7 +693,7 @@ def _record_generation_success(
 
 
 def _handle_streaming_generation_success(
-    linking_metadata, completion_id, kwargs, ft, streaming_events, request_timestamp=None
+    *, linking_metadata, completion_id, kwargs, ft, streaming_events, request_timestamp=None
 ):
     def _on_stop_iteration(self, transaction):
         if hasattr(self, "_nr_ft"):
@@ -668,7 +735,7 @@ def _handle_streaming_generation_success(
     return _on_stop_iteration
 
 
-def _handle_stream_chunk(streaming_events, request_timestamp=None):
+def _handle_stream_chunk(*, streaming_events, request_timestamp=None):
     def _on_stream_chunk(self, chunk):
         streaming_events.append(chunk)
         if not hasattr(self, "_nr_time_to_first_token") and request_timestamp:

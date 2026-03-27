@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import google.genai
+import pytest
 from conftest import GEMINI_VERSION_METRIC
 from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
@@ -33,70 +34,79 @@ from newrelic.api.background_task import background_task
 from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 from newrelic.api.transaction import add_custom_attribute
 
-text_generation_recorded_events = [
-    (
-        {"type": "LlmChatCompletionSummary"},
-        {
-            "id": None,  # UUID that varies with each run
-            "timestamp": None,
-            "llm.conversation_id": "my-awesome-id",
-            "llm.foo": "bar",
-            "span_id": None,
-            "trace_id": "trace-id",
-            "duration": None,  # Response time varies each test run
-            "request.model": "gemini-2.0-flash",
-            "response.model": "gemini-2.0-flash",
-            "request.temperature": 0.7,
-            "request.max_tokens": 100,
-            "response.choices.finish_reason": "STOP",
-            "vendor": "gemini",
-            "ingest_source": "Python",
-            "response.number_of_messages": 2,
-        },
-    ),
-    (
-        {"type": "LlmChatCompletionMessage"},
-        {
-            "id": None,
-            "timestamp": None,
-            "llm.conversation_id": "my-awesome-id",
-            "llm.foo": "bar",
-            "span_id": None,
-            "trace_id": "trace-id",
-            "content": "How many letters are in the word Python?",
-            "role": "user",
-            "completion_id": None,
-            "sequence": 0,
-            "response.model": "gemini-2.0-flash",
-            "vendor": "gemini",
-            "ingest_source": "Python",
-        },
-    ),
-    (
-        {"type": "LlmChatCompletionMessage"},
-        {
-            "id": None,
-            "llm.conversation_id": "my-awesome-id",
-            "llm.foo": "bar",
-            "span_id": None,
-            "trace_id": "trace-id",
-            "content": 'There are 6 letters in the word "Python".\n',
-            "role": "model",
-            "completion_id": None,
-            "sequence": 1,
-            "response.model": "gemini-2.0-flash",
-            "vendor": "gemini",
-            "is_response": True,
-            "ingest_source": "Python",
-        },
-    ),
-]
+
+@pytest.fixture
+def text_generation_events(is_streaming):
+    events = [
+        (
+            {"type": "LlmChatCompletionSummary"},
+            {
+                "id": None,  # UUID that varies with each run
+                "timestamp": None,
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "duration": None,  # Response time varies each test run
+                "request.model": "gemini-2.0-flash",
+                "response.model": "gemini-2.0-flash",
+                "request.temperature": 0.7,
+                "request.max_tokens": 100,
+                "response.choices.finish_reason": "STOP",
+                "vendor": "gemini",
+                "ingest_source": "Python",
+                "response.number_of_messages": 2,
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,
+                "timestamp": None,
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "content": "How many letters are in the word Python?",
+                "role": "user",
+                "completion_id": None,
+                "sequence": 0,
+                "response.model": "gemini-2.0-flash",
+                "vendor": "gemini",
+                "ingest_source": "Python",
+            },
+        ),
+        (
+            {"type": "LlmChatCompletionMessage"},
+            {
+                "id": None,
+                "llm.conversation_id": "my-awesome-id",
+                "llm.foo": "bar",
+                "span_id": None,
+                "trace_id": "trace-id",
+                "content": 'There are 6 letters in the word "Python".\n',
+                "role": "model",
+                "completion_id": None,
+                "sequence": 1,
+                "response.model": "gemini-2.0-flash",
+                "vendor": "gemini",
+                "is_response": True,
+                "ingest_source": "Python",
+            },
+        ),
+    ]
+
+    if is_streaming:
+        # Only valid for streaming, and varies each test run
+        events[0][1]["time_to_first_token"] = None
+
+    return events
 
 
 @reset_core_stats_engine()
-def test_gemini_text_generation(exercise_text_model, text_generation_metrics, set_trace_info):
+def test_gemini_text_generation(exercise_text_model, text_generation_metrics, set_trace_info, text_generation_events):
     # Expect one summary event, one message event for the input, and message event for the output
-    @validate_custom_events(events_with_context_attrs(text_generation_recorded_events))
+    @validate_custom_events(events_with_context_attrs(text_generation_events))
     @validate_custom_event_count(count=3)
     @validate_transaction_metrics(
         name="test_gemini_text_generation",
@@ -156,8 +166,9 @@ def test_gemini_multi_text_generation(exercise_text_model, text_generation_metri
 
 
 @reset_core_stats_engine()
-def test_gemini_text_generation_with_llm_metadata(exercise_text_model, text_generation_metrics, set_trace_info):
-    @validate_custom_events(events_with_context_attrs(text_generation_recorded_events))
+def test_gemini_text_generation_with_llm_metadata(
+    exercise_text_model, text_generation_metrics, set_trace_info, text_generation_events
+):
     @validate_custom_event_count(count=3)
     @validate_transaction_metrics(
         name="test_gemini_text_generation_with_llm_metadata",
@@ -185,8 +196,9 @@ def test_gemini_text_generation_with_llm_metadata(exercise_text_model, text_gene
 
 @reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
-def test_gemini_text_generation_no_content(exercise_text_model, text_generation_metrics, set_trace_info):
-    @validate_custom_events(events_sans_content(text_generation_recorded_events))
+def test_gemini_text_generation_no_content(
+    exercise_text_model, text_generation_metrics, set_trace_info, text_generation_events
+):
     @validate_custom_event_count(count=3)
     @validate_transaction_metrics(
         name="test_gemini_text_generation_no_content",
@@ -212,8 +224,9 @@ def test_gemini_text_generation_no_content(exercise_text_model, text_generation_
 
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
-def test_gemini_text_generation_with_token_count(exercise_text_model, text_generation_metrics, set_trace_info):
-    @validate_custom_events(add_token_count_to_events(text_generation_recorded_events))
+def test_gemini_text_generation_with_token_count(
+    exercise_text_model, text_generation_metrics, set_trace_info, text_generation_events
+):
     @validate_custom_event_count(count=3)
     @validate_transaction_metrics(
         name="test_gemini_text_generation_with_token_count",
@@ -238,8 +251,9 @@ def test_gemini_text_generation_with_token_count(exercise_text_model, text_gener
 
 
 @reset_core_stats_engine()
-def test_gemini_text_generation_no_llm_metadata(exercise_text_model, text_generation_metrics, set_trace_info):
-    @validate_custom_events(events_sans_llm_metadata(text_generation_recorded_events))
+def test_gemini_text_generation_no_llm_metadata(
+    exercise_text_model, text_generation_metrics, set_trace_info, text_generation_events
+):
     # One summary event, one system message, one user message, and one response message from the assistant
     @validate_custom_event_count(count=3)
     @validate_transaction_metrics(

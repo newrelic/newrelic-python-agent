@@ -284,7 +284,9 @@ def wrap_generate_content_stream_sync(wrapped, instance, args, kwargs):
         # Wrap returned generator in a generator proxy
         proxied_return_val = LLMStreamProxy(
             return_val,
-            on_stream_chunk=_handle_stream_chunk(streaming_events=streaming_events),
+            on_stream_chunk=_handle_stream_chunk(
+                streaming_events=streaming_events, request_timestamp=request_timestamp
+            ),
             on_stop_iteration=_handle_streaming_generation_success(
                 linking_metadata=linking_metadata,
                 completion_id=completion_id,
@@ -377,7 +379,9 @@ async def wrap_generate_content_stream_async(wrapped, instance, args, kwargs):
         # Wrap returned async generator in an async generator proxy
         proxied_return_val = AsyncLLMStreamProxy(
             return_val,
-            on_stream_chunk=_handle_stream_chunk(streaming_events=streaming_events),
+            on_stream_chunk=_handle_stream_chunk(
+                streaming_events=streaming_events, request_timestamp=request_timestamp
+            ),
             on_stop_iteration=_handle_streaming_generation_success(
                 linking_metadata=linking_metadata,
                 completion_id=completion_id,
@@ -531,7 +535,15 @@ def _handle_generation_success(
 
 
 def _record_generation_success(
-    transaction, linking_metadata, completion_id, kwargs, ft, response, output_message_list=None, request_timestamp=None
+    transaction,
+    linking_metadata,
+    completion_id,
+    kwargs,
+    ft,
+    response,
+    output_message_list=None,
+    request_timestamp=None,
+    time_to_first_token=None,
 ):
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
@@ -592,6 +604,7 @@ def _record_generation_success(
             # separate request (every input and output from the LLM)
             "response.number_of_messages": 1 + len(output_message_list),
             "timestamp": request_timestamp,
+            "time_to_first_token": time_to_first_token,
         }
 
         llm_metadata = _get_llm_attributes(transaction)
@@ -646,6 +659,7 @@ def _handle_streaming_generation_success(
                     response=response,
                     output_message_list=output_message_list,
                     request_timestamp=request_timestamp,
+                    time_to_first_token=getattr(self, "_nr_time_to_first_token", None),
                 )
             except Exception:
                 _logger.warning(STREAM_PARSING_FAILURE_LOG_MESSAGE, exc_info=True)
@@ -656,9 +670,11 @@ def _handle_streaming_generation_success(
     return _on_stop_iteration
 
 
-def _handle_stream_chunk(streaming_events):
+def _handle_stream_chunk(streaming_events, request_timestamp=None):
     def _on_stream_chunk(self, chunk):
         streaming_events.append(chunk)
+        if not hasattr(self, "_nr_time_to_first_token") and request_timestamp:
+            self._nr_time_to_first_token = int(1000.0 * time.time()) - request_timestamp
 
     return _on_stream_chunk
 

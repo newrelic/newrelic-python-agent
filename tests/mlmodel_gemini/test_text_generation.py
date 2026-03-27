@@ -177,6 +177,7 @@ def test_gemini_multi_text_generation(exercise_text_model, text_generation_metri
 def test_gemini_text_generation_with_llm_metadata(
     exercise_text_model, text_generation_metrics, set_trace_info, text_generation_events
 ):
+    @validate_custom_events(events_with_context_attrs(text_generation_events))
     @validate_custom_event_count(count=3)
     @validate_transaction_metrics(
         name="test_gemini_text_generation_with_llm_metadata",
@@ -207,6 +208,7 @@ def test_gemini_text_generation_with_llm_metadata(
 def test_gemini_text_generation_no_content(
     exercise_text_model, text_generation_metrics, set_trace_info, text_generation_events
 ):
+    @validate_custom_events(events_sans_content(text_generation_events))
     @validate_custom_event_count(count=3)
     @validate_transaction_metrics(
         name="test_gemini_text_generation_no_content",
@@ -235,6 +237,7 @@ def test_gemini_text_generation_no_content(
 def test_gemini_text_generation_with_token_count(
     exercise_text_model, text_generation_metrics, set_trace_info, text_generation_events
 ):
+    @validate_custom_events(add_token_count_to_events(text_generation_events))
     @validate_custom_event_count(count=3)
     @validate_transaction_metrics(
         name="test_gemini_text_generation_with_token_count",
@@ -263,6 +266,7 @@ def test_gemini_text_generation_no_llm_metadata(
     exercise_text_model, text_generation_metrics, set_trace_info, text_generation_events
 ):
     # One summary event, one system message, one user message, and one response message from the assistant
+    @validate_custom_events(events_sans_llm_metadata(text_generation_events))
     @validate_custom_event_count(count=3)
     @validate_transaction_metrics(
         name="test_gemini_text_generation_no_llm_metadata",

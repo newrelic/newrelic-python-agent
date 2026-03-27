@@ -12,6 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+The GraphQL test suite is not tested by OpenTelemetry itself but is
+used as a "root" test suite for Ariadne and Strawberry frameworks
+"""
+
 import pytest
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 

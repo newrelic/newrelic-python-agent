@@ -38,6 +38,9 @@ _default_settings = {
     "debug.record_transaction_failure": True,
     "opentelemetry.enabled": True,
     "opentelemetry.traces.include": {"flask"},
+    # Because New Relic natively supports this framework, this needs
+    # to be added explicitly to the include list for the Hybrid Agent
+    # to use the instrumentation hooks provided through OpenTelemetry.
 }
 
 collector_agent_registration = collector_agent_registration_fixture(

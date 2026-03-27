@@ -34,7 +34,8 @@ _default_settings = {
     "debug.log_data_collector_payloads": True,
     "debug.record_transaction_failure": True,
     "opentelemetry.enabled": True,
-    # Should not need to explicitly include this framework in the list of tracers for this to work
+    # Since New Relic does not support this framework natively, this
+    # will be auto-instrumented when the Hybrid Agent is enabled.
 }
 
 collector_agent_registration = collector_agent_registration_fixture(

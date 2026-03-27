@@ -75,6 +75,12 @@ def test_opentelemetry_bridge_enabled(enabled, traces_enabled):
     _test()
 
 
+# NOTE: This test suite does not test for the case where
+# an OpenTelemetry framework that is ordinarily excluded
+# is explicitly included.  That scenario is tested by
+# using the `include` setting in the OpenTelemetry test
+# suites for frameworks that are supported both in New
+# Relic and OpenTelemetry.
 @pytest.mark.parametrize(
     "enabled,include,exclude,expected_foo_span_count,expected_bar_span_count",
     [

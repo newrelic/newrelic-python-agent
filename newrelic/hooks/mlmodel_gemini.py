@@ -37,7 +37,7 @@ RECORD_EVENTS_FAILURE_LOG_MESSAGE = (
     "Exception occurred in Gemini instrumentation: Failed to record LLM events. "
     "Please report this issue to New Relic Support.\n "
 )
-STREAM_PARSING_FAILURE_LOG_MESSAGE = "Exception occurred in Gemini instrumentation: Failed to process event stream information. Please report this issue to New Relic Support.\n%s"
+STREAM_PARSING_FAILURE_LOG_MESSAGE = "Exception occurred in Gemini instrumentation: Failed to process event stream information. Please report this issue to New Relic Support.\n"
 
 
 _logger = logging.getLogger(__name__)

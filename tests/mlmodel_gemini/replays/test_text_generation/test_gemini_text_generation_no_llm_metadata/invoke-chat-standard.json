@@ -1,5 +1,5 @@
 {
-  "replay_id": "test_text_generation/test_gemini_text_generation_no_content/invoke-model-standard",
+  "replay_id": "test_text_generation/test_gemini_text_generation_no_llm_metadata/invoke-chat-standard",
   "interactions": [
     {
       "request": {
@@ -37,12 +37,12 @@
           "content-type": "application/json; charset=UTF-8",
           "vary": "Origin, X-Origin, Referer",
           "content-encoding": "gzip",
-          "date": "Fri, 27 Mar 2026 19:05:19 GMT",
+          "date": "Fri, 27 Mar 2026 19:34:02 GMT",
           "server": "scaffolding on HTTPServer2",
           "x-xss-protection": "0",
           "x-frame-options": "SAMEORIGIN",
           "x-content-type-options": "nosniff",
-          "server-timing": "gfet4t7; dur=576",
+          "server-timing": "gfet4t7; dur=484",
           "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
           "transfer-encoding": "chunked"
         },
@@ -59,13 +59,13 @@
                   "role": "model"
                 },
                 "finishReason": "STOP",
-                "avgLogprobs": -0.05797367791334788
+                "avgLogprobs": -0.042382121086120605
               }
             ],
             "usageMetadata": {
               "promptTokenCount": 9,
-              "candidatesTokenCount": 12,
-              "totalTokenCount": 21,
+              "candidatesTokenCount": 13,
+              "totalTokenCount": 22,
               "promptTokensDetails": [
                 {
                   "modality": "TEXT",
@@ -75,12 +75,12 @@
               "candidatesTokensDetails": [
                 {
                   "modality": "TEXT",
-                  "tokenCount": 12
+                  "tokenCount": 13
                 }
               ]
             },
             "modelVersion": "gemini-2.0-flash",
-            "responseId": "79TGacyrCMf4jrEP_bfukQ0"
+            "responseId": "qtvGaZeBGIuQjrEPioGB6AQ"
           }
         ],
         "byte_segments": [],
@@ -92,12 +92,12 @@
                 "content-type": "application/json; charset=UTF-8",
                 "vary": "Origin, X-Origin, Referer",
                 "content-encoding": "gzip",
-                "date": "Fri, 27 Mar 2026 19:05:19 GMT",
+                "date": "Fri, 27 Mar 2026 19:34:02 GMT",
                 "server": "scaffolding on HTTPServer2",
                 "x-xss-protection": "0",
                 "x-frame-options": "SAMEORIGIN",
                 "x-content-type-options": "nosniff",
-                "server-timing": "gfet4t7; dur=576",
+                "server-timing": "gfet4t7; dur=484",
                 "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
                 "transfer-encoding": "chunked"
               }
@@ -113,17 +113,17 @@
                   "role": "model"
                 },
                 "finish_reason": "STOP",
-                "avg_logprobs": -0.05797367791334788
+                "avg_logprobs": -0.042382121086120605
               }
             ],
             "model_version": "gemini-2.0-flash",
-            "response_id": "79TGacyrCMf4jrEP_bfukQ0",
+            "response_id": "qtvGaZeBGIuQjrEPioGB6AQ",
             "usage_metadata": {
-              "candidates_token_count": 12,
+              "candidates_token_count": 13,
               "candidates_tokens_details": [
                 {
                   "modality": "TEXT",
-                  "token_count": 12
+                  "token_count": 13
                 }
               ],
               "prompt_token_count": 9,
@@ -133,7 +133,7 @@
                   "token_count": 9
                 }
               ],
-              "total_token_count": 21
+              "total_token_count": 22
             }
           }
         ]

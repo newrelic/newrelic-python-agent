@@ -1,5 +1,5 @@
 {
-  "replay_id": "test_text_generation/test_gemini_text_generation_no_content/invoke-model-standard",
+  "replay_id": "test_text_generation/test_gemini_text_generation_with_llm_metadata/invoke-chat-standard",
   "interactions": [
     {
       "request": {
@@ -37,12 +37,12 @@
           "content-type": "application/json; charset=UTF-8",
           "vary": "Origin, X-Origin, Referer",
           "content-encoding": "gzip",
-          "date": "Fri, 27 Mar 2026 19:05:19 GMT",
+          "date": "Fri, 27 Mar 2026 19:33:59 GMT",
           "server": "scaffolding on HTTPServer2",
           "x-xss-protection": "0",
           "x-frame-options": "SAMEORIGIN",
           "x-content-type-options": "nosniff",
-          "server-timing": "gfet4t7; dur=576",
+          "server-timing": "gfet4t7; dur=552",
           "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
           "transfer-encoding": "chunked"
         },
@@ -59,7 +59,7 @@
                   "role": "model"
                 },
                 "finishReason": "STOP",
-                "avgLogprobs": -0.05797367791334788
+                "avgLogprobs": -0.08227250476678212
               }
             ],
             "usageMetadata": {
@@ -80,7 +80,7 @@
               ]
             },
             "modelVersion": "gemini-2.0-flash",
-            "responseId": "79TGacyrCMf4jrEP_bfukQ0"
+            "responseId": "p9vGac7mFNeG-8YP88SLyAM"
           }
         ],
         "byte_segments": [],
@@ -92,12 +92,12 @@
                 "content-type": "application/json; charset=UTF-8",
                 "vary": "Origin, X-Origin, Referer",
                 "content-encoding": "gzip",
-                "date": "Fri, 27 Mar 2026 19:05:19 GMT",
+                "date": "Fri, 27 Mar 2026 19:33:59 GMT",
                 "server": "scaffolding on HTTPServer2",
                 "x-xss-protection": "0",
                 "x-frame-options": "SAMEORIGIN",
                 "x-content-type-options": "nosniff",
-                "server-timing": "gfet4t7; dur=576",
+                "server-timing": "gfet4t7; dur=552",
                 "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
                 "transfer-encoding": "chunked"
               }
@@ -113,11 +113,11 @@
                   "role": "model"
                 },
                 "finish_reason": "STOP",
-                "avg_logprobs": -0.05797367791334788
+                "avg_logprobs": -0.08227250476678212
               }
             ],
             "model_version": "gemini-2.0-flash",
-            "response_id": "79TGacyrCMf4jrEP_bfukQ0",
+            "response_id": "p9vGac7mFNeG-8YP88SLyAM",
             "usage_metadata": {
               "candidates_token_count": 12,
               "candidates_tokens_details": [

@@ -1,5 +1,5 @@
 {
-  "replay_id": "test_text_generation/test_gemini_text_generation_with_token_count/streaming-model-standard",
+  "replay_id": "test_text_generation/test_gemini_text_generation_with_token_count/streaming-chat-standard",
   "interactions": [
     {
       "request": {
@@ -37,12 +37,12 @@
           "content-disposition": "attachment",
           "vary": "Origin, X-Origin, Referer",
           "transfer-encoding": "chunked",
-          "date": "Fri, 27 Mar 2026 19:05:31 GMT",
+          "date": "Fri, 27 Mar 2026 19:34:13 GMT",
           "server": "scaffolding on HTTPServer2",
           "x-xss-protection": "0",
           "x-frame-options": "SAMEORIGIN",
           "x-content-type-options": "nosniff",
-          "server-timing": "gfet4t7; dur=485",
+          "server-timing": "gfet4t7; dur=611",
           "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
         },
         "body_segments": [
@@ -70,7 +70,7 @@
               ]
             },
             "modelVersion": "gemini-2.0-flash",
-            "responseId": "-9TGaY-5Eozw7dcPws-YwAM"
+            "responseId": "tdvGaaTvDOqT7dcP9sPR0AM"
           },
           {
             "candidates": [
@@ -78,7 +78,33 @@
                 "content": {
                   "parts": [
                     {
-                      "text": " are 6 letters in the word \"Python\".\n"
+                      "text": " are 6"
+                    }
+                  ],
+                  "role": "model"
+                }
+              }
+            ],
+            "usageMetadata": {
+              "promptTokenCount": 10,
+              "totalTokenCount": 10,
+              "promptTokensDetails": [
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 10
+                }
+              ]
+            },
+            "modelVersion": "gemini-2.0-flash",
+            "responseId": "tdvGaaTvDOqT7dcP9sPR0AM"
+          },
+          {
+            "candidates": [
+              {
+                "content": {
+                  "parts": [
+                    {
+                      "text": " letters in the word \"Python\".\n"
                     }
                   ],
                   "role": "model"
@@ -104,7 +130,7 @@
               ]
             },
             "modelVersion": "gemini-2.0-flash",
-            "responseId": "-9TGaY-5Eozw7dcPws-YwAM"
+            "responseId": "tdvGaaTvDOqT7dcP9sPR0AM"
           }
         ],
         "byte_segments": [],
@@ -116,12 +142,12 @@
                 "content-disposition": "attachment",
                 "vary": "Origin, X-Origin, Referer",
                 "transfer-encoding": "chunked",
-                "date": "Fri, 27 Mar 2026 19:05:31 GMT",
+                "date": "Fri, 27 Mar 2026 19:34:13 GMT",
                 "server": "scaffolding on HTTPServer2",
                 "x-xss-protection": "0",
                 "x-frame-options": "SAMEORIGIN",
                 "x-content-type-options": "nosniff",
-                "server-timing": "gfet4t7; dur=485",
+                "server-timing": "gfet4t7; dur=611",
                 "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
               }
             },
@@ -138,7 +164,7 @@
               }
             ],
             "model_version": "gemini-2.0-flash",
-            "response_id": "-9TGaY-5Eozw7dcPws-YwAM",
+            "response_id": "tdvGaaTvDOqT7dcP9sPR0AM",
             "usage_metadata": {
               "prompt_token_count": 10,
               "prompt_tokens_details": [
@@ -157,12 +183,12 @@
                 "content-disposition": "attachment",
                 "vary": "Origin, X-Origin, Referer",
                 "transfer-encoding": "chunked",
-                "date": "Fri, 27 Mar 2026 19:05:31 GMT",
+                "date": "Fri, 27 Mar 2026 19:34:13 GMT",
                 "server": "scaffolding on HTTPServer2",
                 "x-xss-protection": "0",
                 "x-frame-options": "SAMEORIGIN",
                 "x-content-type-options": "nosniff",
-                "server-timing": "gfet4t7; dur=485",
+                "server-timing": "gfet4t7; dur=611",
                 "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
               }
             },
@@ -171,7 +197,48 @@
                 "content": {
                   "parts": [
                     {
-                      "text": " are 6 letters in the word \"Python\".\n"
+                      "text": " are 6"
+                    }
+                  ],
+                  "role": "model"
+                }
+              }
+            ],
+            "model_version": "gemini-2.0-flash",
+            "response_id": "tdvGaaTvDOqT7dcP9sPR0AM",
+            "usage_metadata": {
+              "prompt_token_count": 10,
+              "prompt_tokens_details": [
+                {
+                  "modality": "TEXT",
+                  "token_count": 10
+                }
+              ],
+              "total_token_count": 10
+            }
+          },
+          {
+            "sdk_http_response": {
+              "headers": {
+                "content-type": "text/event-stream",
+                "content-disposition": "attachment",
+                "vary": "Origin, X-Origin, Referer",
+                "transfer-encoding": "chunked",
+                "date": "Fri, 27 Mar 2026 19:34:13 GMT",
+                "server": "scaffolding on HTTPServer2",
+                "x-xss-protection": "0",
+                "x-frame-options": "SAMEORIGIN",
+                "x-content-type-options": "nosniff",
+                "server-timing": "gfet4t7; dur=611",
+                "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+              }
+            },
+            "candidates": [
+              {
+                "content": {
+                  "parts": [
+                    {
+                      "text": " letters in the word \"Python\".\n"
                     }
                   ],
                   "role": "model"
@@ -180,7 +247,7 @@
               }
             ],
             "model_version": "gemini-2.0-flash",
-            "response_id": "-9TGaY-5Eozw7dcPws-YwAM",
+            "response_id": "tdvGaaTvDOqT7dcP9sPR0AM",
             "usage_metadata": {
               "candidates_token_count": 11,
               "candidates_tokens_details": [

@@ -53,7 +53,7 @@
                 "content": {
                   "parts": [
                     {
-                      "text": "There are 6 letters in the word Python.\n"
+                      "text": "There are 6 letters in the word \"Python\".\n"
                     }
                   ],
                   "role": "model"
@@ -107,7 +107,7 @@
                 "content": {
                   "parts": [
                     {
-                      "text": "There are 6 letters in the word Python.\n"
+                      "text": "There are 6 letters in the word \"Python\".\n"
                     }
                   ],
                   "role": "model"

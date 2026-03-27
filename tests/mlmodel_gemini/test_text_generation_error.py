@@ -289,7 +289,9 @@ def test_text_generation_wrong_api_key_error(
     def _test():
         with pytest.raises(google.genai.errors.ClientError):
             set_trace_info()
-            gemini_dev_client._api_client.api_key = "DEADBEEF"
+            fake_api_key = "DEADBEEF"
+            gemini_dev_client._api_client.api_key = fake_api_key
+            gemini_dev_client._api_client._http_options.headers["x-goog-api-key"] = fake_api_key
             exercise_text_model(
                 model="gemini-2.0-flash",
                 contents=["Invalid API key."],

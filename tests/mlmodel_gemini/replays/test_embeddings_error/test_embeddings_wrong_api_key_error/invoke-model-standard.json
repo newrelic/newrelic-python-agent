@@ -1,10 +1,10 @@
 {
-  "replay_id": "test_text_generation_error/test_text_generation_wrong_api_key_error/streaming-model-standard",
+  "replay_id": "test_embeddings_error/test_embeddings_wrong_api_key_error/invoke-model-standard",
   "interactions": [
     {
       "request": {
         "method": "post",
-        "url": "{MLDEV_URL_PREFIX}/models/gemini-2.0-flash:streamGenerateContent?alt=sse",
+        "url": "{MLDEV_URL_PREFIX}/models/gemini-embedding-001:batchEmbedContents",
         "headers": {
           "Content-Type": "application/json",
           "x-goog-api-key": "{REDACTED}",
@@ -13,20 +13,19 @@
         },
         "body_segments": [
           {
-            "contents": [
+            "requests": [
               {
-                "parts": [
-                  {
-                    "text": "Invalid API key."
-                  }
-                ],
-                "role": "user"
+                "content": {
+                  "parts": [
+                    {
+                      "text": "Invalid API key."
+                    }
+                  ],
+                  "role": "user"
+                },
+                "model": "models/gemini-embedding-001"
               }
-            ],
-            "generationConfig": {
-              "temperature": 0.7,
-              "maxOutputTokens": 100
-            }
+            ]
           }
         ]
       },
@@ -34,15 +33,16 @@
         "status_code": 400,
         "headers": {
           "vary": "Origin, X-Origin, Referer",
-          "content-type": "text/event-stream",
-          "date": "Fri, 27 Mar 2026 19:56:52 GMT",
+          "content-type": "application/json; charset=UTF-8",
+          "content-encoding": "gzip",
+          "date": "Fri, 27 Mar 2026 20:02:26 GMT",
           "server": "scaffolding on HTTPServer2",
-          "content-length": "581",
           "x-xss-protection": "0",
           "x-frame-options": "SAMEORIGIN",
           "x-content-type-options": "nosniff",
           "server-timing": "gfet4t7; dur=41",
-          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+          "transfer-encoding": "chunked"
         },
         "body_segments": [
           {

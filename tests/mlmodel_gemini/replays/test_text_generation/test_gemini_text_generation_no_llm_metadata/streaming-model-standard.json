@@ -104,7 +104,7 @@
                 "content": {
                   "parts": [
                     {
-                      "text": " letters in the word Python.\n"
+                      "text": " letters in the word \"Python\".\n"
                     }
                   ],
                   "role": "model"
@@ -238,7 +238,7 @@
                 "content": {
                   "parts": [
                     {
-                      "text": " letters in the word Python.\n"
+                      "text": " letters in the word \"Python\".\n"
                     }
                   ],
                   "role": "model"

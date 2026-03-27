@@ -1,10 +1,10 @@
 {
-  "replay_id": "test_text_generation_error/test_text_generation_wrong_api_key_error/streaming-model-standard",
+  "replay_id": "test_text_generation_error/test_text_generation_invalid_request_error_invalid_model_with_token_count/streaming-chat-standard",
   "interactions": [
     {
       "request": {
         "method": "post",
-        "url": "{MLDEV_URL_PREFIX}/models/gemini-2.0-flash:streamGenerateContent?alt=sse",
+        "url": "{MLDEV_URL_PREFIX}/models/does-not-exist:streamGenerateContent?alt=sse",
         "headers": {
           "Content-Type": "application/json",
           "x-goog-api-key": "{REDACTED}",
@@ -17,7 +17,7 @@
               {
                 "parts": [
                   {
-                    "text": "Invalid API key."
+                    "text": "Model does not exist."
                   }
                 ],
                 "role": "user"
@@ -31,25 +31,25 @@
         ]
       },
       "response": {
-        "status_code": 400,
+        "status_code": 404,
         "headers": {
           "vary": "Origin, X-Origin, Referer",
           "content-type": "text/event-stream",
-          "date": "Fri, 27 Mar 2026 19:56:52 GMT",
+          "date": "Fri, 27 Mar 2026 19:34:16 GMT",
           "server": "scaffolding on HTTPServer2",
-          "content-length": "581",
+          "content-length": "263",
           "x-xss-protection": "0",
           "x-frame-options": "SAMEORIGIN",
           "x-content-type-options": "nosniff",
-          "server-timing": "gfet4t7; dur=41",
+          "server-timing": "gfet4t7; dur=88",
           "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
         },
         "body_segments": [
           {
             "error": {
-              "code": 400,
-              "message": "API key not valid. Please pass a valid API key.",
-              "status": "INVALID_ARGUMENT"
+              "code": 404,
+              "message": "models/does-not-exist is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.",
+              "status": "NOT_FOUND"
             }
           }
         ],

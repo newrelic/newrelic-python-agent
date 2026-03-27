@@ -1,5 +1,5 @@
 {
-  "replay_id": "test_text_generation_error/test_text_generation_wrong_api_key_error/streaming-model-standard",
+  "replay_id": "test_text_generation_error/test_text_generation_wrong_api_key_error/streaming-chat-standard",
   "interactions": [
     {
       "request": {
@@ -35,13 +35,13 @@
         "headers": {
           "vary": "Origin, X-Origin, Referer",
           "content-type": "text/event-stream",
-          "date": "Fri, 27 Mar 2026 19:56:52 GMT",
+          "date": "Fri, 27 Mar 2026 19:56:51 GMT",
           "server": "scaffolding on HTTPServer2",
           "content-length": "581",
           "x-xss-protection": "0",
           "x-frame-options": "SAMEORIGIN",
           "x-content-type-options": "nosniff",
-          "server-timing": "gfet4t7; dur=41",
+          "server-timing": "gfet4t7; dur=45",
           "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
         },
         "body_segments": [

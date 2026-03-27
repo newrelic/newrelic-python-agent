@@ -56,14 +56,21 @@ RECORDED_HEADERS = {"content-type"}
 
 
 @pytest.fixture
-def replay_id(is_vertex, is_streaming, is_chat):
+def replay_id():
     pytest_name = os.environ.get("PYTEST_CURRENT_TEST").split("::")
     test_module = Path(pytest_name[0]).with_suffix("").name
-    test_name = pytest_name[-1].split(" ")[0].split("[")[0]
-    # Don't use the actual parameter values in the replay ID to avoid having different replays for certain parameters like is_async.
-    test_params_name = f"{'streaming' if is_streaming else 'invoke'}-{'chat' if is_chat else 'model'}-{'vertex' if is_vertex else 'standard'}"
+    test_name, test_params = pytest_name[-1].split(" ")[0].split("[")
 
-    return f"{test_module}/{test_name}/{test_params_name}"
+    # Don't use the actual parameter string in the replay ID to avoid having different replays for certain parameters
+    # like is_async and to avoid issues with sorting. We also can't directly use the fixtures or we will cause the
+    # embedding tests to run despite not having streaming or chat parameters. Instead we will just infer the info
+    # from the test names and reproduce it in a standardized format.
+    is_streaming = "stream" in test_params
+    is_chat = "chat" in test_params
+    is_vertex = "vertex" in test_params
+    test_params_suffix = f"{'streaming' if is_streaming else 'invoke'}-{'chat' if is_chat else 'model'}-{'vertex' if is_vertex else 'standard'}"
+
+    return f"{test_module}/{test_name}/{test_params_suffix}"
 
 
 @pytest.fixture
@@ -76,7 +83,10 @@ def gemini_clients(replay_id):
     from newrelic.core.config import _environ_as_bool
 
     record_mode = _environ_as_bool("NEW_RELIC_TESTING_RECORD_GEMINI_RESPONSES", False)
-    replay_client_mode = "record" if record_mode else "replay"
+    # Auto mode will record any missing files, but still replay existing files.
+    # This allows us to add new tests without having to re-record everything.
+    # If you need to re-record everything, you can delete the existing replays completely.
+    replay_client_mode = "auto" if record_mode else "replay"
 
     if record_mode:
         google_api_key = os.environ.get("GOOGLE_API_KEY")
@@ -86,7 +96,9 @@ def gemini_clients(replay_id):
         google_api_key = os.environ["GOOGLE_API_KEY"] = "GEMINI_API_KEY"
 
     # Set the replay directory to a location in this test suite.
-    os.environ["GOOGLE_GENAI_REPLAYS_DIRECTORY"] = str(Path(__file__).parent / "replays")
+    replay_dir = Path(__file__).parent / "replays"
+    replay_dir.mkdir(exist_ok=True)  # Recreate this directory if it's missing for recording purposes
+    os.environ["GOOGLE_GENAI_REPLAYS_DIRECTORY"] = str(replay_dir)
 
     # Monkeypatch the Gemini client to use the replay client which will either record or replay responses depending on the mode.
     replay_client = google.genai._replay_api_client.ReplayApiClient(mode=replay_client_mode, replay_id=replay_id)
@@ -134,13 +146,13 @@ def wrap_httpx_client_send(extract_shortened_prompt):
     return _wrap_httpx_client_send
 
 
-# @pytest.fixture(scope="session", params=["vertex", "standard"])
-@pytest.fixture(scope="session", params=["standard"])
+@pytest.fixture(scope="session", params=["standard"])  # "vertex" to be added
 def is_vertex(request):
+    # This is a placeholder for when we want to test against both the standard Gemini API and the Vertex AI Gemini API.
     return request.param == "vertex"
 
-# @pytest.fixture(scope="session", params=["invoke", "stream"])
-@pytest.fixture(scope="session", params=["invoke"])  # TODO Put this back
+
+@pytest.fixture(scope="session", params=["invoke", "stream"])
 def is_streaming(request):
     return request.param == "stream"
 
@@ -159,6 +171,9 @@ def is_chat(request):
 def exercise_text_model(loop, gemini_dev_client, is_async, is_chat, is_streaming):
     # Pick the sync or async client before we make the chat object for convenience
     client = gemini_dev_client.aio if is_async else gemini_dev_client
+
+    if is_async and is_streaming:
+        pytest.skip("TODO IMPLEMENT THIS")
 
     def _exercise_text_model(*args, **kwargs):
         if is_chat:

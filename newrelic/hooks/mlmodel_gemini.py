@@ -269,7 +269,6 @@ def wrap_generate_content_stream_sync(wrapped, instance, args, kwargs):
 
     ft = FunctionTrace(name=wrapped.__name__, group="Llm/completion/Gemini")
     ft.__enter__()
-    # TODO: Subcomponent? TTFT?
     linking_metadata = get_trace_linking_metadata()
     try:
         return_val = wrapped(*args, **kwargs)
@@ -364,7 +363,6 @@ async def wrap_generate_content_stream_async(wrapped, instance, args, kwargs):
 
     ft = FunctionTrace(name=wrapped.__name__, group="Llm/completion/Gemini")
     ft.__enter__()
-    # TODO: Subcomponent? TTFT?
     linking_metadata = get_trace_linking_metadata()
     try:
         return_val = await wrapped(*args, **kwargs)

@@ -242,12 +242,15 @@ def test_distributed_tracing_partial_granularity(
     else:
         raise ValueError(f"Unknown tracer_info={tracer_info}")
 
-    @background_task()
+    overrides = {
+        "distributed_tracing.sampler.full_granularity.enabled": False,
+        "distributed_tracing.sampler.partial_granularity.enabled": True,
+        "distributed_tracing.sampler.partial_granularity.type": partial_granularity_type,
+    }
+
+    @override_application_settings(overrides)
     def _test():
-        settings = application_settings()
-        settings.distributed_tracing.sampler.full_granularity.enabled = False
-        settings.distributed_tracing.sampler.partial_granularity.enabled = True
-        settings.distributed_tracing.sampler.partial_granularity.type = partial_granularity_type
+        settings = application_settings(name="Python Agent Test (cross_agent_tests)")
 
         span_event_method = root.PARTIAL_GRANULARITY_SPAN_EVENT_METHODS.get(
             settings.distributed_tracing.sampler.partial_granularity.type,

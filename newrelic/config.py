@@ -127,7 +127,6 @@ _config_object = configparser.RawConfigParser(converters={"ratio": ratio})
 # all the settings have been read.
 
 _cache_object = []
-agent_control_health = agent_control_health_instance()
 
 
 def _reset_config_parser():
@@ -716,7 +715,7 @@ def _process_app_name_setting():
     name = app_name_list[0].strip() or "Python Application"
 
     if len(app_name_list) > 3:
-        agent_control_health.set_health_status(HealthStatus.MAX_APP_NAME.value)
+        agent_control_health_instance().set_health_status(HealthStatus.MAX_APP_NAME.value)
 
     linked = []
     for altname in app_name_list[1:]:
@@ -1114,7 +1113,7 @@ def _load_configuration(config_file=None, environment=None, ignore_errors=True, 
         elif not _config_object.read([config_file]):
             raise newrelic.api.exceptions.ConfigurationError(f"Unable to open configuration file {config_file}.")
     except Exception:
-        agent_control_health.set_health_status(HealthStatus.INVALID_CONFIG.value)
+        agent_control_health_instance().set_health_status(HealthStatus.INVALID_CONFIG.value)
         raise
 
     _settings.config_file = config_file
@@ -4618,13 +4617,14 @@ def _setup_agent_control_health():
         return
 
     try:
-        if agent_control_health.health_check_enabled:
+        if agent_control_health_instance().health_check_enabled:
             agent_control_health_thread.start()
     except Exception:
         _logger.warning("Unable to start Agent Control health check thread. Health checks will not be enabled.")
 
 
 def initialize(config_file=None, environment=None, ignore_errors=None, log_file=None, log_level=None):
+    agent_control_health = agent_control_health_instance()
     agent_control_health.start_time_unix_nano = time.time_ns()
 
     if config_file is None:

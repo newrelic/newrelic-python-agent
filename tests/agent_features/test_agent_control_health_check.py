@@ -69,6 +69,14 @@ def restore_settings_fixture():
     initialize()
 
 
+@pytest.fixture(autouse=True)
+def shutdown_health_thread_fixture(tmp_path):
+    # Requires tmp_path to ensure it's not destroyed until after the test,
+    # which ensures we don't write to a missing file.
+    yield
+    agent_control_health_instance()._shutdown_health_thread()
+
+
 @pytest.mark.parametrize("file_uri", ["", "file://", "/test/dir", "foo:/test/dir"])
 def test_invalid_file_directory_supplied(monkeypatch, file_uri):
     # Setup expected env vars to run agent control health check

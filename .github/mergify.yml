@@ -28,7 +28,6 @@ pull_request_rules:
     conditions:
       - merged
     actions:
-      delete_head_branch:
       label:
         remove:
           - "merge-conflicts"

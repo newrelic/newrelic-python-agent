@@ -28,7 +28,12 @@ _default_settings = {
     "custom_insights_events.max_attribute_value": 4096,
     "ai_monitoring.enabled": True,
     "opentelemetry.enabled": True,
-    "opentelemetry.traces.enabled": True,
+    "opentelemetry.traces.include": {"dynamodb"},
+    # Because this framework has been explicitly disabled
+    # (for now), this test ensures that even if `dynamodb`
+    # is added in the include list that the Hybrid Agent
+    # will not allow OpenTelemetry's instrumentation hooks
+    # to be used.
 }
 collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (Hybrid Agent, botocore)",

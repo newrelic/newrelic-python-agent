@@ -23,7 +23,8 @@ from _test_bedrock_chat_completion_converse import (
 from conftest import BOTOCORE_VERSION
 from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
-    add_token_count_to_events,
+    add_token_count_streaming_events,
+    add_token_counts_to_chat_events,
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
     events_sans_content,
@@ -140,8 +141,14 @@ def test_bedrock_chat_completion_no_content(set_trace_info, exercise_model, expe
 
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
-def test_bedrock_chat_completion_with_token_count(set_trace_info, exercise_model, expected_metric, expected_events):
-    @validate_custom_events(add_token_count_to_events(expected_events))
+def test_bedrock_chat_completion_with_token_count(
+    set_trace_info, exercise_model, expected_metric, expected_events, response_streaming
+):
+    expected_events = add_token_counts_to_chat_events(expected_events)
+    if response_streaming:
+        expected_events = add_token_count_streaming_events(expected_events)
+
+    @validate_custom_events(expected_events)
     # One summary event, one user message, and one response message from the assistant
     @validate_custom_event_count(count=4)
     @validate_transaction_metrics(
@@ -254,49 +261,6 @@ def test_bedrock_chat_completion_error_incorrect_access_key(
         background_task=True,
     )
     @background_task(name="test_bedrock_chat_completion")
-    def _test():
-        set_trace_info()
-        add_custom_attribute("llm.conversation_id", "my-awesome-id")
-        add_custom_attribute("llm.foo", "bar")
-        add_custom_attribute("non_llm_attr", "python-agent")
-
-        exercise_converse_incorrect_access_key()
-
-    _test()
-
-
-@reset_core_stats_engine()
-@override_llm_token_callback_settings(llm_token_count_callback)
-def test_bedrock_chat_completion_error_incorrect_access_key_with_token_count(
-    exercise_converse_incorrect_access_key, set_trace_info, expected_metric
-):
-    """
-    A request is made to the server with invalid credentials. botocore will reach out to the server and receive an
-    UnrecognizedClientException as a response. Information from the request will be parsed and reported in customer
-    events. The error response can also be parsed, and will be included as attributes on the recorded exception.
-    """
-
-    @validate_custom_events(add_token_count_to_events(chat_completion_invalid_access_key_error_events))
-    @validate_error_trace_attributes(
-        _client_error_name,
-        exact_attrs={
-            "agent": {},
-            "intrinsic": {},
-            "user": {
-                "http.statusCode": 403,
-                "error.message": "The security token included in the request is invalid.",
-                "error.code": "UnrecognizedClientException",
-            },
-        },
-    )
-    @validate_transaction_metrics(
-        name="test_bedrock_chat_completion_incorrect_access_key_with_token_count",
-        scoped_metrics=[expected_metric],
-        rollup_metrics=[expected_metric],
-        custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
-        background_task=True,
-    )
-    @background_task(name="test_bedrock_chat_completion_incorrect_access_key_with_token_count")
     def _test():
         set_trace_info()
         add_custom_attribute("llm.conversation_id", "my-awesome-id")

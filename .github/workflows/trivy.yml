@@ -31,6 +31,10 @@ jobs:
   trivy:
     if: success() || failure() # Does not run on cancelled workflows
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      security-events: write
+
     steps:
       # Git Checkout
       - name: Checkout Code

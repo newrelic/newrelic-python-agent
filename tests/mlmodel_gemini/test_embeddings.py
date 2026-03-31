@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import google.genai
+from conftest import GEMINI_VERSION_METRIC
 from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     add_token_count_to_events,
@@ -40,7 +40,7 @@ embedding_recorded_events = [
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
             "duration": None,  # Response time varies each test run
-            "request.model": "text-embedding-004",
+            "request.model": "gemini-embedding-001",
             "vendor": "gemini",
             "ingest_source": "Python",
         },
@@ -52,21 +52,21 @@ embedding_recorded_events = [
 @validate_custom_events(embedding_recorded_events)
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
-    name="test_embeddings:test_gemini_embedding_sync",
+    name="test_embeddings:test_gemini_embedding",
     scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
     rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
 @background_task()
-def test_gemini_embedding_sync(gemini_dev_client, set_trace_info):
+def test_gemini_embedding(exercise_embedding_model, set_trace_info):
     set_trace_info()
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
     add_custom_attribute("llm.foo", "bar")
     add_custom_attribute("non_llm_attr", "python-agent")
 
-    gemini_dev_client.models.embed_content(contents="This is an embedding test.", model="text-embedding-004")
+    exercise_embedding_model(contents="This is an embedding test.", model="gemini-embedding-001")
 
 
 @reset_core_stats_engine()
@@ -74,21 +74,21 @@ def test_gemini_embedding_sync(gemini_dev_client, set_trace_info):
 @validate_custom_events(events_sans_content(embedding_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
-    name="test_embeddings:test_gemini_embedding_sync_no_content",
+    name="test_embeddings:test_gemini_embedding_no_content",
     scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
     rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
 @background_task()
-def test_gemini_embedding_sync_no_content(gemini_dev_client, set_trace_info):
+def test_gemini_embedding_no_content(exercise_embedding_model, set_trace_info):
     set_trace_info()
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
     add_custom_attribute("llm.foo", "bar")
     add_custom_attribute("non_llm_attr", "python-agent")
 
-    gemini_dev_client.models.embed_content(contents="This is an embedding test.", model="text-embedding-004")
+    exercise_embedding_model(contents="This is an embedding test.", model="gemini-embedding-001")
 
 
 @reset_core_stats_engine()
@@ -96,123 +96,33 @@ def test_gemini_embedding_sync_no_content(gemini_dev_client, set_trace_info):
 @validate_custom_events(add_token_count_to_events(embedding_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
-    name="test_embeddings:test_gemini_embedding_sync_with_token_count",
+    name="test_embeddings:test_gemini_embedding_with_token_count",
     scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
     rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
 @background_task()
-def test_gemini_embedding_sync_with_token_count(gemini_dev_client, set_trace_info):
+def test_gemini_embedding_with_token_count(exercise_embedding_model, set_trace_info):
     set_trace_info()
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
     add_custom_attribute("llm.foo", "bar")
     add_custom_attribute("non_llm_attr", "python-agent")
 
-    gemini_dev_client.models.embed_content(contents="This is an embedding test.", model="text-embedding-004")
+    exercise_embedding_model(contents="This is an embedding test.", model="gemini-embedding-001")
 
 
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
-def test_gemini_embedding_sync_outside_txn(gemini_dev_client):
-    gemini_dev_client.models.embed_content(contents="This is an embedding test.", model="text-embedding-004")
+def test_gemini_embedding_outside_txn(exercise_embedding_model):
+    exercise_embedding_model(contents="This is an embedding test.", model="gemini-embedding-001")
 
 
 @disabled_ai_monitoring_settings
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 @background_task()
-def test_gemini_embedding_sync_disabled_ai_monitoring_events(gemini_dev_client, set_trace_info):
+def test_gemini_embedding_disabled_ai_monitoring_events(exercise_embedding_model, set_trace_info):
     set_trace_info()
-    gemini_dev_client.models.embed_content(contents="This is an embedding test.", model="text-embedding-004")
-
-
-@reset_core_stats_engine()
-@validate_custom_events(embedding_recorded_events)
-@validate_custom_event_count(count=1)
-@validate_transaction_metrics(
-    name="test_embeddings:test_gemini_embedding_async",
-    scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
-    background_task=True,
-)
-@validate_attributes("agent", ["llm"])
-@background_task()
-def test_gemini_embedding_async(gemini_dev_client, loop, set_trace_info):
-    set_trace_info()
-    add_custom_attribute("llm.conversation_id", "my-awesome-id")
-    add_custom_attribute("llm.foo", "bar")
-    add_custom_attribute("non_llm_attr", "python-agent")
-
-    loop.run_until_complete(
-        gemini_dev_client.aio.models.embed_content(contents="This is an embedding test.", model="text-embedding-004")
-    )
-
-
-@reset_core_stats_engine()
-@disabled_ai_monitoring_record_content_settings
-@validate_custom_events(events_sans_content(embedding_recorded_events))
-@validate_custom_event_count(count=1)
-@validate_transaction_metrics(
-    name="test_embeddings:test_gemini_embedding_async_no_content",
-    scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
-    background_task=True,
-)
-@validate_attributes("agent", ["llm"])
-@background_task()
-def test_gemini_embedding_async_no_content(gemini_dev_client, loop, set_trace_info):
-    set_trace_info()
-    add_custom_attribute("llm.conversation_id", "my-awesome-id")
-    add_custom_attribute("llm.foo", "bar")
-    add_custom_attribute("non_llm_attr", "python-agent")
-
-    loop.run_until_complete(
-        gemini_dev_client.aio.models.embed_content(contents="This is an embedding test.", model="text-embedding-004")
-    )
-
-
-@reset_core_stats_engine()
-@override_llm_token_callback_settings(llm_token_count_callback)
-@validate_custom_events(add_token_count_to_events(embedding_recorded_events))
-@validate_custom_event_count(count=1)
-@validate_transaction_metrics(
-    name="test_embeddings:test_gemini_embedding_async_with_token_count",
-    scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
-    background_task=True,
-)
-@validate_attributes("agent", ["llm"])
-@background_task()
-def test_gemini_embedding_async_with_token_count(gemini_dev_client, loop, set_trace_info):
-    set_trace_info()
-    add_custom_attribute("llm.conversation_id", "my-awesome-id")
-    add_custom_attribute("llm.foo", "bar")
-    add_custom_attribute("non_llm_attr", "python-agent")
-
-    loop.run_until_complete(
-        gemini_dev_client.aio.models.embed_content(contents="This is an embedding test.", model="text-embedding-004")
-    )
-
-
-@reset_core_stats_engine()
-@validate_custom_event_count(count=0)
-def test_gemini_embedding_async_outside_txn(gemini_dev_client, loop):
-    loop.run_until_complete(
-        gemini_dev_client.aio.models.embed_content(contents="This is an embedding test.", model="text-embedding-004")
-    )
-
-
-@disabled_ai_monitoring_settings
-@reset_core_stats_engine()
-@validate_custom_event_count(count=0)
-@background_task()
-def test_gemini_embedding_async_disabled_ai_monitoring_events(gemini_dev_client, loop, set_trace_info):
-    set_trace_info()
-    loop.run_until_complete(
-        gemini_dev_client.aio.models.embed_content(contents="This is an embedding test.", model="text-embedding-004")
-    )
+    exercise_embedding_model(contents="This is an embedding test.", model="gemini-embedding-001")

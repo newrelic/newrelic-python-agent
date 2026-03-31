@@ -1,0 +1,60 @@
+{
+  "replay_id": "test_embeddings_error/test_embeddings_wrong_api_key_error/invoke-model-standard",
+  "interactions": [
+    {
+      "request": {
+        "method": "post",
+        "url": "{MLDEV_URL_PREFIX}/models/gemini-embedding-001:batchEmbedContents",
+        "headers": {
+          "Content-Type": "application/json",
+          "x-goog-api-key": "{REDACTED}",
+          "user-agent": "google-genai-sdk/{VERSION_NUMBER} {LANGUAGE_LABEL}/{VERSION_NUMBER}",
+          "x-goog-api-client": "google-genai-sdk/{VERSION_NUMBER} {LANGUAGE_LABEL}/{VERSION_NUMBER}"
+        },
+        "body_segments": [
+          {
+            "requests": [
+              {
+                "content": {
+                  "parts": [
+                    {
+                      "text": "Invalid API key."
+                    }
+                  ],
+                  "role": "user"
+                },
+                "model": "models/gemini-embedding-001"
+              }
+            ]
+          }
+        ]
+      },
+      "response": {
+        "status_code": 400,
+        "headers": {
+          "vary": "Origin, X-Origin, Referer",
+          "content-type": "application/json; charset=UTF-8",
+          "content-encoding": "gzip",
+          "date": "Fri, 27 Mar 2026 20:02:26 GMT",
+          "server": "scaffolding on HTTPServer2",
+          "x-xss-protection": "0",
+          "x-frame-options": "SAMEORIGIN",
+          "x-content-type-options": "nosniff",
+          "server-timing": "gfet4t7; dur=41",
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+          "transfer-encoding": "chunked"
+        },
+        "body_segments": [
+          {
+            "error": {
+              "code": 400,
+              "message": "API key not valid. Please pass a valid API key.",
+              "status": "INVALID_ARGUMENT"
+            }
+          }
+        ],
+        "sdk_response_segments": []
+      }
+    }
+  ]
+}

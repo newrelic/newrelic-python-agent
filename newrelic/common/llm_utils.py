@@ -38,11 +38,17 @@ def _get_llm_metadata(transaction):
     return llm_metadata_dict
 
 
+def noop(self, *args, **kwargs):
+    """No-op function to use as a default for on_stream_chunk when it's not provided."""
+    pass
+
+
 class LLMStreamProxy(ObjectProxy):
-    def __init__(self, wrapped, on_stop_iteration, on_error):
+    def __init__(self, wrapped, on_stop_iteration, on_error, on_stream_chunk=None):
         super().__init__(wrapped)
         self._nr_on_stop_iteration = on_stop_iteration
         self._nr_on_error = on_error
+        self._nr_on_stream_chunk = on_stream_chunk or noop
         # Track if we've sent the LLM events yet to avoid sending them multiple times
         self._nr_closed = False
 
@@ -53,6 +59,7 @@ class LLMStreamProxy(ObjectProxy):
     def __next__(self):
         try:
             return_val = self._nr_wrapped_iter.__next__()
+            self._nr_on_stream_chunk(self, return_val)
         except StopIteration:
             transaction = current_transaction()
             if transaction:
@@ -97,14 +104,20 @@ class LLMStreamProxy(ObjectProxy):
     def __copy__(self):
         # Required to properly interface with itertool.tee, which can be called by LangChain on generators
         self.__wrapped__, copy = itertools.tee(self.__wrapped__, 2)
-        return LLMStreamProxy(copy, self._nr_on_stop_iteration, self._nr_on_error)
+        return LLMStreamProxy(
+            copy,
+            on_stop_iteration=self._nr_on_stop_iteration,
+            on_error=self._nr_on_error,
+            on_stream_chunk=self._nr_on_stream_chunk,
+        )
 
 
 class AsyncLLMStreamProxy(ObjectProxy):
-    def __init__(self, wrapped, on_stop_iteration, on_error):
+    def __init__(self, wrapped, on_stop_iteration, on_error, on_stream_chunk=None):
         super().__init__(wrapped)
         self._nr_on_stop_iteration = on_stop_iteration
         self._nr_on_error = on_error
+        self._nr_on_stream_chunk = on_stream_chunk or noop
         # Track if we've sent the LLM events yet to avoid sending them multiple times
         self._nr_closed = False
 
@@ -115,6 +128,7 @@ class AsyncLLMStreamProxy(ObjectProxy):
     async def __anext__(self):
         try:
             return_val = await self._nr_wrapped_iter.__anext__()
+            self._nr_on_stream_chunk(self, return_val)
         except StopAsyncIteration:
             transaction = current_transaction()
             if transaction:
@@ -159,4 +173,9 @@ class AsyncLLMStreamProxy(ObjectProxy):
     def __copy__(self):
         # Required to properly interface with itertool.tee, which can be called by LangChain on generators
         self.__wrapped__, copy = itertools.tee(self.__wrapped__, n=2)
-        return AsyncLLMStreamProxy(copy, self._nr_on_stop_iteration, self._nr_on_error)
+        return AsyncLLMStreamProxy(
+            copy,
+            on_stop_iteration=self._nr_on_stop_iteration,
+            on_error=self._nr_on_error,
+            on_stream_chunk=self._nr_on_stream_chunk,
+        )

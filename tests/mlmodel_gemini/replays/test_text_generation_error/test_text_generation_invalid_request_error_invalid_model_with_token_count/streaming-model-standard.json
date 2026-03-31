@@ -1,0 +1,60 @@
+{
+  "replay_id": "test_text_generation_error/test_text_generation_invalid_request_error_invalid_model_with_token_count/streaming-model-standard",
+  "interactions": [
+    {
+      "request": {
+        "method": "post",
+        "url": "{MLDEV_URL_PREFIX}/models/does-not-exist:streamGenerateContent?alt=sse",
+        "headers": {
+          "Content-Type": "application/json",
+          "x-goog-api-key": "{REDACTED}",
+          "user-agent": "google-genai-sdk/{VERSION_NUMBER} {LANGUAGE_LABEL}/{VERSION_NUMBER}",
+          "x-goog-api-client": "google-genai-sdk/{VERSION_NUMBER} {LANGUAGE_LABEL}/{VERSION_NUMBER}"
+        },
+        "body_segments": [
+          {
+            "contents": [
+              {
+                "parts": [
+                  {
+                    "text": "Model does not exist."
+                  }
+                ],
+                "role": "user"
+              }
+            ],
+            "generationConfig": {
+              "temperature": 0.7,
+              "maxOutputTokens": 100
+            }
+          }
+        ]
+      },
+      "response": {
+        "status_code": 404,
+        "headers": {
+          "vary": "Origin, X-Origin, Referer",
+          "content-type": "text/event-stream",
+          "date": "Fri, 27 Mar 2026 19:05:35 GMT",
+          "server": "scaffolding on HTTPServer2",
+          "content-length": "263",
+          "x-xss-protection": "0",
+          "x-frame-options": "SAMEORIGIN",
+          "x-content-type-options": "nosniff",
+          "server-timing": "gfet4t7; dur=76",
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+        },
+        "body_segments": [
+          {
+            "error": {
+              "code": 404,
+              "message": "models/does-not-exist is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods.",
+              "status": "NOT_FOUND"
+            }
+          }
+        ],
+        "sdk_response_segments": []
+      }
+    }
+  ]
+}

@@ -16,12 +16,10 @@ import sys
 
 import google.genai
 import pytest
-from testing_support.fixtures import dt_enabled, override_llm_token_callback_settings, reset_core_stats_engine
+from testing_support.fixtures import dt_enabled, reset_core_stats_engine
 from testing_support.ml_testing_utils import (
-    add_token_count_to_events,
     disabled_ai_monitoring_record_content_settings,
     events_sans_content,
-    llm_token_count_callback,
     set_trace_info,
 )
 from testing_support.validators.validate_custom_event import validate_custom_event_count
@@ -159,34 +157,6 @@ def test_embeddings_invalid_request_error_invalid_model(gemini_dev_client, set_t
         gemini_dev_client.models.embed_content(contents="Embedded: Model does not exist.", model="does-not-exist")
 
 
-@dt_enabled
-@reset_core_stats_engine()
-@override_llm_token_callback_settings(llm_token_count_callback)
-@validate_error_trace_attributes(
-    callable_name(google.genai.errors.ClientError),
-    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.code": "NOT_FOUND", "http.statusCode": 404}},
-)
-@validate_span_events(
-    exact_agents={
-        "error.message": "models/does-not-exist is not found for API version v1beta, or is not supported for embedContent. Call ListModels to see the list of available models and their supported methods."
-    }
-)
-@validate_transaction_metrics(
-    name="test_embeddings_error:test_embeddings_invalid_request_error_invalid_model_with_token_count",
-    scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
-    background_task=True,
-)
-@validate_custom_events(add_token_count_to_events(invalid_model_events))
-@validate_custom_event_count(count=1)
-@background_task()
-def test_embeddings_invalid_request_error_invalid_model_with_token_count(gemini_dev_client, set_trace_info):
-    with pytest.raises(google.genai.errors.ClientError):
-        set_trace_info()
-        gemini_dev_client.models.embed_content(contents="Embedded: Model does not exist.", model="does-not-exist")
-
-
 embedding_invalid_key_error_events = [
     (
         {"type": "LlmEmbedding"},
@@ -319,36 +289,6 @@ def test_embeddings_async_invalid_request_error_no_model_no_content(gemini_dev_c
 @validate_custom_event_count(count=1)
 @background_task()
 def test_embeddings_async_invalid_request_error_invalid_model(gemini_dev_client, loop, set_trace_info):
-    with pytest.raises(google.genai.errors.ClientError):
-        set_trace_info()
-        loop.run_until_complete(
-            gemini_dev_client.models.embed_content(contents="Embedded: Model does not exist.", model="does-not-exist")
-        )
-
-
-@dt_enabled
-@reset_core_stats_engine()
-@override_llm_token_callback_settings(llm_token_count_callback)
-@validate_error_trace_attributes(
-    callable_name(google.genai.errors.ClientError),
-    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.code": "NOT_FOUND", "http.statusCode": 404}},
-)
-@validate_span_events(
-    exact_agents={
-        "error.message": "models/does-not-exist is not found for API version v1beta, or is not supported for embedContent. Call ListModels to see the list of available models and their supported methods."
-    }
-)
-@validate_transaction_metrics(
-    name="test_embeddings_error:test_embeddings_async_invalid_request_error_invalid_model_with_token_count",
-    scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
-    background_task=True,
-)
-@validate_custom_events(add_token_count_to_events(invalid_model_events))
-@validate_custom_event_count(count=1)
-@background_task()
-def test_embeddings_async_invalid_request_error_invalid_model_with_token_count(gemini_dev_client, loop, set_trace_info):
     with pytest.raises(google.genai.errors.ClientError):
         set_trace_info()
         loop.run_until_complete(

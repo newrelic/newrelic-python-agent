@@ -16,6 +16,7 @@ import sys
 
 import google.genai
 import pytest
+from conftest import GEMINI_VERSION_METRIC
 from testing_support.fixtures import dt_enabled, override_llm_token_callback_settings, reset_core_stats_engine
 from testing_support.ml_testing_utils import (
     add_token_count_to_events,
@@ -50,22 +51,26 @@ embedding_recorded_events = [
 ]
 
 
-def test_embeddings_invalid_request_error_no_model(gemini_dev_client, set_trace_info):
+@pytest.fixture(scope="session")
+def model_error_msg(is_async):
+    class_name = "AsyncModels" if is_async else "Models"
     if sys.version_info < (3, 10):
-        error_message = "embed_content() missing 1 required keyword-only argument: 'model'"
+        return "embed_content() missing 1 required keyword-only argument: 'model'"
     else:
-        error_message = "Models.embed_content() missing 1 required keyword-only argument: 'model'"
+        return f"{class_name}.embed_content() missing 1 required keyword-only argument: 'model'"
 
+
+def test_embeddings_invalid_request_error_no_model(exercise_embedding_model, set_trace_info, model_error_msg):
     # No model provided
     @dt_enabled
     @reset_core_stats_engine()
     @validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
-    @validate_span_events(exact_agents={"error.message": error_message})
+    @validate_span_events(exact_agents={"error.message": model_error_msg})
     @validate_transaction_metrics(
         name="test_embeddings_error:test_embeddings_invalid_request_error_no_model.<locals>._test",
         scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
         rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-        custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
+        custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
         background_task=True,
     )
     @validate_custom_events(embedding_recorded_events)
@@ -74,7 +79,7 @@ def test_embeddings_invalid_request_error_no_model(gemini_dev_client, set_trace_
     def _test():
         with pytest.raises(TypeError):
             set_trace_info()
-            gemini_dev_client.models.embed_content(
+            exercise_embedding_model(
                 contents="This is an embedding test."
                 # No model
             )
@@ -82,22 +87,19 @@ def test_embeddings_invalid_request_error_no_model(gemini_dev_client, set_trace_
     _test()
 
 
-def test_embeddings_invalid_request_error_no_model_no_content(gemini_dev_client, set_trace_info):
-    if sys.version_info < (3, 10):
-        error_message = "embed_content() missing 1 required keyword-only argument: 'model'"
-    else:
-        error_message = "Models.embed_content() missing 1 required keyword-only argument: 'model'"
-
+def test_embeddings_invalid_request_error_no_model_no_content(
+    exercise_embedding_model, set_trace_info, model_error_msg
+):
     @dt_enabled
     @disabled_ai_monitoring_record_content_settings
     @reset_core_stats_engine()
     @validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
-    @validate_span_events(exact_agents={"error.message": error_message})
+    @validate_span_events(exact_agents={"error.message": model_error_msg})
     @validate_transaction_metrics(
         name="test_embeddings_error:test_embeddings_invalid_request_error_no_model_no_content.<locals>._test",
         scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
         rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-        custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
+        custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
         background_task=True,
     )
     @validate_custom_events(events_sans_content(embedding_recorded_events))
@@ -106,7 +108,7 @@ def test_embeddings_invalid_request_error_no_model_no_content(gemini_dev_client,
     def _test():
         with pytest.raises(TypeError):
             set_trace_info()
-            gemini_dev_client.models.embed_content(
+            exercise_embedding_model(
                 contents="This is an embedding test."
                 # no model provided
             )
@@ -147,16 +149,16 @@ invalid_model_events = [
     name="test_embeddings_error:test_embeddings_invalid_request_error_invalid_model",
     scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
     rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
     background_task=True,
 )
 @validate_custom_events(invalid_model_events)
 @validate_custom_event_count(count=1)
 @background_task()
-def test_embeddings_invalid_request_error_invalid_model(gemini_dev_client, set_trace_info):
+def test_embeddings_invalid_request_error_invalid_model(exercise_embedding_model, set_trace_info):
     with pytest.raises(google.genai.errors.ClientError):
         set_trace_info()
-        gemini_dev_client.models.embed_content(contents="Embedded: Model does not exist.", model="does-not-exist")
+        exercise_embedding_model(contents="Embedded: Model does not exist.", model="does-not-exist")
 
 
 @dt_enabled
@@ -175,16 +177,16 @@ def test_embeddings_invalid_request_error_invalid_model(gemini_dev_client, set_t
     name="test_embeddings_error:test_embeddings_invalid_request_error_invalid_model_with_token_count",
     scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
     rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
     background_task=True,
 )
 @validate_custom_events(add_token_count_to_events(invalid_model_events))
 @validate_custom_event_count(count=1)
 @background_task()
-def test_embeddings_invalid_request_error_invalid_model_with_token_count(gemini_dev_client, set_trace_info):
+def test_embeddings_invalid_request_error_invalid_model_with_token_count(exercise_embedding_model, set_trace_info):
     with pytest.raises(google.genai.errors.ClientError):
         set_trace_info()
-        gemini_dev_client.models.embed_content(contents="Embedded: Model does not exist.", model="does-not-exist")
+        exercise_embedding_model(contents="Embedded: Model does not exist.", model="does-not-exist")
 
 
 embedding_invalid_key_error_events = [
@@ -196,7 +198,7 @@ embedding_invalid_key_error_events = [
             "trace_id": "trace-id",
             "input": "Invalid API key.",
             "duration": None,  # Response time varies each test run
-            "request.model": "text-embedding-004",  # No model in this test case
+            "request.model": "gemini-embedding-001",  # No model in this test case
             "vendor": "gemini",
             "ingest_source": "Python",
             "error": True,
@@ -217,167 +219,16 @@ embedding_invalid_key_error_events = [
     name="test_embeddings_error:test_embeddings_wrong_api_key_error",
     scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
     rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
     background_task=True,
 )
 @validate_custom_events(embedding_invalid_key_error_events)
 @validate_custom_event_count(count=1)
 @background_task()
-def test_embeddings_wrong_api_key_error(monkeypatch, gemini_dev_client, set_trace_info):
+def test_embeddings_wrong_api_key_error(exercise_embedding_model, gemini_dev_client, set_trace_info):
     with pytest.raises(google.genai.errors.ClientError):
         set_trace_info()
-        gemini_dev_client._api_client.api_key = "DEADBEEF"
-        gemini_dev_client.models.embed_content(contents="Invalid API key.", model="text-embedding-004")
-
-
-def test_embeddings_async_invalid_request_error_no_model(gemini_dev_client, loop, set_trace_info):
-    if sys.version_info < (3, 10):
-        error_message = "embed_content() missing 1 required keyword-only argument: 'model'"
-    else:
-        error_message = "Models.embed_content() missing 1 required keyword-only argument: 'model'"
-
-    @dt_enabled
-    @reset_core_stats_engine()
-    @validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
-    @validate_span_events(exact_agents={"error.message": error_message})
-    @validate_transaction_metrics(
-        name="test_embeddings_error:test_embeddings_async_invalid_request_error_no_model.<locals>._test",
-        scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-        rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-        custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
-        background_task=True,
-    )
-    @validate_custom_events(embedding_recorded_events)
-    @validate_custom_event_count(count=1)
-    @background_task()
-    def _test():
-        with pytest.raises(TypeError):
-            set_trace_info()
-            loop.run_until_complete(
-                gemini_dev_client.models.embed_content(
-                    contents="This is an embedding test."
-                    # No model
-                )
-            )
-
-    _test()
-
-
-def test_embeddings_async_invalid_request_error_no_model_no_content(gemini_dev_client, loop, set_trace_info):
-    if sys.version_info < (3, 10):
-        error_message = "embed_content() missing 1 required keyword-only argument: 'model'"
-    else:
-        error_message = "Models.embed_content() missing 1 required keyword-only argument: 'model'"
-
-    @dt_enabled
-    @disabled_ai_monitoring_record_content_settings
-    @reset_core_stats_engine()
-    @validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
-    @validate_span_events(exact_agents={"error.message": error_message})
-    @validate_transaction_metrics(
-        name="test_embeddings_error:test_embeddings_async_invalid_request_error_no_model_no_content.<locals>._test",
-        scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-        rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-        custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
-        background_task=True,
-    )
-    @validate_custom_events(events_sans_content(embedding_recorded_events))
-    @validate_custom_event_count(count=1)
-    @background_task()
-    def _test():
-        with pytest.raises(TypeError):
-            set_trace_info()
-            loop.run_until_complete(
-                gemini_dev_client.models.embed_content(
-                    contents="This is an embedding test."
-                    # no model provided
-                )
-            )
-
-    _test()
-
-
-@dt_enabled
-@reset_core_stats_engine()
-@validate_error_trace_attributes(
-    callable_name(google.genai.errors.ClientError),
-    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.code": "NOT_FOUND", "http.statusCode": 404}},
-)
-@validate_span_events(
-    exact_agents={
-        "error.message": "models/does-not-exist is not found for API version v1beta, or is not supported for embedContent. Call ListModels to see the list of available models and their supported methods."
-    }
-)
-@validate_transaction_metrics(
-    name="test_embeddings_error:test_embeddings_async_invalid_request_error_invalid_model",
-    scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
-    background_task=True,
-)
-@validate_custom_events(invalid_model_events)
-@validate_custom_event_count(count=1)
-@background_task()
-def test_embeddings_async_invalid_request_error_invalid_model(gemini_dev_client, loop, set_trace_info):
-    with pytest.raises(google.genai.errors.ClientError):
-        set_trace_info()
-        loop.run_until_complete(
-            gemini_dev_client.models.embed_content(contents="Embedded: Model does not exist.", model="does-not-exist")
-        )
-
-
-@dt_enabled
-@reset_core_stats_engine()
-@override_llm_token_callback_settings(llm_token_count_callback)
-@validate_error_trace_attributes(
-    callable_name(google.genai.errors.ClientError),
-    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.code": "NOT_FOUND", "http.statusCode": 404}},
-)
-@validate_span_events(
-    exact_agents={
-        "error.message": "models/does-not-exist is not found for API version v1beta, or is not supported for embedContent. Call ListModels to see the list of available models and their supported methods."
-    }
-)
-@validate_transaction_metrics(
-    name="test_embeddings_error:test_embeddings_async_invalid_request_error_invalid_model_with_token_count",
-    scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
-    background_task=True,
-)
-@validate_custom_events(add_token_count_to_events(invalid_model_events))
-@validate_custom_event_count(count=1)
-@background_task()
-def test_embeddings_async_invalid_request_error_invalid_model_with_token_count(gemini_dev_client, loop, set_trace_info):
-    with pytest.raises(google.genai.errors.ClientError):
-        set_trace_info()
-        loop.run_until_complete(
-            gemini_dev_client.models.embed_content(contents="Embedded: Model does not exist.", model="does-not-exist")
-        )
-
-
-# Wrong api_key provided
-@dt_enabled
-@reset_core_stats_engine()
-@validate_error_trace_attributes(
-    callable_name(google.genai.errors.ClientError),
-    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.code": "INVALID_ARGUMENT", "http.statusCode": 400}},
-)
-@validate_span_events(exact_agents={"error.message": "API key not valid. Please pass a valid API key."})
-@validate_transaction_metrics(
-    name="test_embeddings_error:test_embeddings_async_wrong_api_key_error",
-    scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/Gemini/{google.genai.__version__}", 1)],
-    background_task=True,
-)
-@validate_custom_events(embedding_invalid_key_error_events)
-@validate_custom_event_count(count=1)
-@background_task()
-def test_embeddings_async_wrong_api_key_error(gemini_dev_client, loop, set_trace_info):
-    with pytest.raises(google.genai.errors.ClientError):
-        set_trace_info()
-        gemini_dev_client._api_client.api_key = "DEADBEEF"
-        loop.run_until_complete(
-            gemini_dev_client.models.embed_content(contents="Invalid API key.", model="text-embedding-004")
-        )
+        fake_api_key = "DEADBEEF"
+        gemini_dev_client._api_client.api_key = fake_api_key
+        gemini_dev_client._api_client._http_options.headers["x-goog-api-key"] = fake_api_key
+        exercise_embedding_model(contents="Invalid API key.", model="gemini-embedding-001")

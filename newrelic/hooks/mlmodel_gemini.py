@@ -22,6 +22,7 @@ import google
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
+from newrelic.common.llm_utils import AsyncLLMStreamProxy, LLMStreamProxy
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.core.config import global_settings
@@ -36,6 +37,8 @@ RECORD_EVENTS_FAILURE_LOG_MESSAGE = (
     "Exception occurred in Gemini instrumentation: Failed to record LLM events. "
     "Please report this issue to New Relic Support.\n "
 )
+STREAM_PARSING_FAILURE_LOG_MESSAGE = "Exception occurred in Gemini instrumentation: Failed to process event stream information. Please report this issue to New Relic Support.\n"
+
 
 _logger = logging.getLogger(__name__)
 
@@ -64,14 +67,23 @@ def wrap_embed_content_sync(wrapped, instance, args, kwargs):
     except Exception as exc:
         # In error cases, exit the function trace in _record_embedding_error before recording the LLM error event so
         # that the duration is calculated correctly.
-        _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs, ft, exc)
+        _record_embedding_error(
+            transaction=transaction,
+            embedding_id=embedding_id,
+            linking_metadata=linking_metadata,
+            kwargs=kwargs,
+            ft=ft,
+            exc=exc,
+        )
         raise
     ft.__exit__(None, None, None)
 
     if not response:
         return response
 
-    _record_embedding_success(transaction, embedding_id, linking_metadata, kwargs, ft)
+    _record_embedding_success(
+        transaction=transaction, embedding_id=embedding_id, linking_metadata=linking_metadata, kwargs=kwargs, ft=ft
+    )
     return response
 
 
@@ -99,18 +111,27 @@ async def wrap_embed_content_async(wrapped, instance, args, kwargs):
     except Exception as exc:
         # In error cases, exit the function trace in _record_embedding_error before recording the LLM error event so
         # that the duration is calculated correctly.
-        _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs, ft, exc)
+        _record_embedding_error(
+            transaction=transaction,
+            embedding_id=embedding_id,
+            linking_metadata=linking_metadata,
+            kwargs=kwargs,
+            ft=ft,
+            exc=exc,
+        )
         raise
     ft.__exit__(None, None, None)
 
     if not response:
         return response
 
-    _record_embedding_success(transaction, embedding_id, linking_metadata, kwargs, ft)
+    _record_embedding_success(
+        transaction=transaction, embedding_id=embedding_id, linking_metadata=linking_metadata, kwargs=kwargs, ft=ft
+    )
     return response
 
 
-def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs, ft, exc):
+def _record_embedding_error(*, transaction, embedding_id, linking_metadata, kwargs, ft, exc):
     settings = transaction.settings or global_settings()
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
@@ -165,7 +186,7 @@ def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs,
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
 
 
-def _record_embedding_success(transaction, embedding_id, linking_metadata, kwargs, ft):
+def _record_embedding_success(*, transaction, embedding_id, linking_metadata, kwargs, ft):
     settings = transaction.settings or global_settings()
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
@@ -238,14 +259,98 @@ def wrap_generate_content_sync(wrapped, instance, args, kwargs):
     except Exception as exc:
         # In error cases, exit the function trace in _record_generation_error before recording the LLM error event so
         # that the duration is calculated correctly.
-        _record_generation_error(transaction, linking_metadata, completion_id, kwargs, ft, exc, request_timestamp)
+        _record_generation_error(
+            transaction=transaction,
+            linking_metadata=linking_metadata,
+            completion_id=completion_id,
+            kwargs=kwargs,
+            ft=ft,
+            exc=exc,
+            request_timestamp=request_timestamp,
+        )
         raise
 
     ft.__exit__(None, None, None)
 
-    _handle_generation_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val, request_timestamp)
+    _handle_generation_success(
+        transaction=transaction,
+        linking_metadata=linking_metadata,
+        completion_id=completion_id,
+        kwargs=kwargs,
+        ft=ft,
+        return_val=return_val,
+        request_timestamp=request_timestamp,
+    )
 
     return return_val
+
+
+def wrap_generate_content_stream_sync(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return wrapped(*args, **kwargs)
+
+    settings = transaction.settings or global_settings()
+    if not settings.ai_monitoring.enabled:
+        return wrapped(*args, **kwargs)
+
+    # Framework metric also used for entity tagging in the UI
+    transaction.add_ml_model_info("Gemini", GEMINI_VERSION)
+    transaction._add_agent_attribute("llm", True)
+
+    completion_id = str(uuid.uuid4())
+    request_timestamp = int(1000.0 * time.time())
+
+    ft = FunctionTrace(name=wrapped.__name__, group="Llm/completion/Gemini")
+    ft.__enter__()
+    linking_metadata = get_trace_linking_metadata()
+    try:
+        return_val = wrapped(*args, **kwargs)
+    except Exception as exc:
+        # In error cases, exit the function trace in _record_generation_error before recording the LLM error event so
+        # that the duration is calculated correctly.
+        _record_generation_error(
+            transaction=transaction,
+            linking_metadata=linking_metadata,
+            completion_id=completion_id,
+            kwargs=kwargs,
+            ft=ft,
+            exc=exc,
+            request_timestamp=request_timestamp,
+        )
+        raise
+
+    try:
+        streaming_events = []
+        # Wrap returned generator in a generator proxy
+        proxied_return_val = LLMStreamProxy(
+            return_val,
+            on_stream_chunk=_handle_stream_chunk(
+                streaming_events=streaming_events, request_timestamp=request_timestamp
+            ),
+            on_stop_iteration=_handle_streaming_generation_success(
+                linking_metadata=linking_metadata,
+                completion_id=completion_id,
+                kwargs=kwargs,
+                ft=ft,
+                streaming_events=streaming_events,
+                request_timestamp=request_timestamp,
+            ),
+            on_error=_handle_streaming_generation_error(
+                linking_metadata=linking_metadata,
+                completion_id=completion_id,
+                kwargs=kwargs,
+                ft=ft,
+                request_timestamp=request_timestamp,
+            ),
+        )
+        proxied_return_val._nr_ft = ft
+        proxied_return_val._nr_metadata = linking_metadata
+        return proxied_return_val
+    except Exception:
+        # If proxy creation fails, clean up the function trace and return original value
+        ft.__exit__(*sys.exc_info())
+        return return_val
 
 
 async def wrap_generate_content_async(wrapped, instance, args, kwargs):
@@ -272,17 +377,101 @@ async def wrap_generate_content_async(wrapped, instance, args, kwargs):
     except Exception as exc:
         # In error cases, exit the function trace in _record_generation_error before recording the LLM error event so
         # that the duration is calculated correctly.
-        _record_generation_error(transaction, linking_metadata, completion_id, kwargs, ft, exc, request_timestamp)
+        _record_generation_error(
+            transaction=transaction,
+            linking_metadata=linking_metadata,
+            completion_id=completion_id,
+            kwargs=kwargs,
+            ft=ft,
+            exc=exc,
+            request_timestamp=request_timestamp,
+        )
         raise
 
     ft.__exit__(None, None, None)
 
-    _handle_generation_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val, request_timestamp)
+    _handle_generation_success(
+        transaction=transaction,
+        linking_metadata=linking_metadata,
+        completion_id=completion_id,
+        kwargs=kwargs,
+        ft=ft,
+        return_val=return_val,
+        request_timestamp=request_timestamp,
+    )
 
     return return_val
 
 
-def _record_generation_error(transaction, linking_metadata, completion_id, kwargs, ft, exc, request_timestamp=None):
+async def wrap_generate_content_stream_async(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return await wrapped(*args, **kwargs)
+
+    settings = transaction.settings or global_settings()
+    if not settings.ai_monitoring.enabled:
+        return await wrapped(*args, **kwargs)
+
+    # Framework metric also used for entity tagging in the UI
+    transaction.add_ml_model_info("Gemini", GEMINI_VERSION)
+    transaction._add_agent_attribute("llm", True)
+
+    completion_id = str(uuid.uuid4())
+    request_timestamp = int(1000.0 * time.time())
+
+    ft = FunctionTrace(name=wrapped.__name__, group="Llm/completion/Gemini")
+    ft.__enter__()
+    linking_metadata = get_trace_linking_metadata()
+    try:
+        return_val = await wrapped(*args, **kwargs)
+    except Exception as exc:
+        # In error cases, exit the function trace in _record_generation_error before recording the LLM error event so
+        # that the duration is calculated correctly.
+        _record_generation_error(
+            transaction=transaction,
+            linking_metadata=linking_metadata,
+            completion_id=completion_id,
+            kwargs=kwargs,
+            ft=ft,
+            exc=exc,
+            request_timestamp=request_timestamp,
+        )
+        raise
+
+    try:
+        streaming_events = []
+        # Wrap returned async generator in an async generator proxy
+        proxied_return_val = AsyncLLMStreamProxy(
+            return_val,
+            on_stream_chunk=_handle_stream_chunk(
+                streaming_events=streaming_events, request_timestamp=request_timestamp
+            ),
+            on_stop_iteration=_handle_streaming_generation_success(
+                linking_metadata=linking_metadata,
+                completion_id=completion_id,
+                kwargs=kwargs,
+                ft=ft,
+                streaming_events=streaming_events,
+                request_timestamp=request_timestamp,
+            ),
+            on_error=_handle_streaming_generation_error(
+                linking_metadata=linking_metadata,
+                completion_id=completion_id,
+                kwargs=kwargs,
+                ft=ft,
+                request_timestamp=request_timestamp,
+            ),
+        )
+        proxied_return_val._nr_ft = ft
+        proxied_return_val._nr_metadata = linking_metadata
+        return proxied_return_val
+    except Exception:
+        # If proxy creation fails, clean up the function trace and return original value
+        ft.__exit__(*sys.exc_info())
+        return return_val
+
+
+def _record_generation_error(*, transaction, linking_metadata, completion_id, kwargs, ft, exc, request_timestamp=None):
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
 
@@ -367,8 +556,24 @@ def _record_generation_error(transaction, linking_metadata, completion_id, kwarg
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
 
 
+def _handle_streaming_generation_error(*, linking_metadata, completion_id, kwargs, ft, request_timestamp=None):
+    def _on_stop_iteration(self, transaction):
+        exc = sys.exc_info()[1]
+        _record_generation_error(
+            transaction=transaction,
+            linking_metadata=linking_metadata,
+            completion_id=completion_id,
+            kwargs=kwargs,
+            ft=ft,
+            exc=exc,
+            request_timestamp=request_timestamp,
+        )
+
+    return _on_stop_iteration
+
+
 def _handle_generation_success(
-    transaction, linking_metadata, completion_id, kwargs, ft, return_val, request_timestamp=None
+    *, transaction, linking_metadata, completion_id, kwargs, ft, return_val, request_timestamp=None
 ):
     if not return_val:
         return
@@ -376,9 +581,17 @@ def _handle_generation_success(
     try:
         # Response objects are pydantic models so this function call converts the response into a dict
         response = return_val.model_dump() if hasattr(return_val, "model_dump") else return_val
+        output_message_list = [response.get("candidates")[0].get("content")]
 
         _record_generation_success(
-            transaction, linking_metadata, completion_id, kwargs, ft, response, request_timestamp
+            transaction=transaction,
+            linking_metadata=linking_metadata,
+            completion_id=completion_id,
+            kwargs=kwargs,
+            ft=ft,
+            response=response,
+            output_message_list=output_message_list,
+            request_timestamp=request_timestamp,
         )
 
     except Exception:
@@ -386,7 +599,16 @@ def _handle_generation_success(
 
 
 def _record_generation_success(
-    transaction, linking_metadata, completion_id, kwargs, ft, response, request_timestamp=None
+    *,
+    transaction,
+    linking_metadata,
+    completion_id,
+    kwargs,
+    ft,
+    response,
+    output_message_list=None,
+    request_timestamp=None,
+    time_to_first_token=None,
 ):
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
@@ -395,7 +617,6 @@ def _record_generation_success(
             response_model = response.get("model_version")
             # finish_reason is an enum, so grab just the stringified value from it to report
             finish_reason = response.get("candidates")[0].get("finish_reason").value
-            output_message_list = [response.get("candidates")[0].get("content")]
         else:
             # Set all values to NoneTypes since we cannot access them through kwargs or another method that doesn't
             # require the response object
@@ -448,6 +669,7 @@ def _record_generation_success(
             # separate request (every input and output from the LLM)
             "response.number_of_messages": 1 + len(output_message_list),
             "timestamp": request_timestamp,
+            "time_to_first_token": time_to_first_token,
         }
 
         llm_metadata = _get_llm_attributes(transaction)
@@ -468,6 +690,58 @@ def _record_generation_success(
         )
     except Exception:
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
+
+
+def _handle_streaming_generation_success(
+    *, linking_metadata, completion_id, kwargs, ft, streaming_events, request_timestamp=None
+):
+    def _on_stop_iteration(self, transaction):
+        if hasattr(self, "_nr_ft"):
+            # We first check for our saved linking metadata before making a new call to get_trace_linking_metadata
+            # Directly calling get_trace_linking_metadata() causes the incorrect span ID to be captured and associated with the LLM call
+            # This leads to incorrect linking of the LLM call in the UI
+            linking_metadata = self._nr_metadata or get_trace_linking_metadata()
+            self._nr_ft.__exit__(None, None, None)
+            try:
+                # Streaming chunk objects are pydantic models so this function call converts the response into a dict
+                response = streaming_events[-1]
+                response = response.model_dump()
+
+                # Concatenate all chunk texts together to get the full response text
+                full_content = "".join([chunk.text for chunk in streaming_events])
+
+                # Streaming responses will be a list of chunks, and we can grab metadata from the last chunk to get the final token counts.
+                last_message = streaming_events[-1].candidates[0].content.model_dump()
+                last_message["parts"][0]["text"] = full_content
+                output_message_list = [last_message]
+
+                _record_generation_success(
+                    transaction=transaction,
+                    linking_metadata=linking_metadata,
+                    completion_id=completion_id,
+                    kwargs=kwargs,
+                    ft=ft,
+                    response=response,
+                    output_message_list=output_message_list,
+                    request_timestamp=request_timestamp,
+                    time_to_first_token=getattr(self, "_nr_time_to_first_token", None),
+                )
+            except Exception:
+                _logger.warning(STREAM_PARSING_FAILURE_LOG_MESSAGE, exc_info=True)
+            finally:
+                # Clear cached data as this can be very large.
+                streaming_events.clear()
+
+    return _on_stop_iteration
+
+
+def _handle_stream_chunk(*, streaming_events, request_timestamp=None):
+    def _on_stream_chunk(self, chunk):
+        streaming_events.append(chunk)
+        if not hasattr(self, "_nr_time_to_first_token") and request_timestamp:
+            self._nr_time_to_first_token = int(1000.0 * time.time()) - request_timestamp
+
+    return _on_stream_chunk
 
 
 def create_chat_completion_message_event(
@@ -575,8 +849,10 @@ def create_chat_completion_message_event(
 def instrument_genai_models(module):
     if hasattr(module, "Models"):
         wrap_function_wrapper(module, "Models.generate_content", wrap_generate_content_sync)
+        wrap_function_wrapper(module, "Models.generate_content_stream", wrap_generate_content_stream_sync)
         wrap_function_wrapper(module, "Models.embed_content", wrap_embed_content_sync)
 
     if hasattr(module, "AsyncModels"):
         wrap_function_wrapper(module, "AsyncModels.generate_content", wrap_generate_content_async)
+        wrap_function_wrapper(module, "AsyncModels.generate_content_stream", wrap_generate_content_stream_async)
         wrap_function_wrapper(module, "AsyncModels.embed_content", wrap_embed_content_async)

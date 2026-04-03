@@ -19,14 +19,14 @@ import time
 from contextlib import contextmanager
 
 try:
-    from opentelemetry import trace as otel_api_trace
+    from opentelemetry import trace as otel_api_trace, metrics as otel_api_metric
     from opentelemetry.baggage.propagation import W3CBaggagePropagator
     from opentelemetry.propagate import set_global_textmap
     from opentelemetry.propagators.composite import CompositePropagator
     from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
     from opentelemetry.trace.status import Status, StatusCode
 except ImportError:
-    otel_api_trace = None
+    otel_api_trace = otel_api_metric = None
     W3CBaggagePropagator = None
     set_global_textmap = None
     CompositePropagator = None
@@ -42,7 +42,7 @@ from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.message_trace import MessageTrace
 from newrelic.api.message_transaction import MessageTransaction
 from newrelic.api.time_trace import add_custom_span_attribute, current_trace, notice_error
-from newrelic.api.transaction import Sentinel, current_transaction
+from newrelic.api.transaction import Sentinel, current_transaction, record_opentelemetry_metric
 from newrelic.api.web_transaction import WebTransaction, WSGIWebTransaction
 from newrelic.core.attribute import sanitize
 from newrelic.core.config import global_settings
@@ -103,7 +103,6 @@ except:
 # ----------------------------------------------
 # Custom OpenTelemetry Spans and Traces
 # ----------------------------------------------
-
 
 class Span(otel_api_trace.Span):
     def __init__(
@@ -974,3 +973,233 @@ class TracerProvider(otel_api_trace.TracerProvider):
             resource=self._resource,
             **kwargs,
         )
+
+# ----------------------------------------------
+# Custom OpenTelemetry Metrics
+# ----------------------------------------------
+
+class Instrument(otel_api_metric.Instrument):
+    def __init__(
+        self,
+        name,
+        unit = "",
+        description= "",
+    ):
+        self.name = name
+        self.unit = unit
+        self.description = description
+
+
+class Synchronous(Instrument):
+    """Base class for all synchronous meter instruments"""
+
+
+class Asynchronous(Instrument):
+    """Base class for all synchronous meter instruments"""
+    def __init__(
+        self,
+        name,
+        callbacks = None,
+        unit = "",
+        description = "",
+    ):
+        super().__init__(name, unit=unit, description=description)
+        self.callbacks = callbacks
+
+
+class _Counter(Synchronous):
+    def add(self, amount, attributes = None, context = None):
+        self.attributes = attributes if attributes else {}
+        self.attributes.update(
+            {
+                "unit": self.unit,
+                "description": self.description,
+            }
+        )
+        transaction = current_transaction()
+        if transaction:
+            transaction.record_opentelemetry_metric(self.name, {"count": amount}, tags=self.attributes)
+        else:
+            record_opentelemetry_metric(self.name, {"count": amount}, tags=self.attributes, application=application_instance())
+
+class UpDownCounter(_Counter, otel_api_metric.UpDownCounter):
+    def add(self, amount, attributes = None, context = None):
+        super().add(amount, attributes=attributes, context=context)
+
+
+class Counter(_Counter, otel_api_metric.Counter):
+    def add(self, amount, attributes = None, context = None):
+        if amount < 0:
+            _logger.warning("Amount used in counter %s must be non-negative", self.name)
+            return
+        super().add(amount, attributes=attributes, context=context)
+
+
+class ObservableCounter(Asynchronous, otel_api_metric.ObservableCounter):
+    """An asynchronous Instrument which reports monotonically increasing value(s)"""
+    def __init__(
+        self,
+        name,
+        callbacks = None,
+        unit = "",
+        description = "",
+    ):
+        super().__init__(name, callbacks, unit, description)
+        
+        attributes = {
+            "unit": self.unit,
+            "description": self.description,
+        }
+
+        transaction = current_transaction()
+        
+        for callback in callbacks:
+            for observation in callback():
+                if transaction:
+                    transaction.record_opentelemetry_metric(self.name, observation.value, tags=attributes)
+                else:
+                    record_opentelemetry_metric(self.name, observation.value, tags=attributes, application=application_instance())
+
+
+class ObservableUpDownCounter(Asynchronous, otel_api_metric.ObservableUpDownCounter):
+    """An asynchronous Instrument which reports additive value(s)"""
+    def __init__(
+        self,
+        name,
+        callbacks = None,
+        unit = "",
+        description = "",
+    ):
+        super().__init__(name, callbacks, unit, description)
+        
+        attributes = {
+            "unit": self.unit,
+            "description": self.description,
+        }
+
+        transaction = current_transaction()
+        
+        for callback in callbacks:
+            for observation in callback():
+                if transaction:
+                    transaction.record_opentelemetry_metric(self.name, observation.value, tags=attributes)
+                else:
+                    record_opentelemetry_metric(self.name, observation.value, tags=attributes, application=application_instance())
+
+class Histogram(Synchronous, otel_api_metric.Histogram):
+    def __init__(
+            self,
+            name,
+            unit = "",
+            description = "",
+            explicit_bucket_boundaries_advisory = None,
+        ):
+        super().__init__(name, unit, description)
+        
+        # Ignore this value for now.
+        # self.explicit_bucket_boundaries_advisory = explicit_bucket_boundaries_advisory
+    
+    def record(self, amount, attributes = None, context = None):
+        self.attributes = attributes if attributes else {}
+        self.attributes.update(
+            {
+                "unit": self.unit,
+                "description": self.description,
+            }
+        )
+        transaction = current_transaction()
+        if transaction:
+            transaction.record_opentelemetry_metric(self.name, amount, tags=self.attributes)
+        else:
+            record_opentelemetry_metric(self.name, amount, tags=self.attributes, application=application_instance())
+
+class ObservableGauge(Asynchronous, otel_api_metric.ObservableGauge):
+    """An asynchronous Instrument which reports non-additive value(s)"""
+    def __init__(
+        self,
+        name,
+        callbacks = None,
+        unit = "",
+        description = "",
+    ):
+        super().__init__(name, callbacks, unit, description)
+        attributes = {
+            "unit": self.unit,
+            "description": self.description,
+        }
+
+        transaction = current_transaction()
+        
+        for callback in callbacks:
+            for observation in callback():
+                if transaction:
+                    transaction.record_opentelemetry_metric(self.name, {"count": observation.value}, tags=attributes)
+                else:
+                    record_opentelemetry_metric(self.name, {"count": observation.value}, tags=attributes, application=application_instance())
+
+class Gauge(Synchronous, otel_api_metric._Gauge):
+    def set(self, amount, attributes=None, context=None):
+        self.attributes = attributes if attributes else {}
+        self.attributes.update(
+            {
+                "unit": self.unit,
+                "description": self.description,
+            }
+        )
+        
+        transaction = current_transaction()
+        if transaction:
+            transaction.record_opentelemetry_metric(self.name, amount, tags=self.attributes)
+        else:
+            record_opentelemetry_metric(self.name, amount, tags=self.attributes, application=application_instance())
+
+class Meter(otel_api_metric.Meter):
+    def __init__(
+        self,
+        name,
+        version = None,
+        schema_url = None,
+        attributes = None,
+        **kwargs,
+    ):
+        self._name = name
+        self._version = version
+        self._schema_url = schema_url
+        self._attributes = attributes or {}
+    
+    def create_counter(self, name, unit = "", description = ""):
+        return Counter(name, unit, description)
+    
+    def create_up_down_counter(self, name, unit = "", description = ""):
+        return UpDownCounter(name, unit, description)
+    
+    def create_observable_counter(self, name, callbacks = None, unit = "", description = ""):
+        return ObservableCounter(name, callbacks, unit, description)
+    
+    def create_histogram(self, name, unit = "", description = ""):
+        return Histogram(name, unit, description)
+    
+    def create_observable_gauge(self, name, callbacks = None, unit = "", description = ""):
+        return ObservableGauge(name, callbacks, unit, description)
+    
+    def create_observable_up_down_counter(self, name, callbacks = None, unit = "", description = ""):
+        return ObservableUpDownCounter(name, callbacks, unit, description)
+
+    def create_gauge(self, name, unit = "", description = ""):
+        return Gauge(name, unit, description)
+
+
+class MeterProvider(otel_api_metric.MeterProvider):
+    def __init__(self, *args, **kwargs):
+        self._resource = create_resource(hybrid_bridge=True)
+
+    def get_meter(
+        self,
+        name = "Default",
+        version = None,
+        schema_url = None,
+        attributes = None,
+        **kwargs,
+    ):
+        return Meter(name, version, schema_url, attributes)
+

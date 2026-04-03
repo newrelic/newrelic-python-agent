@@ -156,6 +156,7 @@ def transaction_node(request):
             suppress_apdex=False,
             custom_metrics=CustomMetrics(),
             dimensional_metrics=DimensionalMetrics(),
+            opentelemetry_metrics=DimensionalMetrics(),
             guid="4485b89db608aece",
             cpu_time=0.0,
             suppress_transaction_trace=False,

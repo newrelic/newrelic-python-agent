@@ -21,7 +21,7 @@ from newrelic.core.agent_protocol import AgentProtocol, OtlpProtocol, Serverless
 from newrelic.core.agent_streaming import StreamingRpc
 from newrelic.core.attribute import MAX_NUM_USER_ATTRIBUTES, process_user_attribute
 from newrelic.core.config import global_settings
-from newrelic.core.otlp_utils import encode_metric_data, encode_ml_event_data
+from newrelic.core.otlp_utils import encode_metric_data, encode_ml_event_data 
 
 _logger = logging.getLogger(__name__)
 
@@ -130,7 +130,7 @@ class Session:
         payload = (self.agent_run_id, start_time, end_time, metric_data)
         return self._protocol.send("metric_data", payload)
 
-    def send_dimensional_metric_data(self, start_time, end_time, metric_data):
+    def send_dimensional_metric_data(self, start_time, end_time, metric_data, opentelemetry=False):
         """Called to submit dimensional metric data for specified period of time.
         Time values are seconds since UNIX epoch as returned by the
         time.time() function. The metric data should be iterable of
@@ -140,8 +140,8 @@ class Session:
         to the OTLP API endpoints to keep the entity separate. This is for use
         with the machine learning integration only.
         """
-
-        payload = encode_metric_data(metric_data, start_time, end_time)
+    
+        payload = encode_metric_data(metric_data, start_time, end_time, opentelemetry=opentelemetry)
         return self._otlp_protocol.send("dimensional_metric_data", payload, path="/v1/metrics")
 
     def get_log_events_common_block(self):

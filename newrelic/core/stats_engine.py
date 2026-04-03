@@ -524,6 +524,7 @@ class StatsEngine:
         self.__settings = None
         self.__stats_table = {}
         self.__dimensional_stats_table = DimensionalMetrics()
+        self.__opentelemetry_stats_table = DimensionalMetrics()
         self._transaction_events = SampledDataSet()
         self._error_events = SampledDataSet()
         self._custom_events = SampledDataSet()
@@ -551,6 +552,10 @@ class StatsEngine:
     @property
     def dimensional_stats_table(self):
         return self.__dimensional_stats_table
+
+    @property
+    def opentelemetry_stats_table(self):
+        return self.__opentelemetry_stats_table
 
     @property
     def transaction_events(self):
@@ -594,7 +599,7 @@ class StatsEngine:
 
         """
 
-        return len(self.__stats_table) + self.__dimensional_stats_table.metrics_count()
+        return len(self.__stats_table) + self.__dimensional_stats_table.metrics_count() + self.__opentelemetry_stats_table.metrics_count()
 
     def record_apdex_metric(self, metric):
         """Record a single apdex metric, merging the data with any data
@@ -984,7 +989,15 @@ class StatsEngine:
         """Record a single value metric, merging the data with any data
         from prior value metrics with the same name and tags.
         """
+    
         return self.__dimensional_stats_table.record_dimensional_metric(name, value, tags)
+
+    def record_opentelemetry_metric(self, name, value, tags=None):
+        """Record a single value metric, merging the data with any data
+        from prior value metrics with the same name and tags.
+        """
+        
+        return self.__opentelemetry_stats_table.record_dimensional_metric(name, value, tags)
 
     def record_dimensional_metrics(self, metrics):
         """Record the value metrics supplied by the iterable, merging
@@ -1112,7 +1125,8 @@ class StatsEngine:
 
         self.merge_custom_metrics(transaction.custom_metrics.metrics())
 
-        self.merge_dimensional_metrics(transaction.dimensional_metrics.metrics())
+        self.merge_dimensional_metrics(transaction.dimensional_metrics.metrics(), transaction.opentelemetry_metrics.metrics())
+        
 
         self.record_time_metrics(transaction.time_metrics(self))
 
@@ -1383,7 +1397,7 @@ class StatsEngine:
 
         return len(self.__stats_table)
 
-    def dimensional_metric_data(self, normalizer=None):
+    def dimensional_metric_data(self, normalizer=None, opentelemetry=False):
         """Returns a list containing the low level metric data for
         sending to the core application pertaining to the reporting
         period. This consists of tuple pairs where first is dictionary
@@ -1400,6 +1414,7 @@ class StatsEngine:
 
         result = []
         normalized_stats = {}
+        stats_table = self.__opentelemetry_stats_table if opentelemetry else self.__dimensional_stats_table
 
         # Metric Renaming and Re-Aggregation. After applying the metric
         # renaming rules, the metrics are re-aggregated to collapse the
@@ -1409,11 +1424,11 @@ class StatsEngine:
             _logger.info(
                 "Raw dimensional metric data for harvest of %r is %r.",
                 self.__settings.app_name,
-                list(self.__dimensional_stats_table.metrics()),
+                list(stats_table.metrics()),
             )
 
         if normalizer is not None:
-            for key, value in self.__dimensional_stats_table.metrics():
+            for key, value in stats_table.metrics():
                 key = normalizer(key)[0]
                 stats = normalized_stats.get(key)
                 if stats is None:
@@ -1421,7 +1436,7 @@ class StatsEngine:
                 else:
                     stats.merge_stats(value)
         else:
-            normalized_stats = self.__dimensional_stats_table
+            normalized_stats = stats_table
 
         if self.__settings.debug.log_normalized_metric_data:
             _logger.info(
@@ -1434,14 +1449,6 @@ class StatsEngine:
             result.append((key, value))
 
         return result
-
-    def dimensional_metric_data_count(self):
-        """Returns a count of the number of unique metrics."""
-
-        if not self.__settings:
-            return 0
-
-        return self.__dimensional_stats_table.metrics_count()
 
     def error_data(self):
         """Returns a to a list containing any errors collected during
@@ -1740,6 +1747,7 @@ class StatsEngine:
 
         self.__stats_table = {}
         self.__dimensional_stats_table.reset_metric_stats()
+        self.__opentelemetry_stats_table.reset_metric_stats()
 
     def reset_transaction_events(self):
         """Resets the accumulated statistics back to initial state for
@@ -2076,7 +2084,7 @@ class StatsEngine:
             else:
                 stats.merge_stats(other)
 
-    def merge_dimensional_metrics(self, metrics):
+    def merge_dimensional_metrics(self, dimensional_metrics, opentelemetry_metrics):
         """
         Merges in a set of dimensional metrics. The metrics should be
         provide as an iterable where each item is a tuple of the metric
@@ -2087,17 +2095,23 @@ class StatsEngine:
         if not self.__settings:
             return
 
-        for key, other in metrics:
-            stats_container = self.__dimensional_stats_table.get(key)
-            if not stats_container:
-                self.__dimensional_stats_table[key] = other
-            else:
-                for tags, other_value in other.items():
-                    stats = stats_container.get(tags)
-                    if not stats:
-                        stats_container[tags] = other_value
-                    else:
-                        stats.merge_stats(other_value)
+        metrics_table = [
+            (dimensional_metrics, self.__dimensional_stats_table),
+            (opentelemetry_metrics, self.__opentelemetry_stats_table),
+        ]
+
+        for metrics, stats_table in metrics_table:
+            for key, other in metrics:
+                stats_container = stats_table.get(key)
+                if not stats_container:
+                    stats_table[key] = other
+                else:
+                    for tags, other_value in other.items():
+                        stats = stats_container.get(tags)
+                        if not stats:
+                            stats_container[tags] = other_value
+                        else:
+                            stats.merge_stats(other_value)
 
     def _snapshot(self):
         copy = object.__new__(StatsEngineSnapshot)

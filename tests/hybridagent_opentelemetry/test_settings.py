@@ -19,6 +19,7 @@ from testing_support.util import conditional_decorator
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_count import validate_transaction_count
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_transaction_count import validate_transaction_count
 
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
@@ -147,7 +148,6 @@ def test_opentelemetry_tracer_nested_include_and_exclude():
             nr_foo_trace_guid = int(current_trace().guid, 16)
             foo_span_id = foo_span.get_span_context().span_id
             assert nr_foo_trace_guid == foo_span_id
-
             with tracer2.start_as_current_span(name="Bar", kind=trace.SpanKind.SERVER) as bar_span:
                 nr_bar_trace_guid = int(current_trace().guid, 16)
                 bar_span_id = bar_span.get_span_context().span_id
@@ -155,7 +155,6 @@ def test_opentelemetry_tracer_nested_include_and_exclude():
                 # trace/span is actually the trace created above.
                 assert nr_foo_trace_guid == nr_bar_trace_guid
                 assert nr_bar_trace_guid == bar_span_id
-
                 with tracer1.start_as_current_span(name="Baz", kind=trace.SpanKind.SERVER) as baz_span:
                     nr_baz_trace_guid = int(current_trace().guid, 16)
                     nr_parent_trace_guid = int(current_trace().parent.guid, 16)

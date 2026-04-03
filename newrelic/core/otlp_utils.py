@@ -198,8 +198,9 @@ def stats_to_otlp_metrics(metric_data, start_time, end_time):
             )
 
 
-def encode_metric_data(metric_data, start_time, end_time, resource=None, scope=None):
-    resource = resource or create_resource(attach_apm_entity=False)
+def encode_metric_data(metric_data, start_time, end_time, resource=None, scope=None, opentelemetry=False):
+    kwargs = {"hybrid_bridge": True} if opentelemetry else {"attach_apm_entity": False} 
+    resource = resource or create_resource(**kwargs)
     return MetricsData(
         resource_metrics=[
             ResourceMetrics(

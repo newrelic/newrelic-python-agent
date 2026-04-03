@@ -18,7 +18,7 @@ from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.signature import bind_args
-from newrelic.core.config import global_settings
+from newrelic.core.config import _environ_as_bool, global_settings
 
 ###########################################
 #   Context Instrumentation
@@ -277,3 +277,53 @@ def instrument_pika_utils(module):
 
 def instrument_util_http(module):
     wrap_function_wrapper(module, "get_custom_headers", wrap_get_custom_headers)
+
+
+###########################################
+#   Meter Instrumentation
+###########################################
+
+
+def wrap_set_meter_provider(wrapped, instance, args, kwargs):
+    # This needs to act as a singleton, like the agent instance.
+    # We should initialize the agent here as well, if there is
+    # not an instance already.
+
+    application = application_instance()
+    if not application.active:
+        # Force application registration if not already active
+        application.activate()
+
+    settings = global_settings()
+
+    if not (settings and settings.opentelemetry.enabled) and not os.environ.get("NEW_RELIC_OPENTELEMETRY_ENABLED"):
+        return wrapped(*args, **kwargs)
+
+    nr_meter_provider = application._agent.opentelemetry_meter_provider()
+    return wrapped(nr_meter_provider)
+
+
+def wrap_get_meter_provider(wrapped, instance, args, kwargs):
+    # This needs to act as a singleton, like the agent instance.
+    # We should initialize the agent here as well, if there is
+    # not an instance already.
+
+    application = application_instance()
+    if not application.active:
+        # Force application registration if not already active
+        application.activate()
+
+    settings = global_settings()
+
+    if not (settings and settings.opentelemetry.enabled) and not os.environ.get("NEW_RELIC_OPENTELEMETRY_ENABLED"):
+        return wrapped(*args, **kwargs)
+
+    return application._agent.opentelemetry_meter_provider()
+
+
+def instrument_meter_api(module):
+    if hasattr(module, "set_meter_provider"):
+        wrap_function_wrapper(module, "set_meter_provider", wrap_set_meter_provider)
+
+    if hasattr(module, "get_meter_provider"):
+        wrap_function_wrapper(module, "get_meter_provider", wrap_get_meter_provider)

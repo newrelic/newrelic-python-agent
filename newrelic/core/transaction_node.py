@@ -63,6 +63,7 @@ _TransactionNode = namedtuple(
         "suppress_apdex",
         "custom_metrics",
         "dimensional_metrics",
+        "opentelemetry_metrics",
         "guid",
         "cpu_time",
         "suppress_transaction_trace",

@@ -54,7 +54,6 @@ from newrelic.core.stack_trace import exception_stack
 from newrelic.core.stats_engine import CustomMetrics, DimensionalMetrics, SampledDataSet
 from newrelic.core.thread_utilization import utilization_tracker
 from newrelic.core.trace_cache import TraceCacheActiveTraceError, TraceCacheNoActiveTraceError, trace_cache
-
 _logger = logging.getLogger(__name__)
 
 DISTRIBUTED_TRACE_KEYS_REQUIRED = ("ty", "ac", "ap", "tr", "ti")
@@ -301,6 +300,7 @@ class Transaction:
 
         self._custom_metrics = CustomMetrics()
         self._dimensional_metrics = DimensionalMetrics()
+        self._opentelemetry_metrics = DimensionalMetrics()
 
         global_settings = application.global_settings
 
@@ -591,6 +591,7 @@ class Transaction:
             suppress_apdex=self.suppress_apdex,
             custom_metrics=self._custom_metrics,
             dimensional_metrics=self._dimensional_metrics,
+            opentelemetry_metrics=self._opentelemetry_metrics,
             guid=self.guid,
             cpu_time=self._cpu_user_time_value,
             suppress_transaction_trace=self.suppress_transaction_trace,
@@ -1561,6 +1562,9 @@ class Transaction:
 
             self._dimensional_metrics.record_dimensional_metric(name, value, tags)
 
+    def record_opentelemetry_metric(self, name, value, tags=None):
+        self._opentelemetry_metrics.record_dimensional_metric(name, value, tags)
+
     def record_custom_event(self, event_type, params):
         settings = self._settings
 
@@ -1809,7 +1813,7 @@ def record_custom_metric(name, value, application=None):
                 "transaction was running. As a result, the following metric "
                 "has not been recorded. Name: %r Value: %r. To correct this "
                 "problem, supply an application object as a parameter to this "
-                "record_custom_metrics call.",
+                "record_custom_metric call.",
                 name,
                 value,
             )
@@ -1828,12 +1832,11 @@ def record_custom_metrics(metrics, application=None):
                 "transaction was running. As a result, the following metrics "
                 "have not been recorded: %r. To correct this problem, "
                 "supply an application object as a parameter to this "
-                "record_custom_metric call.",
+                "record_custom_metrics call.",
                 list(metrics),
             )
     elif application.enabled:
         application.record_custom_metrics(metrics)
-
 
 def record_dimensional_metric(name, value, tags=None, application=None):
     if application is None:
@@ -1846,13 +1849,32 @@ def record_dimensional_metric(name, value, tags=None, application=None):
                 "transaction was running. As a result, the following metric "
                 "has not been recorded. Name: %r Value: %r Tags: %r. To correct this "
                 "problem, supply an application object as a parameter to this "
-                "record_dimensional_metrics call.",
+                "record_dimensional_metric call.",
                 name,
                 value,
                 tags,
             )
     elif application.enabled:
         application.record_dimensional_metric(name, value, tags)
+
+def record_opentelemetry_metric(name, value, tags=None, application=None):
+    if application is None:
+        transaction = current_transaction()
+        if transaction:
+            transaction.record_opentelemetry_metric(name, value, tags)
+        else:
+            _logger.debug(
+                "record_opentelemetry_metric has been called but no "
+                "transaction was running. As a result, the following metric "
+                "has not been recorded. Name: %r Value: %r Tags: %r. To correct this "
+                "problem, supply an application object as a parameter to this "
+                "record_opentelemetry_metric call.",
+                name,
+                value,
+                tags,
+            )
+    elif application.enabled:
+        application.record_opentelemetry_metric(name, value, tags)
 
 
 def record_dimensional_metrics(metrics, application=None):
@@ -1866,7 +1888,7 @@ def record_dimensional_metrics(metrics, application=None):
                 "transaction was running. As a result, the following metrics "
                 "have not been recorded: %r. To correct this problem, "
                 "supply an application object as a parameter to this "
-                "record_dimensional_metric call.",
+                "record_dimensional_metrics call.",
                 list(metrics),
             )
     elif application.enabled:

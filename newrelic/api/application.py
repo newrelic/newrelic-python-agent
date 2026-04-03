@@ -133,6 +133,10 @@ class Application:
         if self.active and metrics:
             self._agent.record_dimensional_metrics(self._name, metrics)
 
+    def record_opentelemetry_metric(self, name, value, tags=None):
+        if self.active:
+            self._agent.record_opentelemetry_metric(self._name, name, value, tags)
+            
     def record_custom_event(self, event_type, params):
         if self.active:
             self._agent.record_custom_event(self._name, event_type, params)

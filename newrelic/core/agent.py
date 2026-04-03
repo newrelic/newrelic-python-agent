@@ -121,6 +121,7 @@ class Agent:
     _instance_lock = threading.Lock()
     _instance = None
     _tracer_provider = None
+    _meter_provider = None
     _startup_callables = []  # noqa: RUF012
     _registration_callables = {}  # noqa: RUF012
 
@@ -228,6 +229,46 @@ class Agent:
                     )
 
         return Agent._tracer_provider
+
+    @staticmethod
+    def opentelemetry_meter_provider():
+        """Used by the meter_provider() function to access/create the
+        single meter provider object instance.
+
+        """
+        settings = newrelic.core.config.global_settings()
+
+        if not settings.opentelemetry.enabled and not newrelic.core.config._environ_as_bool(
+            "NEW_RELIC_OPENTELEMETRY_ENABLED"
+        ):
+            _logger.debug("OpenTelemetry mode is disabled.")
+            return
+
+        if Agent._meter_provider:
+            return Agent._meter_provider
+
+        with Agent._instance_lock:
+            if not Agent._meter_provider:
+                try:
+                    from opentelemetry.metrics import NoOpMeterProvider
+
+                    from newrelic.api.opentelemetry import MeterProvider
+
+                    if not settings.opentelemetry.metrics.enabled and not newrelic.core.config._environ_as_bool(
+                        "NEW_RELIC_OPENTELEMETRY_METRICS_ENABLED"
+                    ):
+                        # Set this to prevent any potential crashes
+                        _logger.debug("OpenTelemetry metrics are disabled.")
+                        Agent._meter_provider = NoOpMeterProvider()
+                    else:
+                        Agent._meter_provider = MeterProvider()
+                except ImportError:
+                    # `opentelemetry-api` is not installed, so meter provider cannot be created
+                    _logger.warning(
+                        "OpenTelemetry mode has been enabled but `opentelemetry-api` is not installed, so no MeterProvider can be created."
+                    )
+
+        return Agent._meter_provider
 
     def __init__(self, config):
         """Initialises the agent and attempt to establish a connection
@@ -549,6 +590,19 @@ class Agent:
 
         application.record_custom_metrics(metrics)
 
+    def record_opentelemetry_metric(self, app_name, name, value, tags=None):
+        """Records a basic metric for the named application. If there has
+        been no prior request to activate the application, the metric is
+        discarded.
+
+        """
+
+        application = self._applications.get(app_name, None)
+        if application is None or not application.active:
+            return
+
+        application.record_opentelemetry_metric(name, value, tags)
+        
     def record_dimensional_metric(self, app_name, name, value, tags=None):
         """Records a basic metric for the named application. If there has
         been no prior request to activate the application, the metric is
@@ -561,7 +615,7 @@ class Agent:
             return
 
         application.record_dimensional_metric(name, value, tags)
-
+        
     def record_dimensional_metrics(self, app_name, metrics):
         """Records the metrics for the named application. If there has
         been no prior request to activate the application, the metric is

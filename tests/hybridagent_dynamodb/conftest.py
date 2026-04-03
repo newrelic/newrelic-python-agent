@@ -18,6 +18,11 @@ from newrelic.common.package_version_utils import get_package_version
 
 BOTOCORE_VERSION = get_package_version("botocore")
 
+# This test ensures that even if `dynamodb` is added
+# in the include list that the agent will not allow
+# OpenTelemetry's instrumentation library to be used
+# due to the fact that it is a (temporarily) disabled
+# framework.
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slowdowns.
     "transaction_tracer.explain_threshold": 0.0,

@@ -484,7 +484,21 @@ def wrap_view_handler(wrapped, priority=3):
         if transaction is None:
             return wrapped(*args, **kwargs)
 
-        transaction.set_transaction_name(name, priority=priority)
+        # Wagtail is built on top of Django. It uses metaclasses where the route method
+        # is located on the base class which results in transaction having the same
+        # name. Use the child class instead of the base class name. Set the priority=6
+        # to override the priority set in other parts of this hook file so that the
+        # more explicit name takes precedence.
+        new_name = name
+        try:
+            from wagtail.models.pages import Page
+        except:
+            Page = None
+        if instance and isinstance(instance, Page):
+            new_name = f"{callable_name(instance)}.{wrapped.__name__}"
+            transaction.set_transaction_name(new_name, priority=6)
+        else:
+            transaction.set_transaction_name(new_name, priority=priority)
         with FunctionTrace(name=name, source=wrapped):
             try:
                 return wrapped(*args, **kwargs)

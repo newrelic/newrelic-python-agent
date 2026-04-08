@@ -130,7 +130,6 @@ SPAN_ENTITY_RELATIONSHIP_ATTRIBUTES = {
     "peer.hostname",
     "server.address",
     "server.port",
-    "span.kind",
 }
 
 SPAN_ERROR_ATTRIBUTES = {"error.class", "error.message", "error.expected"}

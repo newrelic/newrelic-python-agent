@@ -33,6 +33,7 @@ class _GCDataSource:
         self.start_time = 0.0
         self.previous_stats = {}
         self.pid = os.getpid()
+        self.__recording = False
 
     @property
     def enabled(self):
@@ -52,21 +53,30 @@ class _GCDataSource:
         return settings.gc_runtime_metrics.top_object_count_limit
 
     def record_gc(self, phase, info):
-        if not self.enabled:
+        if self.__recording:
             return
 
-        current_generation = info["generation"]
+        # __recording flag is used to prevent re-entrant calls to record_gc. This could theoretically result in missing
+        # some GC metrics, but would more likely result in infinite recursion that crashes the entire interpreter.
+        self.__recording = True
+        try:
+            if not self.enabled:
+                return
 
-        if phase == "start":
-            self.start_time = time.time()
-        elif phase == "stop":
-            total_time = time.time() - self.start_time
-            self.gc_time_metrics.record_custom_metric(f"GC/time/{self.pid}/all", total_time)
-            for gen in range(0, 3):
-                if gen <= current_generation:
-                    self.gc_time_metrics.record_custom_metric(f"GC/time/{self.pid}/{gen}", total_time)
-                else:
-                    self.gc_time_metrics.record_custom_metric(f"GC/time/{self.pid}/{gen}", 0)
+            current_generation = info["generation"]
+
+            if phase == "start":
+                self.start_time = time.time()
+            elif phase == "stop":
+                total_time = time.time() - self.start_time
+                self.gc_time_metrics.record_custom_metric(f"GC/time/{self.pid}/all", total_time)
+                for gen in range(0, 3):
+                    if gen <= current_generation:
+                        self.gc_time_metrics.record_custom_metric(f"GC/time/{self.pid}/{gen}", total_time)
+                    else:
+                        self.gc_time_metrics.record_custom_metric(f"GC/time/{self.pid}/{gen}", 0)
+        finally:
+            self.__recording = False
 
     def start(self):
         if not IS_PYPY and hasattr(gc, "callbacks"):

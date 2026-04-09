@@ -23,6 +23,8 @@ from newrelic.core.config import global_settings
 from newrelic.core.stats_engine import CustomMetrics
 from newrelic.samplers.decorators import data_source_factory
 
+IS_PYPY = platform.python_implementation() == "PyPy"
+
 
 @data_source_factory(name="Garbage Collector Metrics")
 class _GCDataSource:
@@ -34,11 +36,12 @@ class _GCDataSource:
 
     @property
     def enabled(self):
-        settings = global_settings()
-        if platform.python_implementation() == "PyPy" or not settings:
+        if IS_PYPY:
             return False
+
         # This might be inheriting from Settings instead of TopLevelSettings
-        elif settings and hasattr(settings, "gc_runtime_metrics"):
+        settings = global_settings()
+        if settings and hasattr(settings, "gc_runtime_metrics"):
             return settings.gc_runtime_metrics.enabled
         else:
             return False
@@ -66,7 +69,7 @@ class _GCDataSource:
                     self.gc_time_metrics.record_custom_metric(f"GC/time/{self.pid}/{gen}", 0)
 
     def start(self):
-        if hasattr(gc, "callbacks"):
+        if not IS_PYPY and hasattr(gc, "callbacks"):
             gc.callbacks.append(self.record_gc)
 
     def stop(self):

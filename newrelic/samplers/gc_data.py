@@ -56,8 +56,9 @@ class _GCDataSource:
         if self.__recording:
             return
 
-        # __recording flag is used to prevent re-entrant calls to record_gc. This could theoretically result in missing
-        # some GC metrics, but would more likely result in infinite recursion that crashes the entire interpreter.
+        # The self.__recording flag is used to prevent re-entrant calls to record_gc. This could theoretically result
+        # in missing some GC metrics, but trying to record the metrics instead would likely result in infinite
+        # recursion that crashes the entire interpreter.
         self.__recording = True
         try:
             if not self.enabled:

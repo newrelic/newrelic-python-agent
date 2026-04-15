@@ -294,9 +294,9 @@ def wrap_set_meter_provider(wrapped, instance, args, kwargs):
         # Force application registration if not already active
         application.activate()
 
-    settings = global_settings()
+    settings = getattr(application, "settings", None) or global_settings()
 
-    if not (settings and settings.opentelemetry.enabled) and not os.environ.get("NEW_RELIC_OPENTELEMETRY_ENABLED"):
+    if not (settings and settings.opentelemetry.enabled):
         return wrapped(*args, **kwargs)
 
     nr_meter_provider = application._agent.opentelemetry_meter_provider()
@@ -313,9 +313,9 @@ def wrap_get_meter_provider(wrapped, instance, args, kwargs):
         # Force application registration if not already active
         application.activate()
 
-    settings = global_settings()
-
-    if not (settings and settings.opentelemetry.enabled) and not os.environ.get("NEW_RELIC_OPENTELEMETRY_ENABLED"):
+    settings = getattr(application, "settings", None) or global_settings()
+    
+    if not (settings and settings.opentelemetry.enabled):
         return wrapped(*args, **kwargs)
 
     return application._agent.opentelemetry_meter_provider()

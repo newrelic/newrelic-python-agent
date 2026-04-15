@@ -134,6 +134,7 @@ class Application:
             self._agent.record_dimensional_metrics(self._name, metrics)
 
     def record_opentelemetry_metric(self, name, value, tags=None):
+        breakpoint()    # is application active?  And what is self._name?
         if self.active:
             self._agent.record_opentelemetry_metric(self._name, name, value, tags)
             

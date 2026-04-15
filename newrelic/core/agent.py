@@ -528,6 +528,24 @@ class Agent:
                 if instance is not None:
                     instance.register_data_source(source, name, settings, **properties)
 
+    def register_observable_callbacks(self, source, function_type, name=None, attributes=None, application_name=None):
+        # breakpoint()
+        _logger.debug(f"TRAVERSE=(3)newrelic.core.agent--self._applications: {self._applications}")
+        if application_name is None:
+            # Bind to any applications that already exist.
+
+            for application in list(self._applications.values()):
+                _logger.debug(f"TRAVERSE=(4a)newrelic.core.agent--application: {application}")
+                application.register_observable_callbacks(source, function_type, name=name, attributes=attributes)
+
+        else:
+            # Bind to specific application if it exists.
+
+            instance = self._applications.get(application_name)
+            _logger.debug(f"TRAVERSE=(4b)newrelic.core.agent--instance: {instance}")
+            if instance is not None:
+                instance.register_observable_callbacks(source, function_type, name=name, attributes=attributes)
+
     def remove_thread_utilization(self):
         _logger.debug("Removing thread utilization data source from all applications")
 
@@ -875,6 +893,12 @@ def shutdown_agent(timeout=None):
 def register_data_source(source, application=None, name=None, settings=None, **properties):
     agent = agent_instance()
     agent.register_data_source(source, (application and application.name) or None, name, settings, **properties)
+
+
+def register_observable_callbacks(source, function_type, name=None, attributes=None, application_name=None):
+    agent = agent_instance()
+    _logger.debug(f"TRAVERSE=(2)newrelic.core.agent--agent instance: {agent}")
+    agent.register_observable_callbacks(source, function_type, name=name, attributes=attributes, application_name=application_name)
 
 
 def _remove_thread_utilization():

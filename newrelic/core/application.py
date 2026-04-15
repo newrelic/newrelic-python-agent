@@ -46,6 +46,7 @@ from newrelic.network.exceptions import (
     RetryDataForRequest,
 )
 from newrelic.samplers.data_sampler import DataSampler
+from newrelic.samplers.opentelemetry_observable_function import observable_function
 
 _logger = logging.getLogger(__name__)
 
@@ -127,6 +128,7 @@ class Application:
 
         self._data_samplers = []
         self.modules = []
+        self._opentelemetry_callbacks = []
 
         # Thread profiler and state of whether active or not.
 
@@ -764,6 +766,11 @@ class Application:
 
         self._data_samplers.append(DataSampler(self._app_name, source, name, settings, **properties))
 
+    def register_observable_callbacks(self, source, function_type, name=None, attributes=None):
+        self._opentelemetry_callbacks.append(observable_function(source, function_type=function_type, name=name, attributes=attributes))
+        # breakpoint()
+        _logger.debug(f"TRAVERSE=(5)newrelic.core.application.register_observable_callbacks--source: {source}, name: {name}")
+
     def start_data_samplers(self):
         """Starts any data samplers. This will be called when the
         application has been successfully registered and monitoring of
@@ -1304,6 +1311,24 @@ class Application:
                                 data_sampler.name,
                             )
 
+                    # Send observable OpenTelemetry metrics
+
+                    if configuration.opentelemetry.enabled and configuration.opentelemetry.metrics.enabled:
+                        _logger.debug("Fetching observable OpenTelemetry metrics for harvest of %r.", self._app_name)
+
+                        # breakpoint()
+                        _logger.debug(f"TRAVERSE=newrelic.core.application.harvest--self._opentelemetry_callbacks: {self._opentelemetry_callbacks}")
+                        for callback in self._opentelemetry_callbacks:
+                            for observation in callback():
+                                try:
+                                    name, value, tags = observation
+                                    _logger.debug(f"TRAVERSE=newrelic.core.application.harvest--name, value, tags: {name}, {value}, {tags}")
+                                    # breakpoint()
+                                    stats.record_opentelemetry_metric(name, value, tags)
+                                except Exception:
+                                    _logger.exception("NOPE.")
+                                    break
+
                     # Send environment plugin list
 
                     stopwatch_start = time.time()
@@ -1581,7 +1606,6 @@ class Application:
                         metric_data = stats.metric_data(metric_normalizer)
                         dimensional_metric_data = stats.dimensional_metric_data(metric_normalizer)
                         opentelemetry_metric_data = stats.dimensional_metric_data(metric_normalizer, opentelemetry=True)
-
                         _logger.debug("Sending metric data for harvest of %r.", self._app_name)
 
                         # Send metrics
@@ -1591,6 +1615,8 @@ class Application:
                                 self._period_start, period_end, dimensional_metric_data
                             )
                         if opentelemetry_metric_data:
+                            # breakpoint()
+                            _logger.debug(f"TRAVERSE=*newrelic.core.application.harvest--opentelemetry_metric_data: {opentelemetry_metric_data}")
                             self._active_session.send_dimensional_metric_data(
                                 self._period_start, period_end, opentelemetry_metric_data, opentelemetry=True
                             )

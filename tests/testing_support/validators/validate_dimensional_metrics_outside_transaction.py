@@ -18,7 +18,7 @@ from newrelic.common.object_wrapper import function_wrapper, transient_function_
 from testing_support.fixtures import catch_background_exceptions
 
 
-def validate_dimensional_metrics_outside_transaction(dimensional_metrics=None):
+def validate_dimensional_metrics_outside_transaction(dimensional_metrics=None, opentelemetry=False):
     dimensional_metrics = dimensional_metrics or []
 
     @function_wrapper
@@ -26,7 +26,8 @@ def validate_dimensional_metrics_outside_transaction(dimensional_metrics=None):
         record_dimensional_metric_called = []
         recorded_metrics = [None]
 
-        @transient_function_wrapper("newrelic.core.stats_engine", "StatsEngine.record_dimensional_metric")
+        stats_engine_record_metric = "StatsEngine.record_opentelemetry_metric" if opentelemetry else "StatsEngine.record_dimensional_metric"
+        @transient_function_wrapper("newrelic.core.stats_engine", stats_engine_record_metric)
         @catch_background_exceptions
         def _validate_dimensional_metrics_outside_transaction(wrapped, instance, args, kwargs):
             record_dimensional_metric_called.append(True)
@@ -35,7 +36,7 @@ def validate_dimensional_metrics_outside_transaction(dimensional_metrics=None):
             except:
                 raise
             else:
-                metrics = instance.dimensional_stats_table.metrics()
+                metrics = instance.opentelemetry_stats_table.metrics() if opentelemetry else instance.dimensional_stats_table.metrics()
                 # Record a copy of the metric value so that the values aren't
                 # merged in the future
                 _metrics = {}

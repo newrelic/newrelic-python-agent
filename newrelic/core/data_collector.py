@@ -140,8 +140,11 @@ class Session:
         to the OTLP API endpoints to keep the entity separate. This is for use
         with the machine learning integration only.
         """
-    
+        
+        # breakpoint()
+        _logger.debug(f"TRAVERSE=*newrelic.core.data_collector.send_dimensional_metric_data--metric_data: {metric_data}, opentelemetry flag: {opentelemetry}")
         payload = encode_metric_data(metric_data, start_time, end_time, opentelemetry=opentelemetry)
+        # breakpoint()
         return self._otlp_protocol.send("dimensional_metric_data", payload, path="/v1/metrics")
 
     def get_log_events_common_block(self):

@@ -74,13 +74,14 @@ def validate_transaction_metrics(
                     _metrics[k] = copy.copy(v)
                 recorded_metrics.append(_metrics)
 
-                metrics = instance.dimensional_stats_table.metrics()
-                # Record a copy of the metric value so that the values aren't
-                # merged in the future
-                _metrics = {}
-                for k, v in metrics:
-                    _metrics[k] = copy.copy(v)
-                recorded_dimensional_metrics.append(_metrics)
+                # metrics = instance.dimensional_stats_table.metrics()
+                for metrics in [instance.dimensional_stats_table.metrics(), instance.opentelemetry_stats_table.metrics()]:
+                    # Record a copy of the metric value so that the values aren't
+                    # merged in the future
+                    _metrics = {}
+                    for k, v in metrics:
+                        _metrics[k] = copy.copy(v)
+                    recorded_dimensional_metrics.append(_metrics)
 
             return result
 

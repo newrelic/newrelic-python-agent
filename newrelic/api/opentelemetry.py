@@ -44,7 +44,9 @@ from newrelic.api.message_transaction import MessageTransaction
 from newrelic.api.time_trace import add_custom_span_attribute, current_trace, notice_error
 from newrelic.api.transaction import Sentinel, current_transaction, record_opentelemetry_metric
 from newrelic.api.web_transaction import WebTransaction, WSGIWebTransaction
+from newrelic.samplers.decorators import data_source_factory
 from newrelic.core.attribute import sanitize
+from newrelic.core.agent import register_data_source, register_observable_callbacks
 from newrelic.core.config import global_settings
 from newrelic.core.database_utils import (
     _all_literals_re,
@@ -723,9 +725,10 @@ class Tracer(otel_api_trace.Tracer):
         *args,
         **kwargs,
     ):
+        settings = global_settings()
         nr_trace_type = FunctionTrace
         transaction = current_transaction()
-        self.nr_application = application_instance()
+        self.nr_application = application_instance(settings.app_name)
         self.attributes = {
             **(attributes or {}),
             **self.tracer_attributes,
@@ -742,7 +745,7 @@ class Tracer(otel_api_trace.Tracer):
 
         self._record_exception = record_exception
         self.set_status_on_exception = set_status_on_exception
-        self.settings = getattr(self.nr_application, "settings", None) or global_settings()
+        self.settings = getattr(self.nr_application, "settings", None) or settings
 
         if self.settings and not self.settings.opentelemetry.enabled:
             return otel_api_trace.INVALID_SPAN
@@ -978,6 +981,13 @@ class TracerProvider(otel_api_trace.TracerProvider):
 # Custom OpenTelemetry Metrics
 # ----------------------------------------------
 
+# TODO: factor in "context" from Observation
+# TODO: activate application and extract settings the way we do for tracers
+
+def create_time_stats(value):
+    # TODO: Do we need to do this for histogram?
+    pass
+
 class Instrument(otel_api_metric.Instrument):
     def __init__(
         self,
@@ -985,9 +995,26 @@ class Instrument(otel_api_metric.Instrument):
         unit = "",
         description= "",
     ):
+        settings = global_settings()
+        application = application_instance(settings.app_name)
+        if not application.active:
+            application.activate()
+            
         self.name = name
         self.unit = unit
         self.description = description
+        self.base_attributes = {}
+
+        # NOTE: `application` will likely have the `settings` attribute at this
+        # point but may not have completed the connection to the data collector
+        # (where the actual configuration is set) at this point.  This is why
+        # we have this and not `getattr(application, "settings", settings)`
+        self.settings = getattr(application, "settings", None) or settings
+        
+        if self.unit:
+            self.base_attributes["unit"] = self.unit
+        if self.description:
+            self.base_attributes["description"] = self.description
 
 
 class Synchronous(Instrument):
@@ -1009,32 +1036,32 @@ class Asynchronous(Instrument):
 
 class _Counter(Synchronous):
     def add(self, amount, attributes = None, context = None):
-        self.attributes = attributes if attributes else {}
-        self.attributes.update(
-            {
-                "unit": self.unit,
-                "description": self.description,
-            }
-        )
+        self.attributes = self.base_attributes if not attributes else {**self.base_attributes, **attributes}
+
         transaction = current_transaction()
         if transaction:
             transaction.record_opentelemetry_metric(self.name, {"count": amount}, tags=self.attributes)
         else:
-            record_opentelemetry_metric(self.name, {"count": amount}, tags=self.attributes, application=application_instance())
+            record_opentelemetry_metric(self.name, {"count": amount}, tags=self.attributes, application=application_instance(self.settings.app_name))
 
+# TODO: ensure that this actually works, since it is going in a counter function that is monotonic
 class UpDownCounter(_Counter, otel_api_metric.UpDownCounter):
     def add(self, amount, attributes = None, context = None):
+        if not isinstance(amount, (int, float)):
+            raise ValueError("Amount used in counter %s must be a number.", self.name)
         super().add(amount, attributes=attributes, context=context)
 
 
 class Counter(_Counter, otel_api_metric.Counter):
     def add(self, amount, attributes = None, context = None):
-        if amount < 0:
-            _logger.warning("Amount used in counter %s must be non-negative", self.name)
-            return
+        # Use this logic here instead of _Counter in order to check if
+        # amount is a valid number first before checking if negative.
+        if not isinstance(amount, (int, float)) or amount < 0:
+            raise ValueError("Amount used in counter %s must be a non-negative number.", self.name)
         super().add(amount, attributes=attributes, context=context)
 
 
+# TODO: THIS IS ALSO WRONG.  THIS NEEDS TO BE A PULL METRIC.
 class ObservableCounter(Asynchronous, otel_api_metric.ObservableCounter):
     """An asynchronous Instrument which reports monotonically increasing value(s)"""
     def __init__(
@@ -1045,22 +1072,30 @@ class ObservableCounter(Asynchronous, otel_api_metric.ObservableCounter):
         description = "",
     ):
         super().__init__(name, callbacks, unit, description)
+
+        # transaction = current_transaction()
         
-        attributes = {
-            "unit": self.unit,
-            "description": self.description,
-        }
+        # try:
+        #     for callback in self.callbacks:
+        #         for observation in callback(otel_api_metric.CallbackOptions):
+        #             if not isinstance(observation, otel_api_metric.Observation):
+        #                 raise TypeError("Callback function used in observable counter must be an iterable of type `opentelemetry.metrics.Observation`.")
+        #             if not isinstance(observation.value, (int, float)) or observation.value < 0:
+        #                 raise ValueError("Amount used in counter %s must be a non-negative number.", observation.value)
+                    
+        #             attribute_tag = {**self.base_attributes}
+        #             if observation.attributes:
+        #                 attribute_tag.update(observation.attributes)
 
-        transaction = current_transaction()
-        
-        for callback in callbacks:
-            for observation in callback():
-                if transaction:
-                    transaction.record_opentelemetry_metric(self.name, observation.value, tags=attributes)
-                else:
-                    record_opentelemetry_metric(self.name, observation.value, tags=attributes, application=application_instance())
+        #             if transaction:
+        #                 transaction.record_opentelemetry_metric(self.name, {"count": observation.value}, tags=attribute_tag)
+        #             else:
+        #                 record_opentelemetry_metric(self.name, {"count": observation.value}, tags=attribute_tag, application=application_instance())
+        # except Exception:
+        #     raise TypeError("Valid callback function must be used in observable counter.")
+            
 
-
+# TODO: THIS IS ALSO WRONG.  THIS NEEDS TO BE A PULL METRIC.
 class ObservableUpDownCounter(Asynchronous, otel_api_metric.ObservableUpDownCounter):
     """An asynchronous Instrument which reports additive value(s)"""
     def __init__(
@@ -1071,20 +1106,28 @@ class ObservableUpDownCounter(Asynchronous, otel_api_metric.ObservableUpDownCoun
         description = "",
     ):
         super().__init__(name, callbacks, unit, description)
-        
-        attributes = {
-            "unit": self.unit,
-            "description": self.description,
-        }
 
         transaction = current_transaction()
-        
-        for callback in callbacks:
-            for observation in callback():
-                if transaction:
-                    transaction.record_opentelemetry_metric(self.name, observation.value, tags=attributes)
-                else:
-                    record_opentelemetry_metric(self.name, observation.value, tags=attributes, application=application_instance())
+
+        # try:
+        #     for callback in self.callbacks:
+        #         for observation in callback(otel_api_metric.CallbackOptions):
+        #             if not isinstance(observation, otel_api_metric.Observation):
+        #                 raise TypeError("Callback function used in observable counter must be an iterable of type `opentelemetry.metrics.Observation`.")
+        #             if not isinstance(observation.value, (int, float)):
+        #                 raise ValueError("Amount used in counter %s must be a number.", observation.value)
+                    
+        #             attribute_tag = {**self.base_attributes}
+        #             if observation.attributes:
+        #                 attribute_tag.update(observation.attributes)
+
+        #             if transaction:
+        #                 transaction.record_opentelemetry_metric(self.name, {"count": observation.value}, tags=attribute_tag)
+        #             else:
+        #                 record_opentelemetry_metric(self.name, {"count": observation.value}, tags=attribute_tag, application=application_instance())
+        # except Exception:
+        #     raise TypeError("Valid callback function must be used in observable counter.")
+            
 
 class Histogram(Synchronous, otel_api_metric.Histogram):
     def __init__(
@@ -1100,18 +1143,23 @@ class Histogram(Synchronous, otel_api_metric.Histogram):
         # self.explicit_bucket_boundaries_advisory = explicit_bucket_boundaries_advisory
     
     def record(self, amount, attributes = None, context = None):
-        self.attributes = attributes if attributes else {}
-        self.attributes.update(
-            {
-                "unit": self.unit,
-                "description": self.description,
-            }
-        )
+        self.attributes = self.base_attributes if not attributes else {**self.base_attributes, **attributes}
+        # self.attributes = attributes if attributes else {}
+        # if self.unit:
+        #     self.attributes["unit"] = self.unit
+        # if self.description:
+        #     self.attributes["description"] = self.description
+        # self.attributes.update(
+        #     {
+        #         "unit": self.unit,
+        #         "description": self.description,
+        #     }
+        # )
         transaction = current_transaction()
         if transaction:
             transaction.record_opentelemetry_metric(self.name, amount, tags=self.attributes)
         else:
-            record_opentelemetry_metric(self.name, amount, tags=self.attributes, application=application_instance())
+            record_opentelemetry_metric(self.name, amount, tags=self.attributes, application=application_instance(self.settings.app_name))
 
 class ObservableGauge(Asynchronous, otel_api_metric.ObservableGauge):
     """An asynchronous Instrument which reports non-additive value(s)"""
@@ -1123,35 +1171,92 @@ class ObservableGauge(Asynchronous, otel_api_metric.ObservableGauge):
         description = "",
     ):
         super().__init__(name, callbacks, unit, description)
-        attributes = {
-            "unit": self.unit,
-            "description": self.description,
-        }
-
-        transaction = current_transaction()
         
-        for callback in callbacks:
-            for observation in callback():
-                if transaction:
-                    transaction.record_opentelemetry_metric(self.name, {"count": observation.value}, tags=attributes)
-                else:
-                    record_opentelemetry_metric(self.name, {"count": observation.value}, tags=attributes, application=application_instance())
+        # OTEL format: yield Observation(val, **attributes)
+        # NR format: yield (name, val)
+
+        try:
+            for callback in self.callbacks:
+                _logger.debug(f"TRAVERSE=(1)newrelic.api.opentelemetry--callback: {callback}, self.callbacks: {self.callbacks}, self.name: {self.name}, self.settings.app_name: {self.settings.app_name}")
+                # breakpoint()
+                register_observable_callbacks(callback, "gauge", self.name, self.base_attributes) #, application_name=self.settings.app_name)
+                
+                # for observation in callback(otel_api_metric.CallbackOptions):
+                #     if not isinstance(observation, otel_api_metric.Observation):
+                #         raise TypeError("Callback function used in observable gauge must be an iterable of type `opentelemetry.metrics.Observation`.")
+                #     if not isinstance(observation.value, (int, float)):
+                #         raise ValueError("Amount used in gauge %s must be a number.", observation.value)
+                
+                #     sub_name = "/".join([f"{k}/{v}" for k, v in observation.attributes.items()])
+                #     breakpoint()
+                #     yield (f"{self.name}/{sub_name}", observation.value) 
+                # opentelemetry_observable_counter.observable_function(callback, "gauge")
+                
+                # store callback in application._opentelemetry_callbacks
+                
+                # @data_source_factory(name=self.name)
+                # def function():
+                #     # function_call = callback(otel_api_metric.CallbackOptions)
+                #     # for observation in function_call:
+                #     for observation in callback(otel_api_metric.CallbackOptions):
+                #         if not isinstance(observation, otel_api_metric.Observation):
+                #             raise TypeError("Callback function used in observable gauge must be an iterable of type `opentelemetry.metrics.Observation`.")
+                #         if not isinstance(observation.value, (int, float)):
+                #             raise ValueError("Amount used in gauge %s must be a number.", observation.value)
+                    
+                #         sub_name = "/".join([f"{k}/{v}" for k, v in observation.attributes.items()])
+                #         breakpoint()
+                #         yield (f"{self.name}/{sub_name}", observation.value)
+                        
+                # # wrapped_callback = data_source_factory(name=self.name, **self.base_attributes)(function)
+                # # register_data_source(wrapped_callback)
+                # register_data_source(function)
+                
+                # for observation in callback(otel_api_metric.CallbackOptions):
+                #     if not isinstance(observation, otel_api_metric.Observation):
+                #         raise TypeError("Callback function used in observable gauge must be an iterable of type `opentelemetry.metrics.Observation`.")
+                #     if not isinstance(observation.value, (int, float)):
+                #         raise ValueError("Amount used in gauge %s must be a number.", observation.value)
+                    
+                #     attribute_tag = {**self.base_attributes}
+                #     if observation.attributes:
+                #         attribute_tag.update(observation.attributes)
+                    
+                    # TODO: Directly wrapping callback will not work because the formats are different
+                    # wrapped_callback = data_source_factory(name=self.name, **attribute_tag)(callback)
+                    # register_data_source(wrapped_callback)
+                    # Dynamic generator creator?  
+                    # def [self.name]:
+                    #     # '/'.join([f"{k}/{v}" for k, v in observation.attributes.items()])
+                    #     yield (f"{self.name}/{'/'.join(observation.attributes.items())}", observation.value)
+
+                    # if transaction:
+                    #     transaction.record_opentelemetry_metric(self.name, observation.value, tags=attribute_tag)
+                    # else:
+                    #     record_opentelemetry_metric(self.name, observation.value, tags=attribute_tag, application=application_instance())
+        except Exception:
+            raise TypeError("Valid callback function must be used in observable gauge.")
 
 class Gauge(Synchronous, otel_api_metric._Gauge):
     def set(self, amount, attributes=None, context=None):
-        self.attributes = attributes if attributes else {}
-        self.attributes.update(
-            {
-                "unit": self.unit,
-                "description": self.description,
-            }
-        )
+        self.attributes = self.base_attributes if not attributes else {**self.base_attributes, **attributes}
+        # self.attributes = attributes if attributes else {}
+        # if self.unit:
+        #     self.attributes["unit"] = self.unit
+        # if self.description:
+        #     self.attributes["description"] = self.description
+        # self.attributes.update(
+        #     {
+        #         "unit": self.unit,
+        #         "description": self.description,
+        #     }
+        # )
         
         transaction = current_transaction()
         if transaction:
             transaction.record_opentelemetry_metric(self.name, amount, tags=self.attributes)
         else:
-            record_opentelemetry_metric(self.name, amount, tags=self.attributes, application=application_instance())
+            record_opentelemetry_metric(self.name, amount, tags=self.attributes, application=application_instance(self.settings.app_name))
 
 class Meter(otel_api_metric.Meter):
     def __init__(

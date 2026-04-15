@@ -996,7 +996,9 @@ class StatsEngine:
         """Record a single value metric, merging the data with any data
         from prior value metrics with the same name and tags.
         """
-        
+
+        # breakpoint()
+        _logger.debug(f"TRAVERSE=(after harvest)newrelic.core.stats_engine.record_opentelemetry_metric--name, value, tags: {name}, {value}, {tags}")
         return self.__opentelemetry_stats_table.record_dimensional_metric(name, value, tags)
 
     def record_dimensional_metrics(self, metrics):

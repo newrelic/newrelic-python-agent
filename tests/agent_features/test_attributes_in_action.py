@@ -91,6 +91,7 @@ AGENT_KEYS_ALL = TRACE_ERROR_AGENT_KEYS + REQ_PARAMS
 TRANS_EVENT_INTRINSICS = ("name", "duration", "type", "timestamp", "totalTime", "error", "apdexPerfZone")
 TRANS_EVENT_AGENT_KEYS = [
     "response.status",
+    "http.statusCode",
     "request.method",
     "request.uri",
     "request.headers.contentType",
@@ -493,13 +494,13 @@ def test_browser_exclude_user_attribute(normal_application):
 _override_settings = {"attributes.exclude": ["request.*"], "attributes.include": ["request.headers.*"]}
 
 _expected_attributes = {
-    "agent": ["response.status", "request.headers.contentType", "request.headers.contentLength"],
+    "agent": ["response.status", "http.statusCode", "request.headers.contentType", "request.headers.contentLength"],
     "user": ERROR_USER_ATTRS,
     "intrinsic": ["guid"],
 }
 
 _expected_attributes_event = {
-    "agent": ["response.status", "request.headers.contentType", "request.headers.contentLength"],
+    "agent": ["response.status", "http.statusCode", "request.headers.contentType", "request.headers.contentLength"],
     "user": ERROR_USER_ATTRS,
     "intrinsic": ERROR_EVENT_INTRINSICS,
 }
@@ -515,7 +516,7 @@ def test_error_in_transaction_exclude_agent_attribute(normal_application):
 
 
 _expected_attributes = {
-    "agent": ["response.status", "request.headers.contentType", "request.headers.contentLength"],
+    "agent": ["response.status", "http.statusCode", "request.headers.contentType", "request.headers.contentLength"],
     "user": USER_ATTRS,
     "intrinsic": ["guid"],
 }
@@ -528,7 +529,7 @@ def test_transaction_trace_exclude_agent_attribute(normal_application):
 
 
 _expected_attributes = {
-    "agent": ["response.status", "request.headers.contentType", "request.headers.contentLength"],
+    "agent": ["response.status", "http.statusCode", "request.headers.contentType", "request.headers.contentLength"],
     "user": USER_ATTRS,
     "intrinsic": TRANS_EVENT_INTRINSICS,
 }
@@ -544,7 +545,7 @@ def test_transaction_event_exclude_agent_attribute(normal_application):
 
 _override_settings = {"attributes.exclude": ["request.*"], "attributes.include": ["request.headers.*"]}
 
-_expected_agent_attributes = ["response.status", "request.headers.contentType", "request.headers.contentLength"]
+_expected_agent_attributes = ["response.status", "http.statusCode", "request.headers.contentType", "request.headers.contentLength"]
 
 _expected_absent_agent_attributes = ["request.method", "request.uri", *REQ_PARAMS]
 

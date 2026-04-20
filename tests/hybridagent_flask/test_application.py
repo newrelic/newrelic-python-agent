@@ -99,6 +99,7 @@ _test_application_rollup_metrics = [
             "request.uri": "/index",
             "response.headers.contentLength": 14,
             "response.status": "200",
+            "http.statusCode": 200
         },
         "intrinsic": {"name": "WebTransaction/Uri/index"},
         "user": {},

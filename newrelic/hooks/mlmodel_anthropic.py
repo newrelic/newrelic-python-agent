@@ -637,9 +637,6 @@ def wrap_messages_stream(manager_cls):
 
 
 class NRMessageStreamProxy(LLMStreamProxy):
-    # This class will be patched with the __stream__ and __stream_text__ methods from
-    # anthropic.lib.streaming.MessageStream when that module is loaded. As a failsafe,
-    # this class should work as a proxy anyway.
     def __enter__(self):
         return self
 
@@ -654,11 +651,18 @@ class NRMessageStreamProxy(LLMStreamProxy):
         for item in proxied_generator:  # noqa: UP028
             yield item
 
+    @property
+    def text_stream(self):
+        return self.__stream_text__()
+
+    def __stream_text__(self):
+        for text in self.__wrapped__.__stream_text__():
+            if not hasattr(self, "_nr_time_to_first_token") and hasattr(self, "_nr_request_timestamp"):
+                self._nr_time_to_first_token = int(1000.0 * time.time()) - self._nr_request_timestamp
+            yield text
+
 
 class NRAsyncMessageStreamProxy(AsyncLLMStreamProxy):
-    # This class will be patched with the __stream__ and __stream_text__ methods from
-    # anthropic.lib.streaming.AsyncMessageStream when that module is loaded. As a failsafe,
-    # this class should work as a proxy anyway.
     async def __aenter__(self):
         return self
 
@@ -672,6 +676,16 @@ class NRAsyncMessageStreamProxy(AsyncLLMStreamProxy):
         )
         async for item in proxied_generator:
             yield item
+
+    @property
+    def text_stream(self):
+        return self.__stream_text__()
+
+    async def __stream_text__(self):
+        async for text in self.__wrapped__.__stream_text__():
+            if not hasattr(self, "_nr_time_to_first_token") and hasattr(self, "_nr_request_timestamp"):
+                self._nr_time_to_first_token = int(1000.0 * time.time()) - self._nr_request_timestamp
+            yield text
 
 
 class NRMessageStreamManager(ObjectProxy):
@@ -713,7 +727,7 @@ class NRMessageStreamManager(ObjectProxy):
         # on_stop_iteration fires when the user exhausts the proxy via __next__().
         # If the user uses stream.text_stream instead, on_stop_iteration is bypassed and
         # __exit__ handles event recording as a fallback.
-        proxied_stream = NRMessageStreamProxy(
+        proxied_stream = self._nr_proxy = NRMessageStreamProxy(
             message_stream,
             on_stream_chunk=_handle_stream_chunk(
                 streaming_events=self._nr_streaming_events, request_timestamp=self._nr_request_timestamp
@@ -723,6 +737,7 @@ class NRMessageStreamManager(ObjectProxy):
         )
         proxied_stream._nr_ft = self._nr_ft
         proxied_stream._nr_metadata = self._nr_linking_metadata
+        proxied_stream._nr_request_timestamp = self._nr_request_timestamp
         return proxied_stream
 
     def __exit__(self, exc_type, exc, exc_tb):
@@ -807,7 +822,7 @@ class NRAsyncMessageStreamManager(ObjectProxy):
         # on_stop_iteration fires when the user exhausts the proxy via __next__().
         # If the user uses stream.text_stream instead, on_stop_iteration is bypassed and
         # __exit__ handles event recording as a fallback.
-        proxied_stream = NRAsyncMessageStreamProxy(
+        proxied_stream = self._nr_proxy = NRAsyncMessageStreamProxy(
             message_stream,
             on_stream_chunk=_handle_stream_chunk(
                 streaming_events=self._nr_streaming_events, request_timestamp=self._nr_request_timestamp
@@ -817,13 +832,14 @@ class NRAsyncMessageStreamManager(ObjectProxy):
         )
         proxied_stream._nr_ft = self._nr_ft
         proxied_stream._nr_metadata = self._nr_linking_metadata
+        proxied_stream._nr_request_timestamp = self._nr_request_timestamp
         return proxied_stream
 
     async def __aexit__(self, exc_type, exc, exc_tb):
         # Fallback: record events if not already recorded (e.g., user used text_stream).
         if not self._nr_events_recorded:
             if exc_type is None:
-                snapshot = getattr(self._nr_message_stream, "_MessageStream__final_message_snapshot", None)
+                snapshot = getattr(self._nr_message_stream, "_AsyncMessageStream__final_message_snapshot", None)
                 if snapshot:
                     usage = getattr(snapshot, "usage", None)
                     content = getattr(snapshot, "content", None)

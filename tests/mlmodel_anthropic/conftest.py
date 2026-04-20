@@ -151,9 +151,9 @@ def is_async(request):
         "create.stream",  # Messages.create(stream=True)
         "create.__stream__",  # Messages.create(stream=True).__stream__()
         # ==== Alternative stream() interfaces ====
-        # "stream.text_stream",  # Messages.stream().text_stream
+        "stream.text_stream",  # Messages.stream().text_stream
         "stream.__stream__",  # Messages.stream().__stream__()
-        # "stream.__stream_text__",  # Messages.stream().__stream_text__()
+        "stream.__stream_text__",  # Messages.stream().__stream_text__()
     ],
 )
 def interaction_method(request):

@@ -213,10 +213,10 @@ def exercise_model(loop, sync_anthropic_client, async_anthropic_client, is_async
 
             # Alternative create() interfaces with streaming
             elif interaction_method == "create.stream":
-                async with async_anthropic_client.messages.create(*args, stream=True, **kwargs) as stream:
+                async with await async_anthropic_client.messages.create(*args, stream=True, **kwargs) as stream:
                     return [chunk async for chunk in stream]
             elif interaction_method == "create.__stream__":
-                async with async_anthropic_client.messages.create(*args, stream=True, **kwargs) as stream:
+                async with await async_anthropic_client.messages.create(*args, stream=True, **kwargs) as stream:
                     return [chunk async for chunk in stream.__stream__()]
 
             # Alternative stream() interfaces

@@ -141,8 +141,21 @@ def is_async(request):
     return request.param == "async"
 
 
-@pytest.fixture(scope="session", params=["create"])  # TODO: Re-enable streaming once instrumented.
-# @pytest.fixture(scope="session", params=["create", "create_stream", "stream", "text_stream"])
+@pytest.fixture(
+    scope="session",
+    params=[
+        # ==== Simple interfaces ====
+        "create",  # Messages.create()
+        "stream",  # Messages.stream()
+        # ==== Alternative create() interfaces with streaming ====
+        "create.stream",  # Messages.create(stream=True)
+        "create.__stream__",  # Messages.create(stream=True).__stream__()
+        # ==== Alternative stream() interfaces ====
+        # "stream.text_stream",  # Messages.stream().text_stream
+        "stream.__stream__",  # Messages.stream().__stream__()
+        # "stream.__stream_text__",  # Messages.stream().__stream_text__()
+    ],
+)
 def interaction_method(request):
     return request.param
 
@@ -153,35 +166,70 @@ def is_streaming(interaction_method):
 
 
 @pytest.fixture(scope="session")
+def is_create_method(interaction_method):
+    return interaction_method.startswith("create")
+
+
+@pytest.fixture(scope="session")
 def exercise_model(loop, sync_anthropic_client, async_anthropic_client, is_async, interaction_method):
     def exercise_model_sync(*args, **kwargs):
+        # Simple interfaces
         if interaction_method == "create":
             return sync_anthropic_client.messages.create(*args, **kwargs)
-        elif interaction_method == "create_stream":
-            stream = sync_anthropic_client.messages.create(*args, stream=True, **kwargs)
-            return list(stream)
         elif interaction_method == "stream":
             with sync_anthropic_client.messages.stream(*args, **kwargs) as stream:
                 return list(stream)
-        elif interaction_method == "text_stream":
+
+        # Alternative create() interfaces with streaming
+        elif interaction_method == "create.stream":
+            with sync_anthropic_client.messages.create(*args, stream=True, **kwargs) as stream:
+                return list(stream)
+        elif interaction_method == "create.__stream__":
+            with sync_anthropic_client.messages.create(*args, stream=True, **kwargs) as stream:
+                return list(stream.__stream__())
+
+        # Alternative stream() interfaces
+        elif interaction_method == "stream.text_stream":
             with sync_anthropic_client.messages.stream(*args, **kwargs) as stream:
                 return list(stream.text_stream)
+        elif interaction_method == "stream.__stream__":
+            with sync_anthropic_client.messages.stream(*args, **kwargs) as stream:
+                return list(stream.__stream__())
+        elif interaction_method == "stream.__stream_text__":
+            with sync_anthropic_client.messages.stream(*args, **kwargs) as stream:
+                return list(stream.__stream_text__())
+
         else:
             raise NotImplementedError
 
     def exercise_model_async(*args, **kwargs):
         async def _exercise_model_async():
+            # Simple interfaces
             if interaction_method == "create":
                 return await async_anthropic_client.messages.create(*args, **kwargs)
-            elif interaction_method == "create_stream":
-                stream = await async_anthropic_client.messages.create(*args, stream=True, **kwargs)
-                return [chunk async for chunk in stream]
             elif interaction_method == "stream":
                 async with async_anthropic_client.messages.stream(*args, **kwargs) as stream:
                     return [event async for event in stream]
-            elif interaction_method == "text_stream":
+
+            # Alternative create() interfaces with streaming
+            elif interaction_method == "create.stream":
+                async with async_anthropic_client.messages.create(*args, stream=True, **kwargs) as stream:
+                    return [chunk async for chunk in stream]
+            elif interaction_method == "create.__stream__":
+                async with async_anthropic_client.messages.create(*args, stream=True, **kwargs) as stream:
+                    return [chunk async for chunk in stream.__stream__()]
+
+            # Alternative stream() interfaces
+            elif interaction_method == "stream.text_stream":
                 async with async_anthropic_client.messages.stream(*args, **kwargs) as stream:
                     return [event async for event in stream.text_stream]
+            elif interaction_method == "stream.__stream__":
+                async with async_anthropic_client.messages.stream(*args, **kwargs) as stream:
+                    return [event async for event in stream.__stream__()]
+            elif interaction_method == "stream.__stream_text__":
+                async with async_anthropic_client.messages.stream(*args, **kwargs) as stream:
+                    return [event async for event in stream.__stream_text__()]
+
             else:
                 raise NotImplementedError
 

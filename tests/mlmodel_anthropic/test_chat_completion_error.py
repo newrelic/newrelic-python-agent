@@ -73,21 +73,28 @@ expected_events_on_no_model_error = [
 
 
 @pytest.fixture(scope="session")
-def chat_completion_metrics(interaction_method):
-    if interaction_method in {"stream", "text_stream"}:
-        return [("Llm/completion/Anthropic/stream", 1)]
-    else:
+def chat_completion_metrics(is_create_method):
+    if is_create_method:
         return [("Llm/completion/Anthropic/create", 1)]
+    else:
+        return [("Llm/completion/Anthropic/stream", 1)]
 
 
-MISSING_MODEL_ERROR = "Missing required arguments; Expected either ('max_tokens', 'messages' and 'model') or ('max_tokens', 'messages', 'model' and 'stream') arguments to be given"
+@pytest.fixture(scope="session")
+def missing_model_error(interaction_method, is_async, is_create_method):
+    if is_create_method:
+        return "Missing required arguments; Expected either ('max_tokens', 'messages' and 'model') or ('max_tokens', 'messages', 'model' and 'stream') arguments to be given"
+    else:
+        return f"{'Async' if is_async else ''}Messages.stream() missing 1 required keyword-only argument: 'model'"
 
 
 @dt_enabled
 @reset_core_stats_engine()
-def test_chat_completion_invalid_request_error_no_model(exercise_model, chat_completion_metrics, set_trace_info):
-    @validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
-    @validate_span_events(exact_agents={"error.message": MISSING_MODEL_ERROR})
+def test_chat_completion_invalid_request_error_no_model(
+    exercise_model, chat_completion_metrics, set_trace_info, missing_model_error
+):
+    @validate_error_trace_attributes("builtins:TypeError", exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
+    @validate_span_events(exact_agents={"error.message": missing_model_error})
     @validate_transaction_metrics(
         name="test_chat_completion_invalid_request_error_no_model",
         scoped_metrics=chat_completion_metrics,
@@ -117,10 +124,10 @@ def test_chat_completion_invalid_request_error_no_model(exercise_model, chat_com
 @disabled_ai_monitoring_record_content_settings
 @reset_core_stats_engine()
 def test_chat_completion_invalid_request_error_no_model_no_content(
-    exercise_model, chat_completion_metrics, set_trace_info
+    exercise_model, chat_completion_metrics, set_trace_info, missing_model_error
 ):
-    @validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
-    @validate_span_events(exact_agents={"error.message": MISSING_MODEL_ERROR})
+    @validate_error_trace_attributes("builtins:TypeError", exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
+    @validate_span_events(exact_agents={"error.message": missing_model_error})
     @validate_transaction_metrics(
         name="test_chat_completion_invalid_request_error_no_model_no_content",
         scoped_metrics=chat_completion_metrics,
@@ -190,9 +197,9 @@ INVALID_MODEL_ERROR = "The given model doesn't exist in the requested endpoint"
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
 def test_chat_completion_invalid_request_error_invalid_model_with_token_count(
-    exercise_model, chat_completion_metrics, set_trace_info, interaction_method
+    exercise_model, chat_completion_metrics, set_trace_info, is_streaming
 ):
-    if interaction_method in {"create_stream", "stream", "text_stream"}:
+    if is_streaming:
         # Streaming endpoints return a 200 status code, but the first event is an error that will be raised.
         expected_exception_type = anthropic.APIStatusError
         expected_status_code = 200
@@ -202,7 +209,7 @@ def test_chat_completion_invalid_request_error_invalid_model_with_token_count(
         expected_status_code = 422
 
     @validate_error_trace_attributes(
-        callable_name(expected_exception_type),
+        f"anthropic:{expected_exception_type.__name__}",
         exact_attrs={
             "agent": {},
             "intrinsic": {},
@@ -280,7 +287,7 @@ def test_chat_completion_wrong_api_key_error(
     anthropic_clients, exercise_model, chat_completion_metrics, set_trace_info, monkeypatch
 ):
     @validate_error_trace_attributes(
-        callable_name(anthropic.BadRequestError),
+        "anthropic:BadRequestError",
         exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.code": "BadRequestError", "http.statusCode": 400}},
     )
     @validate_span_events(exact_agents={"error.message": INVALID_API_KEY_ERROR})

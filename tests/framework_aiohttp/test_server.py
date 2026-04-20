@@ -73,7 +73,11 @@ def test_error_exception(method, uri, metric_name, error, status, nr_enabled, ai
         @validate_transaction_event_attributes(
             required_params={"agent": required_attrs, "user": [], "intrinsic": []},
             forgone_params={"agent": forgone_attrs, "user": [], "intrinsic": []},
-            exact_attrs={"agent": {"response.status": str(status), "http.statusCode": status}, "user": {}, "intrinsic": {}},
+            exact_attrs={
+                "agent": {"response.status": str(status), "http.statusCode": status},
+                "user": {},
+                "intrinsic": {},
+            },
         )
         @validate_code_level_metrics(*metric_name.split(":"))
         @override_ignore_status_codes([404])

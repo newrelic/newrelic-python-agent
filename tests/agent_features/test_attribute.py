@@ -418,7 +418,7 @@ agent_attributes = {
     "response.headers.contentLength": int,
     "response.headers.contentType": str,
     "response.status": str,
-    "http.statusCode": int
+    "http.statusCode": int,
 }
 
 

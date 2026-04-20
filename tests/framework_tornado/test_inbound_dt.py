@@ -23,7 +23,11 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
     required_params={"agent": (), "user": (), "intrinsic": ()},
     forgone_params={"agent": (), "user": (), "intrinsic": ()},
     exact_attrs={
-        "agent": {"response.status": "200", "http.statusCode": 200, "response.headers.contentType": "text/html; charset=UTF-8"},
+        "agent": {
+            "response.status": "200",
+            "http.statusCode": 200,
+            "response.headers.contentType": "text/html; charset=UTF-8",
+        },
         "user": {},
         "intrinsic": {},
     },

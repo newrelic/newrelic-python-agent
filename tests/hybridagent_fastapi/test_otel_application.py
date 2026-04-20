@@ -66,7 +66,7 @@ def test_application(caplog, app, endpoint):
                 "request.uri": endpoint,
                 "response.headers.contentLength": 2,
                 "response.status": "200",
-                "http.statusCode": 200
+                "http.statusCode": 200,
             },
             "intrinsic": {"name": f"WebTransaction/Uri/{transaction_name}"},
             "user": {},

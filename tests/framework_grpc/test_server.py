@@ -47,7 +47,13 @@ def test_simple(method_name, streaming_request, mock_grpc_server, stub):
     @override_application_settings({"attributes.include": ["request.*"]})
     @validate_transaction_event_attributes(
         required_params={
-            "agent": ["request.uri", "request.headers.userAgent", "response.status", "http.statusCode", "response.headers.contentType"],
+            "agent": [
+                "request.uri",
+                "request.headers.userAgent",
+                "response.status",
+                "http.statusCode",
+                "response.headers.contentType",
+            ],
             "user": [],
             "intrinsic": ["port"],
         },
@@ -87,7 +93,11 @@ def test_raises_response_status(method_name, streaming_request, mock_grpc_server
             "user": [],
             "intrinsic": ["port"],
         },
-        exact_attrs={"agent": {"response.status": status_code, "http.statusCode": int(status_code)}, "user": {}, "intrinsic": {"port": port}},
+        exact_attrs={
+            "agent": {"response.status": status_code, "http.statusCode": int(status_code)},
+            "user": {},
+            "intrinsic": {"port": port},
+        },
     )
     @wait_for_transaction_completion
     def _doit():

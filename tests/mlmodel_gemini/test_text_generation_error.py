@@ -277,7 +277,7 @@ expected_events_on_wrong_api_key_error = [
 @dt_enabled
 @reset_core_stats_engine()
 def test_text_generation_wrong_api_key_error(
-    gemini_dev_client, exercise_text_model, text_generation_metrics, set_trace_info
+    gemini_client, exercise_text_model, text_generation_metrics, set_trace_info
 ):
     @validate_error_trace_attributes(
         callable_name(google.genai.errors.ClientError),
@@ -298,8 +298,8 @@ def test_text_generation_wrong_api_key_error(
         with pytest.raises(google.genai.errors.ClientError):
             set_trace_info()
             fake_api_key = "DEADBEEF"
-            gemini_dev_client._api_client.api_key = fake_api_key
-            gemini_dev_client._api_client._http_options.headers["x-goog-api-key"] = fake_api_key
+            gemini_client._api_client.api_key = fake_api_key
+            gemini_client._api_client._http_options.headers["x-goog-api-key"] = fake_api_key
             exercise_text_model(
                 model="gemini-2.0-flash",
                 contents=["Invalid API key."],

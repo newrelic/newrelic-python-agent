@@ -1,0 +1,60 @@
+{
+  "replay_id": "test_text_generation_error/test_text_generation_wrong_api_key_error/streaming-model-vertex",
+  "interactions": [
+    {
+      "request": {
+        "method": "post",
+        "url": "{MLDEV_URL_PREFIX}/models/gemini-2.0-flash:streamGenerateContent?alt=sse",
+        "headers": {
+          "Content-Type": "application/json",
+          "x-goog-api-key": "{REDACTED}",
+          "user-agent": "google-genai-sdk/{VERSION_NUMBER} {LANGUAGE_LABEL}/{VERSION_NUMBER}",
+          "x-goog-api-client": "google-genai-sdk/{VERSION_NUMBER} {LANGUAGE_LABEL}/{VERSION_NUMBER}"
+        },
+        "body_segments": [
+          {
+            "contents": [
+              {
+                "parts": [
+                  {
+                    "text": "Invalid API key."
+                  }
+                ],
+                "role": "user"
+              }
+            ],
+            "generationConfig": {
+              "temperature": 0.7,
+              "maxOutputTokens": 100
+            }
+          }
+        ]
+      },
+      "response": {
+        "status_code": 400,
+        "headers": {
+          "vary": "Origin, X-Origin, Referer",
+          "content-type": "text/event-stream",
+          "date": "Wed, 22 Apr 2026 16:41:06 GMT",
+          "server": "scaffolding on HTTPServer2",
+          "content-length": "581",
+          "x-xss-protection": "0",
+          "x-frame-options": "SAMEORIGIN",
+          "x-content-type-options": "nosniff",
+          "server-timing": "gfet4t7; dur=47",
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
+        },
+        "body_segments": [
+          {
+            "error": {
+              "code": 400,
+              "message": "API key not valid. Please pass a valid API key.",
+              "status": "INVALID_ARGUMENT"
+            }
+          }
+        ],
+        "sdk_response_segments": []
+      }
+    }
+  ]
+}

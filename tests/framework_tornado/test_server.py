@@ -66,6 +66,7 @@ def test_server(app, uri, name, metrics, method_metric):
                 "request.method": "GET",
                 "request.uri": uri,
                 "response.status": "200",
+                "http.statusCode": 200,
             },
             "user": {},
             "intrinsic": {"port": app.get_http_port()},

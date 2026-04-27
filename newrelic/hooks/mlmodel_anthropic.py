@@ -30,13 +30,13 @@ ANTHROPIC_VERSION = get_package_version("anthropic")
 EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE = (
     "Exception occurred in Anthropic instrumentation: While reporting an exception "
     "in Anthropic, another exception occurred. Report this issue to New Relic "
-    "Support.\n "
+    "Support."
 )
 RECORD_EVENTS_FAILURE_LOG_MESSAGE = (
     "Exception occurred in Anthropic instrumentation: Failed to record LLM events. "
-    "Please report this issue to New Relic Support.\n "
+    "Please report this issue to New Relic Support."
 )
-STREAM_PARSING_FAILURE_LOG_MESSAGE = "Exception occurred in Anthropic instrumentation: Failed to process event stream information. Please report this issue to New Relic Support.\n"
+STREAM_PARSING_FAILURE_LOG_MESSAGE = "Exception occurred in Anthropic instrumentation: Failed to process event stream information. Please report this issue to New Relic Support."
 
 _logger = logging.getLogger(__name__)
 

@@ -104,10 +104,8 @@ def chat_completion_events(is_streaming):
 
 @pytest.fixture(scope="session")
 def chat_completion_metrics(interaction_method):
-    if interaction_method in {"stream", "text_stream"}:
-        return [("Llm/completion/Anthropic/stream", 1)]
-    else:
-        return [("Llm/completion/Anthropic/create", 1)]
+    method = interaction_method.split(".")[0]
+    return [(f"Llm/completion/Anthropic/{method}", 1)]
 
 
 @reset_core_stats_engine()

@@ -14,6 +14,7 @@
 
 import pika
 import pytest
+from conftest import EXCHANGE, EXCHANGE_2, QUEUE
 from testing_support.db_settings import rabbitmq_settings
 from testing_support.fixtures import dt_enabled, override_application_settings
 from testing_support.validators.validate_messagebroker_headers import validate_messagebroker_headers
@@ -40,7 +41,6 @@ def cache_pika_headers(wrapped, instance, args, kwargs):
 
 
 DB_SETTINGS = rabbitmq_settings()[0]
-QUEUE = "test-pika-queue"
 CORRELATION_ID = "testingpika"
 REPLY_TO = "testing"
 HEADERS = {"MYHEADER": "pikatest"}
@@ -238,10 +238,10 @@ def test_blocking_connection_headers_reuse_properties(producer):
 
 
 _test_blocking_connection_two_exchanges_metrics = [
-    ("MessageBroker/RabbitMQ/Exchange/Produce/Named/exchange-1", 1),
-    ("MessageBroker/RabbitMQ/Exchange/Produce/Named/exchange-2", 1),
-    ("MessageBroker/RabbitMQ/Exchange/Consume/Named/exchange-1", None),
-    ("MessageBroker/RabbitMQ/Exchange/Consume/Named/exchange-2", None),
+    (f"MessageBroker/RabbitMQ/Exchange/Produce/Named/{EXCHANGE}", 1),
+    (f"MessageBroker/RabbitMQ/Exchange/Produce/Named/{EXCHANGE_2}", 1),
+    (f"MessageBroker/RabbitMQ/Exchange/Consume/Named/{EXCHANGE}", None),
+    (f"MessageBroker/RabbitMQ/Exchange/Consume/Named/{EXCHANGE_2}", None),
 ]
 
 
@@ -261,12 +261,12 @@ _test_blocking_connection_two_exchanges_metrics = [
 def test_blocking_connection_two_exchanges():
     with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
         channel = connection.channel()
-        channel.queue_declare(queue=QUEUE)
-        channel.exchange_declare(exchange="exchange-1", durable=False, auto_delete=True)
-        channel.exchange_declare(exchange="exchange-2", durable=False, auto_delete=True)
+        channel.queue_declare(queue=QUEUE, durable=True, auto_delete=True)
+        channel.exchange_declare(exchange=EXCHANGE, durable=True, auto_delete=True)
+        channel.exchange_declare(exchange=EXCHANGE_2, durable=True, auto_delete=True)
 
-        channel.basic_publish(exchange="exchange-1", routing_key=QUEUE, body="test")
-        channel.basic_publish(exchange="exchange-2", routing_key=QUEUE, body="test")
+        channel.basic_publish(exchange=EXCHANGE, routing_key=QUEUE, body="test")
+        channel.basic_publish(exchange=EXCHANGE_2, routing_key=QUEUE, body="test")
 
 
 _test_select_connection_metrics = [

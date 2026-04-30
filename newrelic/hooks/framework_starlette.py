@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import functools
+
 from newrelic.api.asgi_application import wrap_asgi_application
 from newrelic.api.background_task import BackgroundTaskWrapper
 from newrelic.api.function_trace import FunctionTraceWrapper
@@ -20,6 +22,7 @@ from newrelic.api.transaction import current_transaction
 from newrelic.common.coroutine import is_coroutine_function
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import FunctionWrapper, function_wrapper, wrap_function_wrapper
+from newrelic.common.signature import bind_args
 from newrelic.core.context import ContextOf, context_wrapper
 
 
@@ -208,6 +211,33 @@ async def wrap_run_in_threadpool(wrapped, instance, args, kwargs):
     return await wrapped(func, *args, **kwargs)
 
 
+async def wrap_iterate_in_threadpool(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    trace = current_trace()
+
+    if not transaction or not trace:
+        async for item in wrapped(*args, **kwargs):
+            yield item
+
+    bound_args = bind_args(wrapped, args, kwargs)
+    bound_args["iterator"] = generator_wrapper(bound_args["iterator"], ContextOf(trace=trace))
+
+    async for item in wrapped(**bound_args):
+        yield item
+
+
+def generator_wrapper(wrapped, trace):
+    # This differs from the same API in async_wrapper.pyin that it
+    # returns a generator object directly, instead of a generator function.
+    @functools.wraps(wrapped)
+    def wrapper(*args, **kwargs):
+        with trace:
+            result = yield from iter(wrapped)
+            return result
+
+    return wrapper()
+
+
 def instrument_starlette_applications(module):
     framework = framework_details()
     version_info = tuple(int(v) for v in framework[1].split(".", 3)[:3])
@@ -262,4 +292,7 @@ def instrument_starlette_background_task(module):
 
 
 def instrument_starlette_concurrency(module):
-    wrap_function_wrapper(module, "run_in_threadpool", wrap_run_in_threadpool)
+    if hasattr(module, "run_in_threadpool"):
+        wrap_function_wrapper(module, "run_in_threadpool", wrap_run_in_threadpool)
+    if hasattr(module, "iterate_in_threadpool"):
+        wrap_function_wrapper(module, "iterate_in_threadpool", wrap_iterate_in_threadpool)

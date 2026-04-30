@@ -160,6 +160,114 @@ documentation to help reduce the setup burden on new contributors.
     Container Features](https://containers.dev/features). A few common
     needs are already included but commented out.
 
+## Developing Locally with uv
+
+[uv](https://docs.astral.sh/uv/) is the package and Python version manager used in our development container. You can use it to create a local development environment.
+
+### Installing uv
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+See the [uv installation docs](https://docs.astral.sh/uv/getting-started/installation/) for alternatives such as Homebrew or pip. The installer will add uv's tool bin directory to your `PATH` so that installed tools are accessible.
+
+### Installing Python Versions
+
+Install all Python versions used by the test suite:
+
+```bash
+uv python install cp3.14 cp3.13 cp3.12 cp3.11 cp3.10 cp3.9 pp3.11 pp3.10 cp3.14t
+```
+
+- `cp3.X` - CPython 3.X
+- `pp3.X` - PyPy 3.X
+- `cp3.14t` - CPython 3.14 free-threaded build
+
+To set CPython 3.13 as the default `python` and `python3` executable on your `PATH`:
+
+```bash
+uv python install --default cp3.13
+```
+
+### Installing Development Tools
+
+```bash
+uv tool install tox --with tox-uv-bare
+uv tool install ruff
+uv tool install pre-commit --with pre-commit-uv
+uv tool install asv --with virtualenv
+```
+
+- `tox` - Test Runner (see [Testing Guidelines](#testing-guidelines))
+- `ruff` - Linter and Formatter
+- `pre-commit` - Automatic Linting Checks on Push
+- `asv` - Benchmarking
+
+## Testing Guidelines
+
+The Python Agent uses [tox](https://github.com/tox-dev/tox) for testing.
+The repository uses test suites located in tests/.
+
+You can run these tests by using `grep` on the full list of `tox` environments
+to find a specific one, and then executing the tests with `tox`. See `tox.ini`
+for details on naming conventions in `tox`.
+
+```bash
+tox -l | grep flask
+tox run -e python-framework_flask-py314-flasklatest
+```
+
+## Linting and Formatting
+
+The Python Agent uses [ruff](https://docs.astral.sh/ruff/) for both linting and formatting.
+
+To lint and format the entire codebase:
+
+```bash
+ruff check --fix
+ruff format
+```
+
+## Pre-Commit Hooks
+
+The repository uses [pre-commit](https://pre-commit.com/) as an optional tool to enforce linting, formatting, and license headers. Currently hooks are configured to run at the **pre-push** stage (not on every commit).
+
+Install the hooks after cloning:
+
+```bash
+pre-commit install --install-hooks
+```
+
+To run all hooks manually against every file:
+
+```bash
+pre-commit run --all-files --hook-stage pre-push
+```
+
+## Benchmarking
+
+The Python Agent uses [asv (Airspeed Velocity)](https://asv.readthedocs.io/) for benchmarking. These benchmarks live in `tests/agent_benchmarks/`.
+
+Run benchmarks against the current commit:
+
+```bash
+asv run -es 1 --python=3.14 HEAD^!
+```
+
+Compare benchmark results between two commits or branches:
+
+```bash
+asv compare -s <base-commit> <head-commit>
+```
+
+Generate and view an HTML report of results:
+
+```bash
+asv publish
+asv preview
+```
+
 ## Pull Request Guidelines
 
 Before we can accept a pull request, you must sign our [Contributor
@@ -184,14 +292,3 @@ Additionally:
 3. You may merge the Pull Request in once you have the sign-off of two
     other developers, or if you do not have permission to do that, you
     may request the second reviewer to merge it for you.
-
-## Testing Guidelines
-
-The Python Agent uses [tox](https://github.com/tox-dev/tox) for testing.
-The repository uses tests in tests/.
-
-You can run these tests by entering the tests/ directory and then
-entering the directory of the tests you want to run. Then, run the
-following command:
-
-`tox -c tox.ini -e [test environment]`

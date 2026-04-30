@@ -15,7 +15,7 @@
 from starlette.applications import Starlette
 from starlette.background import BackgroundTasks
 from starlette.exceptions import HTTPException
-from starlette.responses import PlainTextResponse
+from starlette.responses import PlainTextResponse, StreamingResponse
 from starlette.routing import Route
 from testing_support.asgi_testing import AsgiTest
 
@@ -41,7 +41,7 @@ async def index(request):
     return PlainTextResponse("Hello, world!")
 
 
-def non_async(request):
+def sync(request):
     assert current_transaction()
     return PlainTextResponse("Non async route")
 
@@ -78,6 +78,34 @@ def missing_route_handler(request, exc):
     return PlainTextResponse("Missing route handler", status_code=404)
 
 
+async def async_streaming_generator():
+    with FunctionTrace(name=callable_name(async_streaming_generator)):
+        for chunk in ("Async ", "streaming ", "response"):
+            yield chunk
+
+
+def sync_streaming_generator():
+    with FunctionTrace(name=callable_name(sync_streaming_generator)):
+        for chunk in ("Sync ", "streaming ", "response"):  # noqa: UP028
+            yield chunk
+
+
+async def async_handler_async_streaming_response(request):
+    return StreamingResponse(async_streaming_generator(), media_type="text/plain")
+
+
+async def async_handler_sync_streaming_response(request):
+    return StreamingResponse(sync_streaming_generator(), media_type="text/plain")
+
+
+def sync_handler_async_streaming_response(request):
+    return StreamingResponse(async_streaming_generator(), media_type="text/plain")
+
+
+def sync_handler_sync_streaming_response(request):
+    return StreamingResponse(sync_streaming_generator(), media_type="text/plain")
+
+
 class CustomRoute:
     def __init__(self, route):
         self.route = route
@@ -91,7 +119,7 @@ class CustomRoute:
 async def run_bg_task(request):
     tasks = BackgroundTasks()
     tasks.add_task(bg_task_async)
-    tasks.add_task(bg_task_non_async)
+    tasks.add_task(bg_task_sync)
     return PlainTextResponse("Hello, world!", background=tasks)
 
 
@@ -99,20 +127,24 @@ async def bg_task_async():
     pass
 
 
-def bg_task_non_async():
+def bg_task_sync():
     pass
 
 
 routes = [
     Route("/index", index),
     Route("/418", teapot),
-    Route("/non_async", non_async),
+    Route("/sync", sync),
     Route("/runtime_error", runtime_error),
     Route("/handled_error", handled_error),
     Route("/sync_handled_error", sync_handled_error),
     Route("/raw_runtime_error", CustomRoute(runtime_error)),
     Route("/raw_http_error", CustomRoute(teapot)),
     Route("/run_bg_task", run_bg_task),
+    Route("/async_handler_async_streaming_response", async_handler_async_streaming_response),
+    Route("/async_handler_sync_streaming_response", async_handler_sync_streaming_response),
+    Route("/sync_handler_async_streaming_response", sync_handler_async_streaming_response),
+    Route("/sync_handler_sync_streaming_response", sync_handler_sync_streaming_response),
 ]
 
 

@@ -9,7 +9,7 @@ Contributions are always welcome. Before contributing please read the
 [code of
 conduct](https://github.com/newrelic/.github/blob/main/CODE_OF_CONDUCT.md)
 and [search the issue tracker](https://github.com/newrelic/newrelic-python-agent/issues); your issue may have
-already been discussed or fixed in [main]{.title-ref}. To contribute,
+already been discussed or fixed in `main`. To contribute,
 [fork](https://help.github.com/articles/fork-a-repo/) this repository,
 commit your changes, and [send a Pull
 Request](https://help.github.com/articles/using-pull-requests/).
@@ -86,13 +86,15 @@ are happy to provide documentation and assistance for unmodified Open
 Source Software, we cannot provide support for your specific
 environment.
 
+For guided setup options, see [Developing Inside a Container](#developing-inside-a-container) to use our prebuilt Docker environment, or [Developing Locally with uv](#developing-locally-with-uv) to set up directly on your machine.
+
 ## Developing Inside a Container
 
 To avoid the issues involved with setting up a local environment,
 consider using our prebuilt development container to easily create an
 environment on demand with a wide selection of Python versions
 installed. This also comes with the
-[tox](https://github.com/tox-dev/tox) tool (See Testing Guidelines) and
+[tox](https://github.com/tox-dev/tox) tool (see [Testing Guidelines](#testing-guidelines)) and
 a few packages preinstalled.
 
 While we cannot provide direct support in setting up your environment to
@@ -101,23 +103,17 @@ documentation to help reduce the setup burden on new contributors.
 
 ### Prerequisites
 
-1. Install [Docker](https://www.docker.com/) for you local operating
+1. Install [Docker](https://www.docker.com/) for your local operating
     system.
 
 2. Login to the [GitHub Container
     Registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-with-a-personal-access-token-classic)
     through Docker.
 
-3.  
-
-    Install Either:
-
-    :   -   [VS Code](https://code.visualstudio.com/) onto your local
-            system (recommended).
-        -   The [Dev Container
-            CLI](https://github.com/devcontainers/cli) in your terminal.
-            (Requires a local copy of
-            [npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm).)
+3. Install either:
+   - [VS Code](https://code.visualstudio.com/) onto your local system (recommended).
+   - The [Dev Container CLI](https://github.com/devcontainers/cli) in your terminal.
+     (Requires a local copy of [npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm).)
 
 ### Steps for VS Code
 
@@ -125,13 +121,13 @@ documentation to help reduce the setup burden on new contributors.
 2. Install the [VS Code Extension for Dev
     Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
     into VS Code.
-3. In VS Code, open the command pallette (Ctrl-Shift-P on Windows/Linux
+3. In VS Code, open the command palette (Ctrl-Shift-P on Windows/Linux
     or Cmd-Shift-P on Mac) and search for and run \"Dev Containers:
     Rebuild and Reopen in Container\".
 4. Wait for the container to build and start. This may take a long time
     to pull the first time the container is run, subsequent runs should
     be faster thanks to caching.
-5. To update your container, open the command pallette and run \"Dev
+5. To update your container, open the command palette and run \"Dev
     Containers: Rebuild Without Cache and Reopen in Container\".
 
 ### Steps for Command Line Editor Users (vim, etc.)
@@ -281,14 +277,3 @@ tests if you\'re implementing a feature!
 
 Please note that integration tests will be run internally before
 contributions are accepted.
-
-Additionally:
-
-1. Ensure any install or build dependencies are removed before the end
-    of the layer when doing a build.
-2. Increase the version numbers in any examples files and the README.md
-    to the new version that this Pull Request would represent. The
-    versioning scheme we use is [SemVer](http://semver.org/).
-3. You may merge the Pull Request in once you have the sign-off of two
-    other developers, or if you do not have permission to do that, you
-    may request the second reviewer to merge it for you.

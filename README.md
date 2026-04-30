@@ -36,7 +36,7 @@ Relic](http://newrelic.com/python) to learn more.
 
 ## Usage
 
-This package can be installed via pip:
+This package supports Python 3.9+, and can be installed via pip:
 
 ```bash
 pip install newrelic
@@ -79,7 +79,7 @@ pip install newrelic
     ```bash
     NEW_RELIC_CONFIG_FILE=newrelic.ini newrelic-admin run-program gunicorn -c config.py test_site.wsgi
 
-    $ NEW_RELIC_CONFIG_FILE=newrelic.ini newrelic-admin run-program uwsgi uwsgi_config.ini
+    NEW_RELIC_CONFIG_FILE=newrelic.ini newrelic-admin run-program uwsgi uwsgi_config.ini
     ```
 
     Alternatively, you can also [manually integrate the
@@ -122,7 +122,7 @@ also automatically attach troubleshooting data to a New Relic Support
 ticket.
 
 If the issue has been confirmed as a bug or is a Feature request, please
-file a Github issue.
+file a GitHub issue.
 
 ### Support Channels
 
@@ -170,9 +170,10 @@ If you believe you have found a security vulnerability in this project or any of
 
 If you would like to contribute to this project, review [these guidelines](./CONTRIBUTING.md).
 
-To all contributors, we thank you!  Without your contribution, this project would not be what it is today.  We also host a community project page dedicated to the [New Relic Python Agent](https://opensource.newrelic.com/projects/newrelic/newrelic-python-agent).
+To all contributors, we thank you! Without your contribution, this project would not be what it is today. We also host a community project page dedicated to the [New Relic Python Agent](https://opensource.newrelic.com/projects/newrelic/newrelic-python-agent).
 
 ## License
+
 The New Relic Python Agent is licensed under the [Apache 2.0](http://apache.org/licenses/LICENSE-2.0.txt) License. The New Relic
 Python Agent also uses source code from third-party libraries. You can
 find full details on which libraries are used and the terms under which

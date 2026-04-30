@@ -4,7 +4,7 @@
     {
       "request": {
         "method": "post",
-        "url": "{MLDEV_URL_PREFIX}/models/gemini-2.0-flash:streamGenerateContent?alt=sse",
+        "url": "{MLDEV_URL_PREFIX}/models/gemini-2.5-flash:streamGenerateContent?alt=sse",
         "headers": {
           "Content-Type": "application/json",
           "x-goog-api-key": "{REDACTED}",
@@ -25,7 +25,7 @@
             ],
             "generationConfig": {
               "temperature": 0.7,
-              "maxOutputTokens": 100
+              "maxOutputTokens": 500
             }
           }
         ]
@@ -37,12 +37,12 @@
           "content-disposition": "attachment",
           "vary": "Origin, X-Origin, Referer",
           "transfer-encoding": "chunked",
-          "date": "Fri, 27 Mar 2026 19:34:15 GMT",
+          "date": "Thu, 30 Apr 2026 20:00:59 GMT",
           "server": "scaffolding on HTTPServer2",
           "x-xss-protection": "0",
           "x-frame-options": "SAMEORIGIN",
           "x-content-type-options": "nosniff",
-          "server-timing": "gfet4t7; dur=411",
+          "server-timing": "gfet4t7; dur=1145",
           "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
         },
         "body_segments": [
@@ -52,85 +52,29 @@
                 "content": {
                   "parts": [
                     {
-                      "text": "There"
-                    }
-                  ],
-                  "role": "model"
-                }
-              }
-            ],
-            "usageMetadata": {
-              "promptTokenCount": 10,
-              "totalTokenCount": 10,
-              "promptTokensDetails": [
-                {
-                  "modality": "TEXT",
-                  "tokenCount": 10
-                }
-              ]
-            },
-            "modelVersion": "gemini-2.0-flash",
-            "responseId": "t9vGaa79Auel7dcPk-jV2As"
-          },
-          {
-            "candidates": [
-              {
-                "content": {
-                  "parts": [
-                    {
-                      "text": " are 6"
-                    }
-                  ],
-                  "role": "model"
-                }
-              }
-            ],
-            "usageMetadata": {
-              "promptTokenCount": 10,
-              "totalTokenCount": 10,
-              "promptTokensDetails": [
-                {
-                  "modality": "TEXT",
-                  "tokenCount": 10
-                }
-              ]
-            },
-            "modelVersion": "gemini-2.0-flash",
-            "responseId": "t9vGaa79Auel7dcPk-jV2As"
-          },
-          {
-            "candidates": [
-              {
-                "content": {
-                  "parts": [
-                    {
-                      "text": " letters in the word \"Python\".\n"
+                      "text": "There are 6 letters in the word \"Python\".\n"
                     }
                   ],
                   "role": "model"
                 },
-                "finishReason": "STOP"
+                "finishReason": "STOP",
+                "index": 0
               }
             ],
             "usageMetadata": {
-              "promptTokenCount": 9,
+              "promptTokenCount": 10,
               "candidatesTokenCount": 12,
-              "totalTokenCount": 21,
+              "totalTokenCount": 122,
               "promptTokensDetails": [
                 {
                   "modality": "TEXT",
-                  "tokenCount": 9
+                  "tokenCount": 10
                 }
               ],
-              "candidatesTokensDetails": [
-                {
-                  "modality": "TEXT",
-                  "tokenCount": 12
-                }
-              ]
+              "thoughtsTokenCount": 100
             },
-            "modelVersion": "gemini-2.0-flash",
-            "responseId": "t9vGaa79Auel7dcPk-jV2As"
+            "modelVersion": "gemini-2.5-flash",
+            "responseId": "-rTzafLtLJ6v1MkP3O7ZqQg"
           }
         ],
         "byte_segments": [],
@@ -142,12 +86,12 @@
                 "content-disposition": "attachment",
                 "vary": "Origin, X-Origin, Referer",
                 "transfer-encoding": "chunked",
-                "date": "Fri, 27 Mar 2026 19:34:15 GMT",
+                "date": "Thu, 30 Apr 2026 20:00:59 GMT",
                 "server": "scaffolding on HTTPServer2",
                 "x-xss-protection": "0",
                 "x-frame-options": "SAMEORIGIN",
                 "x-content-type-options": "nosniff",
-                "server-timing": "gfet4t7; dur=411",
+                "server-timing": "gfet4t7; dur=1145",
                 "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
               }
             },
@@ -156,114 +100,28 @@
                 "content": {
                   "parts": [
                     {
-                      "text": "There"
-                    }
-                  ],
-                  "role": "model"
-                }
-              }
-            ],
-            "model_version": "gemini-2.0-flash",
-            "response_id": "t9vGaa79Auel7dcPk-jV2As",
-            "usage_metadata": {
-              "prompt_token_count": 10,
-              "prompt_tokens_details": [
-                {
-                  "modality": "TEXT",
-                  "token_count": 10
-                }
-              ],
-              "total_token_count": 10
-            }
-          },
-          {
-            "sdk_http_response": {
-              "headers": {
-                "content-type": "text/event-stream",
-                "content-disposition": "attachment",
-                "vary": "Origin, X-Origin, Referer",
-                "transfer-encoding": "chunked",
-                "date": "Fri, 27 Mar 2026 19:34:15 GMT",
-                "server": "scaffolding on HTTPServer2",
-                "x-xss-protection": "0",
-                "x-frame-options": "SAMEORIGIN",
-                "x-content-type-options": "nosniff",
-                "server-timing": "gfet4t7; dur=411",
-                "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
-              }
-            },
-            "candidates": [
-              {
-                "content": {
-                  "parts": [
-                    {
-                      "text": " are 6"
-                    }
-                  ],
-                  "role": "model"
-                }
-              }
-            ],
-            "model_version": "gemini-2.0-flash",
-            "response_id": "t9vGaa79Auel7dcPk-jV2As",
-            "usage_metadata": {
-              "prompt_token_count": 10,
-              "prompt_tokens_details": [
-                {
-                  "modality": "TEXT",
-                  "token_count": 10
-                }
-              ],
-              "total_token_count": 10
-            }
-          },
-          {
-            "sdk_http_response": {
-              "headers": {
-                "content-type": "text/event-stream",
-                "content-disposition": "attachment",
-                "vary": "Origin, X-Origin, Referer",
-                "transfer-encoding": "chunked",
-                "date": "Fri, 27 Mar 2026 19:34:15 GMT",
-                "server": "scaffolding on HTTPServer2",
-                "x-xss-protection": "0",
-                "x-frame-options": "SAMEORIGIN",
-                "x-content-type-options": "nosniff",
-                "server-timing": "gfet4t7; dur=411",
-                "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000"
-              }
-            },
-            "candidates": [
-              {
-                "content": {
-                  "parts": [
-                    {
-                      "text": " letters in the word \"Python\".\n"
+                      "text": "There are 6 letters in the word \"Python\".\n"
                     }
                   ],
                   "role": "model"
                 },
-                "finish_reason": "STOP"
+                "finish_reason": "STOP",
+                "index": 0
               }
             ],
-            "model_version": "gemini-2.0-flash",
-            "response_id": "t9vGaa79Auel7dcPk-jV2As",
+            "model_version": "gemini-2.5-flash",
+            "response_id": "-rTzafLtLJ6v1MkP3O7ZqQg",
             "usage_metadata": {
               "candidates_token_count": 12,
-              "candidates_tokens_details": [
-                {
-                  "modality": "TEXT",
-                  "token_count": 12
-                }
-              ],
-              "prompt_token_count": 9,
+              "prompt_token_count": 10,
               "prompt_tokens_details": [
                 {
                   "modality": "TEXT",
-                  "token_count": 9
+                  "token_count": 10
                 }
               ],
-              "total_token_count": 21
+              "thoughts_token_count": 100,
+              "total_token_count": 122
             }
           }
         ]

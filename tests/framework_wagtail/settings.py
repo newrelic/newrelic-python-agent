@@ -1,0 +1,70 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import os
+from pathlib import Path
+
+BASE_DIR = Path(__file__).parent
+DEBUG = True
+
+# Make this unique, and don't share it with anybody.
+SECRET_KEY = "cookies"
+
+# List of callables that know how to import templates from various sources.
+TEMPLATE_LOADERS = ("django.template.loaders.filesystem.Loader", "django.template.loaders.app_directories.Loader")
+
+MIDDLEWARE = (
+    "django.middleware.common.CommonMiddleware",
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.middleware.csrf.CsrfViewMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    "django.middleware.gzip.GZipMiddleware",
+)
+
+ROOT_URLCONF = "urls"
+
+TEMPLATE_DIRS = [BASE_DIR / "templates"]
+
+# For Django 1.10 compatibility because TEMPLATE_DIRS is deprecated
+TEMPLATES = [{"BACKEND": "django.template.backends.django.DjangoTemplates", "DIRS": TEMPLATE_DIRS}]
+
+INSTALLED_APPS = [
+    "dummy_app",
+    "wagtail.contrib.forms",
+    "wagtail.contrib.redirects",
+    "wagtail.embeds",
+    "wagtail.sites",
+    "wagtail.users",
+    "wagtail.snippets",
+    "wagtail.documents",
+    "wagtail.images",
+    "wagtail.search",
+    "wagtail.admin",
+    "wagtail",
+    "django_filters",
+    "django.contrib.admin",
+    "django.contrib.auth",
+    "django.contrib.contenttypes",
+    "django.contrib.sessions",
+    "django.contrib.messages",
+    "django.contrib.staticfiles",
+]
+
+DATABASES = {
+    "default": {
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": os.path.join(BASE_DIR, "db.sqlite3"),
+    }
+}

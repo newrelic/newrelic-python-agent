@@ -47,6 +47,7 @@ _parameters_list = [
     "transport_type",
     "trusted_account_key",
     "web_transaction",
+    "exclude_newrelic_header",
 ]
 _parameters = ",".join(_parameters_list)
 
@@ -161,6 +162,7 @@ def test_distributed_tracing(
     transport_type,
     trusted_account_key,
     web_transaction,
+    exclude_newrelic_header,
 ):
     extra_inbound_payloads = []
     if not inbound_payloads:
@@ -193,6 +195,7 @@ def test_distributed_tracing(
         "span_events.enabled": span_events_enabled,
         "account_id": account_id,
         "trusted_account_key": trusted_account_key,
+        "distributed_tracing.exclude_newrelic_header": exclude_newrelic_header,
     }
 
     common_required = intrinsics["common"]["expected"]

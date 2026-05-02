@@ -1179,7 +1179,7 @@ _settings.distributed_tracing.sampler.partial_granularity.remote_parent_not_samp
     "NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_REMOTE_PARENT_NOT_SAMPLED_TRACE_ID_RATIO_BASED_RATIO",
     None,
 )
-_settings.distributed_tracing.exclude_newrelic_header = False
+_settings.distributed_tracing.exclude_newrelic_header = True
 _settings.span_events.enabled = _environ_as_bool("NEW_RELIC_SPAN_EVENTS_ENABLED", default=True)
 _settings.event_harvest_config.harvest_limits.span_event_data = _environ_as_int(
     "NEW_RELIC_SPAN_EVENTS_MAX_SAMPLES_STORED", default=SPAN_EVENT_RESERVOIR_SIZE

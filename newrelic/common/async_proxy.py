@@ -72,17 +72,36 @@ class TransactionContext:
             # Set transaction_init to None so we only attempt to create a
             # transaction the first time entering the context.
             self.transaction_init = None
+
         if not self.transaction:
             return self
 
-        if not self.transaction._state:
+        if self.transaction.state == self.transaction.STATE_PENDING:
             self.transaction.__enter__()
+        elif self.transaction.state == self.transaction.STATE_RUNNING:
+            # Propagate root_span to the current task if it has no cache entry. Some
+            # async iterators dispatch each __anext__ as a new short-lived task via
+            # ensure_future rather than using a single task for the entire async
+            # generator. In this case, our wrapper for task_start stores nothing for
+            # the new task, so current_transaction() returns None inside it. Registering
+            # root_span here restores transaction context for the new task.
+            cache = trace_cache()
+            current_id = cache.current_thread_id()  # Returns id(current_task) in asyncio tasks
+            root_span = self.transaction.root_span
+
+            # Be careful to only set the root_span if there is not already an entry
+            # in the cache for the current task, to ensure we don't destroy any existing
+            # transaction context for the task.
+            if root_span is not None and cache.get(current_id) is None:
+                cache[current_id] = root_span
 
         self.enter_time = time.time()
         return self
 
     def __exit__(self, exc, value, tb):
-        if not self.transaction:
+        # If the Transaction does not exist or is not currently running,
+        # do not attempt to exit as this will cause can error.
+        if not self.transaction or self.transaction.state != self.transaction.STATE_RUNNING:
             return
 
         if self.enter_time is not None:
@@ -235,15 +254,15 @@ class AsyncGeneratorProxy(ObjectProxy):
         return await CoroutineProxy(self.__wrapped__.athrow(*args, **kwargs), self._nr_context)
 
     async def aclose(self):
+        self._nr_context.pre_close()
+
         try:
-            return await CoroutineProxy(self.__wrapped__.aclose(), self._nr_context)
-        finally:
-            # There is nothing further down that can tell correctly that the async generator
-            # is being closed, so we call __exit__ with StopAsyncIteration manually to ensure
-            # the transaction is correctly completed without error. Otherwise this would rely on
-            # the garbage collector deleting the async generator to complete the transaction by
-            # calling Transaction.__del__, which will cause a hanging transaction and race conditions.
-            self._nr_context.__exit__(StopAsyncIteration, None, None)
+            result = await CoroutineProxy(self.__wrapped__.aclose(), self._nr_context)
+        except:
+            raise
+
+        self._nr_context.close()
+        return result
 
 
 def async_proxy(wrapped):

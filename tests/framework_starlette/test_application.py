@@ -71,6 +71,7 @@ def test_application_index(target_application, app_name):
         *MIDDLEWARE_METRICS,
         ("Function/_test_application:async_handler_async_streaming_response", 1),
         ("Function/_test_application:async_streaming_generator", 1),
+        ("Function/_test_application:async_handler_view", 1),
     ],
     rollup_metrics=[FRAMEWORK_METRIC],
 )
@@ -87,6 +88,7 @@ def test_application_async_handler_async_streaming_response(target_application, 
         *MIDDLEWARE_METRICS,
         ("Function/_test_application:async_handler_sync_streaming_response", 1),
         ("Function/_test_application:sync_streaming_generator", 1),
+        ("Function/_test_application:async_handler_view", 1),
     ],
     rollup_metrics=[FRAMEWORK_METRIC],
 )
@@ -103,6 +105,7 @@ def test_application_async_handler_sync_streaming_response(target_application, a
         *MIDDLEWARE_METRICS,
         ("Function/_test_application:sync_handler_async_streaming_response", 1),
         ("Function/_test_application:async_streaming_generator", 1),
+        ("Function/_test_application:sync_handler_view", 1),
     ],
     rollup_metrics=[FRAMEWORK_METRIC],
 )
@@ -119,6 +122,7 @@ def test_application_sync_handler_async_streaming_response(target_application, a
         *MIDDLEWARE_METRICS,
         ("Function/_test_application:sync_handler_sync_streaming_response", 1),
         ("Function/_test_application:sync_streaming_generator", 1),
+        ("Function/_test_application:sync_handler_view", 1),
     ],
     rollup_metrics=[FRAMEWORK_METRIC],
 )

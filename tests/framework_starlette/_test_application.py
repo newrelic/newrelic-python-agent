@@ -91,18 +91,26 @@ def sync_streaming_generator():
 
 
 async def async_handler_async_streaming_response(request):
+    with FunctionTrace(name="_test_application:async_handler_view"):
+        pass
     return StreamingResponse(async_streaming_generator(), media_type="text/plain")
 
 
 async def async_handler_sync_streaming_response(request):
+    with FunctionTrace(name="_test_application:async_handler_view"):
+        pass
     return StreamingResponse(sync_streaming_generator(), media_type="text/plain")
 
 
 def sync_handler_async_streaming_response(request):
+    with FunctionTrace(name="_test_application:sync_handler_view"):
+        pass
     return StreamingResponse(async_streaming_generator(), media_type="text/plain")
 
 
 def sync_handler_sync_streaming_response(request):
+    with FunctionTrace(name="_test_application:sync_handler_view"):
+        pass
     return StreamingResponse(sync_streaming_generator(), media_type="text/plain")
 
 

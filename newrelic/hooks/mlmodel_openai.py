@@ -763,6 +763,7 @@ class LLMStreamProxy(ObjectProxy):
         except Exception as exc:
             _handle_streaming_completion_error(self, transaction, exc, self._nr_request_timestamp)
             raise
+        
         return return_val
 
     def close(self):
@@ -770,10 +771,12 @@ class LLMStreamProxy(ObjectProxy):
 
 
 def _record_stream_chunk(self, return_val):
+    transaction = current_transaction()
     if return_val:
         try:
             if OPENAI_V1:
                 if getattr(return_val, "data", "").startswith("[DONE]"):
+                    _record_events_on_stop_iteration(self, transaction, self._nr_request_timestamp)
                     return
                 return_val = return_val.json()
                 self._nr_openai_attrs["response_headers"] = getattr(self, "_nr_response_headers", {})

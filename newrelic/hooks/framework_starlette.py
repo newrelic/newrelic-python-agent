@@ -227,7 +227,7 @@ async def wrap_iterate_in_threadpool(wrapped, instance, args, kwargs):
 
 
 def generator_wrapper(wrapped, trace):
-    # This differs from the same API in async_wrapper.pyin that it
+    # This differs from the same API in async_wrapper.py in that it
     # returns a generator object directly, instead of a generator function.
     @functools.wraps(wrapped)
     def wrapper(*args, **kwargs):

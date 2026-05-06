@@ -23,6 +23,8 @@ from testing_support.validators.validate_transaction_errors import validate_tran
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
+from newrelic.api.function_trace import FunctionTrace
+from newrelic.api.transaction import current_transaction
 from newrelic.api.web_transaction import web_transaction
 
 asyncio = pytest.importorskip("asyncio")
@@ -168,6 +170,59 @@ def test_asend_receives_a_value(event_loop):
         # finish consumption of the coroutine if necessary
         async for _ in gen:
             pass
+
+    event_loop.run_until_complete(_test())
+
+
+@validate_transaction_metrics(
+    "test_anext_inside_tasks",
+    scoped_metrics=[("Function/anext", 4)],
+    rollup_metrics=[("Function/anext", 4)],
+    background_task=True,
+)
+def test_anext_inside_tasks(event_loop):
+    @background_task(name="test_anext_inside_tasks")
+    async def agen():
+        for i in range(4):
+            # Ensure we never lose context on the transaction, even over multiple anext calls
+            assert current_transaction() is not None, "Lost transaction context"
+
+            # Add a metric to track the number of calls to anext we see
+            with FunctionTrace("anext"):
+                pass
+
+            yield i
+
+    async def _test():
+        gen = agen().__aiter__()
+        received = []
+
+        for _ in range(99):
+            try:
+                result = await asyncio.ensure_future(gen.__anext__())
+                received.append(result)
+            except StopAsyncIteration:
+                break
+        else:
+            raise RuntimeError("Generator did not stop after 100 iterations")
+
+        assert received == [0, 1, 2, 3]
+
+    event_loop.run_until_complete(_test())
+
+
+@validate_transaction_metrics("test_anext_inside_tasks_aclose", background_task=True)
+def test_anext_inside_tasks_aclose(event_loop):
+    @background_task(name="test_anext_inside_tasks_aclose")
+    async def agen():
+        while True:
+            yield
+
+    async def _test():
+        gen = agen().__aiter__()
+
+        await asyncio.ensure_future(gen.__anext__())
+        await asyncio.ensure_future(gen.aclose())
 
     event_loop.run_until_complete(_test())
 

@@ -225,10 +225,10 @@ embedding_invalid_key_error_events = [
 @validate_custom_events(embedding_invalid_key_error_events)
 @validate_custom_event_count(count=1)
 @background_task()
-def test_embeddings_wrong_api_key_error(exercise_embedding_model, gemini_dev_client, set_trace_info):
+def test_embeddings_wrong_api_key_error(exercise_embedding_model, gemini_client, set_trace_info):
     with pytest.raises(google.genai.errors.ClientError):
         set_trace_info()
         fake_api_key = "DEADBEEF"
-        gemini_dev_client._api_client.api_key = fake_api_key
-        gemini_dev_client._api_client._http_options.headers["x-goog-api-key"] = fake_api_key
+        gemini_client._api_client.api_key = fake_api_key
+        gemini_client._api_client._http_options.headers["x-goog-api-key"] = fake_api_key
         exercise_embedding_model(contents="Invalid API key.", model="gemini-embedding-001")

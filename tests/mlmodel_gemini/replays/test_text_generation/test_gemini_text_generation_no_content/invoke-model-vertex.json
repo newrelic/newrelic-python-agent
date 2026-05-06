@@ -1,0 +1,133 @@
+{
+  "replay_id": "test_text_generation/test_gemini_text_generation_no_content/invoke-model-vertex",
+  "interactions": [
+    {
+      "request": {
+        "method": "post",
+        "url": "{MLDEV_URL_PREFIX}/models/gemini-2.5-flash:generateContent",
+        "headers": {
+          "Content-Type": "application/json",
+          "x-goog-api-key": "{REDACTED}",
+          "user-agent": "google-genai-sdk/{VERSION_NUMBER} {LANGUAGE_LABEL}/{VERSION_NUMBER}",
+          "x-goog-api-client": "google-genai-sdk/{VERSION_NUMBER} {LANGUAGE_LABEL}/{VERSION_NUMBER}"
+        },
+        "body_segments": [
+          {
+            "contents": [
+              {
+                "parts": [
+                  {
+                    "text": "How many letters are in the word Python?"
+                  }
+                ],
+                "role": "user"
+              }
+            ],
+            "generationConfig": {
+              "temperature": 0.7,
+              "maxOutputTokens": 500
+            }
+          }
+        ]
+      },
+      "response": {
+        "status_code": 200,
+        "headers": {
+          "x-gemini-service-tier": "standard",
+          "content-type": "application/json; charset=UTF-8",
+          "vary": "Origin, X-Origin, Referer",
+          "content-encoding": "gzip",
+          "date": "Thu, 30 Apr 2026 20:00:32 GMT",
+          "server": "scaffolding on HTTPServer2",
+          "x-xss-protection": "0",
+          "x-frame-options": "SAMEORIGIN",
+          "x-content-type-options": "nosniff",
+          "server-timing": "gfet4t7; dur=943",
+          "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+          "transfer-encoding": "chunked"
+        },
+        "body_segments": [
+          {
+            "candidates": [
+              {
+                "content": {
+                  "parts": [
+                    {
+                      "text": "There are 6 letters in the word \"Python\".\n"
+                    }
+                  ],
+                  "role": "model"
+                },
+                "finishReason": "STOP",
+                "index": 0
+              }
+            ],
+            "usageMetadata": {
+              "promptTokenCount": 10,
+              "candidatesTokenCount": 11,
+              "totalTokenCount": 123,
+              "promptTokensDetails": [
+                {
+                  "modality": "TEXT",
+                  "tokenCount": 10
+                }
+              ],
+              "thoughtsTokenCount": 102
+            },
+            "modelVersion": "gemini-2.5-flash",
+            "responseId": "37TzaZvZFYq7jrEPppbusAs"
+          }
+        ],
+        "byte_segments": [],
+        "sdk_response_segments": [
+          {
+            "sdk_http_response": {
+              "headers": {
+                "x-gemini-service-tier": "standard",
+                "content-type": "application/json; charset=UTF-8",
+                "vary": "Origin, X-Origin, Referer",
+                "content-encoding": "gzip",
+                "date": "Thu, 30 Apr 2026 20:00:32 GMT",
+                "server": "scaffolding on HTTPServer2",
+                "x-xss-protection": "0",
+                "x-frame-options": "SAMEORIGIN",
+                "x-content-type-options": "nosniff",
+                "server-timing": "gfet4t7; dur=943",
+                "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
+                "transfer-encoding": "chunked"
+              }
+            },
+            "candidates": [
+              {
+                "content": {
+                  "parts": [
+                    {
+                      "text": "There are 6 letters in the word \"Python\".\n"
+                    }
+                  ],
+                  "role": "model"
+                },
+                "finish_reason": "STOP",
+                "index": 0
+              }
+            ],
+            "model_version": "gemini-2.5-flash",
+            "response_id": "37TzaZvZFYq7jrEPppbusAs",
+            "usage_metadata": {
+              "candidates_token_count": 11,
+              "prompt_token_count": 10,
+              "prompt_tokens_details": [
+                {
+                  "modality": "TEXT",
+                  "token_count": 10
+                }
+              ],
+              "thoughts_token_count": 102,
+              "total_token_count": 123
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

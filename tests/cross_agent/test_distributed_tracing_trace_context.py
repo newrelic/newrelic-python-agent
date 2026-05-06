@@ -52,6 +52,7 @@ def load_tests():
             "distributed_tracing.enabled": test.pop("distributed_tracing_enabled", True),
             "span_events.enabled": test.pop("span_events_enabled", True),
             "transaction_events.enabled": test.pop("transaction_events_enabled", True),
+            "distributed_tracing.exclude_newrelic_header": test.pop("exclude_newrelic_header", True),
             "distributed_tracing.sampler._root": test.pop("root", "adaptive"),
             "distributed_tracing.sampler._remote_parent_sampled": test.pop("remote_parent_sampled", "adaptive"),
             "distributed_tracing.sampler._remote_parent_not_sampled": test.pop("remote_parent_not_sampled", "adaptive"),

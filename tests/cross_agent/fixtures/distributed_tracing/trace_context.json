@@ -3005,6 +3005,7 @@
     "force_adaptive_sampled": false,
     "span_events_enabled": true,
     "transaction_events_enabled": true,
+    "exclude_newrelic_header": false,
     "transport_type": "HTTP",
     "inbound_headers": [
       {
@@ -3057,7 +3058,7 @@
     ]
   },
   {
-    "test_name": "only_w3c_headers_present_emit_both_header_types",
+    "test_name": "only_w3c_headers_present_exclude_newrelic_header_is_disabled_emit_w3c_headers_only",
     "trusted_account_key": "33",
     "account_id": "33",
     "web_transaction": true,
@@ -3082,13 +3083,7 @@
           "tracestate.parent_type": "0",
           "tracestate.parent_account_id": "33",
           "tracestate.sampled": "1",
-          "tracestate.priority": "1.23456",
-          "newrelic.v": [0, 1],
-          "newrelic.d.ty": "App",
-          "newrelic.d.ac": "33",
-          "newrelic.d.tr": "da8bc8cc6d062849b0efcf3c169afb5a",
-          "newrelic.d.sa": true,
-          "newrelic.d.pr": 1.23456
+          "tracestate.priority": "1.23456"
         },
         "expected": [
           "traceparent.trace_flags",
@@ -3096,13 +3091,8 @@
           "tracestate.span_id",
           "tracestate.transaction_id",
           "tracestate.parent_application_id",
-          "tracestate.timestamp",
-          "newrelic.d.ap",
-          "newrelic.d.tx",
-          "newrelic.d.ti",
-          "newrelic.d.id"
-        ],
-        "unexpected": ["newrelic.d.tk"]
+          "tracestate.timestamp"
+        ]
       }
     ],
     "expected_metrics": [
@@ -3111,8 +3101,7 @@
       ["TransportDuration/App/33/2827902/HTTP/all", 1],
       ["TransportDuration/App/33/2827902/HTTP/allWeb", 1],
       ["Supportability/TraceContext/Accept/Success", 1],
-      ["Supportability/TraceContext/Create/Success", 1],
-      ["Supportability/DistributedTrace/CreatePayload/Success", 1]
+      ["Supportability/TraceContext/Create/Success", 1]
     ]
   },
   {
@@ -3124,6 +3113,7 @@
     "force_adaptive_sampled": false,
     "span_events_enabled": true,
     "transaction_events_enabled": true,
+    "exclude_newrelic_header": false,
     "transport_type": "HTTP",
     "inbound_headers": [
       {

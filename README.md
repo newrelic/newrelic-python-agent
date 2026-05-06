@@ -1,4 +1,4 @@
-<a href="https://opensource.newrelic.com/oss-category/#community-project"><picture>
+<a href="https://docs.newrelic.com/docs/licenses/open-source/oss-category/#community-project"><picture>
 <source media="(prefers-color-scheme: dark)" srcset="https://github.com/newrelic/opensource-website/raw/main/src/images/categories/dark/Community_Plus.png">
 <source media="(prefers-color-scheme: light)" srcset="https://github.com/newrelic/opensource-website/raw/main/src/images/categories/Community_Plus.png">
 <img alt="New Relic Open Source community project banner." src="https://github.com/newrelic/opensource-website/raw/main/src/images/categories/Community_Plus.png">
@@ -170,7 +170,7 @@ If you believe you have found a security vulnerability in this project or any of
 
 If you would like to contribute to this project, review [these guidelines](./CONTRIBUTING.md).
 
-To all contributors, we thank you! Without your contribution, this project would not be what it is today. We also host a community project page dedicated to the [New Relic Python Agent](https://opensource.newrelic.com/projects/newrelic/newrelic-python-agent).
+To all contributors, we thank you! Without your contribution, this project would not be what it is today.
 
 ## License
 

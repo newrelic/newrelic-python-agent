@@ -1778,6 +1778,7 @@ class Application:
         if restart:
             self._agent_restart += 1
             self.activate_session()
+            self.plugins = plugins()  # re-initialize the generator
 
         else:
             self._agent_shutdown = True

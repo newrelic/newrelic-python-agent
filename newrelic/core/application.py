@@ -49,7 +49,7 @@ from newrelic.samplers.data_sampler import DataSampler
 
 _logger = logging.getLogger(__name__)
 
-MAX_PACKAGE_CAPTURE_TIME_PER_SLOW_HARVEST = 2.0
+MAX_PACKAGE_CAPTURE_TIME_PER_SLOW_HARVEST = 3.0
 
 
 class Application:
@@ -104,8 +104,6 @@ class Application:
         self._agent_commands_lock = threading.Lock()
         self._data_samplers_lock = threading.Lock()
         self._data_samplers_started = False
-
-        self._remaining_plugins = True
 
         self._agent_control_health_thread = threading.Thread(
             name="Agent-Control-Health-Session-Thread", target=agent_control_healthcheck_loop
@@ -1284,27 +1282,13 @@ class Application:
                                 data_sampler.name,
                             )
 
-                    # Send environment plugin list
-
-                    stopwatch_start = time.time()
-                    while (
-                        configuration
-                        and configuration.package_reporting.enabled
-                        and self._remaining_plugins
-                        and ((time.time() - stopwatch_start) < MAX_PACKAGE_CAPTURE_TIME_PER_SLOW_HARVEST)
-                    ):
-                        try:
-                            module_info = next(self.plugins)
-                            self.modules.append(module_info)
-                        except StopIteration:
-                            self._remaining_plugins = False
-
-                    # Send the accumulated environment plugin list if not empty
-                    if self.modules:
-                        self._active_session.send_loaded_modules(self.modules)
-
-                        # Reset the modules list every harvest cycle
-                        self.modules = []
+                    # Send environment plugin.
+                    if self.configuration and self.configuration.package_reporting.enabled:
+                        start = time.time()
+                        while package := next(self.plugins, False):
+                            self._active_session.send_loaded_modules([package])
+                            if (time.time() - start) < MAX_PACKAGE_CAPTURE_TIME_PER_SLOW_HARVEST:
+                                break
 
                     # Add a metric we can use to track how many harvest
                     # periods have occurred.
@@ -1741,19 +1725,14 @@ class Application:
 
         self.stop_data_samplers()
 
-        # Finishes collecting environment plugin information
-        # if this has not been completed during harvest
-        # lifetime of the application
-
-        while self.configuration and self.configuration.package_reporting.enabled and self._remaining_plugins:
-            try:
-                module_info = next(self.plugins)
-                self.modules.append(module_info)
-            except StopIteration:
-                self._remaining_plugins = False
-                if self.modules:
-                    self._active_session.send_loaded_modules(self.modules)
-                    self.modules = []
+        # Finishes collecting environment plugin information if this has
+        # not been completed during harvest lifetime of the application.
+        if self.configuration and self.configuration.package_reporting.enabled:
+            # Anything that was left in the plugins
+            # generator will be resolved here.
+            plugins_list = list(self.plugins)
+            if plugins_list:
+                self._active_session.send_loaded_modules(plugins_list)
 
         # Now shutdown the actual agent session.
 
@@ -1776,6 +1755,9 @@ class Application:
         # as shutdown.
 
         if restart:
+            # Reset package/module generator
+            self.plugins = plugins()
+
             self._agent_restart += 1
             self.activate_session()
 

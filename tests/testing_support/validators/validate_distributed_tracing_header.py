@@ -39,6 +39,8 @@ def validate_distributed_tracing_header():
     tracestate = _single_value(headers["tracestate"])
 
     # Parse traceparent (version-trace_id-parent_id-flags)
+    if isinstance(traceparent, bytes):
+        traceparent = traceparent.decode("utf-8")
     w3c_parent = W3CTraceParent.decode(traceparent)
     assert w3c_parent is not None, traceparent
 
@@ -48,6 +50,8 @@ def validate_distributed_tracing_header():
 
     # Parse tracestate, locate the New Relic vendor entry, decode it
     vendor_key = f"{trusted_account_key}@nr"
+    if isinstance(tracestate, bytes):
+        tracestate = tracestate.decode("utf-8")
     vendors = W3CTraceState.decode(tracestate)
     assert vendor_key in vendors, tracestate
 

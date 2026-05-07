@@ -39,7 +39,8 @@ _unexpected_root_intrinsics = ["parentId"]
 _unexpected_child_intrinsics = ["nr.entryPoint", "transaction.name"]
 
 _test_application_rollup_metrics = [
-    ("Supportability/DistributedTrace/CreatePayload/Success", 2),
+    # Only generated when the newrelic header is emitted (exclude_newrelic_header=False).
+    ("Supportability/DistributedTrace/CreatePayload/Success", None),
     ("Supportability/TraceContext/Create/Success", 2),
     ("HttpDispatcher", 1),
     ("WebTransaction", 1),

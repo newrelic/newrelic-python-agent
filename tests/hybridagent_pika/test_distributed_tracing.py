@@ -39,7 +39,8 @@ _override_settings = {
 def do_basic_publish(channel, queue_name, properties=None):
     _test_distributed_tracing_basic_publish_metrics = [
         ("Supportability/TraceContext/Create/Success", 2),
-        ("Supportability/DistributedTrace/CreatePayload/Success", 2),
+        # Only generated when the newrelic header is emitted (exclude_newrelic_header=False).
+        ("Supportability/DistributedTrace/CreatePayload/Success", None),
         (f"MessageBroker/rabbitmq/Exchange/Produce/Named/{queue_name}", 2),
         ("DurationByCaller/Unknown/Unknown/Unknown/Unknown/all", 1),
         ("DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther", 1),

@@ -763,7 +763,7 @@ class LLMStreamProxy(ObjectProxy):
         except Exception as exc:
             _handle_streaming_completion_error(self, transaction, exc, self._nr_request_timestamp)
             raise
-        
+
         return return_val
 
     def close(self):

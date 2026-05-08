@@ -617,7 +617,7 @@ RESPONSES_V1 = {
             "usage": {"prompt_tokens": 5, "total_tokens": 5},
         },
     ],
-    "user: Use a tool to add an exclamation to the word \"Hello\"": [
+    'user: Use a tool to add an exclamation to the word "Hello"': [
         {
             "content-type": "application/json",
             "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
@@ -630,7 +630,7 @@ RESPONSES_V1 = {
             "x-ratelimit-remaining-tokens": "49999985",
             "x-ratelimit-reset-requests": "6ms",
             "x-ratelimit-reset-tokens": "0s",
-            "x-request-id": "req_22204b237d22427fbfd99c665d8a9964"
+            "x-request-id": "req_22204b237d22427fbfd99c665d8a9964",
         },
         200,
         {
@@ -641,35 +641,27 @@ RESPONSES_V1 = {
             "choices": [
                 {
                     "index": 0,
-                    "message": {
-                        "role": "assistant",
-                        "content": "Hello!",
-                        "refusal": None,
-                        "annotations": []
-                    },
+                    "message": {"role": "assistant", "content": "Hello!", "refusal": None, "annotations": []},
                     "logprobs": None,
-                    "finish_reason": "stop"
+                    "finish_reason": "stop",
                 }
             ],
             "usage": {
                 "prompt_tokens": 21,
                 "completion_tokens": 2,
                 "total_tokens": 23,
-                "prompt_tokens_details": {
-                    "cached_tokens": 0,
-                    "audio_tokens": 0
-                },
+                "prompt_tokens_details": {"cached_tokens": 0, "audio_tokens": 0},
                 "completion_tokens_details": {
                     "reasoning_tokens": 0,
                     "audio_tokens": 0,
                     "accepted_prediction_tokens": 0,
-                    "rejected_prediction_tokens": 0
-                }
+                    "rejected_prediction_tokens": 0,
+                },
             },
             "service_tier": "default",
             "system_fingerprint": None,
-        }
-    ]
+        },
+    ],
 }
 
 

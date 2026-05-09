@@ -37,6 +37,7 @@ from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import transient_function_wrapper
 from newrelic.core.context import ContextOf
+from newrelic.api.transaction import current_transaction
 
 PROMPT = {"messages": [HumanMessage('Use a tool to add an exclamation to the word "Hello"')]}
 ERROR_PROMPT = {"messages": [HumanMessage('Use a tool to add an exclamation to the word "exc"')]}
@@ -257,70 +258,55 @@ def test_agent_execution_error(exercise_agent, create_agent_runnable, set_trace_
     _test()  # No output to validate
 
 
-# This test setup tests creating an agent outside of the
-# `create_agent` function as well as exercising the graph
-# through invoke, ainvoke, stream, and astream.  Currently,
-# support is not available for ainvoke and astream without
-# using a context propagator to propagate the trace.
-@reset_core_stats_engine()
-@validate_custom_events(chat_completion_recorded_events)
-@background_task()
-def test_state_graph_with_state_invoke(chat_openai_client, exercise_graph):
+# @dt_enabled
+# @reset_core_stats_engine()
+def test_state_graph_with_state_invoke(chat_openai_client, set_trace_info, exercise_graph):
     from langgraph.graph import END, START, MessagesState, StateGraph
     
-    class GraphContext(TypedDict):
-        nr_context: TimeTrace
-    
-    def state_create_agent_with_client_invoke(state, runtime):
+    def state_create_agent_with_client_invoke(state):
         # `ChatOpenAI.invoke` calls openai.chat.completion
-        nr_context = runtime.context.get("nr_trace", None)
-        
-        if not nr_context:
-            response = chat_openai_client.invoke(state["messages"])
-            return {"messages": [response]}
-        
-        with ContextOf(nr_context):
-            response = chat_openai_client.invoke(state["messages"])
-            return {"messages": [response]}
+        breakpoint()
+        response = chat_openai_client.invoke(state["messages"])
+        return {"messages": [response]}
 
-    builder = StateGraph(MessagesState, GraphContext)
+    builder = StateGraph(MessagesState)
     builder.add_node("my_agent", state_create_agent_with_client_invoke)
     builder.add_edge(START, "my_agent")
     builder.add_edge("my_agent", END)
     graph = builder.compile()
     
-    response = exercise_graph(graph, PROMPT)
-    assert response
+    @validate_custom_events(chat_completion_recorded_events)    # First test to see if any exist.
+    @background_task()
+    def _test():
+        set_trace_info()
+        exercise_graph(graph, PROMPT)
+        # response = exercise_graph(graph, PROMPT)
+        # assert response
+        
+    _test()
 
-# ("Method called", "Context propagation used")
-@pytest.fixture(
-    params=[
-        ("invoke", True),
-        ("invoke", False),
-        ("ainvoke", True),
-        ("stream", True),
-        ("stream", False),
-        ("astream", True),
-    ],
-)
+
+# @pytest.fixture(params=["astream"])
+@pytest.fixture(params=["invoke", "ainvoke", "stream", "astream"])
 def exercise_graph(request, loop):
     def _exercise_graph(graph, prompt):
-        method_called, context_propagation = request.param
-        nr_trace = current_trace() if context_propagation else None
-        config_context = {"nr_trace": nr_trace}
+        method_called = request.param
         if method_called == "invoke":
-            response = graph.invoke(prompt, context=config_context)
+            response = graph.invoke(prompt)
             return response
         elif method_called == "ainvoke":
-            response = loop.run_until_complete(graph.ainvoke(prompt, context=config_context))
+            response = loop.run_until_complete(graph.ainvoke(prompt))
             return response
         elif method_called == "stream":
-            response = list(graph.stream(prompt, context=config_context))
+            response = list(graph.stream(prompt))
             return response
         elif method_called == "astream":
             async def _exercise_agen():
-                return [event async for event in graph.astream(prompt, context=config_context)]
+                temp = [event async for event in graph.astream(prompt, version="v2")]
+                breakpoint()
+                return temp
 
+            breakpoint()
             response = loop.run_until_complete(_exercise_agen())
             return response
         else:

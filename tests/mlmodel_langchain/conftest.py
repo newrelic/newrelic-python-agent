@@ -41,6 +41,8 @@ _default_settings = {
     "debug.log_data_collector_payloads": True,
     "debug.record_transaction_failure": True,
     "ai_monitoring.enabled": True,
+    "ai_monitoring.streaming.enabled": True,
+    "ai_monitoring.record_content.enabled": True,
 }
 
 collector_agent_registration = collector_agent_registration_fixture(

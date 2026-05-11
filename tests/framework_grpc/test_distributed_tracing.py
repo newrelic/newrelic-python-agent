@@ -24,7 +24,7 @@ from newrelic.api.application import application_instance
 from newrelic.api.background_task import background_task
 from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.transaction import Transaction, current_transaction
-from newrelic.common.encoding_utils import DistributedTracePayload, NrTraceState, W3CTraceParent, W3CTraceState
+from newrelic.common.encoding_utils import NrTraceState, W3CTraceParent, W3CTraceState
 
 _test_matrix = (
     "method_name,streaming_request",
@@ -122,28 +122,16 @@ def test_outbound_distributed_trace(mock_grpc_server, method_type, method_name, 
             assert "traceparent" not in metadata
             assert "tracestate" not in metadata
         else:
-            decoded = DistributedTracePayload.decode(metadata["newrelic"])
-
-            # The external span should be the parent
-            exact_intrinsics["guid"] = decoded["d"]["id"]
-
-            # Check that tracestate / traceparent payload matches newrelic
-            # payload
-            w3c_data = W3CTraceParent.decode(metadata["traceparent"])
+            w3c_parent = W3CTraceParent.decode(metadata["traceparent"])
             nr_tracestate = list(W3CTraceState.decode(metadata["tracestate"]).values())[0]
             nr_tracestate = NrTraceState.decode(nr_tracestate, None)
-            w3c_data.update(nr_tracestate)
 
-            # Remove all trust keys
-            decoded["d"].pop("tk", None)
-            w3c_data.pop("tk")
+            # The external span should be the parent
+            exact_intrinsics["guid"] = w3c_parent["id"]
 
-            # Round priority of newrelic header to 6 decimal places so it match tracestate.
-            decoded["d"]["pr"] = f"{decoded['d']['pr']:.6f}"
-            w3c_data["pr"] = f"{w3c_data['pr']:.6f}"
-            del w3c_data["v"]  # Remove the version before comparing.
-
-            assert decoded["d"] == w3c_data
+            # Check that tracestate and traceparent agree on the span id / sampled flag
+            assert nr_tracestate["id"] == w3c_parent["id"]
+            assert nr_tracestate["sa"] == w3c_parent["sa"]
 
     _test()
 

@@ -23,7 +23,7 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
 from testing_support.validators.validate_tt_segment_params import validate_tt_segment_params
 
 from newrelic.api.background_task import background_task
-from newrelic.common.encoding_utils import DistributedTracePayload
+from newrelic.common.encoding_utils import W3CTraceParent
 
 
 def test_httplib_http_request(server):
@@ -153,12 +153,12 @@ def test_httplib_multiple_requests_unique_distributed_tracing_id(server):
     test_transaction()
 
     connection.close()
-    dt_payloads = [DistributedTracePayload.from_http_safe(header["newrelic"]) for header in response_headers]
+    dt_payloads = [W3CTraceParent.decode(header["traceparent"]) for header in response_headers]
 
     ids = set()
     for payload in dt_payloads:
-        assert payload["d"]["id"] not in ids
-        ids.add(payload["d"]["id"])
+        assert payload["id"] not in ids
+        ids.add(payload["id"])
 
 
 def test_httplib_nr_headers_added(server):

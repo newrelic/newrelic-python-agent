@@ -17,7 +17,6 @@ from typing import TypedDict
 import pytest
 from langchain.messages import HumanMessage
 from langchain.tools import tool
-from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import dt_enabled, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     disabled_ai_monitoring_record_content_settings,

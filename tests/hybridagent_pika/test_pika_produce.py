@@ -165,7 +165,8 @@ def test_blocking_connection_headers(enable_distributed_tracing):
         rollup_metrics += [
             ("DurationByCaller/Unknown/Unknown/Unknown/Unknown/all", 1),
             ("DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther", 1),
-            ("Supportability/DistributedTrace/CreatePayload/Success", 2),
+            # Only generated when the newrelic header is emitted (exclude_newrelic_header=False).
+            ("Supportability/DistributedTrace/CreatePayload/Success", None),
             ("Supportability/TraceContext/Create/Success", 2),
         ]
 

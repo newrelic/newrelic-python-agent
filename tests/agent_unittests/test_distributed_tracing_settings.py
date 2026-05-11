@@ -21,9 +21,9 @@ INI_FILE_EMPTY = b"""
 """
 
 
-INI_FILE_W3C = b"""
+INI_FILE_EXPLICIT_FALSE = b"""
 [newrelic]
-distributed_tracing.exclude_newrelic_header = true
+distributed_tracing.exclude_newrelic_header = false
 """
 
 INI_FILE_FULL_GRAN_CONFLICTS_ADAPTIVE = b"""
@@ -109,7 +109,7 @@ distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.trace_
 
 
 # Tests for loading settings and testing for values precedence
-@pytest.mark.parametrize("ini,env,expected_format", ((INI_FILE_EMPTY, {}, False), (INI_FILE_W3C, {}, True)))
+@pytest.mark.parametrize("ini,env,expected_format", ((INI_FILE_EMPTY, {}, True), (INI_FILE_EXPLICIT_FALSE, {}, False)))
 def test_distributed_trace_setings(ini, env, expected_format, global_settings):
     settings = global_settings()
     assert settings.distributed_tracing.exclude_newrelic_header == expected_format

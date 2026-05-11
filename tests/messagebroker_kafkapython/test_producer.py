@@ -48,7 +48,8 @@ def test_distributed_tracing_headers(topic, send_producer_message, expected_brok
         "test_producer:test_distributed_tracing_headers.<locals>.test",
         rollup_metrics=[
             ("Supportability/TraceContext/Create/Success", 1),
-            ("Supportability/DistributedTrace/CreatePayload/Success", 1),
+            # Only generated when the newrelic header is emitted (exclude_newrelic_header=False).
+            ("Supportability/DistributedTrace/CreatePayload/Success", None),
             *expected_broker_metrics,
         ],
         background_task=True,
@@ -67,7 +68,8 @@ def test_distributed_tracing_headers_under_terminal(topic, send_producer_message
         "test_distributed_tracing_headers_under_terminal",
         rollup_metrics=[
             ("Supportability/TraceContext/Create/Success", 1),
-            ("Supportability/DistributedTrace/CreatePayload/Success", 1),
+            # Only generated when the newrelic header is emitted (exclude_newrelic_header=False).
+            ("Supportability/DistributedTrace/CreatePayload/Success", None),
             *expected_broker_metrics,
         ],
         background_task=True,

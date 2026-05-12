@@ -14,37 +14,49 @@
 
 
 from newrelic.api.transaction import current_transaction
-from newrelic.common.encoding_utils import DistributedTracePayload
-
-OUTBOUND_TRACE_KEYS_REQUIRED = ("ty", "ac", "ap", "tr", "pr", "sa", "ti")
+from newrelic.common.encoding_utils import NrTraceState, W3CTraceParent, W3CTraceState
 
 
-def validate_distributed_tracing_header(header="newrelic"):
+def _single_value(value):
+    if isinstance(value, list):
+        assert len(value) == 1, value
+        assert isinstance(value[0], str)
+        return value[0]
+    return value
+
+
+def validate_distributed_tracing_header():
     transaction = current_transaction()
     headers = transaction._test_request_headers
     account_id = transaction.settings.account_id
     application_id = transaction.settings.primary_application_id
+    trusted_account_key = transaction.settings.trusted_account_key or account_id
 
-    assert header in headers, headers
+    assert "traceparent" in headers, headers
+    assert "tracestate" in headers, headers
 
-    values = headers[header]
-    if isinstance(values, list):
-        assert len(values) == 1, headers
-        assert isinstance(values[0], str)
-        value = values[0]
-    else:
-        value = values
+    traceparent = _single_value(headers["traceparent"])
+    tracestate = _single_value(headers["tracestate"])
 
-    # Parse payload
-    payload = DistributedTracePayload.from_http_safe(value)
+    # Parse traceparent (version-trace_id-parent_id-flags)
+    if isinstance(traceparent, bytes):
+        traceparent = traceparent.decode("utf-8")
+    w3c_parent = W3CTraceParent.decode(traceparent)
+    assert w3c_parent is not None, traceparent
 
-    # Distributed Tracing v0.1 is currently implemented
-    assert payload["v"] == [0, 1], payload["v"]
+    trace_id = w3c_parent["tr"]
+    assert len(trace_id) == 32
+    assert trace_id.startswith(transaction.guid)
 
-    data = payload["d"]
+    # Parse tracestate, locate the New Relic vendor entry, decode it
+    vendor_key = f"{trusted_account_key}@nr"
+    if isinstance(tracestate, bytes):
+        tracestate = tracestate.decode("utf-8")
+    vendors = W3CTraceState.decode(tracestate)
+    assert vendor_key in vendors, tracestate
 
-    # Verify all required keys are present
-    assert all(k in data for k in OUTBOUND_TRACE_KEYS_REQUIRED)
+    data = NrTraceState.decode(vendors[vendor_key], trusted_account_key)
+    assert data is not None, tracestate
 
     # Type will always be App (not mobile / browser)
     assert data["ty"] == "App"
@@ -60,17 +72,15 @@ def validate_distributed_tracing_header(header="newrelic"):
     # otherwise, id should be omitted
     if transaction.settings.span_events.enabled:
         assert "id" in data
+        assert data["id"] == w3c_parent["id"]
     else:
         assert "id" not in data
-
-    # Verify referring transaction information
-    assert len(data["tr"]) == 32
-    assert data["tr"].startswith(transaction.guid)
-
-    assert "pa" not in data
 
     # Verify timestamp is an integer
     assert isinstance(data["ti"], int)
 
     # Verify that priority is a float
     assert isinstance(data["pr"], float)
+
+    # Sampled flag should agree between traceparent and tracestate
+    assert data["sa"] == w3c_parent["sa"]

@@ -66,15 +66,83 @@ def test_application_index(target_application, app_name):
 
 @pytest.mark.parametrize("app_name", ("no_error_handler",))
 @validate_transaction_metrics(
-    "_test_application:non_async",
-    scoped_metrics=[*MIDDLEWARE_METRICS, ("Function/_test_application:non_async", 1)],
+    "_test_application:async_handler_async_streaming_response",
+    scoped_metrics=[
+        *MIDDLEWARE_METRICS,
+        ("Function/_test_application:async_handler_async_streaming_response", 1),
+        ("Function/_test_application:async_streaming_generator", 1),
+        ("Function/_test_application:async_handler_view", 1),
+    ],
     rollup_metrics=[FRAMEWORK_METRIC],
 )
-@validate_code_level_metrics("_test_application", "non_async")
-@validate_code_level_metrics("_test_application.middleware_factory.<locals>", "middleware", count=2)
-def test_application_non_async(target_application, app_name):
+def test_application_async_handler_async_streaming_response(target_application, app_name):
     app = target_application[app_name]
-    response = app.get("/non_async")
+    response = app.get("/async_handler_async_streaming_response")
+    assert response.status == 200
+
+
+@pytest.mark.parametrize("app_name", ("no_error_handler",))
+@validate_transaction_metrics(
+    "_test_application:async_handler_sync_streaming_response",
+    scoped_metrics=[
+        *MIDDLEWARE_METRICS,
+        ("Function/_test_application:async_handler_sync_streaming_response", 1),
+        ("Function/_test_application:sync_streaming_generator", 1),
+        ("Function/_test_application:async_handler_view", 1),
+    ],
+    rollup_metrics=[FRAMEWORK_METRIC],
+)
+def test_application_async_handler_sync_streaming_response(target_application, app_name):
+    app = target_application[app_name]
+    response = app.get("/async_handler_sync_streaming_response")
+    assert response.status == 200
+
+
+@pytest.mark.parametrize("app_name", ("no_error_handler",))
+@validate_transaction_metrics(
+    "_test_application:sync_handler_async_streaming_response",
+    scoped_metrics=[
+        *MIDDLEWARE_METRICS,
+        ("Function/_test_application:sync_handler_async_streaming_response", 1),
+        ("Function/_test_application:async_streaming_generator", 1),
+        ("Function/_test_application:sync_handler_view", 1),
+    ],
+    rollup_metrics=[FRAMEWORK_METRIC],
+)
+def test_application_sync_handler_async_streaming_response(target_application, app_name):
+    app = target_application[app_name]
+    response = app.get("/sync_handler_async_streaming_response")
+    assert response.status == 200
+
+
+@pytest.mark.parametrize("app_name", ("no_error_handler",))
+@validate_transaction_metrics(
+    "_test_application:sync_handler_sync_streaming_response",
+    scoped_metrics=[
+        *MIDDLEWARE_METRICS,
+        ("Function/_test_application:sync_handler_sync_streaming_response", 1),
+        ("Function/_test_application:sync_streaming_generator", 1),
+        ("Function/_test_application:sync_handler_view", 1),
+    ],
+    rollup_metrics=[FRAMEWORK_METRIC],
+)
+def test_application_sync_handler_sync_streaming_response(target_application, app_name):
+    app = target_application[app_name]
+    response = app.get("/sync_handler_sync_streaming_response")
+    assert response.status == 200
+
+
+@pytest.mark.parametrize("app_name", ("no_error_handler",))
+@validate_transaction_metrics(
+    "_test_application:sync",
+    scoped_metrics=[*MIDDLEWARE_METRICS, ("Function/_test_application:sync", 1)],
+    rollup_metrics=[FRAMEWORK_METRIC],
+)
+@validate_code_level_metrics("_test_application", "sync")
+@validate_code_level_metrics("_test_application.middleware_factory.<locals>", "middleware", count=2)
+def test_application_sync(target_application, app_name):
+    app = target_application[app_name]
+    response = app.get("/sync")
     assert response.status == 200
 
 

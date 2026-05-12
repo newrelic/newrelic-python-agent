@@ -589,7 +589,7 @@ def test_translate_deprecated_setting_without_old_setting(old, new):
     (
         ("agent_run_id", None),
         ("entity_guid", None),
-        ("distributed_tracing.exclude_newrelic_header", False),
+        ("distributed_tracing.exclude_newrelic_header", True),
         ("otlp_host", "otlp.nr-data.net"),
         ("otlp_port", 0),
     ),

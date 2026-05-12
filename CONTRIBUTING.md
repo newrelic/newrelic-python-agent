@@ -9,7 +9,7 @@ Contributions are always welcome. Before contributing please read the
 [code of
 conduct](https://github.com/newrelic/.github/blob/main/CODE_OF_CONDUCT.md)
 and [search the issue tracker](https://github.com/newrelic/newrelic-python-agent/issues); your issue may have
-already been discussed or fixed in [main]{.title-ref}. To contribute,
+already been discussed or fixed in `main`. To contribute,
 [fork](https://help.github.com/articles/fork-a-repo/) this repository,
 commit your changes, and [send a Pull
 Request](https://help.github.com/articles/using-pull-requests/).
@@ -86,13 +86,15 @@ are happy to provide documentation and assistance for unmodified Open
 Source Software, we cannot provide support for your specific
 environment.
 
+For guided setup options, see [Developing Inside a Container](#developing-inside-a-container) to use our prebuilt Docker environment, or [Developing Locally with uv](#developing-locally-with-uv) to set up directly on your machine.
+
 ## Developing Inside a Container
 
 To avoid the issues involved with setting up a local environment,
 consider using our prebuilt development container to easily create an
 environment on demand with a wide selection of Python versions
 installed. This also comes with the
-[tox](https://github.com/tox-dev/tox) tool (See Testing Guidelines) and
+[tox](https://github.com/tox-dev/tox) tool (see [Testing Guidelines](#testing-guidelines)) and
 a few packages preinstalled.
 
 While we cannot provide direct support in setting up your environment to
@@ -101,23 +103,17 @@ documentation to help reduce the setup burden on new contributors.
 
 ### Prerequisites
 
-1. Install [Docker](https://www.docker.com/) for you local operating
+1. Install [Docker](https://www.docker.com/) for your local operating
     system.
 
 2. Login to the [GitHub Container
     Registry](https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry#authenticating-with-a-personal-access-token-classic)
     through Docker.
 
-3.  
-
-    Install Either:
-
-    :   -   [VS Code](https://code.visualstudio.com/) onto your local
-            system (recommended).
-        -   The [Dev Container
-            CLI](https://github.com/devcontainers/cli) in your terminal.
-            (Requires a local copy of
-            [npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm).)
+3. Install either:
+   - [VS Code](https://code.visualstudio.com/) onto your local system (recommended).
+   - The [Dev Container CLI](https://github.com/devcontainers/cli) in your terminal.
+     (Requires a local copy of [npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm).)
 
 ### Steps for VS Code
 
@@ -125,13 +121,13 @@ documentation to help reduce the setup burden on new contributors.
 2. Install the [VS Code Extension for Dev
     Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
     into VS Code.
-3. In VS Code, open the command pallette (Ctrl-Shift-P on Windows/Linux
+3. In VS Code, open the command palette (Ctrl-Shift-P on Windows/Linux
     or Cmd-Shift-P on Mac) and search for and run \"Dev Containers:
     Rebuild and Reopen in Container\".
 4. Wait for the container to build and start. This may take a long time
     to pull the first time the container is run, subsequent runs should
     be faster thanks to caching.
-5. To update your container, open the command pallette and run \"Dev
+5. To update your container, open the command palette and run \"Dev
     Containers: Rebuild Without Cache and Reopen in Container\".
 
 ### Steps for Command Line Editor Users (vim, etc.)
@@ -160,6 +156,114 @@ documentation to help reduce the setup burden on new contributors.
     Container Features](https://containers.dev/features). A few common
     needs are already included but commented out.
 
+## Developing Locally with uv
+
+[uv](https://docs.astral.sh/uv/) is the package and Python version manager used in our development container. You can use it to create a local development environment.
+
+### Installing uv
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+See the [uv installation docs](https://docs.astral.sh/uv/getting-started/installation/) for alternatives such as Homebrew or pip. The installer will add uv's tool bin directory to your `PATH` so that installed tools are accessible.
+
+### Installing Python Versions
+
+Install all Python versions used by the test suite:
+
+```bash
+uv python install cp3.14 cp3.13 cp3.12 cp3.11 cp3.10 cp3.9 pp3.11 pp3.10 cp3.14t
+```
+
+- `cp3.X` - CPython 3.X
+- `pp3.X` - PyPy 3.X
+- `cp3.14t` - CPython 3.14 free-threaded build
+
+To set CPython 3.13 as the default `python` and `python3` executable on your `PATH`:
+
+```bash
+uv python install --default cp3.13
+```
+
+### Installing Development Tools
+
+```bash
+uv tool install tox --with tox-uv-bare
+uv tool install ruff
+uv tool install pre-commit --with pre-commit-uv
+uv tool install asv --with virtualenv
+```
+
+- `tox` - Test Runner (see [Testing Guidelines](#testing-guidelines))
+- `ruff` - Linter and Formatter
+- `pre-commit` - Automatic Linting Checks on Push
+- `asv` - Benchmarking
+
+## Testing Guidelines
+
+The Python Agent uses [tox](https://github.com/tox-dev/tox) for testing.
+The repository uses test suites located in tests/.
+
+You can run these tests by using `grep` on the full list of `tox` environments
+to find a specific one, and then executing the tests with `tox`. See `tox.ini`
+for details on naming conventions in `tox`.
+
+```bash
+tox -l | grep flask
+tox run -e python-framework_flask-py314-flasklatest
+```
+
+## Linting and Formatting
+
+The Python Agent uses [ruff](https://docs.astral.sh/ruff/) for both linting and formatting.
+
+To lint and format the entire codebase:
+
+```bash
+ruff check --fix
+ruff format
+```
+
+## Pre-Commit Hooks
+
+The repository uses [pre-commit](https://pre-commit.com/) as an optional tool to enforce linting, formatting, and license headers. Currently hooks are configured to run at the **pre-push** stage (not on every commit).
+
+Install the hooks after cloning:
+
+```bash
+pre-commit install --install-hooks
+```
+
+To run all hooks manually against every file:
+
+```bash
+pre-commit run --all-files --hook-stage pre-push
+```
+
+## Benchmarking
+
+The Python Agent uses [asv (Airspeed Velocity)](https://asv.readthedocs.io/) for benchmarking. These benchmarks live in `tests/agent_benchmarks/`.
+
+Run benchmarks against the current commit:
+
+```bash
+asv run -es 1 --python=3.14 HEAD^!
+```
+
+Compare benchmark results between two commits or branches:
+
+```bash
+asv compare -s <base-commit> <head-commit>
+```
+
+Generate and view an HTML report of results:
+
+```bash
+asv publish
+asv preview
+```
+
 ## Pull Request Guidelines
 
 Before we can accept a pull request, you must sign our [Contributor
@@ -173,25 +277,3 @@ tests if you\'re implementing a feature!
 
 Please note that integration tests will be run internally before
 contributions are accepted.
-
-Additionally:
-
-1. Ensure any install or build dependencies are removed before the end
-    of the layer when doing a build.
-2. Increase the version numbers in any examples files and the README.md
-    to the new version that this Pull Request would represent. The
-    versioning scheme we use is [SemVer](http://semver.org/).
-3. You may merge the Pull Request in once you have the sign-off of two
-    other developers, or if you do not have permission to do that, you
-    may request the second reviewer to merge it for you.
-
-## Testing Guidelines
-
-The Python Agent uses [tox](https://github.com/tox-dev/tox) for testing.
-The repository uses tests in tests/.
-
-You can run these tests by entering the tests/ directory and then
-entering the directory of the tests you want to run. Then, run the
-following command:
-
-`tox -c tox.ini -e [test environment]`

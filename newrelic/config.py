@@ -20,6 +20,7 @@ import sys
 import threading
 import time
 import traceback
+import warnings
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -42,7 +43,7 @@ import newrelic.console
 import newrelic.core.agent
 import newrelic.core.config
 from newrelic.common.log_file import initialize_logging
-from newrelic.common.object_names import callable_name, expand_builtin_exception_name
+from newrelic.common.object_names import expand_builtin_exception_name
 from newrelic.common.opentelemetry_tracers import (
     ALL_LIBRARY_TRACERS_TO_NR_HOOKS,
     OPENTELEMETRY_ONLY_TRACERS_TO_NR_HOOKS,
@@ -71,6 +72,12 @@ logging.Logger.trace = trace
 _logger = logging.getLogger(__name__)
 
 DEPRECATED_MODULES = {"aioredis": datetime(2022, 2, 22, 0, 0, tzinfo=timezone.utc)}
+
+LAMBDA_IN_CONFIG_WARNING_MESSAGE = "Using lambdas in configuration files has been removed for security reasons. If dynamic naming is required, consider defining your custom callables in your code rather than configuration, and supplying them as arguments to our decorator or wrapper APIs. (See our API documentation for more information: https://docs.newrelic.com/docs/apm/agents/python-agent/python-agent-api/guide-using-python-agent-api#dynamically-name-segments-and-segment-attributes)"
+
+
+def _lambda_in_config_warning():
+    warnings.warn(LAMBDA_IN_CONFIG_WARNING_MESSAGE, DeprecationWarning, stacklevel=2)
 
 
 def _map_aws_account_id(s):
@@ -1522,8 +1529,7 @@ def _process_background_task_configuration():
                 group = _config_object.get(section, "group")
 
             if name and name.startswith("lambda "):
-                callable_vars = {"callable_name": callable_name}
-                name = eval(name, callable_vars)  # noqa: S307
+                _lambda_in_config_warning()
 
             _logger.debug("register background-task %s", ((module, object_path, application, name, group),))
 
@@ -1572,8 +1578,7 @@ def _process_database_trace_configuration():
             sql = _config_object.get(section, "sql")
 
             if sql.startswith("lambda "):
-                callable_vars = {"callable_name": callable_name}
-                sql = eval(sql, callable_vars)  # noqa: S307
+                _lambda_in_config_warning()
 
             _logger.debug("register database-trace %s", ((module, object_path, sql),))
 
@@ -1627,12 +1632,10 @@ def _process_external_trace_configuration():
                 method = _config_object.get(section, "method")
 
             if url.startswith("lambda "):
-                callable_vars = {"callable_name": callable_name}
-                url = eval(url, callable_vars)  # noqa: S307
+                _lambda_in_config_warning()
 
             if method and method.startswith("lambda "):
-                callable_vars = {"callable_name": callable_name}
-                method = eval(method, callable_vars)  # noqa: S307
+                _lambda_in_config_warning()
 
             _logger.debug("register external-trace %s", ((module, object_path, library, url, method),))
 
@@ -1699,8 +1702,7 @@ def _process_function_trace_configuration():
                 rollup = _config_object.get(section, "rollup")
 
             if name and name.startswith("lambda "):
-                callable_vars = {"callable_name": callable_name}
-                name = eval(name, callable_vars)  # noqa: S307
+                _lambda_in_config_warning()
 
             _logger.debug(
                 "register function-trace %s", ((module, object_path, name, group, label, params, terminal, rollup),)
@@ -1757,8 +1759,7 @@ def _process_generator_trace_configuration():
                 group = _config_object.get(section, "group")
 
             if name and name.startswith("lambda "):
-                callable_vars = {"callable_name": callable_name}
-                name = eval(name, callable_vars)  # noqa: S307
+                _lambda_in_config_warning()
 
             _logger.debug("register generator-trace %s", ((module, object_path, name, group),))
 
@@ -1816,8 +1817,7 @@ def _process_profile_trace_configuration():
                 depth = _config_object.get(section, "depth")
 
             if name and name.startswith("lambda "):
-                callable_vars = {"callable_name": callable_name}
-                name = eval(name, callable_vars)  # noqa: S307
+                _lambda_in_config_warning()
 
             _logger.debug("register profile-trace %s", ((module, object_path, name, group, depth),))
 
@@ -1866,8 +1866,7 @@ def _process_memcache_trace_configuration():
             command = _config_object.get(section, "command")
 
             if command.startswith("lambda "):
-                callable_vars = {"callable_name": callable_name}
-                command = eval(command, callable_vars)  # noqa: S307
+                _lambda_in_config_warning()
 
             _logger.debug("register memcache-trace %s", (module, object_path, command))
 
@@ -1926,8 +1925,7 @@ def _process_transaction_name_configuration():
                 priority = _config_object.getint(section, "priority")
 
             if name and name.startswith("lambda "):
-                callable_vars = {"callable_name": callable_name}
-                name = eval(name, callable_vars)  # noqa: S307
+                _lambda_in_config_warning()
 
             _logger.debug("register transaction-name %s", ((module, object_path, name, group, priority),))
 
@@ -2245,6 +2243,10 @@ def _process_module_builtin_defaults():
     _process_module_definition("openai._base_client", "newrelic.hooks.mlmodel_openai", "instrument_openai_base_client")
 
     _process_module_definition("google.genai.models", "newrelic.hooks.mlmodel_gemini", "instrument_genai_models")
+
+    _process_module_definition(
+        "anthropic.resources.messages.messages", "newrelic.hooks.mlmodel_anthropic", "instrument_anthropic_messages"
+    )
 
     _process_module_definition(
         "asyncio.base_events", "newrelic.hooks.coroutines_asyncio", "instrument_asyncio_base_events"

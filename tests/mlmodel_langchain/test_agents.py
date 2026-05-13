@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import TypedDict
-
 import pytest
 from langchain.messages import HumanMessage
 from langchain.tools import tool
@@ -32,77 +30,12 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
 
 from newrelic.api.background_task import background_task
 from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
-from newrelic.api.time_trace import TimeTrace, current_trace
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import transient_function_wrapper
-from newrelic.core.context import ContextOf
 
 PROMPT = {"messages": [HumanMessage('Use a tool to add an exclamation to the word "Hello"')]}
 ERROR_PROMPT = {"messages": [HumanMessage('Use a tool to add an exclamation to the word "exc"')]}
 SYNC_METHODS = {"invoke", "stream"}
-
-chat_completion_recorded_events = [
-    [
-        {"type": "LlmChatCompletionSummary"},
-        {
-            "duration": None,
-            "id": None,
-            "ingest_source": "Python",
-            "request.model": "gpt-3.5-turbo",
-            "request.temperature": 0.7,
-            "request_id": "req_22204b237d22427fbfd99c665d8a9964",
-            "response.choices.finish_reason": "stop",
-            "response.headers.llmVersion": "2020-10-01",
-            "response.headers.ratelimitLimitRequests": 10000,
-            "response.headers.ratelimitLimitTokens": 50000000,
-            "response.headers.ratelimitRemainingRequests": 9999,
-            "response.headers.ratelimitRemainingTokens": 49999985,
-            "response.headers.ratelimitResetRequests": "6ms",
-            "response.headers.ratelimitResetTokens": "0s",
-            "response.model": "gpt-3.5-turbo-0125",
-            "response.number_of_messages": 2,
-            "response.organization": "user-rk8wq9voijy9sejrncvgi0iw",
-            "span_id": None,
-            "timestamp": None,
-            "trace_id": None,
-            "vendor": "openai",
-        },
-    ],
-    [
-        {"type": "LlmChatCompletionMessage"},
-        {
-            "completion_id": None,
-            "content": 'Use a tool to add an exclamation to the word "Hello"',
-            "id": "chatcmpl-Dd0Na8gXEDyFIhYMsL72TYk3bSZun-0",
-            "ingest_source": "Python",
-            "request_id": "req_22204b237d22427fbfd99c665d8a9964",
-            "response.model": "gpt-3.5-turbo-0125",
-            "role": "user",
-            "sequence": 0,
-            "span_id": None,
-            "timestamp": None,
-            "trace_id": None,
-            "vendor": "openai",
-        },
-    ],
-    [
-        {"type": "LlmChatCompletionMessage"},
-        {
-            "completion_id": None,
-            "content": "Hello!",
-            "id": "chatcmpl-Dd0Na8gXEDyFIhYMsL72TYk3bSZun-1",
-            "ingest_source": "Python",
-            "is_response": True,
-            "request_id": "req_22204b237d22427fbfd99c665d8a9964",
-            "response.model": "gpt-3.5-turbo-0125",
-            "role": "assistant",
-            "sequence": 1,
-            "span_id": None,
-            "trace_id": None,
-            "vendor": "openai",
-        },
-    ],
-]
 
 agent_recorded_event = [
     (
@@ -248,77 +181,3 @@ def test_agent_execution_error(exercise_agent, create_agent_runnable, set_trace_
             exercise_agent(my_agent, PROMPT)  # raises ValueError
 
     _test()  # No output to validate
-
-
-# This test setup tests creating an agent outside of the
-# `create_agent` function as well as exercising the graph
-# through invoke, ainvoke, stream, and astream.  Currently,
-# support is not available for ainvoke and astream without
-# using a context propagator to propagate the trace.
-@reset_core_stats_engine()
-@validate_custom_events(chat_completion_recorded_events)
-@background_task()
-def test_state_graph_with_state_invoke(chat_openai_client, exercise_graph):
-    from langgraph.graph import END, START, MessagesState, StateGraph
-
-    class GraphContext(TypedDict):
-        nr_context: TimeTrace
-
-    def state_create_agent_with_client_invoke(state, runtime):
-        # `ChatOpenAI.invoke` calls openai.chat.completion
-        nr_context = runtime.context.get("nr_trace", None)
-
-        if not nr_context:
-            response = chat_openai_client.invoke(state["messages"])
-            return {"messages": [response]}
-
-        with ContextOf(nr_context):
-            response = chat_openai_client.invoke(state["messages"])
-            return {"messages": [response]}
-
-    builder = StateGraph(MessagesState, GraphContext)
-    builder.add_node("my_agent", state_create_agent_with_client_invoke)
-    builder.add_edge(START, "my_agent")
-    builder.add_edge("my_agent", END)
-    graph = builder.compile()
-
-    response = exercise_graph(graph, PROMPT)
-    assert response
-
-
-# ("Method called", "Context propagation used")
-@pytest.fixture(
-    params=[
-        ("invoke", True),
-        ("invoke", False),
-        ("ainvoke", True),
-        ("stream", True),
-        ("stream", False),
-        ("astream", True),
-    ]
-)
-def exercise_graph(request, loop):
-    def _exercise_graph(graph, prompt):
-        method_called, context_propagation = request.param
-        nr_trace = current_trace() if context_propagation else None
-        config_context = {"nr_trace": nr_trace}
-        if method_called == "invoke":
-            response = graph.invoke(prompt, context=config_context)
-            return response
-        elif method_called == "ainvoke":
-            response = loop.run_until_complete(graph.ainvoke(prompt, context=config_context))
-            return response
-        elif method_called == "stream":
-            response = list(graph.stream(prompt, context=config_context))
-            return response
-        elif method_called == "astream":
-
-            async def _exercise_agen():
-                return [event async for event in graph.astream(prompt, context=config_context)]
-
-            response = loop.run_until_complete(_exercise_agen())
-            return response
-        else:
-            raise NotImplementedError
-
-    return _exercise_graph

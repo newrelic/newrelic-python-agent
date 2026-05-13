@@ -540,17 +540,17 @@ def _record_generation_error(*, transaction, linking_metadata, completion_id, kw
         output_message_list = []
 
         create_chat_completion_message_event(
-            transaction,
-            input_message,
-            completion_id,
-            span_id,
-            trace_id,
+            transaction=transaction,
+            input_message=input_message,
+            chat_completion_id=completion_id,
+            span_id=span_id,
+            trace_id=trace_id,
             # Passing the request model as the response model here since we do not have access to a response model
-            request_model,
-            request_model,
-            llm_metadata,
-            output_message_list,
-            request_timestamp,
+            response_model=request_model,
+            request_model=request_model,
+            llm_metadata=llm_metadata,
+            output_message_list=output_message_list,
+            request_timestamp=request_timestamp,
         )
     except Exception:
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
@@ -677,16 +677,16 @@ def _record_generation_success(
         transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
 
         create_chat_completion_message_event(
-            transaction,
-            input_message,
-            completion_id,
-            span_id,
-            trace_id,
-            response_model,
-            request_model,
-            llm_metadata,
-            output_message_list,
-            request_timestamp,
+            transaction=transaction,
+            input_message=input_message,
+            chat_completion_id=completion_id,
+            span_id=span_id,
+            trace_id=trace_id,
+            response_model=response_model,
+            request_model=request_model,
+            llm_metadata=llm_metadata,
+            output_message_list=output_message_list,
+            request_timestamp=request_timestamp,
         )
     except Exception:
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
@@ -745,6 +745,7 @@ def _handle_stream_chunk(*, streaming_events, request_timestamp=None):
 
 
 def create_chat_completion_message_event(
+    *,
     transaction,
     input_message,
     chat_completion_id,

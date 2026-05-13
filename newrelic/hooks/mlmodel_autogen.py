@@ -208,7 +208,7 @@ def _extract_tool_output(return_val, tool_name):
         return None
 
 
-def _construct_base_tool_event_dict(bound_args, tool_call_data, tool_id, transaction, settings):
+def _construct_base_tool_event_dict(*, bound_args, tool_call_data, tool_id, transaction, settings):
     try:
         _input = getattr(tool_call_data, "arguments", None)
         tool_input = str(_input) if _input else None
@@ -271,7 +271,13 @@ async def wrap__execute_tool_call(wrapped, instance, args, kwargs):
     tool_id = str(uuid.uuid4())
     bound_args = bind_args(wrapped, args, kwargs)
     tool_call_data = bound_args.get("tool_call")
-    tool_event_dict = _construct_base_tool_event_dict(bound_args, tool_call_data, tool_id, transaction, settings)
+    tool_event_dict = _construct_base_tool_event_dict(
+        bound_args=bound_args,
+        tool_call_data=tool_call_data,
+        tool_id=tool_id,
+        transaction=transaction,
+        settings=settings,
+    )
     tool_name = getattr(tool_call_data, "name", "tool")
     func_name = callable_name(wrapped)
 

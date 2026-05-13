@@ -95,7 +95,14 @@ def _wrap_method_trace(module, class_, method, name=None, group=None):
         # _nr_wrapped attrs that will attach model info to the data.
         if method in ("predict", "fit_predict"):
             training_step = getattr(instance, "_nr_wrapped_training_step", "Unknown")
-            create_prediction_event(transaction, class_, instance, args, kwargs, return_val)
+            create_prediction_event(
+                transaction=transaction,
+                class_=class_,
+                instance=instance,
+                args=args,
+                kwargs=kwargs,
+                return_val=return_val,
+            )
             return PredictReturnTypeProxy(return_val, model_name=class_, training_step=training_step)
         return return_val
 
@@ -124,10 +131,10 @@ def _calc_prediction_feature_stats(prediction_input, class_, feature_column_name
         features = np.reshape(numeric_features, (len(numeric_features) // num_cols, num_cols))
         features = features.astype(dtype=np.float64)
 
-        _record_stats(features, feature_column_names, class_, "Feature", tags)
+        _record_stats(data=features, column_names=feature_column_names, class_=class_, column_type="Feature", tags=tags)
 
 
-def _record_stats(data, column_names, class_, column_type, tags):
+def _record_stats(*, data, column_names, class_, column_type, tags):
     import numpy as np
 
     mean = np.mean(data, axis=0)
@@ -165,7 +172,7 @@ def _calc_prediction_label_stats(labels, class_, label_column_names, tags):
     import numpy as np
 
     labels = np.array(labels, dtype=np.float64)
-    _record_stats(labels, label_column_names, class_, "Label", tags)
+    _record_stats(data=labels, column_names=label_column_names, class_=class_, column_type="Label", tags=tags)
 
 
 def _get_label_names(user_defined_label_names, prediction_array):
@@ -236,7 +243,7 @@ def bind_predict(X, *args, **kwargs):
     return X
 
 
-def create_prediction_event(transaction, class_, instance, args, kwargs, return_val):
+def create_prediction_event(*, transaction, class_, instance, args, kwargs, return_val):
     import numpy as np
 
     data_set = bind_predict(*args, **kwargs)

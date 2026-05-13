@@ -359,6 +359,24 @@ def wrap_ContextThreadPoolExecutor_submit(wrapped, instance, args, kwargs):
     return wrapped(bound_args["func"], *bound_args["args"], **bound_args["kwargs"])
 
 
+def bind_run_in_executor(executor_or_config, func, *args, **kwargs):
+    return executor_or_config, func, args, kwargs
+
+
+async def wrap_run_in_executor(wrapped, instance, args, kwargs):
+    trace = current_trace()
+    if not trace:
+        return await wrapped(*args, **kwargs)
+
+    try:
+        executor_or_config, func, args, kwargs = bind_run_in_executor(*args, **kwargs)
+    except Exception:
+        return await wrapped(*args, **kwargs)
+
+    func = context_wrapper(func, trace=trace, strict=True)
+    return await wrapped(executor_or_config, func, *args, **kwargs)
+
+
 def _create_error_vectorstore_events(transaction, search_id, args, kwargs, linking_metadata, wrapped):
     settings = transaction.settings if transaction.settings is not None else global_settings()
     span_id = linking_metadata.get("span.id")
@@ -1233,6 +1251,8 @@ def instrument_langchain_core_tools(module):
 def instrument_langchain_core_runnables_config(module):
     if hasattr(module, "ContextThreadPoolExecutor"):
         wrap_function_wrapper(module, "ContextThreadPoolExecutor.submit", wrap_ContextThreadPoolExecutor_submit)
+    if hasattr(module, "run_in_executor"):
+        wrap_function_wrapper(module, "run_in_executor", wrap_run_in_executor)
 
 
 def instrument_langchain_core_tools_structured(module):

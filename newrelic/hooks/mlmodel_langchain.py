@@ -1053,6 +1053,7 @@ def _create_error_chain_run_events(*, transaction, instance, run_args, completio
         llm_metadata_dict=llm_metadata_dict,
         output_message_list=[],
         request_timestamp=run_args["timestamp"] or None,
+        response_model=model,
     )
 
 
@@ -1125,6 +1126,7 @@ def _create_successful_chain_run_events(
         llm_metadata_dict=llm_metadata_dict,
         output_message_list=output_message_list,
         request_timestamp=run_args["timestamp"] or None,
+        response_model=model,
     )
 
 

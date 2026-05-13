@@ -1015,7 +1015,12 @@ def add_nr_completion_id(run_args, completion_id):
         run_args["config"]["metadata"] = metadata
 
 
-def _get_chain_response_model(instance):
+def _get_chain_request_model(instance):
+    # A best effort attempt to pull the request model from the chain or any of
+    # its steps for better observability. This is not guaranteed to work in all
+    # cases as it depends on how the chain and steps are implemented, and it can
+    # only pull the first model it finds. The request model is not a guaranteed
+    # attribute on chains or steps, but some implementations may have it.
     try:
         llm = getattr(instance, "llm", None)
         if llm is not None:
@@ -1042,7 +1047,7 @@ def _create_error_chain_run_events(*, transaction, instance, run_args, completio
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
     input_message_list = [_input]
-    response_model = _get_chain_response_model(instance)
+    model = _get_chain_request_model(instance)
 
     # Make sure the builtin attributes take precedence over metadata attributes.
     full_chat_completion_summary_dict = {f"metadata.{key}": value for key, value in metadata.items()}
@@ -1056,7 +1061,8 @@ def _create_error_chain_run_events(*, transaction, instance, run_args, completio
             "virtual_llm": True,
             "request_id": run_id,
             "duration": duration,
-            "response.model": response_model,
+            "request.model": model,
+            "response.model": model,
             "response.number_of_messages": len(input_message_list),
             "tags": tags,
             "error": True,
@@ -1075,7 +1081,7 @@ def _create_error_chain_run_events(*, transaction, instance, run_args, completio
         llm_metadata_dict=llm_metadata_dict,
         output_message_list=[],
         request_timestamp=run_args["timestamp"] or None,
-        response_model=response_model,
+        response_model=model,
     )
 
 
@@ -1101,7 +1107,7 @@ def _create_successful_chain_run_events(
     trace_id = linking_metadata.get("trace.id")
     input_message_list = [_input]
     output_message_list = []
-    response_model = _get_chain_response_model(instance)
+    model = _get_chain_request_model(instance)
     if isinstance(response, str):
         output_message_list = [response]
     else:
@@ -1128,7 +1134,8 @@ def _create_successful_chain_run_events(
             "virtual_llm": True,
             "request_id": run_id,
             "duration": duration,
-            "response.model": response_model,
+            "request.model": model,
+            "response.model": model,
             "response.number_of_messages": len(input_message_list) + len(output_message_list),
             "tags": tags,
             "timestamp": run_args.get("timestamp") or None,
@@ -1150,7 +1157,7 @@ def _create_successful_chain_run_events(
         llm_metadata_dict=llm_metadata_dict,
         output_message_list=output_message_list,
         request_timestamp=run_args["timestamp"] or None,
-        response_model=response_model,
+        response_model=model,
     )
 
 

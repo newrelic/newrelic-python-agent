@@ -1024,17 +1024,15 @@ def _get_chain_request_model(instance):
     try:
         llm = getattr(instance, "llm", None)
         if llm is not None:
-            for attr in ("model_name", "model"):
-                name = getattr(llm, attr, None)
-                if isinstance(name, str) and name:
-                    return name
+            name = getattr(llm, "model_name", None) or getattr(llm, "model", None)
+            if isinstance(name, str) and name:
+                return name
         steps = getattr(instance, "steps", None)
         if steps:
             for step in steps:
-                for attr in ("model_name", "model"):
-                    name = getattr(step, attr, None)
-                    if isinstance(name, str) and name:
-                        return name
+                name = getattr(step, "model_name", None) or getattr(step, "model", None)
+                if isinstance(name, str) and name:
+                    return name
     except Exception:
         pass
     return None

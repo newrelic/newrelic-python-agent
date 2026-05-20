@@ -468,7 +468,6 @@ class NrTraceState(dict):
     # tx: transaction guid
     # sa: sampled
     # pr: priority
-    # tr: trace ID
     # tk: trusted account key
     # ti: time
 

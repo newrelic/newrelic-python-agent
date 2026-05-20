@@ -23,7 +23,6 @@ import pytest
 from testing_support.fixtures import override_generic_settings
 from testing_support.util import NamedTemporaryFile
 
-from newrelic.core.config import ML_EVENT_RESERVOIR_SIZE
 from newrelic.api.exceptions import ConfigurationError
 from newrelic.common.object_names import callable_name
 from newrelic.config import (
@@ -36,6 +35,7 @@ from newrelic.config import (
     translate_event_harvest_config_settings,
 )
 from newrelic.core.config import (
+    ML_EVENT_RESERVOIR_SIZE,
     Settings,
     _map_aws_account_id,
     apply_config_setting,
@@ -478,7 +478,7 @@ def test_translate_event_harvest_setting_without_new_setting(external, internal)
     assert external.name not in flatten_settings(result)
     assert fetch_config_setting(result, internal.name) == external.value
     assert "ml_event_data" in settings.event_harvest_config.allowlist
-    assert settings.event_harvest_config.harvest_limits.ml_event_data == ML_EVENT_RESERVOIR_SIZE/12
+    assert settings.event_harvest_config.harvest_limits.ml_event_data == ML_EVENT_RESERVOIR_SIZE / 12
 
 
 @pytest.mark.parametrize("external,internal", translate_event_harvest_settings_tests)

@@ -807,10 +807,8 @@ def delete_setting(settings_object, name):
         target = getattr(target, fields[0])
         fields = fields[1].split(".", 1)
 
-    try:
+    if hasattr(target, fields[0]):
         delattr(target, fields[0])
-    except AttributeError:
-        _logger.debug("Failed to delete setting: %r", name)
 
 
 def translate_event_harvest_config_settings(settings, cached_settings):

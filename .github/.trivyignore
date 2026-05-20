@@ -15,7 +15,8 @@ CVE-2026-44431
 #
 # Not exploitable under default config: the agent only connects to New Relic's collector
 # endpoints over TLS with cert validation enabled, so an attacker cannot inject a malicious
-# compressed response. Exploitable only when the telemetry channel is already compromised
+# compressed response.
+# Exploitable only when the telemetry channel is already compromised
 # (disable_certificate_validation=True, or routing through a compromised HTTPS proxy /
 # TLS-intercepting corporate proxy). In those cases the on-path party already has full
 # read/write of telemetry, so this CVE adds only a DoS on top of much worse outcomes.

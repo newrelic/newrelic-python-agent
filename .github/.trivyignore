@@ -1,1 +1,23 @@
-# Empty for now
+# Both CVEs are in urllib3; fix is in urllib3>=2.7.0, which requires Python 3.10+.
+# Can't upgrade to fix until Python 3.9 support is dropped.
+
+# urllib3 2.6.x: ProxyManager forwards sensitive headers (Authorization/Cookie/Proxy-Authorization)
+# across cross-origin redirects when assert_same_host=False.
+#
+# Not exploitable in the agent: Retry config blocks redirects (redirect=0 raises MaxRetryError
+# on a 3xx) in newrelic/common/agent_http.py. Further, the agent uses HTTPSConnectionPool
+# directly and does not use a ProxyManager, even when proxy settings are in use.
+
+CVE-2026-44431
+
+# urllib3 2.6.x: HTTPResponse.read()/drain_conn() can over-decompress a malicious gzip/deflate
+# response, exhausting CPU/memory.
+#
+# Not exploitable under default config: the agent only connects to New Relic's collector
+# endpoints over TLS with cert validation enabled, so an attacker cannot inject a malicious
+# compressed response. Exploitable only when the telemetry channel is already compromised
+# (disable_certificate_validation=True, or routing through a compromised HTTPS proxy /
+# TLS-intercepting corporate proxy). In those cases the on-path party already has full
+# read/write of telemetry, so this CVE adds only a DoS on top of much worse outcomes.
+
+CVE-2026-44432

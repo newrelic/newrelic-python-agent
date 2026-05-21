@@ -22,6 +22,8 @@ on:
     paths:
       - ".github/containers/**"
       - ".github/workflows/build-ci-image.yml"
+    branches:
+      - main
   push: # Trigger rebuilds when pushing relevant files to main.
     paths:
       - ".github/containers/**"

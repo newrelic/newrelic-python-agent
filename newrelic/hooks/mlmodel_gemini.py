@@ -658,34 +658,27 @@ def _record_generation_success(
         # Parse the message text out to pass to any registered token counting callback
         output_message_content = output_message_list[0].get("parts")[0].get("text") if output_message_list else None
 
-        # Extract token counts from response object
-        if token_usage:
-            response_prompt_tokens = token_usage.get("prompt_token_count")
-            response_completion_tokens = token_usage.get("candidates_token_count")
-            response_total_tokens = token_usage.get("total_token_count")
+        # Token counts default to those reported in the response object if available,
+        # but the user registered callback below may override them.
+        response_prompt_tokens = token_usage.get("prompt_token_count")
+        response_completion_tokens = token_usage.get("candidates_token_count")
+        response_total_tokens = token_usage.get("total_token_count")
 
-        else:
-            response_prompt_tokens = None
-            response_completion_tokens = None
-            response_total_tokens = None
+        # If the user has registered a callback to compute token counts it should always be preferred.
+        token_count_callback = settings.ai_monitoring.llm_token_count_callback
+        if token_count_callback:
+            if input_message_content:
+                response_prompt_tokens = token_count_callback(request_model, input_message_content)
+            if output_message_content:
+                response_completion_tokens = token_count_callback(response_model, output_message_content)
 
-        # Calculate token counts by checking if a callback is registered and if we have the necessary content to pass
-        # to it. If not, then we use the token counts provided in the response object
-        prompt_tokens = (
-            settings.ai_monitoring.llm_token_count_callback(request_model, input_message_content)
-            if settings.ai_monitoring.llm_token_count_callback and input_message_content
-            else response_prompt_tokens
-        )
-        completion_tokens = (
-            settings.ai_monitoring.llm_token_count_callback(response_model, output_message_content)
-            if settings.ai_monitoring.llm_token_count_callback and output_message_content
-            else response_completion_tokens
-        )
-        total_tokens = (
-            prompt_tokens + completion_tokens if all([prompt_tokens, completion_tokens]) else response_total_tokens
-        )
+        # Prefer the sum of individual counts as the total whenever both are available.
+        # This ensures consistency in the event that the token counting callback has reported
+        # different values for prompt or completion tokens.
+        if response_prompt_tokens and response_completion_tokens:
+            response_total_tokens = response_prompt_tokens + response_completion_tokens
 
-        all_token_counts = bool(prompt_tokens and completion_tokens and total_tokens)
+        all_token_counts = bool(response_prompt_tokens and response_completion_tokens and response_total_tokens)
 
         # Extract generation config
         request_temperature, request_max_tokens = _extract_generation_config(kwargs)
@@ -711,9 +704,9 @@ def _record_generation_success(
         }
 
         if all_token_counts:
-            full_chat_completion_summary_dict["response.usage.prompt_tokens"] = prompt_tokens
-            full_chat_completion_summary_dict["response.usage.completion_tokens"] = completion_tokens
-            full_chat_completion_summary_dict["response.usage.total_tokens"] = total_tokens
+            full_chat_completion_summary_dict["response.usage.prompt_tokens"] = response_prompt_tokens
+            full_chat_completion_summary_dict["response.usage.completion_tokens"] = response_completion_tokens
+            full_chat_completion_summary_dict["response.usage.total_tokens"] = response_total_tokens
 
         llm_metadata = _get_llm_attributes(transaction)
         full_chat_completion_summary_dict.update(llm_metadata)

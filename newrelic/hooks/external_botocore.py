@@ -216,11 +216,6 @@ def create_chat_completion_message_event(
             "request_id": request_id,
             "span_id": span_id,
             "trace_id": trace_id,
-            "token_count": (
-                settings.ai_monitoring.llm_token_count_callback(request_model, content)
-                if settings.ai_monitoring.llm_token_count_callback
-                else None
-            ),
             "role": message.get("role"),
             "completion_id": chat_completion_id,
             "sequence": index,
@@ -258,11 +253,6 @@ def create_chat_completion_message_event(
             "request_id": request_id,
             "span_id": span_id,
             "trace_id": trace_id,
-            "token_count": (
-                settings.ai_monitoring.llm_token_count_callback(request_model, content)
-                if settings.ai_monitoring.llm_token_count_callback
-                else None
-            ),
             "role": message.get("role"),
             "completion_id": chat_completion_id,
             "sequence": index,
@@ -1316,6 +1306,8 @@ def handle_chat_completion_event(transaction, bedrock_attrs, request_timestamp=N
     response_id = bedrock_attrs.get("response_id")
     model = bedrock_attrs.get("model")
 
+    # Token counts default to those reported in the response object if available,
+    # but the user registered callback below may override them.
     response_prompt_tokens = bedrock_attrs.get("response.usage.prompt_tokens")
     response_completion_tokens = bedrock_attrs.get("response.usage.completion_tokens")
     response_total_tokens = bedrock_attrs.get("response.usage.total_tokens")
@@ -1333,24 +1325,23 @@ def handle_chat_completion_event(transaction, bedrock_attrs, request_timestamp=N
         len(input_message_list) + len(output_message_list)
     ) or None  # If 0, attribute will be set to None and removed
 
-    input_message_content = " ".join([msg.get("content") for msg in input_message_list if msg.get("content")])
-    prompt_tokens = (
-        settings.ai_monitoring.llm_token_count_callback(model, input_message_content)
-        if settings.ai_monitoring.llm_token_count_callback and input_message_content
-        else response_prompt_tokens
-    )
+    # If the user has registered a callback to compute token counts it should always be preferred.
+    token_count_callback = settings.ai_monitoring.llm_token_count_callback
+    if token_count_callback:
+        input_message_content = " ".join(content for msg in input_message_list if (content := msg.get("content")))
+        if input_message_content:
+            response_prompt_tokens = token_count_callback(model, input_message_content)
+        output_message_content = " ".join(content for msg in output_message_list if (content := msg.get("content")))
+        if output_message_content:
+            response_completion_tokens = token_count_callback(model, output_message_content)
 
-    output_message_content = " ".join([msg.get("content") for msg in output_message_list if msg.get("content")])
-    completion_tokens = (
-        settings.ai_monitoring.llm_token_count_callback(model, output_message_content)
-        if settings.ai_monitoring.llm_token_count_callback and output_message_content
-        else response_completion_tokens
-    )
-    total_tokens = (
-        prompt_tokens + completion_tokens if all([prompt_tokens, completion_tokens]) else response_total_tokens
-    )
+    # Prefer the sum of individual counts as the total whenever both are available.
+    # This ensures consistency in the event that the token counting callback has reported
+    # different values for prompt or completion tokens.
+    if response_prompt_tokens and response_completion_tokens:
+        response_total_tokens = response_prompt_tokens + response_completion_tokens
 
-    all_token_counts = bool(prompt_tokens and completion_tokens and total_tokens)
+    all_token_counts = bool(response_prompt_tokens and response_completion_tokens and response_total_tokens)
 
     chat_completion_summary_dict = {
         "vendor": "bedrock",
@@ -1373,9 +1364,9 @@ def handle_chat_completion_event(transaction, bedrock_attrs, request_timestamp=N
     }
 
     if all_token_counts:
-        chat_completion_summary_dict["response.usage.prompt_tokens"] = prompt_tokens
-        chat_completion_summary_dict["response.usage.completion_tokens"] = completion_tokens
-        chat_completion_summary_dict["response.usage.total_tokens"] = total_tokens
+        chat_completion_summary_dict["response.usage.prompt_tokens"] = response_prompt_tokens
+        chat_completion_summary_dict["response.usage.completion_tokens"] = response_completion_tokens
+        chat_completion_summary_dict["response.usage.total_tokens"] = response_total_tokens
 
     chat_completion_summary_dict.update(llm_metadata_dict)
     chat_completion_summary_dict = {k: v for k, v in chat_completion_summary_dict.items() if v is not None}

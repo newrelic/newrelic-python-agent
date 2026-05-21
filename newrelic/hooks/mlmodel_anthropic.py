@@ -425,6 +425,8 @@ def _record_completion_error(*, transaction, linking_metadata, completion_id, kw
             request_model=request_model,
             llm_metadata=llm_metadata,
             response_content=None,
+            # We do not record token counts in error cases, so set all_token_counts to True so the pipeline tokenizer does not run
+            all_token_counts=True,
             request_timestamp=request_timestamp,
         )
     except Exception:
@@ -447,6 +449,7 @@ def _record_completion_success(
     request_timestamp=None,
     time_to_first_token=None,
 ):
+    settings = transaction.settings or global_settings()
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
     try:
@@ -455,10 +458,39 @@ def _record_completion_success(
         request_temperature = kwargs.get("temperature")
         request_max_tokens = kwargs.get("max_tokens")
 
-        # TODO: Complete token counting
-        # total_tokens = (
-        #     (input_tokens + output_tokens) if (input_tokens is not None and output_tokens is not None) else None
-        # )
+        # Token counts default to those reported in the response object if available,
+        # but the user registered callback below may override them.
+        # Anthropic does not include a total in usage, so it is always recomputed from the parts below.
+        response_prompt_tokens = input_tokens
+        response_completion_tokens = output_tokens
+        response_total_tokens = None
+
+        # If the user has registered a callback to compute token counts it should always be preferred.
+        token_count_callback = settings.ai_monitoring.llm_token_count_callback
+        if token_count_callback:
+            input_message_content = " ".join(
+                content
+                for msg in messages
+                if (
+                    content := _extract_message_content(
+                        msg.get("content") if isinstance(msg, dict) else getattr(msg, "content", None)
+                    )
+                )
+            )
+            if input_message_content:
+                response_prompt_tokens = token_count_callback(request_model, input_message_content)
+            response_text = _extract_message_content(response_content)
+            if response_text:
+                response_completion_tokens = token_count_callback(response_model, response_text)
+
+        # Prefer the sum of individual counts as the total whenever both are available.
+        # This ensures consistency in the event that the token counting callback has reported
+        # different values for prompt or completion tokens.
+        if response_prompt_tokens and response_completion_tokens:
+            response_total_tokens = response_prompt_tokens + response_completion_tokens
+
+        all_token_counts = bool(response_prompt_tokens and response_completion_tokens and response_total_tokens)
+
         number_of_messages = len(messages) + (1 if response_content else 0)
 
         full_chat_completion_summary_dict = {
@@ -474,12 +506,14 @@ def _record_completion_success(
             "response.model": response_model,
             "response.choices.finish_reason": stop_reason,
             "response.number_of_messages": number_of_messages,
-            # "response.usage.total_tokens": total_tokens,
-            # "response.usage.prompt_tokens": input_tokens,
-            # "response.usage.completion_tokens": output_tokens,
             "timestamp": request_timestamp,
             "time_to_first_token": time_to_first_token,
         }
+
+        if all_token_counts:
+            full_chat_completion_summary_dict["response.usage.prompt_tokens"] = response_prompt_tokens
+            full_chat_completion_summary_dict["response.usage.completion_tokens"] = response_completion_tokens
+            full_chat_completion_summary_dict["response.usage.total_tokens"] = response_total_tokens
 
         llm_metadata = _get_llm_attributes(transaction)
         full_chat_completion_summary_dict.update(llm_metadata)
@@ -496,6 +530,7 @@ def _record_completion_success(
             request_model=request_model,
             llm_metadata=llm_metadata,
             response_content=response_content,
+            all_token_counts=all_token_counts,
             request_timestamp=request_timestamp,
         )
     except Exception:
@@ -514,6 +549,7 @@ def create_chat_completion_message_event(
     request_model,
     llm_metadata,
     response_content,
+    all_token_counts,
     request_timestamp=None,
 ):
     try:
@@ -530,11 +566,6 @@ def create_chat_completion_message_event(
                 "id": message_id,
                 "span_id": span_id,
                 "trace_id": trace_id,
-                "token_count": (
-                    settings.ai_monitoring.llm_token_count_callback(request_model, message_content)
-                    if settings.ai_monitoring.llm_token_count_callback and message_content
-                    else None
-                ),
                 "role": role,
                 "completion_id": completion_id,
                 "sequence": sequence,
@@ -542,6 +573,8 @@ def create_chat_completion_message_event(
                 "vendor": "anthropic",
                 "ingest_source": "Python",
             }
+            if all_token_counts:
+                input_message_dict["token_count"] = 0
             if settings.ai_monitoring.record_content.enabled and message_content is not None:
                 input_message_dict["content"] = message_content
             if request_timestamp:
@@ -551,26 +584,14 @@ def create_chat_completion_message_event(
             transaction.record_custom_event("LlmChatCompletionMessage", input_message_dict)
 
         # Record one event for the response
-        if response_content:
+        response_text = _extract_message_content(response_content)
+        if response_text:
             response_sequence = len(messages)
-            # response_content may be a plain string (streaming path) or a list of content blocks (non-streaming).
-            if isinstance(response_content, str):
-                response_text = response_content
-            else:
-                response_text = " ".join(
-                    block.text for block in response_content if getattr(block, "type", None) == "text"
-                )
-
             response_message_id = f"{response_id}-{response_sequence}" if response_id else str(uuid.uuid4())
             output_message_dict = {
                 "id": response_message_id,
                 "span_id": span_id,
                 "trace_id": trace_id,
-                "token_count": (
-                    settings.ai_monitoring.llm_token_count_callback(response_model, response_text)
-                    if settings.ai_monitoring.llm_token_count_callback and response_text
-                    else None
-                ),
                 "role": "assistant",
                 "completion_id": completion_id,
                 "sequence": response_sequence,
@@ -579,6 +600,8 @@ def create_chat_completion_message_event(
                 "ingest_source": "Python",
                 "is_response": True,
             }
+            if all_token_counts:
+                output_message_dict["token_count"] = 0
             if settings.ai_monitoring.record_content.enabled and response_text:
                 output_message_dict["content"] = response_text
 

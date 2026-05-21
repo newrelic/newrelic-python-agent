@@ -513,7 +513,7 @@ def _record_completion_success(
         else:
             response_model = kwargs.get("response.model")
             response_id = kwargs.get("id")
-            token_usage = {}
+            token_usage = kwargs.get("response.usage") or {}
             finish_reason = kwargs.get("finish_reason")
             content = kwargs.get("content")
             # Tool-call responses may carry an empty content string; in that case the
@@ -524,6 +524,7 @@ def _record_completion_success(
                 output_message_list = [{"content": content, "role": kwargs.get("role")}]
             else:
                 output_message_list = []
+
         request_model = kwargs.get("model") or kwargs.get("engine")
 
         messages = kwargs.get("messages") or [{"content": kwargs.get("prompt"), "role": "user"}]
@@ -827,6 +828,7 @@ def _record_stream_chunk(self, return_val):
             self._nr_openai_attrs["response.model"] = return_val.get("model")
             self._nr_openai_attrs["id"] = return_val.get("id")
             self._nr_openai_attrs["response.organization"] = return_val.get("organization")
+            self._nr_openai_attrs["response.usage"] = return_val.get("usage")
             if choices:
                 delta = choices[0].get("delta") or {}
                 if delta:

@@ -4,7 +4,7 @@
     {
       "request": {
         "method": "post",
-        "url": "{MLDEV_URL_PREFIX}/models/gemini-2.0-flash:generateContent",
+        "url": "{MLDEV_URL_PREFIX}/models/gemini-2.5-flash:generateContent",
         "headers": {
           "Content-Type": "application/json",
           "x-goog-api-key": "{REDACTED}",
@@ -25,7 +25,7 @@
             ],
             "generationConfig": {
               "temperature": 0.7,
-              "maxOutputTokens": 100
+              "maxOutputTokens": 500
             }
           }
         ]
@@ -37,12 +37,12 @@
           "content-type": "application/json; charset=UTF-8",
           "vary": "Origin, X-Origin, Referer",
           "content-encoding": "gzip",
-          "date": "Fri, 27 Mar 2026 19:05:16 GMT",
+          "date": "Thu, 30 Apr 2026 20:00:41 GMT",
           "server": "scaffolding on HTTPServer2",
           "x-xss-protection": "0",
           "x-frame-options": "SAMEORIGIN",
           "x-content-type-options": "nosniff",
-          "server-timing": "gfet4t7; dur=509",
+          "server-timing": "gfet4t7; dur=1526",
           "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
           "transfer-encoding": "chunked"
         },
@@ -59,28 +59,23 @@
                   "role": "model"
                 },
                 "finishReason": "STOP",
-                "avgLogprobs": -0.08588122328122456
+                "index": 0
               }
             ],
             "usageMetadata": {
-              "promptTokenCount": 9,
-              "candidatesTokenCount": 12,
-              "totalTokenCount": 21,
+              "promptTokenCount": 10,
+              "candidatesTokenCount": 11,
+              "totalTokenCount": 121,
               "promptTokensDetails": [
                 {
                   "modality": "TEXT",
-                  "tokenCount": 9
+                  "tokenCount": 10
                 }
               ],
-              "candidatesTokensDetails": [
-                {
-                  "modality": "TEXT",
-                  "tokenCount": 12
-                }
-              ]
+              "thoughtsTokenCount": 100
             },
-            "modelVersion": "gemini-2.0-flash",
-            "responseId": "7NTGab-4C8f4jrEP_bfukQ0"
+            "modelVersion": "gemini-2.5-flash",
+            "responseId": "57TzaY3PMMqx1MkP846L4Qg"
           }
         ],
         "byte_segments": [],
@@ -92,12 +87,12 @@
                 "content-type": "application/json; charset=UTF-8",
                 "vary": "Origin, X-Origin, Referer",
                 "content-encoding": "gzip",
-                "date": "Fri, 27 Mar 2026 19:05:16 GMT",
+                "date": "Thu, 30 Apr 2026 20:00:41 GMT",
                 "server": "scaffolding on HTTPServer2",
                 "x-xss-protection": "0",
                 "x-frame-options": "SAMEORIGIN",
                 "x-content-type-options": "nosniff",
-                "server-timing": "gfet4t7; dur=509",
+                "server-timing": "gfet4t7; dur=1526",
                 "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
                 "transfer-encoding": "chunked"
               }
@@ -113,27 +108,22 @@
                   "role": "model"
                 },
                 "finish_reason": "STOP",
-                "avg_logprobs": -0.08588122328122456
+                "index": 0
               }
             ],
-            "model_version": "gemini-2.0-flash",
-            "response_id": "7NTGab-4C8f4jrEP_bfukQ0",
+            "model_version": "gemini-2.5-flash",
+            "response_id": "57TzaY3PMMqx1MkP846L4Qg",
             "usage_metadata": {
-              "candidates_token_count": 12,
-              "candidates_tokens_details": [
-                {
-                  "modality": "TEXT",
-                  "token_count": 12
-                }
-              ],
-              "prompt_token_count": 9,
+              "candidates_token_count": 11,
+              "prompt_token_count": 10,
               "prompt_tokens_details": [
                 {
                   "modality": "TEXT",
-                  "token_count": 9
+                  "token_count": 10
                 }
               ],
-              "total_token_count": 21
+              "thoughts_token_count": 100,
+              "total_token_count": 121
             }
           }
         ]
@@ -142,7 +132,7 @@
     {
       "request": {
         "method": "post",
-        "url": "{MLDEV_URL_PREFIX}/models/gemini-2.0-flash:generateContent",
+        "url": "{MLDEV_URL_PREFIX}/models/gemini-2.5-flash:generateContent",
         "headers": {
           "Content-Type": "application/json",
           "x-goog-api-key": "{REDACTED}",
@@ -163,7 +153,7 @@
             ],
             "generationConfig": {
               "temperature": 0.7,
-              "maxOutputTokens": 100
+              "maxOutputTokens": 500
             }
           }
         ]
@@ -175,12 +165,12 @@
           "content-type": "application/json; charset=UTF-8",
           "vary": "Origin, X-Origin, Referer",
           "content-encoding": "gzip",
-          "date": "Fri, 27 Mar 2026 19:05:17 GMT",
+          "date": "Thu, 30 Apr 2026 20:00:42 GMT",
           "server": "scaffolding on HTTPServer2",
           "x-xss-protection": "0",
           "x-frame-options": "SAMEORIGIN",
           "x-content-type-options": "nosniff",
-          "server-timing": "gfet4t7; dur=608",
+          "server-timing": "gfet4t7; dur=1050",
           "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
           "transfer-encoding": "chunked"
         },
@@ -197,28 +187,23 @@
                   "role": "model"
                 },
                 "finishReason": "STOP",
-                "avgLogprobs": -0.08588122328122456
+                "index": 0
               }
             ],
             "usageMetadata": {
-              "promptTokenCount": 9,
-              "candidatesTokenCount": 12,
-              "totalTokenCount": 21,
+              "promptTokenCount": 10,
+              "candidatesTokenCount": 11,
+              "totalTokenCount": 121,
               "promptTokensDetails": [
                 {
                   "modality": "TEXT",
-                  "tokenCount": 9
+                  "tokenCount": 10
                 }
               ],
-              "candidatesTokensDetails": [
-                {
-                  "modality": "TEXT",
-                  "tokenCount": 12
-                }
-              ]
+              "thoughtsTokenCount": 100
             },
-            "modelVersion": "gemini-2.0-flash",
-            "responseId": "7NTGaafiNKjsjrEPifSK0A0"
+            "modelVersion": "gemini-2.5-flash",
+            "responseId": "6bTzaf7BFoWl1MkP77Dd2Q0"
           }
         ],
         "byte_segments": [],
@@ -230,12 +215,12 @@
                 "content-type": "application/json; charset=UTF-8",
                 "vary": "Origin, X-Origin, Referer",
                 "content-encoding": "gzip",
-                "date": "Fri, 27 Mar 2026 19:05:17 GMT",
+                "date": "Thu, 30 Apr 2026 20:00:42 GMT",
                 "server": "scaffolding on HTTPServer2",
                 "x-xss-protection": "0",
                 "x-frame-options": "SAMEORIGIN",
                 "x-content-type-options": "nosniff",
-                "server-timing": "gfet4t7; dur=608",
+                "server-timing": "gfet4t7; dur=1050",
                 "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
                 "transfer-encoding": "chunked"
               }
@@ -251,27 +236,22 @@
                   "role": "model"
                 },
                 "finish_reason": "STOP",
-                "avg_logprobs": -0.08588122328122456
+                "index": 0
               }
             ],
-            "model_version": "gemini-2.0-flash",
-            "response_id": "7NTGaafiNKjsjrEPifSK0A0",
+            "model_version": "gemini-2.5-flash",
+            "response_id": "6bTzaf7BFoWl1MkP77Dd2Q0",
             "usage_metadata": {
-              "candidates_token_count": 12,
-              "candidates_tokens_details": [
-                {
-                  "modality": "TEXT",
-                  "token_count": 12
-                }
-              ],
-              "prompt_token_count": 9,
+              "candidates_token_count": 11,
+              "prompt_token_count": 10,
               "prompt_tokens_details": [
                 {
                   "modality": "TEXT",
-                  "token_count": 9
+                  "token_count": 10
                 }
               ],
-              "total_token_count": 21
+              "thoughts_token_count": 100,
+              "total_token_count": 121
             }
           }
         ]

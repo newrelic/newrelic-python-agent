@@ -4,7 +4,7 @@
     {
       "request": {
         "method": "post",
-        "url": "{MLDEV_URL_PREFIX}/models/gemini-2.0-flash:streamGenerateContent?alt=sse",
+        "url": "{MLDEV_URL_PREFIX}/models/gemini-2.5-flash:streamGenerateContent?alt=sse",
         "headers": {
           "Content-Type": "application/json",
           "x-goog-api-key": "{REDACTED}",
@@ -25,7 +25,7 @@
             ],
             "generationConfig": {
               "temperature": 0.7,
-              "maxOutputTokens": 100
+              "maxOutputTokens": 500
             }
           }
         ]
@@ -35,7 +35,7 @@
         "headers": {
           "vary": "Origin, X-Origin, Referer",
           "content-type": "text/event-stream",
-          "date": "Fri, 27 Mar 2026 19:56:52 GMT",
+          "date": "Thu, 30 Apr 2026 20:00:26 GMT",
           "server": "scaffolding on HTTPServer2",
           "content-length": "581",
           "x-xss-protection": "0",

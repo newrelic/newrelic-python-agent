@@ -56,9 +56,9 @@ def text_generation_events(is_streaming):
                 "vendor": "gemini",
                 "ingest_source": "Python",
                 "response.number_of_messages": 2,
-                "response.usage.prompt_tokens": None,  # value varies by replay
-                "response.usage.completion_tokens": None,  # value varies by replay
-                "response.usage.total_tokens": None,  # value varies by replay
+                "response.usage.prompt_tokens": 9,
+                "response.usage.completion_tokens": 13,
+                "response.usage.total_tokens": 22,
             },
         ),
         (

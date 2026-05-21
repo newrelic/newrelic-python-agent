@@ -358,6 +358,7 @@ class WebTransaction(Transaction):
             self._add_agent_attribute("response.headers.contentType", self._response_headers["content-type"])
         if self._response_code is not None:
             self._add_agent_attribute("response.status", str(self._response_code))
+            self._add_agent_attribute("http.statusCode", self._response_code)
 
         return super()._update_agent_attributes()
 

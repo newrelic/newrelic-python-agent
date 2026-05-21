@@ -26,7 +26,10 @@ _default_settings = {
     "debug.record_transaction_failure": True,
     "debug.log_explain_plan_queries": True,
     "opentelemetry.enabled": True,
-    "opentelemetry.traces.enabled": True,
+    "opentelemetry.traces.include": {"mysql"},
+    # Because New Relic natively supports this framework, this needs
+    # to be added explicitly to the include list for the Hybrid Agent
+    # to use the instrumentation hooks provided through OpenTelemetry.
 }
 
 collector_agent_registration = collector_agent_registration_fixture(

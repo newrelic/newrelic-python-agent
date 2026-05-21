@@ -23,7 +23,7 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.transaction import current_transaction
-from newrelic.common.encoding_utils import DistributedTracePayload
+from newrelic.common.encoding_utils import W3CTraceParent
 
 DB_SETTINGS = rabbitmq_settings()[0]
 
@@ -39,7 +39,8 @@ _override_settings = {
 def do_basic_publish(channel, queue_name, properties=None):
     _test_distributed_tracing_basic_publish_metrics = [
         ("Supportability/TraceContext/Create/Success", 2),
-        ("Supportability/DistributedTrace/CreatePayload/Success", 2),
+        # Only generated when the newrelic header is emitted (exclude_newrelic_header=False).
+        ("Supportability/DistributedTrace/CreatePayload/Success", None),
         (f"MessageBroker/rabbitmq/Exchange/Produce/Named/{queue_name}", 2),
         ("DurationByCaller/Unknown/Unknown/Unknown/Unknown/all", 1),
         ("DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther", 1),
@@ -112,7 +113,7 @@ def test_basic_consume_distributed_tracing_headers():
     with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
         channel = connection.channel()
         queue_name = f"TESTDT-{os.getpid()}"
-        channel.queue_declare(queue_name, durable=False)
+        channel.queue_declare(queue_name, durable=True, auto_delete=True)
 
         properties = pika.BasicProperties()
         properties.headers = {"Hello": "World"}
@@ -158,7 +159,7 @@ def test_basic_get_no_distributed_tracing_headers():
     with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
         channel = connection.channel()
         queue_name = f"TESTDT-{os.getpid()}"
-        channel.queue_declare(queue_name, durable=False)
+        channel.queue_declare(queue_name, durable=True, auto_delete=True)
 
         properties = pika.BasicProperties()
         properties.headers = {"Hello": "World"}
@@ -175,7 +176,7 @@ def test_distributed_tracing_sends_produce_id():
     with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
         channel = connection.channel()
         queue_name = f"TESTDT-{os.getpid()}"
-        channel.queue_declare(queue_name, durable=False)
+        channel.queue_declare(queue_name, durable=True, auto_delete=True)
 
         properties = pika.BasicProperties()
         properties.headers = {"Hello": "World"}
@@ -201,9 +202,7 @@ def test_distributed_tracing_sends_produce_id():
             channel.queue_delete(queue_name)
 
         properties = raw_message[1]
-        payload = DistributedTracePayload.from_http_safe(properties.headers["newrelic"])
-
-        data = payload["d"]
+        payload = W3CTraceParent.decode(properties.headers["traceparent"])
 
         # The payload should NOT contain the function trace ID
-        assert data["id"] != trace.guid
+        assert payload["id"] != trace.guid

@@ -59,8 +59,8 @@ def producer():
     with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
         channel = connection.channel()
 
-        channel.queue_declare(queue=QUEUE, durable=False)
-        channel.exchange_declare(exchange=EXCHANGE, durable=False)
+        channel.queue_declare(queue=QUEUE, durable=True, auto_delete=True)
+        channel.exchange_declare(exchange=EXCHANGE, durable=True, auto_delete=True)
         channel.queue_bind(queue=QUEUE, exchange=EXCHANGE)
 
         channel.basic_publish(
@@ -80,8 +80,8 @@ def producer_2():
     with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
         channel = connection.channel()
 
-        channel.queue_declare(queue=QUEUE_2, durable=False)
-        channel.exchange_declare(exchange=EXCHANGE_2, durable=False)
+        channel.queue_declare(queue=QUEUE_2, durable=True, auto_delete=True)
+        channel.exchange_declare(exchange=EXCHANGE_2, durable=True, auto_delete=True)
         channel.queue_bind(queue=QUEUE_2, exchange=EXCHANGE_2)
 
         channel.basic_publish(
@@ -101,8 +101,8 @@ def produce_five():
     with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
         channel = connection.channel()
 
-        channel.queue_declare(queue=QUEUE, durable=False)
-        channel.exchange_declare(exchange=EXCHANGE, durable=False)
+        channel.queue_declare(queue=QUEUE, durable=True, auto_delete=True)
+        channel.exchange_declare(exchange=EXCHANGE, durable=True, auto_delete=True)
         channel.queue_bind(queue=QUEUE, exchange=EXCHANGE)
 
         for _ in range(5):

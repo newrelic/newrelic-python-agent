@@ -461,7 +461,7 @@ _expected_attributes = {"user": [], "agent": [], "intrinsic": ("name", "duration
 
 _expected_absent_attributes = {
     "user": ("foo", "drop-me"),
-    "agent": ("response.status", "request.method"),
+    "agent": ("response.status", "http.statusCode", "request.method"),
     "intrinsic": ("port"),
 }
 

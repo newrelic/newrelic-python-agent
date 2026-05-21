@@ -72,7 +72,8 @@ _unexpected_root_intrinsics = ["parentId"]
 _unexpected_child_intrinsics = ["nr.entryPoint", "transaction.name"]
 
 _test_application_rollup_metrics = [
-    ("Supportability/DistributedTrace/CreatePayload/Success", 1),
+    # Only generated when the newrelic header is emitted (exclude_newrelic_header=False).
+    ("Supportability/DistributedTrace/CreatePayload/Success", None),
     ("Supportability/TraceContext/Create/Success", 1),
     ("Python/WSGI/Input/Bytes", 1),
     ("Python/WSGI/Input/Time", 1),
@@ -99,6 +100,7 @@ _test_application_rollup_metrics = [
             "request.uri": "/index",
             "response.headers.contentLength": 14,
             "response.status": "200",
+            "http.statusCode": 200,
         },
         "intrinsic": {"name": "WebTransaction/Uri/index"},
         "user": {},

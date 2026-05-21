@@ -86,7 +86,7 @@ def test_blocking_connection_basic_get_empty():
     QUEUE = f"test_blocking_empty-{os.getpid()}"
     with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
         channel = connection.channel()
-        channel.queue_declare(queue=QUEUE)
+        channel.queue_declare(queue=QUEUE, durable=True, auto_delete=True)
 
         try:
             method_frame, _, _ = channel.basic_get(QUEUE)
@@ -102,7 +102,7 @@ def test_blocking_connection_basic_get_outside_transaction(producer):
     def test_basic_get():
         with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
             channel = connection.channel()
-            channel.queue_declare(queue=QUEUE)
+            channel.queue_declare(queue=QUEUE, durable=True, auto_delete=True)
 
             method_frame, _, _ = channel.basic_get(QUEUE)
             channel.basic_ack(method_frame.delivery_tag)

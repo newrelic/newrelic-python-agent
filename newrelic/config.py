@@ -20,6 +20,7 @@ import sys
 import threading
 import time
 import traceback
+import warnings
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -42,9 +43,10 @@ import newrelic.console
 import newrelic.core.agent
 import newrelic.core.config
 from newrelic.common.log_file import initialize_logging
-from newrelic.common.object_names import callable_name, expand_builtin_exception_name
+from newrelic.common.object_names import expand_builtin_exception_name
 from newrelic.common.opentelemetry_tracers import (
-    HYBRID_AGENT_DEFAULT_INCLUDED_TRACERS_TO_NR_HOOKS,
+    ALL_LIBRARY_TRACERS_TO_NR_HOOKS,
+    OPENTELEMETRY_ONLY_TRACERS_TO_NR_HOOKS,
     TEMPORARILY_DISABLED_OPENTELEMETRY_FRAMEWORKS,
 )
 from newrelic.common.package_version_utils import get_package_version
@@ -70,6 +72,12 @@ logging.Logger.trace = trace
 _logger = logging.getLogger(__name__)
 
 DEPRECATED_MODULES = {"aioredis": datetime(2022, 2, 22, 0, 0, tzinfo=timezone.utc)}
+
+LAMBDA_IN_CONFIG_WARNING_MESSAGE = "Using lambdas in configuration files has been removed for security reasons. If dynamic naming is required, consider defining your custom callables in your code rather than configuration, and supplying them as arguments to our decorator or wrapper APIs. (See our API documentation for more information: https://docs.newrelic.com/docs/apm/agents/python-agent/python-agent-api/guide-using-python-agent-api#dynamically-name-segments-and-segment-attributes)"
+
+
+def _lambda_in_config_warning():
+    warnings.warn(LAMBDA_IN_CONFIG_WARNING_MESSAGE, DeprecationWarning, stacklevel=2)
 
 
 def _map_aws_account_id(s):
@@ -126,7 +134,6 @@ _config_object = configparser.RawConfigParser(converters={"ratio": ratio})
 # all the settings have been read.
 
 _cache_object = []
-agent_control_health = agent_control_health_instance()
 
 
 def _reset_config_parser():
@@ -217,6 +224,10 @@ def _map_compressed_content_encoding(s):
 
 def _map_split_strings(s):
     return s.split()
+
+
+def _map_split_string_by_comma(s):
+    return newrelic.core.config.parse_comma_separated_into_set(s)
 
 
 def _map_console_listener_socket(s):
@@ -680,6 +691,8 @@ def _process_configuration(section):
     _process_setting(section, "instrumentation.middleware.django.include", "get", _map_inc_excl_middleware)
     _process_setting(section, "opentelemetry.enabled", "getboolean", None)
     _process_setting(section, "opentelemetry.traces.enabled", "getboolean", None)
+    _process_setting(section, "opentelemetry.traces.exclude", "get", _map_split_string_by_comma)
+    _process_setting(section, "opentelemetry.traces.include", "get", _map_split_string_by_comma)
 
 
 # Loading of configuration from specified file and for specified
@@ -709,7 +722,7 @@ def _process_app_name_setting():
     name = app_name_list[0].strip() or "Python Application"
 
     if len(app_name_list) > 3:
-        agent_control_health.set_health_status(HealthStatus.MAX_APP_NAME.value)
+        agent_control_health_instance().set_health_status(HealthStatus.MAX_APP_NAME.value)
 
     linked = []
     for altname in app_name_list[1:]:
@@ -1107,7 +1120,7 @@ def _load_configuration(config_file=None, environment=None, ignore_errors=True, 
         elif not _config_object.read([config_file]):
             raise newrelic.api.exceptions.ConfigurationError(f"Unable to open configuration file {config_file}.")
     except Exception:
-        agent_control_health.set_health_status(HealthStatus.INVALID_CONFIG.value)
+        agent_control_health_instance().set_health_status(HealthStatus.INVALID_CONFIG.value)
         raise
 
     _settings.config_file = config_file
@@ -1516,8 +1529,7 @@ def _process_background_task_configuration():
                 group = _config_object.get(section, "group")
 
             if name and name.startswith("lambda "):
-                callable_vars = {"callable_name": callable_name}
-                name = eval(name, callable_vars)  # noqa: S307
+                _lambda_in_config_warning()
 
             _logger.debug("register background-task %s", ((module, object_path, application, name, group),))
 
@@ -1566,8 +1578,7 @@ def _process_database_trace_configuration():
             sql = _config_object.get(section, "sql")
 
             if sql.startswith("lambda "):
-                callable_vars = {"callable_name": callable_name}
-                sql = eval(sql, callable_vars)  # noqa: S307
+                _lambda_in_config_warning()
 
             _logger.debug("register database-trace %s", ((module, object_path, sql),))
 
@@ -1621,12 +1632,10 @@ def _process_external_trace_configuration():
                 method = _config_object.get(section, "method")
 
             if url.startswith("lambda "):
-                callable_vars = {"callable_name": callable_name}
-                url = eval(url, callable_vars)  # noqa: S307
+                _lambda_in_config_warning()
 
             if method and method.startswith("lambda "):
-                callable_vars = {"callable_name": callable_name}
-                method = eval(method, callable_vars)  # noqa: S307
+                _lambda_in_config_warning()
 
             _logger.debug("register external-trace %s", ((module, object_path, library, url, method),))
 
@@ -1693,8 +1702,7 @@ def _process_function_trace_configuration():
                 rollup = _config_object.get(section, "rollup")
 
             if name and name.startswith("lambda "):
-                callable_vars = {"callable_name": callable_name}
-                name = eval(name, callable_vars)  # noqa: S307
+                _lambda_in_config_warning()
 
             _logger.debug(
                 "register function-trace %s", ((module, object_path, name, group, label, params, terminal, rollup),)
@@ -1751,8 +1759,7 @@ def _process_generator_trace_configuration():
                 group = _config_object.get(section, "group")
 
             if name and name.startswith("lambda "):
-                callable_vars = {"callable_name": callable_name}
-                name = eval(name, callable_vars)  # noqa: S307
+                _lambda_in_config_warning()
 
             _logger.debug("register generator-trace %s", ((module, object_path, name, group),))
 
@@ -1810,8 +1817,7 @@ def _process_profile_trace_configuration():
                 depth = _config_object.get(section, "depth")
 
             if name and name.startswith("lambda "):
-                callable_vars = {"callable_name": callable_name}
-                name = eval(name, callable_vars)  # noqa: S307
+                _lambda_in_config_warning()
 
             _logger.debug("register profile-trace %s", ((module, object_path, name, group, depth),))
 
@@ -1860,8 +1866,7 @@ def _process_memcache_trace_configuration():
             command = _config_object.get(section, "command")
 
             if command.startswith("lambda "):
-                callable_vars = {"callable_name": callable_name}
-                command = eval(command, callable_vars)  # noqa: S307
+                _lambda_in_config_warning()
 
             _logger.debug("register memcache-trace %s", (module, object_path, command))
 
@@ -1920,8 +1925,7 @@ def _process_transaction_name_configuration():
                 priority = _config_object.getint(section, "priority")
 
             if name and name.startswith("lambda "):
-                callable_vars = {"callable_name": callable_name}
-                name = eval(name, callable_vars)  # noqa: S307
+                _lambda_in_config_warning()
 
             _logger.debug("register transaction-name %s", ((module, object_path, name, group, priority),))
 
@@ -2241,6 +2245,10 @@ def _process_module_builtin_defaults():
     _process_module_definition("google.genai.models", "newrelic.hooks.mlmodel_gemini", "instrument_genai_models")
 
     _process_module_definition(
+        "anthropic.resources.messages.messages", "newrelic.hooks.mlmodel_anthropic", "instrument_anthropic_messages"
+    )
+
+    _process_module_definition(
         "asyncio.base_events", "newrelic.hooks.coroutines_asyncio", "instrument_asyncio_base_events"
     )
 
@@ -2250,6 +2258,12 @@ def _process_module_builtin_defaults():
 
     _process_module_definition(
         "langgraph.prebuilt.tool_node", "newrelic.hooks.mlmodel_langgraph", "instrument_langgraph_prebuilt_tool_node"
+    )
+    _process_module_definition(
+        "langgraph.pregel._executor", "newrelic.hooks.mlmodel_langgraph", "instrument_langgraph_pregel_executor"
+    )
+    _process_module_definition(
+        "langgraph._internal._runnable", "newrelic.hooks.mlmodel_langgraph", "instrument_langgraph_internal_runnable"
     )
 
     _process_module_definition(
@@ -3248,7 +3262,6 @@ def _process_module_builtin_defaults():
     _process_module_definition(
         "requests.packages.urllib3.connection", "newrelic.hooks.external_urllib3", "instrument_urllib3_connection"
     )
-
     _process_module_definition(
         "starlette.requests", "newrelic.hooks.framework_starlette", "instrument_starlette_requests"
     )
@@ -4456,13 +4469,34 @@ def _is_installed(req):
     return False
 
 
-def _process_opentelemetry_instrumentation_entry_points(
-    final_include_dict=HYBRID_AGENT_DEFAULT_INCLUDED_TRACERS_TO_NR_HOOKS,
-):
-    from importlib.metadata import entry_points
+def _tracer_include_and_exclude_filter():
+    """Uses the values in `opentelemetry.traces.include` and
+    `opentelemetry.traces.exclude` settings, along with the
+    internal included defaults, to determine which tracers
+    should be used.
+    """
 
+    user_exclude = _settings.opentelemetry.traces.exclude or newrelic.core.config._environ_as_comma_separated_set(
+        "NEW_RELIC_OPENTELEMETRY_TRACES_EXCLUDE"
+    )
+    user_include = _settings.opentelemetry.traces.include or newrelic.core.config._environ_as_comma_separated_set(
+        "NEW_RELIC_OPENTELEMETRY_TRACES_INCLUDE"
+    )
+
+    tracer_include_union = {*OPENTELEMETRY_ONLY_TRACERS_TO_NR_HOOKS.keys(), *user_include}
+    mask = tracer_include_union & user_exclude
+    final_include_set = tracer_include_union ^ mask
+
+    return final_include_set
+
+
+def _process_opentelemetry_instrumentation_entry_points():
     if not _settings.opentelemetry.enabled or not _is_installed("opentelemetry-api"):
         return
+
+    include_set = _tracer_include_and_exclude_filter()
+
+    from importlib.metadata import entry_points
 
     group = "opentelemetry_instrumentor"
 
@@ -4476,27 +4510,19 @@ def _process_opentelemetry_instrumentation_entry_points(
     entry_points_generator = (
         entrypoint
         for entrypoint in _entry_points
-        if entrypoint.name in final_include_dict
-        and entrypoint.name not in TEMPORARILY_DISABLED_OPENTELEMETRY_FRAMEWORKS
+        if entrypoint.name in include_set and entrypoint.name not in TEMPORARILY_DISABLED_OPENTELEMETRY_FRAMEWORKS
     )
 
     for entrypoint in entry_points_generator:
         opentelemetry_entrypoints.append(entrypoint)
-        opentelemetry_instrumentation.extend(final_include_dict[entrypoint.name])
+        opentelemetry_instrumentation.extend(ALL_LIBRARY_TRACERS_TO_NR_HOOKS[entrypoint.name])
 
     # Check for native installations
-    # NOTE: This logic will change once enabled and disabled
-    # functionality is implemented for opentelemetry.traces setting.
-    # NOTE: elasticsearch is instrumented both with libs and natively.
-    # To handle this case: If lib is installed, the library itself
-    # will check for native instrumentation and switch to that on its
-    # own, but if not, native instrumentation could still be used and
-    # we would not know.  We handle this as we are with strawberry-graphql
-    # and ariadne where we check to see if opentelemetry-api and the
-    # specific library are installed on the system.
+    # NOTE: for native instrumentation to work, the tracer name must be
+    # explicitly included in the opentelemetry.traces.include setting.
     for lib in ["strawberry-graphql", "ariadne", "elasticsearch"]:
-        if _is_installed(lib):
-            opentelemetry_instrumentation.extend(final_include_dict[lib])
+        if _is_installed(lib) and (lib in include_set):
+            opentelemetry_instrumentation.extend(ALL_LIBRARY_TRACERS_TO_NR_HOOKS[lib])
 
 
 def _process_opentelemetry_instrumentors():
@@ -4598,13 +4624,14 @@ def _setup_agent_control_health():
         return
 
     try:
-        if agent_control_health.health_check_enabled:
+        if agent_control_health_instance().health_check_enabled:
             agent_control_health_thread.start()
     except Exception:
         _logger.warning("Unable to start Agent Control health check thread. Health checks will not be enabled.")
 
 
 def initialize(config_file=None, environment=None, ignore_errors=None, log_file=None, log_level=None):
+    agent_control_health = agent_control_health_instance()
     agent_control_health.start_time_unix_nano = time.time_ns()
 
     if config_file is None:

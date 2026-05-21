@@ -25,7 +25,7 @@ DT_METRICS = [
     ("Supportability/DistributedTrace/AcceptPayload/Success", None),
     ("Supportability/TraceContext/TraceParent/Accept/Success", 1),
 ]
-BASE_ATTRS = ["response.status", "response.headers.contentType", "response.headers.contentLength"]
+BASE_ATTRS = ["response.status", "http.statusCode", "response.headers.contentType", "response.headers.contentLength"]
 
 
 def raw_headers(response):

@@ -43,9 +43,20 @@ def _wrap_get_service_linking_metadata(wrapped, instance, args, kwargs):
     return metadata
 
 
-def get_health_file_contents(tmp_path):
+def get_health_file_contents(tmp_path, timeout=30.0):
     # Grab the file we just wrote to and read its contents
-    health_file = list(Path(tmp_path).iterdir())[0]
+    health_files = list(Path(tmp_path).iterdir())
+    while len(health_files) == 0 and timeout > 0:
+        time.sleep(0.1)
+        timeout -= 0.1
+        health_files = list(Path(tmp_path).iterdir())
+
+    if not health_files:
+        raise RuntimeError("Health file was not created within the expected time")
+
+    assert len(health_files) == 1, f"Expected exactly one health file to be created. Got: {len(health_files)}"
+
+    health_file = health_files[0]
     with health_file.open() as f:
         contents = f.readlines()
         return contents
@@ -67,6 +78,14 @@ def restore_settings_fixture():
     # Re-initialize the agent to restore the settings
     _reset_configuration_done()
     initialize()
+
+
+@pytest.fixture(autouse=True)
+def shutdown_health_thread_fixture(tmp_path):
+    # Requires tmp_path to ensure it's not destroyed until after the test,
+    # which ensures we don't write to a missing file.
+    yield
+    agent_control_health_instance()._shutdown_health_thread()
 
 
 @pytest.mark.parametrize("file_uri", ["", "file://", "/test/dir", "foo:/test/dir"])
@@ -224,9 +243,6 @@ def test_proxy_error_status(monkeypatch, tmp_path):
     with pytest.raises(DiscardDataForRequest):
         protocol.send("analytic_event_data")
 
-    # Give time for the scheduler to kick in and write to the health file
-    time.sleep(5)
-
     contents = get_health_file_contents(tmp_path)
 
     # Assert on contents of health file
@@ -301,8 +317,6 @@ def test_max_app_name_status(monkeypatch, tmp_path):
     # Set app name to exceed maximum allowed configured names
     _reset_configuration_done()
     initialize_agent(app_name="test1;test2;test3;test4")
-    # Give time for the scheduler to kick in and write to the health file
-    time.sleep(5)
 
     contents = get_health_file_contents(tmp_path)
 

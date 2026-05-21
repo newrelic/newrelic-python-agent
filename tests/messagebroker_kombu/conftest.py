@@ -146,7 +146,7 @@ def events():
 @pytest.fixture(scope="session")
 def exchange():
     exchange_uuid = str(uuid.uuid4())
-    return kombu.Exchange(f"exchange-{exchange_uuid}", "direct", durable=True)
+    return kombu.Exchange(f"exchange-{exchange_uuid}", "direct", durable=True, auto_delete=True)
 
 
 @pytest.fixture(scope="session")

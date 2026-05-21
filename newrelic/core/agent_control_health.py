@@ -94,6 +94,7 @@ class AgentControlHealth:
         self.start_time_unix_nano = None
         self.pid_file_id_map = {}
         self._health_delivery_location_cache = {}
+        self._shutdown = False
 
     @property
     def health_check_enabled(self):
@@ -254,6 +255,14 @@ class AgentControlHealth:
 
         return self.pid_file_id_map[pid]
 
+    def _shutdown_health_thread(self):
+        """Internal method used to force shutdown of the health check thread. Only used for testing."""
+        self._shutdown = True
+        with AgentControlHealth._instance_lock:
+            # Delete previous instance so that starting a new thread
+            # will create a new instance that isn't shutdown.
+            AgentControlHealth._instance = None
+
 
 def agent_control_health_instance():
     # Helper function directly returns the singleton instance similar to agent_instance()
@@ -274,6 +283,7 @@ def agent_control_healthcheck_loop():
 
 
 def agent_control_healthcheck(scheduler, reporting_frequency):
-    scheduler.enter(reporting_frequency, 1, agent_control_healthcheck, (scheduler, reporting_frequency))
-
-    agent_control_health_instance().write_to_health_file()
+    agent_control_health = agent_control_health_instance()
+    if not agent_control_health._shutdown:
+        scheduler.enter(reporting_frequency, 1, agent_control_healthcheck, (scheduler, reporting_frequency))
+        agent_control_health.write_to_health_file()

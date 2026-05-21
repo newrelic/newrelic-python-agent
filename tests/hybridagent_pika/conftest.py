@@ -45,7 +45,10 @@ _default_settings = {
     "debug.log_data_collector_payloads": True,
     "debug.record_transaction_failure": True,
     "opentelemetry.enabled": True,
-    "opentelemetry.traces.enabled": True,
+    "opentelemetry.traces.include": {"pika"},
+    # Because New Relic natively supports this framework, this needs
+    # to be added explicitly to the include list for the Hybrid Agent
+    # to use the instrumentation hooks provided through OpenTelemetry.
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
@@ -61,8 +64,8 @@ def producer():
     with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
         channel = connection.channel()
 
-        channel.queue_declare(queue=QUEUE, durable=False)
-        channel.exchange_declare(exchange=EXCHANGE, durable=False)
+        channel.queue_declare(queue=QUEUE, durable=True, auto_delete=True)
+        channel.exchange_declare(exchange=EXCHANGE, durable=True, auto_delete=True)
         channel.queue_bind(queue=QUEUE, exchange=EXCHANGE)
 
         channel.basic_publish(
@@ -82,8 +85,8 @@ def producer_2():
     with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
         channel = connection.channel()
 
-        channel.queue_declare(queue=QUEUE_2, durable=False)
-        channel.exchange_declare(exchange=EXCHANGE_2, durable=False)
+        channel.queue_declare(queue=QUEUE_2, durable=True, auto_delete=True)
+        channel.exchange_declare(exchange=EXCHANGE_2, durable=True, auto_delete=True)
         channel.queue_bind(queue=QUEUE_2, exchange=EXCHANGE_2)
 
         channel.basic_publish(
@@ -103,8 +106,8 @@ def produce_five():
     with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
         channel = connection.channel()
 
-        channel.queue_declare(queue=QUEUE, durable=False)
-        channel.exchange_declare(exchange=EXCHANGE, durable=False)
+        channel.queue_declare(queue=QUEUE, durable=True, auto_delete=True)
+        channel.exchange_declare(exchange=EXCHANGE, durable=True, auto_delete=True)
         channel.queue_bind(queue=QUEUE, exchange=EXCHANGE)
 
         for _ in range(5):

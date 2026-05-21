@@ -1057,8 +1057,8 @@ def test_langchain_chain_error_in_openai(
 ):
     @reset_core_stats_engine()
     @validate_transaction_error_event_count(1)
-    @validate_custom_events(events_with_context_attrs(expected_events))
     @validate_custom_event_count(count=6)
+    @validate_custom_events(events_with_context_attrs(expected_events))
     @validate_transaction_metrics(
         name="mlmodel_langchain.test_chain:test_langchain_chain_error_in_openai.<locals>._test",
         scoped_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
@@ -1458,8 +1458,8 @@ def test_async_langchain_chain_error_in_openai(
 ):
     @reset_core_stats_engine()
     @validate_transaction_error_event_count(1)
-    @validate_custom_events(events_with_context_attrs(expected_events))
     @validate_custom_event_count(count=6)
+    @validate_custom_events(events_with_context_attrs(expected_events))
     @validate_transaction_metrics(
         name="mlmodel_langchain.test_chain:test_async_langchain_chain_error_in_openai.<locals>._test",
         scoped_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],

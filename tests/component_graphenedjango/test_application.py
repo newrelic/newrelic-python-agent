@@ -141,6 +141,7 @@ def test_operation_metrics_and_attrs(wsgi_app):
     @validate_span_events(
         exact_agents={
             "response.status": "200",
+            "http.statusCode": 200,
             "response.headers.contentLength": 108,
             "response.headers.contentType": "application/json",
         }
@@ -179,6 +180,7 @@ def test_field_resolver_metrics_and_attrs(wsgi_app):
     @validate_span_events(
         exact_agents={
             "response.status": "200",
+            "http.statusCode": 200,
             "response.headers.contentLength": 108,
             "response.headers.contentType": "application/json",
         }

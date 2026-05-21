@@ -43,7 +43,7 @@ BASE_METRICS = [
     ("Function/_target_application:request_middleware", 1 if sanic_v19_to_v22_12 else 2),
 ]
 FRAMEWORK_METRICS = [(f"Python/Framework/Sanic/{sanic.__version__}", 1)]
-BASE_ATTRS = ["response.status", "response.headers.contentType", "response.headers.contentLength"]
+BASE_ATTRS = ["response.status", "http.statusCode", "response.headers.contentType", "response.headers.contentLength"]
 
 validate_base_transaction_event_attr = validate_transaction_event_attributes(
     required_params={"agent": BASE_ATTRS, "user": [], "intrinsic": []}
@@ -160,7 +160,7 @@ def test_error_raised_in_error_handler(app):
     app.fetch("get", "/zero")
 
 
-STREAMING_ATTRS = ["response.status", "response.headers.contentType"]
+STREAMING_ATTRS = ["response.status", "http.statusCode", "response.headers.contentType"]
 STREAMING_METRICS = [("Function/_target_application:streaming", 1)]
 
 

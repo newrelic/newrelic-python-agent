@@ -12,22 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 import os
 from pathlib import Path
 
 import google.genai
 import pytest
-from _mock_external_gemini_server import MockExternalGeminiServer, extract_shortened_prompt, simple_get
 from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import (
     collector_agent_registration_fixture,
     collector_available_fixture,
     override_application_settings,
 )
-
-from newrelic.common.object_wrapper import wrap_function_wrapper
-from newrelic.common.signature import bind_args
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow-downs.
@@ -46,87 +41,146 @@ collector_agent_registration = collector_agent_registration_fixture(
     linked_applications=["Python Agent Test (mlmodel_gemini)"],
 )
 
-
-GEMINI_AUDIT_LOG_FILE = Path(__file__).parent / "gemini_audit.log"
-GEMINI_AUDIT_LOG_CONTENTS = {}
-# Intercept outgoing requests and log to file for mocking
-RECORDED_HEADERS = {"content-type"}
+GEMINI_VERSION = google.genai.__version__
+GEMINI_VERSION_METRIC = f"Supportability/Python/ML/Gemini/{GEMINI_VERSION}"
 
 
-@pytest.fixture(scope="session")
-def gemini_clients(MockExternalGeminiServer):
+@pytest.fixture
+def gemini_clients(replay_id):
     """
-    This configures the Gemini client and returns it
+    This configures the Gemini client to use a ReplayApiClient which will either record or replay responses depending
+    on the mode. The mode can be controlled by setting NEW_RELIC_TESTING_RECORD_GEMINI_RESPONSES=1 as an environment
+    variable to run using the real Gemini backend. (Default: mocking)
     """
     from newrelic.core.config import _environ_as_bool
 
-    if not _environ_as_bool("NEW_RELIC_TESTING_RECORD_GEMINI_RESPONSES", False):
-        with MockExternalGeminiServer() as server:
-            gemini_dev_client = google.genai.Client(
-                api_key="GEMINI_API_KEY",
-                http_options=google.genai.types.HttpOptions(base_url=f"http://localhost:{server.port}"),
-            )
-            yield gemini_dev_client
-    else:
+    record_mode = _environ_as_bool("NEW_RELIC_TESTING_RECORD_GEMINI_RESPONSES", False)
+    # Auto mode will record any missing files, but still replay existing files.
+    # This allows us to add new tests without having to re-record everything.
+    # If you need to re-record everything, you can delete the existing replays completely.
+    replay_client_mode = "auto" if record_mode else "replay"
+
+    if record_mode:
         google_api_key = os.environ.get("GOOGLE_API_KEY")
         if not google_api_key:
             raise RuntimeError("GOOGLE_API_KEY environment variable required.")
+    else:
+        google_api_key = os.environ["GOOGLE_API_KEY"] = "GEMINI_API_KEY"
 
-        gemini_dev_client = google.genai.Client(api_key=google_api_key)
-        yield gemini_dev_client
+    # Set the replay directory to a location in this test suite.
+    replay_dir = Path(__file__).parent / "replays"
+    replay_dir.mkdir(exist_ok=True)  # Recreate this directory if it's missing for recording purposes
+    os.environ["GOOGLE_GENAI_REPLAYS_DIRECTORY"] = str(replay_dir)
+
+    # Monkeypatch the Gemini client to use the replay client which will either record or replay responses depending on the mode.
+    replay_client = google.genai._replay_api_client.ReplayApiClient(mode=replay_client_mode, replay_id=replay_id)
+    google.genai.client.Client._get_api_client = lambda self, *args, **kwargs: replay_client
+    gemini_dev_client = google.genai.Client(api_key=google_api_key)
+
+    yield gemini_dev_client
+
+    gemini_dev_client._api_client.close()
+    gemini_dev_client.close()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def gemini_dev_client(gemini_clients):
     # Once VertexAI is enabled, gemini_clients() will yield two different clients up that will be unpacked here
     gemini_dev_client = gemini_clients
     return gemini_dev_client
 
 
-@pytest.fixture(autouse=True, scope="session")
-def gemini_server(gemini_clients, wrap_httpx_client_send):
-    """
-    This fixture will either create a mocked backend for testing purposes, or will
-    set up an audit log file to log responses of the real Gemini backend to a file.
-    The behavior can be controlled by setting NEW_RELIC_TESTING_RECORD_GEMINI_RESPONSES=1 as
-    an environment variable to run using the real Gemini backend. (Default: mocking)
-    """
-    from newrelic.core.config import _environ_as_bool
+@pytest.fixture
+def replay_id():
+    pytest_name = os.environ.get("PYTEST_CURRENT_TEST").split("::")
+    test_module = Path(pytest_name[0]).with_suffix("").name
+    test_name, test_params = pytest_name[-1].split(" ")[0].split("[")
 
-    if _environ_as_bool("NEW_RELIC_TESTING_RECORD_GEMINI_RESPONSES", False):
-        wrap_function_wrapper("httpx._client", "Client.send", wrap_httpx_client_send)
-        yield  # Run tests
-        # Write responses to audit log
-        with GEMINI_AUDIT_LOG_FILE.open("w") as audit_log_fp:
-            json.dump(GEMINI_AUDIT_LOG_CONTENTS, fp=audit_log_fp, indent=4)
-    else:
-        # We are mocking responses so we don't need to do anything in this case.
-        yield
+    # Don't use the actual parameter string in the replay ID to avoid having different replays for certain parameters
+    # like is_async and to avoid issues with sorting. We also can't directly use the fixtures or we will cause the
+    # embedding tests to run despite not having streaming or chat parameters. Instead we will just infer the info
+    # from the test names and reproduce it in a standardized format.
+    is_streaming = "stream" in test_params
+    is_chat = "chat" in test_params
+    is_vertex = "vertex" in test_params
+    test_params_suffix = f"{'streaming' if is_streaming else 'invoke'}-{'chat' if is_chat else 'model'}-{'vertex' if is_vertex else 'standard'}"
+
+    return f"{test_module}/{test_name}/{test_params_suffix}"
 
 
-@pytest.fixture(scope="session")
-def wrap_httpx_client_send(extract_shortened_prompt):
-    def _wrap_httpx_client_send(wrapped, instance, args, kwargs):
-        bound_args = bind_args(wrapped, args, kwargs)
-        request = bound_args["request"]
-        if not request:
-            return wrapped(*args, **kwargs)
+@pytest.fixture(scope="session", params=["standard"])  # "vertex" to be added
+def is_vertex(request):
+    # This is a placeholder for when we want to test against both the standard Gemini API and the Vertex AI Gemini API.
+    return request.param == "vertex"
 
-        params = json.loads(request.content.decode("utf-8"))
-        prompt = extract_shortened_prompt(params)
 
-        # Send request
-        response = wrapped(*args, **kwargs)
+@pytest.fixture(scope="session", params=["invoke", "stream"])
+def is_streaming(request):
+    return request.param == "stream"
 
-        if response.status_code >= 500 or response.status_code < 200:
-            prompt = "error"
 
-        rheaders = response.headers
-        headers = dict(
-            filter(lambda k: k[0].lower() in RECORDED_HEADERS or k[0].lower().startswith("x-goog"), rheaders.items())
-        )
-        body = json.loads(response.content.decode("utf-8"))
-        GEMINI_AUDIT_LOG_CONTENTS[prompt] = headers, response.status_code, body  # Append response data to log
-        return response
+@pytest.fixture(scope="session", params=["sync", "async"])
+def is_async(request):
+    return request.param == "async"
 
-    return _wrap_httpx_client_send
+
+@pytest.fixture(scope="session", params=["chat", "model"])
+def is_chat(request):
+    return request.param == "chat"
+
+
+@pytest.fixture
+def exercise_text_model(loop, gemini_dev_client, is_async, is_chat, is_streaming):
+    # Pick the sync or async client before we make the chat object for convenience
+    client = gemini_dev_client.aio if is_async else gemini_dev_client
+
+    def _exercise_text_model(*args, **kwargs):
+        if is_chat:
+            chat = client.chats.create(model=kwargs.pop("model"))
+            kwargs["message"] = kwargs.pop("contents")  # Make the kwargs compatible
+
+            if not is_streaming:
+                if not is_async:
+                    return chat.send_message(*args, **kwargs)
+                else:
+                    return loop.run_until_complete(chat.send_message(*args, **kwargs))
+            else:
+                if not is_async:
+                    return list(chat.send_message_stream(*args, **kwargs))
+                else:
+
+                    async def _exercise_agen():
+                        return [event async for event in await chat.send_message_stream(*args, **kwargs)]
+
+                    return loop.run_until_complete(_exercise_agen())
+        else:
+            if not is_streaming:
+                if not is_async:
+                    return client.models.generate_content(*args, **kwargs)
+                else:
+                    return loop.run_until_complete(client.models.generate_content(*args, **kwargs))
+            else:
+                if not is_async:
+                    return list(client.models.generate_content_stream(*args, **kwargs))
+                else:
+
+                    async def _exercise_agen():
+                        return [event async for event in await client.models.generate_content_stream(*args, **kwargs)]
+
+                    return loop.run_until_complete(_exercise_agen())
+
+    return _exercise_text_model
+
+
+@pytest.fixture
+def exercise_embedding_model(loop, gemini_dev_client, is_async):
+    # Pick the sync or async client for convenience
+    client = gemini_dev_client.aio if is_async else gemini_dev_client
+
+    def _exercise_embedding_model(*args, **kwargs):
+        if not is_async:
+            return client.models.embed_content(*args, **kwargs)
+        else:
+            return loop.run_until_complete(client.models.embed_content(*args, **kwargs))
+
+    return _exercise_embedding_model

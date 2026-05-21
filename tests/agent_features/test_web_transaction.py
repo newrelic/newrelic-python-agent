@@ -87,6 +87,7 @@ def test_double_wrapped_dispatcher_and_framework_metrics():
         "request.method",
         "request.uri",
         "response.status",
+        "http.statusCode",
         "response.headers.contentLength",
         "response.headers.contentType",
         "request.parameters.foo",

@@ -15,6 +15,7 @@
 import gc
 import os
 import platform
+import threading
 
 import pytest
 from testing_support.fixtures import override_generic_settings
@@ -102,6 +103,37 @@ def test_gc_metrics_collection(gc_data_source, top_object_count_limit):
         else:
             assert obj_metric_count == 4, metrics_table
 
+    _test()
+
+
+@pytest.mark.skipif(platform.python_implementation() == "PyPy", reason="GC Metrics are always disabled on PyPy")
+def test_record_gc_safe_from_reentrant_gc(gc_data_source, monkeypatch):
+    @override_generic_settings(settings, {"gc_runtime_metrics.enabled": True})
+    def _test():
+        enabled_run = threading.Event()
+
+        @property
+        def enabled(*args, **kwargs):
+            # Calls a second time to record_gc(). Note that we can't call gc.collect() here
+            # as it would not actually start a new gc collection. Python stores a flag to
+            # prevent re-entrant gc collections (gcstate->collecting) and it isn't possible
+            # to directly invoke the gc here. However, the allocator can trigger a gc collection
+            # and bypass this flag. To simulate this, we can directly call record_gc() to
+            # verify that the callback is safe from re-entrant calls causing infinite recursion.
+            enabled_run.set()
+            gc_data_source.record_gc("start", {"generation": 0})  # Directly invoke callback
+            return True
+
+        # Patch the enabled property to trigger a re-entrant call to record_gc().
+        monkeypatch.setattr(gc_data_source.__class__, "enabled", enabled)
+
+        # Invoke the gc manually to start the test.
+        gc.collect()
+
+        # Ensure the new property is actually hit and the test is exercising correctly.
+        assert enabled_run.is_set(), "Test did not run correctly."
+
+    # If we exit without causing a RecursionError, the test is successful.
     _test()
 
 

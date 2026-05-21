@@ -39,7 +39,8 @@ def test_DT_inside_transaction_delay(dt_enabled):
         name="test_distributed_tracing:test_DT_inside_transaction_delay.<locals>._test",
         rollup_metrics=[
             ("Supportability/TraceContext/Create/Success", 1 if dt_enabled else None),
-            ("Supportability/DistributedTrace/CreatePayload/Success", 1 if dt_enabled else None),
+            # Only generated when the newrelic header is emitted (exclude_newrelic_header=False).
+            ("Supportability/DistributedTrace/CreatePayload/Success", None),
         ],
         background_task=True,
     )
@@ -62,7 +63,8 @@ def test_DT_outside_transaction_delay(dt_enabled):
         group="Celery",
         rollup_metrics=[
             ("Supportability/TraceContext/Create/Success", 1 if dt_enabled else None),
-            ("Supportability/DistributedTrace/CreatePayload/Success", 1 if dt_enabled else None),
+            # Only generated when the newrelic header is emitted (exclude_newrelic_header=False).
+            ("Supportability/DistributedTrace/CreatePayload/Success", None),
         ],
         background_task=True,
     )
@@ -102,7 +104,8 @@ def test_DT_inside_transaction_apply_with_added_headers(dt_enabled):
         rollup_metrics=[
             ("Function/_target_application.add", 1),
             ("Supportability/TraceContext/Create/Success", 1 if dt_enabled else None),
-            ("Supportability/DistributedTrace/CreatePayload/Success", 1 if dt_enabled else None),
+            # Only generated when the newrelic header is emitted (exclude_newrelic_header=False).
+            ("Supportability/DistributedTrace/CreatePayload/Success", None),
         ],
         scoped_metrics=[("Function/_target_application.add", 1)],
         background_task=True,
@@ -127,7 +130,8 @@ def test_DT_outside_transaction_apply(dt_enabled):
         group="Celery",
         rollup_metrics=[
             ("Supportability/TraceContext/Create/Success", 1 if dt_enabled else None),
-            ("Supportability/DistributedTrace/CreatePayload/Success", 1 if dt_enabled else None),
+            # Only generated when the newrelic header is emitted (exclude_newrelic_header=False).
+            ("Supportability/DistributedTrace/CreatePayload/Success", None),
         ],
         background_task=True,
     )

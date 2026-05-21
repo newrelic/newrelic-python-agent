@@ -14,6 +14,7 @@
 
 import pika
 import pytest
+from conftest import EXCHANGE, EXCHANGE_2, QUEUE
 from testing_support.db_settings import rabbitmq_settings
 from testing_support.fixtures import dt_enabled, override_application_settings, reset_core_stats_engine
 from testing_support.util import conditional_decorator
@@ -48,7 +49,6 @@ def cache_pika_headers(wrapped, instance, args, kwargs):
 
 
 DB_SETTINGS = rabbitmq_settings()[0]
-QUEUE = "test-pika-queue"
 CORRELATION_ID = "testingpika"
 REPLY_TO = "testing"
 HEADERS = {"MYHEADER": "pikatest"}
@@ -165,7 +165,8 @@ def test_blocking_connection_headers(enable_distributed_tracing):
         rollup_metrics += [
             ("DurationByCaller/Unknown/Unknown/Unknown/Unknown/all", 1),
             ("DurationByCaller/Unknown/Unknown/Unknown/Unknown/allOther", 1),
-            ("Supportability/DistributedTrace/CreatePayload/Success", 2),
+            # Only generated when the newrelic header is emitted (exclude_newrelic_header=False).
+            ("Supportability/DistributedTrace/CreatePayload/Success", None),
             ("Supportability/TraceContext/Create/Success", 2),
         ]
 
@@ -220,10 +221,10 @@ def test_blocking_connection_headers_reuse_properties():
 
 
 _test_blocking_connection_two_exchanges_metrics = [
-    ("MessageBroker/rabbitmq/Exchange/Produce/Named/exchange-1", 2),
-    ("MessageBroker/rabbitmq/Exchange/Produce/Named/exchange-2", 2),
-    ("MessageBroker/rabbitmq/Exchange/Consume/Named/exchange-1", None),
-    ("MessageBroker/rabbitmq/Exchange/Consume/Named/exchange-2", None),
+    (f"MessageBroker/rabbitmq/Exchange/Produce/Named/{EXCHANGE}", 2),
+    (f"MessageBroker/rabbitmq/Exchange/Produce/Named/{EXCHANGE_2}", 2),
+    (f"MessageBroker/rabbitmq/Exchange/Consume/Named/{EXCHANGE}", None),
+    (f"MessageBroker/rabbitmq/Exchange/Consume/Named/{EXCHANGE_2}", None),
 ]
 
 
@@ -246,17 +247,17 @@ _test_blocking_connection_two_exchanges_metrics = [
 def test_blocking_connection_two_exchanges():
     with pika.BlockingConnection(pika.ConnectionParameters(DB_SETTINGS["host"])) as connection:
         channel = connection.channel()
-        channel.queue_declare(queue=QUEUE)
-        channel.exchange_declare(exchange="exchange-1", durable=False, auto_delete=True)
-        channel.exchange_declare(exchange="exchange-2", durable=False, auto_delete=True)
+        channel.queue_declare(queue=QUEUE, durable=True, auto_delete=True)
+        channel.exchange_declare(exchange=EXCHANGE, durable=True, auto_delete=True)
+        channel.exchange_declare(exchange=EXCHANGE_2, durable=True, auto_delete=True)
 
-        channel.basic_publish(exchange="exchange-1", routing_key=QUEUE, body="test")
-        channel.basic_publish(exchange="exchange-2", routing_key=QUEUE, body="test")
+        channel.basic_publish(exchange=EXCHANGE, routing_key=QUEUE, body="test")
+        channel.basic_publish(exchange=EXCHANGE_2, routing_key=QUEUE, body="test")
 
 
 _test_select_connection_metrics = [
-    ("MessageBroker/rabbitmq/Exchange/Produce/Named/test-pika-queue", 1),
-    ("MessageBroker/rabbitmq/Exchange/Consume/Named/test-pika-queue", None),
+    (f"MessageBroker/rabbitmq/Exchange/Produce/Named/{QUEUE}", 1),
+    (f"MessageBroker/rabbitmq/Exchange/Consume/Named/{QUEUE}", None),
 ]
 
 
@@ -273,7 +274,7 @@ _test_select_connection_metrics = [
 )
 @validate_span_events(
     count=1,
-    exact_intrinsics={"name": "MessageBroker/rabbitmq/Exchange/Produce/Named/test-pika-queue"},
+    exact_intrinsics={"name": f"MessageBroker/rabbitmq/Exchange/Produce/Named/{QUEUE}"},
     exact_agents={"server.address": DB_SETTINGS["host"]},
 )
 @background_task()
@@ -302,8 +303,8 @@ def test_select_connection():
 
 
 _test_tornado_connection_metrics = [
-    ("MessageBroker/rabbitmq/Exchange/Produce/Named/test-pika-queue", 1),
-    ("MessageBroker/rabbitmq/Exchange/Consume/Named/test-pika-queue", None),
+    (f"MessageBroker/rabbitmq/Exchange/Produce/Named/{QUEUE}", 1),
+    (f"MessageBroker/rabbitmq/Exchange/Consume/Named/{QUEUE}", None),
 ]
 
 
@@ -320,7 +321,7 @@ _test_tornado_connection_metrics = [
 )
 @validate_span_events(
     count=1,
-    exact_intrinsics={"name": "MessageBroker/rabbitmq/Exchange/Produce/Named/test-pika-queue"},
+    exact_intrinsics={"name": f"MessageBroker/rabbitmq/Exchange/Produce/Named/{QUEUE}"},
     exact_agents={"server.address": DB_SETTINGS["host"]},
 )
 @background_task()

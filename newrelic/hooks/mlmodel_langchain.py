@@ -359,7 +359,25 @@ def wrap_ContextThreadPoolExecutor_submit(wrapped, instance, args, kwargs):
     return wrapped(bound_args["func"], *bound_args["args"], **bound_args["kwargs"])
 
 
-def _create_error_vectorstore_events(transaction, search_id, args, kwargs, linking_metadata, wrapped):
+def bind_run_in_executor(executor_or_config, func, *args, **kwargs):
+    return executor_or_config, func, args, kwargs
+
+
+async def wrap_run_in_executor(wrapped, instance, args, kwargs):
+    trace = current_trace()
+    if not trace:
+        return await wrapped(*args, **kwargs)
+
+    try:
+        executor_or_config, func, args, kwargs = bind_run_in_executor(*args, **kwargs)
+    except Exception:
+        return await wrapped(*args, **kwargs)
+
+    func = context_wrapper(func, trace=trace, strict=True)
+    return await wrapped(executor_or_config, func, *args, **kwargs)
+
+
+def _create_error_vectorstore_events(*, transaction, search_id, args, kwargs, linking_metadata, wrapped):
     settings = transaction.settings if transaction.settings is not None else global_settings()
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
@@ -406,14 +424,30 @@ async def wrap_asimilarity_search(wrapped, instance, args, kwargs):
     except Exception:
         ft.notice_error(attributes={"vector_store_id": search_id})
         ft.__exit__(*sys.exc_info())
-        _create_error_vectorstore_events(transaction, search_id, args, kwargs, linking_metadata, wrapped)
+        _create_error_vectorstore_events(
+            transaction=transaction,
+            search_id=search_id,
+            args=args,
+            kwargs=kwargs,
+            linking_metadata=linking_metadata,
+            wrapped=wrapped,
+        )
         raise
     ft.__exit__(None, None, None)
 
     if not response:
         return response
 
-    _record_vector_search_success(transaction, linking_metadata, ft, search_id, args, kwargs, response, wrapped)
+    _record_vector_search_success(
+        transaction=transaction,
+        linking_metadata=linking_metadata,
+        ft=ft,
+        search_id=search_id,
+        args=args,
+        kwargs=kwargs,
+        response=response,
+        wrapped=wrapped,
+    )
     return response
 
 
@@ -439,18 +473,34 @@ def wrap_similarity_search(wrapped, instance, args, kwargs):
     except Exception:
         ft.notice_error(attributes={"vector_store_id": search_id})
         ft.__exit__(*sys.exc_info())
-        _create_error_vectorstore_events(transaction, search_id, args, kwargs, linking_metadata, wrapped)
+        _create_error_vectorstore_events(
+            transaction=transaction,
+            search_id=search_id,
+            args=args,
+            kwargs=kwargs,
+            linking_metadata=linking_metadata,
+            wrapped=wrapped,
+        )
         raise
     ft.__exit__(None, None, None)
 
     if not response:
         return response
 
-    _record_vector_search_success(transaction, linking_metadata, ft, search_id, args, kwargs, response, wrapped)
+    _record_vector_search_success(
+        transaction=transaction,
+        linking_metadata=linking_metadata,
+        ft=ft,
+        search_id=search_id,
+        args=args,
+        kwargs=kwargs,
+        response=response,
+        wrapped=wrapped,
+    )
     return response
 
 
-def _record_vector_search_success(transaction, linking_metadata, ft, search_id, args, kwargs, response, wrapped):
+def _record_vector_search_success(*, transaction, linking_metadata, ft, search_id, args, kwargs, response, wrapped):
     settings = transaction.settings if transaction.settings is not None else global_settings()
     bound_args = bind_args(wrapped, args, kwargs)
     request_query = bound_args["query"]
@@ -646,7 +696,7 @@ def _capture_tool_info(instance, wrapped, args, kwargs):
 
 
 def _record_tool_success(
-    instance, transaction, linking_metadata, agent_name, tool_id, tool_input, tool_name, tool_run_id, ft, response
+    *, instance, transaction, linking_metadata, agent_name, tool_id, tool_input, tool_name, tool_run_id, ft, response
 ):
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
@@ -674,7 +724,7 @@ def _record_tool_success(
 
 
 def _record_tool_error(
-    instance, transaction, linking_metadata, agent_name, tool_id, tool_input, tool_name, tool_run_id, ft
+    *, instance, transaction, linking_metadata, agent_name, tool_id, tool_input, tool_name, tool_run_id, ft
 ):
     settings = transaction.settings if transaction.settings is not None else global_settings()
     ft.notice_error(attributes={"tool_id": tool_id})
@@ -921,7 +971,7 @@ def wrap_RunnableSequence_astream(wrapped, instance, args, kwargs):
     return return_val
 
 
-def _on_chain_stop_iteration(ft, instance, run_args, completion_id, response, linking_metadata):
+def _on_chain_stop_iteration(*, ft, instance, run_args, completion_id, response, linking_metadata):
     def _on_stop_iteration(proxy, transaction):
         ft.__exit__(None, None, None)
         _create_successful_chain_run_events(
@@ -937,7 +987,7 @@ def _on_chain_stop_iteration(ft, instance, run_args, completion_id, response, li
     return _on_stop_iteration
 
 
-def _on_chain_error(ft, instance, run_args, completion_id, linking_metadata):
+def _on_chain_error(*, ft, instance, run_args, completion_id, linking_metadata):
     def _on_error(proxy, transaction):
         ft.notice_error(attributes={"completion_id": completion_id})
         ft.__exit__(*sys.exc_info())
@@ -965,7 +1015,7 @@ def add_nr_completion_id(run_args, completion_id):
         run_args["config"]["metadata"] = metadata
 
 
-def _create_error_chain_run_events(transaction, instance, run_args, completion_id, linking_metadata, duration):
+def _create_error_chain_run_events(*, transaction, instance, run_args, completion_id, linking_metadata, duration):
     _input = run_args.get("input")
     llm_metadata_dict = _get_llm_metadata(transaction)
     run_id, metadata, tags = _get_run_manager_info(transaction, run_args, instance, completion_id)
@@ -994,15 +1044,15 @@ def _create_error_chain_run_events(transaction, instance, run_args, completion_i
     full_chat_completion_summary_dict.update(llm_metadata_dict)
     transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
     create_chat_completion_message_event(
-        transaction,
-        input_message_list,
-        completion_id,
-        span_id,
-        trace_id,
-        run_id,
-        llm_metadata_dict,
-        [],
-        run_args["timestamp"] or None,
+        transaction=transaction,
+        input_message_list=input_message_list,
+        chat_completion_id=completion_id,
+        span_id=span_id,
+        trace_id=trace_id,
+        run_id=run_id,
+        llm_metadata_dict=llm_metadata_dict,
+        output_message_list=[],
+        request_timestamp=run_args["timestamp"] or None,
     )
 
 
@@ -1019,7 +1069,7 @@ def _get_run_manager_info(transaction, run_args, instance, completion_id):
 
 
 def _create_successful_chain_run_events(
-    transaction, instance, run_args, completion_id, response, linking_metadata, duration
+    *, transaction, instance, run_args, completion_id, response, linking_metadata, duration
 ):
     _input = run_args.get("input")
     llm_metadata_dict = _get_llm_metadata(transaction)
@@ -1066,19 +1116,20 @@ def _create_successful_chain_run_events(
     full_chat_completion_summary_dict.update(llm_metadata_dict)
     transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
     create_chat_completion_message_event(
-        transaction,
-        input_message_list,
-        completion_id,
-        span_id,
-        trace_id,
-        run_id,
-        llm_metadata_dict,
-        output_message_list,
-        run_args["timestamp"] or None,
+        transaction=transaction,
+        input_message_list=input_message_list,
+        chat_completion_id=completion_id,
+        span_id=span_id,
+        trace_id=trace_id,
+        run_id=run_id,
+        llm_metadata_dict=llm_metadata_dict,
+        output_message_list=output_message_list,
+        request_timestamp=run_args["timestamp"] or None,
     )
 
 
 def create_chat_completion_message_event(
+    *,
     transaction,
     input_message_list,
     chat_completion_id,
@@ -1233,6 +1284,8 @@ def instrument_langchain_core_tools(module):
 def instrument_langchain_core_runnables_config(module):
     if hasattr(module, "ContextThreadPoolExecutor"):
         wrap_function_wrapper(module, "ContextThreadPoolExecutor.submit", wrap_ContextThreadPoolExecutor_submit)
+    if hasattr(module, "run_in_executor"):
+        wrap_function_wrapper(module, "run_in_executor", wrap_run_in_executor)
 
 
 def instrument_langchain_core_tools_structured(module):

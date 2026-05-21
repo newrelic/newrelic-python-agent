@@ -33,7 +33,7 @@ STREAMED_RESPONSES_V1 = {
     "system: You are a world class algorithm for extracting information in structured formats. | user: Use the given format to extract information from the following input: Hello, world | user: Tip: Make sure to answer in the correct format": [
         {
             "content-type": "text/event-stream; charset=utf-8",
-            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "440",
             "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
             "openai-version": "2020-10-01",
@@ -125,7 +125,7 @@ STREAMED_RESPONSES_V1 = {
     'user: Use a tool to add an exclamation to the word "Hello"': [
         {
             "content-type": "text/event-stream; charset=utf-8",
-            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "134",
             "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
             "openai-version": "2020-10-01",
@@ -219,7 +219,7 @@ RESPONSES_V1 = {
     'system: You are a text manipulation algorithm. | user: Use a tool to add an exclamation to the word "Hello"': [
         {
             "content-type": "application/json",
-            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "324",
             "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
             "openai-version": "2020-10-01",
@@ -276,7 +276,7 @@ RESPONSES_V1 = {
     'system: You are a text manipulation algorithm. | user: Use a tool to add an exclamation to the word "Hello" | assistant: None | tool: Hello!': [
         {
             "content-type": "application/json",
-            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "751",
             "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
             "openai-version": "2020-10-01",
@@ -326,7 +326,7 @@ RESPONSES_V1 = {
     'system: You are a text manipulation algorithm. | user: Use a tool to add an exclamation to the word "exc"': [
         {
             "content-type": "application/json",
-            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "767",
             "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
             "openai-version": "2020-10-01",
@@ -383,7 +383,7 @@ RESPONSES_V1 = {
     "system: You are a helpful assistant who generates a random first name. A user will pass in a first letter, and you should generate a name that starts with that first letter. | user: M": [
         {
             "content-type": "application/json",
-            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "236",
             "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
             "openai-version": "2020-10-01",
@@ -428,7 +428,7 @@ RESPONSES_V1 = {
     "system: You are a helpful assistant who generates comma separated lists.\n    A user will pass in a category, and you should generate 5 objects in that category in a comma separated list.\n    ONLY return a comma separated list, and nothing more. | user: colors": [
         {
             "content-type": "application/json",
-            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "289",
             "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
             "openai-version": "2020-10-01",
@@ -478,7 +478,7 @@ RESPONSES_V1 = {
     "system: You are a world class algorithm for extracting information in structured formats. | user: Use the given format to extract information from the following input: Sally is 13 | user: Tip: Make sure to answer in the correct format": [
         {
             "content-type": "application/json",
-            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "201",
             "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
             "openai-version": "2020-10-01",
@@ -541,7 +541,7 @@ RESPONSES_V1 = {
     "system: You are a generator of quiz questions for a seminar. Use the following pieces of retrieved context to generate 5 multiple choice questions (A,B,C,D) on the subject matter. Use a three sentence maximum and keep the answer concise. Render the output as HTML\n\nWhat is 2 + 4? | user: math": [
         {
             "content-type": "application/json",
-            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "2029",
             "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
             "openai-version": "2020-10-01",
@@ -593,7 +593,7 @@ RESPONSES_V1 = {
         {
             "content-type": "application/json",
             "openai-model": "text-embedding-ada-002-v2",
-            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "42",
             "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
             "openai-version": "2020-10-01",
@@ -623,7 +623,7 @@ RESPONSES_V1 = {
         {
             "content-type": "application/json",
             "openai-model": "text-embedding-ada-002-v2",
-            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "82",
             "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
             "openai-version": "2020-10-01",
@@ -653,7 +653,7 @@ RESPONSES_V1 = {
         {
             "content-type": "application/json",
             "openai-model": "text-embedding-ada-002-v2",
-            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "158",
             "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
             "openai-version": "2020-10-01",
@@ -683,7 +683,7 @@ RESPONSES_V1 = {
         {
             "content-type": "application/json",
             "openai-model": "text-embedding-ada-002-v2",
-            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "116",
             "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
             "openai-version": "2020-10-01",
@@ -712,7 +712,7 @@ RESPONSES_V1 = {
     'user: Use a tool to add an exclamation to the word "Hello"': [
         {
             "content-type": "application/json",
-            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "238",
             "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
             "openai-version": "2020-10-01",

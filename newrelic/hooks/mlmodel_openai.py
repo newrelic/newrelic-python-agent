@@ -509,14 +509,15 @@ def _record_completion_success(
         else:
             response_model = kwargs.get("response.model")
             response_id = kwargs.get("id")
-            output_message_list = []
             finish_reason = kwargs.get("finish_reason")
-            if "content" in kwargs:
-                output_message_list = [{"content": kwargs.get("content"), "role": kwargs.get("role")}]
-            # When tools are involved, the content key may hold an empty string which we do not want to report
-            # In this case, the content we are interested in capturing will already be covered in the input_message_list
-            # We empty out the output_message_list so that we do not report an empty message
-            if "tool_call" in finish_reason and not kwargs.get("content"):
+            content = kwargs.get("content")
+            # Tool-call responses may carry an empty content string; in that case the
+            # relevant content is already captured in input_message_list, so we skip
+            # recording an empty output message.
+            is_empty_tool_call_response = finish_reason and "tool_call" in finish_reason and not content
+            if not is_empty_tool_call_response and content is not None:
+                output_message_list = [{"content": content, "role": kwargs.get("role")}]
+            else:
                 output_message_list = []
         request_model = kwargs.get("model") or kwargs.get("engine")
 

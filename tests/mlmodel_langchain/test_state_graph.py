@@ -110,6 +110,11 @@ chat_completion_stream_recorded_events = [
             "response.model": "gpt-3.5-turbo-0125",
             "response.number_of_messages": 2,
             "response.organization": "nr-test-org",
+            # langchain's ChatOpenAI.stream() passes stream_options={"include_usage": True}
+            # by default, so the final usage chunk is captured and these are populated.
+            "response.usage.completion_tokens": 2,
+            "response.usage.prompt_tokens": 21,
+            "response.usage.total_tokens": 23,
             "span_id": None,
             "time_to_first_token": None,
             "timestamp": None,
@@ -130,6 +135,7 @@ chat_completion_stream_recorded_events = [
             "sequence": 0,
             "span_id": None,
             "timestamp": None,
+            "token_count": 0,
             "trace_id": None,
             "vendor": "openai",
         },
@@ -147,6 +153,7 @@ chat_completion_stream_recorded_events = [
             "role": "assistant",
             "sequence": 1,
             "span_id": None,
+            "token_count": 0,
             "trace_id": None,
             "vendor": "openai",
         },

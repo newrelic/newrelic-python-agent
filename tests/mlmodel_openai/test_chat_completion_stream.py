@@ -346,25 +346,29 @@ def test_openai_chat_completion_sync_no_llm_metadata(set_trace_info):
 )
 @background_task()
 def test_openai_chat_completion_sync_ai_monitoring_streaming_disabled():
-    openai.ChatCompletion.create(
+    generator = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=_test_openai_chat_completion_messages,
         temperature=0.7,
         max_tokens=100,
         stream=True,
     )
+    for resp in generator:
+        assert resp
 
 
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 def test_openai_chat_completion_sync_outside_txn():
-    openai.ChatCompletion.create(
+    generator = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=_test_openai_chat_completion_messages,
         temperature=0.7,
         max_tokens=100,
         stream=True,
     )
+    for resp in generator:
+        assert resp
 
 
 @disabled_ai_monitoring_settings
@@ -372,13 +376,15 @@ def test_openai_chat_completion_sync_outside_txn():
 @validate_custom_event_count(count=0)
 @background_task()
 def test_openai_chat_completion_sync_ai_monitoring_disabled():
-    openai.ChatCompletion.create(
+    generator = openai.ChatCompletion.create(
         model="gpt-3.5-turbo",
         messages=_test_openai_chat_completion_messages,
         temperature=0.7,
         max_tokens=100,
         stream=True,
     )
+    for resp in generator:
+        assert resp
 
 
 @reset_core_stats_engine()

@@ -49,7 +49,7 @@ expected_events_on_no_model_error = [
             "trace_id": "trace-id",
             "duration": None,  # Response time varies each test run
             "request.temperature": 0.7,
-            "request.max_tokens": 100,
+            "request.max_tokens": 500,
             "response.number_of_messages": 1,
             "vendor": "gemini",
             "ingest_source": "Python",
@@ -122,7 +122,7 @@ def test_text_generation_invalid_request_error_no_model(
                 exercise_text_model(
                     # no model
                     contents=["How many letters are in the word Python?"],
-                    config=google.genai.types.GenerateContentConfig(max_output_tokens=100, temperature=0.7),
+                    config=google.genai.types.GenerateContentConfig(max_output_tokens=500, temperature=0.7),
                 )
 
     _test()
@@ -153,7 +153,7 @@ def test_text_generation_invalid_request_error_no_model_no_content(
             exercise_text_model(
                 # no model
                 contents=["How many letters are in the word Python?"],
-                config=google.genai.types.GenerateContentConfig(max_output_tokens=100, temperature=0.7),
+                config=google.genai.types.GenerateContentConfig(max_output_tokens=500, temperature=0.7),
             )
 
     _test()
@@ -171,7 +171,7 @@ expected_events_on_invalid_model_error = [
             "duration": None,  # Response time varies each test run
             "request.model": "does-not-exist",
             "request.temperature": 0.7,
-            "request.max_tokens": 100,
+            "request.max_tokens": 500,
             "response.number_of_messages": 1,
             "vendor": "gemini",
             "ingest_source": "Python",
@@ -230,7 +230,7 @@ def test_text_generation_invalid_request_error_invalid_model_with_token_count(
             exercise_text_model(
                 model="does-not-exist",
                 contents=["Model does not exist."],
-                config=google.genai.types.GenerateContentConfig(max_output_tokens=100, temperature=0.7),
+                config=google.genai.types.GenerateContentConfig(max_output_tokens=500, temperature=0.7),
             )
 
     _test()
@@ -245,9 +245,9 @@ expected_events_on_wrong_api_key_error = [
             "span_id": None,
             "trace_id": "trace-id",
             "duration": None,  # Response time varies each test run
-            "request.model": "gemini-2.0-flash",
+            "request.model": "gemini-2.5-flash",
             "request.temperature": 0.7,
-            "request.max_tokens": 100,
+            "request.max_tokens": 500,
             "response.number_of_messages": 1,
             "vendor": "gemini",
             "ingest_source": "Python",
@@ -263,7 +263,7 @@ expected_events_on_wrong_api_key_error = [
             "trace_id": "trace-id",
             "content": "Invalid API key.",
             "role": "user",
-            "response.model": "gemini-2.0-flash",
+            "response.model": "gemini-2.5-flash",
             "completion_id": None,
             "sequence": 0,
             "vendor": "gemini",
@@ -277,7 +277,7 @@ expected_events_on_wrong_api_key_error = [
 @dt_enabled
 @reset_core_stats_engine()
 def test_text_generation_wrong_api_key_error(
-    gemini_dev_client, exercise_text_model, text_generation_metrics, set_trace_info
+    gemini_client, exercise_text_model, text_generation_metrics, set_trace_info
 ):
     @validate_error_trace_attributes(
         callable_name(google.genai.errors.ClientError),
@@ -298,12 +298,12 @@ def test_text_generation_wrong_api_key_error(
         with pytest.raises(google.genai.errors.ClientError):
             set_trace_info()
             fake_api_key = "DEADBEEF"
-            gemini_dev_client._api_client.api_key = fake_api_key
-            gemini_dev_client._api_client._http_options.headers["x-goog-api-key"] = fake_api_key
+            gemini_client._api_client.api_key = fake_api_key
+            gemini_client._api_client._http_options.headers["x-goog-api-key"] = fake_api_key
             exercise_text_model(
-                model="gemini-2.0-flash",
+                model="gemini-2.5-flash",
                 contents=["Invalid API key."],
-                config=google.genai.types.GenerateContentConfig(max_output_tokens=100, temperature=0.7),
+                config=google.genai.types.GenerateContentConfig(max_output_tokens=500, temperature=0.7),
             )
 
     _test()

@@ -76,6 +76,11 @@ jobs:
 
       - name: Commit and push updated schema
         if: steps.generate.outputs.changed == 'true'
+        env:
+          # Pass the (potentially attacker-controlled) PR branch name through
+          # an env var rather than interpolating it directly into the shell
+          # script -- prevents script injection via crafted branch names.
+          HEAD_REF: ${{ github.event.pull_request.head.ref || github.ref_name }}
         run: |
           if [ -z "$(git status --porcelain .fleetControl)" ]; then
             echo "Generator reported changes but working tree is clean -- nothing to commit."
@@ -85,4 +90,4 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add .fleetControl/schemas/config.json .fleetControl/configurationDefinitions.yml
           git commit -m "chore: update Fleet Control config schema"
-          git push origin HEAD:${{ github.event.pull_request.head.ref || github.ref_name }}
+          git push origin "HEAD:$HEAD_REF"

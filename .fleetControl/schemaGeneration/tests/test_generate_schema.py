@@ -24,7 +24,6 @@ because the filename has a hyphen and is not importable as a module.
 
 import importlib.util
 import os
-import sys
 import tempfile
 import textwrap
 import unittest

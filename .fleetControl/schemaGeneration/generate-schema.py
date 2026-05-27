@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 # Copyright 2010 New Relic, Inc.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -237,9 +236,7 @@ def parse_ini(text, section="newrelic"):
 
         if line.lstrip().startswith("#"):
             # Strip leading '#' and one optional space. Preserve the rest.
-            content = line.lstrip()[1:]
-            if content.startswith(" "):
-                content = content[1:]
+            content = line.lstrip()[1:].removeprefix(" ")
             pending.append(content.rstrip())
             continue
 
@@ -390,20 +387,24 @@ def classify_changes(old_s, new_s, path=""):
 
     old_req = set(old_s.get("required") or [])
     new_req = set(new_s.get("required") or [])
-    for k in sorted(new_req - old_req):
-        changes.append({
+    changes.extend(
+        {
             "path": f"{path}.{k}" if path else k,
             "kind": "required_added",
             "severity": "breaking",
             "detail": "now required",
-        })
-    for k in sorted(old_req - new_req):
-        changes.append({
+        }
+        for k in sorted(new_req - old_req)
+    )
+    changes.extend(
+        {
             "path": f"{path}.{k}" if path else k,
             "kind": "required_removed",
             "severity": "additive",
             "detail": "no longer required",
-        })
+        }
+        for k in sorted(old_req - new_req)
+    )
 
     old_ap = old_s.get("additionalProperties", True)
     new_ap = new_s.get("additionalProperties", True)
@@ -468,16 +469,20 @@ def classify_leaf(op, np, path):
             "detail": "enum constraint removed",
         })
     elif oe and ne and set(oe) != set(ne):
-        for v in sorted(set(oe) - set(ne)):
-            changes.append({
+        changes.extend(
+            {
                 "path": path, "kind": "enum_value_removed", "severity": "breaking",
                 "detail": f"enum value '{v}' removed",
-            })
-        for v in sorted(set(ne) - set(oe)):
-            changes.append({
+            }
+            for v in sorted(set(oe) - set(ne))
+        )
+        changes.extend(
+            {
                 "path": path, "kind": "enum_value_added", "severity": "additive",
                 "detail": f"enum value '{v}' added",
-            })
+            }
+            for v in sorted(set(ne) - set(oe))
+        )
 
     if op.get("default") != np.get("default"):
         changes.append({
@@ -587,7 +592,7 @@ def validate_meta_schema(schema):
     installed; hard-fail (exit 2) only on actual schema invalidity.
     """
     try:
-        import jsonschema  # type: ignore
+        import jsonschema
     except ImportError:
         print("  meta-schema check skipped: jsonschema not installed", file=sys.stderr)
         return
@@ -598,7 +603,7 @@ def validate_meta_schema(schema):
         print("Meta-schema validation FAILED:", file=sys.stderr)
         print(f"  {e.message}", file=sys.stderr)
         sys.exit(2)
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         print(f"  meta-schema check skipped: {type(e).__name__}: {e}", file=sys.stderr)
 
 

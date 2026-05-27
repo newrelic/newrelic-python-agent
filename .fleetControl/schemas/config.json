@@ -1,0 +1,129 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "New Relic Python Agent Configuration",
+  "description": "Fleet Control configuration schema for the New Relic Python agent. Generated from newrelic/newrelic.ini.",
+  "type": "object",
+  "properties": {
+    "license_key": {
+      "type": "string",
+      "description": "New Relic license key associated with your account. Binds the agent's data to your account in the New Relic UI.",
+      "minLength": 1
+    },
+    "app_name": {
+      "type": "string",
+      "default": "Python Application",
+      "description": "The application name. Set this to be the name of your application as you would like it to show up in New Relic UI. You may also set this using the NEW_RELIC_APP_NAME environment variable. The UI will then auto-map instances of your application into a entry on your home dashboard page. You can also specify multiple app names to group your aggregated data. For further details, please see: https://docs.newrelic.com/docs/apm/agents/manage-apm-agents/app-naming/use-multiple-names-app/"
+    },
+    "monitor_mode": {
+      "type": "boolean",
+      "default": true,
+      "description": "When \"true\", the agent collects performance data about your application and reports this data to the New Relic UI at newrelic.com. This global switch is normally overridden for each environment below. It may also be set using the NEW_RELIC_MONITOR_MODE environment variable."
+    },
+    "log_file": {
+      "type": "string",
+      "default": "stdout",
+      "description": "Sets the name of a file to log agent messages to. Whatever you set this to, you must ensure that the permissions for the containing directory and the file itself are correct, and that the user that your web application runs as can write out to the file. If not able to out a log file, it is also possible to say \"stderr\" and output to standard error output. This would normally result in output appearing in your web server log. It can also be set using the NEW_RELIC_LOG environment variable."
+    },
+    "log_level": {
+      "type": "string",
+      "enum": [
+        "critical",
+        "error",
+        "warning",
+        "info",
+        "debug"
+      ],
+      "default": "info",
+      "description": "Sets the level of detail of messages sent to the log file, if a log file location has been provided. Possible values, in increasing order of detail, are: \"critical\", \"error\", \"warning\", \"info\" and \"debug\". When reporting any agent issues to New Relic technical support, the most useful setting for the support engineers is \"debug\". However, this can generate a lot of information very quickly, so it is best not to keep the agent at this level for longer than it takes to reproduce the problem you are experiencing. This may also be set using the NEW_RELIC_LOG_LEVEL environment variable."
+    },
+    "high_security": {
+      "type": "boolean",
+      "default": false,
+      "description": "High Security Mode enforces certain security settings, and prevents them from being overridden, so that no sensitive data is sent to New Relic. Enabling High Security Mode means that request parameters are not collected and SQL can not be sent to New Relic in its raw form. To activate High Security Mode, it must be set to 'true' in this local .ini configuration file AND be set to 'true' in the server-side configuration in the New Relic user interface. It can also be set using the NEW_RELIC_HIGH_SECURITY environment variable. For details, see https://docs.newrelic.com/docs/subscriptions/high-security"
+    },
+    "transaction_tracer.enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "The transaction tracer captures deep information about slow transactions and sends this to the UI on a periodic basis. The transaction tracer is enabled by default. Set this to \"false\" to turn it off."
+    },
+    "transaction_tracer.transaction_threshold": {
+      "type": "string",
+      "default": "apdex_f",
+      "description": "Threshold in seconds for when to collect a transaction trace. When the response time of a controller action exceeds this threshold, a transaction trace will be recorded and sent to the UI. Valid values are any positive float value, or (default) \"apdex_f\", which will use the threshold for a dissatisfying Apdex controller action - four times the Apdex T value."
+    },
+    "transaction_tracer.record_sql": {
+      "type": "string",
+      "enum": [
+        "off",
+        "raw",
+        "obfuscated"
+      ],
+      "default": "obfuscated",
+      "description": "When the transaction tracer is on, SQL statements can optionally be recorded. The recorder has three modes, \"off\" which sends no SQL, \"raw\" which sends the SQL statement in its original form, and \"obfuscated\", which strips out numeric and string literals."
+    },
+    "transaction_tracer.stack_trace_threshold": {
+      "type": "number",
+      "default": 0.5,
+      "description": "Threshold in seconds for when to collect stack trace for a SQL call. In other words, when SQL statements exceed this threshold, then capture and send to the UI the current stack trace. This is helpful for pinpointing where long SQL calls originate from in an application."
+    },
+    "transaction_tracer.explain_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Determines whether the agent will capture query plans for slow SQL queries. Only supported in MySQL and PostgreSQL. Set this to \"false\" to turn it off."
+    },
+    "transaction_tracer.explain_threshold": {
+      "type": "number",
+      "default": 0.5,
+      "description": "Threshold for query execution time below which query plans will not not be captured. Relevant only when \"explain_enabled\" is true."
+    },
+    "transaction_tracer.function_trace": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Space separated list of function or method names in form 'module:function' or 'module:class.function' for which additional function timing instrumentation will be added."
+    },
+    "error_collector.enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "The error collector captures information about uncaught exceptions or logged exceptions and sends them to UI for viewing. The error collector is enabled by default. Set this to \"false\" to turn it off. For more details on errors, see https://docs.newrelic.com/docs/apm/agents/manage-apm-agents/agent-data/manage-errors-apm-collect-ignore-or-mark-expected/"
+    },
+    "error_collector.ignore_classes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "To stop specific errors from reporting to the UI, set this to a space separated list of the Python exception type names to ignore. The exception name should be of the form 'module:class'."
+    },
+    "error_collector.expected_classes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Expected errors are reported to the UI but will not affect the Apdex or error rate. To mark specific errors as expected, set this to a space separated list of the Python exception type names to expected. The exception name should be of the form 'module:class'."
+    },
+    "browser_monitoring.auto_instrument": {
+      "type": "boolean",
+      "default": true,
+      "description": "Browser monitoring is the Real User Monitoring feature of the UI. For those Python web frameworks that are supported, this setting enables the auto-insertion of the browser monitoring JavaScript fragments."
+    },
+    "thread_profiler.enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "A thread profiling session can be scheduled via the UI when this option is enabled. The thread profiler will periodically capture a snapshot of the call stack for each active thread in the application to construct a statistically representative call tree. For more details on the thread profiler tool, see https://docs.newrelic.com/docs/apm/apm-ui-pages/events/thread-profiler-tool/"
+    },
+    "distributed_tracing.enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Distributed tracing lets you see the path that a request takes through your distributed system. For more information, please consult our distributed tracing planning guide. https://docs.newrelic.com/docs/transition-guide-distributed-tracing"
+    }
+  },
+  "required": [
+    "license_key",
+    "app_name"
+  ],
+  "additionalProperties": true
+}

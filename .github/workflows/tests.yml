@@ -751,26 +751,6 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-    services:
-      firestore:
-        # Image set here MUST be repeated down below in options. See comment below.
-        image: gcr.io/google.com/cloudsdktool/google-cloud-cli:437.0.1-emulators
-        ports:
-          - 8080:8080
-        # Set health checks to wait until container has started
-        options: >-
-          --health-cmd "echo success"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-          --health-start-period 5s
-          gcr.io/google.com/cloudsdktool/google-cloud-cli:437.0.1-emulators /bin/bash -c "gcloud emulators firestore start --host-port=0.0.0.0:8080" ||
-        # This is a very hacky solution. GitHub Actions doesn't provide APIs for setting commands on services, but allows adding arbitrary options.
-        # --entrypoint won't work as it only accepts an executable and not the [] syntax.
-        # Instead, we specify the image again the command afterwards like a call to docker create. The result is a few environment variables
-        # and the original command being appended to our hijacked docker create command. We can avoid any issues by adding || to prevent that
-        # from every being executed as bash commands.
-
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # 6.0.2
 
@@ -783,6 +763,18 @@ jobs:
         run: |
           mkdir -p /github/home/.cache/pip
           chown -R "$(whoami)" /github/home/.cache/pip
+
+      - name: Start firestore
+        run: |
+          docker compose \
+            -f .github/containers/firestore/docker-compose.yml \
+            up -d \
+            --wait \
+            --wait-timeout 60 \
+            && exit 0
+          echo "firestore did not become healthy in time"
+          docker compose -f .github/containers/firestore/docker-compose.yml logs
+          exit 1
 
       - name: Get Environments
         id: get-envs
@@ -820,6 +812,11 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
+
+      - name: Stop firestore
+        if: always()
+        run: |
+          docker compose -f .github/containers/firestore/docker-compose.yml down
 
   grpc:
     env:

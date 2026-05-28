@@ -105,6 +105,7 @@ IGNORED_METHODS = {
     "hscan_iter",
     "index_name",
     "keyslot",
+    "keyspace_notifications",
     "labels",
     "list_keys",
     "load_balancing_strategy",  # Use instead of read_from_replicas after v5.3.0

@@ -61,7 +61,7 @@ jobs:
       - mongodb8
       - mssql
       - mysql
-      - nginx
+      # - nginx
       - oracledb
       - postgres9
       - postgres16

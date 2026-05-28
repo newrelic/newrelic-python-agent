@@ -1871,60 +1871,6 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-    services:
-      redis1:
-        image: hmstepanek/redis-cluster-node:1.0.0
-        ports:
-          - 6379:6379
-          - 16379:16379
-        options: >-
-          --add-host=host.docker.internal:host-gateway
-
-      redis2:
-        image: hmstepanek/redis-cluster-node:1.0.0
-        ports:
-          - 6380:6379
-          - 16380:16379
-        options: >-
-          --add-host=host.docker.internal:host-gateway
-
-      redis3:
-        image: hmstepanek/redis-cluster-node:1.0.0
-        ports:
-          - 6381:6379
-          - 16381:16379
-        options: >-
-          --add-host=host.docker.internal:host-gateway
-
-      redis4:
-        image: hmstepanek/redis-cluster-node:1.0.0
-        ports:
-          - 6382:6379
-          - 16382:16379
-        options: >-
-          --add-host=host.docker.internal:host-gateway
-
-      redis5:
-        image: hmstepanek/redis-cluster-node:1.0.0
-        ports:
-          - 6383:6379
-          - 16383:16379
-        options: >-
-          --add-host=host.docker.internal:host-gateway
-
-      redis6:
-        image: hmstepanek/redis-cluster-node:1.0.0
-        ports:
-          - 6384:6379
-          - 16384:16379
-        options: >-
-          --add-host=host.docker.internal:host-gateway
-
-      cluster-setup:
-        image: hmstepanek/redis-cluster:1.0.0
-        options: >-
-          --add-host=host.docker.internal:host-gateway
-
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
 
@@ -1937,6 +1883,23 @@ jobs:
         run: |
           mkdir -p /github/home/.cache/pip
           chown -R "$(whoami)" /github/home/.cache/pip
+
+      - name: Start rediscluster
+        run: |
+          # Build only the redis1 image to prevent fighting, then start the entire cluster
+          docker compose \
+            -f .github/containers/rediscluster/docker-compose.yml \
+            build \
+            redis1 && \
+          docker compose \
+            -f .github/containers/rediscluster/docker-compose.yml \
+            up -d \
+            --wait \
+            --wait-timeout 120 \
+            && exit 0
+          echo "rediscluster did not become healthy in time"
+          docker compose -f .github/containers/rediscluster/docker-compose.yml logs
+          exit 1
 
       - name: Get Environments
         id: get-envs
@@ -1974,6 +1937,11 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
+
+      - name: Stop rediscluster
+        if: always()
+        run: |
+          docker compose -f .github/containers/rediscluster/docker-compose.yml down
 
   solr:
     env:

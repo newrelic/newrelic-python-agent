@@ -1,0 +1,85 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+x-redis-node: &redis-node
+  build: .
+  image: redis-cluster-node:local
+  healthcheck:
+    test: ["CMD", "redis-cli", "ping"]
+    interval: 2s
+    timeout: 3s
+    retries: 15
+
+services:
+  redis1:
+    <<: *redis-node
+    ports:
+      - 6379:6379
+      - 16379:16379
+
+  redis2:
+    <<: *redis-node
+    ports:
+      - 6380:6379
+      - 16380:16379
+
+  redis3:
+    <<: *redis-node
+    ports:
+      - 6381:6379
+      - 16381:16379
+
+  redis4:
+    <<: *redis-node
+    ports:
+      - 6382:6379
+      - 16382:16379
+
+  redis5:
+    <<: *redis-node
+    ports:
+      - 6383:6379
+      - 16383:16379
+
+  redis6:
+    <<: *redis-node
+    ports:
+      - 6384:6379
+      - 16384:16379
+
+  cluster-setup:
+    image: redis-cluster-node:local
+    restart: "no"
+    command:
+      - bash
+      - -c
+      - >-
+        redis-cli --cluster create
+        redis1:6379 redis2:6379 redis3:6379 redis4:6379 redis5:6379 redis6:6379
+        --cluster-replicas 1
+        --cluster-yes &&
+        exec sleep infinity
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -h redis1 cluster info | grep -q cluster_state:ok"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 30s
+    depends_on:
+      redis1: {condition: service_healthy}
+      redis2: {condition: service_healthy}
+      redis3: {condition: service_healthy}
+      redis4: {condition: service_healthy}
+      redis5: {condition: service_healthy}
+      redis6: {condition: service_healthy}

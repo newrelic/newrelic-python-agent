@@ -52,6 +52,29 @@ custom_insights_events.max_samples_stored = 200
 application_logging.forwarding.max_samples_stored = 200
 """
 
+INI_FILE_NEW_HARVEST_SETTINGS_ZERO = b"""
+[newrelic]
+transaction_events.max_samples_stored = 0
+span_events.max_samples_stored = 0
+error_collector.max_event_samples_stored = 0
+custom_insights_events.max_samples_stored = 0
+application_logging.forwarding.max_samples_stored = 0
+"""
+
+INI_FILE_NEW_ZERO_AND_DEPRECATED_HARVEST_SETTINGS = b"""
+[newrelic]
+event_harvest_config.harvest_limits.analytic_event_data = 100
+event_harvest_config.harvest_limits.span_event_data = 100
+event_harvest_config.harvest_limits.error_event_data = 100
+event_harvest_config.harvest_limits.custom_event_data = 100
+event_harvest_config.harvest_limits.log_event_data = 100
+transaction_events.max_samples_stored = 0
+span_events.max_samples_stored = 0
+error_collector.max_event_samples_stored = 0
+custom_insights_events.max_samples_stored = 0
+application_logging.forwarding.max_samples_stored = 0
+"""
+
 
 @pytest.mark.parametrize(
     "ini,env,expected",
@@ -70,6 +93,10 @@ application_logging.forwarding.max_samples_stored = 200
             },
             100,
         ),
+        # A value of 0 should be treated as a real possible setting, and not ignored in favor of the default value.
+        (INI_FILE_NEW_HARVEST_SETTINGS_ZERO, {}, 0),
+        # A value of 0 should also still win over the deprecated value, even if it is non-zero.
+        (INI_FILE_NEW_ZERO_AND_DEPRECATED_HARVEST_SETTINGS, {}, 0),
     ),
 )
 def test_harvest_settings_precedence(ini, env, global_settings, expected):

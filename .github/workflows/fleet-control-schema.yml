@@ -1,0 +1,107 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Fleet Control Config Schema
+
+# Updates .fleetControl/schemas/config.json from newrelic/newrelic.ini
+# whenever a PR against main touches inputs that could affect the schema.
+# The generator never starts fresh -- it deep-merges the freshly generated
+# schema into the existing config.json so the published schema only ever
+# grows (keys present in the old schema are preserved).
+#
+# The generator is run with --ci, which:
+#   - exits 0 if the updated schema matches what's already on disk
+#     (no changes; nothing to commit),
+#   - exits 1 if the schema changed, in which case it has already written
+#     the updated config.json AND bumped the version in
+#     .fleetControl/configurationDefinitions.yml. The "Commit and push"
+#     step then commits both files back to the PR branch.
+#   - exits >=2 on a hard failure (invalid schema, malformed inputs).
+#
+# Auto-commit only works for PRs from branches in this repository -- pushes
+# to fork branches require write access we don't have. PRs from forks will
+# skip the update; reviewers can run the generator locally
+# (`python .fleetControl/schemaGeneration/generate-schema.py --ci`) and
+# ask the contributor to pull.
+
+permissions: {}
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'newrelic/newrelic.ini'
+      - '.fleetControl/schemaGeneration/**'
+      - '.fleetControl/schemas/**'
+      - '.fleetControl/configurationDefinitions.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: fleet-control-schema-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  update:
+    name: Update config schema
+    runs-on: ubuntu-24.04
+    # GITHUB_TOKEN cannot push to fork branches, so skip fork PRs.
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b  # pin@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || github.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run schema generator
+        id: generate
+        run: |
+          set +e
+          python .fleetControl/schemaGeneration/generate-schema.py --ci
+          code=$?
+          set -e
+          case "$code" in
+            0) echo "changed=false" >> "$GITHUB_OUTPUT" ;;
+            1) echo "changed=true"  >> "$GITHUB_OUTPUT" ;;
+            *) echo "Schema generator failed (exit $code)"; exit "$code" ;;
+          esac
+
+      - name: Run schema generator tests
+        run: python -m unittest discover .fleetControl/schemaGeneration/tests
+
+      - name: Commit and push updated schema
+        if: steps.generate.outputs.changed == 'true'
+        env:
+          # Pass the (potentially attacker-controlled) PR branch name through
+          # an env var rather than interpolating it directly into the shell
+          # script -- prevents script injection via crafted branch names.
+          HEAD_REF: ${{ github.event.pull_request.head.ref || github.ref_name }}
+        run: |
+          if [ -z "$(git status --porcelain .fleetControl)" ]; then
+            echo "Generator reported changes but working tree is clean -- nothing to commit."
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .fleetControl/schemas/config.json .fleetControl/configurationDefinitions.yml
+          git commit -m "chore: update Fleet Control config schema"
+          git push origin "HEAD:$HEAD_REF"

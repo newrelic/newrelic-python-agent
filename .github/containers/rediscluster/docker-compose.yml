@@ -71,15 +71,19 @@ services:
         --cluster-yes &&
         exec sleep infinity
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -h redis1 cluster info | grep -q cluster_state:ok"]
+      test:
+        [
+          "CMD-SHELL",
+          "redis-cli -h redis1 cluster info | grep -q cluster_state:ok",
+        ]
       interval: 2s
       timeout: 3s
       retries: 30
       start_period: 30s
     depends_on:
-      redis1: {condition: service_healthy}
-      redis2: {condition: service_healthy}
-      redis3: {condition: service_healthy}
-      redis4: {condition: service_healthy}
-      redis5: {condition: service_healthy}
-      redis6: {condition: service_healthy}
+      redis1: { condition: service_healthy }
+      redis2: { condition: service_healthy }
+      redis3: { condition: service_healthy }
+      redis4: { condition: service_healthy }
+      redis5: { condition: service_healthy }
+      redis6: { condition: service_healthy }

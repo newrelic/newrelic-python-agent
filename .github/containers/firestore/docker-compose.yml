@@ -15,7 +15,12 @@
 services:
   firestore:
     image: gcr.io/google.com/cloudsdktool/google-cloud-cli:437.0.1-emulators
-    command: ["/bin/bash", "-c", "gcloud emulators firestore start --host-port=0.0.0.0:8080"]
+    command:
+      [
+        "/bin/bash",
+        "-c",
+        "gcloud emulators firestore start --host-port=0.0.0.0:8080",
+      ]
     ports:
       - 8080:8080
     healthcheck:

@@ -20,11 +20,11 @@ on:
     - cron: "15 16 * * 0" # At 16:15 UTC on Sunday
   pull_request: # Trigger test builds on pull requests, but only when relevant files change.
     paths:
-      - ".github/containers/**"
+      - ".github/containers/ci/**"
       - ".github/workflows/build-ci-image.yml"
   push: # Trigger rebuilds when pushing relevant files to main.
     paths:
-      - ".github/containers/**"
+      - ".github/containers/ci/**"
       - ".github/workflows/build-ci-image.yml"
     branches:
       - main
@@ -98,7 +98,7 @@ jobs:
         id: build
         uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # 7.2.0
         with:
-          context: .github/containers
+          context: .github/containers/ci
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
           outputs: type=image,name=ghcr.io/${{ steps.image-name.outputs.IMAGE_NAME }},push-by-digest=true,name-canonical=true,push=true

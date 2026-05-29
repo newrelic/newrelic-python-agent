@@ -61,7 +61,7 @@ jobs:
       - mongodb8
       - mssql
       - mysql
-      # - nginx
+      - nginx
       - oracledb
       - postgres9
       - postgres16
@@ -1391,20 +1391,6 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-    services:
-      nginx:
-        image: tpansino1643652/nginx-hello-world:latest
-        ports:
-          - 8080:8080
-          - 8081:8081
-          - 8082:8082
-        # Set health checks to wait until container has started
-        options: >-
-          --health-cmd "service nginx status || exit 1"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # 6.0.2
 
@@ -1417,6 +1403,21 @@ jobs:
         run: |
           mkdir -p /github/home/.cache/pip
           chown -R "$(whoami)" /github/home/.cache/pip
+
+      - name: Start nginx
+        run: |
+          # Build image & run container
+          docker compose \
+            -f .github/containers/nginx/docker-compose.yml \
+            up -d \
+            --build \
+            --wait \
+            --wait-timeout 60 \
+            && exit 0
+          # If the container fails to start, dump logs and exit with failure
+          echo "nginx did not become healthy in time"
+          docker logs nginx
+          exit 1
 
       - name: Get Environments
         id: get-envs
@@ -1454,6 +1455,11 @@ jobs:
           include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
+
+      - name: Stop nginx
+        if: always()
+        run: |
+          docker compose -f .github/containers/nginx/docker-compose.yml down
 
   oracledb:
     env:

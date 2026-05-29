@@ -63,6 +63,16 @@ RUN export DEBIAN_FRONTEND=noninteractive && \
         zsh && \
     rm -rf /var/lib/apt/lists/*
 
+# Install Docker CLI (no daemon) so jobs can drive the host runner's docker via a mounted socket
+RUN install -m 0755 -d /etc/apt/keyrings && \
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc && \
+    chmod a+r /etc/apt/keyrings/docker.asc && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu noble stable" \
+      > /etc/apt/sources.list.d/docker.list && \
+    apt-get update && \
+    apt-get install -y docker-ce-cli docker-buildx-plugin docker-compose-plugin && \
+    rm -rf /var/lib/apt/lists/*
+
 # Install addlicense binary
 ARG ADDLICENSE_VERSION=1.1.1
 RUN if [ "${TARGETPLATFORM}" = "linux/amd64" ]; then export ARCH="x86_64"; else export ARCH="arm64"; fi && \

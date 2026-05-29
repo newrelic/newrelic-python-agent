@@ -1682,9 +1682,7 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
     ml_event_harvest_config = harvest_limits.get("ml_event_data", {})
     if ml_event_harvest_config is not None:
         apply_config_setting(
-            settings_snapshot,
-            "event_harvest_config.harvest_limits.ml_event_data",
-            harvest_limits["ml_event_data"]
+            settings_snapshot, "event_harvest_config.harvest_limits.ml_event_data", harvest_limits["ml_event_data"]
         )
 
     # Override span event harvest config

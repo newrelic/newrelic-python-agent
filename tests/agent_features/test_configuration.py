@@ -23,7 +23,6 @@ import pytest
 from testing_support.fixtures import override_generic_settings
 from testing_support.util import NamedTemporaryFile
 
-from newrelic.core.config import ML_EVENT_RESERVOIR_SIZE
 from newrelic.api.exceptions import ConfigurationError
 from newrelic.common.object_names import callable_name
 from newrelic.config import (
@@ -35,6 +34,7 @@ from newrelic.config import (
     translate_deprecated_settings,
 )
 from newrelic.core.config import (
+    ML_EVENT_RESERVOIR_SIZE,
     Settings,
     _map_aws_account_id,
     apply_config_setting,

@@ -403,12 +403,14 @@ def _process_deprecated_setting(section, option_stored, option_config, getter, m
 
         if value_stored and value_config is None:
             _logger.info(
-                "Deprecated setting found: %r. Please use new setting: %r. Applying value of deprecated setting %r to %r.", value_stored, value_config, value_stored, value_config,
+                "Deprecated setting found: %r. Please use new setting: %r. Applying value of deprecated setting %r to %r.",
+                value_stored,
+                value_config,
+                value_stored,
+                value_config,
             )
         elif value_stored and value_config:
-            _logger.info(
-                "Ignoring deprecated setting: %r. Using new setting: %r.", value_stored, value_config
-            )
+            _logger.info("Ignoring deprecated setting: %r. Using new setting: %r.", value_stored, value_config)
 
         # The getter parsed the value okay but want to
         # pass this through a mapping function to change
@@ -590,7 +592,13 @@ def _process_configuration(section):
     _process_setting(section, "transaction_tracer.attributes.include", "get", _map_inc_excl_attributes)
     _process_setting(section, "error_collector.enabled", "getboolean", None)
     _process_setting(section, "error_collector.capture_events", "getboolean", None)
-    _process_deprecated_setting(section, "event_harvest_config.harvest_limits.error_event_data", "error_collector.max_event_samples_stored", "getint", None)
+    _process_deprecated_setting(
+        section,
+        "event_harvest_config.harvest_limits.error_event_data",
+        "error_collector.max_event_samples_stored",
+        "getint",
+        None,
+    )
     _process_setting(section, "error_collector.capture_source", "getboolean", None)
     _process_setting(section, "error_collector.ignore_classes", "get", _map_split_strings)
     _process_setting(section, "error_collector.ignore_status_codes", "get", _merge_ignore_status_codes)
@@ -611,12 +619,24 @@ def _process_configuration(section):
     _process_setting(section, "slow_sql.enabled", "getboolean", None)
     _process_setting(section, "synthetics.enabled", "getboolean", None)
     _process_setting(section, "transaction_events.enabled", "getboolean", None)
-    _process_deprecated_setting(section, "event_harvest_config.harvest_limits.analytic_event_data", "transaction_events.max_samples_stored", "getint", None)
+    _process_deprecated_setting(
+        section,
+        "event_harvest_config.harvest_limits.analytic_event_data",
+        "transaction_events.max_samples_stored",
+        "getint",
+        None,
+    )
     _process_setting(section, "transaction_events.attributes.enabled", "getboolean", None)
     _process_setting(section, "transaction_events.attributes.exclude", "get", _map_inc_excl_attributes)
     _process_setting(section, "transaction_events.attributes.include", "get", _map_inc_excl_attributes)
     _process_setting(section, "custom_insights_events.enabled", "getboolean", None)
-    _process_deprecated_setting(section, "event_harvest_config.harvest_limits.custom_event_data", "custom_insights_events.max_samples_stored", "getint", None)
+    _process_deprecated_setting(
+        section,
+        "event_harvest_config.harvest_limits.custom_event_data",
+        "custom_insights_events.max_samples_stored",
+        "getint",
+        None,
+    )
     _process_setting(section, "custom_insights_events.max_attribute_value", "getint", None)
     _process_setting(section, "ml_insights_events.enabled", "getboolean", None)
     _process_setting(section, "distributed_tracing.enabled", "getboolean", None)
@@ -674,7 +694,9 @@ def _process_configuration(section):
         "getratio",
     )
     _process_setting(section, "span_events.enabled", "getboolean", None)
-    _process_deprecated_setting(section, "event_harvest_config.harvest_limits.span_event_data", "span_events.max_samples_stored", "getint", None)
+    _process_deprecated_setting(
+        section, "event_harvest_config.harvest_limits.span_event_data", "span_events.max_samples_stored", "getint", None
+    )
     _process_setting(section, "span_events.attributes.enabled", "getboolean", None)
     _process_setting(section, "span_events.attributes.exclude", "get", _map_inc_excl_attributes)
     _process_setting(section, "span_events.attributes.include", "get", _map_inc_excl_attributes)
@@ -751,7 +773,13 @@ def _process_configuration(section):
     _process_setting(section, "code_level_metrics.enabled", "getboolean", None)
 
     _process_setting(section, "application_logging.enabled", "getboolean", None)
-    _process_deprecated_setting(section, "event_harvest_config.harvest_limits.log_event_data", "application_logging.forwarding.max_samples_stored", "getint", None)
+    _process_deprecated_setting(
+        section,
+        "event_harvest_config.harvest_limits.log_event_data",
+        "application_logging.forwarding.max_samples_stored",
+        "getint",
+        None,
+    )
     _process_setting(section, "application_logging.forwarding.enabled", "getboolean", None)
     _process_setting(section, "application_logging.forwarding.custom_attributes", "get", _map_as_mapping)
     _process_setting(section, "application_logging.forwarding.labels.enabled", "getboolean", None)

@@ -52,24 +52,13 @@ custom_insights_events.max_samples_stored = 200
 application_logging.forwarding.max_samples_stored = 200
 """
 
+
 @pytest.mark.parametrize(
     "ini,env,expected",
     (
-        (
-            INI_FILE_DEPRECATED_HARVEST_SETTINGS,
-            {},
-            100,
-        ),
-        (
-            INI_FILE_NEW_HARVEST_SETTINGS,
-            {},
-            100,
-        ),
-        (
-            INI_FILE_NEW_AND_DEPRECATED_HARVEST_SETTINGS,
-            {},
-            200,
-        ),
+        (INI_FILE_DEPRECATED_HARVEST_SETTINGS, {}, 100),
+        (INI_FILE_NEW_HARVEST_SETTINGS, {}, 100),
+        (INI_FILE_NEW_AND_DEPRECATED_HARVEST_SETTINGS, {}, 200),
         (  # ENV VAR configuration works.
             INI_FILE_EMPTY,
             {

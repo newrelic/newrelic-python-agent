@@ -442,7 +442,7 @@ def _process_deprecated_setting(section, option_stored, option_config, getter, m
         # processed. This ensures that the log file and log
         # level entries have been set.
 
-        _cache_object.append((option_stored, value))
+        _cache_object.append((option_config, value))
 
     except configparser.NoSectionError:
         pass

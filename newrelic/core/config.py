@@ -1674,7 +1674,7 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
     # we must override it here manually by converting it into a per harvest cycle
     # value.
     # override ml_events / (60s/5s) harvest
-    harvest_limits["ml_event_data"] = settings_snapshot.event_harvest_config.harvest_limits.ml_event_data / 12
+    harvest_limits["ml_event_data"] = settings_snapshot.event_harvest_config.harvest_limits.ml_event_data // 12
 
     apply_config_setting(settings_snapshot, "event_harvest_config.allowlist", frozenset(harvest_limits))
 

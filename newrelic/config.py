@@ -395,22 +395,24 @@ def _process_deprecated_setting(section, option_stored, option_config, getter, m
             value_config = getattr(_config_object, getter)(section, option_config)
         except configparser.NoOptionError:
             value_config = None
-        value = value_config or value_stored
+        # Use an explicit "is not None" check rather than "or"
+        # so a legitimate value of 0 is not dropped.
+        value = value_config if value_config is not None else value_stored
 
         # This means neither config option was found in the config file so there's nothing to do.
         if value is None:
             return
 
-        if value_stored and value_config is None:
+        if value_stored is not None and value_config is None:
             _logger.info(
                 "Deprecated setting found: %r. Please use new setting: %r. Applying value of deprecated setting %r to %r.",
-                value_stored,
-                value_config,
-                value_stored,
-                value_config,
+                option_stored,
+                option_config,
+                option_stored,
+                option_config,
             )
-        elif value_stored and value_config:
-            _logger.info("Ignoring deprecated setting: %r. Using new setting: %r.", value_stored, value_config)
+        elif value_stored is not None and value_config is not None:
+            _logger.info("Ignoring deprecated setting: %r. Using new setting: %r.", option_stored, option_config)
 
         # The getter parsed the value okay but want to
         # pass this through a mapping function to change

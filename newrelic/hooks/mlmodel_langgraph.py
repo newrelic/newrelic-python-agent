@@ -82,7 +82,7 @@ def wrap_AsyncBackgroundExecutor_submit(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     context = ContextOf(trace=trace, strict=True)
-    func = coroutine_wrapper(wrapped, context)
+    func = coroutine_wrapper(func, context)
     return wrapped(func, *args, **kwargs)
 
 

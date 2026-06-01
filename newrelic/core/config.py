@@ -1666,8 +1666,24 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
         apply_config_setting(settings_snapshot, name, value)
 
     event_harvest_config = server_side_config.get("event_harvest_config", {})
-    harvest_limits = event_harvest_config.get("harvest_limits", ())
+    harvest_limits = event_harvest_config.get("harvest_limits", {})
+
+    # Override this setting here so that the allowlist that is pulled from the
+    # the harvest_limits includes the ml_event harvest limit.
+    # Since the server does not override this setting as it's an OTLP setting,
+    # we must override it here manually by converting it into a per harvest cycle
+    # value.
+    # override ml_events / (60s/5s) harvest
+    harvest_limits["ml_event_data"] = settings_snapshot.event_harvest_config.harvest_limits.ml_event_data // 12
+
     apply_config_setting(settings_snapshot, "event_harvest_config.allowlist", frozenset(harvest_limits))
+
+    # Override ml event harvest config
+    ml_event_harvest_config = harvest_limits.get("ml_event_data", {})
+    if ml_event_harvest_config is not None:
+        apply_config_setting(
+            settings_snapshot, "event_harvest_config.harvest_limits.ml_event_data", harvest_limits["ml_event_data"]
+        )
 
     # Override span event harvest config
     span_event_harvest_config = server_side_config.get("span_event_harvest_config", {})
@@ -1682,16 +1698,6 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
     if collect_ai is not None:
         apply_config_setting(settings_snapshot, "ai_monitoring.enabled", collect_ai)
         _logger.debug("Setting ai_monitoring.enabled to value of collect_ai=%s", collect_ai)
-
-    # Since the server does not override this setting as it's an OTLP setting,
-    # we must override it here manually by converting it into a per harvest cycle
-    # value.
-    apply_config_setting(
-        settings_snapshot,
-        "event_harvest_config.harvest_limits.ml_event_data",
-        # override ml_events / (60s/5s) harvest
-        settings_snapshot.event_harvest_config.harvest_limits.ml_event_data / 12,
-    )
 
     # Since the server does not override this setting we must override it here manually
     # by caping it at the max value of 4095.

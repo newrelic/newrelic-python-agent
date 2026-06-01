@@ -355,6 +355,105 @@ def _process_setting(section, option, getter, mapper):
         _raise_configuration_error(section, option)
 
 
+def _process_deprecated_setting(section, option_stored, option_config, getter, mapper):
+    """
+    Store max_samples settings into event_harvest_config setting locations.
+
+    Background:
+    The collector/server side agent configuration uses the
+    `event_harvest_config` naming convention for their harvest
+    limit settings.  The original intent was for the language
+    agents to switch to this convention.  However, this only
+    happened for the Python agent.  Eventually, to remain
+    consistent with the other language agents, the decision
+    was made to change this back.  However, because the server
+    side configuration settings override the client-side settings,
+    the agent will insist on employing the `max_samples` naming
+    convention from the user's end but translate the settings
+    to their deprecated `event_harvest_config` counterparts during
+    the configuration process.
+
+    Here, the user will still get warnings about deprecated settings
+    being used.  However, the agent will also translate the settings
+    to their deprecated `event_harvest_config` counterparts during
+    the configuration process.
+
+    option_stored: the configuration setting name to store the value as in the settings object
+    option_config: an alternative configuration setting name used by customers to configure the value
+    """
+    try:
+        # The type of a value is dictated by the getter
+        # function supplied.
+
+        # value_config is the new name and value_stored is the deprecated name so
+        # value_config takes precendence over value_stored
+        try:
+            value_stored = getattr(_config_object, getter)(section, option_stored)
+        except configparser.NoOptionError:
+            value_stored = None
+        try:
+            value_config = getattr(_config_object, getter)(section, option_config)
+        except configparser.NoOptionError:
+            value_config = None
+        # Use an explicit "is not None" check rather than "or"
+        # so a legitimate value of 0 is not dropped.
+        value = value_config if value_config is not None else value_stored
+
+        # This means neither config option was found in the config file so there's nothing to do.
+        if value is None:
+            return
+
+        if value_stored is not None and value_config is None:
+            _logger.info(
+                "Deprecated setting found: %r. Please use new setting: %r. Applying value of deprecated setting %r to %r.",
+                option_stored,
+                option_config,
+                option_stored,
+                option_config,
+            )
+        elif value_stored is not None and value_config is not None:
+            _logger.info("Ignoring deprecated setting: %r. Using new setting: %r.", option_stored, option_config)
+
+        # The getter parsed the value okay but want to
+        # pass this through a mapping function to change
+        # it to internal value suitable for internal
+        # settings object. This is usually one where the
+        # value was a string.
+
+        if mapper:
+            value = mapper(value)
+
+        # Now need to apply the option from the
+        # configuration file to the internal settings
+        # object. Walk the object path and assign it.
+
+        target = _settings
+        fields = option_stored.split(".", 1)
+
+        while True:
+            if len(fields) == 1:
+                setattr(target, fields[0], value)
+                break
+            target = getattr(target, fields[0])
+            fields = fields[1].split(".", 1)
+
+        # Cache the configuration so can be dumped out to
+        # log file when whole main configuration has been
+        # processed. This ensures that the log file and log
+        # level entries have been set.
+
+        _cache_object.append((option_config, value))
+
+    except configparser.NoSectionError:
+        pass
+
+    except configparser.NoOptionError:
+        pass
+
+    except Exception:
+        _raise_configuration_error(section, option_stored)
+
+
 def _process_dt_hidden_setting(section, option, getter):
     try:
         # The type of a value is dictated by the getter
@@ -495,7 +594,13 @@ def _process_configuration(section):
     _process_setting(section, "transaction_tracer.attributes.include", "get", _map_inc_excl_attributes)
     _process_setting(section, "error_collector.enabled", "getboolean", None)
     _process_setting(section, "error_collector.capture_events", "getboolean", None)
-    _process_setting(section, "error_collector.max_event_samples_stored", "getint", None)
+    _process_deprecated_setting(
+        section,
+        "event_harvest_config.harvest_limits.error_event_data",
+        "error_collector.max_event_samples_stored",
+        "getint",
+        None,
+    )
     _process_setting(section, "error_collector.capture_source", "getboolean", None)
     _process_setting(section, "error_collector.ignore_classes", "get", _map_split_strings)
     _process_setting(section, "error_collector.ignore_status_codes", "get", _merge_ignore_status_codes)
@@ -516,12 +621,24 @@ def _process_configuration(section):
     _process_setting(section, "slow_sql.enabled", "getboolean", None)
     _process_setting(section, "synthetics.enabled", "getboolean", None)
     _process_setting(section, "transaction_events.enabled", "getboolean", None)
-    _process_setting(section, "transaction_events.max_samples_stored", "getint", None)
+    _process_deprecated_setting(
+        section,
+        "event_harvest_config.harvest_limits.analytic_event_data",
+        "transaction_events.max_samples_stored",
+        "getint",
+        None,
+    )
     _process_setting(section, "transaction_events.attributes.enabled", "getboolean", None)
     _process_setting(section, "transaction_events.attributes.exclude", "get", _map_inc_excl_attributes)
     _process_setting(section, "transaction_events.attributes.include", "get", _map_inc_excl_attributes)
     _process_setting(section, "custom_insights_events.enabled", "getboolean", None)
-    _process_setting(section, "custom_insights_events.max_samples_stored", "getint", None)
+    _process_deprecated_setting(
+        section,
+        "event_harvest_config.harvest_limits.custom_event_data",
+        "custom_insights_events.max_samples_stored",
+        "getint",
+        None,
+    )
     _process_setting(section, "custom_insights_events.max_attribute_value", "getint", None)
     _process_setting(section, "ml_insights_events.enabled", "getboolean", None)
     _process_setting(section, "distributed_tracing.enabled", "getboolean", None)
@@ -579,7 +696,9 @@ def _process_configuration(section):
         "getratio",
     )
     _process_setting(section, "span_events.enabled", "getboolean", None)
-    _process_setting(section, "span_events.max_samples_stored", "getint", None)
+    _process_deprecated_setting(
+        section, "event_harvest_config.harvest_limits.span_event_data", "span_events.max_samples_stored", "getint", None
+    )
     _process_setting(section, "span_events.attributes.enabled", "getboolean", None)
     _process_setting(section, "span_events.attributes.exclude", "get", _map_inc_excl_attributes)
     _process_setting(section, "span_events.attributes.include", "get", _map_inc_excl_attributes)
@@ -647,12 +766,7 @@ def _process_configuration(section):
     _process_setting(section, "apdex_t", "getfloat", None)
     _process_setting(section, "event_loop_visibility.enabled", "getboolean", None)
     _process_setting(section, "event_loop_visibility.blocking_threshold", "getfloat", None)
-    _process_setting(section, "event_harvest_config.harvest_limits.analytic_event_data", "getint", None)
-    _process_setting(section, "event_harvest_config.harvest_limits.custom_event_data", "getint", None)
     _process_setting(section, "event_harvest_config.harvest_limits.ml_event_data", "getint", None)
-    _process_setting(section, "event_harvest_config.harvest_limits.span_event_data", "getint", None)
-    _process_setting(section, "event_harvest_config.harvest_limits.error_event_data", "getint", None)
-    _process_setting(section, "event_harvest_config.harvest_limits.log_event_data", "getint", None)
     _process_setting(section, "infinite_tracing.trace_observer_host", "get", None)
     _process_setting(section, "infinite_tracing.trace_observer_port", "getint", None)
     _process_setting(section, "infinite_tracing.compression", "getboolean", None)
@@ -661,7 +775,13 @@ def _process_configuration(section):
     _process_setting(section, "code_level_metrics.enabled", "getboolean", None)
 
     _process_setting(section, "application_logging.enabled", "getboolean", None)
-    _process_setting(section, "application_logging.forwarding.max_samples_stored", "getint", None)
+    _process_deprecated_setting(
+        section,
+        "event_harvest_config.harvest_limits.log_event_data",
+        "application_logging.forwarding.max_samples_stored",
+        "getint",
+        None,
+    )
     _process_setting(section, "application_logging.forwarding.enabled", "getboolean", None)
     _process_setting(section, "application_logging.forwarding.custom_attributes", "get", _map_as_mapping)
     _process_setting(section, "application_logging.forwarding.labels.enabled", "getboolean", None)
@@ -807,67 +927,8 @@ def delete_setting(settings_object, name):
         target = getattr(target, fields[0])
         fields = fields[1].split(".", 1)
 
-    try:
+    if hasattr(target, fields[0]):
         delattr(target, fields[0])
-    except AttributeError:
-        _logger.debug("Failed to delete setting: %r", name)
-
-
-def translate_event_harvest_config_settings(settings, cached_settings):
-    """Translate event_harvest_config settings to max_samples settings.
-
-    Background:
-    The collector/server side agent configuration uses the
-    `event_harvest_config` naming convention for their harvest
-    limit settings.  The original intent was for the language
-    agents to switch to this convention.  However, this only
-    happened for the Python agent.  Eventually, to remain
-    consistent with the other language agents, the decision
-    was made to change this back.  However, because the server
-    side configuration settings override the client-side settings,
-    the agent will insist on employing the `max_samples` naming
-    convention from the user's end but translate the settings
-    to their deprecated `event_harvest_config` counterparts during
-    the configuration process.
-
-    Here, the user will still get warnings about deprecated settings
-    being used.  However, the agent will also translate the settings
-    to their deprecated `event_harvest_config` counterparts during
-    the configuration process.
-    """
-
-    cached = dict(cached_settings)
-
-    event_harvest_to_max_samples_settings_map = [
-        ("event_harvest_config.harvest_limits.analytic_event_data", "transaction_events.max_samples_stored"),
-        ("event_harvest_config.harvest_limits.span_event_data", "span_events.max_samples_stored"),
-        ("event_harvest_config.harvest_limits.error_event_data", "error_collector.max_event_samples_stored"),
-        ("event_harvest_config.harvest_limits.custom_event_data", "custom_insights_events.max_samples_stored"),
-        ("event_harvest_config.harvest_limits.log_event_data", "application_logging.forwarding.max_samples_stored"),
-    ]
-
-    for event_harvest_key, max_samples_key in event_harvest_to_max_samples_settings_map:
-        if event_harvest_key in cached:
-            _logger.info(
-                "Deprecated setting found: %r. Please use new setting: %r.", event_harvest_key, max_samples_key
-            )
-
-            if max_samples_key in cached:
-                # Since there is the max_samples key as well as the event_harvest key,
-                # we need to apply the max_samples value to the event_harvest key.
-                apply_config_setting(settings, event_harvest_key, cached[max_samples_key])
-                _logger.info(
-                    "Ignoring deprecated setting: %r. Using new setting: %r.", event_harvest_key, max_samples_key
-                )
-            else:
-                # Translation to event_harvest_config has already happened
-                _logger.info("Applying value of deprecated setting %r to %r.", event_harvest_key, max_samples_key)
-        elif max_samples_key in cached:
-            apply_config_setting(settings, event_harvest_key, cached[max_samples_key])
-
-        delete_setting(settings, max_samples_key)
-
-    return settings
 
 
 def translate_deprecated_settings(settings, cached_settings):
@@ -1189,10 +1250,6 @@ def _load_configuration(config_file=None, environment=None, ignore_errors=True, 
     # Translate old settings
 
     translate_deprecated_settings(_settings, _cache_object)
-
-    # Translate event_harvest_config settings to max_samples settings (from user's side)
-
-    translate_event_harvest_config_settings(_settings, _cache_object)
 
     # Apply High Security Mode policy if enabled in local agent
     # configuration file.

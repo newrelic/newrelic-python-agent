@@ -214,6 +214,121 @@ STREAMED_RESPONSES_V1 = {
             },
         ],
     ],
+    "user: What is the capital of France? Answer in one word.": [
+        {
+            "content-type": "text/event-stream; charset=utf-8",
+            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-processing-ms": "134",
+            "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
+            "openai-version": "2020-10-01",
+            "x-ratelimit-limit-requests": "10000",
+            "x-ratelimit-limit-tokens": "50000000",
+            "x-ratelimit-remaining-requests": "9999",
+            "x-ratelimit-remaining-tokens": "49999985",
+            "x-ratelimit-reset-requests": "6ms",
+            "x-ratelimit-reset-tokens": "0s",
+            "x-request-id": "req_22204b237d22427fbfd99c665d8a9964",
+        },
+        200,
+        [
+            {
+                "id": "",
+                "choices": [],
+                "created": 0,
+                "model": "",
+                "object": "",
+                "service_tier": None,
+                "system_fingerprint": None,
+                "usage": None,
+                "prompt_filter_results": [
+                    {
+                        "prompt_index": 0,
+                        "content_filter_results": {
+                            "hate": {"filtered": False, "severity": "safe"},
+                            "self_harm": {"filtered": False, "severity": "safe"},
+                            "sexual": {"filtered": False, "severity": "safe"},
+                            "violence": {"filtered": False, "severity": "safe"},
+                        },
+                    }
+                ],
+            },
+            {
+                "id": "chatcmpl-DelITaJCJy951hwON0psdz2H9dF7i",
+                "choices": [
+                    {
+                        "delta": {
+                            "content": "",
+                            "function_call": None,
+                            "refusal": None,
+                            "role": "assistant",
+                            "tool_calls": None,
+                        },
+                        "finish_reason": None,
+                        "index": 0,
+                        "logprobs": None,
+                        "content_filter_results": {},
+                    }
+                ],
+                "created": 1780079082,
+                "model": "gpt-3.5-turbo-0125",
+                "object": "chat.completion.chunk",
+                "service_tier": "default",
+                "system_fingerprint": "fp_a7294185dc",
+                "usage": None,
+                "obfuscation": "LK4Bn",
+            },
+            {
+                "id": "chatcmpl-DelITaJCJy951hwON0psdz2H9dF7i",
+                "choices": [
+                    {
+                        "delta": {
+                            "content": "Paris",
+                            "function_call": None,
+                            "refusal": None,
+                            "role": None,
+                            "tool_calls": None,
+                        },
+                        "finish_reason": None,
+                        "index": 0,
+                        "logprobs": None,
+                        "content_filter_results": {},
+                    }
+                ],
+                "created": 1780079082,
+                "model": "gpt-3.5-turbo-0125",
+                "object": "chat.completion.chunk",
+                "service_tier": "default",
+                "system_fingerprint": "fp_a7294185dc",
+                "usage": None,
+                "obfuscation": "QP",
+            },
+            {
+                "id": "chatcmpl-DelITaJCJy951hwON0psdz2H9dF7i",
+                "choices": [
+                    {
+                        "delta": {
+                            "content": None,
+                            "function_call": None,
+                            "refusal": None,
+                            "role": None,
+                            "tool_calls": None,
+                        },
+                        "finish_reason": "stop",
+                        "index": 0,
+                        "logprobs": None,
+                        "content_filter_results": {},
+                    }
+                ],
+                "created": 1780079082,
+                "model": "gpt-3.5-turbo-0125",
+                "object": "chat.completion.chunk",
+                "service_tier": "default",
+                "system_fingerprint": "fp_a7294185dc",
+                "usage": None,
+                "obfuscation": "s",
+            },
+        ],
+    ],
 }
 RESPONSES_V1 = {
     'system: You are a text manipulation algorithm. | user: Use a tool to add an exclamation to the word "Hello"': [
@@ -286,7 +401,7 @@ RESPONSES_V1 = {
             "x-ratelimit-remaining-tokens": "49999970",
             "x-ratelimit-reset-requests": "6ms",
             "x-ratelimit-reset-tokens": "0s",
-            "x-request-id": "req_e9add199e2c543f1b0f1dc5318690171",
+            "x-request-id": "req_619548c272db4f1ab380b83de9fdedef",
         },
         200,
         {
@@ -752,6 +867,87 @@ RESPONSES_V1 = {
             },
             "service_tier": "default",
             "system_fingerprint": None,
+        },
+    ],
+    "user: What is the capital of France? Answer in one word.": [
+        {
+            "content-type": "application/json",
+            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-processing-ms": "238",
+            "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
+            "openai-version": "2020-10-01",
+            "x-ratelimit-limit-requests": "10000",
+            "x-ratelimit-limit-tokens": "50000000",
+            "x-ratelimit-remaining-requests": "9999",
+            "x-ratelimit-remaining-tokens": "49999985",
+            "x-ratelimit-reset-requests": "6ms",
+            "x-ratelimit-reset-tokens": "0s",
+            "x-request-id": "req_22204b237d22427fbfd99c665d8a9964",
+        },
+        200,
+        {
+            "id": "chatcmpl-DelITaJCJy951hwON0psdz2H9dF7i",
+            "choices": [
+                {
+                    "finish_reason": "stop",
+                    "index": 0,
+                    "logprobs": None,
+                    "message": {
+                        "content": "Paris",
+                        "refusal": None,
+                        "role": "assistant",
+                        "annotations": [],
+                        "audio": None,
+                        "function_call": None,
+                        "tool_calls": None,
+                    },
+                    "content_filter_results": {
+                        "hate": {"filtered": False, "severity": "safe"},
+                        "self_harm": {"filtered": False, "severity": "safe"},
+                        "sexual": {"filtered": False, "severity": "safe"},
+                        "violence": {"filtered": False, "severity": "safe"},
+                    },
+                }
+            ],
+            "created": 1780077445,
+            "model": "gpt-3.5-turbo-0125",
+            "object": "chat.completion",
+            "service_tier": "default",
+            "system_fingerprint": "fp_a7294185dc",
+            "usage": {
+                "completion_tokens": 2,
+                "prompt_tokens": 19,
+                "total_tokens": 21,
+                "completion_tokens_details": {
+                    "accepted_prediction_tokens": 0,
+                    "audio_tokens": 0,
+                    "reasoning_tokens": 0,
+                    "rejected_prediction_tokens": 0,
+                },
+                "prompt_tokens_details": {"audio_tokens": 0, "cached_tokens": 0},
+                "latency_checkpoint": {
+                    "engine_tbt_ms": 11,
+                    "engine_ttft_ms": 56,
+                    "engine_ttlt_ms": 78,
+                    "pre_inference_ms": 108,
+                    "service_tbt_ms": 16,
+                    "service_ttft_ms": 196,
+                    "service_ttlt_ms": 219,
+                    "total_duration_ms": 120,
+                    "user_visible_ttft_ms": 88,
+                },
+            },
+            "prompt_filter_results": [
+                {
+                    "prompt_index": 0,
+                    "content_filter_results": {
+                        "hate": {"filtered": False, "severity": "safe"},
+                        "self_harm": {"filtered": False, "severity": "safe"},
+                        "sexual": {"filtered": False, "severity": "safe"},
+                        "violence": {"filtered": False, "severity": "safe"},
+                    },
+                }
+            ],
         },
     ],
 }

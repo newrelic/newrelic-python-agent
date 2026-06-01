@@ -46,7 +46,7 @@ GEMINI_VERSION_METRIC = f"Supportability/Python/ML/Gemini/{GEMINI_VERSION}"
 
 
 @pytest.fixture
-def gemini_clients(replay_id):
+def gemini_client(replay_id, is_vertex):
     """
     This configures the Gemini client to use a ReplayApiClient which will either record or replay responses depending
     on the mode. The mode can be controlled by setting NEW_RELIC_TESTING_RECORD_GEMINI_RESPONSES=1 as an environment
@@ -75,19 +75,12 @@ def gemini_clients(replay_id):
     # Monkeypatch the Gemini client to use the replay client which will either record or replay responses depending on the mode.
     replay_client = google.genai._replay_api_client.ReplayApiClient(mode=replay_client_mode, replay_id=replay_id)
     google.genai.client.Client._get_api_client = lambda self, *args, **kwargs: replay_client
-    gemini_dev_client = google.genai.Client(api_key=google_api_key)
+    gemini_client = google.genai.Client(api_key=google_api_key, vertexai=is_vertex)
 
-    yield gemini_dev_client
+    yield gemini_client
 
-    gemini_dev_client._api_client.close()
-    gemini_dev_client.close()
-
-
-@pytest.fixture
-def gemini_dev_client(gemini_clients):
-    # Once VertexAI is enabled, gemini_clients() will yield two different clients up that will be unpacked here
-    gemini_dev_client = gemini_clients
-    return gemini_dev_client
+    gemini_client._api_client.close()
+    gemini_client.close()
 
 
 @pytest.fixture
@@ -108,9 +101,8 @@ def replay_id():
     return f"{test_module}/{test_name}/{test_params_suffix}"
 
 
-@pytest.fixture(scope="session", params=["standard"])  # "vertex" to be added
+@pytest.fixture(scope="session", params=["standard", "vertex"])
 def is_vertex(request):
-    # This is a placeholder for when we want to test against both the standard Gemini API and the Vertex AI Gemini API.
     return request.param == "vertex"
 
 
@@ -130,9 +122,9 @@ def is_chat(request):
 
 
 @pytest.fixture
-def exercise_text_model(loop, gemini_dev_client, is_async, is_chat, is_streaming):
+def exercise_text_model(loop, gemini_client, is_async, is_chat, is_streaming):
     # Pick the sync or async client before we make the chat object for convenience
-    client = gemini_dev_client.aio if is_async else gemini_dev_client
+    client = gemini_client.aio if is_async else gemini_client
 
     def _exercise_text_model(*args, **kwargs):
         if is_chat:
@@ -173,9 +165,9 @@ def exercise_text_model(loop, gemini_dev_client, is_async, is_chat, is_streaming
 
 
 @pytest.fixture
-def exercise_embedding_model(loop, gemini_dev_client, is_async):
+def exercise_embedding_model(loop, gemini_client, is_async):
     # Pick the sync or async client for convenience
-    client = gemini_dev_client.aio if is_async else gemini_dev_client
+    client = gemini_client.aio if is_async else gemini_client
 
     def _exercise_embedding_model(*args, **kwargs):
         if not is_async:

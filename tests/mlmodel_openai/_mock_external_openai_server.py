@@ -30,7 +30,7 @@ from newrelic.common.package_version_utils import get_package_version_tuple
 #    created by an external call.
 # 3) This app runs on a separate thread meaning it won't block the test app.
 
-STREAMED_RESPONSES = {
+STREAMED_RESPONSES_V0 = {
     "Stream parsing error.": [
         {
             "Content-Type": "text/event-stream",
@@ -506,7 +506,156 @@ STREAMED_RESPONSES_V1 = {
         ],
     ],
 }
-RESPONSES = {
+
+# Streaming responses returned when the request includes `stream_options={"include_usage": True}`.
+# OpenAI emits one extra trailing chunk with `choices: []` and a populated `usage` block before
+# sending [DONE].
+STREAMED_RESPONSES_V1_WITH_USAGE = {
+    "You are a scientist.": [
+        {
+            "content-type": "text/event-stream; charset=utf-8",
+            "openai-organization": "nr-test-org",
+            "openai-processing-ms": "334",
+            "openai-project": "proj_id",
+            "openai-version": "2020-10-01",
+            "x-ratelimit-limit-requests": "15000",
+            "x-ratelimit-limit-tokens": "40000",
+            "x-ratelimit-remaining-requests": "14999",
+            "x-ratelimit-remaining-tokens": "39999978",
+            "x-ratelimit-reset-requests": "4ms",
+            "x-ratelimit-reset-tokens": "0s",
+            "x-request-id": "req_f821c73df45f4e30821a81a2d751fe64",
+        },
+        200,
+        [
+            {
+                "id": "chatcmpl-CocmvmDih6DGKIgPUbrzKFxGnMyco",
+                "object": "chat.completion.chunk",
+                "created": 1779406074,
+                "model": "gpt-5.1-2025-11-13",
+                "service_tier": "default",
+                "system_fingerprint": None,
+                "choices": [
+                    {"index": 0, "delta": {"role": "assistant", "content": "", "refusal": None}, "finish_reason": None}
+                ],
+                "usage": None,
+                "obfuscation": "n8bcfdX5",
+            },
+            {
+                "id": "chatcmpl-CocmvmDih6DGKIgPUbrzKFxGnMyco",
+                "object": "chat.completion.chunk",
+                "created": 1779406074,
+                "model": "gpt-5.1-2025-11-13",
+                "service_tier": "default",
+                "system_fingerprint": None,
+                "choices": [{"index": 0, "delta": {"content": "212"}, "finish_reason": None}],
+                "usage": None,
+                "obfuscation": "t2ASUcp",
+            },
+            {
+                "id": "chatcmpl-CocmvmDih6DGKIgPUbrzKFxGnMyco",
+                "object": "chat.completion.chunk",
+                "created": 1779406074,
+                "model": "gpt-5.1-2025-11-13",
+                "service_tier": "default",
+                "system_fingerprint": None,
+                "choices": [{"index": 0, "delta": {"content": "\u00b0F"}, "finish_reason": None}],
+                "usage": None,
+                "obfuscation": "QehtIgXV",
+            },
+            {
+                "id": "chatcmpl-CocmvmDih6DGKIgPUbrzKFxGnMyco",
+                "object": "chat.completion.chunk",
+                "created": 1779406074,
+                "model": "gpt-5.1-2025-11-13",
+                "service_tier": "default",
+                "system_fingerprint": None,
+                "choices": [{"index": 0, "delta": {"content": " is"}, "finish_reason": None}],
+                "usage": None,
+                "obfuscation": "lEH0ats",
+            },
+            {
+                "id": "chatcmpl-CocmvmDih6DGKIgPUbrzKFxGnMyco",
+                "object": "chat.completion.chunk",
+                "created": 1779406074,
+                "model": "gpt-5.1-2025-11-13",
+                "service_tier": "default",
+                "system_fingerprint": None,
+                "choices": [{"index": 0, "delta": {"content": " "}, "finish_reason": None}],
+                "usage": None,
+                "obfuscation": "SzPHsL8tM",
+            },
+            {
+                "id": "chatcmpl-CocmvmDih6DGKIgPUbrzKFxGnMyco",
+                "object": "chat.completion.chunk",
+                "created": 1779406074,
+                "model": "gpt-5.1-2025-11-13",
+                "service_tier": "default",
+                "system_fingerprint": None,
+                "choices": [{"index": 0, "delta": {"content": "100"}, "finish_reason": None}],
+                "usage": None,
+                "obfuscation": "Z0vwQZq",
+            },
+            {
+                "id": "chatcmpl-CocmvmDih6DGKIgPUbrzKFxGnMyco",
+                "object": "chat.completion.chunk",
+                "created": 1779406074,
+                "model": "gpt-5.1-2025-11-13",
+                "service_tier": "default",
+                "system_fingerprint": None,
+                "choices": [{"index": 0, "delta": {"content": "\u00b0C"}, "finish_reason": None}],
+                "usage": None,
+                "obfuscation": "HYe0zapB",
+            },
+            {
+                "id": "chatcmpl-CocmvmDih6DGKIgPUbrzKFxGnMyco",
+                "object": "chat.completion.chunk",
+                "created": 1779406074,
+                "model": "gpt-5.1-2025-11-13",
+                "service_tier": "default",
+                "system_fingerprint": None,
+                "choices": [{"index": 0, "delta": {"content": "."}, "finish_reason": None}],
+                "usage": None,
+                "obfuscation": "0XyvpKQ0L",
+            },
+            {
+                "id": "chatcmpl-CocmvmDih6DGKIgPUbrzKFxGnMyco",
+                "object": "chat.completion.chunk",
+                "created": 1779406074,
+                "model": "gpt-5.1-2025-11-13",
+                "service_tier": "default",
+                "system_fingerprint": None,
+                "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],
+                "usage": None,
+                "obfuscation": "EE9z",
+            },
+            {
+                "id": "chatcmpl-CocmvmDih6DGKIgPUbrzKFxGnMyco",
+                "object": "chat.completion.chunk",
+                "created": 1779406074,
+                "model": "gpt-5.1-2025-11-13",
+                "service_tier": "default",
+                "system_fingerprint": None,
+                "choices": [],
+                "usage": {
+                    "prompt_tokens": 25,
+                    "completion_tokens": 16,
+                    "total_tokens": 41,
+                    "prompt_tokens_details": {"cached_tokens": 0, "audio_tokens": 0},
+                    "completion_tokens_details": {
+                        "reasoning_tokens": 0,
+                        "audio_tokens": 0,
+                        "accepted_prediction_tokens": 0,
+                        "rejected_prediction_tokens": 0,
+                    },
+                },
+                "obfuscation": "kV6540YmG",
+            },
+        ],
+    ]
+}
+
+RESPONSES_V0 = {
     "Invalid API key.": (
         {"Content-Type": "application/json; charset=utf-8", "x-request-id": "4f8f61a7d0401e42a6760ea2ca2049f6"},
         401,
@@ -678,7 +827,10 @@ def simple_get(openai_version, extract_shortened_prompt):
     def _simple_get(self):
         content_len = int(self.headers.get("content-length"))
         content = json.loads(self.rfile.read(content_len).decode("utf-8"))
-        stream = content.get("stream", False)
+        is_openai_v0 = openai_version < (1, 0)
+        is_streaming = content.get("stream", False)
+        # Streaming responses include a final usage chunk only when stream_options.include_usage is True.
+        include_usage = bool(is_streaming and (content.get("stream_options") or {}).get("include_usage"))
         prompt = extract_shortened_prompt(content)
         if not prompt:
             self.send_response(500)
@@ -688,14 +840,18 @@ def simple_get(openai_version, extract_shortened_prompt):
 
         headers, response = ({}, "")
 
-        if openai_version < (1, 0):
-            mocked_responses = RESPONSES
-            if stream:
-                mocked_responses = STREAMED_RESPONSES
+        if is_openai_v0:
+            if is_streaming:
+                mocked_responses = STREAMED_RESPONSES_V0
+            else:
+                mocked_responses = RESPONSES_V0
         else:
-            mocked_responses = RESPONSES_V1
-            if stream:
+            if is_streaming and include_usage:
+                mocked_responses = STREAMED_RESPONSES_V1_WITH_USAGE
+            elif is_streaming:
                 mocked_responses = STREAMED_RESPONSES_V1
+            else:
+                mocked_responses = RESPONSES_V1
 
         for k, v in mocked_responses.items():
             if prompt.startswith(k):
@@ -704,7 +860,7 @@ def simple_get(openai_version, extract_shortened_prompt):
         else:  # If no matches found
             self.send_response(500)
             self.end_headers()
-            self.wfile.write(f"Unknown Prompt ({'Streaming' if stream else 'Non-Streaming'}):\n{prompt}".encode())
+            self.wfile.write(f"Unknown Prompt ({'Streaming' if is_streaming else 'Non-Streaming'}):\n{prompt}".encode())
             return
 
         # Send response code
@@ -716,7 +872,7 @@ def simple_get(openai_version, extract_shortened_prompt):
         self.end_headers()
 
         # Send response body
-        if stream and status_code < 400:
+        if is_streaming and status_code < 400:
             for resp in response:
                 data = json.dumps(resp).encode("utf-8")
                 if prompt == "Stream parsing error.":

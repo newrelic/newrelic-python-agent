@@ -63,8 +63,8 @@
             ],
             "usageMetadata": {
               "promptTokenCount": 10,
-              "candidatesTokenCount": 11,
-              "totalTokenCount": 121,
+              "candidatesTokenCount": 12,
+              "totalTokenCount": 122,
               "promptTokensDetails": [
                 {
                   "modality": "TEXT",
@@ -112,7 +112,7 @@
             "model_version": "gemini-2.5-flash",
             "response_id": "0LTzaZKNFPqNjrEP_NKp-Ao",
             "usage_metadata": {
-              "candidates_token_count": 11,
+              "candidates_token_count": 12,
               "prompt_token_count": 10,
               "prompt_tokens_details": [
                 {
@@ -121,7 +121,7 @@
                 }
               ],
               "thoughts_token_count": 100,
-              "total_token_count": 121
+              "total_token_count": 122
             }
           }
         ]
@@ -189,15 +189,15 @@
             ],
             "usageMetadata": {
               "promptTokenCount": 10,
-              "candidatesTokenCount": 11,
-              "totalTokenCount": 137,
+              "candidatesTokenCount": 12,
+              "totalTokenCount": 122,
               "promptTokensDetails": [
                 {
                   "modality": "TEXT",
                   "tokenCount": 10
                 }
               ],
-              "thoughtsTokenCount": 116
+              "thoughtsTokenCount": 100
             },
             "modelVersion": "gemini-2.5-flash",
             "responseId": "0bTzafioFYXMjrEP67vI0QE"
@@ -238,7 +238,7 @@
             "model_version": "gemini-2.5-flash",
             "response_id": "0bTzafioFYXMjrEP67vI0QE",
             "usage_metadata": {
-              "candidates_token_count": 11,
+              "candidates_token_count": 12,
               "prompt_token_count": 10,
               "prompt_tokens_details": [
                 {
@@ -246,8 +246,8 @@
                   "token_count": 10
                 }
               ],
-              "thoughts_token_count": 116,
-              "total_token_count": 137
+              "thoughts_token_count": 100,
+              "total_token_count": 122
             }
           }
         ]

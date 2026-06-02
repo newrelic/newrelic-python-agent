@@ -16,13 +16,15 @@
 FROM redis:7.0.12
 
 COPY <<"EOF" /etc/redis.conf
-cluster-announce-hostname 'host.docker.internal'
 bind 0.0.0.0
-port 6379
 cluster-enabled yes
 cluster-config-file nodes.conf
 cluster-node-timeout 5000
+cluster-preferred-endpoint-type hostname
 appendonly yes
 EOF
 
-CMD ["redis-server", "/etc/redis.conf"]
+ENV REDIS_PORT=6379 \
+    REDIS_ANNOUNCE_HOSTNAME=localhost
+
+CMD ["sh", "-c", "exec redis-server /etc/redis.conf --port \"$REDIS_PORT\" --cluster-announce-hostname \"$REDIS_ANNOUNCE_HOSTNAME\" --cluster-announce-port \"$REDIS_PORT\""]

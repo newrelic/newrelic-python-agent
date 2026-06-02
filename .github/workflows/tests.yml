@@ -1885,6 +1885,8 @@ jobs:
           chown -R "$(whoami)" /github/home/.cache/pip
 
       - name: Start rediscluster
+        env:
+          REDIS_ANNOUNCE_HOSTNAME: host.docker.internal
         run: |
           # Build only the redis1 image to prevent fighting, then start the entire cluster
           docker compose \

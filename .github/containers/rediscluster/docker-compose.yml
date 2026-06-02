@@ -15,8 +15,10 @@
 x-redis-node: &redis-node
   build: .
   image: redis-cluster-node:local
+  tmpfs:
+    - /data
   healthcheck:
-    test: ["CMD", "redis-cli", "ping"]
+    test: ["CMD-SHELL", "redis-cli -p $$REDIS_PORT ping"]
     interval: 2s
     timeout: 3s
     retries: 15
@@ -24,39 +26,51 @@ x-redis-node: &redis-node
 services:
   redis1:
     <<: *redis-node
+    environment:
+      REDIS_PORT: "6379"
+      REDIS_ANNOUNCE_HOSTNAME: ${REDIS_ANNOUNCE_HOSTNAME:-localhost}
     ports:
       - 6379:6379
-      - 16379:16379
 
   redis2:
     <<: *redis-node
+    environment:
+      REDIS_PORT: "6380"
+      REDIS_ANNOUNCE_HOSTNAME: ${REDIS_ANNOUNCE_HOSTNAME:-localhost}
     ports:
-      - 6380:6379
-      - 16380:16379
+      - 6380:6380
 
   redis3:
     <<: *redis-node
+    environment:
+      REDIS_PORT: "6381"
+      REDIS_ANNOUNCE_HOSTNAME: ${REDIS_ANNOUNCE_HOSTNAME:-localhost}
     ports:
-      - 6381:6379
-      - 16381:16379
+      - 6381:6381
 
   redis4:
     <<: *redis-node
+    environment:
+      REDIS_PORT: "6382"
+      REDIS_ANNOUNCE_HOSTNAME: ${REDIS_ANNOUNCE_HOSTNAME:-localhost}
     ports:
-      - 6382:6379
-      - 16382:16379
+      - 6382:6382
 
   redis5:
     <<: *redis-node
+    environment:
+      REDIS_PORT: "6383"
+      REDIS_ANNOUNCE_HOSTNAME: ${REDIS_ANNOUNCE_HOSTNAME:-localhost}
     ports:
-      - 6383:6379
-      - 16383:16379
+      - 6383:6383
 
   redis6:
     <<: *redis-node
+    environment:
+      REDIS_PORT: "6384"
+      REDIS_ANNOUNCE_HOSTNAME: ${REDIS_ANNOUNCE_HOSTNAME:-localhost}
     ports:
-      - 6384:6379
-      - 16384:16379
+      - 6384:6384
 
   cluster-setup:
     image: redis-cluster-node:local
@@ -66,7 +80,7 @@ services:
       - -c
       - >-
         redis-cli --cluster create
-        redis1:6379 redis2:6379 redis3:6379 redis4:6379 redis5:6379 redis6:6379
+        redis1:6379 redis2:6380 redis3:6381 redis4:6382 redis5:6383 redis6:6384
         --cluster-replicas 1
         --cluster-yes &&
         exec sleep infinity

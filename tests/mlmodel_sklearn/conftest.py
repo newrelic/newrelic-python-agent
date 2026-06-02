@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
-from sklearn import __version__
+import pytest
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 _default_settings = {
@@ -32,3 +31,10 @@ collector_agent_registration = collector_agent_registration_fixture(
     default_settings=_default_settings,
     linked_applications=["Python Agent Test (mlmodel_sklearn)"],
 )
+
+
+@pytest.fixture(scope="session")
+def sklearn_version():
+    from sklearn import __version__
+
+    return tuple(map(int, __version__.split(".")[:2]))

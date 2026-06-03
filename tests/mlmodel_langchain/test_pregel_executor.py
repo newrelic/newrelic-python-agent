@@ -23,34 +23,44 @@ from newrelic.api.background_task import background_task
 from newrelic.api.time_trace import current_trace
 
 
+@pytest.mark.parametrize("as_weakref", [False, True], ids=["strongref", "weakref"])
 @background_task()
-def test_background_executor_submit_propagates_context():
+def test_background_executor_submit_propagates_context(as_weakref):
     trace = current_trace()
     test_ran = Event()
 
-    def task():
+    def task(arg1):
         assert current_trace() is trace
+        assert arg1 == "test"
         test_ran.set()
 
     with BackgroundExecutor(config={}) as submit:
-        future = submit(task)
+        if as_weakref:
+            # Derefence the weakmethod to ensure we don't cause a crash
+            submit = weakref.WeakMethod(submit)()
+        future = submit(task, "test")
         future.result()
 
     assert test_ran.is_set()
 
 
+@pytest.mark.parametrize("as_weakref", [False, True], ids=["strongref", "weakref"])
 @background_task()
-def test_async_background_executor_submit_propagates_context(loop):
+def test_async_background_executor_submit_propagates_context(loop, as_weakref):
     trace = current_trace()
     test_ran = Event()
 
-    async def task():
+    async def task(arg1):
         assert current_trace() is trace
+        assert arg1 == "test"
         test_ran.set()
 
     async def _test():
         async with AsyncBackgroundExecutor(config={}) as submit:
-            future = submit(task)
+            if as_weakref:
+                # Derefence the weakmethod to ensure we don't cause a crash
+                submit = weakref.WeakMethod(submit)()
+            future = submit(task, "test")
             await asyncio.wrap_future(future)
 
     loop.run_until_complete(_test())

@@ -12,10 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import functools
+
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.async_wrapper import coroutine_wrapper
-from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.common.object_wrapper import wrap_function_wrapper, wrap_object
 from newrelic.common.signature import bind_args
 from newrelic.core.context import ContextOf, context_wrapper
 from newrelic.hooks.mlmodel_langchain import wrap_run_in_executor
@@ -57,33 +59,49 @@ def bind_submit(func, *args, **kwargs):
     return func, args, kwargs
 
 
-def wrap_BackgroundExecutor_submit(wrapped, instance, args, kwargs):
-    trace = current_trace()
-    if not trace:
-        return wrapped(*args, **kwargs)
+def wrap_BackgroundExecutor_submit(wrapped):
+    # We can't use wrapt FuctionWrapper here because the function will be wrapped in a weakref.WeakMethod,
+    # which isn't compatible with wrapt. Instead, we have to do the wrapping manually. We use functools.wraps
+    # to preserve the original function's signature, name, and annotations as best as we can.
+    @functools.wraps(wrapped)
+    def _wrapper(self, *args, **kwargs):
+        # This will be a bound method, so the first argument must always be self.
+        trace = current_trace()
+        if not trace:
+            return wrapped(self, *args, **kwargs)
 
-    try:
-        func, args, kwargs = bind_submit(*args, **kwargs)
-    except Exception:
-        return wrapped(*args, **kwargs)
+        try:
+            func, args, kwargs = bind_submit(*args, **kwargs)
+        except Exception:
+            return wrapped(self, *args, **kwargs)
 
-    func = context_wrapper(func, trace=trace, strict=True)
-    return wrapped(func, *args, **kwargs)
+        func = context_wrapper(func, trace=trace, strict=True)
+        return wrapped(self, func, *args, **kwargs)
+
+    return _wrapper
 
 
-def wrap_AsyncBackgroundExecutor_submit(wrapped, instance, args, kwargs):
-    trace = current_trace()
-    if not trace:
-        return wrapped(*args, **kwargs)
+def wrap_AsyncBackgroundExecutor_submit(wrapped):
+    # We can't use wrapt FuctionWrapper here because the function will be wrapped in a weakref.WeakMethod,
+    # which isn't compatible with wrapt. Instead, we have to do the wrapping manually. We use functools.wraps
+    # to preserve the original function's signature, name, and annotations as best as we can.
+    @functools.wraps(wrapped)
+    def _wrapper(self, *args, **kwargs):
+        # This will be a bound method, so the first argument must always be self.
+        trace = current_trace()
+        if not trace:
+            return wrapped(self, *args, **kwargs)
 
-    try:
-        func, args, kwargs = bind_submit(*args, **kwargs)
-    except Exception:
-        return wrapped(*args, **kwargs)
+        try:
+            func, args, kwargs = bind_submit(*args, **kwargs)
+        except Exception:
+            return wrapped(self, *args, **kwargs)
 
-    context = ContextOf(trace=trace, strict=True)
-    func = coroutine_wrapper(func, context)
-    return wrapped(func, *args, **kwargs)
+        context = ContextOf(trace=trace, strict=True)
+        func = coroutine_wrapper(func, context)
+        return wrapped(self, func, *args, **kwargs)
+
+    return _wrapper
 
 
 def instrument_langgraph_prebuilt_tool_node(module):
@@ -96,9 +114,10 @@ def instrument_langgraph_prebuilt_tool_node(module):
 
 def instrument_langgraph_pregel_executor(module):
     if hasattr(module, "BackgroundExecutor"):
-        wrap_function_wrapper(module, "BackgroundExecutor.submit", wrap_BackgroundExecutor_submit)
+        wrap_object(module, "BackgroundExecutor.submit", wrap_BackgroundExecutor_submit)
+
     if hasattr(module, "AsyncBackgroundExecutor"):
-        wrap_function_wrapper(module, "AsyncBackgroundExecutor.submit", wrap_AsyncBackgroundExecutor_submit)
+        wrap_object(module, "AsyncBackgroundExecutor.submit", wrap_AsyncBackgroundExecutor_submit)
 
 
 def instrument_langgraph_internal_runnable(module):

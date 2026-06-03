@@ -13,8 +13,10 @@
 # limitations under the License.
 
 import asyncio
+import weakref
 from threading import Event
 
+import pytest
 from langgraph.pregel._executor import AsyncBackgroundExecutor, BackgroundExecutor
 
 from newrelic.api.background_task import background_task

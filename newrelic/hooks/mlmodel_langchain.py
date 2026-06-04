@@ -768,6 +768,7 @@ async def wrap_chain_async_run(wrapped, instance, args, kwargs):
     run_args["timestamp"] = int(1000.0 * time.time())
     completion_id = str(uuid.uuid4())
     add_nr_completion_id(run_args, completion_id)
+    nr_callback_handler = _attach_nr_callback_handler(run_args)
     # Check to see if launched from agent or directly from chain.
     # The trace group will reflect from where it has started.
     # The AgentExecutor class has an attribute "agent" that does
@@ -788,6 +789,7 @@ async def wrap_chain_async_run(wrapped, instance, args, kwargs):
             completion_id=completion_id,
             linking_metadata=linking_metadata,
             duration=ft.duration * 1000,
+            callback_handler=nr_callback_handler,
         )
         raise
     ft.__exit__(None, None, None)
@@ -803,6 +805,7 @@ async def wrap_chain_async_run(wrapped, instance, args, kwargs):
         response=response,
         linking_metadata=linking_metadata,
         duration=ft.duration * 1000,
+        callback_handler=nr_callback_handler,
     )
     return response
 
@@ -824,6 +827,7 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
     run_args["timestamp"] = int(1000.0 * time.time())
     completion_id = str(uuid.uuid4())
     add_nr_completion_id(run_args, completion_id)
+    nr_callback_handler = _attach_nr_callback_handler(run_args)
     # Check to see if launched from agent or directly from chain.
     # The trace group will reflect from where it has started.
     # The AgentExecutor class has an attribute "agent" that does
@@ -844,6 +848,7 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
             completion_id=completion_id,
             linking_metadata=linking_metadata,
             duration=ft.duration * 1000,
+            callback_handler=nr_callback_handler,
         )
         raise
     ft.__exit__(None, None, None)
@@ -859,6 +864,7 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
         response=response,
         linking_metadata=linking_metadata,
         duration=ft.duration * 1000,
+        callback_handler=nr_callback_handler,
     )
     return response
 
@@ -880,6 +886,7 @@ def wrap_RunnableSequence_stream(wrapped, instance, args, kwargs):
     run_args["timestamp"] = int(1000.0 * time.time())
     completion_id = str(uuid.uuid4())
     add_nr_completion_id(run_args, completion_id)
+    nr_callback_handler = _attach_nr_callback_handler(run_args)
     # Check to see if launched from agent or directly from chain.
     # The trace group will reflect from where it has started.
     # The AgentExecutor class has an attribute "agent" that does
@@ -899,6 +906,7 @@ def wrap_RunnableSequence_stream(wrapped, instance, args, kwargs):
                 completion_id=completion_id,
                 response=[],
                 linking_metadata=linking_metadata,
+                callback_handler=nr_callback_handler,
             ),
             on_error=_on_chain_error(
                 ft=ft,
@@ -906,11 +914,17 @@ def wrap_RunnableSequence_stream(wrapped, instance, args, kwargs):
                 run_args=run_args,
                 completion_id=completion_id,
                 linking_metadata=linking_metadata,
+                callback_handler=nr_callback_handler,
             ),
         )
     except Exception:
         _on_chain_error(
-            ft=ft, instance=instance, run_args=run_args, completion_id=completion_id, linking_metadata=linking_metadata
+            ft=ft,
+            instance=instance,
+            run_args=run_args,
+            completion_id=completion_id,
+            linking_metadata=linking_metadata,
+            callback_handler=nr_callback_handler,
         )(transaction)
         raise
 
@@ -934,6 +948,7 @@ def wrap_RunnableSequence_astream(wrapped, instance, args, kwargs):
     run_args["timestamp"] = int(1000.0 * time.time())
     completion_id = str(uuid.uuid4())
     add_nr_completion_id(run_args, completion_id)
+    nr_callback_handler = _attach_nr_callback_handler(run_args)
     # Check to see if launched from agent or directly from chain.
     # The trace group will reflect from where it has started.
     # The AgentExecutor class has an attribute "agent" that does
@@ -953,6 +968,7 @@ def wrap_RunnableSequence_astream(wrapped, instance, args, kwargs):
                 completion_id=completion_id,
                 response=[],
                 linking_metadata=linking_metadata,
+                callback_handler=nr_callback_handler,
             ),
             on_error=_on_chain_error(
                 ft=ft,
@@ -960,18 +976,26 @@ def wrap_RunnableSequence_astream(wrapped, instance, args, kwargs):
                 run_args=run_args,
                 completion_id=completion_id,
                 linking_metadata=linking_metadata,
+                callback_handler=nr_callback_handler,
             ),
         )
     except Exception:
         _on_chain_error(
-            ft=ft, instance=instance, run_args=run_args, completion_id=completion_id, linking_metadata=linking_metadata
+            ft=ft,
+            instance=instance,
+            run_args=run_args,
+            completion_id=completion_id,
+            linking_metadata=linking_metadata,
+            callback_handler=nr_callback_handler,
         )(transaction)
         raise
 
     return return_val
 
 
-def _on_chain_stop_iteration(*, ft, instance, run_args, completion_id, response, linking_metadata):
+def _on_chain_stop_iteration(
+    *, ft, instance, run_args, completion_id, response, linking_metadata, callback_handler=None
+):
     def _on_stop_iteration(proxy, transaction):
         ft.__exit__(None, None, None)
         _create_successful_chain_run_events(
@@ -982,12 +1006,13 @@ def _on_chain_stop_iteration(*, ft, instance, run_args, completion_id, response,
             response=response,
             linking_metadata=linking_metadata,
             duration=ft.duration * 1000,
+            callback_handler=callback_handler,
         )
 
     return _on_stop_iteration
 
 
-def _on_chain_error(*, ft, instance, run_args, completion_id, linking_metadata):
+def _on_chain_error(*, ft, instance, run_args, completion_id, linking_metadata, callback_handler=None):
     def _on_error(proxy, transaction):
         ft.notice_error(attributes={"completion_id": completion_id})
         ft.__exit__(*sys.exc_info())
@@ -998,6 +1023,7 @@ def _on_chain_error(*, ft, instance, run_args, completion_id, linking_metadata):
             completion_id=completion_id,
             linking_metadata=linking_metadata,
             duration=ft.duration * 1000,
+            callback_handler=callback_handler,
         )
 
     return _on_error
@@ -1015,13 +1041,109 @@ def add_nr_completion_id(run_args, completion_id):
         run_args["config"]["metadata"] = metadata
 
 
-def _create_error_chain_run_events(*, transaction, instance, run_args, completion_id, linking_metadata, duration):
+_NR_CALLBACK_HANDLER_CLS = None
+
+
+def _get_nr_callback_handler_cls():
+    global _NR_CALLBACK_HANDLER_CLS
+    if _NR_CALLBACK_HANDLER_CLS is not None:
+        return _NR_CALLBACK_HANDLER_CLS
+    try:
+        from langchain_core.callbacks import BaseCallbackHandler
+    except ImportError:
+        _NR_CALLBACK_HANDLER_CLS = False
+        return False
+
+    class NewRelicCallbackHandler(BaseCallbackHandler):
+        raise_error = False
+
+        def __init__(self):
+            super().__init__()
+            self.response_model = None
+
+        def on_llm_end(self, response, **_kwargs):
+            if self.response_model is not None:
+                return
+            try:
+                self.response_model = _extract_chain_response_model(response)
+            except Exception:
+                pass
+
+    _NR_CALLBACK_HANDLER_CLS = NewRelicCallbackHandler
+    return NewRelicCallbackHandler
+
+
+def _attach_nr_callback_handler(run_args):
+    cls = _get_nr_callback_handler_cls()
+    if not cls:
+        return None
+    handler = cls()
+    cfg = dict(run_args.get("config") or {})
+    callbacks = cfg.get("callbacks")
+    if callbacks is None:
+        cfg["callbacks"] = [handler]
+    elif isinstance(callbacks, list):
+        cfg["callbacks"] = [*callbacks, handler]
+    else:
+        try:
+            callbacks.add_handler(handler, inherit=True)
+        except Exception:
+            return None
+    run_args["config"] = cfg
+    return handler
+
+
+def _extract_chain_response_model(response):
+    llm_output = getattr(response, "llm_output", None) or {}
+    for key in ("model_name", "model", "model_id"):
+        val = llm_output.get(key)
+        if isinstance(val, str) and val:
+            return val
+    generations = getattr(response, "generations", None) or []
+    for gen_list in generations:
+        for gen in gen_list or []:
+            info = getattr(gen, "generation_info", None) or {}
+            for key in ("model_name", "model", "model_id"):
+                val = info.get(key)
+                if isinstance(val, str) and val:
+                    return val
+    return None
+
+
+def _get_chain_request_model(instance):
+    # A best effort attempt to pull the request model from the chain or any of
+    # its steps for better observability. This is not guaranteed to work in all
+    # cases as it depends on how the chain and steps are implemented, and it can
+    # only pull the first model it finds. The request model is not a guaranteed
+    # attribute on chains or steps, but some implementations may have it.
+    try:
+        llm = getattr(instance, "llm", None)
+        if llm is not None:
+            name = getattr(llm, "model_name", None) or getattr(llm, "model", None)
+            if isinstance(name, str) and name:
+                return name
+        steps = getattr(instance, "steps", None)
+        if steps:
+            for step in steps:
+                name = getattr(step, "model_name", None) or getattr(step, "model", None)
+                if isinstance(name, str) and name:
+                    return name
+    except Exception:
+        pass
+    return None
+
+
+def _create_error_chain_run_events(
+    *, transaction, instance, run_args, completion_id, linking_metadata, duration, callback_handler=None
+):
     _input = run_args.get("input")
     llm_metadata_dict = _get_llm_metadata(transaction)
     run_id, metadata, tags = _get_run_manager_info(transaction, run_args, instance, completion_id)
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
     input_message_list = [_input]
+    request_model = _get_chain_request_model(instance)
+    response_model = getattr(callback_handler, "response_model", None) if callback_handler else None
 
     # Make sure the builtin attributes take precedence over metadata attributes.
     full_chat_completion_summary_dict = {f"metadata.{key}": value for key, value in metadata.items()}
@@ -1035,6 +1157,8 @@ def _create_error_chain_run_events(*, transaction, instance, run_args, completio
             "virtual_llm": True,
             "request_id": run_id,
             "duration": duration,
+            "request.model": request_model,
+            "response.model": response_model,
             "response.number_of_messages": len(input_message_list),
             "tags": tags,
             "error": True,
@@ -1053,6 +1177,7 @@ def _create_error_chain_run_events(*, transaction, instance, run_args, completio
         llm_metadata_dict=llm_metadata_dict,
         output_message_list=[],
         request_timestamp=run_args["timestamp"] or None,
+        response_model=response_model,
     )
 
 
@@ -1069,7 +1194,7 @@ def _get_run_manager_info(transaction, run_args, instance, completion_id):
 
 
 def _create_successful_chain_run_events(
-    *, transaction, instance, run_args, completion_id, response, linking_metadata, duration
+    *, transaction, instance, run_args, completion_id, response, linking_metadata, duration, callback_handler=None
 ):
     _input = run_args.get("input")
     llm_metadata_dict = _get_llm_metadata(transaction)
@@ -1078,6 +1203,8 @@ def _create_successful_chain_run_events(
     trace_id = linking_metadata.get("trace.id")
     input_message_list = [_input]
     output_message_list = []
+    request_model = _get_chain_request_model(instance)
+    response_model = getattr(callback_handler, "response_model", None) if callback_handler else None
     if isinstance(response, str):
         output_message_list = [response]
     else:
@@ -1104,6 +1231,8 @@ def _create_successful_chain_run_events(
             "virtual_llm": True,
             "request_id": run_id,
             "duration": duration,
+            "request.model": request_model,
+            "response.model": response_model,
             "response.number_of_messages": len(input_message_list) + len(output_message_list),
             "tags": tags,
             "timestamp": run_args.get("timestamp") or None,
@@ -1125,6 +1254,7 @@ def _create_successful_chain_run_events(
         llm_metadata_dict=llm_metadata_dict,
         output_message_list=output_message_list,
         request_timestamp=run_args["timestamp"] or None,
+        response_model=response_model,
     )
 
 
@@ -1139,6 +1269,7 @@ def create_chat_completion_message_event(
     llm_metadata_dict,
     output_message_list,
     request_timestamp=None,
+    response_model=None,
 ):
     settings = transaction.settings if transaction.settings is not None else global_settings()
 
@@ -1151,6 +1282,7 @@ def create_chat_completion_message_event(
             "trace_id": trace_id,
             "completion_id": chat_completion_id,
             "sequence": index,
+            "response.model": response_model,
             "vendor": "langchain",
             "ingest_source": "Python",
             "virtual_llm": True,
@@ -1176,6 +1308,7 @@ def create_chat_completion_message_event(
                 "trace_id": trace_id,
                 "completion_id": chat_completion_id,
                 "sequence": index,
+                "response.model": response_model,
                 "vendor": "langchain",
                 "ingest_source": "Python",
                 "is_response": True,

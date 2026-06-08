@@ -1189,6 +1189,11 @@ class StatsEngine:
         # Merge in span events
 
         if settings.distributed_tracing.enabled and settings.span_events.enabled and settings.collect_span_events:
+
+            # Send span data to Darkly
+            for event in transaction.span_events(self.__settings):
+                darkly.add(event, priority=transaction.priority)
+
             if settings.infinite_tracing.enabled:
                 for event in transaction.span_protos(settings):
                     self._span_stream.put(event)

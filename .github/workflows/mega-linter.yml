@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       # Give the default GITHUB_TOKEN write permission to commit and push, comment
-      # issues & post new PR; remove the ones you do not need
+      # issues, and post new Pull Requests
       contents: write
       issues: write
       pull-requests: write
@@ -59,10 +59,20 @@ jobs:
         uses: oxsecurity/megalinter/flavors/python@0e3ce9b9c8c10effb9b269509cc47ca17cae31c7 # 9.5.0
         env:
           # All available variables are described in documentation
-          # https://megalinter.io/latest/configuration/
+          # https://megalinter.io/latest/config-file/
           VALIDATE_ALL_CODEBASE: "true"
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # ADD YOUR CUSTOM ENV VARIABLES HERE OR DEFINE THEM IN A FILE
+          # Disable LLM Advisor for bot PRs (dependabot, renovate, etc.)
+          LLM_ADVISOR_ENABLED: >-
+            ${{
+              github.event_name != 'pull_request' ||
+              (github.event.pull_request.user.login != 'dependabot[bot]' &&
+               github.event.pull_request.user.login != 'renovate[bot]' &&
+               github.event.pull_request.user.login != 'github-actions[bot]' &&
+               !startsWith(github.event.pull_request.user.login, 'dependabot') &&
+               !startsWith(github.event.pull_request.user.login, 'renovate'))
+            }}
+          # ADD YOUR CUSTOM ENV VARIABLES HERE TO OVERRIDE VALUES OF
           # .mega-linter.yml AT THE ROOT OF YOUR REPOSITORY
           GITHUB_COMMENT_REPORTER: "true"
           PYTHON_RUFF_ARGUMENTS: --config pyproject.toml --config 'output-format="github"'
@@ -79,41 +89,39 @@ jobs:
             megalinter-reports
             mega-linter.log
 
-      # Set APPLY_FIXES_IF var for use in future steps
-      - name: Set APPLY_FIXES_IF var
-        run: |
-          printf 'APPLY_FIXES_IF=%s\n' "${{
-            steps.ml.outputs.has_updated_sources == 1 &&
-            (
-              env.APPLY_FIXES_EVENT == 'all' ||
-              env.APPLY_FIXES_EVENT == github.event_name
-            ) &&
-            (
-              github.event_name == 'push' ||
-              github.event.pull_request.head.repo.full_name == github.repository
-            )
-          }}" >> "${GITHUB_ENV}"
-
-      # Set APPLY_FIXES_IF_* vars for use in future steps
-      - name: Set APPLY_FIXES_IF_* vars
-        run: |
-          printf 'APPLY_FIXES_IF_PR=%s\n' "${{
-            env.APPLY_FIXES_IF == 'true' &&
-            env.APPLY_FIXES_MODE == 'pull_request'
-          }}" >> "${GITHUB_ENV}"
-          printf 'APPLY_FIXES_IF_COMMIT=%s\n' "${{
-            env.APPLY_FIXES_IF == 'true' &&
-            env.APPLY_FIXES_MODE == 'commit' &&
-            (!contains(fromJSON('["refs/heads/main", "refs/heads/master"]'), github.ref))
-          }}" >> "${GITHUB_ENV}"
-
+      # Push new commit if applicable
+      # (for now works only on PR from same repository, not from forks)
       - name: Prepare commit
-        if: env.APPLY_FIXES_IF_COMMIT == 'true'
+        if: >-
+          steps.ml.outputs.has_updated_sources == 1 &&
+          (
+            env.APPLY_FIXES_EVENT == 'all' ||
+            env.APPLY_FIXES_EVENT == github.event_name
+          ) &&
+          env.APPLY_FIXES_MODE == 'commit' &&
+          github.ref != 'refs/heads/main' &&
+          (
+            github.event_name == 'push' ||
+            github.event.pull_request.head.repo.full_name == github.repository
+          ) &&
+          !contains(github.event.head_commit.message, 'skip fix')
         run: sudo chown -Rc $UID .git/
 
       - name: Commit and push applied linter fixes
         uses: stefanzweifel/git-auto-commit-action@04702edda442b2e678b25b537cec683a1493fcb9 # 7.1.0
-        if: env.APPLY_FIXES_IF_COMMIT == 'true'
+        if: >-
+          steps.ml.outputs.has_updated_sources == 1 &&
+          (
+            env.APPLY_FIXES_EVENT == 'all' ||
+            env.APPLY_FIXES_EVENT == github.event_name
+          ) &&
+          env.APPLY_FIXES_MODE == 'commit' &&
+          github.ref != 'refs/heads/main' &&
+          (
+            github.event_name == 'push' ||
+            github.event.pull_request.head.repo.full_name == github.repository
+          ) &&
+          !contains(github.event.head_commit.message, 'skip fix')
         with:
           branch: >-
             ${{

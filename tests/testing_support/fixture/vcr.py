@@ -72,6 +72,12 @@ redaction, or cassette location. ``vcr_config`` assembles them into the final VC
 configuration and should generally be left alone.
 """
 
+try:
+    import pytest_recording
+
+except ImportError as exc:
+    raise ImportError("pytest-recording is required to use the vcr fixtures.") from exc
+
 from pathlib import Path
 
 import pytest

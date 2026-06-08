@@ -19,8 +19,8 @@ tox -l
 # Run tests for a specific component (from repository root)
 tox run -e linux-agent_features-py312-with_extensions
 
-# Run tests for a framework integration
-tox run -e python-framework_django-py312-Django0405
+# Run tests for a framework integration (run `tox -l` for exact env names)
+tox run -e python-framework_django-py312-Djangolatest
 ```
 
 To iterate on a single test file with pytest directly, `cd` into that suite's directory first:
@@ -106,10 +106,8 @@ Provides public APIs for:
 #### 4. **Core Engine** (`newrelic/core/`)
 Contains the core agent logic:
 - `agent.py` - Main agent singleton and lifecycle management
-- `data_collector.py` - Communication with New Relic backend
 - `application.py` - Application instance management
-- `transaction.py` - Transaction state and trace building
-- `*_node.py` - Different node types for the transaction trace tree (database, external, function, etc.)
+- `*_node.py` - Node types for the transaction trace tree (database, external, function, etc.)
 - `config.py` - Configuration management
 
 #### 5. **Transaction Model**
@@ -134,13 +132,11 @@ The agent extensively uses function wrapping to inject instrumentation:
 
 1. **Lazy Initialization**: The agent must be initialized before importing instrumented libraries for best results, but handles late initialization gracefully.
 
-2. **Context Management**: Uses context managers (`with` statements) extensively for transaction and trace boundaries.
+2. **Manual Instrumentation API**: Decorators and context managers (`@background_task`, `@function_trace`, `with` blocks) mark transaction and trace boundaries.
 
-3. **Decorator Pattern**: Provides decorators like `@background_task`, `@function_trace` for manual instrumentation.
+3. **Thread Safety**: Heavily uses thread-local storage and locks for managing per-thread transaction state.
 
-4. **Thread Safety**: Heavily uses thread-local storage and locks for managing per-thread transaction state.
-
-5. **Async Support**: Special handling for asyncio, gevent, and other async frameworks with context propagation.
+4. **Async Support**: Special handling for asyncio, gevent, and other async frameworks with context propagation.
 
 ### Test Organization
 
@@ -205,5 +201,4 @@ Instrumentation code must never break the application:
 
 - Tests must be runnable via tox
 - Use `tests/testing_support/validators/` for validating collected metrics/traces
-- Mock external services when possible
 - Each test directory needs its own `conftest.py` with necessary fixtures

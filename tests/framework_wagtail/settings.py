@@ -68,3 +68,5 @@ DATABASES = {
         "NAME": os.path.join(BASE_DIR, "db.sqlite3"),
     }
 }
+
+MIGRATION_MODULES = {"dummy_app": "migrations"}

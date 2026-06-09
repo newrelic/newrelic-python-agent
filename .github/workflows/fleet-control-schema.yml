@@ -14,57 +14,49 @@
 
 name: Fleet Control Config Schema
 
-# Updates .fleetControl/schemas/config.json from newrelic/newrelic.ini
-# whenever a PR against main touches inputs that could affect the schema.
-# The generator never starts fresh -- it deep-merges the freshly generated
-# schema into the existing config.json so the published schema only ever
-# grows (keys present in the old schema are preserved).
+# Per-push regenerator: walks `newrelic.core.config.global_settings()` and
+# rewrites .fleetControl/schemas/config.json on every push to a non-main
+# branch. Auto-commits the regenerated schema back to the pushed branch
+# so reviewers see schema diffs in the PR.
 #
-# The generator is run with --ci, which:
-#   - exits 0 if the updated schema matches what's already on disk
-#     (no changes; nothing to commit),
-#   - exits 1 if the schema changed, in which case it has already written
-#     the updated config.json AND bumped the version in
-#     .fleetControl/configurationDefinitions.yml. The "Commit and push"
-#     step then commits both files back to the PR branch.
-#   - exits >=2 on a hard failure (invalid schema, malformed inputs).
+# Path filters are intentionally NOT used here. The agent's settings
+# tree is dynamic enough (defaults can shift via imported constants in
+# files outside core/config.py) that a path-based skip risks staleness.
+# The generator exits 0 quickly when nothing changed, so the cost of
+# always running is minimal.
 #
-# Auto-commit only works for PRs from branches in this repository -- pushes
-# to fork branches require write access we don't have. PRs from forks will
-# skip the update; reviewers can run the generator locally
-# (`python .fleetControl/schemaGeneration/generate-schema.py --ci`) and
-# ask the contributor to pull.
+# Version bumps to .fleetControl/configurationDefinitions.yml are NOT
+# done here -- they happen at release-prep time via the
+# fleet-control-schema-bump.yml workflow (workflow_dispatch only).
+#
+# Skips main because branch protection blocks the bot from pushing
+# there. Skips fork branches because GITHUB_TOKEN cannot push to forks
+# anyway -- reviewers can run the generator locally and ask the
+# contributor to pull.
 
 permissions: {}
 
 on:
-  pull_request:
-    branches: [ main ]
-    paths:
-      - 'newrelic/newrelic.ini'
-      - '.fleetControl/schemaGeneration/**'
-      - '.fleetControl/schemas/**'
-      - '.fleetControl/configurationDefinitions.yml'
+  push:
+    branches-ignore:
+      - main
   workflow_dispatch:
 
 concurrency:
-  group: fleet-control-schema-${{ github.event.pull_request.number || github.ref }}
+  group: fleet-control-schema-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  update:
-    name: Update config schema
+  regenerate:
+    name: Regenerate config schema
     runs-on: ubuntu-24.04
-    # GITHUB_TOKEN cannot push to fork branches, so skip fork PRs.
-    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.head.repo.full_name == github.repository
     permissions:
       contents: write
 
     steps:
       - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b  # pin@v4
         with:
-          ref: ${{ github.event.pull_request.head.ref || github.ref }}
-          repository: ${{ github.event.pull_request.head.repo.full_name || github.repository }}
+          ref: ${{ github.ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
@@ -74,9 +66,16 @@ jobs:
 
       - name: Run schema generator
         id: generate
+        # `import newrelic.core.config` reads NEW_RELIC_* env vars at import
+        # time, which would leak into the schema's defaults. Unset all of
+        # them before invoking the generator (defense-in-depth even though
+        # CI runners shouldn't have any set).
         run: |
+          while IFS= read -r var; do
+            unset "$var"
+          done < <(printenv | grep -oE '^NEW_RELIC_[^=]+' || true)
           set +e
-          python .fleetControl/schemaGeneration/generate-schema.py --ci
+          python3 .fleetControl/schemaGeneration/generate-schema.py
           code=$?
           set -e
           case "$code" in
@@ -86,22 +85,22 @@ jobs:
           esac
 
       - name: Run schema generator tests
-        run: python -m unittest discover .fleetControl/schemaGeneration/tests
+        run: python3 -m unittest discover .fleetControl/schemaGeneration/tests
 
-      - name: Commit and push updated schema
+      - name: Commit and push regenerated schema
         if: steps.generate.outputs.changed == 'true'
         env:
-          # Pass the (potentially attacker-controlled) PR branch name through
+          # Pass the (potentially attacker-controlled) branch name through
           # an env var rather than interpolating it directly into the shell
           # script -- prevents script injection via crafted branch names.
-          HEAD_REF: ${{ github.event.pull_request.head.ref || github.ref_name }}
+          HEAD_REF: ${{ github.ref_name }}
         run: |
-          if [ -z "$(git status --porcelain .fleetControl)" ]; then
-            echo "Generator reported changes but working tree is clean -- nothing to commit."
+          if [ -z "$(git status --porcelain .fleetControl/schemas/config.json)" ]; then
+            echo "Generator reported changes but config.json is clean -- nothing to commit."
             exit 0
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add .fleetControl/schemas/config.json .fleetControl/configurationDefinitions.yml
-          git commit -m "chore: update Fleet Control config schema"
+          git add .fleetControl/schemas/config.json
+          git commit -m "chore: regenerate Fleet Control config schema"
           git push origin "HEAD:$HEAD_REF"

@@ -16,15 +16,17 @@
 
 Run from the repo root:
 
-    python -m unittest discover .fleetControl/schemaGeneration/tests
+    python3 -m unittest discover .fleetControl/schemaGeneration/tests
 
 The generator script lives one level up; we load it via importlib.util
 because the filename has a hyphen and is not importable as a module.
+
+Diff/bump tests (classify_changes, recommend_bump, apply_bump,
+bump_version) live in test_schema_diff.py since those helpers were
+extracted to schema_diff.py.
 """
 
 import importlib.util
-import os
-import tempfile
 import textwrap
 import unittest
 from pathlib import Path
@@ -39,219 +41,379 @@ _spec.loader.exec_module(gen)
 
 
 # ---------------------------------------------------------------------------
-# Test-local override fixtures (mirror Java's pattern of passing override
-# maps as parameters so production constants don't leak in)
+# Fake Settings classes -- mimic the real `class FooSettings` convention
+# from newrelic.core.config so walk_settings recognizes them.
 # ---------------------------------------------------------------------------
-TEST_ENUMS = {"log_level": ["off", "info", "debug"]}
-TEST_TYPES = {
-    "error_collector.ignore_classes": {
-        "type": "array", "items": {"type": "string"}, "default": [],
-    },
+
+
+class FakeRootSettings:
+    """Stands in for newrelic.core.config.TopLevelSettings."""
+
+
+class FakeChildSettings:
+    """Stands in for any nested settings object (e.g. TransactionTracerSettings)."""
+
+
+class NotASettingsObject:
+    """Plain object, intentionally NOT ending in 'Settings'. walk_settings
+    must NOT recurse into instances of this class -- it should treat them
+    as opaque leaves so AttributeFilter etc. don't get walked.
+    """
+
+
+def make_fake_settings():
+    """Build a small Settings tree exercising every supported leaf type."""
+    s = FakeRootSettings()
+    s.license_key = None
+    s.app_name = "Python Application"
+    s.monitor_mode = True
+    s.log_level = 20  # INFO -- must be translated to 'info' string in schema
+    s.log_file = None
+    s.proxy_port = None
+    s.transaction_tracer = FakeChildSettings()
+    s.transaction_tracer.enabled = True
+    s.transaction_tracer.transaction_threshold = None
+    s.transaction_tracer.record_sql = "obfuscated"
+    s.transaction_tracer.stack_trace_threshold = 0.5
+    s.transaction_tracer.function_trace = []
+    s.attributes = FakeChildSettings()
+    s.attributes.enabled = True
+    s.attributes.include = set()
+    s.attributes.exclude = set()
+    # Server-set / runtime -- should be excluded.
+    s.agent_run_id = None
+    s.beacon = None
+    # Subtree exclusion target.
+    s.cross_application_tracer = FakeChildSettings()
+    s.cross_application_tracer.enabled = False
+    # Non-Settings attribute (mimics AttributeFilter on the real settings).
+    s.attribute_filter = NotASettingsObject()
+    # Private/internal attribute -- should be skipped.
+    s._internal = "do not walk me"
+    return s
+
+
+TEST_ENUMS = {
+    "log_level": ["critical", "error", "warning", "info", "debug"],
+    "transaction_tracer.record_sql": ["off", "raw", "obfuscated"],
 }
-TEST_EXCLUDES = {"some_excluded_key"}
+# Test fixture mirrors the real TYPE_OVERRIDES -- list-typed leaves use the
+# new anyOf helper, everything else stays as before.
+TEST_TYPES = {
+    "transaction_tracer.transaction_threshold": {"type": "string"},
+    "transaction_tracer.function_trace": gen.string_array_or_delimited(default=[]),
+    "attributes.include": gen.string_array_or_delimited(default=[]),
+    "attributes.exclude": gen.string_array_or_delimited(default=[]),
+    "log_file": {"type": "string"},
+    "proxy_port": {"type": "integer"},
+}
+TEST_EXCLUDES = {"agent_run_id", "beacon", "cross_application_tracer.*"}
+
+
+# ---------------------------------------------------------------------------
+# infer_type
+# ---------------------------------------------------------------------------
 
 
 class InferTypeTests(unittest.TestCase):
-    def test_boolean(self):
-        self.assertEqual(gen.infer_type("true"), "boolean")
-        self.assertEqual(gen.infer_type("false"), "boolean")
-        self.assertEqual(gen.infer_type("True"), "boolean")
-        self.assertEqual(gen.infer_type("FALSE"), "boolean")
+    def test_bool_before_int(self):
+        # CRITICAL: bool is a subclass of int. infer_type MUST check bool
+        # before int so True/False don't end up as 'integer'.
+        self.assertEqual(gen.infer_type(True), "boolean")
+        self.assertEqual(gen.infer_type(False), "boolean")
 
     def test_integer(self):
-        self.assertEqual(gen.infer_type("0"), "integer")
-        self.assertEqual(gen.infer_type("42"), "integer")
-        self.assertEqual(gen.infer_type("-1"), "integer")
+        self.assertEqual(gen.infer_type(0), "integer")
+        self.assertEqual(gen.infer_type(42), "integer")
+        self.assertEqual(gen.infer_type(-1), "integer")
 
     def test_number(self):
-        self.assertEqual(gen.infer_type("0.5"), "number")
-        self.assertEqual(gen.infer_type("-1.25"), "number")
+        self.assertEqual(gen.infer_type(0.5), "number")
+        self.assertEqual(gen.infer_type(-1.25), "number")
 
-    def test_string_default(self):
+    def test_string(self):
         self.assertEqual(gen.infer_type("hello"), "string")
-        self.assertEqual(gen.infer_type("apdex_f"), "string")
-
-    def test_empty_and_none(self):
         self.assertEqual(gen.infer_type(""), "string")
-        self.assertEqual(gen.infer_type(None), "string")
+
+    def test_array_types(self):
+        self.assertEqual(gen.infer_type([]), "array")
+        self.assertEqual(gen.infer_type(set()), "array")
+        self.assertEqual(gen.infer_type(()), "array")
+
+    def test_dict_is_object(self):
+        self.assertEqual(gen.infer_type({}), "object")
+
+    def test_none_returns_none(self):
+        self.assertIsNone(gen.infer_type(None))
 
 
-class CoerceDefaultTests(unittest.TestCase):
-    def test_boolean(self):
-        self.assertIs(gen.coerce_default("true", "boolean"), True)
-        self.assertIs(gen.coerce_default("False", "boolean"), False)
-
-    def test_integer(self):
-        self.assertEqual(gen.coerce_default("42", "integer"), 42)
-
-    def test_number(self):
-        self.assertEqual(gen.coerce_default("0.5", "number"), 0.5)
-
-    def test_string_preserves_input(self):
-        # No strip -- the caller passes the value as-is so spacing is preserved.
-        self.assertEqual(gen.coerce_default("Python Application", "string"),
-                         "Python Application")
+# ---------------------------------------------------------------------------
+# default_for
+# ---------------------------------------------------------------------------
 
 
-class ParseIniTests(unittest.TestCase):
-    def test_single_comment_attached_to_key(self):
-        text = "[newrelic]\n# my comment\nfoo = 1\n"
-        keys, comments = gen.parse_ini(text)
-        self.assertEqual(keys, {"foo": "1"})
-        self.assertEqual(comments["foo"], "my comment")
+class DefaultForTests(unittest.TestCase):
+    def test_set_becomes_sorted_list(self):
+        self.assertEqual(gen.default_for({"b", "a", "c"}, "array"), ["a", "b", "c"])
 
-    def test_multi_line_comment_joined(self):
-        text = "[newrelic]\n# line one\n# line two\nfoo = 1\n"
-        _, comments = gen.parse_ini(text)
-        self.assertEqual(comments["foo"], "line one line two")
+    def test_tuple_becomes_list(self):
+        self.assertEqual(gen.default_for((1, 2, 3), "array"), [1, 2, 3])
 
-    def test_blank_line_resets_pending(self):
-        text = "[newrelic]\n# stale comment\n\nfoo = 1\n"
-        _, comments = gen.parse_ini(text)
-        self.assertNotIn("foo", comments)
+    def test_other_passthrough(self):
+        self.assertEqual(gen.default_for(42, "integer"), 42)
+        self.assertEqual(gen.default_for("x", "string"), "x")
+        self.assertIs(gen.default_for(True, "boolean"), True)
 
-    def test_commented_out_example_does_not_bleed(self):
-        # Mirrors the proxy_host example block in newrelic.ini: a commented-out
-        # `# proxy_host = hostname` followed by a blank, then a real key with
-        # its own description must NOT inherit the proxy_host comment text.
-        text = textwrap.dedent("""\
-            [newrelic]
-            # proxy_host = hostname
 
-            # real description
-            transaction_tracer.enabled = true
-            """)
-        _, comments = gen.parse_ini(text)
-        self.assertEqual(comments["transaction_tracer.enabled"], "real description")
+# ---------------------------------------------------------------------------
+# walk_settings
+# ---------------------------------------------------------------------------
 
-    def test_section_header_resets_pending(self):
-        text = textwrap.dedent("""\
-            # stale top-of-file comment
-            [newrelic]
-            foo = 1
-            """)
-        _, comments = gen.parse_ini(text)
-        self.assertNotIn("foo", comments)
 
-    def test_only_named_section_is_parsed(self):
-        text = textwrap.dedent("""\
-            [newrelic]
-            foo = 1
-            [newrelic:production]
-            bar = 2
-            """)
-        keys, _ = gen.parse_ini(text, section="newrelic")
-        self.assertIn("foo", keys)
-        self.assertNotIn("bar", keys)
+class WalkSettingsTests(unittest.TestCase):
+    def test_yields_top_level_leaves(self):
+        s = make_fake_settings()
+        leaves = dict(gen.walk_settings(s))
+        self.assertIn("license_key", leaves)
+        self.assertIn("app_name", leaves)
+        self.assertEqual(leaves["app_name"], "Python Application")
 
-    def test_dotted_keys_preserved(self):
-        text = "[newrelic]\ntransaction_tracer.enabled = true\n"
-        keys, _ = gen.parse_ini(text)
-        self.assertIn("transaction_tracer.enabled", keys)
+    def test_recurses_into_settings_classes(self):
+        s = make_fake_settings()
+        leaves = dict(gen.walk_settings(s))
+        self.assertIn("transaction_tracer.enabled", leaves)
+        self.assertIs(leaves["transaction_tracer.enabled"], True)
+        self.assertIn("attributes.include", leaves)
+
+    def test_does_not_recurse_into_non_settings_objects(self):
+        # NotASettingsObject does not end in 'Settings'. walk must yield
+        # it as an opaque leaf rather than descending into it.
+        s = make_fake_settings()
+        leaves = dict(gen.walk_settings(s))
+        self.assertIn("attribute_filter", leaves)
+        self.assertIsInstance(leaves["attribute_filter"], NotASettingsObject)
+
+    def test_skips_private_attrs(self):
+        s = make_fake_settings()
+        leaves = dict(gen.walk_settings(s))
+        self.assertNotIn("_internal", leaves)
+
+
+# ---------------------------------------------------------------------------
+# is_excluded
+# ---------------------------------------------------------------------------
+
+
+class IsExcludedTests(unittest.TestCase):
+    def test_exact_match(self):
+        self.assertTrue(gen.is_excluded("agent_run_id", {"agent_run_id"}))
+
+    def test_no_match(self):
+        self.assertFalse(gen.is_excluded("app_name", {"agent_run_id"}))
+
+    def test_wildcard_matches_descendant(self):
+        excludes = {"cross_application_tracer.*"}
+        self.assertTrue(gen.is_excluded("cross_application_tracer.enabled", excludes))
+        self.assertTrue(gen.is_excluded("cross_application_tracer.deep.nested.key", excludes))
+
+    def test_wildcard_matches_root(self):
+        # The 'foo.*' entry should also match the bare 'foo' path so a
+        # subtree exclude can drop the top-level node too.
+        self.assertTrue(gen.is_excluded("cross_application_tracer", {"cross_application_tracer.*"}))
+
+    def test_wildcard_does_not_match_unrelated_key(self):
+        excludes = {"cross_application_tracer.*"}
+        self.assertFalse(gen.is_excluded("cross_app", excludes))
+        self.assertFalse(gen.is_excluded("transaction_tracer.enabled", excludes))
+
+
+# ---------------------------------------------------------------------------
+# anyOf helpers
+# ---------------------------------------------------------------------------
+
+
+class StringArrayOrDelimitedTests(unittest.TestCase):
+    def test_shape_no_default(self):
+        s = gen.string_array_or_delimited()
+        self.assertEqual(s, {"anyOf": [{"type": "array", "items": {"type": "string"}}, {"type": "string"}]})
+
+    def test_shape_with_empty_default(self):
+        s = gen.string_array_or_delimited(default=[])
+        self.assertEqual(s["default"], [])
+        self.assertIn("anyOf", s)
+
+    def test_shape_with_populated_default(self):
+        s = gen.string_array_or_delimited(default=["a", "b"])
+        self.assertEqual(s["default"], ["a", "b"])
+
+    def test_custom_item_type(self):
+        s = gen.string_array_or_delimited(item_type="integer")
+        self.assertEqual(s["anyOf"][0]["items"], {"type": "integer"})
+
+
+class StatusCodeArrayOrRangeTests(unittest.TestCase):
+    def test_shape_three_options(self):
+        s = gen.status_code_array_or_range()
+        types = [opt.get("type") for opt in s["anyOf"]]
+        self.assertEqual(types, ["integer", "array", "string"])
+        # Range string carries a description so consumers know the format.
+        self.assertIn("range", s["anyOf"][2]["description"].lower())
+        self.assertEqual(s["anyOf"][1]["items"], {"type": "integer"})
+
+    def test_shape_with_default(self):
+        s = gen.status_code_array_or_range(default=[404])
+        self.assertEqual(s["default"], [404])
+
+
+# ---------------------------------------------------------------------------
+# make_property
+# ---------------------------------------------------------------------------
 
 
 class MakePropertyTests(unittest.TestCase):
     def test_boolean_with_default(self):
-        p = gen.make_property("enabled", "true", "Enable the thing",
-                              TEST_ENUMS, TEST_TYPES)
+        p = gen.make_property("enabled", True, "Enable the thing", TEST_ENUMS, TEST_TYPES)
         self.assertEqual(p["type"], "boolean")
         self.assertIs(p["default"], True)
         self.assertEqual(p["description"], "Enable the thing")
 
-    def test_integer_no_description(self):
-        p = gen.make_property("count", "42", "", TEST_ENUMS, TEST_TYPES)
+    def test_integer(self):
+        p = gen.make_property("count", 42, "", TEST_ENUMS, TEST_TYPES)
         self.assertEqual(p["type"], "integer")
         self.assertEqual(p["default"], 42)
         self.assertNotIn("description", p)
 
-    def test_empty_string_omits_default(self):
-        p = gen.make_property("ignore", "", "", TEST_ENUMS, TEST_TYPES)
-        self.assertEqual(p["type"], "string")
-        self.assertNotIn("default", p)
+    def test_float_is_number(self):
+        p = gen.make_property("threshold", 0.5, "", TEST_ENUMS, TEST_TYPES)
+        self.assertEqual(p["type"], "number")
+        self.assertEqual(p["default"], 0.5)
 
-    def test_enum_override_with_matching_default(self):
-        p = gen.make_property("log_level", "info", "", TEST_ENUMS, TEST_TYPES)
-        self.assertEqual(p["type"], "string")
-        self.assertEqual(p["enum"], ["off", "info", "debug"])
-        self.assertEqual(p["default"], "info")
+    def test_empty_set_auto_anyof(self):
+        # Set-typed live values (regardless of population) get auto-anyOf
+        # because the underlying agent setting is INI-string-parseable.
+        p = gen.make_property("some.set", set(), "", {}, {})
+        self.assertNotIn("type", p)
+        self.assertIn("anyOf", p)
+        self.assertEqual(p["anyOf"][0], {"type": "array", "items": {"type": "string"}})
+        self.assertEqual(p["anyOf"][1], {"type": "string"})
+        self.assertEqual(p["default"], [])
 
-    def test_enum_override_without_matching_default(self):
-        # Default not in enum -> no default emitted (avoid invalid schema).
-        p = gen.make_property("log_level", "verbose", "", TEST_ENUMS, TEST_TYPES)
-        self.assertEqual(p["enum"], ["off", "info", "debug"])
-        self.assertNotIn("default", p)
+    def test_set_with_values_anyof_sorted_default(self):
+        p = gen.make_property("some.set", {"b", "a"}, "", {}, {})
+        self.assertIn("anyOf", p)
+        self.assertEqual(p["default"], ["a", "b"])
 
-    def test_type_override_takes_precedence(self):
-        p = gen.make_property("error_collector.ignore_classes", "FooException",
-                              "doc", TEST_ENUMS, TEST_TYPES)
+    def test_set_of_ints_auto_anyof_int_items(self):
+        # Auto-anyOf should pick up the inner item type from the first
+        # element of a non-empty set.
+        p = gen.make_property("status_codes", {404, 500}, "", {}, {})
+        self.assertEqual(p["anyOf"][0]["items"], {"type": "integer"})
+        self.assertEqual(p["default"], [404, 500])
+
+    def test_empty_list_pins_items_to_string(self):
+        # Plain lists (not sets) still emit a regular array. Only set-typed
+        # live values trigger the auto-anyOf path.
+        p = gen.make_property("some.list", [], "", {}, {})
         self.assertEqual(p["type"], "array")
         self.assertEqual(p["items"], {"type": "string"})
         self.assertEqual(p["default"], [])
+
+    def test_dict_is_object_with_additional_properties_true(self):
+        p = gen.make_property("some.dict", {}, "", {}, {})
+        self.assertEqual(p["type"], "object")
+        self.assertTrue(p["additionalProperties"])
+
+    def test_log_level_int_translated_to_string(self):
+        p = gen.make_property("log_level", 20, "", TEST_ENUMS, TEST_TYPES)
+        self.assertEqual(p["type"], "string")
+        self.assertEqual(p["enum"], TEST_ENUMS["log_level"])
+        self.assertEqual(p["default"], "info")  # 20 -> 'info', not 20
+
+    def test_log_level_unknown_int_no_default(self):
+        p = gen.make_property("log_level", 99, "", TEST_ENUMS, TEST_TYPES)
+        self.assertEqual(p["enum"], TEST_ENUMS["log_level"])
+        self.assertNotIn("default", p)
+
+    def test_enum_with_matching_string_default(self):
+        p = gen.make_property("transaction_tracer.record_sql", "obfuscated", "", TEST_ENUMS, TEST_TYPES)
+        self.assertEqual(p["enum"], TEST_ENUMS["transaction_tracer.record_sql"])
+        self.assertEqual(p["default"], "obfuscated")
+
+    def test_enum_with_non_matching_default_no_default(self):
+        p = gen.make_property("transaction_tracer.record_sql", "weird", "", TEST_ENUMS, TEST_TYPES)
+        self.assertEqual(p["enum"], TEST_ENUMS["transaction_tracer.record_sql"])
+        self.assertNotIn("default", p)
+
+    def test_type_override_takes_precedence(self):
+        p = gen.make_property("transaction_tracer.transaction_threshold", None, "", TEST_ENUMS, TEST_TYPES)
+        self.assertEqual(p["type"], "string")
+        self.assertNotIn("default", p)
+
+    def test_type_override_anyof_for_array(self):
+        # The TEST_TYPES override for attributes.include uses the
+        # string_array_or_delimited helper; the override should win over
+        # auto-anyOf and just be applied verbatim.
+        p = gen.make_property("attributes.include", set(), "doc", TEST_ENUMS, TEST_TYPES)
+        self.assertIn("anyOf", p)
+        self.assertEqual(p["anyOf"][0], {"type": "array", "items": {"type": "string"}})
+        self.assertEqual(p["anyOf"][1], {"type": "string"})
+        self.assertEqual(p["default"], [])
         self.assertEqual(p["description"], "doc")
+
+    def test_none_with_no_override_returns_none(self):
+        # license_key has no override in TEST_TYPES; make_property should
+        # signal "skip me" to the caller.
+        result = gen.make_property("license_key", None, "", {}, {})
+        self.assertIsNone(result)
+
+
+# ---------------------------------------------------------------------------
+# build_properties
+# ---------------------------------------------------------------------------
 
 
 class BuildPropertiesTests(unittest.TestCase):
-    def test_excludes_keys(self):
-        keys = {"some_excluded_key": "true", "agent_enabled": "true"}
-        comments = {}
-        props = gen.build_properties(keys, comments, TEST_EXCLUDES,
-                                     TEST_ENUMS, TEST_TYPES)
-        self.assertNotIn("some_excluded_key", props)
-        self.assertIn("agent_enabled", props)
+    def test_excludes_applied(self):
+        s = make_fake_settings()
+        props = gen.build_properties(s, {}, TEST_EXCLUDES, TEST_ENUMS, TEST_TYPES)
+        self.assertNotIn("agent_run_id", props)
+        self.assertNotIn("beacon", props)
+        # Subtree exclude drops the descendant.
+        self.assertNotIn("cross_application_tracer.enabled", props)
 
-    def test_descriptions_attach(self):
-        keys = {"foo": "true"}
-        comments = {"foo": "foo description"}
-        props = gen.build_properties(keys, comments, TEST_EXCLUDES,
-                                     TEST_ENUMS, TEST_TYPES)
-        self.assertEqual(props["foo"]["description"], "foo description")
+    def test_descriptions_attached_when_present(self):
+        s = make_fake_settings()
+        descs = {"app_name": "the application name"}
+        props = gen.build_properties(s, descs, set(), TEST_ENUMS, TEST_TYPES)
+        self.assertEqual(props["app_name"]["description"], "the application name")
+
+    def test_skipped_none_settings_do_not_appear(self):
+        s = make_fake_settings()
+        # log_file has no TYPE_OVERRIDE in this fixture (we deliberately
+        # omit it from TEST_TYPES below) -> should be skipped.
+        types = dict(TEST_TYPES)
+        types.pop("log_file")
+        props = gen.build_properties(s, {}, set(), TEST_ENUMS, types)
+        self.assertNotIn("log_file", props)
+
+
+# ---------------------------------------------------------------------------
+# generate_schema -- end-to-end integration against the fake tree
+# ---------------------------------------------------------------------------
 
 
 class GenerateSchemaIntegrationTests(unittest.TestCase):
-    """Exercise the full pipeline against an inline INI fixture."""
-
-    FIXTURE = textwrap.dedent("""\
-        # Top-of-file comment that should NOT bleed into license_key.
-
-        [newrelic]
-        # The license key.
-        license_key = *** REPLACE ME ***
-
-        # The application name.
-        app_name = My App
-
-        # Logging configuration.
-        log_level = info
-
-        # Stale comment that should NOT bleed into the next key.
-
-        # Real description for transaction_tracer.enabled.
-        transaction_tracer.enabled = true
-
-        # Threshold for SQL stack trace.
-        transaction_tracer.stack_trace_threshold = 0.5
-
-        # Ignore list (override forces array).
-        error_collector.ignore_classes =
-
-        [newrelic:production]
-        # This should never be parsed.
-        ignored_key = should_not_appear
-        """)
-
     def setUp(self):
-        self.fixture_enums = {"log_level": ["off", "info", "debug"]}
-        self.fixture_types = {
-            "error_collector.ignore_classes": {
-                "type": "array", "items": {"type": "string"}, "default": [],
-            },
+        s = make_fake_settings()
+        descriptions = {
+            "app_name": "The application name.",
+            "monitor_mode": "Enable monitoring.",
+            "transaction_tracer.enabled": "Capture slow transactions.",
         }
         self.schema = gen.generate_schema(
-            self.FIXTURE,
-            exclude_keys=set(),
-            enum_overrides=self.fixture_enums,
-            type_overrides=self.fixture_types,
+            s, descriptions, exclude_keys=TEST_EXCLUDES, enum_overrides=TEST_ENUMS, type_overrides=TEST_TYPES
         )
+        self.props = self.schema["properties"]
 
     def test_top_level_required(self):
         self.assertEqual(self.schema["required"], ["license_key", "app_name"])
@@ -260,43 +422,98 @@ class GenerateSchemaIntegrationTests(unittest.TestCase):
         self.assertTrue(self.schema["additionalProperties"])
 
     def test_license_key_overridden(self):
-        lk = self.schema["properties"]["license_key"]
+        lk = self.props["license_key"]
         self.assertEqual(lk["type"], "string")
         self.assertEqual(lk["minLength"], 1)
         self.assertNotIn("default", lk)
         self.assertIn("license key", lk["description"].lower())
 
     def test_app_name_string_with_default(self):
-        an = self.schema["properties"]["app_name"]
+        an = self.props["app_name"]
         self.assertEqual(an["type"], "string")
-        self.assertEqual(an["default"], "My App")
-        self.assertIn("application name", an["description"].lower())
+        self.assertEqual(an["default"], "Python Application")
+        self.assertEqual(an["description"], "The application name.")
 
-    def test_log_level_enum_with_default(self):
-        ll = self.schema["properties"]["log_level"]
-        self.assertEqual(ll["enum"], ["off", "info", "debug"])
+    def test_log_level_uses_enum_with_string_default(self):
+        ll = self.props["log_level"]
+        self.assertEqual(ll["type"], "string")
+        self.assertEqual(ll["enum"], TEST_ENUMS["log_level"])
         self.assertEqual(ll["default"], "info")
 
-    def test_transaction_tracer_enabled_no_stale_comment(self):
-        prop = self.schema["properties"]["transaction_tracer.enabled"]
-        self.assertEqual(prop["type"], "boolean")
-        self.assertIs(prop["default"], True)
-        self.assertIn("Real description", prop["description"])
-        self.assertNotIn("Stale comment", prop["description"])
+    def test_monitor_mode_boolean_default_true(self):
+        mm = self.props["monitor_mode"]
+        self.assertEqual(mm["type"], "boolean")
+        self.assertIs(mm["default"], True)
 
-    def test_float_inferred_as_number(self):
-        prop = self.schema["properties"]["transaction_tracer.stack_trace_threshold"]
-        self.assertEqual(prop["type"], "number")
-        self.assertEqual(prop["default"], 0.5)
+    def test_transaction_tracer_enabled_boolean(self):
+        tt = self.props["transaction_tracer.enabled"]
+        self.assertEqual(tt["type"], "boolean")
+        self.assertIs(tt["default"], True)
 
-    def test_type_override_applied(self):
-        prop = self.schema["properties"]["error_collector.ignore_classes"]
-        self.assertEqual(prop["type"], "array")
-        self.assertEqual(prop["items"], {"type": "string"})
-        self.assertEqual(prop["default"], [])
+    def test_transaction_threshold_string_via_override(self):
+        tt = self.props["transaction_tracer.transaction_threshold"]
+        self.assertEqual(tt["type"], "string")
+        self.assertNotIn("default", tt)
 
-    def test_environment_section_ignored(self):
-        self.assertNotIn("ignored_key", self.schema["properties"])
+    def test_attributes_include_anyof_via_override(self):
+        ai = self.props["attributes.include"]
+        self.assertIn("anyOf", ai)
+        self.assertEqual(ai["anyOf"][0], {"type": "array", "items": {"type": "string"}})
+        self.assertEqual(ai["anyOf"][1], {"type": "string"})
+        self.assertEqual(ai["default"], [])
+
+    def test_excluded_keys_absent(self):
+        self.assertNotIn("agent_run_id", self.props)
+        self.assertNotIn("beacon", self.props)
+        self.assertNotIn("cross_application_tracer.enabled", self.props)
+
+
+# ---------------------------------------------------------------------------
+# parse_ini_descriptions -- INI is now description-only
+# ---------------------------------------------------------------------------
+
+
+class ParseIniDescriptionsTests(unittest.TestCase):
+    def test_single_comment_attached(self):
+        text = "[newrelic]\n# my comment\nfoo = 1\n"
+        self.assertEqual(gen.parse_ini_descriptions(text)["foo"], "my comment")
+
+    def test_multi_line_comment_joined(self):
+        text = "[newrelic]\n# line one\n# line two\nfoo = 1\n"
+        self.assertEqual(gen.parse_ini_descriptions(text)["foo"], "line one line two")
+
+    def test_blank_line_resets_pending(self):
+        text = "[newrelic]\n# stale\n\nfoo = 1\n"
+        self.assertNotIn("foo", gen.parse_ini_descriptions(text))
+
+    def test_commented_out_example_does_not_bleed(self):
+        text = textwrap.dedent("""\
+            [newrelic]
+            # proxy_host = hostname
+
+            # real description
+            transaction_tracer.enabled = true
+            """)
+        comments = gen.parse_ini_descriptions(text)
+        self.assertEqual(comments["transaction_tracer.enabled"], "real description")
+
+    def test_other_section_ignored(self):
+        text = textwrap.dedent("""\
+            [newrelic]
+            # in newrelic
+            foo = 1
+            [newrelic:production]
+            # in production
+            bar = 2
+            """)
+        comments = gen.parse_ini_descriptions(text)
+        self.assertIn("foo", comments)
+        self.assertNotIn("bar", comments)
+
+
+# ---------------------------------------------------------------------------
+# merge_schemas -- still lives in generate-schema.py
+# ---------------------------------------------------------------------------
 
 
 class MergeSchemasTests(unittest.TestCase):
@@ -306,7 +523,7 @@ class MergeSchemasTests(unittest.TestCase):
 
     def test_keys_only_in_old_preserved(self):
         old = {"type": "object", "properties": {"legacy": {"type": "string", "default": "x"}}}
-        new = {"type": "object", "properties": {"fresh":  {"type": "integer"}}}
+        new = {"type": "object", "properties": {"fresh": {"type": "integer"}}}
         merged = gen.merge_schemas(old, new)
         self.assertIn("legacy", merged["properties"])
         self.assertIn("fresh", merged["properties"])
@@ -332,225 +549,6 @@ class MergeSchemasTests(unittest.TestCase):
         self.assertEqual(x["type"], "integer")
         self.assertEqual(x["default"], 5)
         self.assertNotIn("enum", x)
-
-    def test_top_level_title_takes_new(self):
-        old = {"type": "object", "properties": {}, "title": "old", "description": "old"}
-        new = {"type": "object", "properties": {}, "title": "new", "description": "new"}
-        merged = gen.merge_schemas(old, new)
-        self.assertEqual(merged["title"], "new")
-        self.assertEqual(merged["description"], "new")
-
-
-def _obj(props, required=None, additional=True):
-    node = {"type": "object", "properties": props,
-            "additionalProperties": additional}
-    if required is not None:
-        node["required"] = required
-    return node
-
-
-def _by_kind(changes):
-    return {c["kind"]: c for c in changes}
-
-
-class ClassifyChangesTests(unittest.TestCase):
-    def test_no_changes(self):
-        s = _obj({"foo": {"type": "string", "default": "x"}})
-        self.assertEqual(gen.classify_changes(s, s), [])
-
-    def test_added_is_additive(self):
-        ch = gen.classify_changes(_obj({}), _obj({"foo": {"type": "string"}}))
-        self.assertEqual(len(ch), 1)
-        self.assertEqual(ch[0]["path"], "foo")
-        self.assertEqual(ch[0]["severity"], "additive")
-
-    def test_removed_is_breaking(self):
-        ch = gen.classify_changes(_obj({"foo": {"type": "string"}}), _obj({}))
-        self.assertEqual(ch[0]["kind"], "removed")
-        self.assertEqual(ch[0]["severity"], "breaking")
-
-    def test_type_change_is_breaking(self):
-        ch = _by_kind(gen.classify_changes(
-            _obj({"foo": {"type": "string"}}),
-            _obj({"foo": {"type": "integer"}}),
-        ))
-        self.assertEqual(ch["type_changed"]["severity"], "breaking")
-        self.assertIn("string", ch["type_changed"]["detail"])
-        self.assertIn("integer", ch["type_changed"]["detail"])
-
-    def test_required_added_is_breaking(self):
-        ch = _by_kind(gen.classify_changes(
-            _obj({"foo": {"type": "string"}}, []),
-            _obj({"foo": {"type": "string"}}, ["foo"]),
-        ))
-        self.assertEqual(ch["required_added"]["severity"], "breaking")
-
-    def test_required_removed_is_additive(self):
-        ch = _by_kind(gen.classify_changes(
-            _obj({"foo": {"type": "string"}}, ["foo"]),
-            _obj({"foo": {"type": "string"}}, []),
-        ))
-        self.assertEqual(ch["required_removed"]["severity"], "additive")
-
-    def test_additional_properties_tightened_is_breaking(self):
-        ch = _by_kind(gen.classify_changes(
-            _obj({}, None, True), _obj({}, None, False),
-        ))
-        self.assertEqual(ch["additional_properties_tightened"]["severity"], "breaking")
-
-    def test_additional_properties_implicit_true_matches_explicit(self):
-        old = {"type": "object", "properties": {}}
-        new = {"type": "object", "properties": {}, "additionalProperties": True}
-        self.assertEqual(gen.classify_changes(old, new), [])
-
-    def test_enum_value_removed_is_breaking(self):
-        ch = gen.classify_changes(
-            _obj({"x": {"type": "string", "enum": ["a", "b", "c"]}}),
-            _obj({"x": {"type": "string", "enum": ["a", "c"]}}),
-        )
-        removed = next(c for c in ch if c["kind"] == "enum_value_removed")
-        self.assertEqual(removed["severity"], "breaking")
-        self.assertIn("'b'", removed["detail"])
-
-    def test_enum_value_added_is_additive(self):
-        ch = gen.classify_changes(
-            _obj({"x": {"type": "string", "enum": ["a"]}}),
-            _obj({"x": {"type": "string", "enum": ["a", "b"]}}),
-        )
-        added = next(c for c in ch if c["kind"] == "enum_value_added")
-        self.assertEqual(added["severity"], "additive")
-
-    def test_enum_introduced_is_breaking(self):
-        ch = _by_kind(gen.classify_changes(
-            _obj({"x": {"type": "string"}}),
-            _obj({"x": {"type": "string", "enum": ["a", "b"]}}),
-        ))
-        self.assertEqual(ch["enum_introduced"]["severity"], "breaking")
-
-    def test_default_changed_is_additive(self):
-        ch = _by_kind(gen.classify_changes(
-            _obj({"x": {"type": "string", "default": "a"}}),
-            _obj({"x": {"type": "string", "default": "b"}}),
-        ))
-        self.assertEqual(ch["default_changed"]["severity"], "additive")
-
-    def test_description_changed_is_cosmetic(self):
-        ch = _by_kind(gen.classify_changes(
-            _obj({"x": {"type": "string", "description": "old"}}),
-            _obj({"x": {"type": "string", "description": "new"}}),
-        ))
-        self.assertEqual(ch["description_changed"]["severity"], "cosmetic")
-
-
-class RenderChangeTests(unittest.TestCase):
-    def test_added(self):
-        self.assertEqual(
-            gen.render_change({"path": "foo.bar", "kind": "added",
-                               "severity": "additive", "detail": "new property"}),
-            "+ foo.bar: new property",
-        )
-
-    def test_removed_no_detail(self):
-        self.assertEqual(
-            gen.render_change({"path": "foo", "kind": "removed",
-                               "severity": "breaking", "detail": ""}),
-            "- foo",
-        )
-
-    def test_type_changed(self):
-        self.assertEqual(
-            gen.render_change({"path": "foo", "kind": "type_changed",
-                               "severity": "breaking", "detail": "type x -> y"}),
-            "~ foo: type x -> y",
-        )
-
-
-class RecommendBumpTests(unittest.TestCase):
-    def test_any_breaking_is_major(self):
-        ch = [{"severity": "cosmetic"}, {"severity": "additive"}, {"severity": "breaking"}]
-        self.assertEqual(gen.recommend_bump(ch), "major")
-
-    def test_additive_without_breaking_is_minor(self):
-        self.assertEqual(gen.recommend_bump(
-            [{"severity": "cosmetic"}, {"severity": "additive"}]), "minor")
-
-    def test_cosmetic_only_is_patch(self):
-        self.assertEqual(gen.recommend_bump([{"severity": "cosmetic"}]), "patch")
-
-    def test_empty_is_none(self):
-        self.assertEqual(gen.recommend_bump([]), "none")
-
-
-class ApplyBumpTests(unittest.TestCase):
-    def test_major(self):
-        self.assertEqual(gen.apply_bump("1.2.3", "major"), "2.0.0")
-
-    def test_minor(self):
-        self.assertEqual(gen.apply_bump("1.2.3", "minor"), "1.3.0")
-
-    def test_patch(self):
-        self.assertEqual(gen.apply_bump("1.2.3", "patch"), "1.2.4")
-
-    def test_none_passthrough(self):
-        self.assertEqual(gen.apply_bump("1.2.3", "none"), "1.2.3")
-
-    def test_non_semver_raises(self):
-        with self.assertRaises(ValueError):
-            gen.apply_bump("not-semver", "major")
-
-
-FIXTURE_YAML = textwrap.dedent("""\
-    configurationDefinitions:
-      - platform: KUBERNETESCLUSTER
-        description: Test agent configuration
-        type: agent-config
-        version: 1.2.3
-        schema: ./schemas/config.json
-        format: ini
-    """)
-
-
-class BumpVersionTests(unittest.TestCase):
-    def _temp_yaml(self, content=FIXTURE_YAML):
-        f = tempfile.NamedTemporaryFile(
-            mode="w", suffix=".yml", delete=False, encoding="utf-8"
-        )
-        f.write(content)
-        f.close()
-        self.addCleanup(os.unlink, f.name)
-        return Path(f.name)
-
-    def test_read_returns_old_new(self):
-        path = self._temp_yaml()
-        old_v, new_v = gen.bump_version(path, "minor", False)
-        self.assertEqual(old_v, "1.2.3")
-        self.assertEqual(new_v, "1.3.0")
-
-    def test_write_false_does_not_touch_file(self):
-        path = self._temp_yaml()
-        before = path.read_text()
-        gen.bump_version(path, "major", False)
-        self.assertEqual(path.read_text(), before)
-
-    def test_write_true_mutates(self):
-        path = self._temp_yaml()
-        gen.bump_version(path, "major", True)
-        self.assertIn("version: 2.0.0", path.read_text())
-        # And nothing else should change.
-        self.assertIn("description: Test agent configuration", path.read_text())
-        self.assertIn("schema: ./schemas/config.json", path.read_text())
-
-    def test_none_bump_no_op_even_with_write(self):
-        path = self._temp_yaml()
-        before = path.read_text()
-        old_v, new_v = gen.bump_version(path, "none", True)
-        self.assertEqual(old_v, new_v)
-        self.assertEqual(path.read_text(), before)
-
-    def test_missing_version_raises(self):
-        path = self._temp_yaml("configurationDefinitions:\n  - platform: foo\n")
-        with self.assertRaises(RuntimeError):
-            gen.bump_version(path, "major", False)
 
 
 if __name__ == "__main__":

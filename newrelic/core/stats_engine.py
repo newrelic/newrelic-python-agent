@@ -1190,9 +1190,16 @@ class StatsEngine:
 
         if settings.distributed_tracing.enabled and settings.span_events.enabled and settings.collect_span_events:
 
+            from ldobserve import observe
             # Send span data to Darkly
             for event in transaction.span_events(self.__settings):
-                darkly.add(event, priority=transaction.priority)
+                i_attrs, a_attrs, u_attrs = event
+                attrs = {}
+                attrs.update(u_attrs)
+                attrs.update(a_attrs)
+                attrs.update(i_attrs)
+                with observe.start_span(i_attrs["name"], attributes=attrs) as span:
+                    pass
 
             if settings.infinite_tracing.enabled:
                 for event in transaction.span_protos(settings):

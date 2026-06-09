@@ -25,7 +25,7 @@
             ],
             "generationConfig": {
               "temperature": 0.7,
-              "maxOutputTokens": 100
+              "maxOutputTokens": 500
             }
           }
         ]
@@ -33,16 +33,15 @@
       "response": {
         "status_code": 404,
         "headers": {
-          "x-gemini-service-tier": "standard",
           "vary": "Origin, X-Origin, Referer",
           "content-type": "application/json; charset=UTF-8",
           "content-encoding": "gzip",
-          "date": "Fri, 27 Mar 2026 19:34:05 GMT",
+          "date": "Thu, 30 Apr 2026 19:59:41 GMT",
           "server": "scaffolding on HTTPServer2",
           "x-xss-protection": "0",
           "x-frame-options": "SAMEORIGIN",
           "x-content-type-options": "nosniff",
-          "server-timing": "gfet4t7; dur=80",
+          "server-timing": "gfet4t7; dur=76",
           "alt-svc": "h3=\":443\"; ma=2592000,h3-29=\":443\"; ma=2592000",
           "transfer-encoding": "chunked"
         },

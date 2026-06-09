@@ -4455,31 +4455,31 @@ def _process_module_builtin_defaults():
     )
 
     # Hybrid Agent Hooks
-    _process_module_definition(
-        "opentelemetry.context", "newrelic.hooks.hybridagent_opentelemetry", "instrument_context_api"
-    )
+    #_process_module_definition(
+    #    "opentelemetry.context", "newrelic.hooks.hybridagent_opentelemetry", "instrument_context_api"
+    #)
 
-    _process_module_definition(
-        "opentelemetry.instrumentation.propagators",
-        "newrelic.hooks.hybridagent_opentelemetry",
-        "instrument_global_propagators_api",
-    )
+    #_process_module_definition(
+    #    "opentelemetry.instrumentation.propagators",
+    #    "newrelic.hooks.hybridagent_opentelemetry",
+    #    "instrument_global_propagators_api",
+    #)
 
-    _process_module_definition(
-        "opentelemetry.trace", "newrelic.hooks.hybridagent_opentelemetry", "instrument_trace_api"
-    )
+    #_process_module_definition(
+    #    "opentelemetry.trace", "newrelic.hooks.hybridagent_opentelemetry", "instrument_trace_api"
+    #)
 
-    _process_module_definition(
-        "opentelemetry.util.http", "newrelic.hooks.hybridagent_opentelemetry", "instrument_util_http"
-    )
+    #_process_module_definition(
+    #    "opentelemetry.util.http", "newrelic.hooks.hybridagent_opentelemetry", "instrument_util_http"
+    #)
 
-    _process_module_definition(
-        "opentelemetry.instrumentation.utils", "newrelic.hooks.hybridagent_opentelemetry", "instrument_utils"
-    )
+    #_process_module_definition(
+    #    "opentelemetry.instrumentation.utils", "newrelic.hooks.hybridagent_opentelemetry", "instrument_utils"
+    #)
 
-    _process_module_definition(
-        "opentelemetry.instrumentation.pika.utils", "newrelic.hooks.hybridagent_opentelemetry", "instrument_pika_utils"
-    )
+    #_process_module_definition(
+    #    "opentelemetry.instrumentation.pika.utils", "newrelic.hooks.hybridagent_opentelemetry", "instrument_pika_utils"
+    #)
 
 
 def _process_module_entry_points():

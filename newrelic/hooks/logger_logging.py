@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import threading
 from urllib.parse import quote
 
 from newrelic.api.application import application_instance
@@ -21,6 +22,8 @@ from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapp
 from newrelic.core.config import global_settings
 
 IGNORED_LOG_RECORD_KEYS = {"message", "msg"}
+
+_callHandlers_reentry = threading.local()
 
 
 def add_nr_linking_metadata(message):
@@ -46,56 +49,71 @@ def bind_callHandlers(record):
 
 
 def wrap_callHandlers(wrapped, instance, args, kwargs):
-    transaction = current_transaction()
-    record = bind_callHandlers(*args, **kwargs)
-
-    logger_name = getattr(instance, "name", None)
-    if logger_name and logger_name.split(".")[0] == "newrelic":
+    # Re-entry guard: a downstream handler (e.g. OTel's LoggingHandler exporter)
+    # can synchronously emit a stdlib log record while we're still inside this
+    # wrapper. Fall through to the original callHandlers on re-entry so NR's
+    # logic doesn't run a second time on the nested call.
+    if getattr(_callHandlers_reentry, "active", False):
         return wrapped(*args, **kwargs)
+    _callHandlers_reentry.active = True
+    try:
+        transaction = current_transaction()
+        record = bind_callHandlers(*args, **kwargs)
 
-    if transaction:
-        settings = transaction.settings
-    else:
-        settings = global_settings()
+        logger_name = getattr(instance, "name", None)
+        if logger_name and logger_name.split(".")[0] == "newrelic":
+            return wrapped(*args, **kwargs)
 
-    # Return early if application logging not enabled
-    if settings and settings.application_logging and settings.application_logging.enabled:
-        level_name = str(getattr(record, "levelname", "UNKNOWN"))
-        if settings.application_logging.metrics and settings.application_logging.metrics.enabled:
-            if transaction:
-                transaction.record_custom_metric("Logging/lines", {"count": 1})
-                transaction.record_custom_metric(f"Logging/lines/{level_name}", {"count": 1})
-            else:
-                application = application_instance(activate=False)
-                if application and application.enabled:
-                    application.record_custom_metric("Logging/lines", {"count": 1})
-                    application.record_custom_metric(f"Logging/lines/{level_name}", {"count": 1})
+        if transaction:
+            settings = transaction.settings
+        else:
+            settings = global_settings()
 
-        if settings.application_logging.forwarding and settings.application_logging.forwarding.enabled:
-            try:
-                message = record.msg
-                if not isinstance(message, dict):
-                    # Allow python to convert the message to a string and template it with args.
-                    message = record.getMessage()
+        # Return early if application logging not enabled
+        if settings and settings.application_logging and settings.application_logging.enabled:
+            level_name = str(getattr(record, "levelname", "UNKNOWN"))
+            if settings.application_logging.metrics and settings.application_logging.metrics.enabled:
+                if transaction:
+                    transaction.record_custom_metric("Logging/lines", {"count": 1})
+                    transaction.record_custom_metric(f"Logging/lines/{level_name}", {"count": 1})
+                else:
+                    application = application_instance(activate=False)
+                    if application and application.enabled:
+                        application.record_custom_metric("Logging/lines", {"count": 1})
+                        application.record_custom_metric(f"Logging/lines/{level_name}", {"count": 1})
 
-                # Grab and filter context attributes from log record
-                record_attrs = vars(record)
-                context_attrs = {k: record_attrs[k] for k in record_attrs if k not in IGNORED_LOG_RECORD_KEYS}
+            if settings.application_logging.forwarding and settings.application_logging.forwarding.enabled:
+                try:
+                    message = record.msg
+                    if not isinstance(message, dict):
+                        # Allow python to convert the message to a string and template it with args.
+                        message = record.getMessage()
 
-                record_log_event(
-                    message=message, level=level_name, timestamp=int(record.created * 1000), attributes=context_attrs
-                )
-            except Exception:
-                pass
+                    # Grab and filter context attributes from log record
+                    record_attrs = vars(record)
+                    context_attrs = {k: record_attrs[k] for k in record_attrs if k not in IGNORED_LOG_RECORD_KEYS}
 
-        if settings.application_logging.local_decorating and settings.application_logging.local_decorating.enabled:
-            record._nr_original_message = record.getMessage
-            record.getMessage = wrap_getMessage(record.getMessage)
+                    record_log_event(
+                        message=message,
+                        level=level_name,
+                        timestamp=int(record.created * 1000),
+                        attributes=context_attrs,
+                    )
+                except Exception:
+                    pass
 
-    return wrapped(*args, **kwargs)
+            if settings.application_logging.local_decorating and settings.application_logging.local_decorating.enabled:
+                # Skip decoration if this record has already passed through
+                # otherwise getMessage gets double wrapped.
+                if not hasattr(record, "_nr_wrapped"):
+                    record._nr_wrapped = True
+                    record.getMessage = wrap_getMessage(record.getMessage)
+
+        return wrapped(*args, **kwargs)
+    finally:
+        _callHandlers_reentry.active = False
 
 
 def instrument_logging(module):
-    if hasattr(module, "Logger"):
-        if hasattr(module.Logger, "callHandlers"):
-            wrap_function_wrapper(module, "Logger.callHandlers", wrap_callHandlers)
+    if hasattr(module, "Logger") and hasattr(module.Logger, "callHandlers"):
+        wrap_function_wrapper(module, "Logger.callHandlers", wrap_callHandlers)

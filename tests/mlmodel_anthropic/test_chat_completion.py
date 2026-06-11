@@ -16,7 +16,7 @@ import pytest
 from conftest import ANTHROPIC_VERSION_METRIC
 from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
-    add_token_count_to_events,
+    add_token_counts_to_chat_events,
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
     events_sans_content,
@@ -51,6 +51,9 @@ def chat_completion_events(is_streaming):
                 "response.model": "claude-sonnet-4-5-20250929",
                 "request.temperature": 0.7,
                 "request.max_tokens": 100,
+                "response.usage.prompt_tokens": 16,
+                "response.usage.completion_tokens": 26,
+                "response.usage.total_tokens": 42,
                 "response.choices.finish_reason": "end_turn",
                 "vendor": "anthropic",
                 "ingest_source": "Python",
@@ -71,6 +74,7 @@ def chat_completion_events(is_streaming):
                 "completion_id": None,
                 "sequence": 0,
                 "response.model": "claude-sonnet-4-5-20250929",
+                "token_count": 0,
                 "vendor": "anthropic",
                 "ingest_source": "Python",
             },
@@ -88,6 +92,7 @@ def chat_completion_events(is_streaming):
                 "completion_id": None,
                 "sequence": 1,
                 "response.model": "claude-sonnet-4-5-20250929",
+                "token_count": 0,
                 "vendor": "anthropic",
                 "is_response": True,
                 "ingest_source": "Python",
@@ -238,7 +243,7 @@ def test_anthropic_chat_completion_no_content(
 def test_anthropic_chat_completion_with_token_count(
     exercise_model, chat_completion_metrics, set_trace_info, chat_completion_events
 ):
-    @validate_custom_events(add_token_count_to_events(chat_completion_events))
+    @validate_custom_events(add_token_counts_to_chat_events(chat_completion_events))
     @validate_custom_event_count(count=3)
     @validate_transaction_metrics(
         name="test_anthropic_chat_completion_with_token_count",

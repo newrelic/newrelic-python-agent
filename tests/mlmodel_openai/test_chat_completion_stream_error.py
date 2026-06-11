@@ -581,7 +581,7 @@ expected_events_stream_parsing_error = [
             "trace_id": "trace-id",
             "duration": None,  # Response time varies each test run
             "request.model": "gpt-3.5-turbo",
-            "response.organization": "new-relic-nkmd8b",
+            "response.organization": "nr-test-org",
             "request.temperature": 0.7,
             "request.max_tokens": 100,
             "response.number_of_messages": 1,

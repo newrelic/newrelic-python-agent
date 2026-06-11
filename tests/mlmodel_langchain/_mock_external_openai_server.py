@@ -217,7 +217,7 @@ STREAMED_RESPONSES_V1 = {
     "user: What is the capital of France? Answer in one word.": [
         {
             "content-type": "text/event-stream; charset=utf-8",
-            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "134",
             "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
             "openai-version": "2020-10-01",
@@ -872,7 +872,7 @@ RESPONSES_V1 = {
     "user: What is the capital of France? Answer in one word.": [
         {
             "content-type": "application/json",
-            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "238",
             "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
             "openai-version": "2020-10-01",

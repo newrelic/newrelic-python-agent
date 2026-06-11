@@ -35,7 +35,7 @@ STREAMED_RESPONSES_V0 = {
         {
             "Content-Type": "text/event-stream",
             "openai-model": "gpt-3.5-turbo-0613",
-            "openai-organization": "new-relic-nkmd8b",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "516",
             "openai-version": "2020-10-01",
             "x-ratelimit-limit-requests": "200",
@@ -96,7 +96,7 @@ STREAMED_RESPONSES_V0 = {
         {
             "Content-Type": "text/event-stream",
             "openai-model": "gpt-3.5-turbo-0613",
-            "openai-organization": "new-relic-nkmd8b",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "516",
             "openai-version": "2020-10-01",
             "x-ratelimit-limit-requests": "200",
@@ -696,7 +696,7 @@ RESPONSES_V0 = {
         {
             "content-type": "application/json",
             "openai-model": "gpt-3.5-turbo-0613",
-            "openai-organization": "new-relic-nkmd8b",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "6326",
             "openai-version": "2020-10-01",
             "x-ratelimit-limit-requests": "200",
@@ -733,7 +733,7 @@ RESPONSES_V0 = {
     "This is an embedding test.": (
         {
             "Content-Type": "application/json",
-            "openai-organization": "new-relic-nkmd8b",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "54",
             "openai-version": "2020-10-01",
             "x-ratelimit-limit-requests": "200",
@@ -762,7 +762,7 @@ RESPONSES_V0 = {
         {
             "Content-Type": "application/json",
             "openai-model": "gpt-3.5-turbo-0613",
-            "openai-organization": "new-relic-nkmd8b",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "1469",
             "openai-version": "2020-10-01",
             "x-ratelimit-limit-requests": "200",
@@ -796,7 +796,7 @@ RESPONSES_V0 = {
         {
             "Content-Type": "application/json",
             "openai-model": "gpt-3.5-turbo-0613",
-            "openai-organization": "new-relic-nkmd8b",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "1469",
             "openai-version": "2020-10-01",
             "x-ratelimit-limit-requests": "200",

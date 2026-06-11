@@ -55,7 +55,7 @@ chat_completion_recorded_events = [
             "duration": None,  # Response time varies each test run
             "request.model": "gpt-3.5-turbo",
             "response.model": "gpt-3.5-turbo-0613",
-            "response.organization": "new-relic-nkmd8b",
+            "response.organization": "nr-test-org",
             "request.temperature": 0.7,
             "request.max_tokens": 100,
             "response.choices.finish_reason": "stop",
@@ -202,7 +202,7 @@ chat_completion_recorded_token_events = [
             "duration": None,  # Response time varies each test run
             "request.model": "gpt-3.5-turbo",
             "response.model": "gpt-3.5-turbo-0613",
-            "response.organization": "new-relic-nkmd8b",
+            "response.organization": "nr-test-org",
             "request.temperature": 0.7,
             "request.max_tokens": 100,
             "response.choices.finish_reason": "stop",

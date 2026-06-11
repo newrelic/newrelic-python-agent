@@ -37,6 +37,7 @@ RECORD_EVENTS_FAILURE_LOG_MESSAGE = (
     "Please report this issue to New Relic Support."
 )
 STREAM_PARSING_FAILURE_LOG_MESSAGE = "Exception occurred in Anthropic instrumentation: Failed to process event stream information. Please report this issue to New Relic Support."
+TOKEN_COUNTING_CALLBACK_FAILURE_LOG_MESSAGE = "Exception occurred in llm_token_count_callback for Anthropic %s tokens. Please check your callback implementation and ensure it can handle the provided input. Falling back to token counts from response usage if available."  # noqa: S105
 
 _logger = logging.getLogger(__name__)
 
@@ -478,10 +479,16 @@ def _record_completion_success(
                 )
             )
             if input_message_content:
-                response_prompt_tokens = token_count_callback(request_model, input_message_content)
+                try:
+                    response_prompt_tokens = token_count_callback(request_model, input_message_content)
+                except Exception:
+                    _logger.exception(TOKEN_COUNTING_CALLBACK_FAILURE_LOG_MESSAGE, "prompt")
             response_text = _extract_message_content(response_content)
             if response_text:
-                response_completion_tokens = token_count_callback(response_model, response_text)
+                try:
+                    response_completion_tokens = token_count_callback(response_model, response_text)
+                except Exception:
+                    _logger.exception(TOKEN_COUNTING_CALLBACK_FAILURE_LOG_MESSAGE, "completion")
 
         # Prefer the sum of individual counts as the total whenever both are available.
         # This ensures consistency in the event that the token counting callback has reported

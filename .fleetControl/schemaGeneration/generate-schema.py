@@ -306,9 +306,15 @@ EXCLUDE_KEYS = {
     # Other server-set / non-Settings-class objects on the tree.
     "entity_guid",  # server-assigned at connect
     "attribute_filter",  # AttributeFilter instance, not a config value
+    # Internal-only QA / debug toggles. Surfacing these as customer-tunable
+    # would let an end user disable TLS validation, suppress harvests, swap
+    # logging payloads, etc. -- all of which are support / development
+    # affordances, not configuration.
+    "developer_mode",
     # Subtree exclusions (use `.*` suffix).
     "cross_application_tracer.*",  # legacy, replaced by distributed tracing
     "process_host.*",  # platform-derived (ip_address, display_name, etc.)
+    "debug.*",  # internal QA toggles (cert-validation off-switch, verbose log dumps, etc.)
 }
 
 
@@ -609,8 +615,27 @@ def generate_schema(settings, descriptions, exclude_keys=None, enum_overrides=No
 
 # ---------------------------------------------------------------------------
 # Schema merge -- deep-merges a freshly generated schema into the existing
-# one so the published schema only ever grows.
+# one so the published schema only ever grows for forward-compatibility
+# purposes.
+#
+# Caveat: the "only ever grows" promise does NOT extend to keys that the
+# current generator deliberately excludes via EXCLUDE_KEYS. Filtering those
+# out of the old schema before merge guarantees that newly-added exclusions
+# actually take effect on the next regeneration, instead of being silently
+# resurrected from the prior on-disk schema.
 # ---------------------------------------------------------------------------
+
+
+def filter_excluded(schema, exclude_keys):
+    """Return a copy of `schema` with any properties whose dotted path
+    matches `exclude_keys` removed. Operates on flat top-level property
+    paths only -- mirrors how is_excluded is used in build_properties.
+    """
+    if not schema or "properties" not in schema:
+        return schema
+    filtered = dict(schema)
+    filtered["properties"] = {k: v for k, v in schema["properties"].items() if not is_excluded(k, exclude_keys)}
+    return filtered
 
 
 def merge_schemas(old_s, new_s):
@@ -714,7 +739,12 @@ def main(argv=None):
     generated = generate_schema(settings, descriptions)
 
     old_schema = {} if args.force else load_existing(SCHEMA_PATH)
-    new_schema = merge_schemas(old_schema, generated)
+    # Drop excluded paths from the prior schema before merging so newly-added
+    # entries in EXCLUDE_KEYS take effect instead of being preserved by the
+    # "schema only ever grows" merge. Keep the original around so the diff
+    # classifier can still surface those removals to reviewers.
+    filtered_old_schema = filter_excluded(old_schema, EXCLUDE_KEYS)
+    new_schema = merge_schemas(filtered_old_schema, generated)
 
     validate_meta_schema(new_schema)
 

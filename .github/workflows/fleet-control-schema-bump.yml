@@ -41,7 +41,7 @@ on:
           Git ref (tag or commit) to compare against. Defaults to the
           latest v* tag on main.
         required: false
-        default: ''
+        default: ""
 
 jobs:
   bump:
@@ -52,7 +52,7 @@ jobs:
       pull-requests: write
 
     steps:
-      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b  # pin@v4
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # pin@v4
         with:
           fetch-depth: 0
           ref: main
@@ -78,7 +78,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Compute and apply bump
         id: bump
@@ -97,15 +97,15 @@ jobs:
       - name: Open bump PR
         id: create-pr
         if: steps.bump.outputs.bumped == 'true'
-        uses: peter-evans/create-pull-request@6d6857d36972b65feb161a90e484f2984215f83e  # pin@v6
+        uses: peter-evans/create-pull-request@6d6857d36972b65feb161a90e484f2984215f83e # pin@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           add-paths: .fleetControl/configurationDefinitions.yml
           branch: bump-agent-config-schema-version-${{ github.run_id }}
           delete-branch: true
           base: main
-          title: 'chore: bump agent config schema version'
-          commit-message: 'chore: bump agent config schema version'
+          title: "chore: bump agent config schema version"
+          commit-message: "chore: bump agent config schema version"
           body: |
             Auto-generated bump PR.
 

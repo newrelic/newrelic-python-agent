@@ -1,0 +1,79 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+interactions:
+  - request:
+      body:
+        '{"contents": [{"parts": [{"text": "What is the capital of France?"}], "role":
+        "user"}], "systemInstruction": {"parts": [{"text": "Answer the user''s question
+        in one word.\n\nYou are an agent. Your internal name is \"my_agent\"."}], "role":
+        "user"}, "generationConfig": {}}'
+      headers:
+        Accept:
+          - "*/*"
+        Connection:
+          - keep-alive
+        Content-Type:
+          - application/json
+        Host:
+          - generativelanguage.googleapis.com
+        accept-encoding:
+          - identity
+        x-goog-api-key:
+          - XXXXXX
+      method: POST
+      uri: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent
+    response:
+      body:
+        string:
+          "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\":
+          [\n          {\n            \"text\": \"Paris\",\n            \"thoughtSignature\":
+          \"EtcDCtQDAQw51sf7SnGSYaq6KQBVSfkaRtVpY09Vb2mvRQE32lJRfHW/wjeScdNCatEqI9919UNu5PtM9Rq3h9x3LhK7Sn6iNaaudS7x0XfSRPeMz6rm85wO7NWUYcNR8Srj6tk3gF5nh4TZhlpk6JRxEBXMJJLmF50Z7akDL3o9j+S0DKaG58tfKAxMRC5V5xRdR/o0XmAL3v6Ba+9ZtIc4Y/4iMmJsQyM3iJK2Bf4YAOPhmjS5tmFMupQl3ZruDKP3FihTqoLioiTUWSlW29+Ya/RK4pu5wuXz1Qy96N+Av+MzvzO98jD68IbeCKmRkKjwFvN68mPSFQAb2wIc6pmgwetkhkuDuXL4wzVDTny8pZEJLwNvrUE5HodOZAntifwvbijfrdkI4OD99n8F96fC1PO0bnRk1KgRMFEyAmAF+LiZZRSL4bJ2vWbWZM4gTC2VS4ajThqHHu8vwsR6HZh0pnDvzkVF3E7+wbeA+9NKindJ0AsEIX8Wh9S/IdZePv0ojDnUKwGVwC1MA5Z3ZE9KVsfluA3PdrTVSE4pXSP8Hmo4yIF8w3VCiP99iIsDdcgoXr2PgDlDc1KtGrckmjIAiCAFGD6HCBqIcwMDgr8WabeHZbObQyY/\"\n
+          \         }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\":
+          \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\":
+          34,\n    \"candidatesTokenCount\": 1,\n    \"totalTokenCount\": 152,\n    \"promptTokensDetails\":
+          [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 34\n
+          \     }\n    ],\n    \"thoughtsTokenCount\": 117,\n    \"serviceTier\": \"standard\"\n
+          \ },\n  \"modelVersion\": \"gemini-3.5-flash\",\n  \"responseId\": \"GEwnau3jBoeHjMcP-tC5kQc\"\n}\n"
+      headers:
+        Accept-Ranges:
+          - none
+        Alt-Svc:
+          - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+        Content-Type:
+          - application/json; charset=UTF-8
+        Date:
+          - Mon, 08 Jun 2026 23:11:21 GMT
+        Server:
+          - scaffolding on HTTPServer2
+        Server-Timing:
+          - gfet4t7; dur=1177
+        Transfer-Encoding:
+          - chunked
+        Vary:
+          - X-Origin
+          - Referer
+          - Origin,Accept-Encoding
+        X-Content-Type-Options:
+          - nosniff
+        X-Frame-Options:
+          - SAMEORIGIN
+        X-Gemini-Service-Tier:
+          - standard
+        X-XSS-Protection:
+          - "0"
+      status:
+        code: 200
+        message: OK
+version: 1

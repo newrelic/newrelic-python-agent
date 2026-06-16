@@ -26,6 +26,8 @@ from testing_support.fixtures import (
 )
 from testing_support.ml_testing_utils import set_trace_info
 
+from newrelic.common.package_version_utils import get_package_version
+
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow-downs.
     "transaction_tracer.explain_threshold": 0.0,
@@ -44,8 +46,12 @@ collector_agent_registration = collector_agent_registration_fixture(
 )
 
 
+GOOGLEADK_VERSION = get_package_version("google-adk")
+assert GOOGLEADK_VERSION, "Failed to pull google-adk version for supportability metric"
+
+
 @pytest.fixture(autouse=True)
-def gemini_client(monkeypatch, vcr_recording):
+def patch_gemini_client(monkeypatch, vcr_recording):
     """
     Force accept-encoding: identity onto every google.genai.Client created during a test.
 
@@ -56,6 +62,7 @@ def gemini_client(monkeypatch, vcr_recording):
     controlled by passing --record-mode={all, none, new_episodes} to pytest.
     """
 
+    # Ensure either fake or real credentials are supplied to the Client or it won't init
     if vcr_recording:
         google_api_key = os.environ.get("GOOGLE_API_KEY")
         if not google_api_key:
@@ -94,11 +101,11 @@ def exercise_agent(loop):
         session_service = InMemorySessionService()
         runner = Runner(app_name=app_name, agent=agent, session_service=session_service)
 
-        async def _run():
+        async def _exercise():
             session = await session_service.create_session(app_name=app_name, user_id=user_id)
             new_message = types.Content(role="user", parts=[types.Part.from_text(text=prompt)])
             return [e async for e in runner.run_async(user_id=user_id, session_id=session.id, new_message=new_message)]
 
-        return loop.run_until_complete(_run())
+        return loop.run_until_complete(_exercise())
 
     return _exercise_agent

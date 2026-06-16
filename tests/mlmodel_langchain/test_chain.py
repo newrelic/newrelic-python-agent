@@ -38,18 +38,29 @@ from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.object_names import callable_name
 
 try:
-    from langchain_classic.chains import create_retrieval_chain
     from langchain_classic.chains.combine_documents import create_stuff_documents_chain
     from langchain_classic.chains.openai_functions import (
         create_structured_output_chain,
         create_structured_output_runnable,
     )
+    from langchain_classic.chains.retrieval import create_retrieval_chain
     from langchain_core.output_parsers import BaseOutputParser
 except ImportError:
-    from langchain.chains import create_retrieval_chain
-    from langchain.chains.combine_documents import create_stuff_documents_chain
-    from langchain.chains.openai_functions import create_structured_output_chain, create_structured_output_runnable
-    from langchain.schema import BaseOutputParser
+    # Before Langchain v1.3.9
+    try:
+        from langchain_classic.chains import create_retrieval_chain
+        from langchain_classic.chains.combine_documents import create_stuff_documents_chain
+        from langchain_classic.chains.openai_functions import (
+            create_structured_output_chain,
+            create_structured_output_runnable,
+        )
+        from langchain_core.output_parsers import BaseOutputParser
+    except ImportError:
+        # Before Langchain v1.0.0
+        from langchain.chains import create_retrieval_chain
+        from langchain.chains.combine_documents import create_stuff_documents_chain
+        from langchain.chains.openai_functions import create_structured_output_chain, create_structured_output_runnable
+        from langchain.schema import BaseOutputParser
 
 
 chat_completion_recorded_events_invoke_langchain_error = [
@@ -386,16 +397,14 @@ chat_completion_recorded_events_invoke_no_metadata_or_tags = [
 
 recorded_events_retrieval_chain_response = [
     [
-        {"type": "LlmEmbedding"},
+        {"timestamp": None, "type": "LlmEmbedding"},
         {
+            "duration": None,
             "id": None,
-            "span_id": None,
-            "trace_id": "trace-id",
+            "ingest_source": "Python",
+            "input": "[[3923, 374, 220, 17, 489, 220, 19, 30]]",
             "request.model": "text-embedding-ada-002",
             "request_id": None,
-            "duration": None,
-            "response.model": "text-embedding-ada-002-v2",
-            "response.organization": "user-rk8wq9voijy9sejrncvgi0iw",
             "response.headers.llmVersion": "2020-10-01",
             "response.headers.ratelimitLimitRequests": 10000,
             "response.headers.ratelimitLimitTokens": 10000000,
@@ -403,93 +412,120 @@ recorded_events_retrieval_chain_response = [
             "response.headers.ratelimitRemainingTokens": 9999992,
             "response.headers.ratelimitResetRequests": "6ms",
             "response.headers.ratelimitResetTokens": "0s",
+            "response.model": "text-embedding-ada-002-v2",
+            "response.organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "span_id": None,
+            "trace_id": "trace-id",
             "vendor": "openai",
-            "ingest_source": "Python",
-            "input": "[[3923, 374, 220, 17, 489, 220, 19, 30]]",
         },
     ],
     [
-        {"type": "LlmEmbedding"},
+        {"timestamp": None, "type": "LlmEmbedding"},
         {
+            "duration": None,
             "id": None,
-            "span_id": None,
-            "trace_id": "trace-id",
+            "ingest_source": "Python",
+            "input": "[[10590]]",
             "request.model": "text-embedding-ada-002",
             "request_id": None,
-            "duration": None,
-            "response.model": "text-embedding-ada-002-v2",
-            "response.organization": "user-rk8wq9voijy9sejrncvgi0iw",
             "response.headers.llmVersion": "2020-10-01",
             "response.headers.ratelimitLimitRequests": 10000,
             "response.headers.ratelimitLimitTokens": 10000000,
             "response.headers.ratelimitRemainingRequests": 9999,
-            "response.headers.ratelimitRemainingTokens": 9999998,
+            "response.headers.ratelimitRemainingTokens": 9999999,
             "response.headers.ratelimitResetRequests": "6ms",
             "response.headers.ratelimitResetTokens": "0s",
+            "response.model": "text-embedding-ada-002-v2",
+            "response.organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "span_id": None,
+            "trace_id": "trace-id",
             "vendor": "openai",
-            "ingest_source": "Python",
-            "input": "[[10590]]",
         },
     ],
     [
-        {"type": "LlmVectorSearch"},
+        {"timestamp": None, "type": "LlmVectorSearch"},
         {
-            "request.k": 4,
             "duration": None,
+            "id": None,
+            "ingest_source": "Python",
+            "request.k": 4,
+            "request.query": "math",
             "response.number_of_documents": 1,
             "span_id": None,
             "trace_id": "trace-id",
-            "id": None,
             "vendor": "langchain",
-            "ingest_source": "Python",
-            "request.query": "math",
         },
     ],
     [
-        {"type": "LlmVectorSearchResult"},
+        {"timestamp": None, "type": "LlmVectorSearchResult"},
         {
             "id": None,
+            "ingest_source": "Python",
+            "page_content": "What is 2 + 4?",
             "search_id": None,
             "sequence": 0,
             "span_id": None,
             "trace_id": "trace-id",
             "vendor": "langchain",
-            "ingest_source": "Python",
-            "page_content": "What is 2 + 4?",
         },
     ],
     [
-        {"type": "LlmChatCompletionMessage"},
+        {"timestamp": None, "type": "LlmChatCompletionSummary"},
         {
+            "duration": None,
             "id": None,
-            "request_id": None,
+            "ingest_source": "Python",
+            "request_id": "",
+            "response.number_of_messages": 2,
             "span_id": None,
+            "timestamp": None,
             "trace_id": "trace-id",
-            "completion_id": None,
-            "sequence": 1,
             "vendor": "langchain",
+            "virtual_llm": True,
+        },
+    ],
+    [
+        {"timestamp": None, "type": "LlmChatCompletionMessage"},
+        {
+            "completion_id": None,
+            "content": "{'input': 'math'}",
+            "id": None,
+            "ingest_source": "Python",
+            "request_id": "",
+            "role": "user",
+            "sequence": 0,
+            "span_id": None,
+            "timestamp": None,
+            "trace_id": "trace-id",
+            "vendor": "langchain",
+            "virtual_llm": True,
+        },
+    ],
+    [
+        {"timestamp": None, "type": "LlmChatCompletionMessage"},
+        {
+            "completion_id": None,
+            "content": "page_content='What is 2 + 4?'",
+            "id": None,
             "ingest_source": "Python",
             "is_response": True,
+            "request_id": "",
             "role": "assistant",
+            "sequence": 1,
+            "span_id": None,
+            "trace_id": "trace-id",
+            "vendor": "langchain",
             "virtual_llm": True,
-            "content": "page_content='What is 2 + 4?'",
         },
     ],
     [
-        {"type": "LlmChatCompletionSummary"},
+        {"timestamp": None, "type": "LlmChatCompletionSummary"},
         {
-            "id": None,
-            "timestamp": None,
-            "span_id": None,
-            "trace_id": "trace-id",
-            "request.model": "gpt-3.5-turbo",
-            "request.temperature": 0.7,
-            "vendor": "openai",
-            "ingest_source": "Python",
-            "request_id": None,
             "duration": None,
-            "response.model": "gpt-3.5-turbo-0125",
-            "response.organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "id": None,
+            "ingest_source": "Python",
+            "request.model": "gpt-3.5-turbo",
+            "request_id": None,
             "response.choices.finish_reason": "stop",
             "response.headers.llmVersion": "2020-10-01",
             "response.headers.ratelimitLimitRequests": 10000,
@@ -498,178 +534,413 @@ recorded_events_retrieval_chain_response = [
             "response.headers.ratelimitRemainingTokens": 49999927,
             "response.headers.ratelimitResetRequests": "6ms",
             "response.headers.ratelimitResetTokens": "0s",
+            "response.model": "gpt-3.5-turbo-0125",
             "response.number_of_messages": 3,
+            "response.organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "span_id": None,
+            "timestamp": None,
+            "trace_id": "trace-id",
+            "vendor": "openai",
         },
     ],
     [
-        {"type": "LlmChatCompletionMessage"},
+        {"timestamp": None, "type": "LlmChatCompletionMessage"},
         {
+            "completion_id": None,
+            "content": "You are a generator of quiz questions for a seminar. Use the following pieces of "
+            "retrieved context to generate 5 multiple choice questions (A,B,C,D) on the "
+            "subject matter. Use a three sentence maximum and keep the answer concise. Render "
+            "the output as HTML\n"
+            "\n"
+            "What is 2 + 4?",
             "id": None,
-            "timestamp": None,
+            "ingest_source": "Python",
             "request_id": None,
-            "span_id": None,
-            "trace_id": "trace-id",
+            "response.model": "gpt-3.5-turbo-0125",
             "role": "system",
-            "completion_id": None,
             "sequence": 0,
-            "response.model": "gpt-3.5-turbo-0125",
+            "span_id": None,
+            "timestamp": None,
+            "trace_id": "trace-id",
             "vendor": "openai",
-            "ingest_source": "Python",
-            "content": "You are a generator of quiz questions for a seminar. Use the following pieces of retrieved context to generate 5 multiple choice questions (A,B,C,D) on the subject matter. Use a three sentence maximum and keep the answer concise. Render the output as HTML\n\nWhat is 2 + 4?",
         },
     ],
     [
-        {"type": "LlmChatCompletionMessage"},
+        {"timestamp": None, "type": "LlmChatCompletionMessage"},
         {
-            "id": None,
-            "timestamp": None,
-            "request_id": None,
-            "span_id": None,
-            "trace_id": "trace-id",
-            "role": "user",
             "completion_id": None,
-            "sequence": 1,
-            "response.model": "gpt-3.5-turbo-0125",
-            "vendor": "openai",
-            "ingest_source": "Python",
             "content": "math",
-        },
-    ],
-    [
-        {"type": "LlmChatCompletionMessage"},
-        {
             "id": None,
-            "request_id": None,
-            "span_id": None,
-            "trace_id": "trace-id",
-            "role": "assistant",
-            "completion_id": None,
-            "sequence": 2,
-            "response.model": "gpt-3.5-turbo-0125",
-            "vendor": "openai",
             "ingest_source": "Python",
-            "is_response": True,
-            "content": "```html\n<!DOCTYPE html>\n<html>\n<head>\n  <title>Math Quiz</title>\n</head>\n<body>\n  <h2>Math Quiz Questions</h2>\n  <ol>\n    <li>What is the result of 5 + 3?</li>\n      <ul>\n        <li>A) 7</li>\n        <li>B) 8</li>\n        <li>C) 9</li>\n        <li>D) 10</li>\n      </ul>\n    <li>What is the product of 6 x 7?</li>\n      <ul>\n        <li>A) 36</li>\n        <li>B) 42</li>\n        <li>C) 48</li>\n        <li>D) 56</li>\n      </ul>\n    <li>What is the square root of 64?</li>\n      <ul>\n        <li>A) 6</li>\n        <li>B) 7</li>\n        <li>C) 8</li>\n        <li>D) 9</li>\n      </ul>\n    <li>What is the result of 12 / 4?</li>\n      <ul>\n        <li>A) 2</li>\n        <li>B) 3</li>\n        <li>C) 4</li>\n        <li>D) 5</li>\n      </ul>\n    <li>What is the sum of 15 + 9?</li>\n      <ul>\n        <li>A) 22</li>\n        <li>B) 23</li>\n        <li>C) 24</li>\n        <li>D) 25</li>\n      </ul>\n  </ol>\n</body>\n</html>\n```",
-        },
-    ],
-    [
-        {"type": "LlmChatCompletionMessage"},
-        {
-            "id": None,
-            "timestamp": None,
             "request_id": None,
-            "span_id": None,
-            "trace_id": "trace-id",
-            "completion_id": None,
-            "sequence": 0,
             "response.model": "gpt-3.5-turbo-0125",
-            "vendor": "langchain",
-            "ingest_source": "Python",
             "role": "user",
-            "virtual_llm": True,
-            "content": "{'input': 'math', 'context': [Document(id='1234', metadata={}, page_content='What is 2 + 4?')]}",
+            "sequence": 1,
+            "span_id": None,
+            "timestamp": None,
+            "trace_id": "trace-id",
+            "vendor": "openai",
         },
     ],
     [
-        {"type": "LlmChatCompletionMessage"},
+        {"timestamp": None, "type": "LlmChatCompletionMessage"},
         {
+            "completion_id": None,
+            "content": "```html\n"
+            "1. What is the sum of 5 + 3?\n"
+            "   A) 6\n"
+            "   B) 7\n"
+            "   C) 8\n"
+            "   D) 9\n"
+            "   Answer: B) 7\n"
+            "\n"
+            "2. What is the result of 10 - 3?\n"
+            "   A) 5\n"
+            "   B) 6\n"
+            "   C) 7\n"
+            "   D) 8\n"
+            "   Answer: C) 7\n"
+            "\n"
+            "3. What is the product of 4 * 6?\n"
+            "   A) 20\n"
+            "   B) 24\n"
+            "   C) 28\n"
+            "   D) 30\n"
+            "   Answer: B) 24\n"
+            "\n"
+            "4. What is the outcome of 15 / 3?\n"
+            "   A) 3\n"
+            "   B) 4\n"
+            "   C) 5\n"
+            "   D) 6\n"
+            "   Answer: A) 3\n"
+            "\n"
+            "5. What is the value of 8 squared?\n"
+            "   A) 64\n"
+            "   B) 72\n"
+            "   C) 80\n"
+            "   D) 88\n"
+            "   Answer: A) 64\n"
+            "```\n",
             "id": None,
+            "ingest_source": "Python",
+            "is_response": True,
             "request_id": None,
+            "response.model": "gpt-3.5-turbo-0125",
+            "role": "assistant",
+            "sequence": 2,
             "span_id": None,
             "trace_id": "trace-id",
-            "completion_id": None,
-            "sequence": 1,
-            "response.model": "gpt-3.5-turbo-0125",
-            "vendor": "langchain",
-            "ingest_source": "Python",
-            "role": "assistant",
-            "is_response": True,
-            "virtual_llm": True,
-            "content": "```html\n<!DOCTYPE html>\n<html>\n<head>\n  <title>Math Quiz</title>\n</head>\n<body>\n  <h2>Math Quiz Questions</h2>\n  <ol>\n    <li>What is the result of 5 + 3?</li>\n      <ul>\n        <li>A) 7</li>\n        <li>B) 8</li>\n        <li>C) 9</li>\n        <li>D) 10</li>\n      </ul>\n    <li>What is the product of 6 x 7?</li>\n      <ul>\n        <li>A) 36</li>\n        <li>B) 42</li>\n        <li>C) 48</li>\n        <li>D) 56</li>\n      </ul>\n    <li>What is the square root of 64?</li>\n      <ul>\n        <li>A) 6</li>\n        <li>B) 7</li>\n        <li>C) 8</li>\n        <li>D) 9</li>\n      </ul>\n    <li>What is the result of 12 / 4?</li>\n      <ul>\n        <li>A) 2</li>\n        <li>B) 3</li>\n        <li>C) 4</li>\n        <li>D) 5</li>\n      </ul>\n    <li>What is the sum of 15 + 9?</li>\n      <ul>\n        <li>A) 22</li>\n        <li>B) 23</li>\n        <li>C) 24</li>\n        <li>D) 25</li>\n      </ul>\n  </ol>\n</body>\n</html>\n```",
+            "vendor": "openai",
         },
     ],
     [
-        {"type": "LlmChatCompletionMessage"},
+        {"timestamp": None, "type": "LlmChatCompletionSummary"},
         {
+            "duration": None,
             "id": None,
-            "request_id": None,
+            "ingest_source": "Python",
+            "request.model": "gpt-3.5-turbo",
+            "request_id": "",
+            "response.model": "gpt-3.5-turbo-0125",
+            "response.number_of_messages": 2,
+            "span_id": None,
+            "timestamp": None,
+            "trace_id": "trace-id",
+            "vendor": "langchain",
+            "virtual_llm": True,
+        },
+    ],
+    [
+        {"timestamp": None, "type": "LlmChatCompletionMessage"},
+        {
+            "completion_id": None,
+            "content": "{'input': 'math', 'context': [Document(id='1234', metadata={}, "
+            "page_content='What is 2 + 4?')]}",
+            "id": None,
+            "ingest_source": "Python",
+            "request_id": "",
+            "response.model": "gpt-3.5-turbo-0125",
+            "role": "user",
+            "sequence": 0,
+            "span_id": None,
+            "timestamp": None,
+            "trace_id": "trace-id",
+            "vendor": "langchain",
+            "virtual_llm": True,
+        },
+    ],
+    [
+        {"timestamp": None, "type": "LlmChatCompletionMessage"},
+        {
+            "completion_id": None,
+            "content": "```html\n"
+            "1. What is the sum of 5 + 3?\n"
+            "   A) 6\n"
+            "   B) 7\n"
+            "   C) 8\n"
+            "   D) 9\n"
+            "   Answer: B) 7\n"
+            "\n"
+            "2. What is the result of 10 - 3?\n"
+            "   A) 5\n"
+            "   B) 6\n"
+            "   C) 7\n"
+            "   D) 8\n"
+            "   Answer: C) 7\n"
+            "\n"
+            "3. What is the product of 4 * 6?\n"
+            "   A) 20\n"
+            "   B) 24\n"
+            "   C) 28\n"
+            "   D) 30\n"
+            "   Answer: B) 24\n"
+            "\n"
+            "4. What is the outcome of 15 / 3?\n"
+            "   A) 3\n"
+            "   B) 4\n"
+            "   C) 5\n"
+            "   D) 6\n"
+            "   Answer: A) 3\n"
+            "\n"
+            "5. What is the value of 8 squared?\n"
+            "   A) 64\n"
+            "   B) 72\n"
+            "   C) 80\n"
+            "   D) 88\n"
+            "   Answer: A) 64\n"
+            "```\n",
+            "id": None,
+            "ingest_source": "Python",
+            "is_response": True,
+            "request_id": "",
+            "response.model": "gpt-3.5-turbo-0125",
+            "role": "assistant",
+            "sequence": 1,
             "span_id": None,
             "trace_id": "trace-id",
-            "completion_id": None,
-            "sequence": 1,
-            "response.model": "gpt-3.5-turbo-0125",
             "vendor": "langchain",
-            "ingest_source": "Python",
-            "role": "assistant",
-            "is_response": True,
             "virtual_llm": True,
-            "content": "{'input': 'math', 'context': [Document(id='1234', metadata={}, page_content='What is 2 + 4?')], 'answer': '```html\\n<!DOCTYPE html>\\n<html>\\n<head>\\n  <title>Math Quiz</title>\\n</head>\\n<body>\\n  <h2>Math Quiz Questions</h2>\\n  <ol>\\n    <li>What is the result of 5 + 3?</li>\\n      <ul>\\n        <li>A) 7</li>\\n        <li>B) 8</li>\\n        <li>C) 9</li>\\n        <li>D) 10</li>\\n      </ul>\\n    <li>What is the product of 6 x 7?</li>\\n      <ul>\\n        <li>A) 36</li>\\n        <li>B) 42</li>\\n        <li>C) 48</li>\\n        <li>D) 56</li>\\n      </ul>\\n    <li>What is the square root of 64?</li>\\n      <ul>\\n        <li>A) 6</li>\\n        <li>B) 7</li>\\n        <li>C) 8</li>\\n        <li>D) 9</li>\\n      </ul>\\n    <li>What is the result of 12 / 4?</li>\\n      <ul>\\n        <li>A) 2</li>\\n        <li>B) 3</li>\\n        <li>C) 4</li>\\n        <li>D) 5</li>\\n      </ul>\\n    <li>What is the sum of 15 + 9?</li>\\n      <ul>\\n        <li>A) 22</li>\\n        <li>B) 23</li>\\n        <li>C) 24</li>\\n        <li>D) 25</li>\\n      </ul>\\n  </ol>\\n</body>\\n</html>\\n```'}",
+        },
+    ],
+    [
+        {"timestamp": None, "type": "LlmChatCompletionSummary"},
+        {
+            "duration": None,
+            "id": None,
+            "ingest_source": "Python",
+            "request_id": "",
+            "response.model": "gpt-3.5-turbo-0125",
+            "response.number_of_messages": 2,
+            "span_id": None,
+            "timestamp": None,
+            "trace_id": "trace-id",
+            "vendor": "langchain",
+            "virtual_llm": True,
+        },
+    ],
+    [
+        {"timestamp": None, "type": "LlmChatCompletionMessage"},
+        {
+            "completion_id": None,
+            "content": "{'input': 'math'}",
+            "id": None,
+            "ingest_source": "Python",
+            "request_id": "",
+            "response.model": "gpt-3.5-turbo-0125",
+            "role": "user",
+            "sequence": 0,
+            "span_id": None,
+            "timestamp": None,
+            "trace_id": "trace-id",
+            "vendor": "langchain",
+            "virtual_llm": True,
+        },
+    ],
+    [
+        {"timestamp": None, "type": "LlmChatCompletionMessage"},
+        {
+            "completion_id": None,
+            "content": "{'input': 'math', 'context': [Document(id='1234', metadata={}, "
+            "page_content='What is 2 + 4?')], 'answer': '```html\\n1. What "
+            "is the sum of 5 + 3?\\n   A) 6\\n   B) 7\\n   C) 8\\n   D) "
+            "9\\n   Answer: B) 7\\n\\n2. What is the result of 10 - 3?\\n   "
+            "A) 5\\n   B) 6\\n   C) 7\\n   D) 8\\n   Answer: C) 7\\n\\n3. "
+            "What is the product of 4 * 6?\\n   A) 20\\n   B) 24\\n   C) "
+            "28\\n   D) 30\\n   Answer: B) 24\\n\\n4. What is the outcome of "
+            "15 / 3?\\n   A) 3\\n   B) 4\\n   C) 5\\n   D) 6\\n   Answer: A) "
+            "3\\n\\n5. What is the value of 8 squared?\\n   A) 64\\n   B) "
+            "72\\n   C) 80\\n   D) 88\\n   Answer: A) 64\\n```\\n'}",
+            "id": None,
+            "ingest_source": "Python",
+            "is_response": True,
+            "request_id": "",
+            "response.model": "gpt-3.5-turbo-0125",
+            "role": "assistant",
+            "sequence": 1,
+            "span_id": None,
+            "trace_id": "trace-id",
+            "vendor": "langchain",
+            "virtual_llm": True,
         },
     ],
 ]
 
 chat_completion_recorded_events_str_response = [
-    (
-        {"type": "LlmChatCompletionSummary"},
+    [
+        {"timestamp": None, "type": "LlmChatCompletionSummary"},
         {
+            "duration": None,
             "id": None,
-            "timestamp": None,
+            "ingest_source": "Python",
+            "llm.context": "attr",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
+            "request.model": "gpt-3.5-turbo",
+            "request_id": None,
+            "response.choices.finish_reason": "stop",
+            "response.headers.llmVersion": "2020-10-01",
+            "response.headers.ratelimitLimitRequests": 10000,
+            "response.headers.ratelimitLimitTokens": 50000000,
+            "response.headers.ratelimitRemainingRequests": 9999,
+            "response.headers.ratelimitRemainingTokens": 49999955,
+            "response.headers.ratelimitResetRequests": "6ms",
+            "response.headers.ratelimitResetTokens": "0s",
+            "response.model": "gpt-3.5-turbo-0125",
+            "response.number_of_messages": 3,
+            "response.organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "span_id": None,
+            "timestamp": None,
+            "trace_id": "trace-id",
+            "vendor": "openai",
+        },
+    ],
+    [
+        {"timestamp": None, "type": "LlmChatCompletionMessage"},
+        {
+            "completion_id": None,
+            "content": "You are a helpful assistant who generates a random first name. A user will pass in a first letter, and "
+            "you should generate a name that starts with that first letter.",
+            "id": None,
+            "ingest_source": "Python",
+            "llm.context": "attr",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
+            "request_id": None,
+            "response.model": "gpt-3.5-turbo-0125",
+            "role": "system",
+            "sequence": 0,
+            "span_id": None,
+            "timestamp": None,
+            "trace_id": "trace-id",
+            "vendor": "openai",
+        },
+    ],
+    [
+        {"timestamp": None, "type": "LlmChatCompletionMessage"},
+        {
+            "completion_id": None,
+            "content": "M",
+            "id": None,
+            "ingest_source": "Python",
+            "llm.context": "attr",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
+            "request_id": None,
+            "response.model": "gpt-3.5-turbo-0125",
+            "role": "user",
+            "sequence": 1,
+            "span_id": None,
+            "timestamp": None,
+            "trace_id": "trace-id",
+            "vendor": "openai",
+        },
+    ],
+    [
+        {"timestamp": None, "type": "LlmChatCompletionMessage"},
+        {
+            "completion_id": None,
+            "content": "Melanie",
+            "id": None,
+            "ingest_source": "Python",
+            "is_response": True,
+            "llm.context": "attr",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
+            "request_id": None,
+            "response.model": "gpt-3.5-turbo-0125",
+            "role": "assistant",
+            "sequence": 2,
             "span_id": None,
             "trace_id": "trace-id",
-            "vendor": "langchain",
-            "ingest_source": "Python",
-            "virtual_llm": True,
-            "request_id": None,
+            "vendor": "openai",
+        },
+    ],
+    [
+        {"timestamp": None, "type": "LlmChatCompletionSummary"},
+        {
             "duration": None,
+            "id": None,
+            "ingest_source": "Python",
+            "llm.context": "attr",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
+            "metadata.id": "123",
             "request.model": "gpt-3.5-turbo",
+            "request_id": "",
             "response.model": "gpt-3.5-turbo-0125",
             "response.number_of_messages": 2,
-            "metadata.id": "123",
-        },
-    ),
-    (
-        {"type": "LlmChatCompletionMessage"},
-        {
-            "id": None,
+            "span_id": None,
             "timestamp": None,
-            "llm.conversation_id": "my-awesome-id",
-            "llm.foo": "bar",
-            "request_id": None,
-            "span_id": None,
             "trace_id": "trace-id",
-            "content": "{'text': 'M'}",
-            "completion_id": None,
-            "sequence": 0,
-            "response.model": "gpt-3.5-turbo-0125",
             "vendor": "langchain",
-            "ingest_source": "Python",
-            "role": "user",
             "virtual_llm": True,
         },
-    ),
-    (
-        {"type": "LlmChatCompletionMessage"},
+    ],
+    [
+        {"timestamp": None, "type": "LlmChatCompletionMessage"},
         {
+            "completion_id": None,
+            "content": "{'text': 'M'}",
             "id": None,
+            "ingest_source": "Python",
+            "llm.context": "attr",
             "llm.conversation_id": "my-awesome-id",
             "llm.foo": "bar",
-            "request_id": None,
-            "span_id": None,
-            "trace_id": "trace-id",
-            "content": "Milo",
-            "completion_id": None,
-            "sequence": 1,
+            "request_id": "",
             "response.model": "gpt-3.5-turbo-0125",
+            "role": "user",
+            "sequence": 0,
+            "span_id": None,
+            "timestamp": None,
+            "trace_id": "trace-id",
             "vendor": "langchain",
-            "ingest_source": "Python",
-            "role": "assistant",
-            "is_response": True,
             "virtual_llm": True,
         },
-    ),
+    ],
+    [
+        {"timestamp": None, "type": "LlmChatCompletionMessage"},
+        {
+            "completion_id": None,
+            "content": "Melanie",
+            "id": None,
+            "ingest_source": "Python",
+            "is_response": True,
+            "llm.context": "attr",
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
+            "request_id": "",
+            "response.model": "gpt-3.5-turbo-0125",
+            "role": "assistant",
+            "sequence": 1,
+            "span_id": None,
+            "trace_id": "trace-id",
+            "vendor": "langchain",
+            "virtual_llm": True,
+        },
+    ],
 ]
+
 chat_completion_recorded_events_list_response = [
     (
         {"type": "LlmChatCompletionSummary"},
@@ -1030,6 +1301,8 @@ def test_langchain_chain_no_content(
     _test()
 
 
+# NOTE: To reproduce these tests, set the `OPENAI_API_KEY`
+# environment variable to an invalid key.
 @pytest.mark.parametrize(
     "create_function,call_function,call_function_args,call_function_kwargs,expected_events",
     (
@@ -1430,6 +1703,8 @@ def test_async_langchain_chain(
     _test()
 
 
+# NOTE: To reproduce these tests, set the `OPENAI_API_KEY`
+# environment variable to an invalid key.
 @pytest.mark.parametrize(
     "create_function,call_function,call_function_args,call_function_kwargs,expected_events",
     (

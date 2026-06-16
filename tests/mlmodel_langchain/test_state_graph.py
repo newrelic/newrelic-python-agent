@@ -21,7 +21,11 @@ from testing_support.validators.validate_custom_events import validate_custom_ev
 from newrelic.api.background_task import background_task
 
 CLIENT_PROMPT = {"messages": [HumanMessage("What is the capital of France? Answer in one word.")]}
-AGENT_PROMPT = {"messages": [HumanMessage('Use a tool to add an exclamation to the word "Hello"')]}
+AGENT_PROMPT = {
+    "messages": [
+        HumanMessage('Use a tool to add an exclamation to the word "Hello". Answer in one word with no formatting.')
+    ]
+}
 
 client_recorded_events = [
     [
@@ -31,8 +35,7 @@ client_recorded_events = [
             "id": None,
             "ingest_source": "Python",
             "request.model": "gpt-3.5-turbo",
-            "request.temperature": 0.7,
-            "request_id": "req_22204b237d22427fbfd99c665d8a9964",
+            "request_id": None,
             "response.choices.finish_reason": "stop",
             "response.headers.llmVersion": "2020-10-01",
             "response.headers.ratelimitLimitRequests": 10000,
@@ -55,9 +58,9 @@ client_recorded_events = [
         {
             "completion_id": None,
             "content": "What is the capital of France? Answer in one word.",
-            "id": "chatcmpl-DelITaJCJy951hwON0psdz2H9dF7i-0",
+            "id": None,
             "ingest_source": "Python",
-            "request_id": "req_22204b237d22427fbfd99c665d8a9964",
+            "request_id": None,
             "response.model": "gpt-3.5-turbo-0125",
             "role": "user",
             "sequence": 0,
@@ -72,10 +75,10 @@ client_recorded_events = [
         {
             "completion_id": None,
             "content": "Paris",
-            "id": "chatcmpl-DelITaJCJy951hwON0psdz2H9dF7i-1",
+            "id": None,
             "ingest_source": "Python",
             "is_response": True,
-            "request_id": "req_22204b237d22427fbfd99c665d8a9964",
+            "request_id": None,
             "response.model": "gpt-3.5-turbo-0125",
             "role": "assistant",
             "sequence": 1,
@@ -94,14 +97,13 @@ client_stream_recorded_events = [
             "id": None,
             "ingest_source": "Python",
             "request.model": "gpt-3.5-turbo",
-            "request.temperature": 0.7,
-            "request_id": "req_22204b237d22427fbfd99c665d8a9964",
+            "request_id": None,
             "response.choices.finish_reason": "stop",
             "response.headers.llmVersion": "2020-10-01",
             "response.headers.ratelimitLimitRequests": 10000,
             "response.headers.ratelimitLimitTokens": 50000000,
             "response.headers.ratelimitRemainingRequests": 9999,
-            "response.headers.ratelimitRemainingTokens": 49999985,
+            "response.headers.ratelimitRemainingTokens": 49999984,
             "response.headers.ratelimitResetRequests": "6ms",
             "response.headers.ratelimitResetTokens": "0s",
             "response.model": "gpt-3.5-turbo-0125",
@@ -119,9 +121,9 @@ client_stream_recorded_events = [
         {
             "completion_id": None,
             "content": "What is the capital of France? Answer in one word.",
-            "id": "chatcmpl-DelITaJCJy951hwON0psdz2H9dF7i-0",
+            "id": None,
             "ingest_source": "Python",
-            "request_id": "req_22204b237d22427fbfd99c665d8a9964",
+            "request_id": None,
             "response.model": "gpt-3.5-turbo-0125",
             "role": "user",
             "sequence": 0,
@@ -136,10 +138,10 @@ client_stream_recorded_events = [
         {
             "completion_id": None,
             "content": "Paris",
-            "id": "chatcmpl-DelITaJCJy951hwON0psdz2H9dF7i-1",
+            "id": None,
             "ingest_source": "Python",
             "is_response": True,
-            "request_id": "req_22204b237d22427fbfd99c665d8a9964",
+            "request_id": None,
             "response.model": "gpt-3.5-turbo-0125",
             "role": "assistant",
             "sequence": 1,
@@ -159,14 +161,13 @@ agent_recorded_events = [
             "id": None,
             "ingest_source": "Python",
             "request.model": "gpt-3.5-turbo",
-            "request.temperature": 0.7,
-            "request_id": "req_619548c272db4f1ab380b83de9fdedef",
+            "request_id": None,
             "response.choices.finish_reason": "tool_calls",
             "response.headers.llmVersion": "2020-10-01",
             "response.headers.ratelimitLimitRequests": 10000,
             "response.headers.ratelimitLimitTokens": 50000000,
             "response.headers.ratelimitRemainingRequests": 9999,
-            "response.headers.ratelimitRemainingTokens": 49999974,
+            "response.headers.ratelimitRemainingTokens": 49999964,
             "response.headers.ratelimitResetRequests": "6ms",
             "response.headers.ratelimitResetTokens": "0s",
             "response.model": "gpt-3.5-turbo-0125",
@@ -183,9 +184,9 @@ agent_recorded_events = [
         {
             "completion_id": None,
             "content": "You are a text manipulation algorithm.",
-            "id": "chatcmpl-CukvsGfSQihNO9I3FTqaNKERWtUca-0",
+            "id": None,
             "ingest_source": "Python",
-            "request_id": "req_619548c272db4f1ab380b83de9fdedef",
+            "request_id": "req_9a4249c3b11543c4bc9e84ffc303f115",
             "response.model": "gpt-3.5-turbo-0125",
             "role": "system",
             "sequence": 0,
@@ -199,10 +200,10 @@ agent_recorded_events = [
         {"timestamp": None, "type": "LlmChatCompletionMessage"},
         {
             "completion_id": None,
-            "content": 'Use a tool to add an exclamation to the word "Hello"',
-            "id": "chatcmpl-CukvsGfSQihNO9I3FTqaNKERWtUca-1",
+            "content": 'Use a tool to add an exclamation to the word "Hello". Answer in one word with no formatting.',
+            "id": None,
             "ingest_source": "Python",
-            "request_id": "req_619548c272db4f1ab380b83de9fdedef",
+            "request_id": "req_9a4249c3b11543c4bc9e84ffc303f115",
             "response.model": "gpt-3.5-turbo-0125",
             "role": "user",
             "sequence": 1,
@@ -222,7 +223,7 @@ agent_recorded_events = [
             "input": "{'message': 'Hello'}",
             "name": "add_exclamation",
             "output": "Hello!",
-            "run_id": "call_ymnsNurMgr3atFVr7BnJ2XYK",
+            "run_id": None,
             "span_id": None,
             "trace_id": None,
             "vendor": "langchain",
@@ -235,14 +236,13 @@ agent_recorded_events = [
             "id": None,
             "ingest_source": "Python",
             "request.model": "gpt-3.5-turbo",
-            "request.temperature": 0.7,
-            "request_id": "req_619548c272db4f1ab380b83de9fdedef",
+            "request_id": None,
             "response.choices.finish_reason": "stop",
             "response.headers.llmVersion": "2020-10-01",
             "response.headers.ratelimitLimitRequests": 10000,
             "response.headers.ratelimitLimitTokens": 50000000,
             "response.headers.ratelimitRemainingRequests": 9999,
-            "response.headers.ratelimitRemainingTokens": 49999970,
+            "response.headers.ratelimitRemainingTokens": 49999960,
             "response.headers.ratelimitResetRequests": "6ms",
             "response.headers.ratelimitResetTokens": "0s",
             "response.model": "gpt-3.5-turbo-0125",
@@ -259,9 +259,9 @@ agent_recorded_events = [
         {
             "completion_id": None,
             "content": "You are a text manipulation algorithm.",
-            "id": "chatcmpl-CukvtgYHPS8HRHqCQiQgQrs7a2Tx1-0",
+            "id": None,
             "ingest_source": "Python",
-            "request_id": "req_619548c272db4f1ab380b83de9fdedef",
+            "request_id": "req_449cc76c67974b37aa0739caa6ed6867",
             "response.model": "gpt-3.5-turbo-0125",
             "role": "system",
             "sequence": 0,
@@ -275,10 +275,10 @@ agent_recorded_events = [
         {"timestamp": None, "type": "LlmChatCompletionMessage"},
         {
             "completion_id": None,
-            "content": 'Use a tool to add an exclamation to the word "Hello"',
-            "id": "chatcmpl-CukvtgYHPS8HRHqCQiQgQrs7a2Tx1-1",
+            "content": 'Use a tool to add an exclamation to the word "Hello". Answer in one word with no formatting.',
+            "id": None,
             "ingest_source": "Python",
-            "request_id": "req_619548c272db4f1ab380b83de9fdedef",
+            "request_id": "req_449cc76c67974b37aa0739caa6ed6867",
             "response.model": "gpt-3.5-turbo-0125",
             "role": "user",
             "sequence": 1,
@@ -292,9 +292,9 @@ agent_recorded_events = [
         {"timestamp": None, "type": "LlmChatCompletionMessage"},
         {
             "completion_id": None,
-            "id": "chatcmpl-CukvtgYHPS8HRHqCQiQgQrs7a2Tx1-2",
+            "id": None,
             "ingest_source": "Python",
-            "request_id": "req_619548c272db4f1ab380b83de9fdedef",
+            "request_id": None,
             "response.model": "gpt-3.5-turbo-0125",
             "role": "assistant",
             "sequence": 2,
@@ -309,9 +309,9 @@ agent_recorded_events = [
         {
             "completion_id": None,
             "content": "Hello!",
-            "id": "chatcmpl-CukvtgYHPS8HRHqCQiQgQrs7a2Tx1-3",
+            "id": None,
             "ingest_source": "Python",
-            "request_id": "req_619548c272db4f1ab380b83de9fdedef",
+            "request_id": None,
             "response.model": "gpt-3.5-turbo-0125",
             "role": "tool",
             "sequence": 3,
@@ -325,11 +325,11 @@ agent_recorded_events = [
         {"timestamp": None, "type": "LlmChatCompletionMessage"},
         {
             "completion_id": None,
-            "content": 'The word "Hello" with an exclamation mark added is "Hello!"',
-            "id": "chatcmpl-CukvtgYHPS8HRHqCQiQgQrs7a2Tx1-4",
+            "content": "Hello!",
+            "id": None,
             "ingest_source": "Python",
             "is_response": True,
-            "request_id": "req_619548c272db4f1ab380b83de9fdedef",
+            "request_id": None,
             "response.model": "gpt-3.5-turbo-0125",
             "role": "assistant",
             "sequence": 4,
@@ -371,7 +371,7 @@ def _build_graph(node):
     return builder.compile()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def create_agent(chat_openai_client):
     def _create_agent(model="gpt-5.1", tools=None, system_prompt=None, name="my_agent"):
         from langchain.agents import create_agent

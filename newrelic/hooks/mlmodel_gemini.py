@@ -207,14 +207,13 @@ def _record_embedding_success(*, transaction, embedding_id, linking_metadata, kw
             "id": embedding_id,
             "span_id": span_id,
             "trace_id": trace_id,
+            # Replace values of 0 for token counts with None
+            "response.usage.total_tokens": embedding_token_count or None,
             "request.model": request_model,
             "duration": ft.duration * 1000,
             "vendor": "gemini",
             "ingest_source": "Python",
         }
-        if embedding_token_count:
-            full_embedding_response_dict["response.usage.total_tokens"] = embedding_token_count
-
         if settings.ai_monitoring.record_content.enabled:
             full_embedding_response_dict["input"] = embedding_content
 
@@ -496,13 +495,10 @@ def _record_generation_error(*, transaction, linking_metadata, completion_id, kw
                 "Unable to parse input message to Gemini LLM. Message content and role will be omitted from "
                 "corresponding LlmChatCompletionMessage event. "
             )
-    # Extract the input message content and role from the input message if it exists
-    input_message_content, input_role = _parse_input_message(input_message) if input_message else (None, None)
+    input_message_content, input_role = _parse_input_message(input_message)
 
-    # Extract data from generation config object
     request_temperature, request_max_tokens = _extract_generation_config(kwargs)
 
-    # Prepare error attributes
     notice_error_attributes = {
         "http.statusCode": getattr(exc, "code", None),
         "error.message": getattr(exc, "message", None),
@@ -651,7 +647,7 @@ def _record_generation_success(
                     "corresponding LlmChatCompletionMessage event. "
                 )
 
-        input_message_content, input_role = _parse_input_message(input_message) if input_message else (None, None)
+        input_message_content, input_role = _parse_input_message(input_message)
 
         # Parse output message content
         # This list should have a length of 1 to represent the output message
@@ -680,7 +676,6 @@ def _record_generation_success(
 
         all_token_counts = bool(response_prompt_tokens and response_completion_tokens and response_total_tokens)
 
-        # Extract generation config
         request_temperature, request_max_tokens = _extract_generation_config(kwargs)
 
         full_chat_completion_summary_dict = {

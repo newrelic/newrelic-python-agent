@@ -264,12 +264,14 @@ def _build_before_record_response(wrapped=None, filter_headers=None):
                 else:
                     header = _header
                     value = None
+
                 # Replace or drop headers
-                if header in response["headers"]:
-                    if value:
-                        response["headers"][header] = [value]
+                recorded_header, _ = _get_header(response["headers"], header)
+                if recorded_header:
+                    if value is not None:
+                        response["headers"][recorded_header] = [value]
                     else:
-                        response["headers"].pop(header, None)
+                        response["headers"].pop(recorded_header, None)
 
         # Run the wrapped copy of before_record_response
         if wrapped:

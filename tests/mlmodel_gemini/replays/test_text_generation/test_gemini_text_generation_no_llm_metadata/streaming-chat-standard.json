@@ -62,15 +62,15 @@
             ],
             "usageMetadata": {
               "promptTokenCount": 10,
-              "candidatesTokenCount": 9,
-              "totalTokenCount": 125,
+              "candidatesTokenCount": 12,
+              "totalTokenCount": 122,
               "promptTokensDetails": [
                 {
                   "modality": "TEXT",
                   "tokenCount": 10
                 }
               ],
-              "thoughtsTokenCount": 106
+              "thoughtsTokenCount": 100
             },
             "modelVersion": "gemini-2.5-flash",
             "responseId": "-bTzaamuKKez1MkPvobt6Qg"
@@ -92,15 +92,15 @@
             ],
             "usageMetadata": {
               "promptTokenCount": 10,
-              "candidatesTokenCount": 11,
-              "totalTokenCount": 127,
+              "candidatesTokenCount": 12,
+              "totalTokenCount": 122,
               "promptTokensDetails": [
                 {
                   "modality": "TEXT",
                   "tokenCount": 10
                 }
               ],
-              "thoughtsTokenCount": 106
+              "thoughtsTokenCount": 100
             },
             "modelVersion": "gemini-2.5-flash",
             "responseId": "-bTzaamuKKez1MkPvobt6Qg"
@@ -140,7 +140,7 @@
             "model_version": "gemini-2.5-flash",
             "response_id": "-bTzaamuKKez1MkPvobt6Qg",
             "usage_metadata": {
-              "candidates_token_count": 9,
+              "candidates_token_count": 12,
               "prompt_token_count": 10,
               "prompt_tokens_details": [
                 {
@@ -148,8 +148,8 @@
                   "token_count": 10
                 }
               ],
-              "thoughts_token_count": 106,
-              "total_token_count": 125
+              "thoughts_token_count": 100,
+              "total_token_count": 122
             }
           },
           {
@@ -185,7 +185,7 @@
             "model_version": "gemini-2.5-flash",
             "response_id": "-bTzaamuKKez1MkPvobt6Qg",
             "usage_metadata": {
-              "candidates_token_count": 11,
+              "candidates_token_count": 12,
               "prompt_token_count": 10,
               "prompt_tokens_details": [
                 {
@@ -193,8 +193,8 @@
                   "token_count": 10
                 }
               ],
-              "thoughts_token_count": 106,
-              "total_token_count": 127
+              "thoughts_token_count": 100,
+              "total_token_count": 122
             }
           }
         ]

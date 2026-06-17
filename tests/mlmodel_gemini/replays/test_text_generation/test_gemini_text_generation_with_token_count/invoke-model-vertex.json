@@ -65,14 +65,14 @@
             "usageMetadata": {
               "promptTokenCount": 10,
               "candidatesTokenCount": 12,
-              "totalTokenCount": 148,
+              "totalTokenCount": 122,
               "promptTokensDetails": [
                 {
                   "modality": "TEXT",
                   "tokenCount": 10
                 }
               ],
-              "thoughtsTokenCount": 126
+              "thoughtsTokenCount": 100
             },
             "modelVersion": "gemini-2.5-flash",
             "responseId": "4LTzae30GsrQ-8YP0cyCmQI"
@@ -122,8 +122,8 @@
                   "token_count": 10
                 }
               ],
-              "thoughts_token_count": 126,
-              "total_token_count": 148
+              "thoughts_token_count": 100,
+              "total_token_count": 122
             }
           }
         ]

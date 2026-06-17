@@ -78,14 +78,16 @@ try:
 except ImportError as exc:
     raise ImportError("pytest-recording is required to use the vcr fixtures.") from exc
 
+import json
 from pathlib import Path
 
 import pytest
 
 # Default values for the overridable settings fixtures below
-CENSORED_HEADERS = ["authorization", "x-goog-api-key"]
-IGNORED_HEADERS = ["content-length", "traceparent", "tracestate", "user-agent", "x-goog-api-client"]
-MATCH_ON = ["method", "scheme", "host", "port", "path", "body", "headers", "query"]
+VCR_CENSORED_HEADERS = ["authorization", "cookie", "set-cookie", "x-goog-api-key"]
+VCR_IGNORED_HEADERS = ["content-length", "traceparent", "tracestate", "user-agent", "x-goog-api-client"]
+VCR_REPLACE_HEADERS = []  # Must be tuples of (header_name, replacement_value)
+VCR_MATCH_ON = ["method", "scheme", "host", "port", "path", "body", "headers", "query"]
 
 
 # === Settings fixtures, required and overridable ===
@@ -101,7 +103,7 @@ def vcr_censored_headers():
 
     Override this fixture to customize.
     """
-    return CENSORED_HEADERS
+    return VCR_CENSORED_HEADERS
 
 
 @pytest.fixture(autouse=True)
@@ -115,7 +117,20 @@ def vcr_ignored_headers():
 
     Override this fixture to customize.
     """
-    return IGNORED_HEADERS
+    return VCR_IGNORED_HEADERS
+
+
+@pytest.fixture(autouse=True)
+def vcr_replace_headers():
+    """
+    Header names whose values are replaced with a specified value in recorded cassettes.
+
+    Use this for headers whose presence are required to match against, but whose values need to be
+    replaced with a consistent value (e.g. rate limit headers).
+
+    Override this fixture to customize.
+    """
+    return VCR_REPLACE_HEADERS
 
 
 @pytest.fixture(autouse=True)
@@ -132,7 +147,35 @@ def vcr_match_on():
 
     Override this fixture to customize.
     """
-    return MATCH_ON
+    return VCR_MATCH_ON
+
+
+@pytest.fixture(autouse=True)
+def vcr_before_record_request():
+    """
+    VCR.py hook that is called before every request is recorded.
+
+    Use this to modify the request (e.g. to redact secrets in the body) before it is written to
+    the cassette. Note that this only affects what is recorded, not what is matched against when
+    replaying.
+
+    Override this fixture to customize.
+    """
+    return None  # Return a function to set this
+
+
+@pytest.fixture(autouse=True)
+def vcr_before_record_response():
+    """
+    VCR.py hook that is called before every response is recorded.
+
+    Use this to modify the response (e.g. to redact secrets in the body) before it is written to
+    the cassette. Note that this only affects what is recorded, not what is matched against when
+    replaying.
+
+    Override this fixture to customize.
+    """
+    return None  # Return a function to set this
 
 
 @pytest.fixture(autouse=True)
@@ -167,14 +210,83 @@ def vcr_recording(record_mode):
 
 
 @pytest.fixture(autouse=True)
-def vcr_config(vcr_censored_headers, vcr_ignored_headers, vcr_match_on):
+def vcr_config(
+    vcr_censored_headers,
+    vcr_ignored_headers,
+    vcr_replace_headers,
+    vcr_match_on,
+    vcr_before_record_request,
+    vcr_before_record_response,
+):
     """
     Combines the overridable settings fixtures into VCR.py's final configuration.
 
     Override the individual settings fixtures rather than this one.
     """
-    filter_headers = [(h, "XXXXXX") for h in vcr_censored_headers] + vcr_ignored_headers
-    return {"filter_headers": filter_headers, "match_on": vcr_match_on}
+    filter_headers = (
+        [(h, "XXXXXX") for h in vcr_censored_headers]
+        + [(h, str(v)) for h, v in vcr_replace_headers]
+        + vcr_ignored_headers
+    )
+    config = {"filter_headers": filter_headers, "match_on": vcr_match_on, "decode_compressed_response": True}
+    config["before_record_response"] = _build_before_record_response(vcr_before_record_response, filter_headers)
+    if vcr_before_record_request:
+        config["before_record_request"] = vcr_before_record_request
+    return config
+
+
+def _build_before_record_response(wrapped=None, filter_headers=None):
+    """
+    Wrap a user-defined before_record_response function to also apply additional global logic.
+    """
+
+    def before_record_response(response):
+        # Grab Content-Type and charset to attempt to load the body
+        _, content_type = _get_header(response["headers"], "content-type")
+        if ";" in content_type:
+            charset = content_type.split(";")[1].split("=")[1].lower().strip()
+            content_type = content_type.split(";")[0].strip()
+        else:
+            charset = "utf-8"
+
+        if content_type and content_type.casefold() == "application/json":
+            # Load body from JSON encoded with charset, then dump back to minified JSON and re-encode with charset for recording.
+            # This makes recorded cassettes easier to read and diff by removing unnecessary whitespace that doesn't render well.
+            loaded_body = json.loads(response["body"]["string"].decode(charset))
+            response["body"]["string"] = json.dumps(loaded_body, indent=None).encode(charset)
+
+        # Filter response headers the same way that request headers are filtered
+        if filter_headers:
+            for _header in filter_headers:
+                # Unpack filters
+                if isinstance(_header, (tuple, list)):
+                    header, value = _header
+                else:
+                    header = _header
+                    value = None
+                # Replace or drop headers
+                if header in response["headers"]:
+                    if value:
+                        response["headers"][header] = [value]
+                    else:
+                        response["headers"].pop(header, None)
+
+        # Run the wrapped copy of before_record_response
+        if wrapped:
+            response = wrapped(response)
+
+        return response
+
+    return before_record_response
+
+
+def _get_header(headers, name):
+    """Lookup a header case-insensitively and return the actual header name and value."""
+    for key in headers:
+        if key.casefold() == name.casefold():
+            return key, headers[key][0]
+
+    return None, None
 
 
 def pytest_collection_modifyitems(items):

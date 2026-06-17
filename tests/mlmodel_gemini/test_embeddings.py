@@ -15,7 +15,7 @@
 from conftest import GEMINI_VERSION_METRIC
 from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
-    add_token_count_to_events,
+    add_token_count_to_embedding_events,
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
     events_sans_content,
@@ -93,7 +93,7 @@ def test_gemini_embedding_no_content(exercise_embedding_model, set_trace_info):
 
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
-@validate_custom_events(add_token_count_to_events(embedding_recorded_events))
+@validate_custom_events(add_token_count_to_embedding_events(embedding_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
     name="test_embeddings:test_gemini_embedding_with_token_count",

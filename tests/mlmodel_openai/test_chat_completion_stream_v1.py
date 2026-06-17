@@ -17,7 +17,8 @@ import pytest
 from conftest import get_openai_version
 from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
-    add_token_count_to_events,
+    add_token_count_streaming_events,
+    add_token_counts_to_chat_events,
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
     disabled_ai_monitoring_streaming_settings,
@@ -64,7 +65,8 @@ chat_completion_recorded_events = [
             "request.model": "gpt-5.1",
             "response.model": "gpt-5.1-2025-11-13",
             "response.organization": "nr-test-org",
-            # Usage tokens aren't available when streaming.
+            # Usage tokens are only emitted by OpenAI when stream_options={"include_usage": True}.
+            # See test_openai_chat_completion_sync_with_stream_options_include_usage for that path.
             "request.temperature": 0.7,
             "request.max_tokens": 100,
             "response.choices.finish_reason": "stop",
@@ -139,6 +141,14 @@ chat_completion_recorded_events = [
         },
     ),
 ]
+
+
+# When stream_options={"include_usage": True} is set, the final stream chunk carries usage data
+# and the agent populates response.usage.* on the summary + token_count: 0 on each message.
+chat_completion_recorded_events_include_usage = add_token_count_streaming_events(chat_completion_recorded_events)
+chat_completion_recorded_events_include_usage[0][1].update(
+    {"response.usage.prompt_tokens": 25, "response.usage.completion_tokens": 16, "response.usage.total_tokens": 41}
+)
 
 
 @reset_core_stats_engine()
@@ -303,8 +313,38 @@ def test_openai_chat_completion_sync_no_content(set_trace_info, sync_openai_clie
 
 
 @reset_core_stats_engine()
+@validate_custom_events(chat_completion_recorded_events_include_usage)
+@validate_custom_event_count(count=4)
+@validate_transaction_metrics(
+    name="test_chat_completion_stream_v1:test_openai_chat_completion_sync_with_stream_options_include_usage",
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
+    background_task=True,
+)
+@validate_attributes("agent", ["llm"])
+@background_task()
+def test_openai_chat_completion_sync_with_stream_options_include_usage(set_trace_info, sync_openai_client):
+    """Streaming with stream_options={"include_usage": True} populates response.usage.* on the summary."""
+    set_trace_info()
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
+
+    generator = sync_openai_client.chat.completions.create(
+        model="gpt-5.1",
+        messages=_test_openai_chat_completion_messages,
+        temperature=0.7,
+        max_completion_tokens=100,
+        stream=True,
+        stream_options={"include_usage": True},
+    )
+    for resp in generator:
+        assert resp
+
+
+@reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
-@validate_custom_events(add_token_count_to_events(chat_completion_recorded_events))
+@validate_custom_events(
+    add_token_counts_to_chat_events(add_token_count_streaming_events(chat_completion_recorded_events))
+)
 # One summary event, one system message, one user message, and one response message from the assistant
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
@@ -625,8 +665,41 @@ def test_openai_chat_completion_async_no_content(loop, set_trace_info, async_ope
 
 
 @reset_core_stats_engine()
+@validate_custom_events(chat_completion_recorded_events_include_usage)
+@validate_custom_event_count(count=4)
+@validate_transaction_metrics(
+    name="test_chat_completion_stream_v1:test_openai_chat_completion_async_with_stream_options_include_usage",
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
+    background_task=True,
+)
+@validate_attributes("agent", ["llm"])
+@background_task()
+def test_openai_chat_completion_async_with_stream_options_include_usage(set_trace_info, loop, async_openai_client):
+    """Streaming with stream_options={"include_usage": True} populates response.usage.* on the summary."""
+    set_trace_info()
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
+
+    async def consumer():
+        generator = await async_openai_client.chat.completions.create(
+            model="gpt-5.1",
+            messages=_test_openai_chat_completion_messages,
+            temperature=0.7,
+            max_completion_tokens=100,
+            stream=True,
+            stream_options={"include_usage": True},
+        )
+        async for resp in generator:
+            assert resp
+
+    loop.run_until_complete(consumer())
+
+
+@reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
-@validate_custom_events(add_token_count_to_events(chat_completion_recorded_events))
+@validate_custom_events(
+    add_token_counts_to_chat_events(add_token_count_streaming_events(chat_completion_recorded_events))
+)
 # One summary event, one system message, one user message, and one response message from the assistant
 # @validate_custom_event_count(count=4)
 @validate_transaction_metrics(

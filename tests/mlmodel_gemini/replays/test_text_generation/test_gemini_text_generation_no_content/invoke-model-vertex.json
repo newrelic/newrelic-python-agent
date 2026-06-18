@@ -64,15 +64,15 @@
             ],
             "usageMetadata": {
               "promptTokenCount": 10,
-              "candidatesTokenCount": 11,
-              "totalTokenCount": 123,
+              "candidatesTokenCount": 12,
+              "totalTokenCount": 122,
               "promptTokensDetails": [
                 {
                   "modality": "TEXT",
                   "tokenCount": 10
                 }
               ],
-              "thoughtsTokenCount": 102
+              "thoughtsTokenCount": 100
             },
             "modelVersion": "gemini-2.5-flash",
             "responseId": "37TzaZvZFYq7jrEPppbusAs"
@@ -114,7 +114,7 @@
             "model_version": "gemini-2.5-flash",
             "response_id": "37TzaZvZFYq7jrEPppbusAs",
             "usage_metadata": {
-              "candidates_token_count": 11,
+              "candidates_token_count": 12,
               "prompt_token_count": 10,
               "prompt_tokens_details": [
                 {
@@ -122,8 +122,8 @@
                   "token_count": 10
                 }
               ],
-              "thoughts_token_count": 102,
-              "total_token_count": 123
+              "thoughts_token_count": 100,
+              "total_token_count": 122
             }
           }
         ]

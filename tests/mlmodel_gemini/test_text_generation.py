@@ -17,7 +17,7 @@ import pytest
 from conftest import GEMINI_VERSION_METRIC
 from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
-    add_token_count_to_events,
+    add_token_counts_to_chat_events,
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
     events_sans_content,
@@ -56,6 +56,9 @@ def text_generation_events(is_streaming):
                 "vendor": "gemini",
                 "ingest_source": "Python",
                 "response.number_of_messages": 2,
+                "response.usage.prompt_tokens": 10,
+                "response.usage.completion_tokens": 12,
+                "response.usage.total_tokens": 22,
             },
         ),
         (
@@ -74,6 +77,7 @@ def text_generation_events(is_streaming):
                 "response.model": "gemini-2.5-flash",
                 "vendor": "gemini",
                 "ingest_source": "Python",
+                "token_count": 0,
             },
         ),
         (
@@ -92,6 +96,7 @@ def text_generation_events(is_streaming):
                 "vendor": "gemini",
                 "is_response": True,
                 "ingest_source": "Python",
+                "token_count": 0,
             },
         ),
     ]
@@ -237,7 +242,7 @@ def test_gemini_text_generation_no_content(
 def test_gemini_text_generation_with_token_count(
     exercise_text_model, text_generation_metrics, set_trace_info, text_generation_events
 ):
-    @validate_custom_events(add_token_count_to_events(text_generation_events))
+    @validate_custom_events(add_token_counts_to_chat_events(text_generation_events))
     @validate_custom_event_count(count=3)
     @validate_transaction_metrics(
         name="test_gemini_text_generation_with_token_count",

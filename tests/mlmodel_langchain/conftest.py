@@ -13,9 +13,7 @@
 # limitations under the License.
 
 import itertools
-import json
 import os
-from pathlib import Path
 
 import pytest
 from langchain_core.messages.ai import AIMessage
@@ -26,15 +24,8 @@ from testing_support.fixture.vcr import *  # noqa: F403
 from testing_support.fixtures import (
     collector_agent_registration_fixture,
     collector_available_fixture,
-    override_application_settings,
 )
 from testing_support.ml_testing_utils import set_trace_info
-
-from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import ObjectProxy, wrap_function_wrapper
-from newrelic.common.signature import bind_args
-
-from ._mock_external_openai_server import MockExternalOpenAIServer, extract_shortened_prompt, simple_get
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.

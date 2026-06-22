@@ -49,9 +49,9 @@ GEMINI_VERSION_METRIC = f"Supportability/Python/ML/Gemini/{GEMINI_VERSION}"
 @pytest.fixture
 def gemini_client(vcr_recording, is_vertex):
     """
-    This configures the Gemini client to use a ReplayApiClient which will either record or replay responses depending
-    on the mode. The mode can be controlled by setting NEW_RELIC_TESTING_RECORD_GEMINI_RESPONSES=1 as an environment
-    variable to run using the real Gemini backend. (Default: mocking)
+    This configures the Gemini client to use a fake API key when replaying responses through VCR.
+
+    To record new responses, set a valid API key and run pytest with the flag --record-mode=new_episodes.
     """
 
     if vcr_recording:

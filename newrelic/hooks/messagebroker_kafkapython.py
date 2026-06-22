@@ -11,7 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import logging
 import sys
+import threading
 
 from kafka.serializer import Serializer
 
@@ -30,6 +32,20 @@ HEARTBEAT_FAIL = "MessageBroker/Kafka/Heartbeat/Fail"
 HEARTBEAT_RECEIVE = "MessageBroker/Kafka/Heartbeat/Receive"
 HEARTBEAT_SESSION_TIMEOUT = "MessageBroker/Kafka/Heartbeat/SessionTimeout"
 HEARTBEAT_POLL_TIMEOUT = "MessageBroker/Kafka/Heartbeat/PollTimeout"
+
+KAFKA_CLUSTER_METRIC_PRODUCE = "MessageBroker/Kafka/Cluster/{0}/Topic/{1}/Produce"
+KAFKA_CLUSTER_METRIC_CONSUME = "MessageBroker/Kafka/Cluster/{0}/Topic/{1}/Consume"
+
+_kafka_cluster_id_cache = {}
+_nr_cluster_id_cache_lock = threading.Lock()
+_logger = logging.getLogger(__name__)
+
+
+def _bootstrap_cache_key(bootstrap_servers):
+    """Normalize bootstrap_servers (str or iterable) to the cluster-ID cache key."""
+    if isinstance(bootstrap_servers, str):
+        bootstrap_servers = [bootstrap_servers]
+    return ",".join(sorted(str(s) for s in bootstrap_servers))
 
 
 def _bind_send(topic, value=None, key=None, headers=None, partition=None, timestamp_ms=None):
@@ -66,6 +82,17 @@ def wrap_KafkaProducer_send(wrapped, instance, args, kwargs):
         if hasattr(instance, "config"):
             for server_name in instance.config.get("bootstrap_servers", []):
                 transaction.record_custom_metric(f"MessageBroker/Kafka/Nodes/{server_name}/Produce/{topic}", 1)
+
+        servers = instance.config.get("bootstrap_servers", []) if hasattr(instance, "config") else []
+        cluster_id = None
+        if servers:
+            _cache_key = _bootstrap_cache_key(servers)
+            cluster_id = _kafka_cluster_id_cache.get(_cache_key) or None
+        if cluster_id:
+            transaction.record_custom_metric(
+                KAFKA_CLUSTER_METRIC_PRODUCE.format(cluster_id, topic), 1
+            )
+
         try:
             return wrapped(
                 topic, value=value, key=key, headers=dt_headers, partition=partition, timestamp_ms=timestamp_ms
@@ -82,39 +109,14 @@ def wrap_kafkaconsumer_next(wrapped, instance, args, kwargs):
     try:
         record = wrapped(*args, **kwargs)
     except Exception as e:
-        # StopIteration is an expected error, indicating the end of an iterable,
-        # that should not be captured.
         if not isinstance(e, StopIteration):
             if current_transaction():
-                # Report error on existing transaction if there is one
                 notice_error()
             else:
-                # Report error on application
                 notice_error(application=application_instance(activate=False))
         raise
 
     if record:
-        # This iterator can be called either outside of a transaction, or
-        # within the context of an existing transaction.  There are 3
-        # possibilities we need to handle: (Note that this is similar to
-        # our Pika and Celery instrumentation)
-        #
-        #   1. In an inactive transaction
-        #
-        #      If the end_of_transaction() or ignore_transaction() API
-        #      calls have been invoked, this iterator may be called in the
-        #      context of an inactive transaction. In this case, don't wrap
-        #      the iterator in any way. Just run the original iterator.
-        #
-        #   2. In an active transaction
-        #
-        #      Do nothing.
-        #
-        #   3. Outside of a transaction
-        #
-        #      Since it's not running inside of an existing transaction, we
-        #      want to create a new background transaction for it.
-
         library = "Kafka"
         destination_type = "Topic"
         destination_name = record.topic
@@ -137,7 +139,6 @@ def wrap_kafkaconsumer_next(wrapped, instance, args, kwargs):
             instance._nr_transaction = transaction
             transaction.__enter__()
 
-            # Obtain consumer client_id to send up as agent attribute
             if hasattr(instance, "config") and "client_id" in instance.config:
                 client_id = instance.config["client_id"]
                 transaction._add_agent_attribute("kafka.consume.client_id", client_id)
@@ -145,11 +146,7 @@ def wrap_kafkaconsumer_next(wrapped, instance, args, kwargs):
             transaction._add_agent_attribute("kafka.consume.byteCount", received_bytes)
 
         transaction = current_transaction()
-        if transaction:  # If there is an active transaction now.
-            # Add metrics whether or not a transaction was already active, or one was just started.
-            # Don't add metrics if there was an inactive transaction.
-            # Name the metrics using the same format as the transaction, but in case the active transaction
-            # was an existing one and not a message transaction, reproduce the naming logic here.
+        if transaction:
             group = f"Message/{library}/{destination_type}"
             name = f"Named/{destination_name}"
             transaction.record_custom_metric(f"{group}/{name}/Received/Bytes", received_bytes)
@@ -159,11 +156,84 @@ def wrap_kafkaconsumer_next(wrapped, instance, args, kwargs):
                     transaction.record_custom_metric(
                         f"MessageBroker/Kafka/Nodes/{server_name}/Consume/{destination_name}", 1
                     )
+
+            servers = instance.config.get("bootstrap_servers", []) if hasattr(instance, "config") else []
+            cluster_id = None
+            if servers:
+                _cache_key = _bootstrap_cache_key(servers)
+                cached = _kafka_cluster_id_cache.get(_cache_key)
+                cluster_id = cached if cached else None
+            if cluster_id:
+                transaction.record_custom_metric(
+                    KAFKA_CLUSTER_METRIC_CONSUME.format(cluster_id, destination_name), 1
+                )
             transaction.add_messagebroker_info(
                 "Kafka-Python", get_package_version("kafka-python") or get_package_version("kafka-python-ng")
             )
 
     return record
+
+
+_SECURITY_CONFIG_KEYS = (
+    "security_protocol", "ssl_context", "ssl_cafile", "ssl_certfile",
+    "ssl_keyfile", "ssl_password", "ssl_crlfile", "ssl_ciphers",
+    "sasl_mechanism", "sasl_plain_username", "sasl_plain_password",
+    "sasl_kerberos_service_name", "sasl_kerberos_domain_name",
+    "sasl_oauth_token_provider",
+)
+
+
+def _fetch_cluster_id_kafka_python(bootstrap_servers, instance_config=None):
+    cache_key = _bootstrap_cache_key(bootstrap_servers)
+    with _nr_cluster_id_cache_lock:
+        if _kafka_cluster_id_cache.get(cache_key) is not None:
+            return
+        _kafka_cluster_id_cache[cache_key] = ""  # sentinel to prevent duplicate fetches
+
+    try:
+        from kafka.admin import KafkaAdminClient as _KafkaAdminClient
+        if not hasattr(_KafkaAdminClient, "describe_cluster"):
+            return
+    except ImportError:
+        return
+
+    def _run():
+        admin = None
+        cluster_id = None
+        try:
+            from kafka.admin import KafkaAdminClient
+            extra = {k: instance_config[k] for k in _SECURITY_CONFIG_KEYS if instance_config and k in instance_config and instance_config[k] is not None}
+            admin = KafkaAdminClient(
+                bootstrap_servers=bootstrap_servers,
+                client_id="newrelic-cluster-id-probe",
+                api_version_auto_timeout_ms=5000,
+                **extra,
+            )
+            meta = admin._client.cluster
+            admin._client.poll(timeout_ms=3000)
+            try:
+                result = admin.describe_cluster()
+                cluster_id = getattr(result, "cluster_id", None) or getattr(result, "clusterId", None)
+            except Exception:
+                _logger.debug("NR Kafka describe_cluster failed", exc_info=True)
+            if not cluster_id:
+                cluster_id = getattr(meta, "cluster_id", None) or getattr(meta, "_cluster_id", None)
+        except Exception:
+            _logger.debug("NR Kafka cluster ID fetch failed", exc_info=True)
+        finally:
+            try:
+                if admin is not None:
+                    admin.close()
+            except Exception:
+                pass
+        if cluster_id:
+            with _nr_cluster_id_cache_lock:
+                _kafka_cluster_id_cache[cache_key] = cluster_id
+        else:
+            with _nr_cluster_id_cache_lock:
+                _kafka_cluster_id_cache.pop(cache_key, None)
+
+    threading.Thread(target=_run, daemon=True, name="NR-KafkaPython-ClusterId").start()
 
 
 def wrap_KafkaProducer_init(wrapped, instance, args, kwargs):
@@ -176,7 +246,13 @@ def wrap_KafkaProducer_init(wrapped, instance, args, kwargs):
         instance, "Serialization/Value", "MessageBroker", get_config_key("value_serializer")
     )
 
-    return wrapped(*args, **kwargs)
+    result = wrapped(*args, **kwargs)
+
+    servers = instance.config.get("bootstrap_servers", [])
+    if servers:
+        _fetch_cluster_id_kafka_python(servers, instance.config)
+
+    return result
 
 
 class NewRelicSerializerWrapper(ObjectProxy):
@@ -211,7 +287,6 @@ def wrap_serializer(client, serializer_name, group_prefix, serializer):
         if isinstance(transaction, MessageTransaction):
             topic = transaction.destination_name
         else:
-            # Find parent message trace to retrieve topic
             message_trace = current_trace()
             while message_trace is not None and not isinstance(message_trace, MessageTrace):
                 message_trace = message_trace.parent
@@ -224,17 +299,14 @@ def wrap_serializer(client, serializer_name, group_prefix, serializer):
         return FunctionTraceWrapper(wrapped, name=name, group=group)(*args, **kwargs)
 
     try:
-        # Apply wrapper to serializer
         if serializer is None:
-            # Do nothing
             return serializer
         elif isinstance(serializer, Serializer):
             return NewRelicSerializerWrapper(serializer, group_prefix=group_prefix, serializer_name=serializer_name)
         else:
-            # Wrap callable in wrapper
             return _wrap_serializer(serializer)
     except Exception:
-        return serializer  # Avoid crashes from immutable serializers
+        return serializer
 
 
 def metric_wrapper(metric_name, check_result=False):
@@ -244,8 +316,6 @@ def metric_wrapper(metric_name, check_result=False):
         application = application_instance(activate=False)
         if application:
             if not check_result or (check_result and result):
-                # If the result does not need validated, send metric.
-                # If the result does need validated, ensure it is True.
                 application.record_custom_metric(metric_name, 1)
 
         return result
@@ -259,8 +329,17 @@ def instrument_kafka_producer(module):
         wrap_function_wrapper(module, "KafkaProducer.send", wrap_KafkaProducer_send)
 
 
+def _wrap_KafkaConsumer_init(wrapped, instance, args, kwargs):
+    result = wrapped(*args, **kwargs)
+    servers = instance.config.get("bootstrap_servers", [])
+    if servers:
+        _fetch_cluster_id_kafka_python(servers, instance.config)
+    return result
+
+
 def instrument_kafka_consumer_group(module):
     if hasattr(module, "KafkaConsumer"):
+        wrap_function_wrapper(module, "KafkaConsumer.__init__", _wrap_KafkaConsumer_init)
         wrap_function_wrapper(module, "KafkaConsumer.__next__", wrap_kafkaconsumer_next)
 
 

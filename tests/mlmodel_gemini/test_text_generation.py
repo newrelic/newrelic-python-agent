@@ -48,17 +48,17 @@ def text_generation_events(is_streaming):
                 "span_id": None,
                 "trace_id": "trace-id",
                 "duration": None,  # Response time varies each test run
-                "request.model": "gemini-2.5-flash",
-                "response.model": "gemini-2.5-flash",
+                "request.model": "gemini-3.5-flash",
+                "response.model": "gemini-3.5-flash",
                 "request.temperature": 0.7,
                 "request.max_tokens": 500,
                 "response.choices.finish_reason": "STOP",
                 "vendor": "gemini",
                 "ingest_source": "Python",
                 "response.number_of_messages": 2,
-                "response.usage.prompt_tokens": 10,
-                "response.usage.completion_tokens": 12,
-                "response.usage.total_tokens": 22,
+                "response.usage.completion_tokens": 1,
+                "response.usage.prompt_tokens": 18,
+                "response.usage.total_tokens": 19,
             },
         ),
         (
@@ -70,11 +70,11 @@ def text_generation_events(is_streaming):
                 "llm.foo": "bar",
                 "span_id": None,
                 "trace_id": "trace-id",
-                "content": "How many letters are in the word Python?",
+                "content": "How many letters are in the word Python? Answer in one word with no formatting.",
                 "role": "user",
                 "completion_id": None,
                 "sequence": 0,
-                "response.model": "gemini-2.5-flash",
+                "response.model": "gemini-3.5-flash",
                 "vendor": "gemini",
                 "ingest_source": "Python",
                 "token_count": 0,
@@ -88,11 +88,11 @@ def text_generation_events(is_streaming):
                 "llm.foo": "bar",
                 "span_id": None,
                 "trace_id": "trace-id",
-                "content": 'There are 6 letters in the word "Python".\n',
+                "content": "six",
                 "role": "model",
                 "completion_id": None,
                 "sequence": 1,
-                "response.model": "gemini-2.5-flash",
+                "response.model": "gemini-3.5-flash",
                 "vendor": "gemini",
                 "is_response": True,
                 "ingest_source": "Python",
@@ -137,8 +137,8 @@ def test_gemini_text_generation(exercise_text_model, text_generation_metrics, se
         add_custom_attribute("non_llm_attr", "python-agent")
         with WithLlmCustomAttributes({"context": "attr"}):
             exercise_text_model(
-                model="gemini-2.5-flash",
-                contents="How many letters are in the word Python?",
+                model="gemini-3.5-flash",
+                contents="How many letters are in the word Python? Answer in one word with no formatting.",
                 config=google.genai.types.GenerateContentConfig(max_output_tokens=500, temperature=0.7),
             )
 
@@ -164,13 +164,13 @@ def test_gemini_multi_text_generation(exercise_text_model, text_generation_metri
     def _test():
         set_trace_info()
         exercise_text_model(
-            model="gemini-2.5-flash",
-            contents="How many letters are in the word Python?",
+            model="gemini-3.5-flash",
+            contents="How many letters are in the word Python? Answer in one word with no formatting.",
             config=google.genai.types.GenerateContentConfig(max_output_tokens=500, temperature=0.7),
         )
         exercise_text_model(
-            model="gemini-2.5-flash",
-            contents="How many letters are in the word Python?",
+            model="gemini-3.5-flash",
+            contents="How many letters are in the word Python? Answer in one word with no formatting.",
             # contents="Who invented the Python programming language?",
             config=google.genai.types.GenerateContentConfig(max_output_tokens=500, temperature=0.7),
         )
@@ -200,8 +200,8 @@ def test_gemini_text_generation_with_llm_metadata(
         add_custom_attribute("non_llm_attr", "python-agent")
         with WithLlmCustomAttributes({"context": "attr"}):
             exercise_text_model(
-                model="gemini-2.5-flash",
-                contents="How many letters are in the word Python?",
+                model="gemini-3.5-flash",
+                contents="How many letters are in the word Python? Answer in one word with no formatting.",
                 config=google.genai.types.GenerateContentConfig(max_output_tokens=500, temperature=0.7),
             )
 
@@ -229,8 +229,8 @@ def test_gemini_text_generation_no_content(
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         add_custom_attribute("llm.foo", "bar")
         exercise_text_model(
-            model="gemini-2.5-flash",
-            contents="How many letters are in the word Python?",
+            model="gemini-3.5-flash",
+            contents="How many letters are in the word Python? Answer in one word with no formatting.",
             config=google.genai.types.GenerateContentConfig(max_output_tokens=500, temperature=0.7),
         )
 
@@ -258,8 +258,8 @@ def test_gemini_text_generation_with_token_count(
         add_custom_attribute("llm.conversation_id", "my-awesome-id")
         add_custom_attribute("llm.foo", "bar")
         exercise_text_model(
-            model="gemini-2.5-flash",
-            contents="How many letters are in the word Python?",
+            model="gemini-3.5-flash",
+            contents="How many letters are in the word Python? Answer in one word with no formatting.",
             config=google.genai.types.GenerateContentConfig(max_output_tokens=500, temperature=0.7),
         )
 
@@ -284,8 +284,8 @@ def test_gemini_text_generation_no_llm_metadata(
     def _test():
         set_trace_info()
         exercise_text_model(
-            model="gemini-2.5-flash",
-            contents="How many letters are in the word Python?",
+            model="gemini-3.5-flash",
+            contents="How many letters are in the word Python? Answer in one word with no formatting.",
             config=google.genai.types.GenerateContentConfig(max_output_tokens=500, temperature=0.7),
         )
 
@@ -296,8 +296,8 @@ def test_gemini_text_generation_no_llm_metadata(
 @validate_custom_event_count(count=0)
 def test_gemini_text_generation_outside_txn(exercise_text_model):
     exercise_text_model(
-        model="gemini-2.5-flash",
-        contents="How many letters are in the word Python?",
+        model="gemini-3.5-flash",
+        contents="How many letters are in the word Python? Answer in one word with no formatting.",
         config=google.genai.types.GenerateContentConfig(max_output_tokens=500, temperature=0.7),
     )
 
@@ -308,7 +308,7 @@ def test_gemini_text_generation_outside_txn(exercise_text_model):
 @background_task()
 def test_gemini_text_generation_ai_monitoring_disabled(exercise_text_model):
     exercise_text_model(
-        model="gemini-2.5-flash",
-        contents="How many letters are in the word Python?",
+        model="gemini-3.5-flash",
+        contents="How many letters are in the word Python? Answer in one word with no formatting.",
         config=google.genai.types.GenerateContentConfig(max_output_tokens=500, temperature=0.7),
     )

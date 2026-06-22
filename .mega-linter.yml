@@ -25,7 +25,15 @@ CLEAR_REPORT_FOLDER: true
 VALIDATE_ALL_CODEBASE: true
 IGNORE_GITIGNORED_FILES: true
 FAIL_IF_MISSING_LINTER_IN_FLAVOR: true
-FILTER_REGEX_EXCLUDE: "(.*/?packages/.*)" # Ignore packages directories
+FILTER_REGEX_EXCLUDE: "(.*cassette.*\\.ya?ml)" # Ignore recorded cassette.yaml files
+ADDITIONAL_EXCLUDED_DIRECTORIES:
+  - .pytest_cache
+  - .ruff_cache
+  - .tox
+  - .venv
+  - megalinter-reports
+  - newrelic.egg-info
+  - newrelic/packages
 
 ENABLE_LINTERS: # If you use ENABLE_LINTERS variable, all other linters will be disabled by default
   - ACTION_ACTIONLINT

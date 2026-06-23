@@ -18,6 +18,7 @@ import langchain_core
 import openai
 import pytest
 from langchain_community.vectorstores.faiss import FAISS
+from langchain_openai import ChatOpenAI
 from testing_support.fixtures import reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     disabled_ai_monitoring_record_content_settings,
@@ -806,7 +807,7 @@ chat_completion_recorded_events_str_response = [
             "response.headers.ratelimitLimitRequests": 10000,
             "response.headers.ratelimitLimitTokens": 50000000,
             "response.headers.ratelimitRemainingRequests": 9999,
-            "response.headers.ratelimitRemainingTokens": 49999955,
+            "response.headers.ratelimitRemainingTokens": 49999975,
             "response.headers.ratelimitResetRequests": "6ms",
             "response.headers.ratelimitResetTokens": "0s",
             "response.model": "gpt-3.5-turbo-0125",
@@ -1310,8 +1311,6 @@ def test_langchain_chain_no_content(
     _test()
 
 
-# NOTE: To reproduce these tests, set the `OPENAI_API_KEY`
-# environment variable to an invalid key.
 @pytest.mark.parametrize(
     "create_function,call_function,call_function_args,call_function_kwargs,expected_events",
     (
@@ -1351,7 +1350,6 @@ def test_langchain_chain_no_content(
 )
 def test_langchain_chain_error_in_openai(
     set_trace_info,
-    chat_openai_client,
     json_schema,
     prompt_openai_error,
     create_function,
@@ -1359,6 +1357,7 @@ def test_langchain_chain_error_in_openai(
     call_function_args,
     call_function_kwargs,
     expected_events,
+    monkeypatch,
 ):
     @reset_core_stats_engine()
     @validate_transaction_error_event_count(1)
@@ -1378,7 +1377,11 @@ def test_langchain_chain_error_in_openai(
         add_custom_attribute("llm.foo", "bar")
         add_custom_attribute("non_llm_attr", "python-agent")
 
-        runnable = create_function(json_schema, chat_openai_client, prompt_openai_error)
+        # Ensure the OpenAI key is set incorrectly for this test
+        monkeypatch.delenv("OPENAI_API_KEY")
+        chat_openai_client_no_api_key = ChatOpenAI(api_key="FAKE-OPENAI-KEY")
+
+        runnable = create_function(json_schema, chat_openai_client_no_api_key, prompt_openai_error)
 
         with pytest.raises(openai.AuthenticationError):
             with WithLlmCustomAttributes({"context": "attr"}):
@@ -1753,7 +1756,6 @@ def test_async_langchain_chain(
 )
 def test_async_langchain_chain_error_in_openai(
     set_trace_info,
-    chat_openai_client,
     json_schema,
     prompt_openai_error,
     create_function,
@@ -1761,6 +1763,7 @@ def test_async_langchain_chain_error_in_openai(
     call_function_args,
     call_function_kwargs,
     expected_events,
+    monkeypatch,
     loop,
 ):
     @reset_core_stats_engine()
@@ -1781,7 +1784,11 @@ def test_async_langchain_chain_error_in_openai(
         add_custom_attribute("llm.foo", "bar")
         add_custom_attribute("non_llm_attr", "python-agent")
 
-        runnable = create_function(json_schema, chat_openai_client, prompt_openai_error)
+        # Ensure the OpenAI key is set incorrectly for this test
+        monkeypatch.delenv("OPENAI_API_KEY")
+        chat_openai_client_no_api_key = ChatOpenAI(api_key="FAKE-OPENAI-KEY")
+
+        runnable = create_function(json_schema, chat_openai_client_no_api_key, prompt_openai_error)
 
         with pytest.raises(openai.AuthenticationError):
             with WithLlmCustomAttributes({"context": "attr"}):

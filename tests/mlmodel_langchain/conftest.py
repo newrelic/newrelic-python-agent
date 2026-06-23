@@ -21,7 +21,7 @@ from langchain_core.messages.tool import ToolMessage
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixture.vcr import *  # noqa: F403
-from testing_support.fixture.vcr import VCR_IGNORED_HEADERS
+from testing_support.fixture.vcr import VCR_IGNORED_HEADERS, VCR_REPLACE_HEADERS
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 from testing_support.ml_testing_utils import set_trace_info
 
@@ -43,25 +43,39 @@ collector_agent_registration = collector_agent_registration_fixture(
 
 VCR_IGNORED_HEADERS.extend(
     [
+        "alt-svc",
+        "Cookie",
+        "host",
+        "set-cookie",
+        "Strict-Transport-Security",
+        "X-Content-Type-Options",
+        "x-envoy-upstream-service-time",
+        "x-openai-proxy-wasm",
         "X-Stainless-Arch",
         "X-Stainless-Async",
         "X-Stainless-Lang",
         "X-Stainless-OS",
         "X-Stainless-Package-Version",
         "X-Stainless-Raw-Response",
-        "X-Stainless-Runtime",
-        "X-Stainless-Runtime-Version",
         "x-stainless-retry-count",
-        "x-envoy-upstream-service-time",
-        "X-Content-Type-Options",
-        "x-request-id",
-        "x-openai-proxy-wasm",
-        "set-cookie",
-        "alt-svc",
-        "Strict-Transport-Security",
-        "Cookie",
+        "X-Stainless-Runtime-Version",
+        "X-Stainless-Runtime",
     ]
 )
+
+VCR_REPLACE_HEADERS.extend(
+    [
+        ("openai-organization", "nr-test-org"),
+        ("openai-project", "nr-test-project"),
+        ("x-ratelimit-limit-requests", "10000"),
+        ("x-ratelimit-limit-tokens", "50000000"),
+        ("x-ratelimit-remaining-requests", "9999"),
+        ("x-ratelimit-remaining-tokens", "49999975"),
+        ("x-ratelimit-reset-requests", "6ms"),
+        ("x-ratelimit-reset-tokens", "0s"),
+    ]
+)
+
 
 # Intercept outgoing requests and log to file for mocking
 EXPECTED_AGENT_RESPONSE = "Hello!"

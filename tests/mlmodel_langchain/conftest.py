@@ -16,13 +16,12 @@ import itertools
 import os
 
 import pytest
-import tiktoken
 from langchain_core.messages.ai import AIMessage
 from langchain_core.messages.tool import ToolMessage
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixture.vcr import *  # noqa: F403
-from testing_support.fixture.vcr import VCR_IGNORED_HEADERS, VCR_REPLACE_HEADERS
+from testing_support.fixture.vcr import VCR_IGNORED_HEADERS, VCR_REPLACE_HEADERS, VCR_TIKTOKEN_ENCODINGS
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 from testing_support.ml_testing_utils import set_trace_info
 
@@ -77,10 +76,8 @@ VCR_REPLACE_HEADERS.extend(
     ]
 )
 
-TIKTOKEN_ENCODINGS = ["cl100k_base"]
+VCR_TIKTOKEN_ENCODINGS.extend(["cl100k_base"])
 
-
-# Intercept outgoing requests and log to file for mocking
 EXPECTED_AGENT_RESPONSE = "Hello!"
 EXPECTED_TOOL_OUTPUT = "Hello!"
 
@@ -109,13 +106,6 @@ def openai_clients(vcr_recording):
 def embedding_openai_client(openai_clients):
     _, embedding_client = openai_clients
     return embedding_client
-
-
-@pytest.fixture(scope="session")
-def load_tiktoken_encodings():
-    """Load tiktoken encodings before tests run to avoid issues with VCR blocking the network."""
-    for encoding in TIKTOKEN_ENCODINGS:
-        tiktoken.get_encoding(encoding)
 
 
 @pytest.fixture

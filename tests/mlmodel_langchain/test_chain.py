@@ -410,9 +410,9 @@ recorded_events_retrieval_chain_response = [
             "response.organization": "nr-test-org",
             "response.headers.llmVersion": "2020-10-01",
             "response.headers.ratelimitLimitRequests": 10000,
-            "response.headers.ratelimitLimitTokens": 10000000,
+            "response.headers.ratelimitLimitTokens": 50000000,
             "response.headers.ratelimitRemainingRequests": 9999,
-            "response.headers.ratelimitRemainingTokens": 9999992,
+            "response.headers.ratelimitRemainingTokens": 49999975,
             "response.headers.ratelimitResetRequests": "6ms",
             "response.headers.ratelimitResetTokens": "0s",
             "response.usage.total_tokens": 8,
@@ -434,9 +434,9 @@ recorded_events_retrieval_chain_response = [
             "response.organization": "nr-test-org",
             "response.headers.llmVersion": "2020-10-01",
             "response.headers.ratelimitLimitRequests": 10000,
-            "response.headers.ratelimitLimitTokens": 10000000,
+            "response.headers.ratelimitLimitTokens": 50000000,
             "response.headers.ratelimitRemainingRequests": 9999,
-            "response.headers.ratelimitRemainingTokens": 9999999,
+            "response.headers.ratelimitRemainingTokens": 49999975,
             "response.headers.ratelimitResetRequests": "6ms",
             "response.headers.ratelimitResetTokens": "0s",
             "response.usage.total_tokens": 1,
@@ -535,12 +535,12 @@ recorded_events_retrieval_chain_response = [
             "response.headers.ratelimitLimitRequests": 10000,
             "response.headers.ratelimitLimitTokens": 50000000,
             "response.headers.ratelimitRemainingRequests": 9999,
-            "response.headers.ratelimitRemainingTokens": 49999927,
+            "response.headers.ratelimitRemainingTokens": 49999975,
             "response.headers.ratelimitResetRequests": "6ms",
             "response.headers.ratelimitResetTokens": "0s",
+            "response.usage.completion_tokens": 210,
             "response.usage.prompt_tokens": 73,
-            "response.usage.completion_tokens": 228,
-            "response.usage.total_tokens": 301,
+            "response.usage.total_tokens": 283,
             "response.number_of_messages": 3,
             "response.organization": "nr-test-org",
             "span_id": None,
@@ -590,40 +590,36 @@ recorded_events_retrieval_chain_response = [
         {
             "completion_id": None,
             "content": "```html\n"
-            "1. What is the sum of 5 + 3?\n"
-            "   A) 6\n"
-            "   B) 7\n"
-            "   C) 8\n"
-            "   D) 9\n"
-            "   Answer: B) 7\n"
+            "1. What is the result of 5 x 3?\n"
+            "   A) 12\n"
+            "   B) 15\n"
+            "   C) 18\n"
+            "   D) 20\n"
             "\n"
-            "2. What is the result of 10 - 3?\n"
-            "   A) 5\n"
-            "   B) 6\n"
-            "   C) 7\n"
-            "   D) 8\n"
-            "   Answer: C) 7\n"
-            "\n"
-            "3. What is the product of 4 * 6?\n"
-            "   A) 20\n"
-            "   B) 24\n"
-            "   C) 28\n"
-            "   D) 30\n"
-            "   Answer: B) 24\n"
-            "\n"
-            "4. What is the outcome of 15 / 3?\n"
+            "2. What is the solution to 10 / 2?\n"
             "   A) 3\n"
             "   B) 4\n"
             "   C) 5\n"
             "   D) 6\n"
-            "   Answer: A) 3\n"
             "\n"
-            "5. What is the value of 8 squared?\n"
-            "   A) 64\n"
-            "   B) 72\n"
-            "   C) 80\n"
-            "   D) 88\n"
-            "   Answer: A) 64\n"
+            "3. If a rectangle has a length of 8 and a width of 6, what is its area?\n"
+            "   A) 12\n"
+            "   B) 24\n"
+            "   C) 36\n"
+            "   D) 48\n"
+            "\n"
+            "4. What is the value of 3 squared?\n"
+            "   A) 6\n"
+            "   B) 8\n"
+            "   C) 9\n"
+            "   D) 12\n"
+            "\n"
+            "5. If a store sells a shirt for $20 and a customer buys 3 shirts, how much "
+            "do they owe?\n"
+            "   A) $40\n"
+            "   B) $50\n"
+            "   C) $60\n"
+            "   D) $70\n"
             "```\n",
             "id": None,
             "request_id": None,
@@ -679,40 +675,37 @@ recorded_events_retrieval_chain_response = [
         {
             "completion_id": None,
             "content": "```html\n"
-            "1. What is the sum of 5 + 3?\n"
-            "   A) 6\n"
-            "   B) 7\n"
-            "   C) 8\n"
-            "   D) 9\n"
-            "   Answer: B) 7\n"
+            "1. What is the result of 5 x 3?\n"
+            "   A) 12\n"
+            "   B) 15\n"
+            "   C) 18\n"
+            "   D) 20\n"
             "\n"
-            "2. What is the result of 10 - 3?\n"
-            "   A) 5\n"
-            "   B) 6\n"
-            "   C) 7\n"
-            "   D) 8\n"
-            "   Answer: C) 7\n"
-            "\n"
-            "3. What is the product of 4 * 6?\n"
-            "   A) 20\n"
-            "   B) 24\n"
-            "   C) 28\n"
-            "   D) 30\n"
-            "   Answer: B) 24\n"
-            "\n"
-            "4. What is the outcome of 15 / 3?\n"
+            "2. What is the solution to 10 / 2?\n"
             "   A) 3\n"
             "   B) 4\n"
             "   C) 5\n"
             "   D) 6\n"
-            "   Answer: A) 3\n"
             "\n"
-            "5. What is the value of 8 squared?\n"
-            "   A) 64\n"
-            "   B) 72\n"
-            "   C) 80\n"
-            "   D) 88\n"
-            "   Answer: A) 64\n"
+            "3. If a rectangle has a length of 8 and a width of 6, what is "
+            "its area?\n"
+            "   A) 12\n"
+            "   B) 24\n"
+            "   C) 36\n"
+            "   D) 48\n"
+            "\n"
+            "4. What is the value of 3 squared?\n"
+            "   A) 6\n"
+            "   B) 8\n"
+            "   C) 9\n"
+            "   D) 12\n"
+            "\n"
+            "5. If a store sells a shirt for $20 and a customer buys 3 "
+            "shirts, how much do they owe?\n"
+            "   A) $40\n"
+            "   B) $50\n"
+            "   C) $60\n"
+            "   D) $70\n"
             "```\n",
             "id": None,
             "ingest_source": "Python",
@@ -767,14 +760,14 @@ recorded_events_retrieval_chain_response = [
             "completion_id": None,
             "content": "{'input': 'math', 'context': [Document(id='1234', metadata={}, "
             "page_content='What is 2 + 4?')], 'answer': '```html\\n1. What "
-            "is the sum of 5 + 3?\\n   A) 6\\n   B) 7\\n   C) 8\\n   D) "
-            "9\\n   Answer: B) 7\\n\\n2. What is the result of 10 - 3?\\n   "
-            "A) 5\\n   B) 6\\n   C) 7\\n   D) 8\\n   Answer: C) 7\\n\\n3. "
-            "What is the product of 4 * 6?\\n   A) 20\\n   B) 24\\n   C) "
-            "28\\n   D) 30\\n   Answer: B) 24\\n\\n4. What is the outcome of "
-            "15 / 3?\\n   A) 3\\n   B) 4\\n   C) 5\\n   D) 6\\n   Answer: A) "
-            "3\\n\\n5. What is the value of 8 squared?\\n   A) 64\\n   B) "
-            "72\\n   C) 80\\n   D) 88\\n   Answer: A) 64\\n```\\n'}",
+            "is the result of 5 x 3?\\n   A) 12\\n   B) 15\\n   C) 18\\n   "
+            "D) 20\\n\\n2. What is the solution to 10 / 2?\\n   A) 3\\n   B) "
+            "4\\n   C) 5\\n   D) 6\\n\\n3. If a rectangle has a length of 8 "
+            "and a width of 6, what is its area?\\n   A) 12\\n   B) 24\\n   "
+            "C) 36\\n   D) 48\\n\\n4. What is the value of 3 squared?\\n   "
+            "A) 6\\n   B) 8\\n   C) 9\\n   D) 12\\n\\n5. If a store sells a "
+            "shirt for $20 and a customer buys 3 shirts, how much do they "
+            "owe?\\n   A) $40\\n   B) $50\\n   C) $60\\n   D) $70\\n```\\n'}",
             "id": None,
             "ingest_source": "Python",
             "is_response": True,

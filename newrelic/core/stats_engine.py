@@ -1193,7 +1193,11 @@ class StatsEngine:
             from ldobserve import observe
             # Send span data to Darkly
             for event in transaction.span_events(self.__settings):
-                i_attrs, a_attrs, u_attrs = event
+                if isinstance(event[-1], dict):
+                    i_attrs, a_attrs, u_attrs = event
+                else:
+                    base_event, span_links, span_event_events = event
+                    i_attrs, a_attrs, u_attrs = base_event
                 attrs = {}
                 attrs.update(u_attrs)
                 attrs.update(a_attrs)

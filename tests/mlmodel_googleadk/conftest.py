@@ -51,7 +51,7 @@ assert GOOGLEADK_VERSION, "Failed to pull google-adk version for supportability 
 
 
 @pytest.fixture(autouse=True)
-def patch_gemini_client(monkeypatch, vcr_recording):
+def gemini_api_key(vcr_recording):
     """
     Force accept-encoding: identity onto every google.genai.Client created during a test.
 
@@ -70,24 +70,12 @@ def patch_gemini_client(monkeypatch, vcr_recording):
     else:
         os.environ["GOOGLE_API_KEY"] = "FAKE_GEMINI_API_KEY"
 
-    original_init = google.genai.Client.__init__
 
-    @functools.wraps(original_init)
-    def init_with_identity_encoding(self, *, http_options=None, **kwargs):
-        # Disable gzip encoding to make the recorded responses easier to read and diff.
-        if http_options is not None:
-            # Make options into a mutable dict
-            http_options = http_options.model_dump()
-            # Patch existing headers to force accept-encoding: identity
-            http_options["headers"] = {**(http_options.get("headers", {})), "accept-encoding": "identity"}
-            # Reconstruct HttpOptions with the updated headers
-            http_options = google.genai.types.HttpOptions(**http_options)
-        else:
-            http_options = google.genai.types.HttpOptions(headers={"accept-encoding": "identity"})
-
-        return original_init(self, http_options=http_options, **kwargs)
-
-    monkeypatch.setattr(google.genai.Client, "__init__", init_with_identity_encoding)
+@pytest.fixture(autouse=True, params=[False, True], ids=["standard", "vertex"])
+def is_vertex(request, monkeypatch):
+    """Enable or disable VertexAI mode for the Gemini client using environment variables."""
+    monkeypatch.setenv("GOOGLE_GENAI_USE_VERTEXAI", str(request.param).upper())
+    return request.param
 
 
 @pytest.fixture

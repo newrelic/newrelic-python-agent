@@ -50,14 +50,20 @@ async def wrap__execute_single_function_call_async(wrapped, instance, args, kwar
     run_id = ""
     tool_input = None
     agent_name = "agent"
+    is_local_tool = False
     try:
         bound_args = bind_args(wrapped, args, kwargs)
         function_call = bound_args.get("function_call")
         agent = bound_args.get("agent")
+        tools_dict = bound_args.get("tools_dict")
         if function_call is not None:
             tool_name = getattr(function_call, "name", "tool") or "tool"
             run_id = getattr(function_call, "id", "") or ""
             tool_input = getattr(function_call, "args", None)
+            if tools_dict is not None:
+                from google.adk.tools.function_tool import FunctionTool
+
+                is_local_tool = isinstance(tools_dict.get(tool_name), FunctionTool)
         if agent is not None:
             agent_name = getattr(agent, "name", "agent") or "agent"
     except Exception:
@@ -65,11 +71,12 @@ async def wrap__execute_single_function_call_async(wrapped, instance, args, kwar
 
     func_name = callable_name(wrapped)
     function_trace_name = f"{func_name}/{tool_name}"
-    agentic_subcomponent_data = {"type": "APM-AI_TOOL", "name": tool_name}
 
     ft = FunctionTrace(name=function_trace_name, group="Llm/tool/GoogleADK")
     ft.__enter__()
-    ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
+    if is_local_tool:
+        agentic_subcomponent_data = {"type": "APM-AI_TOOL", "name": tool_name}
+        ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
     linking_metadata = get_trace_linking_metadata()
     tool_id = str(uuid.uuid4())
 

@@ -1190,7 +1190,9 @@ class StatsEngine:
 
         if settings.distributed_tracing.enabled and settings.span_events.enabled and settings.collect_span_events:
 
-            from ldobserve import observe
+            from newrelic.core.agent import agent_instance
+            agent = agent_instance()
+            tracer = agent._tracer_provider.get_tracer(__name__)
             # Send span data to Darkly
             for event in transaction.span_events(self.__settings):
                 if isinstance(event[-1], dict):
@@ -1202,8 +1204,9 @@ class StatsEngine:
                 attrs.update(u_attrs)
                 attrs.update(a_attrs)
                 attrs.update(i_attrs)
-                with observe.start_span(i_attrs["name"], attributes=attrs) as span:
-                    pass
+                #carrier = {}
+                with tracer.start_as_current_span(i_attrs["name"], attributes=attrs) as span:
+                    pass #propagator.inject(carrier=carrier)
 
             if settings.infinite_tracing.enabled:
                 for event in transaction.span_protos(settings):

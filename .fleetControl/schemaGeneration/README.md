@@ -8,7 +8,7 @@ This directory contains the Python scripts that walk
 ## Files
 
 | File | Description |
-|------|-------------|
+| --- | --- |
 | `generate-schema.py` | Per-push regenerator. Reads the live agent settings tree, writes `config.json`. Never touches `configurationDefinitions.yml`. |
 | `bump-schema-version.py` | Release-time version bumper. Compares the schema at a prior git ref to the current schema and writes a new version into `configurationDefinitions.yml`. |
 | `schema_diff.py` | Shared library (no `main`). Holds the diff classification (`classify_changes`), bump arithmetic (`recommend_bump`, `apply_bump`, `bump_version`), and schema loading (`load_existing`). Imported by both top-level scripts. |
@@ -229,13 +229,13 @@ The `.*` suffix matches both the prefix itself and any descendant.
 ### Generator CLI (`generate-schema.py`)
 
 | Option | Description |
-|--------|-------------|
+| --- | --- |
 | `--force` | Overwrite the schema without comparing to the existing one. Always exits 0. |
 
 ### Bumper CLI (`bump-schema-version.py`)
 
 | Option | Description |
-|--------|-------------|
+| --- | --- |
 | `--since=<ref>` | Required. Compare the current schema to the schema at `<ref>` and recommend a bump. |
 | `--ci` | Write the bumped version to `configurationDefinitions.yml`. Without this, the script just prints the recommendation. |
 
@@ -244,7 +244,7 @@ The `.*` suffix matches both the prefix itself and any descendant.
 ### Generator exit codes (`generate-schema.py`)
 
 | Code | Meaning |
-|------|---------|
+| --- | --- |
 | 0 | No schema changes (or first run, or `--force` mode). |
 | 1 | Schema regenerated and on-disk differed (CI should commit). |
 | 2 | Generator failure (invalid schema, malformed inputs). |
@@ -252,7 +252,7 @@ The `.*` suffix matches both the prefix itself and any descendant.
 ### Bumper exit codes (`bump-schema-version.py`)
 
 | Code | Meaning |
-|------|---------|
+| --- | --- |
 | 0 | No bump needed (no schema diff, or bootstrap case where `<ref>` predates the schema). |
 | 1 | Bump applied (`--ci`) or recommended (without `--ci`). |
 | 2 | Bump failure (uncaught exception, missing args, malformed historical inputs). |
@@ -263,7 +263,7 @@ The `.*` suffix matches both the prefix itself and any descendant.
 kind is the highest severity across all changes:
 
 | Change type | Severity | Bump |
-|-------------|----------|------|
+| --- | --- | --- |
 | Property removed | Breaking | Major |
 | Type changed | Breaking | Major |
 | Enum value removed | Breaking | Major |

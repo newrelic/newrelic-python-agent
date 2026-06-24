@@ -26,7 +26,7 @@ from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import transient_function_wrapper
 
-EXPECTED_AGENT_METRIC = (f"Llm/agent/GoogleADK/google.adk.agents.llm_agent:LlmAgent._run_async_impl/{AGENT_NAME}", 1)
+EXPECTED_AGENT_METRIC = (f"Llm/agent/GoogleADK/run_async/{AGENT_NAME}", 1)
 
 
 @dt_enabled

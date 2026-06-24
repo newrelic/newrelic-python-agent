@@ -21,7 +21,6 @@ from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
 from newrelic.common.llm_utils import AsyncLLMStreamProxy, _get_llm_metadata
-from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.core.config import global_settings
@@ -45,9 +44,8 @@ def wrap_llm_agent__run_async_impl(wrapped, instance, args, kwargs):
     transaction.add_ml_model_info("GoogleADK", GOOGLEADK_VERSION)
     transaction._add_agent_attribute("llm", True)
 
-    func_name = callable_name(wrapped)
     agent_name = getattr(instance, "name", "agent")
-    function_trace_name = f"{func_name}/{agent_name}"
+    function_trace_name = f"run_async/{agent_name}"
     agentic_subcomponent_data = {"type": "APM-AI_AGENT", "name": agent_name}
 
     ft = FunctionTrace(name=function_trace_name, group="Llm/agent/GoogleADK")

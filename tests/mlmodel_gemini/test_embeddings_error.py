@@ -140,11 +140,7 @@ invalid_model_events = [
     callable_name(google.genai.errors.ClientError),
     exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.code": "NOT_FOUND", "http.statusCode": 404}},
 )
-@validate_span_events(
-    exact_agents={
-        "error.message": "models/does-not-exist is not found for API version v1beta, or is not supported for embedContent. Call ListModels to see the list of available models and their supported methods."
-    }
-)
+@validate_span_events(expected_agents=["error.message"])  # Message varies by endpoint
 @validate_transaction_metrics(
     name="test_embeddings_error:test_embeddings_invalid_request_error_invalid_model",
     scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
@@ -168,11 +164,7 @@ def test_embeddings_invalid_request_error_invalid_model(exercise_embedding_model
     callable_name(google.genai.errors.ClientError),
     exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.code": "NOT_FOUND", "http.statusCode": 404}},
 )
-@validate_span_events(
-    exact_agents={
-        "error.message": "models/does-not-exist is not found for API version v1beta, or is not supported for embedContent. Call ListModels to see the list of available models and their supported methods."
-    }
-)
+@validate_span_events(expected_agents=["error.message"])  # Message varies by endpoint
 @validate_transaction_metrics(
     name="test_embeddings_error:test_embeddings_invalid_request_error_invalid_model_with_token_count",
     scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
@@ -210,25 +202,39 @@ embedding_invalid_key_error_events = [
 # Wrong api_key provided
 @dt_enabled
 @reset_core_stats_engine()
-@validate_error_trace_attributes(
-    callable_name(google.genai.errors.ClientError),
-    exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.code": "INVALID_ARGUMENT", "http.statusCode": 400}},
-)
-@validate_span_events(exact_agents={"error.message": "API key not valid. Please pass a valid API key."})
-@validate_transaction_metrics(
-    name="test_embeddings_error:test_embeddings_wrong_api_key_error",
-    scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
-    background_task=True,
-)
-@validate_custom_events(embedding_invalid_key_error_events)
-@validate_custom_event_count(count=1)
-@background_task()
-def test_embeddings_wrong_api_key_error(exercise_embedding_model, gemini_client, set_trace_info):
-    with pytest.raises(google.genai.errors.ClientError):
-        set_trace_info()
-        fake_api_key = "DEADBEEF"
-        gemini_client._api_client.api_key = fake_api_key
-        gemini_client._api_client._http_options.headers["x-goog-api-key"] = fake_api_key
-        exercise_embedding_model(contents="Invalid API key.", model="gemini-embedding-001")
+def test_embeddings_wrong_api_key_error(gemini_client, exercise_embedding_model, set_trace_info, is_vertex):
+    # Different error is returned from vertex than the standard API
+    http_status_code = 401 if is_vertex else 400
+    error_code = "UNAUTHENTICATED" if is_vertex else "INVALID_ARGUMENT"
+    _standard_error_message = "API key not valid. Please pass a valid API key."
+    _vertex_error_message = "API keys are not supported by this API. Expected OAuth2 access token or other authentication credentials that assert a principal. See https://cloud.google.com/docs/authentication"
+    error_message = _vertex_error_message if is_vertex else _standard_error_message
+
+    @validate_error_trace_attributes(
+        callable_name(google.genai.errors.ClientError),
+        exact_attrs={
+            "agent": {},
+            "intrinsic": {},
+            "user": {"error.code": error_code, "http.statusCode": http_status_code},
+        },
+    )
+    @validate_span_events(exact_agents={"error.message": error_message})
+    @validate_transaction_metrics(
+        name="test_embeddings_wrong_api_key_error",
+        scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
+        rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
+        custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
+        background_task=True,
+    )
+    @validate_custom_events(embedding_invalid_key_error_events)
+    @validate_custom_event_count(count=1)
+    @background_task(name="test_embeddings_wrong_api_key_error")
+    def _test():
+        with pytest.raises(google.genai.errors.ClientError):
+            set_trace_info()
+            fake_api_key = "DEADBEEF"
+            gemini_client._api_client.api_key = fake_api_key
+            gemini_client._api_client._http_options.headers["x-goog-api-key"] = fake_api_key
+            exercise_embedding_model(model="gemini-embedding-001", contents="Invalid API key.")
+
+    _test()

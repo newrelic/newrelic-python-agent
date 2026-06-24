@@ -20,7 +20,6 @@ import pytest
 from conftest import GEMINI_VERSION_METRIC
 from testing_support.fixtures import dt_enabled, override_llm_token_callback_settings, reset_core_stats_engine
 from testing_support.ml_testing_utils import (
-    add_token_count_to_events,
     disabled_ai_monitoring_record_content_settings,
     events_sans_content,
     events_with_context_attrs,
@@ -64,12 +63,13 @@ expected_events_on_no_model_error = [
             "llm.conversation_id": "my-awesome-id",
             "span_id": None,
             "trace_id": "trace-id",
-            "content": "How many letters are in the word Python?",
+            "content": "How many letters are in the word Python? Answer in one word with no formatting.",
             "role": "user",
             "completion_id": None,
             "sequence": 0,
             "vendor": "gemini",
             "ingest_source": "Python",
+            "token_count": 0,
         },
     ),
 ]
@@ -121,7 +121,7 @@ def test_text_generation_invalid_request_error_no_model(
             with WithLlmCustomAttributes({"context": "attr"}):
                 exercise_text_model(
                     # no model
-                    contents=["How many letters are in the word Python?"],
+                    contents=["How many letters are in the word Python? Answer in one word with no formatting."],
                     config=google.genai.types.GenerateContentConfig(max_output_tokens=500, temperature=0.7),
                 )
 
@@ -152,7 +152,7 @@ def test_text_generation_invalid_request_error_no_model_no_content(
             add_custom_attribute("llm.conversation_id", "my-awesome-id")
             exercise_text_model(
                 # no model
-                contents=["How many letters are in the word Python?"],
+                contents=["How many letters are in the word Python? Answer in one word with no formatting."],
                 config=google.genai.types.GenerateContentConfig(max_output_tokens=500, temperature=0.7),
             )
 
@@ -193,6 +193,7 @@ expected_events_on_invalid_model_error = [
             "sequence": 0,
             "vendor": "gemini",
             "ingest_source": "Python",
+            "token_count": 0,
         },
     ),
 ]
@@ -208,11 +209,7 @@ def test_text_generation_invalid_request_error_invalid_model_with_token_count(
         callable_name(google.genai.errors.ClientError),
         exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.code": "NOT_FOUND", "http.statusCode": 404}},
     )
-    @validate_span_events(
-        exact_agents={
-            "error.message": "models/does-not-exist is not found for API version v1beta, or is not supported for generateContent. Call ListModels to see the list of available models and their supported methods."
-        }
-    )
+    @validate_span_events(expected_agents=["error.message"])  # Message varies by endpoint
     @validate_transaction_metrics(
         name="test_text_generation_invalid_request_error_invalid_model_with_token_count",
         scoped_metrics=text_generation_metrics,
@@ -220,7 +217,7 @@ def test_text_generation_invalid_request_error_invalid_model_with_token_count(
         custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
         background_task=True,
     )
-    @validate_custom_events(add_token_count_to_events(expected_events_on_invalid_model_error))
+    @validate_custom_events(expected_events_on_invalid_model_error)
     @validate_custom_event_count(count=2)
     @background_task(name="test_text_generation_invalid_request_error_invalid_model_with_token_count")
     def _test():
@@ -245,7 +242,7 @@ expected_events_on_wrong_api_key_error = [
             "span_id": None,
             "trace_id": "trace-id",
             "duration": None,  # Response time varies each test run
-            "request.model": "gemini-2.5-flash",
+            "request.model": "gemini-3.5-flash",
             "request.temperature": 0.7,
             "request.max_tokens": 500,
             "response.number_of_messages": 1,
@@ -263,11 +260,12 @@ expected_events_on_wrong_api_key_error = [
             "trace_id": "trace-id",
             "content": "Invalid API key.",
             "role": "user",
-            "response.model": "gemini-2.5-flash",
+            "response.model": "gemini-3.5-flash",
             "completion_id": None,
             "sequence": 0,
             "vendor": "gemini",
             "ingest_source": "Python",
+            "token_count": 0,
         },
     ),
 ]
@@ -277,13 +275,24 @@ expected_events_on_wrong_api_key_error = [
 @dt_enabled
 @reset_core_stats_engine()
 def test_text_generation_wrong_api_key_error(
-    gemini_client, exercise_text_model, text_generation_metrics, set_trace_info
+    gemini_client, exercise_text_model, text_generation_metrics, set_trace_info, is_vertex
 ):
+    # Different error is returned from vertex than the standard API
+    http_status_code = 401 if is_vertex else 400
+    error_code = "UNAUTHENTICATED" if is_vertex else "INVALID_ARGUMENT"
+    _standard_error_message = "API key not valid. Please pass a valid API key."
+    _vertex_error_message = "API keys are not supported by this API. Expected OAuth2 access token or other authentication credentials that assert a principal. See https://cloud.google.com/docs/authentication"
+    error_message = _vertex_error_message if is_vertex else _standard_error_message
+
     @validate_error_trace_attributes(
         callable_name(google.genai.errors.ClientError),
-        exact_attrs={"agent": {}, "intrinsic": {}, "user": {"error.code": "INVALID_ARGUMENT", "http.statusCode": 400}},
+        exact_attrs={
+            "agent": {},
+            "intrinsic": {},
+            "user": {"error.code": error_code, "http.statusCode": http_status_code},
+        },
     )
-    @validate_span_events(exact_agents={"error.message": "API key not valid. Please pass a valid API key."})
+    @validate_span_events(exact_agents={"error.message": error_message})
     @validate_transaction_metrics(
         name="test_text_generation_wrong_api_key_error",
         scoped_metrics=text_generation_metrics,
@@ -301,7 +310,7 @@ def test_text_generation_wrong_api_key_error(
             gemini_client._api_client.api_key = fake_api_key
             gemini_client._api_client._http_options.headers["x-goog-api-key"] = fake_api_key
             exercise_text_model(
-                model="gemini-2.5-flash",
+                model="gemini-3.5-flash",
                 contents=["Invalid API key."],
                 config=google.genai.types.GenerateContentConfig(max_output_tokens=500, temperature=0.7),
             )

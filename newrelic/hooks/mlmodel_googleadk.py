@@ -21,7 +21,6 @@ from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
 from newrelic.common.llm_utils import AsyncLLMStreamProxy, _get_llm_metadata
-from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
@@ -183,8 +182,7 @@ async def wrap__execute_single_function_call_async(wrapped, instance, args, kwar
     except Exception:
         _logger.warning(TOOL_EXTRACTOR_FAILURE_LOG_MESSAGE, exc_info=True)
 
-    func_name = callable_name(wrapped)
-    function_trace_name = f"{func_name}/{tool_name}"
+    function_trace_name = f"execute_single_function_call_async/{tool_name}"
 
     ft = FunctionTrace(name=function_trace_name, group="Llm/tool/GoogleADK")
     ft.__enter__()

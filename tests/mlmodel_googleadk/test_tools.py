@@ -29,11 +29,8 @@ from newrelic.api.background_task import background_task
 from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 from newrelic.hooks.mlmodel_googleadk import GOOGLEADK_VERSION
 
-EXPECTED_AGENT_METRIC = (f"Llm/agent/GoogleADK/google.adk.agents.llm_agent:LlmAgent._run_async_impl/{AGENT_NAME}", 1)
-EXPECTED_TOOL_METRIC = (
-    f"Llm/tool/GoogleADK/google.adk.flows.llm_flows.functions:_execute_single_function_call_async/{TOOL_NAME}",
-    1,
-)
+EXPECTED_AGENT_METRIC = (f"Llm/agent/GoogleADK/run_async/{AGENT_NAME}", 1)
+EXPECTED_TOOL_METRIC = (f"Llm/tool/GoogleADK/execute_single_function_call_async/{TOOL_NAME}", 1)
 EXPECTED_SUPPORTABILITY_METRIC = (f"Supportability/Python/ML/GoogleADK/{GOOGLEADK_VERSION}", 1)
 
 

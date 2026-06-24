@@ -19,57 +19,105 @@ interactions:
       in one word.\n\nYou are an agent. Your internal name is \"my_agent\"."}], "role":
       "user"}, "generationConfig": {}}'
     headers:
-      Accept:
+      accept:
       - '*/*'
-      Connection:
-      - keep-alive
-      Content-Type:
-      - application/json
-      Host:
-      - generativelanguage.googleapis.com
       accept-encoding:
-      - identity
+      - gzip, deflate
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - generativelanguage.googleapis.com
       x-goog-api-key:
       - XXXXXX
     method: POST
     uri: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent
   response:
     body:
-      string: "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\":
-        [\n          {\n            \"text\": \"Paris\",\n            \"thoughtSignature\":
-        \"EvADCu0DAQw51sdO/7vjnJaX3L90TuwmccG8x7ZM5JGGZirw1q95wfAmDIGBKmtDCK/EC8W/7d6UysVl1w6oNIydO7rlwwHKY4Fir3mVXwFvhWxferBmm/E1ia/nasj/OJXY7N+Cpp8D/e2GLzJWEXqYzMKEBvJ3QWvDiRpo/D3nLSuH80HF67C5Jvcb6AcXE0oPMQH2HDw4/IcmX8YTT/LWn1o3Qr6aMJvvoPq7C8J+tTpkjOkB9O4S8HOzu/u9GK7KhCk8A1GMhV1C4PQ6ger43eDqAzDf3JOiLzKzWby8pvwUL9sRMjOV4Rj4ffkGiYdeCdns5hqOBdY8Iw1HP723A9lsPVzkvVWmzLPxQrB6QXcMkApqn5zxHm5y69ar4fC90D8azUL8ckiRYGtY7LZitlpkEuul2MRljftT3WVqUc+Gi8tl/9uUp9szX2LcL+/iTGW5AKldQGFdTmOGu/yxn77ChXsZM2LaVUGWPORiSbsPE7Ln8gjvtCXk8FH1PaJH92aFfE8//V88K0QmT5VWQDHVncuhiX6oWjsPWUQem90VaKpl0F47MxuVfMKNWVkckX657xTDBNGW5+YFKqQvCvPkjvfMjEoRx+OFwJhwa7NzoAISh33QOJgR/uc9H810f3J1DuSCzfWQNREK0j/F4Q==\"\n
-        \         }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\":
-        \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\":
-        34,\n    \"candidatesTokenCount\": 1,\n    \"totalTokenCount\": 161,\n    \"promptTokensDetails\":
-        [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 34\n
-        \     }\n    ],\n    \"thoughtsTokenCount\": 126,\n    \"serviceTier\": \"standard\"\n
-        \ },\n  \"modelVersion\": \"gemini-3.5-flash\",\n  \"responseId\": \"ObghaqbUI9yq1MkP7qPfgQw\"\n}\n"
+      string: '{"candidates": [{"content": {"parts": [{"text": "Paris", "thoughtSignature":
+        "EvEDCu4DAQw51scysUPnXikzqhlwB377CgQvsa+72ncxYL2CvN8LKzIWw1lv89vFsNN5izKp3FwGQBAgJSpqivA4j+3eciQLdFU3pe3eSL0vwFVNLztLSt/5MB6l7caL6tqtS9EVtd8pM39uT8+D/stsW5g3Fhc8OqpAUx4mgEOX34GNHRh63TfUhhla9HbgwnBZhM6nUjafBp0Hs1X3E2e6LDgKulttxjbq/s0jvfIvlhub/SV9+0CMBgeO1YDOyHWK66RuFY8Bcy3+ZfTuRGblTbl4Ig4t9WcUUu0TEq6ZGdSdkaa3tlYieado0Y24sIxwK8Gsb4qrjnqKg22829KYP+UBAXiBzssMXhqPT2s3iJE76nUHxFQASEBx0yAhu5npdbSP3jcwaQe3x9T/hJ+vtzNWO0r8TmNmYrAnhW9RKsqTw5/gLJCey8TjuRgydhXuPAmbvIowvIguan23n3PBltPXfZGZkQ5A+7BP43dYzl9fKXUPMiJjqwkARvOCa7qZ2MvXFgbTjZaO8tMGu79WjKF2sBSeeyRCnd/Ko6BKJvpkyL+lC1AEW/8M6FEr5a5oJPSBWFleFoyXvLQTGNJIbn8ou2gwcO6hX7ezBBmQDu+NXWylzaQrbltOfviLkPVlTdYbdTZSjrcQTIKBbkVg9UQ="}],
+        "role": "model"}, "finishReason": "STOP", "index": 0}], "usageMetadata": {"promptTokenCount":
+        34, "candidatesTokenCount": 1, "totalTokenCount": 161, "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 34}], "thoughtsTokenCount": 126, "serviceTier":
+        "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "hy8zapD7Hva5sOIPyv_P0Qc"}'
     headers:
-      Accept-Ranges:
-      - none
-      Alt-Svc:
+      alt-svc:
       - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
-      Content-Type:
+      content-type:
       - application/json; charset=UTF-8
-      Date:
-      - Thu, 04 Jun 2026 17:39:06 GMT
-      Server:
+      date:
+      - Wed, 17 Jun 2026 23:36:40 GMT
+      server:
       - scaffolding on HTTPServer2
-      Server-Timing:
-      - gfet4t7; dur=1245
-      Transfer-Encoding:
+      server-timing:
+      - gfet4t7; dur=1414
+      transfer-encoding:
       - chunked
-      Vary:
+      vary:
+      - Origin
       - X-Origin
       - Referer
-      - Origin,Accept-Encoding
-      X-Content-Type-Options:
+      x-content-type-options:
       - nosniff
-      X-Frame-Options:
+      x-frame-options:
       - SAMEORIGIN
-      X-Gemini-Service-Tier:
+      x-gemini-service-tier:
       - standard
-      X-XSS-Protection:
+      x-xss-protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "What is the capital of France?"}], "role":
+      "user"}], "systemInstruction": {"parts": [{"text": "Answer the user''s question
+      in one word.\n\nYou are an agent. Your internal name is \"my_agent\"."}], "role":
+      "user"}, "labels": {"adk_agent_name": "my_agent"}, "generationConfig": {}}'
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - aiplatform.googleapis.com
+      x-goog-api-key:
+      - XXXXXX
+    method: POST
+    uri: https://aiplatform.googleapis.com/v1beta1/publishers/google/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"role": "model", "parts": [{"text": "Paris",
+        "thoughtSignature": "AY89a18s+YGC/n8kCIFN20F9UJ1EHDdCoJ6l1YfgC7U8aeSuhAlThCslNVIk/rKGFAq2CW56IS6yLMWIr+018t+5bbq1SNCfUxoDT9Wg/zCCYNP6mq0mtakKnwbpedt5UMSsIznKNvXspv59jRTIWi46smq6Lb4+JGI614COEtk9PsWnMGBIzFJ19OXZv4Sp32+SPT2HT2UoWvN2mnp2TzbfeCZkXxURfp8i+QiWyyxKVdLu471HOOkubZp0FzHlQHBcLDQvg9OVsSJ5UrRcNgzCQJpmYb9x5QeY8Ih282/n2r5sBzdeI6UU1r43N3EKXB4V66oxbnv4mStBTa/9J6Qwsp6stF22GkSI/qrZxfDrSFDfVzLuP+wTBDTXGcKwfkuLPQV/coAZYd12KOCA7IF24lnrLOFzXarVQUPsGY74j2BVo1dpcCknoL3Kxg6h1SGGCurU6ZHqN13hhH7ZCWYkBeV/qFRUk9dNKcTkBILCsHJ2WMEwv+TEAazf51Eo73E3ZHvYhdPeDM2swOhXezGtqdGqtFkf/KTfNBtDOXxyzPnJeqMQWBc8pF9Ey0fX0K3YaU8/cHZevlA4l7CinqNvEqHnEZ1Del1pT3E+xn72NF3r3Fqm0CWA7nsNupEjYPyq"}]},
+        "finishReason": "STOP"}], "usageMetadata": {"promptTokenCount": 32, "candidatesTokenCount":
+        1, "totalTokenCount": 157, "trafficType": "ON_DEMAND", "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 32}], "candidatesTokensDetails": [{"modality":
+        "TEXT", "tokenCount": 1}], "thoughtsTokenCount": 124}, "modelVersion": "gemini-3.5-flash",
+        "createTime": "2026-06-17T23:36:41.305555Z", "responseId": "iS8zapPTEraU4_UPlpLd-Ao"}'
+    headers:
+      alt-svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      content-type:
+      - application/json; charset=UTF-8
+      date:
+      - Wed, 17 Jun 2026 23:36:42 GMT
+      server:
+      - scaffolding on HTTPServer2
+      transfer-encoding:
+      - chunked
+      vary:
+      - Origin
+      - X-Origin
+      - Referer
+      x-content-type-options:
+      - nosniff
+      x-frame-options:
+      - SAMEORIGIN
+      x-xss-protection:
       - '0'
     status:
       code: 200
@@ -83,69 +131,62 @@ interactions:
       {"country": {"title": "Country", "type": "string"}}, "required": ["country"],
       "title": "get_capitalParams", "type": "object"}}]}], "generationConfig": {}}'
     headers:
-      Accept:
+      accept:
       - '*/*'
-      Connection:
-      - keep-alive
-      Content-Type:
-      - application/json
-      Host:
-      - generativelanguage.googleapis.com
       accept-encoding:
-      - identity
+      - gzip, deflate
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - generativelanguage.googleapis.com
       x-goog-api-key:
       - XXXXXX
     method: POST
     uri: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent
   response:
     body:
-      string: "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\":
-        [\n          {\n            \"functionCall\": {\n              \"name\": \"get_capital\",\n
-        \             \"args\": {\n                \"country\": \"France\"\n              },\n
-        \             \"id\": \"9jm89vzu\"\n            },\n            \"thoughtSignature\":
-        \"ErEECq4EAQw51seB6PkS2yq4d6bzFaH2D7e0RGNPcU4OYlPM8au+0iiDtf9noT9qzch9DPIdRjEFZjUo+y+oyKymEpPyDt6/U6stHd3w64kuA0UP3qkNf7bWhLJSn+kbTxT2CB6NpBQoTIGf+yiS/tmuSj5Pda3F/xeUT6H1iktXg32jKpBhDpTV4rmy1yRM21Gi9CXRqZjrhKXksX9z6wEELMsIaQ3I9iMEmVd8+aLuz6hwa0s3/1J8MTQHAOzSOnyJjyatr6dtoCmenzOoOGBLVgkxFdg1QuAmIVCJ9oPKxVyhLbIUNt4vsEedppfGOzsWgPyegx024XvRenR48PHMDpOeFanCiGnupOfJUHJkBrmIgfFsrso0tTUCOjbHE45BZdpR8MSOr21d7QFOR2QcAvatcORmqob50UjRX5VZIUJGOwWZe3sDi+B0pFE6gN+Dmh3+EzSc9scY+o3uxjYlo6BGA5OxE0DB71ev01vxfktwbl7c97JXZy3nc2cSlWeGS8oE5YXSFwNZpEq4cjK90armVeEcRIWL/za5MwSTjQgx8xUsw1CykRmkiUI6ZTVSQxkmqEnY5HewldBvk0qILIPlQHaCOFSnDHTO1lsyw89MiHQp094O2cJxcjjuBiLdISIrdU4k+EfrG7bS92z2uAgWYJjNmV83NOhLlmGEOq4pfpvm9M+CeYbXjB65W88tBXaW2tvXHJrwR0i+7Jqa5kYZHl+P40zhFPY2FT4xu7ou\"\n
-        \         }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\":
-        \"STOP\",\n      \"index\": 0,\n      \"finishMessage\": \"Model generated
-        function call(s).\"\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\":
-        93,\n    \"candidatesTokenCount\": 16,\n    \"totalTokenCount\": 245,\n    \"promptTokensDetails\":
-        [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 93\n
-        \     }\n    ],\n    \"thoughtsTokenCount\": 136,\n    \"serviceTier\": \"standard\"\n
-        \ },\n  \"modelVersion\": \"gemini-3.5-flash\",\n  \"responseId\": \"Frkhasi3BoS9sOIP-dC-mQ4\"\n}\n"
+      string: '{"candidates": [{"content": {"parts": [{"functionCall": {"name": "get_capital",
+        "args": {"country": "France"}, "id": "cnri1x62"}, "thoughtSignature": "EtQDCtEDAQw51se4UiR/kaU+pG9nsAX4oKHoIiKPJ1d6Zdq5iW04Zo/fVLUfxIDOR9KjjnlKNR/NYfWR/VFJJzl9QpIFiCXGArFgSF9SJ6zk1OKe2RtHrR+hFEiUb7p0irQWiOvXZU7/n7gIV0S/vEWke2T/2hCgwX8IPxD9pPEnUD+YBQ6sB8ObFLd4OlRRgByn1H3JaqHSDE+5TH4+45ij3km++3WjwyuRhcG0gH2VRy/xXsIE1ncHd1STj1W5NUrXG/kMmTEkJXgz8jcMEJ93+r+q+OQqXuNy7W0/3NEkMnvQHpUJfGLLHajtpc9eg2cgr+5oMod4W6hSSxjjmvL8g5/lUA86oBe9aoXGsCeUW5HI8aJyaaPjt60q2l7DiUQ3EIhkvhjvZpZ8co3AZESsZSmsW9YQs3Sd3I+9wKqcVFpXR5CG17BXk3IacHK8ADmee3IQzDUyyKvNcDvtCq/p7oGGiRCEuzGTv/9GEIYsmfVD0OUtScHTeLAs1q9GuqH6ZBGdPcXmEJ3wW4mwB239c0JXg8nLvD7qIaYDfiaqUEI3aoPg+4vsqDrsfb35XQ7d/InXT6I6UP/geB/U0gxjb8TcekS49oi8+2XOSKTyBcBETgkU"}],
+        "role": "model"}, "finishReason": "STOP", "index": 0, "finishMessage": "Model
+        generated function call(s)."}], "usageMetadata": {"promptTokenCount": 93,
+        "candidatesTokenCount": 16, "totalTokenCount": 220, "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 93}], "thoughtsTokenCount": 111, "serviceTier":
+        "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "iy8zas78DuKj1MkP36yr6Ac"}'
     headers:
-      Accept-Ranges:
-      - none
-      Alt-Svc:
+      alt-svc:
       - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
-      Content-Type:
+      content-type:
       - application/json; charset=UTF-8
-      Date:
-      - Thu, 04 Jun 2026 17:42:47 GMT
-      Server:
+      date:
+      - Wed, 17 Jun 2026 23:36:44 GMT
+      server:
       - scaffolding on HTTPServer2
-      Server-Timing:
-      - gfet4t7; dur=1410
-      Transfer-Encoding:
+      server-timing:
+      - gfet4t7; dur=1377
+      transfer-encoding:
       - chunked
-      Vary:
+      vary:
+      - Origin
       - X-Origin
       - Referer
-      - Origin,Accept-Encoding
-      X-Content-Type-Options:
+      x-content-type-options:
       - nosniff
-      X-Frame-Options:
+      x-frame-options:
       - SAMEORIGIN
-      X-Gemini-Service-Tier:
+      x-gemini-service-tier:
       - standard
-      X-XSS-Protection:
+      x-xss-protection:
       - '0'
     status:
       code: 200
       message: OK
 - request:
     body: '{"contents": [{"parts": [{"text": "What is the capital of France?"}], "role":
-      "user"}, {"parts": [{"functionCall": {"id": "9jm89vzu", "args": {"country":
-      "France"}, "name": "get_capital"}, "thoughtSignature": "ErEECq4EAQw51seB6PkS2yq4d6bzFaH2D7e0RGNPcU4OYlPM8au-0iiDtf9noT9qzch9DPIdRjEFZjUo-y-oyKymEpPyDt6_U6stHd3w64kuA0UP3qkNf7bWhLJSn-kbTxT2CB6NpBQoTIGf-yiS_tmuSj5Pda3F_xeUT6H1iktXg32jKpBhDpTV4rmy1yRM21Gi9CXRqZjrhKXksX9z6wEELMsIaQ3I9iMEmVd8-aLuz6hwa0s3_1J8MTQHAOzSOnyJjyatr6dtoCmenzOoOGBLVgkxFdg1QuAmIVCJ9oPKxVyhLbIUNt4vsEedppfGOzsWgPyegx024XvRenR48PHMDpOeFanCiGnupOfJUHJkBrmIgfFsrso0tTUCOjbHE45BZdpR8MSOr21d7QFOR2QcAvatcORmqob50UjRX5VZIUJGOwWZe3sDi-B0pFE6gN-Dmh3-EzSc9scY-o3uxjYlo6BGA5OxE0DB71ev01vxfktwbl7c97JXZy3nc2cSlWeGS8oE5YXSFwNZpEq4cjK90armVeEcRIWL_za5MwSTjQgx8xUsw1CykRmkiUI6ZTVSQxkmqEnY5HewldBvk0qILIPlQHaCOFSnDHTO1lsyw89MiHQp094O2cJxcjjuBiLdISIrdU4k-EfrG7bS92z2uAgWYJjNmV83NOhLlmGEOq4pfpvm9M-CeYbXjB65W88tBXaW2tvXHJrwR0i-7Jqa5kYZHl-P40zhFPY2FT4xu7ou"}],
-      "role": "model"}, {"parts": [{"functionResponse": {"id": "9jm89vzu", "name":
+      "user"}, {"parts": [{"functionCall": {"id": "cnri1x62", "args": {"country":
+      "France"}, "name": "get_capital"}, "thoughtSignature": "EtQDCtEDAQw51se4UiR_kaU-pG9nsAX4oKHoIiKPJ1d6Zdq5iW04Zo_fVLUfxIDOR9KjjnlKNR_NYfWR_VFJJzl9QpIFiCXGArFgSF9SJ6zk1OKe2RtHrR-hFEiUb7p0irQWiOvXZU7_n7gIV0S_vEWke2T_2hCgwX8IPxD9pPEnUD-YBQ6sB8ObFLd4OlRRgByn1H3JaqHSDE-5TH4-45ij3km--3WjwyuRhcG0gH2VRy_xXsIE1ncHd1STj1W5NUrXG_kMmTEkJXgz8jcMEJ93-r-q-OQqXuNy7W0_3NEkMnvQHpUJfGLLHajtpc9eg2cgr-5oMod4W6hSSxjjmvL8g5_lUA86oBe9aoXGsCeUW5HI8aJyaaPjt60q2l7DiUQ3EIhkvhjvZpZ8co3AZESsZSmsW9YQs3Sd3I-9wKqcVFpXR5CG17BXk3IacHK8ADmee3IQzDUyyKvNcDvtCq_p7oGGiRCEuzGTv_9GEIYsmfVD0OUtScHTeLAs1q9GuqH6ZBGdPcXmEJ3wW4mwB239c0JXg8nLvD7qIaYDfiaqUEI3aoPg-4vsqDrsfb35XQ7d_InXT6I6UP_geB_U0gxjb8TcekS49oi8-2XOSKTyBcBETgkU"}],
+      "role": "model"}, {"parts": [{"functionResponse": {"id": "cnri1x62", "name":
       "get_capital", "response": {"output": "Paris"}}}], "role": "user"}], "systemInstruction":
       {"parts": [{"text": "Answer the user''s question in one word.\n\nYou are an
       agent. Your internal name is \"my_agent\"."}], "role": "user"}, "tools": [{"functionDeclarations":
@@ -154,57 +195,172 @@ interactions:
       "string"}}, "required": ["country"], "title": "get_capitalParams", "type": "object"}}]}],
       "generationConfig": {}}'
     headers:
-      Accept:
+      accept:
       - '*/*'
-      Connection:
-      - keep-alive
-      Content-Type:
-      - application/json
-      Host:
-      - generativelanguage.googleapis.com
       accept-encoding:
-      - identity
+      - gzip, deflate
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - generativelanguage.googleapis.com
       x-goog-api-key:
       - XXXXXX
     method: POST
     uri: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent
   response:
     body:
-      string: "{\n  \"candidates\": [\n    {\n      \"content\": {\n        \"parts\":
-        [\n          {\n            \"text\": \"Paris\",\n            \"thoughtSignature\":
-        \"Ep8BCpwBAQw51scY9jRm1gRR+wIp3n83l2Nne/45OEv3gu1A3171df1myLLVcuXK3JU59+msaJFR1qQmILPixOdxoUWnsx1CahjhgeNpocAw2WEB00xiv4G97fR3qe4w4xriy3yKxP33+kakl7o8aWFLDEqmYpr2NiYIrNjQyB54uYpuuH3jTUFGvZn64UoRsfDC1IYGPpz2zaIMpV01BsSw\"\n
-        \         }\n        ],\n        \"role\": \"model\"\n      },\n      \"finishReason\":
-        \"STOP\",\n      \"index\": 0\n    }\n  ],\n  \"usageMetadata\": {\n    \"promptTokenCount\":
-        259,\n    \"candidatesTokenCount\": 1,\n    \"totalTokenCount\": 286,\n    \"promptTokensDetails\":
-        [\n      {\n        \"modality\": \"TEXT\",\n        \"tokenCount\": 259\n
-        \     }\n    ],\n    \"thoughtsTokenCount\": 26,\n    \"serviceTier\": \"standard\"\n
-        \ },\n  \"modelVersion\": \"gemini-3.5-flash\",\n  \"responseId\": \"GLkhaqGsA5H6ugfVoKy4CA\"\n}\n"
+      string: '{"candidates": [{"content": {"parts": [{"text": "Paris", "thoughtSignature":
+        "EqwBCqkBAQw51sdrxG2o93i0h7BaW3UWF6S9L4TOlyHfNiZaJ/UWFxMLSk9xKOyak2BHtxy9Z1NQOPraG3Xb4Ae5k3HjF7AkKkzGOSsnZthhwzII0jjTLiU+5oI+UwOs1QlLAtCTEf3CTp4IevjtTc+OgCBGbhWC7UJRSnQ9gZ9bNP+4Sb/LAlQ8WS/gbYjhfglrqMTFNj7Q23qvCu3+DSRJwYXONiPumZ8vFGzHyw=="}],
+        "role": "model"}, "finishReason": "STOP", "index": 0}], "usageMetadata": {"promptTokenCount":
+        234, "candidatesTokenCount": 1, "totalTokenCount": 265, "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 234}], "thoughtsTokenCount": 30, "serviceTier":
+        "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "jC8zauGaOeazjrEP2pWVeA"}'
     headers:
-      Accept-Ranges:
-      - none
-      Alt-Svc:
+      alt-svc:
       - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
-      Content-Type:
+      content-type:
       - application/json; charset=UTF-8
-      Date:
-      - Thu, 04 Jun 2026 17:42:48 GMT
-      Server:
+      date:
+      - Wed, 17 Jun 2026 23:36:45 GMT
+      server:
       - scaffolding on HTTPServer2
-      Server-Timing:
-      - gfet4t7; dur=1122
-      Transfer-Encoding:
+      server-timing:
+      - gfet4t7; dur=904
+      transfer-encoding:
       - chunked
-      Vary:
+      vary:
+      - Origin
       - X-Origin
       - Referer
-      - Origin,Accept-Encoding
-      X-Content-Type-Options:
+      x-content-type-options:
       - nosniff
-      X-Frame-Options:
+      x-frame-options:
       - SAMEORIGIN
-      X-Gemini-Service-Tier:
+      x-gemini-service-tier:
       - standard
-      X-XSS-Protection:
+      x-xss-protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "What is the capital of France?"}], "role":
+      "user"}], "systemInstruction": {"parts": [{"text": "Answer the user''s question
+      in one word.\n\nYou are an agent. Your internal name is \"my_agent\"."}], "role":
+      "user"}, "tools": [{"functionDeclarations": [{"description": "Return the capital
+      of a country.", "name": "get_capital", "parameters_json_schema": {"properties":
+      {"country": {"title": "Country", "type": "string"}}, "required": ["country"],
+      "title": "get_capitalParams", "type": "object"}, "response_json_schema": {"additionalProperties":
+      true, "type": "object"}}]}], "labels": {"adk_agent_name": "my_agent"}, "generationConfig":
+      {}}'
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - aiplatform.googleapis.com
+      x-goog-api-key:
+      - XXXXXX
+    method: POST
+    uri: https://aiplatform.googleapis.com/v1beta1/publishers/google/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"role": "model", "parts": [{"functionCall":
+        {"name": "get_capital", "args": {"country": "France"}}, "thoughtSignature":
+        "AY89a19ix1RWgzv5r3oPeMR3rSJfzAotwUDcVL19v9zKdl6+UJo2090ul0/VRKy6/Y2S82v1T/t1nGwlH2rKq1pnoqBCFURM6Nmn8AmwsrPQpTGt9i1ewGvudxQTbymSljz1vatmMvVV329Vc5R6UD0NXU8wZp+3t5j3gDHz23HtEKR7GOJMaEskFPefGqaZ9Qm95Z86HxyKaUeV5VJgNpE/0G662R+JE5oMLU3ewIbijYWkj2iQeFOAa7y+RpVQcVfDke+0UqQ620pd4fOvcJvhqWgLzwuaG2yWmF23r7nhsWVBLpNMhU387OL3wQ+xazNx7ZptYNT/7GPIWbq4cHhR04IOBkfuG5DI/cd+s+zBf5S7FpD7ODYrlRM1bYUpknP3JAxWh11sTCl+yEXw0NuDIoL53xKMB8V1xYqnm0iK/8bP211uigsUe/YqYd/aWFXpgl47/dnRbCi+TkQWVlwcJmdNXU6zLR08kYa85JrHhy+fV2ojYh4xUzDbUQYbzsFyt0AOBSxaACAGwroOvNFg7Ms3RJ2dkCBP+rr+0ICxsPcN7zLaIag36VA+7/4zAIIMG5TzFsBNUAQGRq6mZ4GJZoBSGhat6/QL62gybNkuaXi/x1rMg70HTe9xFQWUxU7FQMsfkL6rOudXkOmTsDs82udHq/OfoV37gH8ZRUaCtdtNg3Z8+wQ4iS3EXJEXVvLk18dxia46P9TYUWtTj4sEz+KiYBHRLbruolHIvcN0VrZyqYsVPxT6e76H31/HeMYQHDpiNi3glU7vvORlEpH604VjF6UL/dz3E5nu8dgn2jSPPsNLCBsvdd93VCFFVLSjesk9TUbP3clBXjWlCMnovh1ZuN4/PzxEUGiLH4YOwZi8U6krsSO/qcfbqYBSQuyEuBmzD/w+CZ2WDWmsMaJzRTsd8ipa"}]},
+        "finishReason": "STOP"}], "usageMetadata": {"promptTokenCount": 69, "candidatesTokenCount":
+        16, "totalTokenCount": 243, "trafficType": "ON_DEMAND", "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 69}], "candidatesTokensDetails": [{"modality":
+        "TEXT", "tokenCount": 16}], "thoughtsTokenCount": 158}, "modelVersion": "gemini-3.5-flash",
+        "createTime": "2026-06-17T23:36:46.321879Z", "responseId": "ji8zatfSE-iW9LsPma8D"}'
+    headers:
+      alt-svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      content-type:
+      - application/json; charset=UTF-8
+      date:
+      - Wed, 17 Jun 2026 23:36:47 GMT
+      server:
+      - scaffolding on HTTPServer2
+      transfer-encoding:
+      - chunked
+      vary:
+      - Origin
+      - X-Origin
+      - Referer
+      x-content-type-options:
+      - nosniff
+      x-frame-options:
+      - SAMEORIGIN
+      x-xss-protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "What is the capital of France?"}], "role":
+      "user"}, {"parts": [{"functionCall": {"args": {"country": "France"}, "name":
+      "get_capital"}, "thoughtSignature": "AY89a19ix1RWgzv5r3oPeMR3rSJfzAotwUDcVL19v9zKdl6-UJo2090ul0_VRKy6_Y2S82v1T_t1nGwlH2rKq1pnoqBCFURM6Nmn8AmwsrPQpTGt9i1ewGvudxQTbymSljz1vatmMvVV329Vc5R6UD0NXU8wZp-3t5j3gDHz23HtEKR7GOJMaEskFPefGqaZ9Qm95Z86HxyKaUeV5VJgNpE_0G662R-JE5oMLU3ewIbijYWkj2iQeFOAa7y-RpVQcVfDke-0UqQ620pd4fOvcJvhqWgLzwuaG2yWmF23r7nhsWVBLpNMhU387OL3wQ-xazNx7ZptYNT_7GPIWbq4cHhR04IOBkfuG5DI_cd-s-zBf5S7FpD7ODYrlRM1bYUpknP3JAxWh11sTCl-yEXw0NuDIoL53xKMB8V1xYqnm0iK_8bP211uigsUe_YqYd_aWFXpgl47_dnRbCi-TkQWVlwcJmdNXU6zLR08kYa85JrHhy-fV2ojYh4xUzDbUQYbzsFyt0AOBSxaACAGwroOvNFg7Ms3RJ2dkCBP-rr-0ICxsPcN7zLaIag36VA-7_4zAIIMG5TzFsBNUAQGRq6mZ4GJZoBSGhat6_QL62gybNkuaXi_x1rMg70HTe9xFQWUxU7FQMsfkL6rOudXkOmTsDs82udHq_OfoV37gH8ZRUaCtdtNg3Z8-wQ4iS3EXJEXVvLk18dxia46P9TYUWtTj4sEz-KiYBHRLbruolHIvcN0VrZyqYsVPxT6e76H31_HeMYQHDpiNi3glU7vvORlEpH604VjF6UL_dz3E5nu8dgn2jSPPsNLCBsvdd93VCFFVLSjesk9TUbP3clBXjWlCMnovh1ZuN4_PzxEUGiLH4YOwZi8U6krsSO_qcfbqYBSQuyEuBmzD_w-CZ2WDWmsMaJzRTsd8ipa"}],
+      "role": "model"}, {"parts": [{"functionResponse": {"name": "get_capital", "response":
+      {"output": "Paris"}}}], "role": "user"}], "systemInstruction": {"parts": [{"text":
+      "Answer the user''s question in one word.\n\nYou are an agent. Your internal
+      name is \"my_agent\"."}], "role": "user"}, "tools": [{"functionDeclarations":
+      [{"description": "Return the capital of a country.", "name": "get_capital",
+      "parameters_json_schema": {"properties": {"country": {"title": "Country", "type":
+      "string"}}, "required": ["country"], "title": "get_capitalParams", "type": "object"},
+      "response_json_schema": {"additionalProperties": true, "type": "object"}}]}],
+      "labels": {"adk_agent_name": "my_agent"}, "generationConfig": {}}'
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - aiplatform.googleapis.com
+      x-goog-api-key:
+      - XXXXXX
+    method: POST
+    uri: https://aiplatform.googleapis.com/v1beta1/publishers/google/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"role": "model", "parts": [{"text": "Paris",
+        "thoughtSignature": "AY89a19UrMb9c+/F43nMaSeVzdRgF6SibQ5bw4EsjZeVjoAfQmXq3velI7PvHVhS2XnxJO1S25czvDSKophJI6WamjqERsuVGTAEHkmdXeU478Dg0VkU1N3l41YTEoIsCcGnU9V9kVdsWyJdzpFKMxfFk/6if2RAfLu53JXMb64ZZKKPlKt45iAMj5qib7CcKb4WAI5GyOR+O/ftdasgYjRu1vICvmdHidf8"}]},
+        "finishReason": "STOP"}], "usageMetadata": {"promptTokenCount": 245, "candidatesTokenCount":
+        1, "totalTokenCount": 276, "trafficType": "ON_DEMAND", "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 245}], "candidatesTokensDetails": [{"modality":
+        "TEXT", "tokenCount": 1}], "thoughtsTokenCount": 30}, "modelVersion": "gemini-3.5-flash",
+        "createTime": "2026-06-17T23:36:48.519013Z", "responseId": "kC8zauXWH8uepucP4_qE0QI"}'
+    headers:
+      alt-svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      content-type:
+      - application/json; charset=UTF-8
+      date:
+      - Wed, 17 Jun 2026 23:36:49 GMT
+      server:
+      - scaffolding on HTTPServer2
+      transfer-encoding:
+      - chunked
+      vary:
+      - Origin
+      - X-Origin
+      - Referer
+      x-content-type-options:
+      - nosniff
+      x-frame-options:
+      - SAMEORIGIN
+      x-xss-protection:
       - '0'
     status:
       code: 200

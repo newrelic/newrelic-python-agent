@@ -14,7 +14,6 @@
 
 from google.adk.agents import LlmAgent
 
-# Model is hit live during recording; replay mode never reaches the network.
 MODEL = "gemini-3.5-flash"
 AGENT_NAME = "my_agent"
 AGENT_INSTRUCTION = "Answer the user's question in one word."
@@ -24,3 +23,35 @@ PROMPT = "What is the capital of France?"
 def build_agent(tools=None):
     """Return an LlmAgent. tools defaults to none (pure-LLM path)."""
     return LlmAgent(name=AGENT_NAME, model=MODEL, instruction=AGENT_INSTRUCTION, tools=tools or [])
+
+
+agent_recorded_event = [
+    (
+        {"type": "LlmAgent"},
+        {
+            "id": None,
+            "name": AGENT_NAME,
+            "span_id": None,
+            "trace_id": "trace-id",
+            "vendor": "google_adk",
+            "ingest_source": "Python",
+            "duration": None,
+        },
+    )
+]
+
+agent_recorded_event_error = [
+    (
+        {"type": "LlmAgent"},
+        {
+            "id": None,
+            "name": AGENT_NAME,
+            "span_id": None,
+            "trace_id": "trace-id",
+            "vendor": "google_adk",
+            "ingest_source": "Python",
+            "duration": None,
+            "error": True,
+        },
+    )
+]

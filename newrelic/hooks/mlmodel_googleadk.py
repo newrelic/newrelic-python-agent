@@ -90,8 +90,9 @@ async def wrap__execute_single_function_call_async(wrapped, instance, args, kwar
                 transaction=transaction,
                 linking_metadata=linking_metadata,
             )
-            tool_event_dict["duration"] = ft.duration * 1000
-            transaction.record_custom_event("LlmTool", tool_event_dict)
+            if tool_event_dict:
+                tool_event_dict["duration"] = ft.duration * 1000
+                transaction.record_custom_event("LlmTool", tool_event_dict)
         except Exception:
             _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
         raise
@@ -110,8 +111,9 @@ async def wrap__execute_single_function_call_async(wrapped, instance, args, kwar
             transaction=transaction,
             linking_metadata=linking_metadata,
         )
-        tool_event_dict["duration"] = ft.duration * 1000
-        transaction.record_custom_event("LlmTool", tool_event_dict)
+        if tool_event_dict:
+            tool_event_dict["duration"] = ft.duration * 1000
+            transaction.record_custom_event("LlmTool", tool_event_dict)
     except Exception:
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
 
@@ -152,7 +154,7 @@ def _construct_base_tool_event_dict(
 
         if settings.ai_monitoring.record_content.enabled:
             tool_event_dict["input"] = str(tool_input) if tool_input else None
-            tool_event_dict["output"] = str(tool_output) if tool_output is not None else None
+            tool_event_dict["output"] = str(tool_output) if tool_output else None
 
         tool_event_dict.update(_get_llm_metadata(transaction))
     except Exception:

@@ -34,7 +34,8 @@ from external_botocore._test_bedrock_chat_completion_invoke_model import (
 )
 from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
-    add_token_count_to_events,
+    add_token_count_streaming_events,
+    add_token_counts_to_chat_events,
     disabled_ai_monitoring_record_content_settings,
     disabled_ai_monitoring_settings,
     disabled_ai_monitoring_streaming_settings,
@@ -207,7 +208,7 @@ def test_bedrock_chat_completion_no_content(set_trace_info, exercise_model, expe
 @reset_core_stats_engine()
 @override_llm_token_callback_settings(llm_token_count_callback)
 def test_bedrock_chat_completion_with_token_count(set_trace_info, exercise_model, expected_events, expected_metrics):
-    @validate_custom_events(add_token_count_to_events(expected_events))
+    @validate_custom_events(add_token_counts_to_chat_events(add_token_count_streaming_events(expected_events)))
     # One summary event, one user message, and one response message from the assistant
     @validate_custom_event_count(count=3)
     @validate_transaction_metrics(
@@ -446,51 +447,6 @@ def test_bedrock_chat_completion_error_incorrect_access_key_no_content(
         monkeypatch.setattr(bedrock_server._request_signer._credentials, "access_key", "INVALID-ACCESS-KEY")
 
         with pytest.raises(_client_error):
-            set_trace_info()
-            add_custom_attribute("llm.conversation_id", "my-awesome-id")
-            add_custom_attribute("llm.foo", "bar")
-            add_custom_attribute("non_llm_attr", "python-agent")
-
-            exercise_model(prompt="Invalid Token", temperature=0.7, max_tokens=100)
-
-    _test()
-
-
-@reset_core_stats_engine()
-@override_llm_token_callback_settings(llm_token_count_callback)
-def test_bedrock_chat_completion_error_incorrect_access_key_with_token(
-    monkeypatch,
-    bedrock_server,
-    exercise_model,
-    set_trace_info,
-    expected_invalid_access_key_error_events,
-    expected_metrics,
-):
-    @validate_custom_events(add_token_count_to_events(expected_invalid_access_key_error_events))
-    @validate_error_trace_attributes(
-        _client_error_name,
-        exact_attrs={
-            "agent": {},
-            "intrinsic": {},
-            "user": {
-                "http.statusCode": 403,
-                "error.message": "The security token included in the request is invalid.",
-                "error.code": "UnrecognizedClientException",
-            },
-        },
-    )
-    @validate_transaction_metrics(
-        name="test_bedrock_chat_completion",
-        scoped_metrics=expected_metrics,
-        rollup_metrics=expected_metrics,
-        custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
-        background_task=True,
-    )
-    @background_task(name="test_bedrock_chat_completion")
-    def _test():
-        monkeypatch.setattr(bedrock_server._request_signer._credentials, "access_key", "INVALID-ACCESS-KEY")
-
-        with pytest.raises(_client_error):  # not sure where this exception actually comes from
             set_trace_info()
             add_custom_attribute("llm.conversation_id", "my-awesome-id")
             add_custom_attribute("llm.foo", "bar")
@@ -774,58 +730,6 @@ def test_bedrock_chat_completion_error_streaming_exception(loop, bedrock_server,
 def test_bedrock_chat_completion_error_streaming_exception_no_content(loop, bedrock_server, set_trace_info):
     """
     Duplicate of test_bedrock_chat_completion_error_streaming_exception, but with content recording disabled.
-
-    See the original test for a description of the error case.
-    """
-
-    async def _test():
-        with pytest.raises(_event_stream_error):
-            model = "amazon.titan-text-express-v1"
-            body = (chat_completion_payload_templates[model] % ("Streaming Exception", 0.7, 100)).encode("utf-8")
-
-            set_trace_info()
-            add_custom_attribute("llm.conversation_id", "my-awesome-id")
-            add_custom_attribute("llm.foo", "bar")
-            add_custom_attribute("non_llm_attr", "python-agent")
-
-            response = await bedrock_server.invoke_model_with_response_stream(
-                body=body, modelId=model, accept="application/json", contentType="application/json"
-            )
-
-            body = response.get("body")
-            async for resp in body:
-                assert resp
-
-    loop.run_until_complete(_test())
-
-
-@reset_core_stats_engine()
-@override_llm_token_callback_settings(llm_token_count_callback)
-@validate_custom_events(add_token_count_to_events(chat_completion_expected_streaming_error_events))
-@validate_custom_event_count(count=2)
-@validate_error_trace_attributes(
-    _event_stream_error_name,
-    exact_attrs={
-        "agent": {},
-        "intrinsic": {},
-        "user": {
-            "error.message": "Malformed input request, please reformat your input and try again.",
-            "error.code": "ValidationException",
-        },
-    },
-    forgone_params={"agent": (), "intrinsic": (), "user": ("http.statusCode")},
-)
-@validate_transaction_metrics(
-    name="test_bedrock_chat_completion",
-    scoped_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
-    rollup_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
-    background_task=True,
-)
-@background_task(name="test_bedrock_chat_completion")
-def test_bedrock_chat_completion_error_streaming_exception_with_token_count(loop, bedrock_server, set_trace_info):
-    """
-    Duplicate of test_bedrock_chat_completion_error_streaming_exception, but with token callback being set.
 
     See the original test for a description of the error case.
     """

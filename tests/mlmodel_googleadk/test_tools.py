@@ -43,8 +43,8 @@ def _validate_events(events):
 
 @dt_enabled
 @reset_core_stats_engine()
+@validate_custom_event_count(count=7)  # LlmAgent, LlmTool, Input, 2x (Summary, Output) for the two LLM calls.
 @validate_custom_events(events_with_context_attrs(agent_recorded_event + tool_recorded_event(record_content=True)))
-@validate_custom_event_count(count=8)  # LlmAgent, LlmTool, 2x (Summary, Input, Output) for the two LLM calls.
 @validate_transaction_metrics(
     "test_tools:test_tool",
     scoped_metrics=[EXPECTED_AGENT_METRIC, EXPECTED_TOOL_METRIC],
@@ -68,8 +68,8 @@ def test_tool(exercise_agent, set_trace_info):
 @dt_enabled
 @reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
+@validate_custom_event_count(count=7)  # LlmAgent, LlmTool, Input, 2x (Summary, Output) for the two LLM calls.
 @validate_custom_events(agent_recorded_event + tool_recorded_event(record_content=False))
-@validate_custom_event_count(count=8)  # LlmAgent, LlmTool, 2x (Summary, Input, Output) for the two LLM calls.
 @validate_transaction_metrics(
     "test_tools:test_tool_no_content",
     scoped_metrics=[EXPECTED_AGENT_METRIC, EXPECTED_TOOL_METRIC],

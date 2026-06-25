@@ -93,7 +93,7 @@ jobs:
       - tests
 
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
       - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # 6.2.0
         with:
           python-version: "3.13"
@@ -127,7 +127,7 @@ jobs:
       - tests
 
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
       - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # 6.2.0
         with:
           python-version: "3.13"
@@ -166,7 +166,7 @@ jobs:
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
 
       - name: Fetch git tags
         run: |
@@ -231,7 +231,7 @@ jobs:
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
 
       - name: Fetch git tags
         run: |
@@ -294,7 +294,7 @@ jobs:
     runs-on: windows-2025
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
 
       - name: Fetch git tags
         run: |
@@ -363,7 +363,7 @@ jobs:
     runs-on: windows-11-arm
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
 
       - name: Fetch git tags
         run: |
@@ -443,7 +443,7 @@ jobs:
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
 
       - name: Fetch git tags
         run: |
@@ -526,7 +526,7 @@ jobs:
           --health-retries 10
 
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
 
       - name: Fetch git tags
         run: |
@@ -606,7 +606,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
 
       - name: Fetch git tags
         run: |
@@ -687,7 +687,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
 
       - name: Fetch git tags
         run: |
@@ -751,28 +751,8 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-    services:
-      firestore:
-        # Image set here MUST be repeated down below in options. See comment below.
-        image: gcr.io/google.com/cloudsdktool/google-cloud-cli:437.0.1-emulators
-        ports:
-          - 8080:8080
-        # Set health checks to wait until container has started
-        options: >-
-          --health-cmd "echo success"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-          --health-start-period 5s
-          gcr.io/google.com/cloudsdktool/google-cloud-cli:437.0.1-emulators /bin/bash -c "gcloud emulators firestore start --host-port=0.0.0.0:8080" ||
-        # This is a very hacky solution. GitHub Actions doesn't provide APIs for setting commands on services, but allows adding arbitrary options.
-        # --entrypoint won't work as it only accepts an executable and not the [] syntax.
-        # Instead, we specify the image again the command afterwards like a call to docker create. The result is a few environment variables
-        # and the original command being appended to our hijacked docker create command. We can avoid any issues by adding || to prevent that
-        # from every being executed as bash commands.
-
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
 
       - name: Fetch git tags
         run: |
@@ -783,6 +763,18 @@ jobs:
         run: |
           mkdir -p /github/home/.cache/pip
           chown -R "$(whoami)" /github/home/.cache/pip
+
+      - name: Start firestore
+        run: |
+          docker compose \
+            -f .github/containers/firestore/docker-compose.yml \
+            up -d \
+            --wait \
+            --wait-timeout 60 \
+            && exit 0
+          echo "firestore did not become healthy in time"
+          docker compose -f .github/containers/firestore/docker-compose.yml logs
+          exit 1
 
       - name: Get Environments
         id: get-envs
@@ -821,6 +813,11 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
+      - name: Stop firestore
+        if: always()
+        run: |
+          docker compose -f .github/containers/firestore/docker-compose.yml down
+
   grpc:
     env:
       TOTAL_GROUPS: 1
@@ -837,7 +834,7 @@ jobs:
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
 
       - name: Fetch git tags
         run: |
@@ -927,7 +924,7 @@ jobs:
           KAFKA_CFG_INTER_BROKER_LISTENER_NAME: L3
 
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
 
       - name: Fetch git tags
         run: |
@@ -1005,7 +1002,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
 
       - name: Fetch git tags
         run: |
@@ -1083,7 +1080,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
 
       - name: Fetch git tags
         run: |
@@ -1161,7 +1158,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
 
       - name: Fetch git tags
         run: |
@@ -1244,7 +1241,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
 
       - name: Fetch git tags
         run: |
@@ -1327,7 +1324,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
 
       - name: Fetch git tags
         run: |
@@ -1392,7 +1389,7 @@ jobs:
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
 
       - name: Fetch git tags
         run: |
@@ -1493,7 +1490,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
 
       - name: Fetch git tags
         run: |
@@ -1573,7 +1570,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
 
       - name: Fetch git tags
         run: |
@@ -1653,7 +1650,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
 
       - name: Fetch git tags
         run: |
@@ -1732,7 +1729,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
 
       - name: Fetch git tags
         run: |
@@ -1810,7 +1807,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
 
       - name: Fetch git tags
         run: |
@@ -1874,62 +1871,8 @@ jobs:
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
-    services:
-      redis1:
-        image: hmstepanek/redis-cluster-node:1.0.0
-        ports:
-          - 6379:6379
-          - 16379:16379
-        options: >-
-          --add-host=host.docker.internal:host-gateway
-
-      redis2:
-        image: hmstepanek/redis-cluster-node:1.0.0
-        ports:
-          - 6380:6379
-          - 16380:16379
-        options: >-
-          --add-host=host.docker.internal:host-gateway
-
-      redis3:
-        image: hmstepanek/redis-cluster-node:1.0.0
-        ports:
-          - 6381:6379
-          - 16381:16379
-        options: >-
-          --add-host=host.docker.internal:host-gateway
-
-      redis4:
-        image: hmstepanek/redis-cluster-node:1.0.0
-        ports:
-          - 6382:6379
-          - 16382:16379
-        options: >-
-          --add-host=host.docker.internal:host-gateway
-
-      redis5:
-        image: hmstepanek/redis-cluster-node:1.0.0
-        ports:
-          - 6383:6379
-          - 16383:16379
-        options: >-
-          --add-host=host.docker.internal:host-gateway
-
-      redis6:
-        image: hmstepanek/redis-cluster-node:1.0.0
-        ports:
-          - 6384:6379
-          - 16384:16379
-        options: >-
-          --add-host=host.docker.internal:host-gateway
-
-      cluster-setup:
-        image: hmstepanek/redis-cluster:1.0.0
-        options: >-
-          --add-host=host.docker.internal:host-gateway
-
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
 
       - name: Fetch git tags
         run: |
@@ -1940,6 +1883,25 @@ jobs:
         run: |
           mkdir -p /github/home/.cache/pip
           chown -R "$(whoami)" /github/home/.cache/pip
+
+      - name: Start rediscluster
+        env:
+          REDIS_ANNOUNCE_HOSTNAME: host.docker.internal
+        run: |
+          # Build only the redis1 image to prevent fighting, then start the entire cluster
+          docker compose \
+            -f .github/containers/rediscluster/docker-compose.yml \
+            build \
+            redis1 && \
+          docker compose \
+            -f .github/containers/rediscluster/docker-compose.yml \
+            up -d \
+            --wait \
+            --wait-timeout 120 \
+            && exit 0
+          echo "rediscluster did not become healthy in time"
+          docker compose -f .github/containers/rediscluster/docker-compose.yml logs
+          exit 1
 
       - name: Get Environments
         id: get-envs
@@ -1978,6 +1940,11 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
+      - name: Stop rediscluster
+        if: always()
+        run: |
+          docker compose -f .github/containers/rediscluster/docker-compose.yml down
+
   solr:
     env:
       TOTAL_GROUPS: 1
@@ -2009,7 +1976,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
 
       - name: Fetch git tags
         run: |
@@ -2087,7 +2054,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # 6.0.3
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # 7.0.0
 
       - name: Fetch git tags
         run: |

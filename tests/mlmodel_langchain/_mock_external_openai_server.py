@@ -33,7 +33,7 @@ STREAMED_RESPONSES_V1 = {
     "system: You are a world class algorithm for extracting information in structured formats. | user: Use the given format to extract information from the following input: Hello, world | user: Tip: Make sure to answer in the correct format": [
         {
             "content-type": "text/event-stream; charset=utf-8",
-            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "440",
             "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
             "openai-version": "2020-10-01",
@@ -125,7 +125,7 @@ STREAMED_RESPONSES_V1 = {
     'user: Use a tool to add an exclamation to the word "Hello"': [
         {
             "content-type": "text/event-stream; charset=utf-8",
-            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "134",
             "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
             "openai-version": "2020-10-01",
@@ -217,8 +217,8 @@ STREAMED_RESPONSES_V1 = {
     "user: What is the capital of France? Answer in one word.": [
         {
             "content-type": "text/event-stream; charset=utf-8",
-            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
-            "openai-processing-ms": "134",
+            "openai-organization": "nr-test-org",
+            "openai-processing-ms": "245",
             "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
             "openai-version": "2020-10-01",
             "x-ratelimit-limit-requests": "10000",
@@ -232,100 +232,66 @@ STREAMED_RESPONSES_V1 = {
         200,
         [
             {
-                "id": "",
-                "choices": [],
-                "created": 0,
-                "model": "",
-                "object": "",
-                "service_tier": None,
+                "id": "chatcmpl-DelITaJCJy951hwON0psdz2H9dF7i",
+                "object": "chat.completion.chunk",
+                "created": 1781626980,
+                "model": "gpt-3.5-turbo-0125",
+                "service_tier": "default",
                 "system_fingerprint": None,
-                "usage": None,
-                "prompt_filter_results": [
-                    {
-                        "prompt_index": 0,
-                        "content_filter_results": {
-                            "hate": {"filtered": False, "severity": "safe"},
-                            "self_harm": {"filtered": False, "severity": "safe"},
-                            "sexual": {"filtered": False, "severity": "safe"},
-                            "violence": {"filtered": False, "severity": "safe"},
-                        },
-                    }
-                ],
-            },
-            {
-                "id": "chatcmpl-DelITaJCJy951hwON0psdz2H9dF7i",
                 "choices": [
                     {
-                        "delta": {
-                            "content": "",
-                            "function_call": None,
-                            "refusal": None,
-                            "role": "assistant",
-                            "tool_calls": None,
-                        },
+                        "index": 0,
+                        "delta": {"role": "assistant", "content": "", "refusal": None},
+                        "logprobs": None,
                         "finish_reason": None,
-                        "index": 0,
-                        "logprobs": None,
-                        "content_filter_results": {},
                     }
                 ],
-                "created": 1780079082,
-                "model": "gpt-3.5-turbo-0125",
-                "object": "chat.completion.chunk",
-                "service_tier": "default",
-                "system_fingerprint": "fp_a7294185dc",
                 "usage": None,
-                "obfuscation": "LK4Bn",
+                "obfuscation": "dxxvf59Q",
             },
             {
                 "id": "chatcmpl-DelITaJCJy951hwON0psdz2H9dF7i",
-                "choices": [
-                    {
-                        "delta": {
-                            "content": "Paris",
-                            "function_call": None,
-                            "refusal": None,
-                            "role": None,
-                            "tool_calls": None,
-                        },
-                        "finish_reason": None,
-                        "index": 0,
-                        "logprobs": None,
-                        "content_filter_results": {},
-                    }
-                ],
-                "created": 1780079082,
-                "model": "gpt-3.5-turbo-0125",
                 "object": "chat.completion.chunk",
+                "created": 1781626980,
+                "model": "gpt-3.5-turbo-0125",
                 "service_tier": "default",
-                "system_fingerprint": "fp_a7294185dc",
+                "system_fingerprint": None,
+                "choices": [{"index": 0, "delta": {"content": "Paris"}, "logprobs": None, "finish_reason": None}],
                 "usage": None,
-                "obfuscation": "QP",
+                "obfuscation": "MKT8v",
             },
             {
                 "id": "chatcmpl-DelITaJCJy951hwON0psdz2H9dF7i",
-                "choices": [
-                    {
-                        "delta": {
-                            "content": None,
-                            "function_call": None,
-                            "refusal": None,
-                            "role": None,
-                            "tool_calls": None,
-                        },
-                        "finish_reason": "stop",
-                        "index": 0,
-                        "logprobs": None,
-                        "content_filter_results": {},
-                    }
-                ],
-                "created": 1780079082,
-                "model": "gpt-3.5-turbo-0125",
                 "object": "chat.completion.chunk",
+                "created": 1781626980,
+                "model": "gpt-3.5-turbo-0125",
                 "service_tier": "default",
-                "system_fingerprint": "fp_a7294185dc",
+                "system_fingerprint": None,
+                "choices": [{"index": 0, "delta": {}, "logprobs": None, "finish_reason": "stop"}],
                 "usage": None,
-                "obfuscation": "s",
+                "obfuscation": "Z61m",
+            },
+            {
+                "id": "chatcmpl-DelITaJCJy951hwON0psdz2H9dF7i",
+                "object": "chat.completion.chunk",
+                "created": 1781626980,
+                "model": "gpt-3.5-turbo-0125",
+                "service_tier": "default",
+                "system_fingerprint": None,
+                "choices": [],
+                "usage": {
+                    "prompt_tokens": 19,
+                    "completion_tokens": 2,
+                    "total_tokens": 21,
+                    "prompt_tokens_details": {"cached_tokens": 0, "audio_tokens": 0},
+                    "completion_tokens_details": {
+                        "reasoning_tokens": 0,
+                        "audio_tokens": 0,
+                        "accepted_prediction_tokens": 0,
+                        "rejected_prediction_tokens": 0,
+                    },
+                },
+                "obfuscation": "Plc7EI1Jr6",
             },
         ],
     ],
@@ -334,7 +300,7 @@ RESPONSES_V1 = {
     'system: You are a text manipulation algorithm. | user: Use a tool to add an exclamation to the word "Hello"': [
         {
             "content-type": "application/json",
-            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "324",
             "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
             "openai-version": "2020-10-01",
@@ -391,7 +357,7 @@ RESPONSES_V1 = {
     'system: You are a text manipulation algorithm. | user: Use a tool to add an exclamation to the word "Hello" | assistant: None | tool: Hello!': [
         {
             "content-type": "application/json",
-            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "751",
             "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
             "openai-version": "2020-10-01",
@@ -441,7 +407,7 @@ RESPONSES_V1 = {
     'system: You are a text manipulation algorithm. | user: Use a tool to add an exclamation to the word "exc"': [
         {
             "content-type": "application/json",
-            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "767",
             "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
             "openai-version": "2020-10-01",
@@ -498,7 +464,7 @@ RESPONSES_V1 = {
     "system: You are a helpful assistant who generates a random first name. A user will pass in a first letter, and you should generate a name that starts with that first letter. | user: M": [
         {
             "content-type": "application/json",
-            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "236",
             "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
             "openai-version": "2020-10-01",
@@ -543,7 +509,7 @@ RESPONSES_V1 = {
     "system: You are a helpful assistant who generates comma separated lists.\n    A user will pass in a category, and you should generate 5 objects in that category in a comma separated list.\n    ONLY return a comma separated list, and nothing more. | user: colors": [
         {
             "content-type": "application/json",
-            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "289",
             "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
             "openai-version": "2020-10-01",
@@ -593,7 +559,7 @@ RESPONSES_V1 = {
     "system: You are a world class algorithm for extracting information in structured formats. | user: Use the given format to extract information from the following input: Sally is 13 | user: Tip: Make sure to answer in the correct format": [
         {
             "content-type": "application/json",
-            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "201",
             "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
             "openai-version": "2020-10-01",
@@ -656,7 +622,7 @@ RESPONSES_V1 = {
     "system: You are a generator of quiz questions for a seminar. Use the following pieces of retrieved context to generate 5 multiple choice questions (A,B,C,D) on the subject matter. Use a three sentence maximum and keep the answer concise. Render the output as HTML\n\nWhat is 2 + 4? | user: math": [
         {
             "content-type": "application/json",
-            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "2029",
             "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
             "openai-version": "2020-10-01",
@@ -708,7 +674,7 @@ RESPONSES_V1 = {
         {
             "content-type": "application/json",
             "openai-model": "text-embedding-ada-002-v2",
-            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "42",
             "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
             "openai-version": "2020-10-01",
@@ -738,7 +704,7 @@ RESPONSES_V1 = {
         {
             "content-type": "application/json",
             "openai-model": "text-embedding-ada-002-v2",
-            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "82",
             "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
             "openai-version": "2020-10-01",
@@ -768,7 +734,7 @@ RESPONSES_V1 = {
         {
             "content-type": "application/json",
             "openai-model": "text-embedding-ada-002-v2",
-            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "158",
             "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
             "openai-version": "2020-10-01",
@@ -798,7 +764,7 @@ RESPONSES_V1 = {
         {
             "content-type": "application/json",
             "openai-model": "text-embedding-ada-002-v2",
-            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "116",
             "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
             "openai-version": "2020-10-01",
@@ -827,7 +793,7 @@ RESPONSES_V1 = {
     'user: Use a tool to add an exclamation to the word "Hello"': [
         {
             "content-type": "application/json",
-            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "238",
             "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
             "openai-version": "2020-10-01",
@@ -872,7 +838,7 @@ RESPONSES_V1 = {
     "user: What is the capital of France? Answer in one word.": [
         {
             "content-type": "application/json",
-            "openai-organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "openai-organization": "nr-test-org",
             "openai-processing-ms": "238",
             "openai-project": "proj_0Wv6taeZjWf793P67JMswYY3",
             "openai-version": "2020-10-01",

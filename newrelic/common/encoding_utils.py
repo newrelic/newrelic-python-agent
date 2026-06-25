@@ -477,7 +477,8 @@ class NrTraceState(dict):
             pr = f"{pr:.6f}".rstrip("0").rstrip(".")
         version = self.get("v", "0")
         ty = "0"  # Hardcode this as it will always be App.
-        payload = f"{version}-{ty}-{self['ac']}-{self['ap']}-{self.get('id', '')}-{self.get('tx', '')}-{'1' if self.get('sa') else '0'}-{pr}-{self['ti']!s}"
+        # Do not send the span id-this has been deprecated.
+        payload = f"{version}-{ty}-{self['ac']}-{self['ap']}--{self.get('tx', '')}-{'1' if self.get('sa') else '0'}-{pr}-{self['ti']!s}"
         return f"{self.get('tk', self['ac'])}@nr={payload}"
 
     @classmethod

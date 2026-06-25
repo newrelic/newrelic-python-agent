@@ -118,7 +118,7 @@ def test_tracestate_generation(inbound_nr_tracestate):
         "0.4" if inbound_nr_tracestate else "1.2",
     ]
 
-    assert len(fields[4]) == 16
+    assert len(fields[4]) == 0
     assert len(fields[5]) == 16
 
 

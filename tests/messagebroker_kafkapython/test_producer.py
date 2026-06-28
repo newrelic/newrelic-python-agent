@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
+
 import pytest
 from conftest import cache_kafka_producer_headers
 from testing_support.validators.validate_messagebroker_headers import validate_messagebroker_headers
@@ -118,7 +120,7 @@ def seeded_cluster_id(broker):
 
     cache_key = ",".join(sorted(broker))
     test_cluster_id = "test-cluster-abc123"
-    _kafka_cluster_id_cache[cache_key] = test_cluster_id
+    _kafka_cluster_id_cache[cache_key] = (test_cluster_id, time.monotonic())
     yield test_cluster_id
     _kafka_cluster_id_cache.pop(cache_key, None)
 

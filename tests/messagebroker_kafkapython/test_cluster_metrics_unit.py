@@ -54,7 +54,7 @@ class TestProducerSendKeyPreservation:
         """Key must not be replaced by broker address string when cluster ID cached."""
         cluster_id = "test-cluster-uuid"
         cache_key = "broker1:9092,broker2:9092"
-        _kafka_cluster_id_cache[cache_key] = cluster_id
+        _kafka_cluster_id_cache[cache_key] = (cluster_id, time.monotonic())
 
         wrapped = MagicMock(return_value=MagicMock())
         instance = self._make_producer_instance()
@@ -146,7 +146,8 @@ class TestFetchClusterIdKafkaPython:
             time.sleep(0.5)
 
         try:
-            assert _kafka_cluster_id_cache.get(cache_key) == "fetched-uuid"
+            cached = _kafka_cluster_id_cache.get(cache_key)
+            assert isinstance(cached, tuple) and cached[0] == "fetched-uuid"
         finally:
             _kafka_cluster_id_cache.pop(cache_key, None)
 
@@ -166,7 +167,7 @@ class TestFetchClusterIdKafkaPython:
         """A fully-resolved cache entry (non-empty) skips the fetch and returns immediately."""
         servers = ["broker-resolved:9092"]
         cache_key = self._cache_key(servers)
-        _kafka_cluster_id_cache[cache_key] = "already-resolved-uuid"
+        _kafka_cluster_id_cache[cache_key] = ("already-resolved-uuid", time.monotonic())
 
         with patch("newrelic.hooks.messagebroker_kafkapython.threading.Thread") as mock_thread:
             _fetch_cluster_id_kafka_python(servers)

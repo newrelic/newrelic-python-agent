@@ -19,6 +19,7 @@ broker required. They verify correctness of arguments passed to the underlying
 `wrapped` callable without any network I/O.
 """
 
+import time
 from unittest.mock import MagicMock, patch
 
 from newrelic.hooks.messagebroker_kafkapython import (
@@ -142,7 +143,7 @@ class TestFetchClusterIdKafkaPython:
         with patch("kafka.admin.KafkaAdminClient", return_value=mock_admin):
             _fetch_cluster_id_kafka_python(servers)
             # Allow the daemon thread to finish
-            import time; time.sleep(0.5)
+            time.sleep(0.5)
 
         try:
             assert _kafka_cluster_id_cache.get(cache_key) == "fetched-uuid"
@@ -185,6 +186,6 @@ class TestFetchClusterIdKafkaPython:
         # the cache to be populated with a MagicMock instead of being cleared.
         with patch("kafka.admin.KafkaAdminClient", side_effect=Exception("connection refused")):
             _fetch_cluster_id_kafka_python(servers)
-            import time; time.sleep(0.3)
+            time.sleep(0.3)
 
         assert _kafka_cluster_id_cache.get(cache_key) is None

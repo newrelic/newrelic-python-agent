@@ -14,6 +14,7 @@
 import logging
 import sys
 import threading
+import time
 import weakref
 
 from newrelic.api.application import application_instance
@@ -39,6 +40,8 @@ KAFKA_CLUSTER_METRIC_PRODUCE = "MessageBroker/Kafka/Cluster/{0}/Topic/{1}/Produc
 KAFKA_CLUSTER_METRIC_CONSUME = "MessageBroker/Kafka/Cluster/{0}/Topic/{1}/Consume"
 
 
+_CLUSTER_ID_TTL_SECONDS = 60 * 60
+
 _nr_cluster_id_cache = {}
 _nr_cluster_id_cache_lock = threading.Lock()
 
@@ -51,10 +54,15 @@ def _fetch_cluster_id(instance):
     if cache_key:
         with _nr_cluster_id_cache_lock:
             cached = _nr_cluster_id_cache.get(cache_key)
-            if cached:
-                instance._nr_cluster_id = cached
-                return
-            if cached is not None:
+            if isinstance(cached, tuple):
+                cluster_id, ts = cached
+                if time.monotonic() - ts <= _CLUSTER_ID_TTL_SECONDS:
+                    instance._nr_cluster_id = cluster_id
+                    instance._nr_cluster_id_fetched_at = ts
+                    return
+                # Expired — fall through to start a new fetch.
+            elif cached is not None:
+                # "" sentinel — fetch already in progress.
                 return
             _nr_cluster_id_cache[cache_key] = ""
 
@@ -74,11 +82,13 @@ def _fetch_cluster_id(instance):
             meta = inst.list_topics(timeout=5)
             cluster_id = getattr(meta, "cluster_id", None)
             if cluster_id:
+                now = time.monotonic()
                 inst._nr_cluster_id = cluster_id
+                inst._nr_cluster_id_fetched_at = now
                 if cache_key:
                     with _nr_cluster_id_cache_lock:
-                        _nr_cluster_id_cache[cache_key] = cluster_id
-        except Exception as e:
+                        _nr_cluster_id_cache[cache_key] = (cluster_id, now)
+        except Exception:
             _logger.debug("NR Kafka cluster ID fetch failed", exc_info=True)
             if cache_key:
                 with _nr_cluster_id_cache_lock:
@@ -117,11 +127,18 @@ def wrap_Producer_produce(wrapped, instance, args, kwargs):
             transaction.record_custom_metric(f"MessageBroker/Kafka/Nodes/{server_name}/Produce/{topic}", 1)
 
     cluster_id = getattr(instance, "_nr_cluster_id", None)
-    if not cluster_id and hasattr(instance, "_nr_bootstrap_servers"):
+    if cluster_id:
+        if time.monotonic() - getattr(instance, "_nr_cluster_id_fetched_at", 0.0) > _CLUSTER_ID_TTL_SECONDS:
+            _fetch_cluster_id(instance)  # background re-fetch; use stale value below
+    elif hasattr(instance, "_nr_bootstrap_servers"):
         _cache_key = ",".join(sorted(instance._nr_bootstrap_servers))
-        cluster_id = _nr_cluster_id_cache.get(_cache_key) or None
-        if cluster_id:
-            instance._nr_cluster_id = cluster_id  # cache on instance for future calls
+        _cached = _nr_cluster_id_cache.get(_cache_key)
+        if isinstance(_cached, tuple):
+            cluster_id, _ts = _cached
+            instance._nr_cluster_id = cluster_id
+            instance._nr_cluster_id_fetched_at = _ts
+            if time.monotonic() - _ts > _CLUSTER_ID_TTL_SECONDS:
+                _fetch_cluster_id(instance)  # background re-fetch
     if cluster_id:
         transaction.record_custom_metric(
             KAFKA_CLUSTER_METRIC_PRODUCE.format(cluster_id, topic), 1
@@ -236,11 +253,18 @@ def wrap_Consumer_poll(wrapped, instance, args, kwargs):
                         f"MessageBroker/Kafka/Nodes/{server_name}/Consume/{destination_name}", 1
                     )
             cluster_id = getattr(instance, "_nr_cluster_id", None)
-            if not cluster_id and hasattr(instance, "_nr_bootstrap_servers"):
+            if cluster_id:
+                if time.monotonic() - getattr(instance, "_nr_cluster_id_fetched_at", 0.0) > _CLUSTER_ID_TTL_SECONDS:
+                    _fetch_cluster_id(instance)  # background re-fetch; use stale value below
+            elif hasattr(instance, "_nr_bootstrap_servers"):
                 _cache_key = ",".join(sorted(instance._nr_bootstrap_servers))
-                cluster_id = _nr_cluster_id_cache.get(_cache_key) or None
-                if cluster_id:
+                _cached = _nr_cluster_id_cache.get(_cache_key)
+                if isinstance(_cached, tuple):
+                    cluster_id, _ts = _cached
                     instance._nr_cluster_id = cluster_id
+                    instance._nr_cluster_id_fetched_at = _ts
+                    if time.monotonic() - _ts > _CLUSTER_ID_TTL_SECONDS:
+                        _fetch_cluster_id(instance)  # background re-fetch
             if cluster_id:
                 transaction.record_custom_metric(
                     KAFKA_CLUSTER_METRIC_CONSUME.format(cluster_id, destination_name), 1

@@ -1,0 +1,106 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Fleet Control Config Schema
+
+# Per-push regenerator: walks `newrelic.core.config.global_settings()` and
+# rewrites .fleetControl/schemas/config.json on every push to a non-main
+# branch. Auto-commits the regenerated schema back to the pushed branch
+# so reviewers see schema diffs in the PR.
+#
+# Path filters are intentionally NOT used here. The agent's settings
+# tree is dynamic enough (defaults can shift via imported constants in
+# files outside core/config.py) that a path-based skip risks staleness.
+# The generator exits 0 quickly when nothing changed, so the cost of
+# always running is minimal.
+#
+# Version bumps to .fleetControl/configurationDefinitions.yml are NOT
+# done here -- they happen at release-prep time via the
+# fleet-control-schema-bump.yml workflow (workflow_dispatch only).
+#
+# Skips main because branch protection blocks the bot from pushing
+# there. Skips fork branches because GITHUB_TOKEN cannot push to forks
+# anyway -- reviewers can run the generator locally and ask the
+# contributor to pull.
+
+permissions: {}
+
+on:
+  push:
+    branches-ignore:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: fleet-control-schema-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  regenerate:
+    name: Regenerate config schema
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # pin@v4
+        with:
+          ref: ${{ github.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run schema generator
+        id: generate
+        # `import newrelic.core.config` reads NEW_RELIC_* env vars at import
+        # time, which would leak into the schema's defaults. Unset all of
+        # them before invoking the generator (defense-in-depth even though
+        # CI runners shouldn't have any set).
+        run: |
+          while IFS= read -r var; do
+            unset "$var"
+          done < <(printenv | grep -oE '^NEW_RELIC_[^=]+' || true)
+          set +e
+          python3 .fleetControl/schemaGeneration/generate-schema.py
+          code=$?
+          set -e
+          case "$code" in
+            0) echo "changed=false" >> "$GITHUB_OUTPUT" ;;
+            1) echo "changed=true"  >> "$GITHUB_OUTPUT" ;;
+            *) echo "Schema generator failed (exit $code)"; exit "$code" ;;
+          esac
+
+      - name: Run schema generator tests
+        run: python3 -m unittest discover .fleetControl/schemaGeneration/tests
+
+      - name: Commit and push regenerated schema
+        if: steps.generate.outputs.changed == 'true'
+        env:
+          # Pass the (potentially attacker-controlled) branch name through
+          # an env var rather than interpolating it directly into the shell
+          # script -- prevents script injection via crafted branch names.
+          HEAD_REF: ${{ github.ref_name }}
+        run: |
+          if [ -z "$(git status --porcelain .fleetControl/schemas/config.json)" ]; then
+            echo "Generator reported changes but config.json is clean -- nothing to commit."
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .fleetControl/schemas/config.json
+          git commit -m "chore: regenerate Fleet Control config schema"
+          git push origin "HEAD:$HEAD_REF"

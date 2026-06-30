@@ -10,6 +10,9 @@ megalinter-reports/
 # Benchmarks
 .asv/
 
+# LLM Cache Files
+.tiktoken_cache
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

@@ -33,7 +33,11 @@ from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import transient_function_wrapper
 
-PROMPT = {"messages": [HumanMessage('Use a tool to add an exclamation to the word "Hello"')]}
+PROMPT = {
+    "messages": [
+        HumanMessage('Use a tool to add an exclamation to the word "Hello". Answer in one word with no formatting.')
+    ]
+}
 ERROR_PROMPT = {"messages": [HumanMessage('Use a tool to add an exclamation to the word "exc"')]}
 SYNC_METHODS = {"invoke", "stream"}
 

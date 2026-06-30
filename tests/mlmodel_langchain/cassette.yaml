@@ -1,0 +1,1293 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+interactions:
+- request:
+    body: '{"messages":[{"content":"You are a text manipulation algorithm.","role":"system"},{"content":"Use
+      a tool to add an exclamation to the word \"Hello\". Answer in one word with
+      no formatting.","role":"user"}],"model":"gpt-3.5-turbo","stream":false,"tools":[{"type":"function","function":{"name":"add_exclamation","description":"Adds
+      an exclamation mark to the input message.","parameters":{"properties":{"message":{"type":"string"}},"required":["message"],"type":"object"}}}]}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate, zstd
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: '{"id": "chatcmpl-DtzuyY4hQfbRHuaHFg2vTu2zZmdmF", "object": "chat.completion",
+        "created": 1782238424, "model": "gpt-3.5-turbo-0125", "choices": [{"index":
+        0, "message": {"role": "assistant", "content": null, "tool_calls": [{"id":
+        "call_v1KSBmXVXiL9PuaNS6HvdZ8s", "type": "function", "function": {"name":
+        "add_exclamation", "arguments": "{\"message\":\"Hello\"}"}}], "refusal": null,
+        "annotations": []}, "logprobs": null, "finish_reason": "tool_calls"}], "usage":
+        {"prompt_tokens": 78, "completion_tokens": 15, "total_tokens": 93, "prompt_tokens_details":
+        {"cached_tokens": 0, "audio_tokens": 0}, "completion_tokens_details": {"reasoning_tokens":
+        0, "audio_tokens": 0, "accepted_prediction_tokens": 0, "rejected_prediction_tokens":
+        0}}, "service_tier": "default", "system_fingerprint": null}'
+    headers:
+      access-control-expose-headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a10577ea599cfefe-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      date:
+      - Tue, 23 Jun 2026 18:13:46 GMT
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '1445'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_c78b73e8e4c84348bd4effe1cf6eff49
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"messages":[{"content":"You are a text manipulation algorithm.","role":"system"},{"content":"Use
+      a tool to add an exclamation to the word \"Hello\". Answer in one word with
+      no formatting.","role":"user"},{"content":null,"name":"my_agent","role":"assistant","tool_calls":[{"type":"function","id":"call_v1KSBmXVXiL9PuaNS6HvdZ8s","function":{"name":"add_exclamation","arguments":"{\"message\":
+      \"Hello\"}"}}]},{"content":"Hello!","role":"tool","tool_call_id":"call_v1KSBmXVXiL9PuaNS6HvdZ8s"}],"model":"gpt-3.5-turbo","stream":false,"tools":[{"type":"function","function":{"name":"add_exclamation","description":"Adds
+      an exclamation mark to the input message.","parameters":{"properties":{"message":{"type":"string"}},"required":["message"],"type":"object"}}}]}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate, zstd
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: '{"id": "chatcmpl-Dtzv0TaMu8o6TWPyiHh8hNfYbDfyf", "object": "chat.completion",
+        "created": 1782238426, "model": "gpt-3.5-turbo-0125", "choices": [{"index":
+        0, "message": {"role": "assistant", "content": "Hello!", "refusal": null,
+        "annotations": []}, "logprobs": null, "finish_reason": "stop"}], "usage":
+        {"prompt_tokens": 107, "completion_tokens": 3, "total_tokens": 110, "prompt_tokens_details":
+        {"cached_tokens": 0, "audio_tokens": 0}, "completion_tokens_details": {"reasoning_tokens":
+        0, "audio_tokens": 0, "accepted_prediction_tokens": 0, "rejected_prediction_tokens":
+        0}}, "service_tier": "default", "system_fingerprint": null}'
+    headers:
+      access-control-expose-headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a10577f3e9e1fefe-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      date:
+      - Tue, 23 Jun 2026 18:13:48 GMT
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '779'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_1e4fc67953f54ce59fc1362273978fb1
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"messages":[{"content":"You are a text manipulation algorithm.","role":"system"},{"content":"Use
+      a tool to add an exclamation to the word \"Hello\". Answer in one word with
+      no formatting.","role":"user"}],"model":"gpt-3.5-turbo","stream":true,"stream_options":{"include_usage":true},"tools":[{"type":"function","function":{"name":"add_exclamation","description":"Adds
+      an exclamation mark to the input message.","parameters":{"properties":{"message":{"type":"string"}},"required":["message"],"type":"object"}}}]}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate, zstd
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: 'data: {"id":"chatcmpl-Dtzv3dUO9qZjpDSmKSQeV9P5mR1oV","object":"chat.completion.chunk","created":1782238429,"model":"gpt-3.5-turbo-0125","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"role":"assistant","content":null,"tool_calls":[{"index":0,"id":"call_qSJl6PzmkqfRPVSuEPdBELbT","type":"function","function":{"name":"add_exclamation","arguments":""}}],"refusal":null},"logprobs":null,"finish_reason":null}],"usage":null,"obfuscation":"5QhAeLgV4qO2WVn"}
+
+
+        data: {"id":"chatcmpl-Dtzv3dUO9qZjpDSmKSQeV9P5mR1oV","object":"chat.completion.chunk","created":1782238429,"model":"gpt-3.5-turbo-0125","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{\""}}]},"logprobs":null,"finish_reason":null}],"usage":null,"obfuscation":"n2TOzf3Y5PgiP"}
+
+
+        data: {"id":"chatcmpl-Dtzv3dUO9qZjpDSmKSQeV9P5mR1oV","object":"chat.completion.chunk","created":1782238429,"model":"gpt-3.5-turbo-0125","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"message"}}]},"logprobs":null,"finish_reason":null}],"usage":null,"obfuscation":"Leczi8d7G"}
+
+
+        data: {"id":"chatcmpl-Dtzv3dUO9qZjpDSmKSQeV9P5mR1oV","object":"chat.completion.chunk","created":1782238429,"model":"gpt-3.5-turbo-0125","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"\":\""}}]},"logprobs":null,"finish_reason":null}],"usage":null,"obfuscation":"5clfWHp5VGb"}
+
+
+        data: {"id":"chatcmpl-Dtzv3dUO9qZjpDSmKSQeV9P5mR1oV","object":"chat.completion.chunk","created":1782238429,"model":"gpt-3.5-turbo-0125","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"Hello"}}]},"logprobs":null,"finish_reason":null}],"usage":null,"obfuscation":"156T1DFg3Ox"}
+
+
+        data: {"id":"chatcmpl-Dtzv3dUO9qZjpDSmKSQeV9P5mR1oV","object":"chat.completion.chunk","created":1782238429,"model":"gpt-3.5-turbo-0125","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"\"}"}}]},"logprobs":null,"finish_reason":null}],"usage":null,"obfuscation":"quY8mLaNnHh2F"}
+
+
+        data: {"id":"chatcmpl-Dtzv3dUO9qZjpDSmKSQeV9P5mR1oV","object":"chat.completion.chunk","created":1782238429,"model":"gpt-3.5-turbo-0125","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{},"logprobs":null,"finish_reason":"tool_calls"}],"usage":null,"obfuscation":"ecqCGxKqgo65aY"}
+
+
+        data: {"id":"chatcmpl-Dtzv3dUO9qZjpDSmKSQeV9P5mR1oV","object":"chat.completion.chunk","created":1782238429,"model":"gpt-3.5-turbo-0125","service_tier":"default","system_fingerprint":null,"choices":[],"usage":{"prompt_tokens":78,"completion_tokens":15,"total_tokens":93,"prompt_tokens_details":{"cached_tokens":0,"audio_tokens":0},"completion_tokens_details":{"reasoning_tokens":0,"audio_tokens":0,"accepted_prediction_tokens":0,"rejected_prediction_tokens":0}},"obfuscation":"haKN4r0l8"}
+
+
+        data: [DONE]
+
+
+        '
+    headers:
+      access-control-expose-headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a10578046d37fefe-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - text/event-stream; charset=utf-8
+      date:
+      - Tue, 23 Jun 2026 18:13:49 GMT
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '580'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_6cbef5b39ac8479f89e33629144f03f5
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"messages":[{"content":"You are a text manipulation algorithm.","role":"system"},{"content":"Use
+      a tool to add an exclamation to the word \"Hello\". Answer in one word with
+      no formatting.","role":"user"},{"content":null,"name":"my_agent","role":"assistant","tool_calls":[{"type":"function","id":"call_qSJl6PzmkqfRPVSuEPdBELbT","function":{"name":"add_exclamation","arguments":"{\"message\":
+      \"Hello\"}"}}]},{"content":"Hello!","role":"tool","tool_call_id":"call_qSJl6PzmkqfRPVSuEPdBELbT"}],"model":"gpt-3.5-turbo","stream":true,"stream_options":{"include_usage":true},"tools":[{"type":"function","function":{"name":"add_exclamation","description":"Adds
+      an exclamation mark to the input message.","parameters":{"properties":{"message":{"type":"string"}},"required":["message"],"type":"object"}}}]}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate, zstd
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: 'data: {"id":"chatcmpl-Dtzv4oL7iOI8y72DZ6ll6CUwQQsT9","object":"chat.completion.chunk","created":1782238430,"model":"gpt-3.5-turbo-0125","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"role":"assistant","content":"","refusal":null},"logprobs":null,"finish_reason":null}],"usage":null,"obfuscation":"yMRs9Eoy"}
+
+
+        data: {"id":"chatcmpl-Dtzv4oL7iOI8y72DZ6ll6CUwQQsT9","object":"chat.completion.chunk","created":1782238430,"model":"gpt-3.5-turbo-0125","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"content":"Hello"},"logprobs":null,"finish_reason":null}],"usage":null,"obfuscation":"PvpE1"}
+
+
+        data: {"id":"chatcmpl-Dtzv4oL7iOI8y72DZ6ll6CUwQQsT9","object":"chat.completion.chunk","created":1782238430,"model":"gpt-3.5-turbo-0125","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"content":"!"},"logprobs":null,"finish_reason":null}],"usage":null,"obfuscation":"mpwmJo8VD"}
+
+
+        data: {"id":"chatcmpl-Dtzv4oL7iOI8y72DZ6ll6CUwQQsT9","object":"chat.completion.chunk","created":1782238430,"model":"gpt-3.5-turbo-0125","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{},"logprobs":null,"finish_reason":"stop"}],"usage":null,"obfuscation":"7wIk"}
+
+
+        data: {"id":"chatcmpl-Dtzv4oL7iOI8y72DZ6ll6CUwQQsT9","object":"chat.completion.chunk","created":1782238430,"model":"gpt-3.5-turbo-0125","service_tier":"default","system_fingerprint":null,"choices":[],"usage":{"prompt_tokens":107,"completion_tokens":3,"total_tokens":110,"prompt_tokens_details":{"cached_tokens":0,"audio_tokens":0},"completion_tokens_details":{"reasoning_tokens":0,"audio_tokens":0,"accepted_prediction_tokens":0,"rejected_prediction_tokens":0}},"obfuscation":"jtYuLazy"}
+
+
+        data: [DONE]
+
+
+        '
+    headers:
+      access-control-expose-headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a105780a9d5ffefe-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - text/event-stream; charset=utf-8
+      date:
+      - Tue, 23 Jun 2026 18:13:51 GMT
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '1275'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_5ee97765fc384ea68ebdc738542bbba0
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"messages":[{"content":"You are a helpful assistant who generates a random
+      first name. A user will pass in a first letter, and you should generate a name
+      that starts with that first letter.","role":"system"},{"content":"M","role":"user"}],"model":"gpt-3.5-turbo","stream":false}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate, zstd
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: '{"id": "chatcmpl-DtzvAELO463xzY61iPrGrmHrUGhIW", "object": "chat.completion",
+        "created": 1782238436, "model": "gpt-3.5-turbo-0125", "choices": [{"index":
+        0, "message": {"role": "assistant", "content": "Matilda", "refusal": null, "annotations":
+        []}, "logprobs": null, "finish_reason": "stop"}], "usage": {"prompt_tokens":
+        46, "completion_tokens": 2, "total_tokens": 48, "prompt_tokens_details": {"cached_tokens":
+        0, "audio_tokens": 0}, "completion_tokens_details": {"reasoning_tokens": 0,
+        "audio_tokens": 0, "accepted_prediction_tokens": 0, "rejected_prediction_tokens":
+        0}}, "service_tier": "default", "system_fingerprint": null}'
+    headers:
+      access-control-expose-headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a1057830fa6ffefe-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      date:
+      - Tue, 23 Jun 2026 18:13:58 GMT
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '2524'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_e31f8fe594af4069b725889e7772404a
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"messages":[{"content":"You are a helpful assistant who generates comma
+      separated lists.\n    A user will pass in a category, and you should generate
+      5 objects in that category in a comma separated list.\n    ONLY return a comma
+      separated list, and nothing more.","role":"system"},{"content":"colors","role":"user"}],"model":"gpt-3.5-turbo","stream":false}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate, zstd
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: '{"id": "chatcmpl-DtzviMJ9x5mk5FNLwrRlqroV4GXG7", "object": "chat.completion",
+        "created": 1782238470, "model": "gpt-3.5-turbo-0125", "choices": [{"index":
+        0, "message": {"role": "assistant", "content": "red, blue, green, yellow,
+        purple", "refusal": null, "annotations": []}, "logprobs": null, "finish_reason":
+        "stop"}], "usage": {"prompt_tokens": 60, "completion_tokens": 9, "total_tokens":
+        69, "prompt_tokens_details": {"cached_tokens": 0, "audio_tokens": 0}, "completion_tokens_details":
+        {"reasoning_tokens": 0, "audio_tokens": 0, "accepted_prediction_tokens": 0,
+        "rejected_prediction_tokens": 0}}, "service_tier": "default", "system_fingerprint":
+        null}'
+    headers:
+      access-control-expose-headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a105790a2ef5fefe-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      date:
+      - Tue, 23 Jun 2026 18:14:31 GMT
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '983'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_a9a2797091ce4fa59b9287edb8bc468a
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"messages":[{"content":"You are a world class algorithm for extracting
+      information in structured formats.","role":"system"},{"content":"Use the given
+      format to extract information from the following input: Sally is 13","role":"user"},{"content":"Tip:
+      Make sure to answer in the correct format","role":"user"}],"model":"gpt-3.5-turbo","function_call":{"name":"output_formatter"},"functions":[{"name":"output_formatter","description":"Output
+      formatter. Should always be used to format your response to the user.","parameters":{"title":"Person","description":"Identifying
+      information about a person.","type":"object","properties":{"name":{"title":"Name","description":"The
+      person''s name","type":"string"},"age":{"title":"Age","description":"The person''s
+      age","type":"integer"},"fav_food":{"title":"Fav Food","description":"The person''s
+      favorite food","type":"string"}},"required":["name","age"]}}],"stream":false}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate, zstd
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: '{"id": "chatcmpl-DtzvjKBeXn8jRNIVWvEHU6mG8FveQ", "object": "chat.completion",
+        "created": 1782238471, "model": "gpt-3.5-turbo-0125", "choices": [{"index":
+        0, "message": {"role": "assistant", "content": null, "function_call": {"name":
+        "output_formatter", "arguments": "{\"name\":\"Sally\",\"age\":13}"}, "refusal":
+        null, "annotations": []}, "logprobs": null, "finish_reason": "stop"}], "usage":
+        {"prompt_tokens": 159, "completion_tokens": 10, "total_tokens": 169, "prompt_tokens_details":
+        {"cached_tokens": 0, "audio_tokens": 0}, "completion_tokens_details": {"reasoning_tokens":
+        0, "audio_tokens": 0, "accepted_prediction_tokens": 0, "rejected_prediction_tokens":
+        0}}, "service_tier": "default", "system_fingerprint": null}'
+    headers:
+      access-control-expose-headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a1057910fd69fefe-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      date:
+      - Tue, 23 Jun 2026 18:14:33 GMT
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '1393'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_31f7c4d9b8d44de8a9b04829c5349a18
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"messages":[{"content":"You are a world class algorithm for extracting
+      information in structured formats with openai failures.","role":"system"},{"content":"Use
+      the given format to extract information from the following input: Sally is 13","role":"user"},{"content":"Tip:
+      Make sure to answer in the correct format","role":"user"}],"model":"gpt-3.5-turbo","function_call":{"name":"output_formatter"},"functions":[{"name":"output_formatter","description":"Output
+      formatter. Should always be used to format your response to the user.","parameters":{"title":"Person","description":"Identifying
+      information about a person.","type":"object","properties":{"name":{"title":"Name","description":"The
+      person''s name","type":"string"},"age":{"title":"Age","description":"The person''s
+      age","type":"integer"},"fav_food":{"title":"Fav Food","description":"The person''s
+      favorite food","type":"string"}},"required":["name","age"]}}],"stream":false}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate, zstd
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: '{"error": {"message": "Incorrect API key provided: FAKE-OPE***-KEY.
+        You can find your API key at https://platform.openai.com/account/api-keys.",
+        "type": "invalid_request_error", "param": null, "code": "invalid_api_key"}}'
+    headers:
+      access-control-expose-headers:
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a105791b4bbbfefe-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json; charset=utf-8
+      date:
+      - Tue, 23 Jun 2026 18:14:33 GMT
+      server:
+      - cloudflare
+      vary:
+      - Origin
+      x-request-id:
+      - req_e6bfa34797e441acbaf273cd12ffc1f4
+    status:
+      code: 401
+      message: Unauthorized
+- request:
+    body: '{"input":[[3923,374,220,17,489,220,19,30]],"model":"text-embedding-ada-002","encoding_format":"base64"}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate, zstd
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+    method: POST
+    uri: https://api.openai.com/v1/embeddings
+  response:
+    body:
+      string: '{"object": "list", "data": [{"object": "embedding", "index": 0, "embedding":
+        "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"}],
+        "model": "text-embedding-ada-002-v2", "usage": {"prompt_tokens": 8, "total_tokens":
+        8}}'
+    headers:
+      access-control-allow-origin:
+      - '*'
+      access-control-expose-headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a105791f9e21fefe-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      date:
+      - Tue, 23 Jun 2026 18:14:35 GMT
+      openai-model:
+      - text-embedding-ada-002-v2
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '890'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      via:
+      - envoy-router-6f89878f98-2p2hk
+      x-engine-geography:
+      - JP
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_d3a4fb2835ef43519b18b9a8844fd3f7
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"input":[[10590]],"model":"text-embedding-ada-002","encoding_format":"base64"}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate, zstd
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+    method: POST
+    uri: https://api.openai.com/v1/embeddings
+  response:
+    body:
+      string: '{"object": "list", "data": [{"object": "embedding", "index": 0, "embedding":
+        "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"}],
+        "model": "text-embedding-ada-002-v2", "usage": {"prompt_tokens": 1, "total_tokens":
+        1}}'
+    headers:
+      access-control-allow-origin:
+      - '*'
+      access-control-expose-headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a10579289b95fefe-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      date:
+      - Tue, 23 Jun 2026 18:14:36 GMT
+      openai-model:
+      - text-embedding-ada-002-v2
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '275'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      via:
+      - envoy-router-7f6875bbd4-sf5g4
+      x-engine-geography:
+      - US
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_156328328c824ba9bd55fc183b5467a6
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"messages":[{"content":"You are a generator of quiz questions for a seminar.
+      Use the following pieces of retrieved context to generate 5 multiple choice
+      questions (A,B,C,D) on the subject matter. Use a three sentence maximum and
+      keep the answer concise. Render the output as HTML\n\nWhat is 2 + 4?","role":"system"},{"content":"math","role":"user"}],"model":"gpt-3.5-turbo","stream":false}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate, zstd
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: '{"id": "chatcmpl-DtzvoS4hcv7Bg7LTG0mWqjaNXwy7l", "object": "chat.completion",
+        "created": 1782238476, "model": "gpt-3.5-turbo-0125", "choices": [{"index":
+        0, "message": {"role": "assistant", "content": "```html\n1. What is the result
+        of 5 x 3?\n   A) 12\n   B) 15\n   C) 18\n   D) 20\n\n2. What is the solution
+        to 10 / 2?\n   A) 3\n   B) 4\n   C) 5\n   D) 6\n\n3. If a rectangle has a
+        length of 8 and a width of 6, what is its area?\n   A) 12\n   B) 24\n   C)
+        36\n   D) 48\n\n4. What is the value of 3 squared?\n   A) 6\n   B) 8\n   C)
+        9\n   D) 12\n\n5. If a store sells a shirt for $20 and a customer buys 3 shirts,
+        how much do they owe?\n   A) $40\n   B) $50\n   C) $60\n   D) $70\n```\n",
+        "refusal": null, "annotations": []}, "logprobs": null, "finish_reason": "stop"}],
+        "usage": {"prompt_tokens": 73, "completion_tokens": 210, "total_tokens": 283,
+        "prompt_tokens_details": {"cached_tokens": 0, "audio_tokens": 0}, "completion_tokens_details":
+        {"reasoning_tokens": 0, "audio_tokens": 0, "accepted_prediction_tokens": 0,
+        "rejected_prediction_tokens": 0}}, "service_tier": "default", "system_fingerprint":
+        null}'
+    headers:
+      access-control-expose-headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a105792e4950fefe-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      date:
+      - Tue, 23 Jun 2026 18:14:38 GMT
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '2167'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_d3315cdac48d4bc8b3a4100a5e3a7648
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"messages":[{"content":"What is the capital of France? Answer in one word.","role":"user"}],"model":"gpt-3.5-turbo","stream":false}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate, zstd
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: '{"id": "chatcmpl-DtzvqIvgdmZ3Xl4Op0KZDRrh8bbVO", "object": "chat.completion",
+        "created": 1782238478, "model": "gpt-3.5-turbo-0125", "choices": [{"index":
+        0, "message": {"role": "assistant", "content": "Paris", "refusal": null, "annotations":
+        []}, "logprobs": null, "finish_reason": "stop"}], "usage": {"prompt_tokens":
+        19, "completion_tokens": 1, "total_tokens": 20, "prompt_tokens_details": {"cached_tokens":
+        0, "audio_tokens": 0}, "completion_tokens_details": {"reasoning_tokens": 0,
+        "audio_tokens": 0, "accepted_prediction_tokens": 0, "rejected_prediction_tokens":
+        0}}, "service_tier": "default", "system_fingerprint": null}'
+    headers:
+      access-control-expose-headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a105793ccc77fefe-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      date:
+      - Tue, 23 Jun 2026 18:14:40 GMT
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '1354'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_3e6cb9ba936540e98e5b9b2183b4ffd9
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"messages":[{"content":"What is the capital of France? Answer in one word.","role":"user"}],"model":"gpt-3.5-turbo","stream":true,"stream_options":{"include_usage":true}}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate, zstd
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: 'data: {"id":"chatcmpl-DtzvsqwLwIxtxrIOiL36xI7kh3LQD","object":"chat.completion.chunk","created":1782238480,"model":"gpt-3.5-turbo-0125","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"role":"assistant","content":"","refusal":null},"logprobs":null,"finish_reason":null}],"usage":null,"obfuscation":"AdFjfQDJ"}
+
+
+        data: {"id":"chatcmpl-DtzvsqwLwIxtxrIOiL36xI7kh3LQD","object":"chat.completion.chunk","created":1782238480,"model":"gpt-3.5-turbo-0125","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"content":"Paris"},"logprobs":null,"finish_reason":null}],"usage":null,"obfuscation":"UGyPC"}
+
+
+        data: {"id":"chatcmpl-DtzvsqwLwIxtxrIOiL36xI7kh3LQD","object":"chat.completion.chunk","created":1782238480,"model":"gpt-3.5-turbo-0125","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{},"logprobs":null,"finish_reason":"stop"}],"usage":null,"obfuscation":"gQC9"}
+
+
+        data: {"id":"chatcmpl-DtzvsqwLwIxtxrIOiL36xI7kh3LQD","object":"chat.completion.chunk","created":1782238480,"model":"gpt-3.5-turbo-0125","service_tier":"default","system_fingerprint":null,"choices":[],"usage":{"prompt_tokens":19,"completion_tokens":1,"total_tokens":20,"prompt_tokens_details":{"cached_tokens":0,"audio_tokens":0},"completion_tokens_details":{"reasoning_tokens":0,"audio_tokens":0,"accepted_prediction_tokens":0,"rejected_prediction_tokens":0}},"obfuscation":"UWlu5fxgM6"}
+
+
+        data: [DONE]
+
+
+        '
+    headers:
+      access-control-expose-headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a10579473ef2fefe-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - text/event-stream; charset=utf-8
+      date:
+      - Tue, 23 Jun 2026 18:14:40 GMT
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '358'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_4628d961ac97494cb42e4c2cae1533d3
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"messages":[{"content":"You are a text manipulation algorithm.","role":"system"},{"content":"Use
+      a tool to add an exclamation to the word \"exc\"","role":"user"}],"model":"gpt-3.5-turbo","stream":false,"tools":[{"type":"function","function":{"name":"add_exclamation","description":"Adds
+      an exclamation mark to the input message.","parameters":{"properties":{"message":{"type":"string"}},"required":["message"],"type":"object"}}}]}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate, zstd
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: '{"id": "chatcmpl-DtzvzpYJH5HLr3ByFDoBqhlP4eFQX", "object": "chat.completion",
+        "created": 1782238487, "model": "gpt-3.5-turbo-0125", "choices": [{"index":
+        0, "message": {"role": "assistant", "content": null, "tool_calls": [{"id":
+        "call_LFvPijUix171l9AO6wsTRf5B", "type": "function", "function": {"name":
+        "add_exclamation", "arguments": "{\"message\":\"exc\"}"}}], "refusal": null,
+        "annotations": []}, "logprobs": null, "finish_reason": "tool_calls"}], "usage":
+        {"prompt_tokens": 70, "completion_tokens": 15, "total_tokens": 85, "prompt_tokens_details":
+        {"cached_tokens": 0, "audio_tokens": 0}, "completion_tokens_details": {"reasoning_tokens":
+        0, "audio_tokens": 0, "accepted_prediction_tokens": 0, "rejected_prediction_tokens":
+        0}}, "service_tier": "default", "system_fingerprint": null}'
+    headers:
+      access-control-expose-headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a10579702a74fefe-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      date:
+      - Tue, 23 Jun 2026 18:14:47 GMT
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '701'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_9a3bdcd22bbe467aa0ceff7b877582e8
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"messages":[{"content":"You are a text manipulation algorithm.","role":"system"},{"content":"Use
+      a tool to add an exclamation to the word \"exc\"","role":"user"}],"model":"gpt-3.5-turbo","stream":true,"stream_options":{"include_usage":true},"tools":[{"type":"function","function":{"name":"add_exclamation","description":"Adds
+      an exclamation mark to the input message.","parameters":{"properties":{"message":{"type":"string"}},"required":["message"],"type":"object"}}}]}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate, zstd
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: 'data: {"id":"chatcmpl-Dtzw1DkeKVtsY3yqP66aMn25AQfaj","object":"chat.completion.chunk","created":1782238489,"model":"gpt-3.5-turbo-0125","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"role":"assistant","content":null,"tool_calls":[{"index":0,"id":"call_xV16FvF1uC0QYR1nILF4JRbd","type":"function","function":{"name":"add_exclamation","arguments":""}}],"refusal":null},"logprobs":null,"finish_reason":null}],"usage":null,"obfuscation":"YF8VybGBJv9TvR1"}
+
+
+        data: {"id":"chatcmpl-Dtzw1DkeKVtsY3yqP66aMn25AQfaj","object":"chat.completion.chunk","created":1782238489,"model":"gpt-3.5-turbo-0125","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{\""}}]},"logprobs":null,"finish_reason":null}],"usage":null,"obfuscation":"M8XIj2jNztbVY"}
+
+
+        data: {"id":"chatcmpl-Dtzw1DkeKVtsY3yqP66aMn25AQfaj","object":"chat.completion.chunk","created":1782238489,"model":"gpt-3.5-turbo-0125","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"message"}}]},"logprobs":null,"finish_reason":null}],"usage":null,"obfuscation":"stTIEA52v"}
+
+
+        data: {"id":"chatcmpl-Dtzw1DkeKVtsY3yqP66aMn25AQfaj","object":"chat.completion.chunk","created":1782238489,"model":"gpt-3.5-turbo-0125","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"\":\""}}]},"logprobs":null,"finish_reason":null}],"usage":null,"obfuscation":"q7MPAa1BEBf"}
+
+
+        data: {"id":"chatcmpl-Dtzw1DkeKVtsY3yqP66aMn25AQfaj","object":"chat.completion.chunk","created":1782238489,"model":"gpt-3.5-turbo-0125","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"exc"}}]},"logprobs":null,"finish_reason":null}],"usage":null,"obfuscation":"ZAxnAREwoi3iv"}
+
+
+        data: {"id":"chatcmpl-Dtzw1DkeKVtsY3yqP66aMn25AQfaj","object":"chat.completion.chunk","created":1782238489,"model":"gpt-3.5-turbo-0125","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"\"}"}}]},"logprobs":null,"finish_reason":null}],"usage":null,"obfuscation":"NFI0Rrpw4mYAJ"}
+
+
+        data: {"id":"chatcmpl-Dtzw1DkeKVtsY3yqP66aMn25AQfaj","object":"chat.completion.chunk","created":1782238489,"model":"gpt-3.5-turbo-0125","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{},"logprobs":null,"finish_reason":"tool_calls"}],"usage":null,"obfuscation":"WNaO2vuvFMdNb5"}
+
+
+        data: {"id":"chatcmpl-Dtzw1DkeKVtsY3yqP66aMn25AQfaj","object":"chat.completion.chunk","created":1782238489,"model":"gpt-3.5-turbo-0125","service_tier":"default","system_fingerprint":null,"choices":[],"usage":{"prompt_tokens":70,"completion_tokens":15,"total_tokens":85,"prompt_tokens_details":{"cached_tokens":0,"audio_tokens":0},"completion_tokens_details":{"reasoning_tokens":0,"audio_tokens":0,"accepted_prediction_tokens":0,"rejected_prediction_tokens":0}},"obfuscation":"4GhsCOSAT"}
+
+
+        data: [DONE]
+
+
+        '
+    headers:
+      access-control-expose-headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a105797f9e85fefe-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - text/event-stream; charset=utf-8
+      date:
+      - Tue, 23 Jun 2026 18:14:49 GMT
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '383'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_b4fa6bf848264db2965ca9db366869bf
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"input":[[9906,1917,4999,16]],"model":"text-embedding-ada-002","encoding_format":"base64"}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate, zstd
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+    method: POST
+    uri: https://api.openai.com/v1/embeddings
+  response:
+    body:
+      string: '{"object": "list", "data": [{"object": "embedding", "index": 0, "embedding":
+        "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"}],
+        "model": "text-embedding-ada-002-v2", "usage": {"prompt_tokens": 4, "total_tokens":
+        4}}'
+    headers:
+      access-control-allow-origin:
+      - '*'
+      access-control-expose-headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a10579999942fefe-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      date:
+      - Tue, 23 Jun 2026 18:14:54 GMT
+      openai-model:
+      - text-embedding-ada-002-v2
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '240'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      via:
+      - envoy-router-57577fbcf8-lrq62
+      x-engine-geography:
+      - US
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_c843530c15494f518a6931678ceeb902
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"input":[[12833,420,11914,25,22691]],"model":"text-embedding-ada-002","encoding_format":"base64"}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate, zstd
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+    method: POST
+    uri: https://api.openai.com/v1/embeddings
+  response:
+    body:
+      string: '{"object": "list", "data": [{"object": "embedding", "index": 0, "embedding":
+        "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"}],
+        "model": "text-embedding-ada-002-v2", "usage": {"prompt_tokens": 5, "total_tokens":
+        5}}'
+    headers:
+      access-control-allow-origin:
+      - '*'
+      access-control-expose-headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a105799bc8c5fefe-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      date:
+      - Tue, 23 Jun 2026 18:14:54 GMT
+      openai-model:
+      - text-embedding-ada-002-v2
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '158'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      via:
+      - envoy-router-7f6875bbd4-qwkjf
+      x-engine-geography:
+      - US
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_5ce7cda0ec3a4674b300079eefbea654
+    status:
+      code: 200
+      message: OK
+version: 1

@@ -152,3 +152,36 @@ def test_producer_errors(topic, producer, monkeypatch):
 @pytest.fixture
 def expected_broker_metrics(broker, topic):
     return [(f"MessageBroker/Kafka/Nodes/{server}/Produce/{topic}", 1) for server in broker.split(",")]
+
+
+# ---------------------------------------------------------------------------
+# Cluster-ID metric tests (confluent-kafka)
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def producer_with_cluster_id(producer, broker):
+    """Set _nr_cluster_id directly on the producer instance, bypassing the
+    async daemon-thread fetch so metric tests are deterministic and fast."""
+    test_cluster_id = "confluent-cluster-test-999"
+    producer._nr_cluster_id = test_cluster_id
+    # Also need bootstrap servers so the Nodes metrics fire correctly
+    if not hasattr(producer, "_nr_bootstrap_servers"):
+        producer._nr_bootstrap_servers = broker.split(",")
+    yield producer, test_cluster_id
+
+
+def test_cluster_produce_metric(topic, producer_with_cluster_id, send_producer_message, client_type):
+    """MessageBroker/Kafka/Cluster/{id}/Topic/{topic}/Produce appears after produce()."""
+    _, cluster_id = producer_with_cluster_id
+    cluster_metric = f"MessageBroker/Kafka/Cluster/{cluster_id}/Topic/{topic}/Produce"
+
+    @validate_transaction_metrics(
+        "test_producer:test_cluster_produce_metric.<locals>.test",
+        custom_metrics=[(cluster_metric, 1)],
+        background_task=True,
+    )
+    @background_task()
+    def test():
+        send_producer_message()
+
+    test()

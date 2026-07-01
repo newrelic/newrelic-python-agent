@@ -14,6 +14,7 @@
 
 import pytest
 from _test_agent import AGENT_NAME, agent_recorded_event_error, build_agent
+from conftest import EXPECTED_GOOGLE_ADK_VERSION_METRIC
 from testing_support.fixtures import dt_enabled, reset_core_stats_engine, validate_attributes
 from testing_support.validators.validate_custom_event import validate_custom_event_count
 from testing_support.validators.validate_custom_events import validate_custom_events
@@ -26,7 +27,7 @@ from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import transient_function_wrapper
 
-EXPECTED_AGENT_METRIC = (f"Llm/agent/GoogleADK/run_async/{AGENT_NAME}", 1)
+EXPECTED_METRICS = [(f"Llm/agent/GoogleADK/run_async/{AGENT_NAME}", 1)]
 
 
 @dt_enabled
@@ -34,19 +35,20 @@ EXPECTED_AGENT_METRIC = (f"Llm/agent/GoogleADK/run_async/{AGENT_NAME}", 1)
 @validate_transaction_error_event_count(1)
 @validate_error_trace_attributes(callable_name(ValueError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
 @validate_custom_events(agent_recorded_event_error)
-@validate_custom_event_count(count=1)
+@validate_custom_event_count(1)
 @validate_transaction_metrics(
     "test_agent_error:test_agent_error",
-    scoped_metrics=[EXPECTED_AGENT_METRIC],
-    rollup_metrics=[EXPECTED_AGENT_METRIC],
+    scoped_metrics=EXPECTED_METRICS,
+    rollup_metrics=EXPECTED_METRICS,
+    custom_metrics=[EXPECTED_GOOGLE_ADK_VERSION_METRIC],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
 @validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "my_agent"}'})
 @background_task()
 def test_agent_error(exercise_agent, set_trace_info):
-    # Inject a ValueError inside _run_async_impl's async iteration
-    # so the exception flows through the async generator's athrow.
+    # Inject a ValueError into BaseLlmFlow.run_async so the exception fires
+    # at the start of the Gemini round-trip, before any LLM events are emitted.
     @transient_function_wrapper("google.adk.flows.llm_flows.base_llm_flow", "BaseLlmFlow.run_async")
     def inject_exception(wrapped, instance, args, kwargs):
         raise ValueError("Oops")

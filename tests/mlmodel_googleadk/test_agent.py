@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from _test_agent import AGENT_NAME, PROMPT, agent_recorded_event, build_agent
-from conftest import GOOGLEADK_VERSION
+from conftest import EXPECTED_VERSION_METRICS
 from testing_support.fixtures import dt_enabled, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     disabled_ai_monitoring_record_content_settings,
@@ -28,19 +28,23 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
 from newrelic.api.background_task import background_task
 from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 
-EXPECTED_AGENT_METRIC = (f"Llm/agent/GoogleADK/run_async/{AGENT_NAME}", 1)
-EXPECTED_SUPPORTABILITY_METRIC = (f"Supportability/Python/ML/GoogleADK/{GOOGLEADK_VERSION}", 1)
+EXPECTED_METRICS = [(f"Llm/agent/GoogleADK/run_async/{AGENT_NAME}", 1)]
+
+# 4 events:
+#  * 1 LlmAgent
+#  * 3 LLM events from the Gemini round-trip (Input/Output/Summary)
+EXPECTED_EVENT_COUNT = 4
 
 
 @dt_enabled
 @reset_core_stats_engine()
 @validate_custom_events(events_with_context_attrs(agent_recorded_event))
-@validate_custom_event_count(count=4)  # Agent, Input, Output, Summary.
+@validate_custom_event_count(EXPECTED_EVENT_COUNT)
 @validate_transaction_metrics(
     "test_agent:test_agent",
-    scoped_metrics=[EXPECTED_AGENT_METRIC],
-    rollup_metrics=[EXPECTED_AGENT_METRIC],
-    custom_metrics=[EXPECTED_SUPPORTABILITY_METRIC],
+    scoped_metrics=EXPECTED_METRICS,
+    rollup_metrics=EXPECTED_METRICS,
+    custom_metrics=EXPECTED_VERSION_METRICS,
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -60,11 +64,12 @@ def test_agent(exercise_agent, set_trace_info):
 @reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
 @validate_custom_events(agent_recorded_event)
-@validate_custom_event_count(count=4)  # Agent, Input, Output, Summary.
+@validate_custom_event_count(EXPECTED_EVENT_COUNT)
 @validate_transaction_metrics(
     "test_agent:test_agent_no_content",
-    scoped_metrics=[EXPECTED_AGENT_METRIC],
-    rollup_metrics=[EXPECTED_AGENT_METRIC],
+    scoped_metrics=EXPECTED_METRICS,
+    rollup_metrics=EXPECTED_METRICS,
+    custom_metrics=EXPECTED_VERSION_METRICS,
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -82,7 +87,7 @@ def test_agent_no_content(exercise_agent, set_trace_info):
 @dt_enabled
 @reset_core_stats_engine()
 @disabled_ai_monitoring_settings
-@validate_custom_event_count(count=0)
+@validate_custom_event_count(0)
 @validate_transaction_metrics("test_agent:test_agent_disabled_ai_monitoring", background_task=True)
 @background_task()
 def test_agent_disabled_ai_monitoring(exercise_agent, set_trace_info):
@@ -95,7 +100,7 @@ def test_agent_disabled_ai_monitoring(exercise_agent, set_trace_info):
 
 
 @reset_core_stats_engine()
-@validate_custom_event_count(count=0)
+@validate_custom_event_count(0)
 def test_agent_outside_transaction(exercise_agent, set_trace_info):
     set_trace_info()
     agent = build_agent()

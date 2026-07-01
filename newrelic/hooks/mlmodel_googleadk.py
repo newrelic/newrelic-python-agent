@@ -34,7 +34,8 @@ AGENT_EVENT_FAILURE_LOG_MESSAGE = "Exception occurred in Google ADK instrumentat
 TOOL_EXTRACTOR_FAILURE_LOG_MESSAGE = "Exception occurred in Google ADK instrumentation: Failed to extract tool information. If the issue persists, report this issue to New Relic support.\n"
 
 
-def wrap_llm_agent__run_async_impl(wrapped, instance, args, kwargs):
+def wrap__run_async_impl(wrapped, instance, args, kwargs):
+    """Shared _run_async_impl() wrapper for any subclass that implements BaseAgent."""
     transaction = current_transaction()
     if not transaction:
         return wrapped(*args, **kwargs)
@@ -285,7 +286,7 @@ def _construct_base_tool_event_dict(
 
 def instrument_googleadk_agents_llm_agent(module):
     if hasattr(module, "LlmAgent") and hasattr(module.LlmAgent, "_run_async_impl"):
-        wrap_function_wrapper(module, "LlmAgent._run_async_impl", wrap_llm_agent__run_async_impl)
+        wrap_function_wrapper(module, "LlmAgent._run_async_impl", wrap__run_async_impl)
 
 
 def instrument_googleadk_flows_llm_flows_functions(module):

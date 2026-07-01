@@ -46,8 +46,14 @@ collector_agent_registration = collector_agent_registration_fixture(
 )
 
 
-GOOGLEADK_VERSION = get_package_version("google-adk")
-assert GOOGLEADK_VERSION, "Failed to pull google-adk version for supportability metric"
+GOOGLE_ADK_VERSION = get_package_version("google-adk")
+GOOGLE_GENAI_VERSION = get_package_version("google-genai")
+assert GOOGLE_ADK_VERSION, "Failed to pull google-adk version for supportability metric"
+assert GOOGLE_GENAI_VERSION, "Failed to pull google-genai version for supportability metric"
+
+EXPECTED_GOOGLE_ADK_VERSION_METRIC = (f"Supportability/Python/ML/GoogleADK/{GOOGLE_ADK_VERSION}", 1)
+EXPECTED_GOOGLE_GENAI_VERSION_METRIC = (f"Supportability/Python/ML/Gemini/{GOOGLE_GENAI_VERSION}", 1)
+EXPECTED_VERSION_METRICS = [EXPECTED_GOOGLE_ADK_VERSION_METRIC, EXPECTED_GOOGLE_GENAI_VERSION_METRIC]
 
 
 @pytest.fixture(autouse=True)
@@ -74,7 +80,7 @@ def gemini_api_key(vcr_recording):
 @pytest.fixture(autouse=True, params=[False, True], ids=["standard", "vertex"])
 def is_vertex(request, monkeypatch):
     """Enable or disable VertexAI mode for the Gemini client using environment variables."""
-    monkeypatch.setenv("GOOGLE_GENAI_USE_VERTEXAI", str(request.param).upper())
+    monkeypatch.setenv("GOOGLE_GENAI_USE_ENTERPRISE", str(request.param).upper())
     return request.param
 
 

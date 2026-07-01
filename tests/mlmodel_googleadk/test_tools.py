@@ -14,6 +14,7 @@
 
 from _test_agent import AGENT_NAME, PROMPT, agent_recorded_event, build_agent
 from _test_tools import TOOL_NAME, get_capital_tool, tool_recorded_event
+from conftest import EXPECTED_VERSION_METRICS
 from testing_support.fixtures import dt_enabled, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     disabled_ai_monitoring_record_content_settings,
@@ -27,11 +28,18 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
 
 from newrelic.api.background_task import background_task
 from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
-from newrelic.hooks.mlmodel_googleadk import GOOGLEADK_VERSION
 
-EXPECTED_AGENT_METRIC = (f"Llm/agent/GoogleADK/run_async/{AGENT_NAME}", 1)
-EXPECTED_TOOL_METRIC = (f"Llm/tool/GoogleADK/execute_single_function_call_async/{TOOL_NAME}", 1)
-EXPECTED_SUPPORTABILITY_METRIC = (f"Supportability/Python/ML/GoogleADK/{GOOGLEADK_VERSION}", 1)
+EXPECTED_METRICS = [
+    (f"Llm/agent/GoogleADK/run_async/{AGENT_NAME}", 1),
+    (f"Llm/tool/GoogleADK/execute_single_function_call_async/{TOOL_NAME}", 1),
+]
+
+# 7 events:
+#  * 1 LlmAgent
+#  * 1 LlmTool
+#  * 3 LLM events from the first Gemini round-trip (Input/Output/Summary)
+#  * 2 LLM events from the second Gemini round-trip (Output/Summary, no Input event from tools)
+EXPECTED_EVENT_COUNT = 7
 
 
 def _validate_events(events):
@@ -43,13 +51,13 @@ def _validate_events(events):
 
 @dt_enabled
 @reset_core_stats_engine()
-@validate_custom_event_count(count=7)  # LlmAgent, LlmTool, Input, 2x (Summary, Output) for the two LLM calls.
+@validate_custom_event_count(EXPECTED_EVENT_COUNT)
 @validate_custom_events(events_with_context_attrs(agent_recorded_event + tool_recorded_event(record_content=True)))
 @validate_transaction_metrics(
     "test_tools:test_tool",
-    scoped_metrics=[EXPECTED_AGENT_METRIC, EXPECTED_TOOL_METRIC],
-    rollup_metrics=[EXPECTED_AGENT_METRIC, EXPECTED_TOOL_METRIC],
-    custom_metrics=[EXPECTED_SUPPORTABILITY_METRIC],
+    scoped_metrics=EXPECTED_METRICS,
+    rollup_metrics=EXPECTED_METRICS,
+    custom_metrics=EXPECTED_VERSION_METRICS,
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -68,12 +76,13 @@ def test_tool(exercise_agent, set_trace_info):
 @dt_enabled
 @reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
-@validate_custom_event_count(count=7)  # LlmAgent, LlmTool, Input, 2x (Summary, Output) for the two LLM calls.
+@validate_custom_event_count(EXPECTED_EVENT_COUNT)
 @validate_custom_events(agent_recorded_event + tool_recorded_event(record_content=False))
 @validate_transaction_metrics(
     "test_tools:test_tool_no_content",
-    scoped_metrics=[EXPECTED_AGENT_METRIC, EXPECTED_TOOL_METRIC],
-    rollup_metrics=[EXPECTED_AGENT_METRIC, EXPECTED_TOOL_METRIC],
+    scoped_metrics=EXPECTED_METRICS,
+    rollup_metrics=EXPECTED_METRICS,
+    custom_metrics=EXPECTED_VERSION_METRICS,
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -89,7 +98,7 @@ def test_tool_no_content(exercise_agent, set_trace_info):
 @dt_enabled
 @reset_core_stats_engine()
 @disabled_ai_monitoring_settings
-@validate_custom_event_count(count=0)
+@validate_custom_event_count(0)
 @validate_transaction_metrics("test_tools:test_tool_disabled_ai_monitoring", background_task=True)
 @background_task()
 def test_tool_disabled_ai_monitoring(exercise_agent, set_trace_info):
@@ -101,7 +110,7 @@ def test_tool_disabled_ai_monitoring(exercise_agent, set_trace_info):
 
 
 @reset_core_stats_engine()
-@validate_custom_event_count(count=0)
+@validate_custom_event_count(0)
 def test_tool_outside_transaction(exercise_agent, set_trace_info):
     set_trace_info()
     agent = build_agent(tools=[get_capital_tool])

@@ -15,6 +15,7 @@
 import pytest
 from _test_agent import AGENT_NAME, PROMPT, agent_recorded_event_error, build_agent
 from _test_tools import TOOL_NAME, raising_tool, tool_recorded_event_error
+from conftest import EXPECTED_VERSION_METRICS
 from testing_support.fixtures import dt_enabled, reset_core_stats_engine, validate_attributes
 from testing_support.validators.validate_custom_event import validate_custom_event_count
 from testing_support.validators.validate_custom_events import validate_custom_events
@@ -26,8 +27,10 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
 from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
 
-EXPECTED_AGENT_METRIC = (f"Llm/agent/GoogleADK/run_async/{AGENT_NAME}", 1)
-EXPECTED_TOOL_METRIC = (f"Llm/tool/GoogleADK/execute_single_function_call_async/{TOOL_NAME}", 1)
+EXPECTED_METRICS = [
+    (f"Llm/agent/GoogleADK/run_async/{AGENT_NAME}", 1),
+    (f"Llm/tool/GoogleADK/execute_single_function_call_async/{TOOL_NAME}", 1),
+]
 
 
 @dt_enabled
@@ -35,11 +38,16 @@ EXPECTED_TOOL_METRIC = (f"Llm/tool/GoogleADK/execute_single_function_call_async/
 @validate_transaction_error_event_count(1)
 @validate_error_trace_attributes(callable_name(ValueError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
 @validate_custom_events(agent_recorded_event_error + tool_recorded_event_error(record_content=True))
-@validate_custom_event_count(count=5)  # LlmAgent, LlmTool, Summary, Input, Output
+# 5 events:
+#  * 1 LlmAgent
+#  * 1 LlmTool
+#  * 3 LLM events from the single Gemini round-trip (Input/Output/Summary)
+@validate_custom_event_count(5)
 @validate_transaction_metrics(
     "test_tools_error:test_tool_error",
-    scoped_metrics=[EXPECTED_AGENT_METRIC, EXPECTED_TOOL_METRIC],
-    rollup_metrics=[EXPECTED_AGENT_METRIC, EXPECTED_TOOL_METRIC],
+    scoped_metrics=EXPECTED_METRICS,
+    rollup_metrics=EXPECTED_METRICS,
+    custom_metrics=EXPECTED_VERSION_METRICS,
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])

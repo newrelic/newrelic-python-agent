@@ -289,6 +289,11 @@ def instrument_googleadk_agents_llm_agent(module):
         wrap_function_wrapper(module, "LlmAgent._run_async_impl", wrap__run_async_impl)
 
 
+def instrument_googleadk_agents_loop_agent(module):
+    if hasattr(module, "LoopAgent") and hasattr(module.LoopAgent, "_run_async_impl"):
+        wrap_function_wrapper(module, "LoopAgent._run_async_impl", wrap__run_async_impl)
+
+
 def instrument_googleadk_flows_llm_flows_functions(module):
     if hasattr(module, "_execute_single_function_call_async"):
         wrap_function_wrapper(module, "_execute_single_function_call_async", wrap__execute_single_function_call_async)

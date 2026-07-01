@@ -3189,6 +3189,9 @@ def _process_module_builtin_defaults():
         "google.adk.agents.llm_agent", "newrelic.hooks.mlmodel_googleadk", "instrument_googleadk_agents_llm_agent"
     )
     _process_module_definition(
+        "google.adk.agents.loop_agent", "newrelic.hooks.mlmodel_googleadk", "instrument_googleadk_agents_loop_agent"
+    )
+    _process_module_definition(
         "google.adk.flows.llm_flows.functions",
         "newrelic.hooks.mlmodel_googleadk",
         "instrument_googleadk_flows_llm_flows_functions",

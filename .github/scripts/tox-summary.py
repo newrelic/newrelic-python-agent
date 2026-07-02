@@ -25,6 +25,10 @@ GITHUB_SUMMARY = Path(os.environ.get("GITHUB_STEP_SUMMARY", TOX_DIR / "summary.m
 RESULTS_FILE_RE = re.compile(
     r"(?P<job_name>[a-zA-Z0-9_-]+)-(?P<job_num>\d+)-(?P<run_id>[a-zA-Z0-9]+)-(?P<job_id>[a-zA-Z0-9_-]+)-results.json"
 )
+ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-9;]*[a-zA-Z]")
+PYTEST_SUMMARY_RE = re.compile(r"=+ (?P<summary>.+?) in (?P<duration>[\d.]+)s =+")
+PYTEST_COUNT_RE = re.compile(r"(\d+) (passed|failed|skipped|xfailed|xpassed|errors?|warnings?|deselected|rerun)")
+PYTEST_COUNT_NORMALIZE = {"errors": "error", "warnings": "warning"}
 
 GITHUB_SERVER_URL = os.environ.get("GITHUB_SERVER_URL", "https://github.com")
 GITHUB_REPOSITORY = os.environ.get("GITHUB_REPOSITORY", "newrelic/newrelic-python-agent")
@@ -32,8 +36,12 @@ GITHUB_REPOSITORY = os.environ.get("GITHUB_REPOSITORY", "newrelic/newrelic-pytho
 TABLE_HEADER = """
 # Tox Results Summary
 
-| Environment | Status | Duration (s) | Setup Duration (s) | Test Duration (s) | Runner |
-|-------------|--------|--------------|--------------------|-------------------|--------|
+| Total Passed | Total Failed |
+|--------------|--------------|
+| {total_passed} | {total_failed} |
+
+| Environment | Status | Passed | Failed | Duration (s) | Setup Duration (s) | Test Duration (s) | Runner |
+|-------------|--------|--------|--------|--------------|--------------------|-------------------|--------|
 """
 TABLE_HEADER = dedent(TABLE_HEADER).strip()
 
@@ -67,11 +75,13 @@ def main():
 
     with GITHUB_SUMMARY.open("w") as output_fp:
         summary = summarize_results(results)
+        total_passed = sum(r["passed"] for r in summary)
+        total_failed = sum(r["failed"] for r in summary)
         # Print table header
-        print(TABLE_HEADER, file=output_fp)
+        print(TABLE_HEADER.format(total_passed=total_passed, total_failed=total_failed), file=output_fp)
 
         for result in summary:
-            line = "| {env_name} | {status} | {duration} | {setup_duration} | {test_duration} | {runner} |".format(
+            line = "| {env_name} | {status} | {passed} | {failed} | {duration} | {setup_duration} | {test_duration} | {runner} |".format(
                 **result
             )
             print(line, file=output_fp)
@@ -96,6 +106,26 @@ def summarize_results(results):
             test_duration += cmd.get("elapsed", 0)
         test_duration = f"{test_duration:.2f}" if test_duration >= 0 else "N/A"
 
+        # Get test counts from test run
+        passed, failed = 0, 0
+        try:
+            # Remove ANSI color control characters
+            raw_output = ANSI_ESCAPE_RE.sub("", result["test"][0]["output"])
+            # Read backwards through the output since the summary is at the bottom
+            output = reversed(list(raw_output.splitlines()))
+            for line in output:
+                if match := PYTEST_SUMMARY_RE.match(line):
+                    counts = {
+                        PYTEST_COUNT_NORMALIZE.get(name, name): int(num)
+                        for num, name in PYTEST_COUNT_RE.findall(match.group("summary"))
+                    }
+                    passed = counts.get("passed", 0) + counts.get("xfailed", 0)
+                    failed = counts.get("failed", 0) + counts.get("xpassed", 0)
+                    break
+
+        except Exception:
+            pass
+
         summary.append(
             {
                 "env_name": env,
@@ -103,6 +133,8 @@ def summarize_results(results):
                 "duration": duration,
                 "setup_duration": setup_duration,
                 "test_duration": test_duration,
+                "passed": passed,
+                "failed": failed,
                 "runner": runner,
             }
         )

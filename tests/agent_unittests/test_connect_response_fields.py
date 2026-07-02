@@ -159,3 +159,82 @@ def test_account_level_aim(connect_response_fields):
         assert protocol.configuration.ai_monitoring.enabled == connect_response_fields["collect_ai"]
     else:
         assert protocol.configuration.ai_monitoring.enabled is False
+
+
+# AI monitoring server side config values are delivered as a pass-through via
+# the agent_config payload, so the tests below nest them under agent_config.
+@override_generic_settings(global_settings(), {"developer_mode": True})
+@pytest.mark.parametrize(
+    "connect_response_fields,expected_enabled",
+    (
+        # An ai_monitoring.enabled delivered via agent_config takes precedence
+        # over collect_ai.
+        ({"collect_ai": False, "agent_config": {"ai_monitoring.enabled": True}}, True),
+        ({"collect_ai": True, "agent_config": {"ai_monitoring.enabled": False}}, False),
+        # Without ai_monitoring.enabled, collect_ai is the fallback.
+        ({"collect_ai": True}, True),
+        ({"collect_ai": False}, False),
+        # ai_monitoring.enabled applies even when collect_ai is absent.
+        ({"agent_config": {"ai_monitoring.enabled": True}}, True),
+    ),
+)
+def test_ai_monitoring_enabled_precedence(connect_response_fields, expected_enabled):
+    client_cls = functools.partial(CustomTestClient, connect_response_fields=connect_response_fields)
+
+    protocol = AgentProtocol.connect(
+        "app_name", LINKED_APPLICATIONS, ENVIRONMENT, global_settings(), client_cls=client_cls
+    )
+
+    assert protocol.configuration.ai_monitoring.enabled is expected_enabled
+
+
+@override_generic_settings(global_settings(), {"developer_mode": True})
+@pytest.mark.parametrize(
+    "agent_config",
+    (
+        {"ai_monitoring.streaming.enabled": False},
+        {"ai_monitoring.record_content.enabled": False},
+        {"ai_monitoring.streaming.enabled": False, "ai_monitoring.record_content.enabled": False},
+    ),
+)
+def test_ai_monitoring_streaming_and_record_content_server_side(agent_config):
+    connect_response_fields = {"agent_config": agent_config}
+    client_cls = functools.partial(CustomTestClient, connect_response_fields=connect_response_fields)
+
+    protocol = AgentProtocol.connect(
+        "app_name", LINKED_APPLICATIONS, ENVIRONMENT, global_settings(), client_cls=client_cls
+    )
+
+    if "ai_monitoring.streaming.enabled" in agent_config:
+        assert protocol.configuration.ai_monitoring.streaming.enabled == agent_config["ai_monitoring.streaming.enabled"]
+    if "ai_monitoring.record_content.enabled" in agent_config:
+        assert (
+            protocol.configuration.ai_monitoring.record_content.enabled
+            == agent_config["ai_monitoring.record_content.enabled"]
+        )
+
+
+@override_generic_settings(global_settings(), {"developer_mode": True, "high_security": True})
+def test_ai_monitoring_high_security_safeguard():
+    # Even if the connect response tries to enable AI monitoring or content
+    # recording, High Security Mode must keep them disabled. The HSM fixups strip
+    # ai_monitoring.enabled from agent_config, but collect_ai and the other
+    # ai_monitoring.* keys are not stripped, so the agent-side safeguard in
+    # apply_server_side_settings pins all three off as defense-in-depth.
+    connect_response_fields = {
+        "collect_ai": True,
+        "agent_config": {
+            "ai_monitoring.enabled": True,
+            "ai_monitoring.streaming.enabled": True,
+            "ai_monitoring.record_content.enabled": True,
+        },
+    }
+    client_cls = functools.partial(CustomTestClient, connect_response_fields=connect_response_fields)
+
+    protocol = AgentProtocol.connect(
+        "app_name", LINKED_APPLICATIONS, ENVIRONMENT, global_settings(), client_cls=client_cls
+    )
+
+    assert protocol.configuration.ai_monitoring.enabled is False
+    assert protocol.configuration.ai_monitoring.streaming.enabled is False
+    assert protocol.configuration.ai_monitoring.record_content.enabled is False

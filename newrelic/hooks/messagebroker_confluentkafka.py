@@ -26,6 +26,7 @@ from newrelic.api.time_trace import notice_error
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
+from newrelic.core.config import global_settings
 
 _logger = logging.getLogger(__name__)
 
@@ -47,6 +48,9 @@ _nr_cluster_id_cache_lock = threading.Lock()
 
 
 def _fetch_cluster_id(instance):
+    settings = global_settings()
+    if not getattr(getattr(settings, "kafka", None), "cluster_metrics_enabled", False):
+        return
     servers = getattr(instance, "_nr_bootstrap_servers", None)
     # Sort so that equivalent broker sets with different orderings share the same key.
     cache_key = ",".join(sorted(servers)) if servers else None

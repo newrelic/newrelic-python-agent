@@ -147,7 +147,8 @@ class TestFetchClusterIdKafkaPython:
 
         try:
             cached = _kafka_cluster_id_cache.get(cache_key)
-            assert isinstance(cached, tuple) and cached[0] == "fetched-uuid"
+            assert isinstance(cached, tuple)
+            assert cached[0] == "fetched-uuid"
         finally:
             _kafka_cluster_id_cache.pop(cache_key, None)
 

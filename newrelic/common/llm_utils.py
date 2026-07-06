@@ -120,12 +120,19 @@ class AsyncLLMStreamProxy(ObjectProxy):
         self._nr_on_stream_chunk = on_stream_chunk or noop
         # Track if we've sent the LLM events yet to avoid sending them multiple times
         self._nr_closed = False
+        # Lazily established by __aiter__ or __anext__. With LangChain's
+        # astream_events, __anext__ may be called before __aiter__.
+        self._nr_wrapped_iter = None
 
     def __aiter__(self):
         self._nr_wrapped_iter = self.__wrapped__.__aiter__()
         return self
 
     async def __anext__(self):
+        # Lazily establish the wrapped iterator. With astream_events,
+        # __anext__ may be called before __aiter__.
+        if self._nr_wrapped_iter is None:
+            self._nr_wrapped_iter = self.__wrapped__.__aiter__()
         try:
             return_val = await self._nr_wrapped_iter.__anext__()
             self._nr_on_stream_chunk(self, return_val)

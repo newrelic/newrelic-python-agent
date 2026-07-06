@@ -79,6 +79,7 @@ except ImportError as exc:
     raise ImportError("pytest-recording is required to use the vcr fixtures.") from exc
 
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -88,6 +89,7 @@ VCR_CENSORED_HEADERS = ["authorization", "cookie", "set-cookie", "x-goog-api-key
 VCR_IGNORED_HEADERS = ["content-length", "traceparent", "tracestate", "user-agent", "x-goog-api-client"]
 VCR_REPLACE_HEADERS = []  # Must be tuples of (header_name, replacement_value)
 VCR_MATCH_ON = ["method", "scheme", "host", "port", "path", "body", "headers", "query"]
+VCR_TIKTOKEN_ENCODINGS = []
 
 
 # === Settings fixtures, required and overridable ===
@@ -217,6 +219,7 @@ def vcr_config(
     vcr_match_on,
     vcr_before_record_request,
     vcr_before_record_response,
+    vcr_cache_tiktoken_encodings,
 ):
     """
     Combines the overridable settings fixtures into VCR.py's final configuration.
@@ -297,3 +300,22 @@ def pytest_collection_modifyitems(items):
     """
     for item in items:
         item.add_marker(pytest.mark.vcr)
+
+
+@pytest.fixture
+def vcr_cache_tiktoken_encodings(monkeypatch):
+    """Cache the tiktoken encodings before enabling VCR which blocks network access."""
+    try:
+        import tiktoken
+    except ImportError:
+        return  # tiktoken is not installed, skip caching
+
+    # Set up temporary cache dir
+    tox_env_dir = os.environ.get("TOX_ENV_DIR", None) or Path.cwd()
+    cache_dir = Path(tox_env_dir) / ".tiktoken_cache"
+    monkeypatch.setenv("TIKTOKEN_CACHE_DIR", str(cache_dir))
+    cache_dir.mkdir(parents=True, exist_ok=True)
+
+    # Pre-fetch encodings used in tests
+    for encoding in VCR_TIKTOKEN_ENCODINGS:
+        tiktoken.get_encoding(encoding)

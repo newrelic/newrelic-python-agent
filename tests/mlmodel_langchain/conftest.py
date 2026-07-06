@@ -13,25 +13,17 @@
 # limitations under the License.
 
 import itertools
-import json
 import os
-from pathlib import Path
 
 import pytest
+from langchain_core.messages.ai import AIMessage
+from langchain_core.messages.tool import ToolMessage
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from testing_support.fixture.event_loop import event_loop as loop
-from testing_support.fixtures import (
-    collector_agent_registration_fixture,
-    collector_available_fixture,
-    override_application_settings,
-)
+from testing_support.fixture.vcr import *  # noqa: F403
+from testing_support.fixture.vcr import VCR_IGNORED_HEADERS, VCR_REPLACE_HEADERS, VCR_TIKTOKEN_ENCODINGS
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 from testing_support.ml_testing_utils import set_trace_info
-
-from newrelic.api.transaction import current_transaction
-from newrelic.common.object_wrapper import ObjectProxy, wrap_function_wrapper
-from newrelic.common.signature import bind_args
-
-from ._mock_external_openai_server import MockExternalOpenAIServer, extract_shortened_prompt, simple_get
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
@@ -49,46 +41,74 @@ collector_agent_registration = collector_agent_registration_fixture(
     linked_applications=["Python Agent Test (mlmodel_langchain)"],
 )
 
+VCR_IGNORED_HEADERS.extend(
+    [
+        "alt-svc",
+        "Cookie",
+        "host",
+        "set-cookie",
+        "Strict-Transport-Security",
+        "X-Content-Type-Options",
+        "x-envoy-upstream-service-time",
+        "x-openai-proxy-wasm",
+        "X-Stainless-Arch",
+        "X-Stainless-Async",
+        "X-Stainless-Lang",
+        "X-Stainless-OS",
+        "X-Stainless-Package-Version",
+        "X-Stainless-Raw-Response",
+        "x-stainless-retry-count",
+        "X-Stainless-Runtime-Version",
+        "X-Stainless-Runtime",
+    ]
+)
 
-OPENAI_AUDIT_LOG_FILE = Path(__file__).parent / "openai_audit.log"
-OPENAI_AUDIT_LOG_CONTENTS = {}
-# Intercept outgoing requests and log to file for mocking
-RECORDED_HEADERS = {"x-request-id", "content-type"}
-EXPECTED_AGENT_RESPONSE = 'The word "Hello" with an exclamation mark added is "Hello!"'
+VCR_REPLACE_HEADERS.extend(
+    [
+        ("openai-organization", "nr-test-org"),
+        ("openai-project", "nr-test-project"),
+        ("x-ratelimit-limit-requests", "10000"),
+        ("x-ratelimit-limit-tokens", "50000000"),
+        ("x-ratelimit-remaining-requests", "9999"),
+        ("x-ratelimit-remaining-tokens", "49999975"),
+        ("x-ratelimit-reset-requests", "6ms"),
+        ("x-ratelimit-reset-tokens", "0s"),
+    ]
+)
+
+VCR_TIKTOKEN_ENCODINGS.extend(["cl100k_base"])
+
+EXPECTED_AGENT_RESPONSE = "Hello!"
 EXPECTED_TOOL_OUTPUT = "Hello!"
 
 
-@pytest.fixture(scope="session")
-def openai_clients(MockExternalOpenAIServer):
+@pytest.fixture
+def openai_clients(vcr_recording):
     """
-    This configures the openai client and returns it for openai v1 and only configures
-    openai for v0 since there is no client.
+    This configures the OpenAI client to use a ReplayApiClient which
+    will either record or replay responses depending on the mode.
     """
     from newrelic.core.config import _environ_as_bool
 
-    if not _environ_as_bool("NEW_RELIC_TESTING_RECORD_OPENAI_RESPONSES", False):
-        with MockExternalOpenAIServer() as server:
-            chat = ChatOpenAI(base_url=f"http://localhost:{server.port}", api_key="NOT-A-REAL-SECRET", temperature=0.7)
-            embeddings = OpenAIEmbeddings(
-                openai_api_key="NOT-A-REAL-SECRET", openai_api_base=f"http://localhost:{server.port}"
-            )
-            yield chat, embeddings
-    else:
+    if vcr_recording:
         openai_api_key = os.environ.get("OPENAI_API_KEY")
         if not openai_api_key:
             raise RuntimeError("OPENAI_API_KEY environment variable required.")
-        chat = ChatOpenAI(api_key=openai_api_key)
-        embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
-        yield chat, embeddings
+    else:
+        openai_api_key = os.environ["OPENAI_API_KEY"] = "NOT-A-REAL-SECRET"
+
+    chat = ChatOpenAI(api_key=openai_api_key)
+    embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
+    return chat, embeddings
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def embedding_openai_client(openai_clients):
     _, embedding_client = openai_clients
     return embedding_client
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def chat_openai_client(openai_clients):
     chat_client, _ = openai_clients
     return chat_client
@@ -101,17 +121,23 @@ def state_function_step(state):
 def append_function_step(state):
     from langchain.messages import ToolMessage
 
-    messages = state["messages"] if "messages" in state else state["model"]["messages"]
+    if "messages" in state:
+        messages = state["messages"]
+    elif "model" in state:
+        messages = state["model"]["messages"]
+    elif "data" in state:
+        messages = state["data"]["model"]["messages"]
+
     messages.append(ToolMessage(f"The real agent said: {messages[-1].content}", tool_call_id=123))
     return state
 
 
-@pytest.fixture(scope="session", params=["create_agent", "StateGraph", "RunnableSeq", "RunnableSequence"])
+@pytest.fixture(params=["create_agent", "StateGraph", "RunnableSeq", "RunnableSequence"])
 def agent_runnable_type(request):
     return request.param
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def create_agent_runnable(agent_runnable_type, chat_openai_client):
     """Create different runnable forms of the same agent and model as a fixture."""
 
@@ -162,7 +188,7 @@ def create_agent_runnable(agent_runnable_type, chat_openai_client):
         raise NotImplementedError
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def validate_agent_output(agent_runnable_type):
     def _unpack_messages(response):
         if isinstance(response, list) and not any(response):
@@ -173,7 +199,20 @@ def validate_agent_output(agent_runnable_type):
             # Messages are packaged into nested dicts with a "model" or "tool_call" key, a "message" key,
             # which contains a list with one or more messages in order. To unpack everything,
             # we need to unpack the dictionaries values and extract the messasges lists, then flatten them.
-            messages_packed = [next(iter(event.values()))["messages"] for event in response]
+            try:
+                messages_packed = [next(iter(event.values()))["messages"] for event in response]
+            except TypeError:
+                messages_packed = []
+                for event in response:
+                    for value in event.values():
+                        if isinstance(value, dict):
+                            try:
+                                dict_content = next(iter(value.values()))
+                                if dict_content and ("messages" in dict_content):
+                                    messages_packed.append(dict_content["messages"])
+                            except StopIteration:
+                                pass
+
             return list(itertools.chain.from_iterable(messages_packed))
 
         # invoke returns a Response object that contains the messages directly
@@ -230,39 +269,137 @@ def validate_agent_output(agent_runnable_type):
     return _validate_agent_output
 
 
-@pytest.fixture(scope="session", params=["invoke", "ainvoke", "stream", "astream"])
-def exercise_agent(request, loop, validate_agent_output, agent_runnable_type):
+# This is used for `stream_events` and `astream_events`
+@pytest.fixture
+def validate_agent_event_output(agent_runnable_type):
+    def _unpack_messages(response):
+        if isinstance(response, list) and not any(response):
+            # Only None are returned from RunnableSeq.stream(), avoid the crash
+            return []
+        elif isinstance(response, list):
+            # stream returns a list of events
+            # Messages are packaged into nested dicts with a "model" or "tool_call" key, a "message" key,
+            # which contains a list with one or more messages in order. To unpack everything,
+            # we need to unpack the dictionaries values and extract the messasges lists, then flatten them.
+            try:
+                messages_packed = [next(iter(event.values()))["messages"] for event in response]
+            except TypeError:
+                messages_packed = []
+                for event in response:
+                    for value in event.values():
+                        if isinstance(value, dict):
+                            try:
+                                dict_content = next(iter(value.values()))
+                                if dict_content and ("messages" in dict_content):
+                                    messages_packed.append(dict_content["messages"])
+                            except StopIteration:
+                                pass
+
+            return list(itertools.chain.from_iterable(messages_packed))
+
+        # invoke returns a Response object that contains the messages directly
+        return response["messages"]
+
+    def _validate_agent_event_output(response):
+        messages = _unpack_messages(response)
+        if agent_runnable_type == "create_agent":
+            for event in messages:
+                if isinstance(event, AIMessage) and event.response_metadata["finish_reason"] == "stop":
+                    assert event.content == EXPECTED_AGENT_RESPONSE
+                elif isinstance(event, AIMessage) and event.response_metadata["finish_reason"] == "tool_calls":
+                    assert event.tool_calls
+                elif isinstance(event, ToolMessage):
+                    assert event.content == EXPECTED_TOOL_OUTPUT
+
+        elif agent_runnable_type == "RunnableSeq":
+            # stream and astream do not directly output anything for RunnableSeq, and can't be validated.
+            for event in messages:
+                if isinstance(event, AIMessage) and event.response_metadata["finish_reason"] == "stop":
+                    assert event.content == EXPECTED_AGENT_RESPONSE
+                elif isinstance(event, AIMessage) and event.response_metadata["finish_reason"] == "tool_calls":
+                    assert event.tool_calls
+                elif isinstance(event, ToolMessage):
+                    assert event.content == EXPECTED_TOOL_OUTPUT
+
+        elif agent_runnable_type == "StateGraph":
+            for event in messages:
+                if isinstance(event, AIMessage) and event.response_metadata["finish_reason"] == "stop":
+                    assert event.content == EXPECTED_AGENT_RESPONSE
+                elif isinstance(event, AIMessage) and event.response_metadata["finish_reason"] == "tool_calls":
+                    assert event.tool_calls
+                elif isinstance(event, ToolMessage):
+                    assert event.content == EXPECTED_TOOL_OUTPUT
+
+        elif agent_runnable_type == "RunnableSequence":
+            for event in messages:
+                if isinstance(event, AIMessage) and event.response_metadata["finish_reason"] == "stop":
+                    assert event.content == EXPECTED_AGENT_RESPONSE
+                elif isinstance(event, AIMessage) and event.response_metadata["finish_reason"] == "tool_calls":
+                    assert event.tool_calls
+                elif isinstance(event, ToolMessage):
+                    assert event.content == EXPECTED_TOOL_OUTPUT
+
+        else:
+            raise NotImplementedError
+
+    return _validate_agent_event_output
+
+
+@pytest.fixture(
+    params=[
+        {"run_method": "invoke", "version": "v1"},
+        {"run_method": "invoke", "version": "v2"},
+        {"run_method": "ainvoke", "version": "v1"},
+        {"run_method": "ainvoke", "version": "v2"},
+        {"run_method": "stream", "version": "v1"},
+        {"run_method": "stream", "version": "v2"},
+        {"run_method": "astream", "version": "v1"},
+        {"run_method": "astream", "version": "v2"},
+        {"run_method": "astream_events", "version": "v1"},
+        {"run_method": "astream_events", "version": "v2"},
+    ]
+)
+def exercise_agent(request, loop, validate_agent_output, validate_agent_event_output, agent_runnable_type):
     def _exercise_agent(agent, prompt):
-        if request.param == "invoke":
-            response = agent.invoke(prompt)
+        if method == "invoke":
+            response = agent.invoke(prompt, version=version)
             validate_agent_output(response)
             return response
-        elif request.param == "ainvoke":
-            response = loop.run_until_complete(agent.ainvoke(prompt))
+        elif method == "ainvoke":
+            response = loop.run_until_complete(agent.ainvoke(prompt, version=version))
             validate_agent_output(response)
             return response
-        elif request.param == "stream":
-            response = list(agent.stream(prompt))
+        elif method == "stream":
+            response = list(agent.stream(prompt, version=version))
             validate_agent_output(response)
             return response
-        elif request.param == "astream":
+        elif method == "astream":
 
             async def _exercise_agen():
-                return [event async for event in agent.astream(prompt)]
+                return [event async for event in agent.astream(prompt, version=version)]
 
             response = loop.run_until_complete(_exercise_agen())
             validate_agent_output(response)
             return response
+        elif method == "astream_events":
+
+            async def _exercise_agen():
+                return [event async for event in agent.astream_events(prompt, version=version)]
+
+            response = loop.run_until_complete(_exercise_agen())
+            validate_agent_event_output(response)
+            return response
         else:
             raise NotImplementedError
 
-    _exercise_agent._called_method = request.param  # Used for metric names
+    method, version = request.param.get("run_method"), request.param.get("version")
+    _exercise_agent._called_method = method  # Used for metric names
 
     # Expected number of events for a full run of the agent
     if agent_runnable_type != "RunnableSequence":
         _exercise_agent._expected_event_count = 11
         _exercise_agent._expected_event_count_error = 5
-    elif request.param in {"invoke", "ainvoke"}:
+    elif method in ("invoke", "ainvoke"):
         _exercise_agent._expected_event_count = 14
         _exercise_agent._expected_event_count_error = 7
     else:
@@ -272,124 +409,14 @@ def exercise_agent(request, loop, validate_agent_output, agent_runnable_type):
     return _exercise_agent
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def method_name(exercise_agent, agent_runnable_type):
+    method = exercise_agent._called_method
+    # Only AgentObjectProxy (used for create_agent) instruments `astream_events` directly.
+    # For StateGraph/RunnableSeq/RunnableSequence, `astream_events` delegates to `astream`,
+    # so the recorded metric is "astream".
+    if agent_runnable_type != "create_agent" and method == "astream_events":
+        return "astream"
     if agent_runnable_type == "StateGraph":
-        return "invoke" if exercise_agent._called_method in {"invoke", "stream"} else "ainvoke"
-    return exercise_agent._called_method
-
-
-@pytest.fixture(autouse=True, scope="session")
-def openai_server(wrap_httpx_client_send, wrap_stream_iter_events):
-    """
-    This fixture will either create a mocked backend for testing purposes, or will
-    set up an audit log file to log responses of the real OpenAI backend to a file.
-    The behavior can be controlled by setting NEW_RELIC_TESTING_RECORD_OPENAI_RESPONSES=1 as
-    an environment variable to run using the real OpenAI backend. (Default: mocking)
-    """
-    from newrelic.core.config import _environ_as_bool
-
-    if _environ_as_bool("NEW_RELIC_TESTING_RECORD_OPENAI_RESPONSES", False):
-        wrap_function_wrapper("httpx._client", "Client.send", wrap_httpx_client_send)
-        wrap_function_wrapper("openai._streaming", "Stream._iter_events", wrap_stream_iter_events)
-        yield  # Run tests
-        # Write responses to audit log
-        with OPENAI_AUDIT_LOG_FILE.open("w") as audit_log_fp:
-            json.dump(OPENAI_AUDIT_LOG_CONTENTS, fp=audit_log_fp, indent=4)
-    else:
-        # We are mocking openai responses so we don't need to do anything in this case.
-        yield
-
-
-@pytest.fixture(scope="session")
-def wrap_httpx_client_send():
-    def _wrap_httpx_client_send(wrapped, instance, args, kwargs):
-        bound_args = bind_args(wrapped, args, kwargs)
-        stream = bound_args.get("stream", False)
-        request = bound_args["request"]
-
-        if not request:
-            return wrapped(*args, **kwargs)
-
-        params = json.loads(request.content.decode("utf-8"))
-        prompt = extract_shortened_prompt(params)
-
-        # Send request
-        response = wrapped(*args, **kwargs)
-
-        if response.status_code >= 400 or response.status_code < 200:
-            prompt = "error"
-
-        rheaders = response.headers
-
-        headers = dict(
-            filter(
-                lambda k: (
-                    k[0].lower() in RECORDED_HEADERS
-                    or k[0].lower().startswith("openai")
-                    or k[0].lower().startswith("x-ratelimit")
-                ),
-                rheaders.items(),
-            )
-        )
-
-        # Append response data to log
-        if stream:
-            OPENAI_AUDIT_LOG_CONTENTS[prompt] = [headers, response.status_code, []]
-            if prompt == "error":
-                OPENAI_AUDIT_LOG_CONTENTS[prompt][2] = json.loads(response.read())
-        else:
-            body = json.loads(response.content.decode("utf-8"))
-            OPENAI_AUDIT_LOG_CONTENTS[prompt] = headers, response.status_code, body
-        return response
-
-    return _wrap_httpx_client_send
-
-
-class LLMStreamAuditLogProxy(ObjectProxy):
-    def __init__(self, wrapped):
-        super().__init__(wrapped)
-
-    def __iter__(self):
-        return self
-
-    # Make this Proxy a pass through to our instrumentation's proxy by passing along
-    # get attr and set attr calls to our instrumentation's proxy.
-    def __getattr__(self, attr):
-        return self.__wrapped__.__getattr__(attr)
-
-    def __setattr__(self, attr, value):
-        return self.__wrapped__.__setattr__(attr, value)
-
-    def __next__(self):
-        transaction = current_transaction()
-        if not transaction:
-            return self.__wrapped__.__next__()
-
-        try:
-            return_val = self.__wrapped__.__next__()
-            if return_val:
-                prompt = list(OPENAI_AUDIT_LOG_CONTENTS.keys())[-1]
-                if not getattr(return_val, "data", "").startswith("[DONE]"):
-                    OPENAI_AUDIT_LOG_CONTENTS[prompt][2].append(return_val.json())
-            return return_val
-        except Exception:
-            raise
-
-    def close(self):
-        return self.__wrapped__.close()
-
-
-@pytest.fixture(scope="session")
-def wrap_stream_iter_events():
-    def _wrap_stream_iter_events(wrapped, instance, args, kwargs):
-        transaction = current_transaction()
-
-        if not transaction:
-            return wrapped(*args, **kwargs)
-
-        return_val = wrapped(*args, **kwargs)
-        proxied_return_val = LLMStreamAuditLogProxy(return_val)
-        return proxied_return_val
-
-    return _wrap_stream_iter_events
+        return "invoke" if method in ("invoke", "stream", "stream_events") else "ainvoke"
+    return method

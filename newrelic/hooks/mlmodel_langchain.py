@@ -18,6 +18,8 @@ import sys
 import time
 import traceback
 import uuid
+import threading
+import asyncio
 
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import current_trace, get_trace_linking_metadata
@@ -154,6 +156,10 @@ def _construct_base_agent_event_dict(agent_name, agent_id, transaction):
 
 class AgentObjectProxy(ObjectProxy):
     def invoke(self, *args, **kwargs):
+        _logger.debug("THREADING ID from AgentObjectProxy.invoke: %s", threading.get_ident(), stack_info=True)
+        _logger.debug("ASYNCIO CURRENT TASK from AgentObjectProxy.invoke: %s", id(asyncio.current_task()))
+        _logger.debug("TRANSACTION from AgentObjectProxy.invoke: %s", current_transaction())
+
         transaction = current_transaction()
         if not transaction:
             return self.__wrapped__.invoke(*args, **kwargs)
@@ -184,6 +190,10 @@ class AgentObjectProxy(ObjectProxy):
         return return_val
 
     async def ainvoke(self, *args, **kwargs):
+        _logger.debug("THREADING ID from AgentObjectProxy.ainvoke: %s", threading.get_ident(), stack_info=True)
+        _logger.debug("ASYNCIO CURRENT TASK from AgentObjectProxy.ainvoke: %s", id(asyncio.current_task()))
+        _logger.debug("TRANSACTION from AgentObjectProxy.ainvoke: %s", current_transaction())
+        
         transaction = current_transaction()
         if not transaction:
             return await self.__wrapped__.ainvoke(*args, **kwargs)
@@ -214,6 +224,10 @@ class AgentObjectProxy(ObjectProxy):
         return return_val
 
     def stream(self, *args, **kwargs):
+        _logger.debug("THREADING ID from AgentObjectProxy.stream: %s", threading.get_ident(), stack_info=True)
+        _logger.debug("ASYNCIO CURRENT TASK from AgentObjectProxy.stream: %s", id(asyncio.current_task()))
+        _logger.debug("TRANSACTION from AgentObjectProxy.stream: %s", current_transaction())
+        
         transaction = current_transaction()
         if not transaction:
             return self.__wrapped__.stream(*args, **kwargs)
@@ -241,6 +255,10 @@ class AgentObjectProxy(ObjectProxy):
         return return_val
 
     def astream(self, *args, **kwargs):
+        _logger.debug("THREADING ID from AgentObjectProxy.astream: %s", threading.get_ident(), stack_info=True)
+        _logger.debug("ASYNCIO CURRENT TASK from AgentObjectProxy.astream: %s", id(asyncio.current_task()))
+        _logger.debug("TRANSACTION from AgentObjectProxy.astream: %s", current_transaction())
+        
         transaction = current_transaction()
         if not transaction:
             return self.__wrapped__.astream(*args, **kwargs)
@@ -267,7 +285,25 @@ class AgentObjectProxy(ObjectProxy):
 
         return return_val
 
+    def stream_events(self, *args, **kwargs):
+        _logger.debug("THREADING ID from AgentObjectProxy.stream_events: %s", threading.get_ident(), stack_info=True)
+        _logger.debug("ASYNCIO CURRENT TASK from AgentObjectProxy.stream_events: %s", id(asyncio.current_task()))
+        _logger.debug("TRANSACTION from AgentObjectProxy.stream_events: %s", current_transaction())
+        
+        return self.__wrapped__.stream_events(*args, **kwargs)
+
+    def astream_events(self, *args, **kwargs):
+        _logger.debug("THREADING ID from AgentObjectProxy.astream_events: %s", threading.get_ident(), stack_info=True)
+        _logger.debug("ASYNCIO CURRENT TASK from AgentObjectProxy.astream_events: %s", id(asyncio.current_task()))
+        _logger.debug("TRANSACTION from AgentObjectProxy.astream_events: %s", current_transaction())
+        
+        return self.__wrapped__.astream_events(*args, **kwargs)
+    
     def transform(self, *args, **kwargs):
+        _logger.debug("THREADING ID from AgentObjectProxy.transform: %s", threading.get_ident(), stack_info=True)
+        _logger.debug("ASYNCIO CURRENT TASK from AgentObjectProxy.transform: %s", id(asyncio.current_task()))
+        _logger.debug("TRANSACTION from AgentObjectProxy.transform: %s", current_transaction())
+        
         transaction = current_transaction()
         if not transaction:
             return self.__wrapped__.transform(*args, **kwargs)
@@ -295,6 +331,10 @@ class AgentObjectProxy(ObjectProxy):
         return return_val
 
     def atransform(self, *args, **kwargs):
+        _logger.debug("THREADING ID from AgentObjectProxy.atransform: %s", threading.get_ident(), stack_info=True)
+        _logger.debug("ASYNCIO CURRENT TASK from AgentObjectProxy.atransform: %s", id(asyncio.current_task()))
+        _logger.debug("TRANSACTION from AgentObjectProxy.atransform: %s", current_transaction())
+
         transaction = current_transaction()
         if not transaction:
             return self.__wrapped__.atransform(*args, **kwargs)
@@ -323,6 +363,10 @@ class AgentObjectProxy(ObjectProxy):
 
     def _nr_on_stop_iteration(self, ft, agent_event_dict):
         def _on_stop_iteration(proxy, transaction):
+            _logger.debug("THREADING ID from AgentObjectProxy._nr_on_stop_iteration: %s", threading.get_ident(), stack_info=True)
+            _logger.debug("ASYNCIO CURRENT TASK from AgentObjectProxy._nr_on_stop_iteration: %s", id(asyncio.current_task()))
+            _logger.debug("TRANSACTION from AgentObjectProxy._nr_on_stop_iteration: %s", current_transaction())
+            _logger.debug("VALUE of agent_event_dict from AgentObjectProxy._nr_on_stop_iteration: %s", agent_event_dict)
             ft.__exit__(None, None, None)
             if agent_event_dict:
                 agent_event_dict.update({"duration": ft.duration * 1000})
@@ -333,6 +377,10 @@ class AgentObjectProxy(ObjectProxy):
 
     def _nr_on_error(self, ft, agent_event_dict, agent_id):
         def _on_error(proxy, transaction):
+            _logger.debug("THREADING ID from AgentObjectProxy._nr_on_error: %s", threading.get_ident(), stack_info=True)
+            _logger.debug("ASYNCIO CURRENT TASK from AgentObjectProxy._nr_on_error: %s", id(asyncio.current_task()))
+            _logger.debug("TRANSACTION from AgentObjectProxy._nr_on_error: %s", current_transaction())
+            _logger.debug("VALUE of agent_event_dict from AgentObjectProxy._nr_on_error: %s", agent_event_dict)
             ft.notice_error(attributes={"agent_id": agent_id})
             ft.__exit__(*sys.exc_info())
             if agent_event_dict:
@@ -1323,6 +1371,7 @@ def create_chat_completion_message_event(
 
 
 def wrap_create_agent(wrapped, instance, args, kwargs):
+    _logger.debug("TRANSACTION in wrap_create agent: %s", current_transaction())
     transaction = current_transaction()
     if not transaction:
         return wrapped(*args, **kwargs)

@@ -16,6 +16,8 @@ import logging
 import sys
 import time
 import uuid
+import threading
+import asyncio
 
 import google
 
@@ -238,6 +240,10 @@ def _get_llm_attributes(transaction):
 
 
 def wrap_generate_content_sync(wrapped, instance, args, kwargs):
+    _logger.debug("THREADING ID from wrap_generate_content_sync: %s", threading.get_ident(), stack_info=True)
+    _logger.debug("ASYNCIO CURRENT TASK from wrap_generate_content_sync: %s", id(asyncio.current_task()))
+    _logger.debug("TRANSACTION from wrap_generate_content_sync: %s", current_transaction())
+
     transaction = current_transaction()
     if not transaction:
         return wrapped(*args, **kwargs)
@@ -289,6 +295,10 @@ def wrap_generate_content_sync(wrapped, instance, args, kwargs):
 
 
 def wrap_generate_content_stream_sync(wrapped, instance, args, kwargs):
+    _logger.debug("THREADING ID from wrap_generate_content_stream_sync: %s", threading.get_ident(), stack_info=True)
+    _logger.debug("ASYNCIO CURRENT TASK from wrap_generate_content_stream_sync: %s", id(asyncio.current_task()))
+    _logger.debug("TRANSACTION from wrap_generate_content_stream_sync: %s", current_transaction())
+
     transaction = current_transaction()
     if not transaction:
         return wrapped(*args, **kwargs)
@@ -351,12 +361,17 @@ def wrap_generate_content_stream_sync(wrapped, instance, args, kwargs):
         proxied_return_val._nr_metadata = linking_metadata
         return proxied_return_val
     except Exception:
+        _logger.debug("FAILURE: Proxy generation has failed in gemini", exc_info=True)
         # If proxy creation fails, clean up the function trace and return original value
         ft.__exit__(*sys.exc_info())
         return return_val
 
 
 async def wrap_generate_content_async(wrapped, instance, args, kwargs):
+    _logger.debug("THREADING ID from generate_content_async: %s", threading.get_ident(), stack_info=True)
+    _logger.debug("ASYNCIO CURRENT TASK from generate_content_async: %s", id(asyncio.current_task()))
+    _logger.debug("TRANSACTION from generate_content_async: %s", current_transaction())
+
     transaction = current_transaction()
     if not transaction:
         return await wrapped(*args, **kwargs)
@@ -407,6 +422,10 @@ async def wrap_generate_content_async(wrapped, instance, args, kwargs):
 
 
 async def wrap_generate_content_stream_async(wrapped, instance, args, kwargs):
+    _logger.debug("THREADING ID from generate_content_stream_async: %s", threading.get_ident(), stack_info=True)
+    _logger.debug("ASYNCIO CURRENT TASK from generate_content_stream_async: %s", id(asyncio.current_task()))
+    _logger.debug("TRANSACTION from generate_content_stream_async: %s", current_transaction())
+    
     transaction = current_transaction()
     if not transaction:
         return await wrapped(*args, **kwargs)
@@ -469,6 +488,7 @@ async def wrap_generate_content_stream_async(wrapped, instance, args, kwargs):
         proxied_return_val._nr_metadata = linking_metadata
         return proxied_return_val
     except Exception:
+        _logger.debug("FAILURE: Proxy generation has failed in gemini", exc_info=True)
         # If proxy creation fails, clean up the function trace and return original value
         ft.__exit__(*sys.exc_info())
         return return_val

@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import functools
 import os
+from pathlib import Path
 
 import google.genai
 import pytest
@@ -76,6 +76,12 @@ def gemini_api_key(vcr_recording):
             raise RuntimeError("GOOGLE_API_KEY environment variable required.")
     else:
         os.environ["GOOGLE_API_KEY"] = "FAKE_GEMINI_API_KEY"
+
+
+@pytest.fixture(autouse=True)
+def default_cassette_name(request):
+    """Absolute path to the cassette based on major version of Google ADK."""
+    return str(Path(request.fspath).parent / f"cassette_v{GOOGLE_ADK_VERSION_TUPLE[0]}")
 
 
 @pytest.fixture(autouse=True, params=[False, True], ids=["standard", "vertex"])

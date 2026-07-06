@@ -1191,6 +1191,8 @@ class StatsEngine:
         if settings.distributed_tracing.enabled and settings.span_events.enabled and settings.collect_span_events:
 
             from newrelic.core.agent import agent_instance
+            from ldobserve import observe
+            from opentelemetry.trace.span import SpanContext, TraceFlags, TraceState
             agent = agent_instance()
             tracer = agent._tracer_provider.get_tracer(__name__)
             # Send span data to Darkly
@@ -1204,9 +1206,32 @@ class StatsEngine:
                 attrs.update(u_attrs)
                 attrs.update(a_attrs)
                 attrs.update(i_attrs)
+
+                context = SpanContext(trace_id=int(attrs.pop("traceId"),16), span_id=int(attrs.pop("guid"), 16), is_remote=True if transaction.parent_span else False, trace_flags=TraceFlags(0x1 if attrs.pop("sampled") else 0x0), trace_state=TraceState())
                 #carrier = {}
-                with tracer.start_as_current_span(i_attrs["name"], attributes=attrs) as span:
-                    pass #propagator.inject(carrier=carrier)
+                # new ActivitySource("NewRelic.LaunchDarkly").StartActivity("LaunchDarkly", ActivityKind.Internal, parentContext: currentSpan.Context)
+                span = observe._instance._tracer.start_as_current_span(i_attrs["name"], attributes=attrs)
+                span.__enter__()
+                span._start_time = attrs["timestamp"]*10**6
+                span._context = context
+                breakpoint()
+                span.end(end_time=attrs["timestamp"]*10**6 + attrs["duration"]*10**3)
+
+                # span.start_span(  # pylint: disable=too-many-locals
+                # self,
+                # name: str,
+                # context: Optional[context_api.Context] = None,
+                # kind: trace_api.SpanKind = trace_api.SpanKind.INTERNAL,
+                # attributes: types.Attributes = None,
+                # links: Optional[Sequence[trace_api.Link]] = (),
+                # start_time: Optional[int] = None,
+                # record_exception: bool = True,
+                # set_status_on_exception: bool = True,
+
+                #propagator.inject(carrier=carrier)
+                #span = observe.start_span(i_attrs["name"], attributes=attrs)
+                #with span:
+                #    pass
 
             if settings.infinite_tracing.enabled:
                 for event in transaction.span_protos(settings):

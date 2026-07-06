@@ -80,6 +80,36 @@ NEW_RELIC_EXTENSIONS=true pip install -e .
 NEW_RELIC_EXTENSIONS=false pip install -e .
 ```
 
+
+## Reading External Library Code
+
+When you need to read the source of an instrumented third-party library — to verify an API signature, understand class internals, or trace how a wrapped method behaves — **always look in `.tox/` first**. Do not grep system Python paths, and do not run `pip install` into the project.
+
+### Source Layout
+
+External library source lives at:
+
+```
+.tox/<env_name>/lib/python*/site-packages/<library>/
+```
+
+Use a `python*` glob — the Python minor version (e.g., `python3.12`, `python3.14`) varies by env and is encoded in the env name itself (`-py312-`, `-py314-`).
+
+### Lookup Procedure
+
+1. **List existing envs**: `tox -l | grep <library>` (or `ls .tox/`). Built envs contain the library; the others are just names in `tox.ini`.
+2. **Pick a version**: Prefer the env suffixed with `latest` (e.g., `flasklatest`, `djangolatest`) for the newest upstream code. If multiple `*latest` envs exist at different Python versions, prefer the newest Python (e.g., `-py314-` over `-py312-`). If you need an older or specific library version (e.g., `flask0203`), pick the matching versioned env instead.
+3. **Build the env if it doesn't exist yet**: If the env appears in `tox.ini` but not in `.tox/`, generate it without running tests:
+   ```bash
+   tox r -e <env_name> --notest
+   ```
+   Use this same command to install any specific version you need — just pick the right env name.
+4. **If no env name covers the library at all**: Run `grep -i <library> tox.ini` to confirm. If genuinely absent from the test matrix, ask the user before adding a new env.
+
+### Reading the newrelic Package
+
+The Python Agent (`newrelic` package) is installed into every env's `site-packages` with either the full source or as an editable install (you'll see `__editable__.newrelic-*.pth` files). Do not read agent code from `.tox/` — always read it from the project source tree to avoid stale or cached versions.
+
 ## Architecture
 
 ### Core Components

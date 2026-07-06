@@ -1455,4 +1455,269 @@ interactions:
     status:
       code: 200
       message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "What is the capital of France?"}], "role":
+      "user"}], "systemInstruction": {"parts": [{"text": "You are a routing agent.
+      If the user asks a geography question (e.g. about a country''s capital), transfer
+      to the agent named ''child_agent'' using the transfer_to_agent tool. Otherwise,
+      answer the user directly.\n\nYou are an agent. Your internal name is \"parent_agent\".\n\n\nYou
+      have a list of other agents to transfer to:\n\n\nAgent name: child_agent\nAgent
+      description: \n\n\nIf you are the best to answer the question according to your
+      description,\nyou can answer it.\n\nIf another agent is better for answering
+      the question according to its\ndescription, call `transfer_to_agent` function
+      to transfer the question to that\nagent. When transferring, do not generate
+      any text other than the function\ncall.\n\n**NOTE**: the only available agents
+      for `transfer_to_agent` function are\n`child_agent`.\n"}], "role": "user"},
+      "tools": [{"functionDeclarations": [{"description": "Transfer the question to
+      another agent.\n\n  This tool hands off control to another agent when it''s
+      more suitable to\n  answer the user''s question according to the agent''s description.\n\n  Note:\n    For
+      most use cases, you should use TransferToAgentTool instead of this\n    function
+      directly. TransferToAgentTool provides additional enum constraints\n    that
+      prevent LLMs from hallucinating invalid agent names.\n\n  Args:\n    agent_name:
+      the agent name to transfer to.\n  ", "name": "transfer_to_agent", "parameters":
+      {"properties": {"agent_name": {"enum": ["child_agent"], "type": "STRING"}},
+      "required": ["agent_name"], "type": "OBJECT"}}]}], "generationConfig": {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"parts": [{"functionCall": {"name": "transfer_to_agent",
+        "args": {"agent_name": "child_agent"}, "id": "uaz9m05o"}, "thoughtSignature":
+        "ErQDCrEDARFNMg91AUx+a4dXn1mYDe7Xkm1Zb6/nGSEipo5QgAv+tQ4wl7zFPBpNE8rE0qfqC47IMGKpmU3kcL4FXzs4pHvS/fZ2oYF4oUXDT9tvecscLpL1Eq9YaDSmqoYM9dn/lUKkr1OtrTL84zT2X6y0jCHtIlaW6ULQTDFc0XuL1uF9ldm6ykHugOnqKFgVy9Gjz+aQDmYp9SCOjPoxkmtoxYITi5C5qXo4TFMoO9WRq7LNHM9goeLReEenihebJ+o27CK1rsSokM17w3iNBDBhm1TnGQZkI9t6dpVUBvmqW3OpcWurtu5mrhx9+pfjo/wHIPVEqslB4InIkt9y/A0AR9orqq9xexy1KPUYXEn6b1BiXrKialuCfsPfdGhQPhdLSuzMsaBF2iZL5g61MPbWTeQBtMVl04zXODOVMlyBzqElZ6PxzQZ/2Owbwy7BVH2EtTGYGwJDfuNO4hpRopbeIAr13vMUYB2ULioJAv2CCde2Y28NMimZPn6XOAcYX+4WnncRTjGTMyuNyLdUJHjg+p0+bLTUzLzmWcgagZ5DegQQEa8GJIdo30rGMnla7G7Ndw=="}],
+        "role": "model"}, "finishReason": "STOP", "index": 0, "finishMessage": "Model
+        generated function call(s)."}], "usageMetadata": {"promptTokenCount": 351,
+        "candidatesTokenCount": 22, "totalTokenCount": 467, "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 351}], "thoughtsTokenCount": 94, "serviceTier":
+        "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "-zFMaumMG8uW-8YP96euoAk"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:53:48 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Server-Timing:
+      - gfet4t7; dur=1173
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Gemini-Service-Tier:
+      - standard
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "What is the capital of France?"}], "role":
+      "user"}, {"parts": [{"text": "For context:"}, {"text": "[parent_agent] called
+      tool `transfer_to_agent` with parameters: {''agent_name'': ''child_agent''}"}],
+      "role": "user"}, {"parts": [{"text": "For context:"}, {"text": "[parent_agent]
+      `transfer_to_agent` tool returned result: {''result'': None}"}], "role": "user"}],
+      "systemInstruction": {"parts": [{"text": "Answer the user''s geography question
+      in one word.\n\nYou are an agent. Your internal name is \"child_agent\".\n\n\nYou
+      have a list of other agents to transfer to:\n\n\nAgent name: parent_agent\nAgent
+      description: \n\n\nIf you are the best to answer the question according to your
+      description,\nyou can answer it.\n\nIf another agent is better for answering
+      the question according to its\ndescription, call `transfer_to_agent` function
+      to transfer the question to that\nagent. When transferring, do not generate
+      any text other than the function\ncall.\n\n**NOTE**: the only available agents
+      for `transfer_to_agent` function are\n`parent_agent`.\n\nIf neither you nor
+      the other agents are best for the question, transfer to your parent agent parent_agent.\n"}],
+      "role": "user"}, "tools": [{"functionDeclarations": [{"description": "Transfer
+      the question to another agent.\n\n  This tool hands off control to another agent
+      when it''s more suitable to\n  answer the user''s question according to the
+      agent''s description.\n\n  Note:\n    For most use cases, you should use TransferToAgentTool
+      instead of this\n    function directly. TransferToAgentTool provides additional
+      enum constraints\n    that prevent LLMs from hallucinating invalid agent names.\n\n  Args:\n    agent_name:
+      the agent name to transfer to.\n  ", "name": "transfer_to_agent", "parameters":
+      {"properties": {"agent_name": {"enum": ["parent_agent"], "type": "STRING"}},
+      "required": ["agent_name"], "type": "OBJECT"}}]}], "generationConfig": {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"parts": [{"text": "Paris", "thoughtSignature":
+        "ErsCCrgCARFNMg8zAnfj38x8qKbqlEF8crouW+nuuYOQySWdXr2yFwCc1Qz7hR4jyQXopAVESzvLF4BHsr/FNua4PyeOh+RrAXL+E0M03WCHGgluNVZVgcqfJyr8yvS8dMqIwfQG4Rg8DG3dk9CwcNHXh+JKlCmXUjqW2MrL5ojZEg/WufXDr/Pgec2KADy83ePseYWJGPDt0Xz2RedO4eejdHqss1XU7CCzQ3vTwfGS/zZwC9OwOLKMmEPML0vF+ZyiUaIq0+yimO3U+2tov1KncU4SRLmirZ+t5CAsWOMcX7O6SxxFzPzJwqG2rL/SR8mSElw8fLs9xyjbvWzYRmMOju6TTqxHBXOxYfLTOqvMOaTyVWvL6iuRg51Jl22mER/JZEyyIKnN3ZAGN9w1xzjdsXnOJX2clTCkKlPQ"}],
+        "role": "model"}, "finishReason": "STOP", "index": 0}], "usageMetadata": {"promptTokenCount":
+        390, "candidatesTokenCount": 1, "totalTokenCount": 455, "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 390}], "thoughtsTokenCount": 64, "serviceTier":
+        "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "_DFMatq8OJKtjrEP0_27yQc"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:53:49 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Server-Timing:
+      - gfet4t7; dur=1039
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Gemini-Service-Tier:
+      - standard
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "What is the capital of France?"}], "role":
+      "user"}], "systemInstruction": {"parts": [{"text": "You are a routing agent.
+      If the user asks a geography question (e.g. about a country''s capital), transfer
+      to the agent named ''child_agent'' using the transfer_to_agent tool. Otherwise,
+      answer the user directly.\n\nYou are an agent. Your internal name is \"parent_agent\".\n\n\nYou
+      have a list of other agents to transfer to:\n\n\nAgent name: child_agent\nAgent
+      description: \n\n\nIf you are the best to answer the question according to your
+      description,\nyou can answer it.\n\nIf another agent is better for answering
+      the question according to its\ndescription, call `transfer_to_agent` function
+      to transfer the question to that\nagent. When transferring, do not generate
+      any text other than the function\ncall.\n\n**NOTE**: the only available agents
+      for `transfer_to_agent` function are\n`child_agent`.\n"}], "role": "user"},
+      "tools": [{"functionDeclarations": [{"description": "Transfer the question to
+      another agent.\n\n  This tool hands off control to another agent when it''s
+      more suitable to\n  answer the user''s question according to the agent''s description.\n\n  Note:\n    For
+      most use cases, you should use TransferToAgentTool instead of this\n    function
+      directly. TransferToAgentTool provides additional enum constraints\n    that
+      prevent LLMs from hallucinating invalid agent names.\n\n  Args:\n    agent_name:
+      the agent name to transfer to.\n  ", "name": "transfer_to_agent", "parameters":
+      {"properties": {"agent_name": {"enum": ["child_agent"], "type": "STRING"}},
+      "required": ["agent_name"], "type": "OBJECT"}}]}], "labels": {"adk_agent_name":
+      "parent_agent"}, "generationConfig": {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://aiplatform.googleapis.com/v1beta1/publishers/google/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"role": "model", "parts": [{"functionCall":
+        {"name": "transfer_to_agent", "args": {"agent_name": "child_agent"}}, "thoughtSignature":
+        "AY89a19rgO2R29z+yf4X1g5j6NhniXjk81eedV6B5Vfyig/bBPUPUI913YYKHXo2mG4="}]},
+        "finishReason": "STOP"}], "usageMetadata": {"promptTokenCount": 325, "candidatesTokenCount":
+        22, "totalTokenCount": 347, "trafficType": "ON_DEMAND", "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 325}], "candidatesTokensDetails": [{"modality":
+        "TEXT", "tokenCount": 22}]}, "modelVersion": "gemini-3.5-flash", "createTime":
+        "2026-07-06T22:53:50.435375Z", "responseId": "_jFMaq_JGpK8odAP54aioAc"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:53:51 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "What is the capital of France?"}], "role":
+      "user"}, {"parts": [{"text": "For context:"}, {"text": "[parent_agent] called
+      tool `transfer_to_agent` with parameters: {''agent_name'': ''child_agent''}"}],
+      "role": "user"}, {"parts": [{"text": "For context:"}, {"text": "[parent_agent]
+      `transfer_to_agent` tool returned result: {''result'': None}"}], "role": "user"}],
+      "systemInstruction": {"parts": [{"text": "Answer the user''s geography question
+      in one word.\n\nYou are an agent. Your internal name is \"child_agent\".\n\n\nYou
+      have a list of other agents to transfer to:\n\n\nAgent name: parent_agent\nAgent
+      description: \n\n\nIf you are the best to answer the question according to your
+      description,\nyou can answer it.\n\nIf another agent is better for answering
+      the question according to its\ndescription, call `transfer_to_agent` function
+      to transfer the question to that\nagent. When transferring, do not generate
+      any text other than the function\ncall.\n\n**NOTE**: the only available agents
+      for `transfer_to_agent` function are\n`parent_agent`.\n\nIf neither you nor
+      the other agents are best for the question, transfer to your parent agent parent_agent.\n"}],
+      "role": "user"}, "tools": [{"functionDeclarations": [{"description": "Transfer
+      the question to another agent.\n\n  This tool hands off control to another agent
+      when it''s more suitable to\n  answer the user''s question according to the
+      agent''s description.\n\n  Note:\n    For most use cases, you should use TransferToAgentTool
+      instead of this\n    function directly. TransferToAgentTool provides additional
+      enum constraints\n    that prevent LLMs from hallucinating invalid agent names.\n\n  Args:\n    agent_name:
+      the agent name to transfer to.\n  ", "name": "transfer_to_agent", "parameters":
+      {"properties": {"agent_name": {"enum": ["parent_agent"], "type": "STRING"}},
+      "required": ["agent_name"], "type": "OBJECT"}}]}], "labels": {"adk_agent_name":
+      "child_agent"}, "generationConfig": {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://aiplatform.googleapis.com/v1beta1/publishers/google/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"role": "model", "parts": [{"text": "Paris",
+        "thoughtSignature": "AY89a18i5SxSC55rcY/XSPvg36G2KjzJdk6/IwzOaqnXaDW2VsWdGbLKf78sQL/LssM="}]},
+        "finishReason": "STOP"}], "usageMetadata": {"promptTokenCount": 360, "candidatesTokenCount":
+        1, "totalTokenCount": 361, "trafficType": "ON_DEMAND", "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 360}], "candidatesTokensDetails": [{"modality":
+        "TEXT", "tokenCount": 1}]}, "modelVersion": "gemini-3.5-flash", "createTime":
+        "2026-07-06T22:53:51.784599Z", "responseId": "_zFMatfxL7nJ4_UPgpe-qA0"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:53:52 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
 version: 1

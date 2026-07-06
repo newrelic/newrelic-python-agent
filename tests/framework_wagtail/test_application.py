@@ -18,13 +18,8 @@ import pytest
 
 from testing_support.fixtures import (
     collector_agent_registration_fixture,
-    collector_available_fixture,
-    override_application_settings,
-    override_generic_settings,
-    override_ignore_status_codes,
+    collector_available_fixture,  # noqa: F401  # autouse fixture, must be importable in this module
 )
-from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
-from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 
@@ -39,11 +34,11 @@ _default_settings = {
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
-    app_name="Python Agent Test (framework_django)", default_settings=_default_settings, scope="module"
+    app_name="Python Agent Test (framework_wagtail)", default_settings=_default_settings, scope="module"
 )
 
-@pytest.fixture
-def database(autouse=True):
+@pytest.fixture(autouse=True)
+def database():
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
     import django
 
@@ -52,6 +47,23 @@ def database(autouse=True):
 
     call_command("migrate", verbosity=0, interactive=False, run_syncdb=True)
 
+    # Wagtail's own migrations seed a default "Welcome" home page (a plain
+    # ``Page``) and a default ``Site``. Replace that root with a ``HomePage``
+    # and hang a ``RoutablePage`` beneath it so that "/" and "/routable/"
+    # resolve to real, renderable pages served by the dummy_app page types.
+    from wagtail.models import Page, Site
+
+    from dummy_app.models import HomePage, RoutablePage
+
+    if not HomePage.objects.exists():
+        site = Site.objects.get(is_default_site=True)
+        default_home = site.root_page
+        home = Page.objects.get(depth=1).add_child(instance=HomePage(title="Home", slug="home-page"))
+        site.root_page = home
+        site.save()
+        default_home.delete()
+        home.add_child(instance=RoutablePage(title="Routable", slug="routable"))
+
 def target_application():
     from _target_application import _target_application
 
@@ -59,45 +71,45 @@ def target_application():
 
 
 @validate_transaction_metrics(
-    "views:index",
+    "dummy_app.models:HomePage.route",
     scoped_metrics=[
         ("Function/django.core.handlers.wsgi:WSGIHandler.__call__", 1),
         ("Python/WSGI/Application", 1),
         ("Python/WSGI/Response", 1),
         ("Python/WSGI/Finalize", 1),
-        ("Function/views:index", 1),
+        ("Function/wagtail.views:serve", 1),
     ]
 )
 def test_home():
     test_application = target_application()
-    response = test_application.get("")
+    response = test_application.get("/")
 
 
 @validate_transaction_metrics(
-    "views:index",
+    "dummy_app.models:RoutablePage.index_route",
     scoped_metrics=[
         ("Function/django.core.handlers.wsgi:WSGIHandler.__call__", 1),
         ("Python/WSGI/Application", 1),
         ("Python/WSGI/Response", 1),
         ("Python/WSGI/Finalize", 1),
-        ("Function/views:index", 1),
+        ("Function/wagtail.views:serve", 1),
     ]
 )
 def test_routable():
     test_application = target_application()
-    response = test_application.get("/routable")
+    response = test_application.get("/routable/")
 
 
 @validate_transaction_metrics(
-    "views:index",
+    "dummy_app.models:RoutablePage.index",
     scoped_metrics=[
         ("Function/django.core.handlers.wsgi:WSGIHandler.__call__", 1),
         ("Python/WSGI/Application", 1),
         ("Python/WSGI/Response", 1),
         ("Python/WSGI/Finalize", 1),
-        ("Function/views:index", 1),
+        ("Function/wagtail.views:serve", 1),
     ]
 )
 def test_routable_routable():
     test_application = target_application()
-    response = test_application.get("/routable/routable")
+    response = test_application.get("/routable/routable/")

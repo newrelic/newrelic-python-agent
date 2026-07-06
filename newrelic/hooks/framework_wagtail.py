@@ -26,7 +26,7 @@ def _nr_wrapper_route_for_request(wrapped, instance, args, kwargs):
     if route_result:
         page, args, kwargs = route_result
         name = callable_name(page.route)
-        trans.set_transaction_name(name, priority=6)
+        transaction.set_transaction_name(name, priority=6)
 
     return route_result
 

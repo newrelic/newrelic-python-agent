@@ -20,13 +20,13 @@ from wagtail.fields import RichTextField
 class HomePage(Page):
     body = RichTextField(blank=True)
 
-    content_panels = Page.content_panels + ["body"]
+    content_panels = [*Page.content_panels, "body"]
 
 
 class RoutablePage(RoutablePage):
     body = RichTextField(blank=True)
 
-    content_panels = Page.content_panels + ["body"]
+    content_panels = [*Page.content_panels, "body"]
 
     @re_path(r"^routable")
     def index(self, request):

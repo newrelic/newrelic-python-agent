@@ -12,17 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from django.db import migrations, models
-import wagtail.fields
 import django.db.models.deletion
 import wagtail.contrib.routable_page.models
+import wagtail.fields
+from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
-    dependencies = [
-        ("wagtailcore", "0070_rename_pagerevision_revision"),
-    ]
+    dependencies = [("wagtailcore", "0070_rename_pagerevision_revision")]
 
     operations = [
         migrations.CreateModel(
@@ -38,31 +35,29 @@ class Migration(migrations.Migration):
                         serialize=False,
                         to="wagtailcore.Page",
                     ),
-                ),
+                )
             ],
-            options={
-                "abstract": False,
-            },
+            options={"abstract": False},
             bases=("wagtailcore.page",),
         ),
-        migrations.AddField(
-            model_name='homepage',
-            name='body',
-            field=wagtail.fields.RichTextField(blank=True),
-        ),
+        migrations.AddField(model_name="homepage", name="body", field=wagtail.fields.RichTextField(blank=True)),
         migrations.CreateModel(
-            name='RoutablePage',
+            name="RoutablePage",
             fields=[
-                ('page_ptr', models.OneToOneField(auto_created=True, on_delete=django.db.models.deletion.CASCADE, parent_link=True, primary_key=True, serialize=False, to='wagtailcore.page')),
+                (
+                    "page_ptr",
+                    models.OneToOneField(
+                        auto_created=True,
+                        on_delete=django.db.models.deletion.CASCADE,
+                        parent_link=True,
+                        primary_key=True,
+                        serialize=False,
+                        to="wagtailcore.page",
+                    ),
+                )
             ],
-            options={
-                'verbose_name': 'Routable page',
-            },
+            options={"verbose_name": "Routable page"},
             bases=(wagtail.contrib.routable_page.models.RoutablePage,),
         ),
-        migrations.AddField(
-            model_name='routablepage',
-            name='body',
-            field=wagtail.fields.RichTextField(blank=True),
-        ),
+        migrations.AddField(model_name="routablepage", name="body", field=wagtail.fields.RichTextField(blank=True)),
     ]

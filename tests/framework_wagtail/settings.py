@@ -62,11 +62,6 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
 ]
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": Path(BASE_DIR) / "db.sqlite3",
-    }
-}
+DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": Path(BASE_DIR) / "db.sqlite3"}}
 
 MIGRATION_MODULES = {"dummy_app": "migrations"}

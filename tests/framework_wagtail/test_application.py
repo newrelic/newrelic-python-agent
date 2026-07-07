@@ -15,13 +15,11 @@
 import os
 
 import pytest
-
 from testing_support.fixtures import (
     collector_agent_registration_fixture,
-    collector_available_fixture,  # noqa: F401  # autouse fixture, must be importable in this module
+    collector_available_fixture,  # autouse fixture, must be importable in this module
 )
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
@@ -37,6 +35,7 @@ collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (framework_wagtail)", default_settings=_default_settings, scope="module"
 )
 
+
 @pytest.fixture(autouse=True)
 def database():
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
@@ -51,9 +50,8 @@ def database():
     # ``Page``) and a default ``Site``. Replace that root with a ``HomePage``
     # and hang a ``RoutablePage`` beneath it so that "/" and "/routable/"
     # resolve to real, renderable pages served by the dummy_app page types.
-    from wagtail.models import Page, Site
-
     from dummy_app.models import HomePage, RoutablePage
+    from wagtail.models import Page, Site
 
     if not HomePage.objects.exists():
         site = Site.objects.get(is_default_site=True)
@@ -63,6 +61,7 @@ def database():
         site.save()
         default_home.delete()
         home.add_child(instance=RoutablePage(title="Routable", slug="routable"))
+
 
 def target_application():
     from _target_application import _target_application
@@ -78,7 +77,7 @@ def target_application():
         ("Python/WSGI/Response", 1),
         ("Python/WSGI/Finalize", 1),
         ("Function/wagtail.views:serve", 1),
-    ]
+    ],
 )
 def test_home():
     test_application = target_application()
@@ -93,7 +92,7 @@ def test_home():
         ("Python/WSGI/Response", 1),
         ("Python/WSGI/Finalize", 1),
         ("Function/wagtail.views:serve", 1),
-    ]
+    ],
 )
 def test_routable():
     test_application = target_application()
@@ -108,7 +107,7 @@ def test_routable():
         ("Python/WSGI/Response", 1),
         ("Python/WSGI/Finalize", 1),
         ("Function/wagtail.views:serve", 1),
-    ]
+    ],
 )
 def test_routable_routable():
     test_application = target_application()

@@ -52,6 +52,9 @@ _boolean_states = {
     "off": False,
 }
 
+global WAGTAIL_PAGE
+WAGTAIL_PAGE = None
+
 
 def _setting_boolean(value):
     if value.lower() not in _boolean_states:
@@ -490,11 +493,8 @@ def wrap_view_handler(wrapped, priority=3):
         # to override the priority set in other parts of this hook file so that the
         # more explicit name takes precedence.
         new_name = name
-        try:
-            from wagtail.models.pages import Page
-        except:
-            Page = None
-        if instance and isinstance(instance, Page):
+        global WAGTAIL_PAGE
+        if WAGTAIL_PAGE and instance and isinstance(instance, WAGTAIL_PAGE):
             new_name = f"{callable_name(instance)}.{wrapped.__name__}"
             transaction.set_transaction_name(new_name, priority=6)
         else:
@@ -1227,6 +1227,21 @@ def _nr_wrapper_convert_exception_to_response_(wrapped, instance, args, kwargs):
         return _nr_wrap_converted_middleware_(converted_middleware, name)
 
 
+def _nr_wrapper_route_for_request(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+
+    if not transaction:
+        return wrapped(*args, **kwargs)
+
+    route_result = wrapped(*args, **kwargs)
+    if route_result:
+        page, args, kwargs = route_result
+        name = callable_name(page.route)
+        transaction.set_transaction_name(name, priority=6)
+
+    return route_result
+
+
 def instrument_django_core_handlers_exception(module):
     if hasattr(module, "convert_exception_to_response"):
         wrap_function_wrapper(module, "convert_exception_to_response", _nr_wrapper_convert_exception_to_response_)
@@ -1244,3 +1259,11 @@ def instrument_django_core_handlers_asgi(module):
         from newrelic.api.asgi_application import wrap_asgi_application
 
         wrap_asgi_application(module, "ASGIHandler.__call__", framework=framework)
+
+
+def instrument_wagtail_models_pages(module):
+    if hasattr(module, "Page"):
+        global WAGTAIL_PAGE
+        WAGTAIL_PAGE = module.Page
+        if hasattr(module.Page, "route_for_request"):
+            wrap_function_wrapper(module, "Page.route_for_request", _nr_wrapper_route_for_request)

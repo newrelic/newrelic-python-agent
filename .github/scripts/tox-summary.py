@@ -26,9 +26,10 @@ RESULTS_FILE_RE = re.compile(
     r"(?P<job_name>[a-zA-Z0-9_-]+)-(?P<job_num>\d+)-(?P<run_id>[a-zA-Z0-9]+)-(?P<job_id>[a-zA-Z0-9_-]+)-results.json"
 )
 ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-9;]*[a-zA-Z]")
-PYTEST_SUMMARY_RE = re.compile(r"=+ (?P<summary>.+?) in (?P<duration>[\d.]+)s =+")
+PYTEST_SUMMARY_RE = re.compile(r"=+ (?P<summary>.+?) in (?P<duration>[\d.]+)s(?: \([\d:]+\))? =+")
 PYTEST_COUNT_RE = re.compile(r"(\d+) (passed|failed|skipped|xfailed|xpassed|errors?|warnings?|deselected|rerun)")
 PYTEST_COUNT_NORMALIZE = {"error": "errors", "warning": "warnings"}
+COUNT_KEYS = ("passed", "failed", "xfailed", "xpassed", "errors", "warnings")
 
 GITHUB_SERVER_URL = os.environ.get("GITHUB_SERVER_URL", "https://github.com")
 GITHUB_REPOSITORY = os.environ.get("GITHUB_REPOSITORY", "newrelic/newrelic-python-agent")
@@ -75,16 +76,18 @@ def main():
 
     with GITHUB_SUMMARY.open("w") as output_fp:
         summary = summarize_results(results)
-        totals = {
-            f"total_{key}": sum(r[key] for r in summary)
-            for key in ("passed", "failed", "xfailed", "xpassed", "errors", "warnings")
-        }
+        totals = {f"total_{key}": sum(r[key] for r in summary) for key in COUNT_KEYS}
         # Print table header
         print(TABLE_HEADER.format(**totals), file=output_fp)
 
         for result in summary:
+            # Print "-" for counts we couldn't parse to distinguish from 0 counts
+            row = dict(result)
+            if not row["parsed"]:
+                for key in COUNT_KEYS:
+                    row[key] = "-"
             line = "| {env_name} | {status} | {duration} | {setup_duration} | {test_duration} | {runner} | {passed} | {failed} | {xfailed} | {xpassed} | {errors} | {warnings} |".format(
-                **result
+                **row
             )
             print(line, file=output_fp)
 
@@ -140,6 +143,7 @@ def summarize_results(results):
                 "errors": counts.get("errors", 0),
                 "warnings": counts.get("warnings", 0),
                 "runner": runner,
+                "parsed": bool(counts),  # If counts is still empty, this failed to parse
             }
         )
 

@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import functools
 import os
+from pathlib import Path
 
 import google.genai
 import pytest
@@ -26,7 +26,7 @@ from testing_support.fixtures import (
 )
 from testing_support.ml_testing_utils import set_trace_info
 
-from newrelic.common.package_version_utils import get_package_version
+from newrelic.common.package_version_utils import get_package_version, get_package_version_tuple
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow-downs.
@@ -46,6 +46,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 )
 
 
+GOOGLE_ADK_VERSION_TUPLE = get_package_version_tuple("google-adk")
 GOOGLE_ADK_VERSION = get_package_version("google-adk")
 GOOGLE_GENAI_VERSION = get_package_version("google-genai")
 assert GOOGLE_ADK_VERSION, "Failed to pull google-adk version for supportability metric"
@@ -75,6 +76,12 @@ def gemini_api_key(vcr_recording):
             raise RuntimeError("GOOGLE_API_KEY environment variable required.")
     else:
         os.environ["GOOGLE_API_KEY"] = "FAKE_GEMINI_API_KEY"
+
+
+@pytest.fixture(autouse=True)
+def default_cassette_name(request):
+    """Absolute path to the cassette based on major version of Google ADK."""
+    return str(Path(request.fspath).parent / f"cassette_v{GOOGLE_ADK_VERSION_TUPLE[0]}")
 
 
 @pytest.fixture(autouse=True, params=[False, True], ids=["standard", "vertex"])

@@ -112,22 +112,7 @@ def summarize_results(results):
         test_duration = f"{test_duration:.2f}" if test_duration >= 0 else "N/A"
 
         # Get test counts from test run
-        counts = {}
-        try:
-            # Remove ANSI color control characters
-            raw_output = ANSI_ESCAPE_RE.sub("", result["test"][0]["output"])
-            # Read backwards through the output since the summary is at the bottom
-            output = reversed(list(raw_output.splitlines()))
-            for line in output:
-                if match := PYTEST_SUMMARY_RE.match(line):
-                    counts = {
-                        PYTEST_COUNT_NORMALIZE.get(name, name): int(num)
-                        for num, name in PYTEST_COUNT_RE.findall(match.group("summary"))
-                    }
-                    break
-
-        except Exception:
-            pass
+        counts = extract_pytest_counts(result)
 
         summary.append(
             {
@@ -148,6 +133,27 @@ def summarize_results(results):
         )
 
     return sorted(summary, key=lambda result: (1 if "OK" in result["status"] else 0, result["env_name"]))
+
+
+def extract_pytest_counts(result):
+    # Trace through each tox command run backwards to find the pytest summary
+    for command_results in reversed(result.get("test", [])):
+        try:
+            raw_output = command_results.get("output", "")
+            # Remove ANSI color control characters
+            uncolored_output = ANSI_ESCAPE_RE.sub("", raw_output)
+            # Read backwards through the output since the summary is at the bottom
+            output = reversed(list(uncolored_output.splitlines()))
+            for line in output:
+                if match := PYTEST_SUMMARY_RE.match(line):
+                    return {
+                        PYTEST_COUNT_NORMALIZE.get(name, name): int(num)
+                        for num, name in PYTEST_COUNT_RE.findall(match.group("summary"))
+                    }
+        except Exception:
+            pass
+
+    return {}
 
 
 if __name__ == "__main__":

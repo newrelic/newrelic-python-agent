@@ -27,7 +27,7 @@ name: Fleet Control Config Schema
 #
 # Version bumps to .fleetControl/configurationDefinitions.yml are NOT
 # done here -- they happen at release-prep time via the
-# fleet-control-schema-bump.yml workflow (workflow_dispatch only).
+# agent-config-schema-bump.yml workflow (workflow_dispatch only).
 #
 # Skips main because branch protection blocks the bot from pushing
 # there. Skips fork branches because GITHUB_TOKEN cannot push to forks

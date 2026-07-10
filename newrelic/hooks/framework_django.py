@@ -52,7 +52,6 @@ _boolean_states = {
     "off": False,
 }
 
-global WAGTAIL_PAGE
 WAGTAIL_PAGE = None
 
 
@@ -493,7 +492,6 @@ def wrap_view_handler(wrapped, priority=3):
         # to override the priority set in other parts of this hook file so that the
         # more explicit name takes precedence.
         new_name = name
-        global WAGTAIL_PAGE
         if WAGTAIL_PAGE and instance and isinstance(instance, WAGTAIL_PAGE):
             new_name = f"{callable_name(instance)}.{wrapped.__name__}"
             transaction.set_transaction_name(new_name, priority=6)

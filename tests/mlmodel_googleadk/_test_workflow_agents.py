@@ -12,6 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
+from conftest import GOOGLE_ADK_VERSION_TUPLE
+
+if GOOGLE_ADK_VERSION_TUPLE < (2, 0, 0):
+    pytest.skip("google-adk>=2.0.0 required for Workflow", allow_module_level=True)
+
+
 from google.adk.agents import LlmAgent
 from google.adk.workflow import START, Workflow
 

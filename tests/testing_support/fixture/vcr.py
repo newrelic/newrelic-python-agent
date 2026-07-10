@@ -245,6 +245,25 @@ def vcr_recording(record_mode):
 # === Infrastructure fixtures, required and not overridable ===
 
 
+@pytest.fixture
+def vcr_cache_tiktoken_encodings(monkeypatch):
+    """Cache the tiktoken encodings before enabling VCR which blocks network access."""
+    try:
+        import tiktoken
+    except ImportError:
+        return  # tiktoken is not installed, skip caching
+
+    # Set up temporary cache dir
+    tox_env_dir = os.environ.get("TOX_ENV_DIR", None) or Path.cwd()
+    cache_dir = Path(tox_env_dir) / ".tiktoken_cache"
+    monkeypatch.setenv("TIKTOKEN_CACHE_DIR", str(cache_dir))
+    cache_dir.mkdir(parents=True, exist_ok=True)
+
+    # Pre-fetch encodings used in tests
+    for encoding in VCR_TIKTOKEN_ENCODINGS:
+        tiktoken.get_encoding(encoding)
+
+
 @pytest.fixture(autouse=True)
 def vcr_config(
     vcr_censored_headers,
@@ -280,7 +299,7 @@ def _build_before_record_response(wrapped=None, filter_headers=None):
     def before_record_response(response):
         # Grab Content-Type and charset to attempt to load the body
         _, content_type = _get_header(response["headers"], "content-type")
-        if ";" in content_type:
+        if content_type and ";" in content_type:
             charset = content_type.split(";")[1].split("=")[1].lower().strip()
             content_type = content_type.split(";")[0].strip()
         else:
@@ -336,20 +355,19 @@ def pytest_collection_modifyitems(items):
         item.add_marker(pytest.mark.vcr)
 
 
-@pytest.fixture
-def vcr_cache_tiktoken_encodings(monkeypatch):
-    """Cache the tiktoken encodings before enabling VCR which blocks network access."""
-    try:
-        import tiktoken
-    except ImportError:
-        return  # tiktoken is not installed, skip caching
+def pytest_recording_configure(config, vcr):
+    """
+    Register a case-insensitive method matcher with VCR.py so that requests with different
+    capitalizations of the HTTP method (e.g. "GET" vs "get") are considered equivalent.
 
-    # Set up temporary cache dir
-    tox_env_dir = os.environ.get("TOX_ENV_DIR", None) or Path.cwd()
-    cache_dir = Path(tox_env_dir) / ".tiktoken_cache"
-    monkeypatch.setenv("TIKTOKEN_CACHE_DIR", str(cache_dir))
-    cache_dir.mkdir(parents=True, exist_ok=True)
+    ``pytest_recording_configure`` is a hook fired by pytest-recording immediately after it
+    constructs the per-test ``VCR`` instance and before the cassette is opened, so matchers
+    registered here take effect for the cassette that follows.
+    """
 
-    # Pre-fetch encodings used in tests
-    for encoding in VCR_TIKTOKEN_ENCODINGS:
-        tiktoken.get_encoding(encoding)
+    def method(r1, r2):
+        """Method matcher that's case insensitive."""
+        if r1.method.lower() != r2.method.lower():
+            raise AssertionError(f"{r1.method} != {r2.method}")
+
+    vcr.register_matcher("method", method)

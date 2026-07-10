@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
+
+from conftest import GOOGLE_ADK_VERSION_TUPLE
 from google.adk.agents import LlmAgent
 
 MODEL = "gemini-3.5-flash"
@@ -91,12 +94,17 @@ transfer_to_agent_recorded_event = (
 sub_agent_recorded_event = [parent_recorded_event, child_recorded_event, transfer_to_agent_recorded_event]
 
 
-# For error tests, the parent finishes its first turn normally with
-# a tool call and does not see an error. The tool call also completes
-# normally by initiating the transfer. The child raises an exception
-# during its turn, so it is the only event that sees the error.
-
-parent_recorded_event_error = parent_recorded_event
+# For error tests, the tool call completes normally by initiating the transfer,
+# and the child raises an exception during its turn.
+#
+# The error status of the parent event depends on the ADK version. The parent agent
+# has the error bubble up through run_async on google-adk<2, but on google-adk>=2
+# the parent agent's run_async completes normally and the error is contained to the
+# child agent's flow.
+parent_recorded_event_error = copy.deepcopy(parent_recorded_event)
+if GOOGLE_ADK_VERSION_TUPLE < (2, 0, 0):
+    # Mark only the parent's LlmAgent event as error, as the LlmTool is successful.
+    parent_recorded_event_error[1]["error"] = True
 
 child_recorded_event_error = (
     {"type": "LlmAgent"},

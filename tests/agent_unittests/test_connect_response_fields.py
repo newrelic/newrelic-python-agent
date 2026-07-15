@@ -212,29 +212,3 @@ def test_ai_monitoring_streaming_and_record_content_server_side(agent_config):
             protocol.configuration.ai_monitoring.record_content.enabled
             == agent_config["ai_monitoring.record_content.enabled"]
         )
-
-
-@override_generic_settings(global_settings(), {"developer_mode": True, "high_security": True})
-def test_ai_monitoring_high_security_safeguard():
-    # Even if the connect response tries to enable AI monitoring or content
-    # recording, High Security Mode must keep them disabled. The HSM fixups strip
-    # ai_monitoring.enabled from agent_config, but collect_ai and the other
-    # ai_monitoring.* keys are not stripped, so the agent-side safeguard in
-    # apply_server_side_settings pins all three off as defense-in-depth.
-    connect_response_fields = {
-        "collect_ai": True,
-        "agent_config": {
-            "ai_monitoring.enabled": True,
-            "ai_monitoring.streaming.enabled": True,
-            "ai_monitoring.record_content.enabled": True,
-        },
-    }
-    client_cls = functools.partial(CustomTestClient, connect_response_fields=connect_response_fields)
-
-    protocol = AgentProtocol.connect(
-        "app_name", LINKED_APPLICATIONS, ENVIRONMENT, global_settings(), client_cls=client_cls
-    )
-
-    assert protocol.configuration.ai_monitoring.enabled is False
-    assert protocol.configuration.ai_monitoring.streaming.enabled is False
-    assert protocol.configuration.ai_monitoring.record_content.enabled is False

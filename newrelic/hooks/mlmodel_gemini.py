@@ -484,18 +484,7 @@ def _record_generation_error(*, transaction, linking_metadata, completion_id, kw
     # multiple lists to capture each input to the LLM (only inputs and not responses)
     messages = kwargs.get("contents")
 
-    if isinstance(messages, str):
-        input_message = messages
-    else:
-        try:
-            input_message = messages[-1]
-        except Exception:
-            input_message = None
-            _logger.warning(
-                "Unable to parse input message to Gemini LLM. Message content and role will be omitted from "
-                "corresponding LlmChatCompletionMessage event. "
-            )
-    input_message_content, input_role = _parse_input_message(input_message)
+    input_message_content, input_role = _parse_input_message(messages)
 
     request_temperature, request_max_tokens = _extract_generation_config(kwargs)
 
@@ -635,19 +624,7 @@ def _record_generation_success(
         # multiple lists to capture each input to the LLM (only inputs and not responses)
         messages = kwargs.get("contents")
 
-        if isinstance(messages, str):
-            input_message = messages
-        else:
-            try:
-                input_message = messages[-1]
-            except Exception:
-                input_message = None
-                _logger.warning(
-                    "Unable to parse input message to Gemini LLM. Message content and role will be omitted from "
-                    "corresponding LlmChatCompletionMessage event. "
-                )
-
-        input_message_content, input_role = _parse_input_message(input_message)
+        input_message_content, input_role = _parse_input_message(messages)
 
         # Parse output message content
         # This list should have a length of 1 to represent the output message
@@ -724,17 +701,38 @@ def _record_generation_success(
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
 
 
-def _parse_input_message(input_message):
+def _parse_input_message(messages):
     # The input_message will be a string if generate_content was called directly. In this case, we don't have
     # access to the role, so we default to user since this was an input message
-    if isinstance(input_message, str):
+    if isinstance(messages, str):
+        input_message = messages
         return input_message, "user"
-    # The input_message will be a Google Content type if send_message was called, so we parse out the message
-    # text and role (which should be "user")
-    elif isinstance(input_message, google.genai.types.Content):
-        return input_message.parts[0].text, input_message.role
-    else:
-        return None, None
+    elif isinstance(messages, list):
+        input_message = messages[-1]
+        if isinstance(input_message, str):
+            return input_message, "user"
+        # The input_message will be a Google Content type if send_message was called, so we parse out the message
+        # text and role (which should be "user")
+        elif isinstance(input_message, google.genai.types.Content) and input_message.parts[0].text:
+            return input_message.parts[0].text, input_message.role
+        else:
+            try:
+                input_message = next(
+                    (message
+                    for message in messages
+                    for part in message.parts
+                    if getattr(part, "text", None)),
+                    None,
+                )
+                if isinstance(input_message, google.genai.types.Content):
+                    return input_message.parts[0].text, input_message.role
+            except Exception:
+                input_message = None
+                _logger.warning(
+                    "Unable to parse input message to Gemini LLM. Message content and role will be omitted from "
+                    "corresponding LlmChatCompletionMessage event. "
+                )
+    return None, None
 
 
 def _extract_generation_config(kwargs):

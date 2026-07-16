@@ -718,11 +718,7 @@ def _parse_input_message(messages):
         else:
             try:
                 input_message = next(
-                    (message
-                    for message in messages
-                    for part in message.parts
-                    if getattr(part, "text", None)),
-                    None,
+                    (message for message in messages for part in message.parts if getattr(part, "text", None)), None
                 )
                 if isinstance(input_message, google.genai.types.Content):
                     return input_message.parts[0].text, input_message.role

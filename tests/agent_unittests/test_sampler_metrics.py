@@ -76,8 +76,11 @@ EXPECTED_GC_METRICS = (
 )
 
 
-@pytest.mark.xfail(
-    platform.python_implementation() == "PyPy", reason="Not implemented on PyPy yet", strict=True, raises=AssertionError
+@pytest.mark.skipif(
+    platform.python_implementation() == "PyPy",
+    reason="PyPy has no generational garbage collector.",
+    strict=True,
+    raises=AssertionError,
 )
 @pytest.mark.parametrize("top_object_count_limit", (1, 0))
 def test_gc_metrics_collection(gc_data_source, top_object_count_limit):

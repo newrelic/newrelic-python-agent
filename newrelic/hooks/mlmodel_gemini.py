@@ -717,6 +717,8 @@ def _parse_input_message(messages):
             return input_message.parts[0].text, input_message.role
         else:
             try:
+                # If this is a tool call, this is needed to find the input since
+                # the input message will not be the last one in the message list
                 input_message = next(
                     (message
                     for message in messages

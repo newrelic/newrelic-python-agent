@@ -49,13 +49,13 @@ PARENT_SPAN_NAME = f"Llm/agent/GoogleADK/run_async/{PARENT_AGENT_NAME}"
 CHILD_SPAN_NAME = f"Llm/agent/GoogleADK/run_async/{CHILD_AGENT_NAME}"
 AGENT_TOOL_SPAN_NAME = f"Llm/tool/GoogleADK/execute_single_function_call_async/{AGENT_TOOL_NAME}"
 
-# 11 events:
+# 12 events:
 #  * 2 LlmAgent (parent + child)
 #  * 1 LlmTool (AgentTool call)
 #  * 3 LLM events from the parent's first Gemini round-trip ending with a tool call (Input/Output/Summary)
 #  * 3 LLM events from the child's Gemini round-trip (Input/Output/Summary)
-#  * 2 LLM events from the parent's second Gemini round-trip (Output/Summary, no Input because it was a tool call)
-EXPECTED_EVENT_COUNT = 11
+#  * 3 LLM events from the parent's second Gemini round-trip (Input/Output/Summary)
+EXPECTED_EVENT_COUNT = 12
 
 
 @dt_enabled

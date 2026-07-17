@@ -34,12 +34,12 @@ EXPECTED_METRICS = [
     (f"Llm/tool/GoogleADK/execute_single_function_call_async/{TOOL_NAME}", 1),
 ]
 
-# 7 events:
+# 8 events:
 #  * 1 LlmAgent
 #  * 1 LlmTool
 #  * 3 LLM events from the first Gemini round-trip (Input/Output/Summary)
-#  * 2 LLM events from the second Gemini round-trip (Output/Summary, no Input event from tools)
-EXPECTED_EVENT_COUNT = 7
+#  * 3 LLM events from the second Gemini round-trip (Input/Output/Summary)
+EXPECTED_EVENT_COUNT = 8
 
 
 def _validate_events(events):

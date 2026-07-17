@@ -83,7 +83,7 @@ jobs:
 
       - name: Setup QEMU
         if: runner.os == 'Linux'
-        uses: docker/setup-qemu-action@06116385d9baf250c9f4dcb4858b16962ea869c3 # 4.1.0
+        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # 4.2.0
         with:
           platforms: arm64
 
@@ -122,7 +122,7 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
-      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # 6.2.0
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # 6.3.0
         with:
           python-version: "3.13"
 
@@ -204,7 +204,7 @@ jobs:
           repository-url: https://test.pypi.org/legacy/
 
       - name: Attest
-        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # 4.1.0
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # 4.1.1
         id: attest
         with:
           subject-path: |

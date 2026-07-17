@@ -3194,6 +3194,27 @@ def _process_module_builtin_defaults():
         "instrument_autogen_agentchat_agents__assistant_agent",
     )
     _process_module_definition(
+        "google.adk.agents.llm_agent", "newrelic.hooks.mlmodel_googleadk", "instrument_googleadk_agents_llm_agent"
+    )
+    _process_module_definition(
+        "google.adk.agents.loop_agent", "newrelic.hooks.mlmodel_googleadk", "instrument_googleadk_agents_loop_agent"
+    )
+    _process_module_definition(
+        "google.adk.agents.parallel_agent",
+        "newrelic.hooks.mlmodel_googleadk",
+        "instrument_googleadk_agents_parallel_agent",
+    )
+    _process_module_definition(
+        "google.adk.agents.sequential_agent",
+        "newrelic.hooks.mlmodel_googleadk",
+        "instrument_googleadk_agents_sequential_agent",
+    )
+    _process_module_definition(
+        "google.adk.flows.llm_flows.functions",
+        "newrelic.hooks.mlmodel_googleadk",
+        "instrument_googleadk_flows_llm_flows_functions",
+    )
+    _process_module_definition(
         "strands.agent.agent", "newrelic.hooks.mlmodel_strands", "instrument_strands_agent_agent"
     )
     _process_module_definition(

@@ -1658,7 +1658,7 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
     # precedence over the value of collect_ai.
     # Apply collect_ai first so that when agent_config settings from SSC
     # are applied, they will override collect_ai if needed.
-    collect_ai = server_side_config.get("collect_ai", None)
+    collect_ai = server_side_config.pop("collect_ai", None)
     if collect_ai is not None:
         apply_config_setting(settings_snapshot, "ai_monitoring.enabled", collect_ai)
         _logger.debug("Setting ai_monitoring.enabled to value of collect_ai=%s", collect_ai)

@@ -105,12 +105,11 @@ class _GCDataSource:
                 yield (f"GC/objects/{self.pid}/generation/{gen}", {"count": count})
 
         # Record object count for top five types with highest count
-        if hasattr(gc, "get_objects"):
+        if hasattr(gc, "get_objects") and self.top_object_count_limit > 0:
             object_types = map(type, gc.get_objects())
-            if self.top_object_count_limit > 0:
-                highest_types = Counter(object_types).most_common(self.top_object_count_limit)
-                for obj_type, count in highest_types:
-                    yield (f"GC/objects/{self.pid}/type/{callable_name(obj_type)}", {"count": count})
+            highest_types = Counter(object_types).most_common(self.top_object_count_limit)
+            for obj_type, count in highest_types:
+                yield (f"GC/objects/{self.pid}/type/{callable_name(obj_type)}", {"count": count})
 
         if hasattr(gc, "get_stats"):
             stats_by_gen = gc.get_stats()

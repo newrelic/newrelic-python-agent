@@ -1,0 +1,212 @@
+interactions:
+- request:
+    body: '{"contents": [{"parts": [{"text": "Take the word hello, capitalize it,
+      then add an exclamation point."}], "role": "user"}], "safetySettings": [], "tools":
+      [{"functionDeclarations": [{"description": " \n    Add an exclamation point
+      to the end of the phrase.\n    ", "name": "add_exclamation", "parameters": {"properties":
+      {"phrase": {"type": "STRING"}}, "required": ["phrase"], "type": "OBJECT"}},
+      {"description": " \n    Capitalize the letters within the phrase.\n    ", "name":
+      "capitalize_message", "parameters": {"properties": {"phrase": {"type": "STRING"}},
+      "required": ["phrase"], "type": "OBJECT"}}, {"name": "Schema", "parameters":
+      {"properties": {"data": {"type": "STRING"}}, "required": ["data"], "type": "OBJECT"}}]}],
+      "toolConfig": {"functionCallingConfig": {"allowedFunctionNames": ["add_exclamation",
+      "capitalize_message", "Schema"], "mode": "ANY"}}, "generationConfig": {"temperature":
+      1.0, "candidateCount": 1}}'
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate, zstd
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - generativelanguage.googleapis.com
+      x-goog-api-key:
+      - XXXXXX
+    method: POST
+    uri: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:streamGenerateContent?alt=sse
+  response:
+    body:
+      string: "data: {\"candidates\": [{\"content\": {\"parts\": [{\"functionCall\":
+        {\"name\": \"capitalize_message\",\"args\": {\"phrase\": \"hello\"},\"id\":
+        \"ixj8gv6w\"},\"thoughtSignature\": \"Eq8FCqwFARFNMg+7rmDlZ1pfTinDyfRxTKpGecVXmxne2dQVHJ7NBo/CwSVZwA2YqPQy47QP8V8FcOCHuGUuAzEpvvAANrvr7j443F/bD//WdVCrePzWxCpY3sYcfvRXvPGjj7iGmEiqoUqB+E7LUy0lKIkYpTdR1Fd0LY44cG7Jkn2jY1ZFLA7d2/fswUsx+FzxMILrlkvLB/F54ilM3GLUwaV7LbmF2udOl46a4oYrlRv2sn7iAMMcaPJJRyYSVUZsayqB4taMz/zEO39m5G4gA/ANVyCXznlzC3+YUO0Y2Z6oJ982Mt03MaqBrMg8h2aCfF2ZP29fx2eVbHgKp4RNWOKXSSOVCgZvaHf1aZhPAWe8jlvhb8qQlYCEP/fiTLZ1D3syz6/DZI6GXYzvUBk/TOxX5hw3/FxtrWRUntdWjdK/5Lo2G5bQC5pYy4AkdRxfcCIUK+b6k0wLMhtTLLnyFcv558VOk1OKKf+5MbnRPA1W3xvfjWUI8FnYA2k8Jr7ahikbuoWi3+E6r2aBNkaxg7e5gRnlQ0UEVqowjd67BG7m+I9MYMu/mZSZXjXT3uc1Zkt70lguQns8qR9WCdFWSWOeH+7Y2bEXUt7MTekxLARa6ul1lhknD6Whh/s8BI+fPonZpQsoFbLzuGK5BQA+cUxkACPV+1bA/HFeH/WuP4YRMKKxu18faMVJ/g8oV27XVR4TV+EaSDZaRsy+MMfTDpsXZNy+TF1oNbd+ZCdVycCf4nZmzEhxOeT8ea56M910p+8X8/dqQLcj4frikJgXLHYT0ERQ225w+GBL0i0eu+/Pvwk4Q5wNCUIMqNInymDMGfIRuv7jYkIWq1iaa6yJU94YP6k6aP3XK52grg/tu4WaSbpdOIdpSOJyqaKfx4AL1YBlEDHHB+WNjYxHy8Z0\"}],\"role\":
+        \"model\"},\"index\": 0}],\"usageMetadata\": {\"promptTokenCount\": 149,\"candidatesTokenCount\":
+        16,\"totalTokenCount\": 299,\"promptTokensDetails\": [{\"modality\": \"TEXT\",\"tokenCount\":
+        149}],\"thoughtsTokenCount\": 134,\"serviceTier\": \"standard\"},\"modelVersion\":
+        \"gemini-3.5-flash\",\"responseId\": \"mNNfasCzMeKa9MoP3frm8As\"}\r\n\r\ndata:
+        {\"candidates\": [{\"content\": {\"parts\": [{\"text\": \"\"}],\"role\": \"model\"},\"finishReason\":
+        \"STOP\",\"index\": 0}],\"usageMetadata\": {\"promptTokenCount\": 149,\"candidatesTokenCount\":
+        16,\"totalTokenCount\": 299,\"promptTokensDetails\": [{\"modality\": \"TEXT\",\"tokenCount\":
+        149}],\"thoughtsTokenCount\": 134,\"serviceTier\": \"standard\"},\"modelVersion\":
+        \"gemini-3.5-flash\",\"responseId\": \"mNNfasCzMeKa9MoP3frm8As\"}\r\n\r\n"
+    headers:
+      content-disposition:
+      - attachment
+      content-type:
+      - text/event-stream
+      date:
+      - Tue, 21 Jul 2026 20:16:26 GMT
+      server:
+      - scaffolding on HTTPServer2
+      server-timing:
+      - gfet4t7; dur=1662
+      transfer-encoding:
+      - chunked
+      vary:
+      - Origin
+      - X-Origin
+      - Referer
+      x-frame-options:
+      - SAMEORIGIN
+      x-xss-protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "Take the word hello, capitalize it,
+      then add an exclamation point."}], "role": "user"}, {"parts": [{"functionCall":
+      {"args": {"phrase": "hello"}, "name": "capitalize_message"}, "thoughtSignature":
+      "Eq8FCqwFARFNMg-7rmDlZ1pfTinDyfRxTKpGecVXmxne2dQVHJ7NBo_CwSVZwA2YqPQy47QP8V8FcOCHuGUuAzEpvvAANrvr7j443F_bD__WdVCrePzWxCpY3sYcfvRXvPGjj7iGmEiqoUqB-E7LUy0lKIkYpTdR1Fd0LY44cG7Jkn2jY1ZFLA7d2_fswUsx-FzxMILrlkvLB_F54ilM3GLUwaV7LbmF2udOl46a4oYrlRv2sn7iAMMcaPJJRyYSVUZsayqB4taMz_zEO39m5G4gA_ANVyCXznlzC3-YUO0Y2Z6oJ982Mt03MaqBrMg8h2aCfF2ZP29fx2eVbHgKp4RNWOKXSSOVCgZvaHf1aZhPAWe8jlvhb8qQlYCEP_fiTLZ1D3syz6_DZI6GXYzvUBk_TOxX5hw3_FxtrWRUntdWjdK_5Lo2G5bQC5pYy4AkdRxfcCIUK-b6k0wLMhtTLLnyFcv558VOk1OKKf-5MbnRPA1W3xvfjWUI8FnYA2k8Jr7ahikbuoWi3-E6r2aBNkaxg7e5gRnlQ0UEVqowjd67BG7m-I9MYMu_mZSZXjXT3uc1Zkt70lguQns8qR9WCdFWSWOeH-7Y2bEXUt7MTekxLARa6ul1lhknD6Whh_s8BI-fPonZpQsoFbLzuGK5BQA-cUxkACPV-1bA_HFeH_WuP4YRMKKxu18faMVJ_g8oV27XVR4TV-EaSDZaRsy-MMfTDpsXZNy-TF1oNbd-ZCdVycCf4nZmzEhxOeT8ea56M910p-8X8_dqQLcj4frikJgXLHYT0ERQ225w-GBL0i0eu-_Pvwk4Q5wNCUIMqNInymDMGfIRuv7jYkIWq1iaa6yJU94YP6k6aP3XK52grg_tu4WaSbpdOIdpSOJyqaKfx4AL1YBlEDHHB-WNjYxHy8Z0"}],
+      "role": "model"}, {"parts": [{"functionResponse": {"name": "capitalize_message",
+      "response": {"output": [{"type": "text", "text": "HELLO", "id": "lc_tool-message-content-id-1"}]}}}],
+      "role": "user"}], "safetySettings": [], "tools": [{"functionDeclarations": [{"description":
+      " \n    Add an exclamation point to the end of the phrase.\n    ", "name": "add_exclamation",
+      "parameters": {"properties": {"phrase": {"type": "STRING"}}, "required": ["phrase"],
+      "type": "OBJECT"}}, {"description": " \n    Capitalize the letters within the
+      phrase.\n    ", "name": "capitalize_message", "parameters": {"properties": {"phrase":
+      {"type": "STRING"}}, "required": ["phrase"], "type": "OBJECT"}}, {"name": "Schema",
+      "parameters": {"properties": {"data": {"type": "STRING"}}, "required": ["data"],
+      "type": "OBJECT"}}]}], "toolConfig": {"functionCallingConfig": {"allowedFunctionNames":
+      ["add_exclamation", "capitalize_message", "Schema"], "mode": "ANY"}}, "generationConfig":
+      {"temperature": 1.0, "candidateCount": 1}}'
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate, zstd
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - generativelanguage.googleapis.com
+      x-goog-api-key:
+      - XXXXXX
+    method: POST
+    uri: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:streamGenerateContent?alt=sse
+  response:
+    body:
+      string: "data: {\"candidates\": [{\"content\": {\"parts\": [{\"functionCall\":
+        {\"name\": \"add_exclamation\",\"args\": {\"phrase\": \"HELLO\"},\"id\": \"4oz9n0g9\"},\"thoughtSignature\":
+        \"EpwCCpkCARFNMg8qlXBDpITtHVL/L7FI8GBgTNB0KBcb/mrnKdHETgByT+nelUSlI7ixb/wNgkvJ1Sd96Q07rhg3Hd57Ugc4bW96u0+KihB1ARGf82CWlEVPqnlhMGjeobvyZL2B9DOOL0uXwVYKrcwENSrNwmQG3GSCstbko86V6cjRF+tVMXO/WplZjbkFqXJ8xoClmSj6uegonPSAUMkyCrFBWI9fpimHYUxbUOHSut+/XzkCfrE7IJlnu+FiUT4qtmREXMVp1CykHKuiMtXKNH3TV47b5tmxRo+y0xf2V2jM84RrDDB7nvmy3bH0htFObrG7KhvSpBqin4rlQQtnxkQZyIaPqEXcDHsAq/JQLBAS5ejOmrfSN3nTnQg=\"}],\"role\":
+        \"model\"},\"index\": 0}],\"usageMetadata\": {\"promptTokenCount\": 204,\"candidatesTokenCount\":
+        17,\"totalTokenCount\": 271,\"promptTokensDetails\": [{\"modality\": \"TEXT\",\"tokenCount\":
+        204}],\"thoughtsTokenCount\": 50,\"serviceTier\": \"standard\"},\"modelVersion\":
+        \"gemini-3.5-flash\",\"responseId\": \"mtNfaqfOOdaX1MkPlZzbuA0\"}\r\n\r\ndata:
+        {\"candidates\": [{\"content\": {\"parts\": [{\"text\": \"\"}],\"role\": \"model\"},\"finishReason\":
+        \"STOP\",\"index\": 0}],\"usageMetadata\": {\"promptTokenCount\": 338,\"candidatesTokenCount\":
+        17,\"totalTokenCount\": 405,\"promptTokensDetails\": [{\"modality\": \"TEXT\",\"tokenCount\":
+        338}],\"thoughtsTokenCount\": 50,\"serviceTier\": \"standard\"},\"modelVersion\":
+        \"gemini-3.5-flash\",\"responseId\": \"mtNfaqfOOdaX1MkPlZzbuA0\"}\r\n\r\n"
+    headers:
+      content-disposition:
+      - attachment
+      content-type:
+      - text/event-stream
+      date:
+      - Tue, 21 Jul 2026 20:16:29 GMT
+      server:
+      - scaffolding on HTTPServer2
+      server-timing:
+      - gfet4t7; dur=2322
+      transfer-encoding:
+      - chunked
+      vary:
+      - Origin
+      - X-Origin
+      - Referer
+      x-frame-options:
+      - SAMEORIGIN
+      x-xss-protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "Take the word hello, capitalize it,
+      then add an exclamation point."}], "role": "user"}, {"parts": [{"functionCall":
+      {"args": {"phrase": "hello"}, "name": "capitalize_message"}, "thoughtSignature":
+      "Eq8FCqwFARFNMg-7rmDlZ1pfTinDyfRxTKpGecVXmxne2dQVHJ7NBo_CwSVZwA2YqPQy47QP8V8FcOCHuGUuAzEpvvAANrvr7j443F_bD__WdVCrePzWxCpY3sYcfvRXvPGjj7iGmEiqoUqB-E7LUy0lKIkYpTdR1Fd0LY44cG7Jkn2jY1ZFLA7d2_fswUsx-FzxMILrlkvLB_F54ilM3GLUwaV7LbmF2udOl46a4oYrlRv2sn7iAMMcaPJJRyYSVUZsayqB4taMz_zEO39m5G4gA_ANVyCXznlzC3-YUO0Y2Z6oJ982Mt03MaqBrMg8h2aCfF2ZP29fx2eVbHgKp4RNWOKXSSOVCgZvaHf1aZhPAWe8jlvhb8qQlYCEP_fiTLZ1D3syz6_DZI6GXYzvUBk_TOxX5hw3_FxtrWRUntdWjdK_5Lo2G5bQC5pYy4AkdRxfcCIUK-b6k0wLMhtTLLnyFcv558VOk1OKKf-5MbnRPA1W3xvfjWUI8FnYA2k8Jr7ahikbuoWi3-E6r2aBNkaxg7e5gRnlQ0UEVqowjd67BG7m-I9MYMu_mZSZXjXT3uc1Zkt70lguQns8qR9WCdFWSWOeH-7Y2bEXUt7MTekxLARa6ul1lhknD6Whh_s8BI-fPonZpQsoFbLzuGK5BQA-cUxkACPV-1bA_HFeH_WuP4YRMKKxu18faMVJ_g8oV27XVR4TV-EaSDZaRsy-MMfTDpsXZNy-TF1oNbd-ZCdVycCf4nZmzEhxOeT8ea56M910p-8X8_dqQLcj4frikJgXLHYT0ERQ225w-GBL0i0eu-_Pvwk4Q5wNCUIMqNInymDMGfIRuv7jYkIWq1iaa6yJU94YP6k6aP3XK52grg_tu4WaSbpdOIdpSOJyqaKfx4AL1YBlEDHHB-WNjYxHy8Z0"}],
+      "role": "model"}, {"parts": [{"functionResponse": {"name": "capitalize_message",
+      "response": {"output": [{"type": "text", "text": "HELLO", "id": "lc_tool-message-content-id-1"}]}}}],
+      "role": "user"}, {"parts": [{"functionCall": {"args": {"phrase": "HELLO"}, "name":
+      "add_exclamation"}, "thoughtSignature": "EpwCCpkCARFNMg8qlXBDpITtHVL_L7FI8GBgTNB0KBcb_mrnKdHETgByT-nelUSlI7ixb_wNgkvJ1Sd96Q07rhg3Hd57Ugc4bW96u0-KihB1ARGf82CWlEVPqnlhMGjeobvyZL2B9DOOL0uXwVYKrcwENSrNwmQG3GSCstbko86V6cjRF-tVMXO_WplZjbkFqXJ8xoClmSj6uegonPSAUMkyCrFBWI9fpimHYUxbUOHSut-_XzkCfrE7IJlnu-FiUT4qtmREXMVp1CykHKuiMtXKNH3TV47b5tmxRo-y0xf2V2jM84RrDDB7nvmy3bH0htFObrG7KhvSpBqin4rlQQtnxkQZyIaPqEXcDHsAq_JQLBAS5ejOmrfSN3nTnQg="}],
+      "role": "model"}, {"parts": [{"functionResponse": {"name": "add_exclamation",
+      "response": {"output": [{"type": "text", "text": "HELLO!", "id": "lc_tool-message-content-id-3"}]}}}],
+      "role": "user"}], "safetySettings": [], "tools": [{"functionDeclarations": [{"description":
+      " \n    Add an exclamation point to the end of the phrase.\n    ", "name": "add_exclamation",
+      "parameters": {"properties": {"phrase": {"type": "STRING"}}, "required": ["phrase"],
+      "type": "OBJECT"}}, {"description": " \n    Capitalize the letters within the
+      phrase.\n    ", "name": "capitalize_message", "parameters": {"properties": {"phrase":
+      {"type": "STRING"}}, "required": ["phrase"], "type": "OBJECT"}}, {"name": "Schema",
+      "parameters": {"properties": {"data": {"type": "STRING"}}, "required": ["data"],
+      "type": "OBJECT"}}]}], "toolConfig": {"functionCallingConfig": {"allowedFunctionNames":
+      ["add_exclamation", "capitalize_message", "Schema"], "mode": "ANY"}}, "generationConfig":
+      {"temperature": 1.0, "candidateCount": 1}}'
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate, zstd
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - generativelanguage.googleapis.com
+      x-goog-api-key:
+      - XXXXXX
+    method: POST
+    uri: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:streamGenerateContent?alt=sse
+  response:
+    body:
+      string: "data: {\"candidates\": [{\"content\": {\"parts\": [{\"functionCall\":
+        {\"name\": \"Schema\",\"args\": {\"data\": \"HELLO!\"},\"id\": \"vnfzzbqv\"},\"thoughtSignature\":
+        \"Es0BCsoBARFNMg/+tQFwSi3yawpuUo2UfZNwwEp6W8qpsmZ4yLyBkw+B5IrSURJN5GuCYBp77+gjkWck60uYekVvbIMRoNqfBwyA24A0bkmhoOA+Ga9UEZmCnetm++1UFavCDs2O4SFwyStmiZLh3jNxq4bR4Uo1nyfNasn2JsbE+DsCt7ax9HqwEdb1WtDxn/UMjBnuZHZ4LTCc9qMYacstCZ2UmgCoAknVujR+P4Z9s63voX0QNsGGnHSXO6rnOxuH4fs19Ot30+KAFPzxFQ==\"}],\"role\":
+        \"model\"},\"index\": 0}],\"usageMetadata\": {\"promptTokenCount\": 262,\"candidatesTokenCount\":
+        15,\"totalTokenCount\": 310,\"promptTokensDetails\": [{\"modality\": \"TEXT\",\"tokenCount\":
+        262}],\"thoughtsTokenCount\": 33,\"serviceTier\": \"standard\"},\"modelVersion\":
+        \"gemini-3.5-flash\",\"responseId\": \"ndNfaqrIMNSl1MkP1pbB0As\"}\r\n\r\ndata:
+        {\"candidates\": [{\"content\": {\"parts\": [{\"text\": \"\"}],\"role\": \"model\"},\"finishReason\":
+        \"STOP\",\"index\": 0}],\"usageMetadata\": {\"promptTokenCount\": 446,\"candidatesTokenCount\":
+        15,\"totalTokenCount\": 494,\"promptTokensDetails\": [{\"modality\": \"TEXT\",\"tokenCount\":
+        446}],\"thoughtsTokenCount\": 33,\"serviceTier\": \"standard\"},\"modelVersion\":
+        \"gemini-3.5-flash\",\"responseId\": \"ndNfaqrIMNSl1MkP1pbB0As\"}\r\n\r\n"
+    headers:
+      content-disposition:
+      - attachment
+      content-type:
+      - text/event-stream
+      date:
+      - Tue, 21 Jul 2026 20:16:34 GMT
+      server:
+      - scaffolding on HTTPServer2
+      server-timing:
+      - gfet4t7; dur=4334
+      transfer-encoding:
+      - chunked
+      vary:
+      - Origin
+      - X-Origin
+      - Referer
+      x-frame-options:
+      - SAMEORIGIN
+      x-xss-protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+version: 1

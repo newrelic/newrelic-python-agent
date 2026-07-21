@@ -91,8 +91,8 @@ def tracer_info_standard():
                     guid=span["name"],
                     agent_attributes=agent_attrs,
                     user_attributes=span.get("user_attrs", {}),
-                    span_link_events=None,
-                    span_event_events=None,
+                    span_link_events=[{"linkedSpanId": link["linkedSpanId"], "linkedTraceId": link["linkedTraceId"], "id": span["name"], "trace.id": 0xabcde123456789, "timestamp": span["timestamp"], "type": "SpanLink"} for link in span.get("links", [])],
+                    span_event_events=[{"name": event["name"], "span.id": span["name"], "trace.id": 0xabcde123456789, "timestamp": span["timestamp"], "type": "SpanEvent"} for event in span.get("events", [])],
                 )
                 if "children" in span:
                     create_span_tree(node, span["children"])
@@ -111,8 +111,8 @@ def tracer_info_standard():
                     guid=span["name"],
                     agent_attributes={},
                     user_attributes={},
-                    span_link_events=None,
-                    span_event_events=None,
+                    span_link_events=[{"linkedSpanId": link["linkedSpanId"], "linkedTraceId": link["linkedTraceId"], "id": span["name"], "trace.id": 0xabcde123456789, "timestamp": span["timestamp"], "type": "SpanLink"} for link in span.get("links", [])],
+                    span_event_events=[{"name": event["name"], "span.id": span["name"], "trace.id": 0xabcde123456789, "timestamp": span["timestamp"], "type": "SpanEvent"} for event in span.get("events", [])],
                 )
                 if "children" in span:
                     create_span_tree(node, span["children"])
@@ -131,8 +131,8 @@ def tracer_info_standard():
                     guid=span["name"],
                     agent_attributes={},
                     user_attributes={},
-                    span_link_events=None,
-                    span_event_events=None,
+                    span_link_events=[{"linkedSpanId": link["linkedSpanId"], "linkedTraceId": link["linkedTraceId"], "id": span["name"], "trace.id": 0xabcde123456789, "timestamp": span["timestamp"], "type": "SpanLink"} for link in span.get("links", [])],
+                    span_event_events=[{"name": event["name"], "span.id": span["name"], "trace.id": 0xabcde123456789, "timestamp": span["timestamp"], "type": "SpanEvent"} for event in span.get("events", [])],
                 )
                 if "children" in span:
                     create_span_tree(node, span["children"])
@@ -157,8 +157,8 @@ def tracer_info_standard():
         path="OtherTransaction/Function/main",
         trusted_parent_span=None,
         tracing_vendors=None,
-        span_link_events=None,
-        span_event_events=None,
+        span_link_events=[{"linkedSpanId": link["linkedSpanId"], "linkedTraceId": link["linkedTraceId"], "id": root["name"], "trace.id": 0xabcde123456789, "timestamp": root["timestamp"], "type": "SpanLink"} for link in root.get("links", [])],
+        span_event_events=[{"name": event["name"], "span.id": root["name"], "trace.id": 0xabcde123456789, "timestamp": root["timestamp"], "type": "SpanEvent"} for event in root.get("events", [])],
     )
     create_span_tree(root_node, root["children"])
     return root_node
@@ -181,7 +181,7 @@ def tracer_info_too_many():
             guid=span["name"],
             agent_attributes={key: value for key, value in agent_attrs.items() if key != "http.url"},
             user_attributes=span.get("user_attrs", {}),
-            span_link_events=None,
+            span_link_events=[{"linkedSpanId": span["starting_index"] + link, "linkedTraceId": 0x1111111111 + span["starting_index"], "id": span["name"], "trace.id": 0xabcde123456789, "timestamp": span["timestamp"], "type": "SpanLink"} for link in range(span["num_links_per_child"])],
             span_event_events=None,
         )
         return node
@@ -215,6 +215,8 @@ def tracer_info_too_many():
                 "duration_millis": children_formula["duration_millis"],
                 "name": f"{children_formula['name_prefix']}{child + 1}",
                 "agent_attrs": children_formula["agent_attrs"],
+                "num_links_per_child": children_formula["num_links_per_child"],
+                "starting_index": child*2,
             }
         )
         for child in range(children_formula["num_children"])
@@ -278,7 +280,11 @@ def test_distributed_tracing_partial_granularity(
             expected_span_agents = expected_span_attrs.get("agent_attrs", {}).get("expected", {})
 
             matching_span = None
-            for span in spans:
+            for sp in spans:
+                if isinstance(sp[0], list):
+                    span, span_links, span_events = sp
+                else:
+                    span, span_links, span_events = sp, [], []
                 if span[0]["guid"] == expected_span_name:
                     matching_span = span
                     break
@@ -295,8 +301,17 @@ def test_distributed_tracing_partial_granularity(
             for attr in expected_span_agents:
                 assert attr in matching_span[2]
 
+            assert not span_events
+            expected_span_links = expected_span_attrs.get("links", [])
+            #for link in expected_span_links:
+            #    assert span_links
+
         for unexpected in unexpected_spans:
-            for span in spans:
+            for sp in spans:
+                if isinstance(sp[0], list):
+                    span, span_links, span_events = sp
+                else:
+                    span, span_links, span_events = sp, [], []
                 assert span[0]["name"] != unexpected
 
         if expected_metrics:

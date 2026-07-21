@@ -9,6 +9,7 @@
     "name": "root",
     "timestamp": 1766435410000,
     "duration_millis": 1500,
+    "events": [{"name": "F"}],
     "children": [
       {
         "name": "External/B1",
@@ -23,7 +24,9 @@
         },
         "user_attrs": {
           "my_user_attr": "my_value"
-        }
+        },
+        "events": [{"name": "A"}],
+        "links": [{"linkedSpanId": "297", "linkedTraceId": "111111111111111"}]
       },
       {
         "name": "inprocess",
@@ -39,7 +42,8 @@
               "error.class": "errorclass2",
               "error.message": "errormessage2",
               "error.expected": false
-            }
+            },
+            "links": [{"linkedSpanId": "298", "linkedTraceId": "111111111111110"}]
           }
         ]
       },
@@ -61,18 +65,22 @@
           "peer.hostname": "peer",
           "server.address": "server",
           "server.port": 80
-        }
+        },
+        "events": [{"name": "B"}],
+        "links": [{"linkedSpanId": "299", "linkedTraceId": "111111111111100"}]
       },
       {
         "name": "inprocess-2",
         "timestamp": 1766435410020,
         "duration_millis": 200,
+        "events": [{"name": "C"}],
         "children": [
           {
             "name": "Llm/SOMETHING/function",
             "timestamp": 1766435411000,
             "duration_millis": 200,
             "agent_attrs": {},
+            "events": [{"name": "D"}],
             "children": [
               {
                 "name": "External/D",
@@ -80,7 +88,9 @@
                 "duration_millis": 250,
                 "agent_attrs": {
                   "http.url": "serviceD"
-                }
+                },
+                "events": [{"name": "E"}],
+                "links": [{"linkedSpanId": "300", "linkedTraceId": "111111111111000"}]
               }
             ]
           }

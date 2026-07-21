@@ -20,6 +20,7 @@
       {
         "External/B1": {
           "parent": "root",
+          "links": [{"linkedSpanId": "297", "linkedTraceId": "111111111111111"}],
           "agent_attrs": {
             "exact": {
               "http.url": "serviceB",
@@ -39,6 +40,7 @@
       {
         "External/B2": {
           "parent": "root",
+          "links": [{"linkedSpanId": "298", "linkedTraceId": "111111111111110"}],
           "agent_attrs": {
             "exact": {
               "http.url": "serviceB",
@@ -52,6 +54,7 @@
       {
         "External/C": {
           "parent": "root",
+          "links": [{"linkedSpanId": "299", "linkedTraceId": "111111111111100"}],
           "agent_attrs": {
             "exact": {
               "http.url": "serviceC",
@@ -73,12 +76,14 @@
       },
       {
         "Llm/SOMETHING/function": {
-          "parent": "root"
+          "parent": "root",
+          "links": [{"linkedSpanId": "300", "linkedTraceId": "111111111111000"}]
         }
       },
       {
         "External/D": {
           "parent": "Llm/SOMETHING/function",
+          "links": [{"linkedSpanId": "301", "linkedTraceId": "111111111110000"}],
           "agent_attrs": {
             "exact": {
               "http.url": "serviceD"
@@ -111,6 +116,7 @@
       {
         "External/B1": {
           "parent": "root",
+          "links": [{"linkedSpanId": "297", "linkedTraceId": "111111111111111"}],
           "agent_attrs": {
             "exact": {
               "http.url": "serviceB",
@@ -128,6 +134,7 @@
       {
         "External/B2": {
           "parent": "root",
+          "links": [{"linkedSpanId": "298", "linkedTraceId": "111111111111110"}],
           "agent_attrs": {
             "exact": {
               "http.url": "serviceB",
@@ -141,6 +148,7 @@
       {
         "External/C": {
           "parent": "root",
+          "links": [{"linkedSpanId": "299", "linkedTraceId": "111111111111100"}],
           "agent_attrs": {
             "exact": {
               "http.url": "serviceC",
@@ -162,12 +170,14 @@
       },
       {
         "Llm/SOMETHING/function": {
-          "parent": "root"
+          "parent": "root",
+          "links": [{"linkedSpanId": "300", "linkedTraceId": "111111111111000"}]
         }
       },
       {
         "External/D": {
           "parent": "Llm/SOMETHING/function",
+          "links": [{"linkedSpanId": "301", "linkedTraceId": "111111111110000"}],
           "agent_attrs": {
             "exact": {
               "http.url": "serviceD"
@@ -201,6 +211,7 @@
       {
         "External/B1": {
           "parent": "root",
+          "links": [{"linkedSpanId": "297", "linkedTraceId": "111111111111111"}, {"linkedSpanId": "298", "linkedTraceId": "111111111111110"}],
           "intrinsics": {
             "exact": {
               "timestamp": 1766435410010,
@@ -230,6 +241,7 @@
       {
         "External/C": {
           "parent": "root",
+          "links": [{"linkedSpanId": "299", "linkedTraceId": "111111111111100"}],
           "agent_attrs": {
             "exact": {
               "http.url": "serviceC",
@@ -251,12 +263,14 @@
       },
       {
         "Llm/SOMETHING/function": {
-          "parent": "root"
+          "parent": "root",
+          "links": [{"linkedSpanId": "300", "linkedTraceId": "111111111111000"}]
         }
       },
       {
         "External/D": {
           "parent": "root",
+          "links": [{"linkedSpanId": "301", "linkedTraceId": "111111111110000"}],
           "agent_attrs": {
             "exact": {
               "http.url": "serviceD"
@@ -291,7 +305,8 @@
       },
       {
         "External/1": {
-          "parent": "root",
+          "parent": "root", 
+          "links": [{"linkedSpanId": "0"}, {"linkedSpanId": "1"}, {"linkedSpanId": "2"}, {"linkedSpanId": "3"}, {"linkedSpanId": "4"}, {"linkedSpanId": "5"}, {"linkedSpanId": "6"}, {"linkedSpanId": "7"}, {"linkedSpanId": "8"}, {"linkedSpanId": "9"}, {"linkedSpanId": "10"}, {"linkedSpanId": "11"}, {"linkedSpanId": "12"}, {"linkedSpanId": "13"}, {"linkedSpanId": "14"}, {"linkedSpanId": "15"}, {"linkedSpanId": "16"}, {"linkedSpanId": "17"}, {"linkedSpanId": "18"}, {"linkedSpanId": "19"}, {"linkedSpanId": "20"}, {"linkedSpanId": "21"}, {"linkedSpanId": "22"}, {"linkedSpanId": "23"}, {"linkedSpanId": "24"}, {"linkedSpanId": "25"}, {"linkedSpanId": "26"}, {"linkedSpanId": "27"}, {"linkedSpanId": "28"}, {"linkedSpanId": "29"}, {"linkedSpanId": "30"}, {"linkedSpanId": "31"}, {"linkedSpanId": "32"}, {"linkedSpanId": "33"}, {"linkedSpanId": "34"}, {"linkedSpanId": "35"}, {"linkedSpanId": "36"}, {"linkedSpanId": "37"}, {"linkedSpanId": "38"}, {"linkedSpanId": "39"}, {"linkedSpanId": "40"}, {"linkedSpanId": "41"}, {"linkedSpanId": "42"}, {"linkedSpanId": "43"}, {"linkedSpanId": "44"}, {"linkedSpanId": "45"}, {"linkedSpanId": "46"}, {"linkedSpanId": "47"}, {"linkedSpanId": "48"}, {"linkedSpanId": "49"}, {"linkedSpanId": "50"}, {"linkedSpanId": "51"}, {"linkedSpanId": "52"}, {"linkedSpanId": "53"}, {"linkedSpanId": "54"}, {"linkedSpanId": "55"}, {"linkedSpanId": "56"}, {"linkedSpanId": "57"}, {"linkedSpanId": "58"}, {"linkedSpanId": "59"}, {"linkedSpanId": "60"}, {"linkedSpanId": "61"}, {"linkedSpanId": "62"}, {"linkedSpanId": "63"}, {"linkedSpanId": "64"}, {"linkedSpanId": "65"}, {"linkedSpanId": "66"}, {"linkedSpanId": "67"}, {"linkedSpanId": "68"}, {"linkedSpanId": "69"}, {"linkedSpanId": "70"}, {"linkedSpanId": "71"}, {"linkedSpanId": "72"}, {"linkedSpanId": "73"}, {"linkedSpanId": "74"}, {"linkedSpanId": "75"}, {"linkedSpanId": "76"}, {"linkedSpanId": "77"}, {"linkedSpanId": "78"}, {"linkedSpanId": "79"}, {"linkedSpanId": "80"}, {"linkedSpanId": "81"}, {"linkedSpanId": "82"}, {"linkedSpanId": "83"}, {"linkedSpanId": "84"}, {"linkedSpanId": "85"}, {"linkedSpanId": "86"}, {"linkedSpanId": "87"}, {"linkedSpanId": "88"}, {"linkedSpanId": "89"}, {"linkedSpanId": "90"}, {"linkedSpanId": "91"}, {"linkedSpanId": "92"}, {"linkedSpanId": "93"}, {"linkedSpanId": "94"}, {"linkedSpanId": "95"}, {"linkedSpanId": "96"}, {"linkedSpanId": "97"}, {"linkedSpanId": "98"}, {"linkedSpanId": "99"}],
           "intrinsics": {
             "exact": {
               "nr.durations": 0.7

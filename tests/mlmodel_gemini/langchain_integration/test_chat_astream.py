@@ -32,8 +32,6 @@ recorded_events = [
 			'ingest_source': 'Python',
 			'input': "{'phrase': 'hello'}",
 			'name': 'capitalize_message',
-			# 'output': "[{'type': 'text', 'text': 'HELLO', 'id': "
-			#           "'lc_3b47afb3-7d8f-4d83-a78f-b1256c17a2f6'}]",
             'output': None,
 			'run_id': "tool-id-0",
 			'span_id': None,
@@ -62,24 +60,6 @@ recorded_events = [
 			'vendor': 'gemini'
         }
     ],
-	# [
-	# 	{'type': 'LlmChatCompletionMessage'},
-	# 	{
-    #         'completion_id': None,
-	# 		'content': "Take the word hello, capitalize it, then add an exclamation "
-	# 		           'point.',
-	# 		'id': None,
-	# 		'ingest_source': 'Python',
-	# 		'response.model': 'gemini-3.5-flash',
-	# 		'role': 'user',
-	# 		'sequence': 0,
-	# 		'span_id': None,
-	# 		'timestamp': None,
-	# 		'token_count': 0,
-	# 		'trace_id': None,
-	# 		'vendor': 'gemini'
-    #     }
-    # ],
 	[
 		{'type': 'LlmChatCompletionMessage'},
 		{
@@ -106,8 +86,6 @@ recorded_events = [
 			'ingest_source': 'Python',
 			'input': "{'phrase': 'HELLO'}",
 			'name': 'add_exclamation',
-			# 'output': "[{'type': 'text', 'text': 'HELLO!', 'id': "
-			#           "'lc_481139a5-95a8-43f6-adda-48e83b5152ae'}]",
             'output': None,
 			'run_id': None,
 			'span_id': None,
@@ -136,24 +114,6 @@ recorded_events = [
 			'vendor': 'gemini'
         }
     ],
-	# [
-	# 	{'type': 'LlmChatCompletionMessage'},
-	# 	{
-    #         'completion_id': None,
-	# 		'content': "Take the word hello, capitalize it, then add an exclamation "
-	# 		           'point.',
-	# 		'id': None,
-	# 		'ingest_source': 'Python',
-	# 		'response.model': 'gemini-3.5-flash',
-	# 		'role': 'user',
-	# 		'sequence': 0,
-	# 		'span_id': None,
-	# 		'timestamp': None,
-	# 		'token_count': 0,
-	# 		'trace_id': None,
-	# 		'vendor': 'gemini'
-    #     }
-    # ],
 	[
 		{'type': 'LlmChatCompletionMessage'},
 		{

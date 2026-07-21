@@ -153,35 +153,6 @@ def schemas():
 
 # Build nodes
 @pytest.fixture
-def call_model():
-    def wrapper(agent):
-        # Define nodes for StateGraph
-        def _call_model(state):
-            # Ensure that context propagation works
-            # by checking for a transaction
-            assert current_transaction()
-
-            for event in agent.stream({"messages": state["messages"]}, stream_mode="updates"):
-                for node_name, update in event.items():
-                    if isinstance(update, dict) and update.get("messages"):
-                        breakpoint()
-                        yield {"messages": update["messages"]}
-
-        return _call_model
-    return wrapper
-
-@pytest.fixture
-def extra_node():
-    def _extra_node(state):
-        # Ensure that context propagation works
-        # by checking for a transaction
-        assert current_transaction()
-
-        return {"messages": [f"The real agent said: {_extract_text(state['messages'][-1])}"]}
-    
-    return _extra_node
-
-@pytest.fixture
 def async_call_model():
     def wrapper(agent):
         # Define nodes for StateGraph
@@ -225,6 +196,3 @@ def async_extra_node():
         return {"messages": [f"The real agent said: {_extract_text(state['messages'][-1])}"]}
     
     return _extra_node
-
-
-# TODO: 1) Test with sync and async.  2) Test within OpenAI

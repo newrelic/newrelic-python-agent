@@ -335,9 +335,11 @@ class GenericNodeMixin:
         if span:
             yield span
             # Compressed spans are always reparented onto the entry span.
-            if settings.distributed_tracing.sampler.partial_granularity.type != "compact" or isinstance(span[0], dict) and span[0].get(
-                "nr.entryPoint"
-            ) or isinstance(span[0], list) and span[0][0].get("nr.entryPoint"):
+            if (
+                settings.distributed_tracing.sampler.partial_granularity.type != "compact"
+                or (isinstance(span[0], dict) and span[0].get("nr.entryPoint"))
+                or (isinstance(span[0], list) and span[0][0].get("nr.entryPoint"))
+            ):
                 parent_id = self.guid
         for child in self.children:
             for event in child.span_events_partial_granularity(

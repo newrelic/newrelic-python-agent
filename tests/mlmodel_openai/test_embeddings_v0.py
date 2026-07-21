@@ -46,15 +46,15 @@ embedding_recorded_events = [
             "duration": None,  # Response time varies each test run
             "response.model": "text-embedding-ada-002-v2",
             "request.model": "text-embedding-ada-002",
-            "request_id": "c70828b2293314366a76a2b1dcb20688",
+            "request_id": None,  # Wildcarded; re-recorded via VCR
             "response.organization": "nr-test-org",
             "response.headers.llmVersion": "2020-10-01",
-            "response.headers.ratelimitLimitRequests": 200,
-            "response.headers.ratelimitLimitTokens": 150000,
-            "response.headers.ratelimitResetTokens": "2ms",
-            "response.headers.ratelimitResetRequests": "19m45.394s",
-            "response.headers.ratelimitRemainingTokens": 149994,
-            "response.headers.ratelimitRemainingRequests": 197,
+            "response.headers.ratelimitLimitRequests": 10000,
+            "response.headers.ratelimitLimitTokens": 50000000,
+            "response.headers.ratelimitResetTokens": "0s",
+            "response.headers.ratelimitResetRequests": "6ms",
+            "response.headers.ratelimitRemainingTokens": 49999975,
+            "response.headers.ratelimitRemainingRequests": 9999,
             "response.usage.total_tokens": 6,
             "vendor": "openai",
             "ingest_source": "Python",
@@ -67,7 +67,7 @@ embedding_recorded_events = [
 @validate_custom_events(embedding_recorded_events)
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
-    name="test_embeddings:test_openai_embedding_sync",
+    name="test_embeddings_v0:test_openai_embedding_sync",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
     custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
@@ -89,7 +89,7 @@ def test_openai_embedding_sync(set_trace_info):
 @validate_custom_events(events_sans_content(embedding_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
-    name="test_embeddings:test_openai_embedding_sync_no_content",
+    name="test_embeddings_v0:test_openai_embedding_sync_no_content",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
     custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
@@ -111,7 +111,7 @@ def test_openai_embedding_sync_no_content(set_trace_info):
 @validate_custom_events(add_token_count_to_embedding_events(embedding_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
-    name="test_embeddings:test_openai_embedding_sync_with_token_count",
+    name="test_embeddings_v0:test_openai_embedding_sync_with_token_count",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
     custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
@@ -147,7 +147,7 @@ def test_openai_embedding_sync_disabled_ai_monitoring_events(set_trace_info):
 @validate_custom_events(embedding_recorded_events)
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
-    name="test_embeddings:test_openai_embedding_async",
+    name="test_embeddings_v0:test_openai_embedding_async",
     scoped_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
     custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
@@ -171,7 +171,7 @@ def test_openai_embedding_async(loop, set_trace_info):
 @validate_custom_events(events_sans_content(embedding_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
-    name="test_embeddings:test_openai_embedding_async_no_content",
+    name="test_embeddings_v0:test_openai_embedding_async_no_content",
     scoped_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
     custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
@@ -195,7 +195,7 @@ def test_openai_embedding_async_no_content(loop, set_trace_info):
 @validate_custom_events(add_token_count_to_embedding_events(embedding_recorded_events))
 @validate_custom_event_count(count=1)
 @validate_transaction_metrics(
-    name="test_embeddings:test_openai_embedding_async_with_token_count",
+    name="test_embeddings_v0:test_openai_embedding_async_with_token_count",
     scoped_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
     custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],

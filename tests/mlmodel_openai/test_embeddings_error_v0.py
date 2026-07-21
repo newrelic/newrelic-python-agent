@@ -59,7 +59,7 @@ embedding_recorded_events = [
     }
 )
 @validate_transaction_metrics(
-    name="test_embeddings_error:test_embeddings_invalid_request_error_no_model",
+    name="test_embeddings_error_v0:test_embeddings_invalid_request_error_no_model",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
     custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
@@ -90,7 +90,7 @@ def test_embeddings_invalid_request_error_no_model(set_trace_info):
     }
 )
 @validate_transaction_metrics(
-    name="test_embeddings_error:test_embeddings_invalid_request_error_no_model_no_content",
+    name="test_embeddings_error_v0:test_embeddings_invalid_request_error_no_model_no_content",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
     custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
@@ -134,13 +134,10 @@ invalid_model_events = [
     exact_attrs={"agent": {}, "intrinsic": {}, "user": {"http.statusCode": 404}},
 )
 @validate_span_events(
-    exact_agents={
-        "error.message": "The model `does-not-exist` does not exist"
-        # "http.statusCode": 404,
-    }
+    exact_agents={"error.message": "The model `does-not-exist` does not exist or you do not have access to it."}
 )
 @validate_transaction_metrics(
-    name="test_embeddings_error:test_embeddings_invalid_request_error_invalid_model",
+    name="test_embeddings_error_v0:test_embeddings_invalid_request_error_invalid_model",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
     custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
@@ -185,7 +182,7 @@ embedding_auth_error_events = [
     }
 )
 @validate_transaction_metrics(
-    name="test_embeddings_error:test_embeddings_authentication_error",
+    name="test_embeddings_error_v0:test_embeddings_authentication_error",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
     custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
@@ -232,7 +229,7 @@ embedding_invalid_key_error_events = [
     }
 )
 @validate_transaction_metrics(
-    name="test_embeddings_error:test_embeddings_wrong_api_key_error",
+    name="test_embeddings_error_v0:test_embeddings_wrong_api_key_error",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
     custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
@@ -264,7 +261,7 @@ def test_embeddings_wrong_api_key_error(monkeypatch, set_trace_info):
     }
 )
 @validate_transaction_metrics(
-    name="test_embeddings_error:test_embeddings_invalid_request_error_no_model_async",
+    name="test_embeddings_error_v0:test_embeddings_invalid_request_error_no_model_async",
     scoped_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
     custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
@@ -297,7 +294,7 @@ def test_embeddings_invalid_request_error_no_model_async(loop, set_trace_info):
     }
 )
 @validate_transaction_metrics(
-    name="test_embeddings_error:test_embeddings_invalid_request_error_no_model_async_no_content",
+    name="test_embeddings_error_v0:test_embeddings_invalid_request_error_no_model_async_no_content",
     scoped_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
     custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
@@ -324,9 +321,11 @@ def test_embeddings_invalid_request_error_no_model_async_no_content(loop, set_tr
     callable_name(openai.InvalidRequestError),
     exact_attrs={"agent": {}, "intrinsic": {}, "user": {"http.statusCode": 404}},
 )
-@validate_span_events(exact_agents={"error.message": "The model `does-not-exist` does not exist"})
+@validate_span_events(
+    exact_agents={"error.message": "The model `does-not-exist` does not exist or you do not have access to it."}
+)
 @validate_transaction_metrics(
-    name="test_embeddings_error:test_embeddings_invalid_request_error_invalid_model_async",
+    name="test_embeddings_error_v0:test_embeddings_invalid_request_error_invalid_model_async",
     scoped_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
     custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
@@ -353,7 +352,7 @@ def test_embeddings_invalid_request_error_invalid_model_async(loop, set_trace_in
     }
 )
 @validate_transaction_metrics(
-    name="test_embeddings_error:test_embeddings_authentication_error_async",
+    name="test_embeddings_error_v0:test_embeddings_authentication_error_async",
     scoped_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
     custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
@@ -382,7 +381,7 @@ def test_embeddings_authentication_error_async(loop, monkeypatch, set_trace_info
     }
 )
 @validate_transaction_metrics(
-    name="test_embeddings_error:test_embeddings_wrong_api_key_error_async",
+    name="test_embeddings_error_v0:test_embeddings_wrong_api_key_error_async",
     scoped_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
     custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],

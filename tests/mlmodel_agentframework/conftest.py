@@ -42,9 +42,19 @@ AGENT_FRAMEWORK_VERSION = get_package_version("agent-framework")
 assert AGENT_FRAMEWORK_VERSION, "Failed to pull agent-framework version for supportability metric"
 
 
-@pytest.fixture
-def exercise_agent(loop):
-    def _exercise_agent(agent, prompt):
-        return loop.run_until_complete(agent.run(prompt))
+@pytest.fixture(params=[False, True], ids=["ResponseStandard", "ResponseStreaming"])
+def exercise_agent(loop, request):
+    is_streaming = request.param
 
+    def _exercise_agent(agent, prompt):
+        async def _exercise():
+            if is_streaming:
+                response_stream = agent.run(prompt, stream=True)
+                async for _ in response_stream:
+                    pass
+                return await response_stream.get_final_response()
+            else:
+                return await agent.run(prompt)
+
+        return loop.run_until_complete(_exercise())
     return _exercise_agent

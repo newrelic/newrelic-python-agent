@@ -57,4 +57,5 @@ def exercise_agent(loop, request):
                 return await agent.run(prompt)
 
         return loop.run_until_complete(_exercise())
+
     return _exercise_agent

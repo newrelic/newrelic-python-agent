@@ -64,7 +64,9 @@ def test_agent_no_content(exercise_agent, bedrock_client, set_trace_info):
 @reset_core_stats_engine()
 @disabled_ai_monitoring_settings
 @validate_custom_event_count(0)
-@validate_transaction_metrics("mlmodel_agentframework.bedrock.test_agent:test_agent_disabled_ai_monitoring", background_task=True)
+@validate_transaction_metrics(
+    "mlmodel_agentframework.bedrock.test_agent:test_agent_disabled_ai_monitoring", background_task=True
+)
 @background_task()
 def test_agent_disabled_ai_monitoring(exercise_agent, bedrock_client, set_trace_info):
     set_trace_info()

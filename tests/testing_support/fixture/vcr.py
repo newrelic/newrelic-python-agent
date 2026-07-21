@@ -100,6 +100,7 @@ VCR_IGNORED_HEADERS = [
     "x-goog-api-client",
     # OpenAI Headers
     "x-envoy-upstream-service-time",
+    "x-openai-client-user-agent",
     "x-openai-proxy-wasm",
     "x-stainless-arch",
     "x-stainless-async",

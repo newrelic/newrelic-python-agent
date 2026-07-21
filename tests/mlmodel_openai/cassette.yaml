@@ -1,0 +1,2231 @@
+interactions:
+- request:
+    body: '{"messages":[{"role":"system","content":"You are a text parser."},{"role":"user","content":"How
+      many letters are in the word Python? Answer in one word with no formatting."}],"model":"gpt-5.1","max_completion_tokens":500,"temperature":0.7}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - api.openai.com
+      x-stainless-read-timeout:
+      - '600'
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: '{"id": "chatcmpl-E3sGAPiGWRwRd7k7yrhQCXooLfj0J", "object": "chat.completion",
+        "created": 1784592266, "model": "gpt-5.1-2025-11-13", "choices": [{"index":
+        0, "message": {"role": "assistant", "content": "six", "refusal": null, "annotations":
+        []}, "finish_reason": "stop"}], "usage": {"prompt_tokens": 33, "completion_tokens":
+        10, "total_tokens": 43, "prompt_tokens_details": {"cached_tokens": 0, "audio_tokens":
+        0}, "completion_tokens_details": {"reasoning_tokens": 0, "audio_tokens": 0,
+        "accepted_prediction_tokens": 0, "rejected_prediction_tokens": 0}}, "service_tier":
+        "default", "system_fingerprint": null}'
+    headers:
+      access-control-expose-headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a1e5f2beed02e5c0-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      date:
+      - Tue, 21 Jul 2026 00:04:27 GMT
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '616'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_eaf6d4f88e5349c7aebbca3c58a00d61
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"messages":[{"role":"user","content":"Model does not exist."}],"model":"does-not-exist","max_completion_tokens":500,"temperature":0.7}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - api.openai.com
+      x-stainless-read-timeout:
+      - '600'
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: '{"error": {"message": "The model `does-not-exist` does not exist or
+        you do not have access to it.", "type": "invalid_request_error", "param":
+        null, "code": "model_not_found"}}'
+    headers:
+      access-control-expose-headers:
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a1e5f2c849e0e5c0-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json; charset=utf-8
+      date:
+      - Tue, 21 Jul 2026 00:04:27 GMT
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      vary:
+      - Origin
+      x-request-id:
+      - req_b26fb13afe114fd0927c1cd35e436a79
+    status:
+      code: 404
+      message: Not Found
+- request:
+    body: '{"messages":[{"role":"user","content":"Invalid API key."}],"model":"gpt-5.1","max_completion_tokens":500,"temperature":0.7}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - api.openai.com
+      x-stainless-read-timeout:
+      - '600'
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: '{"error": {"message": "Incorrect API key provided: DEADBEEF. You can
+        find your API key at https://platform.openai.com/account/api-keys.", "type":
+        "invalid_request_error", "param": null, "code": "invalid_api_key"}}'
+    headers:
+      access-control-expose-headers:
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a1e5f2c98d0fe5c0-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json; charset=utf-8
+      date:
+      - Tue, 21 Jul 2026 00:04:27 GMT
+      server:
+      - cloudflare
+      vary:
+      - Origin
+      x-request-id:
+      - req_805398c06fec4ad79e181dca89d1b6f6
+    status:
+      code: 401
+      message: Unauthorized
+- request:
+    body: '{"messages":[{"role":"system","content":"You are a text parser."},{"role":"user","content":"How
+      many letters are in the word Python? Answer in one word with no formatting."}],"model":"gpt-5.1","max_completion_tokens":500,"stream":true,"temperature":0.7}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - api.openai.com
+      x-stainless-read-timeout:
+      - '600'
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: 'data: {"id":"chatcmpl-E3sGCuKghkzUGlt83I8IoQzkM5Av1","object":"chat.completion.chunk","created":1784592268,"model":"gpt-5.1-2025-11-13","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"role":"assistant","content":"","refusal":null},"finish_reason":null}],"obfuscation":"bzmCk"}
+
+
+        data: {"id":"chatcmpl-E3sGCuKghkzUGlt83I8IoQzkM5Av1","object":"chat.completion.chunk","created":1784592268,"model":"gpt-5.1-2025-11-13","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"content":"six"},"finish_reason":null}],"obfuscation":"n0JT"}
+
+
+        data: {"id":"chatcmpl-E3sGCuKghkzUGlt83I8IoQzkM5Av1","object":"chat.completion.chunk","created":1784592268,"model":"gpt-5.1-2025-11-13","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"obfuscation":"K"}
+
+
+        data: [DONE]
+
+
+        '
+    headers:
+      access-control-expose-headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a1e5f2cacfcae5c0-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - text/event-stream; charset=utf-8
+      date:
+      - Tue, 21 Jul 2026 00:04:28 GMT
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '455'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_a4c60d91789f46cab7a127c0af78ae46
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"messages":[{"role":"system","content":"You are a text parser."},{"role":"user","content":"How
+      many letters are in the word Python? Answer in one word with no formatting."}],"model":"gpt-5.1","max_completion_tokens":100,"temperature":0.7}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - api.openai.com
+      x-stainless-read-timeout:
+      - '600'
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: '{"id": "chatcmpl-E3sGDl8M6i1reKSElNhOxNQcuPo7R", "object": "chat.completion",
+        "created": 1784592269, "model": "gpt-5.1-2025-11-13", "choices": [{"index":
+        0, "message": {"role": "assistant", "content": "six", "refusal": null, "annotations":
+        []}, "finish_reason": "stop"}], "usage": {"prompt_tokens": 33, "completion_tokens":
+        10, "total_tokens": 43, "prompt_tokens_details": {"cached_tokens": 0, "audio_tokens":
+        0}, "completion_tokens_details": {"reasoning_tokens": 0, "audio_tokens": 0,
+        "accepted_prediction_tokens": 0, "rejected_prediction_tokens": 0}}, "service_tier":
+        "default", "system_fingerprint": null}'
+    headers:
+      access-control-expose-headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a1e5f2d06e32e5c0-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      date:
+      - Tue, 21 Jul 2026 00:04:29 GMT
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '473'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_7e6097ba9b5347fd928d129fd2765c6c
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"messages":[{"role":"system","content":"You are a text parser."},{"role":"user","content":"How
+      many letters are in the word Python? Answer in one word with no formatting."}],"model":"gpt-5.1","max_completion_tokens":100,"stream":true,"temperature":0.7}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - api.openai.com
+      x-stainless-read-timeout:
+      - '600'
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: 'data: {"id":"chatcmpl-E3sGDy52HD1En9Au9TnoiWmmYS0QB","object":"chat.completion.chunk","created":1784592269,"model":"gpt-5.1-2025-11-13","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"role":"assistant","content":"","refusal":null},"finish_reason":null}],"obfuscation":"qszui"}
+
+
+        data: {"id":"chatcmpl-E3sGDy52HD1En9Au9TnoiWmmYS0QB","object":"chat.completion.chunk","created":1784592269,"model":"gpt-5.1-2025-11-13","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"content":"six"},"finish_reason":null}],"obfuscation":"gw7S"}
+
+
+        data: {"id":"chatcmpl-E3sGDy52HD1En9Au9TnoiWmmYS0QB","object":"chat.completion.chunk","created":1784592269,"model":"gpt-5.1-2025-11-13","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"obfuscation":"H"}
+
+
+        data: [DONE]
+
+
+        '
+    headers:
+      access-control-expose-headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a1e5f2d44dd0e5c0-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - text/event-stream; charset=utf-8
+      date:
+      - Tue, 21 Jul 2026 00:04:30 GMT
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '436'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_3ede39adea8b493596902750b428c82e
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"messages":[{"role":"system","content":"You are a text parser."},{"role":"user","content":"How
+      many letters are in the word Python? Answer in one word with no formatting."}],"model":"gpt-5.1","max_completion_tokens":100,"stream":false,"temperature":0.7}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - api.openai.com
+      x-stainless-read-timeout:
+      - '600'
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: '{"id": "chatcmpl-E3sGEZEX8XKTEANFZMvFHQsPVncle", "object": "chat.completion",
+        "created": 1784592270, "model": "gpt-5.1-2025-11-13", "choices": [{"index":
+        0, "message": {"role": "assistant", "content": "six", "refusal": null, "annotations":
+        []}, "finish_reason": "stop"}], "usage": {"prompt_tokens": 33, "completion_tokens":
+        10, "total_tokens": 43, "prompt_tokens_details": {"cached_tokens": 0, "audio_tokens":
+        0}, "completion_tokens_details": {"reasoning_tokens": 0, "audio_tokens": 0,
+        "accepted_prediction_tokens": 0, "rejected_prediction_tokens": 0}}, "service_tier":
+        "default", "system_fingerprint": null}'
+    headers:
+      access-control-expose-headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a1e5f2d85e57e5c0-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      date:
+      - Tue, 21 Jul 2026 00:04:30 GMT
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '480'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_44d6f5158de44d13bf0f5b1f87cb50be
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"messages":[{"role":"system","content":"You are a text parser."},{"role":"user","content":"How
+      many letters are in the word Python? Answer in one word with no formatting."}],"model":"gpt-5.1","max_completion_tokens":500,"stream":true,"stream_options":{"include_usage":true},"temperature":0.7}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - api.openai.com
+      x-stainless-read-timeout:
+      - '600'
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: 'data: {"id":"chatcmpl-E3sGF577gSw6Gdwhv6IS5eC14yUOO","object":"chat.completion.chunk","created":1784592271,"model":"gpt-5.1-2025-11-13","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"role":"assistant","content":"","refusal":null},"finish_reason":null}],"usage":null,"obfuscation":"b5n4VhWv"}
+
+
+        data: {"id":"chatcmpl-E3sGF577gSw6Gdwhv6IS5eC14yUOO","object":"chat.completion.chunk","created":1784592271,"model":"gpt-5.1-2025-11-13","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"content":"six"},"finish_reason":null}],"usage":null,"obfuscation":"cPjOdbd9c"}
+
+
+        data: {"id":"chatcmpl-E3sGF577gSw6Gdwhv6IS5eC14yUOO","object":"chat.completion.chunk","created":1784592271,"model":"gpt-5.1-2025-11-13","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":null,"obfuscation":"ZGqe"}
+
+
+        data: {"id":"chatcmpl-E3sGF577gSw6Gdwhv6IS5eC14yUOO","object":"chat.completion.chunk","created":1784592271,"model":"gpt-5.1-2025-11-13","service_tier":"default","system_fingerprint":null,"choices":[],"usage":{"prompt_tokens":33,"completion_tokens":10,"total_tokens":43,"prompt_tokens_details":{"cached_tokens":0,"audio_tokens":0},"completion_tokens_details":{"reasoning_tokens":0,"audio_tokens":0,"accepted_prediction_tokens":0,"rejected_prediction_tokens":0}},"obfuscation":"HFtwgSjT6"}
+
+
+        data: [DONE]
+
+
+        '
+    headers:
+      access-control-expose-headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a1e5f2dd8aa6e5c0-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - text/event-stream; charset=utf-8
+      date:
+      - Tue, 21 Jul 2026 00:04:32 GMT
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '616'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_2a235523c08f432e8948a325c2bc192d
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"messages":[{"role":"user","content":"Model does not exist."}],"model":"does-not-exist","max_completion_tokens":500,"stream":true,"temperature":0.7}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - api.openai.com
+      x-stainless-read-timeout:
+      - '600'
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: '{"error": {"message": "The model `does-not-exist` does not exist or
+        you do not have access to it.", "type": "invalid_request_error", "param":
+        null, "code": "model_not_found"}}'
+    headers:
+      access-control-expose-headers:
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a1e5f2e81a19e5c0-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json; charset=utf-8
+      date:
+      - Tue, 21 Jul 2026 00:04:32 GMT
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      vary:
+      - Origin
+      x-request-id:
+      - req_b7107aff8c0c447bbb0386325763722a
+    status:
+      code: 404
+      message: Not Found
+- request:
+    body: '{"messages":[{"role":"user","content":"Invalid API key."}],"model":"gpt-5.1","max_completion_tokens":500,"stream":true,"temperature":0.7}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - api.openai.com
+      x-stainless-read-timeout:
+      - '600'
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: '{"error": {"message": "Incorrect API key provided: DEADBEEF. You can
+        find your API key at https://platform.openai.com/account/api-keys.", "type":
+        "invalid_request_error", "param": null, "code": "invalid_api_key"}}'
+    headers:
+      access-control-expose-headers:
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a1e5f2e95cc9e5c0-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json; charset=utf-8
+      date:
+      - Tue, 21 Jul 2026 00:04:32 GMT
+      server:
+      - cloudflare
+      vary:
+      - Origin
+      x-request-id:
+      - req_bcf8644285e54d0387ff509005ade725
+    status:
+      code: 401
+      message: Unauthorized
+- request:
+    body: '{"input":"This is an embedding test.","model":"text-embedding-3-small","encoding_format":"base64"}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - api.openai.com
+      x-stainless-read-timeout:
+      - '600'
+    method: POST
+    uri: https://api.openai.com/v1/embeddings
+  response:
+    body:
+      string: '{"object": "list", "data": [{"object": "embedding", "embedding": "AAA9PABgLjwAwDA9AMAdvQDg7zsAIIe8AMAuPQDAITsAoOK7AIDgPACgCj0AIL87AEBfvADgybwAYGo7AOCYPAAg5joAYOs5ACBwOgCgSD0AgDs9AABzvQAAFjwAYAg9AAAePAAAf70A4Be6ACD5PAAg7zwA4NS7AOBGPACg57wA4NQ7ACCWvABAprwAQBw8AMCouwDAND0AICK9AEC0PAAgJjoAoM67AOAbvQDgaDwAYD27ACDAPADAM70A4FO9AIDQuQAgNj0AYFm9AAD8uQCAGbwAQGe7ACCavACgBD0AgDi8AMARPQAAubwAANa4ACAxPQDgwrwAID+7AEBBPADgnTsAQIA7AAC6vACgTz0AADU8AIA3vABgcD0AAIw8AOABvQBg8DwAoAM9AMB3PAAgLLoAoNI8AAB2vABg9bwAAKQ6AECuPADgDr0A4Ao8AAD2uwAgCrsAQKS9AIDUOwCA0LwAICm9AMA/vQAgFL0A4Eu9AKADOwCA7DsAIF+8AIADvQDAE70AQJO8ACAdPQAgYTwAIOC8ACAevQBAh7sAgC88ACCBvQCg/TwAAM86ACAdvQBAF70AQNa8AOALvACALrsA4Bg9AABDPQCgNrwAgJo7AMA/vQDA/7wAYDi9AECBvABg1rwAYD09AOAwvQDAsbkAAPa8AIC3vADgMbwAYDq9AOD8vAAglLwAQP+7AKAOPABgKz0AgLO8AMCXuwDAjL0AwIw8AKAjvQAAMz0A4I68AOCYuwAAvTwAgG28ACBjvABAjLwA4IG8AKAiPQAADj0AYGK8AODCOwAATTwAYHm9AIAZvADAh70AwCi9AMDmuwBgWbwAAPY8AOClPAAAsDsAQCS7AKBGPQBgDTwA4DS9AADgPAAg5jwAgFy8ACC6vADg4roAoEy8AGB4vACgqbwAQKQ8AAAJvABAlroA4Gu8AICQvQAg9TwAwHa8ACATvQDg6DwAoKi8ACCHPADgV70AgMI8AGApuwBgAz0AoN88AGCFuwAA87wAAJs8AEBGPQDAWTwAQBW9AOCIvAAALT0AAJ88AECJPQBAsrwAQLK7AKBvPQBg27kAgNq5AKAFPQAAiDwAwAK9AEDKvAAAFr0AQG26AOAFPQDAzbsAgAs9AKB0PABgnLwAANw8AEC7vABAo7sAYEc8AMCFuwBgkLwA4Bo9AGCRPQAAqrsAYJK9AAAwPQCAmzsA4Me8AAA2PACgH7wAAFi8AAAvvQDAtLwAYPC8AEB7PAAAUzwAwA29AODzuwAA7bwA4Gq8AID3vADASzwAwO48AGD4vAAg5bsAAAe9AKAMOwCAL70AIAo7AODTPABA9zwAAFw8ACCJuwDgML0AgCW9AACwvAAg+rwA4Gs9ACCIPAAgFbwAACC9AECpvACAgr0AoMO8AMDCOgDAFL0AABg9AIDJvADARDsAoFe9AMAcvACA4rsAwP88AIARvABga70AQM88AIDqvAAgubwA4DG8AICNOwCg0bsAIGO9AGAqvAAgVD0AACm9AAAqvQAg3jsAoL+8AECMvADgNDwAYBa9ACDwvADgqz0AwJ07AOAbvQCAgTwAIJA8AOCfOwAgLj0AYBO9AABnPACgBr0AwHU7AIB2PQAAUrwAQAs9AABJuwBA3DwAwAw9AGARvQCgNr0AoJQ8AACwvADgRj0AQDe7ACBiPACAKj0AYE+5AIAWPQAgDr0AYBA9AOAhvAAArDsA4Lm8AMAJvAAAtjsA4ES8AOD5PADA37sAYG47AODMOQBgBrwAgOA8ACCavAAgfrwAQAS9AGDavABAVDwAACA8AMDRPABAgr0AoDG8AAAHPQCATrwAIJQ7AGASPQBgw7wAYHQ8AEBQPQAgYL0AgNi7AOBLPADgRjsAQGs8ACAyPQCgFL0AgHe7AICKuwDA1TsAYPK8AADduwBgfjwAABG7AKA+PQAAqzwAINq7AIAlvQDgobsAoIk8AECePACgFL0AQEg9ACBfuwBgmbkAIBG9AIBMPACAnjwAQAE9AMD1PAAAkzwA4LQ8ACBMugAAOrwAYEG9ACC0PACgFzwAwOI8AGCWvACgHr0A4Kq7AGDGPACgMr0AwIs8ACBpvQCgLz0A4Os8AOCoPACgojwA4Kc6AICUPAAAE70AgFG9AOAFvQDgBTwAIBI8AEAIPACgRDwAgDW9AKAgPACAr7wAAAW8AKDCvABgJD0AYDW9AOAEvACgHT0AYOk7AOB0vAAglTwAYCM9AKChvACgSL0AIAi9AACGPACgxDwAgDG8AGDaPQCAErwAIAM9ACCFvQAg9LwAAKu8AKDXPADgGj0AACS9AABUPADgOz0AgCM8AEBZvACAbDwAoNm7AKBiuwAAzbwAACa9AMAjvQDg1bwA4JS8ACABvABAGrwAAAu9AABFPACgDL0AoHi7AOA5vQAg4zsAoEW9AIBvPABg8boAYFc9AOAguwBgGjwAQOy7AECgvACggD0AQBU9AOCavADADzsAYJO6AOAQPQCAcrsAAJy7AIA+PABgZzsA4Nc8AOA+vABAnrwAoKA7AMDUvABACb0AAJa9AKBcvADAEb0AAG69AOBjvADAf7sAAP89AMC/vACAursAoJ47AEDCvABgjjsAwGo7AICDvADAjLwAgLw8AKAUvABgFLoAwA69AKAFPQDAGr0AYPC8AOCMPACguLoAgDY9AOBSPQAAR7wAYDO9ACCMPACAQLwAgJ08AICjvABgIbsAIMS8AKBVPACg+TsA4Mu8AODnuwAAYD0AYFc6AEDuvABA+zwA4Bi8AADBOgCANL0AQE28AKAoPADA+7wAYIe9AIBivAAguLwAACC9AACPvAAAxjwAgAO8AIBjvQBg4TsAIHO8AMDTPAAgEjwAgOC7AMAlPQAAnLsA4FI7AGB5ugAghrwAYFs9AICMPABAyLwAIFs7AEA0PADAlTwAABG9AKBHPQAAfLwAoKo7AKCKPACgCz0AIJW8AKAwvQBAKjwAILu6AMDRPAAgDj0AYPE8AGA1vQBACD0AQG48AMD6ugAgXT0AgFc8AEBGvQAAlLsA4Ni8AOADPQAA2bsAABM8AGDbuwAADzwAQKq6AOCHvABAW7oAQKG8AMC6uwAADzwAQKU5AKCxOwCAbTwAABU8AKDAvADgED0AYEc9AEA0OwDgyTwAQAy9AKBEPQAgnbwA4BY9AODFOwAgALwAoOA8ACANPQBgGDwAwLg8AMCQPACA3jwAQA09AODKvABgzDwAYCE8AGA1vACAJ70AQDa9AKC3OgCAXbsAoIs8AOC9PABA+rsAwCk8AAAEPQBAAbwAgGS8AIBPvAAgiDwAQNI8AIATvQDgmjwAgEM8AKAZvABAMLsAYJ08AGCdvACg5TsAIIM8AMDPvACA9bsAwM68AOADvQDA+zwAQJk7AOBLvABgdboAoLC7ACC/PAAAVDwAgAm7ACAPPAAAuTwAwN27AABgvADgq7wAgMU8AGAnvQCgFbsAgCm8AIDluwDAH70AYA69AMCUvABgfbwAoPm8AIB1PAAg0DwAwGs8AOAfvQAAKrsAwB49ACCFvQAg9DsAgKS6AOBlvAAAF7wAQKq8AIAaPQBACL0AILY8AIB3vADgczsA4He8AKDcvAAAxDwAgBi9AKA4uwDgvLwAIN28AEC/OgCg5bsAoOI8AEDQPABA9jsAwJ68AKBdvQBgETwAoOo8AIAOuwAg3rsAgEM9AGDlPADAlDwAAPa7AEDlvACgoDoA4Kw7AICqvADgzrwAgGk7AMBvvQCgnbsAgM88AABkPQBgILwAYPO8AMBAuwDAgjoAoJW6AMC9PADAurwAgFI5AIAhvAAAjjwAQN07AKARvQDARzsAYBK8ACC2vACA/LkAQDO9AMC/OgCgVzsA4Ag8AOCSvACA+7sAADA7AMB1vADg6bsA4Ew8ACDAOgAAr7wAgO88AGAAvQDgDbwAABi9AMDlPADAdT0AICs8AOC4vACgSz0AoPQ8AACiPABg1zwAgI+8AOAsvABgZjwA4CG8ACD0PAAgGL0AYNG8AGB4PQCgK70AgMy8AGCTPAAAxzwAoLM8AECsPACA+jkAAMI8ACAGvQDAYLsAIOm8ACBcPQDgED0AANA8ACATvQCgn7sAYIA5AGB1PQCAQ7wAwBO9AOAEPABAfLwAoM08ACDPvAAA1zoAYEI8AGDvvADAW7wAAJ48AIB2PADAZjwAwL68AGBQvQAg6rwAgLC8AECDOgCg1bwAoAM9AACkvABgG70AYLW9AAAcvQDgijwAYN28AGBBvAAACz0AwLU7AOB9PABAgbwAQNk7AIB2vADAk7wAwNS6ACCZvAAA2TwAIGi8AEAHPQDADrwAoBK8AEAAPABgNbwAoPM7AIA1PQCAXzwA4HS9AMBuPAAgw7wAYE88AEAvOwDAirwAgFk8AAB2PACgtjwAgIA8AOB0OwAgZbsAAKm8AGAKOwDgJz0AAHu7AOD9uwDgW7wAwI68AABGOgDAZz0AIIC8AECJuwBg+LoAgJ88AAANvACg0zwAoDW8AGCEPAAgtLwAgJY5AID6PACgLTwA4AU8AMCYPAAA9jsAQPe8AMC9OgCA1DwAAKm8AGBzPADgVjwAAH+8AKDnPACAUr0AoEm8AGAJPQCggLwAoBs9ACAbuwAA6rwAINe7AACCPADAz7oAQPe8AOAtPQAgMj0AYAY9AKCDOwCgPj0AINK8AACMNgAAsbwAoOW8AIBvuwAAxjYAAPA8AMDXvAAASzwAIOA7AIDEvABgbzsAIDm8AAAzvQAgGD0AAKc6AEAnPQBgMLoAALK8AEDuOwDAM70AAI67AIA7OwAAkTwAIN+7AMCJvADAojsAQB+8ACBgOgBAKDoAYI+8AGAnOwBAorsAwBU9AEBZOwDAHLwAgJ08AEAfPQCA4TsAQA69AICWvQCAabwAoGk8ACDXuwBAxLsA4Iw8AEDRPABgnT0AQP87AGAhvQCAUDwAACy8AGB1PACg7DsAwE69ACAvvAAgNTsAQL+8AIBOOwBgNbsAYEq9AKDQOQDgar0AIBc9AODmvACA1bsAwOc8AKAUPQAgXLwA4Ka6AGDdPAAgnjsAgHU8AMD7vAAg37oAYA09AOCKvADg/TwAoCi7AEDiuwCAKT0AIJo6AMCqvACgtDwAQAq9AMCIPACADLwAQLM8AAC+uwAgDbwAwLA7AGAkPQCgHbwAAFw9AGAQOwBgSrwAAJc8AMBiPQCgErwAQLA8AKA4PQAgPTsAIKc8AAAQuwAg1ToAgH87AEC2OwAAGz0AYGC8AGC9vABA27sAAJW8AEBhvACgAzwAoEM7ACDKuwAAITwAoPw7AIBgPABADr0AgOW8AICsvADgnzwAQBC8AKCqvABgXjsAYEe8AIBVvACALj0AIKQ6AMAROwCAnTwAwHu9AGAUOwCAmDwAAJi6AAB7PACA6LwA4E+8AMBgOwDAzbwAINk7AEDVPABA5LwAIAO7AGAzOwAAwbwAAKg8AGA1PACg8LsAQGg7AEBivADAvLwAgIa8AMDGPAAgM7wAYHQ8AODBPAAAK7sAYP27AGCbuwDgRTwAIEs9AKCUPAAAJbwA4CM8AICVPADgR7wAACM8AAA1vQBg3DoAYM68ACBTvADABr0AoKI8AKCruwBgVLwAIK88ACCrOwBg+LwAIIS8AOCgPADAKbsAQPe8AOB+vAAgT7oAIDk9AOCaPABA7jwAoFw7AOBZvADAYDwAwI26AIAuPAAg2TwAQF28ACAAvQBAp7wAQKk8AACHvABAo7kAwOK7AECuvAAgiLsA4PI8AMAjPACgJrwAQNg8AGC6ugAA0rwAAFw7AOA4PACgnLsAQKC7AIBWPQCADjwAQJo8AGA9PADAo7wAIBa9AAAuuwDAZTwAIFw8AMCtOwAgH7wAYJa8ACA9PAAAmLwA4Ok7AMDJvABAmDwAgJQ8AKA/PADg/LwA4Dy5AGDpOwCABr0AoDe8AIC2vABgOj0A4PG7AOAYPQBg6jwAAGa8AOAtOwCAH7sAYCW8AOCtugCgHTwA4GU7AOC/vACAijsAACm9AODIvADgYr0AQAq8ACCEvAAACzwAQIi8AGCVvACgprwAQIC7AKCsPAAA7DwAgMU7AGCyPAAg3T0AIAI8ACDSPADg1jsAIB08AMAPvADgkjsAQJA8AAAbvQDAqroA4Ne8AKCBPACABD0AoGe8AKAePAAAmDsAgIO8AKCMvABApjwA4L86AGCBPABgE70A4Ak8AEAwPQBgBr0AoL27AGC5vACA9TwAgLg8AAB8PAAAojoAoEE8AGA1uwBgJj0AgLc8AIBOPABgA70AIAM9ACBUOwDgo7sAwDs8AEAkuwAAgLwAwDu8AKB9vADg1rwA4Ay9AKD0vAAgXjwAIDa8AKBguwCATj0AwOm8AAAzPQCgnTwAYB28AEBhuwDAYzwAoB49AADFvABgvDwAIJI8AMC5vADgjDwA4Mw7ACB6vAAgoDsAoLc8AKCDvABArzwAIG48AABvPACg3LsAIIC8ACB1uwAA8zoAQAQ9AIDguwAAw7wAAJG7AKCjvACgODwAQC48AGD5PADgSLwAAN65AMDbuwCAzbwAAHO8AKADPQBAxbwAYNG8AOAFuwBAkbsAIL07AEBeOwBAW7wAAAK9AADuPACgjzwAYLg8AIAnuwBgEr0AoBk9AAAguwCgjzwAAFm9AKBIPAAAd7wAAC08AOAaPADAmLsAgF08ACCyuwBgkLwAIEY8AIBavAAg2DwAIDm8AKAkvQBAAjwAAIg8AMA2uwAgVrwAQHs8AMDCvABgcTwAoPi7AGCUuwDga7wAIEk9AGBmvACgijwAYI67AIDFPACAZ7wA4Ea7AEDrvABA7jgAgAM8AIDLPACguLsAQPc6AGDsvABABT0AAIG8AIB8PADABbwAABe9AADrOwCAnLwAgLu8AEBOOwAgyrsA4PS6AMDBuwBgQjwAwJg8AGB4ugDAlbwAYLo8AABEOgCArLsAgK88AACzPACgJLwAIMq7ACDbuwDgTDwAIAi8AKCPuwAggbwAQNM8ACBrPABAx7wAQBa9AMAxOQBA6TwAQH+9AGAOvAAggTwAoOu8ACDnvAAA3TwAQCW6AKCTPABAxDwAABC9AEDIOQBA3LsAQLQ8AIAtvQCgo7wAAB88AOAJPAAAvrsAgBa9AIDduABglrsA4KU8AGCvOwBgNzwAYBY9AAAiPAAASzwAoBw9AIC8uwDAkjsAYKy8AIAAOwCgVT0AAN68AMCnvAAgELwAQJ08AGBEuwBgCrwAQKy8AGAGuwDgIDwAQIk8ACD9uwDAwDsAoE+9AADXuwCgLjwAQBs9AACZvABAqrsA4Lc7AEABvQAA4rwAYFG9AMBbOwBAX7wAoAG8AABSugBACj0AAEq8ACCdOwAgBr0AQFs8ACCnPADgDj0AAJS8AECIOwAApbwAwMM8AKCZvACAe7sA4AQ9AICkPABgCDsAIAO9AADCvAAA0LwAoGU8AEBjuwDA5DsAINe8ACApvQCAxTwA4AQ9AKAPuwBg+TwAoDy9AOAhPAAgajwAoEC7AMCYPACghbsAgAW9AODzvACAlbwAAO+8AEAPPQAgQbwA4Fu8AKBpvAAg07wAAM27AOBovAAgFL0AgK87AMDQOwBgKDwAQLs8AGBAPAAgR7wAoCC8AOAtugDgcLwAYL28AEDQuwDgQLwAIBM8AKBCOwBgKrsAYCm9AECYuwCgLb0AoAo9AIDNPAAAAb0AoD+7AGC0OwBg9LsAABY9AAAyvADAzDwAgLu8AKBcOwBACDwAAN47AKBduwDgarwAoAI7AECrPAAAjTsAQGw8AIBwvADA0ToAIDs6AKAYPABgwjwAIPW8AACgPABgsTwAwIs8AOCYPABA2zwAoJ86AADcPACAfzoA4Eo9AKCCOwCAkrkAYEg5AAB/PABAHb0AgKG8AGDsPACgmjwAgD+8AMAGPQBgvjwAwGm7AGABvQBAlDwAYLS8AABIvAAgwDwAYFg9ACBVvQCg5rsAoCY8AEBgPQCgfLwAIPS6AKBhvADg3DsAING7AECAPABAk7wAoKo7ACAQPQAA8LwAIB07AOCAPAAgbLwA4Oi8AIC+PABgLjsA4Bm8ACD9PABABbwAgDe9AIDIvAAAArsAIEK9AGCWvAAguLgA4FW8AKC1uwBAnDwAoGe6ACCnvACAxLwAoCo8",
+        "index": 0}], "model": "text-embedding-3-small", "usage": {"prompt_tokens":
+        6, "total_tokens": 6}}'
+    headers:
+      access-control-expose-headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a1e5f2ea3ed5e5c0-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      date:
+      - Tue, 21 Jul 2026 00:04:33 GMT
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '99'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_654e0beff0ac4340a2fab96bd663eca7
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"input":"Model does not exist.","model":"does-not-exist","encoding_format":"base64"}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - api.openai.com
+      x-stainless-read-timeout:
+      - '600'
+    method: POST
+    uri: https://api.openai.com/v1/embeddings
+  response:
+    body:
+      string: '{"error": {"message": "The model `does-not-exist` does not exist or
+        you do not have access to it.", "type": "invalid_request_error", "param":
+        null, "code": "model_not_found"}}'
+    headers:
+      access-control-expose-headers:
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a1e5f2ed2d0ae5c0-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json; charset=utf-8
+      date:
+      - Tue, 21 Jul 2026 00:04:33 GMT
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      vary:
+      - Origin
+      x-request-id:
+      - req_6872fa8fd4494bdc99ed6b44156a8e18
+    status:
+      code: 404
+      message: Not Found
+- request:
+    body: '{"input":"Invalid API key.","model":"text-embedding-ada-002","encoding_format":"base64"}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - api.openai.com
+      x-stainless-read-timeout:
+      - '600'
+    method: POST
+    uri: https://api.openai.com/v1/embeddings
+  response:
+    body:
+      string: '{"error": {"message": "Incorrect API key provided: DEADBEEF. You can
+        find your API key at https://platform.openai.com/account/api-keys.", "type":
+        "invalid_request_error", "param": null, "code": "invalid_api_key"}}'
+    headers:
+      access-control-expose-headers:
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a1e5f2ee6f7ce5c0-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json; charset=utf-8
+      date:
+      - Tue, 21 Jul 2026 00:04:33 GMT
+      server:
+      - cloudflare
+      vary:
+      - Origin
+      x-request-id:
+      - req_3f3f831b92f2487994520d5f5e708cd7
+    status:
+      code: 401
+      message: Unauthorized
+- request:
+    body: '{"input":"This is an embedding test.","model":"text-embedding-ada-002","encoding_format":"base64"}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - api.openai.com
+      x-stainless-read-timeout:
+      - '600'
+    method: POST
+    uri: https://api.openai.com/v1/embeddings
+  response:
+    body:
+      string: '{"object": "list", "data": [{"object": "embedding", "index": 0, "embedding":
+        "Nk6xvJcvijv8eTc74q2RO7xTobuCs+w7WiTtu2KtrLz8ebe8vYfmvF1bkLtd9bI835AEvM1LCjrpmpq7A7WbPCUKgTxdqKE7rESAPJlkmbxoTNq7bbiMOzaaeLvFXO27fWIavEALNrxv7Zs8U4T1vN71FzyA5YS8TuXHO+y2XbzgeAK8PFQGvdEB8Lt9FQk6ly8KPJJ3EL3VbNg8LSvPu9mKLzwYfQC7N5wMOwgG7rwuxju7MZVtOy55qrdw1Zm8Gv8gvG7sUTyqW7g8j6eUuxh9AL36RCg7FflLOwHMUzxl4wW7r2BDPPsspjteQ468YROKvNmKrzy/cC682tfAO5cvCryvxqC6W3OSO5wzSzwAmI48mHwbPMz85DwDtZs8PomVu79wLrrsacw8paO+uqS7QLyNcbu7+ywmPA0lDzzGXbc657HSvFYHYLyfUNg8cIe+OVokbbsSdmG8Xo/VPE7mEbzOMXS5xcMUPBqyj7oR3L47aEzaO0kuGLwIudw8jr+WuxkXozyn2E08AcxTvNpx47s0GFg7Amb2uqgmKbxMsQK9UBshvLCunjovE028vYfmPILNgjwR2/S7JLwlud2oBryA5Dq9JFX+OvreSjy6alk7cCHhvPx5N7xGqmO7SN/yPIi49zyc5wM8Jz+QvDIw2jyF6o+56Ev1uzH8FL1AC7a8GH2AvN927jtQzo88+FyqPC8TTTwCZva8e3nSPCxEm7yeaaQ8MK45vTQYWLybTBc8xl6BPACYjrwSKhq8/WDru+TioDyqDie60LTeOpcuwDuR3KO8lpSdObVmGLu87Hm6gOQ6PK2RkbsW4P88TP4TPOdlC7wjbsq8kPSlu53ON7qZZJk8waU9vO/tALzrz6k8tBfzPCupLjy/Ix26LnkqPFxZfLwmpKO8Nk6xPOiyHL3xIhA8bZ72Okz+E7tACuw7luGuuxznnrwR3L68XFn8vFZuhzySd5A8paM+PGP7B7w+1qa8IyE5PG0E1LvcDFA7qCapvOhL9TxACuw8iqIJPMVcbTqjbi+/vYfmuTVmMz0VrYS8/0mzPLq36jypDV08fvy8vEPaZ7xPzcU8heoPvPreSrwCZ8C8mf1xvP78oTuNcoW72tiKu3XZ2ryLiHM8fBP1PEz+E7zFEKY8NQBWPOAqp7sH0ii752ULPLnRADxj+4e8voiwPPG76DoVrYS87GqWPCXwajzjRmo8EioaPdolnLzSnNy86jUHO2sc1jrQtN48jXG7vGV83jgNJY88j6eUunNYhLzbcq08xl03u/6vkLvgd7i65sqeOgggBLyn2M08nhwTvMZdt7tD27E7kI7IvGhM2jyJVC48jgyoPJlkGTwa/6C7RCmNPIi5QbxGq626wozxvCS8pTx+r6u8D6cvPTYBoDvYojG9z8xgPNa6MzvWBvu7lpNTuwF/wjzrzyk95Xt5PEZdUrx9Yhq8rESAPEQowztp50a8GbB7vFFPZjwzy8Y7zZgbOzecDL3dp7w6Lsa7O8rInzvj+qI8suOtO2o1Ir2uxda8pLwKvMerEjzlyVQ84q2RPEUP9zzFEKa7+Km7u84yvrv4qTs8G+bUO53OtzwcgPe7kI5IuubKnjyGg+i7MuSSvAkIAr26uDS8zUrAu+y23TpBWZG8hE8jvbpqWTwjIoM840ZqPOYWZrzaceM7nOa5O4qiiTzHkXw8AJiOu7CuHrsaso86J4yhvGo1IryYFj48z8xgu3hcxbsGhZc8/MV+vAAysTzDjTs8LStPPH9KmLv73xQ84HiCvO85yLoBgIw8PO3eOiBRPbwR2/S89D7TOpGPEr3aJFI7QApsurq3arua/ru4kim1O8I/YLur9qQ7iGwwvJuZKLx0Pu67gX+nvNnwDDuvxqC8oyGeuhbhyTyJU2S8diiAu1jwJ7xGEYs740ZqvGiZ6zx/Spi8Y/sHvbaaXbuYfJu8/HoBOy4sGTySdka77gWDPLWzqbyueY+8eUTDu05/6rwetlC7dY2TugNoijpbv1k7K6kuPDw6cDyQ9CU8A2gKPJFCgTo+1dw7Fy8luz5vfzwR2/S8nmkkPKWi9Lt8epw71m0ivD9wyTu1Zpg71wgPPKtcAj0LPMc7lKvVus2YGzuni7y60GfNvC3evbyLPCy83kHfPEKNVjxM/ck8JaNZuzLjyLyETtk7O1O8O73ujTzFXO27DIoiPNrYCryA5YS8hoSyvMywHTsUX6k8W3MSOWf+frz22gk8HIFBPMrHVTx3wdg8NgEgvZ3Ot7vlydQ8suOtPCakozzcpnI8CQiCvH1imjzLYww8HID3PFoltzv59xY8H1DzPGxp5zwEUIi8MZXtPCBShzwvxwU9p9hNPEV2nrseab88z8xgvDGWNzvST8s7vTsfPHJwBj3I39e7yxWxvCQJtzueHJM88IcjPf6uxjuhONY7ymF4ukiTqzrPzao8qcGVvLaaXbzk4dY5ve6NvGvPxDsVrYS87+w2vMerkjtBpqK740bqOxaUODua/wU9jNcYPBHbdDxqzvo7A7RROzc15bwKVRM9TP1Ju+HFE7zLFbG8HRvkvKhy8Ds0zJC8YcWuO3Px3LnFEKY8jCPgPEQow7wxle07YMTkPA2/sTwJB7g7mReIO3SllbwgUT26rsXWu7q36jv/lfq6ClWTPLkc/ruCGcq6mbBgvHYntrxsaec7VrrOO4U2VzzPgJm8TjLZuz8juDzzpLA8Xyn4uxfiEzyeaaQ84RIlPIaDaLwoJ4686Ey/u9UgkTwx/BQ9qCXfPMerkjvcWeG72nHju+wdBbxT6xy95n0NPFjwJ7ujIR48cSKrvMV2g7zZiq88K/X1u0ZdUjxFD/c7mMksuptMF7zQGjw8e3lSO1OeC7yeaFq8Kg7Cu1ok7bq9Ox8833buvCBRPTwSduE6WFaFOm24DL3cDZo7hx+fPKS8Crwhnxg5Vm4HvCRvFD3D2sw7A7TRPMFYrDy1s6k6ZmRcOwAyMTz9xxK8TUslPE5/6jtUhgm8jXKFvNtyLbphEwq7cW+8u76IsDwIbRW6ly7AvIDlhLxH+Qg8MuSSO0z9Sbz+/CG8PYhLvJtMF73Pf8+8vOx5vAAx57uU+Oa8Jj7GvDebwrx/43C87utsvN6Puro+1ia8qcEVuwGAjLwhnxi9WFYFvVvAIzrstt07qCapPLN+GrwFNvK7MUkmvEdF0DvY78K7MK8DPCUKgbzirZG78CB8PCUKgbuZ/fE6B9Koumj/SLxfKsI8XkJEPKxEADuUrJ+8OR4tPD5v/7pV0xo8UlCwPGvQjrtiYJu87uvsO5fI4rxVH2I7Jz+QuyQJNzxvOq05gX5du6akCDxIRpq8HID3OulNibxKyDq8grNsu9cID7qGg+g8eF0PvBr/ILwKVZM8zjF0vKc+q7so2bK6+5IDvAaFFzyIuUE82dZ2O/lD3jy9h2a8ysdVu1dVu7ykvAo8W3LIvHip1jw5hIq8PTyEvMp7Drw36NO87benvOL52DoskOI7aZo1Ozw6cLw2TrE7QkDFuk7lR7yNcbu8s33QvP3HEr3p5uE8Up3BvIi4dztC8zM8pvBPPCBRvbxTngu9ODYvO3gPtLzT6re8P3GTPLBH9zxRtUM82KIxPb4iU7zuBYM8Dg0NPGHFLjpai5Q8et5lOfbaibytK7S6pvEZO+Z9jTyIucG7+UNeO63eojtiYBs8ODavPKeMBr0t34c7m0wXvM4x9Ls/cZO8UU/mPPx6gbyFNtc7epHUvG5SL7wNC/m43o86PG6fQDwR23Q84HiCPCXw6rsJVMk6Z7K3O5SsH7w8VAa8V1U7vI/zW7xgd1O83MCIPIKz7LrIksY8gOWEvA+m5Ty87Hk7LsVxPC8UF7wODQ28tbOpO7g1SrpjSJm8XA01vSgnDr2dgSa8CqKkuqpbuDxvOeO8nYEmPO/tgLwy48i7GH0AvJmwYDym8E89FflLO9ym8jyfUNg8ddnaulolN7x3Duo8DIoiOv771zpN5P08f0nOPFOei7zmF7C8oJ4zuTsGK7zFEKY7rnmPvIlTZDyH0g08BoTNvPFvobtBpVg7nDNLvWiZ6zrMsJ28nc3tuznQ0bxrz0S7fvy8vJznAz1mF8u8JvG0PFa7GLutd/u7tBi9u07lxzvUhFq7W3MSOzKXAT26t+o8dPImvK54xbus3Vg8grPsO6HrxLqUrJ88aExavOhL9Tw7Bqu8EPWKvEUPdzwCGq88f0lOPACYjjv0i2Q7Up3BvNAavLv3woe77uvsPMz8ZLxT6xy7bznjuxPEPLwnJXo8/0mzuxr/oLyEApK7Qj/7vN71l7vT6rc71R/HuhEp0DxY8Ce8xl03vH6vqzyTxKE8mWSZvHmqILt5Q3k8JvE0PPzFfrvejzq8LPcJPEI/e7zDjoU8NrSOvAvW6bpgKwy9xcMUvPTxQTz73xS7ClWTvBbgf7xY8Ce8ymF4PFk9ubtDjiC8ZxgVO9nwjLs1ZrM7bzljPIkHHbvY78I6rN1Yuhr/IDt3wiI7WO/dvJuY3rsX4hM86Ey/PK55D7sWlYK8f+PwvAY4hruOWTm8VIaJPAcfurufAn28YmAbPMiSxjvqNQc7QVkRO++G2bz6kG+7PDpwvPcOz7rKYfi8MZXtukFZkbuocvA757FSPAs8x7yfUNi8P3ETOsywHb0Jodq8wozxu+23J7x6kVQ6lpSdPC7FcbycNBU9W79ZPIaEsjyKob+8W3LIO1cIKjvgeAK9zzOIvHmqIDySdsa8/RQkvCeMITsXe+w6JVbIO+dlCz3OMfQ6grNsvA0lj7oRj607Q9rnOzecjDsHHzo86eeru2roEDyLPCy7iVSuNn1iGrvNmBu8lpSdO/NXnzkvE00816HnvGHFLjwzyny8OINAvBjKkTx63uW7390VvIO1AD0ni9c8crxNu/6uRrxzWIQ8XVuQvOqBzrzz8Hc7YmCbvOo1B71ACuy8G+bUutEBcLx+ryu5g7S2O/zGSLyIuPe74CqnPN+QBDwuxfG8c1gEvNTStbxxbvI7SJOrvMZegbu9h2Y7bbiMuX/jcDw9PIQ8mv8FO55pJLuOC947JVeSPOqBTrrvOpI8S2JdPk5/arwQQhy7Q46gPL3ujTvqNQc83kFfOG86LTu2AYW7kI3+O8ONuzwJCAI8SEYauo+mSrv9xxK8xQ9cvAU2crxJ4Ya8izysvBJ3q7wIBu67UgOfvF/dMDzH+KO8j6eUPCxEG7zWujO8bGnnu84yPjx/lt88PtYmvBYu2ztOf+o88woOO7KWnLxDjqC7W8CjPKpbODxMsLg8rEO2O5GPEj3ZPZ689PILPDKXAbvttyc8mRcIPH9KmLwG0V676jUHu55o2jxpTSQ7kik1vAi6pjy+1os8RChDu7aaXbxpmrU8R0VQO0NBjzywYQ28dD84Otu/Pjw/cRO8F3tsPDc1Zbwvx4U8H1DzvH9Jzju+1gs80+o3PN+QBDzM/OS7JLwlPGeyt7uc5wO9o23lvPNXHz1dp9c8/ccSPX9KmDzH+KO7dw7qu9IDBLzYorG8lfkwvf78Ib2JU2Q86xy7vJjJrDpbcsi857FSu5mwYDuXe9G7diiAvFjv3Tr+rxA89PKLPGOU4Dwm8bQ7AcxTvGy3wrynjAY91m0iPd8p3btPzcU6uIJbPGnnxrwzyny82fCMO1ok7brwhyO8gOUEvfzF/jvDjbu82fCMuyoOQjxtnvY8dnP9u0l6XzzRaBe8ZC/NvKPUDDzoS3W73KZyPL7VwTrOMXS8WT25vEYRC7wW4P87NGVpvEI/ezwku9u7cnCGPCGfmDuCs+y6o21lPLoekjuYfJs8yeChvGKtLDzPzOA8hjchvLkdSLxcWfy6mv+FvMz9rrxjR888blIvun0ViTvirZG8ZeMFvac+K7wIbRU7NGVpuwmh2jxZPoO8EioavONHNL1HRdC7szEJvCv2P70r9XW7fMetPKlzury+1ou8CCAEvF31Mr69OtU7cNUZPNdVIL3MsJ27y6/TurRlTjzqNYe8c6RLvDYBILxw1E88pvGZvFok7by7Ule8U56LuyoPjDydzW27vTrVvJjJLD2dzW089PHBPJ7PAb2Gg2g8q0LsuiMhubum8Zm7hOh7uws9ET1KyDo8bqAKvFVtPTxbcxK83agGPd71l7tPgLQ7YRJAPFa6Tj250Da8YHfTuqtC7DvnZYs8hjchPCyQ4rzk4iA8h9HDO6E5oDwlCgE9uri0u7ZOFj1OMlm8VIYJPN/cy7w6az48X92wO3JwhjwBgIw7sGENuwcfujx0Pm48WKOWuzRlaTyJugu9MUjcOu1RyrxsHaC8oyGevI1yBb03NeU7LXjgOTGWtzozy0a8kneQuJCNfjy0GL07N5yMO0UP9zwi0927QL6kPPEiELt2KAA8NBmiu+Z9DT09Ozo8Et2IO2xp5zuNcTu8390VPNUfxzgA5NW8cW7yuzQYWDxD2zG9DXHWuuy2XbyGN6E7IyKDPFijFrteQ447p9jNO2bLA7siOoW8ESnQu3wTdbyfUNg8lpPTPGP6PTsP9EC8knZGPJwzSz1yCV+5oeyOOo0kqrwODMM8G5nDPH+XqTsku9s8LsXxOr7Wi7w/JAI8NBhYO6LTQj0YypG7cW7yvNjvwjy8UyG71DiTvPcOz720y6u8AJiOPLFJCz1ACmy7LPcJPcBXYjxSULA8K6muvBNeXzwRj628FpUCvVsmgbz6kG+8OrjPvOwdBTt63uU8lUbCOxBB0ryGNyE9otJ4u39JTrwnPxA9CVTJvFUfYro/Izg8VrrOvMerEjz7LCY8WddbOlok7bqxSMG8q/VauRaUuLwxSSa6oyEevFdVO7wwYSi8oTkgPUI/e7w2mng8AcxTOhVGXbxSnUG8oFGiu7sFxjpwiIi8mv8FuyDr37s5avS8ZOK7vD07Ojv8ebe8SxaWPJMRszx8x608l8hiPGETCrxdqKG8f0oYOT6JFb2gnrO7ADHnvAuJWLsni9c7luEuO0PbMb1SAx+8NzXlu4JmWzxklSq8s34aOwAysbvj+qI8bznjvIqiiTp0pZW8Dg0NvSE5uzzyvDK6OYSKvJyA3Ls+iZU85Xv5vHzHLbkEAq07IoZMvALNHTwG0V46uh4SvZfI4jjeQik8DQv5PIqiCb1QtPm84qxHOy7Gu7tRtUO86ZnQO7nQNjxqNaK84/oivFu/Wb2UXw482KIxO5r/Bb2bTJe8+ytcuzpsCLyjINS7gX7dOpFCAT1lMBc7WyYBPCKGzLvv7YA81wiPvEz+E7wnJfo81wgPOzxUhjyMI+A8gOS6u7g2lLxxbnI6T83FPJqxKryUrB+8F3tsvER1VDxgxOS8f0nOu6UJnDvT6wG9Npp4vC3fhzzhq327D6bluwAyMTxk4rs8ooYxPWB3UzzeQim8O7kZvf6vkDxI4Dy7tWYYvHx6nDxAWEe8KcBmuusb8TtxbvI7D6ZlPJtMl7tnsje8FuD/Oypb07skvKW7NBkiPPYnGzmGhDI8FF8pvHhcRT1ycIY8FKtwPCUKgTv22gk8D/RAPALNHbw50Zu7R0VQPKtcArzPzOC7cglfO7QYPTzirRE8nmhaPFtySDxhE4o8lKtVu6/GILx22qQ8EPWKPPfBvTvRAjq8ly5APCY+Rjy9O588N5yMOrN+mjxos4G74RIlvMC+ibwm8TQ84RIlPLprI7uc5rm81IUkvFmKyjn7LKY8oAQRPZJ3kDyoJik9V1U7PGDE5LvJLTO9RRBBvK54xTsskOK7Y5TgvD2Iyzvstl05U+rSOr3ujbus3di852ULPFa7GLyjIR68/HoBvLIwv7uPWgO9XFrGPLFIQbzsHYU7P3DJPAXpYDxXVPE8lF8Ou2ETCjyLiPO764KYPCupLrtACuy7bznjO+o1h7y6uDQ7+5KDvIXqDzoPpuW8xcMUPPJW1Tu4NpQ9efexPN2nPLzlyVQ82T0evNEB8Dv0PtM8VIYJPNYGe7yYfJu8E8S8OwY4BjseaT+87p8lve6fpbwCGq+7buxRO1cIKjzp5mG8QaaiPGcYFTzk4qA8PYjLPBvmVDyuEui7LsVxPL2H5jw0GaK8p4yGvEUQQbyjIFQ8bGnnO1/dML18epy8Y0dPPKS8iruCzYI6eF2PusktszxSnUE8bB2gPNcIDz0ku9u8U+scu1Q4Ljw9Ozo74MRJvAvWabxEKQ28"}],
+        "model": "text-embedding-ada-002-v2", "usage": {"prompt_tokens": 6, "total_tokens":
+        6}}'
+    headers:
+      access-control-allow-origin:
+      - '*'
+      access-control-expose-headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a1e5f2efca74e5c0-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      date:
+      - Tue, 21 Jul 2026 00:04:34 GMT
+      openai-model:
+      - text-embedding-ada-002-v2
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '85'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      via:
+      - envoy-router-8d6d9547f-6npfn
+      x-engine-geography:
+      - US
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_3d6ea41e77b7447399cc3558ecf628a0
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"input":[{"role":"user","content":"How many letters are in the word Python?
+      Answer in one word with no formatting."}],"instructions":"You are a text parser.","max_output_tokens":500,"model":"gpt-5.1","temperature":0.7}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - api.openai.com
+      x-stainless-read-timeout:
+      - '600'
+    method: POST
+    uri: https://api.openai.com/v1/responses
+  response:
+    body:
+      string: '{"id": "resp_052fa11ffa9ab45a006a5eb79243f48198a3778dfab4bf1742", "object":
+        "response", "created_at": 1784592274, "status": "completed", "background":
+        false, "billing": {"payer": "developer"}, "completed_at": 1784592274, "error":
+        null, "frequency_penalty": 0.0, "incomplete_details": null, "instructions":
+        "You are a text parser.", "max_output_tokens": 500, "max_tool_calls": null,
+        "model": "gpt-5.1-2025-11-13", "moderation": null, "output": [{"id": "msg_052fa11ffa9ab45a006a5eb792cda48198abfc0b4c124f8117",
+        "type": "message", "status": "completed", "content": [{"type": "output_text",
+        "annotations": [], "logprobs": [], "text": "six"}], "role": "assistant"}],
+        "parallel_tool_calls": true, "presence_penalty": 0.0, "previous_response_id":
+        null, "prompt_cache_key": null, "prompt_cache_retention": "in_memory", "reasoning":
+        {"context": "current_turn", "effort": "none", "mode": "standard", "summary":
+        null}, "safety_identifier": null, "service_tier": "default", "store": true,
+        "temperature": 0.7, "text": {"format": {"type": "text"}, "verbosity": "medium"},
+        "tool_choice": "auto", "tool_usage": {"image_gen": {"input_tokens": 0, "input_tokens_details":
+        {"image_tokens": 0, "text_tokens": 0}, "output_tokens": 0, "output_tokens_details":
+        {"image_tokens": 0, "text_tokens": 0}, "total_tokens": 0}, "web_search": {"num_requests":
+        0}}, "tools": [], "top_logprobs": 0, "top_p": 1.0, "truncation": "disabled",
+        "usage": {"input_tokens": 33, "input_tokens_details": {"cache_write_tokens":
+        0, "cached_tokens": 0}, "output_tokens": 11, "output_tokens_details": {"reasoning_tokens":
+        0}, "total_tokens": 44}, "user": null, "metadata": {}}'
+    headers:
+      access-control-expose-headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a1e5f2f1e800e5c0-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      date:
+      - Tue, 21 Jul 2026 00:04:35 GMT
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '759'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_d1266ca570484342b5fd1b897dde95c3
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"input":[{"role":"user","content":"How many letters are in the word Python?
+      Answer in one word with no formatting."}],"instructions":"You are a text parser.
+      Convert the temperature.","max_output_tokens":500,"model":"gpt-5.1","temperature":0.7,"text":{"format":{"type":"json_schema","strict":true,"name":"LetterCount","schema":{"properties":{"count":{"title":"Count","type":"integer"}},"required":["count"],"title":"LetterCount","type":"object","additionalProperties":false}}}}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - api.openai.com
+      x-stainless-read-timeout:
+      - '600'
+    method: POST
+    uri: https://api.openai.com/v1/responses
+  response:
+    body:
+      string: '{"id": "resp_03be0af0719a407e006a5eb7936848819ab29f2385ca090642", "object":
+        "response", "created_at": 1784592275, "status": "completed", "background":
+        false, "billing": {"payer": "developer"}, "completed_at": 1784592276, "error":
+        null, "frequency_penalty": 0.0, "incomplete_details": null, "instructions":
+        "You are a text parser. Convert the temperature.", "max_output_tokens": 500,
+        "max_tool_calls": null, "model": "gpt-5.1-2025-11-13", "moderation": null,
+        "output": [{"id": "msg_03be0af0719a407e006a5eb79409d0819ab100eb52bb68b71c",
+        "type": "message", "status": "completed", "content": [{"type": "output_text",
+        "annotations": [], "logprobs": [], "text": "{\"count\":6}"}], "role": "assistant"}],
+        "parallel_tool_calls": true, "presence_penalty": 0.0, "previous_response_id":
+        null, "prompt_cache_key": null, "prompt_cache_retention": "in_memory", "reasoning":
+        {"context": "current_turn", "effort": "none", "mode": "standard", "summary":
+        null}, "safety_identifier": null, "service_tier": "default", "store": true,
+        "temperature": 0.7, "text": {"format": {"type": "json_schema", "description":
+        null, "name": "LetterCount", "schema": {"properties": {"count": {"title":
+        "Count", "type": "integer"}}, "required": ["count"], "title": "LetterCount",
+        "type": "object", "additionalProperties": false}, "strict": true}, "verbosity":
+        "medium"}, "tool_choice": "auto", "tool_usage": {"image_gen": {"input_tokens":
+        0, "input_tokens_details": {"image_tokens": 0, "text_tokens": 0}, "output_tokens":
+        0, "output_tokens_details": {"image_tokens": 0, "text_tokens": 0}, "total_tokens":
+        0}, "web_search": {"num_requests": 0}}, "tools": [], "top_logprobs": 0, "top_p":
+        1.0, "truncation": "disabled", "usage": {"input_tokens": 68, "input_tokens_details":
+        {"cache_write_tokens": 0, "cached_tokens": 0}, "output_tokens": 19, "output_tokens_details":
+        {"reasoning_tokens": 0}, "total_tokens": 87}, "user": null, "metadata": {}}'
+    headers:
+      access-control-expose-headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a1e5f2f8f8e9e5c0-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      date:
+      - Tue, 21 Jul 2026 00:04:36 GMT
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '1239'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_c70a38cacc144d4d87a10cd018a98e06
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"input":[{"role":"user","content":"How many letters are in the word Python?
+      Answer in one word with no formatting."}],"instructions":"You are a text parser.","max_output_tokens":500,"model":"does-not-exist-nr-test","temperature":0.7}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - api.openai.com
+      x-stainless-read-timeout:
+      - '600'
+    method: POST
+    uri: https://api.openai.com/v1/responses
+  response:
+    body:
+      string: '{"error": {"message": "The requested model ''does-not-exist-nr-test''
+        does not exist.", "type": "invalid_request_error", "param": "model", "code":
+        "model_not_found"}}'
+    headers:
+      access-control-expose-headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a1e5f3020f0ae5c0-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      date:
+      - Tue, 21 Jul 2026 00:04:37 GMT
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '187'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      x-request-id:
+      - req_4306870cef6b4870b27586cafaf08c5c
+    status:
+      code: 400
+      message: Bad Request
+- request:
+    body: '{"input":[{"role":"user","content":"How many letters are in the word Python?
+      Answer in one word with no formatting."}],"instructions":"You are a text parser.","max_output_tokens":500,"model":"gpt-5.1","stream":true,"temperature":0.7}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - api.openai.com
+      x-stainless-read-timeout:
+      - '600'
+    method: POST
+    uri: https://api.openai.com/v1/responses
+  response:
+    body:
+      string: 'event: response.created
+
+        data: {"type":"response.created","response":{"id":"resp_084003240a4a517f006a5eb79531888198a839b9300e4e2a27","object":"response","created_at":1784592277,"status":"in_progress","background":false,"completed_at":null,"error":null,"frequency_penalty":0.0,"incomplete_details":null,"instructions":"You
+        are a text parser.","max_output_tokens":500,"max_tool_calls":null,"model":"gpt-5.1-2025-11-13","moderation":null,"output":[],"parallel_tool_calls":true,"presence_penalty":0.0,"previous_response_id":null,"prompt_cache_key":null,"prompt_cache_retention":"in_memory","reasoning":{"context":"current_turn","effort":"none","mode":"standard","summary":null},"safety_identifier":null,"service_tier":"auto","store":true,"temperature":0.7,"text":{"format":{"type":"text"},"verbosity":"medium"},"tool_choice":"auto","tool_usage":{"image_gen":{"input_tokens":0,"input_tokens_details":{"image_tokens":0,"text_tokens":0},"output_tokens":0,"output_tokens_details":{"image_tokens":0,"text_tokens":0},"total_tokens":0},"web_search":{"num_requests":0}},"tools":[],"top_logprobs":0,"top_p":1.0,"truncation":"disabled","usage":null,"user":null,"metadata":{}},"sequence_number":0}
+
+
+        event: response.in_progress
+
+        data: {"type":"response.in_progress","response":{"id":"resp_084003240a4a517f006a5eb79531888198a839b9300e4e2a27","object":"response","created_at":1784592277,"status":"in_progress","background":false,"completed_at":null,"error":null,"frequency_penalty":0.0,"incomplete_details":null,"instructions":"You
+        are a text parser.","max_output_tokens":500,"max_tool_calls":null,"model":"gpt-5.1-2025-11-13","moderation":null,"output":[],"parallel_tool_calls":true,"presence_penalty":0.0,"previous_response_id":null,"prompt_cache_key":null,"prompt_cache_retention":"in_memory","reasoning":{"context":"current_turn","effort":"none","mode":"standard","summary":null},"safety_identifier":null,"service_tier":"auto","store":true,"temperature":0.7,"text":{"format":{"type":"text"},"verbosity":"medium"},"tool_choice":"auto","tool_usage":{"image_gen":{"input_tokens":0,"input_tokens_details":{"image_tokens":0,"text_tokens":0},"output_tokens":0,"output_tokens_details":{"image_tokens":0,"text_tokens":0},"total_tokens":0},"web_search":{"num_requests":0}},"tools":[],"top_logprobs":0,"top_p":1.0,"truncation":"disabled","usage":null,"user":null,"metadata":{}},"sequence_number":1}
+
+
+        event: response.output_item.added
+
+        data: {"type":"response.output_item.added","item":{"id":"msg_084003240a4a517f006a5eb795d4c88198ab88e83435fcc948","type":"message","status":"in_progress","content":[],"role":"assistant"},"output_index":0,"sequence_number":2}
+
+
+        event: response.content_part.added
+
+        data: {"type":"response.content_part.added","content_index":0,"item_id":"msg_084003240a4a517f006a5eb795d4c88198ab88e83435fcc948","output_index":0,"part":{"type":"output_text","annotations":[],"logprobs":[],"text":""},"sequence_number":3}
+
+
+        event: response.output_text.delta
+
+        data: {"type":"response.output_text.delta","content_index":0,"delta":"six","item_id":"msg_084003240a4a517f006a5eb795d4c88198ab88e83435fcc948","logprobs":[],"obfuscation":"iR0bnXf73cs7T","output_index":0,"sequence_number":4}
+
+
+        event: response.output_text.done
+
+        data: {"type":"response.output_text.done","content_index":0,"item_id":"msg_084003240a4a517f006a5eb795d4c88198ab88e83435fcc948","logprobs":[],"output_index":0,"sequence_number":5,"text":"six"}
+
+
+        event: response.content_part.done
+
+        data: {"type":"response.content_part.done","content_index":0,"item_id":"msg_084003240a4a517f006a5eb795d4c88198ab88e83435fcc948","output_index":0,"part":{"type":"output_text","annotations":[],"logprobs":[],"text":"six"},"sequence_number":6}
+
+
+        event: response.output_item.done
+
+        data: {"type":"response.output_item.done","item":{"id":"msg_084003240a4a517f006a5eb795d4c88198ab88e83435fcc948","type":"message","status":"completed","content":[{"type":"output_text","annotations":[],"logprobs":[],"text":"six"}],"role":"assistant"},"output_index":0,"sequence_number":7}
+
+
+        event: response.completed
+
+        data: {"type":"response.completed","response":{"id":"resp_084003240a4a517f006a5eb79531888198a839b9300e4e2a27","object":"response","created_at":1784592277,"status":"completed","background":false,"completed_at":1784592277,"error":null,"frequency_penalty":0.0,"incomplete_details":null,"instructions":"You
+        are a text parser.","max_output_tokens":500,"max_tool_calls":null,"model":"gpt-5.1-2025-11-13","moderation":null,"output":[{"id":"msg_084003240a4a517f006a5eb795d4c88198ab88e83435fcc948","type":"message","status":"completed","content":[{"type":"output_text","annotations":[],"logprobs":[],"text":"six"}],"role":"assistant"}],"parallel_tool_calls":true,"presence_penalty":0.0,"previous_response_id":null,"prompt_cache_key":null,"prompt_cache_retention":"in_memory","reasoning":{"context":"current_turn","effort":"none","mode":"standard","summary":null},"safety_identifier":null,"service_tier":"default","store":true,"temperature":0.7,"text":{"format":{"type":"text"},"verbosity":"medium"},"tool_choice":"auto","tool_usage":{"image_gen":{"input_tokens":0,"input_tokens_details":{"image_tokens":0,"text_tokens":0},"output_tokens":0,"output_tokens_details":{"image_tokens":0,"text_tokens":0},"total_tokens":0},"web_search":{"num_requests":0}},"tools":[],"top_logprobs":0,"top_p":1.0,"truncation":"disabled","usage":{"input_tokens":33,"input_tokens_details":{"cache_write_tokens":0,"cached_tokens":0},"output_tokens":11,"output_tokens_details":{"reasoning_tokens":0},"total_tokens":44},"user":null,"metadata":{}},"sequence_number":8}
+
+
+        '
+    headers:
+      access-control-expose-headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a1e5f3043befe5c0-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - text/event-stream; charset=utf-8
+      date:
+      - Tue, 21 Jul 2026 00:04:37 GMT
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '205'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_fbfda88bc0894e559d9072ca8c3084cc
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"input":[{"role":"user","content":"How many letters are in the word Python?
+      Answer in one word with no formatting."}],"instructions":"You are a text parser.","max_output_tokens":500,"model":"does-not-exist-nr-test","stream":true,"temperature":0.7}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - api.openai.com
+      x-stainless-read-timeout:
+      - '600'
+    method: POST
+    uri: https://api.openai.com/v1/responses
+  response:
+    body:
+      string: '{"error": {"message": "The requested model ''does-not-exist-nr-test''
+        does not exist.", "type": "invalid_request_error", "param": "model", "code":
+        "model_not_found"}}'
+    headers:
+      access-control-expose-headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a1e5f30b8c06e5c0-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      date:
+      - Tue, 21 Jul 2026 00:04:43 GMT
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '5106'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      x-request-id:
+      - req_dd4bcf4889c6469fb37d6e5d609e1f32
+    status:
+      code: 400
+      message: Bad Request
+- request:
+    body: '{"model": "does-not-exist", "messages": [{"role": "user", "content": "Model
+      does not exist."}], "temperature": 0.7, "max_tokens": 500}'
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      authorization:
+      - XXXXXX
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: '{"error": {"message": "The model `does-not-exist` does not exist or
+        you do not have access to it.", "type": "invalid_request_error", "param":
+        null, "code": "model_not_found"}}'
+    headers:
+      Access-Control-Expose-Headers:
+      - CF-Ray
+      - CF-Ray
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-Ray:
+      - a1e5f3dbfe8fe5c0-PDX
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Tue, 21 Jul 2026 00:05:11 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      x-request-id:
+      - req_7cb98fde2f77406aa593ebff883f8826
+    status:
+      code: 404
+      message: Not Found
+- request:
+    body: '{"model": "gpt-3.5-turbo", "messages": [{"role": "user", "content": "Invalid
+      API key."}], "temperature": 0.7, "max_tokens": 500}'
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      authorization:
+      - XXXXXX
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: '{"error": {"message": "Incorrect API key provided: DEADBEEF. You can
+        find your API key at https://platform.openai.com/account/api-keys.", "type":
+        "invalid_request_error", "param": null, "code": "invalid_api_key"}}'
+    headers:
+      Access-Control-Expose-Headers:
+      - CF-Ray
+      - CF-Ray
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-Ray:
+      - a1e5f3dcc85ee5c0-PDX
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Tue, 21 Jul 2026 00:05:11 GMT
+      Server:
+      - cloudflare
+      Vary:
+      - Origin
+      x-request-id:
+      - req_fedd1db052db491d8aea629f019cfba7
+    status:
+      code: 401
+      message: Unauthorized
+- request:
+    body: '{"model": "does-not-exist", "messages": [{"role": "user", "content": "Model
+      does not exist."}], "temperature": 0.7, "max_tokens": 500}'
+    headers:
+      Content-Type:
+      - application/json
+      authorization:
+      - XXXXXX
+    method: post
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: '{"error": {"message": "The model `does-not-exist` does not exist or
+        you do not have access to it.", "type": "invalid_request_error", "param":
+        null, "code": "model_not_found"}}'
+    headers:
+      Access-Control-Expose-Headers:
+      - CF-Ray
+      - CF-Ray
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-Ray:
+      - a1e5f3ddba7be5c0-PDX
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Tue, 21 Jul 2026 00:05:12 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      x-request-id:
+      - req_0784ca1d82e54ca085d816d2acce26f3
+    status:
+      code: 404
+      message: Not Found
+- request:
+    body: '{"model": "gpt-3.5-turbo", "messages": [{"role": "user", "content": "Invalid
+      API key."}], "temperature": 0.7, "max_tokens": 500}'
+    headers:
+      Content-Type:
+      - application/json
+      authorization:
+      - XXXXXX
+    method: post
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: '{"error": {"message": "Incorrect API key provided: DEADBEEF. You can
+        find your API key at https://platform.openai.com/account/api-keys.", "type":
+        "invalid_request_error", "param": null, "code": "invalid_api_key"}}'
+    headers:
+      Access-Control-Expose-Headers:
+      - CF-Ray
+      - CF-Ray
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-Ray:
+      - a1e5f3debcb2e5c0-PDX
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Tue, 21 Jul 2026 00:05:12 GMT
+      Server:
+      - cloudflare
+      Vary:
+      - Origin
+      x-request-id:
+      - req_64d079958d7941e2915e4e6e8ee8242e
+    status:
+      code: 401
+      message: Unauthorized
+- request:
+    body: '{"model": "does-not-exist", "messages": [{"role": "user", "content": "Model
+      does not exist."}], "temperature": 0.7, "max_tokens": 500, "stream": true}'
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      authorization:
+      - XXXXXX
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: '{"error": {"message": "The model `does-not-exist` does not exist or
+        you do not have access to it.", "type": "invalid_request_error", "param":
+        null, "code": "model_not_found"}}'
+    headers:
+      Access-Control-Expose-Headers:
+      - CF-Ray
+      - CF-Ray
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-Ray:
+      - a1e5f3df8e93e5c0-PDX
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Tue, 21 Jul 2026 00:05:12 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      x-request-id:
+      - req_69754c234519431ab8bf3866c7f7f0e8
+    status:
+      code: 404
+      message: Not Found
+- request:
+    body: '{"model": "gpt-3.5-turbo", "messages": [{"role": "user", "content": "Invalid
+      API key."}], "temperature": 0.7, "max_tokens": 500, "stream": true}'
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      authorization:
+      - XXXXXX
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: '{"error": {"message": "Incorrect API key provided: DEADBEEF. You can
+        find your API key at https://platform.openai.com/account/api-keys.", "type":
+        "invalid_request_error", "param": null, "code": "invalid_api_key"}}'
+    headers:
+      Access-Control-Expose-Headers:
+      - CF-Ray
+      - CF-Ray
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-Ray:
+      - a1e5f3e07890e5c0-PDX
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Tue, 21 Jul 2026 00:05:12 GMT
+      Server:
+      - cloudflare
+      Vary:
+      - Origin
+      x-request-id:
+      - req_1155a4908c994d39893e18011ef9ad47
+    status:
+      code: 401
+      message: Unauthorized
+- request:
+    body: '{"model": "does-not-exist", "messages": [{"role": "user", "content": "Model
+      does not exist."}], "temperature": 0.7, "max_tokens": 500, "stream": true}'
+    headers:
+      Content-Type:
+      - application/json
+      authorization:
+      - XXXXXX
+    method: post
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: '{"error": {"message": "The model `does-not-exist` does not exist or
+        you do not have access to it.", "type": "invalid_request_error", "param":
+        null, "code": "model_not_found"}}'
+    headers:
+      Access-Control-Expose-Headers:
+      - CF-Ray
+      - CF-Ray
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-Ray:
+      - a1e5f3e15a89e5c0-PDX
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Tue, 21 Jul 2026 00:05:12 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      x-request-id:
+      - req_c6ef79e960b04696b3ee287afcd94ce7
+    status:
+      code: 404
+      message: Not Found
+- request:
+    body: '{"model": "gpt-3.5-turbo", "messages": [{"role": "user", "content": "Invalid
+      API key."}], "temperature": 0.7, "max_tokens": 500, "stream": true}'
+    headers:
+      Content-Type:
+      - application/json
+      authorization:
+      - XXXXXX
+    method: post
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: '{"error": {"message": "Incorrect API key provided: DEADBEEF. You can
+        find your API key at https://platform.openai.com/account/api-keys.", "type":
+        "invalid_request_error", "param": null, "code": "invalid_api_key"}}'
+    headers:
+      Access-Control-Expose-Headers:
+      - CF-Ray
+      - CF-Ray
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-Ray:
+      - a1e5f3e25cbae5c0-PDX
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Tue, 21 Jul 2026 00:05:12 GMT
+      Server:
+      - cloudflare
+      Vary:
+      - Origin
+      x-request-id:
+      - req_e4fd34932dc540fbac4444027b01588a
+    status:
+      code: 401
+      message: Unauthorized
+- request:
+    body: '{"model": "gpt-3.5-turbo", "messages": [{"role": "system", "content": "You
+      are a text parser."}, {"role": "user", "content": "How many letters are in the
+      word Python? Answer in one word with no formatting."}], "temperature": 0.7,
+      "max_tokens": 500, "stream": true}'
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      authorization:
+      - XXXXXX
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: 'data: {"id":"chatcmpl-E3sGuuKuI1BusTtxeOEMKvJYQpyBo","object":"chat.completion.chunk","created":1784592312,"model":"gpt-3.5-turbo-0125","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"role":"assistant","content":"","refusal":null},"logprobs":null,"finish_reason":null}],"obfuscation":"rH4I1"}
+
+
+        data: {"id":"chatcmpl-E3sGuuKuI1BusTtxeOEMKvJYQpyBo","object":"chat.completion.chunk","created":1784592312,"model":"gpt-3.5-turbo-0125","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"content":"Six"},"logprobs":null,"finish_reason":null}],"obfuscation":"seSr"}
+
+
+        data: {"id":"chatcmpl-E3sGuuKuI1BusTtxeOEMKvJYQpyBo","object":"chat.completion.chunk","created":1784592312,"model":"gpt-3.5-turbo-0125","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{},"logprobs":null,"finish_reason":"stop"}],"obfuscation":"z"}
+
+
+        data: [DONE]
+
+
+        '
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-Ray:
+      - a1e5f3e33eeee5c0-PDX
+      Connection:
+      - keep-alive
+      Content-Type:
+      - text/event-stream; charset=utf-8
+      Date:
+      - Tue, 21 Jul 2026 00:05:14 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      access-control-expose-headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '1120'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_b4e829dbdf8a42118b4ae28a4c98e380
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"model": "gpt-3.5-turbo", "messages": [{"role": "system", "content": "You
+      are a text parser."}, {"role": "user", "content": "How many letters are in the
+      word Python? Answer in one word with no formatting."}], "temperature": 0.7,
+      "max_tokens": 500, "stream": true}'
+    headers:
+      Content-Type:
+      - application/json
+      authorization:
+      - XXXXXX
+    method: post
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: 'data: {"id":"chatcmpl-E3sGwzIg4nFGR4awj7L93WHj8U0jI","object":"chat.completion.chunk","created":1784592314,"model":"gpt-3.5-turbo-0125","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"role":"assistant","content":"","refusal":null},"logprobs":null,"finish_reason":null}],"obfuscation":"923pT"}
+
+
+        data: {"id":"chatcmpl-E3sGwzIg4nFGR4awj7L93WHj8U0jI","object":"chat.completion.chunk","created":1784592314,"model":"gpt-3.5-turbo-0125","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"content":"Six"},"logprobs":null,"finish_reason":null}],"obfuscation":"njnQ"}
+
+
+        data: {"id":"chatcmpl-E3sGwzIg4nFGR4awj7L93WHj8U0jI","object":"chat.completion.chunk","created":1784592314,"model":"gpt-3.5-turbo-0125","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{},"logprobs":null,"finish_reason":"stop"}],"obfuscation":"u"}
+
+
+        data: [DONE]
+
+
+        '
+    headers:
+      Access-Control-Expose-Headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-Ray:
+      - a1e5f3edfa02e5c0-PDX
+      Connection:
+      - keep-alive
+      Content-Type:
+      - text/event-stream; charset=utf-8
+      Date:
+      - Tue, 21 Jul 2026 00:05:15 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '387'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_8cc1cdf755964b999d4a937ccdae94c3
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"model": "gpt-3.5-turbo", "messages": [{"role": "system", "content": "You
+      are a text parser."}, {"role": "user", "content": "How many letters are in the
+      word Python? Answer in one word with no formatting."}], "temperature": 0.7,
+      "max_tokens": 500}'
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      authorization:
+      - XXXXXX
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: '{"id": "chatcmpl-E3sGxxuJlTH6S6obhyjdUML3wmSvy", "object": "chat.completion",
+        "created": 1784592315, "model": "gpt-3.5-turbo-0125", "choices": [{"index":
+        0, "message": {"role": "assistant", "content": "Six", "refusal": null, "annotations":
+        []}, "logprobs": null, "finish_reason": "stop"}], "usage": {"prompt_tokens":
+        34, "completion_tokens": 1, "total_tokens": 35, "prompt_tokens_details": {"cached_tokens":
+        0, "audio_tokens": 0}, "completion_tokens_details": {"reasoning_tokens": 0,
+        "audio_tokens": 0, "accepted_prediction_tokens": 0, "rejected_prediction_tokens":
+        0}}, "service_tier": "default", "system_fingerprint": null}'
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-Ray:
+      - a1e5f3f26ce5e5c0-PDX
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 21 Jul 2026 00:05:16 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      access-control-expose-headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '823'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_ab86e711526941399f710daeb0df2fda
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"model": "gpt-3.5-turbo", "messages": [{"role": "system", "content": "You
+      are a text parser."}, {"role": "user", "content": "How many letters are in the
+      word Python? Answer in one word with no formatting."}], "temperature": 0.7,
+      "max_tokens": 500}'
+    headers:
+      Content-Type:
+      - application/json
+      authorization:
+      - XXXXXX
+    method: post
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: '{"id": "chatcmpl-E3sGyp6Kdr3QFCGJ9ikJg3UMtHJqh", "object": "chat.completion",
+        "created": 1784592316, "model": "gpt-3.5-turbo-0125", "choices": [{"index":
+        0, "message": {"role": "assistant", "content": "Six", "refusal": null, "annotations":
+        []}, "logprobs": null, "finish_reason": "stop"}], "usage": {"prompt_tokens":
+        34, "completion_tokens": 1, "total_tokens": 35, "prompt_tokens_details": {"cached_tokens":
+        0, "audio_tokens": 0}, "completion_tokens_details": {"reasoning_tokens": 0,
+        "audio_tokens": 0, "accepted_prediction_tokens": 0, "rejected_prediction_tokens":
+        0}}, "service_tier": "default", "system_fingerprint": null}'
+    headers:
+      Access-Control-Expose-Headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-Ray:
+      - a1e5f3fb3958e5c0-PDX
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 21 Jul 2026 00:05:17 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '960'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_5d956fa647ba48bd9ca345e7a0474f21
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"input": "Model does not exist.", "model": "does-not-exist", "encoding_format":
+      "base64"}'
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      authorization:
+      - XXXXXX
+    method: POST
+    uri: https://api.openai.com/v1/embeddings
+  response:
+    body:
+      string: '{"error": {"message": "The model `does-not-exist` does not exist or
+        you do not have access to it.", "type": "invalid_request_error", "param":
+        null, "code": "model_not_found"}}'
+    headers:
+      Access-Control-Expose-Headers:
+      - CF-Ray
+      - CF-Ray
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-Ray:
+      - a1e5f4041919e5c0-PDX
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Tue, 21 Jul 2026 00:05:18 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      x-request-id:
+      - req_1c499a1b7dff4ca58fc801a9adf85efa
+    status:
+      code: 404
+      message: Not Found
+- request:
+    body: '{"input": "Embedded: Invalid API key.", "model": "text-embedding-ada-002",
+      "encoding_format": "base64"}'
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      authorization:
+      - XXXXXX
+    method: POST
+    uri: https://api.openai.com/v1/embeddings
+  response:
+    body:
+      string: '{"error": {"message": "Incorrect API key provided: DEADBEEF. You can
+        find your API key at https://platform.openai.com/account/api-keys.", "type":
+        "invalid_request_error", "param": null, "code": "invalid_api_key"}}'
+    headers:
+      Access-Control-Expose-Headers:
+      - CF-Ray
+      - CF-Ray
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-Ray:
+      - a1e5f404fb27e5c0-PDX
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Tue, 21 Jul 2026 00:05:18 GMT
+      Server:
+      - cloudflare
+      Vary:
+      - Origin
+      x-request-id:
+      - req_ab984d421ccc4458994a25f45fb3c522
+    status:
+      code: 401
+      message: Unauthorized
+- request:
+    body: '{"input": "Model does not exist.", "model": "does-not-exist", "encoding_format":
+      "base64"}'
+    headers:
+      Content-Type:
+      - application/json
+      authorization:
+      - XXXXXX
+    method: post
+    uri: https://api.openai.com/v1/embeddings
+  response:
+    body:
+      string: '{"error": {"message": "The model `does-not-exist` does not exist or
+        you do not have access to it.", "type": "invalid_request_error", "param":
+        null, "code": "model_not_found"}}'
+    headers:
+      Access-Control-Expose-Headers:
+      - CF-Ray
+      - CF-Ray
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-Ray:
+      - a1e5f405ed76e5c0-PDX
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Tue, 21 Jul 2026 00:05:18 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      x-request-id:
+      - req_d713748dcf4446658ac3495d64c74780
+    status:
+      code: 404
+      message: Not Found
+- request:
+    body: '{"input": "Embedded: Invalid API key.", "model": "text-embedding-ada-002",
+      "encoding_format": "base64"}'
+    headers:
+      Content-Type:
+      - application/json
+      authorization:
+      - XXXXXX
+    method: post
+    uri: https://api.openai.com/v1/embeddings
+  response:
+    body:
+      string: '{"error": {"message": "Incorrect API key provided: DEADBEEF. You can
+        find your API key at https://platform.openai.com/account/api-keys.", "type":
+        "invalid_request_error", "param": null, "code": "invalid_api_key"}}'
+    headers:
+      Access-Control-Expose-Headers:
+      - CF-Ray
+      - CF-Ray
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-Ray:
+      - a1e5f4071817e5c0-PDX
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json; charset=utf-8
+      Date:
+      - Tue, 21 Jul 2026 00:05:18 GMT
+      Server:
+      - cloudflare
+      Vary:
+      - Origin
+      x-request-id:
+      - req_3dabe9876ad148f09cb562ebdde54aea
+    status:
+      code: 401
+      message: Unauthorized
+- request:
+    body: '{"input": "This is an embedding test.", "model": "text-embedding-ada-002",
+      "encoding_format": "base64"}'
+    headers:
+      Accept:
+      - '*/*'
+      Accept-Encoding:
+      - gzip, deflate
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      authorization:
+      - XXXXXX
+    method: POST
+    uri: https://api.openai.com/v1/embeddings
+  response:
+    body:
+      string: '{"object": "list", "data": [{"object": "embedding", "index": 0, "embedding":
+        "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"}],
+        "model": "text-embedding-ada-002-v2", "usage": {"prompt_tokens": 6, "total_tokens":
+        6}}'
+    headers:
+      Access-Control-Allow-Origin:
+      - '*'
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-Ray:
+      - a1e5f407ea0ce5c0-PDX
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 21 Jul 2026 00:05:18 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      Via:
+      - envoy-router-888fcbcf8-kjwqn
+      access-control-expose-headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      openai-model:
+      - text-embedding-ada-002-v2
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '121'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      x-engine-geography:
+      - US
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_cd19b2947f4946ad8b8bf82972c17167
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"input": "This is an embedding test.", "model": "text-embedding-ada-002",
+      "encoding_format": "base64"}'
+    headers:
+      Content-Type:
+      - application/json
+      authorization:
+      - XXXXXX
+    method: post
+    uri: https://api.openai.com/v1/embeddings
+  response:
+    body:
+      string: '{"object": "list", "data": [{"object": "embedding", "index": 0, "embedding":
+        "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"}],
+        "model": "text-embedding-ada-002-v2", "usage": {"prompt_tokens": 6, "total_tokens":
+        6}}'
+    headers:
+      Access-Control-Allow-Origin:
+      - '*'
+      Access-Control-Expose-Headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-Ray:
+      - a1e5f40b394de5c0-PDX
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 21 Jul 2026 00:05:19 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      Via:
+      - envoy-router-888fcbcf8-vvbtq
+      openai-model:
+      - text-embedding-ada-002-v2
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '105'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      x-engine-geography:
+      - US
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_d0849464448b411eb724336dd1454064
+    status:
+      code: 200
+      message: OK
+version: 1

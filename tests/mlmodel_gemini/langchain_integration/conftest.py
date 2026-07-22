@@ -27,11 +27,13 @@ from newrelic.api.transaction import current_transaction
 # Initialize MCP Client and load tools
 @pytest.fixture(scope="session")
 def mcp_client():
+    mcp_server_location = "langchain_integration/mcp_server.py" if os.getenv("GITHUB_ACTIONS") else "tests/mlmodel_gemini/langchain_integration/mcp_server.py"
+
     mcp_client = MultiServerMCPClient(
         {
             "my_mcp_server": {
                 "command": "python",
-                "args": ["tests/mlmodel_gemini/langchain_integration/mcp_server.py"],
+                "args": [mcp_server_location],
                 "transport": "stdio",
             }
         }

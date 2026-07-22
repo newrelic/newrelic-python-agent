@@ -31,7 +31,7 @@ def mcp_client():
         {
             "my_mcp_server": {
                 "command": "python",
-                "args": ["tests/mlmodel_gemini/langchain_integration/_mcp_server.py"],
+                "args": ["tests/mlmodel_gemini/langchain_integration/mcp_server.py"],
                 "transport": "stdio",
             }
         }
@@ -141,7 +141,7 @@ def async_call_model():
 
             step = 0
             async for event in agent.astream({"messages": state["messages"]}, stream_mode="updates"):
-                for _, update in event.items():
+                for update in event.values():
                     if isinstance(update, dict) and update.get("messages"):
                         for message in update["messages"]:
                             try:

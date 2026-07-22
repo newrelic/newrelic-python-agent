@@ -20,14 +20,14 @@ server = FastMCP("DH")
 
 @server.tool()
 def add_exclamation(phrase: str):
-    """ 
+    """
     Add an exclamation point to the end of the phrase.
     """
     return f"{phrase}!"
 
 @server.tool()
 def capitalize_message(phrase: str):
-    """ 
+    """
     Capitalize the letters within the phrase.
     """
     return f"{phrase.upper()}"

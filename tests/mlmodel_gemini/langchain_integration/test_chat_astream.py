@@ -51,8 +51,8 @@ recorded_events = [
 			'response.model': 'gemini-3.5-flash',
 			'response.number_of_messages': 2,
 			'response.usage.completion_tokens': 17,
-			'response.usage.prompt_tokens': 338,
-			'response.usage.total_tokens': 355,
+			'response.usage.prompt_tokens': 437,
+			'response.usage.total_tokens': 454,
 			'span_id': None,
 			'time_to_first_token': 3,
 			'timestamp': None,
@@ -105,8 +105,8 @@ recorded_events = [
 			'response.model': 'gemini-3.5-flash',
 			'response.number_of_messages': 2,
 			'response.usage.completion_tokens': 15,
-			'response.usage.prompt_tokens': 446,
-			'response.usage.total_tokens': 461,
+			'response.usage.prompt_tokens': 543,
+			'response.usage.total_tokens': 558,
 			'span_id': None,
 			'time_to_first_token': 3,
 			'timestamp': None,
@@ -177,8 +177,8 @@ chat_astream_metrics = [
     background_task=True,
 )
 @validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "my_agent"}'})
-@validate_span_events(count=2, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "add_exclamation"}'})
-@validate_span_events(count=2, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "capitalize_message"}'})
+@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "add_exclamation"}'})
+@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "capitalize_message"}'})
 @validate_attributes("agent", ["llm"])
 @background_task()
 def test_chat_astream(loop, build_agent, async_build_state_graph):
@@ -202,12 +202,11 @@ def test_chat_astream(loop, build_agent, async_build_state_graph):
                     messages_result.append(text)
             # Node Outputs (including tool results)
             elif event_type == "updates":
-                for _, update in chunk.items():
+                for update in chunk.values():
                     if not isinstance(update, dict):
                         continue
-                    for msg in update.get("messages", []) or []:
-                        if getattr(msg, "type", None) == "tool":
-                            updates_result.append(_extract_text(msg))
+                    result = [_extract_text(msg) for msg in update.get("messages", []) if getattr(msg, "type", None) == "tool"]
+                    updates_result.extend(result)
             
         return messages_result, updates_result
                             

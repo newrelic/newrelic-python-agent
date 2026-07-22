@@ -19,7 +19,6 @@ import google.genai
 import pytest
 from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixture.vcr import *  # noqa: F403
-from testing_support.fixture.vcr import VCR_IGNORED_HEADERS, VCR_TIKTOKEN_ENCODINGS
 from testing_support.fixtures import (
     collector_agent_registration_fixture,
     collector_available_fixture,
@@ -42,9 +41,6 @@ collector_agent_registration = collector_agent_registration_fixture(
     default_settings=_default_settings,
     linked_applications=["Python Agent Test (mlmodel_gemini)"],
 )
-
-VCR_IGNORED_HEADERS.extend(["accept-encoding"])
-VCR_TIKTOKEN_ENCODINGS.extend(["cl100k_base"])
 
 GEMINI_VERSION = google.genai.__version__
 GEMINI_VERSION_METRIC = f"Supportability/Python/ML/Gemini/{GEMINI_VERSION}"

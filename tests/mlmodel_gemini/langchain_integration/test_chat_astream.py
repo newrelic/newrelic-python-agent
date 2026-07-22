@@ -86,7 +86,7 @@ recorded_events = [
             "input": "{'phrase': 'HELLO'}",
             "name": "add_exclamation",
             "output": None,
-            "run_id": None,
+            "run_id": "tool-id-2",
             "span_id": None,
             "trace_id": None,
             "vendor": "langchain",

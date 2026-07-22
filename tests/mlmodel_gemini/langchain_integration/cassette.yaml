@@ -43,27 +43,27 @@ interactions:
     body:
       string: "data: {\"candidates\": [{\"content\": {\"parts\": [{\"functionCall\":
         {\"name\": \"capitalize_message\",\"args\": {\"phrase\": \"hello\"},\"id\":
-        \"p8kxkybr\"},\"thoughtSignature\": \"EqYJCqMJARFNMg+mGkzeeKYp2FsihLBTG2FEuvHiDPTSqiOpV1JhzNP2Wzo7XTqM8TWgQvYw9Esb3PxRyW4E+/ZeNEMEaCxU8KSxGWR7wxkiPWC7XKNRT1FpeOHOf/adSr5w5gfBGepnlPnX7YCLBMMr9n26Ag4eKuli1G79nRQu+zgs3WYLKIX43/EqS6qOvwe380K784OjfkdWiLt1tpGid9uaqpR1rYCeUeBAjIxxYxwf+Mg+JNO++GvAa4Vx8SVIJsgCO9hFdlT3mDo0WE/jGDSZ4RYK8pxavjvjw+3pwdW1JQ4Mc5sWw+qkm6s8+WgMew6229IygCnPhuRQdAyfXLaBEgNeBCef0o0YsOx8oUhhLbUQJwHEsDn2NLaXWC7UhwukQTbrDm5VmuPuhOnJCV7COm//BBGxwVmYVG9YJ+tqJAsUDmuz377Zy0LigfNspB3fyw0m+ZDeo3WW2ajnUB9LXEAlRV1vch+DEFAB3bdUzWd6iMCJAtyvcbpqzvPex2l05sRlW2LyDR69FyW+fSwaTIsB60jy4VrHdYgG84iFZxabdxNFXQnXK8XOGOStlcVp46VY3rgHZcqzYbZ1BxS3JDQu0QsDB4B/ScHC6PdjeuiXxWBvUmMH13JRiqyo/hsD+Ywg766EeREaYmIFWunSq3u5Ob2kDOnoYIuw8+euhTvC9OIJ4suw1ePvHIy0RH2P0271wROSvMJ2YgnM87RdXsL1m5jGsackqbd2s2lq9NUbPJmHyGERq48w9pp2fhRvbOYOkaVsZzfharVig2WHr5UeOFictklusPCNIyom3SnGsceuT3WEZX9gsN1p2zLoyi5wCVoq7IhA0xBSPq+0/HxvLHdPg7AxY+fFBz47zFucSIqXsd2lUp46V+HmSlRN9VKxYKPX4OhV8YMypqmJ5LVxi22bpb3uQN05Dojk4HpzqjZXZhYxo1jQyQOGfab0Xc8z8yQo7hG02n5IEUGQ/wh9tsD29FvJkmf9c1PLH9H3V98gsHrPKXTFguBtg/hAtSS4INrWyk0+3+f71xJh6etAVps5goqc+qGOSq2SIRbrU7iym52AC59Cf2AKUqvrx5qYt8N8Wzmtlpwtsxi9sFAZwC9DhJqoBUKt6Cg/xOv93JyQX3jSbnLYWSx0MRgcbnFpHs9MXdQ9Dji/RDOPrzkbtMN5scioP1Zg1FHOADUJopOvKRgmMhYiMKLyScWxaYXfSJyqDefK6S9EyCYc8Rb0AUMuaizYsIEDAZvU+8QIKgcJTL0K2RFzsK3fHZh9bPVfHYVx+dx9YVRyGwRjaYbzUKTg6xY2rx8b3bmmtPabSWFkNHPjmVg9+Ou+d3jDAciP8R0HjItjH0fa7CQaf6z1uF15OtmniFDF9gZFzoHcrCDFJ45zBuxXS5b8rzwJJ14mKNwvaY8Tqj/WbsOMPeYwJ+fDFPN1ARyay+xd3PCx+dCc+H+IcLveXXkiZH8qDawVKIrbZzSm8NUn+Q34l900RvTm53KbsTYNe/qSARM1F+zM6nOCTLzFm2c9HmmyA2zDmerxq7/iWN1BGVJZTnahqC3AjZ7xfO2khGZLVrN+/QU=\"}],\"role\":
+        \"pvaxbgv2\"},\"thoughtSignature\": \"EpoICpcIARFNMg+tX5TRdtqJLt1RHpxfosF8xiwP2vNnwc7Ht9BOgyobmkCb5jLbz6qxRBPEIj4g6tf4yi/URcQLSulZz4Tv2LTBBehMd9/dWwvWarzp2UvcGF8XCvnTAGex2uIp2c1IvY+vimKaSjhOdvieN/HdSTHqnjR3hdkjSp5uhOHAdHavyrIiQbdps+fDQASeFvcJoNpxPo7s4fej01lQUe6vckqzMpxG5AM8PNHt+TPRkuU3ieLt18OY+rJRQiVK6nqXEJXk9vdd8dV50GUMZNgNXeTs+pjAkMAw0NwBarVzsgHRkHz4jd6OLbldBRW3XVjfhQlf9JphgXQh72/lGCWbPiBSS4NiiVm5rEVj+LVBCAfcqMlS58LZ7iYTu4G3UGb/ib342FSGrWxk1/RGNPed6Yud4mSdS04OJyrI1KhDT6Yk7UwVs6Tbp1UjedQSuKRvNMWY1Zgh3+vRmEm1yubsWEfZBv3DruaNDcRKOqOrP87/bK8gZs36gdNIYDMGucUVDxoP05Q4SSByNo0gZkSjhOMNb9QxMG4PJnhRoV+eY9ecdKDpR3Uz45zhCgJbdI4WX7e/kOsWEGYtkpBVBqUyT68cCpW13rirG2yo4qaMruOzDoxm50i8rrcMNh7X175lLha/6UzmQP5CoT5RXWmzsX+WpFEk1qFLNWqWKIrTfHrINyUkNyU2JT/zkIyTXyrXrtcWHq0XMiMnRhYCEDbfzq4/mkbf2N3mPVP7vp/KqE51eLJVRMBboNPs8wJSoqFdMifW6e81hsYgb6gDxp9XWzTze1lP0l8XKO87f9mxe1jaXLIJtvxsYeAOUjT2a5DVjj7y38BSsG53+RHS7yixXGEY+tX5xfe+Bh9w9tAiy4YTiiN0BO1lntoWCznX8WerKrxGnesYHSoqsDVBdxvHMjhO5gw84rtgbTek4kfN9ez/HwMWRWCK+l0kzsIZKIPH37ik6DUWkRrRFEvlDtGXl5nlkBSIZgGjigBjL/0oDmM3RYlvxQwW21h/a47F6mCnEN5IR350ydbdgGGN/+ttmPtN+PKoIWCZyf0z3ybpG4OANq88rsv+NLT1s9AZs9M0e2j3fXI5Bi6edHLvIyq41QdnzAUXGZvB5prKhKQ9PFG1jgXSYcyWXOotZ3C1OZqL7UbZ7G8yCbAj/ZAtseBh8ZOtw9wvL9pxjBL5Ef7IoWKM+hk0mFFH+SxnbooQKPLzgub9EFwSPWQUn3FDV6Mg4e1PmtD6uGdyDDWcKFnb0J/mKDh2Y6YhjPjYKWfB+H5iynHhj0Z8ck+qZj0dxEEUUf5zuwRUENuJ79rRr1vVS7VGuQgUZ51S8QZU3BmntfOsOMomAAHvo7c7t0upN4APDAXGfMv30cJlgYYpQE/35uQhkNP5\"}],\"role\":
         \"model\"},\"index\": 0}],\"usageMetadata\": {\"promptTokenCount\": 147,\"candidatesTokenCount\":
-        16,\"totalTokenCount\": 398,\"promptTokensDetails\": [{\"modality\": \"TEXT\",\"tokenCount\":
-        147}],\"thoughtsTokenCount\": 235,\"serviceTier\": \"standard\"},\"modelVersion\":
-        \"gemini-3.5-flash\",\"responseId\": \"9fpgasqKBcS8jrEPkYOs6QI\"}\r\n\r\ndata:
+        16,\"totalTokenCount\": 370,\"promptTokensDetails\": [{\"modality\": \"TEXT\",\"tokenCount\":
+        147}],\"thoughtsTokenCount\": 207,\"serviceTier\": \"standard\"},\"modelVersion\":
+        \"gemini-3.5-flash\",\"responseId\": \"2ylharGPEJ64sOIPkbujyQM\"}\r\n\r\ndata:
         {\"candidates\": [{\"content\": {\"parts\": [{\"text\": \"\"}],\"role\": \"model\"},\"finishReason\":
         \"STOP\",\"index\": 0}],\"usageMetadata\": {\"promptTokenCount\": 147,\"candidatesTokenCount\":
-        16,\"totalTokenCount\": 398,\"promptTokensDetails\": [{\"modality\": \"TEXT\",\"tokenCount\":
-        147}],\"thoughtsTokenCount\": 235,\"serviceTier\": \"standard\"},\"modelVersion\":
-        \"gemini-3.5-flash\",\"responseId\": \"9fpgasqKBcS8jrEPkYOs6QI\"}\r\n\r\n"
+        16,\"totalTokenCount\": 370,\"promptTokensDetails\": [{\"modality\": \"TEXT\",\"tokenCount\":
+        147}],\"thoughtsTokenCount\": 207,\"serviceTier\": \"standard\"},\"modelVersion\":
+        \"gemini-3.5-flash\",\"responseId\": \"2ylharGPEJ64sOIPkbujyQM\"}\r\n\r\n"
     headers:
       content-disposition:
       - attachment
       content-type:
       - text/event-stream
       date:
-      - Wed, 22 Jul 2026 17:16:38 GMT
+      - Wed, 22 Jul 2026 20:36:44 GMT
       server:
       - scaffolding on HTTPServer2
       server-timing:
-      - gfet4t7; dur=1765
+      - gfet4t7; dur=1656
       transfer-encoding:
       - chunked
       vary:
@@ -81,7 +81,7 @@ interactions:
     body: '{"contents": [{"parts": [{"text": "Take the word hello, capitalize it,
       then add an exclamation point."}], "role": "user"}, {"parts": [{"functionCall":
       {"args": {"phrase": "hello"}, "name": "capitalize_message"}, "thoughtSignature":
-      "EqYJCqMJARFNMg-mGkzeeKYp2FsihLBTG2FEuvHiDPTSqiOpV1JhzNP2Wzo7XTqM8TWgQvYw9Esb3PxRyW4E-_ZeNEMEaCxU8KSxGWR7wxkiPWC7XKNRT1FpeOHOf_adSr5w5gfBGepnlPnX7YCLBMMr9n26Ag4eKuli1G79nRQu-zgs3WYLKIX43_EqS6qOvwe380K784OjfkdWiLt1tpGid9uaqpR1rYCeUeBAjIxxYxwf-Mg-JNO--GvAa4Vx8SVIJsgCO9hFdlT3mDo0WE_jGDSZ4RYK8pxavjvjw-3pwdW1JQ4Mc5sWw-qkm6s8-WgMew6229IygCnPhuRQdAyfXLaBEgNeBCef0o0YsOx8oUhhLbUQJwHEsDn2NLaXWC7UhwukQTbrDm5VmuPuhOnJCV7COm__BBGxwVmYVG9YJ-tqJAsUDmuz377Zy0LigfNspB3fyw0m-ZDeo3WW2ajnUB9LXEAlRV1vch-DEFAB3bdUzWd6iMCJAtyvcbpqzvPex2l05sRlW2LyDR69FyW-fSwaTIsB60jy4VrHdYgG84iFZxabdxNFXQnXK8XOGOStlcVp46VY3rgHZcqzYbZ1BxS3JDQu0QsDB4B_ScHC6PdjeuiXxWBvUmMH13JRiqyo_hsD-Ywg766EeREaYmIFWunSq3u5Ob2kDOnoYIuw8-euhTvC9OIJ4suw1ePvHIy0RH2P0271wROSvMJ2YgnM87RdXsL1m5jGsackqbd2s2lq9NUbPJmHyGERq48w9pp2fhRvbOYOkaVsZzfharVig2WHr5UeOFictklusPCNIyom3SnGsceuT3WEZX9gsN1p2zLoyi5wCVoq7IhA0xBSPq-0_HxvLHdPg7AxY-fFBz47zFucSIqXsd2lUp46V-HmSlRN9VKxYKPX4OhV8YMypqmJ5LVxi22bpb3uQN05Dojk4HpzqjZXZhYxo1jQyQOGfab0Xc8z8yQo7hG02n5IEUGQ_wh9tsD29FvJkmf9c1PLH9H3V98gsHrPKXTFguBtg_hAtSS4INrWyk0-3-f71xJh6etAVps5goqc-qGOSq2SIRbrU7iym52AC59Cf2AKUqvrx5qYt8N8Wzmtlpwtsxi9sFAZwC9DhJqoBUKt6Cg_xOv93JyQX3jSbnLYWSx0MRgcbnFpHs9MXdQ9Dji_RDOPrzkbtMN5scioP1Zg1FHOADUJopOvKRgmMhYiMKLyScWxaYXfSJyqDefK6S9EyCYc8Rb0AUMuaizYsIEDAZvU-8QIKgcJTL0K2RFzsK3fHZh9bPVfHYVx-dx9YVRyGwRjaYbzUKTg6xY2rx8b3bmmtPabSWFkNHPjmVg9-Ou-d3jDAciP8R0HjItjH0fa7CQaf6z1uF15OtmniFDF9gZFzoHcrCDFJ45zBuxXS5b8rzwJJ14mKNwvaY8Tqj_WbsOMPeYwJ-fDFPN1ARyay-xd3PCx-dCc-H-IcLveXXkiZH8qDawVKIrbZzSm8NUn-Q34l900RvTm53KbsTYNe_qSARM1F-zM6nOCTLzFm2c9HmmyA2zDmerxq7_iWN1BGVJZTnahqC3AjZ7xfO2khGZLVrN-_QU="}],
+      "EpoICpcIARFNMg-tX5TRdtqJLt1RHpxfosF8xiwP2vNnwc7Ht9BOgyobmkCb5jLbz6qxRBPEIj4g6tf4yi_URcQLSulZz4Tv2LTBBehMd9_dWwvWarzp2UvcGF8XCvnTAGex2uIp2c1IvY-vimKaSjhOdvieN_HdSTHqnjR3hdkjSp5uhOHAdHavyrIiQbdps-fDQASeFvcJoNpxPo7s4fej01lQUe6vckqzMpxG5AM8PNHt-TPRkuU3ieLt18OY-rJRQiVK6nqXEJXk9vdd8dV50GUMZNgNXeTs-pjAkMAw0NwBarVzsgHRkHz4jd6OLbldBRW3XVjfhQlf9JphgXQh72_lGCWbPiBSS4NiiVm5rEVj-LVBCAfcqMlS58LZ7iYTu4G3UGb_ib342FSGrWxk1_RGNPed6Yud4mSdS04OJyrI1KhDT6Yk7UwVs6Tbp1UjedQSuKRvNMWY1Zgh3-vRmEm1yubsWEfZBv3DruaNDcRKOqOrP87_bK8gZs36gdNIYDMGucUVDxoP05Q4SSByNo0gZkSjhOMNb9QxMG4PJnhRoV-eY9ecdKDpR3Uz45zhCgJbdI4WX7e_kOsWEGYtkpBVBqUyT68cCpW13rirG2yo4qaMruOzDoxm50i8rrcMNh7X175lLha_6UzmQP5CoT5RXWmzsX-WpFEk1qFLNWqWKIrTfHrINyUkNyU2JT_zkIyTXyrXrtcWHq0XMiMnRhYCEDbfzq4_mkbf2N3mPVP7vp_KqE51eLJVRMBboNPs8wJSoqFdMifW6e81hsYgb6gDxp9XWzTze1lP0l8XKO87f9mxe1jaXLIJtvxsYeAOUjT2a5DVjj7y38BSsG53-RHS7yixXGEY-tX5xfe-Bh9w9tAiy4YTiiN0BO1lntoWCznX8WerKrxGnesYHSoqsDVBdxvHMjhO5gw84rtgbTek4kfN9ez_HwMWRWCK-l0kzsIZKIPH37ik6DUWkRrRFEvlDtGXl5nlkBSIZgGjigBjL_0oDmM3RYlvxQwW21h_a47F6mCnEN5IR350ydbdgGGN_-ttmPtN-PKoIWCZyf0z3ybpG4OANq88rsv-NLT1s9AZs9M0e2j3fXI5Bi6edHLvIyq41QdnzAUXGZvB5prKhKQ9PFG1jgXSYcyWXOotZ3C1OZqL7UbZ7G8yCbAj_ZAtseBh8ZOtw9wvL9pxjBL5Ef7IoWKM-hk0mFFH-SxnbooQKPLzgub9EFwSPWQUn3FDV6Mg4e1PmtD6uGdyDDWcKFnb0J_mKDh2Y6YhjPjYKWfB-H5iynHhj0Z8ck-qZj0dxEEUUf5zuwRUENuJ79rRr1vVS7VGuQgUZ51S8QZU3BmntfOsOMomAAHvo7c7t0upN4APDAXGfMv30cJlgYYpQE_35uQhkNP5"}],
       "role": "model"}, {"parts": [{"functionResponse": {"name": "capitalize_message",
       "response": {"output": [{"type": "text", "text": "HELLO", "id": "lc_tool-message-content-id-1"}]}}}],
       "role": "user"}], "safetySettings": [], "tools": [{"functionDeclarations": [{"description":
@@ -110,28 +110,28 @@ interactions:
   response:
     body:
       string: "data: {\"candidates\": [{\"content\": {\"parts\": [{\"functionCall\":
-        {\"name\": \"add_exclamation\",\"args\": {\"phrase\": \"HELLO\"},\"id\": \"9agm74ou\"},\"thoughtSignature\":
-        \"EpsCCpgCARFNMg/D+tWrf/JQy+FB2DCpKdGsDXO02OPhsP3xsSkuDATJNpRH+tnzDbhHHnUU2O1bKyaPVWvLGfu4n3Mx2nEFCEYWPkRxFBbduqWHqv7tO2sa0K78h/b6lQHmqhM22am15m5wgiU5m2uJd9PBvl5AuC08cOrsirIbc0t20P0cJENAh0lUTNPw2BCpv5gqhMvEUA/BP41/KXjl24hndPbKLJptXyg3W/37dtzfHW1bQHezPsDFnNHsYiHgFVqRxcOSCL3+Z/+HJB8a3V7aQ1TypKQ8wMSfWbSYkeTSflnlkd/Cni68jw9TwFPOc5KYOROvyn/YLWP+FlKfxPITeRRc14S61nHCn0iLHJnsiytjaaXOd7poTQ==\"}],\"role\":
+        {\"name\": \"add_exclamation\",\"args\": {\"phrase\": \"HELLO\"},\"id\": \"juyl2ler\"},\"thoughtSignature\":
+        \"Eo0CCooCARFNMg9U+qukMMFAwctQKR1vXTDlT+N283u9dCoTkhTOTrwmRhenhbHD73bdHwfnPgyYECcV5rGvvduC+u2PyeI7ZvMsk3VmLNvdJiw1I7uIWf92nUDYXil18euFCb0hriNYsNGcGpV1dcz6jPOux4Ece94iItU541mLuKHG/6c+BFqyUk99c2MbKpRpr1SfR6O2Ry9zKrFL62BWkAasrhOlGdkf6p9OjosbWGrFQQtRm6L+cm40+D+vY/76cJgpHujXNQeoK6CEdn+p+e6pk2umvWLs6vj9PgR4iR5FEARGXlp0+pzTOcob1TcydHsS0KFRnSjoUhNOCoO+M82S2fWH7X5Gkpf9a9Q=\"}],\"role\":
         \"model\"},\"index\": 0}],\"usageMetadata\": {\"promptTokenCount\": 202,\"candidatesTokenCount\":
-        17,\"totalTokenCount\": 267,\"promptTokensDetails\": [{\"modality\": \"TEXT\",\"tokenCount\":
-        202}],\"thoughtsTokenCount\": 48,\"serviceTier\": \"standard\"},\"modelVersion\":
-        \"gemini-3.5-flash\",\"responseId\": \"9_pgatWlFLG4sOIPwtXZKQ\"}\r\n\r\ndata:
+        17,\"totalTokenCount\": 263,\"promptTokensDetails\": [{\"modality\": \"TEXT\",\"tokenCount\":
+        202}],\"thoughtsTokenCount\": 44,\"serviceTier\": \"standard\"},\"modelVersion\":
+        \"gemini-3.5-flash\",\"responseId\": \"3SlharqvGbuq-8YP9OD3gA8\"}\r\n\r\ndata:
         {\"candidates\": [{\"content\": {\"parts\": [{\"text\": \"\"}],\"role\": \"model\"},\"finishReason\":
-        \"STOP\",\"index\": 0}],\"usageMetadata\": {\"promptTokenCount\": 437,\"candidatesTokenCount\":
-        17,\"totalTokenCount\": 502,\"promptTokensDetails\": [{\"modality\": \"TEXT\",\"tokenCount\":
-        437}],\"thoughtsTokenCount\": 48,\"serviceTier\": \"standard\"},\"modelVersion\":
-        \"gemini-3.5-flash\",\"responseId\": \"9_pgatWlFLG4sOIPwtXZKQ\"}\r\n\r\n"
+        \"STOP\",\"index\": 0}],\"usageMetadata\": {\"promptTokenCount\": 409,\"candidatesTokenCount\":
+        17,\"totalTokenCount\": 470,\"promptTokensDetails\": [{\"modality\": \"TEXT\",\"tokenCount\":
+        409}],\"thoughtsTokenCount\": 44,\"serviceTier\": \"standard\"},\"modelVersion\":
+        \"gemini-3.5-flash\",\"responseId\": \"3SlharqvGbuq-8YP9OD3gA8\"}\r\n\r\n"
     headers:
       content-disposition:
       - attachment
       content-type:
       - text/event-stream
       date:
-      - Wed, 22 Jul 2026 17:16:41 GMT
+      - Wed, 22 Jul 2026 20:36:46 GMT
       server:
       - scaffolding on HTTPServer2
       server-timing:
-      - gfet4t7; dur=1841
+      - gfet4t7; dur=1023
       transfer-encoding:
       - chunked
       vary:
@@ -149,11 +149,11 @@ interactions:
     body: '{"contents": [{"parts": [{"text": "Take the word hello, capitalize it,
       then add an exclamation point."}], "role": "user"}, {"parts": [{"functionCall":
       {"args": {"phrase": "hello"}, "name": "capitalize_message"}, "thoughtSignature":
-      "EqYJCqMJARFNMg-mGkzeeKYp2FsihLBTG2FEuvHiDPTSqiOpV1JhzNP2Wzo7XTqM8TWgQvYw9Esb3PxRyW4E-_ZeNEMEaCxU8KSxGWR7wxkiPWC7XKNRT1FpeOHOf_adSr5w5gfBGepnlPnX7YCLBMMr9n26Ag4eKuli1G79nRQu-zgs3WYLKIX43_EqS6qOvwe380K784OjfkdWiLt1tpGid9uaqpR1rYCeUeBAjIxxYxwf-Mg-JNO--GvAa4Vx8SVIJsgCO9hFdlT3mDo0WE_jGDSZ4RYK8pxavjvjw-3pwdW1JQ4Mc5sWw-qkm6s8-WgMew6229IygCnPhuRQdAyfXLaBEgNeBCef0o0YsOx8oUhhLbUQJwHEsDn2NLaXWC7UhwukQTbrDm5VmuPuhOnJCV7COm__BBGxwVmYVG9YJ-tqJAsUDmuz377Zy0LigfNspB3fyw0m-ZDeo3WW2ajnUB9LXEAlRV1vch-DEFAB3bdUzWd6iMCJAtyvcbpqzvPex2l05sRlW2LyDR69FyW-fSwaTIsB60jy4VrHdYgG84iFZxabdxNFXQnXK8XOGOStlcVp46VY3rgHZcqzYbZ1BxS3JDQu0QsDB4B_ScHC6PdjeuiXxWBvUmMH13JRiqyo_hsD-Ywg766EeREaYmIFWunSq3u5Ob2kDOnoYIuw8-euhTvC9OIJ4suw1ePvHIy0RH2P0271wROSvMJ2YgnM87RdXsL1m5jGsackqbd2s2lq9NUbPJmHyGERq48w9pp2fhRvbOYOkaVsZzfharVig2WHr5UeOFictklusPCNIyom3SnGsceuT3WEZX9gsN1p2zLoyi5wCVoq7IhA0xBSPq-0_HxvLHdPg7AxY-fFBz47zFucSIqXsd2lUp46V-HmSlRN9VKxYKPX4OhV8YMypqmJ5LVxi22bpb3uQN05Dojk4HpzqjZXZhYxo1jQyQOGfab0Xc8z8yQo7hG02n5IEUGQ_wh9tsD29FvJkmf9c1PLH9H3V98gsHrPKXTFguBtg_hAtSS4INrWyk0-3-f71xJh6etAVps5goqc-qGOSq2SIRbrU7iym52AC59Cf2AKUqvrx5qYt8N8Wzmtlpwtsxi9sFAZwC9DhJqoBUKt6Cg_xOv93JyQX3jSbnLYWSx0MRgcbnFpHs9MXdQ9Dji_RDOPrzkbtMN5scioP1Zg1FHOADUJopOvKRgmMhYiMKLyScWxaYXfSJyqDefK6S9EyCYc8Rb0AUMuaizYsIEDAZvU-8QIKgcJTL0K2RFzsK3fHZh9bPVfHYVx-dx9YVRyGwRjaYbzUKTg6xY2rx8b3bmmtPabSWFkNHPjmVg9-Ou-d3jDAciP8R0HjItjH0fa7CQaf6z1uF15OtmniFDF9gZFzoHcrCDFJ45zBuxXS5b8rzwJJ14mKNwvaY8Tqj_WbsOMPeYwJ-fDFPN1ARyay-xd3PCx-dCc-H-IcLveXXkiZH8qDawVKIrbZzSm8NUn-Q34l900RvTm53KbsTYNe_qSARM1F-zM6nOCTLzFm2c9HmmyA2zDmerxq7_iWN1BGVJZTnahqC3AjZ7xfO2khGZLVrN-_QU="}],
+      "EpoICpcIARFNMg-tX5TRdtqJLt1RHpxfosF8xiwP2vNnwc7Ht9BOgyobmkCb5jLbz6qxRBPEIj4g6tf4yi_URcQLSulZz4Tv2LTBBehMd9_dWwvWarzp2UvcGF8XCvnTAGex2uIp2c1IvY-vimKaSjhOdvieN_HdSTHqnjR3hdkjSp5uhOHAdHavyrIiQbdps-fDQASeFvcJoNpxPo7s4fej01lQUe6vckqzMpxG5AM8PNHt-TPRkuU3ieLt18OY-rJRQiVK6nqXEJXk9vdd8dV50GUMZNgNXeTs-pjAkMAw0NwBarVzsgHRkHz4jd6OLbldBRW3XVjfhQlf9JphgXQh72_lGCWbPiBSS4NiiVm5rEVj-LVBCAfcqMlS58LZ7iYTu4G3UGb_ib342FSGrWxk1_RGNPed6Yud4mSdS04OJyrI1KhDT6Yk7UwVs6Tbp1UjedQSuKRvNMWY1Zgh3-vRmEm1yubsWEfZBv3DruaNDcRKOqOrP87_bK8gZs36gdNIYDMGucUVDxoP05Q4SSByNo0gZkSjhOMNb9QxMG4PJnhRoV-eY9ecdKDpR3Uz45zhCgJbdI4WX7e_kOsWEGYtkpBVBqUyT68cCpW13rirG2yo4qaMruOzDoxm50i8rrcMNh7X175lLha_6UzmQP5CoT5RXWmzsX-WpFEk1qFLNWqWKIrTfHrINyUkNyU2JT_zkIyTXyrXrtcWHq0XMiMnRhYCEDbfzq4_mkbf2N3mPVP7vp_KqE51eLJVRMBboNPs8wJSoqFdMifW6e81hsYgb6gDxp9XWzTze1lP0l8XKO87f9mxe1jaXLIJtvxsYeAOUjT2a5DVjj7y38BSsG53-RHS7yixXGEY-tX5xfe-Bh9w9tAiy4YTiiN0BO1lntoWCznX8WerKrxGnesYHSoqsDVBdxvHMjhO5gw84rtgbTek4kfN9ez_HwMWRWCK-l0kzsIZKIPH37ik6DUWkRrRFEvlDtGXl5nlkBSIZgGjigBjL_0oDmM3RYlvxQwW21h_a47F6mCnEN5IR350ydbdgGGN_-ttmPtN-PKoIWCZyf0z3ybpG4OANq88rsv-NLT1s9AZs9M0e2j3fXI5Bi6edHLvIyq41QdnzAUXGZvB5prKhKQ9PFG1jgXSYcyWXOotZ3C1OZqL7UbZ7G8yCbAj_ZAtseBh8ZOtw9wvL9pxjBL5Ef7IoWKM-hk0mFFH-SxnbooQKPLzgub9EFwSPWQUn3FDV6Mg4e1PmtD6uGdyDDWcKFnb0J_mKDh2Y6YhjPjYKWfB-H5iynHhj0Z8ck-qZj0dxEEUUf5zuwRUENuJ79rRr1vVS7VGuQgUZ51S8QZU3BmntfOsOMomAAHvo7c7t0upN4APDAXGfMv30cJlgYYpQE_35uQhkNP5"}],
       "role": "model"}, {"parts": [{"functionResponse": {"name": "capitalize_message",
       "response": {"output": [{"type": "text", "text": "HELLO", "id": "lc_tool-message-content-id-1"}]}}}],
       "role": "user"}, {"parts": [{"functionCall": {"args": {"phrase": "HELLO"}, "name":
-      "add_exclamation"}, "thoughtSignature": "EpsCCpgCARFNMg_D-tWrf_JQy-FB2DCpKdGsDXO02OPhsP3xsSkuDATJNpRH-tnzDbhHHnUU2O1bKyaPVWvLGfu4n3Mx2nEFCEYWPkRxFBbduqWHqv7tO2sa0K78h_b6lQHmqhM22am15m5wgiU5m2uJd9PBvl5AuC08cOrsirIbc0t20P0cJENAh0lUTNPw2BCpv5gqhMvEUA_BP41_KXjl24hndPbKLJptXyg3W_37dtzfHW1bQHezPsDFnNHsYiHgFVqRxcOSCL3-Z_-HJB8a3V7aQ1TypKQ8wMSfWbSYkeTSflnlkd_Cni68jw9TwFPOc5KYOROvyn_YLWP-FlKfxPITeRRc14S61nHCn0iLHJnsiytjaaXOd7poTQ=="}],
+      "add_exclamation"}, "thoughtSignature": "Eo0CCooCARFNMg9U-qukMMFAwctQKR1vXTDlT-N283u9dCoTkhTOTrwmRhenhbHD73bdHwfnPgyYECcV5rGvvduC-u2PyeI7ZvMsk3VmLNvdJiw1I7uIWf92nUDYXil18euFCb0hriNYsNGcGpV1dcz6jPOux4Ece94iItU541mLuKHG_6c-BFqyUk99c2MbKpRpr1SfR6O2Ry9zKrFL62BWkAasrhOlGdkf6p9OjosbWGrFQQtRm6L-cm40-D-vY_76cJgpHujXNQeoK6CEdn-p-e6pk2umvWLs6vj9PgR4iR5FEARGXlp0-pzTOcob1TcydHsS0KFRnSjoUhNOCoO-M82S2fWH7X5Gkpf9a9Q="}],
       "role": "model"}, {"parts": [{"functionResponse": {"name": "add_exclamation",
       "response": {"output": [{"type": "text", "text": "HELLO!", "id": "lc_tool-message-content-id-3"}]}}}],
       "role": "user"}], "safetySettings": [], "tools": [{"functionDeclarations": [{"description":
@@ -182,28 +182,28 @@ interactions:
   response:
     body:
       string: "data: {\"candidates\": [{\"content\": {\"parts\": [{\"functionCall\":
-        {\"name\": \"Schema\",\"args\": {\"data\": \"HELLO!\"},\"id\": \"s028e1m4\"},\"thoughtSignature\":
-        \"EpcBCpQBARFNMg/ThpBDGvknxDHj1NTPyo7nofDjE4vvasmpZIkda9ode8ZIsREi5THSQB5p4NXKWQ5BWusSI3fbk0loPvjKE7/7uA7DsSlROJw9pNyHr6avIdCqsRiJwDFoq2Z2B0dL7npq3UHuAuHqWJ82IMZkTG+JTRXkvJZsc7vTvZIZYHw35KT6mBDXwd6h1t39AMRA6w==\"}],\"role\":
+        {\"name\": \"Schema\",\"args\": {\"data\": \"HELLO!\"},\"id\": \"sbff5wpp\"},\"thoughtSignature\":
+        \"EogBCoUBARFNMg+F8rb1GjRKoVnnHzWU086HpBIG8pLJrBOsWEn/yo5rbDjdnzSlW6t/Uc3+dmG6AVe7n+/Ee8dv+7cxnNNVTVtbPz6mvi7pgf30+K4h6f/JB1N5733gdRo6T7JTUTMts7X8DfYVmC/wZwspWaQ1c5QIeI1+KYkVULBD/q/AZjQ1+w==\"}],\"role\":
         \"model\"},\"index\": 0}],\"usageMetadata\": {\"promptTokenCount\": 260,\"candidatesTokenCount\":
-        15,\"totalTokenCount\": 293,\"promptTokensDetails\": [{\"modality\": \"TEXT\",\"tokenCount\":
-        260}],\"thoughtsTokenCount\": 18,\"serviceTier\": \"standard\"},\"modelVersion\":
-        \"gemini-3.5-flash\",\"responseId\": \"-fpgaviSLJ64sOIPkbujyQM\"}\r\n\r\ndata:
+        15,\"totalTokenCount\": 291,\"promptTokensDetails\": [{\"modality\": \"TEXT\",\"tokenCount\":
+        260}],\"thoughtsTokenCount\": 16,\"serviceTier\": \"standard\"},\"modelVersion\":
+        \"gemini-3.5-flash\",\"responseId\": \"3ilhaqrrObOajrEP_KmjoAI\"}\r\n\r\ndata:
         {\"candidates\": [{\"content\": {\"parts\": [{\"text\": \"\"}],\"role\": \"model\"},\"finishReason\":
-        \"STOP\",\"index\": 0}],\"usageMetadata\": {\"promptTokenCount\": 543,\"candidatesTokenCount\":
-        15,\"totalTokenCount\": 576,\"promptTokensDetails\": [{\"modality\": \"TEXT\",\"tokenCount\":
-        543}],\"thoughtsTokenCount\": 18,\"serviceTier\": \"standard\"},\"modelVersion\":
-        \"gemini-3.5-flash\",\"responseId\": \"-fpgaviSLJ64sOIPkbujyQM\"}\r\n\r\n"
+        \"STOP\",\"index\": 0}],\"usageMetadata\": {\"promptTokenCount\": 511,\"candidatesTokenCount\":
+        15,\"totalTokenCount\": 542,\"promptTokensDetails\": [{\"modality\": \"TEXT\",\"tokenCount\":
+        511}],\"thoughtsTokenCount\": 16,\"serviceTier\": \"standard\"},\"modelVersion\":
+        \"gemini-3.5-flash\",\"responseId\": \"3ilhaqrrObOajrEP_KmjoAI\"}\r\n\r\n"
     headers:
       content-disposition:
       - attachment
       content-type:
       - text/event-stream
       date:
-      - Wed, 22 Jul 2026 17:16:42 GMT
+      - Wed, 22 Jul 2026 20:36:48 GMT
       server:
       - scaffolding on HTTPServer2
       server-timing:
-      - gfet4t7; dur=955
+      - gfet4t7; dur=1473
       transfer-encoding:
       - chunked
       vary:

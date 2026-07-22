@@ -1653,6 +1653,16 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
         if value == "apdex_f":
             agent_config["transaction_tracer.transaction_threshold"] = None
 
+    # collect_ai is the account-level toggle to disable AIM.
+    # The value of ai_monitoring.enabled sent from SSC always takes
+    # precedence over the value of collect_ai.
+    # Apply collect_ai first so that when agent_config settings from SSC
+    # are applied, they will override collect_ai if needed.
+    collect_ai = server_side_config.pop("collect_ai", None)
+    if collect_ai is not None:
+        apply_config_setting(settings_snapshot, "ai_monitoring.enabled", collect_ai)
+        _logger.debug("Setting ai_monitoring.enabled to value of collect_ai=%s", collect_ai)
+
     # Overlay with agent server side configuration settings.
 
     for name, value in agent_config.items():
@@ -1668,7 +1678,7 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
     event_harvest_config = server_side_config.get("event_harvest_config", {})
     harvest_limits = event_harvest_config.get("harvest_limits", {})
 
-    # Override this setting here so that the allowlist that is pulled from the
+    # Override this setting here so that the allowlist that is pulled from
     # the harvest_limits includes the ml_event harvest limit.
     # Since the server does not override this setting as it's an OTLP setting,
     # we must override it here manually by converting it into a per harvest cycle
@@ -1678,7 +1688,7 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
 
     apply_config_setting(settings_snapshot, "event_harvest_config.allowlist", frozenset(harvest_limits))
 
-    # Override ml event harvest config
+    # Override ML event harvest config
     ml_event_harvest_config = harvest_limits.get("ml_event_data", {})
     if ml_event_harvest_config is not None:
         apply_config_setting(
@@ -1693,14 +1703,15 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
             settings_snapshot, "event_harvest_config.harvest_limits.span_event_data", span_event_harvest_limit
         )
 
-    # Check to see if collect_ai appears in the connect response to handle account-level AIM toggling
-    collect_ai = server_side_config.get("collect_ai", None)
-    if collect_ai is not None:
-        apply_config_setting(settings_snapshot, "ai_monitoring.enabled", collect_ai)
-        _logger.debug("Setting ai_monitoring.enabled to value of collect_ai=%s", collect_ai)
+    # Enforce High Security Mode on AIM settings as defense-in-depth in case
+    # they get re-enabled during SSC overlay
+    if settings_snapshot.high_security:
+        apply_config_setting(settings_snapshot, "ai_monitoring.enabled", False)
+        apply_config_setting(settings_snapshot, "ai_monitoring.streaming.enabled", False)
+        apply_config_setting(settings_snapshot, "ai_monitoring.record_content.enabled", False)
 
     # Since the server does not override this setting we must override it here manually
-    # by caping it at the max value of 4095.
+    # by capping it at the max value of 4095.
     apply_config_setting(
         settings_snapshot,
         "custom_insights_events.max_attribute_value",

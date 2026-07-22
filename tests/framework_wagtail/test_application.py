@@ -13,6 +13,7 @@
 # limitations under the License.
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
+
 def target_application():
     from _target_application import _target_application
 

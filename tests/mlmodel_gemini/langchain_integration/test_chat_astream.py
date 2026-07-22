@@ -13,136 +13,135 @@
 # limitations under the License.
 
 from langchain.messages import HumanMessage
+from testing_support.fixtures import dt_enabled, reset_core_stats_engine, validate_attributes
+from testing_support.validators.validate_custom_event import validate_custom_event_count
+from testing_support.validators.validate_custom_events import validate_custom_events
+from testing_support.validators.validate_span_events import validate_span_events
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
 
-from testing_support.validators.validate_span_events import validate_span_events
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from testing_support.validators.validate_custom_events import validate_custom_events
-from testing_support.validators.validate_custom_event import validate_custom_event_count
-from testing_support.fixtures import dt_enabled, reset_core_stats_engine, validate_attributes
-
 recorded_events = [
     [
-        {'type': 'LlmTool'},
-		{
-            'agent_name': 'my_agent',
-			'duration': None,
-			'id': None,
-			'ingest_source': 'Python',
-			'input': "{'phrase': 'hello'}",
-			'name': 'capitalize_message',
-            'output': None,
-			'run_id': "tool-id-0",
-			'span_id': None,
-			'trace_id': None,
-			'vendor': 'langchain'
-        }
+        {"type": "LlmTool"},
+        {
+            "agent_name": "my_agent",
+            "duration": None,
+            "id": None,
+            "ingest_source": "Python",
+            "input": "{'phrase': 'hello'}",
+            "name": "capitalize_message",
+            "output": None,
+            "run_id": "tool-id-0",
+            "span_id": None,
+            "trace_id": None,
+            "vendor": "langchain",
+        },
     ],
-	[
-		{'type': 'LlmChatCompletionSummary'},
-		{
-            'duration': None,
-			'id': None,
-			'ingest_source': 'Python',
-			'request.model': 'gemini-3.5-flash',
-			'request.temperature': 1.0,
-			'response.choices.finish_reason': 'STOP',
-			'response.model': 'gemini-3.5-flash',
-			'response.number_of_messages': 2,
-			'response.usage.completion_tokens': 17,
-			'response.usage.prompt_tokens': 437,
-			'response.usage.total_tokens': 454,
-			'span_id': None,
-			'time_to_first_token': 3,
-			'timestamp': None,
-			'trace_id': None,
-			'vendor': 'gemini'
-        }
+    [
+        {"type": "LlmChatCompletionSummary"},
+        {
+            "duration": None,
+            "id": None,
+            "ingest_source": "Python",
+            "request.model": "gemini-3.5-flash",
+            "request.temperature": 1.0,
+            "response.choices.finish_reason": "STOP",
+            "response.model": "gemini-3.5-flash",
+            "response.number_of_messages": 2,
+            "response.usage.completion_tokens": 17,
+            "response.usage.prompt_tokens": 437,
+            "response.usage.total_tokens": 454,
+            "span_id": None,
+            "time_to_first_token": 3,
+            "timestamp": None,
+            "trace_id": None,
+            "vendor": "gemini",
+        },
     ],
-	[
-		{'type': 'LlmChatCompletionMessage'},
-		{
-            'completion_id': None,
-			'content': 'HELLO',
-			'id': None,
-			'ingest_source': 'Python',
-			'is_response': True,
-			'response.model': 'gemini-3.5-flash',
-			'role': 'model',
-			'sequence': 1,
-			'span_id': None,
-			'token_count': 0,
-			'trace_id': None,
-			'vendor': 'gemini'
-        }
+    [
+        {"type": "LlmChatCompletionMessage"},
+        {
+            "completion_id": None,
+            "content": "HELLO",
+            "id": None,
+            "ingest_source": "Python",
+            "is_response": True,
+            "response.model": "gemini-3.5-flash",
+            "role": "model",
+            "sequence": 1,
+            "span_id": None,
+            "token_count": 0,
+            "trace_id": None,
+            "vendor": "gemini",
+        },
     ],
-	[
-		{'type': 'LlmTool'},
-		{
-            'agent_name': 'my_agent',
-			'duration': None,
-			'id': None,
-			'ingest_source': 'Python',
-			'input': "{'phrase': 'HELLO'}",
-			'name': 'add_exclamation',
-            'output': None,
-			'run_id': None,
-			'span_id': None,
-			'trace_id': None,
-			'vendor': 'langchain'
-        }
+    [
+        {"type": "LlmTool"},
+        {
+            "agent_name": "my_agent",
+            "duration": None,
+            "id": None,
+            "ingest_source": "Python",
+            "input": "{'phrase': 'HELLO'}",
+            "name": "add_exclamation",
+            "output": None,
+            "run_id": None,
+            "span_id": None,
+            "trace_id": None,
+            "vendor": "langchain",
+        },
     ],
-	[
-		{'type': 'LlmChatCompletionSummary'},
-		{
-            'duration': None,
-			'id': None,
-			'ingest_source': 'Python',
-			'request.model': 'gemini-3.5-flash',
-			'request.temperature': 1.0,
-			'response.choices.finish_reason': 'STOP',
-			'response.model': 'gemini-3.5-flash',
-			'response.number_of_messages': 2,
-			'response.usage.completion_tokens': 15,
-			'response.usage.prompt_tokens': 543,
-			'response.usage.total_tokens': 558,
-			'span_id': None,
-			'time_to_first_token': 3,
-			'timestamp': None,
-			'trace_id': None,
-			'vendor': 'gemini'
-        }
+    [
+        {"type": "LlmChatCompletionSummary"},
+        {
+            "duration": None,
+            "id": None,
+            "ingest_source": "Python",
+            "request.model": "gemini-3.5-flash",
+            "request.temperature": 1.0,
+            "response.choices.finish_reason": "STOP",
+            "response.model": "gemini-3.5-flash",
+            "response.number_of_messages": 2,
+            "response.usage.completion_tokens": 15,
+            "response.usage.prompt_tokens": 543,
+            "response.usage.total_tokens": 558,
+            "span_id": None,
+            "time_to_first_token": 3,
+            "timestamp": None,
+            "trace_id": None,
+            "vendor": "gemini",
+        },
     ],
-	[
-		{'type': 'LlmChatCompletionMessage'},
-		{
-            'completion_id': None,
-			'content': 'HELLO!',
-			'id': None,
-			'ingest_source': 'Python',
-			'is_response': True,
-			'response.model': 'gemini-3.5-flash',
-			'role': 'model',
-			'sequence': 1,
-			'span_id': None,
-			'token_count': 0,
-			'trace_id': None,
-			'vendor': 'gemini'
-        }
+    [
+        {"type": "LlmChatCompletionMessage"},
+        {
+            "completion_id": None,
+            "content": "HELLO!",
+            "id": None,
+            "ingest_source": "Python",
+            "is_response": True,
+            "response.model": "gemini-3.5-flash",
+            "role": "model",
+            "sequence": 1,
+            "span_id": None,
+            "token_count": 0,
+            "trace_id": None,
+            "vendor": "gemini",
+        },
     ],
-	[
-		{'type': 'LlmAgent'},
-		{
-            'duration': None,
-			'id': None,
-			'ingest_source': 'Python',
-			'name': 'my_agent',
-			'span_id': None,
-			'trace_id': None,
-			'vendor': 'langchain'
-        }
-    ]
+    [
+        {"type": "LlmAgent"},
+        {
+            "duration": None,
+            "id": None,
+            "ingest_source": "Python",
+            "name": "my_agent",
+            "span_id": None,
+            "trace_id": None,
+            "vendor": "langchain",
+        },
+    ],
 ]
 
 
@@ -151,9 +150,7 @@ def _extract_text(message):
     if isinstance(content, str):
         return content
     if isinstance(content, list):
-        return "".join(
-            p.get("text", "") if isinstance(p, dict) else str(p) for p in content
-        )
+        return "".join(p.get("text", "") if isinstance(p, dict) else str(p) for p in content)
     return ""
 
 
@@ -163,8 +160,9 @@ chat_astream_metrics = [
     ("Llm/tool/MCP/mcp.client.session:ClientSession.call_tool/capitalize_message", 1),
     ("Llm/tool/LangChain/arun/add_exclamation", 1),
     ("Llm/tool/MCP/mcp.client.session:ClientSession.call_tool/add_exclamation", 1),
-    ("Llm/completion/Gemini/generate_content_stream", 3), 
+    ("Llm/completion/Gemini/generate_content_stream", 3),
 ]
+
 
 @dt_enabled
 @reset_core_stats_engine()
@@ -193,7 +191,9 @@ def test_chat_astream(loop, build_agent, async_build_state_graph):
         messages_result = []
         updates_result = []
 
-        async for _, event_type, chunk in graph.astream(input_state, stream_mode=["messages", "updates"], subgraphs=True):
+        async for _, event_type, chunk in graph.astream(
+            input_state, stream_mode=["messages", "updates"], subgraphs=True
+        ):
             # Streamed Model Tokens
             if event_type == "messages":
                 message_chunk, _ = chunk
@@ -205,13 +205,13 @@ def test_chat_astream(loop, build_agent, async_build_state_graph):
                 for update in chunk.values():
                     if not isinstance(update, dict):
                         continue
-                    result = [_extract_text(msg) for msg in update.get("messages", []) if getattr(msg, "type", None) == "tool"]
+                    result = [
+                        _extract_text(msg) for msg in update.get("messages", []) if getattr(msg, "type", None) == "tool"
+                    ]
                     updates_result.extend(result)
-            
+
         return messages_result, updates_result
-                            
-    
+
     message, updates = loop.run_until_complete(graph_astream())
     assert message[1] == "HELLO!"
     assert updates[1] == "HELLO!"
-

@@ -789,7 +789,7 @@ def _handle_streaming_generation_success(
             except AttributeError:
                 # During a tool call, the agent will loop back to this,
                 # allowing this segment to properly handle the streaming
-                # generation recording.  In the meantime, we do not 
+                # generation recording.  In the meantime, we do not
                 # want to log a warning.
                 pass
             except Exception:

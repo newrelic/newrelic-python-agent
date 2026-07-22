@@ -12,16 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from typing import Annotated, TypedDict
 import os
+from typing import Annotated, TypedDict
+
 import pytest
-
-from newrelic.api.transaction import current_transaction
-from testing_support.fixture.event_loop import event_loop as loop
-
-from langgraph.graph.message import add_messages
 from langchain.chat_models import init_chat_model
 from langchain_mcp_adapters.client import MultiServerMCPClient
+from langgraph.graph.message import add_messages
+from testing_support.fixture.event_loop import event_loop as loop
+
+from newrelic.api.transaction import current_transaction
 
 
 # Initialize MCP Client and load tools
@@ -36,8 +36,8 @@ def mcp_client():
             }
         }
     )
-    
-    yield mcp_client
+
+    return mcp_client
 
 
 @pytest.fixture
@@ -54,11 +54,7 @@ def gemini_streaming_client(vcr_recording):
     else:
         os.environ["GOOGLE_API_KEY"] = "FAKE_GEMINI_API_KEY"
 
-    yield init_chat_model(
-        "gemini-3.5-flash",
-        model_provider="google_genai",
-        streaming=True,
-    )
+    return init_chat_model("gemini-3.5-flash", model_provider="google_genai", streaming=True)
 
 
 # Build graph
@@ -85,7 +81,7 @@ def build_agent(loop, mcp_client, schemas, gemini_streaming_client):
 @pytest.fixture
 def async_build_state_graph(async_call_model, async_extra_node, schemas):
     def _graph(agent):
-        from langgraph.graph import StateGraph, START, END
+        from langgraph.graph import END, START, StateGraph
 
         call_model_node = async_call_model(agent)
         extra_graph_node = async_extra_node
@@ -109,9 +105,7 @@ def _extract_text(message):
     if isinstance(content, str):
         return content
     if isinstance(content, list):
-        return "".join(
-            p.get("text", "") if isinstance(p, dict) else str(p) for p in content
-        )
+        return "".join(p.get("text", "") if isinstance(p, dict) else str(p) for p in content)
     return ""
 
 
@@ -148,8 +142,12 @@ def async_call_model():
                                 # AIMessage
                                 original_tool_id = message.tool_calls[-1]["id"]
                                 message.tool_calls[-1]["id"] = f"tool-id-{step}"
-                                thought_signature = message.additional_kwargs["__gemini_function_call_thought_signatures__"].pop(original_tool_id)
-                                message.additional_kwargs["__gemini_function_call_thought_signatures__"] = {f"tool-id-{step}": thought_signature}
+                                thought_signature = message.additional_kwargs[
+                                    "__gemini_function_call_thought_signatures__"
+                                ].pop(original_tool_id)
+                                message.additional_kwargs["__gemini_function_call_thought_signatures__"] = {
+                                    f"tool-id-{step}": thought_signature
+                                }
                                 message.id = f"lc_run--ai-message-id-{step}"
                             except AttributeError:
                                 # ToolMessage
@@ -162,7 +160,9 @@ def async_call_model():
                 step += 1
 
         return _call_model
+
     return wrapper
+
 
 @pytest.fixture
 def async_extra_node():
@@ -172,5 +172,5 @@ def async_extra_node():
         assert current_transaction()
 
         return {"messages": [f"The real agent said: {_extract_text(state['messages'][-1])}"]}
-    
+
     return _extra_node

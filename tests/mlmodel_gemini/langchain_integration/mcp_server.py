@@ -14,9 +14,9 @@
 
 from mcp.server.fastmcp import FastMCP
 
-
 # Define MCP Server
 server = FastMCP("DH")
+
 
 @server.tool()
 def add_exclamation(phrase: str):
@@ -24,6 +24,7 @@ def add_exclamation(phrase: str):
     Add an exclamation point to the end of the phrase.
     """
     return f"{phrase}!"
+
 
 @server.tool()
 def capitalize_message(phrase: str):

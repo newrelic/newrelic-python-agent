@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+
 interactions:
 - request:
     body: '{"contents": [{"parts": [{"text": "What is the capital of France?"}], "role":
@@ -42,8 +43,6 @@ interactions:
         [{"modality": "TEXT", "tokenCount": 34}], "thoughtsTokenCount": 118, "serviceTier":
         "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "d7I9aqTiNK6N39IPpbbA0Q8"}'
     headers:
-      alt-svc:
-      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
       content-type:
       - application/json; charset=UTF-8
       date:
@@ -58,8 +57,6 @@ interactions:
       - Origin
       - X-Origin
       - Referer
-      x-content-type-options:
-      - nosniff
       x-frame-options:
       - SAMEORIGIN
       x-gemini-service-tier:
@@ -99,8 +96,6 @@ interactions:
         "TEXT", "tokenCount": 1}], "thoughtsTokenCount": 107}, "modelVersion": "gemini-3.5-flash",
         "createTime": "2026-06-25T22:58:01.857943Z", "responseId": "ebI9ateuNOrm4_UP_qPLmAY"}'
     headers:
-      alt-svc:
-      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
       content-type:
       - application/json; charset=UTF-8
       date:
@@ -113,8 +108,6 @@ interactions:
       - Origin
       - X-Origin
       - Referer
-      x-content-type-options:
-      - nosniff
       x-frame-options:
       - SAMEORIGIN
       x-xss-protection:
@@ -158,8 +151,6 @@ interactions:
         [{"modality": "TEXT", "tokenCount": 118}], "thoughtsTokenCount": 69, "serviceTier":
         "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "e7I9au74IOmE-8YPnJb4-AY"}'
     headers:
-      alt-svc:
-      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
       content-type:
       - application/json; charset=UTF-8
       date:
@@ -174,8 +165,6 @@ interactions:
       - Origin
       - X-Origin
       - Referer
-      x-content-type-options:
-      - nosniff
       x-frame-options:
       - SAMEORIGIN
       x-gemini-service-tier:
@@ -215,8 +204,6 @@ interactions:
         [{"modality": "TEXT", "tokenCount": 54}], "thoughtsTokenCount": 102, "serviceTier":
         "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "fbI9ar6fBJeysOIP6ciM2Q8"}'
     headers:
-      alt-svc:
-      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
       content-type:
       - application/json; charset=UTF-8
       date:
@@ -231,8 +218,6 @@ interactions:
       - Origin
       - X-Origin
       - Referer
-      x-content-type-options:
-      - nosniff
       x-frame-options:
       - SAMEORIGIN
       x-gemini-service-tier:
@@ -281,8 +266,6 @@ interactions:
         [{"modality": "TEXT", "tokenCount": 225}], "thoughtsTokenCount": 16, "serviceTier":
         "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "frI9asaxKfG4sOIPwO69wAE"}'
     headers:
-      alt-svc:
-      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
       content-type:
       - application/json; charset=UTF-8
       date:
@@ -297,8 +280,6 @@ interactions:
       - Origin
       - X-Origin
       - Referer
-      x-content-type-options:
-      - nosniff
       x-frame-options:
       - SAMEORIGIN
       x-gemini-service-tier:
@@ -345,8 +326,6 @@ interactions:
         "TEXT", "tokenCount": 23}], "thoughtsTokenCount": 93}, "modelVersion": "gemini-3.5-flash",
         "createTime": "2026-06-25T22:58:08.083239Z", "responseId": "gLI9aqeKBb716tkPyeGPqQo"}'
     headers:
-      alt-svc:
-      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
       content-type:
       - application/json; charset=UTF-8
       date:
@@ -359,8 +338,6 @@ interactions:
       - Origin
       - X-Origin
       - Referer
-      x-content-type-options:
-      - nosniff
       x-frame-options:
       - SAMEORIGIN
       x-xss-protection:
@@ -400,8 +377,6 @@ interactions:
         "TEXT", "tokenCount": 1}], "thoughtsTokenCount": 109}, "modelVersion": "gemini-3.5-flash",
         "createTime": "2026-06-25T22:58:10.020954Z", "responseId": "grI9atqjAZ65odAPo8CM6Qo"}'
     headers:
-      alt-svc:
-      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
       content-type:
       - application/json; charset=UTF-8
       date:
@@ -414,8 +389,6 @@ interactions:
       - Origin
       - X-Origin
       - Referer
-      x-content-type-options:
-      - nosniff
       x-frame-options:
       - SAMEORIGIN
       x-xss-protection:
@@ -463,8 +436,6 @@ interactions:
         "TEXT", "tokenCount": 1}], "thoughtsTokenCount": 16}, "modelVersion": "gemini-3.5-flash",
         "createTime": "2026-06-25T22:58:11.994872Z", "responseId": "g7I9arjcPPi_998P69zHeQ"}'
     headers:
-      alt-svc:
-      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
       content-type:
       - application/json; charset=UTF-8
       date:
@@ -477,8 +448,6 @@ interactions:
       - Origin
       - X-Origin
       - Referer
-      x-content-type-options:
-      - nosniff
       x-frame-options:
       - SAMEORIGIN
       x-xss-protection:
@@ -532,8 +501,6 @@ interactions:
         [{"modality": "TEXT", "tokenCount": 323}], "thoughtsTokenCount": 97, "serviceTier":
         "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "hbI9at3RLrit-8YPyPCM2AY"}'
     headers:
-      alt-svc:
-      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
       content-type:
       - application/json; charset=UTF-8
       date:
@@ -548,8 +515,6 @@ interactions:
       - Origin
       - X-Origin
       - Referer
-      x-content-type-options:
-      - nosniff
       x-frame-options:
       - SAMEORIGIN
       x-gemini-service-tier:
@@ -607,8 +572,6 @@ interactions:
         [{"modality": "TEXT", "tokenCount": 362}], "thoughtsTokenCount": 145, "serviceTier":
         "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "h7I9au-OE9GR-8YP4NDVuQk"}'
     headers:
-      alt-svc:
-      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
       content-type:
       - application/json; charset=UTF-8
       date:
@@ -623,8 +586,6 @@ interactions:
       - Origin
       - X-Origin
       - Referer
-      x-content-type-options:
-      - nosniff
       x-frame-options:
       - SAMEORIGIN
       x-gemini-service-tier:
@@ -681,8 +642,6 @@ interactions:
         "TEXT", "tokenCount": 22}], "thoughtsTokenCount": 94}, "modelVersion": "gemini-3.5-flash",
         "createTime": "2026-06-25T22:58:17.266772Z", "responseId": "ibI9apSkEL2Y4_UP_Y2hkAs"}'
     headers:
-      alt-svc:
-      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
       content-type:
       - application/json; charset=UTF-8
       date:
@@ -695,8 +654,6 @@ interactions:
       - Origin
       - X-Origin
       - Referer
-      x-content-type-options:
-      - nosniff
       x-frame-options:
       - SAMEORIGIN
       x-xss-protection:
@@ -754,8 +711,6 @@ interactions:
         "TEXT", "tokenCount": 1}], "thoughtsTokenCount": 70}, "modelVersion": "gemini-3.5-flash",
         "createTime": "2026-06-25T22:58:19.072670Z", "responseId": "i7I9at63BPON4_UPxPbvoAs"}'
     headers:
-      alt-svc:
-      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
       content-type:
       - application/json; charset=UTF-8
       date:
@@ -768,8 +723,6 @@ interactions:
       - Origin
       - X-Origin
       - Referer
-      x-content-type-options:
-      - nosniff
       x-frame-options:
       - SAMEORIGIN
       x-xss-protection:
@@ -810,8 +763,6 @@ interactions:
         [{"modality": "TEXT", "tokenCount": 93}], "thoughtsTokenCount": 262, "serviceTier":
         "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "jLI9auPLNN2E1MkP0KPJgQg"}'
     headers:
-      alt-svc:
-      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
       content-type:
       - application/json; charset=UTF-8
       date:
@@ -826,8 +777,6 @@ interactions:
       - Origin
       - X-Origin
       - Referer
-      x-content-type-options:
-      - nosniff
       x-frame-options:
       - SAMEORIGIN
       x-gemini-service-tier:
@@ -873,8 +822,6 @@ interactions:
         [{"modality": "TEXT", "tokenCount": 385}], "thoughtsTokenCount": 16, "serviceTier":
         "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "j7I9as2oLaO7jrEPiZm9sQ0"}'
     headers:
-      alt-svc:
-      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
       content-type:
       - application/json; charset=UTF-8
       date:
@@ -889,8 +836,6 @@ interactions:
       - Origin
       - X-Origin
       - Referer
-      x-content-type-options:
-      - nosniff
       x-frame-options:
       - SAMEORIGIN
       x-gemini-service-tier:
@@ -936,8 +881,6 @@ interactions:
         "TEXT", "tokenCount": 16}], "thoughtsTokenCount": 213}, "modelVersion": "gemini-3.5-flash",
         "createTime": "2026-06-25T22:58:25.173707Z", "responseId": "kbI9aovNCuyQ998PmN-cQA"}'
     headers:
-      alt-svc:
-      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
       content-type:
       - application/json; charset=UTF-8
       date:
@@ -950,8 +893,6 @@ interactions:
       - Origin
       - X-Origin
       - Referer
-      x-content-type-options:
-      - nosniff
       x-frame-options:
       - SAMEORIGIN
       x-xss-protection:
@@ -997,8 +938,6 @@ interactions:
         "TEXT", "tokenCount": 1}], "thoughtsTokenCount": 25}, "modelVersion": "gemini-3.5-flash",
         "createTime": "2026-06-25T22:58:27.541688Z", "responseId": "k7I9aviHIb2Y4_UP_Y2hkAs"}'
     headers:
-      alt-svc:
-      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
       content-type:
       - application/json; charset=UTF-8
       date:
@@ -1011,8 +950,6 @@ interactions:
       - Origin
       - X-Origin
       - Referer
-      x-content-type-options:
-      - nosniff
       x-frame-options:
       - SAMEORIGIN
       x-xss-protection:
@@ -1048,8 +985,6 @@ interactions:
         [{"modality": "TEXT", "tokenCount": 25}], "thoughtsTokenCount": 104, "serviceTier":
         "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "lbI9apHmCvyY-8YP3uCC-Qw"}'
     headers:
-      alt-svc:
-      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
       content-type:
       - application/json; charset=UTF-8
       date:
@@ -1064,8 +999,6 @@ interactions:
       - Origin
       - X-Origin
       - Referer
-      x-content-type-options:
-      - nosniff
       x-frame-options:
       - SAMEORIGIN
       x-gemini-service-tier:
@@ -1105,8 +1038,6 @@ interactions:
         [{"modality": "TEXT", "tokenCount": 36}], "thoughtsTokenCount": 114, "serviceTier":
         "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "lrI9apq2NuvSjMcPttWcgAs"}'
     headers:
-      alt-svc:
-      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
       content-type:
       - application/json; charset=UTF-8
       date:
@@ -1121,8 +1052,6 @@ interactions:
       - Origin
       - X-Origin
       - Referer
-      x-content-type-options:
-      - nosniff
       x-frame-options:
       - SAMEORIGIN
       x-gemini-service-tier:
@@ -1162,8 +1091,6 @@ interactions:
         "TEXT", "tokenCount": 1}], "thoughtsTokenCount": 116}, "modelVersion": "gemini-3.5-flash",
         "createTime": "2026-06-25T22:58:32.597857Z", "responseId": "mLI9auG-JL2Y4_UP_Y2hkAs"}'
     headers:
-      alt-svc:
-      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
       content-type:
       - application/json; charset=UTF-8
       date:
@@ -1176,8 +1103,6 @@ interactions:
       - Origin
       - X-Origin
       - Referer
-      x-content-type-options:
-      - nosniff
       x-frame-options:
       - SAMEORIGIN
       x-xss-protection:
@@ -1216,8 +1141,6 @@ interactions:
         "TEXT", "tokenCount": 1}], "thoughtsTokenCount": 153}, "modelVersion": "gemini-3.5-flash",
         "createTime": "2026-06-25T22:58:34.567017Z", "responseId": "mrI9aunNIurm4_UP_qPLmAY"}'
     headers:
-      alt-svc:
-      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
       content-type:
       - application/json; charset=UTF-8
       date:
@@ -1230,8 +1153,6 @@ interactions:
       - Origin
       - X-Origin
       - Referer
-      x-content-type-options:
-      - nosniff
       x-frame-options:
       - SAMEORIGIN
       x-xss-protection:
@@ -1267,8 +1188,6 @@ interactions:
         [{"modality": "TEXT", "tokenCount": 24}], "thoughtsTokenCount": 101, "serviceTier":
         "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "nLI9au3TKbP4jrEPlrmkYA"}'
     headers:
-      alt-svc:
-      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
       content-type:
       - application/json; charset=UTF-8
       date:
@@ -1283,8 +1202,6 @@ interactions:
       - Origin
       - X-Origin
       - Referer
-      x-content-type-options:
-      - nosniff
       x-frame-options:
       - SAMEORIGIN
       x-gemini-service-tier:
@@ -1322,8 +1239,6 @@ interactions:
         [{"modality": "TEXT", "tokenCount": 24}], "thoughtsTokenCount": 142, "serviceTier":
         "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "nLI9apDYKp2K-8YPjuDpkA8"}'
     headers:
-      alt-svc:
-      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
       content-type:
       - application/json; charset=UTF-8
       date:
@@ -1338,8 +1253,6 @@ interactions:
       - Origin
       - X-Origin
       - Referer
-      x-content-type-options:
-      - nosniff
       x-frame-options:
       - SAMEORIGIN
       x-gemini-service-tier:
@@ -1379,8 +1292,6 @@ interactions:
         "TEXT", "tokenCount": 1}], "thoughtsTokenCount": 111}, "modelVersion": "gemini-3.5-flash",
         "createTime": "2026-06-25T22:58:38.560997Z", "responseId": "nrI9auWeIvON4_UPxPbvoAs"}'
     headers:
-      alt-svc:
-      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
       content-type:
       - application/json; charset=UTF-8
       date:
@@ -1393,8 +1304,6 @@ interactions:
       - Origin
       - X-Origin
       - Referer
-      x-content-type-options:
-      - nosniff
       x-frame-options:
       - SAMEORIGIN
       x-xss-protection:
@@ -1432,8 +1341,6 @@ interactions:
         "TEXT", "tokenCount": 1}], "thoughtsTokenCount": 115}, "modelVersion": "gemini-3.5-flash",
         "createTime": "2026-06-25T22:58:38.630494Z", "responseId": "nrI9at69JoWX4_UPj9fCgQI"}'
     headers:
-      alt-svc:
-      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
       content-type:
       - application/json; charset=UTF-8
       date:
@@ -1446,8 +1353,6 @@ interactions:
       - Origin
       - X-Origin
       - Referer
-      x-content-type-options:
-      - nosniff
       x-frame-options:
       - SAMEORIGIN
       x-xss-protection:
@@ -1483,8 +1388,6 @@ interactions:
         [{"modality": "TEXT", "tokenCount": 24}], "thoughtsTokenCount": 129, "serviceTier":
         "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "obI9armwF4G4sOIP6P2gsAc"}'
     headers:
-      alt-svc:
-      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
       content-type:
       - application/json; charset=UTF-8
       date:
@@ -1499,8 +1402,6 @@ interactions:
       - Origin
       - X-Origin
       - Referer
-      x-content-type-options:
-      - nosniff
       x-frame-options:
       - SAMEORIGIN
       x-gemini-service-tier:
@@ -1542,8 +1443,6 @@ interactions:
         [{"modality": "TEXT", "tokenCount": 175}], "thoughtsTokenCount": 153, "serviceTier":
         "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "orI9atf1O-LbjMcP99_B-Ao"}'
     headers:
-      alt-svc:
-      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
       content-type:
       - application/json; charset=UTF-8
       date:
@@ -1558,8 +1457,6 @@ interactions:
       - Origin
       - X-Origin
       - Referer
-      x-content-type-options:
-      - nosniff
       x-frame-options:
       - SAMEORIGIN
       x-gemini-service-tier:
@@ -1599,8 +1496,6 @@ interactions:
         "TEXT", "tokenCount": 1}], "thoughtsTokenCount": 115}, "modelVersion": "gemini-3.5-flash",
         "createTime": "2026-06-25T22:58:45.005936Z", "responseId": "pbI9arAu85rj9Q_IlayoBg"}'
     headers:
-      alt-svc:
-      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
       content-type:
       - application/json; charset=UTF-8
       date:
@@ -1613,8 +1508,6 @@ interactions:
       - Origin
       - X-Origin
       - Referer
-      x-content-type-options:
-      - nosniff
       x-frame-options:
       - SAMEORIGIN
       x-xss-protection:
@@ -1655,8 +1548,6 @@ interactions:
         "TEXT", "tokenCount": 1}], "thoughtsTokenCount": 226}, "modelVersion": "gemini-3.5-flash",
         "createTime": "2026-06-25T22:58:46.823404Z", "responseId": "prI9auygMr2Y4_UP_Y2hkAs"}'
     headers:
-      alt-svc:
-      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
       content-type:
       - application/json; charset=UTF-8
       date:
@@ -1669,8 +1560,6 @@ interactions:
       - Origin
       - X-Origin
       - Referer
-      x-content-type-options:
-      - nosniff
       x-frame-options:
       - SAMEORIGIN
       x-xss-protection:
@@ -1706,8 +1595,6 @@ interactions:
         [{"modality": "TEXT", "tokenCount": 11}], "thoughtsTokenCount": 100, "serviceTier":
         "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "wjhEatSfJaOq-8YPw5PdsQU"}'
     headers:
-      alt-svc:
-      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
       content-type:
       - application/json; charset=UTF-8
       date:
@@ -1722,8 +1609,6 @@ interactions:
       - Origin
       - X-Origin
       - Referer
-      x-content-type-options:
-      - nosniff
       x-frame-options:
       - SAMEORIGIN
       x-gemini-service-tier:
@@ -1761,8 +1646,6 @@ interactions:
         [{"modality": "TEXT", "tokenCount": 10}], "thoughtsTokenCount": 81, "serviceTier":
         "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "xDhEaqzPBJiajrEPjYXY-QM"}'
     headers:
-      alt-svc:
-      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
       content-type:
       - application/json; charset=UTF-8
       date:
@@ -1777,8 +1660,6 @@ interactions:
       - Origin
       - X-Origin
       - Referer
-      x-content-type-options:
-      - nosniff
       x-frame-options:
       - SAMEORIGIN
       x-gemini-service-tier:
@@ -1817,8 +1698,6 @@ interactions:
         "TEXT", "tokenCount": 1}], "thoughtsTokenCount": 75}, "modelVersion": "gemini-3.5-flash",
         "createTime": "2026-06-30T21:44:37.712987Z", "responseId": "xThEapvCK4_oodAP27mM0QI"}'
     headers:
-      alt-svc:
-      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
       content-type:
       - application/json; charset=UTF-8
       date:
@@ -1831,8 +1710,6 @@ interactions:
       - Origin
       - X-Origin
       - Referer
-      x-content-type-options:
-      - nosniff
       x-frame-options:
       - SAMEORIGIN
       x-xss-protection:
@@ -1869,8 +1746,6 @@ interactions:
         "TEXT", "tokenCount": 1}], "thoughtsTokenCount": 64}, "modelVersion": "gemini-3.5-flash",
         "createTime": "2026-06-30T21:44:39.292001Z", "responseId": "xzhEaqHpEauuodAPzpWzwQQ"}'
     headers:
-      alt-svc:
-      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
       content-type:
       - application/json; charset=UTF-8
       date:
@@ -1883,8 +1758,281 @@ interactions:
       - Origin
       - X-Origin
       - Referer
-      x-content-type-options:
-      - nosniff
+      x-frame-options:
+      - SAMEORIGIN
+      x-xss-protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "What is the capital of France?"}], "role":
+      "user"}], "systemInstruction": {"parts": [{"text": "You are a routing agent.
+      If the user asks a geography question (e.g. about a country''s capital), transfer
+      to the agent named ''child_agent'' using the transfer_to_agent tool. Otherwise,
+      answer the user directly.\n\nYou are an agent. Your internal name is \"parent_agent\".\n\n\nYou
+      have a list of other agents to transfer to:\n\n\nAgent name: child_agent\nAgent
+      description: \n\n\nIf you are the best to answer the question according to your
+      description,\nyou can answer it.\n\nIf another agent is better for answering
+      the question according to its\ndescription, call `transfer_to_agent` function
+      to transfer the question to that\nagent. When transferring, do not generate
+      any text other than the function\ncall.\n\n**NOTE**: the only available agents
+      for `transfer_to_agent` function are\n`child_agent`.\n"}], "role": "user"},
+      "tools": [{"functionDeclarations": [{"description": "Transfer the query to another
+      agent.\n\nUse this tool to hand off control to another agent that is more suitable
+      to\nanswer the user''s query according to the agent''s description.\n\nArgs:\n  agent_name:
+      the agent name to transfer to.", "name": "transfer_to_agent", "parameters_json_schema":
+      {"properties": {"agent_name": {"title": "Agent Name", "type": "string", "enum":
+      ["child_agent"]}}, "required": ["agent_name"], "title": "transfer_to_agentParams",
+      "type": "object"}}]}], "generationConfig": {}}'
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - generativelanguage.googleapis.com
+      x-goog-api-key:
+      - XXXXXX
+    method: POST
+    uri: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"parts": [{"functionCall": {"name": "transfer_to_agent",
+        "args": {"agent_name": "child_agent"}, "id": "7jdx10gv"}, "thoughtSignature":
+        "Er0DCroDARFNMg/gZ5ybNIKoxA7kX98sBI4XnZ10I33MR1MqlODJ36mw9jCiSU2mCa4aHoDDViyEOoLyh7a83nMzrjQJfhTJVxfMYNhncxpS8Zma4t5tHKIJvV8I/JVZ+n5IzC/fSkJzvlHj8/kppHVjLSRZM8YkWg48n+NlOYvwGcjxC2EjMQNmp3qzh8Eka6IuZAT3hudvZfO08qL8HnTaAR5QRHqbHZF1lWxq1ZYlAfv51USPUBs/clocwcaIV1sPGqINqyU8oxkmoP8NiJhy2qu1j5Knai9SNvfKIpFNrCyifsW8dGo+tXWxGWUKNKPFIEo4cZgC1hB34pSnSwDj4pNCEvCA8wsw9VHOYLZEnFKPHC8CyX+XpGeM6KZ9p+pRS+Z6bqMqTjlb9XOynC7C12tgUzu8vgwcz1X2Y/1UCU/OFHKLngoGIrHz35w7Rgvj/3VdIq4amIXXPtS8EYZEiUOxPiqf4qK9MAVrhlK2QPPcyFO7P2/lwIhsnwGY3a8/qgEQvi4T4P3BqRp/1jFTnsO9bMKPDEVd83XovlUOuDGnvS874R9WfJnhvlGAcZw4vv51oyMK7VnEoqzzqw=="}],
+        "role": "model"}, "finishReason": "STOP", "index": 0, "finishMessage": "Model
+        generated function call(s)."}], "usageMetadata": {"promptTokenCount": 323,
+        "candidatesTokenCount": 22, "totalTokenCount": 437, "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 323}], "thoughtsTokenCount": 92, "serviceTier":
+        "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "zYBaatveJ7WHjrEP1cWowAs"}'
+    headers:
+      content-type:
+      - application/json; charset=UTF-8
+      date:
+      - Fri, 17 Jul 2026 19:21:50 GMT
+      server:
+      - scaffolding on HTTPServer2
+      server-timing:
+      - gfet4t7; dur=1144
+      transfer-encoding:
+      - chunked
+      vary:
+      - Origin
+      - X-Origin
+      - Referer
+      x-frame-options:
+      - SAMEORIGIN
+      x-gemini-service-tier:
+      - standard
+      x-xss-protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "What is the capital of France?"}], "role":
+      "user"}, {"parts": [{"text": "For context:"}, {"text": "[parent_agent] called
+      tool `transfer_to_agent` with parameters: {''agent_name'': ''child_agent''}"}],
+      "role": "user"}, {"parts": [{"text": "For context:"}, {"text": "[parent_agent]
+      `transfer_to_agent` tool returned result: {''result'': None}"}], "role": "user"}],
+      "systemInstruction": {"parts": [{"text": "Answer the user''s geography question
+      in one word.\n\nYou are an agent. Your internal name is \"child_agent\".\n\n\nYou
+      have a list of other agents to transfer to:\n\n\nAgent name: parent_agent\nAgent
+      description: \n\n\nIf you are the best to answer the question according to your
+      description,\nyou can answer it.\n\nIf another agent is better for answering
+      the question according to its\ndescription, call `transfer_to_agent` function
+      to transfer the question to that\nagent. When transferring, do not generate
+      any text other than the function\ncall.\n\n**NOTE**: the only available agents
+      for `transfer_to_agent` function are\n`parent_agent`.\n\nIf neither you nor
+      the other agents are best for the question, transfer to your parent agent parent_agent.\n"}],
+      "role": "user"}, "tools": [{"functionDeclarations": [{"description": "Transfer
+      the query to another agent.\n\nUse this tool to hand off control to another
+      agent that is more suitable to\nanswer the user''s query according to the agent''s
+      description.\n\nArgs:\n  agent_name: the agent name to transfer to.", "name":
+      "transfer_to_agent", "parameters_json_schema": {"properties": {"agent_name":
+      {"title": "Agent Name", "type": "string", "enum": ["parent_agent"]}}, "required":
+      ["agent_name"], "title": "transfer_to_agentParams", "type": "object"}}]}], "generationConfig":
+      {}}'
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - generativelanguage.googleapis.com
+      x-goog-api-key:
+      - XXXXXX
+    method: POST
+    uri: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"parts": [{"text": "Paris", "thoughtSignature":
+        "EsEECr4EARFNMg/cuihh1BcELkLPoblZaz5kdxniWLR5er8AjRMF6RVNouyPW70d9KmKbFqPlDVownWj+vCTKJVWU36cjq246kDAZrbfNx3ojKyiZ/rUv/o8c473mh05QxZ3eTQgrhXN+B3cnPvFw6JINfZGIkUc5Bq2fewXkk46e251wKm+he5t0eTwh6zMW3DBJjvjNP8opkHSqOG1mdmMTxjrxyrUOcoEpVfsDFMA2K757RhmddtBcKugIt0/U/zXH4hedaL/7cpSwbOKiha/9XitkcFW3jXCqVvISGkQYh0t4sHneKyGUfTXL1UT9nmtacPMYdigF9Q1ergTlhbah/5fxarOZZpq3Ie7lSAaeHhl5c+7JQP7sgZTuffC5UE9jfrWXHNEilYO8ia8V+F6xTdpf6vD/adKMeq2HOsm1icDh6bKj0q4CAhHsU5hP+mVTQ8431altQQWp5VylkgTjORVfzZAYX27ydmOCcw7rMAUIp8e2T28k+kf1VdrB3qC/hI14B6hqAM59IdlurXYkM7cA1yIaLUmfKPFgG1znkH7e1w6IujfWdPINejBwcdc7WiJa6Fb9WBWcwVPlqlK2iDC80XP3GrIaPUFV0V7+QVAsOHR4+D7U8Wmwoq24JjsbIGiT/gaDeWF7P8fLSSAE/gYxeEf0biy4bU86cOIq1traH4w7Ne43vxFxvDd3yCfIyxJuqcmg33LGWAWwbDwU9P+dHfsyjmLcX1pLFUUX9sc3VGjDPe5/VuPrR7BamiwvA=="}],
+        "role": "model"}, "finishReason": "STOP", "index": 0}], "usageMetadata": {"promptTokenCount":
+        362, "candidatesTokenCount": 1, "totalTokenCount": 492, "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 362}], "thoughtsTokenCount": 129, "serviceTier":
+        "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "zoBaaqOIObWHjrEP1cWowAs"}'
+    headers:
+      content-type:
+      - application/json; charset=UTF-8
+      date:
+      - Fri, 17 Jul 2026 19:21:52 GMT
+      server:
+      - scaffolding on HTTPServer2
+      server-timing:
+      - gfet4t7; dur=1293
+      transfer-encoding:
+      - chunked
+      vary:
+      - Origin
+      - X-Origin
+      - Referer
+      x-frame-options:
+      - SAMEORIGIN
+      x-gemini-service-tier:
+      - standard
+      x-xss-protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "What is the capital of France?"}], "role":
+      "user"}], "systemInstruction": {"parts": [{"text": "You are a routing agent.
+      If the user asks a geography question (e.g. about a country''s capital), transfer
+      to the agent named ''child_agent'' using the transfer_to_agent tool. Otherwise,
+      answer the user directly.\n\nYou are an agent. Your internal name is \"parent_agent\".\n\n\nYou
+      have a list of other agents to transfer to:\n\n\nAgent name: child_agent\nAgent
+      description: \n\n\nIf you are the best to answer the question according to your
+      description,\nyou can answer it.\n\nIf another agent is better for answering
+      the question according to its\ndescription, call `transfer_to_agent` function
+      to transfer the question to that\nagent. When transferring, do not generate
+      any text other than the function\ncall.\n\n**NOTE**: the only available agents
+      for `transfer_to_agent` function are\n`child_agent`.\n"}], "role": "user"},
+      "tools": [{"functionDeclarations": [{"description": "Transfer the query to another
+      agent.\n\nUse this tool to hand off control to another agent that is more suitable
+      to\nanswer the user''s query according to the agent''s description.\n\nArgs:\n  agent_name:
+      the agent name to transfer to.", "name": "transfer_to_agent", "parameters_json_schema":
+      {"properties": {"agent_name": {"title": "Agent Name", "type": "string", "enum":
+      ["child_agent"]}}, "required": ["agent_name"], "title": "transfer_to_agentParams",
+      "type": "object"}, "response_json_schema": {"type": "null"}}]}], "labels": {"adk_agent_name":
+      "parent_agent"}, "generationConfig": {}}'
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - aiplatform.googleapis.com
+      x-goog-api-key:
+      - XXXXXX
+    method: POST
+    uri: https://aiplatform.googleapis.com/v1beta1/publishers/google/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"role": "model", "parts": [{"functionCall":
+        {"name": "transfer_to_agent", "args": {"agent_name": "child_agent"}}, "thoughtSignature":
+        "AY89a1/MWDNqPdMBcIA9q375cA/30a1Ph2OdIpJthbKPX8PoqxT1xSQRLpa8tsrj0mM="}]},
+        "finishReason": "STOP"}], "usageMetadata": {"promptTokenCount": 288, "candidatesTokenCount":
+        22, "totalTokenCount": 310, "trafficType": "ON_DEMAND", "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 288}], "candidatesTokensDetails": [{"modality":
+        "TEXT", "tokenCount": 22}]}, "modelVersion": "gemini-3.5-flash", "createTime":
+        "2026-07-17T19:21:52.521963Z", "responseId": "0IBaauvtH-rAsbwPkK_ywQk"}'
+    headers:
+      content-type:
+      - application/json; charset=UTF-8
+      date:
+      - Fri, 17 Jul 2026 19:21:53 GMT
+      server:
+      - scaffolding on HTTPServer2
+      transfer-encoding:
+      - chunked
+      vary:
+      - Origin
+      - X-Origin
+      - Referer
+      x-frame-options:
+      - SAMEORIGIN
+      x-xss-protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "What is the capital of France?"}], "role":
+      "user"}, {"parts": [{"text": "For context:"}, {"text": "[parent_agent] called
+      tool `transfer_to_agent` with parameters: {''agent_name'': ''child_agent''}"}],
+      "role": "user"}, {"parts": [{"text": "For context:"}, {"text": "[parent_agent]
+      `transfer_to_agent` tool returned result: {''result'': None}"}], "role": "user"}],
+      "systemInstruction": {"parts": [{"text": "Answer the user''s geography question
+      in one word.\n\nYou are an agent. Your internal name is \"child_agent\".\n\n\nYou
+      have a list of other agents to transfer to:\n\n\nAgent name: parent_agent\nAgent
+      description: \n\n\nIf you are the best to answer the question according to your
+      description,\nyou can answer it.\n\nIf another agent is better for answering
+      the question according to its\ndescription, call `transfer_to_agent` function
+      to transfer the question to that\nagent. When transferring, do not generate
+      any text other than the function\ncall.\n\n**NOTE**: the only available agents
+      for `transfer_to_agent` function are\n`parent_agent`.\n\nIf neither you nor
+      the other agents are best for the question, transfer to your parent agent parent_agent.\n"}],
+      "role": "user"}, "tools": [{"functionDeclarations": [{"description": "Transfer
+      the query to another agent.\n\nUse this tool to hand off control to another
+      agent that is more suitable to\nanswer the user''s query according to the agent''s
+      description.\n\nArgs:\n  agent_name: the agent name to transfer to.", "name":
+      "transfer_to_agent", "parameters_json_schema": {"properties": {"agent_name":
+      {"title": "Agent Name", "type": "string", "enum": ["parent_agent"]}}, "required":
+      ["agent_name"], "title": "transfer_to_agentParams", "type": "object"}, "response_json_schema":
+      {"type": "null"}}]}], "labels": {"adk_agent_name": "child_agent"}, "generationConfig":
+      {}}'
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - aiplatform.googleapis.com
+      x-goog-api-key:
+      - XXXXXX
+    method: POST
+    uri: https://aiplatform.googleapis.com/v1beta1/publishers/google/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"role": "model", "parts": [{"text": "Paris",
+        "thoughtSignature": "AY89a19VY9PAU3HLEd9Rj0HLlYbz7Yc5cNqJYcTzXq601W4wskTqX6h1efDxB/QzEiA="}]},
+        "finishReason": "STOP"}], "usageMetadata": {"promptTokenCount": 323, "candidatesTokenCount":
+        1, "totalTokenCount": 324, "trafficType": "ON_DEMAND", "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 323}], "candidatesTokensDetails": [{"modality":
+        "TEXT", "tokenCount": 1}]}, "modelVersion": "gemini-3.5-flash", "createTime":
+        "2026-07-17T19:21:53.970192Z", "responseId": "0YBaatCbO4uWsbwPk8Kx4Q0"}'
+    headers:
+      content-type:
+      - application/json; charset=UTF-8
+      date:
+      - Fri, 17 Jul 2026 19:21:55 GMT
+      server:
+      - scaffolding on HTTPServer2
+      transfer-encoding:
+      - chunked
+      vary:
+      - Origin
+      - X-Origin
+      - Referer
       x-frame-options:
       - SAMEORIGIN
       x-xss-protection:

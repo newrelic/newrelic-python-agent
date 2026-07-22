@@ -575,11 +575,12 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
     except Exception:
         filtered_tool_input = tool_input
 
-    agentic_subcomponent_data = {"type": "APM-AI_TOOL", "name": tool_name}
-
     ft = FunctionTrace(name=f"{wrapped.__name__}/{tool_name}", group="Llm/tool/LangChain")
     ft.__enter__()
-    ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
+    # Subcomponent attribute is only added when the tool executes locally
+    if _is_local_tool(instance):
+        agentic_subcomponent_data = {"type": "APM-AI_TOOL", "name": tool_name}
+        ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
     linking_metadata = get_trace_linking_metadata()
     try:
         return_val = wrapped(**run_args)
@@ -639,11 +640,12 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
     except Exception:
         filtered_tool_input = tool_input
 
-    agentic_subcomponent_data = {"type": "APM-AI_TOOL", "name": tool_name}
-
     ft = FunctionTrace(name=f"{wrapped.__name__}/{tool_name}", group="Llm/tool/LangChain")
     ft.__enter__()
-    ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
+    # Subcomponent attribute is only added when the tool executes locally
+    if _is_local_tool(instance):
+        agentic_subcomponent_data = {"type": "APM-AI_TOOL", "name": tool_name}
+        ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
     linking_metadata = get_trace_linking_metadata()
     try:
         return_val = await wrapped(**run_args)
@@ -678,6 +680,31 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
         response=return_val,
     )
     return return_val
+
+
+# Known modules whose tools execute remotely.
+_REMOTE_TOOL_MODULE_PREFIXES = ("langchain_mcp_adapters", "langgraph.pregel.remote")
+
+
+def _is_local_tool(instance):
+    """
+    Best effort check that a LangChain tool executes locally.
+
+    Returns False only for known remote tools.
+    """
+    try:
+        # StructuredTool holds the underlying callable in the func or coroutine attributes.
+        # Custom BaseTool subclasses hold their logic on the class itself.
+        candidates = (getattr(instance, "func", None), getattr(instance, "coroutine", None), type(instance))
+        for candidate in candidates:
+            module = getattr(candidate, "__module__", "") or ""
+            if module.startswith(_REMOTE_TOOL_MODULE_PREFIXES):
+                return False
+    except Exception:
+        pass
+
+    # If we can't prove it was a remote tool, assume it was local.
+    return True
 
 
 def _capture_tool_info(instance, wrapped, args, kwargs):

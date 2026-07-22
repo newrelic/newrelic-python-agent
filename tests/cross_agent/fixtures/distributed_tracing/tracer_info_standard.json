@@ -81,6 +81,7 @@
             "duration_millis": 200,
             "agent_attrs": {},
             "events": [{"name": "D"}],
+            "links": [{"linkedSpanId": "300", "linkedTraceId": "111111111111000"}],
             "children": [
               {
                 "name": "External/D",
@@ -90,7 +91,7 @@
                   "http.url": "serviceD"
                 },
                 "events": [{"name": "E"}],
-                "links": [{"linkedSpanId": "300", "linkedTraceId": "111111111111000"}]
+                "links": [{"linkedSpanId": "301", "linkedTraceId": "111111111110000"}]
               }
             ]
           }

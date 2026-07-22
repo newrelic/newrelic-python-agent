@@ -73,6 +73,8 @@ _hsm_local_config_file_settings_disabled = [
         "application_logging.forwarding.enabled": True,
         "machine_learning.inference_events_value.enabled": True,
         "ai_monitoring.enabled": True,
+        "ai_monitoring.record_content.enabled": True,
+        "ai_monitoring.streaming.enabled": True,
     },
     {
         "high_security": False,
@@ -85,6 +87,8 @@ _hsm_local_config_file_settings_disabled = [
         "application_logging.forwarding.enabled": True,
         "machine_learning.inference_events_value.enabled": True,
         "ai_monitoring.enabled": True,
+        "ai_monitoring.record_content.enabled": False,
+        "ai_monitoring.streaming.enabled": False,
     },
     {
         "high_security": False,
@@ -97,6 +101,8 @@ _hsm_local_config_file_settings_disabled = [
         "application_logging.forwarding.enabled": False,
         "machine_learning.inference_events_value.enabled": False,
         "ai_monitoring.enabled": False,
+        "ai_monitoring.record_content.enabled": True,
+        "ai_monitoring.streaming.enabled": True,
     },
     {
         "high_security": False,
@@ -109,6 +115,8 @@ _hsm_local_config_file_settings_disabled = [
         "application_logging.forwarding.enabled": False,
         "machine_learning.inference_events_value.enabled": False,
         "ai_monitoring.enabled": False,
+        "ai_monitoring.record_content.enabled": False,
+        "ai_monitoring.streaming.enabled": False,
     },
 ]
 
@@ -124,6 +132,8 @@ _hsm_local_config_file_settings_enabled = [
         "application_logging.forwarding.enabled": False,
         "machine_learning.inference_events_value.enabled": False,
         "ai_monitoring.enabled": False,
+        "ai_monitoring.record_content.enabled": False,
+        "ai_monitoring.streaming.enabled": False,
     },
     {
         "high_security": True,
@@ -136,6 +146,8 @@ _hsm_local_config_file_settings_enabled = [
         "application_logging.forwarding.enabled": False,
         "machine_learning.inference_events_value.enabled": False,
         "ai_monitoring.enabled": False,
+        "ai_monitoring.record_content.enabled": True,
+        "ai_monitoring.streaming.enabled": True,
     },
     {
         "high_security": True,
@@ -148,6 +160,8 @@ _hsm_local_config_file_settings_enabled = [
         "application_logging.forwarding.enabled": False,
         "machine_learning.inference_events_value.enabled": False,
         "ai_monitoring.enabled": False,
+        "ai_monitoring.record_content.enabled": True,
+        "ai_monitoring.streaming.enabled": True,
     },
     {
         "high_security": True,
@@ -160,6 +174,8 @@ _hsm_local_config_file_settings_enabled = [
         "application_logging.forwarding.enabled": True,
         "machine_learning.inference_events_value.enabled": True,
         "ai_monitoring.enabled": True,
+        "ai_monitoring.record_content.enabled": True,
+        "ai_monitoring.streaming.enabled": True,
     },
     {
         "high_security": True,
@@ -172,6 +188,8 @@ _hsm_local_config_file_settings_enabled = [
         "application_logging.forwarding.enabled": True,
         "machine_learning.inference_events_value.enabled": True,
         "ai_monitoring.enabled": True,
+        "ai_monitoring.record_content.enabled": True,
+        "ai_monitoring.streaming.enabled": True,
     },
     {
         "high_security": True,
@@ -184,6 +202,8 @@ _hsm_local_config_file_settings_enabled = [
         "application_logging.forwarding.enabled": True,
         "machine_learning.inference_events_value.enabled": True,
         "ai_monitoring.enabled": True,
+        "ai_monitoring.record_content.enabled": True,
+        "ai_monitoring.streaming.enabled": True,
     },
     {
         "high_security": True,
@@ -196,6 +216,8 @@ _hsm_local_config_file_settings_enabled = [
         "application_logging.forwarding.enabled": True,
         "machine_learning.inference_events_value.enabled": True,
         "ai_monitoring.enabled": True,
+        "ai_monitoring.record_content.enabled": True,
+        "ai_monitoring.streaming.enabled": True,
     },
 ]
 
@@ -223,6 +245,8 @@ def test_local_config_file_override_hsm_disabled(settings):
     original_application_logging_forwarding_enabled = settings.application_logging.forwarding.enabled
     original_machine_learning_inference_event_value_enabled = settings.machine_learning.inference_events_value.enabled
     original_ai_monitoring_enabled = settings.ai_monitoring.enabled
+    original_ai_monitoring_record_content_enabled = settings.ai_monitoring.record_content.enabled
+    original_ai_monitoring_streaming_enabled = settings.ai_monitoring.streaming.enabled
     apply_local_high_security_mode_setting(settings)
 
     assert settings.capture_params == original_capture_params
@@ -237,6 +261,8 @@ def test_local_config_file_override_hsm_disabled(settings):
         == original_machine_learning_inference_event_value_enabled
     )
     assert settings.ai_monitoring.enabled == original_ai_monitoring_enabled
+    assert settings.ai_monitoring.record_content.enabled == original_ai_monitoring_record_content_enabled
+    assert settings.ai_monitoring.streaming.enabled == original_ai_monitoring_streaming_enabled
 
 
 @parameterize_hsm_local_config(_hsm_local_config_file_settings_enabled)
@@ -252,6 +278,8 @@ def test_local_config_file_override_hsm_enabled(settings):
     assert settings.application_logging.forwarding.enabled is False
     assert settings.machine_learning.inference_events_value.enabled is False
     assert settings.ai_monitoring.enabled is False
+    assert settings.ai_monitoring.record_content.enabled is False
+    assert settings.ai_monitoring.streaming.enabled is False
 
 
 _server_side_config_settings_hsm_disabled = [
@@ -277,6 +305,8 @@ _server_side_config_settings_hsm_disabled = [
                 "application_logging.forwarding.enabled": True,
                 "machine_learning.inference_events_value.enabled": True,
                 "ai_monitoring.enabled": True,
+                "ai_monitoring.streaming.enabled": True,
+                "ai_monitoring.record_content.enabled": True,
             }
         },
     ),
@@ -302,6 +332,8 @@ _server_side_config_settings_hsm_disabled = [
                 "application_logging.forwarding.enabled": False,
                 "machine_learning.inference_events_value.enabled": False,
                 "ai_monitoring.enabled": False,
+                "ai_monitoring.streaming.enabled": False,
+                "ai_monitoring.record_content.enabled": False,
             }
         },
     ),
@@ -373,6 +405,8 @@ _server_side_config_settings_hsm_enabled = [
                 "application_logging.forwarding.enabled": True,
                 "machine_learning.inference_events_value.enabled": True,
                 "ai_monitoring.enabled": True,
+                "ai_monitoring.streaming.enabled": True,
+                "ai_monitoring.record_content.enabled": True,
             },
         },
     ),
@@ -396,6 +430,8 @@ def test_remote_config_fixups_hsm_disabled(local_settings, server_settings):
     original_log_forwarding = agent_config["application_logging.forwarding.enabled"]
     original_machine_learning_events = agent_config["machine_learning.inference_events_value.enabled"]
     original_ai_monitoring = agent_config["ai_monitoring.enabled"]
+    original_ai_monitoring_streaming = agent_config["ai_monitoring.streaming.enabled"]
+    original_ai_monitoring_record_content = agent_config["ai_monitoring.record_content.enabled"]
 
     _settings = global_settings()
     settings = override_generic_settings(_settings, local_settings)(AgentProtocol._apply_high_security_mode_fixups)(
@@ -414,6 +450,8 @@ def test_remote_config_fixups_hsm_disabled(local_settings, server_settings):
     assert agent_config["application_logging.forwarding.enabled"] == original_log_forwarding
     assert agent_config["machine_learning.inference_events_value.enabled"] == original_machine_learning_events
     assert agent_config["ai_monitoring.enabled"] == original_ai_monitoring
+    assert agent_config["ai_monitoring.streaming.enabled"] == original_ai_monitoring_streaming
+    assert agent_config["ai_monitoring.record_content.enabled"] == original_ai_monitoring_record_content
 
 
 @pytest.mark.parametrize("local_settings,server_settings", _server_side_config_settings_hsm_enabled)
@@ -439,6 +477,8 @@ def test_remote_config_fixups_hsm_enabled(local_settings, server_settings):
     assert "application_logging.forwarding.enabled" not in settings
     assert "machine_learning.inference_events_value.enabled" not in settings
     assert "ai_monitoring.enabled" not in settings
+    assert "ai_monitoring.streaming.enabled" not in settings
+    assert "ai_monitoring.record_content.enabled" not in settings
 
     assert "capture_params" not in agent_config
     assert "transaction_tracer.record_sql" not in agent_config
@@ -448,6 +488,8 @@ def test_remote_config_fixups_hsm_enabled(local_settings, server_settings):
     assert "application_logging.forwarding.enabled" not in agent_config
     assert "machine_learning.inference_events_value.enabled" not in agent_config
     assert "ai_monitoring.enabled" not in agent_config
+    assert "ai_monitoring.streaming.enabled" not in agent_config
+    assert "ai_monitoring.record_content.enabled" not in agent_config
 
 
 def test_remote_config_hsm_fixups_server_side_disabled():

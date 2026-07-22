@@ -63,28 +63,6 @@ def gemini_streaming_client(vcr_recording):
 
 # Build graph
 @pytest.fixture
-def build_state_graph(call_model, extra_node, schemas):
-    def _graph(agent):
-        from langgraph.graph import StateGraph, START, END
-
-        call_model_node = call_model(agent)
-        extra_graph_node = extra_node
-        _, State = schemas
-
-        builder = StateGraph(state_schema=State)
-        builder.add_node("call_model", call_model_node)
-        builder.add_node("extra_node", extra_graph_node)
-        builder.add_edge(START, "call_model")
-        builder.add_edge("call_model", "extra_node")
-        builder.add_edge("extra_node", END)
-        graph = builder.compile()
-
-        return graph
-
-    return _graph
-
-
-@pytest.fixture
 def build_agent(loop, mcp_client, schemas, gemini_streaming_client):
     def _create_agent():
         from langchain.agents import create_agent

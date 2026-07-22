@@ -34,6 +34,3 @@ def capitalize_message(phrase: str):
 
 
 server.run(transport="stdio")
-
-# if __name__ == "__main__":
-#     server.run(transport="stdio")

@@ -15,8 +15,9 @@
 import os
 import sys
 from typing import Annotated
-from testing_support.fixture.vcr import VCR_IGNORED_HEADERS, VCR_MATCH_ON
+
 import pytest
+from testing_support.fixture.vcr import VCR_IGNORED_HEADERS, VCR_MATCH_ON
 
 if sys.version_info[:2] < (3, 12):
     from typing_extensions import TypedDict
@@ -26,12 +27,13 @@ else:
 from langchain.chat_models import init_chat_model
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langgraph.graph.message import add_messages
-
 from testing_support.fixture.event_loop import event_loop as loop
+
 from newrelic.api.transaction import current_transaction
 
 VCR_IGNORED_HEADERS.extend(["accept-encoding"])
 VCR_MATCH_ON.remove("body")
+
 
 # Initialize MCP Client and load tools
 @pytest.fixture(scope="session")

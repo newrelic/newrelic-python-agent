@@ -13,7 +13,13 @@
 # limitations under the License.
 
 import os
-from typing import Annotated, TypedDict
+import sys
+from typing import Annotated
+
+if sys.version_info[:2] < (3, 12):
+    from typing_extensions import TypeDict
+else:
+    from typing import TypedDict
 
 import pytest
 from langchain.chat_models import init_chat_model

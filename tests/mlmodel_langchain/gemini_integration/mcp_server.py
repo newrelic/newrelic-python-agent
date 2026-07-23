@@ -33,5 +33,5 @@ def capitalize_message(phrase: str):
     """
     return f"{phrase.upper()}"
 
-server.run(transport="stdio")
 
+server.run(transport="stdio")

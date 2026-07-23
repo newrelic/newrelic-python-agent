@@ -299,7 +299,9 @@ def test_chat_astream(loop, response_format, build_agent, async_build_state_grap
     )
     @validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "my_agent"}'})
     @validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "add_exclamation"}'})
-    @validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "capitalize_message"}'})
+    @validate_span_events(
+        count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "capitalize_message"}'}
+    )
     @validate_attributes("agent", ["llm"])
     @background_task()
     def _test():
@@ -329,7 +331,9 @@ def test_chat_astream(loop, response_format, build_agent, async_build_state_grap
                         if not isinstance(update, dict):
                             continue
                         result = [
-                            _extract_text(msg) for msg in update.get("messages", []) if getattr(msg, "type", None) == "tool"
+                            _extract_text(msg)
+                            for msg in update.get("messages", [])
+                            if getattr(msg, "type", None) == "tool"
                         ]
                         updates_result.extend(result)
 

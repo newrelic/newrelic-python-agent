@@ -89,16 +89,14 @@ def _force_genai_httpx_transport(monkeypatch):
 # Initialize MCP Client and load tools
 @pytest.fixture(scope="session")
 def mcp_client():
-    mcp_server_location = "langchain_integration/mcp_server.py" if os.getenv("GITHUB_ACTIONS") else "tests/mlmodel_langchain/gemini_integration/mcp_server.py"
+    mcp_server_location = (
+        "langchain_integration/mcp_server.py"
+        if os.getenv("GITHUB_ACTIONS")
+        else "tests/mlmodel_langchain/gemini_integration/mcp_server.py"
+    )
 
     mcp_client = MultiServerMCPClient(
-        {
-            "my_mcp_server": {
-                "command": sys.executable,
-                "args": [mcp_server_location],
-                "transport": "stdio",
-            }
-        }
+        {"my_mcp_server": {"command": sys.executable, "args": [mcp_server_location], "transport": "stdio"}}
     )
 
     return mcp_client
@@ -138,7 +136,7 @@ def build_agent(response_format, loop, mcp_client, schemas, gemini_streaming_cli
         Schema, State = schemas
 
         kwargs = {"model": gemini_streaming_client, "name": "my_agent", "tools": agent_tools, "state_schema": State}
-        
+
         if response_format == "tool_strategy":
             kwargs.update({"response_format": ToolStrategy(Schema)})
 

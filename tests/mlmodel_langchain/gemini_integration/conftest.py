@@ -12,10 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import json
 import os
 import sys
 from typing import Annotated
-import json
 
 import pytest
 
@@ -37,7 +37,7 @@ from newrelic.common.encoding_utils import ensure_str
 def _match_body_no_thought_signature(recorded, current):
     # If original bodies are identical, then it's a match
     if recorded.body == current.body:
-        return True
+        return
 
     def remove_thought_signature(body):
         try:
@@ -52,19 +52,16 @@ def _match_body_no_thought_signature(recorded, current):
 
     # If parsed and reserialized JSON is identical, then it's a match
     if json.dumps(recorded_body) == json.dumps(current_body):
-        return True
+        return
 
     remove_thought_signature(recorded_body)
     remove_thought_signature(current_body)
 
     # If reserialized JSON without thoughtSignature is identical, then it's a match
-    if json.dumps(recorded_body) == json.dumps(current_body):
-        return True
+    assert json.dumps(recorded_body) == json.dumps(current_body)
 
-    return False
 
 VCR_MATCHERS["body"] = _match_body_no_thought_signature
-
 
 
 # Initialize MCP Client and load tools
@@ -118,14 +115,11 @@ def build_agent(request, loop, mcp_client, schemas, gemini_streaming_client):
         agent_tools = loop.run_until_complete(load_mcp_tools(mcp_client))
         Schema, State = schemas
 
-        format = request.param
-        kwargs = {
-            "model": gemini_streaming_client,
-            "name": "my_agent",
-            "tools": agent_tools,
-            "state_schema": State,
-        }
-        response_format_kwargs = {"response_format": ToolStrategy(Schema)} if format == "tool_strategy" else None
+        response_format = request.param
+        kwargs = {"model": gemini_streaming_client, "name": "my_agent", "tools": agent_tools, "state_schema": State}
+        response_format_kwargs = (
+            {"response_format": ToolStrategy(Schema)} if response_format == "tool_strategy" else None
+        )
         kwargs.update(response_format_kwargs)
 
         return create_agent(**kwargs)

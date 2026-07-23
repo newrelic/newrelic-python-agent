@@ -1,0 +1,128 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+name: Fleet Control Config Schema Bump
+
+# Release-prep workflow: opens a PR that bumps the `version:` field in
+# .fleetControl/configurationDefinitions.yml based on the cumulative
+# schema diff since the previous release tag.
+#
+# Triggered manually before a release tag is cut, so the bumped version
+# can be merged to main and included in the GitHub Release.
+#
+# Release ordering:
+#   1. Run this workflow (workflow_dispatch).
+#   2. Wait for the PR to open (or for the workflow to report no bump needed).
+#   3. Review and merge the bump PR if one was opened.
+#   4. Cut the GitHub Release from the post-merge main.
+#
+# Bootstrap: if the chosen ref predates the .fleetControl/ directory or
+# the `schema:` field, the script exits 0 with a bootstrap message and
+# no PR is opened.
+
+permissions: {}
+
+on:
+  workflow_dispatch:
+    inputs:
+      since_ref:
+        description: >-
+          Git ref (tag or commit) to compare against. Defaults to the
+          latest v* tag on main.
+        required: false
+        default: ""
+
+jobs:
+  bump:
+    name: Open agent config schema bump PR
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b # pin@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Resolve --since ref
+        id: ref
+        env:
+          INPUT_REF: ${{ github.event.inputs.since_ref }}
+        run: |
+          if [ -n "$INPUT_REF" ]; then
+            ref="$INPUT_REF"
+            echo "Using user-supplied ref: $ref"
+          else
+            ref=$(git describe --tags --abbrev=0 --match='v*' main 2>/dev/null || true)
+            if [ -z "$ref" ]; then
+              echo "::error::No release tag (v*) found on main and no since_ref supplied."
+              exit 1
+            fi
+            echo "Auto-discovered latest tag: $ref"
+          fi
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Compute and apply bump
+        id: bump
+        run: |
+          set +e
+          python3 .fleetControl/schemaGeneration/bump-schema-version.py \
+            --since="${{ steps.ref.outputs.ref }}" --ci
+          code=$?
+          set -e
+          case "$code" in
+            0) echo "bumped=false" >> "$GITHUB_OUTPUT" ;;
+            1) echo "bumped=true"  >> "$GITHUB_OUTPUT" ;;
+            *) echo "Bump failed (exit $code)"; exit "$code" ;;
+          esac
+
+      - name: Open bump PR
+        id: create-pr
+        if: steps.bump.outputs.bumped == 'true'
+        uses: peter-evans/create-pull-request@6d6857d36972b65feb161a90e484f2984215f83e # pin@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          add-paths: .fleetControl/configurationDefinitions.yml
+          branch: bump-agent-config-schema-version-${{ github.run_id }}
+          delete-branch: true
+          base: main
+          title: "chore: bump agent config schema version"
+          commit-message: "chore: bump agent config schema version"
+          body: |
+            Auto-generated bump PR.
+
+            Bump computed from the schema diff since `${{ steps.ref.outputs.ref }}`.
+
+            ## ⚠️ Release ordering
+
+            **Merge this PR BEFORE cutting the release tag.**
+
+            If the release tag is cut before this PR merges, the tag's
+            `configurationDefinitions.yml` will still reflect the
+            pre-bump version even though the schema itself reflects the
+            new keys. Consumers see a mismatch.
+
+      - name: Summary
+        if: steps.create-pr.outputs.pull-request-number
+        run: |
+          echo "Submitted PR #${{ steps.create-pr.outputs.pull-request-number }} to bump the agent config schema version."
+          echo "Review and merge before cutting the release tag."
+          echo "${{ steps.create-pr.outputs.pull-request-url }}"

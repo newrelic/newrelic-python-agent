@@ -12,6 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
+import pytest
+
 from langchain.messages import HumanMessage
 from testing_support.fixtures import dt_enabled, reset_core_stats_engine, validate_attributes
 from testing_support.validators.validate_custom_event import validate_custom_event_count
@@ -162,6 +165,7 @@ chat_astream_metrics = [
 ]
 
 
+@pytest.mark.skipif(sys.version_info[:2] < (3, 10), reason="Langchain MCP Adapters do not support Python 3.9 and below")
 @dt_enabled
 @reset_core_stats_engine()
 @validate_custom_event_count(count=9)

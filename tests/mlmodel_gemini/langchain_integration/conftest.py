@@ -27,11 +27,12 @@ from langchain.chat_models import init_chat_model
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langgraph.graph.message import add_messages
 from testing_support.fixture.event_loop import event_loop as loop
-
-from newrelic.api.transaction import current_transaction
 from testing_support.fixture.vcr import VCR_MATCH_ON
 
-# Unlike the rest of the gemini test suite, the output of these tests also 
+from newrelic.api.transaction import current_transaction
+
+
+# Unlike the rest of the gemini test suite, the output of these tests also
 # contains a randomly generated ID.  This ID is baked into the 'thoughtSignature'
 # which has a proprietary encryption.
 # To ensure that VCR_MATCH_ON is only affected in this specific conftest, we

@@ -22,7 +22,7 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
 
 from newrelic.api.background_task import background_task
 
-recorded_events = [
+recorded_events_1 = [
     [
         {"type": "LlmTool"},
         {
@@ -33,7 +33,6 @@ recorded_events = [
             "input": "{'phrase': 'hello'}",
             "name": "capitalize_message",
             "output": None,
-            # "run_id": "tool-id-0",
             "run_id": None,
             "span_id": None,
             "trace_id": None,
@@ -51,8 +50,8 @@ recorded_events = [
             "response.model": "gemini-3.5-flash",
             "response.number_of_messages": 2,
             "response.usage.completion_tokens": 17,
-            "response.usage.prompt_tokens": 409,
-            "response.usage.total_tokens": 426,
+            "response.usage.prompt_tokens": 415,
+            "response.usage.total_tokens": 432,
             "span_id": None,
             "time_to_first_token": None,
             "timestamp": None,
@@ -87,7 +86,6 @@ recorded_events = [
             "input": "{'phrase': 'HELLO'}",
             "name": "add_exclamation",
             "output": None,
-            # "run_id": "tool-id-2",
             "run_id": None,
             "span_id": None,
             "trace_id": None,
@@ -105,8 +103,129 @@ recorded_events = [
             "response.model": "gemini-3.5-flash",
             "response.number_of_messages": 2,
             "response.usage.completion_tokens": 15,
-            "response.usage.prompt_tokens": 511,
-            "response.usage.total_tokens": 526,
+            "response.usage.prompt_tokens": 539,
+            "response.usage.total_tokens": 554,
+            "span_id": None,
+            "time_to_first_token": None,
+            "timestamp": None,
+            "trace_id": None,
+            "vendor": "gemini",
+        },
+    ],
+    [
+        {"type": "LlmChatCompletionMessage"},
+        {
+            "completion_id": None,
+            "content": "HELLO!",
+            "id": None,
+            "ingest_source": "Python",
+            "is_response": True,
+            "response.model": "gemini-3.5-flash",
+            "role": "model",
+            "sequence": 1,
+            "span_id": None,
+            "token_count": 0,
+            "trace_id": None,
+            "vendor": "gemini",
+        },
+    ],
+    [
+        {"type": "LlmAgent"},
+        {
+            "duration": None,
+            "id": None,
+            "ingest_source": "Python",
+            "name": "my_agent",
+            "span_id": None,
+            "trace_id": None,
+            "vendor": "langchain",
+        },
+    ],
+]
+
+recorded_events_2 = [
+    [
+        {"type": "LlmTool"},
+        {
+            "agent_name": "my_agent",
+            "duration": None,
+            "id": None,
+            "ingest_source": "Python",
+            "input": "{'phrase': 'hello'}",
+            "name": "capitalize_message",
+            "output": None,
+            "run_id": None,
+            "span_id": None,
+            "trace_id": None,
+            "vendor": "langchain",
+        },
+    ],
+    [
+        {"type": "LlmChatCompletionSummary"},
+        {
+            "duration": None,
+            "id": None,
+            "ingest_source": "Python",
+            "request.model": "gemini-3.5-flash",
+            "response.choices.finish_reason": "STOP",
+            "response.model": "gemini-3.5-flash",
+            "response.number_of_messages": 2,
+            "response.usage.completion_tokens": 17,
+            "response.usage.prompt_tokens": 355,
+            "response.usage.total_tokens": 372,
+            "span_id": None,
+            "time_to_first_token": None,
+            "timestamp": None,
+            "trace_id": None,
+            "vendor": "gemini",
+        },
+    ],
+    [
+        {"type": "LlmChatCompletionMessage"},
+        {
+            "completion_id": None,
+            "content": "HELLO",
+            "id": None,
+            "ingest_source": "Python",
+            "is_response": True,
+            "response.model": "gemini-3.5-flash",
+            "role": "model",
+            "sequence": 1,
+            "span_id": None,
+            "token_count": 0,
+            "trace_id": None,
+            "vendor": "gemini",
+        },
+    ],
+    [
+        {"type": "LlmTool"},
+        {
+            "agent_name": "my_agent",
+            "duration": None,
+            "id": None,
+            "ingest_source": "Python",
+            "input": "{'phrase': 'HELLO'}",
+            "name": "add_exclamation",
+            "output": None,
+            "run_id": None,
+            "span_id": None,
+            "trace_id": None,
+            "vendor": "langchain",
+        },
+    ],
+    [
+        {"type": "LlmChatCompletionSummary"},
+        {
+            "duration": None,
+            "id": None,
+            "ingest_source": "Python",
+            "request.model": "gemini-3.5-flash",
+            "response.choices.finish_reason": "STOP",
+            "response.model": "gemini-3.5-flash",
+            "response.number_of_messages": 2,
+            "response.usage.completion_tokens": 2,
+            "response.usage.prompt_tokens": 452,
+            "response.usage.total_tokens": 454,
             "span_id": None,
             "time_to_first_token": None,
             "timestamp": None,
@@ -167,52 +286,57 @@ chat_astream_metrics = [
 
 @dt_enabled
 @reset_core_stats_engine()
-@validate_custom_event_count(count=9)
-@validate_custom_events(recorded_events)
-@validate_transaction_metrics(
-    "langchain_integration.test_chat_astream:test_chat_astream",
-    scoped_metrics=chat_astream_metrics,
-    rollup_metrics=chat_astream_metrics,
-    background_task=True,
-)
-@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "my_agent"}'})
-@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "add_exclamation"}'})
-@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "capitalize_message"}'})
-@validate_attributes("agent", ["llm"])
-@background_task()
-def test_chat_astream(loop, build_agent, async_build_state_graph):
-    request_data = "Take the word hello, capitalize it, then add an exclamation point."
+def test_chat_astream(loop, response_format, build_agent, async_build_state_graph):
+    recorded_events = recorded_events_1 if response_format == "tool_strategy" else recorded_events_2
 
-    agent = build_agent()
-    graph = async_build_state_graph(agent)
+    @validate_custom_event_count(count=9)
+    @validate_custom_events(recorded_events)
+    @validate_transaction_metrics(
+        "mlmodel_langchain.gemini_integration.test_chat_astream:test_chat_astream.<locals>._test",
+        scoped_metrics=chat_astream_metrics,
+        rollup_metrics=chat_astream_metrics,
+        background_task=True,
+    )
+    @validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "my_agent"}'})
+    @validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "add_exclamation"}'})
+    @validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "capitalize_message"}'})
+    @validate_attributes("agent", ["llm"])
+    @background_task()
+    def _test():
+        request_data = "Take the word hello, capitalize it, then add an exclamation point."
 
-    input_state = {"messages": [HumanMessage(content=request_data)]}
+        agent = build_agent()
+        graph = async_build_state_graph(agent)
 
-    async def graph_astream():
-        messages_result = []
-        updates_result = []
+        input_state = {"messages": [HumanMessage(content=request_data)]}
 
-        async for _, event_type, chunk in graph.astream(
-            input_state, stream_mode=["messages", "updates"], subgraphs=True
-        ):
-            # Streamed Model Tokens
-            if event_type == "messages":
-                message_chunk, _ = chunk
-                text = _extract_text(message_chunk)
-                if text:
-                    messages_result.append(text)
-            # Node Outputs (including tool results)
-            elif event_type == "updates":
-                for update in chunk.values():
-                    if not isinstance(update, dict):
-                        continue
-                    result = [
-                        _extract_text(msg) for msg in update.get("messages", []) if getattr(msg, "type", None) == "tool"
-                    ]
-                    updates_result.extend(result)
+        async def graph_astream():
+            messages_result = []
+            updates_result = []
 
-        return messages_result, updates_result
+            async for _, event_type, chunk in graph.astream(
+                input_state, stream_mode=["messages", "updates"], subgraphs=True
+            ):
+                # Streamed Model Tokens
+                if event_type == "messages":
+                    message_chunk, _ = chunk
+                    text = _extract_text(message_chunk)
+                    if text:
+                        messages_result.append(text)
+                # Node Outputs (including tool results)
+                elif event_type == "updates":
+                    for update in chunk.values():
+                        if not isinstance(update, dict):
+                            continue
+                        result = [
+                            _extract_text(msg) for msg in update.get("messages", []) if getattr(msg, "type", None) == "tool"
+                        ]
+                        updates_result.extend(result)
 
-    message, updates = loop.run_until_complete(graph_astream())
-    assert message[1] == "HELLO!"
-    assert updates[1] == "HELLO!"
+            return messages_result, updates_result
+
+        message, updates = loop.run_until_complete(graph_astream())
+        assert message[1] == "HELLO!"
+        assert updates[1] == "HELLO!"
+
+    _test()

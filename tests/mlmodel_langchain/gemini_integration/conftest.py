@@ -39,11 +39,14 @@ def _match_body_no_thought_signature(recorded, current):
     if recorded.body == current.body:
         return
 
-    def remove_thought_signature(body):
+    def remove_thought_signature_and_id(body):
         try:
             for content in body["contents"]:
                 for part in content["parts"]:
                     part.pop("thoughtSignature", None)
+                    if part.get("functionResponse"):
+                        for output in part["functionResponse"]["response"]["output"]:
+                            output.pop("id", None)
         except Exception:
             pass
 
@@ -54,8 +57,8 @@ def _match_body_no_thought_signature(recorded, current):
     if json.dumps(recorded_body) == json.dumps(current_body):
         return
 
-    remove_thought_signature(recorded_body)
-    remove_thought_signature(current_body)
+    remove_thought_signature_and_id(recorded_body)
+    remove_thought_signature_and_id(current_body)
 
     # If reserialized JSON without thoughtSignature is identical, then it's a match
     assert json.dumps(recorded_body) == json.dumps(current_body)
@@ -64,27 +67,41 @@ def _match_body_no_thought_signature(recorded, current):
 VCR_MATCHERS["body"] = _match_body_no_thought_signature
 
 
+@pytest.fixture(autouse=True)
+def _force_genai_httpx_transport(monkeypatch):
+    """
+    Force google-genai onto its httpx async transport for this suite.
+
+    google-genai auto-selects aiohttp whenever aiohttp is importable (it is here, pulled in
+    transitively by the langchain dependencies). VCR cannot terminate a replayed aiohttp SSE
+    stream, so on replay the aiohttp transport loops forever reading the streamed response and
+    exhausts memory. httpx replays streaming responses correctly, so hide aiohttp from
+    google-genai (`has_aiohttp` is the first conjunct of `_use_aiohttp()`, so clearing it
+    routes streaming requests through the httpx fallback). `monkeypatch` restores it after
+    each test; `raising=True` (the default) fails loudly if google-genai renames the flag
+    rather than silently regressing to the aiohttp OOM.
+    """
+    import google.genai._api_client as genai_api_client
+
+    monkeypatch.setattr(genai_api_client, "has_aiohttp", False)
+
+
 # Initialize MCP Client and load tools
 @pytest.fixture(scope="session")
-def mcp_client(loop):
-    from mcp.shared.memory import create_connected_server_and_client_session
+def mcp_client():
+    mcp_server_location = "langchain_integration/mcp_server.py" if os.getenv("GITHUB_ACTIONS") else "tests/mlmodel_langchain/gemini_integration/mcp_server.py"
 
-    from .mcp_server import server as mcp_server
+    mcp_client = MultiServerMCPClient(
+        {
+            "my_mcp_server": {
+                "command": sys.executable,
+                "args": [mcp_server_location],
+                "transport": "stdio",
+            }
+        }
+    )
 
-    async def _mcp_client():
-        async with create_connected_server_and_client_session(mcp_server) as session:
-            yield session
-
-    agen = _mcp_client()
-    aiter = agen.__aiter__()
-    session = loop.run_until_complete(aiter.__anext__())
-    yield session
-
-    try:
-        loop.run_until_complete(agen.aclose())
-    except RuntimeError:
-        # Ignore exceptions due to closing in different task than starting
-        pass
+    return mcp_client
 
 
 @pytest.fixture
@@ -104,23 +121,26 @@ def gemini_streaming_client(vcr_recording):
     return init_chat_model("gemini-3.5-flash", model_provider="google_genai", streaming=True)
 
 
-# Build graph
 @pytest.fixture(params=["tool_strategy", "json"])
-def build_agent(request, loop, mcp_client, schemas, gemini_streaming_client):
+def response_format(request):
+    return request.param
+
+
+# Build graph
+@pytest.fixture
+def build_agent(response_format, loop, mcp_client, schemas, gemini_streaming_client):
     def _create_agent():
         from langchain.agents import create_agent
         from langchain.agents.structured_output import ToolStrategy
         from langchain_mcp_adapters.tools import load_mcp_tools
 
-        agent_tools = loop.run_until_complete(load_mcp_tools(mcp_client))
+        agent_tools = loop.run_until_complete(mcp_client.get_tools())
         Schema, State = schemas
 
-        response_format = request.param
         kwargs = {"model": gemini_streaming_client, "name": "my_agent", "tools": agent_tools, "state_schema": State}
-        response_format_kwargs = (
-            {"response_format": ToolStrategy(Schema)} if response_format == "tool_strategy" else None
-        )
-        kwargs.update(response_format_kwargs)
+        
+        if response_format == "tool_strategy":
+            kwargs.update({"response_format": ToolStrategy(Schema)})
 
         return create_agent(**kwargs)
 
@@ -182,31 +202,10 @@ def async_call_model():
             # by checking for a transaction
             assert current_transaction()
 
-            step = 0
             async for event in agent.astream({"messages": state["messages"]}, stream_mode="updates"):
                 for update in event.values():
                     if isinstance(update, dict) and update.get("messages"):
-                        for message in update["messages"]:
-                            try:
-                                # AIMessage
-                                original_tool_id = message.tool_calls[-1]["id"]
-                                message.tool_calls[-1]["id"] = f"tool-id-{step}"
-                                thought_signature = message.additional_kwargs[
-                                    "__gemini_function_call_thought_signatures__"
-                                ].pop(original_tool_id)
-                                message.additional_kwargs["__gemini_function_call_thought_signatures__"] = {
-                                    f"tool-id-{step}": thought_signature
-                                }
-                                message.id = f"lc_run--ai-message-id-{step}"
-                            except AttributeError:
-                                # ToolMessage
-                                if isinstance(message.content, list):
-                                    message.content[-1]["id"] = f"lc_tool-message-content-id-{step}"
-                                else:
-                                    message.tool_call_id = f"tool-id-{step}"
-                                message.id = f"tool-message-id-{step}"
                         yield {"messages": update["messages"]}
-                step += 1
 
         return _call_model
 

@@ -32,3 +32,6 @@ def capitalize_message(phrase: str):
     Capitalize the letters within the phrase.
     """
     return f"{phrase.upper()}"
+
+server.run(transport="stdio")
+

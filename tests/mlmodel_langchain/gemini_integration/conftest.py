@@ -15,6 +15,7 @@
 import os
 import sys
 from typing import Annotated
+import json
 
 import pytest
 
@@ -27,35 +28,66 @@ from langchain.chat_models import init_chat_model
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langgraph.graph.message import add_messages
 from testing_support.fixture.event_loop import event_loop as loop
-from testing_support.fixture.vcr import VCR_MATCH_ON
+from testing_support.fixture.vcr import VCR_MATCHERS
 
 from newrelic.api.transaction import current_transaction
+from newrelic.common.encoding_utils import ensure_str
 
 
-# Unlike the rest of the gemini test suite, the output of these tests also
-# contains a randomly generated ID.  This ID is baked into the 'thoughtSignature'
-# which has a proprietary encryption.
-# To ensure that VCR_MATCH_ON is only affected in this specific conftest, we
-# must override the fixture itself.
-@pytest.fixture(autouse=True)
-def vcr_match_on():
-    return [matcher for matcher in VCR_MATCH_ON if matcher != "body"]
+def _match_body_no_thought_signature(recorded, current):
+    # If original bodies are identical, then it's a match
+    if recorded.body == current.body:
+        return True
+
+    def remove_thought_signature(body):
+        try:
+            for content in body["contents"]:
+                for part in content["parts"]:
+                    part.pop("thoughtSignature", None)
+        except Exception:
+            pass
+
+    recorded_body = json.loads(ensure_str(recorded.body))
+    current_body = json.loads(ensure_str(current.body))
+
+    # If parsed and reserialized JSON is identical, then it's a match
+    if json.dumps(recorded_body) == json.dumps(current_body):
+        return True
+
+    remove_thought_signature(recorded_body)
+    remove_thought_signature(current_body)
+
+    # If reserialized JSON without thoughtSignature is identical, then it's a match
+    if json.dumps(recorded_body) == json.dumps(current_body):
+        return True
+
+    return False
+
+VCR_MATCHERS["body"] = _match_body_no_thought_signature
+
 
 
 # Initialize MCP Client and load tools
 @pytest.fixture(scope="session")
-def mcp_client():
-    mcp_server_location = (
-        "langchain_integration/mcp_server.py"
-        if os.getenv("GITHUB_ACTIONS")
-        else "tests/mlmodel_gemini/langchain_integration/mcp_server.py"
-    )
+def mcp_client(loop):
+    from mcp.shared.memory import create_connected_server_and_client_session
 
-    mcp_client = MultiServerMCPClient(
-        {"my_mcp_server": {"command": "python", "args": [mcp_server_location], "transport": "stdio"}}
-    )
+    from .mcp_server import server as mcp_server
 
-    return mcp_client
+    async def _mcp_client():
+        async with create_connected_server_and_client_session(mcp_server) as session:
+            yield session
+
+    agen = _mcp_client()
+    aiter = agen.__aiter__()
+    session = loop.run_until_complete(aiter.__anext__())
+    yield session
+
+    try:
+        loop.run_until_complete(agen.aclose())
+    except RuntimeError:
+        # Ignore exceptions due to closing in different task than starting
+        pass
 
 
 @pytest.fixture
@@ -76,22 +108,27 @@ def gemini_streaming_client(vcr_recording):
 
 
 # Build graph
-@pytest.fixture
-def build_agent(loop, mcp_client, schemas, gemini_streaming_client):
+@pytest.fixture(params=["tool_strategy", "json"])
+def build_agent(request, loop, mcp_client, schemas, gemini_streaming_client):
     def _create_agent():
         from langchain.agents import create_agent
         from langchain.agents.structured_output import ToolStrategy
+        from langchain_mcp_adapters.tools import load_mcp_tools
 
-        agent_tools = loop.run_until_complete(mcp_client.get_tools())
+        agent_tools = loop.run_until_complete(load_mcp_tools(mcp_client))
         Schema, State = schemas
 
-        return create_agent(
-            model=gemini_streaming_client,
-            name="my_agent",
-            tools=agent_tools,
-            state_schema=State,
-            response_format=ToolStrategy(Schema),
-        )
+        format = request.param
+        kwargs = {
+            "model": gemini_streaming_client,
+            "name": "my_agent",
+            "tools": agent_tools,
+            "state_schema": State,
+        }
+        response_format_kwargs = {"response_format": ToolStrategy(Schema)} if format == "tool_strategy" else None
+        kwargs.update(response_format_kwargs)
+
+        return create_agent(**kwargs)
 
     return _create_agent
 

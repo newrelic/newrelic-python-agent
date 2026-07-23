@@ -15,7 +15,7 @@
 from mcp.server.fastmcp import FastMCP
 
 # Define MCP Server
-server = FastMCP("DH")
+server = FastMCP("NR_FastMCP")
 
 
 @server.tool()
@@ -33,5 +33,3 @@ def capitalize_message(phrase: str):
     """
     return f"{phrase.upper()}"
 
-
-server.run(transport="stdio")

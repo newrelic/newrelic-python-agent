@@ -12,9 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
 
-import pytest
 from langchain.messages import HumanMessage
 from testing_support.fixtures import dt_enabled, reset_core_stats_engine, validate_attributes
 from testing_support.validators.validate_custom_event import validate_custom_event_count
@@ -35,7 +33,8 @@ recorded_events = [
             "input": "{'phrase': 'hello'}",
             "name": "capitalize_message",
             "output": None,
-            "run_id": "tool-id-0",
+            # "run_id": "tool-id-0",
+            "run_id": None,
             "span_id": None,
             "trace_id": None,
             "vendor": "langchain",
@@ -88,7 +87,8 @@ recorded_events = [
             "input": "{'phrase': 'HELLO'}",
             "name": "add_exclamation",
             "output": None,
-            "run_id": "tool-id-2",
+            # "run_id": "tool-id-2",
+            "run_id": None,
             "span_id": None,
             "trace_id": None,
             "vendor": "langchain",

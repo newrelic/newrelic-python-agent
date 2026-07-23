@@ -165,7 +165,6 @@ chat_astream_metrics = [
 ]
 
 
-@pytest.mark.skipif(sys.version_info[:2] < (3, 10), reason="Langchain MCP Adapters do not support Python 3.9 and below")
 @dt_enabled
 @reset_core_stats_engine()
 @validate_custom_event_count(count=9)

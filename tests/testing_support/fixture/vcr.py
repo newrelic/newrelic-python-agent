@@ -96,6 +96,10 @@ VCR_IGNORED_HEADERS = [
     "user-agent",
     "strict-transport-security",
     "x-content-type-options",
+    # AWS Bedrock
+    "amz-sdk-invocation-id",
+    "amz-sdk-request",
+    "x-amz-date",
     # Google Gemini
     "x-goog-api-client",
     # OpenAI Headers

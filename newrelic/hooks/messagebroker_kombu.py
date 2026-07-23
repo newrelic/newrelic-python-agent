@@ -115,7 +115,7 @@ def wrap_Producer_publish(wrapped, instance, args, kwargs):
         source=wrapped,
         terminal=False,
     ):
-        dt_headers = {k: v.encode("utf-8") for k, v in MessageTrace.generate_request_headers(transaction)}
+        dt_headers = dict(MessageTrace.generate_request_headers(transaction))
         if headers:
             dt_headers.update(headers)
 

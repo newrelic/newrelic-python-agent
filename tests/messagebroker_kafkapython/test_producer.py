@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
+
 import pytest
 from conftest import cache_kafka_producer_headers
 from testing_support.validators.validate_messagebroker_headers import validate_messagebroker_headers
@@ -101,3 +103,42 @@ def test_producer_errors(topic, producer, monkeypatch):
 @pytest.fixture
 def expected_broker_metrics(broker, topic):
     return [(f"MessageBroker/Kafka/Nodes/{server}/Produce/{topic}", 1) for server in broker]
+
+
+# ---------------------------------------------------------------------------
+# Cluster-ID metric tests
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def seeded_cluster_id(broker):
+    """Pre-seed the cluster-ID cache with a known value so tests are deterministic.
+
+    The real cluster-ID fetch is async; seeding avoids flaky timing issues
+    in the test suite while still exercising the metric-recording code path.
+    """
+    from newrelic.hooks.messagebroker_kafkapython import _kafka_cluster_id_cache
+
+    cache_key = ",".join(sorted(broker))
+    test_cluster_id = "test-cluster-abc123"
+    _kafka_cluster_id_cache[cache_key] = (test_cluster_id, time.monotonic())
+    yield test_cluster_id
+    _kafka_cluster_id_cache.pop(cache_key, None)
+
+
+def test_cluster_produce_metric(topic, send_producer_message, broker, seeded_cluster_id):
+    """MessageBroker/Kafka/Cluster/{id}/Topic/{topic}/Produce appears after a send."""
+    cluster_id = seeded_cluster_id
+    cluster_metric = f"MessageBroker/Kafka/Cluster/{cluster_id}/Topic/{topic}/Produce"
+
+    @validate_transaction_metrics(
+        "test_producer:test_cluster_produce_metric.<locals>.test",
+        custom_metrics=[(cluster_metric, 1)],
+        background_task=True,
+    )
+    @background_task()
+    def test():
+        send_producer_message()
+
+    test()
+
+

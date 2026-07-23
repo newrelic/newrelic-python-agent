@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
+
 import pytest
 from conftest import cache_kafka_consumer_headers
 from testing_support.fixtures import reset_core_stats_engine, validate_attributes
@@ -186,3 +188,38 @@ def expected_broker_metrics(broker, topic):
 @pytest.fixture
 def expected_missing_broker_metrics(broker, topic):
     return [(f"MessageBroker/Kafka/Nodes/{server}/Consume/{topic}", None) for server in broker]
+
+
+# ---------------------------------------------------------------------------
+# Cluster-ID metric and attribute tests
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def seeded_cluster_id(broker):
+    """Pre-seed the cluster-ID cache so metric tests are deterministic."""
+    from newrelic.hooks.messagebroker_kafkapython import _kafka_cluster_id_cache
+
+    cache_key = ",".join(sorted(broker))
+    test_cluster_id = "test-cluster-consumer-xyz"
+    _kafka_cluster_id_cache[cache_key] = (test_cluster_id, time.monotonic())
+    yield test_cluster_id
+    _kafka_cluster_id_cache.pop(cache_key, None)
+
+
+def test_cluster_consume_metric(get_consumer_record, topic, broker, seeded_cluster_id):
+    """MessageBroker/Kafka/Cluster/{id}/Topic/{topic}/Consume appears after a poll."""
+    cluster_id = seeded_cluster_id
+    cluster_metric = f"MessageBroker/Kafka/Cluster/{cluster_id}/Topic/{topic}/Consume"
+
+    @validate_transaction_metrics(
+        f"Named/{topic}",
+        group="Message/Kafka/Topic",
+        custom_metrics=[(cluster_metric, 1)],
+        background_task=True,
+    )
+    def _test():
+        get_consumer_record()
+
+    _test()
+
+

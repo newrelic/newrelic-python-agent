@@ -182,3 +182,34 @@ def expected_broker_metrics(broker, topic):
 @pytest.fixture
 def expected_missing_broker_metrics(broker, topic):
     return [(f"MessageBroker/Kafka/Nodes/{server}/Consume/{topic}", None) for server in broker.split(",")]
+
+
+# ---------------------------------------------------------------------------
+# Cluster-ID metric and attribute tests (confluent-kafka)
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def consumer_with_cluster_id(consumer, broker):
+    """Set _nr_cluster_id directly on the consumer instance for deterministic tests."""
+    test_cluster_id = "confluent-consumer-cluster-test"
+    consumer._nr_cluster_id = test_cluster_id
+    if not hasattr(consumer, "_nr_bootstrap_servers"):
+        consumer._nr_bootstrap_servers = broker.split(",")
+    yield consumer, test_cluster_id
+
+
+def test_cluster_consume_metric(topic, get_consumer_record, consumer_with_cluster_id, client_type):
+    """MessageBroker/Kafka/Cluster/{id}/Topic/{topic}/Consume appears after poll()."""
+    _, cluster_id = consumer_with_cluster_id
+    cluster_metric = f"MessageBroker/Kafka/Cluster/{cluster_id}/Topic/{topic}/Consume"
+
+    @validate_transaction_metrics(
+        f"Named/{topic}",
+        group="Message/Kafka/Topic",
+        custom_metrics=[(cluster_metric, 1)],
+        background_task=True,
+    )
+    def _test():
+        get_consumer_record()
+
+    _test()

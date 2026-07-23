@@ -164,6 +164,10 @@ class GCRuntimeMetricsSettings(Settings):
     enabled = False
 
 
+class KafkaSettings(Settings):
+    cluster_metrics_enabled = False
+
+
 class MemoryRuntimeMetricsSettings(Settings):
     pass
 
@@ -660,6 +664,7 @@ _settings.event_harvest_config = EventHarvestConfigSettings()
 _settings.event_harvest_config.harvest_limits = EventHarvestConfigHarvestLimitSettings()
 _settings.event_loop_visibility = EventLoopVisibilitySettings()
 _settings.gc_runtime_metrics = GCRuntimeMetricsSettings()
+_settings.kafka = KafkaSettings()
 _settings.memory_runtime_pid_metrics = MemoryRuntimeMetricsSettings()
 _settings.heroku = HerokuSettings()
 _settings.infinite_tracing = InfiniteTracingSettings()
@@ -990,6 +995,8 @@ _settings.thread_profiler.enabled = True
 
 _settings.gc_runtime_metrics.enabled = _environ_as_bool("NEW_RELIC_GC_RUNTIME_METRICS_ENABLED", default=False)
 _settings.gc_runtime_metrics.top_object_count_limit = 5
+
+_settings.kafka.cluster_metrics_enabled = _environ_as_bool("NEW_RELIC_KAFKA_CLUSTER_METRICS_ENABLED", default=False)
 
 _settings.memory_runtime_pid_metrics.enabled = _environ_as_bool(
     "NEW_RELIC_MEMORY_RUNTIME_PID_METRICS_ENABLED", default=True

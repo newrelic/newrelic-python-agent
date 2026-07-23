@@ -1058,6 +1058,14 @@ def apply_local_high_security_mode_setting(settings):
         settings.ai_monitoring.enabled = False
         _logger.info(log_template, "ai_monitoring.enabled", True, False)
 
+    if settings.ai_monitoring.streaming.enabled:
+        settings.ai_monitoring.streaming.enabled = False
+        _logger.info(log_template, "ai_monitoring.streaming.enabled", True, False)
+
+    if settings.ai_monitoring.record_content.enabled:
+        settings.ai_monitoring.record_content.enabled = False
+        _logger.info(log_template, "ai_monitoring.record_content.enabled", True, False)
+
     return settings
 
 
@@ -1256,7 +1264,7 @@ def _load_configuration(config_file=None, environment=None, ignore_errors=True, 
 
     apply_local_high_security_mode_setting(_settings)
 
-    # Look for an app_name setting which is actually a semi colon
+    # Look for an app_name setting which is actually a semicolon
     # list of application names and adjust app_name setting and
     # registered linked applications for later handling.
 
@@ -2993,6 +3001,10 @@ def _process_module_builtin_defaults():
     _process_module_definition("flask_restful", "newrelic.hooks.component_flask_rest", "instrument_flask_rest")
     _process_module_definition("flask_restplus.api", "newrelic.hooks.component_flask_rest", "instrument_flask_rest")
     _process_module_definition("flask_restx.api", "newrelic.hooks.component_flask_rest", "instrument_flask_rest")
+
+    _process_module_definition(
+        "wagtail.models.pages", "newrelic.hooks.framework_django", "instrument_wagtail_models_pages"
+    )
 
     _process_module_definition("graphql_server", "newrelic.hooks.component_graphqlserver", "instrument_graphqlserver")
 

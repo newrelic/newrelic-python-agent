@@ -145,6 +145,8 @@ class AgentProtocol:
         "application_logging.forwarding.enabled",
         "machine_learning.inference_events_value.enabled",
         "ai_monitoring.enabled",
+        "ai_monitoring.streaming.enabled",
+        "ai_monitoring.record_content.enabled",
     )
 
     LOGGER_FUNC_MAPPING = {  # noqa: RUF012

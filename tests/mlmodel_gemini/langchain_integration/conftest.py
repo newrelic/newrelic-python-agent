@@ -17,7 +17,6 @@ import sys
 from typing import Annotated
 
 import pytest
-from testing_support.fixture.vcr import VCR_IGNORED_HEADERS, VCR_MATCH_ON
 
 if sys.version_info[:2] < (3, 12):
     from typing_extensions import TypedDict
@@ -30,9 +29,6 @@ from langgraph.graph.message import add_messages
 from testing_support.fixture.event_loop import event_loop as loop
 
 from newrelic.api.transaction import current_transaction
-
-VCR_IGNORED_HEADERS.extend(["accept-encoding"])
-VCR_MATCH_ON.remove("body")
 
 
 # Initialize MCP Client and load tools

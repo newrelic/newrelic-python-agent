@@ -2314,6 +2314,12 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "agent_framework_bedrock",
+        "newrelic.hooks.mlmodel_agentframework",
+        "instrument_agent_framwork_bedrock__chat_client",
+    )
+
+    _process_module_definition(
         "asyncio.base_events", "newrelic.hooks.coroutines_asyncio", "instrument_asyncio_base_events"
     )
 

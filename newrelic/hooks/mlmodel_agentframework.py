@@ -48,9 +48,13 @@ def wrap_BedrockChatClient__invoke_converse(wrapped, instance, args, kwargs):
 def wrap_BedrockChatClient__prepare_options(wrapped, instance, args, kwargs):
     request = wrapped(*args, **kwargs)
 
+    trace = current_trace()
+    if not trace:
+        return request
+
     # Attach the current trace to the request so we can resume it inside the asyncio.to_thread call
     try:
-        request["_nr_trace"] = current_trace()
+        request["_nr_trace"] = trace
     except Exception:
         _logger.debug(BEDROCK_CONTEXT_FAILURE_MESSAGE)
 

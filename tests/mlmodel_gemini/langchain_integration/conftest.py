@@ -29,6 +29,16 @@ from langgraph.graph.message import add_messages
 from testing_support.fixture.event_loop import event_loop as loop
 
 from newrelic.api.transaction import current_transaction
+from testing_support.fixture.vcr import VCR_MATCH_ON
+
+# Unlike the rest of the gemini test suite, the output of these tests also 
+# contains a randomly generated ID.  This ID is baked into the 'thoughtSignature'
+# which has a proprietary encryption.
+# To ensure that VCR_MATCH_ON is only affected in this specific conftest, we
+# must override the fixture itself.
+@pytest.fixture(autouse=True)
+def vcr_match_on():
+    return [matcher for matcher in VCR_MATCH_ON if matcher != "body"]
 
 
 # Initialize MCP Client and load tools

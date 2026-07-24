@@ -16,10 +16,10 @@ interactions:
 - request:
     body: '{"contents": [{"parts": [{"text": "Take the word hello, capitalize it,
       then add an exclamation point."}], "role": "user"}], "safetySettings": [], "tools":
-      [{"functionDeclarations": [{"description": "\n    Add an exclamation point to
-      the end of the phrase.\n    ", "name": "add_exclamation", "parameters": {"properties":
+      [{"functionDeclarations": [{"description": "Add an exclamation point to
+      the end of the phrase.", "name": "add_exclamation", "parameters": {"properties":
       {"phrase": {"type": "STRING"}}, "required": ["phrase"], "type": "OBJECT"}},
-      {"description": "\n    Capitalize the letters within the phrase.\n    ", "name":
+      {"description": "Capitalize the letters within the phrase.", "name":
       "capitalize_message", "parameters": {"properties": {"phrase": {"type": "STRING"}},
       "required": ["phrase"], "type": "OBJECT"}}, {"name": "Schema", "parameters":
       {"properties": {"data": {"type": "STRING"}}, "required": ["data"], "type": "OBJECT"}}]}],
@@ -85,10 +85,10 @@ interactions:
       "role": "model"}, {"parts": [{"functionResponse": {"name": "capitalize_message",
       "response": {"output": [{"type": "text", "text": "HELLO", "id": "lc_tool-message-content-id-1"}]}}}],
       "role": "user"}], "safetySettings": [], "tools": [{"functionDeclarations": [{"description":
-      "\n    Add an exclamation point to the end of the phrase.\n    ", "name": "add_exclamation",
+      "Add an exclamation point to the end of the phrase.", "name": "add_exclamation",
       "parameters": {"properties": {"phrase": {"type": "STRING"}}, "required": ["phrase"],
-      "type": "OBJECT"}}, {"description": "\n    Capitalize the letters within the
-      phrase.\n    ", "name": "capitalize_message", "parameters": {"properties": {"phrase":
+      "type": "OBJECT"}}, {"description": "Capitalize the letters within the
+      phrase.", "name": "capitalize_message", "parameters": {"properties": {"phrase":
       {"type": "STRING"}}, "required": ["phrase"], "type": "OBJECT"}}, {"name": "Schema",
       "parameters": {"properties": {"data": {"type": "STRING"}}, "required": ["data"],
       "type": "OBJECT"}}]}], "toolConfig": {"functionCallingConfig": {"allowedFunctionNames":
@@ -157,10 +157,10 @@ interactions:
       "role": "model"}, {"parts": [{"functionResponse": {"name": "add_exclamation",
       "response": {"output": [{"type": "text", "text": "HELLO!", "id": "lc_tool-message-content-id-3"}]}}}],
       "role": "user"}], "safetySettings": [], "tools": [{"functionDeclarations": [{"description":
-      "\n    Add an exclamation point to the end of the phrase.\n    ", "name": "add_exclamation",
+      "Add an exclamation point to the end of the phrase.", "name": "add_exclamation",
       "parameters": {"properties": {"phrase": {"type": "STRING"}}, "required": ["phrase"],
-      "type": "OBJECT"}}, {"description": "\n    Capitalize the letters within the
-      phrase.\n    ", "name": "capitalize_message", "parameters": {"properties": {"phrase":
+      "type": "OBJECT"}}, {"description": "Capitalize the letters within the
+      phrase.", "name": "capitalize_message", "parameters": {"properties": {"phrase":
       {"type": "STRING"}}, "required": ["phrase"], "type": "OBJECT"}}, {"name": "Schema",
       "parameters": {"properties": {"data": {"type": "STRING"}}, "required": ["data"],
       "type": "OBJECT"}}]}], "toolConfig": {"functionCallingConfig": {"allowedFunctionNames":
@@ -220,10 +220,10 @@ interactions:
 - request:
     body: '{"contents": [{"parts": [{"text": "Take the word hello, capitalize it,
       then add an exclamation point."}], "role": "user"}], "safetySettings": [], "tools":
-      [{"functionDeclarations": [{"description": "\n    Add an exclamation point to
-      the end of the phrase.\n    ", "name": "add_exclamation", "parameters": {"properties":
+      [{"functionDeclarations": [{"description": "Add an exclamation point to
+      the end of the phrase.", "name": "add_exclamation", "parameters": {"properties":
       {"phrase": {"type": "STRING"}}, "required": ["phrase"], "type": "OBJECT"}},
-      {"description": "\n    Capitalize the letters within the phrase.\n    ", "name":
+      {"description": "Capitalize the letters within the phrase.", "name":
       "capitalize_message", "parameters": {"properties": {"phrase": {"type": "STRING"}},
       "required": ["phrase"], "type": "OBJECT"}}]}], "generationConfig": {"candidateCount":
       1}}'
@@ -286,10 +286,10 @@ interactions:
       "role": "model"}, {"parts": [{"functionResponse": {"name": "capitalize_message",
       "response": {"output": [{"type": "text", "text": "HELLO", "id": "lc_tool-message-content-id-1"}]}}}],
       "role": "user"}], "safetySettings": [], "tools": [{"functionDeclarations": [{"description":
-      "\n    Add an exclamation point to the end of the phrase.\n    ", "name": "add_exclamation",
+      "Add an exclamation point to the end of the phrase.", "name": "add_exclamation",
       "parameters": {"properties": {"phrase": {"type": "STRING"}}, "required": ["phrase"],
-      "type": "OBJECT"}}, {"description": "\n    Capitalize the letters within the
-      phrase.\n    ", "name": "capitalize_message", "parameters": {"properties": {"phrase":
+      "type": "OBJECT"}}, {"description": "Capitalize the letters within the
+      phrase.", "name": "capitalize_message", "parameters": {"properties": {"phrase":
       {"type": "STRING"}}, "required": ["phrase"], "type": "OBJECT"}}]}], "generationConfig":
       {"candidateCount": 1}}'
     headers:
@@ -355,10 +355,10 @@ interactions:
       "role": "model"}, {"parts": [{"functionResponse": {"name": "add_exclamation",
       "response": {"output": [{"type": "text", "text": "HELLO!", "id": "lc_tool-message-content-id-3"}]}}}],
       "role": "user"}], "safetySettings": [], "tools": [{"functionDeclarations": [{"description":
-      "\n    Add an exclamation point to the end of the phrase.\n    ", "name": "add_exclamation",
+      "Add an exclamation point to the end of the phrase.", "name": "add_exclamation",
       "parameters": {"properties": {"phrase": {"type": "STRING"}}, "required": ["phrase"],
-      "type": "OBJECT"}}, {"description": "\n    Capitalize the letters within the
-      phrase.\n    ", "name": "capitalize_message", "parameters": {"properties": {"phrase":
+      "type": "OBJECT"}}, {"description": "Capitalize the letters within the
+      phrase.", "name": "capitalize_message", "parameters": {"properties": {"phrase":
       {"type": "STRING"}}, "required": ["phrase"], "type": "OBJECT"}}]}], "generationConfig":
       {"candidateCount": 1}}'
     headers:
@@ -419,10 +419,10 @@ interactions:
       "role": "model"}, {"parts": [{"functionResponse": {"name": "capitalize_message",
       "response": {"output": [{"type": "text", "text": "HELLO", "id": "lc_381f048b-92c3-440a-8105-47dcf62b8408"}]}}}],
       "role": "user"}], "safetySettings": [], "tools": [{"functionDeclarations": [{"description":
-      "\n    Add an exclamation point to the end of the phrase.\n    ", "name": "add_exclamation",
+      "Add an exclamation point to the end of the phrase.", "name": "add_exclamation",
       "parameters": {"properties": {"phrase": {"type": "STRING"}}, "required": ["phrase"],
-      "type": "OBJECT"}}, {"description": "\n    Capitalize the letters within the
-      phrase.\n    ", "name": "capitalize_message", "parameters": {"properties": {"phrase":
+      "type": "OBJECT"}}, {"description": "Capitalize the letters within the
+      phrase.", "name": "capitalize_message", "parameters": {"properties": {"phrase":
       {"type": "STRING"}}, "required": ["phrase"], "type": "OBJECT"}}, {"name": "Schema",
       "parameters": {"properties": {"data": {"type": "STRING"}}, "required": ["data"],
       "type": "OBJECT"}}]}], "toolConfig": {"functionCallingConfig": {"allowedFunctionNames":
@@ -491,10 +491,10 @@ interactions:
       "role": "model"}, {"parts": [{"functionResponse": {"name": "add_exclamation",
       "response": {"output": [{"type": "text", "text": "HELLO!", "id": "lc_d03ef689-0776-4549-b53c-f3a29563d8a5"}]}}}],
       "role": "user"}], "safetySettings": [], "tools": [{"functionDeclarations": [{"description":
-      "\n    Add an exclamation point to the end of the phrase.\n    ", "name": "add_exclamation",
+      "Add an exclamation point to the end of the phrase.", "name": "add_exclamation",
       "parameters": {"properties": {"phrase": {"type": "STRING"}}, "required": ["phrase"],
-      "type": "OBJECT"}}, {"description": "\n    Capitalize the letters within the
-      phrase.\n    ", "name": "capitalize_message", "parameters": {"properties": {"phrase":
+      "type": "OBJECT"}}, {"description": "Capitalize the letters within the
+      phrase.", "name": "capitalize_message", "parameters": {"properties": {"phrase":
       {"type": "STRING"}}, "required": ["phrase"], "type": "OBJECT"}}, {"name": "Schema",
       "parameters": {"properties": {"data": {"type": "STRING"}}, "required": ["data"],
       "type": "OBJECT"}}]}], "toolConfig": {"functionCallingConfig": {"allowedFunctionNames":
@@ -559,10 +559,10 @@ interactions:
       "role": "model"}, {"parts": [{"functionResponse": {"name": "capitalize_message",
       "response": {"output": [{"type": "text", "text": "HELLO", "id": "lc_5e6b7c3e-aa47-48a1-a0a2-1b91065c7490"}]}}}],
       "role": "user"}], "safetySettings": [], "tools": [{"functionDeclarations": [{"description":
-      "\n    Add an exclamation point to the end of the phrase.\n    ", "name": "add_exclamation",
+      "Add an exclamation point to the end of the phrase.", "name": "add_exclamation",
       "parameters": {"properties": {"phrase": {"type": "STRING"}}, "required": ["phrase"],
-      "type": "OBJECT"}}, {"description": "\n    Capitalize the letters within the
-      phrase.\n    ", "name": "capitalize_message", "parameters": {"properties": {"phrase":
+      "type": "OBJECT"}}, {"description": "Capitalize the letters within the
+      phrase.", "name": "capitalize_message", "parameters": {"properties": {"phrase":
       {"type": "STRING"}}, "required": ["phrase"], "type": "OBJECT"}}]}], "generationConfig":
       {"candidateCount": 1}}'
     headers:
@@ -628,10 +628,10 @@ interactions:
       "role": "model"}, {"parts": [{"functionResponse": {"name": "add_exclamation",
       "response": {"output": [{"type": "text", "text": "HELLO!", "id": "lc_3c378a27-a68b-4036-8d60-f49b9f8d1ae4"}]}}}],
       "role": "user"}], "safetySettings": [], "tools": [{"functionDeclarations": [{"description":
-      "\n    Add an exclamation point to the end of the phrase.\n    ", "name": "add_exclamation",
+      "Add an exclamation point to the end of the phrase.", "name": "add_exclamation",
       "parameters": {"properties": {"phrase": {"type": "STRING"}}, "required": ["phrase"],
-      "type": "OBJECT"}}, {"description": "\n    Capitalize the letters within the
-      phrase.\n    ", "name": "capitalize_message", "parameters": {"properties": {"phrase":
+      "type": "OBJECT"}}, {"description": "Capitalize the letters within the
+      phrase.", "name": "capitalize_message", "parameters": {"properties": {"phrase":
       {"type": "STRING"}}, "required": ["phrase"], "type": "OBJECT"}}]}], "generationConfig":
       {"candidateCount": 1}}'
     headers:

@@ -89,17 +89,9 @@ def _force_genai_httpx_transport(monkeypatch):
 # Initialize MCP Client and load tools
 @pytest.fixture(scope="session")
 def mcp_client():
-    mcp_server_location = (
-        "gemini_integration/mcp_server.py"
-        if os.getenv("GITHUB_ACTIONS")
-        else "tests/mlmodel_langchain/gemini_integration/mcp_server.py"
+    return MultiServerMCPClient(
+        {"my_mcp_server": {"command": sys.executable, "args": ["gemini_integration/mcp_server.py"], "transport": "stdio"}}
     )
-
-    mcp_client = MultiServerMCPClient(
-        {"my_mcp_server": {"command": sys.executable, "args": [mcp_server_location], "transport": "stdio"}}
-    )
-
-    return mcp_client
 
 
 @pytest.fixture

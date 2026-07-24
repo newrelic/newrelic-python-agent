@@ -359,19 +359,26 @@ def pytest_collection_modifyitems(items):
         item.add_marker(pytest.mark.vcr)
 
 
+# === Custom VCR Matchers ===
+
+
+def _match_method_case_insensitive(r1, r2):
+    """
+    A case-insensitive method matcher fore VCR so that requests with different
+    capitalizations of the HTTP method (e.g. "GET" vs "get") are considered equivalent.
+    """
+    if r1.method.lower() != r2.method.lower():
+        raise AssertionError(f"{r1.method} != {r2.method}")
+
+
+VCR_MATCHERS = {"method": _match_method_case_insensitive}
+
+
 def pytest_recording_configure(config, vcr):
     """
-    Register a case-insensitive method matcher with VCR.py so that requests with different
-    capitalizations of the HTTP method (e.g. "GET" vs "get") are considered equivalent.
-
     ``pytest_recording_configure`` is a hook fired by pytest-recording immediately after it
     constructs the per-test ``VCR`` instance and before the cassette is opened, so matchers
     registered here take effect for the cassette that follows.
     """
-
-    def method(r1, r2):
-        """Method matcher that's case insensitive."""
-        if r1.method.lower() != r2.method.lower():
-            raise AssertionError(f"{r1.method} != {r2.method}")
-
-    vcr.register_matcher("method", method)
+    for matcher_name, matcher_func in VCR_MATCHERS.items():
+        vcr.register_matcher(matcher_name, matcher_func)

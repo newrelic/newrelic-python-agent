@@ -90,7 +90,7 @@ def _force_genai_httpx_transport(monkeypatch):
 @pytest.fixture(scope="session")
 def mcp_client():
     mcp_server_location = (
-        "langchain_integration/mcp_server.py"
+        "gemini_integration/mcp_server.py"
         if os.getenv("GITHUB_ACTIONS")
         else "tests/mlmodel_langchain/gemini_integration/mcp_server.py"
     )

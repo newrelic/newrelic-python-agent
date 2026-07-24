@@ -90,7 +90,13 @@ def _force_genai_httpx_transport(monkeypatch):
 @pytest.fixture(scope="session")
 def mcp_client():
     return MultiServerMCPClient(
-        {"my_mcp_server": {"command": sys.executable, "args": ["gemini_integration/mcp_server.py"], "transport": "stdio"}}
+        {
+            "my_mcp_server": {
+                "command": sys.executable,
+                "args": ["gemini_integration/mcp_server.py"],
+                "transport": "stdio",
+            }
+        }
     )
 
 

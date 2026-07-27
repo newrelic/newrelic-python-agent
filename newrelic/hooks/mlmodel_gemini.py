@@ -713,12 +713,11 @@ def _parse_input_message(messages):
             return input_message, "user"
         # The input_message will be a Google Content type if send_message was called, so we parse out the message
         # text and role (which should be "user")
-        elif isinstance(input_message, google.genai.types.Content) and input_message.parts[0].text:
-            return input_message.parts[0].text, input_message.role
+        # Note that the "text" attribute will exist but may not be populated.
         else:
             try:
-                # If this is a tool call, this is needed to find the input since
-                # the input message will not be the last one in the message list
+                # If there is a tool call involved, this is needed to find the input
+                # since the input message will not be the last one in the message list
                 input_message = next(
                     (message for message in messages for part in message.parts if getattr(part, "text", None)), None
                 )

@@ -15,6 +15,7 @@
 import json
 import os
 import sys
+from pathlib import Path
 from typing import Annotated
 
 import pytest
@@ -89,14 +90,9 @@ def _force_genai_httpx_transport(monkeypatch):
 # Initialize MCP Client and load tools
 @pytest.fixture(scope="session")
 def mcp_client():
+    mcp_server_file = str(Path(__file__).parent / "mcp_server.py")
     return MultiServerMCPClient(
-        {
-            "my_mcp_server": {
-                "command": sys.executable,
-                "args": ["gemini_integration/mcp_server.py"],
-                "transport": "stdio",
-            }
-        }
+        {"my_mcp_server": {"command": sys.executable, "args": [mcp_server_file], "transport": "stdio"}}
     )
 
 

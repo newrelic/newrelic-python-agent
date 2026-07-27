@@ -364,7 +364,7 @@ def pytest_collection_modifyitems(items):
 
 def _match_method_case_insensitive(r1, r2):
     """
-    A case-insensitive method matcher fore VCR so that requests with different
+    A case-insensitive method matcher for VCR so that requests with different
     capitalizations of the HTTP method (e.g. "GET" vs "get") are considered equivalent.
     """
     if r1.method.lower() != r2.method.lower():

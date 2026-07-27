@@ -19,11 +19,14 @@ import google.genai
 import pytest
 from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixture.vcr import *  # noqa: F403
+from testing_support.fixture.vcr import VCR_IGNORED_HEADERS
 from testing_support.fixtures import (
     collector_agent_registration_fixture,
     collector_available_fixture,
     override_application_settings,
 )
+
+VCR_IGNORED_HEADERS.extend(["accept-encoding"])
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow-downs.

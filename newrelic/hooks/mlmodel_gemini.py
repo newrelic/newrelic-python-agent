@@ -713,12 +713,11 @@ def _parse_input_message(messages):
             return input_message, "user"
         # The input_message will be a Google Content type if send_message was called, so we parse out the message
         # text and role (which should be "user")
-        elif isinstance(input_message, google.genai.types.Content) and input_message.parts[0].text:
-            return input_message.parts[0].text, input_message.role
+        # Note that the "text" attribute will exist but may not be populated.
         else:
             try:
-                # If this is a tool call, this is needed to find the input since
-                # the input message will not be the last one in the message list
+                # If there is a tool call involved, this is needed to find the input
+                # since the input message will not be the last one in the message list
                 input_message = next(
                     (message for message in messages for part in message.parts if getattr(part, "text", None)), None
                 )
@@ -761,7 +760,14 @@ def _handle_streaming_generation_success(
                 response = response.model_dump()
 
                 # Concatenate all chunk texts together to get the full response text
-                full_content = "".join([chunk.text for chunk in streaming_events])
+                try:
+                    full_content = "".join([chunk.text for chunk in streaming_events])
+                except TypeError:
+                    # This is to account for tool calls, where the tool
+                    # call response contains the text that is required.
+                    # If not valid, this will trigger an AttributeError
+                    # and not record a streaming success (yet).
+                    full_content = kwargs["contents"][-1].parts[0].function_response.response["output"][0]["text"]
 
                 # Streaming responses will be a list of chunks, and we can grab metadata from the last chunk to get the final token counts.
                 last_message = streaming_events[-1].candidates[0].content.model_dump()
@@ -779,6 +785,12 @@ def _handle_streaming_generation_success(
                     request_timestamp=request_timestamp,
                     time_to_first_token=getattr(self, "_nr_time_to_first_token", None),
                 )
+            except AttributeError:
+                # During a tool call, the agent will loop back to this,
+                # allowing this segment to properly handle the streaming
+                # generation recording.  In the meantime, we do not
+                # want to log a warning.
+                pass
             except Exception:
                 _logger.warning(STREAM_PARSING_FAILURE_LOG_MESSAGE, exc_info=True)
             finally:

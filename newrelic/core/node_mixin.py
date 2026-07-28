@@ -115,7 +115,7 @@ class GenericNodeMixin:
         if i_attrs.get("nr.entryPoint") or i_attrs["name"].startswith("Llm/"):
             ct_exit_spans["kept"] += 1
             base_span_event = [i_attrs, u_attrs, a_attrs]
-            return [base_span_event, span_link_events, []]
+            return [base_span_event, span_link_events, None]
         exit_span_attrs_present = attribute.SPAN_ENTITY_RELATIONSHIP_ATTRIBUTES & set(a_attrs)
         # If the span is not an exit span, skip it by returning None, reparenting any
         # span_link_events it carried onto the closest surviving ancestor span.
@@ -126,7 +126,7 @@ class GenericNodeMixin:
         # just return the exit span as is.
         ct_exit_spans["kept"] += 1
         base_span_event = [i_attrs, u_attrs, a_attrs]
-        return [base_span_event, span_link_events, []]
+        return [base_span_event, span_link_events, None]
 
     def _span_event_partial_granularity_essential(
         self,
@@ -177,7 +177,7 @@ class GenericNodeMixin:
                 attr_class=attr_class,
             )
             base_span_event = [i_attrs, {}, a_minimized_attrs]
-            return [base_span_event, span_link_events, []]
+            return [base_span_event, span_link_events, None]
         # If the span is not an exit span, skip it by returning None, reparenting any
         # span_link_events it carried onto the closest surviving ancestor span.
         if not exit_span_attrs_present:
@@ -192,7 +192,7 @@ class GenericNodeMixin:
             attr_class=attr_class,
         )
         base_span_event = [i_attrs, {}, a_minimized_attrs]
-        return [base_span_event, span_link_events, []]
+        return [base_span_event, span_link_events, None]
 
     def _span_event_partial_granularity_compact(
         self,
@@ -243,7 +243,7 @@ class GenericNodeMixin:
                 attr_class=attr_class,
             )
             base_span_event = [i_attrs, {}, a_minimized_attrs]
-            return [base_span_event, span_link_events, []]
+            return [base_span_event, span_link_events, None]
         # If the span is not an exit span, skip it by returning None, reparenting any
         # span_link_events it carried onto the closest surviving ancestor span.
         if not exit_span_attrs_present:
@@ -276,7 +276,7 @@ class GenericNodeMixin:
             ct_exit_spans["kept"] += 1
             # Only keep entity-synthesis, and error agent attributes, and intrinsics.
             base_span_event = [i_attrs, {}, a_minimized_attrs]
-            return [base_span_event, span_link_events, []]
+            return [base_span_event, span_link_events, None]
         # If this is an exit span we've already seen, add the error attributes
         # (last occurring error takes precedence), add it's guid to the list
         # of ids on the seen span, compute the new duration & start time, and

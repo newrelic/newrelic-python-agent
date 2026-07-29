@@ -48,7 +48,7 @@ def test_model_methods_wrapped_in_function_trace(multioutput_model_name, run_mul
 
 
 @pytest.fixture
-def run_multioutput_model():
+def run_multioutput_model(sklearn_version):
     def _run(multioutput_model_name):
         import sklearn.multioutput
         from sklearn.datasets import make_multilabel_classification
@@ -56,7 +56,7 @@ def run_multioutput_model():
         X, y = make_multilabel_classification(n_classes=3, random_state=0)
 
         kwargs = {"estimator": AdaBoostClassifier()}
-        if multioutput_model_name in ["RegressorChain", "ClassifierChain"]:
+        if multioutput_model_name in ["RegressorChain", "ClassifierChain"] and sklearn_version < (1, 9):
             kwargs = {"base_estimator": AdaBoostClassifier()}
 
         clf = getattr(sklearn.multioutput, multioutput_model_name)(**kwargs)

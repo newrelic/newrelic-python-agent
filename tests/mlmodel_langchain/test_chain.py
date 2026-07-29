@@ -18,6 +18,7 @@ import langchain_core
 import openai
 import pytest
 from langchain_community.vectorstores.faiss import FAISS
+from langchain_openai import ChatOpenAI
 from testing_support.fixtures import reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     disabled_ai_monitoring_record_content_settings,
@@ -67,6 +68,7 @@ chat_completion_recorded_events_invoke_langchain_error = [
             "virtual_llm": True,
             "request_id": None,
             "duration": None,
+            "request.model": "gpt-3.5-turbo",
             "response.number_of_messages": 1,
             "metadata.id": "123",
             "error": True,
@@ -108,6 +110,7 @@ chat_completion_recorded_events_runnable_invoke_openai_error = [
             "virtual_llm": True,
             "request_id": None,
             "duration": None,
+            "request.model": "gpt-3.5-turbo",
             "response.number_of_messages": 1,
             "metadata.id": "123",
             "error": True,
@@ -148,6 +151,8 @@ chat_completion_recorded_events_runnable_invoke = [
             "virtual_llm": True,
             "request_id": None,
             "duration": None,
+            "request.model": "gpt-3.5-turbo",
+            "response.model": "gpt-3.5-turbo-0125",
             "response.number_of_messages": 2,
             "metadata.id": "123",
             "tags": "['bar']",
@@ -166,6 +171,7 @@ chat_completion_recorded_events_runnable_invoke = [
             "content": "{'input': 'Sally is 13'}",
             "completion_id": None,
             "sequence": 0,
+            "response.model": "gpt-3.5-turbo-0125",
             "vendor": "langchain",
             "ingest_source": "Python",
             "role": "user",
@@ -184,6 +190,7 @@ chat_completion_recorded_events_runnable_invoke = [
             "content": "{'name': 'Sally', 'age': 13}",
             "completion_id": None,
             "sequence": 1,
+            "response.model": "gpt-3.5-turbo-0125",
             "vendor": "langchain",
             "ingest_source": "Python",
             "role": "assistant",
@@ -207,6 +214,8 @@ chat_completion_recorded_events_invoke = [
             "virtual_llm": True,
             "request_id": None,
             "duration": None,
+            "request.model": "gpt-3.5-turbo",
+            "response.model": "gpt-3.5-turbo-0125",
             "response.number_of_messages": 2,
             "metadata.id": "123",
             "tags": "['bar']",
@@ -225,6 +234,7 @@ chat_completion_recorded_events_invoke = [
             "content": "{'input': 'Sally is 13'}",
             "completion_id": None,
             "sequence": 0,
+            "response.model": "gpt-3.5-turbo-0125",
             "vendor": "langchain",
             "ingest_source": "Python",
             "role": "user",
@@ -243,6 +253,7 @@ chat_completion_recorded_events_invoke = [
             "content": "{'function': {'name': 'Sally', 'age': 13}}",
             "completion_id": None,
             "sequence": 1,
+            "response.model": "gpt-3.5-turbo-0125",
             "vendor": "langchain",
             "ingest_source": "Python",
             "role": "assistant",
@@ -266,6 +277,8 @@ chat_completion_recorded_events_runnable_invoke_no_metadata_or_tags = [
             "virtual_llm": True,
             "request_id": None,
             "duration": None,
+            "request.model": "gpt-3.5-turbo",
+            "response.model": "gpt-3.5-turbo-0125",
             "response.number_of_messages": 2,
         },
     ),
@@ -282,6 +295,7 @@ chat_completion_recorded_events_runnable_invoke_no_metadata_or_tags = [
             "content": "{'input': 'Sally is 13'}",
             "completion_id": None,
             "sequence": 0,
+            "response.model": "gpt-3.5-turbo-0125",
             "vendor": "langchain",
             "ingest_source": "Python",
             "role": "user",
@@ -300,6 +314,7 @@ chat_completion_recorded_events_runnable_invoke_no_metadata_or_tags = [
             "content": "{'name': 'Sally', 'age': 13}",
             "completion_id": None,
             "sequence": 1,
+            "response.model": "gpt-3.5-turbo-0125",
             "vendor": "langchain",
             "ingest_source": "Python",
             "role": "assistant",
@@ -323,6 +338,8 @@ chat_completion_recorded_events_invoke_no_metadata_or_tags = [
             "virtual_llm": True,
             "request_id": None,
             "duration": None,
+            "request.model": "gpt-3.5-turbo",
+            "response.model": "gpt-3.5-turbo-0125",
             "response.number_of_messages": 2,
         },
     ),
@@ -339,6 +356,7 @@ chat_completion_recorded_events_invoke_no_metadata_or_tags = [
             "content": "{'input': 'Sally is 13'}",
             "completion_id": None,
             "sequence": 0,
+            "response.model": "gpt-3.5-turbo-0125",
             "vendor": "langchain",
             "ingest_source": "Python",
             "role": "user",
@@ -357,6 +375,7 @@ chat_completion_recorded_events_invoke_no_metadata_or_tags = [
             "content": "{'function': {'name': 'Sally', 'age': 13}}",
             "completion_id": None,
             "sequence": 1,
+            "response.model": "gpt-3.5-turbo-0125",
             "vendor": "langchain",
             "ingest_source": "Python",
             "role": "assistant",
@@ -377,14 +396,15 @@ recorded_events_retrieval_chain_response = [
             "request_id": None,
             "duration": None,
             "response.model": "text-embedding-ada-002-v2",
-            "response.organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "response.organization": "nr-test-org",
             "response.headers.llmVersion": "2020-10-01",
             "response.headers.ratelimitLimitRequests": 10000,
-            "response.headers.ratelimitLimitTokens": 10000000,
+            "response.headers.ratelimitLimitTokens": 50000000,
             "response.headers.ratelimitRemainingRequests": 9999,
-            "response.headers.ratelimitRemainingTokens": 9999992,
+            "response.headers.ratelimitRemainingTokens": 49999975,
             "response.headers.ratelimitResetRequests": "6ms",
             "response.headers.ratelimitResetTokens": "0s",
+            "response.usage.total_tokens": 8,
             "vendor": "openai",
             "ingest_source": "Python",
             "input": "[[3923, 374, 220, 17, 489, 220, 19, 30]]",
@@ -400,14 +420,15 @@ recorded_events_retrieval_chain_response = [
             "request_id": None,
             "duration": None,
             "response.model": "text-embedding-ada-002-v2",
-            "response.organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "response.organization": "nr-test-org",
             "response.headers.llmVersion": "2020-10-01",
             "response.headers.ratelimitLimitRequests": 10000,
-            "response.headers.ratelimitLimitTokens": 10000000,
+            "response.headers.ratelimitLimitTokens": 50000000,
             "response.headers.ratelimitRemainingRequests": 9999,
-            "response.headers.ratelimitRemainingTokens": 9999998,
+            "response.headers.ratelimitRemainingTokens": 49999975,
             "response.headers.ratelimitResetRequests": "6ms",
             "response.headers.ratelimitResetTokens": "0s",
+            "response.usage.total_tokens": 1,
             "vendor": "openai",
             "ingest_source": "Python",
             "input": "[[10590]]",
@@ -471,15 +492,18 @@ recorded_events_retrieval_chain_response = [
             "request_id": None,
             "duration": None,
             "response.model": "gpt-3.5-turbo-0125",
-            "response.organization": "user-rk8wq9voijy9sejrncvgi0iw",
+            "response.organization": "nr-test-org",
             "response.choices.finish_reason": "stop",
             "response.headers.llmVersion": "2020-10-01",
             "response.headers.ratelimitLimitRequests": 10000,
             "response.headers.ratelimitLimitTokens": 50000000,
             "response.headers.ratelimitRemainingRequests": 9999,
-            "response.headers.ratelimitRemainingTokens": 49999927,
+            "response.headers.ratelimitRemainingTokens": 49999975,
             "response.headers.ratelimitResetRequests": "6ms",
             "response.headers.ratelimitResetTokens": "0s",
+            "response.usage.prompt_tokens": 51,
+            "response.usage.completion_tokens": 1,
+            "response.usage.total_tokens": 52,
             "response.number_of_messages": 3,
         },
     ],
@@ -496,8 +520,9 @@ recorded_events_retrieval_chain_response = [
             "sequence": 0,
             "response.model": "gpt-3.5-turbo-0125",
             "vendor": "openai",
+            "token_count": 0,
             "ingest_source": "Python",
-            "content": "You are a generator of quiz questions for a seminar. Use the following pieces of retrieved context to generate 5 multiple choice questions (A,B,C,D) on the subject matter. Use a three sentence maximum and keep the answer concise. Render the output as HTML\n\nWhat is 2 + 4?",
+            "content": "You are a math solver. The retrieved context contains a single arithmetic question. Reply with only the numeric answer as digits, with no other text or punctuation.\n\nWhat is 2 + 4?",
         },
     ],
     [
@@ -513,6 +538,7 @@ recorded_events_retrieval_chain_response = [
             "sequence": 1,
             "response.model": "gpt-3.5-turbo-0125",
             "vendor": "openai",
+            "token_count": 0,
             "ingest_source": "Python",
             "content": "math",
         },
@@ -529,9 +555,10 @@ recorded_events_retrieval_chain_response = [
             "sequence": 2,
             "response.model": "gpt-3.5-turbo-0125",
             "vendor": "openai",
+            "token_count": 0,
             "ingest_source": "Python",
             "is_response": True,
-            "content": "```html\n<!DOCTYPE html>\n<html>\n<head>\n  <title>Math Quiz</title>\n</head>\n<body>\n  <h2>Math Quiz Questions</h2>\n  <ol>\n    <li>What is the result of 5 + 3?</li>\n      <ul>\n        <li>A) 7</li>\n        <li>B) 8</li>\n        <li>C) 9</li>\n        <li>D) 10</li>\n      </ul>\n    <li>What is the product of 6 x 7?</li>\n      <ul>\n        <li>A) 36</li>\n        <li>B) 42</li>\n        <li>C) 48</li>\n        <li>D) 56</li>\n      </ul>\n    <li>What is the square root of 64?</li>\n      <ul>\n        <li>A) 6</li>\n        <li>B) 7</li>\n        <li>C) 8</li>\n        <li>D) 9</li>\n      </ul>\n    <li>What is the result of 12 / 4?</li>\n      <ul>\n        <li>A) 2</li>\n        <li>B) 3</li>\n        <li>C) 4</li>\n        <li>D) 5</li>\n      </ul>\n    <li>What is the sum of 15 + 9?</li>\n      <ul>\n        <li>A) 22</li>\n        <li>B) 23</li>\n        <li>C) 24</li>\n        <li>D) 25</li>\n      </ul>\n  </ol>\n</body>\n</html>\n```",
+            "content": "6",
         },
     ],
     [
@@ -544,6 +571,7 @@ recorded_events_retrieval_chain_response = [
             "trace_id": "trace-id",
             "completion_id": None,
             "sequence": 0,
+            "response.model": "gpt-3.5-turbo-0125",
             "vendor": "langchain",
             "ingest_source": "Python",
             "role": "user",
@@ -560,12 +588,13 @@ recorded_events_retrieval_chain_response = [
             "trace_id": "trace-id",
             "completion_id": None,
             "sequence": 1,
+            "response.model": "gpt-3.5-turbo-0125",
             "vendor": "langchain",
             "ingest_source": "Python",
             "role": "assistant",
             "is_response": True,
             "virtual_llm": True,
-            "content": "```html\n<!DOCTYPE html>\n<html>\n<head>\n  <title>Math Quiz</title>\n</head>\n<body>\n  <h2>Math Quiz Questions</h2>\n  <ol>\n    <li>What is the result of 5 + 3?</li>\n      <ul>\n        <li>A) 7</li>\n        <li>B) 8</li>\n        <li>C) 9</li>\n        <li>D) 10</li>\n      </ul>\n    <li>What is the product of 6 x 7?</li>\n      <ul>\n        <li>A) 36</li>\n        <li>B) 42</li>\n        <li>C) 48</li>\n        <li>D) 56</li>\n      </ul>\n    <li>What is the square root of 64?</li>\n      <ul>\n        <li>A) 6</li>\n        <li>B) 7</li>\n        <li>C) 8</li>\n        <li>D) 9</li>\n      </ul>\n    <li>What is the result of 12 / 4?</li>\n      <ul>\n        <li>A) 2</li>\n        <li>B) 3</li>\n        <li>C) 4</li>\n        <li>D) 5</li>\n      </ul>\n    <li>What is the sum of 15 + 9?</li>\n      <ul>\n        <li>A) 22</li>\n        <li>B) 23</li>\n        <li>C) 24</li>\n        <li>D) 25</li>\n      </ul>\n  </ol>\n</body>\n</html>\n```",
+            "content": "6",
         },
     ],
     [
@@ -577,12 +606,13 @@ recorded_events_retrieval_chain_response = [
             "trace_id": "trace-id",
             "completion_id": None,
             "sequence": 1,
+            "response.model": "gpt-3.5-turbo-0125",
             "vendor": "langchain",
             "ingest_source": "Python",
             "role": "assistant",
             "is_response": True,
             "virtual_llm": True,
-            "content": "{'input': 'math', 'context': [Document(id='1234', metadata={}, page_content='What is 2 + 4?')], 'answer': '```html\\n<!DOCTYPE html>\\n<html>\\n<head>\\n  <title>Math Quiz</title>\\n</head>\\n<body>\\n  <h2>Math Quiz Questions</h2>\\n  <ol>\\n    <li>What is the result of 5 + 3?</li>\\n      <ul>\\n        <li>A) 7</li>\\n        <li>B) 8</li>\\n        <li>C) 9</li>\\n        <li>D) 10</li>\\n      </ul>\\n    <li>What is the product of 6 x 7?</li>\\n      <ul>\\n        <li>A) 36</li>\\n        <li>B) 42</li>\\n        <li>C) 48</li>\\n        <li>D) 56</li>\\n      </ul>\\n    <li>What is the square root of 64?</li>\\n      <ul>\\n        <li>A) 6</li>\\n        <li>B) 7</li>\\n        <li>C) 8</li>\\n        <li>D) 9</li>\\n      </ul>\\n    <li>What is the result of 12 / 4?</li>\\n      <ul>\\n        <li>A) 2</li>\\n        <li>B) 3</li>\\n        <li>C) 4</li>\\n        <li>D) 5</li>\\n      </ul>\\n    <li>What is the sum of 15 + 9?</li>\\n      <ul>\\n        <li>A) 22</li>\\n        <li>B) 23</li>\\n        <li>C) 24</li>\\n        <li>D) 25</li>\\n      </ul>\\n  </ol>\\n</body>\\n</html>\\n```'}",
+            "content": "{'input': 'math', 'context': [Document(id='1234', metadata={}, page_content='What is 2 + 4?')], 'answer': '6'}",
         },
     ],
 ]
@@ -602,6 +632,8 @@ chat_completion_recorded_events_str_response = [
             "virtual_llm": True,
             "request_id": None,
             "duration": None,
+            "request.model": "gpt-3.5-turbo",
+            "response.model": "gpt-3.5-turbo-0125",
             "response.number_of_messages": 2,
             "metadata.id": "123",
         },
@@ -616,9 +648,10 @@ chat_completion_recorded_events_str_response = [
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
-            "content": "{'text': 'M'}",
+            "content": "{'text': '2 + 3'}",
             "completion_id": None,
             "sequence": 0,
+            "response.model": "gpt-3.5-turbo-0125",
             "vendor": "langchain",
             "ingest_source": "Python",
             "role": "user",
@@ -634,9 +667,10 @@ chat_completion_recorded_events_str_response = [
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
-            "content": "Milo",
+            "content": "5",
             "completion_id": None,
             "sequence": 1,
+            "response.model": "gpt-3.5-turbo-0125",
             "vendor": "langchain",
             "ingest_source": "Python",
             "role": "assistant",
@@ -660,6 +694,8 @@ chat_completion_recorded_events_list_response = [
             "virtual_llm": True,
             "request_id": None,
             "duration": None,
+            "request.model": "gpt-3.5-turbo",
+            "response.model": "gpt-3.5-turbo-0125",
             "response.number_of_messages": 2,
             "metadata.id": "123",
         },
@@ -674,9 +710,10 @@ chat_completion_recorded_events_list_response = [
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
-            "content": "{'text': 'colors'}",
+            "content": "{'text': 'English vowels'}",
             "completion_id": None,
             "sequence": 0,
+            "response.model": "gpt-3.5-turbo-0125",
             "vendor": "langchain",
             "ingest_source": "Python",
             "role": "user",
@@ -692,9 +729,10 @@ chat_completion_recorded_events_list_response = [
             "request_id": None,
             "span_id": None,
             "trace_id": "trace-id",
-            "content": "red",
+            "content": "a",
             "completion_id": None,
             "sequence": 1,
+            "response.model": "gpt-3.5-turbo-0125",
             "vendor": "langchain",
             "ingest_source": "Python",
             "role": "assistant",
@@ -719,6 +757,7 @@ chat_completion_recorded_events_error_in_openai = [
             "virtual_llm": True,
             "request_id": None,
             "duration": None,
+            "request.model": "gpt-3.5-turbo",
             "response.number_of_messages": 1,
             "metadata.id": "123",
         },
@@ -759,6 +798,7 @@ chat_completion_recorded_events_error_in_langchain = [
             "virtual_llm": True,
             "request_id": None,
             "duration": None,
+            "request.model": "gpt-3.5-turbo",
             "response.number_of_messages": 1,
         },
     ),
@@ -801,7 +841,7 @@ def test_langchain_chain_str_response(set_trace_info, chat_openai_client):
     add_custom_attribute("llm.foo", "bar")
     add_custom_attribute("non_llm_attr", "python-agent")
 
-    template = """You are a helpful assistant who generates a random first name. A user will pass in a first letter, and you should generate a name that starts with that first letter."""
+    template = """You are a calculator. The user will provide a simple arithmetic expression. Reply with only the numeric answer as digits, with no other text or punctuation."""
     human_template = "{text}"
 
     chat_prompt = langchain_core.prompts.ChatPromptTemplate.from_messages(
@@ -810,7 +850,7 @@ def test_langchain_chain_str_response(set_trace_info, chat_openai_client):
     str_output_parser = langchain_core.output_parsers.string.StrOutputParser()
     chain = chat_prompt | chat_openai_client | str_output_parser
     with WithLlmCustomAttributes({"context": "attr"}):
-        chain.invoke({"text": "M"}, config={"metadata": {"id": "123"}})
+        chain.invoke({"text": "2 + 3"}, config={"metadata": {"id": "123"}})
 
 
 @reset_core_stats_engine()
@@ -830,9 +870,7 @@ def test_langchain_chain_list_response(set_trace_info, comma_separated_list_outp
     add_custom_attribute("llm.foo", "bar")
     add_custom_attribute("non_llm_attr", "python-agent")
 
-    template = """You are a helpful assistant who generates comma separated lists.
-    A user will pass in a category, and you should generate 5 objects in that category in a comma separated list.
-    ONLY return a comma separated list, and nothing more."""
+    template = """You are a helpful assistant. The user will pass in a category. Reply with the members of that category as a lowercase, comma-separated list, in canonical order. Return only the list, and nothing more."""
     human_template = "{text}"
 
     chat_prompt = langchain_core.prompts.ChatPromptTemplate.from_messages(
@@ -840,7 +878,7 @@ def test_langchain_chain_list_response(set_trace_info, comma_separated_list_outp
     )
     chain = chat_prompt | chat_openai_client | comma_separated_list_output_parser
     with WithLlmCustomAttributes({"context": "attr"}):
-        chain.invoke({"text": "colors"}, config={"metadata": {"id": "123"}})
+        chain.invoke({"text": "English vowels"}, config={"metadata": {"id": "123"}})
 
 
 @pytest.mark.parametrize(
@@ -1038,7 +1076,6 @@ def test_langchain_chain_no_content(
 )
 def test_langchain_chain_error_in_openai(
     set_trace_info,
-    chat_openai_client,
     json_schema,
     prompt_openai_error,
     create_function,
@@ -1046,6 +1083,7 @@ def test_langchain_chain_error_in_openai(
     call_function_args,
     call_function_kwargs,
     expected_events,
+    monkeypatch,
 ):
     @reset_core_stats_engine()
     @validate_transaction_error_event_count(1)
@@ -1065,7 +1103,11 @@ def test_langchain_chain_error_in_openai(
         add_custom_attribute("llm.foo", "bar")
         add_custom_attribute("non_llm_attr", "python-agent")
 
-        runnable = create_function(json_schema, chat_openai_client, prompt_openai_error)
+        # Ensure the OpenAI key is set incorrectly for this test
+        monkeypatch.delenv("OPENAI_API_KEY")
+        chat_openai_client_no_api_key = ChatOpenAI(api_key="FAKE-OPENAI-KEY")
+
+        runnable = create_function(json_schema, chat_openai_client_no_api_key, prompt_openai_error)
 
         with pytest.raises(openai.AuthenticationError):
             with WithLlmCustomAttributes({"context": "attr"}):
@@ -1258,9 +1300,7 @@ def test_async_langchain_chain_list_response(
     add_custom_attribute("llm.foo", "bar")
     add_custom_attribute("non_llm_attr", "python-agent")
 
-    template = """You are a helpful assistant who generates comma separated lists.
-    A user will pass in a category, and you should generate 5 objects in that category in a comma separated list.
-    ONLY return a comma separated list, and nothing more."""
+    template = """You are a helpful assistant. The user will pass in a category. Reply with the members of that category as a lowercase, comma-separated list, in canonical order. Return only the list, and nothing more."""
     human_template = "{text}"
 
     chat_prompt = langchain_core.prompts.ChatPromptTemplate.from_messages(
@@ -1268,7 +1308,7 @@ def test_async_langchain_chain_list_response(
     )
     chain = chat_prompt | chat_openai_client | comma_separated_list_output_parser
     with WithLlmCustomAttributes({"context": "attr"}):
-        loop.run_until_complete(chain.ainvoke({"text": "colors"}, config={"metadata": {"id": "123"}}))
+        loop.run_until_complete(chain.ainvoke({"text": "English vowels"}, config={"metadata": {"id": "123"}}))
 
 
 @reset_core_stats_engine()
@@ -1291,9 +1331,7 @@ def test_async_langchain_chain_list_response_no_content(
     add_custom_attribute("llm.foo", "bar")
     add_custom_attribute("non_llm_attr", "python-agent")
 
-    template = """You are a helpful assistant who generates comma separated lists.
-    A user will pass in a category, and you should generate 5 objects in that category in a comma separated list.
-    ONLY return a comma separated list, and nothing more."""
+    template = """You are a helpful assistant. The user will pass in a category. Reply with the members of that category as a lowercase, comma-separated list, in canonical order. Return only the list, and nothing more."""
     human_template = "{text}"
 
     chat_prompt = langchain_core.prompts.ChatPromptTemplate.from_messages(
@@ -1301,7 +1339,7 @@ def test_async_langchain_chain_list_response_no_content(
     )
     chain = chat_prompt | chat_openai_client | comma_separated_list_output_parser
 
-    loop.run_until_complete(chain.ainvoke({"text": "colors"}, config={"metadata": {"id": "123"}}))
+    loop.run_until_complete(chain.ainvoke({"text": "English vowels"}, config={"metadata": {"id": "123"}}))
 
 
 @pytest.mark.parametrize(
@@ -1438,7 +1476,6 @@ def test_async_langchain_chain(
 )
 def test_async_langchain_chain_error_in_openai(
     set_trace_info,
-    chat_openai_client,
     json_schema,
     prompt_openai_error,
     create_function,
@@ -1446,6 +1483,7 @@ def test_async_langchain_chain_error_in_openai(
     call_function_args,
     call_function_kwargs,
     expected_events,
+    monkeypatch,
     loop,
 ):
     @reset_core_stats_engine()
@@ -1466,7 +1504,11 @@ def test_async_langchain_chain_error_in_openai(
         add_custom_attribute("llm.foo", "bar")
         add_custom_attribute("non_llm_attr", "python-agent")
 
-        runnable = create_function(json_schema, chat_openai_client, prompt_openai_error)
+        # Ensure the OpenAI key is set incorrectly for this test
+        monkeypatch.delenv("OPENAI_API_KEY")
+        chat_openai_client_no_api_key = ChatOpenAI(api_key="FAKE-OPENAI-KEY")
+
+        runnable = create_function(json_schema, chat_openai_client_no_api_key, prompt_openai_error)
 
         with pytest.raises(openai.AuthenticationError):
             with WithLlmCustomAttributes({"context": "attr"}):
@@ -1670,10 +1712,9 @@ def retrieval_chain_prompt():
             (
                 "system",
                 (
-                    "You are a generator of quiz questions for a seminar. "
-                    "Use the following pieces of retrieved context to generate "
-                    "5 multiple choice questions (A,B,C,D) on the subject matter. Use a three sentence "
-                    "maximum and keep the answer concise. Render the output as HTML"
+                    "You are a math solver. The retrieved context contains a single "
+                    "arithmetic question. Reply with only the numeric answer as digits, "
+                    "with no other text or punctuation."
                     "\n\n"
                     "{context}"
                 ),

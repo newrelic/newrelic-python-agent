@@ -29,6 +29,7 @@ def llm_token_count_callback(model, content):
     return 105
 
 
+# This will be removed once all LLM instrumentations have been converted to use new token count design
 def add_token_count_to_events(expected_events):
     events = copy.deepcopy(expected_events)
     for event in events:
@@ -37,23 +38,45 @@ def add_token_count_to_events(expected_events):
     return events
 
 
+def add_token_count_to_embedding_events(expected_events):
+    events = copy.deepcopy(expected_events)
+    for event in events:
+        if event[0]["type"] == "LlmEmbedding":
+            event[1]["response.usage.total_tokens"] = 105
+    return events
+
+
+def add_token_count_streaming_events(expected_events):
+    events = copy.deepcopy(expected_events)
+    for event in events:
+        if event[0]["type"] == "LlmChatCompletionMessage":
+            event[1]["token_count"] = 0
+    return events
+
+
+def add_token_counts_to_chat_events(expected_events):
+    events = copy.deepcopy(expected_events)
+    for event in events:
+        if event[0]["type"] == "LlmChatCompletionSummary":
+            event[1]["response.usage.prompt_tokens"] = 105
+            event[1]["response.usage.completion_tokens"] = 105
+            event[1]["response.usage.total_tokens"] = 210
+    return events
+
+
 def events_sans_content(event):
     new_event = copy.deepcopy(event)
     for _event in new_event:
         if "input" in _event[1]:
             del _event[1]["input"]
-        elif "content" in _event[1]:
+        if "content" in _event[1]:
             del _event[1]["content"]
-    return new_event
-
-
-def tool_events_sans_content(event):
-    new_event = copy.deepcopy(event)
-    for _event in new_event:
-        del _event[1]["input"]
         if "output" in _event[1]:
             del _event[1]["output"]
     return new_event
+
+
+tool_events_sans_content = events_sans_content  # alias for older tests
 
 
 def events_sans_llm_metadata(expected_events):

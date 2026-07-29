@@ -1,11 +1,17 @@
 .DS_Store
 .DS_Store/
 
+# Claude
+.claude/
+
 # Linter
 megalinter-reports/
 
 # Benchmarks
 .asv/
+
+# LLM Cache Files
+.tiktoken_cache
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

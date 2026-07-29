@@ -76,14 +76,14 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # 6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # 7.0.1
         with:
           persist-credentials: false
           fetch-depth: 0
 
       - name: Setup QEMU
         if: runner.os == 'Linux'
-        uses: docker/setup-qemu-action@ce360397dd3f832beb865e1373c09c0e9f86d70a # 4.0.0
+        uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # 4.2.0
         with:
           platforms: arm64
 
@@ -117,12 +117,12 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # 6.0.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # 7.0.1
         with:
           persist-credentials: false
           fetch-depth: 0
 
-      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # 6.2.0
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # 7.0.0
         with:
           python-version: "3.13"
 
@@ -195,16 +195,16 @@ jobs:
 
       - name: Upload Package to PyPI
         if: matrix.pypi-instance == 'pypi'
-        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # 1.14.0
+        uses: pypa/gh-action-pypi-publish@ba38be9e461d3875417946c167d0b5f3d385a247 # 1.14.1
 
       - name: Upload Package to TestPyPI
         if: matrix.pypi-instance == 'testpypi'
-        uses: pypa/gh-action-pypi-publish@cef221092ed1bacb1cc03d23a2d87d1d172e277b # 1.14.0
+        uses: pypa/gh-action-pypi-publish@ba38be9e461d3875417946c167d0b5f3d385a247 # 1.14.1
         with:
           repository-url: https://test.pypi.org/legacy/
 
       - name: Attest
-        uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32 # 4.1.0
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # 4.1.1
         id: attest
         with:
           subject-path: |

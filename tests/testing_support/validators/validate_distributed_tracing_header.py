@@ -68,13 +68,9 @@ def validate_distributed_tracing_header():
     # Verify data belonging to this transaction
     assert data["tx"] == transaction.guid
 
-    # If span events are enabled, id should be sent
-    # otherwise, id should be omitted
-    if transaction.settings.span_events.enabled:
-        assert "id" in data
-        assert data["id"] == w3c_parent["id"]
-    else:
-        assert "id" not in data
+    # span id should not ever be sent.
+    assert "id" not in data
+    assert w3c_parent["id"]
 
     # Verify timestamp is an integer
     assert isinstance(data["ti"], int)

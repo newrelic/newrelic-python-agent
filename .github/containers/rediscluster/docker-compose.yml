@@ -1,0 +1,103 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+x-redis-node: &redis-node
+  build: .
+  image: redis-cluster-node:local
+  tmpfs:
+    - /data
+  healthcheck:
+    test: ["CMD-SHELL", "redis-cli -p $$REDIS_PORT ping"]
+    interval: 2s
+    timeout: 3s
+    retries: 15
+
+services:
+  redis1:
+    <<: *redis-node
+    environment:
+      REDIS_PORT: "6379"
+      REDIS_ANNOUNCE_HOSTNAME: ${REDIS_ANNOUNCE_HOSTNAME:-localhost}
+    ports:
+      - 6379:6379
+
+  redis2:
+    <<: *redis-node
+    environment:
+      REDIS_PORT: "6380"
+      REDIS_ANNOUNCE_HOSTNAME: ${REDIS_ANNOUNCE_HOSTNAME:-localhost}
+    ports:
+      - 6380:6380
+
+  redis3:
+    <<: *redis-node
+    environment:
+      REDIS_PORT: "6381"
+      REDIS_ANNOUNCE_HOSTNAME: ${REDIS_ANNOUNCE_HOSTNAME:-localhost}
+    ports:
+      - 6381:6381
+
+  redis4:
+    <<: *redis-node
+    environment:
+      REDIS_PORT: "6382"
+      REDIS_ANNOUNCE_HOSTNAME: ${REDIS_ANNOUNCE_HOSTNAME:-localhost}
+    ports:
+      - 6382:6382
+
+  redis5:
+    <<: *redis-node
+    environment:
+      REDIS_PORT: "6383"
+      REDIS_ANNOUNCE_HOSTNAME: ${REDIS_ANNOUNCE_HOSTNAME:-localhost}
+    ports:
+      - 6383:6383
+
+  redis6:
+    <<: *redis-node
+    environment:
+      REDIS_PORT: "6384"
+      REDIS_ANNOUNCE_HOSTNAME: ${REDIS_ANNOUNCE_HOSTNAME:-localhost}
+    ports:
+      - 6384:6384
+
+  cluster-setup:
+    image: redis-cluster-node:local
+    restart: "no"
+    command:
+      - bash
+      - -c
+      - >-
+        redis-cli --cluster create
+        redis1:6379 redis2:6380 redis3:6381 redis4:6382 redis5:6383 redis6:6384
+        --cluster-replicas 1
+        --cluster-yes &&
+        exec sleep infinity
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "redis-cli -h redis1 cluster info | grep -q cluster_state:ok",
+        ]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+      start_period: 30s
+    depends_on:
+      redis1: { condition: service_healthy }
+      redis2: { condition: service_healthy }
+      redis3: { condition: service_healthy }
+      redis4: { condition: service_healthy }
+      redis5: { condition: service_healthy }
+      redis6: { condition: service_healthy }

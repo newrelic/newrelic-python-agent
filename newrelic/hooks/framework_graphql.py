@@ -84,6 +84,18 @@ def wrap_executor_context_init(wrapped, instance, args, kwargs):
     return result
 
 
+def _execution_context_has_errors(execution_context):
+    # graphql-core <= 3.2.9 exposes .errors directly on ExecutionContext.
+    # graphql-core >= 3.2.10 moved errors into a CollectedErrors helper at
+    # .collected_errors. Fall back gracefully so instrumentation never raises.
+    errors = getattr(execution_context, "errors", None)
+    if errors is None:
+        collected = getattr(execution_context, "collected_errors", None)
+        if collected is not None:
+            errors = getattr(collected, "errors", None)
+    return bool(errors)
+
+
 def wrap_execute_operation(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     trace = current_trace()
@@ -124,7 +136,7 @@ def wrap_execute_operation(wrapped, instance, args, kwargs):
     result = wrapped(*args, **kwargs)
 
     def set_name(value=None):
-        if not execution_context.errors and hasattr(trace, "set_transaction_name"):
+        if not _execution_context_has_errors(execution_context) and hasattr(trace, "set_transaction_name"):
             # Operation trace sets transaction name
             trace.set_transaction_name(priority=14)
         return value

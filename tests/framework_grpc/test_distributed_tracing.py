@@ -129,8 +129,9 @@ def test_outbound_distributed_trace(mock_grpc_server, method_type, method_name, 
             # The external span should be the parent
             exact_intrinsics["guid"] = w3c_parent["id"]
 
-            # Check that tracestate and traceparent agree on the span id / sampled flag
-            assert nr_tracestate["id"] == w3c_parent["id"]
+            # Check that traceparent contains the span id
+            assert w3c_parent["id"]
+            # Check that tracestate and traceparent agree on the sampled flag
             assert nr_tracestate["sa"] == w3c_parent["sa"]
 
     _test()

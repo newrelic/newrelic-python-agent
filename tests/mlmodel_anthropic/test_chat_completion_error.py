@@ -19,7 +19,6 @@ import pytest
 from conftest import ANTHROPIC_VERSION_METRIC
 from testing_support.fixtures import dt_enabled, override_llm_token_callback_settings, reset_core_stats_engine
 from testing_support.ml_testing_utils import (
-    add_token_count_to_events,
     disabled_ai_monitoring_record_content_settings,
     events_sans_content,
     events_with_context_attrs,
@@ -69,6 +68,7 @@ expected_events_on_no_model_error = [
             "role": "user",
             "completion_id": None,
             "sequence": 0,
+            "token_count": 0,
             "vendor": "anthropic",
             "ingest_source": "Python",
         },
@@ -190,6 +190,7 @@ expected_events_on_invalid_model_error = [
             "completion_id": None,
             "response.model": "does-not-exist",
             "sequence": 0,
+            "token_count": 0,
             "vendor": "anthropic",
             "ingest_source": "Python",
         },
@@ -230,7 +231,7 @@ def test_chat_completion_invalid_request_error_invalid_model_with_token_count(
         custom_metrics=[(ANTHROPIC_VERSION_METRIC, 1)],
         background_task=True,
     )
-    @validate_custom_events(add_token_count_to_events(expected_events_on_invalid_model_error))
+    @validate_custom_events(expected_events_on_invalid_model_error)
     @validate_custom_event_count(count=2)
     @background_task(name="test_chat_completion_invalid_request_error_invalid_model_with_token_count")
     def _test():
@@ -277,6 +278,7 @@ expected_events_on_wrong_api_key_error = [
             "response.model": "claude-4-5-sonnet",
             "completion_id": None,
             "sequence": 0,
+            "token_count": 0,
             "vendor": "anthropic",
             "ingest_source": "Python",
         },

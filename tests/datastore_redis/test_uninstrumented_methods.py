@@ -68,6 +68,7 @@ IGNORED_METHODS = {
     "get_relation",
     "get_retry",
     "index_name",
+    "keyspace_notifications",
     "labels",
     "list_keys",
     "load_document",

@@ -1,0 +1,46 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+interactions:
+- request:
+    body: '{"messages": [{"role": "user", "content": [{"text": "What is the capital
+      of France?"}]}], "inferenceConfig": {"maxTokens": 1024}, "system": [{"text":
+      "Answer the user''s question in one word."}]}'
+    headers:
+      Content-Type:
+      - !!binary |
+        YXBwbGljYXRpb24vanNvbg==
+      authorization:
+      - XXXXXX
+    method: POST
+    uri: https://bedrock-runtime.us-east-1.amazonaws.com/model/anthropic.claude-3-sonnet-20240229-v1%3A0/converse
+  response:
+    body:
+      string: '{"metrics": {"latencyMs": 1219}, "output": {"message": {"content":
+        [{"text": "Paris"}], "role": "assistant"}}, "stopReason": "end_turn", "usage":
+        {"inputTokens": 23, "outputTokens": 4, "serverToolUsage": {}, "totalTokens":
+        27}}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      Date:
+      - Tue, 21 Jul 2026 17:38:15 GMT
+      x-amzn-RequestId:
+      - 10e29e28-5f4b-4d0d-a7f0-eecc55c35038
+    status:
+      code: 200
+      message: OK
+version: 1

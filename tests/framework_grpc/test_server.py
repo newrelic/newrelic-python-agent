@@ -81,7 +81,7 @@ def test_raises_response_status(method_name, streaming_request, mock_grpc_server
     _transaction_name = f"sample_application:SampleApplicationServicer.{method_name}"
     method = getattr(stub, method_name)
 
-    status_code = str(grpc.StatusCode.UNKNOWN.value[0])
+    status_code = int(grpc.StatusCode.UNKNOWN.value[0])
 
     @validate_code_level_metrics("sample_application.SampleApplicationServicer", method_name)
     @validate_transaction_errors(errors=["builtins:AssertionError"])
@@ -94,7 +94,7 @@ def test_raises_response_status(method_name, streaming_request, mock_grpc_server
             "intrinsic": ["port"],
         },
         exact_attrs={
-            "agent": {"response.status": status_code, "http.statusCode": int(status_code)},
+            "agent": {"response.status": str(status_code), "http.statusCode": status_code},
             "user": {},
             "intrinsic": {"port": port},
         },

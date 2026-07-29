@@ -1,0 +1,1723 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+interactions:
+- request:
+    body: '{"contents": [{"parts": [{"text": "What is the capital of France?"}], "role":
+      "user"}], "systemInstruction": {"parts": [{"text": "Answer the user''s question
+      in one word.\n\nYou are an agent. Your internal name is \"my_agent\"."}], "role":
+      "user"}, "generationConfig": {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"parts": [{"text": "Paris", "thoughtSignature":
+        "Eu0DCuoDARFNMg8I/ykIg8xBrIhWHCr4fI0iS0dpIVmfxW1Ym5NyyiWhGPwTfAkCyNaijjTXixG13GkM7wwjuxlZvANsgDdui8mJ1y4f7RVPSDCitDXvYdHoc1lDyeKrtq++kHRAGm+ZNj0+4vn5odPo5UhtGt7HkiXyUgv3eFUvGzbMQDdjwNsa0xmyT1F+3ncT4LDcNuCNYQTcLQbC+pmfBgqh3F6cxTVr9aAqf6vOjyPcOJc0gHmuJ1cFn+8qcKKbdVSYQ4u8I2d63A6URClt87ZQdLNI0d1Cnh6mbMuXFsCOCcuo3ksfHLtxoffe++7S3lqk1o6NsVKSO6n3Cu1BJDwnl2aP+B/6gUvHDGbuZCbBeX4kUbMIctZWPBFbTSqjYFdBDKeEibhH+GhdeYWAAppFVKQIvI/ALcLODCeRGCKUae0KM9bzI8fUoCxlGm+xtqGHQYO9svv6cWjgygy1u1a1VdF+ZYUG+Bf/l6HHcYDmJgjsFuW4ZuMGa4lthKTDa81N1oh6WJ44+Q0x54e/Ek4qNb4Wl+cP5ARbr7Cu2YuyCFDtzIUo4JpcJ6+BXrETum/3P7hvv7ZMYRS+niPb8ul8ifC1roiByBir2YWnF241lYAj5VLBbnNgfsz5Ym5t24AHlUVpLoeoLkbFDA=="}],
+        "role": "model"}, "finishReason": "STOP", "index": 0}], "usageMetadata": {"promptTokenCount":
+        34, "candidatesTokenCount": 1, "totalTokenCount": 160, "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 34}], "thoughtsTokenCount": 125, "serviceTier":
+        "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "BixMau7kBJyW-8YPk5Ce8QY"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:28:23 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Server-Timing:
+      - gfet4t7; dur=1149
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Gemini-Service-Tier:
+      - standard
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "What is the capital of France?"}], "role":
+      "user"}], "systemInstruction": {"parts": [{"text": "Answer the user''s question
+      in one word.\n\nYou are an agent. Your internal name is \"my_agent\"."}], "role":
+      "user"}, "labels": {"adk_agent_name": "my_agent"}, "generationConfig": {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://aiplatform.googleapis.com/v1beta1/publishers/google/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"role": "model", "parts": [{"text": "Paris",
+        "thoughtSignature": "AY89a1+ssmphwWtw+K/OXKVUmT5dO+kV0n9b+NFbdDZSnr6u1jvWWWX+wSKxyYYtykY="}]},
+        "finishReason": "STOP"}], "usageMetadata": {"promptTokenCount": 32, "candidatesTokenCount":
+        1, "totalTokenCount": 33, "trafficType": "ON_DEMAND", "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 32}], "candidatesTokensDetails": [{"modality":
+        "TEXT", "tokenCount": 1}]}, "modelVersion": "gemini-3.5-flash", "createTime":
+        "2026-07-06T22:28:23.718017Z", "responseId": "ByxMasHpK9-I998PsaK7oAs"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:28:24 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "What is the capital of France?"}], "role":
+      "user"}], "systemInstruction": {"parts": [{"text": "You are a routing agent.
+      If the user asks a geography question (e.g. about a country''s capital), call
+      the tool named ''geo_specialist'' to delegate. Otherwise answer the user directly.\n\nYou
+      are an agent. Your internal name is \"parent_agent\"."}], "role": "user"}, "tools":
+      [{"functionDeclarations": [{"description": "A geography specialist agent that
+      answers geography questions in one word.", "name": "geo_specialist", "parameters":
+      {"properties": {"request": {"type": "STRING"}}, "required": ["request"], "type":
+      "OBJECT"}}]}], "generationConfig": {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"parts": [{"functionCall": {"name": "geo_specialist",
+        "args": {"request": "What is the capital of France?"}, "id": "x9h48he3"},
+        "thoughtSignature": "EpwCCpkCARFNMg8eSiyAhONVK+ooMJw912EQHBSWTIxO4m+aURJ/F77oYLbmXXtaGCIsnE1CCb8wgdJpb+esgiiGyD719JUxNPLXEwXbFBd6ne/6/CuNlszVSI6UkyhbdaExlf78RbLgoKtOtzl6KbA1TA/HqdU0KSYJBbVSPQ/KoiOD7O770cTyhgUwCxd8/2xZrJpXI1ibKnKeWD8qounuw3v9HTV0PQZ4bzQM6c85f93rzRmx/33/lyCBFYrJ4el68Ngf77516o5H0A5/aKKcgQXyXHgN3LsCHHU8AKPepsR5FKJzjpK21P1rRR51jRPPRMgvVPVPAoo5bugLggQVRF+YsjsiOPttMElwTwlXue6jppBSHWUVH2vyzHY="}],
+        "role": "model"}, "finishReason": "STOP", "index": 0, "finishMessage": "Model
+        generated function call(s)."}], "usageMetadata": {"promptTokenCount": 118,
+        "candidatesTokenCount": 23, "totalTokenCount": 200, "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 118}], "thoughtsTokenCount": 59, "serviceTier":
+        "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "CCxMarbuOsev1MkP-YjQ6Qk"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:28:25 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Server-Timing:
+      - gfet4t7; dur=1119
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Gemini-Service-Tier:
+      - standard
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "What is the capital of France?"}], "role":
+      "user"}], "systemInstruction": {"parts": [{"text": "Answer the user''s geography
+      question in one word.\n\nYou are an agent. Your internal name is \"geo_specialist\".
+      The description about you is \"A geography specialist agent that answers geography
+      questions in one word.\"."}], "role": "user"}, "generationConfig": {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"parts": [{"text": "Paris", "thoughtSignature":
+        "EpwDCpkDARFNMg82brDDEY7F3cRaX0hEqNS/L0/hKDvCpSRPpjSFXWh8CYlinAicypvNtmS3J5eeBF27vKH4aqbrPXKo9TXNqVrLrpZrK/VrlFK4TeYU7ZSrD9aohBrLwy37W/SULf/E9GT2np3o+9eJM0JtzKmVK4UFamZ0ae7qCIRYrgfJB3F8nXjU6EBCphSFMFzgFUCn0net6I1qgryGioQL+0N5fX9IyROoxOHuhmHO2iCYP1PtGlRoapfz+mAReTIty668j1A1REQOKFOKNmV6LozIIymRgvrAcdPHFtPxm/NREr7TbXRZffScKL0bd4Z5zS8uLrOifcssPUAifdDTGweqQk4zqDyY76qT1dr7h7+1v9sFyAYY+fClaPs7ECv4+y5HqGxH71l4NN3fTrNqgHPk9z3XsxKGtDdPD/Cnyj2fVY+DhiWzOw/TLXQVpsaBs2r6k+5wTQxW8SVLVoWFBz4dT4TqjJLa4VmHYtF3AhR1viLAVnB6vqPej4u2VyIThSquvMFUt/nhlz48DeZirx8okDpQU4UIbg=="}],
+        "role": "model"}, "finishReason": "STOP", "index": 0}], "usageMetadata": {"promptTokenCount":
+        54, "candidatesTokenCount": 1, "totalTokenCount": 162, "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 54}], "thoughtsTokenCount": 107, "serviceTier":
+        "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "CixMatiPFreW-8YPoK3EyQY"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:28:27 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Server-Timing:
+      - gfet4t7; dur=1113
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Gemini-Service-Tier:
+      - standard
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "What is the capital of France?"}], "role":
+      "user"}, {"parts": [{"functionCall": {"id": "x9h48he3", "args": {"request":
+      "What is the capital of France?"}, "name": "geo_specialist"}, "thoughtSignature":
+      "EpwCCpkCARFNMg8eSiyAhONVK-ooMJw912EQHBSWTIxO4m-aURJ_F77oYLbmXXtaGCIsnE1CCb8wgdJpb-esgiiGyD719JUxNPLXEwXbFBd6ne_6_CuNlszVSI6UkyhbdaExlf78RbLgoKtOtzl6KbA1TA_HqdU0KSYJBbVSPQ_KoiOD7O770cTyhgUwCxd8_2xZrJpXI1ibKnKeWD8qounuw3v9HTV0PQZ4bzQM6c85f93rzRmx_33_lyCBFYrJ4el68Ngf77516o5H0A5_aKKcgQXyXHgN3LsCHHU8AKPepsR5FKJzjpK21P1rRR51jRPPRMgvVPVPAoo5bugLggQVRF-YsjsiOPttMElwTwlXue6jppBSHWUVH2vyzHY="}],
+      "role": "model"}, {"parts": [{"functionResponse": {"id": "x9h48he3", "name":
+      "geo_specialist", "response": {"result": "Paris"}}}], "role": "user"}], "systemInstruction":
+      {"parts": [{"text": "You are a routing agent. If the user asks a geography question
+      (e.g. about a country''s capital), call the tool named ''geo_specialist'' to
+      delegate. Otherwise answer the user directly.\n\nYou are an agent. Your internal
+      name is \"parent_agent\"."}], "role": "user"}, "tools": [{"functionDeclarations":
+      [{"description": "A geography specialist agent that answers geography questions
+      in one word.", "name": "geo_specialist", "parameters": {"properties": {"request":
+      {"type": "STRING"}}, "required": ["request"], "type": "OBJECT"}}]}], "generationConfig":
+      {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"parts": [{"text": "Paris", "thoughtSignature":
+        "EjQKMgERTTIPqp9NyxmjZyFtm0iDrkeRK5KGAIwiwbr972fN0RCzA8ryuvBeXlwHqGEUKtrM"}],
+        "role": "model"}, "finishReason": "STOP", "index": 0}], "usageMetadata": {"promptTokenCount":
+        215, "candidatesTokenCount": 1, "totalTokenCount": 216, "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 215}], "serviceTier": "standard"}, "modelVersion":
+        "gemini-3.5-flash", "responseId": "CyxMavGBNJa9sOIP8ZO7-Q8"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:28:28 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Server-Timing:
+      - gfet4t7; dur=737
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Gemini-Service-Tier:
+      - standard
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "What is the capital of France?"}], "role":
+      "user"}], "systemInstruction": {"parts": [{"text": "You are a routing agent.
+      If the user asks a geography question (e.g. about a country''s capital), call
+      the tool named ''geo_specialist'' to delegate. Otherwise answer the user directly.\n\nYou
+      are an agent. Your internal name is \"parent_agent\"."}], "role": "user"}, "tools":
+      [{"functionDeclarations": [{"description": "A geography specialist agent that
+      answers geography questions in one word.", "name": "geo_specialist", "parameters":
+      {"properties": {"request": {"type": "STRING"}}, "required": ["request"], "type":
+      "OBJECT"}}]}], "labels": {"adk_agent_name": "parent_agent"}, "generationConfig":
+      {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://aiplatform.googleapis.com/v1beta1/publishers/google/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"role": "model", "parts": [{"functionCall":
+        {"name": "geo_specialist", "args": {"request": "What is the capital of France?"}},
+        "thoughtSignature": "AY89a19yOx/qE3BDw2buX3qFOX9Sryz0ZejxtZI/qbvYO4wDZJXd3iPoJsQN46K3CSM="}]},
+        "finishReason": "STOP"}], "usageMetadata": {"promptTokenCount": 96, "candidatesTokenCount":
+        23, "totalTokenCount": 119, "trafficType": "ON_DEMAND", "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 96}], "candidatesTokensDetails": [{"modality":
+        "TEXT", "tokenCount": 23}]}, "modelVersion": "gemini-3.5-flash", "createTime":
+        "2026-07-06T22:28:29.005950Z", "responseId": "DSxMar4ugIH0uw_byZKhBA"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:28:29 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "What is the capital of France?"}], "role":
+      "user"}], "systemInstruction": {"parts": [{"text": "Answer the user''s geography
+      question in one word.\n\nYou are an agent. Your internal name is \"geo_specialist\".
+      The description about you is \"A geography specialist agent that answers geography
+      questions in one word.\"."}], "role": "user"}, "labels": {"adk_agent_name":
+      "geo_specialist"}, "generationConfig": {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://aiplatform.googleapis.com/v1beta1/publishers/google/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"role": "model", "parts": [{"text": "Paris",
+        "thoughtSignature": "AY89a1+SCWcoEdNVivJjjbDyaotXa07vy6BW7OTptw/tbj8QSytzrN3stGp0/VzyfSQ="}]},
+        "finishReason": "STOP"}], "usageMetadata": {"promptTokenCount": 52, "candidatesTokenCount":
+        1, "totalTokenCount": 53, "trafficType": "ON_DEMAND", "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 52}], "candidatesTokensDetails": [{"modality":
+        "TEXT", "tokenCount": 1}]}, "modelVersion": "gemini-3.5-flash", "createTime":
+        "2026-07-06T22:28:30.213390Z", "responseId": "DixMao6DDfDAodAPioW4mQ0"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:28:30 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "What is the capital of France?"}], "role":
+      "user"}, {"parts": [{"functionCall": {"args": {"request": "What is the capital
+      of France?"}, "name": "geo_specialist"}, "thoughtSignature": "AY89a19yOx_qE3BDw2buX3qFOX9Sryz0ZejxtZI_qbvYO4wDZJXd3iPoJsQN46K3CSM="}],
+      "role": "model"}, {"parts": [{"functionResponse": {"name": "geo_specialist",
+      "response": {"result": "Paris"}}}], "role": "user"}], "systemInstruction": {"parts":
+      [{"text": "You are a routing agent. If the user asks a geography question (e.g.
+      about a country''s capital), call the tool named ''geo_specialist'' to delegate.
+      Otherwise answer the user directly.\n\nYou are an agent. Your internal name
+      is \"parent_agent\"."}], "role": "user"}, "tools": [{"functionDeclarations":
+      [{"description": "A geography specialist agent that answers geography questions
+      in one word.", "name": "geo_specialist", "parameters": {"properties": {"request":
+      {"type": "STRING"}}, "required": ["request"], "type": "OBJECT"}}]}], "labels":
+      {"adk_agent_name": "parent_agent"}, "generationConfig": {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://aiplatform.googleapis.com/v1beta1/publishers/google/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"role": "model", "parts": [{"text": "Paris",
+        "thoughtSignature": "AY89a19e3r8CwL0bRzSxOw2t0bEPnnfEBrGrN2N6CNwLQfrGslT7ytY7k/O2b7jHqr4="}]},
+        "finishReason": "STOP"}], "usageMetadata": {"promptTokenCount": 122, "candidatesTokenCount":
+        1, "totalTokenCount": 123, "trafficType": "ON_DEMAND", "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 122}], "candidatesTokensDetails": [{"modality":
+        "TEXT", "tokenCount": 1}]}, "modelVersion": "gemini-3.5-flash", "createTime":
+        "2026-07-06T22:28:31.596952Z", "responseId": "DyxMati3JLnJ4_UPgpe-qA0"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:28:32 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "Begin."}], "role": "user"}], "systemInstruction":
+      {"parts": [{"text": "Reply with the single word: Ping\n\nYou are an agent. Your
+      internal name is \"looped\"."}], "role": "user"}, "generationConfig": {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"parts": [{"text": "Ping", "thoughtSignature":
+        "Et4ECtsEARFNMg9C1xo1O769KnI3Ud8l3UMUZ5gfW5aDQpa3UxPBNMwx4ihip4O2lZ5bGeHrXjl8juNHXJmwly2D+MvmFYlwPygWPqpHmUK97tSiANerQYaZv9rV9tXTHPm1enRkRZjz1Jh9kR1sXsE246MVxlMTXd2GVYyYp4VvW4U+VG/JZ6sKCta2Lv8mcWh3KoTitCsnsJ0VeLNMYSa8RHwpaDa22ZJ/pdPyA/iznGdzagXabDD+PV5zwU3sbSOPqvrpFDm3j3ZUq1FB1FQJe7uToMrH5R4vakNAeAUtj2qDeJrTnPa3wFrBraZXFsp9vs4uIBZGLNNb7JyJtOkW6UzRYuInhLxWuMeb8wYwdN6xpuswUSPx3IRj+tfnaYeKCUqM/Wm2ulIjjCeV5TIN2tQquEL0F2vj+Tg5REl6WzZrIKLeMTPUJptGd5pUmVN2kDiylC/3hUIOgmJAsWxOPuu6RzanzlK/YL4uF6122FvrLpDcnEIFDTqnoigjN00Q12OvoJnR/T4Iq3k25d1OzBRshi8nq8LhNSefKPFOGF9wXLsmhWOh73TLUjPt4Qld2C5NmcK5sOWiGaMGJKhre6/hDcn4ugi4fhWYpQxjvHJAfh9C1WqmBZAiQt/l0sdzldaA6OkBYx2hjENGKtQypAo7O5Bz5NhkOxBV0o/ldDN0EiuAixMlL/IHaFSwZ1b9wV9cxGoZm+pUXupxkZE3NBzf19af02Y/LFpYyHzdfTfDhVJiWaQGmTMbfHiSKhbH2wcIpTg8X8/Q3sPNyJjAzLXYxln5sWw7wpCbjKY8"}],
+        "role": "model"}, "finishReason": "STOP", "index": 0}], "usageMetadata": {"promptTokenCount":
+        24, "candidatesTokenCount": 1, "totalTokenCount": 166, "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 24}], "thoughtsTokenCount": 141, "serviceTier":
+        "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "ESxMaveaCMucjrEPqfbmmAc"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:28:34 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Server-Timing:
+      - gfet4t7; dur=1138
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Gemini-Service-Tier:
+      - standard
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "Begin."}], "role": "user"}, {"parts":
+      [{"text": "Ping", "thoughtSignature": "Et4ECtsEARFNMg9C1xo1O769KnI3Ud8l3UMUZ5gfW5aDQpa3UxPBNMwx4ihip4O2lZ5bGeHrXjl8juNHXJmwly2D-MvmFYlwPygWPqpHmUK97tSiANerQYaZv9rV9tXTHPm1enRkRZjz1Jh9kR1sXsE246MVxlMTXd2GVYyYp4VvW4U-VG_JZ6sKCta2Lv8mcWh3KoTitCsnsJ0VeLNMYSa8RHwpaDa22ZJ_pdPyA_iznGdzagXabDD-PV5zwU3sbSOPqvrpFDm3j3ZUq1FB1FQJe7uToMrH5R4vakNAeAUtj2qDeJrTnPa3wFrBraZXFsp9vs4uIBZGLNNb7JyJtOkW6UzRYuInhLxWuMeb8wYwdN6xpuswUSPx3IRj-tfnaYeKCUqM_Wm2ulIjjCeV5TIN2tQquEL0F2vj-Tg5REl6WzZrIKLeMTPUJptGd5pUmVN2kDiylC_3hUIOgmJAsWxOPuu6RzanzlK_YL4uF6122FvrLpDcnEIFDTqnoigjN00Q12OvoJnR_T4Iq3k25d1OzBRshi8nq8LhNSefKPFOGF9wXLsmhWOh73TLUjPt4Qld2C5NmcK5sOWiGaMGJKhre6_hDcn4ugi4fhWYpQxjvHJAfh9C1WqmBZAiQt_l0sdzldaA6OkBYx2hjENGKtQypAo7O5Bz5NhkOxBV0o_ldDN0EiuAixMlL_IHaFSwZ1b9wV9cxGoZm-pUXupxkZE3NBzf19af02Y_LFpYyHzdfTfDhVJiWaQGmTMbfHiSKhbH2wcIpTg8X8_Q3sPNyJjAzLXYxln5sWw7wpCbjKY8"}],
+      "role": "model"}, {"parts": [{"text": "Continue processing previous requests
+      as instructed. Exit or provide a summary if no more outputs are needed."}],
+      "role": "user"}], "systemInstruction": {"parts": [{"text": "Reply with the single
+      word: Ping\n\nYou are an agent. Your internal name is \"looped\"."}], "role":
+      "user"}, "generationConfig": {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"parts": [{"text": "Ping", "thoughtSignature":
+        "EroJCrcJARFNMg/0HIZMxTJ2vDUH9bjCO7/8ueM4NWYL6YrMcRQVMNOeQRyfcvcWpBToNJLSKbEfTmBynTAlB1R+FuOYlgvRdDLmHTdjndGJS64SK3eaIZMNYqGpyeukTxf3CJCm3uaX0cGbJetEAwlfBYqvNFIjj5U+idC21JDPBjfN8rS1kc5i13dx6RHQ4Cmy2yvNaF4VvcLypuTKLm/ERRgSECXIYf1oxb9BIt02Izt/zk5GWm5EN0MfYvdnXAwl00euyjPtc6trWrltY9/suFb6A++FW3ZLD883+N32d9QQZ0hUNzo61s5md/Biwfs2cW/uCBZG4VeSWLF97Twz6FVvEoXU50wzn5zKQWBkGRonilVDiX3GcF4Ju5JZ0oSXmImyfrAs7HxybDU4fhIkl0eUjzZWs8fjomm8vlvApKZDvcebU4UERSn0cyoPe2Pz0q+E8GxK68ZMYwrhkn+haJyru0UEueaCTtZePkVb0CKznZBC3QSJWl0RZ17yGGn8s3b8VaKT8Sx7lZMKdSeO1sF8R0RdaRBgNH1ieNqwfyn5Zo6XrbWXXPtQ7c2/+XxziRkz3ewcBqlceJY/BzRPkfoN11pZpPCu2IWqH21WvBa/2VoARHuPWml6pOzTXkD+6crVG9+XeNOAosOr2aOWFJ575JIT0EFjvfrjLu7ExyIjeiS9/ZSwVJQ2r5rApxf5iZvl+iPaJEpORk1DlD7v87fNvPBpTbPyixTcQ3F7PXj2Rh3H9ohoyPfYoF4U1pe37w1IDyHoWIAdEWo8KHmLBGxlmQIlf6n1uIcS+hdXrgZDPA2Gydk7z9MTBmK5onC5hIZRWXb8lQZIJAuElFZgOV/Vn5SdBylWNVNd4dFgX9UV0it3LCbSC/P+WqLHYqI929DRQqGiUz031+/Xql8+6IhI1aE49cHMXLfmR2RROOK9OHTfHBhtch8/cAWED57jvaWRoAyKp7wJtZZ1e70lmVZ4VJi84Ummz+xsj7CMeXkDkUwb/WvVjLcgHKSMSs8dpZ3SKg8c43cyZSt0z44bdB01jNW+g0d/ENM7HyC8YxQpNQF4EFUobQkhWRvOjY7FG+0jLclnNDlnM6IJytotbIZUl3cU8vkj51Z7PuqrNql+G6U0yCfZ5qeYFW4S94h3t2E6i/7M7j0S4eB7ykfFrL2S4CieLBahygBG8xFk1EmiziVa8Pjd86Sxypr/PEfmmofhDd2IhVFxU3kvK1svJV/+k+Se4xR1nNUwQsxy0mKT4NZNDIow4zAxhudWNvcvlxrpOwHE0hOP4OofEv3I36MBn0UnRonJ2WMrkkLAvDWfUvPMd3hjgdcD8MyfDW5hCan5/uuFbCe15MLjakiVYBlGf2ISZJDF1jxDkfPfGLi9s10vci0ga0mGCBQ3kEjRJ4xGxFRnH2RYqxpG0/XgyCvtrbwiVyQCcz/5Qc8erQuFhRuwgKy76B5IJgjbWbyxIeYJ1U7JnpvEkO1OgJd7Hp7rS24sEyQPW8zh84HZLawFtCj46DHDiSqAQZJTqBJO8cIbExilBh2xaXrQT+Um00Ts7eBg5g6PGLjEF0FedIA5qJIX03rMAuu3OvOOtxKSGdLweq/14l0pzg=="}],
+        "role": "model"}, "finishReason": "STOP", "index": 0}], "usageMetadata": {"promptTokenCount":
+        187, "candidatesTokenCount": 1, "totalTokenCount": 454, "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 187}], "thoughtsTokenCount": 266, "serviceTier":
+        "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "EixMavGZJNyPjrEP47_1SQ"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:28:36 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Server-Timing:
+      - gfet4t7; dur=1810
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Gemini-Service-Tier:
+      - standard
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "Begin."}], "role": "user"}], "systemInstruction":
+      {"parts": [{"text": "Reply with the single word: Ping\n\nYou are an agent. Your
+      internal name is \"looped\"."}], "role": "user"}, "labels": {"adk_agent_name":
+      "looped"}, "generationConfig": {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://aiplatform.googleapis.com/v1beta1/publishers/google/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"role": "model", "parts": [{"text": "Ping",
+        "thoughtSignature": "AY89a18MB+XrjvrCGcYKQdho53+0yBHmp0p8t0EXelmehH7Kq0+EidAAPQMXuIbnAAo="}]},
+        "finishReason": "STOP"}], "usageMetadata": {"promptTokenCount": 22, "candidatesTokenCount":
+        1, "totalTokenCount": 23, "trafficType": "ON_DEMAND", "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 22}], "candidatesTokensDetails": [{"modality":
+        "TEXT", "tokenCount": 1}]}, "modelVersion": "gemini-3.5-flash", "createTime":
+        "2026-07-06T22:28:36.925356Z", "responseId": "FCxMaqy9OLOU4_UP4cq8uQw"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:28:37 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "Begin."}], "role": "user"}, {"parts":
+      [{"text": "Ping", "thoughtSignature": "AY89a18MB-XrjvrCGcYKQdho53-0yBHmp0p8t0EXelmehH7Kq0-EidAAPQMXuIbnAAo="}],
+      "role": "model"}, {"parts": [{"text": "Continue processing previous requests
+      as instructed. Exit or provide a summary if no more outputs are needed."}],
+      "role": "user"}], "systemInstruction": {"parts": [{"text": "Reply with the single
+      word: Ping\n\nYou are an agent. Your internal name is \"looped\"."}], "role":
+      "user"}, "labels": {"adk_agent_name": "looped"}, "generationConfig": {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://aiplatform.googleapis.com/v1beta1/publishers/google/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"role": "model", "parts": [{"text": "Ping",
+        "thoughtSignature": "AY89a19jMjIO/gKscQSONx8R1jyPV5Fvl5KT3hNh0dhhH6CaDKe6td8sOxGjvzF0mkI="}]},
+        "finishReason": "STOP"}], "usageMetadata": {"promptTokenCount": 42, "candidatesTokenCount":
+        1, "totalTokenCount": 43, "trafficType": "ON_DEMAND", "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 42}], "candidatesTokensDetails": [{"modality":
+        "TEXT", "tokenCount": 1}]}, "modelVersion": "gemini-3.5-flash", "createTime":
+        "2026-07-06T22:28:38.084421Z", "responseId": "FixMasWTBcOm998P6dbs4Qo"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:28:38 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "Begin."}], "role": "user"}], "systemInstruction":
+      {"parts": [{"text": "Reply with the single word: Berlin\n\nYou are an agent.
+      Your internal name is \"right\"."}], "role": "user"}, "generationConfig": {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"parts": [{"text": "Berlin", "thoughtSignature":
+        "EtoECtcEARFNMg8Z97jQoagYC7M1LDCLT3Ro3eg7/3/0F9r40jrjvbk8gW3Yv9wRVBrQiAzmuCq/RL4b/TTC5B703dj4HRf+8QPsgmeCuBK+GFKSMyTOrVH9pGF9oCVkOxVskoL90M8be+os4lIuhQViE5M3BCYBfjl6151WV2BvUm2ttQDAeMAWNakLFv8yyB+x7HX7U/XVTuUFoWfd4yAALPtNLj2ekCuJCGHzUhuEBg0UDaw9UDKyMNLVY4pJUKv5dOGRQVCw/Bhw815FnU4NgHuhhF5JGljSr5FM4uazPhZsXB3vZP5+8Tq32XBBYHWbZtEcv1Rhmgt3L6z1rsRuPZqNKB171SQZv7lorgs2t2CNdn8Ke7t+zbUbcg5pu870vroYlIxE3KXusAzhxoTmhD0Td8aYEELrqHIdZH2hTGH980CO8gNwS0qRLtr9U9fu3dlsUuyRDA1AsZ22ASUVgGuXaFZo9hIWeEkfz27/pbBC84Ru3D5OYsfKzNdxqwFj2xD8YDcdfusKF+hv5P89In9DCnKmdrD6j8LNypL4CsIQcP5DIRxiSDhvn4TJigJmcg3V2Gy4TAtDwJOsMcQekFPGlL3L62qJUGMQ3MBtUJESWk9r4Ge/cjnJtRlujtvW2I4K10xTOF/FPhB9MDJm0EKsYhITGBxigNlHsahv66Hq08f2CLsiIXCcDtH15WpfPD7gajN1AEVCp88pueP59PbBjG4xjmilGwGqG02uRwNWItwam8Xw0p8M63CNJIrwI4F15265UYxUyprwygrvxQsytkYUrrlcDWE="}],
+        "role": "model"}, "finishReason": "STOP", "index": 0}], "usageMetadata": {"promptTokenCount":
+        24, "candidatesTokenCount": 1, "totalTokenCount": 159, "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 24}], "thoughtsTokenCount": 134, "serviceTier":
+        "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "FyxMarGhG5Ss_uMPrNq68Qs"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:28:40 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Server-Timing:
+      - gfet4t7; dur=1067
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Gemini-Service-Tier:
+      - standard
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "Begin."}], "role": "user"}], "systemInstruction":
+      {"parts": [{"text": "Reply with the single word: Tokyo\n\nYou are an agent.
+      Your internal name is \"left\"."}], "role": "user"}, "generationConfig": {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"parts": [{"text": "Tokyo", "thoughtSignature":
+        "EpoECpcEARFNMg8WJ/Tefdss2cUKqaw1chD4O1DEoKqZWCOdqqX17Yh0m35s64tX09YnEhg98Fq9MxYPe87Zj4RgD0J8G1VZWpoFJwVeeO0zDiijh2FtUl8n0xg+quMwMsFjBVfSVZvdpNljtXFVsQkAtDDOIAVdjHKj+dgT/LAri2yfV30WB4cAKlhW2Y/eT1BC4qnHFsi2oFFcAxpDeoYJmZePe7sQElxO/ZdkgOTNcwyikl6BGBosiB4XIErXM/7LKzVujGseiHgMxJ3u5+K97NTfyfxFqYfWvqNgXiY+9899zz5HqUE57kgL9TsYq7fo0UF/+AY2lDt84yVPTyboLbIsJFrgz1EgW5ocKjbJ4QZvRC3MrZmoNLgGNZK8crI0lN9SFykzWUkaEp/6Yo/lZH4Dmt1kwoSy/2qB57+PLS4eYuFBwc7R1JqJ8GMr5Rz7gnxiD3ZbBy6qKe9ZBqaeyAjdshdZIUjiTlRWHX/2dSuvjxyvyLPQ0mnb7FxDKt2hGBKitoCCFoqfVayHzzx8v5DyU64aKihpSbCvg0+jjM5tJa1zUY2weFsFwAsZvkUlRieL6KqhsshmY7cEu50hLfbqMkz9pjYZWapuJvBY5HMGyTFevyjoOg4zO5h1Yil1vXOuIgJSHMYHM/TSO4VaC0bF/Re9UCy+TlViOeT+yanjJDEGNEJUZn9+WGGywGXHhgPlTQE6yaMdxw=="}],
+        "role": "model"}, "finishReason": "STOP", "index": 0}], "usageMetadata": {"promptTokenCount":
+        24, "candidatesTokenCount": 1, "totalTokenCount": 145, "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 24}], "thoughtsTokenCount": 120, "serviceTier":
+        "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "FyxMare0G-ak_uMP3O3y6Qg"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:28:40 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Server-Timing:
+      - gfet4t7; dur=1220
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Gemini-Service-Tier:
+      - standard
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "Begin."}], "role": "user"}], "systemInstruction":
+      {"parts": [{"text": "Reply with the single word: Tokyo\n\nYou are an agent.
+      Your internal name is \"left\"."}], "role": "user"}, "labels": {"adk_agent_name":
+      "left"}, "generationConfig": {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://aiplatform.googleapis.com/v1beta1/publishers/google/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"role": "model", "parts": [{"text": "Tokyo",
+        "thoughtSignature": "AY89a1/9fg6E4eGBxgyPqY7gLOjYzKuS36Ts41Xtsu+g5kg0hkiS5dAdh0DqrvjA9Lc="}]},
+        "finishReason": "STOP"}], "usageMetadata": {"promptTokenCount": 22, "candidatesTokenCount":
+        1, "totalTokenCount": 23, "trafficType": "ON_DEMAND", "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 22}], "candidatesTokensDetails": [{"modality":
+        "TEXT", "tokenCount": 1}]}, "modelVersion": "gemini-3.5-flash", "createTime":
+        "2026-07-06T22:28:41.159884Z", "responseId": "GSxMaozhCYLQ6tkP2deiuAI"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:28:41 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "Begin."}], "role": "user"}], "systemInstruction":
+      {"parts": [{"text": "Reply with the single word: Berlin\n\nYou are an agent.
+      Your internal name is \"right\"."}], "role": "user"}, "labels": {"adk_agent_name":
+      "right"}, "generationConfig": {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://aiplatform.googleapis.com/v1beta1/publishers/google/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"role": "model", "parts": [{"text": "Berlin",
+        "thoughtSignature": "AY89a1+HstlzDrGw+Nrz+ZBlGCVoHtpWpxN9OID6dmWIljJ9kwG5OS6xOqCXz4Efq3o="}]},
+        "finishReason": "STOP"}], "usageMetadata": {"promptTokenCount": 22, "candidatesTokenCount":
+        1, "totalTokenCount": 23, "trafficType": "ON_DEMAND", "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 22}], "candidatesTokensDetails": [{"modality":
+        "TEXT", "tokenCount": 1}]}, "modelVersion": "gemini-3.5-flash", "createTime":
+        "2026-07-06T22:28:41.100562Z", "responseId": "GSxMatKRBvLA998PwufpiAw"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:28:42 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "Begin."}], "role": "user"}], "systemInstruction":
+      {"parts": [{"text": "Reply with the single word: Paris\n\nYou are an agent.
+      Your internal name is \"step1\"."}], "role": "user"}, "generationConfig": {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"parts": [{"text": "Paris", "thoughtSignature":
+        "EuMDCuADARFNMg/NTCb3jD6fFl/gYaLmWokqKRLRf6BaPl8EoYWooDvKd0fmoeh2XepenHPtZwwJURk5qQYQUu6u62wNlG7L31Wu5fyTA5g2rWTtFumBPisOmeusy5BHnvOJEMcqefJSyQHsQPw5/vkKeiJGyoZw6qS9o5ojSke8OasMdcRyYIY13E1HQtxkhUHtGpb+ucE0dnvxyKLrQjSr1PdtbQ2xrYNE6rQTO3btSs0Jc9WW5cmIrUPH5yuN7QsurcemA7eqnwMaggCDuaYyrhSP9TQbDZ4OA2jnVKvoKFGptuwal5EHkQjW2sRX6GV3iaZEE/12V9OQ4b7k9dNnSMieKQXfRlW2AxEVH+cQD/m3jmWfn75okqzORO10aD6xYt1ekRWCMaiMEua4dvNWspd+DAZnEFnWokTKXuNJIQ+i7Om13nOYf0xW0WWlJjN7vPp9E2jRZIYfXn2+5PFqsQV9HX3IyopU143SFYjqwH7wLWInjp2YIrVfoyrVL9Gm055AGGfdVlq9ouOv5pb+B6fbzhP0IC2JI0gR52NO0MqiExsZPgE/TtOt0iR0sLOrCHY96pnM1t5N9UtSREhgaAOg3oMFESPdJzh7tEbOanl2+msKXSpm3eCx+pG5nklsKjGu"}],
+        "role": "model"}, "finishReason": "STOP", "index": 0}], "usageMetadata": {"promptTokenCount":
+        25, "candidatesTokenCount": 1, "totalTokenCount": 147, "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 25}], "thoughtsTokenCount": 121, "serviceTier":
+        "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "GixMauj6M5a9sOIPhvrr-Ao"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:28:44 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Server-Timing:
+      - gfet4t7; dur=1338
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Gemini-Service-Tier:
+      - standard
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "Begin."}], "role": "user"}, {"parts":
+      [{"text": "For context:"}, {"text": "[step1] said: Paris"}], "role": "user"}],
+      "systemInstruction": {"parts": [{"text": "Reply with the single word: France\n\nYou
+      are an agent. Your internal name is \"step2\"."}], "role": "user"}, "generationConfig":
+      {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"parts": [{"text": "France", "thoughtSignature":
+        "EvADCu0DARFNMg/0dDBMrBQXX5nUrppqXJfhynGpHOWeLgUUNkrGWdKmTYNbipyWk3naqcQsBMpYBMOk79DdC4RznqaQfu6ns16LACaJyI3IYA2cIR/T84iYCXTBVpTYOaWMdEB9RYI/uIbpH+i2j+w4+WoowdntMCsKUy2e4qI/lBdvQ8t4slKWjXgX9mw5ivRVHmb7yKFqCotjhK3gob0Nc3kmsLBLStwSbDMms1iFr78rCWtAofAed5QCob1T/UAsL/WXuh/9xsYdKDnapyrLny1vop/m0uM/9WR26CHDLjfvW1zlzCulBhbF11zVfmVGMqbIpnyrMSjmfZVpkIYg6tP/yLwA6DXuSBnOBn3Ut3S0D71Wrevl5EWrRIYaTFSNTcCmcguNjFVHXlLs3+IcD3uYfGWZWwQr9bVJ6ep9hJhZRwzkzR0pZVWkOFYWq2Yw1V8ylwyWLwtaUQUEb8gJ1Vwjpj2joN8WcItAQGu/4z3Esyy4b3baioGuukrCYIwZoIX3WQYqkwSCiQYZzeq6/MrjsCcBfvEhWdMng787z8wsuUciNTYRXLf+gwVv1V5eZ2+DZmTbblJQExaBZgN/1mboT6yg+H0UlkLmih0cgBJEacXc47FLMHst71wgVEMt6OqeKNY7/iEU2fmKrvjxzA=="}],
+        "role": "model"}, "finishReason": "STOP", "index": 0}], "usageMetadata": {"promptTokenCount":
+        36, "candidatesTokenCount": 1, "totalTokenCount": 157, "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 36}], "thoughtsTokenCount": 120, "serviceTier":
+        "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "HCxMat70HcHJ-8YPhJPS2Ac"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:28:45 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Server-Timing:
+      - gfet4t7; dur=1147
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Gemini-Service-Tier:
+      - standard
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "Begin."}], "role": "user"}], "systemInstruction":
+      {"parts": [{"text": "Reply with the single word: Paris\n\nYou are an agent.
+      Your internal name is \"step1\"."}], "role": "user"}, "labels": {"adk_agent_name":
+      "step1"}, "generationConfig": {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://aiplatform.googleapis.com/v1beta1/publishers/google/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"role": "model", "parts": [{"text": "Paris",
+        "thoughtSignature": "AY89a185gt+lV5czfVC+G2NQp6KoqKOBElz53Rw/tI8vweZMgjIh3niw5Xheghi5JUE="}]},
+        "finishReason": "STOP"}], "usageMetadata": {"promptTokenCount": 23, "candidatesTokenCount":
+        1, "totalTokenCount": 24, "trafficType": "ON_DEMAND", "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 23}], "candidatesTokensDetails": [{"modality":
+        "TEXT", "tokenCount": 1}]}, "modelVersion": "gemini-3.5-flash", "createTime":
+        "2026-07-06T22:28:46.087266Z", "responseId": "HixMauKpBZqL998PyqPM8Q8"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:28:46 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "Begin."}], "role": "user"}, {"parts":
+      [{"text": "For context:"}, {"text": "[step1] said: Paris"}], "role": "user"}],
+      "systemInstruction": {"parts": [{"text": "Reply with the single word: France\n\nYou
+      are an agent. Your internal name is \"step2\"."}], "role": "user"}, "labels":
+      {"adk_agent_name": "step2"}, "generationConfig": {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://aiplatform.googleapis.com/v1beta1/publishers/google/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"role": "model", "parts": [{"text": "France",
+        "thoughtSignature": "AY89a184W5qGEvByborF880VxY00isRIithW3oHojQsbT/arPd3mBjjBgNMFuNSqX/A="}]},
+        "finishReason": "STOP"}], "usageMetadata": {"promptTokenCount": 32, "candidatesTokenCount":
+        1, "totalTokenCount": 33, "trafficType": "ON_DEMAND", "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 32}], "candidatesTokensDetails": [{"modality":
+        "TEXT", "tokenCount": 1}]}, "modelVersion": "gemini-3.5-flash", "createTime":
+        "2026-07-06T22:28:47.303216Z", "responseId": "HyxMavDAErOU4_UP4cq8uQw"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:28:47 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "What is the capital of France?"}], "role":
+      "user"}], "systemInstruction": {"parts": [{"text": "You are a routing agent.
+      If the user asks a geography question (e.g. about a country''s capital), transfer
+      to the agent named ''child_agent'' using the transfer_to_agent tool. Otherwise,
+      answer the user directly.\n\nYou are an agent. Your internal name is \"parent_agent\".\n\n\nYou
+      have a list of other agents to transfer to:\n\n\nAgent name: child_agent\nAgent
+      description: \n\n\nIf you are the best to answer the question according to your
+      description,\nyou can answer it.\n\nIf another agent is better for answering
+      the question according to its\ndescription, call `transfer_to_agent` function
+      to transfer the question to that\nagent. When transferring, do not generate
+      any text other than the function\ncall.\n\n**NOTE**: the only available agents
+      for `transfer_to_agent` function are\n`child_agent`.\n"}], "role": "user"},
+      "tools": [{"functionDeclarations": [{"description": "Transfer the question to
+      another agent.\n\nThis tool hands off control to another agent when it''s more
+      suitable to\nanswer the user''s question according to the agent''s description.\n\nNote:\n  For
+      most use cases, you should use TransferToAgentTool instead of this\n  function
+      directly. TransferToAgentTool provides additional enum constraints\n  that prevent
+      LLMs from hallucinating invalid agent names.\n\nArgs:\n  agent_name: the agent
+      name to transfer to.\n", "name": "transfer_to_agent", "parameters": {"properties":
+      {"agent_name": {"enum": ["child_agent"], "type": "STRING"}}, "required": ["agent_name"],
+      "type": "OBJECT"}}]}], "generationConfig": {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"parts": [{"functionCall": {"name": "transfer_to_agent",
+        "args": {"agent_name": "child_agent"}, "id": "wutm04gz"}, "thoughtSignature":
+        "ErQDCrEDARFNMg/8U++9lHLDxLG3baDIItwveOLUbb/q6SlIUKy7ddgC/aivzwlsMo5oFSyUMNWFtKStDcn2E6vsn4z7Br8zG/3SrNjtAbkyA9wUsD3mobl9OPb2E9iwnYiXu9W1UQ7s+eZDB/0cRwxDnFTnsIN9UCSBrG7FJGLWi2ASmliyV5X24QS2AiVpAeleKjTmdGgcIvRh5tXCeOlq1r9EMz/xWFCvqYKC5JjkV+c6Qd3DbLJtyJM6nBE2qj6b0TS4RuMpkcDWLGe/lA9VZ2Hm0p6s+25v0MxxtxeaFaA6HbwG0UKZjl5mf8/0K7WpQGznstTJL9HRNXWfBvbnkcLghl6va5YLREmIAmDEnY6URgpwHPSESf3mnA9dJz2oea1C/0kMzZ5IdjV6/A5D0hmGoe0re9DYV2CdqE6K5ayEkfdwNv2AfgLmobWkE/P0ESaJykH2LIJSiiJrvqSHlBJLe1OHRVMcY54MlJKBlMwQv0VD4MewDVRdZD6gAGYbRNnxRMlAVlhco2xFb0v/LtqgwTDX35hLsyljtdO555C6FYjM6Uh68ssXvaKELQIvomco2w=="}],
+        "role": "model"}, "finishReason": "STOP", "index": 0, "finishMessage": "Model
+        generated function call(s)."}], "usageMetadata": {"promptTokenCount": 346,
+        "candidatesTokenCount": 22, "totalTokenCount": 463, "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 346}], "thoughtsTokenCount": 95, "serviceTier":
+        "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "ICxMaqrhJaDm_uMPk6LN4Ag"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:28:49 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Server-Timing:
+      - gfet4t7; dur=995
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Gemini-Service-Tier:
+      - standard
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "What is the capital of France?"}], "role":
+      "user"}, {"parts": [{"text": "For context:"}, {"text": "[parent_agent] called
+      tool `transfer_to_agent` with parameters: {''agent_name'': ''child_agent''}"}],
+      "role": "user"}, {"parts": [{"text": "For context:"}, {"text": "[parent_agent]
+      `transfer_to_agent` tool returned result: {''result'': None}"}], "role": "user"}],
+      "systemInstruction": {"parts": [{"text": "Answer the user''s geography question
+      in one word.\n\nYou are an agent. Your internal name is \"child_agent\".\n\n\nYou
+      have a list of other agents to transfer to:\n\n\nAgent name: parent_agent\nAgent
+      description: \n\n\nIf you are the best to answer the question according to your
+      description,\nyou can answer it.\n\nIf another agent is better for answering
+      the question according to its\ndescription, call `transfer_to_agent` function
+      to transfer the question to that\nagent. When transferring, do not generate
+      any text other than the function\ncall.\n\n**NOTE**: the only available agents
+      for `transfer_to_agent` function are\n`parent_agent`.\n\nIf neither you nor
+      the other agents are best for the question, transfer to your parent agent parent_agent.\n"}],
+      "role": "user"}, "tools": [{"functionDeclarations": [{"description": "Transfer
+      the question to another agent.\n\nThis tool hands off control to another agent
+      when it''s more suitable to\nanswer the user''s question according to the agent''s
+      description.\n\nNote:\n  For most use cases, you should use TransferToAgentTool
+      instead of this\n  function directly. TransferToAgentTool provides additional
+      enum constraints\n  that prevent LLMs from hallucinating invalid agent names.\n\nArgs:\n  agent_name:
+      the agent name to transfer to.\n", "name": "transfer_to_agent", "parameters":
+      {"properties": {"agent_name": {"enum": ["parent_agent"], "type": "STRING"}},
+      "required": ["agent_name"], "type": "OBJECT"}}]}], "generationConfig": {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"parts": [{"text": "Paris", "thoughtSignature":
+        "EqcGCqQGARFNMg828drpzYbi3idbTu33U9IR/6qGeBdOciSTE8xDo/WLjmli8zryg8Co50Y1WFcEjOdy+WcyTRXkUw8VoLSl/8OJj4umlqQz71ukejhk+kbrlc/uGg92XjNNpj1RH5HEGDhnqhUmrIpY14RkYdiU+ZXvLFmyAQ4aEj1YXD3u7+KIX0I7r4Jj32YTJ7/NcxecG4T+KyyTUqMypTOUZYWb/plw5AkFrcJPoYUOERUsotJe104jH5qJW8XfG6ZAPtixFCEdBISGX6Dl4LOyhynKY0dfwOwHjGTBPVcV2ExAJOfvkamLrqDVWRU+RsLZ+yqAVpVvhlS6nisxaWGhUJJGUWQpMf8U+xLHE4BcALwC2NPI0lEtHcp+8jNSpJUl0YY5R0mKgRj8BUsl7heLUkjq7q1FPYd4MUroFjj9sjJ5nbLa0q17UtesYP/BZR8LE4cqpEZYlFzrOscJwXrr99H50HNlLbuwxrtaAykFwrNCZU+AdZrsyOaMc4XO6gcKB/7JDc9VO9EWRbnpxTo2vYHlEsddtP9bYxSGZ3MCaD7rJR/OSkm6mS2Zl613BDOJK2uj/4XWeSmO/LyeLvGUetGDs+UKUB7qRrM+HcbggWhhDvWobowS9iwvdl1QuIs/p4Zg03MIzXlQyRDGNBivZgcFmNOlUL4IJHA5uAddtk/PtIpsumj8zKKfy2YNdzQaRdwsiFvlvZVlrOCDR68oEdTiI74XWwuauufoB4/K96F0dY1qpvDFBCittop1WZpbdNhxRPmx/jhraht8RkoKZlC2cM0gkF20yqtMHjUDATFGTRAPXWQukuKeB/RxdRqIebmx5WfkDzBFwpUahYmYUH4arD4HNTTTPnzHyekBEd5XZt/seJ24VJli6NJY7spjo6FN3oCYezasHHGedN0ngTO+YoD9jbo5FU4Fwp6PvJnvK60LUqpksGdTTweh4GVf6Z4P7/Mkn9wIihdZO4SNdq/iU1Ety97QnJPHC3auV0uVC4utzqlIB6NwiALEMwJXKe39z+dYUNwxbScXc86HoawAobZ7Ldi37ffJTRod8QOacV+A"}],
+        "role": "model"}, "finishReason": "STOP", "index": 0}], "usageMetadata": {"promptTokenCount":
+        385, "candidatesTokenCount": 1, "totalTokenCount": 564, "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 385}], "thoughtsTokenCount": 178, "serviceTier":
+        "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "ISxMaqa-N-usjrEPkO_hiAY"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:28:51 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Server-Timing:
+      - gfet4t7; dur=1519
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Gemini-Service-Tier:
+      - standard
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "What is the capital of France?"}], "role":
+      "user"}], "systemInstruction": {"parts": [{"text": "You are a routing agent.
+      If the user asks a geography question (e.g. about a country''s capital), transfer
+      to the agent named ''child_agent'' using the transfer_to_agent tool. Otherwise,
+      answer the user directly.\n\nYou are an agent. Your internal name is \"parent_agent\".\n\n\nYou
+      have a list of other agents to transfer to:\n\n\nAgent name: child_agent\nAgent
+      description: \n\n\nIf you are the best to answer the question according to your
+      description,\nyou can answer it.\n\nIf another agent is better for answering
+      the question according to its\ndescription, call `transfer_to_agent` function
+      to transfer the question to that\nagent. When transferring, do not generate
+      any text other than the function\ncall.\n\n**NOTE**: the only available agents
+      for `transfer_to_agent` function are\n`child_agent`.\n"}], "role": "user"},
+      "tools": [{"functionDeclarations": [{"description": "Transfer the question to
+      another agent.\n\nThis tool hands off control to another agent when it''s more
+      suitable to\nanswer the user''s question according to the agent''s description.\n\nNote:\n  For
+      most use cases, you should use TransferToAgentTool instead of this\n  function
+      directly. TransferToAgentTool provides additional enum constraints\n  that prevent
+      LLMs from hallucinating invalid agent names.\n\nArgs:\n  agent_name: the agent
+      name to transfer to.\n", "name": "transfer_to_agent", "parameters": {"properties":
+      {"agent_name": {"enum": ["child_agent"], "type": "STRING"}}, "required": ["agent_name"],
+      "type": "OBJECT"}}]}], "labels": {"adk_agent_name": "parent_agent"}, "generationConfig":
+      {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://aiplatform.googleapis.com/v1beta1/publishers/google/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"role": "model", "parts": [{"functionCall":
+        {"name": "transfer_to_agent", "args": {"agent_name": "child_agent"}}, "thoughtSignature":
+        "AY89a1/mp7h3ZAMguJCKk7OMKAtrsr6QBJTC0h7jxslyrMnv7ojY4FnAcwohVX0Z8N4="}]},
+        "finishReason": "STOP"}], "usageMetadata": {"promptTokenCount": 320, "candidatesTokenCount":
+        22, "totalTokenCount": 342, "trafficType": "ON_DEMAND", "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 320}], "candidatesTokensDetails": [{"modality":
+        "TEXT", "tokenCount": 22}]}, "modelVersion": "gemini-3.5-flash", "createTime":
+        "2026-07-06T22:28:51.933888Z", "responseId": "IyxMaoCAOcOm998P6dbs4Qo"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:28:52 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "What is the capital of France?"}], "role":
+      "user"}, {"parts": [{"text": "For context:"}, {"text": "[parent_agent] called
+      tool `transfer_to_agent` with parameters: {''agent_name'': ''child_agent''}"}],
+      "role": "user"}, {"parts": [{"text": "For context:"}, {"text": "[parent_agent]
+      `transfer_to_agent` tool returned result: {''result'': None}"}], "role": "user"}],
+      "systemInstruction": {"parts": [{"text": "Answer the user''s geography question
+      in one word.\n\nYou are an agent. Your internal name is \"child_agent\".\n\n\nYou
+      have a list of other agents to transfer to:\n\n\nAgent name: parent_agent\nAgent
+      description: \n\n\nIf you are the best to answer the question according to your
+      description,\nyou can answer it.\n\nIf another agent is better for answering
+      the question according to its\ndescription, call `transfer_to_agent` function
+      to transfer the question to that\nagent. When transferring, do not generate
+      any text other than the function\ncall.\n\n**NOTE**: the only available agents
+      for `transfer_to_agent` function are\n`parent_agent`.\n\nIf neither you nor
+      the other agents are best for the question, transfer to your parent agent parent_agent.\n"}],
+      "role": "user"}, "tools": [{"functionDeclarations": [{"description": "Transfer
+      the question to another agent.\n\nThis tool hands off control to another agent
+      when it''s more suitable to\nanswer the user''s question according to the agent''s
+      description.\n\nNote:\n  For most use cases, you should use TransferToAgentTool
+      instead of this\n  function directly. TransferToAgentTool provides additional
+      enum constraints\n  that prevent LLMs from hallucinating invalid agent names.\n\nArgs:\n  agent_name:
+      the agent name to transfer to.\n", "name": "transfer_to_agent", "parameters":
+      {"properties": {"agent_name": {"enum": ["parent_agent"], "type": "STRING"}},
+      "required": ["agent_name"], "type": "OBJECT"}}]}], "labels": {"adk_agent_name":
+      "child_agent"}, "generationConfig": {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://aiplatform.googleapis.com/v1beta1/publishers/google/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"role": "model", "parts": [{"text": "Paris",
+        "thoughtSignature": "AY89a1+Qi7i1kGqSqi/CJ0acvjQNiM+eS0Im5YH9XwvKFGlNkWnVMbvEW1pDgMsUn90="}]},
+        "finishReason": "STOP"}], "usageMetadata": {"promptTokenCount": 355, "candidatesTokenCount":
+        1, "totalTokenCount": 356, "trafficType": "ON_DEMAND", "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 355}], "candidatesTokensDetails": [{"modality":
+        "TEXT", "tokenCount": 1}]}, "modelVersion": "gemini-3.5-flash", "createTime":
+        "2026-07-06T22:28:53.317947Z", "responseId": "JSxMavuzE7G7_9MP3__yyAY"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:28:53 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "What is the capital of France?"}], "role":
+      "user"}], "systemInstruction": {"parts": [{"text": "Answer the user''s question
+      in one word.\n\nYou are an agent. Your internal name is \"my_agent\"."}], "role":
+      "user"}, "tools": [{"functionDeclarations": [{"description": "Return the capital
+      of a country.", "name": "get_capital", "parameters": {"properties": {"country":
+      {"type": "STRING"}}, "required": ["country"], "type": "OBJECT"}}]}], "generationConfig":
+      {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"parts": [{"functionCall": {"name": "get_capital",
+        "args": {"country": "France"}, "id": "clux564c"}, "thoughtSignature": "EvoECvcEARFNMg+SuQFGwC9wadnPNxRZuS5VAOIIOCMa/RWbF5koFs2NMDGeCJn2GJNXgRq7FpKl+PxyN9ruiCzjJM6QjC6MaCHsuByP4AT+R2FNeARfS63oj+By3YmXT5iDYK7NItzvfXCVAlkyiSTsXpmA888B/7yZwnmJYQb4gVB3LVzJghI0M+Is/Yx/5tRyu1lDsVWZyIdl9sBUKA5mgfeyRPVxMdzEw+3i6v080+jF7I/5ni7nUk9JXeqLdf2NeUgo5U7lcOig5jMEunpLKRANYMinNdHara1W7hWYhT9AtQLd6oa+LDuNlCujMXF1scd0Iimy97UQCpBfYX2hBaRRTrsN6SOcrtSc6On8SKJUKV8wi4kIdmM3slMemZ21QFi+sDnNvoOTP2gnVA0Q+A5WpSt0CYS+7aHSc9P5vqGTHHt29leXFEED1/XGO/7LuHmCsrVFHGYGrS4xYGDzxnMr7M4JRW4F9fvRVzULKaU+97PJF3WSxYg++D24OpvvcsiJHXKSEJkaEfpIqFrUoF61zgapGgRvqDr35ovDMcdu6CAy22R8MDPtZA7S+ZZ7qu3VgsL+Gw5fmtg0KW9v8ELzoVT9Z999QNpSOEeEpE3MlKu2xfHuoWZphFdUL+YrzU9CRwN9OSUYX4LTuP7I2vuCT0i8/jr5+bQpTyefLUx2zEzhcpQav9F+jXdfrKlrvYoqkReEJByLX5MtNLjX3i3WSlVG6PQlryju0fMIf5A63gJvKo/H2arL5H63e+z7CEV4mz5DEXQWkQvcGeQq09U6dXT/DETBWJj78CL7diqJ0zum6mHq9E3SyNKcRUPYFo1F1SNVh5BYCw=="}],
+        "role": "model"}, "finishReason": "STOP", "index": 0, "finishMessage": "Model
+        generated function call(s)."}], "usageMetadata": {"promptTokenCount": 78,
+        "candidatesTokenCount": 16, "totalTokenCount": 233, "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 78}], "thoughtsTokenCount": 139, "serviceTier":
+        "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "LyxMatXnPImsjrEP3NDc4Q8"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:29:05 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Server-Timing:
+      - gfet4t7; dur=1390
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Gemini-Service-Tier:
+      - standard
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "What is the capital of France?"}], "role":
+      "user"}, {"parts": [{"functionCall": {"id": "clux564c", "args": {"country":
+      "France"}, "name": "get_capital"}, "thoughtSignature": "EvoECvcEARFNMg-SuQFGwC9wadnPNxRZuS5VAOIIOCMa_RWbF5koFs2NMDGeCJn2GJNXgRq7FpKl-PxyN9ruiCzjJM6QjC6MaCHsuByP4AT-R2FNeARfS63oj-By3YmXT5iDYK7NItzvfXCVAlkyiSTsXpmA888B_7yZwnmJYQb4gVB3LVzJghI0M-Is_Yx_5tRyu1lDsVWZyIdl9sBUKA5mgfeyRPVxMdzEw-3i6v080-jF7I_5ni7nUk9JXeqLdf2NeUgo5U7lcOig5jMEunpLKRANYMinNdHara1W7hWYhT9AtQLd6oa-LDuNlCujMXF1scd0Iimy97UQCpBfYX2hBaRRTrsN6SOcrtSc6On8SKJUKV8wi4kIdmM3slMemZ21QFi-sDnNvoOTP2gnVA0Q-A5WpSt0CYS-7aHSc9P5vqGTHHt29leXFEED1_XGO_7LuHmCsrVFHGYGrS4xYGDzxnMr7M4JRW4F9fvRVzULKaU-97PJF3WSxYg--D24OpvvcsiJHXKSEJkaEfpIqFrUoF61zgapGgRvqDr35ovDMcdu6CAy22R8MDPtZA7S-ZZ7qu3VgsL-Gw5fmtg0KW9v8ELzoVT9Z999QNpSOEeEpE3MlKu2xfHuoWZphFdUL-YrzU9CRwN9OSUYX4LTuP7I2vuCT0i8_jr5-bQpTyefLUx2zEzhcpQav9F-jXdfrKlrvYoqkReEJByLX5MtNLjX3i3WSlVG6PQlryju0fMIf5A63gJvKo_H2arL5H63e-z7CEV4mz5DEXQWkQvcGeQq09U6dXT_DETBWJj78CL7diqJ0zum6mHq9E3SyNKcRUPYFo1F1SNVh5BYCw=="}],
+      "role": "model"}, {"parts": [{"functionResponse": {"id": "clux564c", "name":
+      "get_capital", "response": {"output": "Paris"}}}], "role": "user"}], "systemInstruction":
+      {"parts": [{"text": "Answer the user''s question in one word.\n\nYou are an
+      agent. Your internal name is \"my_agent\"."}], "role": "user"}, "tools": [{"functionDeclarations":
+      [{"description": "Return the capital of a country.", "name": "get_capital",
+      "parameters": {"properties": {"country": {"type": "STRING"}}, "required": ["country"],
+      "type": "OBJECT"}}]}], "generationConfig": {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"parts": [{"text": "Paris", "thoughtSignature":
+        "EpgBCpUBARFNMg9onHc6d/zhBQVTYZWXTjkWJ1g+HOGlGZxYtK/GRuUqbiD3Cesi/rO6GOm/hMMTc4D84CSsq6/qCAOahknL1Kz02qNLUBtItfFHAuHvRCKYfVeYpyRpNuKPFChLWOA83XPP2LvRa7jJmU6RPzwL0RxMfzlERIklkho/9xmPJf/DcT7b9HrvGwq4/q+2lIalDW0="}],
+        "role": "model"}, "finishReason": "STOP", "index": 0}], "usageMetadata": {"promptTokenCount":
+        247, "candidatesTokenCount": 1, "totalTokenCount": 274, "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 247}], "thoughtsTokenCount": 26, "serviceTier":
+        "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "MSxMaq31KqSr_uMP5aW7kAs"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:29:06 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Server-Timing:
+      - gfet4t7; dur=958
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Gemini-Service-Tier:
+      - standard
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "What is the capital of France?"}], "role":
+      "user"}], "systemInstruction": {"parts": [{"text": "Answer the user''s question
+      in one word.\n\nYou are an agent. Your internal name is \"my_agent\"."}], "role":
+      "user"}, "tools": [{"functionDeclarations": [{"description": "Return the capital
+      of a country.", "name": "get_capital", "parameters": {"properties": {"country":
+      {"type": "STRING"}}, "required": ["country"], "type": "OBJECT"}}]}], "labels":
+      {"adk_agent_name": "my_agent"}, "generationConfig": {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://aiplatform.googleapis.com/v1beta1/publishers/google/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"role": "model", "parts": [{"functionCall":
+        {"name": "get_capital", "args": {"country": "France"}}, "thoughtSignature":
+        "AY89a19oDT5Jv1DRPASY2aMVHWuZlSWrbMdr1Fj09jI43qrFhMs0Jlp5+T4CIIf02bc="}]},
+        "finishReason": "STOP"}], "usageMetadata": {"promptTokenCount": 56, "candidatesTokenCount":
+        16, "totalTokenCount": 72, "trafficType": "ON_DEMAND", "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 56}], "candidatesTokensDetails": [{"modality":
+        "TEXT", "tokenCount": 16}]}, "modelVersion": "gemini-3.5-flash", "createTime":
+        "2026-07-06T22:29:07.094912Z", "responseId": "MyxMasDlBeSY4_UP6fjLyQs"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:29:07 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "What is the capital of France?"}], "role":
+      "user"}, {"parts": [{"functionCall": {"args": {"country": "France"}, "name":
+      "get_capital"}, "thoughtSignature": "AY89a19oDT5Jv1DRPASY2aMVHWuZlSWrbMdr1Fj09jI43qrFhMs0Jlp5-T4CIIf02bc="}],
+      "role": "model"}, {"parts": [{"functionResponse": {"name": "get_capital", "response":
+      {"output": "Paris"}}}], "role": "user"}], "systemInstruction": {"parts": [{"text":
+      "Answer the user''s question in one word.\n\nYou are an agent. Your internal
+      name is \"my_agent\"."}], "role": "user"}, "tools": [{"functionDeclarations":
+      [{"description": "Return the capital of a country.", "name": "get_capital",
+      "parameters": {"properties": {"country": {"type": "STRING"}}, "required": ["country"],
+      "type": "OBJECT"}}]}], "labels": {"adk_agent_name": "my_agent"}, "generationConfig":
+      {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://aiplatform.googleapis.com/v1beta1/publishers/google/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"role": "model", "parts": [{"text": "Paris",
+        "thoughtSignature": "AY89a18tBNyTIvL8gugxz3KIw+s0dpzmQtaAZwwcUHDjuBN7+PV2TpLtQUt/sMr+Ddg="}]},
+        "finishReason": "STOP"}], "usageMetadata": {"promptTokenCount": 74, "candidatesTokenCount":
+        1, "totalTokenCount": 75, "trafficType": "ON_DEMAND", "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 74}], "candidatesTokensDetails": [{"modality":
+        "TEXT", "tokenCount": 1}]}, "modelVersion": "gemini-3.5-flash", "createTime":
+        "2026-07-06T22:29:08.334766Z", "responseId": "NCxMaq63FLnJ4_UPgpe-qA0"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:29:09 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "What is the capital of France?"}], "role":
+      "user"}], "systemInstruction": {"parts": [{"text": "You are a routing agent.
+      If the user asks a geography question (e.g. about a country''s capital), transfer
+      to the agent named ''child_agent'' using the transfer_to_agent tool. Otherwise,
+      answer the user directly.\n\nYou are an agent. Your internal name is \"parent_agent\".\n\n\nYou
+      have a list of other agents to transfer to:\n\n\nAgent name: child_agent\nAgent
+      description: \n\n\nIf you are the best to answer the question according to your
+      description,\nyou can answer it.\n\nIf another agent is better for answering
+      the question according to its\ndescription, call `transfer_to_agent` function
+      to transfer the question to that\nagent. When transferring, do not generate
+      any text other than the function\ncall.\n\n**NOTE**: the only available agents
+      for `transfer_to_agent` function are\n`child_agent`.\n"}], "role": "user"},
+      "tools": [{"functionDeclarations": [{"description": "Transfer the question to
+      another agent.\n\n  This tool hands off control to another agent when it''s
+      more suitable to\n  answer the user''s question according to the agent''s description.\n\n  Note:\n    For
+      most use cases, you should use TransferToAgentTool instead of this\n    function
+      directly. TransferToAgentTool provides additional enum constraints\n    that
+      prevent LLMs from hallucinating invalid agent names.\n\n  Args:\n    agent_name:
+      the agent name to transfer to.\n  ", "name": "transfer_to_agent", "parameters":
+      {"properties": {"agent_name": {"enum": ["child_agent"], "type": "STRING"}},
+      "required": ["agent_name"], "type": "OBJECT"}}]}], "generationConfig": {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"parts": [{"functionCall": {"name": "transfer_to_agent",
+        "args": {"agent_name": "child_agent"}, "id": "uaz9m05o"}, "thoughtSignature":
+        "ErQDCrEDARFNMg91AUx+a4dXn1mYDe7Xkm1Zb6/nGSEipo5QgAv+tQ4wl7zFPBpNE8rE0qfqC47IMGKpmU3kcL4FXzs4pHvS/fZ2oYF4oUXDT9tvecscLpL1Eq9YaDSmqoYM9dn/lUKkr1OtrTL84zT2X6y0jCHtIlaW6ULQTDFc0XuL1uF9ldm6ykHugOnqKFgVy9Gjz+aQDmYp9SCOjPoxkmtoxYITi5C5qXo4TFMoO9WRq7LNHM9goeLReEenihebJ+o27CK1rsSokM17w3iNBDBhm1TnGQZkI9t6dpVUBvmqW3OpcWurtu5mrhx9+pfjo/wHIPVEqslB4InIkt9y/A0AR9orqq9xexy1KPUYXEn6b1BiXrKialuCfsPfdGhQPhdLSuzMsaBF2iZL5g61MPbWTeQBtMVl04zXODOVMlyBzqElZ6PxzQZ/2Owbwy7BVH2EtTGYGwJDfuNO4hpRopbeIAr13vMUYB2ULioJAv2CCde2Y28NMimZPn6XOAcYX+4WnncRTjGTMyuNyLdUJHjg+p0+bLTUzLzmWcgagZ5DegQQEa8GJIdo30rGMnla7G7Ndw=="}],
+        "role": "model"}, "finishReason": "STOP", "index": 0, "finishMessage": "Model
+        generated function call(s)."}], "usageMetadata": {"promptTokenCount": 351,
+        "candidatesTokenCount": 22, "totalTokenCount": 467, "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 351}], "thoughtsTokenCount": 94, "serviceTier":
+        "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "-zFMaumMG8uW-8YP96euoAk"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:53:48 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Server-Timing:
+      - gfet4t7; dur=1173
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Gemini-Service-Tier:
+      - standard
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "What is the capital of France?"}], "role":
+      "user"}, {"parts": [{"text": "For context:"}, {"text": "[parent_agent] called
+      tool `transfer_to_agent` with parameters: {''agent_name'': ''child_agent''}"}],
+      "role": "user"}, {"parts": [{"text": "For context:"}, {"text": "[parent_agent]
+      `transfer_to_agent` tool returned result: {''result'': None}"}], "role": "user"}],
+      "systemInstruction": {"parts": [{"text": "Answer the user''s geography question
+      in one word.\n\nYou are an agent. Your internal name is \"child_agent\".\n\n\nYou
+      have a list of other agents to transfer to:\n\n\nAgent name: parent_agent\nAgent
+      description: \n\n\nIf you are the best to answer the question according to your
+      description,\nyou can answer it.\n\nIf another agent is better for answering
+      the question according to its\ndescription, call `transfer_to_agent` function
+      to transfer the question to that\nagent. When transferring, do not generate
+      any text other than the function\ncall.\n\n**NOTE**: the only available agents
+      for `transfer_to_agent` function are\n`parent_agent`.\n\nIf neither you nor
+      the other agents are best for the question, transfer to your parent agent parent_agent.\n"}],
+      "role": "user"}, "tools": [{"functionDeclarations": [{"description": "Transfer
+      the question to another agent.\n\n  This tool hands off control to another agent
+      when it''s more suitable to\n  answer the user''s question according to the
+      agent''s description.\n\n  Note:\n    For most use cases, you should use TransferToAgentTool
+      instead of this\n    function directly. TransferToAgentTool provides additional
+      enum constraints\n    that prevent LLMs from hallucinating invalid agent names.\n\n  Args:\n    agent_name:
+      the agent name to transfer to.\n  ", "name": "transfer_to_agent", "parameters":
+      {"properties": {"agent_name": {"enum": ["parent_agent"], "type": "STRING"}},
+      "required": ["agent_name"], "type": "OBJECT"}}]}], "generationConfig": {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"parts": [{"text": "Paris", "thoughtSignature":
+        "ErsCCrgCARFNMg8zAnfj38x8qKbqlEF8crouW+nuuYOQySWdXr2yFwCc1Qz7hR4jyQXopAVESzvLF4BHsr/FNua4PyeOh+RrAXL+E0M03WCHGgluNVZVgcqfJyr8yvS8dMqIwfQG4Rg8DG3dk9CwcNHXh+JKlCmXUjqW2MrL5ojZEg/WufXDr/Pgec2KADy83ePseYWJGPDt0Xz2RedO4eejdHqss1XU7CCzQ3vTwfGS/zZwC9OwOLKMmEPML0vF+ZyiUaIq0+yimO3U+2tov1KncU4SRLmirZ+t5CAsWOMcX7O6SxxFzPzJwqG2rL/SR8mSElw8fLs9xyjbvWzYRmMOju6TTqxHBXOxYfLTOqvMOaTyVWvL6iuRg51Jl22mER/JZEyyIKnN3ZAGN9w1xzjdsXnOJX2clTCkKlPQ"}],
+        "role": "model"}, "finishReason": "STOP", "index": 0}], "usageMetadata": {"promptTokenCount":
+        390, "candidatesTokenCount": 1, "totalTokenCount": 455, "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 390}], "thoughtsTokenCount": 64, "serviceTier":
+        "standard"}, "modelVersion": "gemini-3.5-flash", "responseId": "_DFMatq8OJKtjrEP0_27yQc"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:53:49 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Server-Timing:
+      - gfet4t7; dur=1039
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-Gemini-Service-Tier:
+      - standard
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "What is the capital of France?"}], "role":
+      "user"}], "systemInstruction": {"parts": [{"text": "You are a routing agent.
+      If the user asks a geography question (e.g. about a country''s capital), transfer
+      to the agent named ''child_agent'' using the transfer_to_agent tool. Otherwise,
+      answer the user directly.\n\nYou are an agent. Your internal name is \"parent_agent\".\n\n\nYou
+      have a list of other agents to transfer to:\n\n\nAgent name: child_agent\nAgent
+      description: \n\n\nIf you are the best to answer the question according to your
+      description,\nyou can answer it.\n\nIf another agent is better for answering
+      the question according to its\ndescription, call `transfer_to_agent` function
+      to transfer the question to that\nagent. When transferring, do not generate
+      any text other than the function\ncall.\n\n**NOTE**: the only available agents
+      for `transfer_to_agent` function are\n`child_agent`.\n"}], "role": "user"},
+      "tools": [{"functionDeclarations": [{"description": "Transfer the question to
+      another agent.\n\n  This tool hands off control to another agent when it''s
+      more suitable to\n  answer the user''s question according to the agent''s description.\n\n  Note:\n    For
+      most use cases, you should use TransferToAgentTool instead of this\n    function
+      directly. TransferToAgentTool provides additional enum constraints\n    that
+      prevent LLMs from hallucinating invalid agent names.\n\n  Args:\n    agent_name:
+      the agent name to transfer to.\n  ", "name": "transfer_to_agent", "parameters":
+      {"properties": {"agent_name": {"enum": ["child_agent"], "type": "STRING"}},
+      "required": ["agent_name"], "type": "OBJECT"}}]}], "labels": {"adk_agent_name":
+      "parent_agent"}, "generationConfig": {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://aiplatform.googleapis.com/v1beta1/publishers/google/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"role": "model", "parts": [{"functionCall":
+        {"name": "transfer_to_agent", "args": {"agent_name": "child_agent"}}, "thoughtSignature":
+        "AY89a19rgO2R29z+yf4X1g5j6NhniXjk81eedV6B5Vfyig/bBPUPUI913YYKHXo2mG4="}]},
+        "finishReason": "STOP"}], "usageMetadata": {"promptTokenCount": 325, "candidatesTokenCount":
+        22, "totalTokenCount": 347, "trafficType": "ON_DEMAND", "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 325}], "candidatesTokensDetails": [{"modality":
+        "TEXT", "tokenCount": 22}]}, "modelVersion": "gemini-3.5-flash", "createTime":
+        "2026-07-06T22:53:50.435375Z", "responseId": "_jFMaq_JGpK8odAP54aioAc"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:53:51 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "What is the capital of France?"}], "role":
+      "user"}, {"parts": [{"text": "For context:"}, {"text": "[parent_agent] called
+      tool `transfer_to_agent` with parameters: {''agent_name'': ''child_agent''}"}],
+      "role": "user"}, {"parts": [{"text": "For context:"}, {"text": "[parent_agent]
+      `transfer_to_agent` tool returned result: {''result'': None}"}], "role": "user"}],
+      "systemInstruction": {"parts": [{"text": "Answer the user''s geography question
+      in one word.\n\nYou are an agent. Your internal name is \"child_agent\".\n\n\nYou
+      have a list of other agents to transfer to:\n\n\nAgent name: parent_agent\nAgent
+      description: \n\n\nIf you are the best to answer the question according to your
+      description,\nyou can answer it.\n\nIf another agent is better for answering
+      the question according to its\ndescription, call `transfer_to_agent` function
+      to transfer the question to that\nagent. When transferring, do not generate
+      any text other than the function\ncall.\n\n**NOTE**: the only available agents
+      for `transfer_to_agent` function are\n`parent_agent`.\n\nIf neither you nor
+      the other agents are best for the question, transfer to your parent agent parent_agent.\n"}],
+      "role": "user"}, "tools": [{"functionDeclarations": [{"description": "Transfer
+      the question to another agent.\n\n  This tool hands off control to another agent
+      when it''s more suitable to\n  answer the user''s question according to the
+      agent''s description.\n\n  Note:\n    For most use cases, you should use TransferToAgentTool
+      instead of this\n    function directly. TransferToAgentTool provides additional
+      enum constraints\n    that prevent LLMs from hallucinating invalid agent names.\n\n  Args:\n    agent_name:
+      the agent name to transfer to.\n  ", "name": "transfer_to_agent", "parameters":
+      {"properties": {"agent_name": {"enum": ["parent_agent"], "type": "STRING"}},
+      "required": ["agent_name"], "type": "OBJECT"}}]}], "labels": {"adk_agent_name":
+      "child_agent"}, "generationConfig": {}}'
+    headers:
+      Content-Type:
+      - application/json
+      x-goog-api-key:
+      - XXXXXX
+    method: post
+    uri: https://aiplatform.googleapis.com/v1beta1/publishers/google/models/gemini-3.5-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"role": "model", "parts": [{"text": "Paris",
+        "thoughtSignature": "AY89a18i5SxSC55rcY/XSPvg36G2KjzJdk6/IwzOaqnXaDW2VsWdGbLKf78sQL/LssM="}]},
+        "finishReason": "STOP"}], "usageMetadata": {"promptTokenCount": 360, "candidatesTokenCount":
+        1, "totalTokenCount": 361, "trafficType": "ON_DEMAND", "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 360}], "candidatesTokensDetails": [{"modality":
+        "TEXT", "tokenCount": 1}]}, "modelVersion": "gemini-3.5-flash", "createTime":
+        "2026-07-06T22:53:51.784599Z", "responseId": "_zFMatfxL7nJ4_UPgpe-qA0"}'
+    headers:
+      Alt-Svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      Content-Type:
+      - application/json; charset=UTF-8
+      Date:
+      - Mon, 06 Jul 2026 22:53:52 GMT
+      Server:
+      - scaffolding on HTTPServer2
+      Transfer-Encoding:
+      - chunked
+      Vary:
+      - Origin
+      - X-Origin
+      - Referer
+      X-Content-Type-Options:
+      - nosniff
+      X-Frame-Options:
+      - SAMEORIGIN
+      X-XSS-Protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+version: 1

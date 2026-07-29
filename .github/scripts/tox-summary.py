@@ -25,6 +25,11 @@ GITHUB_SUMMARY = Path(os.environ.get("GITHUB_STEP_SUMMARY", TOX_DIR / "summary.m
 RESULTS_FILE_RE = re.compile(
     r"(?P<job_name>[a-zA-Z0-9_-]+)-(?P<job_num>\d+)-(?P<run_id>[a-zA-Z0-9]+)-(?P<job_id>[a-zA-Z0-9_-]+)-results.json"
 )
+ANSI_ESCAPE_RE = re.compile(r"\x1b\[[0-9;]*[a-zA-Z]")
+PYTEST_SUMMARY_RE = re.compile(r"=+ (?P<summary>.+?) in (?P<duration>[\d.]+)s(?: \([\d:]+\))? =+")
+PYTEST_COUNT_RE = re.compile(r"(\d+) (passed|failed|skipped|xfailed|xpassed|errors?|warnings?|deselected|rerun)")
+PYTEST_COUNT_NORMALIZE = {"error": "errors", "warning": "warnings"}
+COUNT_KEYS = ("passed", "failed", "xfailed", "xpassed", "errors", "warnings")
 
 GITHUB_SERVER_URL = os.environ.get("GITHUB_SERVER_URL", "https://github.com")
 GITHUB_REPOSITORY = os.environ.get("GITHUB_REPOSITORY", "newrelic/newrelic-python-agent")
@@ -32,8 +37,12 @@ GITHUB_REPOSITORY = os.environ.get("GITHUB_REPOSITORY", "newrelic/newrelic-pytho
 TABLE_HEADER = """
 # Tox Results Summary
 
-| Environment | Status | Duration (s) | Setup Duration (s) | Test Duration (s) | Runner |
-|-------------|--------|--------------|--------------------|-------------------|--------|
+| Total Passed | Total Failed | Total XFailed | Total XPassed | Total Errors | Total Warnings |
+|--------------|--------------|---------------|---------------|--------------|----------------|
+| {total_passed} | {total_failed} | {total_xfailed} | {total_xpassed} | {total_errors} | {total_warnings} |
+
+| Environment | Status | Duration (s) | Setup Duration (s) | Test Duration (s) | Runner | Passed | Failed | XFailed | XPassed | Errors | Warnings |
+|-------------|--------|--------------|--------------------|-------------------|--------|--------|--------|---------|---------|--------|----------|
 """
 TABLE_HEADER = dedent(TABLE_HEADER).strip()
 
@@ -67,12 +76,18 @@ def main():
 
     with GITHUB_SUMMARY.open("w") as output_fp:
         summary = summarize_results(results)
+        totals = {f"total_{key}": sum(r[key] for r in summary) for key in COUNT_KEYS}
         # Print table header
-        print(TABLE_HEADER, file=output_fp)
+        print(TABLE_HEADER.format(**totals), file=output_fp)
 
         for result in summary:
-            line = "| {env_name} | {status} | {duration} | {setup_duration} | {test_duration} | {runner} |".format(
-                **result
+            # Print "-" for counts we couldn't parse to distinguish from 0 counts
+            row = dict(result)
+            if not row["parsed"]:
+                for key in COUNT_KEYS:
+                    row[key] = "-"
+            line = "| {env_name} | {status} | {duration} | {setup_duration} | {test_duration} | {runner} | {passed} | {failed} | {xfailed} | {xpassed} | {errors} | {warnings} |".format(
+                **row
             )
             print(line, file=output_fp)
 
@@ -96,6 +111,9 @@ def summarize_results(results):
             test_duration += cmd.get("elapsed", 0)
         test_duration = f"{test_duration:.2f}" if test_duration >= 0 else "N/A"
 
+        # Get test counts from test run
+        counts = extract_pytest_counts(result)
+
         summary.append(
             {
                 "env_name": env,
@@ -103,11 +121,39 @@ def summarize_results(results):
                 "duration": duration,
                 "setup_duration": setup_duration,
                 "test_duration": test_duration,
+                "passed": counts.get("passed", 0),
+                "failed": counts.get("failed", 0),
+                "xfailed": counts.get("xfailed", 0),
+                "xpassed": counts.get("xpassed", 0),
+                "errors": counts.get("errors", 0),
+                "warnings": counts.get("warnings", 0),
                 "runner": runner,
+                "parsed": bool(counts),  # If counts is still empty, this failed to parse
             }
         )
 
     return sorted(summary, key=lambda result: (1 if "OK" in result["status"] else 0, result["env_name"]))
+
+
+def extract_pytest_counts(result):
+    # Trace through each tox command run backwards to find the pytest summary
+    for command_results in reversed(result.get("test", [])):
+        try:
+            raw_output = command_results.get("output", "")
+            # Remove ANSI color control characters
+            uncolored_output = ANSI_ESCAPE_RE.sub("", raw_output)
+            # Read backwards through the output since the summary is at the bottom
+            output = reversed(list(uncolored_output.splitlines()))
+            for line in output:
+                if match := PYTEST_SUMMARY_RE.match(line):
+                    return {
+                        PYTEST_COUNT_NORMALIZE.get(name, name): int(num)
+                        for num, name in PYTEST_COUNT_RE.findall(match.group("summary"))
+                    }
+        except Exception:
+            pass
+
+    return {}
 
 
 if __name__ == "__main__":

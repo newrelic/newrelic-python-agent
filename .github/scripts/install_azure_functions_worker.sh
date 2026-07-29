@@ -30,7 +30,11 @@ PYTHON="${BUILD_DIR}/.venv/bin/python"
 PIP="${BUILD_DIR}/.venv/bin/pip"
 PIPCOMPILE="${BUILD_DIR}/.venv/bin/pip-compile"
 INVOKE="${BUILD_DIR}/.venv/bin/invoke"
-${PIP} install pip-tools build invoke
+${PIP} install \
+    'pip-tools<7.6;python_version<="3.10"' \
+    'pip-tools;python_version>="3.11"' \
+    build \
+    invoke
 
 # Install proto build dependencies
 $( cd ${BUILD_DIR}/workers/ && ${PIPCOMPILE} -o ${BUILD_DIR}/requirements.txt )

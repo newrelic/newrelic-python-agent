@@ -80,7 +80,7 @@ class GenericNodeMixin:
     def _span_event_partial_granularity_reduced(
         self, settings, base_attrs=None, parent_guid=None, attr_class=dict, ct_exit_spans=None, parent_span_link_events=None
     ):
-        base_attrs, attr_class, span_link_events, span_event_events = self.span_event(
+        base_attrs, attr_class, span_link_events, _ = self.span_event(
             settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class
         )
         span_link_events = span_link_events or []
@@ -137,7 +137,7 @@ class GenericNodeMixin:
         ct_exit_spans=None,
         parent_span_link_events=None,
     ):
-        base_attrs, attr_class, span_link_events, span_event_events = self.span_event(
+        base_attrs, attr_class, span_link_events, _ = self.span_event(
             settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class
         )
         span_link_events = span_link_events or []
@@ -203,7 +203,7 @@ class GenericNodeMixin:
         ct_exit_spans=None,
         parent_span_link_events=None,
     ):
-        base_attrs, attr_class, span_link_events, span_event_events = self.span_event(
+        base_attrs, attr_class, span_link_events, _ = self.span_event(
             settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class
         )
         span_link_events = span_link_events or []

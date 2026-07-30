@@ -17,6 +17,8 @@ from testing_support.db_settings import redis_settings
 from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
+from newrelic.common.package_version_utils import get_package_version_tuple
+
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
     "transaction_tracer.explain_threshold": 0.0,
@@ -34,17 +36,17 @@ collector_agent_registration = collector_agent_registration_fixture(
 
 DB_SETTINGS = redis_settings()[0]
 
+REDIS_PY_VERSION = get_package_version_tuple("redis")
+
 
 @pytest.fixture(scope="session")
 def connection_kwargs():
     kwargs = {"host": DB_SETTINGS["host"], "port": DB_SETTINGS["port"], "db": 0}
 
-    try:
+    if REDIS_PY_VERSION >= (8, 1, 0):
         from redis.maint_notifications import MaintNotificationsConfig
 
         kwargs["maint_notifications_config"] = MaintNotificationsConfig(enabled=False)
-    except ImportError:
-        pass
 
     return kwargs
 

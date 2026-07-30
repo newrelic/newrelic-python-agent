@@ -18,7 +18,7 @@ will not result in an error.
 """
 
 import pytest
-import redis
+from conftest import REDIS_PY_VERSION
 from testing_support.db_settings import redis_settings
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
@@ -28,7 +28,6 @@ from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
 
 DB_SETTINGS = redis_settings()[0]
-REDIS_PY_VERSION = get_package_version_tuple("redis")
 
 
 class FakeConnectionPool:

@@ -322,9 +322,11 @@ def test_distributed_tracing_partial_granularity(
                 assert span[0]["name"] != unexpected
 
         if expected_metrics:
-            metric = expected_metrics.pop(0)
-            assert metric[0] == "Supportability/<LANG>/PartialGranularity/NrIds/Dropped"
-            assert metric[1] == ct_exit_spans["dropped_ids"]
-        assert not expected_metrics  # assert all expected_metrics have been asserted
+            METRIC_NAME_TO_COUNT_MAPPING = {
+                "Supportability/<LANG>/PartialGranularity/NrIds/Dropped": "dropped_ids",
+                "Supportability/<LANG>/PartialGranularity/SpanLink/Dropped": "dropped_span_links",
+            }
+            for metric_name, metric_value in expected_metrics:
+                assert metric_value == ct_exit_spans[METRIC_NAME_TO_COUNT_MAPPING[metric_name]]
 
     _test()

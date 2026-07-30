@@ -290,7 +290,8 @@
     "tracer_info":"tracer_info_compact_too_many.json",
     "partial_granularity_type": "compact",
     "expected_metrics": [
-      ["Supportability/<LANG>/PartialGranularity/NrIds/Dropped", 6]
+      ["Supportability/<LANG>/PartialGranularity/NrIds/Dropped", 6],
+      ["Supportability/<LANG>/PartialGranularity/SpanLink/Dropped", 40]
     ],
     "expected_spans": [
       {

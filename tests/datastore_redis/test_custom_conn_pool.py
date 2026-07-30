@@ -114,8 +114,8 @@ def exercise_redis(client):
     background_task=True,
 )
 @background_task()
-def test_fake_conn_pool_enable_instance(command_name):
-    client = redis.StrictRedis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
+def test_fake_conn_pool_enable_instance(client, command_name):
+    client = client()
 
     # Get a real connection
 
@@ -140,8 +140,8 @@ def test_fake_conn_pool_enable_instance(command_name):
     background_task=True,
 )
 @background_task()
-def test_fake_conn_pool_disable_instance(command_name):
-    client = redis.StrictRedis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
+def test_fake_conn_pool_disable_instance(client, command_name):
+    client = client()
 
     # Get a real connection
 

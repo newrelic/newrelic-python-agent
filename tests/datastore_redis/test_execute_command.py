@@ -20,7 +20,6 @@ from testing_support.util import instance_hostname
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
-from newrelic.common.package_version_utils import get_package_version_tuple
 
 DB_SETTINGS = redis_settings()[0]
 
@@ -63,41 +62,14 @@ def exercise_redis_single_arg(client):
 
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
-    "test_execute_command:test_strict_redis_execute_command_two_args_enable",
-    scoped_metrics=_base_scoped_metrics,
-    rollup_metrics=_enable_rollup_metrics,
-    background_task=True,
-)
-@background_task()
-def test_strict_redis_execute_command_two_args_enable():
-    r = redis.StrictRedis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
-    exercise_redis_multi_args(r)
-
-
-@override_application_settings(_disable_instance_settings)
-@validate_transaction_metrics(
-    "test_execute_command:test_strict_redis_execute_command_two_args_disabled",
-    scoped_metrics=_base_scoped_metrics,
-    rollup_metrics=_disable_rollup_metrics,
-    background_task=True,
-)
-@background_task()
-def test_strict_redis_execute_command_two_args_disabled():
-    r = redis.StrictRedis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
-    exercise_redis_multi_args(r)
-
-
-@override_application_settings(_enable_instance_settings)
-@validate_transaction_metrics(
     "test_execute_command:test_redis_execute_command_two_args_enable",
     scoped_metrics=_base_scoped_metrics,
     rollup_metrics=_enable_rollup_metrics,
     background_task=True,
 )
 @background_task()
-def test_redis_execute_command_two_args_enable():
-    r = redis.Redis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
-    exercise_redis_multi_args(r)
+def test_redis_execute_command_two_args_enable(client):
+    exercise_redis_multi_args(client())
 
 
 @override_application_settings(_disable_instance_settings)
@@ -108,35 +80,8 @@ def test_redis_execute_command_two_args_enable():
     background_task=True,
 )
 @background_task()
-def test_redis_execute_command_two_args_disabled():
-    r = redis.Redis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
-    exercise_redis_multi_args(r)
-
-
-@override_application_settings(_enable_instance_settings)
-@validate_transaction_metrics(
-    "test_execute_command:test_strict_redis_execute_command_as_one_arg_enable",
-    scoped_metrics=_base_scoped_metrics,
-    rollup_metrics=_enable_rollup_metrics,
-    background_task=True,
-)
-@background_task()
-def test_strict_redis_execute_command_as_one_arg_enable():
-    r = redis.StrictRedis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
-    exercise_redis_single_arg(r)
-
-
-@override_application_settings(_disable_instance_settings)
-@validate_transaction_metrics(
-    "test_execute_command:test_strict_redis_execute_command_as_one_arg_disabled",
-    scoped_metrics=_base_scoped_metrics,
-    rollup_metrics=_disable_rollup_metrics,
-    background_task=True,
-)
-@background_task()
-def test_strict_redis_execute_command_as_one_arg_disabled():
-    r = redis.StrictRedis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
-    exercise_redis_single_arg(r)
+def test_redis_execute_command_two_args_disabled(client):
+    exercise_redis_multi_args(client())
 
 
 @override_application_settings(_enable_instance_settings)
@@ -147,9 +92,8 @@ def test_strict_redis_execute_command_as_one_arg_disabled():
     background_task=True,
 )
 @background_task()
-def test_redis_execute_command_as_one_arg_enable():
-    r = redis.Redis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
-    exercise_redis_single_arg(r)
+def test_redis_execute_command_as_one_arg_enable(client):
+    exercise_redis_single_arg(client())
 
 
 @override_application_settings(_disable_instance_settings)
@@ -160,6 +104,5 @@ def test_redis_execute_command_as_one_arg_enable():
     background_task=True,
 )
 @background_task()
-def test_redis_execute_command_as_one_arg_disabled():
-    r = redis.Redis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
-    exercise_redis_single_arg(r)
+def test_redis_execute_command_as_one_arg_disabled(client):
+    exercise_redis_single_arg(client())

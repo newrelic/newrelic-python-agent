@@ -20,7 +20,6 @@ from testing_support.util import instance_hostname
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
-from newrelic.common.package_version_utils import get_package_version_tuple
 
 DB_MULTIPLE_SETTINGS = redis_settings()
 

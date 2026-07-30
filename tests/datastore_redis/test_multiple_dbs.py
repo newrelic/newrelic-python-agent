@@ -20,10 +20,8 @@ from testing_support.util import instance_hostname
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
-from newrelic.common.package_version_utils import get_package_version_tuple
 
 DB_MULTIPLE_SETTINGS = redis_settings()
-REDIS_PY_VERSION = get_package_version_tuple("redis")
 
 
 # Settings
@@ -37,26 +35,20 @@ _base_scoped_metrics = [
     ("Datastore/operation/Redis/get", 1),
     ("Datastore/operation/Redis/set", 1),
     ("Datastore/operation/Redis/client_list", 1),
+    ("Datastore/operation/Redis/client_setinfo", 2),
 ]
-# client_setinfo was introduced in v5.0.0 and assigns info displayed in client_list output
-if REDIS_PY_VERSION >= (5, 0):
-    _base_scoped_metrics.append(("Datastore/operation/Redis/client_setinfo", 2))
 
-datastore_all_metric_count = 5 if REDIS_PY_VERSION >= (5, 0) else 3
 
 _base_rollup_metrics = [
-    ("Datastore/all", datastore_all_metric_count),
-    ("Datastore/allOther", datastore_all_metric_count),
-    ("Datastore/Redis/all", datastore_all_metric_count),
-    ("Datastore/Redis/allOther", datastore_all_metric_count),
+    ("Datastore/all", 5),
+    ("Datastore/allOther", 5),
+    ("Datastore/Redis/all", 5),
+    ("Datastore/Redis/allOther", 5),
     ("Datastore/operation/Redis/get", 1),
     ("Datastore/operation/Redis/set", 1),
     ("Datastore/operation/Redis/client_list", 1),
+    ("Datastore/operation/Redis/client_setinfo", 2),
 ]
-
-# client_setinfo was introduced in v5.0.0 and assigns info displayed in client_list output
-if REDIS_PY_VERSION >= (5, 0):
-    _base_rollup_metrics.append(("Datastore/operation/Redis/client_setinfo", 2))
 
 
 if len(DB_MULTIPLE_SETTINGS) > 1:
@@ -73,7 +65,7 @@ if len(DB_MULTIPLE_SETTINGS) > 1:
     instance_metric_name_2 = f"Datastore/instance/Redis/{host_2}/{port_2}"
 
     instance_metric_name_1_count = 2
-    instance_metric_name_2_count = 3 if REDIS_PY_VERSION >= (5, 0) else 1
+    instance_metric_name_2_count = 3
 
     _enable_rollup_metrics = _base_rollup_metrics.extend(
         [(instance_metric_name_1, instance_metric_name_1_count), (instance_metric_name_2, instance_metric_name_2_count)]

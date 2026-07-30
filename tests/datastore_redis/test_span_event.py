@@ -42,9 +42,7 @@ _disable_instance_settings = {
 }
 
 
-def _exercise_db():
-    client = redis.StrictRedis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=DATABASE_NUMBER)
-
+def _exercise_db(client):
     client.set("key", "value")
     client.get("key")
 
@@ -56,7 +54,7 @@ def _exercise_db():
 
 @pytest.mark.parametrize("db_instance_enabled", (True, False))
 @pytest.mark.parametrize("instance_enabled", (True, False))
-def test_span_events(instance_enabled, db_instance_enabled):
+def test_span_events(instance_enabled, db_instance_enabled, client):
     guid = "dbb533c53b749e0b"
     priority = 0.5
 
@@ -123,6 +121,6 @@ def test_span_events(instance_enabled, db_instance_enabled):
         txn.guid = guid
         txn._priority = priority
         txn._sampled = True
-        _exercise_db()
+        _exercise_db(client())
 
     _test()

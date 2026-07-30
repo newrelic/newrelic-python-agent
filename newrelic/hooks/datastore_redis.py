@@ -25,6 +25,7 @@ _redis_client_sync_methods = {
     "auth",
     "bgrewriteaof",
     "bitfield",
+    "blmovem",
     "blmpop",
     "bzmpop",
     "client",
@@ -41,6 +42,9 @@ _redis_client_sync_methods = {
     "hexpiretime",
     "hgetdel",
     "hgetex",
+    "himport_discard_all_internal",
+    "himport_discard_internal",
+    "himport_prepare_internal",
     "hotkeys_get",
     "hotkeys_reset",
     "hotkeys_start",
@@ -56,18 +60,24 @@ _redis_client_sync_methods = {
     "latency_graph",
     "latency_histogram",
     "lcs",
+    "lmovem",
     "lpop",
     "lpos",
     "memory_doctor",
     "memory_help",
     "monitor",
+    "nrange",
+    "nrevrange",
     "pexpiretime",
     "psetex",
     "psync",
     "pubsub",
+    "querylabels",
+    "read",
     "renamenx",
     "rpop",
     "script_debug",
+    "sdiffcard",
     "sentinel_ckquorum",
     "sentinel_failover",
     "sentinel_flushconfig",
@@ -85,6 +95,7 @@ _redis_client_sync_methods = {
     "sort",
     "spop",
     "srandmember",
+    "sunioncard",
     "unwatch",
     "vadd",
     "vcard",
@@ -126,6 +137,7 @@ _redis_client_async_methods = {
     "aggregate",
     "aliasadd",
     "aliasdel",
+    "aliaslist",
     "aliasupdate",
     "alter_schema_add",
     "alter",
@@ -553,17 +565,22 @@ def _instance_info(kwargs):
     return (host, port_path_or_id, db)
 
 
-def _wrap_Redis_method_wrapper_(module, instance_class_name, operation):
-    name = f"{instance_class_name}.{operation}"
-    if operation in _redis_client_gen_methods:
+def _wrap_Redis_method_wrapper_(module, instance_class_name, method_name):
+    name = f"{instance_class_name}.{method_name}"
+    if method_name in _redis_client_gen_methods:
         async_wrapper = generator_wrapper
     else:
         async_wrapper = None
 
+    # For methods with a internal helper, the internal method is wrapped but
+    # we need to remove that suffix before reporting it to match the API the
+    # user actually called.
+    operation = method_name.removesuffix("_internal")
+
     wrap_datastore_trace(module, name, product="Redis", target=None, operation=operation, async_wrapper=async_wrapper)
 
 
-def _wrap_asyncio_Redis_method_wrapper(module, instance_class_name, operation):
+def _wrap_asyncio_Redis_method_wrapper(module, instance_class_name, method_name):
     def _nr_wrapper_asyncio_Redis_method_(wrapped, instance, args, kwargs):
         from redis.asyncio.client import Pipeline
 
@@ -575,11 +592,16 @@ def _wrap_asyncio_Redis_method_wrapper(module, instance_class_name, operation):
             wrapped, product="Redis", target=None, operation=operation, async_wrapper=async_wrapper
         )(*args, **kwargs)
 
-    name = f"{instance_class_name}.{operation}"
-    if operation in _redis_client_gen_methods:
+    name = f"{instance_class_name}.{method_name}"
+    if method_name in _redis_client_gen_methods:
         async_wrapper = async_generator_wrapper
     else:
         async_wrapper = coroutine_wrapper
+
+    # For methods with a internal helper, the internal method is wrapped but
+    # we need to remove that suffix before reporting it to match the API the
+    # user actually called.
+    operation = method_name.removesuffix("_internal")
 
     wrap_function_wrapper(module, name, _nr_wrapper_asyncio_Redis_method_)
 

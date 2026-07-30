@@ -18,9 +18,6 @@ from testing_support.db_settings import redis_settings
 
 DB_SETTINGS = redis_settings()[0]
 
-redis_client = redis.Redis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
-strict_redis_client = redis.StrictRedis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
-
 
 IGNORED_METHODS = {
     "MODULE_CALLBACKS",
@@ -67,6 +64,7 @@ IGNORED_METHODS = {
     "get_property",
     "get_relation",
     "get_retry",
+    "himport_registry",
     "index_name",
     "keyspace_notifications",
     "labels",
@@ -98,7 +96,6 @@ REDIS_MODULES = {"bf", "cf", "cms", "ft", "graph", "json", "tdigest", "topk", "t
 IGNORED_METHODS |= REDIS_MODULES
 
 
-@pytest.mark.parametrize("client", (redis_client, strict_redis_client))
 def test_uninstrumented_methods(client):
     methods = {m for m in dir(client) if not m[0] == "_"}
     is_wrapped = lambda m: hasattr(getattr(client, m), "__wrapped__")

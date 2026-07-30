@@ -13,14 +13,13 @@
 # limitations under the License.
 
 import pytest
-from conftest import get_openai_version
+from conftest import OPENAI_VERSION
 from testing_support.fixtures import reset_core_stats_engine
 from testing_support.ml_testing_utils import set_trace_info
 from testing_support.validators.validate_custom_event import validate_custom_event_count
 
 from newrelic.api.background_task import background_task
 
-OPENAI_VERSION = get_openai_version()
 SKIP_IF_NO_OPENAI_EMBEDDING_STREAMING_SUPPORT = pytest.mark.skipif(
     OPENAI_VERSION < (1, 8), reason="OpenAI does not support embedding streaming until v1.8"
 )
@@ -63,10 +62,10 @@ def test_openai_embedding_async(loop, set_trace_info, async_openai_stream_client
 
 
 @pytest.fixture
-def sync_openai_stream_client(sync_openai_client, openai_version):
+def sync_openai_stream_client(sync_openai_client):
     return sync_openai_client.with_streaming_response
 
 
 @pytest.fixture
-def async_openai_stream_client(async_openai_client, openai_version):
+def async_openai_stream_client(async_openai_client):
     return async_openai_client.with_streaming_response

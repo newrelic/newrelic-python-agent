@@ -1215,11 +1215,13 @@ class StatsEngine:
                         trace_flags=TraceFlags(0x1 if attrs.pop("sampled") else 0x0),
                         trace_state=TraceState(),
                     )
+                    # timestamp in ms converted to ns
                     span = observe._instance._tracer.start_span(
-                        i_attrs["name"], attributes=attrs, start_time=attrs["timestamp"] * 10**6
+                        i_attrs["name"], attributes=attrs, start_time=int(attrs["timestamp"] * 10**6)
                     )
                     span._context = context
-                    span.end(end_time=int(attrs["timestamp"] * 10**6 + attrs["duration"] * 10**3))
+                    # timestamp in ms + duration in s converted to ns
+                    span.end(end_time=int(attrs["timestamp"] * 10**6 + attrs["duration"] * 10**9))
 
             if settings.infinite_tracing.enabled:
                 for event in transaction.span_protos(settings):

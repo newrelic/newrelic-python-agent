@@ -91,8 +91,31 @@ def tracer_info_standard():
                     guid=span["name"],
                     agent_attributes=agent_attrs,
                     user_attributes=span.get("user_attrs", {}),
-                    span_link_events=[[{"linkedSpanId": link["linkedSpanId"], "linkedTraceId": link["linkedTraceId"], "id": span["name"], "trace.id": 0xabcde123456789, "timestamp": span["timestamp"], "type": "SpanLink"}, {}, {}] for link in span.get("links", [])],
-                    span_event_events=[{"name": event["name"], "span.id": span["name"], "trace.id": 0xabcde123456789, "timestamp": span["timestamp"], "type": "SpanEvent"} for event in span.get("events", [])],
+                    span_link_events=[
+                        [
+                            {
+                                "linkedSpanId": link["linkedSpanId"],
+                                "linkedTraceId": link["linkedTraceId"],
+                                "id": span["name"],
+                                "trace.id": 0xABCDE123456789,
+                                "timestamp": span["timestamp"],
+                                "type": "SpanLink",
+                            },
+                            {},
+                            {},
+                        ]
+                        for link in span.get("links", [])
+                    ],
+                    span_event_events=[
+                        {
+                            "name": event["name"],
+                            "span.id": span["name"],
+                            "trace.id": 0xABCDE123456789,
+                            "timestamp": span["timestamp"],
+                            "type": "SpanEvent",
+                        }
+                        for event in span.get("events", [])
+                    ],
                 )
                 if "children" in span:
                     create_span_tree(node, span["children"])
@@ -111,8 +134,31 @@ def tracer_info_standard():
                     guid=span["name"],
                     agent_attributes={},
                     user_attributes={},
-                    span_link_events=[[{"linkedSpanId": link["linkedSpanId"], "linkedTraceId": link["linkedTraceId"], "id": span["name"], "trace.id": 0xabcde123456789, "timestamp": span["timestamp"], "type": "SpanLink"}, {}, {}] for link in span.get("links", [])],
-                    span_event_events=[{"name": event["name"], "span.id": span["name"], "trace.id": 0xabcde123456789, "timestamp": span["timestamp"], "type": "SpanEvent"} for event in span.get("events", [])],
+                    span_link_events=[
+                        [
+                            {
+                                "linkedSpanId": link["linkedSpanId"],
+                                "linkedTraceId": link["linkedTraceId"],
+                                "id": span["name"],
+                                "trace.id": 0xABCDE123456789,
+                                "timestamp": span["timestamp"],
+                                "type": "SpanLink",
+                            },
+                            {},
+                            {},
+                        ]
+                        for link in span.get("links", [])
+                    ],
+                    span_event_events=[
+                        {
+                            "name": event["name"],
+                            "span.id": span["name"],
+                            "trace.id": 0xABCDE123456789,
+                            "timestamp": span["timestamp"],
+                            "type": "SpanEvent",
+                        }
+                        for event in span.get("events", [])
+                    ],
                 )
                 if "children" in span:
                     create_span_tree(node, span["children"])
@@ -131,8 +177,31 @@ def tracer_info_standard():
                     guid=span["name"],
                     agent_attributes={},
                     user_attributes={},
-                    span_link_events=[[{"linkedSpanId": link["linkedSpanId"], "linkedTraceId": link["linkedTraceId"], "id": span["name"], "trace.id": 0xabcde123456789, "timestamp": span["timestamp"], "type": "SpanLink"}, {}, {}] for link in span.get("links", [])],
-                    span_event_events=[{"name": event["name"], "span.id": span["name"], "trace.id": 0xabcde123456789, "timestamp": span["timestamp"], "type": "SpanEvent"} for event in span.get("events", [])],
+                    span_link_events=[
+                        [
+                            {
+                                "linkedSpanId": link["linkedSpanId"],
+                                "linkedTraceId": link["linkedTraceId"],
+                                "id": span["name"],
+                                "trace.id": 0xABCDE123456789,
+                                "timestamp": span["timestamp"],
+                                "type": "SpanLink",
+                            },
+                            {},
+                            {},
+                        ]
+                        for link in span.get("links", [])
+                    ],
+                    span_event_events=[
+                        {
+                            "name": event["name"],
+                            "span.id": span["name"],
+                            "trace.id": 0xABCDE123456789,
+                            "timestamp": span["timestamp"],
+                            "type": "SpanEvent",
+                        }
+                        for event in span.get("events", [])
+                    ],
                 )
                 if "children" in span:
                     create_span_tree(node, span["children"])
@@ -157,8 +226,31 @@ def tracer_info_standard():
         path="OtherTransaction/Function/main",
         trusted_parent_span=None,
         tracing_vendors=None,
-        span_link_events=[[{"linkedSpanId": link["linkedSpanId"], "linkedTraceId": link["linkedTraceId"], "id": root["name"], "trace.id": 0xabcde123456789, "timestamp": root["timestamp"], "type": "SpanLink"}, {}, {}] for link in root.get("links", [])],
-        span_event_events=[{"name": event["name"], "span.id": root["name"], "trace.id": 0xabcde123456789, "timestamp": root["timestamp"], "type": "SpanEvent"} for event in root.get("events", [])],
+        span_link_events=[
+            [
+                {
+                    "linkedSpanId": link["linkedSpanId"],
+                    "linkedTraceId": link["linkedTraceId"],
+                    "id": root["name"],
+                    "trace.id": 0xABCDE123456789,
+                    "timestamp": root["timestamp"],
+                    "type": "SpanLink",
+                },
+                {},
+                {},
+            ]
+            for link in root.get("links", [])
+        ],
+        span_event_events=[
+            {
+                "name": event["name"],
+                "span.id": root["name"],
+                "trace.id": 0xABCDE123456789,
+                "timestamp": root["timestamp"],
+                "type": "SpanEvent",
+            }
+            for event in root.get("events", [])
+        ],
     )
     create_span_tree(root_node, root["children"])
     return root_node
@@ -181,7 +273,21 @@ def tracer_info_too_many():
             guid=span["name"],
             agent_attributes={key: value for key, value in agent_attrs.items() if key != "http.url"},
             user_attributes=span.get("user_attrs", {}),
-            span_link_events=[[{"linkedSpanId": f"{span['starting_index'] + link}", "linkedTraceId": f"{0x1111111111 + span['starting_index']}", "id": span["name"], "trace.id": 0xabcde123456789, "timestamp": span["timestamp"], "type": "SpanLink"}, {}, {}] for link in range(span["num_links_per_child"])],
+            span_link_events=[
+                [
+                    {
+                        "linkedSpanId": f"{span['starting_index'] + link}",
+                        "linkedTraceId": f"{0x1111111111 + span['starting_index']}",
+                        "id": span["name"],
+                        "trace.id": 0xABCDE123456789,
+                        "timestamp": span["timestamp"],
+                        "type": "SpanLink",
+                    },
+                    {},
+                    {},
+                ]
+                for link in range(span["num_links_per_child"])
+            ],
             span_event_events=None,
         )
         return node

@@ -25,7 +25,6 @@ from newrelic.api.time_trace import current_trace
 from newrelic.common.package_version_utils import get_package_version_tuple
 
 DB_SETTINGS = redis_settings()[0]
-REDIS_PY_VERSION = get_package_version_tuple("redis")
 
 # Settings
 
@@ -224,7 +223,6 @@ def test_redis_generator_disable_instance():
     exercise_redis(client)
 
 
-@pytest.mark.skipif(REDIS_PY_VERSION < (4, 2), reason="Redis.asyncio was not added until v4.2")
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
     "test_generators:test_redis_async_generator_enable_instance",
@@ -238,7 +236,6 @@ def test_redis_async_generator_enable_instance(loop):
     loop.run_until_complete(exercise_redis_async(client))
 
 
-@pytest.mark.skipif(REDIS_PY_VERSION < (4, 2), reason="Redis.asyncio was not added until v4.2")
 @override_application_settings(_disable_instance_settings)
 @validate_transaction_metrics(
     "test_generators:test_redis_async_generator_disable_instance",

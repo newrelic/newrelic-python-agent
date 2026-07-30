@@ -25,7 +25,6 @@ from newrelic.api.time_trace import current_trace
 from newrelic.common.package_version_utils import get_package_version_tuple
 
 DB_SETTINGS = redis_settings()[0]
-REDIS_PY_VERSION = get_package_version_tuple("redis")
 
 # Settings
 
@@ -174,41 +173,14 @@ async def exercise_redis_async(client):
 
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
-    "test_generators:test_strict_redis_generator_enable_instance",
-    scoped_metrics=_base_scoped_metrics,
-    rollup_metrics=_enable_rollup_metrics,
-    background_task=True,
-)
-@background_task()
-def test_strict_redis_generator_enable_instance():
-    client = redis.StrictRedis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
-    exercise_redis(client)
-
-
-@override_application_settings(_disable_instance_settings)
-@validate_transaction_metrics(
-    "test_generators:test_strict_redis_generator_disable_instance",
-    scoped_metrics=_base_scoped_metrics,
-    rollup_metrics=_disable_rollup_metrics,
-    background_task=True,
-)
-@background_task()
-def test_strict_redis_generator_disable_instance():
-    client = redis.StrictRedis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
-    exercise_redis(client)
-
-
-@override_application_settings(_enable_instance_settings)
-@validate_transaction_metrics(
     "test_generators:test_redis_generator_enable_instance",
     scoped_metrics=_base_scoped_metrics,
     rollup_metrics=_enable_rollup_metrics,
     background_task=True,
 )
 @background_task()
-def test_redis_generator_enable_instance():
-    client = redis.Redis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
-    exercise_redis(client)
+def test_redis_generator_enable_instance(client):
+    exercise_redis(client())
 
 
 @override_application_settings(_disable_instance_settings)
@@ -219,12 +191,10 @@ def test_redis_generator_enable_instance():
     background_task=True,
 )
 @background_task()
-def test_redis_generator_disable_instance():
-    client = redis.Redis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
-    exercise_redis(client)
+def test_redis_generator_disable_instance(client):
+    exercise_redis(client())
 
 
-@pytest.mark.skipif(REDIS_PY_VERSION < (4, 2), reason="Redis.asyncio was not added until v4.2")
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
     "test_generators:test_redis_async_generator_enable_instance",
@@ -233,12 +203,10 @@ def test_redis_generator_disable_instance():
     background_task=True,
 )
 @background_task()
-def test_redis_async_generator_enable_instance(loop):
-    client = redis.asyncio.Redis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
-    loop.run_until_complete(exercise_redis_async(client))
+def test_redis_async_generator_enable_instance(loop, async_client):
+    loop.run_until_complete(exercise_redis_async(async_client()))
 
 
-@pytest.mark.skipif(REDIS_PY_VERSION < (4, 2), reason="Redis.asyncio was not added until v4.2")
 @override_application_settings(_disable_instance_settings)
 @validate_transaction_metrics(
     "test_generators:test_redis_async_generator_disable_instance",
@@ -247,6 +215,5 @@ def test_redis_async_generator_enable_instance(loop):
     background_task=True,
 )
 @background_task()
-def test_redis_async_generator_disable_instance(loop):
-    client = redis.asyncio.Redis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
-    loop.run_until_complete(exercise_redis_async(client))
+def test_redis_async_generator_disable_instance(loop, async_client):
+    loop.run_until_complete(exercise_redis_async(async_client()))

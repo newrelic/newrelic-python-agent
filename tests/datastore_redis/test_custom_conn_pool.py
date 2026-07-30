@@ -18,7 +18,7 @@ will not result in an error.
 """
 
 import pytest
-import redis
+from conftest import REDIS_PY_VERSION
 from testing_support.db_settings import redis_settings
 from testing_support.fixtures import override_application_settings
 from testing_support.util import instance_hostname
@@ -28,7 +28,6 @@ from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
 
 DB_SETTINGS = redis_settings()[0]
-REDIS_PY_VERSION = get_package_version_tuple("redis")
 
 
 class FakeConnectionPool:
@@ -65,37 +64,31 @@ _disable_instance_settings = {"datastore_tracer.instance_reporting.enabled": Fal
 
 # We don't record instance metrics when using redis blaster,
 # so we just check for base metrics.
-datastore_all_metric_count = 5 if REDIS_PY_VERSION >= (5, 0) else 3
 
 _base_scoped_metrics = [
     ("Datastore/operation/Redis/get", 1),
     ("Datastore/operation/Redis/set", 1),
     ("Datastore/operation/Redis/client_list", 1),
+    ("Datastore/operation/Redis/client_setinfo", 2),
 ]
-# client_setinfo was introduced in v5.0.0 and assigns info displayed in client_list output
-if REDIS_PY_VERSION >= (5, 0):
-    _base_scoped_metrics.append(("Datastore/operation/Redis/client_setinfo", 2))
 
 _base_rollup_metrics = [
-    ("Datastore/all", datastore_all_metric_count),
-    ("Datastore/allOther", datastore_all_metric_count),
-    ("Datastore/Redis/all", datastore_all_metric_count),
-    ("Datastore/Redis/allOther", datastore_all_metric_count),
+    ("Datastore/all", 5),
+    ("Datastore/allOther", 5),
+    ("Datastore/Redis/all", 5),
+    ("Datastore/Redis/allOther", 5),
     ("Datastore/operation/Redis/get", 1),
     ("Datastore/operation/Redis/set", 1),
     ("Datastore/operation/Redis/client_list", 1),
+    ("Datastore/operation/Redis/client_setinfo", 2),
 ]
-if REDIS_PY_VERSION >= (5, 0):
-    _base_rollup_metrics.append(("Datastore/operation/Redis/client_setinfo", 2))
 
 _host = instance_hostname(DB_SETTINGS["host"])
 _port = DB_SETTINGS["port"]
 
 _instance_metric_name = f"Datastore/instance/Redis/{_host}/{_port}"
 
-instance_metric_count = 5 if REDIS_PY_VERSION >= (5, 0) else 3
-
-_enable_rollup_metrics = _base_rollup_metrics.append((_instance_metric_name, instance_metric_count))
+_enable_rollup_metrics = _base_rollup_metrics.append((_instance_metric_name, 5))
 
 _disable_rollup_metrics = _base_rollup_metrics.append((_instance_metric_name, None))
 
@@ -120,8 +113,8 @@ def exercise_redis(client):
     background_task=True,
 )
 @background_task()
-def test_fake_conn_pool_enable_instance(command_name):
-    client = redis.StrictRedis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
+def test_fake_conn_pool_enable_instance(client, command_name):
+    client = client()
 
     # Get a real connection
 
@@ -146,8 +139,8 @@ def test_fake_conn_pool_enable_instance(command_name):
     background_task=True,
 )
 @background_task()
-def test_fake_conn_pool_disable_instance(command_name):
-    client = redis.StrictRedis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
+def test_fake_conn_pool_disable_instance(client, command_name):
+    client = client()
 
     # Get a real connection
 

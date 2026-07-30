@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM redis:7.0.12
+FROM redis:latest
 
 COPY <<"EOF" /etc/redis.conf
 bind 0.0.0.0

@@ -65,41 +65,14 @@ def exercise_redis(client):
 
 @override_application_settings(_enable_instance_settings)
 @validate_transaction_metrics(
-    "test_get_and_set:test_strict_redis_operation_enable_instance",
-    scoped_metrics=_base_scoped_metrics,
-    rollup_metrics=_enable_rollup_metrics,
-    background_task=True,
-)
-@background_task()
-def test_strict_redis_operation_enable_instance():
-    client = redis.StrictRedis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
-    exercise_redis(client)
-
-
-@override_application_settings(_disable_instance_settings)
-@validate_transaction_metrics(
-    "test_get_and_set:test_strict_redis_operation_disable_instance",
-    scoped_metrics=_base_scoped_metrics,
-    rollup_metrics=_disable_rollup_metrics,
-    background_task=True,
-)
-@background_task()
-def test_strict_redis_operation_disable_instance():
-    client = redis.StrictRedis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
-    exercise_redis(client)
-
-
-@override_application_settings(_enable_instance_settings)
-@validate_transaction_metrics(
     "test_get_and_set:test_redis_operation_enable_instance",
     scoped_metrics=_base_scoped_metrics,
     rollup_metrics=_enable_rollup_metrics,
     background_task=True,
 )
 @background_task()
-def test_redis_operation_enable_instance():
-    client = redis.Redis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
-    exercise_redis(client)
+def test_redis_operation_enable_instance(client):
+    exercise_redis(client())
 
 
 @override_application_settings(_disable_instance_settings)
@@ -110,6 +83,5 @@ def test_redis_operation_enable_instance():
     background_task=True,
 )
 @background_task()
-def test_redis_operation_disable_instance():
-    client = redis.Redis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
-    exercise_redis(client)
+def test_redis_operation_disable_instance(client):
+    exercise_redis(client())

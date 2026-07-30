@@ -102,6 +102,7 @@ IGNORED_METHODS = {
     "get_replicas",
     "get_retry",
     "get_special_nodes",
+    "himport_registry",
     "hscan_iter",
     "index_name",
     "keyslot",

@@ -1202,23 +1202,24 @@ class StatsEngine:
                 else:
                     base_event, span_links, span_event_events = event
                     i_attrs, a_attrs, u_attrs = base_event
-                attrs = {}
-                attrs.update(u_attrs)
-                attrs.update(a_attrs)
-                attrs.update(i_attrs)
-
-                context = SpanContext(
-                    trace_id=int(attrs.pop("traceId"), 16),
-                    span_id=int(attrs.pop("guid"), 16),
-                    is_remote=True if transaction.parent_span else False,
-                    trace_flags=TraceFlags(0x1 if attrs.pop("sampled") else 0x0),
-                    trace_state=TraceState(),
-                )
-                span = observe._instance._tracer.start_span(
-                    i_attrs["name"], attributes=attrs, start_time=attrs["timestamp"] * 10**6
-                )
-                span._context = context
-                span.end(end_time=int(attrs["timestamp"] * 10**6 + attrs["duration"] * 10**3))
+                # Skip spans that originally came from OTel.
+                if "otel.scope.name" not in a_attrs:
+                    attrs = {}
+                    attrs.update(u_attrs)
+                    attrs.update(a_attrs)
+                    attrs.update(i_attrs)
+                    context = SpanContext(
+                        trace_id=int(attrs.pop("traceId"), 16),
+                        span_id=int(attrs.pop("guid"), 16),
+                        is_remote=True if transaction.parent_span else False,
+                        trace_flags=TraceFlags(0x1 if attrs.pop("sampled") else 0x0),
+                        trace_state=TraceState(),
+                    )
+                    span = observe._instance._tracer.start_span(
+                        i_attrs["name"], attributes=attrs, start_time=attrs["timestamp"] * 10**6
+                    )
+                    span._context = context
+                    span.end(end_time=int(attrs["timestamp"] * 10**6 + attrs["duration"] * 10**3))
 
             if settings.infinite_tracing.enabled:
                 for event in transaction.span_protos(settings):

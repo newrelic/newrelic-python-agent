@@ -15,42 +15,31 @@
 import asyncio
 from uuid import uuid4
 
-import pytest
+from conftest import async_client as client
+from conftest import async_client_pool as client_pool
 from testing_support.db_settings import redis_settings
-from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.util import instance_hostname
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
-from newrelic.common.package_version_utils import get_package_version_tuple
 
 # Settings
 
 DB_SETTINGS = redis_settings()[0]
-REDIS_PY_VERSION = get_package_version_tuple("redis")
 
 # Metrics for publish test
 
-datastore_all_metric_count = 5 if REDIS_PY_VERSION >= (5, 0) else 3
-
-_base_scoped_metrics = [("Datastore/operation/Redis/publish", 3)]
-
-if REDIS_PY_VERSION >= (5, 0):
-    _base_scoped_metrics.append(("Datastore/operation/Redis/client_setinfo", 2))
+_base_scoped_metrics = [("Datastore/operation/Redis/publish", 3), ("Datastore/operation/Redis/client_setinfo", 2)]
 
 _base_rollup_metrics = [
-    ("Datastore/all", datastore_all_metric_count),
-    ("Datastore/allOther", datastore_all_metric_count),
-    ("Datastore/Redis/all", datastore_all_metric_count),
-    ("Datastore/Redis/allOther", datastore_all_metric_count),
+    ("Datastore/all", 5),
+    ("Datastore/allOther", 5),
+    ("Datastore/Redis/all", 5),
+    ("Datastore/Redis/allOther", 5),
     ("Datastore/operation/Redis/publish", 3),
-    (
-        f"Datastore/instance/Redis/{instance_hostname(DB_SETTINGS['host'])}/{DB_SETTINGS['port']}",
-        datastore_all_metric_count,
-    ),
+    (f"Datastore/instance/Redis/{instance_hostname(DB_SETTINGS['host'])}/{DB_SETTINGS['port']}", 5),
+    ("Datastore/operation/Redis/client_setinfo", 2),
 ]
-if REDIS_PY_VERSION >= (5, 0):
-    _base_rollup_metrics.append(("Datastore/operation/Redis/client_setinfo", 2))
 
 
 # Metrics for connection pool test
@@ -76,22 +65,6 @@ _base_pool_rollup_metrics = [
 # Tests
 
 
-@pytest.fixture
-def client(loop):
-    import redis.asyncio
-
-    return loop.run_until_complete(redis.asyncio.Redis(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0))
-
-
-@pytest.fixture
-def client_pool(loop):
-    import redis.asyncio
-
-    connection_pool = redis.asyncio.ConnectionPool(host=DB_SETTINGS["host"], port=DB_SETTINGS["port"], db=0)
-    return loop.run_until_complete(redis.asyncio.Redis(connection_pool=connection_pool))
-
-
-@pytest.mark.skipif(REDIS_PY_VERSION < (4, 2), reason="This functionality exists in Redis 4.2+")
 @validate_transaction_metrics(
     "test_asyncio:test_async_connection_pool",
     scoped_metrics=_base_pool_scoped_metrics,
@@ -100,6 +73,8 @@ def client_pool(loop):
 )
 @background_task()
 def test_async_connection_pool(client_pool, loop):
+    client_pool = client_pool()
+
     async def _test_async_pool(client_pool):
         await client_pool.set("key1", "value1")
         await client_pool.get("key1")
@@ -108,10 +83,11 @@ def test_async_connection_pool(client_pool, loop):
     loop.run_until_complete(_test_async_pool(client_pool))
 
 
-@pytest.mark.skipif(REDIS_PY_VERSION < (4, 2), reason="This functionality exists in Redis 4.2+")
 @validate_transaction_metrics("test_asyncio:test_async_pipeline", background_task=True)
 @background_task()
 def test_async_pipeline(client, loop):
+    client = client()
+
     async def _test_pipeline(client):
         async with client.pipeline(transaction=True) as pipe:
             await pipe.set("key1", "value1")
@@ -120,7 +96,6 @@ def test_async_pipeline(client, loop):
     loop.run_until_complete(_test_pipeline(client))
 
 
-@pytest.mark.skipif(REDIS_PY_VERSION < (4, 2), reason="This functionality exists in Redis 4.2+")
 @validate_transaction_metrics(
     "test_asyncio:test_async_pubsub",
     scoped_metrics=_base_scoped_metrics,
@@ -129,6 +104,8 @@ def test_async_pipeline(client, loop):
 )
 @background_task()
 def test_async_pubsub(client, loop):
+    client = client()
+
     messages_received = []
     message_received = asyncio.Event()
 

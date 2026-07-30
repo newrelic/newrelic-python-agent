@@ -78,7 +78,13 @@ class GenericNodeMixin:
         return base_span_event
 
     def _span_event_partial_granularity_reduced(
-        self, settings, base_attrs=None, parent_guid=None, attr_class=dict, ct_exit_spans=None, parent_span_link_events=None
+        self,
+        settings,
+        base_attrs=None,
+        parent_guid=None,
+        attr_class=dict,
+        ct_exit_spans=None,
+        parent_span_link_events=None,
     ):
         base_attrs, attr_class, span_link_events, _ = self.span_event(
             settings, base_attrs=base_attrs, parent_guid=parent_guid, attr_class=attr_class
@@ -347,7 +353,14 @@ class GenericNodeMixin:
             )
 
     def span_events_partial_granularity(
-        self, settings, span_event_method, base_attrs=None, parent_guid=None, attr_class=dict, ct_exit_spans=None, parent_span_link_events=None
+        self,
+        settings,
+        span_event_method,
+        base_attrs=None,
+        parent_guid=None,
+        attr_class=dict,
+        ct_exit_spans=None,
+        parent_span_link_events=None,
     ):
         span = span_event_method(
             self=self,
@@ -364,7 +377,9 @@ class GenericNodeMixin:
         if span:
             yield span
             # Compressed spans are always reparented onto the entry span.
-            if settings.distributed_tracing.sampler.partial_granularity.type != "compact" or span[0][0].get("nr.entryPoint"):
+            if settings.distributed_tracing.sampler.partial_granularity.type != "compact" or span[0][0].get(
+                "nr.entryPoint"
+            ):
                 parent_id = self.guid
                 next_parent_span_link_events = span[1]
         for child in self.children:

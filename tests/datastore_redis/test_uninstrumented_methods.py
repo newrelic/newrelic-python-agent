@@ -67,6 +67,7 @@ IGNORED_METHODS = {
     "get_property",
     "get_relation",
     "get_retry",
+    "himport_registry",
     "index_name",
     "keyspace_notifications",
     "labels",

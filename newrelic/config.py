@@ -4481,6 +4481,16 @@ def _process_module_builtin_defaults():
         "opentelemetry.instrumentation.pika.utils", "newrelic.hooks.hybridagent_opentelemetry", "instrument_pika_utils"
     )
 
+    _process_module_definition(
+        "ldclient.config", "newrelic.hooks.observability_ldclient", "instrument_ldclient_config"
+    )
+    _process_module_definition(
+        "ldclient.client", "newrelic.hooks.observability_ldclient", "instrument_ldclient_client"
+    )
+    _process_module_definition(
+        "ldobserve.__init__", "newrelic.hooks.observability_ldclient", "instrument_ldobserve___init__"
+    )
+
 
 def _process_module_entry_points():
     from importlib.metadata import entry_points

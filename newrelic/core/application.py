@@ -49,7 +49,7 @@ from newrelic.samplers.data_sampler import DataSampler
 
 _logger = logging.getLogger(__name__)
 
-MAX_PACKAGE_CAPTURE_TIME_PER_SLOW_HARVEST = 0.5
+MAX_PACKAGE_CAPTURE_TIME_PER_FAST_HARVEST = 0.5
 
 
 class Application:
@@ -1498,7 +1498,7 @@ class Application:
                         start = time.time()
                         while package := next(self.plugins, None):
                             package_list.append(package)
-                            if (time.time() - start) > MAX_PACKAGE_CAPTURE_TIME_PER_SLOW_HARVEST:
+                            if (time.time() - start) > MAX_PACKAGE_CAPTURE_TIME_PER_FAST_HARVEST:
                                 break
                         if package_list:
                             self._active_session.send_loaded_modules(package_list)

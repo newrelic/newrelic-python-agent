@@ -4530,6 +4530,16 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "ldclient.config", "newrelic.hooks.observability_ldclient", "instrument_ldclient_config"
+    )
+    _process_module_definition(
+        "ldclient.client", "newrelic.hooks.observability_ldclient", "instrument_ldclient_client"
+    )
+    _process_module_definition(
+        "ldobserve.__init__", "newrelic.hooks.observability_ldclient", "instrument_ldobserve___init__"
+    )
+
+    _process_module_definition(
         "azure.cosmos.cosmos_client", "newrelic.hooks.datastore_azurecosmos", "instrument_cosmos_client"
     )
 

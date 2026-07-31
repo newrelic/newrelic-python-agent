@@ -49,7 +49,7 @@ from newrelic.samplers.data_sampler import DataSampler
 
 _logger = logging.getLogger(__name__)
 
-MAX_PACKAGE_CAPTURE_TIME_PER_SLOW_HARVEST = 3.0
+MAX_PACKAGE_CAPTURE_TIME_PER_SLOW_HARVEST = 1.0
 
 
 class Application:
@@ -1282,14 +1282,6 @@ class Application:
                                 data_sampler.name,
                             )
 
-                    # Send environment plugin.
-                    if self.configuration and self.configuration.package_reporting.enabled:
-                        start = time.time()
-                        while package := next(self.plugins, False):
-                            self._active_session.send_loaded_modules([package])
-                            if (time.time() - start) < MAX_PACKAGE_CAPTURE_TIME_PER_SLOW_HARVEST:
-                                break
-
                     # Add a metric we can use to track how many harvest
                     # periods have occurred.
 
@@ -1498,6 +1490,18 @@ class Application:
                             _logger.debug("Sending error data for harvest of %r.", self._app_name)
 
                             self._active_session.send_errors(error_data)
+
+                    # Send environment plugin.
+
+                    if configuration and configuration.package_reporting.enabled:
+                        package_list = []
+                        start = time.time()
+                        while package := next(self.plugins, None):
+                            package_list.append(package)
+                            if (time.time() - start) > MAX_PACKAGE_CAPTURE_TIME_PER_SLOW_HARVEST:
+                                break
+                        if package_list:
+                            self._active_session.send_loaded_modules(package_list)
 
                     if not flexible:
                         if configuration.collect_traces:
@@ -1755,12 +1759,11 @@ class Application:
         # as shutdown.
 
         if restart:
-            # Reset package/module generator
-            self.plugins = plugins()
-
             self._agent_restart += 1
             self.activate_session()
-            self.plugins = plugins()  # re-initialize the generator
+
+            # Re-initialize the generator upon restart
+            self.plugins = plugins()
 
         else:
             self._agent_shutdown = True

@@ -331,14 +331,14 @@ class GenericNodeMixin:
     def span_event(self, settings, base_attrs=None, parent_guid=None, attr_class=dict):
         return base_attrs, attr_class, None, None
 
-    def _reparent_span_link_events(self, span_link_events, new_guid, target_span_link_events, ct_exit_spans):
-        # target_span_link_events is None when there's no surviving ancestor to reparent onto
+    def _reparent_span_link_events(self, span_link_events, new_guid, parent_span_link_events, ct_exit_spans):
+        # parent_span_link_events is None when there's no surviving ancestor to reparent onto
         # (only possible for the root/entry span, which is never dropped).
-        if not span_link_events or target_span_link_events is None:
+        if not span_link_events or parent_span_link_events is None:
             return
-        available = attribute.MAX_NUM_SPAN_LINK_EVENTS - len(target_span_link_events)
+        available = attribute.MAX_NUM_SPAN_LINK_EVENTS - len(parent_span_link_events)
         for i_attrs, u_attrs, a_attrs in span_link_events[:available]:
-            target_span_link_events.append([{**i_attrs, "id": new_guid}, u_attrs, a_attrs])
+            parent_span_link_events.append([{**i_attrs, "id": new_guid}, u_attrs, a_attrs])
         if len(span_link_events) > available:
             ct_exit_spans["dropped_span_links"] += len(span_link_events) - available
 

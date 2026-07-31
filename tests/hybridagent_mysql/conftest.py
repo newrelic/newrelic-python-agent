@@ -42,3 +42,18 @@ collector_agent_registration = collector_agent_registration_fixture(
 @pytest.fixture(scope="session")
 def table_name():
     return f"datastore_mysql_{os.getpid()}"
+
+
+@pytest.fixture(autouse=True, params=(False, True), ids=("OldAttributes", "NewAttributes"))
+def semantic_convention_version(request, monkeypatch):
+    from opentelemetry.instrumentation._semconv import _OpenTelemetrySemanticConventionStability
+
+    if request.param:
+        monkeypatch.setenv("OTEL_SEMCONV_STABILITY_OPT_IN", "database")
+    else:
+        monkeypatch.delenv("OTEL_SEMCONV_STABILITY_OPT_IN", raising=False)
+
+    # We need to manually re-initialize the Semantic Conventions of OpenTelemetry
+    # to change the attribute names it outputs for testing purposes.
+    _OpenTelemetrySemanticConventionStability._initialized = False
+    _OpenTelemetrySemanticConventionStability._initialize()

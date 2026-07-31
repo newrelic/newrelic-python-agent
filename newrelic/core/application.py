@@ -49,7 +49,7 @@ from newrelic.samplers.data_sampler import DataSampler
 
 _logger = logging.getLogger(__name__)
 
-MAX_PACKAGE_CAPTURE_TIME_PER_SLOW_HARVEST = 1.0
+MAX_PACKAGE_CAPTURE_TIME_PER_SLOW_HARVEST = 0.5
 
 
 class Application:

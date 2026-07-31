@@ -1375,11 +1375,11 @@ def wrap_StructuredTool_invoke(wrapped, instance, args, kwargs):
 
     metadata = bind_args(wrapped, args, kwargs).get("config", {}).get("metadata", {})
     # Delete the reference after grabbing it to avoid it ending up in LangChain attributes
-    trace = metadata.pop("_nr_trace", None)
-    if not trace:
+    trace_cache_id = metadata.pop("_nr_trace_id", None)
+    if not trace_cache_id:
         return wrapped(*args, **kwargs)
 
-    with ContextOf(trace=trace):
+    with ContextOf(trace_cache_id=trace_cache_id):
         return wrapped(*args, **kwargs)
 
 
@@ -1391,12 +1391,12 @@ async def wrap_StructuredTool_ainvoke(wrapped, instance, args, kwargs):
         return await wrapped(*args, **kwargs)
 
     metadata = bind_args(wrapped, args, kwargs).get("config", {}).get("metadata", {})
-    metadata["_nr_trace"] = trace
+    metadata["_nr_trace_id"] = trace.thread_id
 
     try:
         return await wrapped(*args, **kwargs)
     finally:
-        metadata.pop("_nr_trace", None)
+        metadata.pop("_nr_trace_id", None)
 
 
 def instrument_langchain_runnables_chains_base(module):

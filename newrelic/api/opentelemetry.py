@@ -475,20 +475,31 @@ class Span(otel_api_trace.Span):
                 self.nr_trace._add_agent_attribute(key, value)
 
     def _database_attribute_mapping(self):
+        # OpenTelemetry migrated the following attribute names gated behind
+        # the feature flag OTEL_SEMCONV_STABILITY_OPT_IN.
+        # db.name -> db.namespace
+        # db.statement -> db.query.text
+        # db.mongodb.collection -> db.collection.name
+        # Read both so the bridge works regardless of which conventions the instrumentation emits.
+
         span_obj_attrs = {
             "host": self.attributes.get("net.peer.name") or self.attributes.get("server.address"),
-            "database_name": self.attributes.get("db.name"),
+            "database_name": self.attributes.get("db.name") or self.attributes.get("db.namespace"),
             "port_path_or_id": self.attributes.get("net.peer.port") or self.attributes.get("server.port"),
             "product": self.attributes.get("db.system", self.attributes.get("db.system.name")),
         }
         agent_attrs = {}
 
+        # Pop both attributes a query can appear in so a raw query is never left behind as a stray
+        # attribute, then use either convention's output.
         db_statement = self.attributes.pop("db.statement", None)
+        _db_query_text = self.attributes.pop("db.query.text", None)
+        db_statement = db_statement or _db_query_text
         if db_statement:
             if hasattr(db_statement, "string"):
                 db_statement = db_statement.string
             operation, target = get_database_operation_target_from_statement(db_statement)
-            target = target or self.attributes.get("db.mongodb.collection")
+            target = target or self.attributes.get("db.mongodb.collection") or self.attributes.get("db.collection.name")
             span_obj_attrs.update({"operation": operation, "target": target})
             if self.nr_transaction.application.settings.transaction_tracer.record_sql != "off":
                 if self.nr_transaction.application.settings.transaction_tracer.record_sql == "obfuscated":

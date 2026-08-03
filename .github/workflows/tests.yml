@@ -88,7 +88,8 @@ jobs:
   # Combine and upload coverage data
   coverage:
     runs-on: ubuntu-24.04
-    if: success() || failure() # Does not run on cancelled workflows
+    # Don't run this job if triggered by Dependabot, but otherwise run it regardless of success or failure
+    if: ${{ (github.actor != 'dependabot[bot]') && (success() || failure()) }} # Does not run on cancelled workflows
     needs:
       - tests
 

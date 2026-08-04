@@ -66,14 +66,28 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
     try:
         response = wrapped(*args, **kwargs)
     except Exception as exc:
-        _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs, ft, exc)
+        _record_embedding_error(
+            transaction=transaction,
+            embedding_id=embedding_id,
+            linking_metadata=linking_metadata,
+            kwargs=kwargs,
+            ft=ft,
+            exc=exc,
+        )
         raise
     ft.__exit__(None, None, None)
 
     if not response:
         return response
 
-    _record_embedding_success(transaction, embedding_id, linking_metadata, kwargs, ft, response)
+    _record_embedding_success(
+        transaction=transaction,
+        embedding_id=embedding_id,
+        linking_metadata=linking_metadata,
+        kwargs=kwargs,
+        ft=ft,
+        response=response,
+    )
     return response
 
 
@@ -104,10 +118,26 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     try:
         return_val = wrapped(*args, **kwargs)
     except Exception as exc:
-        _record_completion_error(transaction, linking_metadata, completion_id, kwargs, ft, exc, request_timestamp)
+        _record_completion_error(
+            transaction=transaction,
+            linking_metadata=linking_metadata,
+            completion_id=completion_id,
+            kwargs=kwargs,
+            ft=ft,
+            exc=exc,
+            request_timestamp=request_timestamp,
+        )
         raise
 
-    _handle_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val, request_timestamp)
+    _handle_completion_success(
+        transaction=transaction,
+        linking_metadata=linking_metadata,
+        completion_id=completion_id,
+        kwargs=kwargs,
+        ft=ft,
+        return_val=return_val,
+        request_timestamp=request_timestamp,
+    )
     return return_val
 
 
@@ -128,6 +158,7 @@ def check_rate_limit_header(response_headers, header_name, is_int):
 
 
 def create_chat_completion_message_event(
+    *,
     transaction,
     input_message_list,
     chat_completion_id,
@@ -242,18 +273,32 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
     try:
         response = await wrapped(*args, **kwargs)
     except Exception as exc:
-        _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs, ft, exc)
+        _record_embedding_error(
+            transaction=transaction,
+            embedding_id=embedding_id,
+            linking_metadata=linking_metadata,
+            kwargs=kwargs,
+            ft=ft,
+            exc=exc,
+        )
         raise
     ft.__exit__(None, None, None)
 
     if not response:
         return response
 
-    _record_embedding_success(transaction, embedding_id, linking_metadata, kwargs, ft, response)
+    _record_embedding_success(
+        transaction=transaction,
+        embedding_id=embedding_id,
+        linking_metadata=linking_metadata,
+        kwargs=kwargs,
+        ft=ft,
+        response=response,
+    )
     return response
 
 
-def _record_embedding_success(transaction, embedding_id, linking_metadata, kwargs, ft, response):
+def _record_embedding_success(*, transaction, embedding_id, linking_metadata, kwargs, ft, response):
     settings = transaction.settings if transaction.settings is not None else global_settings()
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
@@ -329,7 +374,7 @@ def _record_embedding_success(transaction, embedding_id, linking_metadata, kwarg
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
 
-def _record_embedding_error(transaction, embedding_id, linking_metadata, kwargs, ft, exc):
+def _record_embedding_error(*, transaction, embedding_id, linking_metadata, kwargs, ft, exc):
     settings = transaction.settings if transaction.settings is not None else global_settings()
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
@@ -425,15 +470,31 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
     try:
         return_val = await wrapped(*args, **kwargs)
     except Exception as exc:
-        _record_completion_error(transaction, linking_metadata, completion_id, kwargs, ft, exc, request_timestamp)
+        _record_completion_error(
+            transaction=transaction,
+            linking_metadata=linking_metadata,
+            completion_id=completion_id,
+            kwargs=kwargs,
+            ft=ft,
+            exc=exc,
+            request_timestamp=request_timestamp,
+        )
         raise
 
-    _handle_completion_success(transaction, linking_metadata, completion_id, kwargs, ft, return_val, request_timestamp)
+    _handle_completion_success(
+        transaction=transaction,
+        linking_metadata=linking_metadata,
+        completion_id=completion_id,
+        kwargs=kwargs,
+        ft=ft,
+        return_val=return_val,
+        request_timestamp=request_timestamp,
+    )
     return return_val
 
 
 def _handle_completion_success(
-    transaction, linking_metadata, completion_id, kwargs, ft, return_val, request_timestamp=None
+    *, transaction, linking_metadata, completion_id, kwargs, ft, return_val, request_timestamp=None
 ):
     settings = transaction.settings if transaction.settings is not None else global_settings()
     stream = kwargs.get("stream", False)
@@ -478,14 +539,21 @@ def _handle_completion_success(
                 response = json.loads(response.http_response.text.strip())
 
         _record_completion_success(
-            transaction, linking_metadata, completion_id, kwargs, ft, response_headers, response, request_timestamp
+            transaction=transaction,
+            linking_metadata=linking_metadata,
+            completion_id=completion_id,
+            kwargs=kwargs,
+            ft=ft,
+            response_headers=response_headers,
+            response=response,
+            request_timestamp=request_timestamp,
         )
     except Exception:
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
 
 def _record_completion_success(
-    transaction, linking_metadata, completion_id, kwargs, ft, response_headers, response, request_timestamp=None
+    *, transaction, linking_metadata, completion_id, kwargs, ft, response_headers, response, request_timestamp=None
 ):
     settings = transaction.settings if transaction.settings is not None else global_settings()
     span_id = linking_metadata.get("span.id")
@@ -614,24 +682,24 @@ def _record_completion_success(
         transaction.record_custom_event("LlmChatCompletionSummary", full_chat_completion_summary_dict)
 
         create_chat_completion_message_event(
-            transaction,
-            input_message_list,
-            completion_id,
-            span_id,
-            trace_id,
-            response_model,
-            response_id,
-            request_id,
-            llm_metadata,
-            output_message_list,
-            all_token_counts,
-            request_timestamp,
+            transaction=transaction,
+            input_message_list=input_message_list,
+            completion_id=completion_id,
+            span_id=span_id,
+            trace_id=trace_id,
+            response_model=response_model,
+            response_id=response_id,
+            request_id=request_id,
+            llm_metadata=llm_metadata,
+            output_message_list=output_message_list,
+            all_token_counts=all_token_counts,
+            request_timestamp=request_timestamp,
         )
     except Exception:
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
 
-def _record_completion_error(transaction, linking_metadata, completion_id, kwargs, ft, exc, request_timestamp=None):
+def _record_completion_error(*, transaction, linking_metadata, completion_id, kwargs, ft, exc, request_timestamp=None):
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
     request_message_list = kwargs.get("messages", None) or []
@@ -704,19 +772,19 @@ def _record_completion_error(transaction, linking_metadata, completion_id, kwarg
             output_message_list = [{"content": kwargs.get("content"), "role": kwargs.get("role")}]
 
         create_chat_completion_message_event(
-            transaction,
-            request_message_list,
-            completion_id,
-            span_id,
-            trace_id,
-            kwargs.get("response.model"),
-            response_id,
-            request_id,
-            llm_metadata,
-            output_message_list,
+            transaction=transaction,
+            input_message_list=request_message_list,
+            completion_id=completion_id,
+            span_id=span_id,
+            trace_id=trace_id,
+            response_model=kwargs.get("response.model"),
+            response_id=response_id,
+            request_id=request_id,
+            llm_metadata=llm_metadata,
+            output_message_list=output_message_list,
             # We do not record token counts in error cases, so set all_token_counts to True so the pipeline tokenizer does not run
-            True,
-            request_timestamp,
+            all_token_counts=True,
+            request_timestamp=request_timestamp,
         )
     except Exception:
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
@@ -799,7 +867,9 @@ class LLMStreamProxy(ObjectProxy):
             _record_events_on_stop_iteration(self, transaction, self._nr_request_timestamp)
             raise
         except Exception as exc:
-            _handle_streaming_completion_error(self, transaction, exc, self._nr_request_timestamp)
+            _handle_streaming_completion_error(
+                stream_proxy=self, transaction=transaction, exc=exc, request_timestamp=self._nr_request_timestamp
+            )
             raise
 
         return return_val
@@ -860,14 +930,14 @@ def _record_events_on_stop_iteration(stream_proxy, transaction, request_timestam
             completion_id = str(uuid.uuid4())
             response_headers = openai_attrs.get("response_headers") or {}
             _record_completion_success(
-                transaction,
-                linking_metadata,
-                completion_id,
-                openai_attrs,
-                stream_proxy._nr_ft,
-                response_headers,
-                None,
-                request_timestamp,
+                transaction=transaction,
+                linking_metadata=linking_metadata,
+                completion_id=completion_id,
+                kwargs=openai_attrs,
+                ft=stream_proxy._nr_ft,
+                response_headers=response_headers,
+                response=None,
+                request_timestamp=request_timestamp,
             )
         except Exception:
             _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
@@ -882,7 +952,7 @@ def _record_events_on_stop_iteration(stream_proxy, transaction, request_timestam
                 stream_proxy._nr_openai_attrs.clear()
 
 
-def _handle_streaming_completion_error(stream_proxy, transaction, exc, request_timestamp=None):
+def _handle_streaming_completion_error(*, stream_proxy, transaction, exc, request_timestamp=None):
     if hasattr(stream_proxy, "_nr_ft"):
         openai_attrs = getattr(stream_proxy, "_nr_openai_attrs", {})
 
@@ -893,7 +963,13 @@ def _handle_streaming_completion_error(stream_proxy, transaction, exc, request_t
         linking_metadata = get_trace_linking_metadata()
         completion_id = str(uuid.uuid4())
         _record_completion_error(
-            transaction, linking_metadata, completion_id, openai_attrs, stream_proxy._nr_ft, exc, request_timestamp
+            transaction=transaction,
+            linking_metadata=linking_metadata,
+            completion_id=completion_id,
+            kwargs=openai_attrs,
+            ft=stream_proxy._nr_ft,
+            exc=exc,
+            request_timestamp=request_timestamp,
         )
 
 
@@ -919,7 +995,9 @@ class AsyncLLMStreamProxy(ObjectProxy):
             _record_events_on_stop_iteration(self, transaction, self._nr_request_timestamp)
             raise
         except Exception as exc:
-            _handle_streaming_completion_error(self, transaction, exc, self._nr_request_timestamp)
+            _handle_streaming_completion_error(
+                stream_proxy=self, transaction=transaction, exc=exc, request_timestamp=self._nr_request_timestamp
+            )
             raise
         return return_val
 

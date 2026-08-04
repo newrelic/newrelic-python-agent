@@ -494,7 +494,7 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
 
 
 def _handle_completion_success(
-    *, transaction, linking_metadata, completion_id, kwargs, ft, return_val, request_timestamp=None
+    *, transaction, linking_metadata, completion_id, kwargs, ft, return_val, request_timestamp=None, responses_api=False
 ):
     settings = transaction.settings if transaction.settings is not None else global_settings()
     stream = kwargs.get("stream", False)
@@ -513,6 +513,8 @@ def _handle_completion_success(
             return_val._nr_ft = ft
             return_val._nr_metadata = linking_metadata
             return_val._nr_openai_attrs = getattr(return_val, "_nr_openai_attrs", {})
+            # Marker so _record_stream_chunk parses Responses events instead of Chat Completions chunks.
+            return_val._nr_openai_attrs["_nr_response_api"] = responses_api
             return_val._nr_openai_attrs["messages"] = kwargs.get("messages", [])
             return_val._nr_openai_attrs["temperature"] = kwargs.get("temperature")
             return_val._nr_openai_attrs["max_tokens"] = kwargs.get("max_tokens") or kwargs.get("max_completion_tokens")
@@ -537,6 +539,13 @@ def _handle_completion_success(
                 # to change, but the return type for now is the following:
                 # openai._legacy_response.LegacyAPIResponse
                 response = json.loads(response.http_response.text.strip())
+
+        if responses_api:
+            # Merge the extracted response attributes into kwargs and record via the shared
+            # response=None branch, exactly as the streaming path does. Set the
+            # response to None here to indicate attr extraction has already happened.
+            kwargs.update(_responses_api_response_attrs(response))
+            response = None  # Avoids later attr extraction logic.
 
         _record_completion_success(
             transaction=transaction,
@@ -790,6 +799,172 @@ def _record_completion_error(*, transaction, linking_metadata, completion_id, kw
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
 
+def _responses_api_request_attrs(kwargs):
+    """Extract attributes from the Responses API's request kwargs. Shared by streaming and non-streaming paths."""
+    input_ = kwargs.get("input")
+    messages = []
+    if kwargs.get("instructions"):
+        messages.append({"content": kwargs["instructions"], "role": "system"})
+    if isinstance(input_, str):
+        messages.append({"content": input_, "role": "user"})
+    elif isinstance(input_, (list, tuple)):
+        for item in input_:
+            if isinstance(item, dict) and item.get("role") is not None:
+                content = item.get("content")
+                # Content is a string, or a list of typed parts each carrying `text`.
+                if isinstance(content, (list, tuple)):
+                    content = "".join(part.get("text") or "" for part in content if isinstance(part, dict))
+                messages.append({"content": content, "role": item["role"]})
+
+    return {
+        "messages": messages,
+        "model": kwargs.get("model"),
+        "temperature": kwargs.get("temperature"),
+        "max_tokens": kwargs.get("max_output_tokens"),
+        "stream": kwargs.get("stream", False),
+    }
+
+
+def _responses_api_response_attrs(response):
+    """Extract attributes from the Responses API's Response object. Shared by streaming and non-streaming paths."""
+    response = response or {}
+
+    # Response content exists in output items of type "message", inside content parts of type "output_text".
+    content = "".join(
+        part.get("text")
+        for item in response.get("output") or []
+        if isinstance(item, dict) and item.get("type") == "message"
+        for part in item.get("content") or []
+        if isinstance(part, dict) and part.get("type") == "output_text" and part.get("text")
+    )
+
+    # The Responses API has no per choice finish_reason.
+    # Use incomplete_details.reason if it exists, or fall back to status.
+    incomplete_details = response.get("incomplete_details") or {}
+
+    # Pull usage object once and unpack below
+    usage = response.get("usage") or {}
+
+    return {
+        "response.model": response.get("model"),
+        "id": response.get("id"),
+        "response.usage": {
+            "prompt_tokens": usage.get("input_tokens"),
+            "completion_tokens": usage.get("output_tokens"),
+            "total_tokens": usage.get("total_tokens"),
+        },
+        "content": content,
+        "role": "assistant",
+        "finish_reason": incomplete_details.get("reason") or response.get("status"),
+    }
+
+
+def wrap_responses_sync(wrapped, instance, args, kwargs):
+    """Instrument openai.resources.responses.Responses.create() and .parse()."""
+    transaction = current_transaction()
+    if not transaction:
+        return wrapped(*args, **kwargs)
+
+    # The .with_streaming_response. wrapper is not yet instrumented. Skip it for now.
+    if _is_streaming_response_wrapper(kwargs):
+        return wrapped(*args, **kwargs)
+
+    request_timestamp = int(1000.0 * time.time())
+
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    if not settings.ai_monitoring.enabled:
+        return wrapped(*args, **kwargs)
+
+    # Framework metric also used for entity tagging in the UI
+    transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
+    transaction._add_agent_attribute("llm", True)
+
+    completion_id = str(uuid.uuid4())
+    nr_kwargs = _responses_api_request_attrs(kwargs)
+
+    ft = FunctionTrace(name=wrapped.__name__, group="Llm/completion/OpenAI")
+    ft.__enter__()
+    linking_metadata = get_trace_linking_metadata()
+    try:
+        return_val = wrapped(*args, **kwargs)
+    except Exception as exc:
+        _record_completion_error(
+            transaction=transaction,
+            linking_metadata=linking_metadata,
+            completion_id=completion_id,
+            kwargs=nr_kwargs,
+            ft=ft,
+            exc=exc,
+            request_timestamp=request_timestamp,
+        )
+        raise
+
+    _handle_completion_success(
+        transaction=transaction,
+        linking_metadata=linking_metadata,
+        completion_id=completion_id,
+        kwargs=nr_kwargs,
+        ft=ft,
+        return_val=return_val,
+        request_timestamp=request_timestamp,
+        responses_api=True,
+    )
+    return return_val
+
+
+async def wrap_responses_async(wrapped, instance, args, kwargs):
+    """Instrument openai.resources.responses.AsyncResponses.create() and .parse()."""
+    transaction = current_transaction()
+    if not transaction:
+        return await wrapped(*args, **kwargs)
+
+    # The .with_streaming_response. wrapper is not yet instrumented. Skip it for now.
+    if _is_streaming_response_wrapper(kwargs):
+        return await wrapped(*args, **kwargs)
+
+    request_timestamp = int(1000.0 * time.time())
+
+    settings = transaction.settings if transaction.settings is not None else global_settings()
+    if not settings.ai_monitoring.enabled:
+        return await wrapped(*args, **kwargs)
+
+    # Framework metric also used for entity tagging in the UI
+    transaction.add_ml_model_info("OpenAI", OPENAI_VERSION)
+    transaction._add_agent_attribute("llm", True)
+
+    completion_id = str(uuid.uuid4())
+    nr_kwargs = _responses_api_request_attrs(kwargs)
+
+    ft = FunctionTrace(name=wrapped.__name__, group="Llm/completion/OpenAI")
+    ft.__enter__()
+    linking_metadata = get_trace_linking_metadata()
+    try:
+        return_val = await wrapped(*args, **kwargs)
+    except Exception as exc:
+        _record_completion_error(
+            transaction=transaction,
+            linking_metadata=linking_metadata,
+            completion_id=completion_id,
+            kwargs=nr_kwargs,
+            ft=ft,
+            exc=exc,
+            request_timestamp=request_timestamp,
+        )
+        raise
+
+    _handle_completion_success(
+        transaction=transaction,
+        linking_metadata=linking_metadata,
+        completion_id=completion_id,
+        kwargs=nr_kwargs,
+        ft=ft,
+        return_val=return_val,
+        request_timestamp=request_timestamp,
+        responses_api=True,
+    )
+    return return_val
+
+
 def wrap_convert_to_openai_object(wrapped, instance, args, kwargs):
     """Obtain reponse headers for v0."""
     transaction = current_transaction()
@@ -879,6 +1054,11 @@ class LLMStreamProxy(ObjectProxy):
 
 
 def _record_stream_chunk(stream_proxy, return_val):
+    """
+    Record a stream chunk emitted by OpenAI.
+
+    Dispatches the bulk of the work to separate functions for OpenAI ChatCompletions vs Responses APIs.
+    """
     transaction = current_transaction()
     if return_val:
         try:
@@ -890,27 +1070,73 @@ def _record_stream_chunk(stream_proxy, return_val):
                 stream_proxy._nr_openai_attrs["response_headers"] = getattr(stream_proxy, "_nr_response_headers", {})
             else:
                 stream_proxy._nr_openai_attrs["response_headers"] = getattr(return_val, "_nr_response_headers", {})
-            choices = return_val.get("choices") or []
-            stream_proxy._nr_openai_attrs["response.model"] = return_val.get("model")
-            stream_proxy._nr_openai_attrs["id"] = return_val.get("id")
-            stream_proxy._nr_openai_attrs["response.organization"] = return_val.get("organization")
-            stream_proxy._nr_openai_attrs["response.usage"] = return_val.get("usage")
-            if choices:
-                delta = choices[0].get("delta") or {}
-                if delta:
-                    if delta.get("content") and "time_to_first_token" not in stream_proxy._nr_openai_attrs:
-                        stream_proxy._nr_openai_attrs["time_to_first_token"] = (
-                            int(1000.0 * time.time()) - stream_proxy._nr_request_timestamp
-                        )
-                    stream_proxy._nr_openai_attrs["content"] = stream_proxy._nr_openai_attrs.get("content", "") + (
-                        delta.get("content") or ""
-                    )
-                    stream_proxy._nr_openai_attrs["role"] = stream_proxy._nr_openai_attrs.get("role") or delta.get(
-                        "role"
-                    )
-                stream_proxy._nr_openai_attrs["finish_reason"] = choices[0].get("finish_reason")
+
+            # Responses API stream events use a different schema than Chat Completions chunks.
+            if stream_proxy._nr_openai_attrs.get("_nr_response_api"):
+                _record_responses_stream_event(stream_proxy, return_val)
+            else:
+                _record_chat_completion_stream_event(stream_proxy, return_val)
         except Exception:
             _logger.warning(STREAM_PARSING_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
+
+
+def _record_chat_completion_stream_event(stream_proxy, event):
+    """
+    Record a stream event emitted by the Chat Completion API.
+
+    We keep a record of stream events as they arrive, and when the stream finishes we emit the events
+    from the agent as LLMChatCompletionMessage events using the shared _record_completion_success
+    function.
+
+    This function helps to stores these attributes in a common format for the two different
+    OpenAI endpoints which produce different event shapes.
+    """
+
+    choices = event.get("choices") or []
+    stream_proxy._nr_openai_attrs["response.model"] = event.get("model")
+    stream_proxy._nr_openai_attrs["id"] = event.get("id")
+    stream_proxy._nr_openai_attrs["response.organization"] = event.get("organization")
+    stream_proxy._nr_openai_attrs["response.usage"] = event.get("usage")
+    if choices:
+        delta = choices[0].get("delta") or {}
+        if delta:
+            if delta.get("content") and "time_to_first_token" not in stream_proxy._nr_openai_attrs:
+                stream_proxy._nr_openai_attrs["time_to_first_token"] = (
+                    int(1000.0 * time.time()) - stream_proxy._nr_request_timestamp
+                )
+            stream_proxy._nr_openai_attrs["content"] = stream_proxy._nr_openai_attrs.get("content", "") + (
+                delta.get("content") or ""
+            )
+            stream_proxy._nr_openai_attrs["role"] = stream_proxy._nr_openai_attrs.get("role") or delta.get("role")
+        stream_proxy._nr_openai_attrs["finish_reason"] = choices[0].get("finish_reason")
+
+
+def _record_responses_stream_event(stream_proxy, event):
+    """
+    Record a stream event emitted by the Responses API.
+
+    We keep a record of stream events as they arrive, and when the stream finishes we emit the events
+    from the agent as LLMChatCompletionMessage events using the shared _record_completion_success
+    function.
+
+    This function helps to stores these attributes in a common format for the two different
+    OpenAI endpoints which produce different event shapes.
+    """
+    event_type = event.get("type")
+    if event_type == "response.output_text.delta":
+        delta = event.get("delta") or ""
+        if delta and "time_to_first_token" not in stream_proxy._nr_openai_attrs:
+            stream_proxy._nr_openai_attrs["time_to_first_token"] = (
+                int(1000.0 * time.time()) - stream_proxy._nr_request_timestamp
+            )
+        stream_proxy._nr_openai_attrs["content"] = stream_proxy._nr_openai_attrs.get("content", "") + delta
+        stream_proxy._nr_openai_attrs["role"] = stream_proxy._nr_openai_attrs.get("role") or "assistant"
+    elif event_type in ("response.completed", "response.incomplete", "response.failed"):
+        response = _responses_api_response_attrs(event.get("response") or {})
+        stream_proxy._nr_openai_attrs["response.model"] = response["response.model"]
+        stream_proxy._nr_openai_attrs["id"] = response["id"]
+        stream_proxy._nr_openai_attrs["response.usage"] = response["response.usage"]
+        stream_proxy._nr_openai_attrs["finish_reason"] = response["finish_reason"]
 
 
 def _record_events_on_stop_iteration(stream_proxy, transaction, request_timestamp=None):
@@ -1125,6 +1351,19 @@ def instrument_openai_resources_chat_completions(module):
         wrap_function_wrapper(module, "Completions.create", wrap_chat_completion_sync)
     if hasattr(module.AsyncCompletions, "create"):
         wrap_function_wrapper(module, "AsyncCompletions.create", wrap_chat_completion_async)
+
+
+def instrument_openai_resources_responses(module):
+    if hasattr(module, "Responses"):
+        if hasattr(module.Responses, "create"):
+            wrap_function_wrapper(module, "Responses.create", wrap_responses_sync)
+        if hasattr(module.Responses, "parse"):
+            wrap_function_wrapper(module, "Responses.parse", wrap_responses_sync)
+    if hasattr(module, "AsyncResponses"):
+        if hasattr(module.AsyncResponses, "create"):
+            wrap_function_wrapper(module, "AsyncResponses.create", wrap_responses_async)
+        if hasattr(module.AsyncResponses, "parse"):
+            wrap_function_wrapper(module, "AsyncResponses.parse", wrap_responses_async)
 
 
 def instrument_openai_resources_embeddings(module):

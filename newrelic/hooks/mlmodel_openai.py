@@ -808,48 +808,50 @@ class LLMStreamProxy(ObjectProxy):
         return self.__wrapped__.close()
 
 
-def _record_stream_chunk(self, return_val):
+def _record_stream_chunk(stream_proxy, return_val):
     transaction = current_transaction()
     if return_val:
         try:
             if OPENAI_V1:
                 if getattr(return_val, "data", "").startswith("[DONE]"):
-                    _record_events_on_stop_iteration(self, transaction, self._nr_request_timestamp)
+                    _record_events_on_stop_iteration(stream_proxy, transaction, stream_proxy._nr_request_timestamp)
                     return
                 return_val = return_val.json()
-                self._nr_openai_attrs["response_headers"] = getattr(self, "_nr_response_headers", {})
+                stream_proxy._nr_openai_attrs["response_headers"] = getattr(stream_proxy, "_nr_response_headers", {})
             else:
-                self._nr_openai_attrs["response_headers"] = getattr(return_val, "_nr_response_headers", {})
+                stream_proxy._nr_openai_attrs["response_headers"] = getattr(return_val, "_nr_response_headers", {})
             choices = return_val.get("choices") or []
-            self._nr_openai_attrs["response.model"] = return_val.get("model")
-            self._nr_openai_attrs["id"] = return_val.get("id")
-            self._nr_openai_attrs["response.organization"] = return_val.get("organization")
-            self._nr_openai_attrs["response.usage"] = return_val.get("usage")
+            stream_proxy._nr_openai_attrs["response.model"] = return_val.get("model")
+            stream_proxy._nr_openai_attrs["id"] = return_val.get("id")
+            stream_proxy._nr_openai_attrs["response.organization"] = return_val.get("organization")
+            stream_proxy._nr_openai_attrs["response.usage"] = return_val.get("usage")
             if choices:
                 delta = choices[0].get("delta") or {}
                 if delta:
-                    if delta.get("content") and "time_to_first_token" not in self._nr_openai_attrs:
-                        self._nr_openai_attrs["time_to_first_token"] = (
-                            int(1000.0 * time.time()) - self._nr_request_timestamp
+                    if delta.get("content") and "time_to_first_token" not in stream_proxy._nr_openai_attrs:
+                        stream_proxy._nr_openai_attrs["time_to_first_token"] = (
+                            int(1000.0 * time.time()) - stream_proxy._nr_request_timestamp
                         )
-                    self._nr_openai_attrs["content"] = self._nr_openai_attrs.get("content", "") + (
+                    stream_proxy._nr_openai_attrs["content"] = stream_proxy._nr_openai_attrs.get("content", "") + (
                         delta.get("content") or ""
                     )
-                    self._nr_openai_attrs["role"] = self._nr_openai_attrs.get("role") or delta.get("role")
-                self._nr_openai_attrs["finish_reason"] = choices[0].get("finish_reason")
+                    stream_proxy._nr_openai_attrs["role"] = stream_proxy._nr_openai_attrs.get("role") or delta.get(
+                        "role"
+                    )
+                stream_proxy._nr_openai_attrs["finish_reason"] = choices[0].get("finish_reason")
         except Exception:
             _logger.warning(STREAM_PARSING_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
 
-def _record_events_on_stop_iteration(self, transaction, request_timestamp=None):
-    if hasattr(self, "_nr_ft"):
+def _record_events_on_stop_iteration(stream_proxy, transaction, request_timestamp=None):
+    if hasattr(stream_proxy, "_nr_ft"):
         # We first check for our saved linking metadata before making a new call to get_trace_linking_metadata
         # Directly calling get_trace_linking_metadata() causes the incorrect span ID to be captured and associated with the LLM call
         # This leads to incorrect linking of the LLM call in the UI
-        linking_metadata = self._nr_metadata or get_trace_linking_metadata()
-        self._nr_ft.__exit__(None, None, None)
+        linking_metadata = stream_proxy._nr_metadata or get_trace_linking_metadata()
+        stream_proxy._nr_ft.__exit__(None, None, None)
         try:
-            openai_attrs = getattr(self, "_nr_openai_attrs", {})
+            openai_attrs = getattr(stream_proxy, "_nr_openai_attrs", {})
 
             # If there are no openai attrs exit early as there's no data to record.
             if not openai_attrs:
@@ -862,7 +864,7 @@ def _record_events_on_stop_iteration(self, transaction, request_timestamp=None):
                 linking_metadata,
                 completion_id,
                 openai_attrs,
-                self._nr_ft,
+                stream_proxy._nr_ft,
                 response_headers,
                 None,
                 request_timestamp,
@@ -876,22 +878,22 @@ def _record_events_on_stop_iteration(self, transaction, request_timestamp=None):
             # stream since there is a condition where the iterator may exit before all the
             # stream contents is read. This results in StopIteration being raised twice
             # instead of once at the end of the loop.
-            if hasattr(self, "_nr_openai_attrs"):
-                self._nr_openai_attrs.clear()
+            if hasattr(stream_proxy, "_nr_openai_attrs"):
+                stream_proxy._nr_openai_attrs.clear()
 
 
-def _handle_streaming_completion_error(self, transaction, exc, request_timestamp=None):
-    if hasattr(self, "_nr_ft"):
-        openai_attrs = getattr(self, "_nr_openai_attrs", {})
+def _handle_streaming_completion_error(stream_proxy, transaction, exc, request_timestamp=None):
+    if hasattr(stream_proxy, "_nr_ft"):
+        openai_attrs = getattr(stream_proxy, "_nr_openai_attrs", {})
 
         # If there are no openai attrs exit early as there's no data to record.
         if not openai_attrs:
-            self._nr_ft.__exit__(*sys.exc_info())
+            stream_proxy._nr_ft.__exit__(*sys.exc_info())
             return
         linking_metadata = get_trace_linking_metadata()
         completion_id = str(uuid.uuid4())
         _record_completion_error(
-            transaction, linking_metadata, completion_id, openai_attrs, self._nr_ft, exc, request_timestamp
+            transaction, linking_metadata, completion_id, openai_attrs, stream_proxy._nr_ft, exc, request_timestamp
         )
 
 

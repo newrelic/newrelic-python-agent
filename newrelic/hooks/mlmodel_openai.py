@@ -39,13 +39,15 @@ STREAM_PARSING_FAILURE_LOG_MESSAGE = "Exception occurred in OpenAI instrumentati
 _logger = logging.getLogger(__name__)
 
 
+def _is_streaming_response_wrapper(kwargs):
+    # The SDK's with_streaming_response path re-wraps the same create method we instrument, so
+    # this header it injects is the only signal that distinguishes it at the level we wrap.
+    return (kwargs.get("extra_headers") or {}).get("X-Stainless-Raw-Response") == "stream"
+
+
 def wrap_embedding_sync(wrapped, instance, args, kwargs):
     transaction = current_transaction()
-    if (
-        not transaction
-        or kwargs.get("stream", False)
-        or (kwargs.get("extra_headers") or {}).get("X-Stainless-Raw-Response") == "stream"
-    ):
+    if not transaction or kwargs.get("stream", False) or _is_streaming_response_wrapper(kwargs):
         return wrapped(*args, **kwargs)
     settings = transaction.settings if transaction.settings is not None else global_settings()
     if not settings.ai_monitoring.enabled:
@@ -80,9 +82,8 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    # If `.with_streaming_response.` wrapper used, switch to streaming
-    # For now, we will exit and instrument this later
-    if (kwargs.get("extra_headers") or {}).get("X-Stainless-Raw-Response") == "stream":
+    # The .with_streaming_response. wrapper is not yet instrumented. Skip it for now.
+    if _is_streaming_response_wrapper(kwargs):
         return wrapped(*args, **kwargs)
 
     request_timestamp = int(1000.0 * time.time())
@@ -221,11 +222,7 @@ def create_chat_completion_message_event(
 
 async def wrap_embedding_async(wrapped, instance, args, kwargs):
     transaction = current_transaction()
-    if (
-        not transaction
-        or kwargs.get("stream", False)
-        or (kwargs.get("extra_headers") or {}).get("X-Stainless-Raw-Response") == "stream"
-    ):
+    if not transaction or kwargs.get("stream", False) or _is_streaming_response_wrapper(kwargs):
         return await wrapped(*args, **kwargs)
 
     settings = transaction.settings if transaction.settings is not None else global_settings()
@@ -406,9 +403,8 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
     if not transaction:
         return await wrapped(*args, **kwargs)
 
-    # If `.with_streaming_response.` wrapper used, switch to streaming
-    # For now, we will exit and instrument this later
-    if (kwargs.get("extra_headers") or {}).get("X-Stainless-Raw-Response") == "stream":
+    # The .with_streaming_response. wrapper is not yet instrumented. Skip it for now.
+    if _is_streaming_response_wrapper(kwargs):
         return await wrapped(*args, **kwargs)
 
     request_timestamp = int(1000.0 * time.time())

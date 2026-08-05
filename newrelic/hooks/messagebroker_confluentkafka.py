@@ -13,9 +13,6 @@
 # limitations under the License.
 import logging
 import sys
-import threading
-import time
-import weakref
 
 from newrelic.api.application import application_instance
 from newrelic.api.error_trace import wrap_error_trace
@@ -41,64 +38,52 @@ KAFKA_CLUSTER_METRIC_PRODUCE = "MessageBroker/Kafka/Cluster/{0}/Topic/{1}/Produc
 KAFKA_CLUSTER_METRIC_CONSUME = "MessageBroker/Kafka/Cluster/{0}/Topic/{1}/Consume"
 
 
-_CLUSTER_ID_TTL_SECONDS = 60 * 60
+# Populated only by Producers (see _resolve_producer_cluster_id) and read by
+# Consumers on the same broker set (see _resolve_consumer_cluster_id). No TTL:
+# a cluster id is a stable identifier for the lifetime of a broker cluster, and
+# a new Producer/Consumer naturally refreshes it on its own first call.
+_nr_cluster_id_by_bootstrap = {}
 
-_nr_cluster_id_cache = {}
-_nr_cluster_id_cache_lock = threading.Lock()
 
-
-def _fetch_cluster_id(instance):
+def _cluster_metrics_enabled():
     settings = global_settings()
-    if not getattr(getattr(settings, "kafka", None), "cluster_metrics_enabled", False):
-        return
-    servers = getattr(instance, "_nr_bootstrap_servers", None)
+    return bool(getattr(getattr(settings, "kafka", None), "cluster_metrics_enabled", False))
+
+
+def _bootstrap_key(instance):
     # Sort so that equivalent broker sets with different orderings share the same key.
-    cache_key = ",".join(sorted(servers)) if servers else None
+    servers = getattr(instance, "_nr_bootstrap_servers", None)
+    return ",".join(sorted(servers)) if servers else None
 
-    if cache_key:
-        with _nr_cluster_id_cache_lock:
-            cached = _nr_cluster_id_cache.get(cache_key)
-            if isinstance(cached, tuple):
-                cluster_id, ts = cached
-                if time.monotonic() - ts <= _CLUSTER_ID_TTL_SECONDS:
-                    instance._nr_cluster_id = cluster_id
-                    instance._nr_cluster_id_fetched_at = ts
-                    return
-                # Expired — fall through to start a new fetch.
-            elif cached is not None:
-                # "" sentinel — fetch already in progress.
-                return
-            _nr_cluster_id_cache[cache_key] = ""
 
-    # Hold only a weak reference so the thread closure does not extend the
-    # lifetime of a Producer/Consumer that the caller has already abandoned.
-    instance_ref = weakref.ref(instance)
+def _resolve_producer_cluster_id(instance):
+    # timeout=0 returns whatever metadata librdkafka already has cached for this
+    # already-connected client (or nothing) without blocking — no separate
+    # AdminClient connection, no network round trip on our part.
+    if not _cluster_metrics_enabled():
+        return None
+    try:
+        meta = instance.list_topics(timeout=0)
+        cluster_id = getattr(meta, "cluster_id", None)
+    except Exception:
+        _logger.debug("NR Kafka cluster ID fetch failed", exc_info=True)
+        cluster_id = None
+    if cluster_id:
+        key = _bootstrap_key(instance)
+        if key:
+            _nr_cluster_id_by_bootstrap[key] = cluster_id
+    return cluster_id
 
-    def _run():
-        inst = instance_ref()
-        if inst is None:
-            # Instance was GC'd before the thread ran; clean up sentinel and exit.
-            if cache_key:
-                with _nr_cluster_id_cache_lock:
-                    _nr_cluster_id_cache.pop(cache_key, None)
-            return
-        try:
-            meta = inst.list_topics(timeout=5)
-            cluster_id = getattr(meta, "cluster_id", None)
-            if cluster_id:
-                now = time.monotonic()
-                inst._nr_cluster_id = cluster_id
-                inst._nr_cluster_id_fetched_at = now
-                if cache_key:
-                    with _nr_cluster_id_cache_lock:
-                        _nr_cluster_id_cache[cache_key] = (cluster_id, now)
-        except Exception:
-            _logger.debug("NR Kafka cluster ID fetch failed", exc_info=True)
-            if cache_key:
-                with _nr_cluster_id_cache_lock:
-                    _nr_cluster_id_cache.pop(cache_key, None)
 
-    threading.Thread(target=_run, daemon=True, name="NR-Kafka-ClusterId").start()
+def _resolve_consumer_cluster_id(instance):
+    # Consumers deliberately never call list_topics() themselves: librdkafka has
+    # a known use-after-free (rdkafka#4214) when topic metadata is fetched on a
+    # Consumer while a partition rebalance is in progress. Instead, read a value
+    # a Producer on the same bootstrap-servers has already resolved.
+    if not _cluster_metrics_enabled():
+        return None
+    key = _bootstrap_key(instance)
+    return _nr_cluster_id_by_bootstrap.get(key) if key else None
 
 
 def wrap_Producer_produce(wrapped, instance, args, kwargs):
@@ -130,19 +115,7 @@ def wrap_Producer_produce(wrapped, instance, args, kwargs):
         for server_name in instance._nr_bootstrap_servers:
             transaction.record_custom_metric(f"MessageBroker/Kafka/Nodes/{server_name}/Produce/{topic}", 1)
 
-    cluster_id = getattr(instance, "_nr_cluster_id", None)
-    if cluster_id:
-        if time.monotonic() - getattr(instance, "_nr_cluster_id_fetched_at", 0.0) > _CLUSTER_ID_TTL_SECONDS:
-            _fetch_cluster_id(instance)  # background re-fetch; use stale value below
-    elif hasattr(instance, "_nr_bootstrap_servers"):
-        _cache_key = ",".join(sorted(instance._nr_bootstrap_servers))
-        _cached = _nr_cluster_id_cache.get(_cache_key)
-        if isinstance(_cached, tuple):
-            cluster_id, _ts = _cached
-            instance._nr_cluster_id = cluster_id
-            instance._nr_cluster_id_fetched_at = _ts
-            if time.monotonic() - _ts > _CLUSTER_ID_TTL_SECONDS:
-                _fetch_cluster_id(instance)  # background re-fetch
+    cluster_id = _resolve_producer_cluster_id(instance)
     if cluster_id:
         transaction.record_custom_metric(
             KAFKA_CLUSTER_METRIC_PRODUCE.format(cluster_id, topic), 1
@@ -256,19 +229,7 @@ def wrap_Consumer_poll(wrapped, instance, args, kwargs):
                     transaction.record_custom_metric(
                         f"MessageBroker/Kafka/Nodes/{server_name}/Consume/{destination_name}", 1
                     )
-            cluster_id = getattr(instance, "_nr_cluster_id", None)
-            if cluster_id:
-                if time.monotonic() - getattr(instance, "_nr_cluster_id_fetched_at", 0.0) > _CLUSTER_ID_TTL_SECONDS:
-                    _fetch_cluster_id(instance)  # background re-fetch; use stale value below
-            elif hasattr(instance, "_nr_bootstrap_servers"):
-                _cache_key = ",".join(sorted(instance._nr_bootstrap_servers))
-                _cached = _nr_cluster_id_cache.get(_cache_key)
-                if isinstance(_cached, tuple):
-                    cluster_id, _ts = _cached
-                    instance._nr_cluster_id = cluster_id
-                    instance._nr_cluster_id_fetched_at = _ts
-                    if time.monotonic() - _ts > _CLUSTER_ID_TTL_SECONDS:
-                        _fetch_cluster_id(instance)  # background re-fetch
+            cluster_id = _resolve_consumer_cluster_id(instance)
             if cluster_id:
                 transaction.record_custom_metric(
                     KAFKA_CLUSTER_METRIC_CONSUME.format(cluster_id, destination_name), 1
@@ -323,8 +284,6 @@ def wrap_SerializingProducer_init(wrapped, instance, args, kwargs):
     except Exception:
         pass
 
-    _fetch_cluster_id(instance)
-
 
 def wrap_DeserializingConsumer_init(wrapped, instance, args, kwargs):
     wrapped(*args, **kwargs)
@@ -343,8 +302,6 @@ def wrap_DeserializingConsumer_init(wrapped, instance, args, kwargs):
     except Exception:
         pass
 
-    _fetch_cluster_id(instance)
-
 
 def wrap_Producer_init(wrapped, instance, args, kwargs):
     wrapped(*args, **kwargs)
@@ -358,8 +315,6 @@ def wrap_Producer_init(wrapped, instance, args, kwargs):
     except Exception:
         pass
 
-    _fetch_cluster_id(instance)
-
 
 def wrap_Consumer_init(wrapped, instance, args, kwargs):
     wrapped(*args, **kwargs)
@@ -372,8 +327,6 @@ def wrap_Consumer_init(wrapped, instance, args, kwargs):
             instance._nr_bootstrap_servers = servers.split(",")
     except Exception:
         pass
-
-    _fetch_cluster_id(instance)
 
 
 def wrap_immutable_class(module, class_name):

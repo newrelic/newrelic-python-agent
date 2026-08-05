@@ -19,15 +19,16 @@ broker required. They verify correctness of arguments passed to the underlying
 `wrapped` callable without any network I/O.
 """
 
-import time
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-from newrelic.hooks.messagebroker_kafkapython import (
-    _bootstrap_cache_key,
-    _fetch_cluster_id_kafka_python,
-    _kafka_cluster_id_cache,
-    wrap_KafkaProducer_send,
-)
+from newrelic.core.config import global_settings
+from newrelic.hooks.messagebroker_kafkapython import _read_cluster_id, wrap_KafkaProducer_send
+
+
+def _enable_cluster_metrics(monkeypatch):
+    settings = global_settings()
+    monkeypatch.setattr(settings.kafka, "cluster_metrics_enabled", True)
 
 
 # ---------------------------------------------------------------------------
@@ -37,50 +38,44 @@ from newrelic.hooks.messagebroker_kafkapython import (
 
 class TestProducerSendKeyPreservation:
     """The Kafka message routing key must survive the wrap_KafkaProducer_send
-    instrumentation unchanged, regardless of whether cluster ID is cached."""
+    instrumentation unchanged, regardless of whether a cluster ID is resolved."""
 
-    def _make_producer_instance(self, bootstrap_servers=None):
+    def _make_producer_instance(self, bootstrap_servers=None, cluster_id=None):
         instance = MagicMock()
         instance.config = {
             "bootstrap_servers": bootstrap_servers or ["broker1:9092", "broker2:9092"],
         }
+        instance._metadata = SimpleNamespace(cluster_id=cluster_id)
         return instance
 
     def _bind_send_args(self, topic, value=None, key=None, headers=None):
         """Return positional args as wrap_KafkaProducer_send receives them."""
         return (topic,), {"value": value, "key": key, "headers": headers or []}
 
-    def test_message_key_not_overwritten_with_cluster_id_in_cache(self):
-        """Key must not be replaced by broker address string when cluster ID cached."""
-        cluster_id = "test-cluster-uuid"
-        cache_key = "broker1:9092,broker2:9092"
-        _kafka_cluster_id_cache[cache_key] = (cluster_id, time.monotonic())
-
+    def test_message_key_not_overwritten_with_cluster_id_resolved(self, monkeypatch):
+        """Key must not be replaced by broker address string when a cluster ID is resolved."""
+        _enable_cluster_metrics(monkeypatch)
         wrapped = MagicMock(return_value=MagicMock())
-        instance = self._make_producer_instance()
+        instance = self._make_producer_instance(cluster_id="test-cluster-uuid")
         args, kwargs = self._bind_send_args("my-topic", value=b"v", key=b"original-key")
 
-        try:
-            with patch("newrelic.hooks.messagebroker_kafkapython.current_transaction") as mock_txn:
-                mock_txn.return_value = MagicMock()  # active transaction
-                wrap_KafkaProducer_send(wrapped, instance, args, kwargs)
-        finally:
-            _kafka_cluster_id_cache.pop(cache_key, None)
+        with patch("newrelic.hooks.messagebroker_kafkapython.current_transaction") as mock_txn:
+            mock_txn.return_value = MagicMock()  # active transaction
+            wrap_KafkaProducer_send(wrapped, instance, args, kwargs)
 
         # The wrapped callable must have been called with key=b"original-key",
         # not key="broker1:9092,broker2:9092" or any other broker-derived string.
         assert wrapped.called, "wrapped() was never called"
         call_kwargs = wrapped.call_args[1]
         assert call_kwargs["key"] == b"original-key", (
-            f"Message key was corrupted: got {call_kwargs['key']!r}, "
-            f"expected b'original-key'. Likely cause: cache lookup variable "
-            f"reused the name 'key', overwriting the Kafka routing key."
+            f"Message key was corrupted: got {call_kwargs['key']!r}, expected b'original-key'."
         )
 
-    def test_message_key_not_overwritten_when_no_cluster_id_cached(self):
-        """Key must not be replaced even when cluster ID is not yet in the cache."""
+    def test_message_key_not_overwritten_when_no_cluster_id_resolved(self, monkeypatch):
+        """Key must not be replaced even when no cluster ID is resolved."""
+        _enable_cluster_metrics(monkeypatch)
         wrapped = MagicMock(return_value=MagicMock())
-        instance = self._make_producer_instance(bootstrap_servers=["broker-no-cache:9092"])
+        instance = self._make_producer_instance(bootstrap_servers=["broker-no-cluster:9092"], cluster_id=None)
         args, kwargs = self._bind_send_args("topic", key="string-key-123")
 
         with patch("newrelic.hooks.messagebroker_kafkapython.current_transaction") as mock_txn:
@@ -89,13 +84,14 @@ class TestProducerSendKeyPreservation:
 
         assert wrapped.called
         assert wrapped.call_args[1]["key"] == "string-key-123", (
-            "Message key corrupted even when cluster ID was not in cache."
+            "Message key corrupted even when no cluster ID was resolved."
         )
 
-    def test_none_key_preserved(self):
+    def test_none_key_preserved(self, monkeypatch):
         """A None routing key must remain None (common case for unkeyed messages)."""
+        _enable_cluster_metrics(monkeypatch)
         wrapped = MagicMock(return_value=MagicMock())
-        instance = self._make_producer_instance()
+        instance = self._make_producer_instance(cluster_id="test-cluster-uuid")
         args, kwargs = self._bind_send_args("topic", key=None)
 
         with patch("newrelic.hooks.messagebroker_kafkapython.current_transaction") as mock_txn:
@@ -104,10 +100,11 @@ class TestProducerSendKeyPreservation:
 
         assert wrapped.call_args[1]["key"] is None, "None key was corrupted."
 
-    def test_no_transaction_bypasses_instrumentation(self):
+    def test_no_transaction_bypasses_instrumentation(self, monkeypatch):
         """Without an active NR transaction, wrapped() is called with original args."""
+        _enable_cluster_metrics(monkeypatch)
         wrapped = MagicMock(return_value=MagicMock())
-        instance = self._make_producer_instance()
+        instance = self._make_producer_instance(cluster_id="test-cluster-uuid")
         args = ("topic",)
         kwargs = {"value": b"v", "key": b"my-key"}
 
@@ -121,73 +118,35 @@ class TestProducerSendKeyPreservation:
 
 
 # ---------------------------------------------------------------------------
-# Cluster ID is fetched via KafkaAdminClient.describe_cluster() in a
-# background daemon thread — no passive MetadataResponse interception.
+# Cluster ID is a passive, synchronous read off kafka-python's own
+# ClusterMetadata object — no AdminClient, no background thread, no cache.
 # ---------------------------------------------------------------------------
 
-class TestFetchClusterIdKafkaPython:
-    """_fetch_cluster_id_kafka_python populates the cache via KafkaAdminClient."""
+class TestReadClusterId:
+    def test_returns_none_when_cluster_metrics_disabled(self):
+        instance = MagicMock()
+        instance._metadata = SimpleNamespace(cluster_id="some-id")
+        assert _read_cluster_id(instance) is None
 
-    def _cache_key(self, servers):
-        return _bootstrap_cache_key(servers)
+    def test_reads_from_producer_metadata_attribute(self, monkeypatch):
+        _enable_cluster_metrics(monkeypatch)
+        instance = MagicMock(spec=["_metadata"])
+        instance._metadata = SimpleNamespace(cluster_id="producer-cluster-id")
+        assert _read_cluster_id(instance) == "producer-cluster-id"
 
-    def test_cluster_id_written_to_cache_on_success(self):
-        """A successful describe_cluster() stores the cluster UUID in the module cache."""
-        servers = ["broker-fetch1:9092"]
-        cache_key = self._cache_key(servers)
-        _kafka_cluster_id_cache.pop(cache_key, None)
+    def test_reads_from_consumer_client_cluster_attribute(self, monkeypatch):
+        _enable_cluster_metrics(monkeypatch)
+        instance = MagicMock(spec=["_client"])
+        instance._client = SimpleNamespace(cluster=SimpleNamespace(cluster_id="consumer-cluster-id"))
+        assert _read_cluster_id(instance) == "consumer-cluster-id"
 
-        mock_admin = MagicMock()
-        mock_admin.describe_cluster.return_value = {"cluster_id": "fetched-uuid", "brokers": []}
+    def test_returns_none_when_metadata_not_yet_populated(self, monkeypatch):
+        _enable_cluster_metrics(monkeypatch)
+        instance = MagicMock(spec=["_metadata"])
+        instance._metadata = SimpleNamespace(cluster_id=None)
+        assert _read_cluster_id(instance) is None
 
-        with patch("kafka.admin.KafkaAdminClient", return_value=mock_admin):
-            _fetch_cluster_id_kafka_python(servers)
-            # Allow the daemon thread to finish
-            time.sleep(0.5)
-
-        try:
-            cached = _kafka_cluster_id_cache.get(cache_key)
-            assert isinstance(cached, tuple)
-            assert cached[0] == "fetched-uuid"
-        finally:
-            _kafka_cluster_id_cache.pop(cache_key, None)
-
-    def test_sentinel_prevents_duplicate_fetches(self):
-        """While a fetch is in-flight (sentinel ''), a second call does not spawn a thread."""
-        servers = ["broker-sentinel:9092"]
-        cache_key = self._cache_key(servers)
-        _kafka_cluster_id_cache[cache_key] = ""  # pre-set sentinel
-
-        with patch("newrelic.hooks.messagebroker_kafkapython.threading.Thread") as mock_thread:
-            _fetch_cluster_id_kafka_python(servers)
-            mock_thread.assert_not_called()
-
-        _kafka_cluster_id_cache.pop(cache_key, None)
-
-    def test_existing_resolved_entry_not_refetched(self):
-        """A fully-resolved cache entry (non-empty) skips the fetch and returns immediately."""
-        servers = ["broker-resolved:9092"]
-        cache_key = self._cache_key(servers)
-        _kafka_cluster_id_cache[cache_key] = ("already-resolved-uuid", time.monotonic())
-
-        with patch("newrelic.hooks.messagebroker_kafkapython.threading.Thread") as mock_thread:
-            _fetch_cluster_id_kafka_python(servers)
-            mock_thread.assert_not_called()
-
-        _kafka_cluster_id_cache.pop(cache_key, None)
-
-    def test_sentinel_removed_on_failure(self):
-        """If KafkaAdminClient raises, the sentinel is removed so future instances can retry."""
-        servers = ["broker-fail:9092"]
-        cache_key = self._cache_key(servers)
-        _kafka_cluster_id_cache.pop(cache_key, None)
-
-        # Raise at construction time — this hits the outer except in _run() which
-        # removes the sentinel. Raising only on connect() wouldn't work because
-        # MagicMock.describe_cluster() auto-creates a truthy return value, causing
-        # the cache to be populated with a MagicMock instead of being cleared.
-        with patch("kafka.admin.KafkaAdminClient", side_effect=Exception("connection refused")):
-            _fetch_cluster_id_kafka_python(servers)
-            time.sleep(0.3)
-
-        assert _kafka_cluster_id_cache.get(cache_key) is None
+    def test_returns_none_when_no_metadata_or_client_attribute(self, monkeypatch):
+        _enable_cluster_metrics(monkeypatch)
+        instance = MagicMock(spec=[])
+        assert _read_cluster_id(instance) is None

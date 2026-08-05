@@ -14,6 +14,7 @@
 
 import threading
 import time
+from types import SimpleNamespace
 
 import pytest
 from conftest import cache_kafka_producer_headers
@@ -24,6 +25,7 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.common.object_names import callable_name
+from newrelic.core.config import global_settings
 
 
 @pytest.mark.parametrize(
@@ -159,15 +161,18 @@ def expected_broker_metrics(broker, topic):
 # ---------------------------------------------------------------------------
 
 @pytest.fixture
-def producer_with_cluster_id(producer, broker):
-    """Set _nr_cluster_id directly on the producer instance, bypassing the
-    async daemon-thread fetch so metric tests are deterministic and fast."""
+def producer_with_cluster_id(producer, broker, monkeypatch):
+    """Enable cluster metrics and stub list_topics() so the producer's
+    cluster-id read (see _resolve_producer_cluster_id) is deterministic and
+    doesn't depend on a real broker round trip."""
     test_cluster_id = "confluent-cluster-test-999"
-    producer._nr_cluster_id = test_cluster_id
+    settings = global_settings()
+    monkeypatch.setattr(settings.kafka, "cluster_metrics_enabled", True)
+    monkeypatch.setattr(producer, "list_topics", lambda timeout=0: SimpleNamespace(cluster_id=test_cluster_id))
     # Also need bootstrap servers so the Nodes metrics fire correctly
     if not hasattr(producer, "_nr_bootstrap_servers"):
         producer._nr_bootstrap_servers = broker.split(",")
-    yield producer, test_cluster_id
+    return producer, test_cluster_id
 
 
 def test_cluster_produce_metric(topic, producer_with_cluster_id, send_producer_message, client_type):

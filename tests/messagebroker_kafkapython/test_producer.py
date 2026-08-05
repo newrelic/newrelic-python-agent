@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import time
-
 import pytest
 from conftest import cache_kafka_producer_headers
 from testing_support.validators.validate_messagebroker_headers import validate_messagebroker_headers
@@ -23,6 +21,7 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.common.object_names import callable_name
+from newrelic.core.config import global_settings
 
 
 def test_trace_metrics(topic, send_producer_message, expected_broker_metrics):
@@ -110,19 +109,15 @@ def expected_broker_metrics(broker, topic):
 # ---------------------------------------------------------------------------
 
 @pytest.fixture
-def seeded_cluster_id(broker):
-    """Pre-seed the cluster-ID cache with a known value so tests are deterministic.
-
-    The real cluster-ID fetch is async; seeding avoids flaky timing issues
-    in the test suite while still exercising the metric-recording code path.
-    """
-    from newrelic.hooks.messagebroker_kafkapython import _kafka_cluster_id_cache
-
-    cache_key = ",".join(sorted(broker))
+def seeded_cluster_id(producer, monkeypatch):
+    """Directly set the cluster id on kafka-python's own ClusterMetadata object
+    — the same passive attribute _read_cluster_id reads — so tests are
+    deterministic without depending on a real broker round trip."""
+    settings = global_settings()
+    monkeypatch.setattr(settings.kafka, "cluster_metrics_enabled", True)
     test_cluster_id = "test-cluster-abc123"
-    _kafka_cluster_id_cache[cache_key] = (test_cluster_id, time.monotonic())
-    yield test_cluster_id
-    _kafka_cluster_id_cache.pop(cache_key, None)
+    producer._metadata.cluster_id = test_cluster_id
+    return test_cluster_id
 
 
 def test_cluster_produce_metric(topic, send_producer_message, broker, seeded_cluster_id):

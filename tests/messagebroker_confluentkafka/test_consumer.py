@@ -26,6 +26,7 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import end_of_transaction
 from newrelic.common.object_names import callable_name
+from newrelic.core.config import global_settings
 
 
 def test_custom_metrics(get_consumer_record, topic, expected_broker_metrics):
@@ -189,13 +190,23 @@ def expected_missing_broker_metrics(broker, topic):
 # ---------------------------------------------------------------------------
 
 @pytest.fixture
-def consumer_with_cluster_id(consumer, broker):
-    """Set _nr_cluster_id directly on the consumer instance for deterministic tests."""
+def consumer_with_cluster_id(consumer, broker, monkeypatch):
+    """Enable cluster metrics and pre-populate the shared bootstrap-servers ->
+    cluster-id cache, as a Producer on the same broker set would — Consumers
+    never call list_topics() themselves (see _resolve_consumer_cluster_id)."""
+    from newrelic.hooks.messagebroker_confluentkafka import _bootstrap_key, _nr_cluster_id_by_bootstrap
+
     test_cluster_id = "confluent-consumer-cluster-test"
-    consumer._nr_cluster_id = test_cluster_id
+    settings = global_settings()
+    monkeypatch.setattr(settings.kafka, "cluster_metrics_enabled", True)
     if not hasattr(consumer, "_nr_bootstrap_servers"):
         consumer._nr_bootstrap_servers = broker.split(",")
-    yield consumer, test_cluster_id
+    key = _bootstrap_key(consumer)
+    _nr_cluster_id_by_bootstrap[key] = test_cluster_id
+    try:
+        yield consumer, test_cluster_id
+    finally:
+        _nr_cluster_id_by_bootstrap.pop(key, None)
 
 
 def test_cluster_consume_metric(topic, get_consumer_record, consumer_with_cluster_id, client_type):

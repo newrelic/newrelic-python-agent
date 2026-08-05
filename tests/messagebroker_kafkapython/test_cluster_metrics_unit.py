@@ -45,7 +45,7 @@ class TestProducerSendKeyPreservation:
         instance.config = {
             "bootstrap_servers": bootstrap_servers or ["broker1:9092", "broker2:9092"],
         }
-        instance._metadata = SimpleNamespace(cluster_id=cluster_id)
+        instance._metadata = SimpleNamespace(_nr_cluster_id=cluster_id)
         return instance
 
     def _bind_send_args(self, topic, value=None, key=None, headers=None):
@@ -120,33 +120,88 @@ class TestProducerSendKeyPreservation:
 # ---------------------------------------------------------------------------
 # Cluster ID is a passive, synchronous read off kafka-python's own
 # ClusterMetadata object — no AdminClient, no background thread, no cache.
+#
+# Real ClusterMetadata never stores the wire protocol's cluster_id field on
+# itself (update_metadata() discards it), so these tests target the attribute
+# wrap_ClusterMetadata_update_metadata actually populates (_nr_cluster_id), not
+# the native (always-empty) one. See TestUpdateMetadataCapture below for a test
+# against the real kafka-python protocol response type, not a stub.
 # ---------------------------------------------------------------------------
 
 class TestReadClusterId:
     def test_returns_none_when_cluster_metrics_disabled(self):
         instance = MagicMock()
-        instance._metadata = SimpleNamespace(cluster_id="some-id")
+        instance._metadata = SimpleNamespace(_nr_cluster_id="some-id")
         assert _read_cluster_id(instance) is None
 
     def test_reads_from_producer_metadata_attribute(self, monkeypatch):
         _enable_cluster_metrics(monkeypatch)
         instance = MagicMock(spec=["_metadata"])
-        instance._metadata = SimpleNamespace(cluster_id="producer-cluster-id")
+        instance._metadata = SimpleNamespace(_nr_cluster_id="producer-cluster-id")
         assert _read_cluster_id(instance) == "producer-cluster-id"
 
     def test_reads_from_consumer_client_cluster_attribute(self, monkeypatch):
         _enable_cluster_metrics(monkeypatch)
         instance = MagicMock(spec=["_client"])
-        instance._client = SimpleNamespace(cluster=SimpleNamespace(cluster_id="consumer-cluster-id"))
+        instance._client = SimpleNamespace(cluster=SimpleNamespace(_nr_cluster_id="consumer-cluster-id"))
         assert _read_cluster_id(instance) == "consumer-cluster-id"
 
     def test_returns_none_when_metadata_not_yet_populated(self, monkeypatch):
         _enable_cluster_metrics(monkeypatch)
         instance = MagicMock(spec=["_metadata"])
-        instance._metadata = SimpleNamespace(cluster_id=None)
+        instance._metadata = SimpleNamespace(_nr_cluster_id=None)
         assert _read_cluster_id(instance) is None
 
     def test_returns_none_when_no_metadata_or_client_attribute(self, monkeypatch):
         _enable_cluster_metrics(monkeypatch)
         instance = MagicMock(spec=[])
         assert _read_cluster_id(instance) is None
+
+
+# ---------------------------------------------------------------------------
+# wrap_ClusterMetadata_update_metadata against the real kafka-python protocol
+# response type (not a stub) — this is the regression test for the bug where
+# ClusterMetadata never actually stored a real cluster id anywhere.
+# ---------------------------------------------------------------------------
+
+class TestUpdateMetadataCapture:
+    def _real_response(self, cluster_id):
+        from kafka.protocol.metadata import MetadataResponse_v2
+
+        return MetadataResponse_v2(brokers=[], cluster_id=cluster_id, controller_id=-1, topics=[])
+
+    def test_captures_cluster_id_from_real_response_type(self):
+        from newrelic.hooks.messagebroker_kafkapython import wrap_ClusterMetadata_update_metadata
+
+        instance = MagicMock(spec=["_nr_cluster_id"])
+        wrapped = MagicMock()
+        response = self._real_response("real-cluster-uuid")
+
+        wrap_ClusterMetadata_update_metadata(wrapped, instance, (response,), {})
+
+        assert instance._nr_cluster_id == "real-cluster-uuid"
+        wrapped.assert_called_once_with(response)
+
+    def test_wrapped_still_called_when_capture_fails(self):
+        """A malformed response must not prevent the real update_metadata from running."""
+        from newrelic.hooks.messagebroker_kafkapython import wrap_ClusterMetadata_update_metadata
+
+        instance = MagicMock(spec_set=[])  # setting any attribute raises AttributeError
+        wrapped = MagicMock()
+        response = self._real_response("real-cluster-uuid")
+
+        wrap_ClusterMetadata_update_metadata(wrapped, instance, (response,), {})
+
+        wrapped.assert_called_once_with(response)
+
+    def test_no_cluster_id_on_response_does_not_set_attribute(self):
+        from newrelic.hooks.messagebroker_kafkapython import wrap_ClusterMetadata_update_metadata
+
+        instance = object()  # plain object -- no attribute unless we actually set one
+        wrapped = MagicMock()
+        response = self._real_response(None)
+
+        wrap_ClusterMetadata_update_metadata(wrapped, instance, (response,), {})
+
+        assert not hasattr(instance, "_nr_cluster_id")
+        wrapped.assert_called_once_with(response)

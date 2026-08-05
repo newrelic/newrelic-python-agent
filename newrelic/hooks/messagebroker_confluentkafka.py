@@ -13,6 +13,7 @@
 # limitations under the License.
 import logging
 import sys
+import threading
 
 from newrelic.api.application import application_instance
 from newrelic.api.error_trace import wrap_error_trace
@@ -44,6 +45,11 @@ KAFKA_CLUSTER_METRIC_CONSUME = "MessageBroker/Kafka/Cluster/{0}/Topic/{1}/Consum
 # a new Producer/Consumer naturally refreshes it on its own first call.
 _nr_cluster_id_by_bootstrap = {}
 
+# Bootstrap-key (or, lacking one, instance id) for producers with a resolution
+# thread currently running, so concurrent produce() calls don't each spawn one.
+_nr_cluster_id_resolution_in_flight = set()
+_nr_cluster_id_resolution_lock = threading.Lock()
+
 
 def _cluster_metrics_enabled():
     settings = global_settings()
@@ -51,28 +57,57 @@ def _cluster_metrics_enabled():
 
 
 def _bootstrap_key(instance):
-    # Sort so that equivalent broker sets with different orderings share the same key.
+    # Sort so that equivalent broker sets with different orderings share the same key;
+    # strip whitespace so "a:9092, b:9092" and "a:9092,b:9092" also share it.
     servers = getattr(instance, "_nr_bootstrap_servers", None)
-    return ",".join(sorted(servers)) if servers else None
+    return ",".join(sorted(server.strip() for server in servers)) if servers else None
 
 
 def _resolve_producer_cluster_id(instance):
-    # timeout=0 returns whatever metadata librdkafka already has cached for this
-    # already-connected client (or nothing) without blocking — no separate
-    # AdminClient connection, no network round trip on our part.
+    # Resolved at most once per producer instance: the cluster id is stable for
+    # the producer's lifetime. list_topics() genuinely blocks (it waits for
+    # librdkafka's metadata refresh), so resolution runs on a background daemon
+    # thread rather than the calling produce() thread — otherwise every produce()
+    # call would re-block for the full timeout for as long as resolution keeps
+    # failing (e.g. during a broker outage), which is worst exactly when fast
+    # failure matters most.
     if not _cluster_metrics_enabled():
         return None
-    try:
-        meta = instance.list_topics(timeout=0)
-        cluster_id = getattr(meta, "cluster_id", None)
-    except Exception:
-        _logger.debug("NR Kafka cluster ID fetch failed", exc_info=True)
-        cluster_id = None
+    cluster_id = getattr(instance, "_nr_cluster_id", None)
     if cluster_id:
-        key = _bootstrap_key(instance)
-        if key:
-            _nr_cluster_id_by_bootstrap[key] = cluster_id
-    return cluster_id
+        return cluster_id
+    key = _bootstrap_key(instance)
+    if key:
+        cluster_id = _nr_cluster_id_by_bootstrap.get(key)
+        if cluster_id:
+            instance._nr_cluster_id = cluster_id
+            return cluster_id
+    _schedule_cluster_id_resolution(instance, key)
+    return None
+
+
+def _schedule_cluster_id_resolution(instance, key):
+    guard_key = key if key else id(instance)
+    with _nr_cluster_id_resolution_lock:
+        if guard_key in _nr_cluster_id_resolution_in_flight:
+            return
+        _nr_cluster_id_resolution_in_flight.add(guard_key)
+
+    def _resolve():
+        try:
+            meta = instance.list_topics(timeout=5)
+            cluster_id = getattr(meta, "cluster_id", None)
+        except Exception:
+            _logger.debug("NR Kafka cluster ID fetch failed", exc_info=True)
+            cluster_id = None
+        if cluster_id:
+            instance._nr_cluster_id = cluster_id
+            if key:
+                _nr_cluster_id_by_bootstrap[key] = cluster_id
+        with _nr_cluster_id_resolution_lock:
+            _nr_cluster_id_resolution_in_flight.discard(guard_key)
+
+    threading.Thread(target=_resolve, daemon=True).start()
 
 
 def _resolve_consumer_cluster_id(instance):

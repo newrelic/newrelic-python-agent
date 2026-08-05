@@ -45,18 +45,35 @@ def _cluster_metrics_enabled():
 
 
 def _read_cluster_id(instance):
-    # kafka-python's own ClusterMetadata already tracks the cluster id as a
-    # passive side effect of the client's normal bootstrap/refresh traffic —
-    # this is a synchronous, in-memory attribute read, no admin client, no
-    # extra connection. KafkaProducer and KafkaConsumer expose it via
-    # different attribute paths.
+    # ClusterMetadata.update_metadata() receives the cluster id on every real
+    # metadata refresh (it's a field on the raw MetadataResponse) but discards it —
+    # it only copies brokers/topics/controller_id onto self. wrap_ClusterMetadata_update_metadata
+    # captures it into _nr_cluster_id as a passive side effect of that same refresh,
+    # so this read stays a synchronous, in-memory attribute lookup: no admin client,
+    # no extra connection. KafkaProducer and KafkaConsumer expose the ClusterMetadata
+    # object via different attribute paths.
     if not _cluster_metrics_enabled():
         return None
     metadata = getattr(instance, "_metadata", None)  # KafkaProducer
     if metadata is None:
         client = getattr(instance, "_client", None)  # KafkaConsumer
         metadata = getattr(client, "cluster", None) if client else None
-    return getattr(metadata, "cluster_id", None) if metadata else None
+    return getattr(metadata, "_nr_cluster_id", None) if metadata else None
+
+
+def _bind_update_metadata(metadata_response):
+    return metadata_response
+
+
+def wrap_ClusterMetadata_update_metadata(wrapped, instance, args, kwargs):
+    try:
+        metadata_response = _bind_update_metadata(*args, **kwargs)
+        cluster_id = getattr(metadata_response, "cluster_id", None)
+        if cluster_id:
+            instance._nr_cluster_id = cluster_id
+    except Exception:
+        _logger.debug("NR Kafka cluster ID capture failed", exc_info=True)
+    return wrapped(*args, **kwargs)
 
 
 def _bind_send(topic, value=None, key=None, headers=None, partition=None, timestamp_ms=None):
@@ -263,6 +280,11 @@ def metric_wrapper(metric_name, check_result=False):
         return result
 
     return _metric_wrapper
+
+
+def instrument_kafka_cluster(module):
+    if hasattr(module, "ClusterMetadata") and hasattr(module.ClusterMetadata, "update_metadata"):
+        wrap_function_wrapper(module, "ClusterMetadata.update_metadata", wrap_ClusterMetadata_update_metadata)
 
 
 def instrument_kafka_producer(module):

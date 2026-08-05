@@ -110,13 +110,16 @@ def expected_broker_metrics(broker, topic):
 
 @pytest.fixture
 def seeded_cluster_id(producer, monkeypatch):
-    """Directly set the cluster id on kafka-python's own ClusterMetadata object
-    — the same passive attribute _read_cluster_id reads — so tests are
-    deterministic without depending on a real broker round trip."""
+    """Directly set _nr_cluster_id on kafka-python's own ClusterMetadata object
+    — the attribute wrap_ClusterMetadata_update_metadata populates from a real
+    metadata refresh, and the same one _read_cluster_id reads — so tests are
+    deterministic without depending on a real broker round trip. (The native
+    ClusterMetadata.cluster_id is never populated by the real library — see
+    TestUpdateMetadataCapture in test_cluster_metrics_unit.py.)"""
     settings = global_settings()
     monkeypatch.setattr(settings.kafka, "cluster_metrics_enabled", True)
     test_cluster_id = "test-cluster-abc123"
-    producer._metadata.cluster_id = test_cluster_id
+    producer._metadata._nr_cluster_id = test_cluster_id
     return test_cluster_id
 
 

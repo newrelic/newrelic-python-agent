@@ -63,7 +63,7 @@ def openai_clients(vcr_recording):
     else:
         openai_api_key = os.environ["OPENAI_API_KEY"] = "NOT-A-REAL-SECRET"
 
-    chat = ChatOpenAI(api_key=openai_api_key, temperature=0.7)
+    chat = ChatOpenAI(api_key=openai_api_key, temperature=0.05, model="gpt-5.1")
     embeddings = OpenAIEmbeddings(openai_api_key=openai_api_key)
     return chat, embeddings
 

@@ -267,6 +267,33 @@ class AgentObjectProxy(ObjectProxy):
 
         return return_val
 
+    def astream_events(self, *args, **kwargs):
+        transaction = current_transaction()
+        if not transaction:
+            return self.__wrapped__.astream_events(*args, **kwargs)
+
+        agent_name = getattr(self.__wrapped__, "name", "agent")
+        agent_id = str(uuid.uuid4())
+        agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
+        function_trace_name = f"astream_events/{agent_name}"
+        agentic_subcomponent_data = {"type": "APM-AI_AGENT", "name": agent_name}
+
+        ft = FunctionTrace(name=function_trace_name, group="Llm/agent/LangChain")
+        ft.__enter__()
+        ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
+        try:
+            return_val = self.__wrapped__.astream_events(*args, **kwargs)
+            return_val = AsyncLLMStreamProxy(
+                return_val,
+                on_stop_iteration=self._nr_on_stop_iteration(ft, agent_event_dict),
+                on_error=self._nr_on_error(ft, agent_event_dict, agent_id),
+            )
+        except Exception:
+            self._nr_on_error(ft, agent_event_dict, agent_id)(transaction)
+            raise
+
+        return return_val
+
     def transform(self, *args, **kwargs):
         transaction = current_transaction()
         if not transaction:

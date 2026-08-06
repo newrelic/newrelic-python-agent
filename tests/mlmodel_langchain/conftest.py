@@ -215,7 +215,7 @@ def validate_agent_output(agent_runnable_type):
     return _validate_agent_output
 
 
-@pytest.fixture(params=["invoke", "ainvoke", "stream", "astream"])
+@pytest.fixture(params=["invoke", "ainvoke", "stream", "astream", "astream_events"])
 def exercise_agent(request, loop, validate_agent_output, agent_runnable_type):
     def _exercise_agent(agent, prompt):
         if request.param == "invoke":
@@ -236,6 +236,20 @@ def exercise_agent(request, loop, validate_agent_output, agent_runnable_type):
                 return [event async for event in agent.astream(prompt)]
 
             response = loop.run_until_complete(_exercise_agen())
+            validate_agent_output(response)
+            return response
+        elif request.param == "astream_events":
+
+            async def _exercise_agen():
+                return [event async for event in agent.astream_events(prompt)]
+
+            events = loop.run_until_complete(_exercise_agen())
+            root_run_id = events[0]["run_id"] if events else None
+            response = [
+                event["data"]["chunk"]
+                for event in events
+                if event["event"] == "on_chain_stream" and event["run_id"] == root_run_id
+            ]
             validate_agent_output(response)
             return response
         else:
@@ -259,6 +273,18 @@ def exercise_agent(request, loop, validate_agent_output, agent_runnable_type):
 
 @pytest.fixture
 def method_name(exercise_agent, agent_runnable_type):
+    method = exercise_agent._called_method
+    if method == "astream_events":
+        # All APIs except create_agent will run through "astream" instead of "astream_events"
+        if agent_runnable_type == "create_agent":
+            return method
+        return "astream"
+
     if agent_runnable_type == "StateGraph":
-        return "invoke" if exercise_agent._called_method in {"invoke", "stream"} else "ainvoke"
-    return exercise_agent._called_method
+        # StateGraph will only call "invoke" or "ainvoke", even when streaming
+        if method in {"invoke", "stream"}:
+            return "invoke"
+        else:
+            return "ainvoke"
+
+    return method

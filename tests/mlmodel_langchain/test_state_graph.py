@@ -225,7 +225,7 @@ def test_state_graph_with_agent_astream(exercise_graph, create_agent):
     assert response
 
 
-@pytest.fixture(params=["invoke", "ainvoke", "stream", "astream"])
+@pytest.fixture(params=["invoke", "ainvoke", "stream", "astream", "astream_events"])
 def exercise_graph(request, loop):
     def _exercise_graph(graph, prompt):
         method_called = request.param
@@ -240,6 +240,12 @@ def exercise_graph(request, loop):
 
                 async def _exercise_agen():
                     return [event async for event in graph.astream(prompt)]
+
+                return loop.run_until_complete(_exercise_agen())
+            elif method_called == "astream_events":
+
+                async def _exercise_agen():
+                    return [event async for event in graph.astream_events(prompt, version="v2")]
 
                 return loop.run_until_complete(_exercise_agen())
             else:

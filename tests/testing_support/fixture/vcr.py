@@ -87,19 +87,25 @@ import pytest
 # Default values for the overridable settings fixtures below
 VCR_CENSORED_HEADERS = ["authorization", "x-goog-api-key"]
 VCR_IGNORED_HEADERS = [
-    "content-length",
-    "traceparent",
-    "tracestate",
+    "accept-encoding",
     "alt-svc",
+    "content-length",
     "cookie",
     "set-cookie",
-    "user-agent",
     "strict-transport-security",
+    "traceparent",
+    "tracestate",
+    "user-agent",
     "x-content-type-options",
+    # Cloudflare Response Headers
+    "access-control-expose-headers",
+    "cf-cache-status",
+    "cf-ray",
     # AWS Bedrock
     "amz-sdk-invocation-id",
     "amz-sdk-request",
     "x-amz-date",
+    "x-amz-security-token",
     # Google Gemini
     "x-goog-api-client",
     # OpenAI Headers
@@ -112,6 +118,7 @@ VCR_IGNORED_HEADERS = [
     "x-stainless-os",
     "x-stainless-package-version",
     "x-stainless-raw-response",
+    "x-stainless-read-timeout",
     "x-stainless-retry-count",
     "x-stainless-runtime-version",
     "x-stainless-runtime",

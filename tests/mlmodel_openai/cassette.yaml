@@ -29,8 +29,6 @@ interactions:
       - application/json
       host:
       - api.openai.com
-      x-stainless-read-timeout:
-      - '600'
     method: POST
     uri: https://api.openai.com/v1/chat/completions
   response:
@@ -44,14 +42,6 @@ interactions:
         "accepted_prediction_tokens": 0, "rejected_prediction_tokens": 0}}, "service_tier":
         "default", "system_fingerprint": null}'
     headers:
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a1e5f2beed02e5c0-PDX
       connection:
       - keep-alive
       content-type:
@@ -102,8 +92,6 @@ interactions:
       - application/json
       host:
       - api.openai.com
-      x-stainless-read-timeout:
-      - '600'
     method: POST
     uri: https://api.openai.com/v1/chat/completions
   response:
@@ -112,13 +100,6 @@ interactions:
         you do not have access to it.", "type": "invalid_request_error", "param":
         null, "code": "model_not_found"}}'
     headers:
-      access-control-expose-headers:
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a1e5f2c849e0e5c0-PDX
       connection:
       - keep-alive
       content-type:
@@ -151,8 +132,6 @@ interactions:
       - application/json
       host:
       - api.openai.com
-      x-stainless-read-timeout:
-      - '600'
     method: POST
     uri: https://api.openai.com/v1/chat/completions
   response:
@@ -161,13 +140,6 @@ interactions:
         find your API key at https://platform.openai.com/account/api-keys.", "type":
         "invalid_request_error", "param": null, "code": "invalid_api_key"}}'
     headers:
-      access-control-expose-headers:
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a1e5f2c98d0fe5c0-PDX
       connection:
       - keep-alive
       content-type:
@@ -199,8 +171,6 @@ interactions:
       - application/json
       host:
       - api.openai.com
-      x-stainless-read-timeout:
-      - '600'
     method: POST
     uri: https://api.openai.com/v1/chat/completions
   response:
@@ -219,14 +189,6 @@ interactions:
 
         '
     headers:
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a1e5f2cacfcae5c0-PDX
       connection:
       - keep-alive
       content-type:
@@ -278,8 +240,6 @@ interactions:
       - application/json
       host:
       - api.openai.com
-      x-stainless-read-timeout:
-      - '600'
     method: POST
     uri: https://api.openai.com/v1/chat/completions
   response:
@@ -293,14 +253,6 @@ interactions:
         "accepted_prediction_tokens": 0, "rejected_prediction_tokens": 0}}, "service_tier":
         "default", "system_fingerprint": null}'
     headers:
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a1e5f2d06e32e5c0-PDX
       connection:
       - keep-alive
       content-type:
@@ -352,8 +304,6 @@ interactions:
       - application/json
       host:
       - api.openai.com
-      x-stainless-read-timeout:
-      - '600'
     method: POST
     uri: https://api.openai.com/v1/chat/completions
   response:
@@ -372,14 +322,6 @@ interactions:
 
         '
     headers:
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a1e5f2d44dd0e5c0-PDX
       connection:
       - keep-alive
       content-type:
@@ -431,8 +373,6 @@ interactions:
       - application/json
       host:
       - api.openai.com
-      x-stainless-read-timeout:
-      - '600'
     method: POST
     uri: https://api.openai.com/v1/chat/completions
   response:
@@ -446,14 +386,6 @@ interactions:
         "accepted_prediction_tokens": 0, "rejected_prediction_tokens": 0}}, "service_tier":
         "default", "system_fingerprint": null}'
     headers:
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a1e5f2d85e57e5c0-PDX
       connection:
       - keep-alive
       content-type:
@@ -505,8 +437,6 @@ interactions:
       - application/json
       host:
       - api.openai.com
-      x-stainless-read-timeout:
-      - '600'
     method: POST
     uri: https://api.openai.com/v1/chat/completions
   response:
@@ -528,14 +458,6 @@ interactions:
 
         '
     headers:
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a1e5f2dd8aa6e5c0-PDX
       connection:
       - keep-alive
       content-type:
@@ -586,8 +508,6 @@ interactions:
       - application/json
       host:
       - api.openai.com
-      x-stainless-read-timeout:
-      - '600'
     method: POST
     uri: https://api.openai.com/v1/chat/completions
   response:
@@ -596,13 +516,6 @@ interactions:
         you do not have access to it.", "type": "invalid_request_error", "param":
         null, "code": "model_not_found"}}'
     headers:
-      access-control-expose-headers:
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a1e5f2e81a19e5c0-PDX
       connection:
       - keep-alive
       content-type:
@@ -635,8 +548,6 @@ interactions:
       - application/json
       host:
       - api.openai.com
-      x-stainless-read-timeout:
-      - '600'
     method: POST
     uri: https://api.openai.com/v1/chat/completions
   response:
@@ -645,13 +556,6 @@ interactions:
         find your API key at https://platform.openai.com/account/api-keys.", "type":
         "invalid_request_error", "param": null, "code": "invalid_api_key"}}'
     headers:
-      access-control-expose-headers:
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a1e5f2e95cc9e5c0-PDX
       connection:
       - keep-alive
       content-type:
@@ -682,8 +586,6 @@ interactions:
       - application/json
       host:
       - api.openai.com
-      x-stainless-read-timeout:
-      - '600'
     method: POST
     uri: https://api.openai.com/v1/embeddings
   response:
@@ -692,14 +594,6 @@ interactions:
         "index": 0}], "model": "text-embedding-3-small", "usage": {"prompt_tokens":
         6, "total_tokens": 6}}'
     headers:
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a1e5f2ea3ed5e5c0-PDX
       connection:
       - keep-alive
       content-type:
@@ -750,8 +644,6 @@ interactions:
       - application/json
       host:
       - api.openai.com
-      x-stainless-read-timeout:
-      - '600'
     method: POST
     uri: https://api.openai.com/v1/embeddings
   response:
@@ -760,13 +652,6 @@ interactions:
         you do not have access to it.", "type": "invalid_request_error", "param":
         null, "code": "model_not_found"}}'
     headers:
-      access-control-expose-headers:
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a1e5f2ed2d0ae5c0-PDX
       connection:
       - keep-alive
       content-type:
@@ -799,8 +684,6 @@ interactions:
       - application/json
       host:
       - api.openai.com
-      x-stainless-read-timeout:
-      - '600'
     method: POST
     uri: https://api.openai.com/v1/embeddings
   response:
@@ -809,13 +692,6 @@ interactions:
         find your API key at https://platform.openai.com/account/api-keys.", "type":
         "invalid_request_error", "param": null, "code": "invalid_api_key"}}'
     headers:
-      access-control-expose-headers:
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a1e5f2ee6f7ce5c0-PDX
       connection:
       - keep-alive
       content-type:
@@ -846,8 +722,6 @@ interactions:
       - application/json
       host:
       - api.openai.com
-      x-stainless-read-timeout:
-      - '600'
     method: POST
     uri: https://api.openai.com/v1/embeddings
   response:
@@ -859,14 +733,6 @@ interactions:
     headers:
       access-control-allow-origin:
       - '*'
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a1e5f2efca74e5c0-PDX
       connection:
       - keep-alive
       content-type:
@@ -924,8 +790,6 @@ interactions:
       - application/json
       host:
       - api.openai.com
-      x-stainless-read-timeout:
-      - '600'
     method: POST
     uri: https://api.openai.com/v1/responses
   response:
@@ -951,14 +815,6 @@ interactions:
         0, "cached_tokens": 0}, "output_tokens": 11, "output_tokens_details": {"reasoning_tokens":
         0}, "total_tokens": 44}, "user": null, "metadata": {}}'
     headers:
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a1e5f2f1e800e5c0-PDX
       connection:
       - keep-alive
       content-type:
@@ -1011,8 +867,6 @@ interactions:
       - application/json
       host:
       - api.openai.com
-      x-stainless-read-timeout:
-      - '600'
     method: POST
     uri: https://api.openai.com/v1/responses
   response:
@@ -1042,14 +896,6 @@ interactions:
         {"cache_write_tokens": 0, "cached_tokens": 0}, "output_tokens": 19, "output_tokens_details":
         {"reasoning_tokens": 0}, "total_tokens": 87}, "user": null, "metadata": {}}'
     headers:
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a1e5f2f8f8e9e5c0-PDX
       connection:
       - keep-alive
       content-type:
@@ -1101,8 +947,6 @@ interactions:
       - application/json
       host:
       - api.openai.com
-      x-stainless-read-timeout:
-      - '600'
     method: POST
     uri: https://api.openai.com/v1/responses
   response:
@@ -1111,14 +955,6 @@ interactions:
         does not exist.", "type": "invalid_request_error", "param": "model", "code":
         "model_not_found"}}'
     headers:
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a1e5f3020f0ae5c0-PDX
       connection:
       - keep-alive
       content-type:
@@ -1156,8 +992,6 @@ interactions:
       - application/json
       host:
       - api.openai.com
-      x-stainless-read-timeout:
-      - '600'
     method: POST
     uri: https://api.openai.com/v1/responses
   response:
@@ -1212,14 +1046,6 @@ interactions:
 
         '
     headers:
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a1e5f3043befe5c0-PDX
       connection:
       - keep-alive
       content-type:
@@ -1271,8 +1097,6 @@ interactions:
       - application/json
       host:
       - api.openai.com
-      x-stainless-read-timeout:
-      - '600'
     method: POST
     uri: https://api.openai.com/v1/responses
   response:
@@ -1281,14 +1105,6 @@ interactions:
         does not exist.", "type": "invalid_request_error", "param": "model", "code":
         "model_not_found"}}'
     headers:
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a1e5f30b8c06e5c0-PDX
       connection:
       - keep-alive
       content-type:
@@ -1332,13 +1148,6 @@ interactions:
         you do not have access to it.", "type": "invalid_request_error", "param":
         null, "code": "model_not_found"}}'
     headers:
-      Access-Control-Expose-Headers:
-      - CF-Ray
-      - CF-Ray
-      CF-Cache-Status:
-      - DYNAMIC
-      CF-Ray:
-      - a1e5f3dbfe8fe5c0-PDX
       Connection:
       - keep-alive
       Content-Type:
@@ -1378,13 +1187,6 @@ interactions:
         find your API key at https://platform.openai.com/account/api-keys.", "type":
         "invalid_request_error", "param": null, "code": "invalid_api_key"}}'
     headers:
-      Access-Control-Expose-Headers:
-      - CF-Ray
-      - CF-Ray
-      CF-Cache-Status:
-      - DYNAMIC
-      CF-Ray:
-      - a1e5f3dcc85ee5c0-PDX
       Connection:
       - keep-alive
       Content-Type:
@@ -1416,13 +1218,6 @@ interactions:
         you do not have access to it.", "type": "invalid_request_error", "param":
         null, "code": "model_not_found"}}'
     headers:
-      Access-Control-Expose-Headers:
-      - CF-Ray
-      - CF-Ray
-      CF-Cache-Status:
-      - DYNAMIC
-      CF-Ray:
-      - a1e5f3ddba7be5c0-PDX
       Connection:
       - keep-alive
       Content-Type:
@@ -1456,13 +1251,6 @@ interactions:
         find your API key at https://platform.openai.com/account/api-keys.", "type":
         "invalid_request_error", "param": null, "code": "invalid_api_key"}}'
     headers:
-      Access-Control-Expose-Headers:
-      - CF-Ray
-      - CF-Ray
-      CF-Cache-Status:
-      - DYNAMIC
-      CF-Ray:
-      - a1e5f3debcb2e5c0-PDX
       Connection:
       - keep-alive
       Content-Type:
@@ -1500,13 +1288,6 @@ interactions:
         you do not have access to it.", "type": "invalid_request_error", "param":
         null, "code": "model_not_found"}}'
     headers:
-      Access-Control-Expose-Headers:
-      - CF-Ray
-      - CF-Ray
-      CF-Cache-Status:
-      - DYNAMIC
-      CF-Ray:
-      - a1e5f3df8e93e5c0-PDX
       Connection:
       - keep-alive
       Content-Type:
@@ -1546,13 +1327,6 @@ interactions:
         find your API key at https://platform.openai.com/account/api-keys.", "type":
         "invalid_request_error", "param": null, "code": "invalid_api_key"}}'
     headers:
-      Access-Control-Expose-Headers:
-      - CF-Ray
-      - CF-Ray
-      CF-Cache-Status:
-      - DYNAMIC
-      CF-Ray:
-      - a1e5f3e07890e5c0-PDX
       Connection:
       - keep-alive
       Content-Type:
@@ -1584,13 +1358,6 @@ interactions:
         you do not have access to it.", "type": "invalid_request_error", "param":
         null, "code": "model_not_found"}}'
     headers:
-      Access-Control-Expose-Headers:
-      - CF-Ray
-      - CF-Ray
-      CF-Cache-Status:
-      - DYNAMIC
-      CF-Ray:
-      - a1e5f3e15a89e5c0-PDX
       Connection:
       - keep-alive
       Content-Type:
@@ -1624,13 +1391,6 @@ interactions:
         find your API key at https://platform.openai.com/account/api-keys.", "type":
         "invalid_request_error", "param": null, "code": "invalid_api_key"}}'
     headers:
-      Access-Control-Expose-Headers:
-      - CF-Ray
-      - CF-Ray
-      CF-Cache-Status:
-      - DYNAMIC
-      CF-Ray:
-      - a1e5f3e25cbae5c0-PDX
       Connection:
       - keep-alive
       Content-Type:
@@ -1680,10 +1440,6 @@ interactions:
 
         '
     headers:
-      CF-Cache-Status:
-      - DYNAMIC
-      CF-Ray:
-      - a1e5f3e33eeee5c0-PDX
       Connection:
       - keep-alive
       Content-Type:
@@ -1694,10 +1450,6 @@ interactions:
       - cloudflare
       Transfer-Encoding:
       - chunked
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
       openai-organization:
       - nr-test-org
       openai-processing-ms:
@@ -1751,14 +1503,6 @@ interactions:
 
         '
     headers:
-      Access-Control-Expose-Headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      CF-Cache-Status:
-      - DYNAMIC
-      CF-Ray:
-      - a1e5f3edfa02e5c0-PDX
       Connection:
       - keep-alive
       Content-Type:
@@ -1823,10 +1567,6 @@ interactions:
         "audio_tokens": 0, "accepted_prediction_tokens": 0, "rejected_prediction_tokens":
         0}}, "service_tier": "default", "system_fingerprint": null}'
     headers:
-      CF-Cache-Status:
-      - DYNAMIC
-      CF-Ray:
-      - a1e5f3f26ce5e5c0-PDX
       Connection:
       - keep-alive
       Content-Type:
@@ -1837,10 +1577,6 @@ interactions:
       - cloudflare
       Transfer-Encoding:
       - chunked
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
       openai-organization:
       - nr-test-org
       openai-processing-ms:
@@ -1889,14 +1625,6 @@ interactions:
         "audio_tokens": 0, "accepted_prediction_tokens": 0, "rejected_prediction_tokens":
         0}}, "service_tier": "default", "system_fingerprint": null}'
     headers:
-      Access-Control-Expose-Headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      CF-Cache-Status:
-      - DYNAMIC
-      CF-Ray:
-      - a1e5f3fb3958e5c0-PDX
       Connection:
       - keep-alive
       Content-Type:
@@ -1954,13 +1682,6 @@ interactions:
         you do not have access to it.", "type": "invalid_request_error", "param":
         null, "code": "model_not_found"}}'
     headers:
-      Access-Control-Expose-Headers:
-      - CF-Ray
-      - CF-Ray
-      CF-Cache-Status:
-      - DYNAMIC
-      CF-Ray:
-      - a1e5f4041919e5c0-PDX
       Connection:
       - keep-alive
       Content-Type:
@@ -2000,13 +1721,6 @@ interactions:
         find your API key at https://platform.openai.com/account/api-keys.", "type":
         "invalid_request_error", "param": null, "code": "invalid_api_key"}}'
     headers:
-      Access-Control-Expose-Headers:
-      - CF-Ray
-      - CF-Ray
-      CF-Cache-Status:
-      - DYNAMIC
-      CF-Ray:
-      - a1e5f404fb27e5c0-PDX
       Connection:
       - keep-alive
       Content-Type:
@@ -2038,13 +1752,6 @@ interactions:
         you do not have access to it.", "type": "invalid_request_error", "param":
         null, "code": "model_not_found"}}'
     headers:
-      Access-Control-Expose-Headers:
-      - CF-Ray
-      - CF-Ray
-      CF-Cache-Status:
-      - DYNAMIC
-      CF-Ray:
-      - a1e5f405ed76e5c0-PDX
       Connection:
       - keep-alive
       Content-Type:
@@ -2078,13 +1785,6 @@ interactions:
         find your API key at https://platform.openai.com/account/api-keys.", "type":
         "invalid_request_error", "param": null, "code": "invalid_api_key"}}'
     headers:
-      Access-Control-Expose-Headers:
-      - CF-Ray
-      - CF-Ray
-      CF-Cache-Status:
-      - DYNAMIC
-      CF-Ray:
-      - a1e5f4071817e5c0-PDX
       Connection:
       - keep-alive
       Content-Type:
@@ -2125,10 +1825,6 @@ interactions:
     headers:
       Access-Control-Allow-Origin:
       - '*'
-      CF-Cache-Status:
-      - DYNAMIC
-      CF-Ray:
-      - a1e5f407ea0ce5c0-PDX
       Connection:
       - keep-alive
       Content-Type:
@@ -2141,10 +1837,6 @@ interactions:
       - chunked
       Via:
       - envoy-router-888fcbcf8-kjwqn
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
       openai-model:
       - text-embedding-ada-002-v2
       openai-organization:
@@ -2193,14 +1885,6 @@ interactions:
     headers:
       Access-Control-Allow-Origin:
       - '*'
-      Access-Control-Expose-Headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      CF-Cache-Status:
-      - DYNAMIC
-      CF-Ray:
-      - a1e5f40b394de5c0-PDX
       Connection:
       - keep-alive
       Content-Type:

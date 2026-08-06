@@ -21,8 +21,6 @@ interactions:
     headers:
       accept:
       - application/json
-      accept-encoding:
-      - gzip, deflate, zstd
       authorization:
       - XXXXXX
       connection:
@@ -44,14 +42,6 @@ interactions:
         0, "audio_tokens": 0, "accepted_prediction_tokens": 0, "rejected_prediction_tokens":
         0}}, "service_tier": "default", "system_fingerprint": null}'
     headers:
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a17140ef7f200dcf-PDX
       connection:
       - keep-alive
       content-type:
@@ -96,8 +86,6 @@ interactions:
     headers:
       accept:
       - application/json
-      accept-encoding:
-      - gzip, deflate, zstd
       authorization:
       - XXXXXX
       connection:
@@ -117,14 +105,6 @@ interactions:
         0, "audio_tokens": 0, "accepted_prediction_tokens": 0, "rejected_prediction_tokens":
         0}}, "service_tier": "default", "system_fingerprint": null}'
     headers:
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a17140f80c3e0dcf-PDX
       connection:
       - keep-alive
       content-type:
@@ -167,8 +147,6 @@ interactions:
     headers:
       accept:
       - application/json
-      accept-encoding:
-      - gzip, deflate, zstd
       authorization:
       - XXXXXX
       connection:
@@ -188,14 +166,6 @@ interactions:
         "audio_tokens": 0, "accepted_prediction_tokens": 0, "rejected_prediction_tokens":
         0}}, "service_tier": "default", "system_fingerprint": null}'
     headers:
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a17142d478d20dcf-PDX
       connection:
       - keep-alive
       content-type:
@@ -239,8 +209,6 @@ interactions:
     headers:
       accept:
       - application/json
-      accept-encoding:
-      - gzip, deflate, zstd
       authorization:
       - XXXXXX
       connection:
@@ -260,14 +228,6 @@ interactions:
         0, "audio_tokens": 0, "accepted_prediction_tokens": 0, "rejected_prediction_tokens":
         0}}, "service_tier": "default", "system_fingerprint": null}'
     headers:
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a17142d75fe40dcf-PDX
       connection:
       - keep-alive
       content-type:
@@ -316,8 +276,6 @@ interactions:
     headers:
       accept:
       - application/json
-      accept-encoding:
-      - gzip, deflate, zstd
       authorization:
       - XXXXXX
       connection:
@@ -338,14 +296,6 @@ interactions:
         0, "audio_tokens": 0, "accepted_prediction_tokens": 0, "rejected_prediction_tokens":
         0}}, "service_tier": "default", "system_fingerprint": null}'
     headers:
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a17142e0c89b0dcf-PDX
       connection:
       - keep-alive
       content-type:
@@ -394,8 +344,6 @@ interactions:
     headers:
       accept:
       - application/json
-      accept-encoding:
-      - gzip, deflate, zstd
       authorization:
       - XXXXXX
       connection:
@@ -410,13 +358,6 @@ interactions:
         You can find your API key at https://platform.openai.com/account/api-keys.",
         "type": "invalid_request_error", "param": null, "code": "invalid_api_key"}}'
     headers:
-      access-control-expose-headers:
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a17142fbbddf0dcf-PDX
       connection:
       - keep-alive
       content-type:
@@ -437,8 +378,6 @@ interactions:
     headers:
       accept:
       - application/json
-      accept-encoding:
-      - gzip, deflate, zstd
       authorization:
       - XXXXXX
       connection:
@@ -458,14 +397,6 @@ interactions:
         "audio_tokens": 0, "accepted_prediction_tokens": 0, "rejected_prediction_tokens":
         0}}, "service_tier": "default", "system_fingerprint": null}'
     headers:
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a1714300ac6d0dcf-PDX
       connection:
       - keep-alive
       content-type:
@@ -506,8 +437,6 @@ interactions:
     headers:
       accept:
       - application/json
-      accept-encoding:
-      - gzip, deflate, zstd
       authorization:
       - XXXXXX
       connection:
@@ -535,14 +464,6 @@ interactions:
 
         '
     headers:
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a171430a7f0c0dcf-PDX
       connection:
       - keep-alive
       content-type:
@@ -585,8 +506,6 @@ interactions:
     headers:
       accept:
       - application/json
-      accept-encoding:
-      - gzip, deflate, zstd
       authorization:
       - XXXXXX
       connection:
@@ -608,14 +527,6 @@ interactions:
         0, "audio_tokens": 0, "accepted_prediction_tokens": 0, "rejected_prediction_tokens":
         0}}, "service_tier": "default", "system_fingerprint": null}'
     headers:
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a171432a9cea0dcf-PDX
       connection:
       - keep-alive
       content-type:
@@ -656,8 +567,6 @@ interactions:
     headers:
       accept:
       - application/json
-      accept-encoding:
-      - gzip, deflate, zstd
       authorization:
       - XXXXXX
       connection:
@@ -675,14 +584,6 @@ interactions:
     headers:
       access-control-allow-origin:
       - '*'
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a17147a3ca020dcf-PDX
       connection:
       - keep-alive
       content-type:
@@ -729,8 +630,6 @@ interactions:
     headers:
       accept:
       - application/json
-      accept-encoding:
-      - gzip, deflate, zstd
       authorization:
       - XXXXXX
       connection:
@@ -748,14 +647,6 @@ interactions:
     headers:
       access-control-allow-origin:
       - '*'
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a17147a61f290dcf-PDX
       connection:
       - keep-alive
       content-type:
@@ -804,8 +695,6 @@ interactions:
     headers:
       accept:
       - application/json
-      accept-encoding:
-      - gzip, deflate, zstd
       authorization:
       - XXXXXX
       connection:
@@ -825,14 +714,6 @@ interactions:
         "audio_tokens": 0, "accepted_prediction_tokens": 0, "rejected_prediction_tokens":
         0}}, "service_tier": "default", "system_fingerprint": null}'
     headers:
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a17147a83c4a0dcf-PDX
       connection:
       - keep-alive
       content-type:
@@ -873,8 +754,6 @@ interactions:
     headers:
       accept:
       - application/json
-      accept-encoding:
-      - gzip, deflate, zstd
       authorization:
       - XXXXXX
       connection:
@@ -892,14 +771,6 @@ interactions:
     headers:
       access-control-allow-origin:
       - '*'
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a1714813ea430dcf-PDX
       connection:
       - keep-alive
       content-type:
@@ -946,8 +817,6 @@ interactions:
     headers:
       accept:
       - application/json
-      accept-encoding:
-      - gzip, deflate, zstd
       authorization:
       - XXXXXX
       connection:
@@ -965,14 +834,6 @@ interactions:
     headers:
       access-control-allow-origin:
       - '*'
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a1714814ec970dcf-PDX
       connection:
       - keep-alive
       content-type:
@@ -1022,8 +883,6 @@ interactions:
     headers:
       accept:
       - application/json
-      accept-encoding:
-      - gzip, deflate, zstd
       authorization:
       - XXXXXX
       connection:
@@ -1046,14 +905,6 @@ interactions:
         "rejected_prediction_tokens": 0}}, "service_tier": "default", "system_fingerprint":
         null}'
     headers:
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a182d27a8acc5ee6-PDX
       connection:
       - keep-alive
       content-type:
@@ -1098,8 +949,6 @@ interactions:
     headers:
       accept:
       - application/json
-      accept-encoding:
-      - gzip, deflate, zstd
       authorization:
       - XXXXXX
       connection:
@@ -1120,14 +969,6 @@ interactions:
         "rejected_prediction_tokens": 0}}, "service_tier": "default", "system_fingerprint":
         null}'
     headers:
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a182d2894ae25ee6-PDX
       connection:
       - keep-alive
       content-type:

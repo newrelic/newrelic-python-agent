@@ -256,8 +256,10 @@ def _with_streaming_response_create_kwargs(stream_set, stream_val):
     return kwargs
 
 
-# `.with_streaming_response.` is not yet instrumented, so it emits no LLM events. The tests below
-# assert that current behavior (count=0). Instrumenting it is future work.
+# TODO: Once instrumentation support is added for .with_streaming_response
+# the validators can be rewritten.
+
+
 @SKIP_IF_NO_OPENAI_WITH_STREAMING_RESPONSE
 @reset_core_stats_engine()
 @pytest.mark.parametrize("iter_method", ["iter_lines", "iter_bytes", "iter_text"])

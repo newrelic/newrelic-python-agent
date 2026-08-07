@@ -16,13 +16,11 @@ interactions:
 - request:
     body: '{"messages":[{"content":"You are a text manipulation algorithm.","role":"system"},{"content":"Call
       the add_exclamation tool with message=\"Hello\". Reply with only the tool output,
-      no other text.","role":"user"}],"model":"gpt-3.5-turbo","stream":false,"temperature":0.7,"tools":[{"type":"function","function":{"name":"add_exclamation","description":"Adds
+      no other text.","role":"user"}],"model":"gpt-5.1","stream":false,"tools":[{"type":"function","function":{"name":"add_exclamation","description":"Adds
       an exclamation mark to the input message.","parameters":{"properties":{"message":{"type":"string"}},"required":["message"],"type":"object"}}}]}'
     headers:
       accept:
       - application/json
-      accept-encoding:
-      - gzip, deflate, zstd
       authorization:
       - XXXXXX
       connection:
@@ -33,35 +31,27 @@ interactions:
     uri: https://api.openai.com/v1/chat/completions
   response:
     body:
-      string: '{"id": "chatcmpl-DyjwBisOslzESdW8A2OhHO1xk3qPK", "object": "chat.completion",
-        "created": 1783368635, "model": "gpt-3.5-turbo-0125", "choices": [{"index":
+      string: '{"id": "chatcmpl-E9xB9CdRNBdzUQyoATLduaVQokUnq", "object": "chat.completion",
+        "created": 1786041143, "model": "gpt-5.1-2025-11-13", "choices": [{"index":
         0, "message": {"role": "assistant", "content": null, "tool_calls": [{"id":
-        "call_zMq39z2e9dLaMeCsjMSOkys8", "type": "function", "function": {"name":
+        "call_vy5D1h4ymgZ2GEYT7OZHiVst", "type": "function", "function": {"name":
         "add_exclamation", "arguments": "{\"message\":\"Hello\"}"}}], "refusal": null,
-        "annotations": []}, "logprobs": null, "finish_reason": "tool_calls"}], "usage":
-        {"prompt_tokens": 78, "completion_tokens": 15, "total_tokens": 93, "prompt_tokens_details":
+        "annotations": []}, "finish_reason": "tool_calls"}], "usage": {"prompt_tokens":
+        161, "completion_tokens": 24, "total_tokens": 185, "prompt_tokens_details":
         {"cached_tokens": 0, "audio_tokens": 0}, "completion_tokens_details": {"reasoning_tokens":
         0, "audio_tokens": 0, "accepted_prediction_tokens": 0, "rejected_prediction_tokens":
         0}}, "service_tier": "default", "system_fingerprint": null}'
     headers:
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a17140ef7f200dcf-PDX
       connection:
       - keep-alive
       content-type:
       - application/json
       date:
-      - Mon, 06 Jul 2026 20:10:36 GMT
+      - Thu, 06 Aug 2026 18:32:24 GMT
       openai-organization:
       - nr-test-org
       openai-processing-ms:
-      - '481'
+      - '786'
       openai-project:
       - nr-test-project
       openai-version:
@@ -83,21 +73,19 @@ interactions:
       x-ratelimit-reset-tokens:
       - 0s
       x-request-id:
-      - req_d20f8e8fdc394022a8b95f62ace42b10
+      - req_9819c64fc6b6468e858c28f26d521d68
     status:
       code: 200
       message: OK
 - request:
     body: '{"messages":[{"content":"You are a text manipulation algorithm.","role":"system"},{"content":"Call
       the add_exclamation tool with message=\"Hello\". Reply with only the tool output,
-      no other text.","role":"user"},{"content":null,"name":"my_agent","role":"assistant","tool_calls":[{"type":"function","id":"call_zMq39z2e9dLaMeCsjMSOkys8","function":{"name":"add_exclamation","arguments":"{\"message\":
-      \"Hello\"}"}}]},{"content":"Hello!","role":"tool","tool_call_id":"call_zMq39z2e9dLaMeCsjMSOkys8"}],"model":"gpt-3.5-turbo","stream":false,"temperature":0.7,"tools":[{"type":"function","function":{"name":"add_exclamation","description":"Adds
+      no other text.","role":"user"},{"content":null,"name":"my_agent","role":"assistant","tool_calls":[{"type":"function","id":"call_vy5D1h4ymgZ2GEYT7OZHiVst","function":{"name":"add_exclamation","arguments":"{\"message\":
+      \"Hello\"}"}}]},{"content":"Hello!","role":"tool","tool_call_id":"call_vy5D1h4ymgZ2GEYT7OZHiVst"}],"model":"gpt-5.1","stream":false,"tools":[{"type":"function","function":{"name":"add_exclamation","description":"Adds
       an exclamation mark to the input message.","parameters":{"properties":{"message":{"type":"string"}},"required":["message"],"type":"object"}}}]}'
     headers:
       accept:
       - application/json
-      accept-encoding:
-      - gzip, deflate, zstd
       authorization:
       - XXXXXX
       connection:
@@ -108,33 +96,25 @@ interactions:
     uri: https://api.openai.com/v1/chat/completions
   response:
     body:
-      string: '{"id": "chatcmpl-DyjwCWB6oPS6gcxdy4b9JW4Ey6Lv5", "object": "chat.completion",
-        "created": 1783368636, "model": "gpt-3.5-turbo-0125", "choices": [{"index":
+      string: '{"id": "chatcmpl-E9xBBujwdD80QtKD39xZwt8j0gc9U", "object": "chat.completion",
+        "created": 1786041145, "model": "gpt-5.1-2025-11-13", "choices": [{"index":
         0, "message": {"role": "assistant", "content": "Hello!", "refusal": null,
-        "annotations": []}, "logprobs": null, "finish_reason": "stop"}], "usage":
-        {"prompt_tokens": 107, "completion_tokens": 2, "total_tokens": 109, "prompt_tokens_details":
+        "annotations": []}, "finish_reason": "stop"}], "usage": {"prompt_tokens":
+        196, "completion_tokens": 5, "total_tokens": 201, "prompt_tokens_details":
         {"cached_tokens": 0, "audio_tokens": 0}, "completion_tokens_details": {"reasoning_tokens":
         0, "audio_tokens": 0, "accepted_prediction_tokens": 0, "rejected_prediction_tokens":
         0}}, "service_tier": "default", "system_fingerprint": null}'
     headers:
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a17140f80c3e0dcf-PDX
       connection:
       - keep-alive
       content-type:
       - application/json
       date:
-      - Mon, 06 Jul 2026 20:10:37 GMT
+      - Thu, 06 Aug 2026 18:32:25 GMT
       openai-organization:
       - nr-test-org
       openai-processing-ms:
-      - '874'
+      - '884'
       openai-project:
       - nr-test-project
       openai-version:
@@ -156,19 +136,173 @@ interactions:
       x-ratelimit-reset-tokens:
       - 0s
       x-request-id:
-      - req_d20f8e8fdc394022a8b95f62ace42b10
+      - req_0849ba2311ad4f38b370989277bdeb56
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"messages":[{"content":"You are a text manipulation algorithm.","role":"system"},{"content":"Call
+      the add_exclamation tool with message=\"Hello\". Reply with only the tool output,
+      no other text.","role":"user"}],"model":"gpt-5.1","stream":true,"stream_options":{"include_usage":true},"tools":[{"type":"function","function":{"name":"add_exclamation","description":"Adds
+      an exclamation mark to the input message.","parameters":{"properties":{"message":{"type":"string"}},"required":["message"],"type":"object"}}}]}'
+    headers:
+      accept:
+      - application/json
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: 'data: {"id":"chatcmpl-E9xBCZY7o8Ezj3rmfDQmgaaPvnIos","object":"chat.completion.chunk","created":1786041146,"model":"gpt-5.1-2025-11-13","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"role":"assistant","content":null,"tool_calls":[{"index":0,"id":"call_7mnOEjqxznchq5bQZ9x19gJC","type":"function","function":{"name":"add_exclamation","arguments":""}}],"refusal":null},"finish_reason":null}],"usage":null,"obfuscation":"LFeR3gbHnzVOAPt"}
+
+
+        data: {"id":"chatcmpl-E9xBCZY7o8Ezj3rmfDQmgaaPvnIos","object":"chat.completion.chunk","created":1786041146,"model":"gpt-5.1-2025-11-13","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{\""}}]},"finish_reason":null}],"usage":null,"obfuscation":"q3DhDKWX4326t"}
+
+
+        data: {"id":"chatcmpl-E9xBCZY7o8Ezj3rmfDQmgaaPvnIos","object":"chat.completion.chunk","created":1786041146,"model":"gpt-5.1-2025-11-13","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"message"}}]},"finish_reason":null}],"usage":null,"obfuscation":"EPKzgppxX"}
+
+
+        data: {"id":"chatcmpl-E9xBCZY7o8Ezj3rmfDQmgaaPvnIos","object":"chat.completion.chunk","created":1786041146,"model":"gpt-5.1-2025-11-13","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"\":\""}}]},"finish_reason":null}],"usage":null,"obfuscation":"zZ20G6s0pOj"}
+
+
+        data: {"id":"chatcmpl-E9xBCZY7o8Ezj3rmfDQmgaaPvnIos","object":"chat.completion.chunk","created":1786041146,"model":"gpt-5.1-2025-11-13","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"Hello"}}]},"finish_reason":null}],"usage":null,"obfuscation":"dBT8xCuN4VN"}
+
+
+        data: {"id":"chatcmpl-E9xBCZY7o8Ezj3rmfDQmgaaPvnIos","object":"chat.completion.chunk","created":1786041146,"model":"gpt-5.1-2025-11-13","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"\"}"}}]},"finish_reason":null}],"usage":null,"obfuscation":"xauhJbnz2a9NY"}
+
+
+        data: {"id":"chatcmpl-E9xBCZY7o8Ezj3rmfDQmgaaPvnIos","object":"chat.completion.chunk","created":1786041146,"model":"gpt-5.1-2025-11-13","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{},"finish_reason":"tool_calls"}],"usage":null,"obfuscation":"PxfAue3BdBskTA"}
+
+
+        data: {"id":"chatcmpl-E9xBCZY7o8Ezj3rmfDQmgaaPvnIos","object":"chat.completion.chunk","created":1786041146,"model":"gpt-5.1-2025-11-13","service_tier":"default","system_fingerprint":null,"choices":[],"usage":{"prompt_tokens":161,"completion_tokens":24,"total_tokens":185,"prompt_tokens_details":{"cached_tokens":0,"audio_tokens":0},"completion_tokens_details":{"reasoning_tokens":0,"audio_tokens":0,"accepted_prediction_tokens":0,"rejected_prediction_tokens":0}},"obfuscation":"VTtcy0b"}
+
+
+        data: [DONE]
+
+
+        '
+    headers:
+      connection:
+      - keep-alive
+      content-type:
+      - text/event-stream; charset=utf-8
+      date:
+      - Thu, 06 Aug 2026 18:32:26 GMT
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '554'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_9bc66d773ed240e0b1d20cb2344cda2c
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"messages":[{"content":"You are a text manipulation algorithm.","role":"system"},{"content":"Call
+      the add_exclamation tool with message=\"Hello\". Reply with only the tool output,
+      no other text.","role":"user"},{"content":null,"name":"my_agent","role":"assistant","tool_calls":[{"type":"function","id":"call_7mnOEjqxznchq5bQZ9x19gJC","function":{"name":"add_exclamation","arguments":"{\"message\":
+      \"Hello\"}"}}]},{"content":"Hello!","role":"tool","tool_call_id":"call_7mnOEjqxznchq5bQZ9x19gJC"}],"model":"gpt-5.1","stream":true,"stream_options":{"include_usage":true},"tools":[{"type":"function","function":{"name":"add_exclamation","description":"Adds
+      an exclamation mark to the input message.","parameters":{"properties":{"message":{"type":"string"}},"required":["message"],"type":"object"}}}]}'
+    headers:
+      accept:
+      - application/json
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: 'data: {"id":"chatcmpl-E9xBDVPUfukXOdbuLAML4JY7ejRAS","object":"chat.completion.chunk","created":1786041147,"model":"gpt-5.1-2025-11-13","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"role":"assistant","content":"","refusal":null},"finish_reason":null}],"usage":null,"obfuscation":"s0TqnLqc"}
+
+
+        data: {"id":"chatcmpl-E9xBDVPUfukXOdbuLAML4JY7ejRAS","object":"chat.completion.chunk","created":1786041147,"model":"gpt-5.1-2025-11-13","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"content":"Hello"},"finish_reason":null}],"usage":null,"obfuscation":"G4GZc"}
+
+
+        data: {"id":"chatcmpl-E9xBDVPUfukXOdbuLAML4JY7ejRAS","object":"chat.completion.chunk","created":1786041147,"model":"gpt-5.1-2025-11-13","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"content":"!"},"finish_reason":null}],"usage":null,"obfuscation":"xGAqNi6u7"}
+
+
+        data: {"id":"chatcmpl-E9xBDVPUfukXOdbuLAML4JY7ejRAS","object":"chat.completion.chunk","created":1786041147,"model":"gpt-5.1-2025-11-13","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":null,"obfuscation":"amr6"}
+
+
+        data: {"id":"chatcmpl-E9xBDVPUfukXOdbuLAML4JY7ejRAS","object":"chat.completion.chunk","created":1786041147,"model":"gpt-5.1-2025-11-13","service_tier":"default","system_fingerprint":null,"choices":[],"usage":{"prompt_tokens":196,"completion_tokens":5,"total_tokens":201,"prompt_tokens_details":{"cached_tokens":0,"audio_tokens":0},"completion_tokens_details":{"reasoning_tokens":0,"audio_tokens":0,"accepted_prediction_tokens":0,"rejected_prediction_tokens":0}},"obfuscation":"C2znJFSG"}
+
+
+        data: [DONE]
+
+
+        '
+    headers:
+      connection:
+      - keep-alive
+      content-type:
+      - text/event-stream; charset=utf-8
+      date:
+      - Thu, 06 Aug 2026 18:32:27 GMT
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '439'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_1f567910c43a45c090d616eab55aa928
     status:
       code: 200
       message: OK
 - request:
     body: '{"messages":[{"content":"You are a calculator. The user will provide a
       simple arithmetic expression. Reply with only the numeric answer as digits,
-      with no other text or punctuation.","role":"system"},{"content":"2 + 3","role":"user"}],"model":"gpt-3.5-turbo","stream":false,"temperature":0.7}'
+      with no other text or punctuation.","role":"system"},{"content":"2 + 3","role":"user"}],"model":"gpt-5.1","stream":false}'
     headers:
       accept:
       - application/json
-      accept-encoding:
-      - gzip, deflate, zstd
       authorization:
       - XXXXXX
       connection:
@@ -179,33 +313,25 @@ interactions:
     uri: https://api.openai.com/v1/chat/completions
   response:
     body:
-      string: '{"id": "chatcmpl-DyjxQVcyJ1JSbpc7utbxFCwDQWZGZ", "object": "chat.completion",
-        "created": 1783368712, "model": "gpt-3.5-turbo-0125", "choices": [{"index":
+      string: '{"id": "chatcmpl-E9xBG29prrfrCV2QoM2R02HiuI9Ps", "object": "chat.completion",
+        "created": 1786041150, "model": "gpt-5.1-2025-11-13", "choices": [{"index":
         0, "message": {"role": "assistant", "content": "5", "refusal": null, "annotations":
-        []}, "logprobs": null, "finish_reason": "stop"}], "usage": {"prompt_tokens":
-        45, "completion_tokens": 1, "total_tokens": 46, "prompt_tokens_details": {"cached_tokens":
-        0, "audio_tokens": 0}, "completion_tokens_details": {"reasoning_tokens": 0,
-        "audio_tokens": 0, "accepted_prediction_tokens": 0, "rejected_prediction_tokens":
-        0}}, "service_tier": "default", "system_fingerprint": null}'
+        []}, "finish_reason": "stop"}], "usage": {"prompt_tokens": 44, "completion_tokens":
+        10, "total_tokens": 54, "prompt_tokens_details": {"cached_tokens": 0, "audio_tokens":
+        0}, "completion_tokens_details": {"reasoning_tokens": 0, "audio_tokens": 0,
+        "accepted_prediction_tokens": 0, "rejected_prediction_tokens": 0}}, "service_tier":
+        "default", "system_fingerprint": null}'
     headers:
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a17142d478d20dcf-PDX
       connection:
       - keep-alive
       content-type:
       - application/json
       date:
-      - Mon, 06 Jul 2026 20:11:52 GMT
+      - Thu, 06 Aug 2026 18:32:30 GMT
       openai-organization:
       - nr-test-org
       openai-processing-ms:
-      - '330'
+      - '596'
       openai-project:
       - nr-test-project
       openai-version:
@@ -227,7 +353,7 @@ interactions:
       x-ratelimit-reset-tokens:
       - 0s
       x-request-id:
-      - req_6390feb2aa144b23b0487eca7916536c
+      - req_68d7ad3bb7cd4a01b86e90d6f50c2680
     status:
       code: 200
       message: OK
@@ -235,12 +361,10 @@ interactions:
     body: '{"messages":[{"content":"You are a helpful assistant. The user will pass
       in a category. Reply with the members of that category as a lowercase, comma-separated
       list, in canonical order. Return only the list, and nothing more.","role":"system"},{"content":"English
-      vowels","role":"user"}],"model":"gpt-3.5-turbo","stream":false,"temperature":0.7}'
+      vowels","role":"user"}],"model":"gpt-5.1","stream":false}'
     headers:
       accept:
       - application/json
-      accept-encoding:
-      - gzip, deflate, zstd
       authorization:
       - XXXXXX
       connection:
@@ -251,33 +375,25 @@ interactions:
     uri: https://api.openai.com/v1/chat/completions
   response:
     body:
-      string: '{"id": "chatcmpl-DyjxRAV7FX4cBuRUNhOYQeUDiXe4f", "object": "chat.completion",
-        "created": 1783368713, "model": "gpt-3.5-turbo-0125", "choices": [{"index":
+      string: '{"id": "chatcmpl-E9xBGG7v2TQMIU1jtJk0kKRfYTFJu", "object": "chat.completion",
+        "created": 1786041150, "model": "gpt-5.1-2025-11-13", "choices": [{"index":
         0, "message": {"role": "assistant", "content": "a, e, i, o, u", "refusal":
-        null, "annotations": []}, "logprobs": null, "finish_reason": "stop"}], "usage":
-        {"prompt_tokens": 55, "completion_tokens": 9, "total_tokens": 64, "prompt_tokens_details":
+        null, "annotations": []}, "finish_reason": "stop"}], "usage": {"prompt_tokens":
+        54, "completion_tokens": 18, "total_tokens": 72, "prompt_tokens_details":
         {"cached_tokens": 0, "audio_tokens": 0}, "completion_tokens_details": {"reasoning_tokens":
         0, "audio_tokens": 0, "accepted_prediction_tokens": 0, "rejected_prediction_tokens":
         0}}, "service_tier": "default", "system_fingerprint": null}'
     headers:
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a17142d75fe40dcf-PDX
       connection:
       - keep-alive
       content-type:
       - application/json
       date:
-      - Mon, 06 Jul 2026 20:11:54 GMT
+      - Thu, 06 Aug 2026 18:32:31 GMT
       openai-organization:
       - nr-test-org
       openai-processing-ms:
-      - '832'
+      - '971'
       openai-project:
       - nr-test-project
       openai-version:
@@ -299,7 +415,7 @@ interactions:
       x-ratelimit-reset-tokens:
       - 0s
       x-request-id:
-      - req_754e9e3efd6b4adbaf6fac6753c6d531
+      - req_8edb8a0d8b4e48128f29794465db616b
     status:
       code: 200
       message: OK
@@ -307,85 +423,7 @@ interactions:
     body: '{"messages":[{"content":"You are a world class algorithm for extracting
       information in structured formats.","role":"system"},{"content":"Use the given
       format to extract information from the following input: Sally is 13","role":"user"},{"content":"Tip:
-      Make sure to answer in the correct format","role":"user"}],"model":"gpt-3.5-turbo","function_call":{"name":"output_formatter"},"functions":[{"name":"output_formatter","description":"Output
-      formatter. Should always be used to format your response to the user.","parameters":{"title":"Person","description":"Identifying
-      information about a person.","type":"object","properties":{"name":{"title":"Name","description":"The
-      person''s name","type":"string"},"age":{"title":"Age","description":"The person''s
-      age","type":"integer"},"fav_food":{"title":"Fav Food","description":"The person''s
-      favorite food","type":"string"}},"required":["name","age"]}}],"stream":false,"temperature":0.7}'
-    headers:
-      accept:
-      - application/json
-      accept-encoding:
-      - gzip, deflate, zstd
-      authorization:
-      - XXXXXX
-      connection:
-      - keep-alive
-      content-type:
-      - application/json
-    method: POST
-    uri: https://api.openai.com/v1/chat/completions
-  response:
-    body:
-      string: '{"id": "chatcmpl-DyjxVLIkNhzQC36Xo7wUyQeXNa1Yv", "object": "chat.completion",
-        "created": 1783368717, "model": "gpt-3.5-turbo-0125", "choices": [{"index":
-        0, "message": {"role": "assistant", "content": null, "function_call": {"name":
-        "output_formatter", "arguments": "{\"name\": \"Sally\", \"age\": 13}"}, "refusal":
-        null, "annotations": []}, "logprobs": null, "finish_reason": "stop"}], "usage":
-        {"prompt_tokens": 159, "completion_tokens": 13, "total_tokens": 172, "prompt_tokens_details":
-        {"cached_tokens": 0, "audio_tokens": 0}, "completion_tokens_details": {"reasoning_tokens":
-        0, "audio_tokens": 0, "accepted_prediction_tokens": 0, "rejected_prediction_tokens":
-        0}}, "service_tier": "default", "system_fingerprint": null}'
-    headers:
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a17142e0c89b0dcf-PDX
-      connection:
-      - keep-alive
-      content-type:
-      - application/json
-      date:
-      - Mon, 06 Jul 2026 20:11:58 GMT
-      openai-organization:
-      - nr-test-org
-      openai-processing-ms:
-      - '899'
-      openai-project:
-      - nr-test-project
-      openai-version:
-      - '2020-10-01'
-      server:
-      - cloudflare
-      transfer-encoding:
-      - chunked
-      x-ratelimit-limit-requests:
-      - '10000'
-      x-ratelimit-limit-tokens:
-      - '50000000'
-      x-ratelimit-remaining-requests:
-      - '9999'
-      x-ratelimit-remaining-tokens:
-      - '49999975'
-      x-ratelimit-reset-requests:
-      - 6ms
-      x-ratelimit-reset-tokens:
-      - 0s
-      x-request-id:
-      - req_960f6ee3ea0e462cbc13f25b820cca12
-    status:
-      code: 200
-      message: OK
-- request:
-    body: '{"messages":[{"content":"You are a world class algorithm for extracting
-      information in structured formats with openai failures.","role":"system"},{"content":"Use
-      the given format to extract information from the following input: Sally is 13","role":"user"},{"content":"Tip:
-      Make sure to answer in the correct format","role":"user"}],"model":"gpt-3.5-turbo","function_call":{"name":"output_formatter"},"functions":[{"name":"output_formatter","description":"Output
+      Make sure to answer in the correct format","role":"user"}],"model":"gpt-5.1","function_call":{"name":"output_formatter"},"functions":[{"name":"output_formatter","description":"Output
       formatter. Should always be used to format your response to the user.","parameters":{"title":"Person","description":"Identifying
       information about a person.","type":"object","properties":{"name":{"title":"Name","description":"The
       person''s name","type":"string"},"age":{"title":"Age","description":"The person''s
@@ -394,8 +432,6 @@ interactions:
     headers:
       accept:
       - application/json
-      accept-encoding:
-      - gzip, deflate, zstd
       authorization:
       - XXXXXX
       connection:
@@ -406,226 +442,26 @@ interactions:
     uri: https://api.openai.com/v1/chat/completions
   response:
     body:
-      string: '{"error": {"message": "Incorrect API key provided: FAKE-OPE***-KEY.
-        You can find your API key at https://platform.openai.com/account/api-keys.",
-        "type": "invalid_request_error", "param": null, "code": "invalid_api_key"}}'
-    headers:
-      access-control-expose-headers:
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a17142fbbddf0dcf-PDX
-      connection:
-      - keep-alive
-      content-type:
-      - application/json; charset=utf-8
-      date:
-      - Mon, 06 Jul 2026 20:11:58 GMT
-      server:
-      - cloudflare
-      vary:
-      - Origin
-      x-request-id:
-      - 1f1e0206-010b-4424-990b-4f0ae615f643
-    status:
-      code: 401
-      message: Unauthorized
-- request:
-    body: '{"messages":[{"content":"What is the capital of France? Answer in one word.","role":"user"}],"model":"gpt-3.5-turbo","stream":false,"temperature":0.7}'
-    headers:
-      accept:
-      - application/json
-      accept-encoding:
-      - gzip, deflate, zstd
-      authorization:
-      - XXXXXX
-      connection:
-      - keep-alive
-      content-type:
-      - application/json
-    method: POST
-    uri: https://api.openai.com/v1/chat/completions
-  response:
-    body:
-      string: '{"id": "chatcmpl-DyjxXP7QeqZsp81qtbX65us41OVKg", "object": "chat.completion",
-        "created": 1783368719, "model": "gpt-3.5-turbo-0125", "choices": [{"index":
-        0, "message": {"role": "assistant", "content": "Paris", "refusal": null, "annotations":
-        []}, "logprobs": null, "finish_reason": "stop"}], "usage": {"prompt_tokens":
-        19, "completion_tokens": 1, "total_tokens": 20, "prompt_tokens_details": {"cached_tokens":
-        0, "audio_tokens": 0}, "completion_tokens_details": {"reasoning_tokens": 0,
-        "audio_tokens": 0, "accepted_prediction_tokens": 0, "rejected_prediction_tokens":
-        0}}, "service_tier": "default", "system_fingerprint": null}'
-    headers:
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a1714300ac6d0dcf-PDX
-      connection:
-      - keep-alive
-      content-type:
-      - application/json
-      date:
-      - Mon, 06 Jul 2026 20:12:00 GMT
-      openai-organization:
-      - nr-test-org
-      openai-processing-ms:
-      - '1166'
-      openai-project:
-      - nr-test-project
-      openai-version:
-      - '2020-10-01'
-      server:
-      - cloudflare
-      transfer-encoding:
-      - chunked
-      x-ratelimit-limit-requests:
-      - '10000'
-      x-ratelimit-limit-tokens:
-      - '50000000'
-      x-ratelimit-remaining-requests:
-      - '9999'
-      x-ratelimit-remaining-tokens:
-      - '49999975'
-      x-ratelimit-reset-requests:
-      - 6ms
-      x-ratelimit-reset-tokens:
-      - 0s
-      x-request-id:
-      - req_ac60b6a469084412a5496bc5c71d8801
-    status:
-      code: 200
-      message: OK
-- request:
-    body: '{"messages":[{"content":"What is the capital of France? Answer in one word.","role":"user"}],"model":"gpt-3.5-turbo","stream":true,"stream_options":{"include_usage":true},"temperature":0.7}'
-    headers:
-      accept:
-      - application/json
-      accept-encoding:
-      - gzip, deflate, zstd
-      authorization:
-      - XXXXXX
-      connection:
-      - keep-alive
-      content-type:
-      - application/json
-    method: POST
-    uri: https://api.openai.com/v1/chat/completions
-  response:
-    body:
-      string: 'data: {"id":"chatcmpl-DyjxXP7QeqZsp81qtbX65us41OVKg","object":"chat.completion.chunk","created":1783368721,"model":"gpt-3.5-turbo-0125","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"role":"assistant","content":"","refusal":null},"logprobs":null,"finish_reason":null}],"usage":null,"obfuscation":"Vy2xZuj6"}
-
-
-        data: {"id":"chatcmpl-DyjxXP7QeqZsp81qtbX65us41OVKg","object":"chat.completion.chunk","created":1783368721,"model":"gpt-3.5-turbo-0125","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"content":"Paris"},"logprobs":null,"finish_reason":null}],"usage":null,"obfuscation":"c96pk"}
-
-
-        data: {"id":"chatcmpl-DyjxXP7QeqZsp81qtbX65us41OVKg","object":"chat.completion.chunk","created":1783368721,"model":"gpt-3.5-turbo-0125","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{},"logprobs":null,"finish_reason":"stop"}],"usage":null,"obfuscation":"l9zH"}
-
-
-        data: {"id":"chatcmpl-DyjxXP7QeqZsp81qtbX65us41OVKg","object":"chat.completion.chunk","created":1783368721,"model":"gpt-3.5-turbo-0125","service_tier":"default","system_fingerprint":null,"choices":[],"usage":{"prompt_tokens":19,"completion_tokens":1,"total_tokens":20,"prompt_tokens_details":{"cached_tokens":0,"audio_tokens":0},"completion_tokens_details":{"reasoning_tokens":0,"audio_tokens":0,"accepted_prediction_tokens":0,"rejected_prediction_tokens":0}},"obfuscation":"RBFwbRk6yg"}
-
-
-        data: [DONE]
-
-
-        '
-    headers:
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a171430a7f0c0dcf-PDX
-      connection:
-      - keep-alive
-      content-type:
-      - text/event-stream; charset=utf-8
-      date:
-      - Mon, 06 Jul 2026 20:12:03 GMT
-      openai-organization:
-      - nr-test-org
-      openai-processing-ms:
-      - '1916'
-      openai-project:
-      - nr-test-project
-      openai-version:
-      - '2020-10-01'
-      server:
-      - cloudflare
-      transfer-encoding:
-      - chunked
-      x-ratelimit-limit-requests:
-      - '10000'
-      x-ratelimit-limit-tokens:
-      - '50000000'
-      x-ratelimit-remaining-requests:
-      - '9999'
-      x-ratelimit-remaining-tokens:
-      - '49999975'
-      x-ratelimit-reset-requests:
-      - 6ms
-      x-ratelimit-reset-tokens:
-      - 0s
-      x-request-id:
-      - req_ac60b6a469084412a5496bc5c71d8801
-    status:
-      code: 200
-      message: OK
-- request:
-    body: '{"messages":[{"content":"You are a text manipulation algorithm.","role":"system"},{"content":"Use
-      a tool to add an exclamation to the word \"exc\"","role":"user"}],"model":"gpt-3.5-turbo","stream":false,"temperature":0.7,"tools":[{"type":"function","function":{"name":"add_exclamation","description":"Adds
-      an exclamation mark to the input message.","parameters":{"properties":{"message":{"type":"string"}},"required":["message"],"type":"object"}}}]}'
-    headers:
-      accept:
-      - application/json
-      accept-encoding:
-      - gzip, deflate, zstd
-      authorization:
-      - XXXXXX
-      connection:
-      - keep-alive
-      content-type:
-      - application/json
-    method: POST
-    uri: https://api.openai.com/v1/chat/completions
-  response:
-    body:
-      string: '{"id": "chatcmpl-DyjxeO0zu4FvtLexci02P76Sein2R", "object": "chat.completion",
-        "created": 1783368726, "model": "gpt-3.5-turbo-0125", "choices": [{"index":
-        0, "message": {"role": "assistant", "content": null, "tool_calls": [{"id":
-        "call_6kIudMDybZtnLHx67w5Gjo4Q", "type": "function", "function": {"name":
-        "add_exclamation", "arguments": "{\"message\":\"exc\"}"}}], "refusal": null,
-        "annotations": []}, "logprobs": null, "finish_reason": "tool_calls"}], "usage":
-        {"prompt_tokens": 70, "completion_tokens": 15, "total_tokens": 85, "prompt_tokens_details":
+      string: '{"id": "chatcmpl-E9xBItgcgd0y2J4oNiQMwsGVnIPfO", "object": "chat.completion",
+        "created": 1786041152, "model": "gpt-5.1-2025-11-13", "choices": [{"index":
+        0, "message": {"role": "assistant", "content": null, "function_call": {"name":
+        "output_formatter", "arguments": "{\"name\":\"Sally\",\"age\":13}"}, "refusal":
+        null, "annotations": []}, "finish_reason": "function_call"}], "usage": {"prompt_tokens":
+        223, "completion_tokens": 28, "total_tokens": 251, "prompt_tokens_details":
         {"cached_tokens": 0, "audio_tokens": 0}, "completion_tokens_details": {"reasoning_tokens":
         0, "audio_tokens": 0, "accepted_prediction_tokens": 0, "rejected_prediction_tokens":
         0}}, "service_tier": "default", "system_fingerprint": null}'
     headers:
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a171432a9cea0dcf-PDX
       connection:
       - keep-alive
       content-type:
       - application/json
       date:
-      - Mon, 06 Jul 2026 20:12:07 GMT
+      - Thu, 06 Aug 2026 18:32:32 GMT
       openai-organization:
       - nr-test-org
       openai-processing-ms:
-      - '958'
+      - '845'
       openai-project:
       - nr-test-project
       openai-version:
@@ -647,7 +483,7 @@ interactions:
       x-ratelimit-reset-tokens:
       - 0s
       x-request-id:
-      - req_f7d36ca208e548a19ba2e09fd7f60192
+      - req_f1ac759be93346219335158dc60adda1
     status:
       code: 200
       message: OK
@@ -656,8 +492,6 @@ interactions:
     headers:
       accept:
       - application/json
-      accept-encoding:
-      - gzip, deflate, zstd
       authorization:
       - XXXXXX
       connection:
@@ -675,26 +509,18 @@ interactions:
     headers:
       access-control-allow-origin:
       - '*'
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a17147a3ca020dcf-PDX
       connection:
       - keep-alive
       content-type:
       - application/json
       date:
-      - Mon, 06 Jul 2026 20:15:09 GMT
+      - Thu, 06 Aug 2026 18:32:36 GMT
       openai-model:
       - text-embedding-ada-002-v2
       openai-organization:
       - nr-test-org
       openai-processing-ms:
-      - '120'
+      - '116'
       openai-project:
       - nr-test-project
       openai-version:
@@ -704,7 +530,7 @@ interactions:
       transfer-encoding:
       - chunked
       via:
-      - envoy-router-579b48ddd-gpsk4
+      - envoy-router-5985964fdf-znxjm
       x-engine-geography:
       - US
       x-ratelimit-limit-requests:
@@ -720,7 +546,7 @@ interactions:
       x-ratelimit-reset-tokens:
       - 0s
       x-request-id:
-      - req_ac60b6a469084412a5496bc5c71d8801
+      - req_0544289978d640828acc189a2910467c
     status:
       code: 200
       message: OK
@@ -729,8 +555,6 @@ interactions:
     headers:
       accept:
       - application/json
-      accept-encoding:
-      - gzip, deflate, zstd
       authorization:
       - XXXXXX
       connection:
@@ -748,26 +572,18 @@ interactions:
     headers:
       access-control-allow-origin:
       - '*'
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a17147a61f290dcf-PDX
       connection:
       - keep-alive
       content-type:
       - application/json
       date:
-      - Mon, 06 Jul 2026 20:15:10 GMT
+      - Thu, 06 Aug 2026 18:32:36 GMT
       openai-model:
       - text-embedding-ada-002-v2
       openai-organization:
       - nr-test-org
       openai-processing-ms:
-      - '208'
+      - '77'
       openai-project:
       - nr-test-project
       openai-version:
@@ -777,7 +593,7 @@ interactions:
       transfer-encoding:
       - chunked
       via:
-      - envoy-router-579b48ddd-jl72d
+      - envoy-router-68cccf4d4b-w7gst
       x-engine-geography:
       - US
       x-ratelimit-limit-requests:
@@ -793,19 +609,17 @@ interactions:
       x-ratelimit-reset-tokens:
       - 0s
       x-request-id:
-      - req_e85f1dd183b347f09fe4aeb4db28c5c0
+      - req_9e49ab681b1649f29fb41ee23b930a47
     status:
       code: 200
       message: OK
 - request:
     body: '{"messages":[{"content":"You are a math solver. The retrieved context contains
       a single arithmetic question. Reply with only the numeric answer as digits,
-      with no other text or punctuation.\n\nWhat is 2 + 4?","role":"system"},{"content":"math","role":"user"}],"model":"gpt-3.5-turbo","stream":false,"temperature":0.7}'
+      with no other text or punctuation.\n\nWhat is 2 + 4?","role":"system"},{"content":"math","role":"user"}],"model":"gpt-5.1","stream":false}'
     headers:
       accept:
       - application/json
-      accept-encoding:
-      - gzip, deflate, zstd
       authorization:
       - XXXXXX
       connection:
@@ -816,33 +630,25 @@ interactions:
     uri: https://api.openai.com/v1/chat/completions
   response:
     body:
-      string: '{"id": "chatcmpl-Dyk0cvyg4BX3Atfn1XVpA0U8Y6fWK", "object": "chat.completion",
-        "created": 1783368910, "model": "gpt-3.5-turbo-0125", "choices": [{"index":
+      string: '{"id": "chatcmpl-E9xBMPNpmGUcSymafC0SHY9xKjG4a", "object": "chat.completion",
+        "created": 1786041156, "model": "gpt-5.1-2025-11-13", "choices": [{"index":
         0, "message": {"role": "assistant", "content": "6", "refusal": null, "annotations":
-        []}, "logprobs": null, "finish_reason": "stop"}], "usage": {"prompt_tokens":
-        51, "completion_tokens": 1, "total_tokens": 52, "prompt_tokens_details": {"cached_tokens":
-        0, "audio_tokens": 0}, "completion_tokens_details": {"reasoning_tokens": 0,
-        "audio_tokens": 0, "accepted_prediction_tokens": 0, "rejected_prediction_tokens":
-        0}}, "service_tier": "default", "system_fingerprint": null}'
+        []}, "finish_reason": "stop"}], "usage": {"prompt_tokens": 50, "completion_tokens":
+        10, "total_tokens": 60, "prompt_tokens_details": {"cached_tokens": 0, "audio_tokens":
+        0}, "completion_tokens_details": {"reasoning_tokens": 0, "audio_tokens": 0,
+        "accepted_prediction_tokens": 0, "rejected_prediction_tokens": 0}}, "service_tier":
+        "default", "system_fingerprint": null}'
     headers:
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a17147a83c4a0dcf-PDX
       connection:
       - keep-alive
       content-type:
       - application/json
       date:
-      - Mon, 06 Jul 2026 20:15:11 GMT
+      - Thu, 06 Aug 2026 18:32:37 GMT
       openai-organization:
       - nr-test-org
       openai-processing-ms:
-      - '832'
+      - '621'
       openai-project:
       - nr-test-project
       openai-version:
@@ -864,7 +670,404 @@ interactions:
       x-ratelimit-reset-tokens:
       - 0s
       x-request-id:
-      - req_43d927e226724df6bfe29e3871621cbc
+      - req_ef107995223f4294bbadfa6eb620a50a
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"messages":[{"content":"You are a text manipulation algorithm.","role":"system"},{"content":"Call
+      the add_exclamation_mcp tool with message=\"Hello\". Reply with only the tool
+      output, no other text.","role":"user"}],"model":"gpt-5.1","stream":false,"tools":[{"type":"function","function":{"name":"add_exclamation_mcp","description":"Adds
+      an exclamation mark to the input message.","parameters":{"properties":{"message":{"type":"string"}},"required":["message"],"type":"object"}}}]}'
+    headers:
+      accept:
+      - application/json
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: '{"id": "chatcmpl-E9xBNP8hMixf5meHhgxXsfOD3Hant", "object": "chat.completion",
+        "created": 1786041157, "model": "gpt-5.1-2025-11-13", "choices": [{"index":
+        0, "message": {"role": "assistant", "content": null, "tool_calls": [{"id":
+        "call_JxHOUNgCG5yWiczNxhCufWIn", "type": "function", "function": {"name":
+        "add_exclamation_mcp", "arguments": "{\"message\":\"Hello\"}"}}], "refusal":
+        null, "annotations": []}, "finish_reason": "tool_calls"}], "usage": {"prompt_tokens":
+        165, "completion_tokens": 26, "total_tokens": 191, "prompt_tokens_details":
+        {"cached_tokens": 0, "audio_tokens": 0}, "completion_tokens_details": {"reasoning_tokens":
+        0, "audio_tokens": 0, "accepted_prediction_tokens": 0, "rejected_prediction_tokens":
+        0}}, "service_tier": "default", "system_fingerprint": null}'
+    headers:
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      date:
+      - Thu, 06 Aug 2026 18:32:38 GMT
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '816'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_de764a3bd244449aa7a25c001a673740
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"messages":[{"content":"You are a text manipulation algorithm.","role":"system"},{"content":"Call
+      the add_exclamation_mcp tool with message=\"Hello\". Reply with only the tool
+      output, no other text.","role":"user"},{"content":null,"name":"my_agent","role":"assistant","tool_calls":[{"type":"function","id":"call_JxHOUNgCG5yWiczNxhCufWIn","function":{"name":"add_exclamation_mcp","arguments":"{\"message\":
+      \"Hello\"}"}}]},{"content":[{"type":"text","text":"Hello!"}],"role":"tool","tool_call_id":"call_JxHOUNgCG5yWiczNxhCufWIn"}],"model":"gpt-5.1","stream":false,"tools":[{"type":"function","function":{"name":"add_exclamation_mcp","description":"Adds
+      an exclamation mark to the input message.","parameters":{"properties":{"message":{"type":"string"}},"required":["message"],"type":"object"}}}]}'
+    headers:
+      accept:
+      - application/json
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: '{"id": "chatcmpl-E9xBO2pduBzBbnXb6h9fH62Uh05ht", "object": "chat.completion",
+        "created": 1786041158, "model": "gpt-5.1-2025-11-13", "choices": [{"index":
+        0, "message": {"role": "assistant", "content": "Hello!", "refusal": null,
+        "annotations": []}, "finish_reason": "stop"}], "usage": {"prompt_tokens":
+        204, "completion_tokens": 5, "total_tokens": 209, "prompt_tokens_details":
+        {"cached_tokens": 0, "audio_tokens": 0}, "completion_tokens_details": {"reasoning_tokens":
+        0, "audio_tokens": 0, "accepted_prediction_tokens": 0, "rejected_prediction_tokens":
+        0}}, "service_tier": "default", "system_fingerprint": null}'
+    headers:
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      date:
+      - Thu, 06 Aug 2026 18:32:39 GMT
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '731'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_4687b20dc12a471d99a87f485032bbab
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"messages":[{"content":"What is the capital of France? Answer in one word.","role":"user"}],"model":"gpt-5.1","stream":false}'
+    headers:
+      accept:
+      - application/json
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: '{"id": "chatcmpl-E9xBPJWBhHz0Mtm8rJclBUK2Hqpjx", "object": "chat.completion",
+        "created": 1786041159, "model": "gpt-5.1-2025-11-13", "choices": [{"index":
+        0, "message": {"role": "assistant", "content": "Paris", "refusal": null, "annotations":
+        []}, "finish_reason": "stop"}], "usage": {"prompt_tokens": 18, "completion_tokens":
+        10, "total_tokens": 28, "prompt_tokens_details": {"cached_tokens": 0, "audio_tokens":
+        0}, "completion_tokens_details": {"reasoning_tokens": 0, "audio_tokens": 0,
+        "accepted_prediction_tokens": 0, "rejected_prediction_tokens": 0}}, "service_tier":
+        "default", "system_fingerprint": null}'
+    headers:
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      date:
+      - Thu, 06 Aug 2026 18:32:39 GMT
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '748'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_b4a3f513b8ab4a60a5e57b6b1ce908ee
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"messages":[{"content":"What is the capital of France? Answer in one word.","role":"user"}],"model":"gpt-5.1","stream":true,"stream_options":{"include_usage":true}}'
+    headers:
+      accept:
+      - application/json
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: 'data: {"id":"chatcmpl-E9xBQ6SY0sDyMPSryf6v709QjGtnF","object":"chat.completion.chunk","created":1786041160,"model":"gpt-5.1-2025-11-13","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"role":"assistant","content":"","refusal":null},"finish_reason":null}],"usage":null,"obfuscation":"hAE89nei"}
+
+
+        data: {"id":"chatcmpl-E9xBQ6SY0sDyMPSryf6v709QjGtnF","object":"chat.completion.chunk","created":1786041160,"model":"gpt-5.1-2025-11-13","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"content":"Paris"},"finish_reason":null}],"usage":null,"obfuscation":"dVeRg"}
+
+
+        data: {"id":"chatcmpl-E9xBQ6SY0sDyMPSryf6v709QjGtnF","object":"chat.completion.chunk","created":1786041160,"model":"gpt-5.1-2025-11-13","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{},"finish_reason":"stop"}],"usage":null,"obfuscation":"MTfU"}
+
+
+        data: {"id":"chatcmpl-E9xBQ6SY0sDyMPSryf6v709QjGtnF","object":"chat.completion.chunk","created":1786041160,"model":"gpt-5.1-2025-11-13","service_tier":"default","system_fingerprint":null,"choices":[],"usage":{"prompt_tokens":18,"completion_tokens":10,"total_tokens":28,"prompt_tokens_details":{"cached_tokens":0,"audio_tokens":0},"completion_tokens_details":{"reasoning_tokens":0,"audio_tokens":0,"accepted_prediction_tokens":0,"rejected_prediction_tokens":0}},"obfuscation":"5GUrUN4dP"}
+
+
+        data: [DONE]
+
+
+        '
+    headers:
+      connection:
+      - keep-alive
+      content-type:
+      - text/event-stream; charset=utf-8
+      date:
+      - Thu, 06 Aug 2026 18:32:40 GMT
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '467'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_1fdcada9d22c4bb7ac4f89c82559ab6b
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"messages":[{"content":"You are a text manipulation algorithm.","role":"system"},{"content":"Use
+      a tool to add an exclamation to the word \"exc\"","role":"user"}],"model":"gpt-5.1","stream":false,"tools":[{"type":"function","function":{"name":"add_exclamation","description":"Adds
+      an exclamation mark to the input message.","parameters":{"properties":{"message":{"type":"string"}},"required":["message"],"type":"object"}}}]}'
+    headers:
+      accept:
+      - application/json
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: '{"id": "chatcmpl-E9xBUXvkgt0Sv92Z0KXdFHe33y62Q", "object": "chat.completion",
+        "created": 1786041164, "model": "gpt-5.1-2025-11-13", "choices": [{"index":
+        0, "message": {"role": "assistant", "content": null, "tool_calls": [{"id":
+        "call_6T5eGDwNFJLxovVwEeJXx75m", "type": "function", "function": {"name":
+        "add_exclamation", "arguments": "{\"message\":\"exc\"}"}}], "refusal": null,
+        "annotations": []}, "finish_reason": "tool_calls"}], "usage": {"prompt_tokens":
+        153, "completion_tokens": 24, "total_tokens": 177, "prompt_tokens_details":
+        {"cached_tokens": 0, "audio_tokens": 0}, "completion_tokens_details": {"reasoning_tokens":
+        0, "audio_tokens": 0, "accepted_prediction_tokens": 0, "rejected_prediction_tokens":
+        0}}, "service_tier": "default", "system_fingerprint": null}'
+    headers:
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      date:
+      - Thu, 06 Aug 2026 18:32:45 GMT
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '884'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_e596711f3c1f49e085f4e4065631d30c
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"messages":[{"content":"You are a text manipulation algorithm.","role":"system"},{"content":"Use
+      a tool to add an exclamation to the word \"exc\"","role":"user"}],"model":"gpt-5.1","stream":true,"stream_options":{"include_usage":true},"tools":[{"type":"function","function":{"name":"add_exclamation","description":"Adds
+      an exclamation mark to the input message.","parameters":{"properties":{"message":{"type":"string"}},"required":["message"],"type":"object"}}}]}'
+    headers:
+      accept:
+      - application/json
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+    method: POST
+    uri: https://api.openai.com/v1/chat/completions
+  response:
+    body:
+      string: 'data: {"id":"chatcmpl-E9xBWMnnhvAjibAZaVG7uacS8tQP3","object":"chat.completion.chunk","created":1786041166,"model":"gpt-5.1-2025-11-13","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"role":"assistant","content":null,"tool_calls":[{"index":0,"id":"call_iC5YTGs9EAilPcu0XG5L8qi1","type":"function","function":{"name":"add_exclamation","arguments":""}}],"refusal":null},"finish_reason":null}],"usage":null,"obfuscation":"92reVCLdXUKXwLi"}
+
+
+        data: {"id":"chatcmpl-E9xBWMnnhvAjibAZaVG7uacS8tQP3","object":"chat.completion.chunk","created":1786041166,"model":"gpt-5.1-2025-11-13","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"{\""}}]},"finish_reason":null}],"usage":null,"obfuscation":"k5O08f59qkK81"}
+
+
+        data: {"id":"chatcmpl-E9xBWMnnhvAjibAZaVG7uacS8tQP3","object":"chat.completion.chunk","created":1786041166,"model":"gpt-5.1-2025-11-13","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"message"}}]},"finish_reason":null}],"usage":null,"obfuscation":"CfBfm3v6F"}
+
+
+        data: {"id":"chatcmpl-E9xBWMnnhvAjibAZaVG7uacS8tQP3","object":"chat.completion.chunk","created":1786041166,"model":"gpt-5.1-2025-11-13","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"\":\""}}]},"finish_reason":null}],"usage":null,"obfuscation":"IA4IMpc88Nc"}
+
+
+        data: {"id":"chatcmpl-E9xBWMnnhvAjibAZaVG7uacS8tQP3","object":"chat.completion.chunk","created":1786041166,"model":"gpt-5.1-2025-11-13","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"exc"}}]},"finish_reason":null}],"usage":null,"obfuscation":"otSUqftqrBCtw"}
+
+
+        data: {"id":"chatcmpl-E9xBWMnnhvAjibAZaVG7uacS8tQP3","object":"chat.completion.chunk","created":1786041166,"model":"gpt-5.1-2025-11-13","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{"tool_calls":[{"index":0,"function":{"arguments":"\"}"}}]},"finish_reason":null}],"usage":null,"obfuscation":"fquxoxBVStypt"}
+
+
+        data: {"id":"chatcmpl-E9xBWMnnhvAjibAZaVG7uacS8tQP3","object":"chat.completion.chunk","created":1786041166,"model":"gpt-5.1-2025-11-13","service_tier":"default","system_fingerprint":null,"choices":[{"index":0,"delta":{},"finish_reason":"tool_calls"}],"usage":null,"obfuscation":"sNI8GNYAGxOtq0"}
+
+
+        data: {"id":"chatcmpl-E9xBWMnnhvAjibAZaVG7uacS8tQP3","object":"chat.completion.chunk","created":1786041166,"model":"gpt-5.1-2025-11-13","service_tier":"default","system_fingerprint":null,"choices":[],"usage":{"prompt_tokens":153,"completion_tokens":24,"total_tokens":177,"prompt_tokens_details":{"cached_tokens":0,"audio_tokens":0},"completion_tokens_details":{"reasoning_tokens":0,"audio_tokens":0,"accepted_prediction_tokens":0,"rejected_prediction_tokens":0}},"obfuscation":"tCC3lik"}
+
+
+        data: [DONE]
+
+
+        '
+    headers:
+      connection:
+      - keep-alive
+      content-type:
+      - text/event-stream; charset=utf-8
+      date:
+      - Thu, 06 Aug 2026 18:32:47 GMT
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '507'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_b24075022db64139bc18fd6b2a5a812a
     status:
       code: 200
       message: OK
@@ -873,8 +1076,6 @@ interactions:
     headers:
       accept:
       - application/json
-      accept-encoding:
-      - gzip, deflate, zstd
       authorization:
       - XXXXXX
       connection:
@@ -892,26 +1093,18 @@ interactions:
     headers:
       access-control-allow-origin:
       - '*'
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a1714813ea430dcf-PDX
       connection:
       - keep-alive
       content-type:
       - application/json
       date:
-      - Mon, 06 Jul 2026 20:15:27 GMT
+      - Thu, 06 Aug 2026 18:32:49 GMT
       openai-model:
       - text-embedding-ada-002-v2
       openai-organization:
       - nr-test-org
       openai-processing-ms:
-      - '44'
+      - '105'
       openai-project:
       - nr-test-project
       openai-version:
@@ -921,7 +1114,7 @@ interactions:
       transfer-encoding:
       - chunked
       via:
-      - envoy-router-6b757dcf66-lk9ms
+      - envoy-router-6dc6f555c4-rq8kv
       x-engine-geography:
       - US
       x-ratelimit-limit-requests:
@@ -937,7 +1130,7 @@ interactions:
       x-ratelimit-reset-tokens:
       - 0s
       x-request-id:
-      - 664acf4f-cc31-41c2-9fa2-7aabba1ae45f
+      - req_0101532120cc4c27adb5b54946536101
     status:
       code: 200
       message: OK
@@ -946,8 +1139,6 @@ interactions:
     headers:
       accept:
       - application/json
-      accept-encoding:
-      - gzip, deflate, zstd
       authorization:
       - XXXXXX
       connection:
@@ -965,26 +1156,18 @@ interactions:
     headers:
       access-control-allow-origin:
       - '*'
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a1714814ec970dcf-PDX
       connection:
       - keep-alive
       content-type:
       - application/json
       date:
-      - Mon, 06 Jul 2026 20:15:27 GMT
+      - Thu, 06 Aug 2026 18:32:49 GMT
       openai-model:
       - text-embedding-ada-002-v2
       openai-organization:
       - nr-test-org
       openai-processing-ms:
-      - '83'
+      - '155'
       openai-project:
       - nr-test-project
       openai-version:
@@ -994,7 +1177,7 @@ interactions:
       transfer-encoding:
       - chunked
       via:
-      - envoy-router-579b48ddd-qv5sw
+      - envoy-router-7db96f599d-jw8lm
       x-engine-geography:
       - US
       x-ratelimit-limit-requests:
@@ -1010,20 +1193,23 @@ interactions:
       x-ratelimit-reset-tokens:
       - 0s
       x-request-id:
-      - req_e2f12be10c664e20bad6a9e11aeda5dc
+      - req_93c0e28d44ce45709b0c0da947cad36d
     status:
       code: 200
       message: OK
 - request:
-    body: '{"messages":[{"content":"You are a text manipulation algorithm.","role":"system"},{"content":"Call
-      the add_exclamation_mcp tool with message=\"Hello\". Reply with only the tool
-      output, no other text.","role":"user"}],"model":"gpt-3.5-turbo","stream":false,"temperature":0.7,"tools":[{"type":"function","function":{"name":"add_exclamation_mcp","description":"Adds
-      an exclamation mark to the input message.","parameters":{"properties":{"message":{"type":"string"}},"required":["message"],"type":"object"}}}]}'
+    body: '{"messages":[{"content":"You are a world class algorithm for extracting
+      information in structured formats with openai failures.","role":"system"},{"content":"Use
+      the given format to extract information from the following input: Sally is 13","role":"user"},{"content":"Tip:
+      Make sure to answer in the correct format","role":"user"}],"model":"gpt-5.1","function_call":{"name":"output_formatter"},"functions":[{"name":"output_formatter","description":"Output
+      formatter. Should always be used to format your response to the user.","parameters":{"title":"Person","description":"Identifying
+      information about a person.","type":"object","properties":{"name":{"title":"Name","description":"The
+      person''s name","type":"string"},"age":{"title":"Age","description":"The person''s
+      age","type":"integer"},"fav_food":{"title":"Fav Food","description":"The person''s
+      favorite food","type":"string"}},"required":["name","age"]}}],"stream":false}'
     headers:
       accept:
       - application/json
-      accept-encoding:
-      - gzip, deflate, zstd
       authorization:
       - XXXXXX
       connection:
@@ -1034,133 +1220,23 @@ interactions:
     uri: https://api.openai.com/v1/chat/completions
   response:
     body:
-      string: '{"id": "chatcmpl-DzVrTIy5YWxOo2JjHyNNLCEoZeIQ5", "object": "chat.completion",
-        "created": 1783552855, "model": "gpt-3.5-turbo-0125", "choices": [{"index":
-        0, "message": {"role": "assistant", "content": null, "tool_calls": [{"id":
-        "call_FI6Wqecvc3Pm1sIJIWbfiPqn", "type": "function", "function": {"name":
-        "add_exclamation_mcp", "arguments": "{\"message\":\"Hello\"}"}}], "refusal":
-        null, "annotations": []}, "logprobs": null, "finish_reason": "tool_calls"}],
-        "usage": {"prompt_tokens": 82, "completion_tokens": 17, "total_tokens": 99,
-        "prompt_tokens_details": {"cached_tokens": 0, "audio_tokens": 0}, "completion_tokens_details":
-        {"reasoning_tokens": 0, "audio_tokens": 0, "accepted_prediction_tokens": 0,
-        "rejected_prediction_tokens": 0}}, "service_tier": "default", "system_fingerprint":
-        null}'
+      string: '{"error": {"message": "Incorrect API key provided: FAKE-OPE***-KEY.
+        You can find your API key at https://platform.openai.com/account/api-keys.",
+        "type": "invalid_request_error", "param": null, "code": "invalid_api_key"}}'
     headers:
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a182d27a8acc5ee6-PDX
       connection:
       - keep-alive
       content-type:
-      - application/json
+      - application/json; charset=utf-8
       date:
-      - Wed, 08 Jul 2026 23:20:56 GMT
-      openai-organization:
-      - nr-test-org
-      openai-processing-ms:
-      - '1537'
-      openai-project:
-      - nr-test-project
-      openai-version:
-      - '2020-10-01'
+      - Thu, 06 Aug 2026 22:34:18 GMT
       server:
       - cloudflare
-      transfer-encoding:
-      - chunked
-      x-ratelimit-limit-requests:
-      - '10000'
-      x-ratelimit-limit-tokens:
-      - '50000000'
-      x-ratelimit-remaining-requests:
-      - '9999'
-      x-ratelimit-remaining-tokens:
-      - '49999975'
-      x-ratelimit-reset-requests:
-      - 6ms
-      x-ratelimit-reset-tokens:
-      - 0s
+      vary:
+      - Origin
       x-request-id:
-      - req_769ac9ab9bce44929dff73538cc803d1
+      - req_265def936a78454e802df1641d9dde0b
     status:
-      code: 200
-      message: OK
-- request:
-    body: '{"messages":[{"content":"You are a text manipulation algorithm.","role":"system"},{"content":"Call
-      the add_exclamation_mcp tool with message=\"Hello\". Reply with only the tool
-      output, no other text.","role":"user"},{"content":null,"name":"my_agent","role":"assistant","tool_calls":[{"type":"function","id":"call_FI6Wqecvc3Pm1sIJIWbfiPqn","function":{"name":"add_exclamation_mcp","arguments":"{\"message\":
-      \"Hello\"}"}}]},{"content":[{"type":"text","text":"Hello!"}],"role":"tool","tool_call_id":"call_FI6Wqecvc3Pm1sIJIWbfiPqn"}],"model":"gpt-3.5-turbo","stream":false,"temperature":0.7,"tools":[{"type":"function","function":{"name":"add_exclamation_mcp","description":"Adds
-      an exclamation mark to the input message.","parameters":{"properties":{"message":{"type":"string"}},"required":["message"],"type":"object"}}}]}'
-    headers:
-      accept:
-      - application/json
-      accept-encoding:
-      - gzip, deflate, zstd
-      authorization:
-      - XXXXXX
-      connection:
-      - keep-alive
-      content-type:
-      - application/json
-    method: POST
-    uri: https://api.openai.com/v1/chat/completions
-  response:
-    body:
-      string: '{"id": "chatcmpl-DzVrUApwqEqiJqmsGYi0xyFRiHOG5", "object": "chat.completion",
-        "created": 1783552856, "model": "gpt-3.5-turbo-0125", "choices": [{"index":
-        0, "message": {"role": "assistant", "content": "{\"message\":\"Hello!\"}",
-        "refusal": null, "annotations": []}, "logprobs": null, "finish_reason": "stop"}],
-        "usage": {"prompt_tokens": 115, "completion_tokens": 7, "total_tokens": 122,
-        "prompt_tokens_details": {"cached_tokens": 0, "audio_tokens": 0}, "completion_tokens_details":
-        {"reasoning_tokens": 0, "audio_tokens": 0, "accepted_prediction_tokens": 0,
-        "rejected_prediction_tokens": 0}}, "service_tier": "default", "system_fingerprint":
-        null}'
-    headers:
-      access-control-expose-headers:
-      - X-Request-ID
-      - CF-Ray
-      - CF-Ray
-      cf-cache-status:
-      - DYNAMIC
-      cf-ray:
-      - a182d2894ae25ee6-PDX
-      connection:
-      - keep-alive
-      content-type:
-      - application/json
-      date:
-      - Wed, 08 Jul 2026 23:20:57 GMT
-      openai-organization:
-      - nr-test-org
-      openai-processing-ms:
-      - '409'
-      openai-project:
-      - nr-test-project
-      openai-version:
-      - '2020-10-01'
-      server:
-      - cloudflare
-      transfer-encoding:
-      - chunked
-      x-ratelimit-limit-requests:
-      - '10000'
-      x-ratelimit-limit-tokens:
-      - '50000000'
-      x-ratelimit-remaining-requests:
-      - '9999'
-      x-ratelimit-remaining-tokens:
-      - '49999975'
-      x-ratelimit-reset-requests:
-      - 6ms
-      x-ratelimit-reset-tokens:
-      - 0s
-      x-request-id:
-      - req_3a560a188af14f67890e2b1ad837bd71
-    status:
-      code: 200
-      message: OK
+      code: 401
+      message: Unauthorized
 version: 1

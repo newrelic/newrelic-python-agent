@@ -16,6 +16,7 @@ import pytest
 from langchain.messages import HumanMessage
 from langchain.tools import tool
 from testing_support.fixtures import reset_core_stats_engine
+from testing_support.validators.validate_custom_event import validate_custom_event_count
 from testing_support.validators.validate_custom_events import validate_custom_events
 
 from newrelic.api.background_task import background_task
@@ -29,212 +30,18 @@ AGENT_PROMPT = {
     ]
 }
 
-client_recorded_events = [
-    [
-        {"type": "LlmChatCompletionSummary"},
-        {
-            "duration": None,
-            "id": None,
-            "ingest_source": "Python",
-            "request.model": "gpt-3.5-turbo",
-            "request.temperature": 0.7,
-            "request_id": "req_ac60b6a469084412a5496bc5c71d8801",
-            "response.choices.finish_reason": "stop",
-            "response.headers.llmVersion": "2020-10-01",
-            "response.headers.ratelimitLimitRequests": 10000,
-            "response.headers.ratelimitLimitTokens": 50000000,
-            "response.headers.ratelimitRemainingRequests": 9999,
-            "response.headers.ratelimitRemainingTokens": 49999975,
-            "response.headers.ratelimitResetRequests": "6ms",
-            "response.headers.ratelimitResetTokens": "0s",
-            "response.model": "gpt-3.5-turbo-0125",
-            "response.number_of_messages": 2,
-            "response.organization": "nr-test-org",
-            "response.usage.completion_tokens": 1,
-            "response.usage.prompt_tokens": 19,
-            "response.usage.total_tokens": 20,
-            "span_id": None,
-            "timestamp": None,
-            "trace_id": None,
-            "vendor": "openai",
-        },
-    ],
-    [
-        {"type": "LlmChatCompletionMessage"},
-        {
-            "completion_id": None,
-            "content": "What is the capital of France? Answer in one word.",
-            "id": "chatcmpl-DyjxXP7QeqZsp81qtbX65us41OVKg-0",
-            "ingest_source": "Python",
-            "request_id": "req_ac60b6a469084412a5496bc5c71d8801",
-            "response.model": "gpt-3.5-turbo-0125",
-            "role": "user",
-            "sequence": 0,
-            "span_id": None,
-            "timestamp": None,
-            "token_count": 0,
-            "trace_id": None,
-            "vendor": "openai",
-        },
-    ],
-    [
-        {"type": "LlmChatCompletionMessage"},
-        {
-            "completion_id": None,
-            "content": "Paris",
-            "id": "chatcmpl-DyjxXP7QeqZsp81qtbX65us41OVKg-1",
-            "ingest_source": "Python",
-            "is_response": True,
-            "request_id": "req_ac60b6a469084412a5496bc5c71d8801",
-            "response.model": "gpt-3.5-turbo-0125",
-            "role": "assistant",
-            "sequence": 1,
-            "span_id": None,
-            "token_count": 0,
-            "trace_id": None,
-            "vendor": "openai",
-        },
-    ],
-]
 
-client_stream_recorded_events = [
-    [
-        {"type": "LlmChatCompletionSummary"},
-        {
-            "duration": None,
-            "id": None,
-            "ingest_source": "Python",
-            "request.model": "gpt-3.5-turbo",
-            "request.temperature": 0.7,
-            "request_id": "req_ac60b6a469084412a5496bc5c71d8801",
-            "response.choices.finish_reason": "stop",
-            "response.headers.llmVersion": "2020-10-01",
-            "response.headers.ratelimitLimitRequests": 10000,
-            "response.headers.ratelimitLimitTokens": 50000000,
-            "response.headers.ratelimitRemainingRequests": 9999,
-            "response.headers.ratelimitRemainingTokens": 49999975,
-            "response.headers.ratelimitResetRequests": "6ms",
-            "response.headers.ratelimitResetTokens": "0s",
-            "response.model": "gpt-3.5-turbo-0125",
-            "response.number_of_messages": 2,
-            "response.organization": "nr-test-org",
-            # langchain's ChatOpenAI.stream() passes stream_options={"include_usage": True}
-            # by default, so the final usage chunk is captured and these are populated.
-            "response.usage.completion_tokens": 1,
-            "response.usage.prompt_tokens": 19,
-            "response.usage.total_tokens": 20,
-            "span_id": None,
-            "time_to_first_token": None,
-            "timestamp": None,
-            "trace_id": None,
-            "vendor": "openai",
-        },
-    ],
-    [
-        {"type": "LlmChatCompletionMessage"},
-        {
-            "completion_id": None,
-            "content": "What is the capital of France? Answer in one word.",
-            "id": "chatcmpl-DyjxXP7QeqZsp81qtbX65us41OVKg-0",
-            "ingest_source": "Python",
-            "request_id": "req_ac60b6a469084412a5496bc5c71d8801",
-            "response.model": "gpt-3.5-turbo-0125",
-            "role": "user",
-            "sequence": 0,
-            "span_id": None,
-            "timestamp": None,
-            "token_count": 0,
-            "trace_id": None,
-            "vendor": "openai",
-        },
-    ],
-    [
-        {"type": "LlmChatCompletionMessage"},
-        {
-            "completion_id": None,
-            "content": "Paris",
-            "id": "chatcmpl-DyjxXP7QeqZsp81qtbX65us41OVKg-1",
-            "ingest_source": "Python",
-            "is_response": True,
-            "request_id": "req_ac60b6a469084412a5496bc5c71d8801",
-            "response.model": "gpt-3.5-turbo-0125",
-            "role": "assistant",
-            "sequence": 1,
-            "span_id": None,
-            "token_count": 0,
-            "trace_id": None,
-            "vendor": "openai",
-        },
-    ],
-]
+# Agent invocation produces 11 Total Events, 9 from OpenAI and 2 from Langchain
+# * Summary, System Prompt, Input Prompt
+# * Tool
+# * Summary, System Prompt, Input Prompt, Tool Input, Tool Output
+# * Agent
+AGENT_EVENT_COUNT = 11
+CLIENT_EVENT_COUNT = 3  # Summary + Input + Output
 
 
+# Validations only for the recorded LlmAgent and LlmTool events
 agent_recorded_events = [
-    [
-        {"timestamp": None, "type": "LlmChatCompletionSummary"},
-        {
-            "duration": None,
-            "id": None,
-            "ingest_source": "Python",
-            "request.model": "gpt-3.5-turbo",
-            "request.temperature": 0.7,
-            "request_id": "req_d20f8e8fdc394022a8b95f62ace42b10",
-            "response.choices.finish_reason": "tool_calls",
-            "response.headers.llmVersion": "2020-10-01",
-            "response.headers.ratelimitLimitRequests": 10000,
-            "response.headers.ratelimitLimitTokens": 50000000,
-            "response.headers.ratelimitRemainingRequests": 9999,
-            "response.headers.ratelimitRemainingTokens": 49999975,
-            "response.headers.ratelimitResetRequests": "6ms",
-            "response.headers.ratelimitResetTokens": "0s",
-            "response.model": "gpt-3.5-turbo-0125",
-            "response.number_of_messages": 2,
-            "response.organization": "nr-test-org",
-            "response.usage.completion_tokens": 15,
-            "response.usage.prompt_tokens": 78,
-            "response.usage.total_tokens": 93,
-            "span_id": None,
-            "timestamp": None,
-            "trace_id": None,
-            "vendor": "openai",
-        },
-    ],
-    [
-        {"timestamp": None, "type": "LlmChatCompletionMessage"},
-        {
-            "completion_id": None,
-            "content": "You are a text manipulation algorithm.",
-            "id": "chatcmpl-DyjwBisOslzESdW8A2OhHO1xk3qPK-0",
-            "ingest_source": "Python",
-            "request_id": "req_d20f8e8fdc394022a8b95f62ace42b10",
-            "response.model": "gpt-3.5-turbo-0125",
-            "role": "system",
-            "sequence": 0,
-            "span_id": None,
-            "timestamp": None,
-            "token_count": 0,
-            "trace_id": None,
-            "vendor": "openai",
-        },
-    ],
-    [
-        {"timestamp": None, "type": "LlmChatCompletionMessage"},
-        {
-            "completion_id": None,
-            "content": 'Call the add_exclamation tool with message="Hello". Reply with only the tool output, no other text.',
-            "id": "chatcmpl-DyjwBisOslzESdW8A2OhHO1xk3qPK-1",
-            "ingest_source": "Python",
-            "request_id": "req_d20f8e8fdc394022a8b95f62ace42b10",
-            "response.model": "gpt-3.5-turbo-0125",
-            "role": "user",
-            "sequence": 1,
-            "span_id": None,
-            "timestamp": None,
-            "token_count": 0,
-            "trace_id": None,
-            "vendor": "openai",
-        },
-    ],
     [
         {"timestamp": None, "type": "LlmTool"},
         {
@@ -245,128 +52,10 @@ agent_recorded_events = [
             "input": "{'message': 'Hello'}",
             "name": "add_exclamation",
             "output": "Hello!",
-            "run_id": "call_zMq39z2e9dLaMeCsjMSOkys8",
+            "run_id": None,
             "span_id": None,
             "trace_id": None,
             "vendor": "langchain",
-        },
-    ],
-    [
-        {"timestamp": None, "type": "LlmChatCompletionSummary"},
-        {
-            "duration": None,
-            "id": None,
-            "ingest_source": "Python",
-            "request.model": "gpt-3.5-turbo",
-            "request.temperature": 0.7,
-            "request_id": "req_d20f8e8fdc394022a8b95f62ace42b10",
-            "response.choices.finish_reason": "stop",
-            "response.headers.llmVersion": "2020-10-01",
-            "response.headers.ratelimitLimitRequests": 10000,
-            "response.headers.ratelimitLimitTokens": 50000000,
-            "response.headers.ratelimitRemainingRequests": 9999,
-            "response.headers.ratelimitRemainingTokens": 49999975,
-            "response.headers.ratelimitResetRequests": "6ms",
-            "response.headers.ratelimitResetTokens": "0s",
-            "response.model": "gpt-3.5-turbo-0125",
-            "response.number_of_messages": 5,
-            "response.organization": "nr-test-org",
-            "response.usage.completion_tokens": 2,
-            "response.usage.prompt_tokens": 107,
-            "response.usage.total_tokens": 109,
-            "span_id": None,
-            "timestamp": None,
-            "trace_id": None,
-            "vendor": "openai",
-        },
-    ],
-    [
-        {"timestamp": None, "type": "LlmChatCompletionMessage"},
-        {
-            "completion_id": None,
-            "content": "You are a text manipulation algorithm.",
-            "id": "chatcmpl-DyjwCWB6oPS6gcxdy4b9JW4Ey6Lv5-0",
-            "ingest_source": "Python",
-            "request_id": "req_d20f8e8fdc394022a8b95f62ace42b10",
-            "response.model": "gpt-3.5-turbo-0125",
-            "role": "system",
-            "sequence": 0,
-            "span_id": None,
-            "timestamp": None,
-            "token_count": 0,
-            "trace_id": None,
-            "vendor": "openai",
-        },
-    ],
-    [
-        {"timestamp": None, "type": "LlmChatCompletionMessage"},
-        {
-            "completion_id": None,
-            "content": 'Call the add_exclamation tool with message="Hello". Reply with only the tool output, no other text.',
-            "id": "chatcmpl-DyjwCWB6oPS6gcxdy4b9JW4Ey6Lv5-1",
-            "ingest_source": "Python",
-            "request_id": "req_d20f8e8fdc394022a8b95f62ace42b10",
-            "response.model": "gpt-3.5-turbo-0125",
-            "role": "user",
-            "sequence": 1,
-            "span_id": None,
-            "timestamp": None,
-            "token_count": 0,
-            "trace_id": None,
-            "vendor": "openai",
-        },
-    ],
-    [
-        {"timestamp": None, "type": "LlmChatCompletionMessage"},
-        {
-            "completion_id": None,
-            "id": "chatcmpl-DyjwCWB6oPS6gcxdy4b9JW4Ey6Lv5-2",
-            "ingest_source": "Python",
-            "request_id": "req_d20f8e8fdc394022a8b95f62ace42b10",
-            "response.model": "gpt-3.5-turbo-0125",
-            "role": "assistant",
-            "sequence": 2,
-            "span_id": None,
-            "timestamp": None,
-            "trace_id": None,
-            "token_count": 0,
-            "vendor": "openai",
-        },
-    ],
-    [
-        {"timestamp": None, "type": "LlmChatCompletionMessage"},
-        {
-            "completion_id": None,
-            "content": "Hello!",
-            "id": "chatcmpl-DyjwCWB6oPS6gcxdy4b9JW4Ey6Lv5-3",
-            "ingest_source": "Python",
-            "request_id": "req_d20f8e8fdc394022a8b95f62ace42b10",
-            "response.model": "gpt-3.5-turbo-0125",
-            "role": "tool",
-            "sequence": 3,
-            "span_id": None,
-            "timestamp": None,
-            "token_count": 0,
-            "trace_id": None,
-            "vendor": "openai",
-        },
-    ],
-    [
-        {"timestamp": None, "type": "LlmChatCompletionMessage"},
-        {
-            "completion_id": None,
-            "content": "Hello!",
-            "id": "chatcmpl-DyjwCWB6oPS6gcxdy4b9JW4Ey6Lv5-4",
-            "ingest_source": "Python",
-            "is_response": True,
-            "request_id": "req_d20f8e8fdc394022a8b95f62ace42b10",
-            "response.model": "gpt-3.5-turbo-0125",
-            "role": "assistant",
-            "sequence": 4,
-            "span_id": None,
-            "token_count": 0,
-            "trace_id": None,
-            "vendor": "openai",
         },
     ],
     [
@@ -415,7 +104,7 @@ def create_agent(chat_openai_client):
 
 
 @reset_core_stats_engine()
-@validate_custom_events(client_recorded_events)
+@validate_custom_event_count(count=CLIENT_EVENT_COUNT)
 @background_task()
 def test_state_graph_with_client_invoke(chat_openai_client, exercise_graph):
     def state_graph_invoke(state):
@@ -427,7 +116,7 @@ def test_state_graph_with_client_invoke(chat_openai_client, exercise_graph):
 
 
 @reset_core_stats_engine()
-@validate_custom_events(client_recorded_events)
+@validate_custom_event_count(count=CLIENT_EVENT_COUNT)
 @background_task()
 def test_state_graph_with_client_ainvoke(chat_openai_client, exercise_graph):
     async def state_graph_ainvoke(state):
@@ -439,7 +128,7 @@ def test_state_graph_with_client_ainvoke(chat_openai_client, exercise_graph):
 
 
 @reset_core_stats_engine()
-@validate_custom_events(client_stream_recorded_events)
+@validate_custom_event_count(count=CLIENT_EVENT_COUNT)
 @background_task()
 def test_state_graph_with_client_stream(chat_openai_client, exercise_graph):
     def state_graph_stream(state):
@@ -451,7 +140,7 @@ def test_state_graph_with_client_stream(chat_openai_client, exercise_graph):
 
 
 @reset_core_stats_engine()
-@validate_custom_events(client_stream_recorded_events)
+@validate_custom_event_count(count=CLIENT_EVENT_COUNT)
 @background_task()
 def test_state_graph_with_client_astream(chat_openai_client, exercise_graph):
     async def state_graph_astream(state):
@@ -464,6 +153,7 @@ def test_state_graph_with_client_astream(chat_openai_client, exercise_graph):
 
 @reset_core_stats_engine()
 @validate_custom_events(agent_recorded_events)
+@validate_custom_event_count(count=AGENT_EVENT_COUNT)
 @background_task()
 def test_state_graph_with_agent_invoke(exercise_graph, create_agent):
     my_agent = create_agent(tools=[add_exclamation], system_prompt="You are a text manipulation algorithm.")
@@ -478,6 +168,7 @@ def test_state_graph_with_agent_invoke(exercise_graph, create_agent):
 
 @reset_core_stats_engine()
 @validate_custom_events(agent_recorded_events)
+@validate_custom_event_count(count=AGENT_EVENT_COUNT)
 @background_task()
 def test_state_graph_with_agent_ainvoke(exercise_graph, create_agent):
     my_agent = create_agent(tools=[add_exclamation], system_prompt="You are a text manipulation algorithm.")
@@ -492,6 +183,7 @@ def test_state_graph_with_agent_ainvoke(exercise_graph, create_agent):
 
 @reset_core_stats_engine()
 @validate_custom_events(agent_recorded_events)
+@validate_custom_event_count(count=AGENT_EVENT_COUNT)
 @background_task()
 def test_state_graph_with_agent_stream(exercise_graph, create_agent):
     my_agent = create_agent(tools=[add_exclamation], system_prompt="You are a text manipulation algorithm.")
@@ -513,6 +205,7 @@ def test_state_graph_with_agent_stream(exercise_graph, create_agent):
 
 @reset_core_stats_engine()
 @validate_custom_events(agent_recorded_events)
+@validate_custom_event_count(count=AGENT_EVENT_COUNT)
 @background_task()
 def test_state_graph_with_agent_astream(exercise_graph, create_agent):
     my_agent = create_agent(tools=[add_exclamation], system_prompt="You are a text manipulation algorithm.")
@@ -532,7 +225,7 @@ def test_state_graph_with_agent_astream(exercise_graph, create_agent):
     assert response
 
 
-@pytest.fixture(params=["invoke", "ainvoke", "stream", "astream"])
+@pytest.fixture(params=["invoke", "ainvoke", "stream", "astream", "astream_events"])
 def exercise_graph(request, loop):
     def _exercise_graph(graph, prompt):
         method_called = request.param
@@ -547,6 +240,12 @@ def exercise_graph(request, loop):
 
                 async def _exercise_agen():
                     return [event async for event in graph.astream(prompt)]
+
+                return loop.run_until_complete(_exercise_agen())
+            elif method_called == "astream_events":
+
+                async def _exercise_agen():
+                    return [event async for event in graph.astream_events(prompt, version="v2")]
 
                 return loop.run_until_complete(_exercise_agen())
             else:

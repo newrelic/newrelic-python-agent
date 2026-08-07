@@ -209,9 +209,9 @@ def seeded_cluster_id(consumer, monkeypatch):
 
 
 def test_cluster_consume_metric(get_consumer_record, topic, broker, seeded_cluster_id):
-    """MessageBroker/Kafka/Cluster/{id}/Topic/{topic}/Consume appears after a poll."""
+    """MessageBroker/Kafka/Cluster/{id}/Consume/{topic} appears after a poll."""
     cluster_id = seeded_cluster_id
-    cluster_metric = f"MessageBroker/Kafka/Cluster/{cluster_id}/Topic/{topic}/Consume"
+    cluster_metric = f"MessageBroker/Kafka/Cluster/{cluster_id}/Consume/{topic}"
 
     @validate_transaction_metrics(
         f"Named/{topic}",

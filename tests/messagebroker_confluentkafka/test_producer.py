@@ -194,9 +194,9 @@ def producer_with_cluster_id(producer, broker, monkeypatch, send_producer_messag
 
 
 def test_cluster_produce_metric(topic, producer_with_cluster_id, send_producer_message, client_type):
-    """MessageBroker/Kafka/Cluster/{id}/Topic/{topic}/Produce appears after produce()."""
+    """MessageBroker/Kafka/Cluster/{id}/Produce/{topic} appears after produce()."""
     _, cluster_id = producer_with_cluster_id
-    cluster_metric = f"MessageBroker/Kafka/Cluster/{cluster_id}/Topic/{topic}/Produce"
+    cluster_metric = f"MessageBroker/Kafka/Cluster/{cluster_id}/Produce/{topic}"
 
     @validate_transaction_metrics(
         "test_producer:test_cluster_produce_metric.<locals>.test",

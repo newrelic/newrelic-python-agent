@@ -110,7 +110,7 @@ def gemini_streaming_client(vcr_recording):
     else:
         os.environ["GOOGLE_API_KEY"] = "FAKE_GEMINI_API_KEY"
 
-    return init_chat_model("gemini-3.5-flash", model_provider="google_genai", streaming=True)
+    return init_chat_model("gemini-3.5-flash", model_provider="google_genai", streaming=True, temperature=0.05)
 
 
 @pytest.fixture(params=["tool_strategy", "json"])

@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import logging
 import sys
 
 from kafka.serializer import Serializer
@@ -23,6 +24,7 @@ from newrelic.api.time_trace import current_trace, notice_error
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import ObjectProxy, function_wrapper, wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
+from newrelic.core.config import global_settings
 
 HEARTBEAT_POLL = "MessageBroker/Kafka/Heartbeat/Poll"
 HEARTBEAT_SENT = "MessageBroker/Kafka/Heartbeat/Sent"
@@ -30,6 +32,48 @@ HEARTBEAT_FAIL = "MessageBroker/Kafka/Heartbeat/Fail"
 HEARTBEAT_RECEIVE = "MessageBroker/Kafka/Heartbeat/Receive"
 HEARTBEAT_SESSION_TIMEOUT = "MessageBroker/Kafka/Heartbeat/SessionTimeout"
 HEARTBEAT_POLL_TIMEOUT = "MessageBroker/Kafka/Heartbeat/PollTimeout"
+
+KAFKA_CLUSTER_METRIC_PRODUCE = "MessageBroker/Kafka/Cluster/{0}/Produce/{1}"
+KAFKA_CLUSTER_METRIC_CONSUME = "MessageBroker/Kafka/Cluster/{0}/Consume/{1}"
+
+_logger = logging.getLogger(__name__)
+
+
+def _cluster_metrics_enabled():
+    settings = global_settings()
+    return bool(getattr(getattr(settings, "kafka", None), "cluster_metrics_enabled", False))
+
+
+def _read_cluster_id(instance):
+    # ClusterMetadata.update_metadata() receives the cluster id on every real
+    # metadata refresh (it's a field on the raw MetadataResponse) but discards it —
+    # it only copies brokers/topics/controller_id onto self. wrap_ClusterMetadata_update_metadata
+    # captures it into _nr_cluster_id as a passive side effect of that same refresh,
+    # so this read stays a synchronous, in-memory attribute lookup: no admin client,
+    # no extra connection. KafkaProducer and KafkaConsumer expose the ClusterMetadata
+    # object via different attribute paths.
+    if not _cluster_metrics_enabled():
+        return None
+    metadata = getattr(instance, "_metadata", None)  # KafkaProducer
+    if metadata is None:
+        client = getattr(instance, "_client", None)  # KafkaConsumer
+        metadata = getattr(client, "cluster", None) if client else None
+    return getattr(metadata, "_nr_cluster_id", None) if metadata else None
+
+
+def _bind_update_metadata(metadata_response):
+    return metadata_response
+
+
+def wrap_ClusterMetadata_update_metadata(wrapped, instance, args, kwargs):
+    try:
+        metadata_response = _bind_update_metadata(*args, **kwargs)
+        cluster_id = getattr(metadata_response, "cluster_id", None)
+        if cluster_id:
+            instance._nr_cluster_id = cluster_id
+    except Exception:
+        _logger.debug("NR Kafka cluster ID capture failed", exc_info=True)
+    return wrapped(*args, **kwargs)
 
 
 def _bind_send(topic, value=None, key=None, headers=None, partition=None, timestamp_ms=None):
@@ -40,6 +84,13 @@ def wrap_KafkaProducer_send(wrapped, instance, args, kwargs):
     transaction = current_transaction()
 
     if transaction is None:
+        topic, *_ = _bind_send(*args, **kwargs)
+        topic = topic or "Default"
+        cluster_id = _read_cluster_id(instance)
+        if cluster_id:
+            app = application_instance(activate=False)
+            if app:
+                app.record_custom_metric(KAFKA_CLUSTER_METRIC_PRODUCE.format(cluster_id, topic), 1)
         return wrapped(*args, **kwargs)
 
     topic, value, key, headers, partition, timestamp_ms = _bind_send(*args, **kwargs)
@@ -66,6 +117,13 @@ def wrap_KafkaProducer_send(wrapped, instance, args, kwargs):
         if hasattr(instance, "config"):
             for server_name in instance.config.get("bootstrap_servers", []):
                 transaction.record_custom_metric(f"MessageBroker/Kafka/Nodes/{server_name}/Produce/{topic}", 1)
+
+        cluster_id = _read_cluster_id(instance)
+        if cluster_id:
+            transaction.record_custom_metric(
+                KAFKA_CLUSTER_METRIC_PRODUCE.format(cluster_id, topic), 1
+            )
+
         try:
             return wrapped(
                 topic, value=value, key=key, headers=dt_headers, partition=partition, timestamp_ms=timestamp_ms
@@ -82,39 +140,15 @@ def wrap_kafkaconsumer_next(wrapped, instance, args, kwargs):
     try:
         record = wrapped(*args, **kwargs)
     except Exception as e:
-        # StopIteration is an expected error, indicating the end of an iterable,
-        # that should not be captured.
+        # StopIteration ends iteration normally — do not capture.
         if not isinstance(e, StopIteration):
             if current_transaction():
-                # Report error on existing transaction if there is one
                 notice_error()
             else:
-                # Report error on application
                 notice_error(application=application_instance(activate=False))
         raise
 
     if record:
-        # This iterator can be called either outside of a transaction, or
-        # within the context of an existing transaction.  There are 3
-        # possibilities we need to handle: (Note that this is similar to
-        # our Pika and Celery instrumentation)
-        #
-        #   1. In an inactive transaction
-        #
-        #      If the end_of_transaction() or ignore_transaction() API
-        #      calls have been invoked, this iterator may be called in the
-        #      context of an inactive transaction. In this case, don't wrap
-        #      the iterator in any way. Just run the original iterator.
-        #
-        #   2. In an active transaction
-        #
-        #      Do nothing.
-        #
-        #   3. Outside of a transaction
-        #
-        #      Since it's not running inside of an existing transaction, we
-        #      want to create a new background transaction for it.
-
         library = "Kafka"
         destination_type = "Topic"
         destination_name = record.topic
@@ -137,7 +171,6 @@ def wrap_kafkaconsumer_next(wrapped, instance, args, kwargs):
             instance._nr_transaction = transaction
             transaction.__enter__()
 
-            # Obtain consumer client_id to send up as agent attribute
             if hasattr(instance, "config") and "client_id" in instance.config:
                 client_id = instance.config["client_id"]
                 transaction._add_agent_attribute("kafka.consume.client_id", client_id)
@@ -145,11 +178,7 @@ def wrap_kafkaconsumer_next(wrapped, instance, args, kwargs):
             transaction._add_agent_attribute("kafka.consume.byteCount", received_bytes)
 
         transaction = current_transaction()
-        if transaction:  # If there is an active transaction now.
-            # Add metrics whether or not a transaction was already active, or one was just started.
-            # Don't add metrics if there was an inactive transaction.
-            # Name the metrics using the same format as the transaction, but in case the active transaction
-            # was an existing one and not a message transaction, reproduce the naming logic here.
+        if transaction:
             group = f"Message/{library}/{destination_type}"
             name = f"Named/{destination_name}"
             transaction.record_custom_metric(f"{group}/{name}/Received/Bytes", received_bytes)
@@ -159,6 +188,12 @@ def wrap_kafkaconsumer_next(wrapped, instance, args, kwargs):
                     transaction.record_custom_metric(
                         f"MessageBroker/Kafka/Nodes/{server_name}/Consume/{destination_name}", 1
                     )
+
+            cluster_id = _read_cluster_id(instance)
+            if cluster_id:
+                transaction.record_custom_metric(
+                    KAFKA_CLUSTER_METRIC_CONSUME.format(cluster_id, destination_name), 1
+                )
             transaction.add_messagebroker_info(
                 "Kafka-Python", get_package_version("kafka-python") or get_package_version("kafka-python-ng")
             )
@@ -211,7 +246,6 @@ def wrap_serializer(client, serializer_name, group_prefix, serializer):
         if isinstance(transaction, MessageTransaction):
             topic = transaction.destination_name
         else:
-            # Find parent message trace to retrieve topic
             message_trace = current_trace()
             while message_trace is not None and not isinstance(message_trace, MessageTrace):
                 message_trace = message_trace.parent
@@ -224,17 +258,14 @@ def wrap_serializer(client, serializer_name, group_prefix, serializer):
         return FunctionTraceWrapper(wrapped, name=name, group=group)(*args, **kwargs)
 
     try:
-        # Apply wrapper to serializer
         if serializer is None:
-            # Do nothing
             return serializer
         elif isinstance(serializer, Serializer):
             return NewRelicSerializerWrapper(serializer, group_prefix=group_prefix, serializer_name=serializer_name)
         else:
-            # Wrap callable in wrapper
             return _wrap_serializer(serializer)
     except Exception:
-        return serializer  # Avoid crashes from immutable serializers
+        return serializer
 
 
 def metric_wrapper(metric_name, check_result=False):
@@ -244,13 +275,16 @@ def metric_wrapper(metric_name, check_result=False):
         application = application_instance(activate=False)
         if application:
             if not check_result or (check_result and result):
-                # If the result does not need validated, send metric.
-                # If the result does need validated, ensure it is True.
                 application.record_custom_metric(metric_name, 1)
 
         return result
 
     return _metric_wrapper
+
+
+def instrument_kafka_cluster(module):
+    if hasattr(module, "ClusterMetadata") and hasattr(module.ClusterMetadata, "update_metadata"):
+        wrap_function_wrapper(module, "ClusterMetadata.update_metadata", wrap_ClusterMetadata_update_metadata)
 
 
 def instrument_kafka_producer(module):

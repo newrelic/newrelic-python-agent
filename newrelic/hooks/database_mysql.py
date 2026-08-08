@@ -20,7 +20,7 @@ from newrelic.hooks.database_dbapi2 import ConnectionFactory
 def instance_info(args, kwargs):
     host = kwargs.get("host")
     port = kwargs.get("port")
-    db = kwargs.get("db")
+    db = kwargs.get("database") or kwargs.get("db")
 
     return (host, port, db)
 

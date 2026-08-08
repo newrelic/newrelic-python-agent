@@ -131,6 +131,68 @@ def test_execute_via_cursor(table_name):
     connection.commit()
 
 
+@validate_transaction_metrics(
+    "test_database:test_connection_with_database_keyword",
+    scoped_metrics=_test_execute_via_cursor_scoped_metrics,
+    rollup_metrics=_test_execute_via_cursor_rollup_metrics,
+    background_task=True,
+)
+@validate_transaction_metrics(
+    "test_database:test_connection_with_database_keyword",
+    scoped_metrics=_test_execute_via_cursor_scoped_metrics,
+    rollup_metrics=_test_execute_via_cursor_rollup_metrics,
+    background_task=True,
+)
+@validate_database_trace_inputs(sql_parameters_type=dict)
+@background_task()
+def test_connection_with_database_keyword(table_name):
+    assert mysql_version is not None
+    connection = mysql.connector.connect(
+        database=DB_SETTINGS["name"],
+        user=DB_SETTINGS["user"],
+        passwd=DB_SETTINGS["password"],
+        host=DB_SETTINGS["host"],
+        port=DB_SETTINGS["port"],
+    )
+
+    cursor = connection.cursor()
+
+    cursor.execute(f"""drop table if exists `{table_name}`""")
+
+    cursor.execute(f"""create table {table_name} (a integer, b real, c text)""")
+
+    cursor.executemany(
+        f"insert into `{table_name}` values (%(a)s, %(b)s, %(c)s)",
+        [{"a": 1, "b": 1.0, "c": "1.0"}, {"a": 2, "b": 2.2, "c": "2.2"}, {"a": 3, "b": 3.3, "c": "3.3"}],
+    )
+
+    cursor.execute(f"""select * from {table_name}""")
+
+    for _row in cursor:
+        pass
+
+    cursor.execute(
+        f"update `{table_name}` set a=%(a)s, b=%(b)s, c=%(c)s where a=%(old_a)s",
+        {"a": 4, "b": 4.0, "c": "4.0", "old_a": 1},
+    )
+
+    cursor.execute(f"""delete from `{table_name}` where a=2""")
+
+    cursor.execute(f"""drop procedure if exists {DB_PROCEDURE}""")
+    cursor.execute(
+        f"""CREATE PROCEDURE {DB_PROCEDURE}()
+                      BEGIN
+                        SELECT 'Hello World!';
+                      END"""
+    )
+
+    cursor.callproc(f"{DB_PROCEDURE}")
+
+    connection.commit()
+    connection.rollback()
+    connection.commit()
+
+
 _test_connect_using_alias_scoped_metrics = [
     (_connector_metric_name, 1),
     (f"Datastore/statement/MySQL/datastore_mysql_{DB_NAMESPACE}/select", 1),

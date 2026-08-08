@@ -252,6 +252,15 @@ ignore = [
     # Disabled rules in admin scripts
     "S108",  # flake8-bandit (hardcoded log files are never used as input)
 ]
+".fleetControl/schemaGeneration/*" = [
+    # Standalone build-time generator + its tests; not part of the agent package.
+    "INP",  # flake8-no-pep420 (no __init__.py; this is a script, not a package)
+]
+".fleetControl/schemaGeneration/tests/*" = [
+    # Schema generator tests use stdlib unittest (no pytest dependency).
+    "PT009",  # use-of-assertEqual (we deliberately use unittest assertions)
+    "PT027",  # use-of-assertRaises (we deliberately use unittest assertions)
+]
 
 # =========================
 # Other Tools Configuration

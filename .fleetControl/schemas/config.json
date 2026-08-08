@@ -1,0 +1,1110 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "New Relic Python Agent Configuration",
+  "description": "Fleet Control configuration schema for the New Relic Python agent. Generated from newrelic.core.config.global_settings().",
+  "type": "object",
+  "properties": {
+    "agent_limits.data_collector_timeout": {
+      "type": "number",
+      "default": 30.0
+    },
+    "agent_limits.data_compression_level": {
+      "type": "integer"
+    },
+    "agent_limits.data_compression_threshold": {
+      "type": "integer",
+      "default": 65536
+    },
+    "agent_limits.errors_per_harvest": {
+      "type": "integer",
+      "default": 20
+    },
+    "agent_limits.errors_per_transaction": {
+      "type": "integer",
+      "default": 5
+    },
+    "agent_limits.max_sql_connections": {
+      "type": "integer",
+      "default": 4
+    },
+    "agent_limits.slow_sql_data": {
+      "type": "integer",
+      "default": 10
+    },
+    "agent_limits.slow_sql_stack_trace": {
+      "type": "integer",
+      "default": 30
+    },
+    "agent_limits.slow_transaction_dry_harvests": {
+      "type": "integer",
+      "default": 5
+    },
+    "agent_limits.sql_explain_plans": {
+      "type": "integer",
+      "default": 30
+    },
+    "agent_limits.sql_explain_plans_per_harvest": {
+      "type": "integer",
+      "default": 60
+    },
+    "agent_limits.sql_query_length_maximum": {
+      "type": "integer",
+      "default": 16384
+    },
+    "agent_limits.synthetics_events": {
+      "type": "integer",
+      "default": 200
+    },
+    "agent_limits.synthetics_transactions": {
+      "type": "integer",
+      "default": 20
+    },
+    "agent_limits.thread_profiler_nodes": {
+      "type": "integer",
+      "default": 20000
+    },
+    "agent_limits.transaction_traces_nodes": {
+      "type": "integer",
+      "default": 2000
+    },
+    "ai_monitoring.enabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "ai_monitoring.record_content.enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "ai_monitoring.streaming.enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "apdex_t": {
+      "type": "number",
+      "default": 0.5
+    },
+    "api_key": {
+      "type": "string"
+    },
+    "app_name": {
+      "type": "string",
+      "default": "Python Application",
+      "description": "The application name. Set this to be the name of your application as you would like it to show up in New Relic UI. You may also set this using the NEW_RELIC_APP_NAME environment variable. The UI will then auto-map instances of your application into a entry on your home dashboard page. You can also specify multiple app names to group your aggregated data. For further details, please see: https://docs.newrelic.com/docs/apm/agents/manage-apm-agents/app-naming/use-multiple-names-app/"
+    },
+    "application_logging.enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "application_logging.forwarding.context_data.enabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "application_logging.forwarding.context_data.exclude": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "default": []
+    },
+    "application_logging.forwarding.context_data.include": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "default": []
+    },
+    "application_logging.forwarding.custom_attributes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "application_logging.forwarding.enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "application_logging.forwarding.labels.enabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "application_logging.forwarding.labels.exclude": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "default": []
+    },
+    "application_logging.local_decorating.enabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "application_logging.metrics.enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "attributes.enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "attributes.exclude": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "default": []
+    },
+    "attributes.include": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "default": []
+    },
+    "audit_log_file": {
+      "type": "string"
+    },
+    "aws_lambda_metadata": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "azure_operator.enabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "browser_monitoring.attributes.enabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "browser_monitoring.attributes.exclude": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "default": []
+    },
+    "browser_monitoring.attributes.include": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "default": []
+    },
+    "browser_monitoring.auto_instrument": {
+      "type": "boolean",
+      "default": true,
+      "description": "Browser monitoring is the Real User Monitoring feature of the UI. For those Python web frameworks that are supported, this setting enables the auto-insertion of the browser monitoring JavaScript fragments."
+    },
+    "browser_monitoring.content_type": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [
+        "text/html"
+      ]
+    },
+    "browser_monitoring.debug": {
+      "type": "boolean",
+      "default": false
+    },
+    "browser_monitoring.enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "browser_monitoring.loader": {
+      "type": "string",
+      "default": "rum"
+    },
+    "browser_monitoring.loader_version": {
+      "type": "string"
+    },
+    "browser_monitoring.ssl_for_http": {
+      "type": "boolean"
+    },
+    "ca_bundle_path": {
+      "type": "string"
+    },
+    "capture_environ": {
+      "type": "boolean",
+      "default": true
+    },
+    "capture_params": {
+      "type": "boolean"
+    },
+    "cloud.aws.account_id": {
+      "type": "integer"
+    },
+    "code_level_metrics.enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "collect_analytics_events": {
+      "type": "boolean",
+      "default": true
+    },
+    "collect_custom_events": {
+      "type": "boolean",
+      "default": true
+    },
+    "collect_error_events": {
+      "type": "boolean",
+      "default": true
+    },
+    "collect_errors": {
+      "type": "boolean",
+      "default": true
+    },
+    "collect_span_events": {
+      "type": "boolean",
+      "default": true
+    },
+    "collect_traces": {
+      "type": "boolean",
+      "default": true
+    },
+    "compressed_content_encoding": {
+      "type": "string",
+      "default": "gzip"
+    },
+    "console.allow_interpreter_cmd": {
+      "type": "boolean",
+      "default": false
+    },
+    "console.listener_socket": {
+      "type": "string"
+    },
+    "custom_insights_events.enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "custom_insights_events.max_attribute_value": {
+      "type": "integer",
+      "default": 255
+    },
+    "datastore_tracer.database_name_reporting.enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "datastore_tracer.instance_reporting.enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "distributed_tracing.enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Distributed tracing lets you see the path that a request takes through your distributed system. For more information, please consult our distributed tracing planning guide. https://docs.newrelic.com/docs/transition-guide-distributed-tracing"
+    },
+    "distributed_tracing.exclude_newrelic_header": {
+      "type": "boolean",
+      "default": true
+    },
+    "distributed_tracing.sampler.adaptive_sampling_target": {
+      "type": "integer",
+      "default": 10
+    },
+    "distributed_tracing.sampler.full_granularity.enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "distributed_tracing.sampler.partial_granularity.enabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.adaptive.sampling_target": {
+      "type": "integer"
+    },
+    "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.trace_id_ratio_based.ratio": {
+      "type": "number"
+    },
+    "distributed_tracing.sampler.partial_granularity.remote_parent_sampled.adaptive.sampling_target": {
+      "type": "integer"
+    },
+    "distributed_tracing.sampler.partial_granularity.remote_parent_sampled.trace_id_ratio_based.ratio": {
+      "type": "number"
+    },
+    "distributed_tracing.sampler.partial_granularity.root.adaptive.sampling_target": {
+      "type": "integer"
+    },
+    "distributed_tracing.sampler.partial_granularity.root.trace_id_ratio_based.ratio": {
+      "type": "number"
+    },
+    "distributed_tracing.sampler.partial_granularity.type": {
+      "type": "string",
+      "default": "essential"
+    },
+    "distributed_tracing.sampler.remote_parent_not_sampled.adaptive.sampling_target": {
+      "type": "integer"
+    },
+    "distributed_tracing.sampler.remote_parent_not_sampled.trace_id_ratio_based.ratio": {
+      "type": "number"
+    },
+    "distributed_tracing.sampler.remote_parent_sampled.adaptive.sampling_target": {
+      "type": "integer"
+    },
+    "distributed_tracing.sampler.remote_parent_sampled.trace_id_ratio_based.ratio": {
+      "type": "number"
+    },
+    "distributed_tracing.sampler.root.adaptive.sampling_target": {
+      "type": "integer"
+    },
+    "distributed_tracing.sampler.root.trace_id_ratio_based.ratio": {
+      "type": "number"
+    },
+    "enabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "error_collector.attributes.enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "error_collector.attributes.exclude": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "default": []
+    },
+    "error_collector.attributes.include": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "default": []
+    },
+    "error_collector.capture_events": {
+      "type": "boolean",
+      "default": true
+    },
+    "error_collector.capture_source": {
+      "type": "boolean",
+      "default": false
+    },
+    "error_collector.enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "The error collector captures information about uncaught exceptions or logged exceptions and sends them to UI for viewing. The error collector is enabled by default. Set this to \"false\" to turn it off. For more details on errors, see https://docs.newrelic.com/docs/apm/agents/manage-apm-agents/agent-data/manage-errors-apm-collect-ignore-or-mark-expected/"
+    },
+    "error_collector.expected_classes": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "default": [],
+      "description": "Expected errors are reported to the UI but will not affect the Apdex or error rate. To mark specific errors as expected, set this to a space separated list of the Python exception type names to expected. The exception name should be of the form 'module:class'."
+    },
+    "error_collector.expected_status_codes": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        {
+          "type": "string",
+          "description": "Comma- or space-separated integers and ranges (e.g. \"100-102 200-208 226 300-308 404\")"
+        }
+      ]
+    },
+    "error_collector.ignore_classes": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "default": [],
+      "description": "To stop specific errors from reporting to the UI, set this to a space separated list of the Python exception type names to ignore. The exception name should be of the form 'module:class'."
+    },
+    "error_collector.ignore_status_codes": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        {
+          "type": "string",
+          "description": "Comma- or space-separated integers and ranges (e.g. \"100-102 200-208 226 300-308 404\")"
+        }
+      ]
+    },
+    "event_harvest_config.harvest_limits.analytic_event_data": {
+      "type": "integer",
+      "default": 1200
+    },
+    "event_harvest_config.harvest_limits.custom_event_data": {
+      "type": "integer",
+      "default": 3600
+    },
+    "event_harvest_config.harvest_limits.error_event_data": {
+      "type": "integer",
+      "default": 100
+    },
+    "event_harvest_config.harvest_limits.log_event_data": {
+      "type": "integer",
+      "default": 10000
+    },
+    "event_harvest_config.harvest_limits.ml_event_data": {
+      "type": "integer",
+      "default": 100000
+    },
+    "event_harvest_config.harvest_limits.span_event_data": {
+      "type": "integer",
+      "default": 2000
+    },
+    "event_loop_visibility.blocking_threshold": {
+      "type": "number",
+      "default": 0.1
+    },
+    "event_loop_visibility.enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "gc_runtime_metrics.enabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "gc_runtime_metrics.top_object_count_limit": {
+      "type": "integer",
+      "default": 5
+    },
+    "heroku.dyno_name_prefixes_to_shorten": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [
+        "run",
+        "scheduler"
+      ]
+    },
+    "heroku.use_dyno_names": {
+      "type": "boolean",
+      "default": true
+    },
+    "high_security": {
+      "type": "boolean",
+      "default": false,
+      "description": "High Security Mode enforces certain security settings, and prevents them from being overridden, so that no sensitive data is sent to New Relic. Enabling High Security Mode means that request parameters are not collected and SQL can not be sent to New Relic in its raw form. To activate High Security Mode, it must be set to 'true' in this local .ini configuration file AND be set to 'true' in the server-side configuration in the New Relic user interface. It can also be set using the NEW_RELIC_HIGH_SECURITY environment variable. For details, see https://docs.newrelic.com/docs/subscriptions/high-security"
+    },
+    "include_environ": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [
+        "CONTENT_LENGTH",
+        "CONTENT_TYPE",
+        "HTTP_ACCEPT",
+        "HTTP_HOST",
+        "HTTP_REFERER",
+        "HTTP_USER_AGENT",
+        "REQUEST_METHOD"
+      ]
+    },
+    "infinite_tracing.batching": {
+      "type": "boolean",
+      "default": true
+    },
+    "infinite_tracing.compression": {
+      "type": "boolean",
+      "default": true
+    },
+    "infinite_tracing.span_queue_size": {
+      "type": "integer",
+      "default": 10000
+    },
+    "infinite_tracing.ssl": {
+      "type": "boolean",
+      "default": true
+    },
+    "infinite_tracing.trace_observer_port": {
+      "type": "integer",
+      "default": 443
+    },
+    "instrumentation.graphql.capture_introspection_queries": {
+      "type": "boolean",
+      "default": false
+    },
+    "instrumentation.kombu.consumer.enabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "instrumentation.kombu.ignored_exchanges": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [
+        "celeryev"
+      ]
+    },
+    "instrumentation.middleware.django.enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "instrumentation.middleware.django.exclude": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "instrumentation.middleware.django.include": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "k8s_operator.enabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "labels": {
+      "type": "string"
+    },
+    "linked_applications": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "log_file": {
+      "type": "string",
+      "description": "Sets the name of a file to log agent messages to. Whatever you set this to, you must ensure that the permissions for the containing directory and the file itself are correct, and that the user that your web application runs as can write out to the file. If not able to out a log file, it is also possible to say \"stderr\" and output to standard error output. This would normally result in output appearing in your web server log. It can also be set using the NEW_RELIC_LOG environment variable."
+    },
+    "log_level": {
+      "type": "string",
+      "enum": [
+        "critical",
+        "error",
+        "warning",
+        "info",
+        "debug"
+      ],
+      "default": "info",
+      "description": "Sets the level of detail of messages sent to the log file, if a log file location has been provided. Possible values, in increasing order of detail, are: \"critical\", \"error\", \"warning\", \"info\" and \"debug\". When reporting any agent issues to New Relic technical support, the most useful setting for the support engineers is \"debug\". However, this can generate a lot of information very quickly, so it is best not to keep the agent at this level for longer than it takes to reproduce the problem you are experiencing. This may also be set using the NEW_RELIC_LOG_LEVEL environment variable."
+    },
+    "machine_learning.enabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "machine_learning.inference_events_value.enabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "max_payload_size_in_bytes": {
+      "type": "integer",
+      "default": 1000000
+    },
+    "max_stack_trace_lines": {
+      "type": "integer",
+      "default": 50
+    },
+    "memory_runtime_pid_metrics.enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "message_tracer.segment_parameters_enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "metric_name_rules": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "ml_insights_events.enabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "monitor_mode": {
+      "type": "boolean",
+      "default": true,
+      "description": "When \"true\", the agent collects performance data about your application and reports this data to the New Relic UI at newrelic.com. This global switch is normally overridden for each environment below. It may also be set using the NEW_RELIC_MONITOR_MODE environment variable."
+    },
+    "opentelemetry.enabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "opentelemetry.traces.enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "opentelemetry.traces.exclude": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "default": []
+    },
+    "opentelemetry.traces.include": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "default": []
+    },
+    "otlp_port": {
+      "type": "integer",
+      "default": 0
+    },
+    "package_reporting.enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "port": {
+      "type": "integer",
+      "default": 0
+    },
+    "proxy_host": {
+      "type": "string"
+    },
+    "proxy_pass": {
+      "type": "string"
+    },
+    "proxy_port": {
+      "type": "integer"
+    },
+    "proxy_scheme": {
+      "type": "string"
+    },
+    "proxy_user": {
+      "type": "string"
+    },
+    "sampling_rate": {
+      "type": "integer",
+      "default": 0
+    },
+    "sampling_target": {
+      "type": "integer",
+      "default": 10
+    },
+    "sampling_target_period_in_seconds": {
+      "type": "integer",
+      "default": 60
+    },
+    "serverless_mode.enabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "shutdown_timeout": {
+      "type": "number",
+      "default": 2.5
+    },
+    "slow_sql.enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "span_events.attributes.enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "span_events.attributes.exclude": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "default": []
+    },
+    "span_events.attributes.include": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "default": []
+    },
+    "span_events.enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "startup_timeout": {
+      "type": "number",
+      "default": 0.0
+    },
+    "strip_exception_messages.allowlist": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "strip_exception_messages.enabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "synthetics.enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "thread_profiler.enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "A thread profiling session can be scheduled via the UI when this option is enabled. The thread profiler will periodically capture a snapshot of the call stack for each active thread in the application to construct a statistically representative call tree. For more details on the thread profiler tool, see https://docs.newrelic.com/docs/apm/apm-ui-pages/events/thread-profiler-tool/"
+    },
+    "transaction_events.attributes.enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "transaction_events.attributes.exclude": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "default": []
+    },
+    "transaction_events.attributes.include": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "default": []
+    },
+    "transaction_events.enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "transaction_name.limit": {
+      "type": "integer"
+    },
+    "transaction_name.naming_scheme": {
+      "type": "string"
+    },
+    "transaction_name_rules": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "transaction_segment_terms": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "transaction_segments.attributes.enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "transaction_segments.attributes.exclude": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "default": []
+    },
+    "transaction_segments.attributes.include": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "default": []
+    },
+    "transaction_tracer.attributes.enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "transaction_tracer.attributes.exclude": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "default": []
+    },
+    "transaction_tracer.attributes.include": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "default": []
+    },
+    "transaction_tracer.enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "The transaction tracer captures deep information about slow transactions and sends this to the UI on a periodic basis. The transaction tracer is enabled by default. Set this to \"false\" to turn it off."
+    },
+    "transaction_tracer.explain_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Determines whether the agent will capture query plans for slow SQL queries. Only supported in MySQL and PostgreSQL. Set this to \"false\" to turn it off."
+    },
+    "transaction_tracer.explain_threshold": {
+      "type": "number",
+      "default": 0.5,
+      "description": "Threshold for query execution time below which query plans will not not be captured. Relevant only when \"explain_enabled\" is true."
+    },
+    "transaction_tracer.function_trace": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "default": [],
+      "description": "Space separated list of function or method names in form 'module:function' or 'module:class.function' for which additional function timing instrumentation will be added."
+    },
+    "transaction_tracer.generator_trace": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "default": []
+    },
+    "transaction_tracer.record_sql": {
+      "type": "string",
+      "enum": [
+        "off",
+        "raw",
+        "obfuscated"
+      ],
+      "default": "obfuscated",
+      "description": "When the transaction tracer is on, SQL statements can optionally be recorded. The recorder has three modes, \"off\" which sends no SQL, \"raw\" which sends the SQL statement in its original form, and \"obfuscated\", which strips out numeric and string literals."
+    },
+    "transaction_tracer.stack_trace_threshold": {
+      "type": "number",
+      "default": 0.5,
+      "description": "Threshold in seconds for when to collect stack trace for a SQL call. In other words, when SQL statements exceed this threshold, then capture and send to the UI the current stack trace. This is helpful for pinpointing where long SQL calls originate from in an application."
+    },
+    "transaction_tracer.top_n": {
+      "type": "integer",
+      "default": 20
+    },
+    "transaction_tracer.transaction_threshold": {
+      "type": "string",
+      "description": "Threshold in seconds for when to collect a transaction trace. When the response time of a controller action exceeds this threshold, a transaction trace will be recorded and sent to the UI. Valid values are any positive float value, or (default) \"apdex_f\", which will use the threshold for a dissatisfying Apdex controller action - four times the Apdex T value."
+    },
+    "url_rules": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": []
+    },
+    "utilization.billing_hostname": {
+      "type": "string"
+    },
+    "utilization.detect_aws": {
+      "type": "boolean",
+      "default": true
+    },
+    "utilization.detect_azure": {
+      "type": "boolean",
+      "default": true
+    },
+    "utilization.detect_azurefunction": {
+      "type": "boolean",
+      "default": true
+    },
+    "utilization.detect_docker": {
+      "type": "boolean",
+      "default": true
+    },
+    "utilization.detect_gcp": {
+      "type": "boolean",
+      "default": true
+    },
+    "utilization.detect_kubernetes": {
+      "type": "boolean",
+      "default": true
+    },
+    "utilization.detect_pcf": {
+      "type": "boolean",
+      "default": true
+    },
+    "utilization.logical_processors": {
+      "type": "integer",
+      "default": 0
+    },
+    "utilization.total_ram_mib": {
+      "type": "integer",
+      "default": 0
+    },
+    "web_transactions_apdex": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "license_key": {
+      "type": "string",
+      "description": "New Relic license key associated with your account. Binds the agent's data to your account in the New Relic UI.",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "license_key",
+    "app_name"
+  ],
+  "additionalProperties": true
+}

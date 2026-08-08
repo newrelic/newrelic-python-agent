@@ -410,9 +410,9 @@ def test_application_harvest_with_spans(
         assert span_endpoints_called[-2] == "metric_data", span_endpoints_called
 
         if span_events_enabled and spans_created > 0:
-            assert span_endpoints_called[-3] == "span_event_data", span_endpoints_called
+            assert span_endpoints_called[-4] == "span_event_data", span_endpoints_called
         else:
-            assert span_endpoints_called[-3] != "span_event_data", span_endpoints_called
+            assert span_endpoints_called[-4] != "span_event_data", span_endpoints_called
 
     _test()
 

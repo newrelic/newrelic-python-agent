@@ -268,6 +268,22 @@ class AgentObjectProxy(ObjectProxy):
         return return_val
 
     def astream_events(self, *args, **kwargs):
+        # v3 Support
+        try:
+            bound_args = bind_args(self.__wrapped__.astream_events, args, kwargs)
+            api_version = bound_args.get("version")
+        except Exception:
+            # If we can't determine which version of the API this is,
+            # exit early to avoid breaking the API.
+            return self.__wrapped__.astream_events(*args, **kwargs)
+
+        if api_version in {"v1", "v2"}:
+            return self.__astream_events_v1_v2(*args, **kwargs)
+        else:
+            # Unknown API version, return without disrupting the API's return value
+            return self.__wrapped__.astream_events(*args, **kwargs)
+
+    def __astream_events_v1_v2(self, *args, **kwargs):
         transaction = current_transaction()
         if not transaction:
             return self.__wrapped__.astream_events(*args, **kwargs)

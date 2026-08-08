@@ -13,6 +13,7 @@
     "duration_millis": 5000,
     "children_formula": {
       "num_children": 70,
+      "num_links_per_child": 2,
       "duration_millis": 10,
       "duration_gap_millis": 1,
       "name_prefix": "External/",

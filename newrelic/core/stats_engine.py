@@ -1234,6 +1234,11 @@ class StatsEngine:
                         self.record_custom_metric(
                             "Supportability/Python/PartialGranularity/NrIds/Dropped", {"count": dropped_ids}
                         )
+                    dropped_span_links = getattr(transaction, "partial_granularity_dropped_span_links", 0)
+                    if dropped_span_links:
+                        self.record_custom_metric(
+                            "Supportability/Python/PartialGranularity/SpanLink/Dropped", {"count": dropped_span_links}
+                        )
 
         # Merge in log events
 

@@ -21,6 +21,7 @@ from traceback import format_exception
 import pytest
 
 from newrelic.agent import get_linking_metadata
+from newrelic.api import time_trace
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.log import NewRelicContextFormatter
@@ -375,3 +376,24 @@ def test_get_linking_metadata_api_inside_transaction():
 def test_get_linking_metadata_api_outside_transaction():
     metadata = get_linking_metadata()
     validate_metadata(metadata, EXPECTED_KEYS_NO_TXN)
+
+
+def test_get_linking_metadata_api_honors_application(monkeypatch):
+    """The application argument must reach the entity attributes.
+
+    It was accepted and dropped, so a process reporting to more than one
+    application always got the default entity.
+    """
+
+    class FakeSettings:
+        app_name = "OTHER-APP"
+        entity_guid = "other-guid"
+
+    class FakeApplication:
+        settings = FakeSettings()
+
+    monkeypatch.setattr(time_trace, "current_trace", lambda: None)
+
+    metadata = get_linking_metadata(application=FakeApplication())
+    assert metadata["entity.name"] == "OTHER-APP"
+    assert metadata["entity.guid"] == "other-guid"

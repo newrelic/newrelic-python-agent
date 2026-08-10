@@ -15,6 +15,7 @@ import logging
 
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.signature import bind_args
+from newrelic.api.time_trace import current_trace
 
 _logger = logging.getLogger(__name__)
 global OBSERVABILITY_PLUGIN_REGISTERED
@@ -33,7 +34,7 @@ def _create_NewRelicHook():
 
         def after_evaluation(self, series_context, data, detail):
             try:
-                logger.info("Attaching data to NR span")
+                _logger.info("Attaching data to NR span")
                 attrs = {
                   'feature_flag.key': series_context.key,
                   'feature_flag.provider.name': 'LaunchDarkly',
@@ -47,13 +48,13 @@ def _create_NewRelicHook():
                     attrs['feature_flag.result.reason.inExperiment'] = True
                 if getattr(detail, "value", None):
                     attrs['feature_flag.result.value'] = detail.value
-                trace = newrelic.agent.current_trace()
+                trace = current_trace()
                 if not trace:
                     raise Exception("No active trace. Unable to attach Darkly data to span.")
                 for key, value in attrs.items():
                     trace.add_custom_attribute(key, value)
             except Exception as e:
-                logger.error("[newrelic-hook] failed to enrich span", exc_info=True)
+                _logger.error("[newrelic-hook] failed to enrich span", exc_info=True)
             return data
     return NewRelicHook()
 

@@ -4520,6 +4520,22 @@ def _process_module_builtin_defaults():
         "opentelemetry.instrumentation.pika.utils", "newrelic.hooks.hybridagent_opentelemetry", "instrument_pika_utils"
     )
 
+    _process_module_definition(
+        "azure.cosmos.cosmos_client", "newrelic.hooks.datastore_azurecosmos", "instrument_cosmos_client"
+    )
+
+    _process_module_definition(
+        "azure.cosmos.database", "newrelic.hooks.datastore_azurecosmos", "instrument_cosmos_database"
+    )
+
+    _process_module_definition(
+        "azure.cosmos.container", "newrelic.hooks.datastore_azurecosmos", "instrument_cosmos_container"
+    )
+
+    _process_module_definition(
+        "azure.cosmos.user", "newrelic.hooks.datastore_azurecosmos", "instrument_cosmos_user"
+    )
+
 
 def _process_module_entry_points():
     from importlib.metadata import entry_points

@@ -158,6 +158,7 @@ jobs:
       contents: read
       id-token: write # IMPORTANT: this permission is mandatory for trusted publishing
       attestations: write
+      artifact-metadata: write
     needs:
       - build-wheels
       - build-sdist
@@ -204,7 +205,7 @@ jobs:
           repository-url: https://test.pypi.org/legacy/
 
       - name: Attest
-        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # 4.2.2
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # 4.2.2
         id: attest
         with:
           subject-path: |

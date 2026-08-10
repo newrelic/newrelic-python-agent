@@ -744,7 +744,7 @@ def get_service_linking_metadata(application=None, settings=None):
 
 
 def get_linking_metadata(application=None):
-    metadata = get_service_linking_metadata()
+    metadata = get_service_linking_metadata(application)
     trace = current_trace()
     if trace:
         metadata.update(trace._get_trace_linking_metadata())

@@ -1496,7 +1496,7 @@ class Application:
                     if configuration and configuration.package_reporting.enabled:
                         package_list = []
                         start = time.time()
-                        while package := next(self.plugins, None):
+                        for package in self.plugins:
                             package_list.append(package)
                             if (time.time() - start) > MAX_PACKAGE_CAPTURE_TIME_PER_FAST_HARVEST:
                                 break

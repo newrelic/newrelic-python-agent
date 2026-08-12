@@ -13,85 +13,42 @@
 # limitations under the License.
 
 from newrelic.common.object_wrapper import wrap_function_wrapper
-from newrelic.api.datastore_trace import wrap_datastore_trace
 from newrelic.api.transaction import current_transaction
-from newrelic.api.datastore_trace import DatastoreTrace
+from newrelic.api.datastore_trace import DatastoreTrace, DatastoreTraceWrapper
 from newrelic.common.signature import bind_args
+from newrelic.common.async_wrapper import coroutine_wrapper
+
 import urllib.parse as urlparse
 
+##################################################
+# Client Instrumentation
+##################################################
 
-_azure_cosmos_client_methods = {
-    "close",
+# Synchronous functions for sync and async
+_client_methods_sync_for_sync_and_async = (
     "from_connection_string",
-    "create_database",
-    "create_database_if_not_exists",
     "get_database_client",
     "list_databases",
     "query_databases",
+)
+
+# Synchronous for sync, asynchronous for async
+_client_methods_sync_async_respective = (
+    "close",
+    "create_database",
+    "create_database_if_not_exists",
     "delete_databases",
+)
+
+# Synchronous functions only with sync
+_client_methods_sync = {
     "get_database_account",
 }
 
-_azure_cosmos_database_methods = (
-    "read",
-    "create_container",
-    "create_container_if_not_exists",
-    "delete_container",
-    "get_container_client",
-    "list_containers",
-    "query_containers",
-    "replace_container",
-    "list_users",
-    "query_users",
-    "get_user_client",
-    "create_user",
-    "upsert_user",
-    "replace_user",
-    "delete_user",
-    "read_offer",
-    "get_throughput",
-    "replace_throughput",
+# Asyncronous functions only with async
+_client_methods_async = (
+    "_get_database_account",
 )
-
-_azure_cosmos_container_methods = {
-    "read",
-    "read_item",
-    "read_items",
-    "read_all_items",
-    "query_items_change_feed",
-    "query_items",
-    "semantic_rerank",
-    "replace_item",
-    "upsert_item",
-    "create_item",
-    "patch_item",
-    "execute_item_batch",
-    "delete_item",
-    "read_offer",
-    "get_throughput",
-    "replace_throughput",
-    "list_conflicts",
-    "query_conflicts",
-    "get_conflict",
-    "delete_conflict",
-    "delete_all_items_by_partition_key",
-    "read_feed_ranges",
-    "get_latest_session_token",
-    "feed_range_from_partition_key",
-    "is_feed_range_subset",
-}
-
-_azure_cosmos_user_methods = {
-    "read",
-    "list_permissions",
-    "query_permissions",
-    "get_permission",
-    "create_permission",
-    "upsert_permission",
-    "replace_permission",
-    "delete_permission",
-}
-
 
 def wrap_CosmosClient_method_wrapper(module, name):
     def _wrap_CosmosClient_method_wrapper_(wrapped, instance, args, kwargs):
@@ -117,6 +74,83 @@ def wrap_CosmosClient_method_wrapper(module, name):
         wrap_function_wrapper(module, f"CosmosClient.{name}", _wrap_CosmosClient_method_wrapper_)
 
 
+def wrap_aio_CosmosClient_method_wrapper(module, name):
+    def _wrap_aio_CosmosClient_method_wrapper_(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
+        if not transaction:
+            return wrapped(*args, **kwargs)
+
+        bound_args = bind_args(wrapped, args, kwargs)
+        try:
+            database_name = bound_args.get("database")
+            url = instance.client_connection.url_connection
+            url_split = urlparse.urlsplit(url)
+            host, port_path_or_id = url_split.netloc.split(":")
+        except Exception:
+            host, port_path_or_id, database_name = None, None, None
+
+        return DatastoreTraceWrapper(
+            wrapped, product="CosmosDB", target=None, operation=name, host=host, port_path_or_id=port_path_or_id, database_name=database_name, async_wrapper=coroutine_wrapper
+        )(*args, **kwargs)
+
+    if hasattr(module.CosmosClient, name):
+        wrap_function_wrapper(module, f"CosmosClient.{name}", _wrap_aio_CosmosClient_method_wrapper_)
+
+
+def instrument_cosmos_client(module):
+    _methods = (*_client_methods_sync_for_sync_and_async, *_client_methods_sync, *_client_methods_sync_async_respective)
+    for name in _methods:
+        if hasattr(module, "CosmosClient"):
+            wrap_CosmosClient_method_wrapper(module, name)
+
+
+def instrument_cosmos_aio_client(module):
+    _aio_methods = (*_client_methods_async, *_client_methods_sync_async_respective)
+    for name in _aio_methods:
+        if hasattr(module, "CosmosClient"):
+            wrap_aio_CosmosClient_method_wrapper(module, name)
+
+    _methods = _client_methods_sync_for_sync_and_async
+    for name in _methods:
+        if hasattr(module, "CosmosClient"):
+            wrap_CosmosClient_method_wrapper(module, name)
+
+
+##################################################
+# Database Instrumentation
+##################################################
+
+# Synchronous functions for sync and async
+_database_methods_sync_for_sync_and_async = (
+    "get_container_client",
+    "list_containers",
+    "query_containers",
+    "get_user_client",
+    "list_users",
+    "query_users",
+)
+
+# Synchronous for sync, asynchronous for async
+_database_methods_sync_async_respective = (
+    "read",
+    "create_container",
+    "create_container_if_not_exists",
+    "replace_container",
+    "delete_container",
+    "create_user",
+    "upsert_user",
+    "replace_user",
+    "delete_user",
+    "get_throughput",
+    "replace_throughput",
+)
+
+# Synchronous functions only with sync
+_database_methods_sync = (
+    "read_offer",
+)
+
+
 def wrap_DatabaseProxy_method_wrapper(module, name):
     def _wrap_DatabaseProxy_method_wrapper_(wrapped, instance, args, kwargs):
         transaction = current_transaction()
@@ -138,6 +172,89 @@ def wrap_DatabaseProxy_method_wrapper(module, name):
 
     if hasattr(module.DatabaseProxy, name):
         wrap_function_wrapper(module, f"DatabaseProxy.{name}", _wrap_DatabaseProxy_method_wrapper_)
+
+
+def wrap_aio_DatabaseProxy_method_wrapper(module, name):
+    def _wrap_aio_DatabaseProxy_method_wrapper_(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
+        if not transaction:
+            return wrapped(*args, **kwargs)
+
+        try:
+            database_link = instance.database_link
+            url = instance.client_connection.url_connection
+            url_split = urlparse.urlsplit(url)
+            host, port_path_or_id = url_split.netloc.split(":")
+        except Exception:
+            host, port_path_or_id, database_link = None, None, None
+
+        return DatastoreTraceWrapper(
+            wrapped, product="CosmosDB", target=None, operation=name, host=host, port_path_or_id=port_path_or_id, database_name=database_link, async_wrapper=coroutine_wrapper
+        )(*args, **kwargs)
+
+    if hasattr(module.DatabaseProxy, name):
+        wrap_function_wrapper(module, f"DatabaseProxy.{name}", _wrap_aio_DatabaseProxy_method_wrapper_)
+
+
+def instrument_cosmos_database(module):
+    _methods = (*_database_methods_sync_for_sync_and_async, *_database_methods_sync, *_database_methods_sync_async_respective)
+    for name in _methods:
+        if hasattr(module, "DatabaseProxy"):
+            wrap_DatabaseProxy_method_wrapper(module, name)
+
+
+def instrument_cosmos_aio_database(module):
+    _aio_methods = _database_methods_sync_async_respective
+    for name in _aio_methods:
+        if hasattr(module, "DatabaseProxy"):
+            wrap_aio_DatabaseProxy_method_wrapper(module, name)
+
+    _methods = _database_methods_sync_for_sync_and_async
+    for name in _methods:
+        if hasattr(module, "DatabaseProxy"):
+            wrap_DatabaseProxy_method_wrapper(module, name)
+
+
+##################################################
+# Container Instrumentation
+##################################################
+
+# Synchronous functions for sync and async
+_container_methods_sync_for_sync_and_async = (
+    "read_all_items",
+    "query_items_change_feed",
+    "query_items",
+    "list_conflicts",
+    "query_conflicts",
+    "read_feed_ranges",
+)
+
+# Synchronous for sync, asynchronous for async
+_container_methods_sync_async_respective = (
+    "read",
+    "create_item",
+    "read_item",
+    "read_items",
+    "semantic_rerank",
+    "replace_item",
+    "upsert_item",
+    "patch_item",
+    "delete_item",
+    "get_throughput",
+    "replace_throughput",
+    "get_conflict",
+    "delete_conflict",
+    "delete_all_items_by_partition_key",
+    "execute_item_batch",
+    "get_latest_session_token",
+    "feed_range_from_partition_key",
+    "is_feed_range_subset",
+)
+
+# Synchronous functions only with sync
+_container_methods_sync = (
+    "read_offer",
+)
 
 
 def wrap_ContainerProxy_method_wrapper(module, name):
@@ -163,6 +280,68 @@ def wrap_ContainerProxy_method_wrapper(module, name):
         wrap_function_wrapper(module, f"ContainerProxy.{name}", _wrap_ContainerProxy_method_wrapper_)
 
 
+def wrap_aio_ContainerProxy_method_wrapper(module, name):
+    def _wrap_aio_ContainerProxy_method_wrapper_(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
+        if not transaction:
+            return wrapped(*args, **kwargs)
+
+        try:
+            container_link = instance.container_link
+            url = instance.client_connection.url_connection
+            url_split = urlparse.urlsplit(url)
+            host, port_path_or_id = url_split.netloc.split(":")
+        except Exception:
+            host, port_path_or_id, container_link = None, None, None
+
+        return DatastoreTraceWrapper(
+            wrapped, product="CosmosDB", target=None, operation=name, host=host, port_path_or_id=port_path_or_id, database_name=container_link, async_wrapper=coroutine_wrapper
+        )(*args, **kwargs)
+
+    if hasattr(module.DatabaseProxy, name):
+        wrap_function_wrapper(module, f"DatabaseProxy.{name}", _wrap_aio_ContainerProxy_method_wrapper_)
+
+
+def instrument_cosmos_container(module):
+    _methods = (*_container_methods_sync_for_sync_and_async, *_container_methods_sync, *_container_methods_sync_async_respective)
+    for name in _methods:
+        if hasattr(module, "ContainerProxy"):
+            wrap_ContainerProxy_method_wrapper(module, name)
+
+
+def instrument_cosmos_aio_container(module):
+    _aio_methods = _container_methods_sync_async_respective
+    for name in _aio_methods:
+        if hasattr(module, "ContainerProxy"):
+            wrap_aio_ContainerProxy_method_wrapper(module, name)
+
+    _methods = _container_methods_sync_for_sync_and_async
+    for name in _methods:
+        if hasattr(module, "ContainerProxy"):
+            wrap_ContainerProxy_method_wrapper(module, name)
+
+
+##################################################
+# User Instrumentation
+##################################################
+
+# Synchronous functions for sync and async
+_user_methods_sync_for_sync_and_async = (
+    "list_permissions",
+    "query_permissions",
+)
+
+# Synchronous for sync, asynchronous for async
+_user_methods_sync_async_respective = (
+    "read",
+    "get_permission",
+    "create_permission",
+    "upsert_permission",
+    "replace_permission",
+    "delete_permission",
+)
+
+
 def wrap_UserProxy_method_wrapper(module, name):
     def _wrap_UserProxy_method_wrapper_(wrapped, instance, args, kwargs):
         transaction = current_transaction()
@@ -186,26 +365,43 @@ def wrap_UserProxy_method_wrapper(module, name):
         wrap_function_wrapper(module, f"UserProxy.{name}", _wrap_UserProxy_method_wrapper_)
 
 
-def instrument_cosmos_client(module):
-    for name in _azure_cosmos_client_methods:
-        if hasattr(module, "CosmosClient"):
-            wrap_CosmosClient_method_wrapper(module, name)
+def wrap_aio_UserProxy_method_wrapper(module, name):
+    def _wrap_aio_UserProxy_method_wrapper_(wrapped, instance, args, kwargs):
+        transaction = current_transaction()
+        if not transaction:
+            return wrapped(*args, **kwargs)
 
+        try:
+            user_link = instance.user_link
+            url = instance.client_connection.url_connection
+            url_split = urlparse.urlsplit(url)
+            host, port_path_or_id = url_split.netloc.split(":")
+        except Exception:
+            host, port_path_or_id, user_link = None, None, None
 
-def instrument_cosmos_database(module):
-    for name in _azure_cosmos_database_methods:
-        if hasattr(module, "DatabaseProxy"):
-            wrap_DatabaseProxy_method_wrapper(module, name)
+        return DatastoreTraceWrapper(
+            wrapped, product="CosmosDB", target=None, operation=name, host=host, port_path_or_id=port_path_or_id, database_name=user_link, async_wrapper=coroutine_wrapper
+        )(*args, **kwargs)
 
-
-def instrument_cosmos_container(module):
-    for name in _azure_cosmos_container_methods:
-        if hasattr(module, "ContainerProxy"):
-            wrap_ContainerProxy_method_wrapper(module, name)
+    if hasattr(module.DatabaseProxy, name):
+        wrap_function_wrapper(module, f"DatabaseProxy.{name}", _wrap_aio_UserProxy_method_wrapper_)
 
 
 def instrument_cosmos_user(module):
-    for name in _azure_cosmos_user_methods:
+    _methods = (*_user_methods_sync_for_sync_and_async, *_user_methods_sync_async_respective)
+    for name in _methods:
+        if hasattr(module, "UserProxy"):
+            wrap_UserProxy_method_wrapper(module, name)
+
+
+def instrument_cosmos_aio_user(module):
+    _aio_methods = _user_methods_sync_async_respective
+    for name in _aio_methods:
+        if hasattr(module, "UserProxy"):
+            wrap_aio_UserProxy_method_wrapper(module, name)
+
+    _methods = _user_methods_sync_for_sync_and_async
+    for name in _methods:
         if hasattr(module, "UserProxy"):
             wrap_UserProxy_method_wrapper(module, name)
 

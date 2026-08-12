@@ -19,6 +19,10 @@ from langchain_core.messages.tool import ToolMessage
 
 from .conftest import EXPECTED_AGENT_RESPONSE, EXPECTED_TOOL_OUTPUT
 
+# ==========
+# Components
+# ==========
+
 
 def state_function_step(state):
     return {"messages": [f"The real agent said: {state['messages'][-1].content}"]}
@@ -35,6 +39,11 @@ def append_function_step(state):
 
     messages.append(ToolMessage(f"The real agent said: {messages[-1].content}", tool_call_id=123))
     return state
+
+
+# ========================
+# Building Agent Runnables
+# ========================
 
 
 @pytest.fixture(params=["create_agent", "StateGraph", "RunnableSeq", "RunnableSequence"])
@@ -91,6 +100,11 @@ def create_agent_runnable(agent_runnable_type, chat_openai_client):
         return _create_runnable_sequence
     else:
         raise RuntimeError("Unexpected Combination")
+
+
+# =======================
+# Validating Agent Output
+# =======================
 
 
 @pytest.fixture
@@ -178,10 +192,14 @@ def validate_agent_output(agent_runnable_type):
     return _validate_agent_output
 
 
+# =================
+# Exercise Matrix
+# =================
+
 # Each exercise method is tested only across the LangChain "version" values it actually
-# accepts as an argument. (None pass no argument and uses the default value). Version
-# support still varies by runnable type, run-method versions and the v3 protocol require
-# a langgraph Pregel graph so the exercise_agent fixture skips the runnable-type combinations
+# accepts as an argument. None passes no argument and uses the default value. Version
+# support still varies by runnable type: run-method versions and the v3 protocol require
+# a langgraph Pregel graph, so the exercise_agent fixture skips the runnable-type combinations
 # that can't run. This list is shared with test_state_graph.py's exercise_graph fixture via import.
 EXERCISE_PARAMS = [
     # Run methods take version arg only on langgraph Pregel graphs. Other runnables do not take a version arg.
@@ -197,11 +215,22 @@ EXERCISE_PARAMS = [
     pytest.param(("astream", None), id="astream-default"),
     pytest.param(("astream", "v1"), id="astream-v1"),
     pytest.param(("astream", "v2"), id="astream-v2"),
-    # astream_events v3 only executes on a Pregel graph.
     pytest.param(("astream_events", None), id="astream_events-default"),
     pytest.param(("astream_events", "v1"), id="astream_events-v1"),
     pytest.param(("astream_events", "v2"), id="astream_events-v2"),
-    # TODO: Add testing for v3 API versions
+    # The v3 events protocol resolves to a typed stream that can be driven to completion through
+    # several public consumption APIs. Those rows carry a third tuple element that represents the
+    # iteration method used to drive the stream. This lets us achieve better coverage over a wider
+    # range of APIs and application architectures.
+    pytest.param(("astream_events", "v3", "output"), id="astream_events.output-v3"),
+    pytest.param(("astream_events", "v3", "__iter__"), id="astream_events.__iter__-v3"),
+    pytest.param(("astream_events", "v3", "messages"), id="astream_events.messages-v3"),
+    pytest.param(("astream_events", "v3", "context_manager"), id="astream_events.context_manager-v3"),
+    # stream_events only supports v3 (v1/v2/None raise NotImplementedError)
+    pytest.param(("stream_events", "v3", "output"), id="stream_events.output-v3"),
+    pytest.param(("stream_events", "v3", "__iter__"), id="stream_events.__iter__-v3"),
+    pytest.param(("stream_events", "v3", "messages"), id="stream_events.messages-v3"),
+    pytest.param(("stream_events", "v3", "context_manager"), id="stream_events.context_manager-v3"),
 ]
 
 
@@ -222,7 +251,104 @@ def exercise_method_version(exercise_method_params):
 
 
 @pytest.fixture
-def exercise_agent(loop, validate_agent_output, agent_runnable_type, exercise_method, exercise_method_version):
+def exercise_iteration_method(exercise_method_params):
+    # Only used for (a)stream_events v3.
+    if len(exercise_method_params) >= 3:
+        return exercise_method_params[2]
+    return None
+
+
+# ==============
+# Stream Drivers
+# ==============
+
+
+@pytest.fixture
+def exercise_astream_events(loop, exercise_method_version, exercise_iteration_method):
+    version = exercise_method_version
+    iteration_method = exercise_iteration_method
+    version_kwargs = {} if version is None else {"version": version}
+
+    async def _exercise_v1_v2(agent, prompt):
+        events = [event async for event in agent.astream_events(prompt, **version_kwargs)]
+        root_run_id = events[0]["run_id"] if events else None
+        return [
+            event["data"]["chunk"]
+            for event in events
+            if event["event"] == "on_chain_stream" and event["run_id"] == root_run_id
+        ]
+
+    async def _exercise_v3(agent, prompt):
+        run = await agent.astream_events(prompt, version="v3")
+        if iteration_method == "__iter__":
+            # raw ProtocolEvent iteration
+            async for _event in run:
+                pass
+            return await run.output()
+        elif iteration_method == "messages":
+            async for handle in run.messages:
+                # per-LLM-call ChatModelStream handles
+                async for _chunk in handle:
+                    pass
+            return await run.output()
+        elif iteration_method == "context_manager":
+            async with run:
+                return await run.output()
+        elif iteration_method == "output":
+            return await run.output()
+        else:
+            raise RuntimeError("Unexpected Combination")
+
+    def _exercise(agent, prompt):
+        if version == "v3":
+            return loop.run_until_complete(_exercise_v3(agent, prompt))
+        else:
+            return loop.run_until_complete(_exercise_v1_v2(agent, prompt))
+
+    return _exercise
+
+
+@pytest.fixture
+def exercise_stream_events(exercise_iteration_method):
+    iteration_method = exercise_iteration_method
+
+    def _exercise(agent, prompt):
+        run = agent.stream_events(prompt, version="v3")
+        if iteration_method == "__iter__":
+            for _event in run:  # raw ProtocolEvent iteration
+                pass
+            return run.output
+        elif iteration_method == "messages":
+            for handle in run.messages:  # per-LLM-call ChatModelStream handles
+                for _chunk in handle:
+                    pass
+            return run.output
+        elif iteration_method == "context_manager":
+            with run:
+                return run.output
+        elif iteration_method == "output":
+            return run.output
+        else:
+            raise RuntimeError("Unexpected Combination")
+
+    return _exercise
+
+
+# =================
+# Exercising Agents
+# =================
+
+
+@pytest.fixture
+def exercise_agent(
+    loop,
+    validate_agent_output,
+    agent_runnable_type,
+    exercise_method,
+    exercise_method_version,
+    exercise_stream_events,
+    exercise_astream_events,
+):
     # Shorthand variable names
     method = exercise_method
     version = exercise_method_version
@@ -253,35 +379,12 @@ def exercise_agent(loop, validate_agent_output, agent_runnable_type, exercise_me
                 validate_agent_output(response)
                 return response
             elif method == "astream_events":
-                if version == "v3":
-                    # v3 returns an awaitable resolving to a typed stream.
-                    # Drive it with .output(), and return the final state.
-                    async def _collect_astream_events_v3():
-                        run = await agent.astream_events(prompt, version="v3")
-                        return await run.output()
-
-                    response = loop.run_until_complete(_collect_astream_events_v3())
-                    validate_agent_output(response)
-                    return response
-                else:
-
-                    async def _collect_astream_events_v1_v2():
-                        return [event async for event in agent.astream_events(prompt, **version_kwargs)]
-
-                    events = loop.run_until_complete(_collect_astream_events_v1_v2())
-                    root_run_id = events[0]["run_id"] if events else None
-                    response = [
-                        event["data"]["chunk"]
-                        for event in events
-                        if event["event"] == "on_chain_stream" and event["run_id"] == root_run_id
-                    ]
-                    validate_agent_output(response)
-                    return response
+                response = exercise_astream_events(agent, prompt)
+                validate_agent_output(response)
+                return response
             elif method == "stream_events":
                 if version == "v3":
-                    # v3 returns an awaitable resolving to a typed stream.
-                    # Drive it with .output(), and return the final state.
-                    response = agent.stream_events(prompt, version="v3").output
+                    response = exercise_stream_events(agent, prompt)
                     validate_agent_output(response)
                     return response
                 else:
@@ -292,6 +395,22 @@ def exercise_agent(loop, validate_agent_output, agent_runnable_type, exercise_me
             # Catch any not implemented combinations of Runnable and method version.
             # If we were expecting this combination not to work, issue a pytest.skip
             # with an appropriate message.
+
+            # Version support depends on the runnable type, not just the method. Skip the
+            # combinations that cannot run so the shared param list stays a clean cross product.
+            # create_agent (a Pregel graph) is fully instrumented for the v3 events protocol,
+            # so it is intentionally not skipped here — those cells run for real.
+            is_pregel = agent_runnable_type in {"create_agent", "StateGraph"}
+            if not is_pregel:
+                if version is not None and method in {"invoke", "ainvoke", "stream", "astream"}:
+                    pytest.skip(
+                        f"{agent_runnable_type} is a plain Runnable; version= on {method} is a Pregel-only feature."
+                    )
+                if version == "v3" and method in {"astream_events", "stream_events"}:
+                    pytest.skip(
+                        f"{agent_runnable_type} is a plain Runnable; the v3 events protocol requires a Pregel graph."
+                    )
+
             raise
 
     # Expected number of events for a full run of the agent
@@ -306,6 +425,11 @@ def exercise_agent(loop, validate_agent_output, agent_runnable_type, exercise_me
         _exercise_agent._expected_event_count_error = 7
 
     return _exercise_agent
+
+
+# =============
+# Agent Metrics
+# =============
 
 
 @pytest.fixture

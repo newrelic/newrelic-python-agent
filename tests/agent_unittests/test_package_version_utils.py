@@ -16,7 +16,9 @@ import sys
 import warnings
 
 import pytest
+import webtest
 from testing_support.validators.validate_function_called import validate_function_called
+from testing_support.validators.validate_function_not_called import validate_function_not_called
 
 from newrelic.common.package_version_utils import (
     NULL_VERSIONS,
@@ -37,17 +39,19 @@ SKIP_IF_NOT_PY310_PLUS = pytest.mark.skipif(not IS_PY310_PLUS, reason="These fea
 
 
 @pytest.fixture(autouse=True)
-def patched_pytest_module(monkeypatch):
-    for attr in VERSION_ATTRS:
-        if hasattr(pytest, attr):
-            monkeypatch.delattr(pytest, attr)
-
-    return pytest
+def patched_module_attrs(monkeypatch):
+    for module in (pytest, webtest):
+        for attr in VERSION_ATTRS:
+            if hasattr(module, attr):
+                monkeypatch.delattr(module, attr)
 
 
 @pytest.fixture(autouse=True)
 def cleared_package_version_cache():
     """Ensure cache is empty before every test to exercise code paths."""
+    from newrelic.common.package_version_utils import _packages_distributions
+
+    _packages_distributions.clear()
     _get_package_version.cache_clear()
 
 
@@ -96,18 +100,38 @@ def test_get_package_version_tuple(monkeypatch, attr, value, expected_value):
     assert version == expected_value
 
 
-@validate_function_called("importlib.metadata", "version")
-def test_importlib_dot_metadata():
-    # Test for importlib.metadata from the standard library.
-    version = get_package_version("pytest")
-    assert version not in NULL_VERSIONS, version
-
-
 @SKIP_IF_NOT_PY310_PLUS
-@validate_function_called("importlib.metadata", "packages_distributions")
-def test_mapping_import_to_distribution_packages():
-    version = get_package_version("pytest")
-    assert version not in NULL_VERSIONS, version
+def test_importlib_metadata_caching():
+    @validate_function_called("newrelic.common.package_version_utils", "_get_package_version")
+    @validate_function_called("importlib.metadata", "packages_distributions")
+    @validate_function_called("importlib.metadata", "version")
+    def _first():
+        # The first time get_package_version() is ever called, we will
+        # call packages_distributions() and cache it. After that, we call
+        # importlib.metadata.version() to get the actual version.
+        return get_package_version("pytest")
+
+    @validate_function_called("newrelic.common.package_version_utils", "_get_package_version")
+    @validate_function_not_called("importlib.metadata", "packages_distributions")
+    @validate_function_called("importlib.metadata", "version")
+    def _second():
+        # On future calls to get_package_version() we never call
+        # packages_distributions() as it's already cached. We do
+        # still call importlib.metadata.version() though with the
+        # cached distribution name.
+        return get_package_version("webtest")
+
+    @validate_function_called("newrelic.common.package_version_utils", "_get_package_version")
+    @validate_function_not_called("importlib.metadata", "packages_distributions")
+    @validate_function_not_called("importlib.metadata", "version")
+    def _third():
+        # When an already cached package version is looked up, we don't
+        # call either of the importlib.metadata functions.
+        return get_package_version("pytest")
+
+    assert _first() not in NULL_VERSIONS
+    assert _second() not in NULL_VERSIONS
+    assert _third() not in NULL_VERSIONS
 
 
 def _getattr_deprecation_warning(attr):

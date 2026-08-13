@@ -104,6 +104,66 @@ def wrap_AsyncBackgroundExecutor_submit(wrapped):
     return _wrapper
 
 
+def _record_graph_stream_completion(instance):
+    try:
+        # Do not report events twice
+        if getattr(instance, "_nr_closed", True):
+            return
+
+        transaction = current_transaction()
+        if not transaction:
+            return
+
+        # Look for an error to report if there is one
+        try:
+            mux = getattr(instance, "_mux", None)
+            events = getattr(mux, "_events", None) if mux is not None else None
+            error = getattr(events, "_error", None) if events is not None else None
+        except Exception:
+            error = None
+
+        # Mark events as reported to avoid duplicates
+        instance._nr_closed = True
+        if error:
+            instance._nr_on_error(instance, transaction, error=error)
+        else:
+            instance._nr_on_stop_iteration(instance, transaction)
+    except Exception:
+        pass
+
+
+def wrap_GraphRunStream__pump_next(wrapped, instance, args, kwargs):
+    # _pump_next returns False when a graph is exhausted, either due to successful completion or a stored error.
+    result = wrapped(*args, **kwargs)
+    if result is False and getattr(instance, "_exhausted", False):
+        _record_graph_stream_completion(instance)
+    return result
+
+
+async def wrap_AsyncGraphRunStream__apump_next(wrapped, instance, args, kwargs):
+    # _apump_next returns False when a graph is exhausted, either due to successful completion or a stored error.
+    result = await wrapped(*args, **kwargs)
+    if result is False and getattr(instance, "_exhausted", False):
+        _record_graph_stream_completion(instance)
+    return result
+
+
+def wrap_GraphRunStream_abort(wrapped, instance, args, kwargs):
+    # abort is an early exit that can be called directly or by __exit__ on the context manager.
+    # If the run is aborted before we record events, make one last attempt.
+    result = wrapped(*args, **kwargs)
+    _record_graph_stream_completion(instance)
+    return result
+
+
+async def wrap_AsyncGraphRunStream_abort(wrapped, instance, args, kwargs):
+    # abort is an early exit that can be called directly or by __exit__ on the context manager.
+    # If the run is aborted before we record events, make one last attempt.
+    result = await wrapped(*args, **kwargs)
+    _record_graph_stream_completion(instance)
+    return result
+
+
 def instrument_langgraph_prebuilt_tool_node(module):
     if hasattr(module, "ToolNode"):
         if hasattr(module.ToolNode, "_execute_tool_sync"):
@@ -120,6 +180,19 @@ def instrument_langgraph_pregel_executor(module):
         wrap_object(module, "AsyncBackgroundExecutor.submit", wrap_AsyncBackgroundExecutor_submit)
 
 
+def instrument_langgraph_stream_run_stream(module):
+    if hasattr(module, "GraphRunStream"):
+        if hasattr(module.GraphRunStream, "_pump_next"):
+            wrap_function_wrapper(module, "GraphRunStream._pump_next", wrap_GraphRunStream__pump_next)
+        if hasattr(module.GraphRunStream, "abort"):
+            wrap_function_wrapper(module, "GraphRunStream.abort", wrap_GraphRunStream_abort)
+    if hasattr(module, "AsyncGraphRunStream"):
+        if hasattr(module.AsyncGraphRunStream, "_apump_next"):
+            wrap_function_wrapper(module, "AsyncGraphRunStream._apump_next", wrap_AsyncGraphRunStream__apump_next)
+        if hasattr(module.AsyncGraphRunStream, "abort"):
+            wrap_function_wrapper(module, "AsyncGraphRunStream.abort", wrap_AsyncGraphRunStream_abort)
+
+
 def instrument_langgraph_internal_runnable(module):
     # langgraph._internal._runnable imports run_in_executor via `from ... import`,
     # binding the reference at import time. If that import happened before newrelic
@@ -127,7 +200,7 @@ def instrument_langgraph_internal_runnable(module):
     #
     # The real fix for this issue is to get users to initialize the agent correctly
     # before any imports, or to use the newrelic-admin wrapper. As a last ditch effort,
-    # wrap the reference on this module the wrapped version is picked up at
+    # wrap the reference on this module so that the wrapped version is picked up at
     # compile time on StateGraph. This will only work if newrelic is initialized before
     # the StateGraph is compiled, but it should provide slightly better compatibility.
     if hasattr(module, "run_in_executor") and not hasattr(module.run_in_executor, "__wrapped__"):

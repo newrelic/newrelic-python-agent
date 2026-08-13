@@ -406,13 +406,13 @@ def test_application_harvest_with_spans(
         assert app._stats_engine.span_events.num_samples == 0
 
         # Verify that the metric_data endpoint is the 2nd to last and
-        # span_event_data is the 3rd to last endpoint called
+        # span_event_data is the 4th to last endpoint called
         assert span_endpoints_called[-2] == "metric_data", span_endpoints_called
 
         if span_events_enabled and spans_created > 0:
-            assert span_endpoints_called[-3] == "span_event_data", span_endpoints_called
+            assert span_endpoints_called[-4] == "span_event_data", span_endpoints_called
         else:
-            assert span_endpoints_called[-3] != "span_event_data", span_endpoints_called
+            assert span_endpoints_called[-4] != "span_event_data", span_endpoints_called
 
     _test()
 

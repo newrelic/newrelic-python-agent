@@ -2339,6 +2339,9 @@ def _process_module_builtin_defaults():
     _process_module_definition(
         "langgraph._internal._runnable", "newrelic.hooks.mlmodel_langgraph", "instrument_langgraph_internal_runnable"
     )
+    _process_module_definition(
+        "langgraph.stream.run_stream", "newrelic.hooks.mlmodel_langgraph", "instrument_langgraph_stream_run_stream"
+    )
 
     _process_module_definition(
         "langchain_core.runnables.base",

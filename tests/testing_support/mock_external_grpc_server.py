@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import socket
 from concurrent import futures
 
 import grpc
+
+from testing_support.util import get_open_port as _get_open_port
 
 # This defines an external grpc server test apps can use for testing.
 #
@@ -28,6 +29,8 @@ import grpc
 
 
 class MockExternalgRPCServer:
+    get_open_port = staticmethod(_get_open_port)
+
     def __init__(self, port=None, *args, **kwargs):
         self.server = grpc.server(futures.ThreadPoolExecutor(max_workers=4))
         if port:
@@ -49,14 +52,6 @@ class MockExternalgRPCServer:
                     # Reraise errors other than port already in use
                     if "Address already in use" not in exc:
                         raise
-
-    @staticmethod
-    def get_open_port():
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.bind(("", 0))
-        port = s.getsockname()[1]
-        s.close()
-        return port
 
     def __enter__(self):
         self.server.start()

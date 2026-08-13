@@ -12,20 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import socket
-
 import cheroot.wsgi
+from testing_support.util import get_open_port
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 import newrelic.api.transaction
-
-
-def get_open_port():
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind(("", 0))
-    port = s.getsockname()[1]
-    s.close()
-    return port
 
 
 def wsgi_test_app(environ, start_response):

@@ -14,7 +14,6 @@
 
 import asyncio
 import logging
-import socket
 import threading
 from urllib.request import HTTPError, urlopen
 
@@ -26,6 +25,7 @@ from testing_support.fixtures import (
     wait_for_background_threads,
 )
 from testing_support.sample_asgi_applications import AppWithCall, AppWithCallRaw, simple_app_v2_raw
+from testing_support.util import get_open_port
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from uvicorn.config import Config
@@ -34,14 +34,6 @@ from uvicorn.main import Server
 from newrelic.common.object_names import callable_name
 
 UVICORN_VERSION = tuple(int(v) for v in uvicorn.__version__.split(".")[:2])
-
-
-def get_open_port():
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.bind(("", 0))
-    port = s.getsockname()[1]
-    s.close()
-    return port
 
 
 @pytest.fixture(

@@ -32,6 +32,18 @@ from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import transient_function_wrapper
 
+from ._test_agents import (
+    agent_runnable_type,
+    create_agent_runnable,
+    exercise_agent,
+    exercise_astream_events,
+    exercise_iteration_method,
+    exercise_method,
+    exercise_method_params,
+    exercise_method_version,
+    exercise_stream_events,
+    validate_agent_output,
+)
 from ._test_tools import add_exclamation, tool_method_metric, tool_type
 
 PROMPT = {

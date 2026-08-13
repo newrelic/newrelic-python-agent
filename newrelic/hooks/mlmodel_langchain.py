@@ -267,6 +267,47 @@ class AgentObjectProxy(ObjectProxy):
 
         return return_val
 
+    def stream_events(self, *args, **kwargs):
+        try:
+            bound_args = bind_args(self.__wrapped__.stream_events, args, kwargs)
+            api_version = bound_args.get("version")
+        except Exception:
+            # If we can't determine which version of the API this is,
+            # exit early to avoid breaking the API.
+            return self.__wrapped__.stream_events(*args, **kwargs)
+
+        if api_version == "v3":
+            return self._nr_stream_events_v3(*args, **kwargs)
+        else:
+            # Unsupported/unknown version, return without disrupting the API's return value.
+            return self.__wrapped__.stream_events(*args, **kwargs)
+
+    def _nr_stream_events_v3(self, *args, **kwargs):
+        transaction = current_transaction()
+        if not transaction:
+            return self.__wrapped__.stream_events(*args, **kwargs)
+
+        agent_name = getattr(self.__wrapped__, "name", "agent")
+        agent_id = str(uuid.uuid4())
+        agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
+        function_trace_name = f"stream_events/{agent_name}"
+        agentic_subcomponent_data = {"type": "APM-AI_AGENT", "name": agent_name}
+
+        ft = FunctionTrace(name=function_trace_name, group="Llm/agent/LangChain")
+        ft.__enter__()
+        ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
+        try:
+            # Returns a GraphRunStream object which we instrument, but requires the
+            # context from this agent invocation to be attached so we can send events
+            # on completion.
+            stream = self.__wrapped__.stream_events(*args, **kwargs)
+        except Exception:
+            self._nr_on_error(ft, agent_event_dict, agent_id)(transaction)
+            raise
+
+        self._nr_attach_graph_run_stream_context(stream, ft, agent_event_dict, agent_id)
+        return stream
+
     def astream_events(self, *args, **kwargs):
         # v3 Support
         try:
@@ -278,12 +319,14 @@ class AgentObjectProxy(ObjectProxy):
             return self.__wrapped__.astream_events(*args, **kwargs)
 
         if api_version in {"v1", "v2"}:
-            return self.__astream_events_v1_v2(*args, **kwargs)
+            return self._nr_astream_events_v1_v2(*args, **kwargs)
+        elif api_version == "v3":
+            return self._nr_astream_events_v3(*args, **kwargs)
         else:
             # Unknown API version, return without disrupting the API's return value
             return self.__wrapped__.astream_events(*args, **kwargs)
 
-    def __astream_events_v1_v2(self, *args, **kwargs):
+    def _nr_astream_events_v1_v2(self, *args, **kwargs):
         transaction = current_transaction()
         if not transaction:
             return self.__wrapped__.astream_events(*args, **kwargs)
@@ -309,6 +352,32 @@ class AgentObjectProxy(ObjectProxy):
             raise
 
         return return_val
+
+    async def _nr_astream_events_v3(self, *args, **kwargs):
+        transaction = current_transaction()
+        if not transaction:
+            return await self.__wrapped__.astream_events(*args, **kwargs)
+
+        agent_name = getattr(self.__wrapped__, "name", "agent")
+        agent_id = str(uuid.uuid4())
+        agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction)
+        function_trace_name = f"astream_events/{agent_name}"
+        agentic_subcomponent_data = {"type": "APM-AI_AGENT", "name": agent_name}
+
+        ft = FunctionTrace(name=function_trace_name, group="Llm/agent/LangChain")
+        ft.__enter__()
+        ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
+        try:
+            # Returns a AsyncGraphRunStream object which we instrument, but requires the
+            # context from this agent invocation to be attached so we can send events
+            # on completion.
+            run = await self.__wrapped__.astream_events(*args, **kwargs)
+        except Exception:
+            self._nr_on_error(ft, agent_event_dict, agent_id)(transaction)
+            raise
+
+        self._nr_attach_graph_run_stream_context(run, ft, agent_event_dict, agent_id)
+        return run
 
     def transform(self, *args, **kwargs):
         transaction = current_transaction()
@@ -375,8 +444,9 @@ class AgentObjectProxy(ObjectProxy):
         return _on_stop_iteration
 
     def _nr_on_error(self, ft, agent_event_dict, agent_id):
-        def _on_error(proxy, transaction):
-            ft.notice_error(attributes={"agent_id": agent_id})
+        def _on_error(proxy, transaction, error=None):
+            # Uses active exception if error=None
+            ft.notice_error(error=error, attributes={"agent_id": agent_id})
             ft.__exit__(*sys.exc_info())
             if agent_event_dict:
                 # If we hit an exception, append the error attribute and duration from the exited function trace
@@ -385,6 +455,22 @@ class AgentObjectProxy(ObjectProxy):
                 agent_event_dict.clear()
 
         return _on_error
+
+    def _nr_attach_graph_run_stream_context(self, graph_run_stream, ft, agent_event_dict, agent_id):
+        on_stop_iteration = self._nr_on_stop_iteration(ft, agent_event_dict)
+        on_error = self._nr_on_error(ft, agent_event_dict, agent_id)
+
+        try:
+            graph_run_stream._nr_on_stop_iteration = on_stop_iteration
+            graph_run_stream._nr_on_error = on_error
+            graph_run_stream._nr_closed = False
+        except Exception:
+            # If we cannot attach context to an unexpected stream type, close the trace so it does
+            # not leak. The agent event will not be recorded in this case.
+            ft.__exit__(None, None, None)
+            _logger.debug("Unable to attach New Relic context to LangChain v3 stream.", exc_info=True)
+
+        return graph_run_stream
 
 
 def bind_submit(func, *args, **kwargs):

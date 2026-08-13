@@ -21,7 +21,7 @@ from testing_support.validators.validate_custom_events import validate_custom_ev
 
 from newrelic.api.background_task import background_task
 
-from .conftest import exercise_method, exercise_method_version
+from ._test_agents import exercise_method, exercise_method_params, exercise_method_version
 
 CLIENT_PROMPT = {"messages": [HumanMessage("What is the capital of France? Answer in one word.")]}
 AGENT_PROMPT = {

@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from azure.cosmos import PartitionKey
-
 
 def test_container_read(container):
     props = container.read()
@@ -80,7 +78,6 @@ def test_async_container_read_all_and_query(loop, async_container, async_item):
         results = async_container.query_items(
             "SELECT * FROM c WHERE c.id = @id",
             parameters=[{"name": "@id", "value": "test_item"}],
-            # enable_cross_partition_query=True,
         )
         result_list = [result async for result in results]
         assert len(result_list) == 1
@@ -125,56 +122,12 @@ def test_async_container_batch_operations(loop, async_container):
     loop.run_until_complete(_test_async_container_batch_operations())
 
 
-# def test_container_conflicts(container, item):
-#     conflicts_list = [conflict for conflict in container.list_conflicts()]
-#     breakpoint()
-#     conflict_queries = container.query_conflicts("SELECT * FROM c")
-#     for conflict in conflict_queries:
-#         conflict.get("id")
-
-
-# def test_async_container_conflicts(loop, async_container, async_item):
-#     async def _test_async_container_conflicts():
-#         conflicts_list = [conflict for conflict in async_container.list_conflicts()]
-#         conflict_queries = async_container.query_conflicts("SELECT * FROM c")
-#         for conflict in conflict_queries:
-#             conflict.get("id")
-#     loop.run_until_complete(_test_async_container_conflicts())
-
-
-# # TODO: FIX
-# def test_container_feed_ranges(container, item):
-#     body = {"id": "its_over_nine_thousaaaaand", "container": "test_partition", "value": 9001}
-#     container.create_item(body)
-
-#     feed_ranges = container.read_feed_ranges()
-#     pk_range = container.feed_range_from_partition_key("test_partition")
-#     # feed_ranges_list = [fr for fr in feed_ranges]
-#     tokens = [(r, "") for r in feed_ranges]
-#     container.is_feed_range_subset(tokens[0][0], pk_range)
-#     container.get_latest_session_token(tokens, pk_range)
-
-
-# def test_async_container_feed_ranges(loop, async_container, async_item):
-#     async def _test_async_container_feed_ranges():
-#         feed_ranges = async_container.read_feed_ranges()
-#         pk_range = async_container.feed_range_from_partition_key("test_partition")
-#         # feed_ranges_list = [fr for fr in feed_ranges]
-#         tokens = [(r, "") for r in feed_ranges]
-#         async_container.is_feed_range_subset(tokens[0][0], pk_range)
-#         async_container.get_latest_session_token(tokens, pk_range)
-
-#     loop.run_until_complete(_test_async_container_feed_ranges())
-
-
 def test_container_delete_by_partition_key(container, item):
-    # container.create_item({"id": "bulk_item", "container": "bulk_part"})
     container.delete_all_items_by_partition_key("test_partition")
 
 
 def test_async_container_delete_by_partition_key(loop, async_container, async_item):
     async def _test_async_container_delete_by_partition_key():
-        # container.create_item({"id": "bulk_item", "container": "bulk_part"})
         async_container.delete_all_items_by_partition_key("test_partition")
 
     loop.run_until_complete(_test_async_container_delete_by_partition_key())

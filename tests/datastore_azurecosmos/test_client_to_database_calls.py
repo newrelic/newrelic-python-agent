@@ -51,9 +51,6 @@ def test_client_query_databases(client, database):
 def test_client_query_databases(loop, async_client, async_database):
     async def _test_client_query_databases():
         async_results = async_client.query_databases("SELECT * FROM c WHERE c.id = 'test_database'")
-        # async for db in async_results:
-        #     breakpoint()
-        #     db.get("id")
         assert any([db.get("id") == "test_database" async for db in async_results])
 
     loop.run_until_complete(_test_client_query_databases())

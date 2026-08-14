@@ -20,7 +20,7 @@ def test_user_read_and_permissions(user, container, permission):
     user.read()
     user.list_permissions()
     user.query_permissions("SELECT * FROM c WHERE c.id = 'test_permission'")
-    perm = user.get_permission("test_permission")
+    user.get_permission("test_permission")
     user.replace_permission(
         "test_permission",
         {"id": "test_permission", "permissionMode": "All", "resource": container.container_link},

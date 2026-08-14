@@ -42,11 +42,11 @@ def test_database_user_complete(database, user):
 
 def test_async_database_user_complete(loop, async_database, async_user):
     async def _test_async_database_user_complete():
-        async_database.replace_user(async_user, {"id": "test_user"})
+        await async_database.replace_user(async_user, {"id": "test_user"})
         async_database.query_users("SELECT * FROM c WHERE c.id = 'test_user'")
-        async_database.create_user({"id": "another_user"})
-        async_database.upsert_user({"id": "another_user"})
-        async_database.delete_user("another_user")
+        await async_database.create_user({"id": "another_user"})
+        await async_database.upsert_user({"id": "another_user"})
+        await async_database.delete_user("another_user")
 
     loop.run_until_complete(_test_async_database_user_complete())
 

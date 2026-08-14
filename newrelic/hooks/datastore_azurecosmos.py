@@ -37,7 +37,7 @@ _client_methods_sync_async_respective = (
     "close",
     "create_database",
     "create_database_if_not_exists",
-    "delete_databases",
+    "delete_database",
 )
 
 # Synchronous functions only with sync
@@ -298,8 +298,8 @@ def wrap_aio_ContainerProxy_method_wrapper(module, name):
             wrapped, product="CosmosDB", target=None, operation=name, host=host, port_path_or_id=port_path_or_id, database_name=container_link, async_wrapper=coroutine_wrapper
         )(*args, **kwargs)
 
-    if hasattr(module.DatabaseProxy, name):
-        wrap_function_wrapper(module, f"DatabaseProxy.{name}", _wrap_aio_ContainerProxy_method_wrapper_)
+    if hasattr(module.ContainerProxy, name):
+        wrap_function_wrapper(module, f"ContainerProxy.{name}", _wrap_aio_ContainerProxy_method_wrapper_)
 
 
 def instrument_cosmos_container(module):
@@ -383,8 +383,8 @@ def wrap_aio_UserProxy_method_wrapper(module, name):
             wrapped, product="CosmosDB", target=None, operation=name, host=host, port_path_or_id=port_path_or_id, database_name=user_link, async_wrapper=coroutine_wrapper
         )(*args, **kwargs)
 
-    if hasattr(module.DatabaseProxy, name):
-        wrap_function_wrapper(module, f"DatabaseProxy.{name}", _wrap_aio_UserProxy_method_wrapper_)
+    if hasattr(module.UserProxy, name):
+        wrap_function_wrapper(module, f"UserProxy.{name}", _wrap_aio_UserProxy_method_wrapper_)
 
 
 def instrument_cosmos_user(module):

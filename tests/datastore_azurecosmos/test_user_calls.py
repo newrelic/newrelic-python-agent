@@ -12,10 +12,39 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# TODO: Put in validators
 # TODO: Set up trusted certs in github actions
 
+from newrelic.api.background_task import background_task
+from conftest import db_settings
 
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+
+
+_base_user_permissions = (
+    ("Datastore/all", 6),
+    ("Datastore/CosmosDB/all", 6),
+    ("Datastore/allOther", 6),
+    ("Datastore/CosmosDB/allOther", 6),
+    (f"Datastore/instance/CosmosDB/{db_settings()}", 6),
+)
+
+_scoped_user_permissions = (
+    ("Datastore/operation/CosmosDB/read", 1),
+    ("Datastore/operation/CosmosDB/list_permissions", 1),
+    ("Datastore/operation/CosmosDB/query_permissions", 1),
+    ("Datastore/operation/CosmosDB/get_permission", 1),
+    ("Datastore/operation/CosmosDB/replace_permission", 1),
+    ("Datastore/operation/CosmosDB/upsert_permission", 1),
+)
+
+
+@validate_transaction_metrics(
+    "test_user_calls:test_user_read_and_permissions",
+    scoped_metrics=_scoped_user_permissions,
+    rollup_metrics=[*_scoped_user_permissions, *_base_user_permissions],
+    background_task=True,
+)
+@background_task()
 def test_user_read_and_permissions(user, container, permission):
     user.read()
     user.list_permissions()
@@ -30,6 +59,13 @@ def test_user_read_and_permissions(user, container, permission):
     )
 
 
+@validate_transaction_metrics(
+    "test_user_calls:test_async_user_read_and_permissions",
+    scoped_metrics=_scoped_user_permissions,
+    rollup_metrics=[*_scoped_user_permissions, *_base_user_permissions],
+    background_task=True,
+)
+@background_task()
 def test_async_user_read_and_permissions(loop, async_user, async_container, async_permission):
     async def _test_async_user_read_and_permissions():
         await async_user.read()

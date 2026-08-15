@@ -12,7 +12,36 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from newrelic.api.background_task import background_task
+from conftest import db_settings
 
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+
+
+_base_database_read = (
+    ("Datastore/all", 5),
+    ("Datastore/CosmosDB/all", 5),
+    ("Datastore/allOther", 5),
+    ("Datastore/CosmosDB/allOther", 5),
+    (f"Datastore/instance/CosmosDB/{db_settings()}", 5),
+)
+
+_scoped_database_read = (
+    ("Datastore/operation/CosmosDB/create_database", 1),
+    ("Datastore/operation/CosmosDB/read", 1),
+    ("Datastore/operation/CosmosDB/replace_throughput", 1),
+    ("Datastore/operation/CosmosDB/get_throughput", 1),
+    ("Datastore/operation/CosmosDB/delete_database", 1),
+)
+
+
+@validate_transaction_metrics(
+    "test_database_calls:test_database_calls",
+    scoped_metrics=_scoped_database_read,
+    rollup_metrics=[*_scoped_database_read, *_base_database_read],
+    background_task=True,
+)
+@background_task()
 def test_database_calls(client):
     database = client.create_database(
         "database_with_throughput",
@@ -24,6 +53,13 @@ def test_database_calls(client):
     client.delete_database("database_with_throughput")
 
 
+@validate_transaction_metrics(
+    "test_database_calls:test_async_database_calls",
+    scoped_metrics=_scoped_database_read,
+    rollup_metrics=[*_scoped_database_read, *_base_database_read],
+    background_task=True,
+)
+@background_task()
 def test_async_database_calls(loop, async_client):
     async def _test_async_database_calls():
         async_database = await async_client.create_database(
@@ -38,6 +74,28 @@ def test_async_database_calls(loop, async_client):
     loop.run_until_complete(_test_async_database_calls())
 
 
+# NOTE: This command has already been deprecated
+# so it will eventually need a conditional skip.
+_base_database_read_offer = (
+    ("Datastore/all", 1),
+    ("Datastore/CosmosDB/all", 1),
+    ("Datastore/allOther", 1),
+    ("Datastore/CosmosDB/allOther", 1),
+    (f"Datastore/instance/CosmosDB/{db_settings()}", 1),
+)
+
+_scoped_database_read_offer = (
+    ("Datastore/operation/CosmosDB/read_offer", 1),
+)
+
+
+@validate_transaction_metrics(
+    "test_database_calls:test_database_read_offer",
+    scoped_metrics=_scoped_database_read_offer,
+    rollup_metrics=[*_scoped_database_read_offer, *_base_database_read_offer],
+    background_task=True,
+)
+@background_task()
 def test_database_read_offer(database):
     database.read_offer()
 

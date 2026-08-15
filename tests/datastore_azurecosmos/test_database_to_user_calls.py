@@ -12,7 +12,33 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from newrelic.api.background_task import background_task
+from conftest import db_settings
 
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+
+
+_base_user_calls = (
+    ("Datastore/all", 2),
+    ("Datastore/CosmosDB/all", 2),
+    ("Datastore/allOther", 2),
+    ("Datastore/CosmosDB/allOther", 2),
+    (f"Datastore/instance/CosmosDB/{db_settings()}", 2),
+)
+
+_scoped_user_calls = (
+    ("Datastore/operation/CosmosDB/get_user_client", 1),
+    ("Datastore/operation/CosmosDB/list_users", 1),
+)
+
+
+@validate_transaction_metrics(
+    "test_database_to_user_calls:test_database_calls_to_user",
+    scoped_metrics=_scoped_user_calls,
+    rollup_metrics=[*_scoped_user_calls, *_base_user_calls],
+    background_task=True,
+)
+@background_task()
 def test_database_calls_to_user(database, user):
     user_client = database.get_user_client("test_user")
     assert user_client.id == user.id
@@ -21,6 +47,13 @@ def test_database_calls_to_user(database, user):
     assert any([user.get("id") == "test_user" for user in all_users])
 
 
+@validate_transaction_metrics(
+    "test_database_to_user_calls:test_async_database_calls_to_user",
+    scoped_metrics=_scoped_user_calls,
+    rollup_metrics=[*_scoped_user_calls, *_base_user_calls],
+    background_task=True,
+)
+@background_task()
 def test_async_database_calls_to_user(loop, async_database, async_user):
     async def _test_async_database_calls_to_user():
         user_client = async_database.get_user_client("test_user")
@@ -32,6 +65,30 @@ def test_async_database_calls_to_user(loop, async_database, async_user):
     loop.run_until_complete(_test_async_database_calls_to_user())
 
 
+_base_user_complete = (
+    ("Datastore/all", 5),
+    ("Datastore/CosmosDB/all", 5),
+    ("Datastore/allOther", 5),
+    ("Datastore/CosmosDB/allOther", 5),
+    (f"Datastore/instance/CosmosDB/{db_settings()}", 5),
+)
+
+_scoped_user_complete = (
+    ("Datastore/operation/CosmosDB/replace_user", 1),
+    ("Datastore/operation/CosmosDB/query_users", 1),
+    ("Datastore/operation/CosmosDB/create_user", 1),
+    ("Datastore/operation/CosmosDB/upsert_user", 1),
+    ("Datastore/operation/CosmosDB/delete_user", 1),
+)
+
+
+@validate_transaction_metrics(
+    "test_database_to_user_calls:test_database_user_complete",
+    scoped_metrics=_scoped_user_complete,
+    rollup_metrics=[*_scoped_user_complete, *_base_user_complete],
+    background_task=True,
+)
+@background_task()
 def test_database_user_complete(database, user):
     database.replace_user(user, {"id": "test_user"})
     database.query_users("SELECT * FROM c WHERE c.id = 'test_user'")
@@ -40,6 +97,13 @@ def test_database_user_complete(database, user):
     database.delete_user("another_user")
 
 
+@validate_transaction_metrics(
+    "test_database_to_user_calls:test_async_database_user_complete",
+    scoped_metrics=_scoped_user_complete,
+    rollup_metrics=[*_scoped_user_complete, *_base_user_complete],
+    background_task=True,
+)
+@background_task()
 def test_async_database_user_complete(loop, async_database, async_user):
     async def _test_async_database_user_complete():
         await async_database.replace_user(async_user, {"id": "test_user"})

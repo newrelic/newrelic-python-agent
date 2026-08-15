@@ -13,7 +13,10 @@
 # limitations under the License.
 
 import pytest
+import urllib.parse as urlparse
+
 from testing_support.db_settings import cosmos_settings
+from testing_support.util import instance_hostname
 from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
@@ -37,6 +40,16 @@ collector_agent_registration = collector_agent_registration_fixture(
 
 DB_SETTINGS = cosmos_settings()[0]
 COSMOSDB_VERSION = get_package_version_tuple("azure-cosmos")
+
+
+def db_settings():
+    settings = DB_SETTINGS
+    url = settings.get("url")
+    url_split = urlparse.urlsplit(url)
+    host, port = url_split.netloc.split(":")
+    host = instance_hostname(host)
+
+    return f"{host}/{port}"
 
 
 @pytest.fixture

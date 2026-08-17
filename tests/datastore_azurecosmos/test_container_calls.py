@@ -146,13 +146,12 @@ def test_container_read_all_and_query(container, item):
     all_sync_items = container.read_all_items()
     assert any(item.get("id") == "test_item" for item in all_sync_items)
 
-    results = container.query_items(
+    results = list(container.query_items(
         "SELECT * FROM c WHERE c.id = @id",
         parameters=[{"name": "@id", "value": "test_item"}],
         enable_cross_partition_query=True,
-    )
-    result_list = [result for result in results]
-    assert len(result_list) == 1
+    ))
+    assert len(results) == 1
 
 
 @validate_transaction_metrics(

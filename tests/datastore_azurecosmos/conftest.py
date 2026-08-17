@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import pytest
 import urllib.parse as urlparse
 
@@ -40,6 +41,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 
 DB_SETTINGS = cosmos_settings()[0]
 COSMOSDB_VERSION = get_package_version_tuple("azure-cosmos")
+_IDENTIFIER = str(os.getpid())
 
 
 def db_settings():
@@ -94,20 +96,22 @@ def async_client(loop):
 
 @pytest.fixture
 def database(client):
-    database = client.create_database_if_not_exists("test_database")
+    db_name = f"test_database_{_IDENTIFIER}"
+    database = client.create_database_if_not_exists(db_name)
 
     yield database
-    client.delete_database("test_database")
+    client.delete_database(db_name)
 
 
 @pytest.fixture
 def async_database(loop, async_client):
+    db_name = f"test_database_{_IDENTIFIER}"
     async_database = loop.run_until_complete(
-        async_client.create_database_if_not_exists("test_database")
+        async_client.create_database_if_not_exists(db_name)
     )
 
     yield async_database
-    loop.run_until_complete(async_client.delete_database("test_database"))
+    loop.run_until_complete(async_client.delete_database(db_name))
 
 
 @pytest.fixture

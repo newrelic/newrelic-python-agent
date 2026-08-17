@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from newrelic.api.background_task import background_task
-from conftest import db_settings
+from conftest import db_settings, _IDENTIFIER
 
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
@@ -45,16 +45,17 @@ _scoped_sync_database_calls = (
 )
 @background_task()
 def test_client_calls_to_database(client, database):
-    database_client = client.get_database_client("test_database")
+    database_client = client.get_database_client(database.id)
     assert database_client.id == database.id
     client.get_database_account()
 
-    client.create_database_if_not_exists("another_database")
+    another_db = f"another_database_{_IDENTIFIER}"
+    client.create_database_if_not_exists(another_db)
     all_databases = client.list_databases()
     db_ids = {db_dict.get("id") for db_dict in all_databases}
-    assert db_ids == {"test_database", "another_database"}
+    assert db_ids.issuperset({database.id, another_db})
 
-    client.delete_database("another_database")
+    client.delete_database(another_db)
 
 
 _scoped_async_database_calls = (
@@ -71,17 +72,18 @@ _scoped_async_database_calls = (
 @background_task()
 def test_async_client_calls_to_database(loop, async_client, async_database):
     async def _test_async_client_calls_to_database():
-        database_client = async_client.get_database_client("test_database")
+        database_client = async_client.get_database_client(async_database.id)
         assert database_client.id == async_database.id
 
-        await async_client.create_database_if_not_exists("another_database")
+        another_db = f"another_database_{_IDENTIFIER}"
+        await async_client.create_database_if_not_exists(another_db)
         all_databases = async_client.list_databases()
         await async_client._get_database_account()
         db_ids = {db_dict.get("id") async for db_dict in all_databases}
-        
-        assert db_ids == {"test_database", "another_database"}
 
-        await async_client.delete_database("another_database")
+        assert db_ids.issuperset({async_database.id, another_db})
+
+        await async_client.delete_database(another_db)
 
     loop.run_until_complete(_test_async_client_calls_to_database())
 
@@ -106,8 +108,8 @@ _scoped_database_calls = (
 )
 @background_task()
 def test_client_query_databases(client, database):
-    results = client.query_databases("SELECT * FROM c WHERE c.id = 'test_database'")
-    assert any(db.get("id") == "test_database" for db in results)
+    results = client.query_databases(f"SELECT * FROM c WHERE c.id = '{database.id}'")
+    assert any(db.get("id") == database.id for db in results)
 
 
 @validate_transaction_metrics(
@@ -119,7 +121,7 @@ def test_client_query_databases(client, database):
 @background_task()
 def test_async_client_query_databases(loop, async_client, async_database):
     async def _test_async_client_query_databases():
-        async_results = async_client.query_databases("SELECT * FROM c WHERE c.id = 'test_database'")
-        assert any([db.get("id") == "test_database" async for db in async_results])
+        async_results = async_client.query_databases(f"SELECT * FROM c WHERE c.id = '{async_database.id}'")
+        assert any([db.get("id") == async_database.id async for db in async_results])
 
     loop.run_until_complete(_test_async_client_query_databases())

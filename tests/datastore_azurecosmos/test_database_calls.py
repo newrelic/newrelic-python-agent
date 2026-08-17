@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from newrelic.api.background_task import background_task
-from conftest import db_settings
+from conftest import db_settings, _IDENTIFIER
 
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
@@ -43,14 +43,12 @@ _scoped_database_read = (
 )
 @background_task()
 def test_database_calls(client):
-    database = client.create_database(
-        "database_with_throughput",
-        offer_throughput=400,
-    )
+    db_name = f"database_with_throughput_{_IDENTIFIER}"
+    database = client.create_database(db_name, offer_throughput=400)
     database.read()
     database.replace_throughput(throughput=42)
     database.get_throughput()
-    client.delete_database("database_with_throughput")
+    client.delete_database(db_name)
 
 
 @validate_transaction_metrics(
@@ -62,14 +60,12 @@ def test_database_calls(client):
 @background_task()
 def test_async_database_calls(loop, async_client):
     async def _test_async_database_calls():
-        async_database = await async_client.create_database(
-            "database_with_throughput",
-            offer_throughput=400,
-        )
+        db_name = f"database_with_throughput_{_IDENTIFIER}"
+        async_database = await async_client.create_database(db_name, offer_throughput=400)
         await async_database.read()
         await async_database.replace_throughput(throughput=42)
         await async_database.get_throughput()
-        await async_client.delete_database("database_with_throughput")
+        await async_client.delete_database(db_name)
 
     loop.run_until_complete(_test_async_database_calls())
 

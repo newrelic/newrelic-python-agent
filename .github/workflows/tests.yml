@@ -615,20 +615,20 @@ jobs:
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
 
-      # - name: Export and Trust Cosmos DB Certificate
-      #   run: |
-      #     sudo mkdir -p /usr/local/share/ca-certificates/
+      - name: Check for port readiness by finding certificates
+        run: |
+          sudo mkdir -p /usr/local/share/ca-certificates/
 
-      #     # Add a timeout to avoid infinite loops
-      #     RETRIES=0
-      #     until curl -k -s https://cosmosdb:8081/_explorer/index.html > /dev/null; do
-      #       RETRIES=$((RETRIES + 1))
-      #       if [ "$RETRIES" -ge 30 ]; then
-      #         echo "ERROR: CosmosDB explorer not reachable after 60s"
-      #         exit 1
-      #       fi
-      #       sleep 2
-      #     done
+          # Add a timeout to avoid infinite loops
+          RETRIES=0
+          until curl -k -s https://cosmosdb:8081/_explorer/index.html > /dev/null; do
+            RETRIES=$((RETRIES + 1))
+            if [ "$RETRIES" -ge 30 ]; then
+              echo "ERROR: CosmosDB explorer not reachable after 60s"
+              exit 1
+            fi
+            sleep 2
+          done
 
       #     curl -k https://cosmosdb:8081/_explorer/emulator.pem -o emulator.crt
 

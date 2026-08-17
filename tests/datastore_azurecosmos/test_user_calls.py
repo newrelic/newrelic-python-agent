@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# TODO: Set up trusted certs in github actions
-
 from newrelic.api.background_task import background_task
 from conftest import db_settings
 

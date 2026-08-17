@@ -596,14 +596,11 @@ jobs:
       cosmosdb:
         image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview
         env:
-          # CASSANDRA_SEEDS: "cassandra"
-          # CASSANDRA_CLUSTER_NAME: TestCluster
-          # CASSANDRA_ENDPOINT_SNITCH: SimpleSnitch
-          # CASSANDRA_NUM_TOKENS: "128"
+          PROTOCOL: https
         ports:
           - 8080:8080   # health port
-          - 1234:1234   # explorer port
-          - 8081:8081   # endpoint portq
+          # - 1234:1234   # explorer port
+          - 8081:8081   # endpoint port
         # Set health checks to wait until container has started
         options: >-
           --health-cmd "curl --silent --fail localhost:8080/health || exit 1"
@@ -618,6 +615,19 @@ jobs:
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
+
+      - name: Export and Trust Cosmos DB Certificate
+        run: |
+          sudo mkdir -p /usr/local/share/ca-certificates/
+          
+          until curl -k -s https://localhost:8081/_explorer/index.html > /dev/null; do
+            sleep 2
+          done
+          
+          curl -k https://localhost:8081/_explorer/emulator.pem -o emulator.crt
+          
+          sudo cp emulator.crt /usr/local/share/ca-certificates/cosmosdb.crt
+          sudo update-ca-certificates
 
       - name: Configure pip cache
         run: |

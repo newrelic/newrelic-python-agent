@@ -618,13 +618,20 @@ jobs:
       - name: Export and Trust Cosmos DB Certificate
         run: |
           sudo mkdir -p /usr/local/share/ca-certificates/
-          
-          until curl -k -s https://localhost:8081/_explorer/index.html > /dev/null; do
+
+          # Add a timeout to avoid infinite loops
+          RETRIES=0
+          until curl -k -s https://cosmosdb:8081/_explorer/index.html > /dev/null; do
+            RETRIES=$((RETRIES + 1))
+            if [ "$RETRIES" -ge 30 ]; then
+              echo "ERROR: CosmosDB explorer not reachable after 60s"
+              exit 1
+            fi
             sleep 2
           done
-          
-          curl -k https://localhost:8081/_explorer/emulator.pem -o emulator.crt
-          
+
+          curl -k https://cosmosdb:8081/_explorer/emulator.pem -o emulator.crt
+
           sudo cp emulator.crt /usr/local/share/ca-certificates/cosmosdb.crt
           sudo update-ca-certificates
 

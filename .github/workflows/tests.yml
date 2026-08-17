@@ -598,15 +598,14 @@ jobs:
         env:
           PROTOCOL: https
         ports:
-          - 8080:8080   # health port
-          # - 1234:1234   # explorer port
+          - 8080:8080   # health/readiness port
           - 8081:8081   # endpoint port
         # Set health checks to wait until container has started
         options: >-
-          --health-cmd "curl --silent --fail localhost:8080/health || exit 1"
-          --health-interval 10s
+          --health-cmd "curl --silent --fail localhost:8080/ready | grep -q '\"ready\":\s*true' || exit 1"
+          --health-interval 5s
           --health-timeout 5s
-          --health-retries 5
+          --health-retries 16
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # 7.0.1

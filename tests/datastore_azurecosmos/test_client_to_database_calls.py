@@ -107,7 +107,7 @@ _scoped_database_calls = (
 @background_task()
 def test_client_query_databases(client, database):
     results = client.query_databases("SELECT * FROM c WHERE c.id = 'test_database'")
-    assert any([db.get("id") == "test_database" for db in results])
+    assert any(db.get("id") == "test_database" for db in results)
 
 
 @validate_transaction_metrics(

@@ -44,7 +44,7 @@ def test_database_calls_to_user(database, user):
     assert user_client.id == user.id
 
     all_users = database.list_users()
-    assert any([user.get("id") == "test_user" for user in all_users])
+    assert any(user.get("id") == "test_user" for user in all_users)
 
 
 @validate_transaction_metrics(

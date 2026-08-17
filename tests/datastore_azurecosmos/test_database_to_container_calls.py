@@ -112,7 +112,7 @@ _scoped_container_query = (
 def test_database_container_queries(database):
     database.create_container_if_not_exists("test_container", partition_key=PartitionKey(path="/container"))
     results = database.query_containers("SELECT * FROM c WHERE c.id = 'test_container'")
-    assert any([container.get("id") == "test_container" for container in results])
+    assert any(container.get("id") == "test_container" for container in results)
 
 
 @validate_transaction_metrics(

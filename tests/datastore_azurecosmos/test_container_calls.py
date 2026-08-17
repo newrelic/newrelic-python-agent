@@ -144,7 +144,7 @@ _scoped_container_read_and_query = (
 @background_task()
 def test_container_read_all_and_query(container, item):
     all_sync_items = container.read_all_items()
-    assert any([item.get("id") == "test_item" for item in all_sync_items])
+    assert any(item.get("id") == "test_item" for item in all_sync_items)
 
     results = container.query_items(
         "SELECT * FROM c WHERE c.id = @id",

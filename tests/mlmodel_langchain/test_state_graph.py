@@ -21,6 +21,8 @@ from testing_support.validators.validate_custom_events import validate_custom_ev
 
 from newrelic.api.background_task import background_task
 
+from ._test_agents import exercise_method, exercise_method_params, exercise_method_version
+
 CLIENT_PROMPT = {"messages": [HumanMessage("What is the capital of France? Answer in one word.")]}
 AGENT_PROMPT = {
     "messages": [
@@ -225,35 +227,58 @@ def test_state_graph_with_agent_astream(exercise_graph, create_agent):
     assert response
 
 
-@pytest.fixture(params=["invoke", "ainvoke", "stream", "astream", "astream_events"])
-def exercise_graph(request, loop):
+@pytest.fixture
+def exercise_graph(loop, exercise_method, exercise_method_version):
+    # Shorthand variable names
+    method = exercise_method
+    version = exercise_method_version
+
+    # Omit the kwarg entirely when version is None so the library default runs.
+    version_kwargs = {} if version is None else {"version": version}
+
     def _exercise_graph(graph, prompt):
-        method_called = request.param
         try:
-            if method_called == "invoke":
-                return graph.invoke(prompt)
-            elif method_called == "ainvoke":
-                return loop.run_until_complete(graph.ainvoke(prompt))
-            elif method_called == "stream":
-                return list(graph.stream(prompt))
-            elif method_called == "astream":
+            if method == "invoke":
+                return graph.invoke(prompt, **version_kwargs)
+            elif method == "ainvoke":
+                return loop.run_until_complete(graph.ainvoke(prompt, **version_kwargs))
+            elif method == "stream":
+                return list(graph.stream(prompt, **version_kwargs))
+            elif method == "astream":
 
-                async def _exercise_agen():
-                    return [event async for event in graph.astream(prompt)]
+                async def _collect_astream():
+                    return [event async for event in graph.astream(prompt, **version_kwargs)]
 
-                return loop.run_until_complete(_exercise_agen())
-            elif method_called == "astream_events":
+                return loop.run_until_complete(_collect_astream())
+            elif method == "astream_events":
+                if version == "v3":
+                    # v3 returns an awaitable resolving to a typed stream.
+                    # Drive it with .output(), and return the final state.
+                    async def _collect_astream_events_v3():
+                        run = await graph.astream_events(prompt, version="v3")
+                        return await run.output()
 
-                async def _exercise_agen():
-                    return [event async for event in graph.astream_events(prompt, version="v2")]
+                    return loop.run_until_complete(_collect_astream_events_v3())
+                else:
 
-                return loop.run_until_complete(_exercise_agen())
+                    async def _collect_astream_events_v1_v2():
+                        return [event async for event in graph.astream_events(prompt, **version_kwargs)]
+
+                    return loop.run_until_complete(_collect_astream_events_v1_v2())
+            elif method == "stream_events":
+                if version == "v3":
+                    # v3 returns an awaitable resolving to a typed stream.
+                    # Drive it with .output(), and return the final state.
+                    return graph.stream_events(prompt, version="v3").output
+
+                else:
+                    raise RuntimeError("Unexpected Combination")
             else:
-                raise NotImplementedError
+                raise RuntimeError("Unexpected Combination")
         except TypeError as exc:
-            # Async nodes cannot be run via langgraph's sync APIs (invoke/stream).
+            # Async nodes cannot be run via langgraph's sync APIs (invoke/stream/stream_events).
             if "No synchronous function provided" in str(exc):
-                pytest.skip(f"Cannot invoke an async node via a synchronous api. (Tried {method_called})")
+                pytest.skip(f"Cannot invoke an async node via a synchronous api. (Tried {method})")
             raise
 
     return _exercise_graph

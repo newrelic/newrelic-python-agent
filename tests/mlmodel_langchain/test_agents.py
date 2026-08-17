@@ -33,6 +33,20 @@ from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import transient_function_wrapper
 
+from ._test_agents import (
+    agent_method_metric,
+    agent_runnable_type,
+    create_agent_runnable,
+    exercise_agent,
+    exercise_astream_events,
+    exercise_iteration_method,
+    exercise_method,
+    exercise_method_params,
+    exercise_method_version,
+    exercise_stream_events,
+    validate_agent_output,
+)
+
 PROMPT = {
     "messages": [
         HumanMessage(
@@ -85,14 +99,11 @@ def add_exclamation(message: str) -> str:
 
 @dt_enabled
 @reset_core_stats_engine()
-def test_agent(exercise_agent, create_agent_runnable, set_trace_info, method_name):
+def test_agent(exercise_agent, create_agent_runnable, set_trace_info, agent_method_metric):
     @validate_custom_events(events_with_context_attrs(agent_recorded_event))
     @validate_custom_event_count(count=exercise_agent._expected_event_count)
     @validate_transaction_metrics(
-        "test_agent",
-        scoped_metrics=[(f"Llm/agent/LangChain/{method_name}/my_agent", 1)],
-        rollup_metrics=[(f"Llm/agent/LangChain/{method_name}/my_agent", 1)],
-        background_task=True,
+        "test_agent", scoped_metrics=[agent_method_metric], rollup_metrics=[agent_method_metric], background_task=True
     )
     @validate_attributes("agent", ["llm"])
     @validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "my_agent"}'})
@@ -113,13 +124,13 @@ def test_agent(exercise_agent, create_agent_runnable, set_trace_info, method_nam
 @dt_enabled
 @reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
-def test_agent_no_content(exercise_agent, create_agent_runnable, set_trace_info, method_name):
+def test_agent_no_content(exercise_agent, create_agent_runnable, set_trace_info, agent_method_metric):
     @validate_custom_events(agent_recorded_event)
     @validate_custom_event_count(count=exercise_agent._expected_event_count)
     @validate_transaction_metrics(
         "test_agent_no_content",
-        scoped_metrics=[(f"Llm/agent/LangChain/{method_name}/my_agent", 1)],
-        rollup_metrics=[(f"Llm/agent/LangChain/{method_name}/my_agent", 1)],
+        scoped_metrics=[agent_method_metric],
+        rollup_metrics=[agent_method_metric],
         background_task=True,
     )
     @validate_attributes("agent", ["llm"])
@@ -157,7 +168,9 @@ def test_agent_disabled_ai_monitoring_events(exercise_agent, create_agent_runnab
 
 @dt_enabled
 @reset_core_stats_engine()
-def test_agent_execution_error(exercise_agent, create_agent_runnable, set_trace_info, method_name, agent_runnable_type):
+def test_agent_execution_error(
+    exercise_agent, create_agent_runnable, set_trace_info, agent_method_metric, agent_runnable_type
+):
     # Add a wrapper to intentionally force an error in the Agent code
     @transient_function_wrapper("langchain_openai.chat_models.base", "ChatOpenAI._get_request_payload")
     def inject_exception(wrapped, instance, args, kwargs):
@@ -170,8 +183,8 @@ def test_agent_execution_error(exercise_agent, create_agent_runnable, set_trace_
     @validate_custom_event_count(count=1 if agent_runnable_type != "RunnableSequence" else 3)
     @validate_transaction_metrics(
         "test_agent_execution_error",
-        scoped_metrics=[(f"Llm/agent/LangChain/{method_name}/my_agent", 1)],
-        rollup_metrics=[(f"Llm/agent/LangChain/{method_name}/my_agent", 1)],
+        scoped_metrics=[agent_method_metric],
+        rollup_metrics=[agent_method_metric],
         background_task=True,
     )
     @validate_attributes("agent", ["llm"])

@@ -56,9 +56,16 @@ def db_settings():
 def client():
     import azure.cosmos
 
+    # Because the emulator used in github actions has
+    # a self-signed cert, the cert trust chain can be
+    # bypassed entirely. The `connection_verify=False`
+    # param flows directly to aiohttp's connector, 
+    # bypassing the cert trust chain entirely.
+
     client = azure.cosmos.CosmosClient(
         url=DB_SETTINGS["url"],
         credential=DB_SETTINGS["credential"],
+        connection_verify=False,
     )
 
     yield client
@@ -69,9 +76,16 @@ def client():
 def async_client(loop):
     import azure.cosmos.aio
 
+    # Because the emulator used in github actions has
+    # a self-signed cert, the cert trust chain can be
+    # bypassed entirely. The `connection_verify=False`
+    # param flows directly to aiohttp's connector, 
+    # bypassing the cert trust chain entirely.
+
     async_client = azure.cosmos.aio.CosmosClient(
         url=DB_SETTINGS["url"],
         credential=DB_SETTINGS["credential"],
+        connection_verify=False,
     )
 
     yield async_client

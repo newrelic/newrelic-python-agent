@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.api.background_task import background_task
 from conftest import db_settings
-
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
+from newrelic.api.background_task import background_task
 
 _base_container_read = (
     ("Datastore/all", 1),
@@ -26,9 +25,7 @@ _base_container_read = (
     (f"Datastore/instance/CosmosDB/{db_settings()}", 1),
 )
 
-_scoped_container_read = (
-    ("Datastore/operation/CosmosDB/read", 1),
-)
+_scoped_container_read = (("Datastore/operation/CosmosDB/read", 1),)
 
 
 @validate_transaction_metrics(
@@ -146,11 +143,13 @@ def test_container_read_all_and_query(container, item):
     all_sync_items = container.read_all_items()
     assert any(item.get("id") == "test_item" for item in all_sync_items)
 
-    results = list(container.query_items(
-        "SELECT * FROM c WHERE c.id = @id",
-        parameters=[{"name": "@id", "value": "test_item"}],
-        enable_cross_partition_query=True,
-    ))
+    results = list(
+        container.query_items(
+            "SELECT * FROM c WHERE c.id = @id",
+            parameters=[{"name": "@id", "value": "test_item"}],
+            enable_cross_partition_query=True,
+        )
+    )
     assert len(results) == 1
 
 
@@ -167,8 +166,7 @@ def test_async_container_read_all_and_query(loop, async_container, async_item):
         assert any([item.get("id") == "test_item" async for item in all_async_items])
 
         results = async_container.query_items(
-            "SELECT * FROM c WHERE c.id = @id",
-            parameters=[{"name": "@id", "value": "test_item"}],
+            "SELECT * FROM c WHERE c.id = @id", parameters=[{"name": "@id", "value": "test_item"}]
         )
         result_list = [result async for result in results]
         assert len(result_list) == 1
@@ -184,9 +182,7 @@ _base_container_patch = (
     (f"Datastore/instance/CosmosDB/{db_settings()}", 1),
 )
 
-_scoped_container_patch = (
-    ("Datastore/operation/CosmosDB/patch_item", 1),
-)
+_scoped_container_patch = (("Datastore/operation/CosmosDB/patch_item", 1),)
 
 
 @validate_transaction_metrics(
@@ -198,9 +194,7 @@ _scoped_container_patch = (
 @background_task()
 def test_container_patch_item(container, item):
     container.patch_item(
-        "test_item",
-        partition_key="test_partition",
-        patch_operations=[{"op": "replace", "path": "/value", "value": 99}],
+        "test_item", partition_key="test_partition", patch_operations=[{"op": "replace", "path": "/value", "value": 99}]
     )
 
 
@@ -218,12 +212,11 @@ def test_async_container_patch_item(loop, async_container, async_item):
             partition_key="test_partition",
             patch_operations=[{"op": "replace", "path": "/value", "value": 99}],
         )
+
     loop.run_until_complete(_test_async_container_patch_item())
 
 
-_scoped_container_batch = (
-    ("Datastore/operation/CosmosDB/execute_item_batch", 1),
-)
+_scoped_container_batch = (("Datastore/operation/CosmosDB/execute_item_batch", 1),)
 
 
 @validate_transaction_metrics(
@@ -259,9 +252,7 @@ def test_async_container_batch_operations(loop, async_container):
     loop.run_until_complete(_test_async_container_batch_operations())
 
 
-_scoped_container_delete = (
-    ("Datastore/operation/CosmosDB/delete_all_items_by_partition_key", 1),
-)
+_scoped_container_delete = (("Datastore/operation/CosmosDB/delete_all_items_by_partition_key", 1),)
 
 
 @validate_transaction_metrics(

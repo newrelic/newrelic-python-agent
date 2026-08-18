@@ -4535,9 +4535,7 @@ def _process_module_builtin_defaults():
         "azure.cosmos.container", "newrelic.hooks.datastore_azurecosmos", "instrument_cosmos_container"
     )
 
-    _process_module_definition(
-        "azure.cosmos.user", "newrelic.hooks.datastore_azurecosmos", "instrument_cosmos_user"
-    )
+    _process_module_definition("azure.cosmos.user", "newrelic.hooks.datastore_azurecosmos", "instrument_cosmos_user")
 
     _process_module_definition(
         "azure.cosmos.aio._cosmos_client", "newrelic.hooks.datastore_azurecosmos", "instrument_cosmos_aio_client"

@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.api.background_task import background_task
-from conftest import db_settings, _IDENTIFIER
-
+from conftest import _IDENTIFIER, db_settings
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
+from newrelic.api.background_task import background_task
 
 _base_database_read = (
     ("Datastore/all", 5),
@@ -80,9 +79,7 @@ _base_database_read_offer = (
     (f"Datastore/instance/CosmosDB/{db_settings()}", 1),
 )
 
-_scoped_database_read_offer = (
-    ("Datastore/operation/CosmosDB/read_offer", 1),
-)
+_scoped_database_read_offer = (("Datastore/operation/CosmosDB/read_offer", 1),)
 
 
 @validate_transaction_metrics(
@@ -94,4 +91,3 @@ _scoped_database_read_offer = (
 @background_task()
 def test_database_read_offer(database):
     database.read_offer()
-

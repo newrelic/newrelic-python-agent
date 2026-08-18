@@ -13,12 +13,10 @@
 # limitations under the License.
 
 from azure.cosmos import PartitionKey
-
-from newrelic.api.background_task import background_task
 from conftest import db_settings
-
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
+from newrelic.api.background_task import background_task
 
 _base_container_calls = (
     ("Datastore/all", 5),
@@ -55,10 +53,7 @@ def test_database_calls_to_container(database, container):
     assert container_ids == {"test_container", "another_container"}
 
     database.delete_container("another_container")
-    database.replace_container(
-        container,
-        partition_key=PartitionKey(path="/new-and-improved-container"),
-    )
+    database.replace_container(container, partition_key=PartitionKey(path="/new-and-improved-container"))
 
 
 @validate_transaction_metrics(
@@ -81,8 +76,7 @@ def test_async_database_calls_to_container(loop, async_database, async_container
 
         await async_database.delete_container("another_container")
         await async_database.replace_container(
-            async_container,
-            partition_key=PartitionKey(path="/new-and-improved-container"),
+            async_container, partition_key=PartitionKey(path="/new-and-improved-container")
         )
 
     loop.run_until_complete(_test_async_database_calls_to_container())
@@ -124,7 +118,9 @@ def test_database_container_queries(database):
 @background_task()
 def test_database_container_queries(loop, async_database):
     async def _test_database_container_queries():
-        await async_database.create_container_if_not_exists("test_container", partition_key=PartitionKey(path="/container"))
+        await async_database.create_container_if_not_exists(
+            "test_container", partition_key=PartitionKey(path="/container")
+        )
         results = async_database.query_containers("SELECT * FROM c WHERE c.id = 'test_container'")
         assert any([container.get("id") == "test_container" async for container in results])
 
@@ -146,10 +142,7 @@ _scoped_container_throughput = (
     ("Datastore/operation/CosmosDB/delete_container", 1),
 )
 
-_scoped_sync_container_throughput = (
-    *_scoped_container_throughput,
-    ("Datastore/operation/CosmosDB/read_offer", 1),
-)
+_scoped_sync_container_throughput = (*_scoped_container_throughput, ("Datastore/operation/CosmosDB/read_offer", 1))
 
 
 @validate_transaction_metrics(
@@ -161,9 +154,7 @@ _scoped_sync_container_throughput = (
 @background_task()
 def test_container_throughput_and_offer(database):
     container = database.create_container(
-        "throughput_container",
-        partition_key=PartitionKey(path="/id"),
-        offer_throughput=400,
+        "throughput_container", partition_key=PartitionKey(path="/id"), offer_throughput=400
     )
     try:
         throughput = container.get_throughput()
@@ -181,6 +172,7 @@ _base_async_container_throughput = (
     (f"Datastore/instance/CosmosDB/{db_settings()}", 4),
 )
 
+
 @validate_transaction_metrics(
     "test_database_to_container_calls:test_async_container_throughput",
     scoped_metrics=_scoped_container_throughput,
@@ -191,9 +183,7 @@ _base_async_container_throughput = (
 def test_async_container_throughput(loop, async_database):
     async def _test_async_container_throughput():
         container = await async_database.create_container(
-            "throughput_container",
-            partition_key=PartitionKey(path="/id"),
-            offer_throughput=400,
+            "throughput_container", partition_key=PartitionKey(path="/id"), offer_throughput=400
         )
         try:
             throughput = await container.get_throughput()

@@ -13,13 +13,13 @@
 # limitations under the License.
 
 import os
-import pytest
 import urllib.parse as urlparse
 
+import pytest
 from testing_support.db_settings import cosmos_settings
-from testing_support.util import instance_hostname
 from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
+from testing_support.util import instance_hostname
 
 from newrelic.common.package_version_utils import get_package_version_tuple
 
@@ -61,13 +61,11 @@ def client():
     # Because the emulator used in github actions has
     # a self-signed cert, the cert trust chain can be
     # bypassed entirely. The `connection_verify=False`
-    # param flows directly to aiohttp's connector, 
+    # param flows directly to aiohttp's connector,
     # bypassing the cert trust chain entirely.
 
     client = azure.cosmos.CosmosClient(
-        url=DB_SETTINGS["url"],
-        credential=DB_SETTINGS["credential"],
-        connection_verify=False,
+        url=DB_SETTINGS["url"], credential=DB_SETTINGS["credential"], connection_verify=False
     )
 
     yield client
@@ -81,13 +79,11 @@ def async_client(loop):
     # Because the emulator used in github actions has
     # a self-signed cert, the cert trust chain can be
     # bypassed entirely. The `connection_verify=False`
-    # param flows directly to aiohttp's connector, 
+    # param flows directly to aiohttp's connector,
     # bypassing the cert trust chain entirely.
 
     async_client = azure.cosmos.aio.CosmosClient(
-        url=DB_SETTINGS["url"],
-        credential=DB_SETTINGS["credential"],
-        connection_verify=False,
+        url=DB_SETTINGS["url"], credential=DB_SETTINGS["credential"], connection_verify=False
     )
 
     yield async_client
@@ -106,9 +102,7 @@ def database(client):
 @pytest.fixture
 def async_database(loop, async_client):
     db_name = f"test_database_{_IDENTIFIER}"
-    async_database = loop.run_until_complete(
-        async_client.create_database_if_not_exists(db_name)
-    )
+    async_database = loop.run_until_complete(async_client.create_database_if_not_exists(db_name))
 
     yield async_database
     loop.run_until_complete(async_client.delete_database(db_name))
@@ -119,8 +113,7 @@ def container(database):
     import azure.cosmos
 
     container = database.create_container_if_not_exists(
-        "test_container",
-        partition_key=azure.cosmos.PartitionKey(path="/container"),
+        "test_container", partition_key=azure.cosmos.PartitionKey(path="/container")
     )
 
     yield container
@@ -133,8 +126,7 @@ def async_container(loop, async_database):
 
     async_container = loop.run_until_complete(
         async_database.create_container_if_not_exists(
-            "test_container",
-            partition_key=azure.cosmos.PartitionKey(path="/container"),
+            "test_container", partition_key=azure.cosmos.PartitionKey(path="/container")
         )
     )
 
@@ -152,9 +144,7 @@ def user(database):
 
 @pytest.fixture
 def async_user(loop, async_database):
-    user = loop.run_until_complete(
-        async_database.create_user({"id": "test_user"})
-    )
+    user = loop.run_until_complete(async_database.create_user({"id": "test_user"}))
 
     yield user
     loop.run_until_complete(async_database.delete_user("test_user"))
@@ -164,7 +154,7 @@ def async_user(loop, async_database):
 def item(container):
     body = {"id": "test_item", "container": "test_partition", "value": 42}
     result = container.create_item(body)
-    
+
     yield result
 
     try:
@@ -190,7 +180,7 @@ def async_item(loop, async_container):
 def permission(user, container):
     body = {"id": "test_permission", "permissionMode": "Read", "resource": container.container_link}
     result = user.create_permission(body)
-    
+
     yield result
 
     try:
@@ -210,4 +200,3 @@ def async_permission(loop, async_user, async_container):
         loop.run_until_complete(async_user.delete_permission("test_permission"))
     except Exception:
         pass
-

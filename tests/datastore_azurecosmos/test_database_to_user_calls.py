@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.api.background_task import background_task
 from conftest import db_settings
-
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
+from newrelic.api.background_task import background_task
 
 _base_user_calls = (
     ("Datastore/all", 2),
@@ -113,4 +112,3 @@ def test_async_database_user_complete(loop, async_database, async_user):
         await async_database.delete_user("another_user")
 
     loop.run_until_complete(_test_async_database_user_complete())
-

@@ -12,11 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.api.background_task import background_task
 from conftest import db_settings
-
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
+from newrelic.api.background_task import background_task
 
 _base_user_permissions = (
     ("Datastore/all", 6),
@@ -49,12 +48,9 @@ def test_user_read_and_permissions(user, container, permission):
     user.query_permissions("SELECT * FROM c WHERE c.id = 'test_permission'")
     user.get_permission("test_permission")
     user.replace_permission(
-        "test_permission",
-        {"id": "test_permission", "permissionMode": "All", "resource": container.container_link},
+        "test_permission", {"id": "test_permission", "permissionMode": "All", "resource": container.container_link}
     )
-    user.upsert_permission(
-        {"id": "test_permission", "permissionMode": "Read", "resource": container.container_link},
-    )
+    user.upsert_permission({"id": "test_permission", "permissionMode": "Read", "resource": container.container_link})
 
 
 @validate_transaction_metrics(
@@ -75,6 +71,7 @@ def test_async_user_read_and_permissions(loop, async_user, async_container, asyn
             {"id": "test_permission", "permissionMode": "All", "resource": async_container.container_link},
         )
         await async_user.upsert_permission(
-            {"id": "test_permission", "permissionMode": "Read", "resource": async_container.container_link},
+            {"id": "test_permission", "permissionMode": "Read", "resource": async_container.container_link}
         )
+
     loop.run_until_complete(_test_async_user_read_and_permissions())

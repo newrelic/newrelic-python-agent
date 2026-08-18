@@ -12,13 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.common.object_wrapper import wrap_function_wrapper
-from newrelic.api.transaction import current_transaction
-from newrelic.api.datastore_trace import DatastoreTrace, DatastoreTraceWrapper
-from newrelic.common.signature import bind_args
-from newrelic.common.async_wrapper import coroutine_wrapper
-
 import urllib.parse as urlparse
+
+from newrelic.api.datastore_trace import DatastoreTrace, DatastoreTraceWrapper
+from newrelic.api.transaction import current_transaction
+from newrelic.common.async_wrapper import coroutine_wrapper
+from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.common.signature import bind_args
 
 ##################################################
 # Client Instrumentation
@@ -33,22 +33,14 @@ _client_methods_sync_for_sync_and_async = (
 )
 
 # Synchronous for sync, asynchronous for async
-_client_methods_sync_async_respective = (
-    "close",
-    "create_database",
-    "create_database_if_not_exists",
-    "delete_database",
-)
+_client_methods_sync_async_respective = ("close", "create_database", "create_database_if_not_exists", "delete_database")
 
 # Synchronous functions only with sync
-_client_methods_sync = {
-    "get_database_account",
-}
+_client_methods_sync = {"get_database_account"}
 
 # Asyncronous functions only with async
-_client_methods_async = (
-    "_get_database_account",
-)
+_client_methods_async = ("_get_database_account",)
+
 
 def wrap_CosmosClient_method_wrapper(module, name):
     def _wrap_CosmosClient_method_wrapper_(wrapped, instance, args, kwargs):
@@ -66,7 +58,13 @@ def wrap_CosmosClient_method_wrapper(module, name):
             host, port_path_or_id, database_name = None, None, None
 
         with DatastoreTrace(
-            product="CosmosDB", target=None, operation=name, host=host, port_path_or_id=port_path_or_id, database_name=database_name, source=wrapped
+            product="CosmosDB",
+            target=None,
+            operation=name,
+            host=host,
+            port_path_or_id=port_path_or_id,
+            database_name=database_name,
+            source=wrapped,
         ):
             return wrapped(*args, **kwargs)
 
@@ -90,7 +88,14 @@ def wrap_aio_CosmosClient_method_wrapper(module, name):
             host, port_path_or_id, database_name = None, None, None
 
         return DatastoreTraceWrapper(
-            wrapped, product="CosmosDB", target=None, operation=name, host=host, port_path_or_id=port_path_or_id, database_name=database_name, async_wrapper=coroutine_wrapper
+            wrapped,
+            product="CosmosDB",
+            target=None,
+            operation=name,
+            host=host,
+            port_path_or_id=port_path_or_id,
+            database_name=database_name,
+            async_wrapper=coroutine_wrapper,
         )(*args, **kwargs)
 
     if hasattr(module.CosmosClient, name):
@@ -146,9 +151,7 @@ _database_methods_sync_async_respective = (
 )
 
 # Synchronous functions only with sync
-_database_methods_sync = (
-    "read_offer",
-)
+_database_methods_sync = ("read_offer",)
 
 
 def wrap_DatabaseProxy_method_wrapper(module, name):
@@ -166,7 +169,13 @@ def wrap_DatabaseProxy_method_wrapper(module, name):
             host, port_path_or_id, database_link = None, None, None
 
         with DatastoreTrace(
-            product="CosmosDB", target=None, operation=name, host=host, port_path_or_id=port_path_or_id, database_name=database_link, source=wrapped
+            product="CosmosDB",
+            target=None,
+            operation=name,
+            host=host,
+            port_path_or_id=port_path_or_id,
+            database_name=database_link,
+            source=wrapped,
         ):
             return wrapped(*args, **kwargs)
 
@@ -189,7 +198,14 @@ def wrap_aio_DatabaseProxy_method_wrapper(module, name):
             host, port_path_or_id, database_link = None, None, None
 
         return DatastoreTraceWrapper(
-            wrapped, product="CosmosDB", target=None, operation=name, host=host, port_path_or_id=port_path_or_id, database_name=database_link, async_wrapper=coroutine_wrapper
+            wrapped,
+            product="CosmosDB",
+            target=None,
+            operation=name,
+            host=host,
+            port_path_or_id=port_path_or_id,
+            database_name=database_link,
+            async_wrapper=coroutine_wrapper,
         )(*args, **kwargs)
 
     if hasattr(module.DatabaseProxy, name):
@@ -197,7 +213,11 @@ def wrap_aio_DatabaseProxy_method_wrapper(module, name):
 
 
 def instrument_cosmos_database(module):
-    _methods = (*_database_methods_sync_for_sync_and_async, *_database_methods_sync, *_database_methods_sync_async_respective)
+    _methods = (
+        *_database_methods_sync_for_sync_and_async,
+        *_database_methods_sync,
+        *_database_methods_sync_async_respective,
+    )
     for name in _methods:
         if hasattr(module, "DatabaseProxy"):
             wrap_DatabaseProxy_method_wrapper(module, name)
@@ -252,9 +272,7 @@ _container_methods_sync_async_respective = (
 )
 
 # Synchronous functions only with sync
-_container_methods_sync = (
-    "read_offer",
-)
+_container_methods_sync = ("read_offer",)
 
 
 def wrap_ContainerProxy_method_wrapper(module, name):
@@ -272,7 +290,13 @@ def wrap_ContainerProxy_method_wrapper(module, name):
             host, port_path_or_id, container_link = None, None, None
 
         with DatastoreTrace(
-            product="CosmosDB", target=None, operation=name, host=host, port_path_or_id=port_path_or_id, database_name=container_link, source=wrapped
+            product="CosmosDB",
+            target=None,
+            operation=name,
+            host=host,
+            port_path_or_id=port_path_or_id,
+            database_name=container_link,
+            source=wrapped,
         ):
             return wrapped(*args, **kwargs)
 
@@ -295,7 +319,14 @@ def wrap_aio_ContainerProxy_method_wrapper(module, name):
             host, port_path_or_id, container_link = None, None, None
 
         return DatastoreTraceWrapper(
-            wrapped, product="CosmosDB", target=None, operation=name, host=host, port_path_or_id=port_path_or_id, database_name=container_link, async_wrapper=coroutine_wrapper
+            wrapped,
+            product="CosmosDB",
+            target=None,
+            operation=name,
+            host=host,
+            port_path_or_id=port_path_or_id,
+            database_name=container_link,
+            async_wrapper=coroutine_wrapper,
         )(*args, **kwargs)
 
     if hasattr(module.ContainerProxy, name):
@@ -303,7 +334,11 @@ def wrap_aio_ContainerProxy_method_wrapper(module, name):
 
 
 def instrument_cosmos_container(module):
-    _methods = (*_container_methods_sync_for_sync_and_async, *_container_methods_sync, *_container_methods_sync_async_respective)
+    _methods = (
+        *_container_methods_sync_for_sync_and_async,
+        *_container_methods_sync,
+        *_container_methods_sync_async_respective,
+    )
     for name in _methods:
         if hasattr(module, "ContainerProxy"):
             wrap_ContainerProxy_method_wrapper(module, name)
@@ -326,10 +361,7 @@ def instrument_cosmos_aio_container(module):
 ##################################################
 
 # Synchronous functions for sync and async
-_user_methods_sync_for_sync_and_async = (
-    "list_permissions",
-    "query_permissions",
-)
+_user_methods_sync_for_sync_and_async = ("list_permissions", "query_permissions")
 
 # Synchronous for sync, asynchronous for async
 _user_methods_sync_async_respective = (
@@ -357,7 +389,13 @@ def wrap_UserProxy_method_wrapper(module, name):
             host, port_path_or_id, user_link = None, None, None
 
         with DatastoreTrace(
-            product="CosmosDB", target=None, operation=name, host=host, port_path_or_id=port_path_or_id, database_name=user_link, source=wrapped
+            product="CosmosDB",
+            target=None,
+            operation=name,
+            host=host,
+            port_path_or_id=port_path_or_id,
+            database_name=user_link,
+            source=wrapped,
         ):
             return wrapped(*args, **kwargs)
 
@@ -380,7 +418,14 @@ def wrap_aio_UserProxy_method_wrapper(module, name):
             host, port_path_or_id, user_link = None, None, None
 
         return DatastoreTraceWrapper(
-            wrapped, product="CosmosDB", target=None, operation=name, host=host, port_path_or_id=port_path_or_id, database_name=user_link, async_wrapper=coroutine_wrapper
+            wrapped,
+            product="CosmosDB",
+            target=None,
+            operation=name,
+            host=host,
+            port_path_or_id=port_path_or_id,
+            database_name=user_link,
+            async_wrapper=coroutine_wrapper,
         )(*args, **kwargs)
 
     if hasattr(module.UserProxy, name):
@@ -404,4 +449,3 @@ def instrument_cosmos_aio_user(module):
     for name in _methods:
         if hasattr(module, "UserProxy"):
             wrap_UserProxy_method_wrapper(module, name)
-

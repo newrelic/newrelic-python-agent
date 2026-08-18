@@ -13,15 +13,9 @@
 # limitations under the License.
 
 
-IGNORED_CLIENT_METHODS = {
-    "client_connection",
-}
+IGNORED_CLIENT_METHODS = {"client_connection"}
 
-IGNORED_DATABASE_METHODS = {
-    "client_connection",
-    "database_link",
-    "id",
-}
+IGNORED_DATABASE_METHODS = {"client_connection", "database_link", "id"}
 
 IGNORED_CONTAINER_METHODS = {
     "client_connection",
@@ -32,16 +26,9 @@ IGNORED_CONTAINER_METHODS = {
     "scripts",
 }
 
-IGNORED_ASYNC_CONTAINER_METHODS = {
-    *IGNORED_CONTAINER_METHODS,
-    "database_link",
-}
+IGNORED_ASYNC_CONTAINER_METHODS = {*IGNORED_CONTAINER_METHODS, "database_link"}
 
-IGNORED_USER_METHODS = {
-    "client_connection",
-    "id",
-    "user_link",
-}
+IGNORED_USER_METHODS = {"client_connection", "id", "user_link"}
 
 
 def test_uninstrumented_client_methods(client):

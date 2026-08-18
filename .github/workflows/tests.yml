@@ -598,8 +598,8 @@ jobs:
         env:
           PROTOCOL: https
         ports:
-          - 8080:8080   # health/readiness port
-          - 8081:8081   # endpoint port
+          - 8080:8080 # health/readiness port
+          - 8081:8081 # endpoint port
         # Set health checks to wait until container has started
         options: >-
           --health-cmd "curl --silent --fail localhost:8080/ready | grep -q '\"ready\":\s*true' || exit 1"
@@ -629,11 +629,6 @@ jobs:
             fi
             sleep 2
           done
-
-      #     curl -k https://cosmosdb:8081/_explorer/emulator.pem -o emulator.crt
-
-      #     sudo cp emulator.crt /usr/local/share/ca-certificates/cosmosdb.crt
-      #     sudo update-ca-certificates
 
       - name: Configure pip cache
         run: |

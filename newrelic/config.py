@@ -3023,6 +3023,8 @@ def _process_module_builtin_defaults():
 
     _process_module_definition("httpx._client", "newrelic.hooks.external_httpx", "instrument_httpx_client")
 
+    _process_module_definition("httpx2._client", "newrelic.hooks.external_httpx2", "instrument_httpx2_client")
+
     _process_module_definition("gluon.contrib.feedparser", "newrelic.hooks.external_feedparser")
     _process_module_definition("gluon.contrib.memcache.memcache", "newrelic.hooks.memcache_memcache")
 

@@ -1363,6 +1363,10 @@ def _create_successful_chain_run_events(
     response_model = getattr(callback_handler, "response_model", None) if callback_handler else None
     if isinstance(response, str):
         output_message_list = [response]
+    elif hasattr(response, "value") and hasattr(response, "interrupts"):
+        # LangGraph V1.1+ returns a GraphOutput. Read .value to avoid the
+        # deprecated item access path (response[key]) that emits a warning.
+        output_message_list = [response.value]
     else:
         try:
             output_message_list = [response[0]] if response else []

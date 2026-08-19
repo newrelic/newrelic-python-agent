@@ -1414,7 +1414,7 @@ jobs:
             && exit 0
           # If the container fails to start, dump logs and exit with failure
           echo "nginx did not become healthy in time"
-          docker logs nginx
+          docker compose -f .github/containers/nginx/docker-compose.yml logs
           exit 1
 
       - name: Get Environments
@@ -1485,7 +1485,7 @@ jobs:
           ORACLE_PWD: oracle
         # Set health checks to wait until container has started
         options: >-
-          --health-cmd "timeout 5 bash -c 'cat < /dev/null > /dev/udp/127.0.0.1/11211'"
+          --health-cmd "/opt/oracle/checkDBStatus.sh"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5

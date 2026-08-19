@@ -13,7 +13,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM nginx:latest
+FROM nginx:stable-alpine
+
+RUN apk add --no-cache openssl
 
 COPY <<"EOF" /etc/nginx/nginx.conf
 user  nginx;
@@ -37,6 +39,7 @@ http {
     keepalive_timeout  65;
     # HTTP/1.1-3.0 server
     server {
+        listen 9000;  # Healthchecks
         listen 8080 quic reuseport;
         listen 8080 ssl;
         http2 on;
@@ -54,7 +57,7 @@ http {
 EOF
 
 COPY --chmod=0755 <<"EOF" /docker-entrypoint.d/50-generate-cert.sh
-#!/bin/bash
+#!/bin/sh
 set -euo pipefail
 
 echo "Generating self signed cert..."

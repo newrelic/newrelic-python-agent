@@ -110,21 +110,21 @@ def test_database_container_queries(database):
 
 
 @validate_transaction_metrics(
-    "test_database_to_container_calls:test_database_container_queries",
+    "test_database_to_container_calls:test_async_database_container_queries",
     scoped_metrics=_scoped_container_query,
     rollup_metrics=[*_scoped_container_query, *_base_container_query],
     background_task=True,
 )
 @background_task()
-def test_database_container_queries(loop, async_database):
-    async def _test_database_container_queries():
+def test_async_database_container_queries(loop, async_database):
+    async def _test_async_database_container_queries():
         await async_database.create_container_if_not_exists(
             "test_container", partition_key=PartitionKey(path="/container")
         )
         results = async_database.query_containers("SELECT * FROM c WHERE c.id = 'test_container'")
         assert any([container.get("id") == "test_container" async for container in results])
 
-    loop.run_until_complete(_test_database_container_queries())
+    loop.run_until_complete(_test_async_database_container_queries())
 
 
 _base_sync_container_throughput = (

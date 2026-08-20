@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "New Relic Python Agent Configuration",
-  "description": "Fleet Control configuration schema for the New Relic Python agent. Generated from newrelic.core.config.global_settings().",
+  "description": "Agent configuration schema for the New Relic Python agent. Generated from newrelic.core.config.global_settings().",
   "type": "object",
   "properties": {
     "agent_limits.data_collector_timeout": {
@@ -84,7 +84,8 @@
       "default": 0.5
     },
     "api_key": {
-      "type": "string"
+      "type": "string",
+      "writeOnly": true
     },
     "app_name": {
       "type": "string",
@@ -764,7 +765,8 @@
       "type": "string"
     },
     "proxy_pass": {
-      "type": "string"
+      "type": "string",
+      "writeOnly": true
     },
     "proxy_port": {
       "type": "integer"
@@ -773,7 +775,8 @@
       "type": "string"
     },
     "proxy_user": {
-      "type": "string"
+      "type": "string",
+      "writeOnly": true
     },
     "sampling_rate": {
       "type": "integer",
@@ -1099,7 +1102,8 @@
     "license_key": {
       "type": "string",
       "description": "New Relic license key associated with your account. Binds the agent's data to your account in the New Relic UI.",
-      "minLength": 1
+      "minLength": 1,
+      "writeOnly": true
     }
   },
   "required": [

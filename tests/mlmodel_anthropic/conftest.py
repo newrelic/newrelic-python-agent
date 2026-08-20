@@ -28,7 +28,7 @@ from testing_support.fixtures import (
 from testing_support.mock_external_http_server import MockExternalHTTPServer
 
 from newrelic.common.object_wrapper import wrap_function_wrapper
-from newrelic.common.package_version_utils import get_package_version
+from newrelic.common.package_version_utils import get_package_version, get_package_version_tuple
 from newrelic.common.signature import bind_args
 
 _default_settings = {
@@ -49,6 +49,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 )
 
 ANTHROPIC_VERSION = get_package_version("anthropic")
+ANTHROPIC_VERSION_TUPLE = get_package_version_tuple("anthropic")
 ANTHROPIC_VERSION_METRIC = f"Supportability/Python/ML/Anthropic/{ANTHROPIC_VERSION}"
 
 ANTHROPIC_AUDIT_LOG_FILE = Path(__file__).parent / "anthropic_audit.log"
@@ -173,6 +174,10 @@ def is_create_method(interaction_method):
 @pytest.fixture(scope="session")
 def exercise_model(loop, sync_anthropic_client, async_anthropic_client, is_async, interaction_method):
     def exercise_model_sync(*args, **kwargs):
+        if ANTHROPIC_VERSION_TUPLE >= (1, 0, 0):
+            if "temperature" in kwargs:
+                kwargs["extra_body"] = {"temperature": kwargs.pop("temperature")}
+
         # Simple interfaces
         if interaction_method == "create":
             return sync_anthropic_client.messages.create(*args, **kwargs)
@@ -204,6 +209,10 @@ def exercise_model(loop, sync_anthropic_client, async_anthropic_client, is_async
 
     def exercise_model_async(*args, **kwargs):
         async def _exercise_model_async():
+            if ANTHROPIC_VERSION_TUPLE >= (1, 0, 0):
+                if "temperature" in kwargs:
+                    kwargs["extra_body"] = {"temperature": kwargs.pop("temperature")}
+
             # Simple interfaces
             if interaction_method == "create":
                 return await async_anthropic_client.messages.create(*args, **kwargs)

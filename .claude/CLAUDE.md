@@ -87,11 +87,7 @@ When you need to read the source of an instrumented third-party library — to v
 
 ### Source Layout
 
-External library source lives at:
-
-```
-.tox/<env_name>/lib/python*/site-packages/<library>/
-```
+External library source lives at: `.tox/<env_name>/lib/python*/site-packages/<library>/`
 
 Use a `python*` glob — the Python minor version (e.g., `python3.12`, `python3.14`) varies by env and is encoded in the env name itself (`-py312-`, `-py314-`).
 
@@ -115,10 +111,14 @@ The Python Agent (`newrelic` package) is installed into every env's `site-packag
 ### Core Components
 
 #### 1. **Import Hook System** (`newrelic/api/import_hook.py`)
-The agent uses Python's import hook mechanism to automatically instrument third-party libraries. Import hooks are registered for specific modules and fire when those modules are first imported, allowing the agent to wrap functions before they're used. These are registered by calling `_process_module_definition(target, module, function)` where `target` is a string form of the instrumented library's module path, `module` is a string form of the module containing the instrument function under `newrelic.hooks.*`, and `function` is the name of the instrumentation hook to run on that module.
+The agent uses Python's import hook mechanism to automatically instrument third-party libraries. Import hooks are registered for specific modules and fire when those modules are first imported, allowing the agent to wrap functions before they're used.
+
+These are registered by calling `_process_module_definition(target, module, function)` where `target` is a string form of the instrumented library's module path, `module` is a string form of the module containing the instrument function under `newrelic.hooks.*`, and `function` is the name of the instrumentation hook to run on that module.
 
 #### 2. **Instrumentation Hooks** (`newrelic/hooks/`)
-Each file in the `hooks/` directory contains instrumentation for a specific library or framework. Hooks use `wrap_function_wrapper` and similar utilities to instrument code without modifying the original source. Each instrument function requires at least 1 import hook which will apply it, made by a call to `_process_module_definition` in the file `newrelic/config.py` under the function `_process_module_builtin_defaults`.
+Each file in the `hooks/` directory contains instrumentation for a specific library or framework. Hooks use `wrap_function_wrapper` and similar utilities to instrument code without modifying the original source.
+
+Each instrument function requires at least 1 import hook which will apply it, made by a call to `_process_module_definition` in the file `newrelic/config.py` under the function `_process_module_builtin_defaults`.
 
 Pattern:
 ```python

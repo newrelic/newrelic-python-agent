@@ -21,6 +21,9 @@ from functools import lru_cache
 VERSION_ATTRS = ("__version__", "version", "__version_tuple__", "version_tuple")
 NULL_VERSIONS = frozenset((None, "", "0", "0.0", "0.0.0", "0.0.0.0", (0,), (0, 0), (0, 0, 0), (0, 0, 0, 0)))  # noqa: S104
 
+# Global variable to hold importlib.metadata.packages_distributions() after it's called once
+_packages_distributions = {}
+
 
 def get_package_version(name):
     """Gets the version string of the library.
@@ -72,6 +75,10 @@ def get_package_version_tuple(name):
 
 @lru_cache
 def _get_package_version(name):
+    # Cached lookup helper that will avoid the cost of determining
+    # a package's version more than once.
+    global _packages_distributions
+
     module = sys.modules.get(name, None)
     version = None
 
@@ -96,14 +103,16 @@ def _get_package_version(name):
             except Exception:
                 pass
 
+    # In Python 3.10+ packages_distribution can be checked as well.
     try:
-        # In Python 3.10+ packages_distribution can be checked for as well.
-        if hasattr(importlib_metadata, "packages_distributions"):
-            distributions = importlib_metadata.packages_distributions()
-            distribution_name = distributions.get(name, name)
-            distribution_name = distribution_name[0] if isinstance(distribution_name, list) else distribution_name
-        else:
-            distribution_name = name
+        # Cached lookup for packages_distributions() to avoid scanning the filesystem
+        # every time we need to check a package verison.
+        if not _packages_distributions and hasattr(importlib_metadata, "packages_distributions"):
+            _packages_distributions = importlib_metadata.packages_distributions()
+
+        # Try to grab the package's distribution name, and fallback to just the package name if we can't find it.
+        distribution_names = _packages_distributions.get(name, [name])
+        distribution_name = distribution_names[0]
 
         version = importlib_metadata.version(distribution_name)
         if version not in NULL_VERSIONS:

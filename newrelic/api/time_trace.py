@@ -21,7 +21,7 @@ import traceback
 
 from newrelic.api.settings import STRIP_EXCEPTION_MESSAGE
 from newrelic.common.object_names import parse_exc_info
-from newrelic.core.attribute import MAX_NUM_USER_ATTRIBUTES, process_user_attribute
+from newrelic.core.attribute import MAX_NUM_SPAN_LINK_EVENTS, MAX_NUM_USER_ATTRIBUTES, process_user_attribute
 from newrelic.core.code_level_metrics import extract_code_from_callable, extract_code_from_traceback
 from newrelic.core.config import is_expected_error, should_ignore_error
 from newrelic.core.trace_cache import trace_cache
@@ -225,7 +225,7 @@ class TimeTrace:
         if not settings.opentelemetry.enabled:
             return
 
-        if len(self.span_link_events) >= 100:
+        if len(self.span_link_events) >= MAX_NUM_SPAN_LINK_EVENTS:
             self.transaction._record_supportability("Supportability/SpanEvent/Links/Dropped")
             return
 

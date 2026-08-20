@@ -115,7 +115,10 @@ def validate_compact_span_event(
                 raise
             else:
                 if not instance.settings.infinite_tracing.enabled:
-                    events = [event for priority, seen_at, event in instance.span_events.pq]
+                    events = [
+                        event if isinstance(event[0], dict) else event[0]
+                        for priority, seen_at, event in instance.span_events.pq
+                    ]
 
                 recorded_span_events.append(events)
 

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Fleet Control Config Schema Generator -- Python Agent
+Agent Config Schema Generator -- Python Agent
 
 Walks `newrelic.core.config.global_settings()` and writes JSON Schema
 Draft 2020-12 to .fleetControl/schemas/config.json.
@@ -68,7 +68,7 @@ The generator sets `additionalProperties: true` at the root. This is
 intentional and serves two purposes:
 
   1. Forward compatibility. The agent ships new config keys in every
-     release. A Fleet Control deployment may be validating against a
+     release. A consumer may be validating against a
      schema generated from an older agent -- strict validation would
      reject any newer key, breaking users who upgrade the agent before
      the schema is republished.
@@ -150,10 +150,6 @@ def string_array_or_delimited(default=None, item_type="string"):
     """Schema for keys that accept either a YAML/JSON array OR a delimited
     string (space- or comma-separated).
 
-    The Python agent parses these via `_environ_as_set` /
-    `_environ_as_comma_separated_set`, so the INI string form is
-    documented as the user-facing format. The structured array form is
-    accepted for Fleet Control consumers that emit structured config.
     """
     schema = {"anyOf": [{"type": "array", "items": {"type": item_type}}, {"type": "string"}]}
     if default is not None:
@@ -275,6 +271,20 @@ TYPE_OVERRIDES = {
     "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.trace_id_ratio_based.ratio": {
         "type": "number"
     },
+}
+
+# ---------------------------------------------------------------------------
+# Secret-valued settings -- mirrors the strip/obfuscate list in
+# newrelic.core.config.global_settings_dump(), which already treats these
+# as sensitive when reporting settings back to the collector. Marked
+# `writeOnly: true` here so consumers can mask them on entry and
+# never echo a previously-submitted value back to the user.
+# ---------------------------------------------------------------------------
+WRITE_ONLY_KEYS = {
+    "license_key",
+    "api_key",
+    "proxy_user",
+    "proxy_pass",
 }
 
 # ---------------------------------------------------------------------------
@@ -570,6 +580,8 @@ def build_properties(settings, descriptions, exclude_keys, enum_overrides, type_
             if path != "license_key":
                 skipped_none.append(path)
             continue
+        if path in WRITE_ONLY_KEYS:
+            prop["writeOnly"] = True
         properties[path] = prop
 
     if skipped_none:
@@ -598,12 +610,14 @@ def generate_schema(settings, descriptions, exclude_keys=None, enum_overrides=No
     # Hardcoded license_key: the live default is None and we always want
     # this surfaced as a required, non-empty string.
     properties["license_key"] = dict(LICENSE_KEY_OVERRIDE)
+    if "license_key" in WRITE_ONLY_KEYS:
+        properties["license_key"]["writeOnly"] = True
 
     return {
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "title": "New Relic Python Agent Configuration",
         "description": (
-            "Fleet Control configuration schema for the New Relic Python agent. "
+            "Agent configuration schema for the New Relic Python agent. "
             "Generated from newrelic.core.config.global_settings()."
         ),
         "type": "object",
@@ -721,7 +735,7 @@ def validate_meta_schema(schema):
 
 def main(argv=None):
     parser = argparse.ArgumentParser(
-        description="Generate Fleet Control config schema. Writes config.json only; "
+        description="Generate Agent Control config schema. Writes config.json only; "
         "version bumps live in bump-schema-version.py."
     )
     parser.add_argument(

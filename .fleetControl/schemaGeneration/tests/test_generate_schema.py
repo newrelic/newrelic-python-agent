@@ -396,6 +396,29 @@ class BuildPropertiesTests(unittest.TestCase):
         props = gen.build_properties(s, {}, set(), TEST_ENUMS, types)
         self.assertNotIn("log_file", props)
 
+    def test_write_only_applied_to_secret_settings(self):
+        # Mirrors the strip/obfuscate list in
+        # newrelic.core.config.global_settings_dump().
+        class FakeSettings:
+            pass
+
+        s = FakeSettings()
+        s.api_key = "secret-key"
+        s.proxy_user = "user"
+        s.proxy_pass = "pass"
+        s.app_name = "not a secret"
+
+        types = {
+            "api_key": {"type": "string"},
+            "proxy_user": {"type": "string"},
+            "proxy_pass": {"type": "string"},
+        }
+        props = gen.build_properties(s, {}, set(), {}, types)
+        self.assertTrue(props["api_key"]["writeOnly"])
+        self.assertTrue(props["proxy_user"]["writeOnly"])
+        self.assertTrue(props["proxy_pass"]["writeOnly"])
+        self.assertNotIn("writeOnly", props["app_name"])
+
 
 # ---------------------------------------------------------------------------
 # generate_schema -- end-to-end integration against the fake tree
@@ -427,6 +450,7 @@ class GenerateSchemaIntegrationTests(unittest.TestCase):
         self.assertEqual(lk["minLength"], 1)
         self.assertNotIn("default", lk)
         self.assertIn("license key", lk["description"].lower())
+        self.assertTrue(lk["writeOnly"])
 
     def test_app_name_string_with_default(self):
         an = self.props["app_name"]

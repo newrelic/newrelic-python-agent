@@ -36,6 +36,7 @@ from pathlib import Path
 _SCRIPT_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_SCRIPT_DIR))
 import schema_diff  # noqa: E402
+from schema_diff import ADDITIVE, BREAKING, COSMETIC, MAJOR, MINOR, NO_BUMP, PATCH  # noqa: E402
 
 
 def _obj(props, required=None, additional=True):
@@ -56,17 +57,17 @@ class ClassifyChangesTests(unittest.TestCase):
 
     def test_added_is_additive(self):
         ch = schema_diff.classify_changes(_obj({}), _obj({"foo": {"type": "string"}}))
-        self.assertEqual(ch[0]["severity"], "additive")
+        self.assertEqual(ch[0]["severity"], ADDITIVE)
 
     def test_removed_is_breaking(self):
         ch = schema_diff.classify_changes(_obj({"foo": {"type": "string"}}), _obj({}))
-        self.assertEqual(ch[0]["severity"], "breaking")
+        self.assertEqual(ch[0]["severity"], BREAKING)
 
     def test_type_change_is_breaking(self):
         ch = _by_kind(
             schema_diff.classify_changes(_obj({"foo": {"type": "string"}}), _obj({"foo": {"type": "integer"}}))
         )
-        self.assertEqual(ch["type_changed"]["severity"], "breaking")
+        self.assertEqual(ch["type_changed"]["severity"], BREAKING)
 
     def test_required_added_is_breaking(self):
         ch = _by_kind(
@@ -74,7 +75,7 @@ class ClassifyChangesTests(unittest.TestCase):
                 _obj({"foo": {"type": "string"}}, []), _obj({"foo": {"type": "string"}}, ["foo"])
             )
         )
-        self.assertEqual(ch["required_added"]["severity"], "breaking")
+        self.assertEqual(ch["required_added"]["severity"], BREAKING)
 
     def test_required_removed_is_additive(self):
         ch = _by_kind(
@@ -82,27 +83,27 @@ class ClassifyChangesTests(unittest.TestCase):
                 _obj({"foo": {"type": "string"}}, ["foo"]), _obj({"foo": {"type": "string"}}, [])
             )
         )
-        self.assertEqual(ch["required_removed"]["severity"], "additive")
+        self.assertEqual(ch["required_removed"]["severity"], ADDITIVE)
 
     def test_additional_properties_tightened_is_breaking(self):
         ch = _by_kind(schema_diff.classify_changes(_obj({}, None, True), _obj({}, None, False)))
-        self.assertEqual(ch["additional_properties_tightened"]["severity"], "breaking")
+        self.assertEqual(ch["additional_properties_tightened"]["severity"], BREAKING)
 
     def test_additional_properties_loosened_is_additive(self):
         ch = _by_kind(schema_diff.classify_changes(_obj({}, None, False), _obj({}, None, True)))
-        self.assertEqual(ch["additional_properties_loosened"]["severity"], "additive")
+        self.assertEqual(ch["additional_properties_loosened"]["severity"], ADDITIVE)
 
     def test_enum_value_removed_is_breaking(self):
         ch = schema_diff.classify_changes(
             _obj({"x": {"type": "string", "enum": ["a", "b"]}}), _obj({"x": {"type": "string", "enum": ["a"]}})
         )
-        self.assertEqual(next(c for c in ch if c["kind"] == "enum_value_removed")["severity"], "breaking")
+        self.assertEqual(next(c for c in ch if c["kind"] == "enum_value_removed")["severity"], BREAKING)
 
     def test_enum_value_added_is_additive(self):
         ch = schema_diff.classify_changes(
             _obj({"x": {"type": "string", "enum": ["a"]}}), _obj({"x": {"type": "string", "enum": ["a", "b"]}})
         )
-        self.assertEqual(next(c for c in ch if c["kind"] == "enum_value_added")["severity"], "additive")
+        self.assertEqual(next(c for c in ch if c["kind"] == "enum_value_added")["severity"], ADDITIVE)
 
     def test_enum_introduced_is_breaking(self):
         ch = _by_kind(
@@ -110,7 +111,7 @@ class ClassifyChangesTests(unittest.TestCase):
                 _obj({"x": {"type": "string"}}), _obj({"x": {"type": "string", "enum": ["a"]}})
             )
         )
-        self.assertEqual(ch["enum_introduced"]["severity"], "breaking")
+        self.assertEqual(ch["enum_introduced"]["severity"], BREAKING)
 
     def test_default_changed_is_additive(self):
         ch = _by_kind(
@@ -118,7 +119,7 @@ class ClassifyChangesTests(unittest.TestCase):
                 _obj({"x": {"type": "string", "default": "a"}}), _obj({"x": {"type": "string", "default": "b"}})
             )
         )
-        self.assertEqual(ch["default_changed"]["severity"], "additive")
+        self.assertEqual(ch["default_changed"]["severity"], ADDITIVE)
 
     def test_description_changed_is_cosmetic(self):
         ch = _by_kind(
@@ -127,36 +128,62 @@ class ClassifyChangesTests(unittest.TestCase):
                 _obj({"x": {"type": "string", "description": "new"}}),
             )
         )
-        self.assertEqual(ch["description_changed"]["severity"], "cosmetic")
+        self.assertEqual(ch["description_changed"]["severity"], COSMETIC)
+
+    def test_write_only_introduced_is_breaking(self):
+        # writeOnly has no dedicated handling -- it falls through to the
+        # generic keyword catch-all, same as any other unrecognized keyword.
+        ch = _by_kind(
+            schema_diff.classify_changes(
+                _obj({"x": {"type": "string"}}), _obj({"x": {"type": "string", "writeOnly": True}})
+            )
+        )
+        self.assertEqual(ch["writeOnly_changed"]["severity"], BREAKING)
+
+    def test_arbitrary_unrecognized_keyword_changed_is_breaking(self):
+        # No special-casing required -- any keyword not in the dedicated
+        # list (type/enum/default/description) is caught generically.
+        ch = _by_kind(
+            schema_diff.classify_changes(
+                _obj({"x": {"type": "integer", "minimum": 1}}), _obj({"x": {"type": "integer", "minimum": 5}})
+            )
+        )
+        self.assertEqual(ch["minimum_changed"]["severity"], BREAKING)
+
+    def test_unrecognized_keyword_unchanged_is_not_reported(self):
+        ch = schema_diff.classify_changes(
+            _obj({"x": {"type": "string", "pattern": "^a"}}), _obj({"x": {"type": "string", "pattern": "^a"}})
+        )
+        self.assertEqual(ch, [])
 
 
 class RecommendBumpTests(unittest.TestCase):
     def test_breaking_is_major(self):
-        self.assertEqual(schema_diff.recommend_bump([{"severity": "breaking"}]), "major")
+        self.assertEqual(schema_diff.recommend_bump([{"severity": BREAKING}]), MAJOR)
 
     def test_additive_is_minor(self):
-        self.assertEqual(schema_diff.recommend_bump([{"severity": "additive"}]), "minor")
+        self.assertEqual(schema_diff.recommend_bump([{"severity": ADDITIVE}]), MINOR)
 
     def test_cosmetic_is_patch(self):
-        self.assertEqual(schema_diff.recommend_bump([{"severity": "cosmetic"}]), "patch")
+        self.assertEqual(schema_diff.recommend_bump([{"severity": COSMETIC}]), PATCH)
 
     def test_empty_is_none(self):
-        self.assertEqual(schema_diff.recommend_bump([]), "none")
+        self.assertEqual(schema_diff.recommend_bump([]), NO_BUMP)
 
     def test_breaking_wins_over_additive(self):
-        self.assertEqual(schema_diff.recommend_bump([{"severity": "additive"}, {"severity": "breaking"}]), "major")
+        self.assertEqual(schema_diff.recommend_bump([{"severity": ADDITIVE}, {"severity": BREAKING}]), MAJOR)
 
 
 class ApplyBumpTests(unittest.TestCase):
     def test_apply_bumps(self):
-        self.assertEqual(schema_diff.apply_bump("1.2.3", "major"), "2.0.0")
-        self.assertEqual(schema_diff.apply_bump("1.2.3", "minor"), "1.3.0")
-        self.assertEqual(schema_diff.apply_bump("1.2.3", "patch"), "1.2.4")
-        self.assertEqual(schema_diff.apply_bump("1.2.3", "none"), "1.2.3")
+        self.assertEqual(schema_diff.apply_bump("1.2.3", MAJOR), "2.0.0")
+        self.assertEqual(schema_diff.apply_bump("1.2.3", MINOR), "1.3.0")
+        self.assertEqual(schema_diff.apply_bump("1.2.3", PATCH), "1.2.4")
+        self.assertEqual(schema_diff.apply_bump("1.2.3", NO_BUMP), "1.2.3")
 
     def test_apply_bump_invalid_semver(self):
         with self.assertRaises(ValueError):
-            schema_diff.apply_bump("not-semver", "major")
+            schema_diff.apply_bump("not-semver", MAJOR)
 
     def test_apply_bump_unknown_kind(self):
         with self.assertRaises(ValueError):
@@ -184,25 +211,25 @@ class BumpVersionTests(unittest.TestCase):
 
     def test_read_returns_old_new(self):
         path = self._temp_yaml()
-        old_v, new_v = schema_diff.bump_version(path, "minor", False)
+        old_v, new_v = schema_diff.bump_version(path, MINOR, False)
         self.assertEqual(old_v, "1.2.3")
         self.assertEqual(new_v, "1.3.0")
 
     def test_write_false_does_not_touch_file(self):
         path = self._temp_yaml()
         before = path.read_text()
-        schema_diff.bump_version(path, "major", False)
+        schema_diff.bump_version(path, MAJOR, False)
         self.assertEqual(path.read_text(), before)
 
     def test_write_true_mutates(self):
         path = self._temp_yaml()
-        schema_diff.bump_version(path, "major", True)
+        schema_diff.bump_version(path, MAJOR, True)
         self.assertIn("version: 2.0.0", path.read_text())
 
     def test_missing_version_raises(self):
         path = self._temp_yaml("configurationDefinitions:\n  - platform: foo\n")
         with self.assertRaises(RuntimeError):
-            schema_diff.bump_version(path, "major", False)
+            schema_diff.bump_version(path, MAJOR, False)
 
 
 class LoadExistingTests(unittest.TestCase):

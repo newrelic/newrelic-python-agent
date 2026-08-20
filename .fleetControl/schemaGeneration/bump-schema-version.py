@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Fleet Control Config Schema Version Bumper -- Python Agent
+Agent Config Schema Version Bumper -- Python Agent
 
 Reads the schema and metadata at a prior git ref (typically the latest
 release tag), diffs against the current schema, classifies the cumulative
@@ -54,7 +54,7 @@ CONFIG_DEF_PATH = FLEET_CONTROL_DIR / "configurationDefinitions.yml"
 
 # Reuse the diff helpers and version-bump rewriter from the shared module.
 sys.path.insert(0, str(SCRIPT_DIR))
-from schema_diff import apply_bump, bump_version, classify_changes, print_changes, recommend_bump  # noqa: E402
+from schema_diff import NO_BUMP, apply_bump, bump_version, classify_changes, print_changes, recommend_bump  # noqa: E402
 
 # Path inside the repo (POSIX, since git uses forward slashes regardless
 # of platform). Used when invoking `git show <ref>:<path>`.
@@ -171,15 +171,13 @@ def main(argv=None):
     # historical doc is only the source of the diff baseline.
     old_v, new_v = bump_version(CONFIG_DEF_PATH, bump, args.ci)
 
-    if bump == "none":
+    if bump == NO_BUMP:
         print(f"\nNo bump needed (current version: {old_v}).")
         return 0
 
     if args.ci:
         if new_v == old_v:
-            # apply_bump returns the input version when bump == 'none';
-            # this branch covers the rare case where bump != 'none' but
-            # the version was already at the bumped value (manual edit).
+            # The bump != NO_BUMP but the version was already at the bumped value (manual edit).
             print(f"\nRecommended bump: {bump}, but {old_v} already reflects it. No write.")
             return 0
         print(f"\nApplied bump: {bump} ({old_v} -> {new_v})")

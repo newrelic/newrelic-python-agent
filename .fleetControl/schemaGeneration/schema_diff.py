@@ -27,6 +27,15 @@ import json
 import re
 from pathlib import Path
 
+BREAKING = "breaking"
+ADDITIVE = "additive"
+COSMETIC = "cosmetic"
+
+MAJOR = "major"
+MINOR = "minor"
+PATCH = "patch"
+NO_BUMP = "none"
+
 # ---------------------------------------------------------------------------
 # Schema I/O
 # ---------------------------------------------------------------------------
@@ -76,7 +85,7 @@ def classify_changes(old_s, new_s, path=""):
         {
             "path": f"{path}.{k}" if path else k,
             "kind": "required_added",
-            "severity": "breaking",
+            "severity": BREAKING,
             "detail": "now required",
         }
         for k in sorted(new_req - old_req)
@@ -85,7 +94,7 @@ def classify_changes(old_s, new_s, path=""):
         {
             "path": f"{path}.{k}" if path else k,
             "kind": "required_removed",
-            "severity": "additive",
+            "severity": ADDITIVE,
             "detail": "no longer required",
         }
         for k in sorted(old_req - new_req)
@@ -98,7 +107,7 @@ def classify_changes(old_s, new_s, path=""):
             {
                 "path": path or "<root>",
                 "kind": "additional_properties_tightened",
-                "severity": "breaking",
+                "severity": BREAKING,
                 "detail": "additionalProperties: true -> false",
             }
         )
@@ -107,7 +116,7 @@ def classify_changes(old_s, new_s, path=""):
             {
                 "path": path or "<root>",
                 "kind": "additional_properties_loosened",
-                "severity": "additive",
+                "severity": ADDITIVE,
                 "detail": "additionalProperties: false -> true",
             }
         )
@@ -117,11 +126,9 @@ def classify_changes(old_s, new_s, path=""):
     for key in sorted(set(old_props.keys()) | set(new_props.keys())):
         child_path = f"{path}.{key}" if path else key
         if key not in old_props:
-            changes.append({"path": child_path, "kind": "added", "severity": "additive", "detail": "new property"})
+            changes.append({"path": child_path, "kind": "added", "severity": ADDITIVE, "detail": "new property"})
         elif key not in new_props:
-            changes.append(
-                {"path": child_path, "kind": "removed", "severity": "breaking", "detail": "property removed"}
-            )
+            changes.append({"path": child_path, "kind": "removed", "severity": BREAKING, "detail": "property removed"})
         else:
             op = old_props[key]
             np = new_props[key]
@@ -141,7 +148,7 @@ def classify_leaf(op, np, path):
             {
                 "path": path,
                 "kind": "type_changed",
-                "severity": "breaking",
+                "severity": BREAKING,
                 "detail": f"type {op.get('type')} -> {np.get('type')}",
             }
         )
@@ -153,21 +160,21 @@ def classify_leaf(op, np, path):
             {
                 "path": path,
                 "kind": "enum_introduced",
-                "severity": "breaking",
+                "severity": BREAKING,
                 "detail": f"newly constrained to enum {ne}",
             }
         )
     elif oe is not None and ne is None:
         changes.append(
-            {"path": path, "kind": "enum_removed_entirely", "severity": "additive", "detail": "enum constraint removed"}
+            {"path": path, "kind": "enum_removed_entirely", "severity": ADDITIVE, "detail": "enum constraint removed"}
         )
     elif oe and ne and set(oe) != set(ne):
         changes.extend(
-            {"path": path, "kind": "enum_value_removed", "severity": "breaking", "detail": f"enum value '{v}' removed"}
+            {"path": path, "kind": "enum_value_removed", "severity": BREAKING, "detail": f"enum value '{v}' removed"}
             for v in sorted(set(oe) - set(ne))
         )
         changes.extend(
-            {"path": path, "kind": "enum_value_added", "severity": "additive", "detail": f"enum value '{v}' added"}
+            {"path": path, "kind": "enum_value_added", "severity": ADDITIVE, "detail": f"enum value '{v}' added"}
             for v in sorted(set(ne) - set(oe))
         )
 
@@ -176,16 +183,37 @@ def classify_leaf(op, np, path):
             {
                 "path": path,
                 "kind": "default_changed",
-                "severity": "additive",
+                "severity": ADDITIVE,
                 "detail": f"default {op.get('default')} -> {np.get('default')}",
             }
         )
 
     if op.get("description") != np.get("description"):
         changes.append(
-            {"path": path, "kind": "description_changed", "severity": "cosmetic", "detail": "description updated"}
+            {"path": path, "kind": "description_changed", "severity": COSMETIC, "detail": "description updated"}
         )
 
+    changes.extend(_classify_other_keywords(op, np, path))
+
+    return changes
+
+
+# Keys with dedicated handling above -- each has its own bump semantics.
+# Everything else is handled uniformly by _classify_other_keywords below.
+_HANDLED_KEYWORDS = {"type", "enum", "default", "description"}
+
+
+def _classify_other_keywords(op, np, path):
+    """Catch-all for every JSON Schema keyword not covered by the dedicated
+    checks above.
+    """
+    changes = []
+    for key in sorted((set(op) | set(np)) - _HANDLED_KEYWORDS):
+        ov, nv = op.get(key), np.get(key)
+        if ov != nv:
+            changes.append(
+                {"path": path, "kind": f"{key}_changed", "severity": BREAKING, "detail": f"{key} {ov!r} -> {nv!r}"}
+            )
     return changes
 
 
@@ -201,28 +229,28 @@ def recommend_bump(changes):
     breaking change forces 'major'; otherwise any additive change forces
     'minor'; otherwise any cosmetic change forces 'patch'; otherwise 'none'.
     """
-    if any(c.get("severity") == "breaking" for c in changes):
-        return "major"
-    if any(c.get("severity") == "additive" for c in changes):
-        return "minor"
-    if any(c.get("severity") == "cosmetic" for c in changes):
-        return "patch"
-    return "none"
+    if any(c.get("severity") == BREAKING for c in changes):
+        return MAJOR
+    if any(c.get("severity") == ADDITIVE for c in changes):
+        return MINOR
+    if any(c.get("severity") == COSMETIC for c in changes):
+        return PATCH
+    return NO_BUMP
 
 
 def apply_bump(version, bump):
     """Return a new MAJOR.MINOR.PATCH string after applying the given bump kind."""
-    if bump == "none":
+    if bump == NO_BUMP:
         return version
     parts = version.split(".")
     if len(parts) != 3 or not all(p.isdigit() for p in parts):
         raise ValueError(f"version '{version}' is not semver MAJOR.MINOR.PATCH")
     major, minor, patch = (int(p) for p in parts)
-    if bump == "major":
+    if bump == MAJOR:
         return f"{major + 1}.0.0"
-    if bump == "minor":
+    if bump == MINOR:
         return f"{major}.{minor + 1}.0"
-    if bump == "patch":
+    if bump == PATCH:
         return f"{major}.{minor}.{patch + 1}"
     raise ValueError(f"unknown bump kind '{bump}'")
 
@@ -260,19 +288,11 @@ def print_changes(changes, *, header="Schema changes"):
         print("\nNo schema changes.")
         return
 
-    breaking = [c for c in changes if c["severity"] == "breaking"]
-    additive = [c for c in changes if c["severity"] == "additive"]
-    cosmetic = [c for c in changes if c["severity"] == "cosmetic"]
     print(f"\n{header} ({len(changes)}):")
-    if breaking:
-        print(f"  BREAKING ({len(breaking)}):")
-        for c in breaking:
-            print(f"    {render_change(c)}")
-    if additive:
-        print(f"  ADDITIVE ({len(additive)}):")
-        for c in additive:
-            print(f"    {render_change(c)}")
-    if cosmetic:
-        print(f"  COSMETIC ({len(cosmetic)}):")
-        for c in cosmetic:
+    for label, severity in (("BREAKING", BREAKING), ("ADDITIVE", ADDITIVE), ("COSMETIC", COSMETIC)):
+        bucket = [c for c in changes if c["severity"] == severity]
+        if not bucket:
+            continue
+        print(f"  {label} ({len(bucket)}):")
+        for c in bucket:
             print(f"    {render_change(c)}")

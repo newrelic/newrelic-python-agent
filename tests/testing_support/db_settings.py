@@ -244,6 +244,28 @@ def cassandra_settings():
     return settings
 
 
+def cosmos_settings():
+    """Return a list of dict of settings for connecting to CosmosDB.
+
+    Will return the correct settings, depending on which of the environments it
+    is running in. It attempts to set variables in the following order, where
+    later environments override earlier ones.
+
+        1. Local
+        2. Github Actions
+    """
+
+    host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "127.0.0.1"
+    settings = [
+        {
+            "url": f"https://{host}:8081",
+            # NOTE: This is not a secret key
+            "credential": "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==",
+        }
+    ]
+    return settings
+
+
 def firestore_settings():
     """Return a list of dict of settings for connecting to firestore.
 

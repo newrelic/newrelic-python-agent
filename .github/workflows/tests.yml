@@ -51,6 +51,7 @@ jobs:
       - windows_arm64
       - python
       - cassandra
+      - cosmosdb
       - elasticsearchserver07
       - elasticsearchserver08
       - firestore
@@ -533,6 +534,101 @@ jobs:
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
           git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          mkdir -p /github/home/.cache/pip
+          chown -R "$(whoami)" /github/home/.cache/pip
+
+      - name: Get Environments
+        id: get-envs
+        run: |
+          tox -l | python ./.github/scripts/get-envs.py
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
+
+      - name: Test
+        run: |
+          tox run-parallel \
+            -v -e ${{ steps.get-envs.outputs.envs }} \
+            --result-json=./.tox/${{ github.job }}-${{ matrix.group-number }}-${{ github.run_id }}-${{ job.check_run_id }}-results.json \
+            --exit-and-dump-after=900
+        env:
+          TOX_PARALLEL_NO_SPINNER: 1
+          FORCE_COLOR: "true"
+
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # 7.0.1
+        if: always()
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload Results Artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # 7.0.1
+        if: always()
+        with:
+          name: results-${{ github.job }}-${{ strategy.job-index }}
+          path: ./.tox/*-results.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  cosmosdb:
+    env:
+      TOTAL_GROUPS: 1
+
+    strategy:
+      fail-fast: false
+      matrix:
+        group-number: [1]
+
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
+    timeout-minutes: 30
+    services:
+      cosmosdb:
+        image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview
+        env:
+          PROTOCOL: https
+        ports:
+          - 8080:8080 # health/readiness port
+          - 8081:8081 # endpoint port
+        # Set health checks to wait until container has started
+        options: >-
+          --health-cmd "curl --silent --fail localhost:8080/ready | grep -q '\"ready\":\s*true' || exit 1"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 16
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # 7.0.1
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
+
+      - name: Check for port readiness by finding certificates
+        run: |
+          sudo mkdir -p /usr/local/share/ca-certificates/
+
+          # Add a timeout to avoid infinite loops
+          RETRIES=0
+          until curl -k -s https://cosmosdb:8081/_explorer/index.html > /dev/null; do
+            RETRIES=$((RETRIES + 1))
+            if [ "$RETRIES" -ge 30 ]; then
+              echo "ERROR: CosmosDB explorer not reachable after 60s"
+              exit 1
+            fi
+            sleep 2
+          done
 
       - name: Configure pip cache
         run: |

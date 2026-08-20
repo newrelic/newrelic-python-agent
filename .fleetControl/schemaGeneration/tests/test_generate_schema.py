@@ -408,11 +408,7 @@ class BuildPropertiesTests(unittest.TestCase):
         s.proxy_pass = "pass"  # noqa: S105
         s.app_name = "not a secret"
 
-        types = {
-            "api_key": {"type": "string"},
-            "proxy_user": {"type": "string"},
-            "proxy_pass": {"type": "string"},
-        }
+        types = {"api_key": {"type": "string"}, "proxy_user": {"type": "string"}, "proxy_pass": {"type": "string"}}
         props = gen.build_properties(s, {}, set(), {}, types)
         self.assertTrue(props["api_key"]["writeOnly"])
         self.assertTrue(props["proxy_user"]["writeOnly"])

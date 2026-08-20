@@ -82,12 +82,7 @@ def classify_changes(old_s, new_s, path=""):
     old_req = set(old_s.get("required") or [])
     new_req = set(new_s.get("required") or [])
     changes.extend(
-        {
-            "path": f"{path}.{k}" if path else k,
-            "kind": "required_added",
-            "severity": BREAKING,
-            "detail": "now required",
-        }
+        {"path": f"{path}.{k}" if path else k, "kind": "required_added", "severity": BREAKING, "detail": "now required"}
         for k in sorted(new_req - old_req)
     )
     changes.extend(
@@ -157,12 +152,7 @@ def classify_leaf(op, np, path):
     ne = np.get("enum")
     if oe is None and ne is not None:
         changes.append(
-            {
-                "path": path,
-                "kind": "enum_introduced",
-                "severity": BREAKING,
-                "detail": f"newly constrained to enum {ne}",
-            }
+            {"path": path, "kind": "enum_introduced", "severity": BREAKING, "detail": f"newly constrained to enum {ne}"}
         )
     elif oe is not None and ne is None:
         changes.append(

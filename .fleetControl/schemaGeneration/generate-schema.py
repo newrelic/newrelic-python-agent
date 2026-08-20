@@ -280,12 +280,7 @@ TYPE_OVERRIDES = {
 # `writeOnly: true` here so consumers can mask them on entry and
 # never echo a previously-submitted value back to the user.
 # ---------------------------------------------------------------------------
-WRITE_ONLY_KEYS = {
-    "license_key",
-    "api_key",
-    "proxy_user",
-    "proxy_pass",
-}
+WRITE_ONLY_KEYS = {"license_key", "api_key", "proxy_user", "proxy_pass"}
 
 # ---------------------------------------------------------------------------
 # Keys to exclude from the customer-facing schema.

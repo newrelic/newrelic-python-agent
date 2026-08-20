@@ -1087,7 +1087,8 @@ def test_langchain_chain_error_in_openai(
     monkeypatch,
 ):
     @reset_core_stats_engine()
-    @validate_transaction_error_event_count(1)
+    # Error count varies by langchain_openai version, versions >=1.6.0 reraise a new error and report two.
+    @validate_transaction_error_event_count(2)
     @validate_custom_event_count(count=6)
     @validate_custom_events(events_with_context_attrs(expected_events))
     @validate_transaction_metrics(
@@ -1488,7 +1489,8 @@ def test_async_langchain_chain_error_in_openai(
     loop,
 ):
     @reset_core_stats_engine()
-    @validate_transaction_error_event_count(1)
+    # Error count varies by langchain_openai version, versions >=1.6.0 reraise a new error and report two.
+    @validate_transaction_error_event_count(2)
     @validate_custom_event_count(count=6)
     @validate_custom_events(events_with_context_attrs(expected_events))
     @validate_transaction_metrics(

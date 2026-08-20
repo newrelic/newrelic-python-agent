@@ -111,8 +111,8 @@ def _get_package_version(name):
             _packages_distributions = importlib_metadata.packages_distributions()
 
         # Try to grab the package's distribution name, and fallback to just the package name if we can't find it.
-        distribution_names = _packages_distributions.get(name, [])
-        distribution_name = distribution_names[0] if distribution_names else name
+        distribution_names = _packages_distributions.get(name, [name])
+        distribution_name = distribution_names[0]
 
         version = importlib_metadata.version(distribution_name)
         if version not in NULL_VERSIONS:

@@ -618,7 +618,7 @@ class TransactionNode(_TransactionNode):
                 settings, base_attrs, parent_guid=self.parent_span, attr_class=attr_class
             )
         else:
-            ct_exit_spans = {"instrumented": 0, "kept": 0, "dropped_ids": 0}
+            ct_exit_spans = {"instrumented": 0, "kept": 0, "dropped_ids": 0, "dropped_span_links": 0}
             partial_type = settings.distributed_tracing.sampler.partial_granularity.type
             # Get the appropriate span_event method for the partial granularity type.
             # If the type does not exist fallback on the default "essential".
@@ -626,23 +626,11 @@ class TransactionNode(_TransactionNode):
                 partial_type, self.root.PARTIAL_GRANULARITY_SPAN_EVENT_METHODS["essential"]
             )
             # In corner case scenarios where there is a harvest while spans are being added
-            # to the reservoir, a compact span may be sent before its agent attributes have
-            # been updated. This is solved by cacheing all spans in compact mode and not
-            # adding them to the reservoir until all spans are touched.
-            if partial_type == "compact":
-                events = list(
-                    self.root.span_events_partial_granularity(
-                        settings,
-                        span_event_method,
-                        base_attrs,
-                        parent_guid=self.parent_span,
-                        attr_class=attr_class,
-                        ct_exit_spans=ct_exit_spans,
-                    )
-                )
-                yield from events
-            else:
-                yield from self.root.span_events_partial_granularity(
+            # to the reservoir, a compact or span with links may be sent before its agent
+            # attributes (including links) have been updated. This is solved by cacheing all
+            # spans and not adding them to the reservoir until all spans are touched.
+            events = list(
+                self.root.span_events_partial_granularity(
                     settings,
                     span_event_method,
                     base_attrs,
@@ -650,6 +638,8 @@ class TransactionNode(_TransactionNode):
                     attr_class=attr_class,
                     ct_exit_spans=ct_exit_spans,
                 )
+            )
+            yield from events
             # If this transaction is partial granularity sampled, record the number of spans
             # instrumented and the number of spans kept to monitor cost savings of partial
             # granularity tracing.
@@ -657,3 +647,4 @@ class TransactionNode(_TransactionNode):
             self.spans_instrumented = ct_exit_spans["instrumented"]
             self.spans_kept = ct_exit_spans["kept"]
             self.partial_granularity_dropped_ids = ct_exit_spans["dropped_ids"]
+            self.partial_granularity_dropped_span_links = ct_exit_spans["dropped_span_links"]

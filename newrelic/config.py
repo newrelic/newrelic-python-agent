@@ -283,7 +283,7 @@ def _raise_configuration_error(section, option=None):
         options = _config_object.options(section)
 
         _logger.error("Options = %s", options)
-        _logger.exception("Exception Details")
+        _logger.exception("Exception Details")  # noqa: LOG004
 
         if not _ignore_errors:
             if section:
@@ -296,7 +296,7 @@ def _raise_configuration_error(section, option=None):
 
     else:
         _logger.error("Option = %s", option)
-        _logger.exception("Exception Details")
+        _logger.exception("Exception Details")  # noqa: LOG004
 
         if not _ignore_errors:
             if section:
@@ -1359,7 +1359,7 @@ def _raise_instrumentation_error(instrumentation_type, locals_dict):
     _logger.error("INSTRUMENTATION ERROR")
     _logger.error("Type = %s", instrumentation_type)
     _logger.error("Locals = %s", locals_dict)
-    _logger.exception("Exception Details")
+    _logger.exception("Exception Details")  # noqa: LOG004
 
     if not _ignore_errors:
         raise newrelic.api.exceptions.InstrumentationError(

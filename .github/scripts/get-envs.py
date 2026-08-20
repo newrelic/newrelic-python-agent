@@ -29,7 +29,7 @@ def main(stdin):
     filtered_envs = [env for env in environments if env.startswith(GITHUB_JOB + "-")]
     grouped_envs = filtered_envs[GROUP_NUMBER::TOTAL_GROUPS]
 
-    # If not environments are found, raise an error with helpful information.
+    # If environments are not found, raise an error with helpful information.
     if not grouped_envs:
         error_msg = dedent(f"""
             No matching environments found.
@@ -41,7 +41,7 @@ def main(stdin):
             filtered_envs = {filtered_envs}
             grouped_envs = {grouped_envs}
         """)
-        raise RuntimeError(error_msg(environments))
+        raise RuntimeError(error_msg)
 
     # Output results to GITHUB_OUTPUT for use in later steps.
     if GITHUB_OUTPUT:

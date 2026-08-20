@@ -405,7 +405,7 @@ class BuildPropertiesTests(unittest.TestCase):
         s = FakeSettings()
         s.api_key = "secret-key"
         s.proxy_user = "user"
-        s.proxy_pass = "pass"
+        s.proxy_pass = "pass"  # noqa: S105
         s.app_name = "not a secret"
 
         types = {

@@ -118,9 +118,7 @@ def build_agent():
             kwargs["max_retry_limit"] = max_retry_limit
         if max_iter is not None:
             kwargs["max_iter"] = max_iter
-        return Agent(
-            role=AGENT_NAME, goal=AGENT_GOAL, backstory=AGENT_BACKSTORY, llm=llm, tools=tools or [], **kwargs
-        )
+        return Agent(role=AGENT_NAME, goal=AGENT_GOAL, backstory=AGENT_BACKSTORY, llm=llm, tools=tools or [], **kwargs)
 
     return _build_agent
 
@@ -128,12 +126,7 @@ def build_agent():
 @pytest.fixture
 def build_crew(build_agent):
     def _build_crew(
-        llm,
-        tools=None,
-        description=PROMPT,
-        expected_output="One word.",
-        max_retry_limit=None,
-        max_iter=None,
+        llm, tools=None, description=PROMPT, expected_output="One word.", max_retry_limit=None, max_iter=None
     ):
         """Return a single-agent Crew. A Crew routes work through Agent.execute_task and ToolUsage."""
         agent = build_agent(llm, tools=tools, max_retry_limit=max_retry_limit, max_iter=max_iter)

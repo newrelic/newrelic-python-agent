@@ -31,7 +31,6 @@ from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import transient_function_wrapper
 
-
 EXPECTED_SYNC_TOOL_METRIC = (f"Llm/tool/CrewAI/crewai.tools.tool_usage:ToolUsage._use/{TOOL_NAME}", 1)
 EXPECTED_ASYNC_TOOL_METRIC = (f"Llm/tool/CrewAI/crewai.tools.tool_usage:ToolUsage._ause/{TOOL_NAME}", 1)
 

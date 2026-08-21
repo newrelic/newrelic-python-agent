@@ -35,7 +35,7 @@ EXPECTED_TOOL_METRIC = (
 
 # 11 events:
 #  * 1 LlmTool
-#  * 2 LlmChatCompletionSummary, one per LLM round-trip (tool call, then final answer)
+#  * 2 LlmChatCompletionSummary, one per LLM round-trip
 #  * 8 LlmChatCompletionMessage across those two round-trips
 EXPECTED_EVENT_COUNT = 11
 

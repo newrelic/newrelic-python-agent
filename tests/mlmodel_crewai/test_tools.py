@@ -28,18 +28,13 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
 from newrelic.api.background_task import background_task
 from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 
-# This suite covers the ReAct (text) tool path, which routes tool execution through
-# crewai.tools.tool_usage.ToolUsage. The crewai_llm fixture is what forces the agent onto it --
-# see its docstring in conftest.py. The native function-calling path is covered by
-# test_tools_native.py.
-
 
 EXPECTED_SYNC_TOOL_METRIC = (f"Llm/tool/CrewAI/crewai.tools.tool_usage:ToolUsage._use/{TOOL_NAME}", 1)
 EXPECTED_ASYNC_TOOL_METRIC = (f"Llm/tool/CrewAI/crewai.tools.tool_usage:ToolUsage._ause/{TOOL_NAME}", 1)
 
 # 10 events:
 #  * 1 LlmTool
-#  * 2 LlmChatCompletionSummary, one per LLM round-trip (tool call, then final answer)
+#  * 2 LlmChatCompletionSummary, one per LLM round-trip
 #  * 7 LlmChatCompletionMessage across those two round-trips
 EXPECTED_EVENT_COUNT = 10
 
@@ -84,10 +79,6 @@ def test_tool_async(build_crew, crewai_llm, set_trace_info, loop):
     set_trace_info()
     crew = build_crew(crewai_llm, tools=[get_capital], description=TOOL_PROMPT)
     with WithLlmCustomAttributes({"context": "attr"}):
-        # Crew.akickoff is used rather than Crew.kickoff_async: the latter is a thread-pool wrapper
-        # (asyncio.to_thread(self.kickoff)), so it runs the synchronous loop in a worker thread where the
-        # thread-local transaction is not visible and no instrumentation runs at all. akickoff drives the
-        # genuine coroutine path: Agent.aexecute_task -> CrewAgentExecutor.ainvoke -> _ainvoke_loop.
         result = loop.run_until_complete(crew.akickoff())
     assert "Paris" in str(result)
 

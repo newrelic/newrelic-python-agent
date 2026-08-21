@@ -36,8 +36,7 @@ _logger = logging.getLogger(__name__)
 
 
 def _get_tool_name(tool, calling):
-    # The tool name lives on both the resolved tool and the calling object;
-    # prefer the tool itself and fall back to the calling object.
+    # The tool name lives on both the resolved tool and the calling object
     return getattr(tool, "name", None) or getattr(calling, "tool_name", None) or "tool"
 
 
@@ -168,18 +167,7 @@ def _record_tool_success(transaction, settings, tool_event_dict, ft, return_val)
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
 
 
-def instrument_crewai_tools_tool_usage(module):
-    if hasattr(module, "ToolUsage"):
-        if hasattr(module.ToolUsage, "_use"):
-            wrap_function_wrapper(module, "ToolUsage._use", wrap_tool_usage__use)
-        if hasattr(module.ToolUsage, "_ause"):
-            wrap_function_wrapper(module, "ToolUsage._ause", wrap_tool_usage__ause)
-
-
 def wrap_tool_usage_event_init(wrapped, instance, args, kwargs):
-    # Runs synchronously, in-line with whichever code constructed the event (e.g.
-    # CrewAgentExecutor._handle_native_tool_calls), so it's a safe place to capture the
-    # already-parsed tool name/args/output/error that crewai packages onto these events,
     wrapped(*args, **kwargs)
 
     transaction = current_transaction()
@@ -222,7 +210,7 @@ def _construct_native_tool_event_dict(event, tool_id, transaction, settings, lin
 
 def wrap_crew_agent_executor__handle_native_tool_calls(wrapped, instance, args, kwargs):
     # Covers the native function-calling tool path, which is the default for OpenAI/Anthropic/
-    # Gemini/Azure/Bedrock models in current crewai versions and bypasses ToolUsage entirely
+    # Gemini/Azure/Bedrock models in current CrewAI versions and bypasses ToolUsage entirely
     transaction = current_transaction()
     if not transaction:
         return wrapped(*args, **kwargs)
@@ -262,8 +250,7 @@ def wrap_crew_agent_executor__handle_native_tool_calls(wrapped, instance, args, 
     else:
         transaction._nr_crewai_native_tool_events = previous_events
 
-    # _handle_native_tool_calls emits ToolUsageErrorEvent AND (unconditionally) ToolUsageFinishedEvent
-    # on a tool failure, so prefer the error event when both are present.
+    # _handle_native_tool_calls emits ToolUsageErrorEvent and ToolUsageFinishedEvent
     error_event = next((e for e in captured_events if type(e).__name__ == "ToolUsageErrorEvent"), None)
     finished_event = error_event or next(
         (e for e in captured_events if type(e).__name__ == "ToolUsageFinishedEvent"), None
@@ -280,8 +267,6 @@ def wrap_crew_agent_executor__handle_native_tool_calls(wrapped, instance, args, 
     )
     tool_event_dict["duration"] = ft.duration * 1000
     if error_event is not None:
-        # crewai catches native tool-call errors internally and never raises them, so there is
-        # no transaction error to notice here -- only this event's error flag signals failure.
         tool_event_dict["error"] = True
     elif settings.ai_monitoring.record_content.enabled and finished_event is not None:
         output = getattr(finished_event, "output", None)
@@ -301,3 +286,11 @@ def instrument_crewai_agents_crew_agent_executor(module):
         wrap_function_wrapper(
             module, "CrewAgentExecutor._handle_native_tool_calls", wrap_crew_agent_executor__handle_native_tool_calls
         )
+
+
+def instrument_crewai_tools_tool_usage(module):
+    if hasattr(module, "ToolUsage"):
+        if hasattr(module.ToolUsage, "_use"):
+            wrap_function_wrapper(module, "ToolUsage._use", wrap_tool_usage__use)
+        if hasattr(module.ToolUsage, "_ause"):
+            wrap_function_wrapper(module, "ToolUsage._ause", wrap_tool_usage__ause)

@@ -45,8 +45,6 @@ def instance_info(args, kwargs):
             host = server_string
             port = None
 
-
-
         database = result.get("database")
     except Exception:
         host = port = database = None

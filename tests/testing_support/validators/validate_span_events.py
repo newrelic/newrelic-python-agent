@@ -85,7 +85,10 @@ def validate_span_events(
                 raise
             else:
                 if not instance.settings.infinite_tracing.enabled:
-                    events = [event for priority, seen_at, event in instance.span_events.pq]
+                    events = [
+                        event if isinstance(event[0], dict) else event[0]
+                        for priority, seen_at, event in instance.span_events.pq
+                    ]
 
                 recorded_span_events.append(events)
 
@@ -99,6 +102,10 @@ def validate_span_events(
         mismatches = []
         matching_span_events = 0
         for captured_event in captured_events:
+            # if isinstance(event[0], dict):
+            #    captured_event = event
+            # else:
+            #    captured_event = event[0]
             if Span and isinstance(captured_event, Span):
                 intrinsics = captured_event.intrinsics
                 user_attrs = captured_event.user_attributes

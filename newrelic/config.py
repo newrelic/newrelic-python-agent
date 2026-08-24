@@ -283,7 +283,7 @@ def _raise_configuration_error(section, option=None):
         options = _config_object.options(section)
 
         _logger.error("Options = %s", options)
-        _logger.exception("Exception Details")
+        _logger.exception("Exception Details")  # noqa: LOG004
 
         if not _ignore_errors:
             if section:
@@ -296,7 +296,7 @@ def _raise_configuration_error(section, option=None):
 
     else:
         _logger.error("Option = %s", option)
-        _logger.exception("Exception Details")
+        _logger.exception("Exception Details")  # noqa: LOG004
 
         if not _ignore_errors:
             if section:
@@ -1359,7 +1359,7 @@ def _raise_instrumentation_error(instrumentation_type, locals_dict):
     _logger.error("INSTRUMENTATION ERROR")
     _logger.error("Type = %s", instrumentation_type)
     _logger.error("Locals = %s", locals_dict)
-    _logger.exception("Exception Details")
+    _logger.exception("Exception Details")  # noqa: LOG004
 
     if not _ignore_errors:
         raise newrelic.api.exceptions.InstrumentationError(
@@ -3023,6 +3023,8 @@ def _process_module_builtin_defaults():
 
     _process_module_definition("httpx._client", "newrelic.hooks.external_httpx", "instrument_httpx_client")
 
+    _process_module_definition("httpx2._client", "newrelic.hooks.external_httpx2", "instrument_httpx2_client")
+
     _process_module_definition("gluon.contrib.feedparser", "newrelic.hooks.external_feedparser")
     _process_module_definition("gluon.contrib.memcache.memcache", "newrelic.hooks.memcache_memcache")
 
@@ -4523,6 +4525,36 @@ def _process_module_builtin_defaults():
 
     _process_module_definition(
         "opentelemetry.instrumentation.pika.utils", "newrelic.hooks.hybridagent_opentelemetry", "instrument_pika_utils"
+    )
+
+    _process_module_definition(
+        "azure.cosmos.cosmos_client", "newrelic.hooks.datastore_azurecosmos", "instrument_cosmos_client"
+    )
+
+    _process_module_definition(
+        "azure.cosmos.database", "newrelic.hooks.datastore_azurecosmos", "instrument_cosmos_database"
+    )
+
+    _process_module_definition(
+        "azure.cosmos.container", "newrelic.hooks.datastore_azurecosmos", "instrument_cosmos_container"
+    )
+
+    _process_module_definition("azure.cosmos.user", "newrelic.hooks.datastore_azurecosmos", "instrument_cosmos_user")
+
+    _process_module_definition(
+        "azure.cosmos.aio._cosmos_client", "newrelic.hooks.datastore_azurecosmos", "instrument_cosmos_aio_client"
+    )
+
+    _process_module_definition(
+        "azure.cosmos.aio._database", "newrelic.hooks.datastore_azurecosmos", "instrument_cosmos_aio_database"
+    )
+
+    _process_module_definition(
+        "azure.cosmos.aio._container", "newrelic.hooks.datastore_azurecosmos", "instrument_cosmos_aio_container"
+    )
+
+    _process_module_definition(
+        "azure.cosmos.aio._user", "newrelic.hooks.datastore_azurecosmos", "instrument_cosmos_aio_user"
     )
 
 

@@ -50,7 +50,7 @@ def instance_info(args, kwargs):
         host = port = database = None
 
     return host, port, database
-    
+
 
 class CursorWrapper(DBAPI2CursorWrapper):
     def __enter__(self):

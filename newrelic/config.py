@@ -3288,7 +3288,9 @@ def _process_module_builtin_defaults():
 
     _process_module_definition("pymssql", "newrelic.hooks.database_pymssql", "instrument_pymssql")
 
-    _process_module_definition("mssql_python.db_connection", "newrelic.hooks.database_mssqlpython", "instrument_mssqlpython")
+    _process_module_definition(
+        "mssql_python.db_connection", "newrelic.hooks.database_mssqlpython", "instrument_mssqlpython"
+    )
 
     _process_module_definition("psycopg", "newrelic.hooks.database_psycopg", "instrument_psycopg")
     _process_module_definition("psycopg.sql", "newrelic.hooks.database_psycopg", "instrument_psycopg_sql")

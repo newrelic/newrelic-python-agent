@@ -25,6 +25,7 @@ from newrelic.api.background_task import background_task
 def mssql_python():
     """Delay package import to execution time rather than import time."""
     import mssql_python
+
     return mssql_python
 
 

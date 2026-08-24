@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import pytest
-
 from testing_support.db_settings import mssql_settings
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
@@ -47,4 +46,3 @@ def version():
 def connection_string():
     conn_string = f"Server={DB_SETTINGS['host']},{DB_SETTINGS['port']};UID={DB_SETTINGS['user']};PWD={DB_SETTINGS['password']};Encrypt=yes;TrustServerCertificate=yes;"
     return conn_string
-

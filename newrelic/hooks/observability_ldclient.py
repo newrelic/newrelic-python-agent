@@ -34,7 +34,6 @@ def _create_NewRelicHook():
 
         def after_evaluation(self, series_context, data, detail):
             try:
-                _logger.info("Attaching data to NR span")
                 attrs = {
                   'feature_flag.key': series_context.key,
                   'feature_flag.provider.name': 'LaunchDarkly',
@@ -68,20 +67,14 @@ def _nr_wrapper_Config___init__(wrapped, instance, args, kwargs):
             bound_args["hooks"] = [nr_hook]
         else:
             bound_args["hooks"].append(nr_hook)
+        return wrapped(**bound_args)
     except Exception:
         _logger.error("Failed to add New Relic hook to Launch Darkly hooks list. Please report this issue to New Relic Support.", exc_info=True)
+        return wrapped(instance, *args, **kwargs)
 
-    return wrapped(**bound_args)
 
 def _nr_wrapper_Client___init__(wrapped, instance, args, kwargs):
     return_val =  wrapped(*args, **kwargs)
-
-    #hook_present = False
-    #for hook in reversed(instance._hooks):
-    #    if isinstance(hook, NewRelicHook):
-    #        hook_present == True
-    #if not hook_present:
-    #    _logger.warning("Failed to add New Relic hook to Launch Darkly hooks list. Please report this issue to New Relic Support.")
 
     global OBSERVABILITY_PLUGIN_REGISTERED
     if not OBSERVABILITY_PLUGIN_REGISTERED:

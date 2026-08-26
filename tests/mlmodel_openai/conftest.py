@@ -58,8 +58,9 @@ if OPENAI_VERSION < (1, 0):
         # The Responses API only exists in openai v1+.
         "test_responses.py",
         "test_responses_error.py",
-        "test_responses_stream.py",
+        "test_responses_parse.py",
         "test_responses_stream_error.py",
+        "test_responses_stream.py",
     ]
 else:
     collect_ignore = [

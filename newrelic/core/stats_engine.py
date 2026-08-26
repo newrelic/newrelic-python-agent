@@ -1190,17 +1190,15 @@ class StatsEngine:
 
         if settings.distributed_tracing.enabled and settings.span_events.enabled and settings.collect_span_events:
 
-            from newrelic.core.agent import agent_instance
             from ldobserve import observe
             from opentelemetry.trace.span import SpanContext, TraceFlags, TraceState
-            agent = agent_instance()
-            tracer = agent._tracer_provider.get_tracer(__name__)
+
             # Send span data to Darkly
             for event in transaction.span_events(self.__settings):
                 if isinstance(event[-1], dict):
                     i_attrs, a_attrs, u_attrs = event
                 else:
-                    base_event, span_links, span_event_events = event
+                    base_event, _ = event
                     i_attrs, a_attrs, u_attrs = base_event
                 # Skip spans that originally came from OTel.
                 if "otel.scope.name" not in a_attrs:

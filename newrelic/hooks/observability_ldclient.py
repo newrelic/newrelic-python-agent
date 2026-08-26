@@ -18,7 +18,6 @@ from newrelic.common.signature import bind_args
 from newrelic.api.time_trace import current_trace
 
 _logger = logging.getLogger(__name__)
-global OBSERVABILITY_PLUGIN_REGISTERED
 OBSERVABILITY_PLUGIN_REGISTERED = False
 
 def _create_NewRelicHook():
@@ -53,7 +52,7 @@ def _create_NewRelicHook():
                 for key, value in attrs.items():
                     trace.add_custom_attribute(key, value)
             except Exception as e:
-                _logger.error("[newrelic-hook] failed to enrich span", exc_info=True)
+                _logger.exception("[newrelic-hook] failed to enrich span")
             return data
     return NewRelicHook()
 
@@ -69,7 +68,7 @@ def _nr_wrapper_Config___init__(wrapped, instance, args, kwargs):
             bound_args["hooks"].append(nr_hook)
         return wrapped(**bound_args)
     except Exception:
-        _logger.error("Failed to add New Relic hook to Launch Darkly hooks list. Please report this issue to New Relic Support.", exc_info=True)
+        _logger.exception("Failed to add New Relic hook to Launch Darkly hooks list. Please report this issue to New Relic Support.")
         return wrapped(instance, *args, **kwargs)
 
 

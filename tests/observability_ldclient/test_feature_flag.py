@@ -95,7 +95,6 @@ def initialize_ldclient():
         'feature_flag.context.id': "send-request",
         'feature_flag.result.variationIndex': 0,
         'feature_flag.result.reason.kind': "FALLTHROUGH",
-        #'feature_flag.result.reason.inExperiment': True,
         'feature_flag.result.value': True,
     }
 )

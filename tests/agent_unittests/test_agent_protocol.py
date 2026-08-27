@@ -94,7 +94,7 @@ def override_utilization(monkeypatch):
         "cloud_region": "Central US",
     }
     AZUREAPPSERVICE = {
-        "cloud_resource_id": "/subscriptions/b999997b-cb91-49e0-b922-c9188372bdba/resourceGroups/my-resource-group/providers/Microsoft.Web/sites/my-azure-service-app",
+        "cloud_resource_id": "/subscriptions/b999997b-cb91-49e0-b922-c9188372bdba/resourceGroups/my-resource-group/providers/Microsoft.Web/sites/my-azure-service-app"
     }
 
     @classmethod
@@ -301,7 +301,17 @@ def connect_payload_asserts(
         assert "ip_address" not in payload_data["utilization"]
 
     utilization_len = utilization_len + any(
-        [with_aws, with_ecs, with_pcf, with_gcp, with_azure, with_docker, with_kubernetes, with_azurefunction, with_azureappservice]
+        [
+            with_aws,
+            with_ecs,
+            with_pcf,
+            with_gcp,
+            with_azure,
+            with_docker,
+            with_kubernetes,
+            with_azurefunction,
+            with_azureappservice,
+        ]
     )
     assert len(payload_data["utilization"]) == utilization_len
     assert payload_data["utilization"]["hostname"] == HOST
@@ -384,7 +394,16 @@ def connect_payload_asserts(
     ],
 )
 def test_connect(
-    with_aws, with_ecs, with_pcf, with_gcp, with_azure, with_azurefunction, with_azureappservice, with_docker, with_kubernetes, with_ip
+    with_aws,
+    with_ecs,
+    with_pcf,
+    with_gcp,
+    with_azure,
+    with_azurefunction,
+    with_azureappservice,
+    with_docker,
+    with_kubernetes,
+    with_ip,
 ):
     global AWS, AZURE, AZUREFUNCTION, AZUREAPPSERVICE, GCP, PCF, DOCKER, KUBERNETES, IP_ADDRESS
 

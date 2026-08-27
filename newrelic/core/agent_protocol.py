@@ -23,8 +23,8 @@ from newrelic.common.agent_http import ApplicationModeClient, ServerlessModeClie
 from newrelic.common.encoding_utils import json_decode, json_encode, serverless_payload_encode
 from newrelic.common.utilization import (
     AWSUtilization,
-    AzureFunctionUtilization,
     AzureAppServiceUtilization,
+    AzureFunctionUtilization,
     AzureUtilization,
     DockerUtilization,
     ECSUtilization,

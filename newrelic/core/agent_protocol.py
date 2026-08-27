@@ -24,6 +24,7 @@ from newrelic.common.encoding_utils import json_decode, json_encode, serverless_
 from newrelic.common.utilization import (
     AWSUtilization,
     AzureFunctionUtilization,
+    AzureAppServiceUtilization,
     AzureUtilization,
     DockerUtilization,
     ECSUtilization,
@@ -352,6 +353,8 @@ class AgentProtocol:
             vendors.append(AzureUtilization)
         if settings["utilization.detect_azurefunction"]:
             vendors.append(AzureFunctionUtilization)
+        if settings["utilization.detect_azureappservice"]:
+            vendors.append(AzureAppServiceUtilization)
 
         for vendor in vendors:
             metadata = vendor.detect()

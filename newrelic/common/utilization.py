@@ -245,7 +245,7 @@ class AzureFunctionUtilization(CommonUtilization):
                     resource_group_name = AZURE_RESOURCE_GROUP_NAME_RE.search(website_owner_name).group(1)
                 else:
                     resource_group_name = AZURE_RESOURCE_GROUP_NAME_PARTIAL_RE.search(website_owner_name).group(1)
-                subscription_id = re.search(r"(?:(?!\+).)*", website_owner_name).group(0)
+                subscription_id = re.search(r"([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})", website_owner_name).group(0)
                 faas_app_name = f"/subscriptions/{subscription_id}/resourceGroups/{resource_group_name}/providers/Microsoft.Web/sites/{azure_function_app_name}"
                 # Only send if all values are present
                 return (faas_app_name, cloud_region)
@@ -268,6 +268,36 @@ class AzureFunctionUtilization(CommonUtilization):
                 v = v.decode("utf-8")
             values[k] = v
         return values
+
+
+class AzureAppServiceUtilization(CommonUtilization):
+    METADATA_HOST = "169.254.169.254"
+    METADATA_PATH = "/metadata/instance/compute"
+    METADATA_QUERY = {"api-version": "2017-03-01"}  # noqa: RUF012
+    EXPECTED_KEYS = ("cloud.resource_id")
+    HEADERS = {"Metadata": "true"}  # noqa: RUF012
+    VENDOR_NAME = "azureappservice"
+
+    @classmethod
+    def fetch(cls):
+        website_resource_group_name = os.environ.get("WEBSITE_RESOURCE_GROUP")
+        website_owner_name = os.environ.get("WEBSITE_OWNER_NAME")
+        azure_service_app_name = os.environ.get("WEBSITE_SITE_NAME")
+
+        if all((website_resource_group_name, website_owner_name, azure_service_app_name)):
+            try:
+                subscription_id = re.search(r"([0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12})", website_owner_name).group(0)
+                if subscription_id: 
+                    cloud_resource_id = f"/subscriptions/{subscription_id}/resourceGroups/{website_resource_group_name}/providers/Microsoft.Web/sites/{azure_service_app_name}"
+                    return cloud_resource_id
+                raise Exception
+            except Exception:
+                _logger.debug(
+                    "Unable to determine Azure App Services subscription id from WEBSITE_OWNER_NAME. %r",
+                    website_owner_name,
+                )
+
+        return None
 
 
 class GCPUtilization(CommonUtilization):

@@ -40,7 +40,7 @@ from newrelic.network.exceptions import (
 
 # Global constants used in tests
 APP_NAME = "test_app"
-IP_ADDRESS = AWS = AZURE = ECS = GCP = PCF = BOOT_ID = DOCKER = KUBERNETES = AZUREFUNCTION = None
+IP_ADDRESS = AWS = AZURE = ECS = GCP = PCF = BOOT_ID = DOCKER = KUBERNETES = AZUREFUNCTION = AZUREAPPSERVICE = None
 BROWSER_MONITORING_DEBUG = "debug"
 BROWSER_MONITORING_LOADER = "loader"
 CAPTURE_PARAMS = "capture_params"
@@ -80,7 +80,7 @@ def clear_sent_values():
 
 @pytest.fixture(autouse=True)
 def override_utilization(monkeypatch):
-    global AWS, AZURE, ECS, GCP, PCF, BOOT_ID, DOCKER, KUBERNETES, AZUREFUNCTION
+    global AWS, AZURE, ECS, GCP, PCF, BOOT_ID, DOCKER, KUBERNETES, AZUREFUNCTION, AZUREAPPSERVICE
     AWS = {"id": "foo", "type": "bar", "zone": "baz"}
     AZURE = {"location": "foo", "name": "bar", "vmId": "baz", "vmSize": "boo"}
     ECS = {"ecsDockerId": "foobar"}
@@ -92,6 +92,9 @@ def override_utilization(monkeypatch):
     AZUREFUNCTION = {
         "faas_app_name": "/subscriptions/b999997b-cb91-49e0-b922-c9188372bdba/resourceGroups/my-resource-group/providers/Microsoft.Web/sites/my-azure-function-app",
         "cloud_region": "Central US",
+    }
+    AZUREAPPSERVICE = {
+        "cloud_resource_id": "/subscriptions/b999997b-cb91-49e0-b922-c9188372bdba/resourceGroups/my-resource-group/providers/Microsoft.Web/sites/my-azure-service-app",
     }
 
     @classmethod
@@ -106,6 +109,8 @@ def override_utilization(monkeypatch):
             output = ECS
         elif name.startswith("AzureFunction"):
             output = AZUREFUNCTION
+        elif name.startswith("AzureApp"):
+            output = AZUREAPPSERVICE
         elif name.startswith("Azure"):
             output = AZURE
         elif name.startswith("ECS"):
@@ -261,6 +266,7 @@ def connect_payload_asserts(
     with_docker=True,
     with_kubernetes=True,
     with_azurefunction=True,
+    with_azureappservice=True,
 ):
     payload_data = payload[0]
 
@@ -295,7 +301,7 @@ def connect_payload_asserts(
         assert "ip_address" not in payload_data["utilization"]
 
     utilization_len = utilization_len + any(
-        [with_aws, with_ecs, with_pcf, with_gcp, with_azure, with_docker, with_kubernetes, with_azurefunction]
+        [with_aws, with_ecs, with_pcf, with_gcp, with_azure, with_docker, with_kubernetes, with_azurefunction, with_azureappservice]
     )
     assert len(payload_data["utilization"]) == utilization_len
     assert payload_data["utilization"]["hostname"] == HOST
@@ -313,7 +319,7 @@ def connect_payload_asserts(
     assert harvest_limits["error_event_data"] == ERROR_EVENT_DATA
 
     vendors_len = 0
-    if any([with_aws, with_pcf, with_gcp, with_azure, with_azurefunction]):
+    if any([with_aws, with_pcf, with_gcp, with_azure, with_azurefunction, with_azureappservice]):
         vendors_len += 1
 
     if with_ecs:
@@ -339,6 +345,8 @@ def connect_payload_asserts(
             assert payload_data["utilization"]["vendors"]["azure"] == AZURE
         elif with_azurefunction:
             assert payload_data["utilization"]["vendors"]["azurefunction"] == AZUREFUNCTION
+        elif with_azureappservice:
+            assert payload_data["utilization"]["vendors"]["azureappservice"] == AZUREAPPSERVICE
 
         if with_ecs:
             assert payload_data["utilization"]["vendors"]["ecs"] == ECS
@@ -353,30 +361,32 @@ def connect_payload_asserts(
 
 
 @pytest.mark.parametrize(
-    "with_aws,with_ecs,with_pcf,with_gcp,with_azure,with_azurefunction,with_docker,with_kubernetes,with_ip",
+    "with_aws,with_ecs,with_pcf,with_gcp,with_azure,with_azurefunction,with_azureappservice,with_docker,with_kubernetes,with_ip",
     [
-        (False, False, False, False, False, False, False, False, False),
-        (False, False, False, False, False, False, False, False, True),
-        (True, True, False, False, False, False, True, False, True),
-        (True, True, False, False, False, False, True, True, True),
-        (False, False, True, False, False, False, True, True, True),
-        (False, False, False, True, False, False, True, True, True),
-        (False, False, False, False, True, False, True, True, True),
-        (False, False, False, False, False, True, True, True, True),
-        (True, True, False, False, False, False, False, False, True),
-        (False, False, True, False, False, False, False, False, True),
-        (False, False, False, True, False, False, False, False, True),
-        (False, False, False, False, True, False, False, False, True),
-        (False, False, False, False, False, True, False, False, True),
-        (True, True, True, True, True, True, True, True, True),
-        (True, True, True, True, True, True, True, False, True),
-        (True, True, True, True, True, True, False, True, True),
+        (False, False, False, False, False, False, False, False, False, False),
+        (False, False, False, False, False, False, False, False, False, True),
+        (True, True, False, False, False, False, False, True, False, True),
+        (True, True, False, False, False, False, False, True, True, True),
+        (False, False, True, False, False, False, False, True, True, True),
+        (False, False, False, True, False, False, False, True, True, True),
+        (False, False, False, False, True, False, False, True, True, True),
+        (False, False, False, False, False, True, False, True, True, True),
+        (False, False, False, False, False, False, True, True, True, True),
+        (True, True, False, False, False, False, False, False, False, True),
+        (False, False, True, False, False, False, False, False, False, True),
+        (False, False, False, True, False, False, False, False, False, True),
+        (False, False, False, False, True, False, False, False, False, True),
+        (False, False, False, False, False, True, False, False, False, True),
+        (False, False, False, False, False, False, True, False, False, True),
+        (True, True, True, True, True, True, True, True, True, True),
+        (True, True, True, True, True, True, True, True, False, True),
+        (True, True, True, True, True, True, True, False, True, True),
     ],
 )
 def test_connect(
-    with_aws, with_ecs, with_pcf, with_gcp, with_azure, with_azurefunction, with_docker, with_kubernetes, with_ip
+    with_aws, with_ecs, with_pcf, with_gcp, with_azure, with_azurefunction, with_azureappservice, with_docker, with_kubernetes, with_ip
 ):
-    global AWS, AZURE, AZUREFUNCTION, GCP, PCF, DOCKER, KUBERNETES, IP_ADDRESS
+    global AWS, AZURE, AZUREFUNCTION, AZUREAPPSERVICE, GCP, PCF, DOCKER, KUBERNETES, IP_ADDRESS
 
     if sys.platform == "win32":
         # Docker utilization is not supported on Windows.
@@ -399,6 +409,8 @@ def test_connect(
         KUBERNETES = Exception
     if not with_azurefunction:
         AZUREFUNCTION = Exception
+    if not with_azureappservice:
+        AZUREAPPSERVICE = Exception
     if not with_ip:
         IP_ADDRESS = None
     settings = finalize_application_settings(
@@ -417,6 +429,7 @@ def test_connect(
             "utilization.detect_docker": with_docker,
             "utilization.detect_kubernetes": with_kubernetes,
             "utilization.detect_azurefunction": with_azurefunction,
+            "utilization.detect_azureappservice": with_azureappservice,
             "event_harvest_config": {
                 "harvest_limits": {
                     "analytic_event_data": ANALYTIC_EVENT_DATA,
@@ -451,6 +464,7 @@ def test_connect(
         with_docker=with_docker,
         with_kubernetes=with_kubernetes,
         with_azurefunction=with_azurefunction,
+        with_azureappservice=with_azureappservice,
     )
 
     # Verify agent_settings call is done with the finalized settings

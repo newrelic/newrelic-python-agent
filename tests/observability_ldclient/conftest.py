@@ -26,6 +26,7 @@ _default_settings = {
     "debug.record_transaction_failure": True,
     "opentelemetry.enabled": True,
     "opentelemetry.traces.enabled": True,
+    "launch_darkly_integration.enabled": True,
 }
 
 collector_agent_registration = collector_agent_registration_fixture(

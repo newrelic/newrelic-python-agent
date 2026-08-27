@@ -16,6 +16,7 @@ import logging
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.signature import bind_args
 from newrelic.api.time_trace import current_trace
+from newrelic.core.config import global_settings
 
 _logger = logging.getLogger(__name__)
 OBSERVABILITY_PLUGIN_REGISTERED = False
@@ -58,21 +59,24 @@ def _create_NewRelicHook():
 
 
 def _nr_wrapper_Config___init__(wrapped, instance, args, kwargs):
-    try:
-        bound_args = bind_args(wrapped, args, kwargs)
+    settings = global_settings()
+    # Only add the hook if the integration setting is enabled.
+    if settings.launch_darkly_integration.enabled:
+        try:
+            bound_args = bind_args(wrapped, args, kwargs)
 
-        nr_hook = _create_NewRelicHook()
-        if bound_args["hooks"] is None:
-            bound_args["hooks"] = [nr_hook]
-        else:
-            bound_args["hooks"].append(nr_hook)
-        return wrapped(**bound_args)
-    except Exception:
-        _logger.exception("Failed to add New Relic hook to Launch Darkly hooks list. Please report this issue to New Relic Support.")
-        return wrapped(instance, *args, **kwargs)
+            nr_hook = _create_NewRelicHook()
+            if bound_args["hooks"] is None:
+                bound_args["hooks"] = [nr_hook]
+            else:
+                bound_args["hooks"].append(nr_hook)
+            return wrapped(**bound_args)
+        except Exception:
+            _logger.exception("Failed to add New Relic hook to Launch Darkly hooks list. Please report this issue to New Relic Support.")
+            return wrapped(instance, *args, **kwargs)
 
 
-def _nr_wrapper_Client___init__(wrapped, instance, args, kwargs):
+def _nr_wrapper_LDClient___init__(wrapped, instance, args, kwargs):
     return_val =  wrapped(*args, **kwargs)
 
     global OBSERVABILITY_PLUGIN_REGISTERED
@@ -94,8 +98,8 @@ def instrument_ldclient_config(module):
 
 
 def instrument_ldclient_client(module):
-    if hasattr(module, "Client"):
-        wrap_function_wrapper(module, "Client.__init__", _nr_wrapper_Client___init__)
+    if hasattr(module, "LDClient"):
+        wrap_function_wrapper(module, "LDClient.__init__", _nr_wrapper_LDClient___init__)
 
 
 def instrument_ldobserve___init__(module):

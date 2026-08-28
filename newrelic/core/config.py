@@ -280,6 +280,10 @@ class MlInsightsEventsSettings(Settings):
     pass
 
 
+class LaunchDarklyIntegrationSettings(Settings):
+    pass
+
+
 class ProcessHostSettings(Settings):
     pass
 
@@ -595,6 +599,7 @@ _settings.code_level_metrics = CodeLevelMetricsSettings()
 _settings.console = ConsoleSettings()
 _settings.custom_insights_events = CustomInsightsEventsSettings()
 _settings.ml_insights_events = MlInsightsEventsSettings()
+_settings.launch_darkly_integration = LaunchDarklyIntegrationSettings()
 _settings.datastore_tracer = DatastoreTracerSettings()
 _settings.datastore_tracer.database_name_reporting = DatastoreTracerDatabaseNameReportingSettings()
 _settings.datastore_tracer.instance_reporting = DatastoreTracerInstanceReportingSettings()
@@ -1419,6 +1424,7 @@ _settings.k8s_operator.enabled = _environ_as_bool("NEW_RELIC_K8S_OPERATOR_ENABLE
 _settings.azure_operator.enabled = _environ_as_bool("NEW_RELIC_AZURE_OPERATOR_ENABLED", default=False)
 _settings.package_reporting.enabled = _environ_as_bool("NEW_RELIC_PACKAGE_REPORTING_ENABLED", default=True)
 _settings.ml_insights_events.enabled = _environ_as_bool("NEW_RELIC_ML_INSIGHTS_EVENTS_ENABLED", default=False)
+_settings.launch_darkly_integration.enabled = _environ_as_bool("NEW_RELIC_LAUNCH_DARKLY_ENABLED", default=False)
 _settings.opentelemetry.enabled = _environ_as_bool("NEW_RELIC_OPENTELEMETRY_ENABLED", default=False)
 _settings.opentelemetry.traces.enabled = _environ_as_bool("NEW_RELIC_OPENTELEMETRY_TRACES_ENABLED", default=True)
 _settings.opentelemetry.traces.exclude = _environ_as_comma_separated_set(

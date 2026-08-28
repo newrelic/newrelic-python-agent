@@ -73,7 +73,7 @@ def _nr_wrapper_Config___init__(wrapped, instance, args, kwargs):
             return wrapped(**bound_args)
         except Exception:
             _logger.exception("Failed to add New Relic hook to Launch Darkly hooks list. Please report this issue to New Relic Support.")
-            return wrapped(instance, *args, **kwargs)
+    return wrapped(instance, *args, **kwargs)
 
 
 def _nr_wrapper_LDClient___init__(wrapped, instance, args, kwargs):

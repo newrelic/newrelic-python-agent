@@ -12,10 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from newrelic.common.utilization import AzureFunctionUtilization
+from newrelic.common.utilization import AzureAppServiceUtilization, AzureFunctionUtilization
 
 
-def test_utilization(monkeypatch):
+def test_azure_function_utilization(monkeypatch):
+    monkeypatch.setenv("FUNCTIONS_WORKER_RUNTIME", True)
     monkeypatch.setenv("REGION_NAME", "eastus2")
     monkeypatch.setenv(
         "WEBSITE_OWNER_NAME", "0b0d165f-aaaf-4a3b-b929-5f60588d95a3+testing-python-EastUS2webspace-Linux"
@@ -31,10 +32,39 @@ def test_utilization(monkeypatch):
     assert cloud_region == "eastus2"
 
 
-def test_utilization_bad_website_owner_name(monkeypatch):
+def test_azure_function_utilization_bad_website_owner_name(monkeypatch):
+    monkeypatch.setenv("FUNCTIONS_WORKER_RUNTIME", True)
     monkeypatch.setenv("REGION_NAME", "eastus2")
     monkeypatch.setenv("WEBSITE_OWNER_NAME", "ERROR")
     monkeypatch.setenv("WEBSITE_SITE_NAME", "test-func-linux")
 
     result = AzureFunctionUtilization.fetch()
     assert result is None, f"Expected failure but got result instead. {result}"
+
+
+# -------------------------
+# The following tests are actually for Azure App Services:
+# -------------------------
+
+
+def test_azure_app_service_utilization(monkeypatch):
+    monkeypatch.setenv("WEBSITE_RESOURCE_GROUP", "testing-python")
+    monkeypatch.setenv(
+        "WEBSITE_OWNER_NAME", "0b0d165f-aaaf-4a3b-b929-5f60588d95a3+testing-python-EastUS2webspace-Linux"
+    )
+    monkeypatch.setenv("WEBSITE_SITE_NAME", "test-func-linux")
+
+    cloud_resource_id = AzureAppServiceUtilization.fetch()
+    assert cloud_resource_id, "Failed to parse utilization for Azure App Service."
+
+    expected_cloud_resource_id = "/subscriptions/0b0d165f-aaaf-4a3b-b929-5f60588d95a3/resourceGroups/testing-python/providers/Microsoft.Web/sites/test-func-linux"
+    assert cloud_resource_id == expected_cloud_resource_id
+
+
+def test_azure_app_service_utilization_bad_website_owner_name(monkeypatch):
+    monkeypatch.setenv("WEBSITE_RESOURCE_GROUP", "testing-python")
+    monkeypatch.setenv("WEBSITE_OWNER_NAME", "ERROR")
+    monkeypatch.setenv("WEBSITE_SITE_NAME", "test-func-linux")
+
+    cloud_resource_id = AzureAppServiceUtilization.fetch()
+    assert cloud_resource_id is None, f"Expected failure but got result instead. {cloud_resource_id}"

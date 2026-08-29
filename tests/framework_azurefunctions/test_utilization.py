@@ -16,6 +16,7 @@ from newrelic.common.utilization import AzureAppServiceUtilization, AzureFunctio
 
 
 def test_azure_function_utilization(monkeypatch):
+    monkeypatch.setenv("FUNCTIONS_WORKER_RUNTIME", True)
     monkeypatch.setenv("REGION_NAME", "eastus2")
     monkeypatch.setenv(
         "WEBSITE_OWNER_NAME", "0b0d165f-aaaf-4a3b-b929-5f60588d95a3+testing-python-EastUS2webspace-Linux"
@@ -32,6 +33,7 @@ def test_azure_function_utilization(monkeypatch):
 
 
 def test_azure_function_utilization_bad_website_owner_name(monkeypatch):
+    monkeypatch.setenv("FUNCTIONS_WORKER_RUNTIME", True)
     monkeypatch.setenv("REGION_NAME", "eastus2")
     monkeypatch.setenv("WEBSITE_OWNER_NAME", "ERROR")
     monkeypatch.setenv("WEBSITE_SITE_NAME", "test-func-linux")

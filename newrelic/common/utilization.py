@@ -238,8 +238,11 @@ class AzureFunctionUtilization(CommonUtilization):
         cloud_region = os.environ.get("REGION_NAME")
         website_owner_name = os.environ.get("WEBSITE_OWNER_NAME")
         azure_function_app_name = os.environ.get("WEBSITE_SITE_NAME")
+        # Use this environment variable to distinguish between
+        # Azure Functions and Azure App Services
+        functions_worker_runtime = os.environ.get("FUNCTIONS_WORKER_RUNTIME")
 
-        if all((cloud_region, website_owner_name, azure_function_app_name)):
+        if all((cloud_region, website_owner_name, azure_function_app_name, functions_worker_runtime)):
             try:
                 if website_owner_name.endswith("-Linux"):
                     resource_group_name = AZURE_RESOURCE_GROUP_NAME_RE.search(website_owner_name).group(1)
@@ -276,7 +279,7 @@ class AzureAppServiceUtilization(CommonUtilization):
     METADATA_HOST = "169.254.169.254"
     METADATA_PATH = "/metadata/instance/compute"
     METADATA_QUERY = {"api-version": "2017-03-01"}  # noqa: RUF012
-    EXPECTED_KEYS = "cloud.resource_id"
+    EXPECTED_KEYS = ("cloud.resource_id",)
     HEADERS = {"Metadata": "true"}  # noqa: RUF012
     VENDOR_NAME = "azureappservice"
 
@@ -302,6 +305,19 @@ class AzureAppServiceUtilization(CommonUtilization):
                 )
 
         return None
+
+    @classmethod
+    def get_values(cls, response):
+        if response is None:
+            return
+
+        values = {}
+        key = cls.EXPECTED_KEYS[0]
+        if hasattr(response, "decode"):
+            response = response.decode("utf-8")
+        values[key] = response
+
+        return values
 
 
 class GCPUtilization(CommonUtilization):

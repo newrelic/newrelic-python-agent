@@ -351,10 +351,10 @@ class AgentProtocol:
             vendors.append(GCPUtilization)
         if settings["utilization.detect_azure"]:
             vendors.append(AzureUtilization)
-        if settings["utilization.detect_azurefunction"]:
-            vendors.append(AzureFunctionUtilization)
         if settings["utilization.detect_azureappservice"]:
             vendors.append(AzureAppServiceUtilization)
+        if settings["utilization.detect_azurefunction"]:
+            vendors.append(AzureFunctionUtilization)
 
         for vendor in vendors:
             metadata = vendor.detect()

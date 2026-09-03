@@ -40,6 +40,7 @@ on:
         description: >-
           Git ref (tag or commit) to compare against. Defaults to the
           latest v* tag on main.
+        type: string
         required: false
         default: ""
 

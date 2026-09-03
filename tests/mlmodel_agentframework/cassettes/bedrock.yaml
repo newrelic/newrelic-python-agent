@@ -24,22 +24,22 @@ interactions:
       authorization:
       - XXXXXX
     method: POST
-    uri: https://bedrock-runtime.us-east-1.amazonaws.com/model/anthropic.claude-3-sonnet-20240229-v1%3A0/converse
+    uri: https://bedrock-runtime.us-east-1.amazonaws.com/model/us.amazon.nova-2-lite-v1%3A0/converse
   response:
     body:
-      string: '{"metrics": {"latencyMs": 1219}, "output": {"message": {"content":
-        [{"text": "Paris"}], "role": "assistant"}}, "stopReason": "end_turn", "usage":
-        {"inputTokens": 23, "outputTokens": 4, "serverToolUsage": {}, "totalTokens":
-        27}}'
+      string: '{"metrics": {"latencyMs": 397}, "output": {"message": {"content": [{"text":
+        "The capital of France is **Paris**."}], "role": "assistant"}}, "stopReason":
+        "end_turn", "usage": {"inputTokens": 61, "outputTokens": 9, "serverToolUsage":
+        {}, "totalTokens": 70}}'
     headers:
       Connection:
       - keep-alive
       Content-Type:
       - application/json
       Date:
-      - Tue, 21 Jul 2026 17:38:15 GMT
+      - Thu, 03 Sep 2026 18:27:26 GMT
       x-amzn-RequestId:
-      - 10e29e28-5f4b-4d0d-a7f0-eecc55c35038
+      - d2453782-0090-440c-9dc3-7afe900bd4be
     status:
       code: 200
       message: OK

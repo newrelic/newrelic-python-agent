@@ -2314,6 +2314,9 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "agent_framework._agents", "newrelic.hooks.mlmodel_agentframework", "instrument_agent_framwork__agents"
+    )
+    _process_module_definition(
         "agent_framework_bedrock",
         "newrelic.hooks.mlmodel_agentframework",
         "instrument_agent_framwork_bedrock__chat_client",

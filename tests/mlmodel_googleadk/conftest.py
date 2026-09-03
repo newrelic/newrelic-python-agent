@@ -19,6 +19,7 @@ import google.genai
 import pytest
 from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixture.vcr import *  # noqa: F403
+from testing_support.fixture.vcr import VCR_MATCHERS, gemini_match_body_no_thought_signature
 from testing_support.fixtures import (
     collector_agent_registration_fixture,
     collector_available_fixture,
@@ -44,6 +45,8 @@ collector_agent_registration = collector_agent_registration_fixture(
     default_settings=_default_settings,
     linked_applications=["Python Agent Test (mlmodel_googleadk)"],
 )
+
+VCR_MATCHERS["body"] = gemini_match_body_no_thought_signature
 
 
 GOOGLE_ADK_VERSION_TUPLE = get_package_version_tuple("google-adk")

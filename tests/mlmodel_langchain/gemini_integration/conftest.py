@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import json
 import os
 import sys
 from pathlib import Path
@@ -29,43 +28,11 @@ from langchain.chat_models import init_chat_model
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langgraph.graph.message import add_messages
 from testing_support.fixture.event_loop import event_loop as loop
-from testing_support.fixture.vcr import VCR_MATCHERS
+from testing_support.fixture.vcr import VCR_MATCHERS, gemini_match_body_no_thought_signature
 
 from newrelic.api.transaction import current_transaction
-from newrelic.common.encoding_utils import ensure_str
 
-
-def _match_body_no_thought_signature(recorded, current):
-    # If original bodies are identical, then it's a match
-    if recorded.body == current.body:
-        return
-
-    def remove_thought_signature_and_id(body):
-        try:
-            for content in body["contents"]:
-                for part in content["parts"]:
-                    part.pop("thoughtSignature", None)
-                    if part.get("functionResponse"):
-                        for output in part["functionResponse"]["response"]["output"]:
-                            output.pop("id", None)
-        except Exception:
-            pass
-
-    recorded_body = json.loads(ensure_str(recorded.body))
-    current_body = json.loads(ensure_str(current.body))
-
-    # If parsed and reserialized JSON is identical, then it's a match
-    if json.dumps(recorded_body) == json.dumps(current_body):
-        return
-
-    remove_thought_signature_and_id(recorded_body)
-    remove_thought_signature_and_id(current_body)
-
-    # If reserialized JSON without thoughtSignature is identical, then it's a match
-    assert json.dumps(recorded_body) == json.dumps(current_body)
-
-
-VCR_MATCHERS["body"] = _match_body_no_thought_signature
+VCR_MATCHERS["body"] = gemini_match_body_no_thought_signature
 
 
 @pytest.fixture(autouse=True)

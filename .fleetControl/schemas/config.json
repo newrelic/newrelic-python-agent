@@ -663,13 +663,6 @@
     },
     "log_level": {
       "type": "string",
-      "enum": [
-        "critical",
-        "error",
-        "warning",
-        "info",
-        "debug"
-      ],
       "default": "info",
       "description": "Sets the level of detail of messages sent to the log file, if a log file location has been provided. Possible values, in increasing order of detail, are: \"critical\", \"error\", \"warning\", \"info\" and \"debug\". When reporting any agent issues to New Relic technical support, the most useful setting for the support engineers is \"debug\". However, this can generate a lot of information very quickly, so it is best not to keep the agent at this level for longer than it takes to reproduce the problem you are experiencing. This may also be set using the NEW_RELIC_LOG_LEVEL environment variable."
     },

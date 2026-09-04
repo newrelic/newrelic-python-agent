@@ -184,19 +184,17 @@ def status_code_array_or_range(default=None):
 
 # ---------------------------------------------------------------------------
 # Enum overrides. The customer-facing form of a setting may differ from
-# its in-memory representation -- log_level for example is stored as a
-# Python logging int (20 == INFO) but customers configure it as a string.
-# When an enum override matches a setting whose live default is not in
-# the enum, the override emits the enum's first matching string and the
-# inferred type is dropped in favor of `string`.
+# its in-memory representation. When an enum override matches a setting
+# whose live default is not in the enum, the default is omitted rather
+# than emitting a value the schema doesn't allow.
 # ---------------------------------------------------------------------------
-ENUM_OVERRIDES = {
-    "log_level": ["critical", "error", "warning", "info", "debug"],
-    "transaction_tracer.record_sql": ["off", "raw", "obfuscated"],
-}
+ENUM_OVERRIDES = {"transaction_tracer.record_sql": ["off", "raw", "obfuscated"]}
 
-# Settings whose live default is an int log-level but the schema should
-# present a string. Used by make_property to pick the right enum default.
+# log_level is stored in memory as a Python logging int (20 == INFO) but
+# customers configure it as a free-form string, so it gets a dedicated
+# make_property branch (below) that emits `type: string` -- no enum --
+# with this mapping used to translate the live int default into its
+# string form.
 LOG_LEVEL_INT_TO_STRING = {50: "critical", 40: "error", 30: "warning", 20: "info", 10: "debug"}
 
 # ---------------------------------------------------------------------------
@@ -414,24 +412,27 @@ def make_property(path, value, description, enum_overrides, type_overrides):
       1. type_overrides[path] -- explicit override wins (used for None
          defaults, anyOf shapes, and arrays whose items type cannot be
          inferred).
-      2. enum_overrides[path] -- enum forces type=string and translates
-         the live default if it is in the enum (or, for log_level, maps
-         the int default to its string form).
-      3. Auto-anyOf for set values -- any non-explicitly-overridden leaf
+      2. log_level -- dedicated branch; emits type=string (no enum) with
+         the live int default translated via LOG_LEVEL_INT_TO_STRING.
+      3. enum_overrides[path] -- enum forces type=string and passes the
+         live default through if it is a member of the enum.
+      4. Auto-anyOf for set values -- any non-explicitly-overridden leaf
          whose live default is a Python `set` gets the
          `anyOf [array, string]` shape used by INI list values.
-      4. infer_type(value) -- otherwise.
+      5. infer_type(value) -- otherwise.
     """
     if path in type_overrides:
         prop = dict(type_overrides[path])
+    elif path == "log_level":
+        prop = {"type": "string"}
+        default = LOG_LEVEL_INT_TO_STRING.get(value)
+        if default is not None:
+            prop["default"] = default
     elif path in enum_overrides:
         enum_vals = enum_overrides[path]
         prop = {"type": "string", "enum": list(enum_vals)}
-        # Map int log levels to their string form; other settings just
-        # pass the value through if it's already in the enum.
-        default = LOG_LEVEL_INT_TO_STRING.get(value, value) if path == "log_level" else value
-        if isinstance(default, str) and default in enum_vals:
-            prop["default"] = default
+        if isinstance(value, str) and value in enum_vals:
+            prop["default"] = value
     elif isinstance(value, set):
         # Auto-detect: sets in global_settings() come from
         # _environ_as_set / _environ_as_comma_separated_set, which means

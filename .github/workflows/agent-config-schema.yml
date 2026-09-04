@@ -84,9 +84,6 @@ jobs:
             *) echo "Schema generator failed (exit $code)"; exit "$code" ;;
           esac
 
-      - name: Run schema generator tests
-        run: python3 -m unittest discover .fleetControl/schemaGeneration/tests
-
       - name: Commit and push regenerated schema
         if: steps.generate.outputs.changed == 'true'
         env:

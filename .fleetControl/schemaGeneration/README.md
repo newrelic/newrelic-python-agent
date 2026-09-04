@@ -12,7 +12,6 @@ This directory contains the Python scripts that walk
 | `generate-schema.py` | Per-push regenerator. Reads the live agent settings tree, writes `config.json`. Never touches `configurationDefinitions.yml`. |
 | `bump-schema-version.py` | Release-time version bumper. Compares the schema at a prior git ref to the current schema and writes a new version into `configurationDefinitions.yml`. |
 | `schema_diff.py` | Shared library (no `main`). Holds the diff classification (`classify_changes`), bump arithmetic (`recommend_bump`, `apply_bump`, `bump_version`), and schema loading (`load_existing`). Imported by both top-level scripts. |
-| `dump-settings.py` | Dev helper. Lists every leaf in `global_settings()` and how it appears in the generated schema (or why it was excluded). Not part of the workflow. |
 | `tests/test_generate_schema.py` | Tests for the generator (`infer_type`, `make_property`, `build_properties`, `generate_schema`, anyOf helpers). |
 | `tests/test_schema_diff.py` | Tests for the shared library (`classify_changes`, `recommend_bump`, `apply_bump`, `bump_version`, `load_existing`). |
 | `tests/test_bump_schema_version.py` | Tests for the bump script (parsing helpers + main bootstrap/happy paths with mocked `git_show`). |
@@ -124,12 +123,6 @@ python3 .fleetControl/schemaGeneration/bump-schema-version.py --since=v10.21.0
 
 # Apply a release-time bump (writes configurationDefinitions.yml)
 python3 .fleetControl/schemaGeneration/bump-schema-version.py --since=v10.21.0 --ci
-
-# Dump every live setting alongside how it appears in the schema
-python3 .fleetControl/schemaGeneration/dump-settings.py
-
-# Filter the dump to settings missing from the schema
-python3 .fleetControl/schemaGeneration/dump-settings.py --missing
 ```
 
 ## Adding new configuration keys
@@ -182,9 +175,7 @@ Keys that accept integers, arrays of integers, or range strings (e.g.,
 Keys with a fixed set of allowed values should be added to `ENUM_OVERRIDES`:
 
 ```python
-ENUM_OVERRIDES = {
-    'new_feature.mode': ['option1', 'option2', 'option3'],
-}
+ENUM_OVERRIDES = {"new_feature.mode": ["option1", "option2", "option3"]}
 ```
 
 ### None-defaulted leaves
@@ -203,8 +194,8 @@ Add keys to `EXCLUDE_KEYS` to drop them from the schema:
 
 ```python
 EXCLUDE_KEYS = {
-    'agent_run_id',                # exact match
-    'cross_application_tracer.*',  # subtree exclusion
+    "agent_run_id",  # exact match
+    "cross_application_tracer.*",  # subtree exclusion
 }
 ```
 
@@ -220,7 +211,7 @@ The `.*` suffix matches both the prefix itself and any descendant.
 6. **If the key has enum values** → add to `ENUM_OVERRIDES`.
 7. **If the key should be hidden** → add to `EXCLUDE_KEYS`.
 8. **Run the generator again**; verify the schema entry looks correct.
-9. **Run the tests** (`python3 -m unittest discover .fleetControl/schemaGeneration/tests`).
+9. **Run the tests** (`pytest tests/agent_unittests/test_agent_config_schema.py`).
 10. The next release will pick up the bump when the maintainer runs the
     bump workflow as part of release prep.
 
@@ -280,12 +271,13 @@ kind is the highest severity across all changes:
 
 ## Running the tests
 
-```bash
-# All schema-generation tests in one shot
-python3 -m unittest discover .fleetControl/schemaGeneration/tests
+Tests for `generate-schema.py`, `schema_diff.py`, and `bump-schema-version.py`
+live in `tests/agent_unittests/test_agent_config_schema.py` and run as part
+of the standard `agent_unittests` tox suite.
 
-# Individual files
-python3 -m unittest .fleetControl.schemaGeneration.tests.test_generate_schema
-python3 -m unittest .fleetControl.schemaGeneration.tests.test_schema_diff
-python3 -m unittest .fleetControl.schemaGeneration.tests.test_bump_schema_version
+```bash
+pytest tests/agent_unittests/test_agent_config_schema.py
+
+# Or via tox, matching CI:
+tox run -e linux-agent_unittests-py312-with_extensions
 ```

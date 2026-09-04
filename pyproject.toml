@@ -252,6 +252,10 @@ ignore = [
     # Disabled rules in admin scripts
     "S108",  # flake8-bandit (hardcoded log files are never used as input)
 ]
+".fleetControl/schemaGeneration/*" = [
+    # Standalone build-time generator scripts; not part of the agent package.
+    "INP",  # flake8-no-pep420 (no __init__.py; this is a script, not a package)
+]
 
 # =========================
 # Other Tools Configuration

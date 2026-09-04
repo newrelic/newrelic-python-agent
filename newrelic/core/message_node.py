@@ -84,4 +84,10 @@ class MessageNode(_MessageNode, GenericNodeMixin):
         )
 
     def span_event(self, settings, base_attrs=None, parent_guid=None, attr_class=dict):
-        return base_attrs, attr_class, self.span_link_events, self.span_event_events
+        i_attrs = (base_attrs and base_attrs.copy()) or attr_class()
+        if self.operation.lower() == "produce":
+            i_attrs["span.kind"] = "producer"
+        elif self.operation.lower() in ["consume", "settle", "peek"]:   # TODO: add "process" to list?
+            i_attrs["span.kind"] = "consumer"
+
+        return i_attrs, attr_class, self.span_link_events, self.span_event_events

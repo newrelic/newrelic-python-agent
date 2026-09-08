@@ -26,9 +26,11 @@ from newrelic.api.background_task import background_task
 # mcp>=2 renamed mcp.server.fastmcp.FastMCP to mcp.server.mcpserver.MCPServer,
 try:
     from mcp.server.fastmcp import FastMCP as SDKFastMCP
+
     TOOL_MANAGER_MODULE = "mcp.server.fastmcp.tools.tool_manager"
 except ImportError:
     from mcp.server.mcpserver import MCPServer as SDKFastMCP
+
     TOOL_MANAGER_MODULE = "mcp.server.mcpserver.tools.tool_manager"
 
 

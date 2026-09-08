@@ -16,13 +16,20 @@ import pytest
 from fastmcp.client import Client
 from fastmcp.client.transports import FastMCPTransport
 from fastmcp.server.server import FastMCP
-from mcp.server.fastmcp.tools import ToolManager
 from testing_support.ml_testing_utils import disabled_ai_monitoring_settings
 from testing_support.validators.validate_function_not_called import validate_function_not_called
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
+
+# mcp>=2 renamed mcp.server.fastmcp.FastMCP to mcp.server.mcpserver.MCPServer,
+try:
+    from mcp.server.fastmcp import FastMCP as SDKFastMCP
+    TOOL_MANAGER_MODULE = "mcp.server.fastmcp.tools.tool_manager"
+except ImportError:
+    from mcp.server.mcpserver import MCPServer as SDKFastMCP
+    TOOL_MANAGER_MODULE = "mcp.server.mcpserver.tools.tool_manager"
 
 
 @pytest.fixture
@@ -73,8 +80,8 @@ def test_tool_tracing_via_client_session(loop, fastmcp_server):
 
 @validate_transaction_metrics(
     "test_mcp:test_tool_tracing_via_tool_manager",
-    scoped_metrics=[("Llm/tool/MCP/mcp.server.fastmcp.tools.tool_manager:ToolManager.call_tool/add_exclamation", 1)],
-    rollup_metrics=[("Llm/tool/MCP/mcp.server.fastmcp.tools.tool_manager:ToolManager.call_tool/add_exclamation", 1)],
+    scoped_metrics=[(f"Llm/tool/MCP/{TOOL_MANAGER_MODULE}:ToolManager.call_tool/add_exclamation", 1)],
+    rollup_metrics=[(f"Llm/tool/MCP/{TOOL_MANAGER_MODULE}:ToolManager.call_tool/add_exclamation", 1)],
     background_task=True,
 )
 @validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "add_exclamation"}'})
@@ -84,10 +91,11 @@ def test_tool_tracing_via_tool_manager(loop):
         def add_exclamation(phrase):
             return f"{phrase}!"
 
-        manager = ToolManager()
-        manager.add_tool(add_exclamation)
-        result = await manager.call_tool("add_exclamation", {"phrase": "Python is awesome"})
-        assert result == "Python is awesome!"
+        server = SDKFastMCP("Test Tools")
+        server.add_tool(add_exclamation)
+        result = await server.call_tool("add_exclamation", {"phrase": "Python is awesome"})
+        content = result.content if hasattr(result, "content") else result
+        assert "Python is awesome!" in str(content[0])
 
     loop.run_until_complete(_test())
 

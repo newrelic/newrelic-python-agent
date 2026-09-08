@@ -1645,6 +1645,7 @@ class Application:
                     internal_metric(f"Supportability/Python/Harvest/Exception/{callable_name(exc_type)}", 1)
 
                     if self._period_start != period_end:
+                        _logger.debug(f"Start and stop periods are not equal: {self._period_start=}, {period_end=}")
                         self._stats_engine.rollback(stats)
 
                 except DiscardDataForRequest:

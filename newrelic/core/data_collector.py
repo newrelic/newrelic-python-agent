@@ -127,6 +127,7 @@ class Session:
         specific metrics.
         """
 
+        _logger.debug(f"Send Metric Data--{self.agent_run_id=}, {start_time=}, {end_time=}, {metric_data=}")
         payload = (self.agent_run_id, start_time, end_time, metric_data)
         return self._protocol.send("metric_data", payload)
 

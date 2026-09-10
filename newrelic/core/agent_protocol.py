@@ -298,6 +298,7 @@ class AgentProtocol:
         connect_settings = {}
         connect_settings["browser_monitoring.loader"] = settings["browser_monitoring.loader"]
         connect_settings["browser_monitoring.debug"] = settings["browser_monitoring.debug"]
+        connect_settings["browser_monitoring.version"] = settings["browser_monitoring.version"]
         connect_settings["ai_monitoring.enabled"] = settings["ai_monitoring.enabled"]
         connect_settings["distributed_tracing.sampler.adaptive_sampling_target"] = settings[
             "distributed_tracing.sampler.adaptive_sampling_target"

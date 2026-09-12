@@ -18,6 +18,12 @@ from newrelic.api.external_trace import ExternalTrace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 
+NR_HEADER_KEYS = frozenset(("traceparent", "tracestate", "newrelic"))
+
+
+def _is_nr_dt_header(header, *args, **kwargs):
+    return header.lower() in NR_HEADER_KEYS
+
 
 def httplib_endheaders_wrapper(wrapped, instance, args, kwargs, scheme, library):
     transaction = current_transaction()
@@ -99,15 +105,13 @@ def httplib_putheader_wrapper(wrapped, instance, args, kwargs):
     if transaction is None:
         return wrapped(*args, **kwargs)
 
-    # Remember if we see any NR headers being set. This is only doing
-    # it if we see either, but they should always both be getting set.
-
-    def nr_header(header, *args, **kwargs):
-        return header.upper() == "NEWRELIC"
+    # Remember if we see any NR headers being set. It's possible there
+    # are other traceparent or tracestate headers that will trigger this,
+    # but we want to avoid crashes related to overriding signed headers.
 
     connection = instance
 
-    if nr_header(*args, **kwargs):
+    if _is_nr_dt_header(*args, **kwargs):
         connection._nr_skip_headers = True
 
     return wrapped(*args, **kwargs)

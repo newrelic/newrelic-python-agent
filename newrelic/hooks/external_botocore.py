@@ -1831,6 +1831,7 @@ def _nr_endpoint_make_request_(wrapped, instance, args, kwargs):
     operation_model, request_dict = _bind_make_request_params(*args, **kwargs)
     url = request_dict.get("url")
     method = request_dict.get("method")
+    headers = request_dict.get("headers") or {}
 
     with ExternalTrace(library="botocore", url=url, method=method, source=wrapped) as trace:
         try:
@@ -1840,6 +1841,14 @@ def _nr_endpoint_make_request_(wrapped, instance, args, kwargs):
             if lambda_arn:
                 trace._add_agent_attribute("cloud.platform", "aws_lambda")
                 trace._add_agent_attribute("cloud.resource_id", lambda_arn)
+
+            # Insert DT Headers now to avoid issues with signing.
+            if hasattr(trace, "generate_request_headers"):
+                dt_headers = dict(trace.generate_request_headers(trace.transaction))
+                if headers:
+                    dt_headers.update(headers)
+                request_dict["headers"] = dt_headers
+
         except:
             pass
 

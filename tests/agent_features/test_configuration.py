@@ -396,6 +396,26 @@ def test_delete_setting_parent():
     assert "transaction_tracer" not in settings
 
 
+def test_browser_monitoring_version_without_loader_warns(caplog):
+    caplog.set_level(logging.WARNING, logger="newrelic.core.config")
+
+    settings = global_settings()
+    apply_config_setting(settings, "browser_monitoring.version", "1.317.0")
+
+    app_settings = apply_server_side_settings(settings=settings)
+
+    assert app_settings.browser_monitoring.version == "1.317.0"
+    assert not app_settings.js_agent_loader
+
+    message = (
+        "Requested browser_monitoring.version '1.317.0' did not return a browser agent loader; "
+        "please ensure it is available and supported. No browser monitoring will be injected."
+    )
+    assert message in caplog.text
+
+    apply_config_setting(settings, "browser_monitoring.version", "")
+
+
 translate_deprecated_settings_tests = [
     # Nothing in here right now.
 ]

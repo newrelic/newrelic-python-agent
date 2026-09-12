@@ -612,6 +612,7 @@ def _process_configuration(section):
     _process_setting(section, "browser_monitoring.enabled", "getboolean", None)
     _process_setting(section, "browser_monitoring.auto_instrument", "getboolean", None)
     _process_setting(section, "browser_monitoring.loader", "get", None)
+    _process_setting(section, "browser_monitoring.version", "get", None)
     _process_setting(section, "browser_monitoring.debug", "getboolean", None)
     _process_setting(section, "browser_monitoring.ssl_for_http", "getboolean", None)
     _process_setting(section, "browser_monitoring.content_type", "get", _map_split_strings)

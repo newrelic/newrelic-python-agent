@@ -43,6 +43,7 @@ APP_NAME = "test_app"
 IP_ADDRESS = AWS = AZURE = ECS = GCP = PCF = BOOT_ID = DOCKER = KUBERNETES = AZUREFUNCTION = None
 BROWSER_MONITORING_DEBUG = "debug"
 BROWSER_MONITORING_LOADER = "loader"
+BROWSER_MONITORING_VERSION = "1.317.0"
 CAPTURE_PARAMS = "capture_params"
 DISPLAY_NAME = "display_name"
 METADATA = {}
@@ -278,9 +279,10 @@ def connect_payload_asserts(
     assert len(payload_data["security_settings"]) == 2
     assert payload_data["security_settings"]["capture_params"] == CAPTURE_PARAMS
     assert payload_data["security_settings"]["transaction_tracer"] == {"record_sql": RECORD_SQL}
-    assert len(payload_data["settings"]) == 4
+    assert len(payload_data["settings"]) == 5
     assert payload_data["settings"]["browser_monitoring.loader"] == (BROWSER_MONITORING_LOADER)
     assert payload_data["settings"]["browser_monitoring.debug"] == (BROWSER_MONITORING_DEBUG)
+    assert payload_data["settings"]["browser_monitoring.version"] == (BROWSER_MONITORING_VERSION)
     assert payload_data["settings"]["ai_monitoring.enabled"] is False
     assert payload_data["settings"]["distributed_tracing.sampler.adaptive_sampling_target"] == 10
 
@@ -405,6 +407,7 @@ def test_connect(
         {
             "browser_monitoring.loader": BROWSER_MONITORING_LOADER,
             "browser_monitoring.debug": BROWSER_MONITORING_DEBUG,
+            "browser_monitoring.version": BROWSER_MONITORING_VERSION,
             "capture_params": CAPTURE_PARAMS,
             "process_host.display_name": DISPLAY_NAME,
             "transaction_tracer.record_sql": RECORD_SQL,

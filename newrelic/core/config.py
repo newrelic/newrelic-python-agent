@@ -1249,6 +1249,7 @@ _settings.browser_monitoring.loader_version = None
 _settings.browser_monitoring.debug = False
 _settings.browser_monitoring.ssl_for_http = None
 _settings.browser_monitoring.content_type = ["text/html"]
+_settings.browser_monitoring.version = ""
 _settings.browser_monitoring.attributes.enabled = _environ_as_bool(
     "NEW_RELIC_BROWSER_MONITORING_ATTRIBUTES_ENABLED", default=False
 )
@@ -1727,6 +1728,16 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
             "Improper configuration. Infinite tracing cannot be enabled at the same time as partial granularity tracing. Setting distributed_tracing.sampler.partial_granularity.enabled=False."
         )
         apply_config_setting(settings_snapshot, "distributed_tracing.sampler.partial_granularity.enabled", False)
+
+    # If browser_monitoring.version is set but no js_agent_loader is returned, we infer
+    # the customer-supplied browser agent version is unsupported, malformed, etc. and
+    # log a warning.
+    if settings_snapshot.browser_monitoring.version and not settings_snapshot.js_agent_loader:
+        _logger.warning(
+            "Requested browser_monitoring.version '%s' did not return a browser agent loader; "
+            "please ensure it is available and supported. No browser monitoring will be injected.",
+            settings_snapshot.browser_monitoring.version,
+        )
 
     # Reapply on top any local setting overrides.
 

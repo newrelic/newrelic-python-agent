@@ -1926,4 +1926,179 @@ interactions:
     status:
       code: 200
       message: OK
+- request:
+    body: '{"input":[{"role":"user","content":"How many letters are in the word Python?
+      Answer in one word with no formatting."}],"instructions":"You are a text parser.","max_output_tokens":500,"model":"gpt-5.1","stream":false,"temperature":0.7}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - api.openai.com
+      x-stainless-read-timeout:
+      - '600'
+    method: POST
+    uri: https://api.openai.com/v1/responses
+  response:
+    body:
+      string: '{"id": "resp_081ea74341470ade006a725d6656348199bd2fadddedab5ed1", "object":
+        "response", "created_at": 1785879910, "status": "completed", "background":
+        false, "billing": {"payer": "developer"}, "completed_at": 1785879911, "error":
+        null, "frequency_penalty": 0.0, "incomplete_details": null, "instructions":
+        "You are a text parser.", "max_output_tokens": 500, "max_tool_calls": null,
+        "model": "gpt-5.1-2025-11-13", "moderation": null, "output": [{"id": "msg_081ea74341470ade006a725d66d4688199972a545cb42ae2ed",
+        "type": "message", "status": "completed", "content": [{"type": "output_text",
+        "annotations": [], "logprobs": [], "text": "six"}], "role": "assistant"}],
+        "parallel_tool_calls": true, "presence_penalty": 0.0, "previous_response_id":
+        null, "prompt_cache_key": null, "prompt_cache_retention": "in_memory", "reasoning":
+        {"context": "current_turn", "effort": "none", "mode": "standard", "summary":
+        null}, "safety_identifier": null, "service_tier": "default", "store": true,
+        "temperature": 0.7, "text": {"format": {"type": "text"}, "verbosity": "medium"},
+        "tool_choice": "auto", "tool_usage": {"image_gen": {"input_tokens": 0, "input_tokens_details":
+        {"image_tokens": 0, "text_tokens": 0}, "output_tokens": 0, "output_tokens_details":
+        {"image_tokens": 0, "text_tokens": 0}, "total_tokens": 0}, "web_search": {"num_requests":
+        0}}, "tools": [], "top_logprobs": 0, "top_p": 1.0, "truncation": "disabled",
+        "usage": {"input_tokens": 33, "input_tokens_details": {"cache_write_tokens":
+        0, "cached_tokens": 0}, "output_tokens": 11, "output_tokens_details": {"reasoning_tokens":
+        0}, "total_tokens": 44}, "user": null, "metadata": {}}'
+    headers:
+      access-control-expose-headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a260bf5e9cc70d87-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      date:
+      - Tue, 04 Aug 2026 21:45:11 GMT
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '1018'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_68cab68b5b5543fb87a72b0dcca278f8
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"input":[{"role":"user","content":"How many letters are in the word Python?
+      Answer in one word with no formatting."}],"instructions":"You are a text parser.","max_output_tokens":500,"model":"gpt-5.1","temperature":0.7,"text":{"format":{"type":"json_schema","strict":true,"name":"LetterCount","schema":{"properties":{"count":{"title":"Count","type":"integer"}},"required":["count"],"title":"LetterCount","type":"object","additionalProperties":false}}}}'
+    headers:
+      accept:
+      - application/json
+      accept-encoding:
+      - gzip, deflate
+      authorization:
+      - XXXXXX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - api.openai.com
+      x-stainless-read-timeout:
+      - '600'
+    method: POST
+    uri: https://api.openai.com/v1/responses
+  response:
+    body:
+      string: '{"id": "resp_0464cf6d565af4e8006a73d0e80c50819889e3cb5edfd6b6a3", "object":
+        "response", "created_at": 1785975016, "status": "completed", "background":
+        false, "billing": {"payer": "developer"}, "completed_at": 1785975017, "error":
+        null, "frequency_penalty": 0.0, "incomplete_details": null, "instructions":
+        "You are a text parser.", "max_output_tokens": 500, "max_tool_calls": null,
+        "model": "gpt-5.1-2025-11-13", "moderation": null, "output": [{"id": "msg_0464cf6d565af4e8006a73d0e9117081989140609510e0639d",
+        "type": "message", "status": "completed", "content": [{"type": "output_text",
+        "annotations": [], "logprobs": [], "text": "{\"count\":1}"}], "role": "assistant"}],
+        "parallel_tool_calls": true, "presence_penalty": 0.0, "previous_response_id":
+        null, "prompt_cache_key": null, "prompt_cache_retention": "in_memory", "reasoning":
+        {"context": "current_turn", "effort": "none", "mode": "standard", "summary":
+        null}, "safety_identifier": null, "service_tier": "default", "store": true,
+        "temperature": 0.7, "text": {"format": {"type": "json_schema", "description":
+        null, "name": "LetterCount", "schema": {"properties": {"count": {"title":
+        "Count", "type": "integer"}}, "required": ["count"], "title": "LetterCount",
+        "type": "object", "additionalProperties": false}, "strict": true}, "verbosity":
+        "medium"}, "tool_choice": "auto", "tool_usage": {"image_gen": {"input_tokens":
+        0, "input_tokens_details": {"image_tokens": 0, "text_tokens": 0}, "output_tokens":
+        0, "output_tokens_details": {"image_tokens": 0, "text_tokens": 0}, "total_tokens":
+        0}, "web_search": {"num_requests": 0}}, "tools": [], "top_logprobs": 0, "top_p":
+        1.0, "truncation": "disabled", "usage": {"input_tokens": 64, "input_tokens_details":
+        {"cache_write_tokens": 0, "cached_tokens": 0}, "output_tokens": 19, "output_tokens_details":
+        {"reasoning_tokens": 0}, "total_tokens": 83}, "user": null, "metadata": {}}'
+    headers:
+      access-control-expose-headers:
+      - X-Request-ID
+      - CF-Ray
+      - CF-Ray
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a269d149cda6dcdd-PDX
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      date:
+      - Thu, 06 Aug 2026 00:10:17 GMT
+      openai-organization:
+      - nr-test-org
+      openai-processing-ms:
+      - '1725'
+      openai-project:
+      - nr-test-project
+      openai-version:
+      - '2020-10-01'
+      server:
+      - cloudflare
+      transfer-encoding:
+      - chunked
+      x-ratelimit-limit-requests:
+      - '10000'
+      x-ratelimit-limit-tokens:
+      - '50000000'
+      x-ratelimit-remaining-requests:
+      - '9999'
+      x-ratelimit-remaining-tokens:
+      - '49999975'
+      x-ratelimit-reset-requests:
+      - 6ms
+      x-ratelimit-reset-tokens:
+      - 0s
+      x-request-id:
+      - req_a23af6d131df4e958e44fd0fee47af24
+    status:
+      code: 200
+      message: OK
 version: 1

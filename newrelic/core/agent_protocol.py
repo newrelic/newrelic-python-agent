@@ -23,6 +23,7 @@ from newrelic.common.agent_http import ApplicationModeClient, ServerlessModeClie
 from newrelic.common.encoding_utils import json_decode, json_encode, serverless_payload_encode
 from newrelic.common.utilization import (
     AWSUtilization,
+    AzureAppServiceUtilization,
     AzureFunctionUtilization,
     AzureUtilization,
     DockerUtilization,
@@ -350,6 +351,8 @@ class AgentProtocol:
             vendors.append(GCPUtilization)
         if settings["utilization.detect_azure"]:
             vendors.append(AzureUtilization)
+        if settings["utilization.detect_azureappservice"]:
+            vendors.append(AzureAppServiceUtilization)
         if settings["utilization.detect_azurefunction"]:
             vendors.append(AzureFunctionUtilization)
 

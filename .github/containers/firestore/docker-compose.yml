@@ -14,7 +14,7 @@
 
 services:
   firestore:
-    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:437.0.1-emulators
+    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:582.0.0-emulators
     command:
       [
         "/bin/bash",

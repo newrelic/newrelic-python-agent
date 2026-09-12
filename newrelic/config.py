@@ -3259,7 +3259,11 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.adapter_mcp",
         "instrument_mcp_server_fastmcp_tools_tool_manager",
     )
-
+    _process_module_definition(
+        "mcp.server.mcpserver.tools.tool_manager",
+        "newrelic.hooks.adapter_mcp",
+        "instrument_mcp_server_fastmcp_tools_tool_manager",
+    )
     _process_module_definition("structlog._base", "newrelic.hooks.logger_structlog", "instrument_structlog__base")
     _process_module_definition("structlog._frames", "newrelic.hooks.logger_structlog", "instrument_structlog__frames")
     _process_module_definition("paste.httpserver", "newrelic.hooks.adapter_paste", "instrument_paste_httpserver")

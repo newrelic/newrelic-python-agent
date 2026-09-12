@@ -370,8 +370,10 @@ def _handle_streaming_create_error(*, linking_metadata, completion_id, kwargs, f
 def _record_completion_error(*, transaction, linking_metadata, completion_id, kwargs, ft, exc, request_timestamp=None):
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
-    request_temperature = kwargs.get("temperature")
     request_max_tokens = kwargs.get("max_tokens")
+    request_temperature = kwargs.get("temperature")
+    if not request_temperature:
+        request_temperature = kwargs.get("extra_body", {}).get("temperature")
 
     messages = kwargs.get("messages", [])
 
@@ -456,8 +458,10 @@ def _record_completion_success(
     try:
         messages = kwargs.get("messages", [])
         request_model = kwargs.get("model")
-        request_temperature = kwargs.get("temperature")
         request_max_tokens = kwargs.get("max_tokens")
+        request_temperature = kwargs.get("temperature")
+        if not request_temperature:
+            request_temperature = kwargs.get("extra_body", {}).get("temperature")
 
         # Token counts default to those reported in the response object if available,
         # but the user registered callback below may override them.

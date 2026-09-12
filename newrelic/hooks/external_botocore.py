@@ -1611,6 +1611,9 @@ CUSTOM_TRACE_POINTS = {
     ("kinesis", "add_tags_to_stream"): aws_function_trace(
         "add_tags_to_stream", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
+    ("kinesis", "create_channel"): aws_function_trace(
+        "create_channel", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
     ("kinesis", "create_stream"): aws_function_trace(
         "create_stream", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
@@ -1619,6 +1622,12 @@ CUSTOM_TRACE_POINTS = {
         extract_kinesis,
         extract_agent_attrs=extract_kinesis_agent_attrs,
         library="Kinesis",
+    ),
+    ("kinesis", "delete_channel"): aws_function_trace(
+        "delete_channel", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "describe_channel"): aws_function_trace(
+        "describe_channel", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
     ("kinesis", "delete_resource_policy"): aws_function_trace(
         "delete_resource_policy", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
@@ -1667,6 +1676,9 @@ CUSTOM_TRACE_POINTS = {
         extract_agent_attrs=extract_kinesis_agent_attrs,
         library="Kinesis",
     ),
+    ("kinesis", "list_channels"): aws_function_trace(
+        "list_channels", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
     ("kinesis", "list_shards"): aws_function_trace(
         "list_shards", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
@@ -1711,6 +1723,9 @@ CUSTOM_TRACE_POINTS = {
         "untag_resource", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
     ("kinesis", "update_account_settings"): aws_function_trace("update_account_settings", library="Kinesis"),
+    ("kinesis", "update_channel"): aws_function_trace(
+        "update_channel", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
     ("kinesis", "update_max_record_size"): aws_function_trace(
         "update_max_record_size", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),

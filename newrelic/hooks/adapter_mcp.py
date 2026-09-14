@@ -14,6 +14,7 @@
 
 import json
 import logging
+from urllib.parse import urlsplit
 
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.transaction import current_transaction
@@ -61,9 +62,10 @@ async def wrap_read_resource(wrapped, instance, args, kwargs):
 
     try:
         resource_uri = bound_args.get("uri")
-        resource_scheme = getattr(resource_uri, "scheme", "resource")
+        split_uri = urlsplit(str(resource_uri))
+        resource_scheme = getattr(split_uri, "scheme", "resource") or "resource"
     except Exception:
-        _logger.warning("Unable to parse resource URI scheme for MCP read_resource call")
+        _logger.debug("Unable to parse resource URI scheme for MCP read_resource call.", exc_info=True)
 
     function_trace_name = f"{func_name}/{resource_scheme}"
 

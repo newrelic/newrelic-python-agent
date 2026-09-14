@@ -19,14 +19,12 @@ import google.genai
 import pytest
 from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixture.vcr import *  # noqa: F403
-from testing_support.fixture.vcr import VCR_IGNORED_HEADERS
+from testing_support.fixture.vcr import VCR_IGNORED_HEADERS, VCR_MATCHERS, gemini_match_body_no_thought_signature
 from testing_support.fixtures import (
     collector_agent_registration_fixture,
     collector_available_fixture,
     override_application_settings,
 )
-
-VCR_IGNORED_HEADERS.extend(["accept-encoding"])
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow-downs.
@@ -44,6 +42,9 @@ collector_agent_registration = collector_agent_registration_fixture(
     default_settings=_default_settings,
     linked_applications=["Python Agent Test (mlmodel_gemini)"],
 )
+
+VCR_IGNORED_HEADERS.extend(["accept-encoding"])
+VCR_MATCHERS["body"] = gemini_match_body_no_thought_signature
 
 GEMINI_VERSION = google.genai.__version__
 GEMINI_VERSION_METRIC = f"Supportability/Python/ML/Gemini/{GEMINI_VERSION}"

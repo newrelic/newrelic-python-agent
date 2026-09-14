@@ -1249,7 +1249,7 @@ _settings.browser_monitoring.loader_version = None
 _settings.browser_monitoring.debug = False
 _settings.browser_monitoring.ssl_for_http = None
 _settings.browser_monitoring.content_type = ["text/html"]
-_settings.browser_monitoring.version = ""
+_settings.browser_monitoring.version = None
 _settings.browser_monitoring.attributes.enabled = _environ_as_bool(
     "NEW_RELIC_BROWSER_MONITORING_ATTRIBUTES_ENABLED", default=False
 )

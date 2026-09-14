@@ -413,7 +413,7 @@ def test_browser_monitoring_version_without_loader_warns(caplog):
     )
     assert message in caplog.text
 
-    apply_config_setting(settings, "browser_monitoring.version", "")
+    apply_config_setting(settings, "browser_monitoring.version", None)
 
 
 translate_deprecated_settings_tests = [

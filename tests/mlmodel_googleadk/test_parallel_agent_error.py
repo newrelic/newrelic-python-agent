@@ -23,7 +23,7 @@ from _test_parallel_agent import (
     build_parallel,
     parallel_recorded_events_error,
 )
-from conftest import EXPECTED_VERSION_METRICS
+from conftest import EXPECTED_VERSION_METRICS, GOOGLE_ADK_VERSION_TUPLE
 from testing_support.fixtures import dt_enabled, reset_core_stats_engine, validate_attributes
 from testing_support.validators.validate_custom_event import validate_custom_event_count
 from testing_support.validators.validate_custom_events import validate_custom_events
@@ -55,7 +55,7 @@ RIGHT_SPAN_NAME = f"Llm/agent/GoogleADK/run_async/{RIGHT_AGENT_NAME}"
 # the child. As a result, 2 distinct errors are recorded on the transaction.
 # On Python<=3.10, ADK re-raises the child's ValueError directly and the
 # transaction dedupes the error nodes, so only one error is counted.
-EXPECTED_ERROR_EVENT_COUNT = 2 if sys.version_info >= (3, 11) else 1
+EXPECTED_ERROR_EVENT_COUNT = (2 if GOOGLE_ADK_VERSION_TUPLE < (2,9) else 1) if sys.version_info >= (3, 11) else 1
 
 
 @dt_enabled

@@ -14,7 +14,7 @@
 
 from _test_agent import AGENT_NAME, PROMPT, agent_recorded_event, build_agent
 from _test_tools import TOOL_NAME, get_capital_tool, tool_recorded_event
-from conftest import EXPECTED_VERSION_METRICS
+from conftest import EXPECTED_VERSION_METRICS, GOOGLE_ADK_VERSION_TUPLE
 from testing_support.fixtures import dt_enabled, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     disabled_ai_monitoring_record_content_settings,
@@ -29,9 +29,12 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
 from newrelic.api.background_task import background_task
 from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 
+
+EXECUTE_FUNCTION_CALL_NAME = "execute_single_function_call_async" if GOOGLE_ADK_VERSION_TUPLE < (2,9) else "execute_single_prepared_call"
+
 EXPECTED_METRICS = [
     (f"Llm/agent/GoogleADK/run_async/{AGENT_NAME}", 1),
-    (f"Llm/tool/GoogleADK/execute_single_function_call_async/{TOOL_NAME}", 1),
+    (f"Llm/tool/GoogleADK/{EXECUTE_FUNCTION_CALL_NAME}/{TOOL_NAME}", 1),
 ]
 
 # 8 events:

@@ -148,6 +148,103 @@ def _construct_base_agent_event_dict(agent_name, agent_id, transaction, linking_
     return agent_event_dict
 
 
+async def wrap__execute_single_prepared_call(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return await wrapped(*args, **kwargs)
+
+    settings = transaction.settings or global_settings()
+    if not settings.ai_monitoring.enabled:
+        return await wrapped(*args, **kwargs)
+
+    transaction.add_ml_model_info("GoogleADK", GOOGLEADK_VERSION)
+    transaction._add_agent_attribute("llm", True)
+
+    run_id = ""
+    tool_input = None
+    agent_name = "agent"
+    is_local_tool = False
+    try:
+        bound_args = bind_args(wrapped, args, kwargs)
+        prepared_call = bound_args.get("prepared_call")
+        agent = bound_args.get("agent")
+        # tools_dict = bound_args.get("tools_dict")
+
+        if prepared_call is not None:
+            tools_dict = prepared_call.tools_dict
+            tool_input = getattr(prepared_call, "function_args", None)
+            function_call = getattr(prepared_call, "function_call", None)
+
+            if function_call is not None:
+                tool_name = getattr(function_call, "name", "tool") or "tool"
+                run_id = getattr(function_call, "id", "") or ""
+
+            if tools_dict is not None:
+                from google.adk.tools.function_tool import FunctionTool
+
+                is_local_tool = isinstance(tools_dict.get(tool_name), FunctionTool)
+        if agent is not None:
+            agent_name = getattr(agent, "name", "agent") or "agent"
+    except Exception:
+        _logger.warning(TOOL_EXTRACTOR_FAILURE_LOG_MESSAGE, exc_info=True)
+
+    function_trace_name = f"execute_single_prepared_call/{tool_name}"
+
+    ft = FunctionTrace(name=function_trace_name, group="Llm/tool/GoogleADK")
+    ft.__enter__()
+    if is_local_tool:
+        agentic_subcomponent_data = {"type": "APM-AI_TOOL", "name": tool_name}
+        ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
+    linking_metadata = get_trace_linking_metadata()
+    tool_id = str(uuid.uuid4())
+
+    try:
+        tool_output = await wrapped(*args, **kwargs)
+    except Exception:
+        ft.notice_error(attributes={"tool_id": tool_id})
+        ft.__exit__(*sys.exc_info())
+        try:
+            tool_event_dict = _construct_base_tool_event_dict(
+                tool_name=tool_name,
+                tool_id=tool_id,
+                run_id=run_id,
+                tool_input=tool_input,
+                tool_output=None,
+                agent_name=agent_name,
+                error=True,
+                transaction=transaction,
+                linking_metadata=linking_metadata,
+            )
+            if tool_event_dict:
+                tool_event_dict["duration"] = ft.duration * 1000
+                transaction.record_custom_event("LlmTool", tool_event_dict)
+        except Exception:
+            _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
+        raise
+
+    ft.__exit__(None, None, None)
+    try:
+        response_dict = _extract_tool_response_dict(tool_output)
+        tool_event_dict = _construct_base_tool_event_dict(
+            tool_name=tool_name,
+            tool_id=tool_id,
+            run_id=run_id,
+            tool_input=tool_input,
+            tool_output=response_dict,
+            agent_name=agent_name,
+            error=False,
+            transaction=transaction,
+            linking_metadata=linking_metadata,
+        )
+        if tool_event_dict:
+            tool_event_dict["duration"] = ft.duration * 1000
+            transaction.record_custom_event("LlmTool", tool_event_dict)
+    except Exception:
+        _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
+
+    return tool_output
+
+
 async def wrap__execute_single_function_call_async(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
@@ -305,5 +402,12 @@ def instrument_googleadk_agents_sequential_agent(module):
 
 
 def instrument_googleadk_flows_llm_flows_functions(module):
+    # < v2.9
     if hasattr(module, "_execute_single_function_call_async"):
         wrap_function_wrapper(module, "_execute_single_function_call_async", wrap__execute_single_function_call_async)
+
+
+def instrument_googleadk_flows_llm_flows__tool_caller(module):
+    # v2.9+
+    if hasattr(module, "_execute_single_prepared_call"):
+        wrap_function_wrapper(module, "_execute_single_prepared_call", wrap__execute_single_prepared_call)

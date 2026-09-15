@@ -21,7 +21,7 @@ from _test_agent_tool import (
     agent_tool_recorded_events_error,
     build_agent_with_agent_tool,
 )
-from conftest import EXPECTED_VERSION_METRICS
+from conftest import EXPECTED_VERSION_METRICS, GOOGLE_ADK_VERSION_TUPLE
 from testing_support.fixtures import dt_enabled, reset_core_stats_engine, validate_attributes
 from testing_support.validators.validate_custom_event import validate_custom_event_count
 from testing_support.validators.validate_custom_events import validate_custom_events
@@ -34,19 +34,22 @@ from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import transient_function_wrapper
 
+EXECUTE_FUNCTION_CALL_NAME = (
+    "execute_single_function_call_async" if GOOGLE_ADK_VERSION_TUPLE < (2, 9) else "execute_single_prepared_call"
+)
+
 EXPECTED_METRICS = [
     (f"Llm/agent/GoogleADK/run_async/{PARENT_AGENT_NAME}", 1),
     (f"Llm/agent/GoogleADK/run_async/{CHILD_AGENT_NAME}", 1),
-    (f"Llm/tool/GoogleADK/execute_single_function_call_async/{AGENT_TOOL_NAME}", 1),
+    (f"Llm/tool/GoogleADK/{EXECUTE_FUNCTION_CALL_NAME}/{AGENT_TOOL_NAME}", 1),
 ]
-
 
 EXPECTED_PARENT_SUBCOMPONENT = f'{{"type": "APM-AI_AGENT", "name": "{PARENT_AGENT_NAME}"}}'
 EXPECTED_CHILD_SUBCOMPONENT = f'{{"type": "APM-AI_AGENT", "name": "{CHILD_AGENT_NAME}"}}'
 
 PARENT_SPAN_NAME = f"Llm/agent/GoogleADK/run_async/{PARENT_AGENT_NAME}"
 CHILD_SPAN_NAME = f"Llm/agent/GoogleADK/run_async/{CHILD_AGENT_NAME}"
-AGENT_TOOL_SPAN_NAME = f"Llm/tool/GoogleADK/execute_single_function_call_async/{AGENT_TOOL_NAME}"
+AGENT_TOOL_SPAN_NAME = f"Llm/tool/GoogleADK/{EXECUTE_FUNCTION_CALL_NAME}/{AGENT_TOOL_NAME}"
 
 
 @dt_enabled

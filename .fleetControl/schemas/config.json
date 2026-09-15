@@ -272,6 +272,10 @@
     "browser_monitoring.ssl_for_http": {
       "type": "boolean"
     },
+    "browser_monitoring.version": {
+      "type": "string",
+      "default": ""
+    },
     "ca_bundle_path": {
       "type": "string"
     },

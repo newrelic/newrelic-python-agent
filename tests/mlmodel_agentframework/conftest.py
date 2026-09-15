@@ -12,16 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from pathlib import Path
+
 import pytest
 from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixture.vcr import *  # noqa: F403
-from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
+from testing_support.fixtures import (
+    collector_agent_registration_fixture,
+    collector_available_fixture,
+    override_application_settings,
+)
 from testing_support.ml_testing_utils import set_trace_info
 
 from newrelic.common.package_version_utils import get_package_version, get_package_version_tuple
 
+from ._clients import *  # noqa: F403
+from ._test_agent import MODEL, build_agent, exercise_agent
+
 _default_settings = {
-    "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slowdowns.
+    "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow-downs.
     "transaction_tracer.explain_threshold": 0.0,
     "transaction_tracer.transaction_threshold": 0.0,
     "transaction_tracer.stack_trace_threshold": 0.0,
@@ -40,22 +49,10 @@ collector_agent_registration = collector_agent_registration_fixture(
 AGENT_FRAMEWORK_VERSION_TUPLE = get_package_version_tuple("agent-framework")
 AGENT_FRAMEWORK_VERSION = get_package_version("agent-framework")
 assert AGENT_FRAMEWORK_VERSION, "Failed to pull agent-framework version for supportability metric"
+EXPECTED_VERSION_METRICS = [(f"Supportability/Python/ML/MicrosoftAgentFramework/{AGENT_FRAMEWORK_VERSION}", 1)]
 
 
-@pytest.fixture(params=[False, True], ids=["ResponseStandard", "ResponseStreaming"])
-def exercise_agent(loop, request):
-    is_streaming = request.param
-
-    def _exercise_agent(agent, prompt):
-        async def _exercise():
-            if is_streaming:
-                response_stream = agent.run(prompt, stream=True)
-                async for _ in response_stream:
-                    pass
-                return await response_stream.get_final_response()
-            else:
-                return await agent.run(prompt)
-
-        return loop.run_until_complete(_exercise())
-
-    return _exercise_agent
+@pytest.fixture(autouse=True)
+def default_cassette_name(provider):
+    """Absolute path to the cassette based on the LLM provider."""
+    return str(Path(__file__).parent / "cassettes" / f"{provider}.yaml")

@@ -790,7 +790,14 @@ def _handle_streaming_generation_success(
                 # allowing this segment to properly handle the streaming
                 # generation recording.  In the meantime, we do not
                 # want to log a warning.
-                pass
+
+                _logger.debug(
+                    "When using tools, this AttributeError is an expected "
+                    "intermediary step.  However, if this stops being the "
+                    "case, running the agent in debug mode will allow us to "
+                    "view the value of `streaming_events` at this step."
+                )
+                _logger.debug("streaming_events: %s", streaming_events, stack_info=True)
             except Exception:
                 _logger.warning(STREAM_PARSING_FAILURE_LOG_MESSAGE, exc_info=True)
             finally:

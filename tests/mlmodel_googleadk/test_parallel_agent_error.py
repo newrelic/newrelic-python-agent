@@ -55,7 +55,7 @@ RIGHT_SPAN_NAME = f"Llm/agent/GoogleADK/run_async/{RIGHT_AGENT_NAME}"
 # the child. As a result, 2 distinct errors are recorded on the transaction.
 # On Python<=3.10, ADK re-raises the child's ValueError directly and the
 # transaction dedupes the error nodes, so only one error is counted.
-EXPECTED_ERROR_EVENT_COUNT = (2 if GOOGLE_ADK_VERSION_TUPLE < (2,9) else 1) if sys.version_info >= (3, 11) else 1
+EXPECTED_ERROR_EVENT_COUNT = (2 if GOOGLE_ADK_VERSION_TUPLE < (2, 9) else 1) if sys.version_info >= (3, 11) else 1
 
 
 @dt_enabled

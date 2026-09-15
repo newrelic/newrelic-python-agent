@@ -29,8 +29,9 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
 from newrelic.api.background_task import background_task
 from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 
-
-EXECUTE_FUNCTION_CALL_NAME = "execute_single_function_call_async" if GOOGLE_ADK_VERSION_TUPLE < (2,9) else "execute_single_prepared_call"
+EXECUTE_FUNCTION_CALL_NAME = (
+    "execute_single_function_call_async" if GOOGLE_ADK_VERSION_TUPLE < (2, 9) else "execute_single_prepared_call"
+)
 
 EXPECTED_METRICS = [
     (f"Llm/agent/GoogleADK/run_async/{AGENT_NAME}", 1),

@@ -749,6 +749,7 @@ def _process_configuration(section):
     _process_setting(section, "utilization.detect_aws", "getboolean", None)
     _process_setting(section, "utilization.detect_azure", "getboolean", None)
     _process_setting(section, "utilization.detect_azurefunction", "getboolean", None)
+    _process_setting(section, "utilization.detect_azureappservice", "getboolean", None)
     _process_setting(section, "utilization.detect_docker", "getboolean", None)
     _process_setting(section, "utilization.detect_kubernetes", "getboolean", None)
     _process_setting(section, "utilization.detect_gcp", "getboolean", None)

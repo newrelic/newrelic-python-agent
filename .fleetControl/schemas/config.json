@@ -1060,6 +1060,10 @@
       "type": "boolean",
       "default": true
     },
+    "utilization.detect_azureappservice": {
+      "type": "boolean",
+      "default": true
+    },
     "utilization.detect_azurefunction": {
       "type": "boolean",
       "default": true

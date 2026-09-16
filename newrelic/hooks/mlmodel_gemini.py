@@ -626,10 +626,7 @@ def _record_generation_success(
 
         input_message_content, input_role = _parse_input_message(messages)
 
-        # Parse output message content
-        # This list should have a length of 1 to represent the output message
-        # Parse the message text out to pass to any registered token counting callback
-        output_message_content = output_message_list[0].get("parts")[0].get("text") if output_message_list else None
+        output_message_content = _parse_output_message(output_message_list)
 
         # Token counts default to those reported in the response object if available,
         # but the user registered callback below may override them.
@@ -732,6 +729,25 @@ def _parse_input_message(messages):
     return None, None
 
 
+def _parse_output_message(output_message_list=None):
+    # Parse output message content
+    # This list should have a length of 1 to represent the output message
+    # Parse the message text out to pass to any registered token counting callback
+    try:
+        output_message_content = next(
+            (part.get("text") for output_message in output_message_list for part in output_message.get("parts")), None
+        )
+    except AttributeError:
+        output_message_content = None
+        _logger.debug("output_message_list = %s", output_message_list, stack_info=True)
+        _logger.warning(
+            "Unable to parse output message to Gemini LLM. Message content and role will be omitted from "
+            "corresponding LlmChatCompletionMessage event. "
+        )
+
+    return output_message_content
+
+
 def _extract_generation_config(kwargs):
     generation_config = kwargs.get("config")
     if generation_config:
@@ -761,7 +777,9 @@ def _handle_streaming_generation_success(
 
                 # Concatenate all chunk texts together to get the full response text
                 try:
-                    full_content = "".join([chunk.text for chunk in streaming_events])
+                    full_content = "".join(
+                        [(chunk.text if chunk.text is not None else "") for chunk in streaming_events]
+                    )
                 except TypeError:
                     # This is to account for tool calls, where the tool
                     # call response contains the text that is required.

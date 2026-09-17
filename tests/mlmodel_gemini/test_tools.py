@@ -76,9 +76,7 @@ def test_gemini_tool(exercise_text_model, text_generation_metrics, set_trace_inf
 @reset_core_stats_engine()
 def test_gemini_multi_text_generation(exercise_text_model, text_generation_metrics, set_trace_info, is_chat):
     # Double all the metric counts for this test as we run the model twice
-    text_generation_metrics = [
-        (m[0], m[1] * (1 if is_chat else 2)) for m in text_generation_metrics
-    ]
+    text_generation_metrics = [(m[0], m[1] * (1 if is_chat else 2)) for m in text_generation_metrics]
 
     # Expect one summary event, one message event for the input, and message event for the output for each send_message_call
     @validate_custom_event_count(count=6)

@@ -780,11 +780,12 @@ def _handle_streaming_generation_success(
                     full_content = "".join(
                         [(chunk.text if chunk.text is not None else "") for chunk in streaming_events]
                     )
+                    if full_content == "":
+                        raise TypeError
                 except TypeError:
-                    # This is to account for tool calls, where the tool
-                    # call response contains the text that is required.
-                    # If not valid, this will trigger an AttributeError
-                    # and not record a streaming success (yet).
+                    # This is to account for tool calls, where the tool call response contains
+                    # the text that is required.  If a response is not available, this will
+                    # trigger an AttributeError and not record a streaming success (yet).
                     full_content = kwargs["contents"][-1].parts[0].function_response.response["output"][0]["text"]
 
                 # Streaming responses will be a list of chunks, and we can grab metadata from the last chunk to get the final token counts.

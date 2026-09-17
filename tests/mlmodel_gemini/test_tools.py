@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
-
 import google.genai
 import pytest
 from conftest import GEMINI_VERSION_METRIC
@@ -29,7 +27,6 @@ from newrelic.api.transaction import add_custom_attribute
 PROMPT = "What is the capital of France?"
 EXPECTED_TOOL_INPUT_STR = "{'country': 'France'}"
 EXPECTED_TOOL_OUTPUT_STR = "{'output': 'Paris'}"
-PYTHON_VERSION_OVER_3_9 = sys.version_info[:2] > (3, 9)
 
 
 def get_capital(country: str) -> dict:
@@ -43,14 +40,13 @@ def get_capital(country: str) -> dict:
 def text_generation_metrics(is_streaming, is_chat):
     metric_name = "generate_content_stream" if is_streaming else "generate_content"
 
-    chat_count = 2 if PYTHON_VERSION_OVER_3_9 else 1
-    return [(f"Llm/completion/Gemini/{metric_name}", chat_count if is_chat else 1)]
+    return [(f"Llm/completion/Gemini/{metric_name}", 2 if is_chat else 1)]
 
 
 @reset_core_stats_engine()
-def test_gemini_tool(exercise_text_model, text_generation_metrics, set_trace_info, is_chat):
+def test_gemini_tool(exercise_text_model, text_generation_metrics, set_trace_info, is_chat, is_streaming):
     # Expect one summary event, one message event for the input, and message event for the output
-    @validate_custom_event_count(count=6 if (is_chat and PYTHON_VERSION_OVER_3_9) else 3)
+    @validate_custom_event_count(count=6 if (not is_streaming and is_chat) else 3)
     @validate_transaction_metrics(
         name="test_gemini_tool",
         scoped_metrics=text_generation_metrics,
@@ -81,7 +77,7 @@ def test_gemini_tool(exercise_text_model, text_generation_metrics, set_trace_inf
 def test_gemini_multi_text_generation(exercise_text_model, text_generation_metrics, set_trace_info, is_chat):
     # Double all the metric counts for this test as we run the model twice
     text_generation_metrics = [
-        (m[0], m[1] * (1 if (is_chat and PYTHON_VERSION_OVER_3_9) else 2)) for m in text_generation_metrics
+        (m[0], m[1] * (1 if is_chat else 2)) for m in text_generation_metrics
     ]
 
     # Expect one summary event, one message event for the input, and message event for the output for each send_message_call

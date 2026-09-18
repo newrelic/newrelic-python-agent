@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import inspect
 import json
 import logging
 import sys
@@ -95,6 +96,45 @@ def _extract_exception_message(exc):
         return str(exc)
 
 
+def _parsed_response(return_val):
+    """Return a parsed ``Message`` for attribute extraction from a sync response.
+
+    Callers that use the SDK's ``with_raw_response`` accessor (notably ``langchain-anthropic``'s
+    ``ChatAnthropic``) route through ``Messages.create`` but receive a raw ``APIResponse`` /
+    ``LegacyAPIResponse`` wrapper instead of a parsed ``Message``, so ``response.usage`` /
+    ``.content`` / ``.id`` are absent and token + content capture is silently lost. Parse the raw
+    response for extraction; ``.parse()`` caches its result, so the raw object handed back to the
+    caller is unaffected. Falls back to the original object on any failure so instrumentation never
+    breaks the call. See the async variant for the async-client case.
+    """
+    if hasattr(return_val, "parse") and not hasattr(return_val, "usage"):
+        try:
+            parsed = return_val.parse()
+        except Exception:
+            return return_val
+        if not inspect.isawaitable(parsed):
+            return parsed
+        # Async raw response reached the sync path unexpectedly; don't leave a coroutine dangling.
+        parsed.close()
+    return return_val
+
+
+async def _parsed_response_async(return_val):
+    """Async variant of :func:`_parsed_response`.
+
+    ``AsyncAPIResponse.parse()`` is a coroutine, so it must be awaited to yield the ``Message``.
+    """
+    if hasattr(return_val, "parse") and not hasattr(return_val, "usage"):
+        try:
+            parsed = return_val.parse()
+            if inspect.isawaitable(parsed):
+                parsed = await parsed
+            return parsed
+        except Exception:
+            return return_val
+    return return_val
+
+
 def wrap_messages_create_sync(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
@@ -164,7 +204,7 @@ def wrap_messages_create_sync(wrapped, instance, args, kwargs):
     # Non-streaming path
     ft.__exit__(None, None, None)
 
-    response = return_val
+    response = _parsed_response(return_val)
     usage = getattr(response, "usage", None)
     _record_completion_success(
         transaction=transaction,
@@ -252,7 +292,7 @@ async def wrap_messages_create_async(wrapped, instance, args, kwargs):
     # Non-streaming path
     ft.__exit__(None, None, None)
 
-    response = return_val
+    response = await _parsed_response_async(return_val)
     usage = getattr(response, "usage", None)
     _record_completion_success(
         transaction=transaction,

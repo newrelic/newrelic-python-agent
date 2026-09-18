@@ -147,6 +147,7 @@ def is_async(request):
     params=[
         # ==== Simple interfaces ====
         "create",  # Messages.create()
+        "create.with_raw_response",  # Messages.with_raw_response.create()
         "stream",  # Messages.stream()
         # ==== Alternative create() interfaces with streaming ====
         "create.stream",  # Messages.create(stream=True)
@@ -163,7 +164,7 @@ def interaction_method(request):
 
 @pytest.fixture(scope="session")
 def is_streaming(interaction_method):
-    return interaction_method != "create"
+    return interaction_method not in ("create", "create.with_raw_response")
 
 
 @pytest.fixture(scope="session")
@@ -181,6 +182,8 @@ def exercise_model(loop, sync_anthropic_client, async_anthropic_client, is_async
         # Simple interfaces
         if interaction_method == "create":
             return sync_anthropic_client.messages.create(*args, **kwargs)
+        elif interaction_method == "create.with_raw_response":
+            return sync_anthropic_client.messages.with_raw_response.create(*args, **kwargs)
         elif interaction_method == "stream":
             with sync_anthropic_client.messages.stream(*args, **kwargs) as stream:
                 return list(stream)
@@ -216,6 +219,8 @@ def exercise_model(loop, sync_anthropic_client, async_anthropic_client, is_async
             # Simple interfaces
             if interaction_method == "create":
                 return await async_anthropic_client.messages.create(*args, **kwargs)
+            elif interaction_method == "create.with_raw_response":
+                return await async_anthropic_client.messages.with_raw_response.create(*args, **kwargs)
             elif interaction_method == "stream":
                 async with async_anthropic_client.messages.stream(*args, **kwargs) as stream:
                     return [event async for event in stream]

@@ -134,6 +134,49 @@ def wrap_ServiceBusSender_produce_messages(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
 
+async def wrap_ServiceBusSender_produce_messages_async(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return await wrapped(*args, **kwargs)
+
+    transaction.add_messagebroker_info("ServiceBus", get_package_version("azure-servicebus"))
+    bound_args = bind_args(wrapped, args, kwargs)
+    message = bound_args.get("message") or bound_args.get("messages")
+
+    destination_type = destination_name = None
+
+    if hasattr(instance, "_nr_queue_name"):
+        destination_type = "Queue"
+        destination_name = instance._nr_queue_name
+    elif hasattr(instance, "_nr_topic_name"):
+        destination_type = "Topic"
+        destination_name = instance._nr_topic_name
+
+    with MessageTrace(
+        library="ServiceBus",
+        operation="Produce",
+        destination_type=destination_type,
+        destination_name=destination_name,
+        source=wrapped,
+    ) as trace:
+        try:
+            _dt_header_injector(transaction, message)
+
+            host = instance._handler._connection._hostname
+            port = instance._handler._connection._port
+            trace.agent_attributes.update(
+                {
+                    "messaging.destination.name": destination_name,
+                    "server.address": host,
+                    "server.port": port,
+                }
+            )
+        except Exception:
+            pass
+
+        return await wrapped(*args, **kwargs)
+    
+
 def wrap_ServiceBusSender_cancel_scheduled_messages(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
@@ -166,12 +209,51 @@ def wrap_ServiceBusSender_cancel_scheduled_messages(wrapped, instance, args, kwa
                     "server.port": port,
                 }
             )
-            return wrapped(*args, **kwargs)
+            # return wrapped(*args, **kwargs)
         except Exception:
             pass
 
         return wrapped(*args, **kwargs)
 
+
+async def wrap_ServiceBusSender_cancel_scheduled_messages_async(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return await wrapped(*args, **kwargs)
+
+    transaction.add_messagebroker_info("ServiceBus", get_package_version("azure-servicebus"))
+    destination_type = destination_name = None
+
+    if hasattr(instance, "_nr_queue_name"):
+        destination_type = "Queue"
+        destination_name = instance._nr_queue_name
+    elif hasattr(instance, "_nr_topic_name"):
+        destination_type = "Topic"
+        destination_name = instance._nr_topic_name
+
+    with MessageTrace(
+        library="ServiceBus",
+        operation="Produce",
+        destination_type=destination_type,
+        destination_name=destination_name,
+        source=wrapped,
+    ) as trace:
+        try:
+            host = instance._handler._connection._hostname
+            port = instance._handler._connection._port
+            trace.agent_attributes.update(
+                {
+                    "messaging.destination.name": destination_name,
+                    "server.address": host,
+                    "server.port": port,
+                }
+            )
+            # return await wrapped(*args, **kwargs)
+        except Exception:
+            pass
+
+        return await wrapped(*args, **kwargs)
+    
 
 def wrap_ServiceBusSender_exit(wrapped, instance, args, kwargs):
     try:
@@ -185,6 +267,20 @@ def wrap_ServiceBusSender_exit(wrapped, instance, args, kwargs):
         pass
 
     return wrapped(*args, **kwargs)
+
+
+async def wrap_ServiceBusSender_aexit(wrapped, instance, args, kwargs):
+    try:
+        del instance._nr_queue_name
+    except AttributeError:
+        pass
+
+    try:
+        del instance._nr_topic_name
+    except AttributeError:
+        pass
+
+    return await wrapped(*args, **kwargs)
 
 
 def wrap_ServiceBusReceiver_init(wrapped, instance, args, kwargs):
@@ -280,9 +376,49 @@ def wrap_ServiceBusReceiver_peek_messages(wrapped, instance, args, kwargs):
                     "server.port": port,
                 }
             )
-            return wrapped(*args, **kwargs)
+            # return wrapped(*args, **kwargs)
         except Exception:
-            return wrapped(*args, **kwargs)
+            pass
+
+        return wrapped(*args, **kwargs)
+
+
+async def wrap_ServiceBusReceiver_peek_messages_async(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return await wrapped(*args, **kwargs)
+
+    destination_type = destination_name = None
+
+    if hasattr(instance, "_nr_queue_name"):
+        destination_type = "Queue"
+        destination_name = instance._nr_queue_name
+    elif hasattr(instance, "_nr_topic_name"):
+        destination_type = "Topic"
+        destination_name = instance._nr_topic_name
+
+    with MessageTrace(
+        library="ServiceBus",
+        operation="Peek",
+        destination_type=destination_type,
+        destination_name=destination_name,
+        source=wrapped,
+    ) as trace:
+        try:
+            host = instance._handler._connection._hostname
+            port = instance._handler._connection._port
+            trace.agent_attributes.update(
+                {
+                    "messaging.destination.name": destination_name,
+                    "server.address": host,
+                    "server.port": port,
+                }
+            )
+            # return wrapped(*args, **kwargs)
+        except Exception:
+            pass
+
+        return await wrapped(*args, **kwargs)
 
 
 def wrap_ServiceBusSender_settle_message_with_retry(wrapped, instance, args, kwargs):
@@ -316,9 +452,49 @@ def wrap_ServiceBusSender_settle_message_with_retry(wrapped, instance, args, kwa
                     "server.port": port,
                 }
             )
-            return wrapped(*args, **kwargs)
+            # return wrapped(*args, **kwargs)
         except Exception:
-            return wrapped(*args, **kwargs) 
+            pass
+
+        return wrapped(*args, **kwargs) 
+
+
+async def wrap_ServiceBusSender_settle_message_with_retry_async(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return await wrapped(*args, **kwargs)
+
+    destination_type = destination_name = None
+
+    if hasattr(instance, "_nr_queue_name"):
+        destination_type = "Queue"
+        destination_name = instance._nr_queue_name
+    elif hasattr(instance, "_nr_topic_name"):
+        destination_type = "Topic"
+        destination_name = instance._nr_topic_name
+
+    with MessageTrace(
+        library="ServiceBus",
+        operation="Settle",
+        destination_type=destination_type,
+        destination_name=destination_name,
+        source=wrapped,
+    ) as trace:
+        try:
+            host = instance._handler._connection._hostname
+            port = instance._handler._connection._port
+            trace.agent_attributes.update(
+                {
+                    "messaging.destination.name": destination_name,
+                    "server.address": host,
+                    "server.port": port,
+                }
+            )
+            # return wrapped(*args, **kwargs)
+        except Exception:
+            pass
+
+        return await wrapped(*args, **kwargs) 
 
 
 def wrap_ServiceBusReceiver_exit(wrapped, instance, args, kwargs):
@@ -333,6 +509,20 @@ def wrap_ServiceBusReceiver_exit(wrapped, instance, args, kwargs):
         pass
 
     return wrapped(*args, **kwargs)
+
+
+async def wrap_ServiceBusReceiver_aexit(wrapped, instance, args, kwargs):
+    try:
+        del instance._nr_queue_name
+    except AttributeError:
+        pass
+
+    try:
+        del instance._nr_topic_name
+    except AttributeError:
+        pass
+
+    return await wrapped(*args, **kwargs)
 
 
 def instrument_servicebus_sender(module):
@@ -360,5 +550,22 @@ def instrument_servicebus_transport_pyamqp_transport(module):
 def instrument_servicebus_transport_uamqp_transport(module):
     if hasattr(module, "UamqpTransport"):
         wrap_function_wrapper(module, "UamqpTransport.build_received_message", wrap_build_received_message)
+
+
+def instrument_servicebus_sender_async(module):
+    if hasattr(module, "ServiceBusSender"):
+        wrap_function_wrapper(module, "ServiceBusSender.__init__", wrap_ServiceBusSender_init)
+        wrap_function_wrapper(module, "ServiceBusSender.send_messages", wrap_ServiceBusSender_produce_messages_async)
+        wrap_function_wrapper(module, "ServiceBusSender.schedule_messages", wrap_ServiceBusSender_produce_messages_async)
+        wrap_function_wrapper(module, "ServiceBusSender.cancel_scheduled_messages", wrap_ServiceBusSender_cancel_scheduled_messages_async)
+        wrap_function_wrapper(module, "ServiceBusSender.__aexit__", wrap_ServiceBusSender_aexit)
+
+
+def instrument_servicebus_receiver_async(module):
+    if hasattr(module, "ServiceBusReceiver"):
+        wrap_function_wrapper(module, "ServiceBusReceiver.__init__", wrap_ServiceBusReceiver_init)
+        wrap_function_wrapper(module, "ServiceBusReceiver.peek_messages", wrap_ServiceBusReceiver_peek_messages_async)
+        wrap_function_wrapper(module, "ServiceBusReceiver._settle_message_with_retry", wrap_ServiceBusSender_settle_message_with_retry_async)
+        wrap_function_wrapper(module, "ServiceBusReceiver.__aexit__", wrap_ServiceBusReceiver_aexit)
 
 

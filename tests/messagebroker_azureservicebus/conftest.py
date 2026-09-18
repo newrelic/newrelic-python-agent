@@ -25,6 +25,8 @@ from newrelic.common.package_version_utils import get_package_version_tuple
 PIKA_VERSION_INFO = get_package_version_tuple("azure.servicebus")
 DB_SETTINGS = servicebus_settings()
 
+# TODO: Also test for when entity name is provided instead of queue or topic
+
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
@@ -144,3 +146,130 @@ def subscription_dead_letter_receiver(client, topic_name, subscription_name):
         yield subscription_dead_letter_receiver
 
 
+#------------------
+# Async Services
+#------------------
+
+@pytest.fixture
+def async_service_bus_client(loop):
+    from azure.servicebus.aio.management import ServiceBusAdministrationClient
+    from azure.servicebus.aio import ServiceBusClient
+
+    admin_connection_string = DB_SETTINGS.get("admin_connection_string")
+    connection_string = DB_SETTINGS.get("connection_string")
+    host = DB_SETTINGS.get("host")
+    admin_port = DB_SETTINGS.get("admin_port")
+
+    queue_name = f"queue-{os.getpid()}"
+    topic_name = f"topic-{os.getpid()}"
+    subscription_name = f"subscription-{os.getpid()}"
+
+    async def setup():
+        admin = ServiceBusAdministrationClient.from_connection_string(admin_connection_string)
+        admin._impl._client._base_url = f"http://{host}:{admin_port}"
+        admin.__aenter__()
+        await admin.create_queue(queue_name)
+        await admin.create_topic(topic_name)
+        await admin.create_subscription(topic_name, subscription_name)
+
+        client = ServiceBusClient.from_connection_string(connection_string)
+        client.__aenter__()
+        return admin, client
+
+    admin_client, client = loop.run_until_complete(setup())
+
+    yield (client, queue_name, topic_name, subscription_name)
+
+    async def teardown():
+        await client.close()
+        try:
+            await admin_client.delete_queue(queue_name)
+            await admin_client.delete_subscription(topic_name, subscription_name)
+            await admin_client.delete_topic(topic_name)
+            await admin_client.close()
+        except Exception:
+            raise
+
+    loop.run_until_complete(teardown())
+
+
+@pytest.fixture
+def async_client(async_service_bus_client):
+    client, _, _, _ = async_service_bus_client
+    return client
+
+
+@pytest.fixture
+def async_queue_name(async_service_bus_client):
+    _, queue_name, _, _ = async_service_bus_client
+    return queue_name
+
+
+@pytest.fixture
+def async_topic_name(async_service_bus_client):
+    _, _, topic_name, _ = async_service_bus_client
+    return topic_name
+
+
+@pytest.fixture
+def async_subscription_name(async_service_bus_client):
+    _, _, _, subscription_name = async_service_bus_client
+    return subscription_name
+
+
+@pytest.fixture
+def async_queue_sender(async_client, async_queue_name):
+    queue_sender = async_client.get_queue_sender(queue_name=async_queue_name)
+    yield queue_sender
+    queue_sender.close()
+
+
+@pytest.fixture
+def async_topic_sender(async_client, async_topic_name):
+    topic_sender = async_client.get_topic_sender(topic_name=async_topic_name)
+    yield topic_sender
+    topic_sender.close()
+
+
+@pytest.fixture
+def async_queue_receiver(async_client, async_queue_name):
+    queue_receiver = async_client.get_queue_receiver(queue_name=async_queue_name)
+    yield queue_receiver
+    queue_receiver.close()
+
+
+@pytest.fixture
+def async_queue_dead_letter_receiver(async_client, async_queue_name):
+    from azure.servicebus import ServiceBusSubQueue
+
+    queue_dead_letter_receiver = async_client.get_queue_receiver(queue_name=async_queue_name, sub_queue=ServiceBusSubQueue.DEAD_LETTER)
+    yield queue_dead_letter_receiver
+    queue_dead_letter_receiver.close()
+
+
+@pytest.fixture
+def async_subscription_receiver(loop, async_client, async_topic_name, async_subscription_name):
+    # subscription_receiver = loop.run_until_complete(async_client.get_subscription_receiver(topic_name=async_topic_name, subscription_name=async_subscription_name))
+    # yield subscription_receiver
+    # loop.run_until_complete(subscription_receiver.close())
+
+    # with async_client.get_subscription_receiver(topic_name=async_topic_name, subscription_name=async_subscription_name) as subscription_receiver:
+    #     yield subscription_receiver
+    subscription_receiver = async_client.get_subscription_receiver(topic_name=async_topic_name, subscription_name=async_subscription_name)
+    yield subscription_receiver
+    subscription_receiver.close()
+
+
+@pytest.fixture
+def async_subscription_dead_letter_receiver(loop, async_client, async_topic_name, async_subscription_name):
+    from azure.servicebus import ServiceBusSubQueue
+
+    # subscription_dead_letter_receiver = loop.run_until_complete(async_client.get_subscription_receiver(topic_name=async_topic_name, subscription_name=async_subscription_name, sub_queue=ServiceBusSubQueue.DEAD_LETTER))
+    # yield subscription_dead_letter_receiver
+    # loop.run_until_complete(subscription_dead_letter_receiver.close())
+
+    # with async_client.get_subscription_receiver(topic_name=async_topic_name, subscription_name=async_subscription_name, sub_queue=ServiceBusSubQueue.DEAD_LETTER) as subscription_dead_letter_receiver:
+    #     yield subscription_dead_letter_receiver
+    subscription_dead_letter_receiver = async_client.get_subscription_receiver(topic_name=async_topic_name, subscription_name=async_subscription_name, sub_queue=ServiceBusSubQueue.DEAD_LETTER)
+    yield subscription_dead_letter_receiver
+    subscription_dead_letter_receiver.close()

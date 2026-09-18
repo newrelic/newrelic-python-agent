@@ -3182,6 +3182,12 @@ def _process_module_builtin_defaults():
         "azure.servicebus._transport._uamqp_transport", "newrelic.hooks.messagebroker_azureservicebus", "instrument_servicebus_transport_uamqp_transport"
     )
     _process_module_definition(
+        "azure.servicebus.aio._servicebus_sender_async", "newrelic.hooks.messagebroker_azureservicebus", "instrument_servicebus_sender_async"
+    )
+    _process_module_definition(
+        "azure.servicebus.aio._servicebus_receiver_async", "newrelic.hooks.messagebroker_azureservicebus", "instrument_servicebus_receiver_async"
+    )
+    _process_module_definition(
         "confluent_kafka.cimpl", "newrelic.hooks.messagebroker_confluentkafka", "instrument_confluentkafka_cimpl"
     )
     _process_module_definition(

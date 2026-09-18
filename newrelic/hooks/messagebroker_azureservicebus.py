@@ -12,20 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# import logging
-# import sys
-
-# from newrelic.api.application import application_instance, application_settings
-# from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.message_trace import MessageTrace
-# from newrelic.api.time_trace import current_trace, notice_error
+
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
-# from newrelic.core.config import global_settings
-
-# _logger = logging.getLogger(__name__)
 
 
 def _dt_header_injector(transaction, message):
@@ -88,8 +80,7 @@ def wrap_ServiceBusSender_init(wrapped, instance, args, kwargs):
     entity_name = bound_args.get("entity_name")
     fully_qualified_namespace = bound_args.get("full_qualified_namespace")
 
-    # If entity name was provided instead,
-    # determine if this is queue or topic.
+    # If entity name was provided instead, determine if this is queue or topic.
     entity_type = _determine_entity_type(fully_qualified_namespace, entity_name)
 
     if queue_name or (entity_type == "Queue"):
@@ -258,42 +249,6 @@ def wrap_build_received_message(wrapped, instance, args, kwargs):
         return message
 
 
-# def wrap_ServiceBusReceiver_settle_message(wrapped, instance, args, kwargs):
-#     transaction = current_transaction()
-#     if not transaction:
-#         return wrapped(*args, **kwargs)
-
-#     destination_type = destination_name = None
-
-#     if hasattr(instance, "_nr_queue_name"):
-#         destination_type = "Queue"
-#         destination_name = instance._nr_queue_name
-#     elif hasattr(instance, "_nr_topic_name"):
-#         destination_type = "Topic"
-#         destination_name = instance._nr_topic_name
-
-#     with MessageTrace(
-#         library="ServiceBus",
-#         operation="Settle",
-#         destination_type=destination_type,
-#         destination_name=destination_name,
-#         source=wrapped,
-#     ) as trace:
-#         try:
-#             host = instance._handler._connection._hostname
-#             port = instance._handler._connection._port
-#             trace.agent_attributes.update(
-#                 {
-#                     "messaging.destination.name": destination_name,
-#                     "server.address": host,
-#                     "server.port": port,
-#                 }
-#             )
-#             return wrapped(*args, **kwargs)
-#         except Exception:
-#             return wrapped(*args, **kwargs)
-
-
 def wrap_ServiceBusReceiver_peek_messages(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
@@ -366,7 +321,6 @@ def wrap_ServiceBusSender_settle_message_with_retry(wrapped, instance, args, kwa
             return wrapped(*args, **kwargs) 
 
 
-
 def wrap_ServiceBusReceiver_exit(wrapped, instance, args, kwargs):
     try:
         del instance._nr_queue_name
@@ -393,10 +347,6 @@ def instrument_servicebus_sender(module):
 def instrument_servicebus_receiver(module):
     if hasattr(module, "ServiceBusReceiver"):
         wrap_function_wrapper(module, "ServiceBusReceiver.__init__", wrap_ServiceBusReceiver_init)
-        # wrap_function_wrapper(module, "ServiceBusReceiver.complete_message", wrap_ServiceBusReceiver_settle_message)
-        # wrap_function_wrapper(module, "ServiceBusReceiver.defer_message", wrap_ServiceBusReceiver_settle_message)
-        # wrap_function_wrapper(module, "ServiceBusReceiver.dead_letter_message", wrap_ServiceBusReceiver_settle_message)
-        # wrap_function_wrapper(module, "ServiceBusReceiver.abandon_message", wrap_ServiceBusReceiver_settle_message)
         wrap_function_wrapper(module, "ServiceBusReceiver.peek_messages", wrap_ServiceBusReceiver_peek_messages)
         wrap_function_wrapper(module, "ServiceBusReceiver._settle_message_with_retry", wrap_ServiceBusSender_settle_message_with_retry)
         wrap_function_wrapper(module, "ServiceBusReceiver.__exit__", wrap_ServiceBusReceiver_exit)

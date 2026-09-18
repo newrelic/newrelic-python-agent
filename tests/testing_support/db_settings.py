@@ -391,3 +391,27 @@ def nginx_settings():
     instances = 1
     settings = [{"host": host, "port": 8080 + instance_num} for instance_num in range(instances)]
     return settings
+
+
+def servicebus_settings():
+    """Return a list of dict of settings for connecting to nginx.
+
+    Will return the correct settings, depending on which of the environments it
+    is running in. It attempts to set variables in the following order, where
+    later environments override earlier ones.
+
+        1. Local
+        2. Github Actions
+    """
+
+    host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "localhost"
+    admin_port = 5300
+    admin_connection_string = f"Endpoint=sb://{host}:{admin_port};SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;"
+    connection_string = f"Endpoint=sb://{host};SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;"
+    settings = {
+        "host": host,
+        "admin_port": admin_port,
+        "connection_string": connection_string,
+        "admin_connection_string": admin_connection_string,
+    }
+    return settings

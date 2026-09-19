@@ -13,6 +13,7 @@
 # limitations under the License.
 import logging
 import sys
+import threading
 
 from newrelic.api.application import application_instance
 from newrelic.api.error_trace import wrap_error_trace
@@ -23,6 +24,7 @@ from newrelic.api.time_trace import notice_error
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
+from newrelic.core.config import global_settings
 
 _logger = logging.getLogger(__name__)
 
@@ -32,6 +34,91 @@ HEARTBEAT_FAIL = "MessageBroker/Kafka/Heartbeat/Fail"
 HEARTBEAT_RECEIVE = "MessageBroker/Kafka/Heartbeat/Receive"
 HEARTBEAT_SESSION_TIMEOUT = "MessageBroker/Kafka/Heartbeat/SessionTimeout"
 HEARTBEAT_POLL_TIMEOUT = "MessageBroker/Kafka/Heartbeat/PollTimeout"
+
+KAFKA_CLUSTER_METRIC_PRODUCE = "MessageBroker/Kafka/Cluster/{0}/Produce/{1}"
+KAFKA_CLUSTER_METRIC_CONSUME = "MessageBroker/Kafka/Cluster/{0}/Consume/{1}"
+
+
+# Populated only by Producers (see _resolve_producer_cluster_id) and read by
+# Consumers on the same broker set (see _resolve_consumer_cluster_id). No TTL:
+# a cluster id is a stable identifier for the lifetime of a broker cluster, and
+# a new Producer/Consumer naturally refreshes it on its own first call.
+_nr_cluster_id_by_bootstrap = {}
+
+# Bootstrap-key (or, lacking one, instance id) for producers with a resolution
+# thread currently running, so concurrent produce() calls don't each spawn one.
+_nr_cluster_id_resolution_in_flight = set()
+_nr_cluster_id_resolution_lock = threading.Lock()
+
+
+def _cluster_metrics_enabled():
+    settings = global_settings()
+    return bool(getattr(getattr(settings, "kafka", None), "cluster_metrics_enabled", False))
+
+
+def _bootstrap_key(instance):
+    # Sort so that equivalent broker sets with different orderings share the same key;
+    # strip whitespace so "a:9092, b:9092" and "a:9092,b:9092" also share it.
+    servers = getattr(instance, "_nr_bootstrap_servers", None)
+    return ",".join(sorted(server.strip() for server in servers)) if servers else None
+
+
+def _resolve_producer_cluster_id(instance):
+    # Resolved at most once per producer instance: the cluster id is stable for
+    # the producer's lifetime. list_topics() genuinely blocks (it waits for
+    # librdkafka's metadata refresh), so resolution runs on a background daemon
+    # thread rather than the calling produce() thread — otherwise every produce()
+    # call would re-block for the full timeout for as long as resolution keeps
+    # failing (e.g. during a broker outage), which is worst exactly when fast
+    # failure matters most.
+    if not _cluster_metrics_enabled():
+        return None
+    cluster_id = getattr(instance, "_nr_cluster_id", None)
+    if cluster_id:
+        return cluster_id
+    key = _bootstrap_key(instance)
+    if key:
+        cluster_id = _nr_cluster_id_by_bootstrap.get(key)
+        if cluster_id:
+            instance._nr_cluster_id = cluster_id
+            return cluster_id
+    _schedule_cluster_id_resolution(instance, key)
+    return None
+
+
+def _schedule_cluster_id_resolution(instance, key):
+    guard_key = key if key else id(instance)
+    with _nr_cluster_id_resolution_lock:
+        if guard_key in _nr_cluster_id_resolution_in_flight:
+            return
+        _nr_cluster_id_resolution_in_flight.add(guard_key)
+
+    def _resolve():
+        try:
+            meta = instance.list_topics(timeout=5)
+            cluster_id = getattr(meta, "cluster_id", None)
+        except Exception:
+            _logger.debug("NR Kafka cluster ID fetch failed", exc_info=True)
+            cluster_id = None
+        if cluster_id:
+            instance._nr_cluster_id = cluster_id
+            if key:
+                _nr_cluster_id_by_bootstrap[key] = cluster_id
+        with _nr_cluster_id_resolution_lock:
+            _nr_cluster_id_resolution_in_flight.discard(guard_key)
+
+    threading.Thread(target=_resolve, daemon=True).start()
+
+
+def _resolve_consumer_cluster_id(instance):
+    # Consumers deliberately never call list_topics() themselves: librdkafka has
+    # a known use-after-free (rdkafka#4214) when topic metadata is fetched on a
+    # Consumer while a partition rebalance is in progress. Instead, read a value
+    # a Producer on the same bootstrap-servers has already resolved.
+    if not _cluster_metrics_enabled():
+        return None
+    key = _bootstrap_key(instance)
+    return _nr_cluster_id_by_bootstrap.get(key) if key else None
 
 
 def wrap_Producer_produce(wrapped, instance, args, kwargs):
@@ -62,6 +149,12 @@ def wrap_Producer_produce(wrapped, instance, args, kwargs):
     if hasattr(instance, "_nr_bootstrap_servers"):
         for server_name in instance._nr_bootstrap_servers:
             transaction.record_custom_metric(f"MessageBroker/Kafka/Nodes/{server_name}/Produce/{topic}", 1)
+
+    cluster_id = _resolve_producer_cluster_id(instance)
+    if cluster_id:
+        transaction.record_custom_metric(
+            KAFKA_CLUSTER_METRIC_PRODUCE.format(cluster_id, topic), 1
+        )
 
     with MessageTrace(
         library="Kafka", operation="Produce", destination_type="Topic", destination_name=topic, source=wrapped
@@ -171,6 +264,11 @@ def wrap_Consumer_poll(wrapped, instance, args, kwargs):
                     transaction.record_custom_metric(
                         f"MessageBroker/Kafka/Nodes/{server_name}/Consume/{destination_name}", 1
                     )
+            cluster_id = _resolve_consumer_cluster_id(instance)
+            if cluster_id:
+                transaction.record_custom_metric(
+                    KAFKA_CLUSTER_METRIC_CONSUME.format(cluster_id, destination_name), 1
+                )
             transaction.add_messagebroker_info("Confluent-Kafka", get_package_version("confluent-kafka"))
 
     return record
@@ -213,6 +311,14 @@ def wrap_SerializingProducer_init(wrapped, instance, args, kwargs):
     if hasattr(instance, "_value_serializer") and callable(instance._value_serializer):
         instance._value_serializer = wrap_serializer("Serialization/Value", "MessageBroker")(instance._value_serializer)
 
+    try:
+        conf = kwargs.get("conf") or (args[0] if args else {})
+        servers = conf.get("bootstrap.servers") if isinstance(conf, dict) else None
+        if servers:
+            instance._nr_bootstrap_servers = servers.split(",")
+    except Exception:
+        pass
+
 
 def wrap_DeserializingConsumer_init(wrapped, instance, args, kwargs):
     wrapped(*args, **kwargs)
@@ -222,6 +328,14 @@ def wrap_DeserializingConsumer_init(wrapped, instance, args, kwargs):
 
     if hasattr(instance, "_value_deserializer") and callable(instance._value_deserializer):
         instance._value_deserializer = wrap_serializer("Deserialization/Value", "Message")(instance._value_deserializer)
+
+    try:
+        conf = kwargs.get("conf") or (args[0] if args else {})
+        servers = conf.get("bootstrap.servers") if isinstance(conf, dict) else None
+        if servers:
+            instance._nr_bootstrap_servers = servers.split(",")
+    except Exception:
+        pass
 
 
 def wrap_Producer_init(wrapped, instance, args, kwargs):

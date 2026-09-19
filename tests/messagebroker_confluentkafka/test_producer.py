@@ -14,6 +14,7 @@
 
 import threading
 import time
+from types import SimpleNamespace
 
 import pytest
 from conftest import cache_kafka_producer_headers
@@ -24,6 +25,7 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.common.object_names import callable_name
+from newrelic.core.config import global_settings
 
 
 @pytest.mark.parametrize(
@@ -152,3 +154,57 @@ def test_producer_errors(topic, producer, monkeypatch):
 @pytest.fixture
 def expected_broker_metrics(broker, topic):
     return [(f"MessageBroker/Kafka/Nodes/{server}/Produce/{topic}", 1) for server in broker.split(",")]
+
+
+# ---------------------------------------------------------------------------
+# Cluster-ID metric tests (confluent-kafka)
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def producer_with_cluster_id(producer, broker, monkeypatch, send_producer_message):
+    """Enable cluster metrics and stub list_topics() so the producer's
+    cluster-id read (see _resolve_producer_cluster_id) is deterministic and
+    doesn't depend on a real broker round trip.
+
+    Resolution runs on a background thread (see _schedule_cluster_id_resolution),
+    so it's never available on the very first produce() call that triggers it —
+    same as real usage. Send one warm-up message here and wait for that thread
+    to finish, so the metric assertion in the actual test can rely on the id
+    already being cached on the instance.
+    """
+    test_cluster_id = "confluent-cluster-test-999"
+    settings = global_settings()
+    monkeypatch.setattr(settings.kafka, "cluster_metrics_enabled", True)
+    monkeypatch.setattr(producer, "list_topics", lambda timeout=0: SimpleNamespace(cluster_id=test_cluster_id))
+    # Also need bootstrap servers so the Nodes metrics fire correctly
+    if not hasattr(producer, "_nr_bootstrap_servers"):
+        producer._nr_bootstrap_servers = broker.split(",")
+
+    @background_task()
+    def _warm_up():
+        send_producer_message()
+
+    _warm_up()  # triggers resolution; id isn't cached on the instance yet
+    deadline = time.time() + 2
+    while getattr(producer, "_nr_cluster_id", None) is None and time.time() < deadline:
+        time.sleep(0.01)
+    assert producer._nr_cluster_id == test_cluster_id, "background cluster-id resolution did not complete"
+
+    return producer, test_cluster_id
+
+
+def test_cluster_produce_metric(topic, producer_with_cluster_id, send_producer_message, client_type):
+    """MessageBroker/Kafka/Cluster/{id}/Produce/{topic} appears after produce()."""
+    _, cluster_id = producer_with_cluster_id
+    cluster_metric = f"MessageBroker/Kafka/Cluster/{cluster_id}/Produce/{topic}"
+
+    @validate_transaction_metrics(
+        "test_producer:test_cluster_produce_metric.<locals>.test",
+        custom_metrics=[(cluster_metric, 1)],
+        background_task=True,
+    )
+    @background_task()
+    def test():
+        send_producer_message()
+
+    test()

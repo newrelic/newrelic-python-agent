@@ -97,16 +97,7 @@ def _extract_exception_message(exc):
 
 
 def _parsed_response(return_val):
-    """Return a parsed ``Message`` for attribute extraction from a sync response.
-
-    Callers that use the SDK's ``with_raw_response`` accessor (notably ``langchain-anthropic``'s
-    ``ChatAnthropic``) route through ``Messages.create`` but receive a raw ``APIResponse`` /
-    ``LegacyAPIResponse`` wrapper instead of a parsed ``Message``, so ``response.usage`` /
-    ``.content`` / ``.id`` are absent and token + content capture is silently lost. Parse the raw
-    response for extraction; ``.parse()`` caches its result, so the raw object handed back to the
-    caller is unaffected. Falls back to the original object on any failure so instrumentation never
-    breaks the call. See the async variant for the async-client case.
-    """
+    # Convert any unparsed APIResponse objects to Message objects for instrumentation capture.
     if hasattr(return_val, "parse") and not hasattr(return_val, "usage"):
         try:
             parsed = return_val.parse()
@@ -120,10 +111,7 @@ def _parsed_response(return_val):
 
 
 async def _parsed_response_async(return_val):
-    """Async variant of :func:`_parsed_response`.
-
-    ``AsyncAPIResponse.parse()`` is a coroutine, so it must be awaited to yield the ``Message``.
-    """
+    # Async variant of _parsed_response that awaits the parse() coroutine.
     if hasattr(return_val, "parse") and not hasattr(return_val, "usage"):
         try:
             parsed = return_val.parse()

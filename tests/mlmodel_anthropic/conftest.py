@@ -183,7 +183,8 @@ def exercise_model(loop, sync_anthropic_client, async_anthropic_client, is_async
         if interaction_method == "create":
             return sync_anthropic_client.messages.create(*args, **kwargs)
         elif interaction_method == "create.with_raw_response":
-            return sync_anthropic_client.messages.with_raw_response.create(*args, **kwargs)
+            raw_response = sync_anthropic_client.messages.with_raw_response.create(*args, **kwargs)
+            return raw_response.parse()
         elif interaction_method == "stream":
             with sync_anthropic_client.messages.stream(*args, **kwargs) as stream:
                 return list(stream)
@@ -220,7 +221,8 @@ def exercise_model(loop, sync_anthropic_client, async_anthropic_client, is_async
             if interaction_method == "create":
                 return await async_anthropic_client.messages.create(*args, **kwargs)
             elif interaction_method == "create.with_raw_response":
-                return await async_anthropic_client.messages.with_raw_response.create(*args, **kwargs)
+                raw_response = await async_anthropic_client.messages.with_raw_response.create(*args, **kwargs)
+                return await raw_response.parse()
             elif interaction_method == "stream":
                 async with async_anthropic_client.messages.stream(*args, **kwargs) as stream:
                     return [event async for event in stream]

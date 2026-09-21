@@ -367,6 +367,37 @@ def test_async_topic_distributed_traces_one_sent_two_received(loop, async_topic_
     receive2()
 
 
+def test_async_topic_send_and_receive_entity_name(loop, async_topic_name, async_subscription_name, async_topic_sender_as_entity, async_subscription_receiver_as_entity):
+    _metrics = [
+        (f"MessageBroker/ServiceBus/Topic/Produce/Named/{async_topic_name}-entity", 1),
+        (f"MessageBroker/ServiceBus/Topic/Consume/Named/{async_topic_name}-entity/Subscriptions/{async_subscription_name}-entity", 1),
+        (f"MessageBroker/ServiceBus/Topic/Settle/Named/{async_topic_name}-entity/Subscriptions/{async_subscription_name}-entity", 1),
+    ]
+
+    async def _test():
+        message_text = "Send message from topic."
+        sent_message = ServiceBusMessage(message_text)
+        await async_topic_sender_as_entity.send_messages(sent_message)
+
+        received_messages = await async_subscription_receiver_as_entity.receive_messages(max_message_count=1, max_wait_time=5)
+        for message in received_messages:
+            message_body = message._message.data[0].decode()
+            assert message_body == message_text
+            await async_subscription_receiver_as_entity.complete_message(message)
+
+    @validate_transaction_metrics(
+        "test_async_topic:test_async_topic_send_and_receive_entity_name.<locals>.test",
+        scoped_metrics=_metrics,
+        rollup_metrics=_metrics,
+        background_task=True,
+    )
+    @background_task()
+    def test():
+        loop.run_until_complete(_test())
+
+    test()
+
+
 @pytest.mark.skip(reason="Emulator does not support this")
 def test_async_topic_send_and_receive_iterative(loop, async_topic_name, async_subscription_name, async_topic_sender, async_subscription_receiver):
     """

@@ -337,6 +337,40 @@ def test_queue_distributed_traces_one_sent_two_received(queue_name, queue_sender
     _receive2()
 
 
+def test_queue_send_and_receive_entity_name(queue_sender_as_entity, queue_receiver_as_entity):
+    entity_name_send, queue_sender = queue_sender_as_entity
+    entity_name_receive, queue_receiver = queue_receiver_as_entity
+
+    assert entity_name_send == entity_name_receive
+    entity_name = entity_name_receive
+
+    _metrics = [
+        (f"MessageBroker/ServiceBus/Queue/Produce/Named/{entity_name}", 1),
+        (f"MessageBroker/ServiceBus/Queue/Consume/Named/{entity_name}", 1),
+        (f"MessageBroker/ServiceBus/Queue/Settle/Named/{entity_name}", 1),
+    ]
+
+    @validate_transaction_metrics(
+        "test_queue:test_queue_send_and_receive_entity_name.<locals>._test",
+        scoped_metrics=_metrics,
+        rollup_metrics=_metrics,
+        background_task=True,
+    )
+    @background_task()
+    def _test():
+        message_text = "Send message from queue."
+        sent_message = ServiceBusMessage(message_text)
+        queue_sender.send_messages(sent_message)
+
+        received_messages = queue_receiver.receive_messages(max_message_count=1, max_wait_time=5)
+        for message in received_messages:
+            message_body = message._message.data[0].decode()
+            assert message_body == message_text
+            queue_receiver.complete_message(message)
+
+    _test()
+
+
 @pytest.mark.skip(reason="Emulator does not support this")
 def test_queue_send_and_receive_iterative(queue_name, queue_sender, queue_receiver):
     """

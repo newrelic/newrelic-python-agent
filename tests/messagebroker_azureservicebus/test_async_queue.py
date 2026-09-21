@@ -355,6 +355,37 @@ def test_async_queue_distributed_traces_one_sent_two_received(loop, async_queue_
         loop.run_until_complete(_receive2())
 
 
+def test_async_queue_send_and_receive_entity_name(loop, async_queue_name, async_queue_sender_as_entity, async_queue_receiver_as_entity):
+    _metrics = [
+        (f"MessageBroker/ServiceBus/Queue/Produce/Named/{async_queue_name}-entity", 1),
+        (f"MessageBroker/ServiceBus/Queue/Consume/Named/{async_queue_name}-entity", 1),
+        (f"MessageBroker/ServiceBus/Queue/Settle/Named/{async_queue_name}-entity", 1),
+    ]
+
+    async def _test():
+        message_text = "Send message from queue."
+        sent_message = ServiceBusMessage(message_text)
+        await async_queue_sender_as_entity.send_messages(sent_message)
+
+        received_messages = await async_queue_receiver_as_entity.receive_messages(max_message_count=1, max_wait_time=5)
+        for message in received_messages:
+            message_body = message._message.data[0].decode()
+            assert message_body == message_text
+            await async_queue_receiver_as_entity.complete_message(message)
+
+    @validate_transaction_metrics(
+        "test_async_queue:test_async_queue_send_and_receive_entity_name.<locals>.test",
+        scoped_metrics=_metrics,
+        rollup_metrics=_metrics,
+        background_task=True,
+    )
+    @background_task()
+    def test():
+        loop.run_until_complete(_test())
+
+    test()
+
+
 @pytest.mark.skip(reason="Emulator does not support this")
 def test_async_queue_send_and_receive_iterative(loop, async_queue_name, async_queue_sender, async_queue_receiver):
     """

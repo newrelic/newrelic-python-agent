@@ -337,6 +337,40 @@ def test_topic_distributed_traces_one_sent_two_received(topic_name, subscription
     _receive2()
 
 
+def test_topic_send_and_receive_as_entity(topic_sender_as_entity, subscription_receiver_as_entity):
+    entity_name_send, topic_sender = topic_sender_as_entity
+    entity_name_receive, subscription_name, subscription_receiver = subscription_receiver_as_entity 
+
+    assert entity_name_send == entity_name_receive
+    entity_name = entity_name_send
+
+    _metrics = [
+        (f"MessageBroker/ServiceBus/Topic/Produce/Named/{entity_name}", 1),
+        (f"MessageBroker/ServiceBus/Topic/Consume/Named/{entity_name}/Subscriptions/{subscription_name}", 1),
+        (f"MessageBroker/ServiceBus/Topic/Settle/Named/{entity_name}/Subscriptions/{subscription_name}", 1),
+    ]
+
+    @validate_transaction_metrics(
+        "test_topic:test_topic_send_and_receive_as_entity.<locals>._test",
+        scoped_metrics=_metrics,
+        rollup_metrics=_metrics,
+        background_task=True,
+    )
+    @background_task()
+    def _test():
+        message_text = "Send message from topic."
+        sent_message = ServiceBusMessage(message_text)
+        topic_sender.send_messages(sent_message)
+
+        received_messages = subscription_receiver.receive_messages(max_message_count=1, max_wait_time=5)
+        for message in received_messages:
+            message_body = message._message.data[0].decode()
+            assert message_body == message_text
+            subscription_receiver.complete_message(message)
+
+    _test()
+
+
 @pytest.mark.skip(reason="Emulator does not support this")
 def test_topic_send_and_receive_iterative(topic_name, subscription_name, topic_sender, subscription_receiver):
     """

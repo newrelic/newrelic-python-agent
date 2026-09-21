@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import inspect
 import json
 import os
 from pathlib import Path
@@ -222,7 +223,10 @@ def exercise_model(loop, sync_anthropic_client, async_anthropic_client, is_async
                 return await async_anthropic_client.messages.create(*args, **kwargs)
             elif interaction_method == "create.with_raw_response":
                 raw_response = await async_anthropic_client.messages.with_raw_response.create(*args, **kwargs)
-                return await raw_response.parse()
+                response = raw_response.parse()
+                if inspect.isawaitable(response):
+                    response = await response
+                return response
             elif interaction_method == "stream":
                 async with async_anthropic_client.messages.stream(*args, **kwargs) as stream:
                     return [event async for event in stream]

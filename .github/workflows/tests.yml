@@ -69,6 +69,7 @@ jobs:
       - rabbitmq
       - redis
       - rediscluster
+      - servicebus
       - solr
       - valkey
 
@@ -2041,6 +2042,99 @@ jobs:
         if: always()
         run: |
           docker compose -f .github/containers/rediscluster/docker-compose.yml down
+
+  servicebus:
+    env:
+      TOTAL_GROUPS: 1
+
+    strategy:
+      fail-fast: false
+      matrix:
+        group-number: [1]
+
+    runs-on: ubuntu-24.04
+    container:
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      options: >-
+        --add-host=host.docker.internal:host-gateway
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # 7.0.1
+
+      - name: Fetch git tags
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git fetch --tags origin
+
+      - name: Configure pip cache
+        run: |
+          mkdir -p /github/home/.cache/pip
+          chown -R "$(whoami)" /github/home/.cache/pip
+
+      - name: Start Azure Service Bus Emulator
+        run: |
+          docker compose \
+            -f .github/containers/servicebus/docker-compose.yml \
+            up -d \
+            --wait \
+            --wait-timeout 60 \
+            && exit 0
+          echo "MSSQL did not become healthy in time"
+          docker compose -f .github/containers/servicebus/docker-compose.yml logs
+          exit 1
+
+      - name: Wait for Service Bus Emulator Health Check
+        run: |
+          echo "Waiting for emulator to become healthy."
+          timeout 90s bash -c '
+            until curl -s -f http://host.docker.internal:5300/health 2>/dev/null; do
+              sleep 5
+            done'
+          echo "Emulator is ready."
+
+      - name: Get Environments
+        id: get-envs
+        run: |
+          tox -l | python ./.github/scripts/get-envs.py
+        env:
+          GROUP_NUMBER: ${{ matrix.group-number }}
+
+      - name: Test
+        run: |
+          tox run-parallel \
+            -v -e ${{ steps.get-envs.outputs.envs }} \
+            --result-json=./.tox/${{ github.job }}-${{ matrix.group-number }}-${{ github.run_id }}-${{ job.check_run_id }}-results.json \
+            --exit-and-dump-after=900
+        env:
+          SERVICEBUS_CONNECTION_STRING: "Endpoint=sb://localhost:5672;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;"
+          TOX_PARALLEL_NO_SPINNER: 1
+          FORCE_COLOR: "true"
+
+      - name: Upload Coverage Artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # 7.0.1
+        if: always()
+        with:
+          name: coverage-${{ github.job }}-${{ strategy.job-index }}
+          path: ./**/.coverage.*
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Upload Results Artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # 7.0.1
+        if: always()
+        with:
+          name: results-${{ github.job }}-${{ strategy.job-index }}
+          path: ./.tox/*-results.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: Stop Containers
+        if: always()
+        run: |
+          docker compose -f .github/containers/servicebus/docker-compose.yml down
 
   solr:
     env:

@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from newrelic.api.message_trace import MessageTrace
-
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
@@ -46,13 +45,13 @@ def _dt_header_acceptor(transaction, message):
     headers = getattr(message, "application_properties", None)
     # The keys and headers get converted to bytes.
     # We need to convert them back to strings.
-    string_headers = {k.decode('utf-8'): v.decode('utf-8') for k, v in headers.items()}
+    string_headers = {k.decode("utf-8"): v.decode("utf-8") for k, v in headers.items()}
     transaction.accept_distributed_trace_headers(string_headers)
 
 
 def _determine_entity_type(connection_str_or_namespace, entity_name=None):
-    from azure.servicebus.management import ServiceBusAdministrationClient
     from azure.core.exceptions import ResourceNotFoundError
+    from azure.servicebus.management import ServiceBusAdministrationClient
 
     if not entity_name:
         return
@@ -69,7 +68,7 @@ def _determine_entity_type(connection_str_or_namespace, entity_name=None):
             return "Topic"
         except ResourceNotFoundError:
             pass
-            
+
         return "unknown"
 
 
@@ -122,11 +121,7 @@ def wrap_ServiceBusSender_produce_messages(wrapped, instance, args, kwargs):
             host = instance._handler._connection._hostname
             port = instance._handler._connection._port
             trace.agent_attributes.update(
-                {
-                    "messaging.destination.name": destination_name,
-                    "server.address": host,
-                    "server.port": port,
-                }
+                {"messaging.destination.name": destination_name, "server.address": host, "server.port": port}
             )
         except Exception:
             pass
@@ -165,17 +160,13 @@ async def wrap_ServiceBusSender_produce_messages_async(wrapped, instance, args, 
             host = instance._handler._connection._hostname
             port = instance._handler._connection._port
             trace.agent_attributes.update(
-                {
-                    "messaging.destination.name": destination_name,
-                    "server.address": host,
-                    "server.port": port,
-                }
+                {"messaging.destination.name": destination_name, "server.address": host, "server.port": port}
             )
         except Exception:
             pass
 
         return await wrapped(*args, **kwargs)
-    
+
 
 def wrap_ServiceBusSender_cancel_scheduled_messages(wrapped, instance, args, kwargs):
     transaction = current_transaction()
@@ -203,11 +194,7 @@ def wrap_ServiceBusSender_cancel_scheduled_messages(wrapped, instance, args, kwa
             host = instance._handler._connection._hostname
             port = instance._handler._connection._port
             trace.agent_attributes.update(
-                {
-                    "messaging.destination.name": destination_name,
-                    "server.address": host,
-                    "server.port": port,
-                }
+                {"messaging.destination.name": destination_name, "server.address": host, "server.port": port}
             )
             # return wrapped(*args, **kwargs)
         except Exception:
@@ -242,18 +229,14 @@ async def wrap_ServiceBusSender_cancel_scheduled_messages_async(wrapped, instanc
             host = instance._handler._connection._hostname
             port = instance._handler._connection._port
             trace.agent_attributes.update(
-                {
-                    "messaging.destination.name": destination_name,
-                    "server.address": host,
-                    "server.port": port,
-                }
+                {"messaging.destination.name": destination_name, "server.address": host, "server.port": port}
             )
             # return await wrapped(*args, **kwargs)
         except Exception:
             pass
 
         return await wrapped(*args, **kwargs)
-    
+
 
 def wrap_ServiceBusSender_exit(wrapped, instance, args, kwargs):
     try:
@@ -295,9 +278,9 @@ def wrap_ServiceBusReceiver_init(wrapped, instance, args, kwargs):
     # If entity name was provided instead,
     # determine if this is queue or topic.
     if queue_name or (entity_name == entity_path):
-        instance._nr_queue_name = entity_path 
+        instance._nr_queue_name = entity_path
     elif topic_name or (entity_name != entity_path):
-        instance._nr_topic_name = entity_path 
+        instance._nr_topic_name = entity_path
 
     return result
 
@@ -309,8 +292,8 @@ def wrap_build_received_message(wrapped, instance, args, kwargs):
 
     bound_args = bind_args(wrapped, args, kwargs)
     receiver = bound_args.get("receiver")
-    entity_name = getattr(receiver, "_entity_name")
-    entity_path = getattr(receiver, "_entity_path")
+    entity_name = receiver._entity_name
+    entity_path = receiver._entity_path
 
     message = wrapped(*args, **kwargs)
 
@@ -333,11 +316,7 @@ def wrap_build_received_message(wrapped, instance, args, kwargs):
             host = receiver._handler._connection._hostname
             port = receiver._handler._connection._port
             trace.agent_attributes.update(
-                {
-                    "messaging.destination.name": destination_name,
-                    "server.address": host,
-                    "server.port": port,
-                }
+                {"messaging.destination.name": destination_name, "server.address": host, "server.port": port}
             )
         except Exception:
             pass
@@ -370,11 +349,7 @@ def wrap_ServiceBusReceiver_peek_messages(wrapped, instance, args, kwargs):
             host = instance._handler._connection._hostname
             port = instance._handler._connection._port
             trace.agent_attributes.update(
-                {
-                    "messaging.destination.name": destination_name,
-                    "server.address": host,
-                    "server.port": port,
-                }
+                {"messaging.destination.name": destination_name, "server.address": host, "server.port": port}
             )
             # return wrapped(*args, **kwargs)
         except Exception:
@@ -408,11 +383,7 @@ async def wrap_ServiceBusReceiver_peek_messages_async(wrapped, instance, args, k
             host = instance._handler._connection._hostname
             port = instance._handler._connection._port
             trace.agent_attributes.update(
-                {
-                    "messaging.destination.name": destination_name,
-                    "server.address": host,
-                    "server.port": port,
-                }
+                {"messaging.destination.name": destination_name, "server.address": host, "server.port": port}
             )
             # return wrapped(*args, **kwargs)
         except Exception:
@@ -446,17 +417,13 @@ def wrap_ServiceBusSender_settle_message_with_retry(wrapped, instance, args, kwa
             host = instance._handler._connection._hostname
             port = instance._handler._connection._port
             trace.agent_attributes.update(
-                {
-                    "messaging.destination.name": destination_name,
-                    "server.address": host,
-                    "server.port": port,
-                }
+                {"messaging.destination.name": destination_name, "server.address": host, "server.port": port}
             )
             # return wrapped(*args, **kwargs)
         except Exception:
             pass
 
-        return wrapped(*args, **kwargs) 
+        return wrapped(*args, **kwargs)
 
 
 async def wrap_ServiceBusSender_settle_message_with_retry_async(wrapped, instance, args, kwargs):
@@ -484,17 +451,13 @@ async def wrap_ServiceBusSender_settle_message_with_retry_async(wrapped, instanc
             host = instance._handler._connection._hostname
             port = instance._handler._connection._port
             trace.agent_attributes.update(
-                {
-                    "messaging.destination.name": destination_name,
-                    "server.address": host,
-                    "server.port": port,
-                }
+                {"messaging.destination.name": destination_name, "server.address": host, "server.port": port}
             )
             # return wrapped(*args, **kwargs)
         except Exception:
             pass
 
-        return await wrapped(*args, **kwargs) 
+        return await wrapped(*args, **kwargs)
 
 
 def wrap_ServiceBusReceiver_exit(wrapped, instance, args, kwargs):
@@ -530,7 +493,9 @@ def instrument_servicebus_sender(module):
         wrap_function_wrapper(module, "ServiceBusSender.__init__", wrap_ServiceBusSender_init)
         wrap_function_wrapper(module, "ServiceBusSender.send_messages", wrap_ServiceBusSender_produce_messages)
         wrap_function_wrapper(module, "ServiceBusSender.schedule_messages", wrap_ServiceBusSender_produce_messages)
-        wrap_function_wrapper(module, "ServiceBusSender.cancel_scheduled_messages", wrap_ServiceBusSender_cancel_scheduled_messages)
+        wrap_function_wrapper(
+            module, "ServiceBusSender.cancel_scheduled_messages", wrap_ServiceBusSender_cancel_scheduled_messages
+        )
         wrap_function_wrapper(module, "ServiceBusSender.__exit__", wrap_ServiceBusSender_exit)
 
 
@@ -538,7 +503,9 @@ def instrument_servicebus_receiver(module):
     if hasattr(module, "ServiceBusReceiver"):
         wrap_function_wrapper(module, "ServiceBusReceiver.__init__", wrap_ServiceBusReceiver_init)
         wrap_function_wrapper(module, "ServiceBusReceiver.peek_messages", wrap_ServiceBusReceiver_peek_messages)
-        wrap_function_wrapper(module, "ServiceBusReceiver._settle_message_with_retry", wrap_ServiceBusSender_settle_message_with_retry)
+        wrap_function_wrapper(
+            module, "ServiceBusReceiver._settle_message_with_retry", wrap_ServiceBusSender_settle_message_with_retry
+        )
         wrap_function_wrapper(module, "ServiceBusReceiver.__exit__", wrap_ServiceBusReceiver_exit)
 
 
@@ -556,8 +523,12 @@ def instrument_servicebus_sender_async(module):
     if hasattr(module, "ServiceBusSender"):
         wrap_function_wrapper(module, "ServiceBusSender.__init__", wrap_ServiceBusSender_init)
         wrap_function_wrapper(module, "ServiceBusSender.send_messages", wrap_ServiceBusSender_produce_messages_async)
-        wrap_function_wrapper(module, "ServiceBusSender.schedule_messages", wrap_ServiceBusSender_produce_messages_async)
-        wrap_function_wrapper(module, "ServiceBusSender.cancel_scheduled_messages", wrap_ServiceBusSender_cancel_scheduled_messages_async)
+        wrap_function_wrapper(
+            module, "ServiceBusSender.schedule_messages", wrap_ServiceBusSender_produce_messages_async
+        )
+        wrap_function_wrapper(
+            module, "ServiceBusSender.cancel_scheduled_messages", wrap_ServiceBusSender_cancel_scheduled_messages_async
+        )
         wrap_function_wrapper(module, "ServiceBusSender.__aexit__", wrap_ServiceBusSender_aexit)
 
 
@@ -565,7 +536,9 @@ def instrument_servicebus_receiver_async(module):
     if hasattr(module, "ServiceBusReceiver"):
         wrap_function_wrapper(module, "ServiceBusReceiver.__init__", wrap_ServiceBusReceiver_init)
         wrap_function_wrapper(module, "ServiceBusReceiver.peek_messages", wrap_ServiceBusReceiver_peek_messages_async)
-        wrap_function_wrapper(module, "ServiceBusReceiver._settle_message_with_retry", wrap_ServiceBusSender_settle_message_with_retry_async)
+        wrap_function_wrapper(
+            module,
+            "ServiceBusReceiver._settle_message_with_retry",
+            wrap_ServiceBusSender_settle_message_with_retry_async,
+        )
         wrap_function_wrapper(module, "ServiceBusReceiver.__aexit__", wrap_ServiceBusReceiver_aexit)
-
-

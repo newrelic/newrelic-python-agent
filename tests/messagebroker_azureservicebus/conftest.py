@@ -13,8 +13,8 @@
 # limitations under the License.
 
 import os
-import pytest
 
+import pytest
 from testing_support.db_settings import servicebus_settings
 from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
@@ -41,14 +41,15 @@ collector_agent_registration = collector_agent_registration_fixture(
 )
 
 
-#------------------
+# ------------------
 # Sync Services
-#------------------
+# ------------------
+
 
 @pytest.fixture
 def service_bus_client():
-    from azure.servicebus.management import ServiceBusAdministrationClient
     from azure.servicebus import ServiceBusClient
+    from azure.servicebus.management import ServiceBusAdministrationClient
 
     admin_connection_string = DB_SETTINGS.get("admin_connection_string")
     connection_string = DB_SETTINGS.get("connection_string")
@@ -81,8 +82,8 @@ def service_bus_client():
 
 @pytest.fixture
 def service_bus_client_entity_queue():
-    from azure.servicebus.management import ServiceBusAdministrationClient
     from azure.servicebus import ServiceBusClient
+    from azure.servicebus.management import ServiceBusAdministrationClient
 
     admin_connection_string = DB_SETTINGS.get("admin_connection_string")
     connection_string = DB_SETTINGS.get("connection_string")
@@ -110,8 +111,8 @@ def service_bus_client_entity_queue():
 
 @pytest.fixture
 def service_bus_client_entity_topic():
-    from azure.servicebus.management import ServiceBusAdministrationClient
     from azure.servicebus import ServiceBusClient
+    from azure.servicebus.management import ServiceBusAdministrationClient
 
     admin_connection_string = DB_SETTINGS.get("admin_connection_string")
     connection_string = DB_SETTINGS.get("connection_string")
@@ -200,7 +201,9 @@ def queue_receiver(client, queue_name):
 def queue_dead_letter_receiver(client, queue_name):
     from azure.servicebus import ServiceBusSubQueue
 
-    with client.get_queue_receiver(queue_name=queue_name, sub_queue=ServiceBusSubQueue.DEAD_LETTER) as queue_dead_letter_receiver:
+    with client.get_queue_receiver(
+        queue_name=queue_name, sub_queue=ServiceBusSubQueue.DEAD_LETTER
+    ) as queue_dead_letter_receiver:
         yield queue_dead_letter_receiver
 
 
@@ -213,7 +216,9 @@ def queue_receiver_as_entity(service_bus_client_entity_queue):
 
 @pytest.fixture
 def subscription_receiver(client, topic_name, subscription_name):
-    with client.get_subscription_receiver(topic_name=topic_name, subscription_name=subscription_name) as subscription_receiver:
+    with client.get_subscription_receiver(
+        topic_name=topic_name, subscription_name=subscription_name
+    ) as subscription_receiver:
         yield subscription_receiver
 
 
@@ -221,25 +226,30 @@ def subscription_receiver(client, topic_name, subscription_name):
 def subscription_dead_letter_receiver(client, topic_name, subscription_name):
     from azure.servicebus import ServiceBusSubQueue
 
-    with client.get_subscription_receiver(topic_name=topic_name, subscription_name=subscription_name, sub_queue=ServiceBusSubQueue.DEAD_LETTER) as subscription_dead_letter_receiver:
+    with client.get_subscription_receiver(
+        topic_name=topic_name, subscription_name=subscription_name, sub_queue=ServiceBusSubQueue.DEAD_LETTER
+    ) as subscription_dead_letter_receiver:
         yield subscription_dead_letter_receiver
 
 
 @pytest.fixture
 def subscription_receiver_as_entity(service_bus_client_entity_topic):
     client, topic_name, subscription_name = service_bus_client_entity_topic
-    with client.get_subscription_receiver(topic_name=topic_name, subscription_name=subscription_name) as entity_receiver:
+    with client.get_subscription_receiver(
+        topic_name=topic_name, subscription_name=subscription_name
+    ) as entity_receiver:
         yield topic_name, subscription_name, entity_receiver
 
 
-#------------------
+# ------------------
 # Async Services
-#------------------
+# ------------------
+
 
 @pytest.fixture
 def async_service_bus_client(loop):
-    from azure.servicebus.aio.management import ServiceBusAdministrationClient
     from azure.servicebus.aio import ServiceBusClient
+    from azure.servicebus.aio.management import ServiceBusAdministrationClient
 
     admin_connection_string = DB_SETTINGS.get("admin_connection_string")
     connection_string = DB_SETTINGS.get("connection_string")
@@ -282,8 +292,8 @@ def async_service_bus_client(loop):
 
 @pytest.fixture
 def async_service_bus_client_entity_queue(loop):
-    from azure.servicebus.aio.management import ServiceBusAdministrationClient
     from azure.servicebus.aio import ServiceBusClient
+    from azure.servicebus.aio.management import ServiceBusAdministrationClient
 
     admin_connection_string = DB_SETTINGS.get("admin_connection_string")
     host = DB_SETTINGS.get("host")
@@ -322,8 +332,8 @@ def async_service_bus_client_entity_queue(loop):
 
 @pytest.fixture
 def async_service_bus_client_entity_topic(loop):
-    from azure.servicebus.aio.management import ServiceBusAdministrationClient
     from azure.servicebus.aio import ServiceBusClient
+    from azure.servicebus.aio.management import ServiceBusAdministrationClient
 
     admin_connection_string = DB_SETTINGS.get("admin_connection_string")
     host = DB_SETTINGS.get("host")
@@ -361,7 +371,6 @@ def async_service_bus_client_entity_topic(loop):
         await admin_client.close()
 
     loop.run_until_complete(teardown())
-
 
 
 @pytest.fixture
@@ -433,19 +442,22 @@ def async_queue_receiver_as_entity(async_service_bus_client_entity_queue):
     entity_receiver.close()
 
 
-
 @pytest.fixture
 def async_queue_dead_letter_receiver(async_client, async_queue_name):
     from azure.servicebus import ServiceBusSubQueue
 
-    queue_dead_letter_receiver = async_client.get_queue_receiver(queue_name=async_queue_name, sub_queue=ServiceBusSubQueue.DEAD_LETTER)
+    queue_dead_letter_receiver = async_client.get_queue_receiver(
+        queue_name=async_queue_name, sub_queue=ServiceBusSubQueue.DEAD_LETTER
+    )
     yield queue_dead_letter_receiver
     queue_dead_letter_receiver.close()
 
 
 @pytest.fixture
 def async_subscription_receiver(async_client, async_topic_name, async_subscription_name):
-    subscription_receiver = async_client.get_subscription_receiver(topic_name=async_topic_name, subscription_name=async_subscription_name)
+    subscription_receiver = async_client.get_subscription_receiver(
+        topic_name=async_topic_name, subscription_name=async_subscription_name
+    )
     yield subscription_receiver
     subscription_receiver.close()
 
@@ -454,7 +466,9 @@ def async_subscription_receiver(async_client, async_topic_name, async_subscripti
 def async_subscription_dead_letter_receiver(async_client, async_topic_name, async_subscription_name):
     from azure.servicebus import ServiceBusSubQueue
 
-    subscription_dead_letter_receiver = async_client.get_subscription_receiver(topic_name=async_topic_name, subscription_name=async_subscription_name, sub_queue=ServiceBusSubQueue.DEAD_LETTER)
+    subscription_dead_letter_receiver = async_client.get_subscription_receiver(
+        topic_name=async_topic_name, subscription_name=async_subscription_name, sub_queue=ServiceBusSubQueue.DEAD_LETTER
+    )
     yield subscription_dead_letter_receiver
     subscription_dead_letter_receiver.close()
 
@@ -462,6 +476,8 @@ def async_subscription_dead_letter_receiver(async_client, async_topic_name, asyn
 @pytest.fixture
 def async_subscription_receiver_as_entity(async_service_bus_client_entity_topic):
     async_client, async_topic_name, async_subscription_name = async_service_bus_client_entity_topic
-    eneity_receiver = async_client.get_subscription_receiver(topic_name=async_topic_name, subscription_name=async_subscription_name)
+    eneity_receiver = async_client.get_subscription_receiver(
+        topic_name=async_topic_name, subscription_name=async_subscription_name
+    )
     yield eneity_receiver
     eneity_receiver.close()

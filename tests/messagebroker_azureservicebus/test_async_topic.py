@@ -12,17 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 import datetime
 
+import pytest
 from azure.servicebus import ServiceBusMessage
 from azure.servicebus.amqp import AmqpAnnotatedMessage
-
-from newrelic.api.background_task import background_task
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
+from newrelic.api.background_task import background_task
 
-def test_async_topic_send_and_receive(loop, async_topic_name, async_subscription_name, async_topic_sender, async_subscription_receiver):
+
+def test_async_topic_send_and_receive(
+    loop, async_topic_name, async_subscription_name, async_topic_sender, async_subscription_receiver
+):
     _metrics = [
         (f"MessageBroker/ServiceBus/Topic/Produce/Named/{async_topic_name}", 1),
         (f"MessageBroker/ServiceBus/Topic/Peek/Named/{async_topic_name}/Subscriptions/{async_subscription_name}", 1),
@@ -60,9 +62,7 @@ def test_async_topic_send_and_receive(loop, async_topic_name, async_subscription
 
 
 def test_async_topic_schedule_and_cancel(loop, async_topic_name, async_topic_sender):
-    _metrics = [
-        (f"MessageBroker/ServiceBus/Topic/Produce/Named/{async_topic_name}", 2),
-    ]
+    _metrics = [(f"MessageBroker/ServiceBus/Topic/Produce/Named/{async_topic_name}", 2)]
 
     async def _test():
         message_text = "Schedule message from topic."
@@ -84,7 +84,9 @@ def test_async_topic_schedule_and_cancel(loop, async_topic_name, async_topic_sen
     test()
 
 
-def test_async_topic_send_and_receive_deferred_message(loop, async_topic_name, async_subscription_name, async_topic_sender, async_subscription_receiver):
+def test_async_topic_send_and_receive_deferred_message(
+    loop, async_topic_name, async_subscription_name, async_topic_sender, async_subscription_receiver
+):
     _metrics = [
         (f"MessageBroker/ServiceBus/Topic/Produce/Named/{async_topic_name}", 1),
         (f"MessageBroker/ServiceBus/Topic/Consume/Named/{async_topic_name}/Subscriptions/{async_subscription_name}", 1),
@@ -103,7 +105,9 @@ def test_async_topic_send_and_receive_deferred_message(loop, async_topic_name, a
             sequence_number = message.sequence_number
             await async_subscription_receiver.defer_message(message)
 
-        received_deferred_messages = await async_subscription_receiver.receive_deferred_messages(sequence_numbers=sequence_number)
+        received_deferred_messages = await async_subscription_receiver.receive_deferred_messages(
+            sequence_numbers=sequence_number
+        )
         for message in received_deferred_messages:
             message_body = message._message.data[0].decode()
             assert message_body == message_text
@@ -121,8 +125,15 @@ def test_async_topic_send_and_receive_deferred_message(loop, async_topic_name, a
 
     test()
 
-    
-def test_async_topic_send_and_receive_dead_letter_message(loop, async_topic_name, async_subscription_name, async_topic_sender, async_subscription_receiver, async_subscription_dead_letter_receiver):
+
+def test_async_topic_send_and_receive_dead_letter_message(
+    loop,
+    async_topic_name,
+    async_subscription_name,
+    async_topic_sender,
+    async_subscription_receiver,
+    async_subscription_dead_letter_receiver,
+):
     _metrics = [
         (f"MessageBroker/ServiceBus/Topic/Produce/Named/{async_topic_name}", 1),
         (f"MessageBroker/ServiceBus/Topic/Consume/Named/{async_topic_name}/Subscriptions/{async_subscription_name}", 1),
@@ -140,7 +151,9 @@ def test_async_topic_send_and_receive_dead_letter_message(loop, async_topic_name
             assert message_body == message_text
             await async_subscription_receiver.dead_letter_message(message)
 
-        received_dead_letter_messages = await async_subscription_dead_letter_receiver.receive_messages(max_message_count=1, max_wait_time=5)
+        received_dead_letter_messages = await async_subscription_dead_letter_receiver.receive_messages(
+            max_message_count=1, max_wait_time=5
+        )
         for message in received_dead_letter_messages:
             message_body = message._message.data[0].decode()
             assert message_body == message_text
@@ -159,7 +172,9 @@ def test_async_topic_send_and_receive_dead_letter_message(loop, async_topic_name
     test()
 
 
-def test_async_topic_send_and_receive_AmqpAnnotatedMessage(loop, async_topic_name, async_subscription_name, async_topic_sender, async_subscription_receiver):
+def test_async_topic_send_and_receive_AmqpAnnotatedMessage(
+    loop, async_topic_name, async_subscription_name, async_topic_sender, async_subscription_receiver
+):
     _metrics = [
         (f"MessageBroker/ServiceBus/Topic/Produce/Named/{async_topic_name}", 1),
         (f"MessageBroker/ServiceBus/Topic/Consume/Named/{async_topic_name}/Subscriptions/{async_subscription_name}", 1),
@@ -170,7 +185,11 @@ def test_async_topic_send_and_receive_AmqpAnnotatedMessage(loop, async_topic_nam
         message_text = "Send AmqpAnnotatedMessage message type from topic."
         application_properties = {"body_type": "data"}
         delivery_annotations = {"delivery_annotation_key": "value"}
-        sent_message = AmqpAnnotatedMessage(data_body=message_text, delivery_annotations=delivery_annotations, application_properties=application_properties)
+        sent_message = AmqpAnnotatedMessage(
+            data_body=message_text,
+            delivery_annotations=delivery_annotations,
+            application_properties=application_properties,
+        )
         await async_topic_sender.send_messages(sent_message)
 
         received_messages = await async_subscription_receiver.receive_messages(max_message_count=1, max_wait_time=5)
@@ -192,7 +211,9 @@ def test_async_topic_send_and_receive_AmqpAnnotatedMessage(loop, async_topic_nam
     test()
 
 
-def test_async_topic_send_and_receive_multiple_messages(loop, async_topic_name, async_subscription_name, async_topic_sender, async_subscription_receiver):
+def test_async_topic_send_and_receive_multiple_messages(
+    loop, async_topic_name, async_subscription_name, async_topic_sender, async_subscription_receiver
+):
     _metrics = [
         (f"MessageBroker/ServiceBus/Topic/Produce/Named/{async_topic_name}", 1),
         (f"MessageBroker/ServiceBus/Topic/Consume/Named/{async_topic_name}/Subscriptions/{async_subscription_name}", 2),
@@ -223,20 +244,17 @@ def test_async_topic_send_and_receive_multiple_messages(loop, async_topic_name, 
     test()
 
 
-def test_async_topic_distributed_traces_one_sent_one_received(loop, async_topic_name, async_subscription_name, async_topic_sender, async_subscription_receiver):
+def test_async_topic_distributed_traces_one_sent_one_received(
+    loop, async_topic_name, async_subscription_name, async_topic_sender, async_subscription_receiver
+):
     """
     Send operation gets one transaction and receive operation gets another
     transaction.  Two items are sent, so DT header is sent for each item.
     Since one transaction is receiving both items, we only need to read a
     header from the first item in order to connect the two transactions.
     """
-    _send_scoped_metrics = [
-        (f"MessageBroker/ServiceBus/Topic/Produce/Named/{async_topic_name}", 1),
-    ]
-    _send_rollup_metrics = [
-        ("Supportability/TraceContext/Create/Success", 2),
-        *_send_scoped_metrics,
-    ]
+    _send_scoped_metrics = [(f"MessageBroker/ServiceBus/Topic/Produce/Named/{async_topic_name}", 1)]
+    _send_rollup_metrics = [("Supportability/TraceContext/Create/Success", 2), *_send_scoped_metrics]
 
     async def _send():
         messages_text = ["Send message from topic.", "Send a second message from topic"]
@@ -282,20 +300,17 @@ def test_async_topic_distributed_traces_one_sent_one_received(loop, async_topic_
     receive()
 
 
-def test_async_topic_distributed_traces_one_sent_two_received(loop, async_topic_name, async_subscription_name, async_topic_sender, async_subscription_receiver):
+def test_async_topic_distributed_traces_one_sent_two_received(
+    loop, async_topic_name, async_subscription_name, async_topic_sender, async_subscription_receiver
+):
     """
     Send operation gets one transaction and two separate transactions
     are used for receiving of one item.  Two items are sent, so DT header
     is sent for each item.  Now, each receiving transaction should
     receive a DT header for the one item that they received.
     """
-    _send_scoped_metrics = [
-        (f"MessageBroker/ServiceBus/Topic/Produce/Named/{async_topic_name}", 1),
-    ]
-    _send_rollup_metrics = [
-        ("Supportability/TraceContext/Create/Success", 2),
-        *_send_scoped_metrics,
-    ]
+    _send_scoped_metrics = [(f"MessageBroker/ServiceBus/Topic/Produce/Named/{async_topic_name}", 1)]
+    _send_rollup_metrics = [("Supportability/TraceContext/Create/Success", 2), *_send_scoped_metrics]
 
     async def _send():
         messages_text = ["Send message from topic.", "Send a second message from topic"]
@@ -367,11 +382,19 @@ def test_async_topic_distributed_traces_one_sent_two_received(loop, async_topic_
     receive2()
 
 
-def test_async_topic_send_and_receive_entity_name(loop, async_topic_name, async_subscription_name, async_topic_sender_as_entity, async_subscription_receiver_as_entity):
+def test_async_topic_send_and_receive_entity_name(
+    loop, async_topic_name, async_subscription_name, async_topic_sender_as_entity, async_subscription_receiver_as_entity
+):
     _metrics = [
         (f"MessageBroker/ServiceBus/Topic/Produce/Named/{async_topic_name}-entity", 1),
-        (f"MessageBroker/ServiceBus/Topic/Consume/Named/{async_topic_name}-entity/Subscriptions/{async_subscription_name}-entity", 1),
-        (f"MessageBroker/ServiceBus/Topic/Settle/Named/{async_topic_name}-entity/Subscriptions/{async_subscription_name}-entity", 1),
+        (
+            f"MessageBroker/ServiceBus/Topic/Consume/Named/{async_topic_name}-entity/Subscriptions/{async_subscription_name}-entity",
+            1,
+        ),
+        (
+            f"MessageBroker/ServiceBus/Topic/Settle/Named/{async_topic_name}-entity/Subscriptions/{async_subscription_name}-entity",
+            1,
+        ),
     ]
 
     async def _test():
@@ -379,7 +402,9 @@ def test_async_topic_send_and_receive_entity_name(loop, async_topic_name, async_
         sent_message = ServiceBusMessage(message_text)
         await async_topic_sender_as_entity.send_messages(sent_message)
 
-        received_messages = await async_subscription_receiver_as_entity.receive_messages(max_message_count=1, max_wait_time=5)
+        received_messages = await async_subscription_receiver_as_entity.receive_messages(
+            max_message_count=1, max_wait_time=5
+        )
         for message in received_messages:
             message_body = message._message.data[0].decode()
             assert message_body == message_text
@@ -399,7 +424,9 @@ def test_async_topic_send_and_receive_entity_name(loop, async_topic_name, async_
 
 
 @pytest.mark.skip(reason="Emulator does not support this")
-def test_async_topic_send_and_receive_iterative(loop, async_topic_name, async_subscription_name, async_topic_sender, async_subscription_receiver):
+def test_async_topic_send_and_receive_iterative(
+    loop, async_topic_name, async_subscription_name, async_topic_sender, async_subscription_receiver
+):
     """
     This tests receiving a message iteratively, i.e.
     without explicitly using `receiver.receive_messages()`
@@ -424,7 +451,6 @@ def test_async_topic_send_and_receive_iterative(loop, async_topic_name, async_su
             assert message_body in messages_text
             await async_subscription_receiver.complete_message(message)
 
-
     @validate_transaction_metrics(
         "test_async_topic:test_async_topic_send_and_receive_iterative.<locals>.test",
         scoped_metrics=_metrics,
@@ -436,8 +462,3 @@ def test_async_topic_send_and_receive_iterative(loop, async_topic_name, async_su
         loop.run_until_complete(_test())
 
     test()
-
-
-
-
-

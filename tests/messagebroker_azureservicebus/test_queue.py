@@ -12,14 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 import datetime
 
+import pytest
 from azure.servicebus import ServiceBusMessage
-from azure.servicebus.amqp import AmqpAnnotatedMessage 
+from azure.servicebus.amqp import AmqpAnnotatedMessage
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 
 def test_queue_send_and_receive(queue_name, queue_sender, queue_receiver):
@@ -57,9 +57,7 @@ def test_queue_send_and_receive(queue_name, queue_sender, queue_receiver):
 
 
 def test_queue_schedule_and_cancel(queue_name, queue_sender):
-    _metrics = [
-        (f"MessageBroker/ServiceBus/Queue/Produce/Named/{queue_name}", 2),
-    ]
+    _metrics = [(f"MessageBroker/ServiceBus/Queue/Produce/Named/{queue_name}", 2)]
 
     @validate_transaction_metrics(
         "test_queue:test_queue_schedule_and_cancel.<locals>._test",
@@ -113,7 +111,9 @@ def test_queue_send_and_receive_deferred_message(queue_name, queue_sender, queue
     _test()
 
 
-def test_queue_send_and_receive_dead_letter_message(queue_name, queue_sender, queue_receiver, queue_dead_letter_receiver):
+def test_queue_send_and_receive_dead_letter_message(
+    queue_name, queue_sender, queue_receiver, queue_dead_letter_receiver
+):
     _metrics = [
         (f"MessageBroker/ServiceBus/Queue/Produce/Named/{queue_name}", 1),
         (f"MessageBroker/ServiceBus/Queue/Consume/Named/{queue_name}", 1),
@@ -138,7 +138,9 @@ def test_queue_send_and_receive_dead_letter_message(queue_name, queue_sender, qu
             assert message_body == message_text
             queue_receiver.dead_letter_message(message)
 
-        received_dead_letter_messages = queue_dead_letter_receiver.receive_messages(max_message_count=1, max_wait_time=5)
+        received_dead_letter_messages = queue_dead_letter_receiver.receive_messages(
+            max_message_count=1, max_wait_time=5
+        )
         for message in received_dead_letter_messages:
             message_body = message._message.data[0].decode()
             assert message_body == message_text
@@ -165,7 +167,11 @@ def test_queue_send_and_receive_AmqpAnnotatedMessage(queue_name, queue_sender, q
         message_text = "Send AmqpAnnotatedMessage message type from queue."
         application_properties = {"body_type": "data"}
         delivery_annotations = {"delivery_annotation_key": "value"}
-        sent_message = AmqpAnnotatedMessage(data_body=message_text, delivery_annotations=delivery_annotations, application_properties=application_properties)
+        sent_message = AmqpAnnotatedMessage(
+            data_body=message_text,
+            delivery_annotations=delivery_annotations,
+            application_properties=application_properties,
+        )
         queue_sender.send_messages(sent_message)
 
         received_messages = queue_receiver.receive_messages(max_message_count=1, max_wait_time=5)
@@ -212,13 +218,8 @@ def test_queue_distributed_traces_one_sent_one_received(queue_name, queue_sender
     Since one transaction is receiving both items, we only need to read a
     header from the first item in order to connect the two transactions.
     """
-    _send_scoped_metrics = [
-        (f"MessageBroker/ServiceBus/Queue/Produce/Named/{queue_name}", 1),
-    ]
-    _send_rollup_metrics = [
-        ("Supportability/TraceContext/Create/Success", 2),
-        *_send_scoped_metrics,
-    ]
+    _send_scoped_metrics = [(f"MessageBroker/ServiceBus/Queue/Produce/Named/{queue_name}", 1)]
+    _send_rollup_metrics = [("Supportability/TraceContext/Create/Success", 2), *_send_scoped_metrics]
 
     @validate_transaction_metrics(
         "test_queue:test_queue_distributed_traces_one_sent_one_received.<locals>._send",
@@ -265,13 +266,8 @@ def test_queue_distributed_traces_one_sent_two_received(queue_name, queue_sender
     is sent for each item.  Now, each receiving transaction should
     receive a DT header for the one item that they received.
     """
-    _send_scoped_metrics = [
-        (f"MessageBroker/ServiceBus/Queue/Produce/Named/{queue_name}", 1),
-    ]
-    _send_rollup_metrics = [
-        ("Supportability/TraceContext/Create/Success", 2),
-        *_send_scoped_metrics,
-    ]
+    _send_scoped_metrics = [(f"MessageBroker/ServiceBus/Queue/Produce/Named/{queue_name}", 1)]
+    _send_rollup_metrics = [("Supportability/TraceContext/Create/Success", 2), *_send_scoped_metrics]
 
     @validate_transaction_metrics(
         "test_queue:test_queue_distributed_traces_one_sent_two_received.<locals>._send",
@@ -284,7 +280,6 @@ def test_queue_distributed_traces_one_sent_two_received(queue_name, queue_sender
         messages_text = ["Send message from queue.", "Send a second message from queue"]
         sent_messages = list(map(ServiceBusMessage, messages_text))
         queue_sender.send_messages(sent_messages)
-
 
     _receive1_scoped_metrics = [
         (f"MessageBroker/ServiceBus/Queue/Consume/Named/{queue_name}", 1),
@@ -308,7 +303,6 @@ def test_queue_distributed_traces_one_sent_two_received(queue_name, queue_sender
         for message in received_messages:
             queue_receiver.complete_message(message)
 
-
     _receive2_scoped_metrics = [
         (f"MessageBroker/ServiceBus/Queue/Consume/Named/{queue_name}", 1),
         (f"MessageBroker/ServiceBus/Queue/Settle/Named/{queue_name}", 1),
@@ -330,7 +324,6 @@ def test_queue_distributed_traces_one_sent_two_received(queue_name, queue_sender
         received_messages = queue_receiver.receive_messages(max_message_count=1, max_wait_time=5)
         for message in received_messages:
             queue_receiver.complete_message(message)
-
 
     _send()
     _receive1()
@@ -403,7 +396,3 @@ def test_queue_send_and_receive_iterative(queue_name, queue_sender, queue_receiv
             queue_receiver.complete_message(message)
 
     _test()
-
-
-
-

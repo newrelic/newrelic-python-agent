@@ -50,7 +50,7 @@ EMBEDDING_STREAMING_UNSUPPORTED_LOG_MESSAGE = "Response streaming with embedding
 
 UNSUPPORTED_MODEL_WARNING_SENT = False
 
-NEWRELIC_SIGNED_HEADERS_BLACKLIST = (
+NEWRELIC_SIGNED_HEADERS_DENYLIST = (
     "traceparent",
     "tracestate",
     "newrelic",
@@ -1888,7 +1888,9 @@ def instrument_botocore_client(module):
 
 
 def instrument_botocore_auth(module):
+    # botocore uses the term "Blacklist" while this library typically uses "Denylist" instead.
+    # We can't change the name of the symbol in the botocore package so avoid typos when referring to both.
     if hasattr(module, "SIGNED_HEADERS_BLACKLIST") and isinstance(module.SIGNED_HEADERS_BLACKLIST, list):
-        for header in NEWRELIC_SIGNED_HEADERS_BLACKLIST:
+        for header in NEWRELIC_SIGNED_HEADERS_DENYLIST:
             if header not in module.SIGNED_HEADERS_BLACKLIST:
                 module.SIGNED_HEADERS_BLACKLIST.append(header)

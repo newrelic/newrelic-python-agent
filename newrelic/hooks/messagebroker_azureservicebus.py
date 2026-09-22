@@ -196,7 +196,6 @@ def wrap_ServiceBusSender_cancel_scheduled_messages(wrapped, instance, args, kwa
             trace.agent_attributes.update(
                 {"messaging.destination.name": destination_name, "server.address": host, "server.port": port}
             )
-            # return wrapped(*args, **kwargs)
         except Exception:
             pass
 
@@ -231,7 +230,6 @@ async def wrap_ServiceBusSender_cancel_scheduled_messages_async(wrapped, instanc
             trace.agent_attributes.update(
                 {"messaging.destination.name": destination_name, "server.address": host, "server.port": port}
             )
-            # return await wrapped(*args, **kwargs)
         except Exception:
             pass
 
@@ -351,7 +349,6 @@ def wrap_ServiceBusReceiver_peek_messages(wrapped, instance, args, kwargs):
             trace.agent_attributes.update(
                 {"messaging.destination.name": destination_name, "server.address": host, "server.port": port}
             )
-            # return wrapped(*args, **kwargs)
         except Exception:
             pass
 
@@ -385,7 +382,6 @@ async def wrap_ServiceBusReceiver_peek_messages_async(wrapped, instance, args, k
             trace.agent_attributes.update(
                 {"messaging.destination.name": destination_name, "server.address": host, "server.port": port}
             )
-            # return wrapped(*args, **kwargs)
         except Exception:
             pass
 
@@ -419,7 +415,6 @@ def wrap_ServiceBusSender_settle_message_with_retry(wrapped, instance, args, kwa
             trace.agent_attributes.update(
                 {"messaging.destination.name": destination_name, "server.address": host, "server.port": port}
             )
-            # return wrapped(*args, **kwargs)
         except Exception:
             pass
 
@@ -453,7 +448,6 @@ async def wrap_ServiceBusSender_settle_message_with_retry_async(wrapped, instanc
             trace.agent_attributes.update(
                 {"messaging.destination.name": destination_name, "server.address": host, "server.port": port}
             )
-            # return wrapped(*args, **kwargs)
         except Exception:
             pass
 

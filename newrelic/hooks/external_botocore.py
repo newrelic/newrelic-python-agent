@@ -1888,7 +1888,7 @@ def instrument_botocore_client(module):
 
 
 def instrument_botocore_auth(module):
-    if hasattr(module, "SIGNED_HEADERS_BLACKLIST"):
-        signed_headers_blacklist = module.SIGNED_HEADERS_BLACKLIST
-        if isinstance(signed_headers_blacklist, list):
-            signed_headers_blacklist.extend(NEWRELIC_SIGNED_HEADERS_BLACKLIST)
+    if hasattr(module, "SIGNED_HEADERS_BLACKLIST") and isinstance(module.SIGNED_HEADERS_BLACKLIST, list):
+        for header in NEWRELIC_SIGNED_HEADERS_BLACKLIST:
+            if header not in module.SIGNED_HEADERS_BLACKLIST:
+                module.SIGNED_HEADERS_BLACKLIST.append(header)

@@ -66,7 +66,7 @@ def test_async_queue_schedule_and_cancel(loop, async_queue_name, async_queue_sen
     async def _test():
         message_text = "Schedule message from queue."
         sent_message = ServiceBusMessage(message_text)
-        scheduled_time_utc = datetime.datetime.now(datetime.UTC) + datetime.timedelta(seconds=30)
+        scheduled_time_utc = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=30)
         sequence_number = await async_queue_sender.schedule_messages(sent_message, scheduled_time_utc)
         await async_queue_sender.cancel_scheduled_messages(sequence_number)
 

@@ -69,7 +69,7 @@ def test_topic_schedule_and_cancel(topic_name, topic_sender):
     def _test():
         message_text = "Schedule message from topic."
         sent_message = ServiceBusMessage(message_text)
-        scheduled_time_utc = datetime.datetime.now(datetime.UTC) + datetime.timedelta(seconds=30)
+        scheduled_time_utc = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=30)
         sequence_number = topic_sender.schedule_messages(sent_message, scheduled_time_utc)
         topic_sender.cancel_scheduled_messages(sequence_number)
 

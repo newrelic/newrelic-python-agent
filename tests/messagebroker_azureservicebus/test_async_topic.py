@@ -67,7 +67,7 @@ def test_async_topic_schedule_and_cancel(loop, async_topic_name, async_topic_sen
     async def _test():
         message_text = "Schedule message from topic."
         sent_message = ServiceBusMessage(message_text)
-        scheduled_time_utc = datetime.datetime.now(datetime.UTC) + datetime.timedelta(seconds=30)
+        scheduled_time_utc = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=30)
         sequence_number = await async_topic_sender.schedule_messages(sent_message, scheduled_time_utc)
         await async_topic_sender.cancel_scheduled_messages(sequence_number)
 

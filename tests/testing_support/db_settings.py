@@ -305,6 +305,26 @@ def elasticsearch_settings():
     return settings
 
 
+def opensearch_settings():
+    """Return a list of dict of settings for connecting to opensearch.
+
+    Will return the correct settings, depending on which of the environments it
+    is running in. It attempts to set variables in the following order, where
+    later environments override earlier ones.
+
+        1. Local
+        2. Github Actions
+    """
+
+    host = "host.docker.internal" if "GITHUB_ACTIONS" in os.environ else "localhost"
+    instances = 2
+    settings = [
+        {"host": host, "port": str(8080 + instance_num), "namespace": str(os.getpid())}
+        for instance_num in range(instances)
+    ]
+    return settings
+
+
 def solr_settings():
     """Return a list of dict of settings for connecting to solr.
 

@@ -93,17 +93,25 @@ def httplib_getresponse_wrapper(wrapped, instance, args, kwargs):
     return response
 
 
+# Every header generate_request_headers() can emit. Seeing any of them means a
+# caller (e.g. the botocore hook, which must add them before SigV4 signing)
+# already injected DT headers, and endheaders must not add a second copy.
+_NR_UPSTREAM_HEADER_NAMES = frozenset(
+    ("NEWRELIC", "TRACEPARENT", "TRACESTATE", "X-NEWRELIC-SYNTHETICS", "X-NEWRELIC-SYNTHETICS-INFO")
+)
+
+
 def httplib_putheader_wrapper(wrapped, instance, args, kwargs):
     transaction = current_transaction()
 
     if transaction is None:
         return wrapped(*args, **kwargs)
 
-    # Remember if we see any NR headers being set. This is only doing
-    # it if we see either, but they should always both be getting set.
+    # Remember if we see any NR headers being set upstream, so
+    # endheaders knows not to add them a second time.
 
     def nr_header(header, *args, **kwargs):
-        return header.upper() == "NEWRELIC"
+        return header.upper() in _NR_UPSTREAM_HEADER_NAMES
 
     connection = instance
 

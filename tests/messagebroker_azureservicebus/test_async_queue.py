@@ -1,0 +1,429 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import datetime
+
+import pytest
+from azure.servicebus import ServiceBusMessage
+from azure.servicebus.amqp import AmqpAnnotatedMessage
+from testing_support.fixture.event_loop import event_loop as loop
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+
+from newrelic.api.background_task import background_task
+
+
+def test_async_queue_send_and_receive(loop, async_queue_name, async_queue_sender, async_queue_receiver):
+    _metrics = [
+        (f"MessageBroker/ServiceBus/Queue/Produce/Named/{async_queue_name}", 1),
+        (f"MessageBroker/ServiceBus/Queue/Peek/Named/{async_queue_name}", 1),
+        (f"MessageBroker/ServiceBus/Queue/Consume/Named/{async_queue_name}", 1),
+        (f"MessageBroker/ServiceBus/Queue/Settle/Named/{async_queue_name}", 1),
+    ]
+
+    async def _test():
+        message_text = "Send message from queue."
+        sent_message = ServiceBusMessage(message_text)
+        await async_queue_sender.send_messages(sent_message)
+
+        received_peek_messages = await async_queue_receiver.peek_messages(max_message_count=1)
+        for message in received_peek_messages:
+            message_body = message._message.data[0].decode()
+            assert message_body == message_text
+
+        received_messages = await async_queue_receiver.receive_messages(max_message_count=1, max_wait_time=5)
+        for message in received_messages:
+            message_body = message._message.data[0].decode()
+            assert message_body == message_text
+            await async_queue_receiver.complete_message(message)
+
+    @validate_transaction_metrics(
+        "test_async_queue:test_async_queue_send_and_receive.<locals>.test",
+        scoped_metrics=_metrics,
+        rollup_metrics=_metrics,
+        background_task=True,
+    )
+    @background_task()
+    def test():
+        loop.run_until_complete(_test())
+
+    test()
+
+
+def test_async_queue_schedule_and_cancel(loop, async_queue_name, async_queue_sender):
+    _metrics = [(f"MessageBroker/ServiceBus/Queue/Produce/Named/{async_queue_name}", 2)]
+
+    async def _test():
+        message_text = "Schedule message from queue."
+        sent_message = ServiceBusMessage(message_text)
+        scheduled_time_utc = datetime.datetime.now(datetime.timezone.utc) + datetime.timedelta(seconds=30)
+        sequence_number = await async_queue_sender.schedule_messages(sent_message, scheduled_time_utc)
+        await async_queue_sender.cancel_scheduled_messages(sequence_number)
+
+    @validate_transaction_metrics(
+        "test_async_queue:test_async_queue_schedule_and_cancel.<locals>.test",
+        scoped_metrics=_metrics,
+        rollup_metrics=_metrics,
+        background_task=True,
+    )
+    @background_task()
+    def test():
+        loop.run_until_complete(_test())
+
+
+def test_async_queue_send_and_receive_deferred_message(
+    loop, async_queue_name, async_queue_sender, async_queue_receiver
+):
+    _metrics = [
+        (f"MessageBroker/ServiceBus/Queue/Produce/Named/{async_queue_name}", 1),
+        (f"MessageBroker/ServiceBus/Queue/Consume/Named/{async_queue_name}", 1),
+        (f"MessageBroker/ServiceBus/Queue/Settle/Named/{async_queue_name}", 2),
+    ]
+
+    async def _test():
+        message_text = "Send message from queue to be deferred."
+        sent_message = ServiceBusMessage(message_text)
+        await async_queue_sender.send_messages(sent_message)
+
+        received_messages = await async_queue_receiver.receive_messages(max_message_count=1, max_wait_time=5)
+        for message in received_messages:
+            message_body = message._message.data[0].decode()
+            assert message_body == message_text
+            sequence_number = message.sequence_number
+            await async_queue_receiver.defer_message(message)
+
+        received_deferred_messages = await async_queue_receiver.receive_deferred_messages(
+            sequence_numbers=sequence_number
+        )
+        for message in received_deferred_messages:
+            message_body = message._message.data[0].decode()
+            assert message_body == message_text
+            await async_queue_receiver.complete_message(message)
+
+    @validate_transaction_metrics(
+        "test_async_queue:test_async_queue_send_and_receive_deferred_message.<locals>.test",
+        scoped_metrics=_metrics,
+        rollup_metrics=_metrics,
+        background_task=True,
+    )
+    @background_task()
+    def test():
+        loop.run_until_complete(_test())
+
+
+def test_async_queue_send_and_receive_dead_letter_message(
+    loop, async_queue_name, async_queue_sender, async_queue_receiver, async_queue_dead_letter_receiver
+):
+    _metrics = [
+        (f"MessageBroker/ServiceBus/Queue/Produce/Named/{async_queue_name}", 1),
+        (f"MessageBroker/ServiceBus/Queue/Consume/Named/{async_queue_name}", 1),
+        (f"MessageBroker/ServiceBus/Queue/Settle/Named/{async_queue_name}", 1),
+    ]
+
+    async def _test():
+        message_text = "Send message from queue to dead letter queue."
+        sent_message = ServiceBusMessage(message_text)
+        await async_queue_sender.send_messages(sent_message)
+
+        received_messages = await async_queue_receiver.receive_messages(max_message_count=1, max_wait_time=5)
+        for message in received_messages:
+            message_body = message._message.data[0].decode()
+            assert message_body == message_text
+            await async_queue_receiver.dead_letter_message(message)
+
+        received_dead_letter_messages = await async_queue_dead_letter_receiver.receive_messages(
+            max_message_count=1, max_wait_time=5
+        )
+        for message in received_dead_letter_messages:
+            message_body = message._message.data[0].decode()
+            assert message_body == message_text
+            await async_queue_dead_letter_receiver.complete_message(message)
+
+    @validate_transaction_metrics(
+        "test_async_queue:test_async_queue_send_and_receive_dead_letter_message.<locals>.test",
+        scoped_metrics=_metrics,
+        rollup_metrics=_metrics,
+        background_task=True,
+    )
+    @background_task()
+    def test():
+        loop.run_until_complete(_test())
+
+
+def test_async_queue_send_and_receive_AmqpAnnotatedMessage(
+    loop, async_queue_name, async_queue_sender, async_queue_receiver
+):
+    _metrics = [
+        (f"MessageBroker/ServiceBus/Queue/Produce/Named/{async_queue_name}", 1),
+        (f"MessageBroker/ServiceBus/Queue/Consume/Named/{async_queue_name}", 1),
+        (f"MessageBroker/ServiceBus/Queue/Settle/Named/{async_queue_name}", 1),
+    ]
+
+    async def _test():
+        message_text = "Send AmqpAnnotatedMessage message type from queue."
+        application_properties = {"body_type": "data"}
+        delivery_annotations = {"delivery_annotation_key": "value"}
+        sent_message = AmqpAnnotatedMessage(
+            data_body=message_text,
+            delivery_annotations=delivery_annotations,
+            application_properties=application_properties,
+        )
+        await async_queue_sender.send_messages(sent_message)
+
+        received_messages = await async_queue_receiver.receive_messages(max_message_count=1, max_wait_time=5)
+        for message in received_messages:
+            message_body = message.raw_amqp_message._data_body[0].decode()
+            assert message_body == message_text
+            await async_queue_receiver.complete_message(message)
+
+    @validate_transaction_metrics(
+        "test_async_queue:test_async_queue_send_and_receive_AmqpAnnotatedMessage.<locals>.test",
+        scoped_metrics=_metrics,
+        rollup_metrics=_metrics,
+        background_task=True,
+    )
+    @background_task()
+    def test():
+        loop.run_until_complete(_test())
+
+
+def test_async_queue_send_and_receive_multiple_messages(
+    loop, async_queue_name, async_queue_sender, async_queue_receiver
+):
+    _metrics = [
+        (f"MessageBroker/ServiceBus/Queue/Produce/Named/{async_queue_name}", 1),
+        (f"MessageBroker/ServiceBus/Queue/Consume/Named/{async_queue_name}", 2),
+        (f"MessageBroker/ServiceBus/Queue/Settle/Named/{async_queue_name}", 2),
+    ]
+
+    async def _test():
+        messages_text = ["Send message from queue.", "Send a second message from queue"]
+        sent_messages = list(map(ServiceBusMessage, messages_text))
+        await async_queue_sender.send_messages(sent_messages)
+
+        received_messages = await async_queue_receiver.receive_messages(max_message_count=2, max_wait_time=5)
+        for message in received_messages:
+            message_body = message._message.data[0].decode()
+            assert message_body in messages_text
+            await async_queue_receiver.complete_message(message)
+
+    @validate_transaction_metrics(
+        "test_async_queue:test_async_queue_send_and_receive_multiple_messages.<locals>.test",
+        scoped_metrics=_metrics,
+        rollup_metrics=_metrics,
+        background_task=True,
+    )
+    @background_task()
+    def test():
+        loop.run_until_complete(_test())
+
+    test()
+
+
+def test_async_queue_distributed_traces_one_sent_one_received(
+    loop, async_queue_name, async_queue_sender, async_queue_receiver
+):
+    """
+    Send operation gets one transaction and receive operation gets another
+    transaction.  Two items are sent, so DT header is sent for each item.
+    Since one transaction is receiving both items, we only need to read a
+    header from the first item in order to connect the two transactions.
+    """
+    _send_scoped_metrics = [(f"MessageBroker/ServiceBus/Queue/Produce/Named/{async_queue_name}", 1)]
+    _send_rollup_metrics = [("Supportability/TraceContext/Create/Success", 2), *_send_scoped_metrics]
+
+    async def _send():
+        messages_text = ["Send message from queue.", "Send a second message from queue"]
+        sent_messages = list(map(ServiceBusMessage, messages_text))
+        await async_queue_sender.send_messages(sent_messages)
+
+    _receive_scoped_metrics = [
+        (f"MessageBroker/ServiceBus/Queue/Consume/Named/{async_queue_name}", 2),
+        (f"MessageBroker/ServiceBus/Queue/Settle/Named/{async_queue_name}", 2),
+    ]
+    _receive_rollup_metrics = [
+        ("Supportability/TraceContext/TraceParent/Accept/Success", 1),
+        ("Supportability/TraceContext/Accept/Success", 1),
+        *_receive_scoped_metrics,
+    ]
+
+    async def _receive():
+        received_messages = await async_queue_receiver.receive_messages(max_message_count=2, max_wait_time=5)
+        for message in received_messages:
+            await async_queue_receiver.complete_message(message)
+
+    @validate_transaction_metrics(
+        "test_async_queue:test_async_queue_distributed_traces_one_sent_one_received.<locals>.send",
+        scoped_metrics=_send_scoped_metrics,
+        rollup_metrics=_send_rollup_metrics,
+        background_task=True,
+    )
+    @background_task()
+    def send():
+        loop.run_until_complete(_send())
+
+    @validate_transaction_metrics(
+        "test_async_queue:test_async_queue_distributed_traces_one_sent_one_received.<locals>.receive",
+        scoped_metrics=_receive_scoped_metrics,
+        rollup_metrics=_receive_rollup_metrics,
+        background_task=True,
+    )
+    @background_task()
+    def receive():
+        loop.run_until_complete(_receive())
+
+
+def test_async_queue_distributed_traces_one_sent_two_received(
+    loop, async_queue_name, async_queue_sender, async_queue_receiver
+):
+    """
+    Send operation gets one transaction and two separate transactions
+    are used for receiving of one item.  Two items are sent, so DT header
+    is sent for each item.  Now, each receiving transaction should
+    receive a DT header for the one item that they received.
+    """
+    _send_scoped_metrics = [(f"MessageBroker/ServiceBus/Queue/Produce/Named/{async_queue_name}", 1)]
+    _send_rollup_metrics = [("Supportability/TraceContext/Create/Success", 2), *_send_scoped_metrics]
+
+    async def _send():
+        messages_text = ["Send message from queue.", "Send a second message from queue"]
+        sent_messages = list(map(ServiceBusMessage, messages_text))
+        await async_queue_sender.send_messages(sent_messages)
+
+    _receive1_scoped_metrics = [
+        (f"MessageBroker/ServiceBus/Queue/Consume/Named/{async_queue_name}", 1),
+        (f"MessageBroker/ServiceBus/Queue/Settle/Named/{async_queue_name}", 1),
+    ]
+    _receive1_rollup_metrics = [
+        ("Supportability/TraceContext/TraceParent/Accept/Success", 1),
+        ("Supportability/TraceContext/Accept/Success", 1),
+        *_receive1_scoped_metrics,
+    ]
+
+    async def _receive1():
+        received_messages = await async_queue_receiver.receive_messages(max_message_count=1, max_wait_time=5)
+        for message in received_messages:
+            await async_queue_receiver.complete_message(message)
+
+    _receive2_scoped_metrics = [
+        (f"MessageBroker/ServiceBus/Queue/Consume/Named/{async_queue_name}", 1),
+        (f"MessageBroker/ServiceBus/Queue/Settle/Named/{async_queue_name}", 1),
+    ]
+    _receive2_rollup_metrics = [
+        ("Supportability/TraceContext/TraceParent/Accept/Success", 1),
+        ("Supportability/TraceContext/Accept/Success", 1),
+        *_receive2_scoped_metrics,
+    ]
+
+    async def _receive2():
+        received_messages = await async_queue_receiver.receive_messages(max_message_count=1, max_wait_time=5)
+        for message in received_messages:
+            await async_queue_receiver.complete_message(message)
+
+    @validate_transaction_metrics(
+        "test_async_queue:test_async_queue_distributed_traces_one_sent_two_received.<locals>.send",
+        scoped_metrics=_send_scoped_metrics,
+        rollup_metrics=_send_rollup_metrics,
+        background_task=True,
+    )
+    @background_task()
+    def send():
+        loop.run_until_complete(_send())
+
+    @validate_transaction_metrics(
+        "test_async_queue:test_async_queue_distributed_traces_one_sent_two_received.<locals>.receive1",
+        scoped_metrics=_receive1_scoped_metrics,
+        rollup_metrics=_receive1_rollup_metrics,
+        background_task=True,
+    )
+    @background_task()
+    def receive1():
+        loop.run_until_complete(_receive1())
+
+    @validate_transaction_metrics(
+        "test_async_queue:test_async_queue_distributed_traces_one_sent_two_received.<locals>._receive2",
+        scoped_metrics=_receive2_scoped_metrics,
+        rollup_metrics=_receive2_rollup_metrics,
+        background_task=True,
+    )
+    @background_task()
+    def receive2():
+        loop.run_until_complete(_receive2())
+
+
+def test_async_queue_send_and_receive_entity_name(
+    loop, async_queue_name, async_queue_sender_as_entity, async_queue_receiver_as_entity
+):
+    _metrics = [
+        (f"MessageBroker/ServiceBus/Queue/Produce/Named/{async_queue_name}-entity", 1),
+        (f"MessageBroker/ServiceBus/Queue/Consume/Named/{async_queue_name}-entity", 1),
+        (f"MessageBroker/ServiceBus/Queue/Settle/Named/{async_queue_name}-entity", 1),
+    ]
+
+    async def _test():
+        message_text = "Send message from queue."
+        sent_message = ServiceBusMessage(message_text)
+        await async_queue_sender_as_entity.send_messages(sent_message)
+
+        received_messages = await async_queue_receiver_as_entity.receive_messages(max_message_count=1, max_wait_time=5)
+        for message in received_messages:
+            message_body = message._message.data[0].decode()
+            assert message_body == message_text
+            await async_queue_receiver_as_entity.complete_message(message)
+
+    @validate_transaction_metrics(
+        "test_async_queue:test_async_queue_send_and_receive_entity_name.<locals>.test",
+        scoped_metrics=_metrics,
+        rollup_metrics=_metrics,
+        background_task=True,
+    )
+    @background_task()
+    def test():
+        loop.run_until_complete(_test())
+
+    test()
+
+
+@pytest.mark.skip(reason="Emulator does not support this")
+def test_async_queue_send_and_receive_iterative(loop, async_queue_name, async_queue_sender, async_queue_receiver):
+    """
+    This tests receiving a message iteratively, i.e.
+    without explicitly using `receiver.receive_messages()`
+    NOTE: This test works with an Azure instance
+    but the emulator used to run this does not.
+    """
+    _metrics = [
+        (f"MessageBroker/ServiceBus/Queue/Produce/Named/{async_queue_name}", 2),
+        (f"MessageBroker/ServiceBus/Queue/Consume/Named/{async_queue_name}", 2),
+        (f"MessageBroker/ServiceBus/Queue/Settle/Named/{async_queue_name}", 2),
+    ]
+
+    async def _test():
+        messages_text = ["Send message from queue.", "Send a second message from queue"]
+        sent_messages = list(map(ServiceBusMessage, messages_text))
+        await async_queue_sender.send_messages(sent_messages)
+
+        async for message in async_queue_receiver:
+            message_body = message._message.data[0].decode()
+            assert message_body in messages_text
+            await async_queue_receiver.complete_message(message)
+
+    @validate_transaction_metrics(
+        "test_async_queue:test_async_queue_send_and_receive_iterative.<locals>.test",
+        scoped_metrics=_metrics,
+        rollup_metrics=_metrics,
+        background_task=True,
+    )
+    @background_task()
+    def test():
+        loop.run_until_complete(_test())

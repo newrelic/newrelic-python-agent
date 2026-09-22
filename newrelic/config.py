@@ -3170,6 +3170,36 @@ def _process_module_builtin_defaults():
     _process_module_definition("cherrypy._cptree", "newrelic.hooks.framework_cherrypy", "instrument_cherrypy__cptree")
 
     _process_module_definition(
+        "azure.servicebus._servicebus_sender",
+        "newrelic.hooks.messagebroker_azureservicebus",
+        "instrument_servicebus_sender",
+    )
+    _process_module_definition(
+        "azure.servicebus._servicebus_receiver",
+        "newrelic.hooks.messagebroker_azureservicebus",
+        "instrument_servicebus_receiver",
+    )
+    _process_module_definition(
+        "azure.servicebus._transport._pyamqp_transport",
+        "newrelic.hooks.messagebroker_azureservicebus",
+        "instrument_servicebus_transport_pyamqp_transport",
+    )
+    _process_module_definition(
+        "azure.servicebus._transport._uamqp_transport",
+        "newrelic.hooks.messagebroker_azureservicebus",
+        "instrument_servicebus_transport_uamqp_transport",
+    )
+    _process_module_definition(
+        "azure.servicebus.aio._servicebus_sender_async",
+        "newrelic.hooks.messagebroker_azureservicebus",
+        "instrument_servicebus_sender_async",
+    )
+    _process_module_definition(
+        "azure.servicebus.aio._servicebus_receiver_async",
+        "newrelic.hooks.messagebroker_azureservicebus",
+        "instrument_servicebus_receiver_async",
+    )
+    _process_module_definition(
         "confluent_kafka.cimpl", "newrelic.hooks.messagebroker_confluentkafka", "instrument_confluentkafka_cimpl"
     )
     _process_module_definition(

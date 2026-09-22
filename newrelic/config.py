@@ -4499,6 +4499,7 @@ def _process_module_builtin_defaults():
 
     _process_module_definition("botocore.endpoint", "newrelic.hooks.external_botocore", "instrument_botocore_endpoint")
     _process_module_definition("botocore.client", "newrelic.hooks.external_botocore", "instrument_botocore_client")
+    _process_module_definition("botocore.auth", "newrelic.hooks.external_botocore", "instrument_botocore_auth")
 
     _process_module_definition(
         "s3transfer.futures", "newrelic.hooks.external_s3transfer", "instrument_s3transfer_futures"

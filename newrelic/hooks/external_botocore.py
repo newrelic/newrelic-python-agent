@@ -50,6 +50,14 @@ EMBEDDING_STREAMING_UNSUPPORTED_LOG_MESSAGE = "Response streaming with embedding
 
 UNSUPPORTED_MODEL_WARNING_SENT = False
 
+NEWRELIC_SIGNED_HEADERS_DENYLIST = (
+    "traceparent",
+    "tracestate",
+    "newrelic",
+    "x-newrelic-synthetics",
+    "x-newrelic-synthetics-info",
+)
+
 
 def extract_sqs(*args, **kwargs):
     queue_value = kwargs.get("QueueUrl", "Unknown")
@@ -1846,7 +1854,6 @@ def _nr_endpoint_make_request_(wrapped, instance, args, kwargs):
     operation_model, request_dict = _bind_make_request_params(*args, **kwargs)
     url = request_dict.get("url")
     method = request_dict.get("method")
-    headers = request_dict.get("headers") or {}
 
     with ExternalTrace(library="botocore", url=url, method=method, source=wrapped) as trace:
         try:
@@ -1856,14 +1863,6 @@ def _nr_endpoint_make_request_(wrapped, instance, args, kwargs):
             if lambda_arn:
                 trace._add_agent_attribute("cloud.platform", "aws_lambda")
                 trace._add_agent_attribute("cloud.resource_id", lambda_arn)
-
-            # Insert DT Headers now to avoid issues with signing.
-            if hasattr(trace, "generate_request_headers"):
-                dt_headers = dict(trace.generate_request_headers(trace.transaction))
-                if headers:
-                    dt_headers.update(headers)
-                request_dict["headers"] = dt_headers
-
         except:
             pass
 
@@ -1886,3 +1885,12 @@ def instrument_botocore_client(module):
         wrap_function_wrapper(module, "ClientCreator._create_methods", _nr_clientcreator__create_methods)
     if hasattr(module, "BaseClient"):
         wrap_function_wrapper(module, "BaseClient._emit_api_params", wrap_emit_api_params)
+
+
+def instrument_botocore_auth(module):
+    # botocore uses the term "Blacklist" while this library typically uses "Denylist" instead.
+    # We can't change the name of the symbol in the botocore package so avoid typos when referring to both.
+    if hasattr(module, "SIGNED_HEADERS_BLACKLIST") and isinstance(module.SIGNED_HEADERS_BLACKLIST, list):
+        for header in NEWRELIC_SIGNED_HEADERS_DENYLIST:
+            if header not in module.SIGNED_HEADERS_BLACKLIST:
+                module.SIGNED_HEADERS_BLACKLIST.append(header)

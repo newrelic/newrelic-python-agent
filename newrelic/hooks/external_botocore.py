@@ -50,6 +50,14 @@ EMBEDDING_STREAMING_UNSUPPORTED_LOG_MESSAGE = "Response streaming with embedding
 
 UNSUPPORTED_MODEL_WARNING_SENT = False
 
+NEWRELIC_SIGNED_HEADERS_BLACKLIST = (
+    "traceparent",
+    "tracestate",
+    "newrelic",
+    "x-newrelic-synthetics",
+    "x-newrelic-synthetics-info",
+)
+
 
 def extract_sqs(*args, **kwargs):
     queue_value = kwargs.get("QueueUrl", "Unknown")
@@ -1877,3 +1885,10 @@ def instrument_botocore_client(module):
         wrap_function_wrapper(module, "ClientCreator._create_methods", _nr_clientcreator__create_methods)
     if hasattr(module, "BaseClient"):
         wrap_function_wrapper(module, "BaseClient._emit_api_params", wrap_emit_api_params)
+
+
+def instrument_botocore_auth(module):
+    if hasattr(module, "SIGNED_HEADERS_BLACKLIST"):
+        signed_headers_blacklist = module.SIGNED_HEADERS_BLACKLIST
+        if isinstance(signed_headers_blacklist, list):
+            signed_headers_blacklist.extend(NEWRELIC_SIGNED_HEADERS_BLACKLIST)

@@ -21,6 +21,7 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.common.object_names import callable_name
+from newrelic.core.config import global_settings
 
 
 def test_trace_metrics(topic, send_producer_message, expected_broker_metrics):
@@ -101,3 +102,41 @@ def test_producer_errors(topic, producer, monkeypatch):
 @pytest.fixture
 def expected_broker_metrics(broker, topic):
     return [(f"MessageBroker/Kafka/Nodes/{server}/Produce/{topic}", 1) for server in broker]
+
+
+# ---------------------------------------------------------------------------
+# Cluster-ID metric tests
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def seeded_cluster_id(producer, monkeypatch):
+    """Directly set _nr_cluster_id on kafka-python's own ClusterMetadata object
+    — the attribute wrap_ClusterMetadata_update_metadata populates from a real
+    metadata refresh, and the same one _read_cluster_id reads — so tests are
+    deterministic without depending on a real broker round trip. (The native
+    ClusterMetadata.cluster_id is never populated by the real library — see
+    TestUpdateMetadataCapture in test_cluster_metrics_unit.py.)"""
+    settings = global_settings()
+    monkeypatch.setattr(settings.kafka, "cluster_metrics_enabled", True)
+    test_cluster_id = "test-cluster-abc123"
+    producer._metadata._nr_cluster_id = test_cluster_id
+    return test_cluster_id
+
+
+def test_cluster_produce_metric(topic, send_producer_message, broker, seeded_cluster_id):
+    """MessageBroker/Kafka/Cluster/{id}/Produce/{topic} appears after a send."""
+    cluster_id = seeded_cluster_id
+    cluster_metric = f"MessageBroker/Kafka/Cluster/{cluster_id}/Produce/{topic}"
+
+    @validate_transaction_metrics(
+        "test_producer:test_cluster_produce_metric.<locals>.test",
+        custom_metrics=[(cluster_metric, 1)],
+        background_task=True,
+    )
+    @background_task()
+    def test():
+        send_producer_message()
+
+    test()
+
+

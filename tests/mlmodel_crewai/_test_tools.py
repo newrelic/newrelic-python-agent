@@ -41,6 +41,7 @@ EXPECTED_TOOL_OUTPUT_STR = "Paris"
 def tool_recorded_event(record_content: bool, output: str = EXPECTED_TOOL_OUTPUT_STR):
     base = {
         "id": None,
+        "run_id": None,  # "" on the ReAct path, a real OpenAI tool_call ID on the native path
         "name": TOOL_NAME,
         "span_id": None,
         "trace_id": "trace-id",
@@ -58,6 +59,7 @@ def tool_recorded_event(record_content: bool, output: str = EXPECTED_TOOL_OUTPUT
 def tool_recorded_event_error(record_content: bool):
     base = {
         "id": None,
+        "run_id": None,  # "" on the ReAct path, a real OpenAI tool_call ID on the native path
         "name": TOOL_NAME,
         "span_id": None,
         "trace_id": "trace-id",

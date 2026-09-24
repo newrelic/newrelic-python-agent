@@ -29,19 +29,20 @@ from newrelic.api.background_task import background_task
 from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 
 EXPECTED_TOOL_METRIC = (
-    f"Llm/tool/CrewAI/crewai.agents.crew_agent_executor:CrewAgentExecutor._handle_native_tool_calls/{TOOL_NAME}",
+    f"Llm/tool/CrewAI/crewai.experimental.agent_executor:AgentExecutor._execute_single_native_tool_call/{TOOL_NAME}",
     1,
 )
 
-# 11 events:
+# 10 events:
 #  * 1 LlmTool
 #  * 2 LlmChatCompletionSummary, one per LLM round-trip
-#  * 8 LlmChatCompletionMessage across those two round-trips
-EXPECTED_EVENT_COUNT = 11
+#  * 7 LlmChatCompletionMessage across those two round-trips
+EXPECTED_EVENT_COUNT = 10
 
-# 12 events. Same two round-trips, but the failing tool result adds one more message to the
-# second request than the successful one carries.
-EXPECTED_ERROR_EVENT_COUNT = 12
+# 11 events:
+# The failing tool result adds one more message to the second
+# request than the successful one has.
+EXPECTED_ERROR_EVENT_COUNT = 11
 
 
 @dt_enabled

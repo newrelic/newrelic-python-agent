@@ -28,15 +28,13 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
 from newrelic.api.background_task import background_task
 from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 
-
 EXPECTED_SYNC_TOOL_METRIC = (f"Llm/tool/CrewAI/crewai.tools.tool_usage:ToolUsage._use/{TOOL_NAME}", 1)
-EXPECTED_ASYNC_TOOL_METRIC = (f"Llm/tool/CrewAI/crewai.tools.tool_usage:ToolUsage._ause/{TOOL_NAME}", 1)
 
-# 10 events:
+# 11 events:
 #  * 1 LlmTool
 #  * 2 LlmChatCompletionSummary, one per LLM round-trip
-#  * 7 LlmChatCompletionMessage across those two round-trips
-EXPECTED_EVENT_COUNT = 10
+#  * 8 LlmChatCompletionMessage across those two round-trips
+EXPECTED_EVENT_COUNT = 11
 
 
 @dt_enabled
@@ -67,8 +65,8 @@ def test_tool(build_crew, crewai_llm, set_trace_info):
 @validate_custom_event_count(count=EXPECTED_EVENT_COUNT)
 @validate_transaction_metrics(
     "test_tools:test_tool_async",
-    scoped_metrics=[EXPECTED_ASYNC_TOOL_METRIC],
-    rollup_metrics=[EXPECTED_ASYNC_TOOL_METRIC],
+    scoped_metrics=[EXPECTED_SYNC_TOOL_METRIC],
+    rollup_metrics=[EXPECTED_SYNC_TOOL_METRIC],
     custom_metrics=EXPECTED_VERSION_METRICS,
     background_task=True,
 )

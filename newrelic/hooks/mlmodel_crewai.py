@@ -18,7 +18,7 @@ import sys
 import uuid
 
 from newrelic.api.function_trace import FunctionTrace
-from newrelic.api.time_trace import get_trace_linking_metadata
+from newrelic.api.time_trace import current_trace, get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
 from newrelic.common.llm_utils import _get_llm_metadata
 from newrelic.common.object_names import callable_name
@@ -26,6 +26,7 @@ from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
 from newrelic.core.config import global_settings
+from newrelic.core.context import context_wrapper
 
 CREWAI_VERSION = get_package_version("crewai")
 
@@ -46,9 +47,11 @@ def _construct_base_tool_event_dict(instance, tool, calling, tool_id, transactio
         tool_input = str(_input) if _input else None
         tool_name = _get_tool_name(tool, calling)
         agent_name = getattr(getattr(instance, "agent", None), "role", "agent")
+        run_id = getattr(calling, "id", None) or ""
 
         tool_event_dict = {
             "id": tool_id,
+            "run_id": run_id,
             "name": tool_name,
             "span_id": linking_metadata.get("span.id"),
             "trace_id": linking_metadata.get("trace.id"),
@@ -91,8 +94,8 @@ def wrap_tool_usage__use(wrapped, instance, args, kwargs):
 
     try:
         bound_args = bind_args(wrapped, args, kwargs)
-        tool = bound_args.get("tool")
-        calling = bound_args.get("calling")
+        tool = bound_args.get("tool", None)
+        calling = bound_args.get("calling", None)
     except Exception:
         tool = calling = None
         _logger.warning(TOOL_EXTRACTOR_FAILURE_LOG_MESSAGE, exc_info=True)
@@ -129,8 +132,8 @@ async def wrap_tool_usage__ause(wrapped, instance, args, kwargs):
 
     try:
         bound_args = bind_args(wrapped, args, kwargs)
-        tool = bound_args.get("tool")
-        calling = bound_args.get("calling")
+        tool = bound_args.get("tool", None)
+        calling = bound_args.get("calling", None)
     except Exception:
         tool = calling = None
         _logger.warning(TOOL_EXTRACTOR_FAILURE_LOG_MESSAGE, exc_info=True)
@@ -168,21 +171,32 @@ def _record_tool_success(transaction, settings, tool_event_dict, ft, return_val)
 
 
 def wrap_tool_usage_event_init(wrapped, instance, args, kwargs):
-    wrapped(*args, **kwargs)
+    result = wrapped(*args, **kwargs)
 
     transaction = current_transaction()
     if not transaction:
-        return
+        return result
 
     captured_events = getattr(transaction, "_nr_crewai_native_tool_events", None)
     if captured_events is None:
-        return
+        return result
 
     if type(instance).__name__ in ("ToolUsageFinishedEvent", "ToolUsageErrorEvent"):
         captured_events.append(instance)
 
+    return result
 
-def _construct_native_tool_event_dict(event, tool_id, transaction, settings, linking_metadata):
+
+def _extract_native_tool_call_id(tool_call):
+    try:
+        if isinstance(tool_call, dict):
+            return tool_call.get("id") or ""
+        return getattr(tool_call, "id", None) or ""
+    except Exception:
+        return ""
+
+
+def _construct_native_tool_event_dict(event, tool_id, run_id, transaction, settings, linking_metadata):
     try:
         tool_name = (getattr(event, "tool_name", None) if event else None) or "tool"
         tool_input = getattr(event, "tool_args", None) if event else None
@@ -191,6 +205,7 @@ def _construct_native_tool_event_dict(event, tool_id, transaction, settings, lin
 
         tool_event_dict = {
             "id": tool_id,
+            "run_id": run_id,
             "name": tool_name,
             "span_id": linking_metadata.get("span.id"),
             "trace_id": linking_metadata.get("trace.id"),
@@ -208,9 +223,9 @@ def _construct_native_tool_event_dict(event, tool_id, transaction, settings, lin
     return tool_event_dict
 
 
-def wrap_crew_agent_executor__handle_native_tool_calls(wrapped, instance, args, kwargs):
-    # Covers the native function-calling tool path, which is the default for OpenAI/Anthropic/
-    # Gemini/Azure/Bedrock models in current CrewAI versions and bypasses ToolUsage entirely
+def wrap_agent_executor__execute_single_native_tool_call(wrapped, instance, args, kwargs):
+    # Covers the native function-calling tool path on crewai.experimental.agent_executor.AgentExecutor
+    # (the default executor as of crewai 1.15.0), which bypasses ToolUsage entirely
     transaction = current_transaction()
     if not transaction:
         return wrapped(*args, **kwargs)
@@ -223,14 +238,13 @@ def wrap_crew_agent_executor__handle_native_tool_calls(wrapped, instance, args, 
     transaction._add_agent_attribute("llm", True)
 
     tool_id = str(uuid.uuid4())
+    run_id = _extract_native_tool_call_id(args[0]) if args else ""
     func_name = callable_name(wrapped)
     linking_metadata = get_trace_linking_metadata()
 
     ft = FunctionTrace(name=func_name, group="Llm/tool/CrewAI")
     ft.__enter__()
 
-    # Save/restore rather than blindly clearing, in case of reentrant native tool calls
-    # within the same transaction (e.g. an agent delegating to another agent).
     previous_events = getattr(transaction, "_nr_crewai_native_tool_events", None)
     transaction._nr_crewai_native_tool_events = []
     try:
@@ -250,7 +264,7 @@ def wrap_crew_agent_executor__handle_native_tool_calls(wrapped, instance, args, 
     else:
         transaction._nr_crewai_native_tool_events = previous_events
 
-    # _handle_native_tool_calls emits ToolUsageErrorEvent and ToolUsageFinishedEvent
+    # _execute_single_native_tool_call emits at most one ToolUsageErrorEvent or ToolUsageFinishedEvent
     error_event = next((e for e in captured_events if type(e).__name__ == "ToolUsageErrorEvent"), None)
     finished_event = error_event or next(
         (e for e in captured_events if type(e).__name__ == "ToolUsageFinishedEvent"), None
@@ -263,7 +277,7 @@ def wrap_crew_agent_executor__handle_native_tool_calls(wrapped, instance, args, 
     ft.__exit__(None, None, None)
 
     tool_event_dict = _construct_native_tool_event_dict(
-        finished_event, tool_id, transaction, settings, linking_metadata
+        finished_event, tool_id, run_id, transaction, settings, linking_metadata
     )
     tool_event_dict["duration"] = ft.duration * 1000
     if error_event is not None:
@@ -276,15 +290,34 @@ def wrap_crew_agent_executor__handle_native_tool_calls(wrapped, instance, args, 
     return return_val
 
 
+async def wrap_flow__execute_method(wrapped, instance, args, kwargs):
+    # Wrapper for context propagation with tool calls
+    trace = current_trace()
+    if not trace or len(args) < 2:
+        return await wrapped(*args, **kwargs)
+
+    method = args[1]
+    wrapped_method = context_wrapper(method, trace=trace, strict=True)
+    new_args = (args[0], wrapped_method, *args[2:])
+    return await wrapped(*new_args, **kwargs)
+
+
 def instrument_crewai_events_types_tool_usage_events(module):
     if hasattr(module, "ToolUsageEvent"):
         wrap_function_wrapper(module, "ToolUsageEvent.__init__", wrap_tool_usage_event_init)
 
 
-def instrument_crewai_agents_crew_agent_executor(module):
-    if hasattr(module, "CrewAgentExecutor") and hasattr(module.CrewAgentExecutor, "_handle_native_tool_calls"):
+def instrument_crewai_flow_flow(module):
+    if hasattr(module, "Flow") and hasattr(module.Flow, "_execute_method"):
+        wrap_function_wrapper(module, "Flow._execute_method", wrap_flow__execute_method)
+
+
+def instrument_crewai_experimental_agent_executor(module):
+    if hasattr(module, "AgentExecutor") and hasattr(module.AgentExecutor, "_execute_single_native_tool_call"):
         wrap_function_wrapper(
-            module, "CrewAgentExecutor._handle_native_tool_calls", wrap_crew_agent_executor__handle_native_tool_calls
+            module,
+            "AgentExecutor._execute_single_native_tool_call",
+            wrap_agent_executor__execute_single_native_tool_call,
         )
 
 

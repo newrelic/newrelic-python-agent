@@ -15,6 +15,7 @@
 import pytest
 from _test_tools import TOOL_NAME, get_capital, tool_recorded_event_error
 from conftest import EXPECTED_VERSION_METRICS, TOOL_PROMPT
+from crewai.tools import ToolExecutionFailedError, ToolFailure, ToolFailureRecord
 from testing_support.fixtures import dt_enabled, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     disabled_ai_monitoring_record_content_settings,
@@ -31,9 +32,7 @@ from newrelic.api.background_task import background_task
 from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import transient_function_wrapper
 
-
 EXPECTED_SYNC_TOOL_METRIC = (f"Llm/tool/CrewAI/crewai.tools.tool_usage:ToolUsage._use/{TOOL_NAME}", 1)
-EXPECTED_ASYNC_TOOL_METRIC = (f"Llm/tool/CrewAI/crewai.tools.tool_usage:ToolUsage._ause/{TOOL_NAME}", 1)
 
 # 5 events:
 #  * 1 LlmTool
@@ -42,19 +41,18 @@ EXPECTED_ASYNC_TOOL_METRIC = (f"Llm/tool/CrewAI/crewai.tools.tool_usage:ToolUsag
 EXPECTED_EVENT_COUNT = 5
 
 
-class CrewAIToolError(RuntimeError):
-    pass
-
-
 @transient_function_wrapper("crewai.tools.tool_usage", "ToolUsage._check_tool_repeated_usage")
 def inject_tool_error(wrapped, instance, args, kwargs):
-    raise CrewAIToolError("Oops")
+    record = ToolFailureRecord(tool_name=TOOL_NAME, failure=ToolFailure(message="Oops"))
+    raise ToolExecutionFailedError(record)
 
 
 @dt_enabled
 @reset_core_stats_engine()
 @validate_transaction_error_event_count(1)
-@validate_error_trace_attributes(callable_name(CrewAIToolError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
+@validate_error_trace_attributes(
+    callable_name(ToolExecutionFailedError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}}
+)
 @validate_custom_events(tool_recorded_event_error(record_content=True))
 @validate_custom_event_count(count=EXPECTED_EVENT_COUNT)
 @validate_transaction_metrics(
@@ -71,7 +69,7 @@ def inject_tool_error(wrapped, instance, args, kwargs):
 def test_tool_error(build_crew, crewai_llm, set_trace_info):
     set_trace_info()
     crew = build_crew(crewai_llm, tools=[get_capital], description=TOOL_PROMPT, max_retry_limit=0)
-    with pytest.raises(CrewAIToolError):
+    with pytest.raises(ToolExecutionFailedError):
         crew.kickoff()
 
 
@@ -79,7 +77,9 @@ def test_tool_error(build_crew, crewai_llm, set_trace_info):
 @reset_core_stats_engine()
 @disabled_ai_monitoring_record_content_settings
 @validate_transaction_error_event_count(1)
-@validate_error_trace_attributes(callable_name(CrewAIToolError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
+@validate_error_trace_attributes(
+    callable_name(ToolExecutionFailedError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}}
+)
 @validate_custom_events(tool_recorded_event_error(record_content=False))
 @validate_custom_event_count(count=EXPECTED_EVENT_COUNT)
 @validate_transaction_metrics(
@@ -95,20 +95,22 @@ def test_tool_error(build_crew, crewai_llm, set_trace_info):
 def test_tool_error_no_content(build_crew, crewai_llm, set_trace_info):
     set_trace_info()
     crew = build_crew(crewai_llm, tools=[get_capital], description=TOOL_PROMPT, max_retry_limit=0)
-    with pytest.raises(CrewAIToolError):
+    with pytest.raises(ToolExecutionFailedError):
         crew.kickoff()
 
 
 @dt_enabled
 @reset_core_stats_engine()
 @validate_transaction_error_event_count(1)
-@validate_error_trace_attributes(callable_name(CrewAIToolError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
+@validate_error_trace_attributes(
+    callable_name(ToolExecutionFailedError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}}
+)
 @validate_custom_events(tool_recorded_event_error(record_content=True))
 @validate_custom_event_count(count=EXPECTED_EVENT_COUNT)
 @validate_transaction_metrics(
     "test_tool_error:test_tool_error_async",
-    scoped_metrics=[EXPECTED_ASYNC_TOOL_METRIC],
-    rollup_metrics=[EXPECTED_ASYNC_TOOL_METRIC],
+    scoped_metrics=[EXPECTED_SYNC_TOOL_METRIC],
+    rollup_metrics=[EXPECTED_SYNC_TOOL_METRIC],
     custom_metrics=EXPECTED_VERSION_METRICS,
     background_task=True,
 )
@@ -119,7 +121,7 @@ def test_tool_error_no_content(build_crew, crewai_llm, set_trace_info):
 def test_tool_error_async(build_crew, crewai_llm, set_trace_info, loop):
     set_trace_info()
     crew = build_crew(crewai_llm, tools=[get_capital], description=TOOL_PROMPT, max_retry_limit=0)
-    with pytest.raises(CrewAIToolError):
+    with pytest.raises(ToolExecutionFailedError):
         loop.run_until_complete(crew.akickoff())
 
 
@@ -133,5 +135,5 @@ def test_tool_error_async(build_crew, crewai_llm, set_trace_info, loop):
 def test_tool_error_disabled_ai_monitoring(build_crew, crewai_llm, set_trace_info):
     set_trace_info()
     crew = build_crew(crewai_llm, tools=[get_capital], description=TOOL_PROMPT, max_retry_limit=0)
-    with pytest.raises(CrewAIToolError):
+    with pytest.raises(ToolExecutionFailedError):
         crew.kickoff()

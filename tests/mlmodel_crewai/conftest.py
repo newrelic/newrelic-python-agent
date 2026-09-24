@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+from pathlib import Path
 
 # CrewAI phones home for telemetry and prompts interactively to enable execution tracing.
 # Disable both (and mark a test environment) before crewai is imported so tests run offline
@@ -31,6 +32,19 @@ from testing_support.fixtures import collector_agent_registration_fixture, colle
 from testing_support.ml_testing_utils import set_trace_info
 
 from newrelic.common.package_version_utils import get_package_version
+
+# raising_capital shares get_capital's registered tool name/schema  and VCR's shared cassette.yaml has no way to route
+# "the correct pre-recorded  pair to "the right" test
+# Giving each test their own cassette to avoid collisions
+_ISOLATED_CASSETTE_TESTS = {"test_tool_native_error", "test_tool_native_error_no_content"}
+
+
+@pytest.fixture(autouse=True)
+def default_cassette_name(request):
+    if request.node.name in _ISOLATED_CASSETTE_TESTS:
+        return str(Path(request.fspath).parent / f"cassette_{request.node.name}")
+    return str(Path(request.fspath).parent / "cassette")
+
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow-downs.
@@ -118,9 +132,7 @@ def build_agent():
             kwargs["max_retry_limit"] = max_retry_limit
         if max_iter is not None:
             kwargs["max_iter"] = max_iter
-        return Agent(
-            role=AGENT_NAME, goal=AGENT_GOAL, backstory=AGENT_BACKSTORY, llm=llm, tools=tools or [], **kwargs
-        )
+        return Agent(role=AGENT_NAME, goal=AGENT_GOAL, backstory=AGENT_BACKSTORY, llm=llm, tools=tools or [], **kwargs)
 
     return _build_agent
 
@@ -128,12 +140,7 @@ def build_agent():
 @pytest.fixture
 def build_crew(build_agent):
     def _build_crew(
-        llm,
-        tools=None,
-        description=PROMPT,
-        expected_output="One word.",
-        max_retry_limit=None,
-        max_iter=None,
+        llm, tools=None, description=PROMPT, expected_output="One word.", max_retry_limit=None, max_iter=None
     ):
         """Return a single-agent Crew. A Crew routes work through Agent.execute_task and ToolUsage."""
         agent = build_agent(llm, tools=tools, max_retry_limit=max_retry_limit, max_iter=max_iter)

@@ -102,7 +102,7 @@ def crewai_native_llm(vcr_recording):
     Return a CrewAI LLM that drives the agent through native (function-calling) tool calls.
 
     This is the default for OpenAI/Anthropic/Gemini/Azure/Bedrock models, and routes tool
-    execution through CrewAgentExecutor._handle_native_tool_calls, bypassing ToolUsage entirely.
+    execution through AgentExecutor._execute_single_native_tool_call, bypassing ToolUsage entirely.
     """
     return _build_llm(vcr_recording)
 
@@ -112,9 +112,8 @@ def crewai_llm(vcr_recording, monkeypatch):
     """
     Return a CrewAI LLM that drives the agent through the ReAct (text) path instead.
 
-    CrewAgentExecutor._invoke_loop picks the native path whenever llm.supports_function_calling()
-    is true, so reaching ToolUsage._use/_ause -- the methods the agent instruments -- requires
-    forcing that off.
+    AgentExecutor picks the native path whenever llm.supports_function_calling() is true, so
+    reaching ToolUsage._use/_ause -- the methods the agent instruments -- requires forcing that off.
     """
     llm = _build_llm(vcr_recording)
     monkeypatch.setattr(type(llm), "supports_function_calling", lambda self: False)

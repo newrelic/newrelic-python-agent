@@ -612,6 +612,7 @@ def _process_configuration(section):
     _process_setting(section, "browser_monitoring.enabled", "getboolean", None)
     _process_setting(section, "browser_monitoring.auto_instrument", "getboolean", None)
     _process_setting(section, "browser_monitoring.loader", "get", None)
+    _process_setting(section, "browser_monitoring.version", "get", None)
     _process_setting(section, "browser_monitoring.debug", "getboolean", None)
     _process_setting(section, "browser_monitoring.ssl_for_http", "getboolean", None)
     _process_setting(section, "browser_monitoring.content_type", "get", _map_split_strings)
@@ -3244,6 +3245,11 @@ def _process_module_builtin_defaults():
         "instrument_googleadk_flows_llm_flows_functions",
     )
     _process_module_definition(
+        "google.adk.flows.llm_flows._tool_caller",
+        "newrelic.hooks.mlmodel_googleadk",
+        "instrument_googleadk_flows_llm_flows__tool_caller",
+    )
+    _process_module_definition(
         "strands.agent.agent", "newrelic.hooks.mlmodel_strands", "instrument_strands_agent_agent"
     )
     _process_module_definition(
@@ -3273,7 +3279,11 @@ def _process_module_builtin_defaults():
         "newrelic.hooks.adapter_mcp",
         "instrument_mcp_server_fastmcp_tools_tool_manager",
     )
-
+    _process_module_definition(
+        "mcp.server.mcpserver.tools.tool_manager",
+        "newrelic.hooks.adapter_mcp",
+        "instrument_mcp_server_fastmcp_tools_tool_manager",
+    )
     _process_module_definition("structlog._base", "newrelic.hooks.logger_structlog", "instrument_structlog__base")
     _process_module_definition("structlog._frames", "newrelic.hooks.logger_structlog", "instrument_structlog__frames")
     _process_module_definition("paste.httpserver", "newrelic.hooks.adapter_paste", "instrument_paste_httpserver")
@@ -3661,6 +3671,22 @@ def _process_module_builtin_defaults():
         "elastic_transport._async_transport",
         "newrelic.hooks.datastore_elasticsearch",
         "instrument_async_elastic_transport__transport",
+    )
+
+    _process_module_definition(
+        "opensearchpy.client", "newrelic.hooks.datastore_opensearch", "instrument_opensearch_client"
+    )
+    _process_module_definition(
+        "opensearchpy._async.client", "newrelic.hooks.datastore_opensearch", "instrument_async_opensearch_client"
+    )
+    _process_module_definition(
+        "opensearchpy.connection.base", "newrelic.hooks.datastore_opensearch", "instrument_opensearch_connection_base"
+    )
+    _process_module_definition(
+        "opensearchpy.transport", "newrelic.hooks.datastore_opensearch", "instrument_opensearch_transport"
+    )
+    _process_module_definition(
+        "opensearchpy._async.transport", "newrelic.hooks.datastore_opensearch", "instrument_async_opensearch_transport"
     )
 
     _process_module_definition("pika.adapters", "newrelic.hooks.messagebroker_pika", "instrument_pika_adapters")
@@ -4487,6 +4513,7 @@ def _process_module_builtin_defaults():
 
     _process_module_definition("botocore.endpoint", "newrelic.hooks.external_botocore", "instrument_botocore_endpoint")
     _process_module_definition("botocore.client", "newrelic.hooks.external_botocore", "instrument_botocore_client")
+    _process_module_definition("botocore.auth", "newrelic.hooks.external_botocore", "instrument_botocore_auth")
 
     _process_module_definition(
         "s3transfer.futures", "newrelic.hooks.external_s3transfer", "instrument_s3transfer_futures"

@@ -84,6 +84,8 @@ from pathlib import Path
 
 import pytest
 
+from newrelic.common.encoding_utils import ensure_str
+
 # Default values for the overridable settings fixtures below
 VCR_CENSORED_HEADERS = ["authorization", "x-goog-api-key"]
 VCR_IGNORED_HEADERS = [
@@ -390,3 +392,34 @@ def pytest_recording_configure(config, vcr):
     """
     for matcher_name, matcher_func in VCR_MATCHERS.items():
         vcr.register_matcher(matcher_name, matcher_func)
+
+
+def gemini_match_body_no_thought_signature(recorded, current):
+    """Configure VCR to match bodies in Gemini without the thought signature."""
+    # If original bodies are identical, then it's a match
+    if recorded.body == current.body:
+        return
+
+    def remove_thought_signature_and_id(body):
+        try:
+            for content in body["contents"]:
+                for part in content["parts"]:
+                    part.pop("thoughtSignature", None)
+                    if part.get("functionResponse"):
+                        for output in part["functionResponse"]["response"]["output"]:
+                            output.pop("id", None)
+        except Exception:
+            pass
+
+    recorded_body = json.loads(ensure_str(recorded.body))
+    current_body = json.loads(ensure_str(current.body))
+
+    # If parsed and reserialized JSON is identical, then it's a match
+    if json.dumps(recorded_body) == json.dumps(current_body):
+        return
+
+    remove_thought_signature_and_id(recorded_body)
+    remove_thought_signature_and_id(current_body)
+
+    # If reserialized JSON without thoughtSignature is identical, then it's a match
+    assert json.dumps(recorded_body) == json.dumps(current_body)

@@ -626,10 +626,7 @@ def _record_generation_success(
 
         input_message_content, input_role = _parse_input_message(messages)
 
-        # Parse output message content
-        # This list should have a length of 1 to represent the output message
-        # Parse the message text out to pass to any registered token counting callback
-        output_message_content = output_message_list[0].get("parts")[0].get("text") if output_message_list else None
+        output_message_content = _parse_output_message(output_message_list)
 
         # Token counts default to those reported in the response object if available,
         # but the user registered callback below may override them.
@@ -732,6 +729,25 @@ def _parse_input_message(messages):
     return None, None
 
 
+def _parse_output_message(output_message_list=None):
+    # Parse output message content
+    # This list should have a length of 1 to represent the output message
+    # Parse the message text out to pass to any registered token counting callback
+    try:
+        output_message_content = next(
+            (part.get("text") for output_message in output_message_list for part in output_message.get("parts")), None
+        )
+    except AttributeError:
+        output_message_content = None
+        _logger.debug("output_message_list = %s", output_message_list, stack_info=True)
+        _logger.warning(
+            "Unable to parse output message to Gemini LLM. Message content and role will be omitted from "
+            "corresponding LlmChatCompletionMessage event. "
+        )
+
+    return output_message_content
+
+
 def _extract_generation_config(kwargs):
     generation_config = kwargs.get("config")
     if generation_config:
@@ -761,12 +777,15 @@ def _handle_streaming_generation_success(
 
                 # Concatenate all chunk texts together to get the full response text
                 try:
-                    full_content = "".join([chunk.text for chunk in streaming_events])
+                    full_content = "".join(
+                        [(chunk.text if chunk.text is not None else "") for chunk in streaming_events]
+                    )
+                    if full_content == "":
+                        raise TypeError
                 except TypeError:
-                    # This is to account for tool calls, where the tool
-                    # call response contains the text that is required.
-                    # If not valid, this will trigger an AttributeError
-                    # and not record a streaming success (yet).
+                    # This is to account for tool calls, where the tool call response contains
+                    # the text that is required.  If a response is not available, this will
+                    # trigger an AttributeError and not record a streaming success (yet).
                     full_content = kwargs["contents"][-1].parts[0].function_response.response["output"][0]["text"]
 
                 # Streaming responses will be a list of chunks, and we can grab metadata from the last chunk to get the final token counts.
@@ -790,7 +809,14 @@ def _handle_streaming_generation_success(
                 # allowing this segment to properly handle the streaming
                 # generation recording.  In the meantime, we do not
                 # want to log a warning.
-                pass
+
+                _logger.debug(
+                    "When using tools, this AttributeError is an expected "
+                    "intermediary step.  However, if this stops being the "
+                    "case, running the agent in debug mode will allow us to "
+                    "view the value of `streaming_events` at this step."
+                )
+                _logger.debug("streaming_events: %s", streaming_events, stack_info=True)
             except Exception:
                 _logger.warning(STREAM_PARSING_FAILURE_LOG_MESSAGE, exc_info=True)
             finally:

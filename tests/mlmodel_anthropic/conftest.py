@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import inspect
 import json
 import os
 from pathlib import Path
@@ -28,7 +29,7 @@ from testing_support.fixtures import (
 from testing_support.mock_external_http_server import MockExternalHTTPServer
 
 from newrelic.common.object_wrapper import wrap_function_wrapper
-from newrelic.common.package_version_utils import get_package_version
+from newrelic.common.package_version_utils import get_package_version, get_package_version_tuple
 from newrelic.common.signature import bind_args
 
 _default_settings = {
@@ -49,6 +50,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 )
 
 ANTHROPIC_VERSION = get_package_version("anthropic")
+ANTHROPIC_VERSION_TUPLE = get_package_version_tuple("anthropic")
 ANTHROPIC_VERSION_METRIC = f"Supportability/Python/ML/Anthropic/{ANTHROPIC_VERSION}"
 
 ANTHROPIC_AUDIT_LOG_FILE = Path(__file__).parent / "anthropic_audit.log"
@@ -146,6 +148,7 @@ def is_async(request):
     params=[
         # ==== Simple interfaces ====
         "create",  # Messages.create()
+        "create.with_raw_response",  # Messages.with_raw_response.create()
         "stream",  # Messages.stream()
         # ==== Alternative create() interfaces with streaming ====
         "create.stream",  # Messages.create(stream=True)
@@ -162,7 +165,7 @@ def interaction_method(request):
 
 @pytest.fixture(scope="session")
 def is_streaming(interaction_method):
-    return interaction_method != "create"
+    return interaction_method not in ("create", "create.with_raw_response")
 
 
 @pytest.fixture(scope="session")
@@ -173,9 +176,16 @@ def is_create_method(interaction_method):
 @pytest.fixture(scope="session")
 def exercise_model(loop, sync_anthropic_client, async_anthropic_client, is_async, interaction_method):
     def exercise_model_sync(*args, **kwargs):
+        if ANTHROPIC_VERSION_TUPLE >= (1, 0, 0):
+            if "temperature" in kwargs:
+                kwargs["extra_body"] = {"temperature": kwargs.pop("temperature")}
+
         # Simple interfaces
         if interaction_method == "create":
             return sync_anthropic_client.messages.create(*args, **kwargs)
+        elif interaction_method == "create.with_raw_response":
+            raw_response = sync_anthropic_client.messages.with_raw_response.create(*args, **kwargs)
+            return raw_response.parse()
         elif interaction_method == "stream":
             with sync_anthropic_client.messages.stream(*args, **kwargs) as stream:
                 return list(stream)
@@ -204,9 +214,19 @@ def exercise_model(loop, sync_anthropic_client, async_anthropic_client, is_async
 
     def exercise_model_async(*args, **kwargs):
         async def _exercise_model_async():
+            if ANTHROPIC_VERSION_TUPLE >= (1, 0, 0):
+                if "temperature" in kwargs:
+                    kwargs["extra_body"] = {"temperature": kwargs.pop("temperature")}
+
             # Simple interfaces
             if interaction_method == "create":
                 return await async_anthropic_client.messages.create(*args, **kwargs)
+            elif interaction_method == "create.with_raw_response":
+                raw_response = await async_anthropic_client.messages.with_raw_response.create(*args, **kwargs)
+                response = raw_response.parse()
+                if inspect.isawaitable(response):
+                    response = await response
+                return response
             elif interaction_method == "stream":
                 async with async_anthropic_client.messages.stream(*args, **kwargs) as stream:
                     return [event async for event in stream]

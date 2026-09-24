@@ -50,6 +50,14 @@ EMBEDDING_STREAMING_UNSUPPORTED_LOG_MESSAGE = "Response streaming with embedding
 
 UNSUPPORTED_MODEL_WARNING_SENT = False
 
+NEWRELIC_SIGNED_HEADERS_DENYLIST = (
+    "traceparent",
+    "tracestate",
+    "newrelic",
+    "x-newrelic-synthetics",
+    "x-newrelic-synthetics-info",
+)
+
 
 def extract_sqs(*args, **kwargs):
     queue_value = kwargs.get("QueueUrl", "Unknown")
@@ -1611,6 +1619,9 @@ CUSTOM_TRACE_POINTS = {
     ("kinesis", "add_tags_to_stream"): aws_function_trace(
         "add_tags_to_stream", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
+    ("kinesis", "create_channel"): aws_function_trace(
+        "create_channel", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
     ("kinesis", "create_stream"): aws_function_trace(
         "create_stream", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
@@ -1619,6 +1630,12 @@ CUSTOM_TRACE_POINTS = {
         extract_kinesis,
         extract_agent_attrs=extract_kinesis_agent_attrs,
         library="Kinesis",
+    ),
+    ("kinesis", "delete_channel"): aws_function_trace(
+        "delete_channel", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "describe_channel"): aws_function_trace(
+        "describe_channel", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
     ("kinesis", "delete_resource_policy"): aws_function_trace(
         "delete_resource_policy", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
@@ -1667,6 +1684,9 @@ CUSTOM_TRACE_POINTS = {
         extract_agent_attrs=extract_kinesis_agent_attrs,
         library="Kinesis",
     ),
+    ("kinesis", "list_channels"): aws_function_trace(
+        "list_channels", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
     ("kinesis", "list_shards"): aws_function_trace(
         "list_shards", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
@@ -1711,6 +1731,9 @@ CUSTOM_TRACE_POINTS = {
         "untag_resource", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
     ("kinesis", "update_account_settings"): aws_function_trace("update_account_settings", library="Kinesis"),
+    ("kinesis", "update_channel"): aws_function_trace(
+        "update_channel", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
     ("kinesis", "update_max_record_size"): aws_function_trace(
         "update_max_record_size", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
@@ -1862,3 +1885,12 @@ def instrument_botocore_client(module):
         wrap_function_wrapper(module, "ClientCreator._create_methods", _nr_clientcreator__create_methods)
     if hasattr(module, "BaseClient"):
         wrap_function_wrapper(module, "BaseClient._emit_api_params", wrap_emit_api_params)
+
+
+def instrument_botocore_auth(module):
+    # botocore uses the term "Blacklist" while this library typically uses "Denylist" instead.
+    # We can't change the name of the symbol in the botocore package so avoid typos when referring to both.
+    if hasattr(module, "SIGNED_HEADERS_BLACKLIST") and isinstance(module.SIGNED_HEADERS_BLACKLIST, list):
+        for header in NEWRELIC_SIGNED_HEADERS_DENYLIST:
+            if header not in module.SIGNED_HEADERS_BLACKLIST:
+                module.SIGNED_HEADERS_BLACKLIST.append(header)

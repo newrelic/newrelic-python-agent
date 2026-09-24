@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import inspect
 import json
 import logging
 import sys
@@ -95,6 +96,33 @@ def _extract_exception_message(exc):
         return str(exc)
 
 
+def _parsed_response(return_val):
+    # Convert any unparsed APIResponse objects to Message objects for instrumentation capture.
+    if hasattr(return_val, "parse") and not hasattr(return_val, "usage"):
+        try:
+            parsed = return_val.parse()
+        except Exception:
+            return return_val
+        if not inspect.isawaitable(parsed):
+            return parsed
+        # Async raw response reached the sync path unexpectedly; don't leave a coroutine dangling.
+        parsed.close()
+    return return_val
+
+
+async def _parsed_response_async(return_val):
+    # Async variant of _parsed_response that awaits the parse() coroutine.
+    if hasattr(return_val, "parse") and not hasattr(return_val, "usage"):
+        try:
+            parsed = return_val.parse()
+            if inspect.isawaitable(parsed):
+                parsed = await parsed
+            return parsed
+        except Exception:
+            return return_val
+    return return_val
+
+
 def wrap_messages_create_sync(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction:
@@ -164,7 +192,7 @@ def wrap_messages_create_sync(wrapped, instance, args, kwargs):
     # Non-streaming path
     ft.__exit__(None, None, None)
 
-    response = return_val
+    response = _parsed_response(return_val)
     usage = getattr(response, "usage", None)
     _record_completion_success(
         transaction=transaction,
@@ -252,7 +280,7 @@ async def wrap_messages_create_async(wrapped, instance, args, kwargs):
     # Non-streaming path
     ft.__exit__(None, None, None)
 
-    response = return_val
+    response = await _parsed_response_async(return_val)
     usage = getattr(response, "usage", None)
     _record_completion_success(
         transaction=transaction,
@@ -370,8 +398,10 @@ def _handle_streaming_create_error(*, linking_metadata, completion_id, kwargs, f
 def _record_completion_error(*, transaction, linking_metadata, completion_id, kwargs, ft, exc, request_timestamp=None):
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
-    request_temperature = kwargs.get("temperature")
     request_max_tokens = kwargs.get("max_tokens")
+    request_temperature = kwargs.get("temperature")
+    if not request_temperature:
+        request_temperature = kwargs.get("extra_body", {}).get("temperature")
 
     messages = kwargs.get("messages", [])
 
@@ -456,8 +486,10 @@ def _record_completion_success(
     try:
         messages = kwargs.get("messages", [])
         request_model = kwargs.get("model")
-        request_temperature = kwargs.get("temperature")
         request_max_tokens = kwargs.get("max_tokens")
+        request_temperature = kwargs.get("temperature")
+        if not request_temperature:
+            request_temperature = kwargs.get("extra_body", {}).get("temperature")
 
         # Token counts default to those reported in the response object if available,
         # but the user registered callback below may override them.

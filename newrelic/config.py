@@ -3659,6 +3659,22 @@ def _process_module_builtin_defaults():
         "instrument_async_elastic_transport__transport",
     )
 
+    _process_module_definition(
+        "opensearchpy.client", "newrelic.hooks.datastore_opensearch", "instrument_opensearch_client"
+    )
+    _process_module_definition(
+        "opensearchpy._async.client", "newrelic.hooks.datastore_opensearch", "instrument_async_opensearch_client"
+    )
+    _process_module_definition(
+        "opensearchpy.connection.base", "newrelic.hooks.datastore_opensearch", "instrument_opensearch_connection_base"
+    )
+    _process_module_definition(
+        "opensearchpy.transport", "newrelic.hooks.datastore_opensearch", "instrument_opensearch_transport"
+    )
+    _process_module_definition(
+        "opensearchpy._async.transport", "newrelic.hooks.datastore_opensearch", "instrument_async_opensearch_transport"
+    )
+
     _process_module_definition("pika.adapters", "newrelic.hooks.messagebroker_pika", "instrument_pika_adapters")
     _process_module_definition("pika.channel", "newrelic.hooks.messagebroker_pika", "instrument_pika_channel")
     _process_module_definition("pika.spec", "newrelic.hooks.messagebroker_pika", "instrument_pika_spec")
@@ -4483,6 +4499,7 @@ def _process_module_builtin_defaults():
 
     _process_module_definition("botocore.endpoint", "newrelic.hooks.external_botocore", "instrument_botocore_endpoint")
     _process_module_definition("botocore.client", "newrelic.hooks.external_botocore", "instrument_botocore_client")
+    _process_module_definition("botocore.auth", "newrelic.hooks.external_botocore", "instrument_botocore_auth")
 
     _process_module_definition(
         "s3transfer.futures", "newrelic.hooks.external_s3transfer", "instrument_s3transfer_futures"

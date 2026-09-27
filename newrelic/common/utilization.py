@@ -446,6 +446,13 @@ class KubernetesUtilization(CommonUtilization):
     EXPECTED_KEYS = ("kubernetes_service_host",)
     VENDOR_NAME = "kubernetes"
 
+    @classmethod
+    def valid_chars(cls, data):
+        # Kubernetes service hosts can be IPv6 addresses.
+        if data is not None:
+            data = data.replace(":", "")
+        return super().valid_chars(data)
+
     @staticmethod
     def fetch():
         kubernetes_service_host = os.environ.get("KUBERNETES_SERVICE_HOST")

@@ -1744,7 +1744,10 @@ CUSTOM_TRACE_POINTS = {
         "update_stream_mode", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
     ("kinesis", "update_stream_record_distribution_strategy"): aws_function_trace(
-        "update_stream_record_distribution_strategy", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+        "update_stream_record_distribution_strategy",
+        extract_kinesis,
+        extract_agent_attrs=extract_kinesis_agent_attrs,
+        library="Kinesis",
     ),
     ("kinesis", "update_stream_warm_throughput"): aws_function_trace(
         "update_stream_warm_throughput",

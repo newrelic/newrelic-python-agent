@@ -46,7 +46,14 @@ EXPECTED_AGENT_ATTRS = {
     }
 }
 
-UNINSTRUMENTED_KINESIS_METHODS = ("generate_presigned_url", "close", "get_waiter", "can_paginate", "get_paginator", "kinesis")
+UNINSTRUMENTED_KINESIS_METHODS = (
+    "generate_presigned_url",
+    "close",
+    "get_waiter",
+    "can_paginate",
+    "get_paginator",
+    "kinesis",
+)
 
 _kinesis_scoped_metrics = [
     (f"MessageBroker/Kinesis/Stream/Produce/Named/{TEST_STREAM}", 2),

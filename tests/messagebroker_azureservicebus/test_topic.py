@@ -223,7 +223,7 @@ def test_topic_distributed_traces_one_sent_one_received(
     header from the first item in order to connect the two transactions.
     """
     _send_scoped_metrics = [(f"MessageBroker/ServiceBus/Topic/Produce/Named/{topic_name}", 1)]
-    _send_rollup_metrics = [("Supportability/TraceContext/Create/Success", 2), *_send_scoped_metrics]
+    _send_rollup_metrics = [("Supportability/TraceContext/Create/Success", 1), *_send_scoped_metrics]
 
     @validate_transaction_metrics(
         "test_topic:test_topic_distributed_traces_one_sent_one_received.<locals>._send",
@@ -273,7 +273,7 @@ def test_topic_distributed_traces_one_sent_two_received(
     receive a DT header for the one item that they received.
     """
     _send_scoped_metrics = [(f"MessageBroker/ServiceBus/Topic/Produce/Named/{topic_name}", 1)]
-    _send_rollup_metrics = [("Supportability/TraceContext/Create/Success", 2), *_send_scoped_metrics]
+    _send_rollup_metrics = [("Supportability/TraceContext/Create/Success", 1), *_send_scoped_metrics]
 
     @validate_transaction_metrics(
         "test_topic:test_topic_distributed_traces_one_sent_two_received.<locals>._send",

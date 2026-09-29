@@ -19,34 +19,24 @@ from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
 
 
-def _dt_header_injector(transaction, message):
-    # This seems redundant until we consider that some
-    # messages may be deferred, some may be lost, some
-    # may be peeked at in another transaction, so each
-    # of these messages will get its own DT header.  If
-    # they are all received by the same transaction, the
-    # logic will be redundant (worst case scenario).
+def _insert_distributed_trace_headers(transaction, message):
+    dt_headers = {k: v.encode("utf-8") for k, v in MessageTrace.generate_request_headers(transaction)}
     if isinstance(message, list):
         for msg in message:
-            dt_headers = {k: v.encode("utf-8") for k, v in MessageTrace.generate_request_headers(transaction)}
             if getattr(msg, "application_properties", None):
                 msg.application_properties.update(dt_headers)
             else:
                 msg.application_properties = dt_headers
     else:
-        dt_headers = {k: v.encode("utf-8") for k, v in MessageTrace.generate_request_headers(transaction)}
         if getattr(message, "application_properties", None):
             message.application_properties.update(dt_headers)
         else:
             message.application_properties = dt_headers
 
 
-def _dt_header_acceptor(transaction, message):
+def _accept_distributed_trace_headers(transaction, message):
     headers = getattr(message, "application_properties", None)
-    # The keys and headers get converted to bytes.
-    # We need to convert them back to strings.
-    string_headers = {k.decode("utf-8"): v.decode("utf-8") for k, v in headers.items()}
-    transaction.accept_distributed_trace_headers(string_headers)
+    transaction.accept_distributed_trace_headers(headers)
 
 
 def _determine_entity_type(connection_str_or_namespace, entity_name=None):
@@ -116,7 +106,7 @@ def wrap_ServiceBusSender_produce_messages(wrapped, instance, args, kwargs):
         source=wrapped,
     ) as trace:
         try:
-            _dt_header_injector(transaction, message)
+            _insert_distributed_trace_headers(transaction, message)
 
             host = instance._handler._connection._hostname
             port = instance._handler._connection._port
@@ -155,7 +145,7 @@ async def wrap_ServiceBusSender_produce_messages_async(wrapped, instance, args, 
         source=wrapped,
     ) as trace:
         try:
-            _dt_header_injector(transaction, message)
+            _insert_distributed_trace_headers(transaction, message)
 
             host = instance._handler._connection._hostname
             port = instance._handler._connection._port
@@ -309,7 +299,7 @@ def wrap_build_received_message(wrapped, instance, args, kwargs):
         source=wrapped,
     ) as trace:
         try:
-            _dt_header_acceptor(transaction, message)
+            _accept_distributed_trace_headers(transaction, message)
 
             host = receiver._handler._connection._hostname
             port = receiver._handler._connection._port

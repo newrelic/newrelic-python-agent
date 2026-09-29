@@ -2190,7 +2190,6 @@ jobs:
             --result-json=./.tox/${{ github.job }}-${{ matrix.group-number }}-${{ github.run_id }}-${{ job.check_run_id }}-results.json \
             --exit-and-dump-after=900
         env:
-          SERVICEBUS_CONNECTION_STRING: "Endpoint=sb://localhost:5672;SharedAccessKeyName=RootManageSharedAccessKey;SharedAccessKey=SAS_KEY_VALUE;UseDevelopmentEmulator=true;"
           TOX_PARALLEL_NO_SPINNER: 1
           FORCE_COLOR: "true"
 

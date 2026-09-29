@@ -414,7 +414,7 @@ def nginx_settings():
 
 
 def servicebus_settings():
-    """Return a list of dict of settings for connecting to nginx.
+    """Return a list of dict of settings for connecting to Azure Service Bus.
 
     Will return the correct settings, depending on which of the environments it
     is running in. It attempts to set variables in the following order, where

@@ -2163,7 +2163,7 @@ jobs:
             --wait \
             --wait-timeout 60 \
             && exit 0
-          echo "MSSQL did not become healthy in time"
+          echo "Azure Service Bus did not become healthy in time"
           docker compose -f .github/containers/servicebus/docker-compose.yml logs
           exit 1
 

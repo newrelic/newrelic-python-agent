@@ -42,11 +42,6 @@ def test_azure_function_utilization_bad_website_owner_name(monkeypatch):
     assert result is None, f"Expected failure but got result instead. {result}"
 
 
-# -------------------------
-# The following tests are actually for Azure App Services:
-# -------------------------
-
-
 def test_azure_app_service_utilization(monkeypatch):
     monkeypatch.setenv("WEBSITE_RESOURCE_GROUP", "testing-python")
     monkeypatch.setenv(

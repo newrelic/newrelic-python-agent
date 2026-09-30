@@ -87,7 +87,14 @@ def gemini_api_key(vcr_recording):
 @pytest.fixture(autouse=True)
 def default_cassette_name(request):
     """Absolute path to the cassette based on major version of Google ADK."""
-    return str(Path(request.fspath).parent / f"cassette_v{GOOGLE_ADK_VERSION_TUPLE[0]}")
+    if GOOGLE_ADK_VERSION_TUPLE[0] == 1:
+        filename = "cassette_v1"
+    elif GOOGLE_ADK_VERSION_TUPLE < (2, 9):
+        filename = "cassette_v2_legacy"
+    else:
+        filename = "cassette_v2"
+
+    return str(Path(request.fspath).parent / filename)
 
 
 @pytest.fixture(autouse=True, params=[False, True], ids=["standard", "vertex"])

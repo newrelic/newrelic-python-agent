@@ -123,10 +123,11 @@ def instrument(module):
         "HTTPConnection.endheaders",
         functools.partial(httplib_endheaders_wrapper, scheme="http", library="http"),
     )
-    wrap_function_wrapper(
-        module,
-        "HTTPSConnection.endheaders",
-        functools.partial(httplib_endheaders_wrapper, scheme="https", library="http"),
-    )
+    if not hasattr(module.HTTPSConnection.endheaders, "_nr_wrapper"):
+        wrap_function_wrapper(
+            module,
+            "HTTPSConnection.endheaders",
+            functools.partial(httplib_endheaders_wrapper, scheme="https", library="http"),
+        )
     wrap_function_wrapper(module, "HTTPConnection.getresponse", httplib_getresponse_wrapper)
     wrap_function_wrapper(module, "HTTPConnection.putheader", httplib_putheader_wrapper)

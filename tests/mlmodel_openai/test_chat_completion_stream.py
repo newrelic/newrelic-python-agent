@@ -36,8 +36,8 @@ from newrelic.api.background_task import background_task
 from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 from newrelic.api.transaction import add_custom_attribute
 
-# TODO: Once instrumentation support is added for `.with_streaming_response.`
-# the validator checks can be uncommented/active.
+# TODO: Once instrumentation support is added for with_streaming_response
+# the validators can be uncommented/active.
 
 SKIP_IF_NO_OPENAI_WITH_STREAMING_RESPONSE = pytest.mark.skipif(
     OPENAI_VERSION < (1, 8), reason="OpenAI does not support .with_streaming_response. until v1.8"
@@ -189,6 +189,8 @@ def test_openai_chat_completion_sync_with_llm_metadata(set_trace_info, sync_open
 @SKIP_IF_NO_OPENAI_WITH_STREAMING_RESPONSE
 @reset_core_stats_engine()
 @pytest.mark.parametrize("stream_set, stream_val", [(False, None), (True, True), (True, False)])
+# TODO: Activate validators for with_streaming_response once instrumented.
+@validate_custom_event_count(count=0)
 @validate_transaction_metrics(
     name="test_chat_completion_stream:test_openai_chat_completion_sync_with_llm_metadata_with_streaming_response_lines",
     # custom_metrics=[
@@ -223,6 +225,8 @@ def test_openai_chat_completion_sync_with_llm_metadata_with_streaming_response_l
 @SKIP_IF_NO_OPENAI_WITH_STREAMING_RESPONSE
 @reset_core_stats_engine()
 @pytest.mark.parametrize("stream_set, stream_val", [(False, None), (True, True), (True, False)])
+# TODO: Activate validators for with_streaming_response once instrumented.
+@validate_custom_event_count(count=0)
 @validate_transaction_metrics(
     name="test_chat_completion_stream:test_openai_chat_completion_sync_with_llm_metadata_with_streaming_response_bytes",
     # custom_metrics=[
@@ -257,6 +261,8 @@ def test_openai_chat_completion_sync_with_llm_metadata_with_streaming_response_b
 @SKIP_IF_NO_OPENAI_WITH_STREAMING_RESPONSE
 @reset_core_stats_engine()
 @pytest.mark.parametrize("stream_set, stream_val", [(False, None), (True, True), (True, False)])
+# TODO: Activate validators for with_streaming_response once instrumented.
+@validate_custom_event_count(count=0)
 @validate_transaction_metrics(
     name="test_chat_completion_stream:test_openai_chat_completion_sync_with_llm_metadata_with_streaming_response_text",
     # custom_metrics=[
@@ -522,6 +528,8 @@ def test_openai_chat_completion_async_with_llm_metadata(loop, set_trace_info, as
 @pytest.mark.parametrize("stream_set, stream_val", [(False, None), (True, True), (True, False)])
 # @validate_custom_events(chat_completion_recorded_events)
 # @validate_custom_event_count(count=4)
+# TODO: Activate validators for with_streaming_response once instrumented.
+@validate_custom_event_count(count=0)
 @validate_transaction_metrics(
     "test_chat_completion_stream:test_openai_chat_completion_async_with_llm_metadata_with_streaming_response_lines",
     # scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
@@ -562,6 +570,8 @@ def test_openai_chat_completion_async_with_llm_metadata_with_streaming_response_
 @pytest.mark.parametrize("stream_set, stream_val", [(False, None), (True, True), (True, False)])
 # @validate_custom_events(chat_completion_recorded_events)
 # @validate_custom_event_count(count=4)
+# # TODO: Activate validators for with_streaming_response once instrumented.
+@validate_custom_event_count(count=0)
 @validate_transaction_metrics(
     "test_chat_completion_stream:test_openai_chat_completion_async_with_llm_metadata_with_streaming_response_bytes",
     # scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
@@ -602,6 +612,8 @@ def test_openai_chat_completion_async_with_llm_metadata_with_streaming_response_
 @pytest.mark.parametrize("stream_set, stream_val", [(False, None), (True, True), (True, False)])
 # @validate_custom_events(chat_completion_recorded_events)
 # @validate_custom_event_count(count=4)
+# TODO: Activate validators for with_streaming_response once instrumented.
+@validate_custom_event_count(count=0)
 @validate_transaction_metrics(
     "test_chat_completion_stream:test_openai_chat_completion_async_with_llm_metadata_with_streaming_response_text",
     # scoped_metrics=[("Llm/completion/OpenAI/create", 1)],

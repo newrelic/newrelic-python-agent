@@ -1305,22 +1305,26 @@ class Transaction:
             return False
 
         try:
-            traceparent = headers.get("traceparent", "")
-            tracestate = headers.get("tracestate", "")
-            distributed_header = headers.get("newrelic", "")
+            headers_dict = dict(headers)
+
+            traceparent = headers_dict.get("traceparent", "")
+            tracestate = headers_dict.get("tracestate", "")
+            distributed_header = headers_dict.get("newrelic", "")
+
+            if not any([traceparent, tracestate, distributed_header]):
+                for k, v in headers_dict.items():
+                    k = ensure_str(k)
+                    if k == "traceparent":
+                        traceparent = v
+                    elif k == "tracestate":
+                        tracestate = v
+                    elif k == "newrelic":
+                        distributed_header = v
+
         except Exception:
             traceparent = ""
             tracestate = ""
             distributed_header = ""
-
-            for k, v in headers:
-                k = ensure_str(k)
-                if k == "traceparent":
-                    traceparent = v
-                elif k == "tracestate":
-                    tracestate = v
-                elif k == "newrelic":
-                    distributed_header = v
 
         if traceparent:
             try:

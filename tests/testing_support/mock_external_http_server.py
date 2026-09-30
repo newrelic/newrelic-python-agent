@@ -107,9 +107,9 @@ def incoming_headers_to_body_text(self):
     self.wfile.write(response)
 
 
-class MockExternalHTTPHResponseHeadersServer(MockExternalHTTPServer):
+class MockExternalHTTPResponseHeadersServer(MockExternalHTTPServer):
     """
-    MockExternalHTTPHResponseHeadersServer will send the incoming
+    MockExternalHTTPResponseHeadersServer will send the incoming
     request headers back as the response.body, allowing us to validate
     httpclient request headers.
 

@@ -53,19 +53,17 @@ is_windows = sys.platform == "win32"
 # `distutils` has been deprecated since Python 3.10 and
 # entirely removed from the standard library in Python 3.12
 try:
-    from setuptools import setup
-    from setuptools import Extension
-    from setuptools.errors import CCompilerError, ExecError, PlatformError
+    from setuptools import Extension, setup
     from setuptools.command.build_ext import build_ext
+    from setuptools.errors import CCompilerError, ExecError, PlatformError
 
     build_ext_errors = (CCompilerError, ExecError, PlatformError, OSError)
 
     with_setuptools = True
 except ImportError:
-    from distutils.core import setup
-    from distutils.core import Extension
-    from distutils.errors import CCompilerError, DistutilsExecError, DistutilsPlatformError
     from distutils.command.build_ext import build_ext
+    from distutils.core import Extension, setup
+    from distutils.errors import CCompilerError, DistutilsExecError, DistutilsPlatformError
 
     build_ext_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError, OSError)
 

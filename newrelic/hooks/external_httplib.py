@@ -118,16 +118,19 @@ def httplib_putheader_wrapper(wrapped, instance, args, kwargs):
 
 
 def instrument(module):
-    wrap_function_wrapper(
-        module,
-        "HTTPConnection.endheaders",
-        functools.partial(httplib_endheaders_wrapper, scheme="http", library="http"),
-    )
-    if not hasattr(module.HTTPSConnection.endheaders, "_nr_wrapper"):
+    # HTTPSConnection must be wrapped first to ensure we don't inherit an already wrapped method from HTTPConnection.
+    # Guard on hasattr since HTTPSConnection is only defined when the ssl module is available.
+    if hasattr(module, "HTTPSConnection"):
         wrap_function_wrapper(
             module,
             "HTTPSConnection.endheaders",
             functools.partial(httplib_endheaders_wrapper, scheme="https", library="http"),
+        )
+    if hasattr(module, "HTTPConnection"):
+        wrap_function_wrapper(
+            module,
+            "HTTPConnection.endheaders",
+            functools.partial(httplib_endheaders_wrapper, scheme="http", library="http"),
         )
     wrap_function_wrapper(module, "HTTPConnection.getresponse", httplib_getresponse_wrapper)
     wrap_function_wrapper(module, "HTTPConnection.putheader", httplib_putheader_wrapper)

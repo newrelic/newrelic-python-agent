@@ -1189,7 +1189,6 @@ class StatsEngine:
         # Merge in span events
 
         if settings.distributed_tracing.enabled and settings.span_events.enabled and settings.collect_span_events:
-
             if settings.launch_darkly_integration.enabled and settings.opentelemetry.enabled:
                 from ldobserve import observe
                 from opentelemetry.trace.span import SpanContext, TraceFlags, TraceState
@@ -1197,10 +1196,9 @@ class StatsEngine:
                 # Send span data to Darkly
                 for event in transaction.span_events(self.__settings):
                     if isinstance(event[-1], dict):
-                        i_attrs, a_attrs, u_attrs = event
+                        i_attrs, u_attrs, a_attrs = event
                     else:
-                        base_event, _ = event
-                        i_attrs, a_attrs, u_attrs = base_event
+                        i_attrs, u_attrs, a_attrs = event[0]
                     # Skip spans that originally came from OTel.
                     if "otel.scope.name" not in a_attrs:
                         attrs = {}

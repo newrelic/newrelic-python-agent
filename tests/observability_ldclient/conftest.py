@@ -12,8 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import pytest
-from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 from opentelemetry import propagate, trace
+from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 from newrelic.api.opentelemetry import opentelemetry_context_propagator
 
@@ -26,12 +26,13 @@ _default_settings = {
     "debug.record_transaction_failure": True,
     "opentelemetry.enabled": True,
     "opentelemetry.traces.enabled": True,
-    #"launch_darkly_integration.enabled": True,
+    "launch_darkly_integration.enabled": True,
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
     app_name="Python Agent Test (framework_flask)", default_settings=_default_settings
 )
+
 
 @pytest.fixture(scope="session")
 def tracer():
@@ -39,4 +40,3 @@ def tracer():
 
     tracer_provider = trace.get_tracer_provider()
     return tracer_provider.get_tracer()
-

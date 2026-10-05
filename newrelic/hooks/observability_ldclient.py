@@ -22,6 +22,7 @@ _logger = logging.getLogger(__name__)
 OBSERVABILITY_PLUGIN_REGISTERED = False
 OBSERVABILITY_PLUGIN_WARNING = "ObservabilityPlugin must be registered with Launch Darkly ldclient in order to successfully initialize the Launch Darkly-New Relic integration."
 
+
 def _create_NewRelicHook():
     from ldclient.hook import Hook, Metadata
 

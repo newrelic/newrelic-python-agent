@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import pytest
+from testing_support.certs import patch_default_https_context
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 from testing_support.mock_external_http_server import MockExternalHTTPResponseHeadersServer
 
@@ -30,7 +31,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 )
 
 
-@pytest.fixture(scope="session")
-def server():
-    with MockExternalHTTPResponseHeadersServer() as _server:
+@pytest.fixture(scope="session", params=["http", "https"])
+def server(request):
+    with MockExternalHTTPResponseHeadersServer(https=(request.param == "https")) as _server:
         yield _server

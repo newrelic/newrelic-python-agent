@@ -34,4 +34,5 @@ collector_agent_registration = collector_agent_registration_fixture(
 @pytest.fixture(scope="session", params=["http", "https"])
 def server(request):
     with MockExternalHTTPResponseHeadersServer(https=(request.param == "https")) as _server:
+        _server.url = f"{_server.scheme}://localhost:{_server.port}"
         yield _server

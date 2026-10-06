@@ -124,7 +124,7 @@ ENV UV_LINK_MODE="copy"
 # Install CPython and PyPy versions
 RUN uv python install -f \
         cp3.14 cp3.13 cp3.12 cp3.11 cp3.10 cp3.9 \
-        pp3.11 pp3.10 \
+        pp3.11.15 pp3.10 \
         cp3.14t && \
     uv clean
 

@@ -87,6 +87,7 @@ class MockExternalHTTPServer(threading.Thread):
 
         if https:
             context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            context.minimum_version = ssl.TLSVersion.TLSv1_2
             context.load_cert_chain(certfile=CERT_PATH, keyfile=CERT_PATH)
             self.httpd.socket = context.wrap_socket(
                 sock=self.httpd.socket, server_side=True, do_handshake_on_connect=False

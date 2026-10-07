@@ -123,8 +123,6 @@ if not with_setuptools:
         "newrelic.hooks",
         "newrelic.network",
         "newrelic.packages",
-        "newrelic.packages.isort",
-        "newrelic.packages.isort.stdlibs",
         "newrelic.packages.opentelemetry_proto",
         "newrelic.packages.urllib3",
         "newrelic.packages.urllib3.contrib",

@@ -61,6 +61,10 @@ try:
 
     with_setuptools = True
 except ImportError:
+    if python_version >= (3, 13):
+        raise ImportError("setuptools is required to install newrelic on Python 3.13 or higher.")
+
+    # Python 3.12 and below can install using distutils
     from distutils.command.build_ext import build_ext
     from distutils.core import Extension, setup
     from distutils.errors import CCompilerError, DistutilsExecError, DistutilsPlatformError

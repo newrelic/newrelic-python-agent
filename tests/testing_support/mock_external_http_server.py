@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import ssl
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
+from testing_support.certs import CERT_PATH
 from testing_support.util import get_open_port as _get_open_port
 
 # This defines an external server test apps can make requests to (instead of
@@ -45,9 +47,10 @@ class MockExternalHTTPServer(threading.Thread):
 
     get_open_port = staticmethod(_get_open_port)
 
-    def __init__(self, handler=simple_get, port=None, *args, **kwargs):
+    def __init__(self, handler=simple_get, port=None, https=False, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.daemon = True
+        self.scheme = "https" if https else "http"
         handler = type(
             "ResponseHandler",
             (BaseHTTPRequestHandler, object),
@@ -82,6 +85,14 @@ class MockExternalHTTPServer(threading.Thread):
                     if "Address already in use" not in exc:
                         raise
 
+        if https:
+            context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            context.minimum_version = ssl.TLSVersion.TLSv1_2
+            context.load_cert_chain(certfile=CERT_PATH, keyfile=CERT_PATH)
+            self.httpd.socket = context.wrap_socket(
+                sock=self.httpd.socket, server_side=True, do_handshake_on_connect=False
+            )
+
     def __enter__(self):
         self.start()
         return self
@@ -107,13 +118,13 @@ def incoming_headers_to_body_text(self):
     self.wfile.write(response)
 
 
-class MockExternalHTTPHResponseHeadersServer(MockExternalHTTPServer):
+class MockExternalHTTPResponseHeadersServer(MockExternalHTTPServer):
     """
-    MockExternalHTTPHResponseHeadersServer will send the incoming
+    MockExternalHTTPResponseHeadersServer will send the incoming
     request headers back as the response.body, allowing us to validate
     httpclient request headers.
 
     """
 
-    def __init__(self, handler=incoming_headers_to_body_text, port=None):
-        super().__init__(handler=handler, port=port)
+    def __init__(self, handler=incoming_headers_to_body_text, port=None, https=False):
+        super().__init__(handler=handler, port=port, https=https)

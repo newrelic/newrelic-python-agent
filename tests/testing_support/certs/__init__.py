@@ -12,6 +12,28 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import ssl
 from pathlib import Path
 
+import pytest
+
+from newrelic.common.object_wrapper import function_wrapper
+
 CERT_PATH = Path(__file__).parent / "cert.pem"
+
+
+@pytest.fixture(scope="session", autouse=True)
+def patch_default_https_context():
+    # Patch default SSL contexts to include the testing certificate
+    @function_wrapper
+    def wrap_create_default_https_context(wrapped, instance, args, kwargs):
+        # return ssl._create_unverified_context()
+        context = wrapped(*args, **kwargs)
+        context.load_verify_locations(cafile=CERT_PATH)
+        return context
+
+    original = ssl._create_default_https_context
+    wrapped = wrap_create_default_https_context(original)
+    ssl._create_default_https_context = wrapped
+    yield
+    ssl._create_default_https_context = original

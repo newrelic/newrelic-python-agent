@@ -4,8 +4,7 @@ REPO_ROOT=$(git rev-parse --show-toplevel)
 cd $REPO_ROOT
 
 # Generated from:
-# opentelemetry-python==1.40.0
-# https://github.com/open-telemetry/opentelemetry-proto/tree/v1.10.0
+# https://github.com/open-telemetry/opentelemetry-proto/tree/v1.11.1
 # Which uses:
 # grpcio-tools==1.63.2
 # https://github.com/open-telemetry/opentelemetry-python/blob/v1.40.0/gen-requirements.txt

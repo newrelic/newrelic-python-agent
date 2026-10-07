@@ -28,15 +28,6 @@ from newrelic.common.package_version_utils import (
     get_package_version_tuple,
 )
 
-# Notes:
-# importlib.metadata was a provisional addition to the std library in Python 3.8 and 3.9
-# while pkg_resources was deprecated.
-# importlib.metadata is no longer provisional in Python 3.10+. It added some attributes
-# such as distribution_packages and removed pkg_resources.
-
-IS_PY310_PLUS = sys.version_info[:2] >= (3, 10)
-SKIP_IF_NOT_PY310_PLUS = pytest.mark.skipif(not IS_PY310_PLUS, reason="These features were added in 3.10+")
-
 
 @pytest.fixture(autouse=True)
 def patched_module_attrs(monkeypatch):
@@ -100,7 +91,6 @@ def test_get_package_version_tuple(monkeypatch, attr, value, expected_value):
     assert version == expected_value
 
 
-@SKIP_IF_NOT_PY310_PLUS
 def test_importlib_metadata_caching():
     @validate_function_called("newrelic.common.package_version_utils", "_get_package_version")
     @validate_function_called("importlib.metadata", "packages_distributions")

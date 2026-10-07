@@ -22,16 +22,15 @@ description = "New Relic Python Agent"
 authors = [{name = "New Relic", email = "support@newrelic.com"}]
 maintainers = [{name = "New Relic", email = "support@newrelic.com"}]
 readme = "README.md"
-# License requires setuptools>=77.0.3 for pyproject.toml, which is Python 3.9+
+# License requires setuptools>=77.0.3 for pyproject.toml
 # license = "Apache-2.0"
 # license-files = [
 #     "LICENSE",
 #     "THIRD_PARTY_NOTICES.md",
 # ]
-requires-python = ">=3.9"  # python_requires is also located in setup.py
+requires-python = ">=3.10"  # python_requires is also located in setup.py
 classifiers = [
     "Development Status :: 5 - Production/Stable",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",

@@ -16,7 +16,7 @@ import asyncio
 
 import pytest
 from testing_support.fixtures import dt_enabled, override_application_settings, override_generic_settings
-from testing_support.mock_external_http_server import MockExternalHTTPHResponseHeadersServer
+from testing_support.mock_external_http_server import MockExternalHTTPResponseHeadersServer
 from testing_support.validators.validate_distributed_tracing_headers import validate_distributed_tracing_headers
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
@@ -45,7 +45,7 @@ def dt_response_handler(self):
 
 @pytest.fixture(scope="session")
 def mock_server():
-    external = MockExternalHTTPHResponseHeadersServer(handler=dt_response_handler)
+    external = MockExternalHTTPResponseHeadersServer(handler=dt_response_handler)
     with external:
         yield external
 

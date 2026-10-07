@@ -21,7 +21,7 @@ from aiohttp.test_utils import AioHTTPTestCase
 from aiohttp.test_utils import TestClient as _TestClient
 from testing_support.fixture.event_loop import event_loop
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
-from testing_support.mock_external_http_server import MockExternalHTTPHResponseHeadersServer, MockExternalHTTPServer
+from testing_support.mock_external_http_server import MockExternalHTTPResponseHeadersServer, MockExternalHTTPServer
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
@@ -107,7 +107,7 @@ def mock_header_server():
         self.end_headers()
         self.wfile.write(response)
 
-    with MockExternalHTTPHResponseHeadersServer(handler=handler) as _server:
+    with MockExternalHTTPResponseHeadersServer(handler=handler) as _server:
         yield _server
 
 

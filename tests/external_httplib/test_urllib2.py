@@ -16,6 +16,7 @@ import urllib.request as urllib2
 
 import pytest
 from testing_support.external_fixtures import cache_outgoing_headers
+from testing_support.fixtures import override_application_settings
 from testing_support.validators.validate_distributed_tracing_headers import validate_distributed_tracing_headers
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
@@ -36,56 +37,13 @@ def metrics(server):
     return scoped, rollup
 
 
-def test_urlopen_http_request(server, metrics):
+def test_urlopen_request(server, metrics):
     @validate_transaction_metrics(
-        "test_urllib2:test_urlopen_http_request",
-        scoped_metrics=metrics[0],
-        rollup_metrics=metrics[1],
-        background_task=True,
+        "test_urllib2:test_urlopen_request", scoped_metrics=metrics[0], rollup_metrics=metrics[1], background_task=True
     )
-    @background_task(name="test_urllib2:test_urlopen_http_request")
+    @background_task(name="test_urllib2:test_urlopen_request")
     def _test():
-        urllib2.urlopen(f"http://localhost:{server.port}/")
-
-    _test()
-
-
-def test_urlopen_https_request(server, metrics):
-    @validate_transaction_metrics(
-        "test_urllib2:test_urlopen_https_request",
-        scoped_metrics=metrics[0],
-        rollup_metrics=metrics[1],
-        background_task=True,
-    )
-    @background_task(name="test_urllib2:test_urlopen_https_request")
-    def _test():
-        try:
-            urllib2.urlopen(f"https://localhost:{server.port}/")
-        except Exception:
-            pass
-
-    _test()
-
-
-def test_urlopen_http_request_with_port(server):
-    scoped = [(f"External/localhost:{server.port}/urllib2/", 1)]
-
-    rollup = [
-        ("External/all", 1),
-        ("External/allOther", 1),
-        (f"External/localhost:{server.port}/all", 1),
-        (f"External/localhost:{server.port}/urllib2/", 1),
-    ]
-
-    @validate_transaction_metrics(
-        "test_urllib2:test_urlopen_http_request_with_port",
-        scoped_metrics=scoped,
-        rollup_metrics=rollup,
-        background_task=True,
-    )
-    @background_task(name="test_urllib2:test_urlopen_http_request_with_port")
-    def _test():
-        urllib2.urlopen(f"http://localhost:{server.port}/")
+        urllib2.urlopen(f"{server.url}/")
 
     _test()
 
@@ -111,8 +69,28 @@ def test_urlopen_file_request():
     urllib2.urlopen(file_uri)
 
 
-@background_task()
-@cache_outgoing_headers
-@validate_distributed_tracing_headers
-def test_urlopen_distributed_tracing_request(server):
-    urllib2.urlopen(f"http://localhost:{server.port}/")
+@pytest.mark.parametrize(
+    "distributed_tracing,span_events,exclude_newrelic_header",
+    (
+        pytest.param(True, True, True, id="dt_on-spans_on-exclude_nr_header"),
+        pytest.param(True, True, False, id="dt_on-spans_on-include_nr_header"),
+        pytest.param(True, False, True, id="dt_on-spans_off-exclude_nr_header"),
+        pytest.param(True, False, False, id="dt_on-spans_off-include_nr_header"),
+        pytest.param(False, False, True, id="dt_off-spans_off-exclude_nr_header"),
+    ),
+)
+def test_urlopen_distributed_tracing_request(server, distributed_tracing, span_events, exclude_newrelic_header):
+    @override_application_settings(
+        {
+            "distributed_tracing.enabled": distributed_tracing,
+            "span_events.enabled": span_events,
+            "distributed_tracing.exclude_newrelic_header": exclude_newrelic_header,
+        }
+    )
+    @background_task(name="test_urllib2:test_urlopen_distributed_tracing_request")
+    @cache_outgoing_headers
+    @validate_distributed_tracing_headers
+    def _test():
+        urllib2.urlopen(f"{server.url}/")
+
+    _test()

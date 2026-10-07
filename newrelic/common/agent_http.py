@@ -249,6 +249,7 @@ class HttpClient(BaseClient):
         self._max_payload_size_in_bytes = max_payload_size_in_bytes
         self._audit_log_fp = audit_log_fp
         self._default_content_encoding_header = default_content_encoding_header
+        self._shared_ssl_context = None
 
         self._prefix = ""
 
@@ -269,7 +270,7 @@ class HttpClient(BaseClient):
                     else:
                         # If there is no resolved cafile on Windows, attempt to load the default certs.
                         try:
-                            _context = ssl.SSLContext()
+                            _context = ssl.SSLContext(ssl.PROTOCOL_TLS)
                             _context.load_default_certs()
                             system_certs = _context.get_ca_certs()
                         except Exception:
@@ -282,6 +283,10 @@ class HttpClient(BaseClient):
                         if not system_certs:
                             ca_bundle_path = certs.where()
                             internal_metric("Supportability/Python/Certificate/BundleRequired", 1)
+
+                else:
+                    self._shared_ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+                    connection_kwargs["ssl_context"] = self._shared_ssl_context
 
             if ca_bundle_path:
                 if Path(ca_bundle_path).is_dir():

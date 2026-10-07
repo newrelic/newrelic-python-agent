@@ -1028,7 +1028,11 @@ def _nr_wrapper_django_template_base_Library_tag_(wrapped, instance, args, kwarg
             # them to the variables in compile_function.__code__.co_freevars.
 
             cells = dict(
-                zip(compile_function.__code__.co_freevars, (c.cell_contents for c in compile_function.func_closure), strict=True)
+                zip(
+                    compile_function.__code__.co_freevars,
+                    (c.cell_contents for c in compile_function.func_closure),
+                    strict=True,
+                )
             )
 
             # node_class is the 4th arg passed to generic_tag_compiler()

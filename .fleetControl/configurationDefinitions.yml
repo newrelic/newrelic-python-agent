@@ -14,8 +14,13 @@
 
 configurationDefinitions:
   - platform: KUBERNETESCLUSTER
-    description: Python agent configuration
-    type: agent-config
+    type: AgentConfig
     version: 1.0.1
     schema: ./schemas/config.json
     format: ini
+    bindings:
+      - type: CONFIGURES
+        targetType: AGENT
+        target: NRPythonAgent
+        versions:
+          - ">=11.2.0"

@@ -642,6 +642,7 @@ def _process_configuration(section):
     )
     _process_setting(section, "custom_insights_events.max_attribute_value", "getint", None)
     _process_setting(section, "ml_insights_events.enabled", "getboolean", None)
+    _process_setting(section, "launch_darkly_integration.enabled", "getboolean", None)
     _process_setting(section, "distributed_tracing.enabled", "getboolean", None)
     _process_setting(section, "distributed_tracing.exclude_newrelic_header", "getboolean", None)
     _process_setting(section, "distributed_tracing.sampler.adaptive_sampling_target", "getint", None)
@@ -4591,6 +4592,10 @@ def _process_module_builtin_defaults():
     _process_module_definition(
         "opentelemetry.instrumentation.pika.utils", "newrelic.hooks.hybridagent_opentelemetry", "instrument_pika_utils"
     )
+
+    _process_module_definition("ldclient.config", "newrelic.hooks.observability_ldclient", "instrument_ldclient_config")
+    _process_module_definition("ldclient.client", "newrelic.hooks.observability_ldclient", "instrument_ldclient_client")
+    _process_module_definition("ldobserve", "newrelic.hooks.observability_ldclient", "instrument_ldobserve")
 
     _process_module_definition(
         "azure.cosmos.cosmos_client", "newrelic.hooks.datastore_azurecosmos", "instrument_cosmos_client"

@@ -36,7 +36,7 @@ Relic](http://newrelic.com/python) to learn more.
 
 ## Usage
 
-This package supports Python 3.9+, and can be installed via pip:
+This package supports Python 3.10+, and can be installed via pip:
 
 ```bash
 pip install newrelic

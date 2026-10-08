@@ -4632,13 +4632,7 @@ def _process_module_entry_points():
     from importlib.metadata import entry_points
 
     group = "newrelic.hooks"
-
-    try:
-        # group kwarg was only added to importlib.metadata.entry_points in Python 3.10.
-        _entry_points = entry_points(group=group)
-    except TypeError:
-        # Grab entire entry_points dictionary and select group from it.
-        _entry_points = entry_points().get(group, ())
+    _entry_points = entry_points(group=group)
 
     for entrypoint in _entry_points:
         target = entrypoint.name
@@ -4702,13 +4696,7 @@ def _process_opentelemetry_instrumentation_entry_points():
     from importlib.metadata import entry_points
 
     group = "opentelemetry_instrumentor"
-
-    try:
-        # group kwarg was only added to importlib.metadata.entry_points in Python 3.10.
-        _entry_points = entry_points(group=group)
-    except TypeError:
-        # Grab entire entry_points dictionary and select group from it.
-        _entry_points = entry_points().get(group, ())
+    _entry_points = entry_points(group=group)
 
     entry_points_generator = (
         entrypoint
@@ -4785,13 +4773,7 @@ def _setup_extensions():
     from importlib.metadata import entry_points
 
     group = "newrelic.extension"
-
-    try:
-        # group kwarg was only added to importlib.metadata.entry_points in Python 3.10.
-        _entry_points = entry_points(group=group)
-    except TypeError:
-        # Grab entire entry_points dictionary and select group from it.
-        _entry_points = entry_points().get(group, ())
+    _entry_points = entry_points(group=group)
 
     for entrypoint in _entry_points:
         __import__(entrypoint.module_name)

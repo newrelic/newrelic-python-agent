@@ -13,20 +13,23 @@
 # limitations under the License.
 
 import logging
-import sys
 
 from newrelic.api.application import application_instance
 from newrelic.api.transaction import current_transaction, record_log_event
-from newrelic.common.object_wrapper import wrap_function_wrapper
+from newrelic.common.object_wrapper import wrap_function_wrapper, wrapt_extensions_loaded
 from newrelic.common.signature import bind_args
 from newrelic.core.config import global_settings
 from newrelic.hooks.logger_logging import add_nr_linking_metadata
 
 _logger = logging.getLogger(__name__)
 
-IS_PYPY = hasattr(sys, "pypy_version_info")
 LOGURU_FILTERED_RECORD_ATTRS = {"extra", "message", "time", "level", "_nr_original_message", "record"}
 ALLOWED_LOGURU_OPTIONS_LENGTHS = frozenset((8, 9))
+
+
+# wrapt always adds at least 1 frame of wrapper that must be ignored, and the
+# pure Python wrappers add an additional frame over the C extensions.
+WRAPPER_FRAME_OFFSET = 1 if wrapt_extensions_loaded else 2
 
 
 def _filter_record_attributes(record):
@@ -84,12 +87,7 @@ def wrap_log(wrapped, instance, args, kwargs):
         # Loguru looks into the stack trace to find the caller's module and function names.
         # options[1] tells loguru how far up to look in the stack trace to find the caller.
         # Because wrap_log is an extra call in the stack trace, loguru needs to look 1 level higher.
-        if not IS_PYPY:
-            options[1] += 1
-        else:
-            # PyPy inspection requires an additional frame of offset, as the wrapt internals seem to
-            # add another frame on PyPy but not on CPython.
-            options[1] += 2
+        options[1] += WRAPPER_FRAME_OFFSET
 
     except Exception as e:
         _logger.debug("Exception in loguru handling: %s", e)

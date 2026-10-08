@@ -4,5 +4,5 @@
 # to the New Relic Python Agent's dependencies in newrelic/packages/.
 opentelemetry_proto==1.40.0
 urllib3==2.8.0
-wrapt==2.1.2
+wrapt==2.4.1
 asgiref==3.11.1  # We only vendor asgiref.compatibility.py

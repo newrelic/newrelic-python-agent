@@ -35,6 +35,10 @@ def _create_NewRelicHook():
             return data
 
         def after_evaluation(self, series_context, data, detail):
+            trace = current_trace()
+            if not trace:
+                return data
+
             try:
                 attrs = {
                     "feature_flag.key": series_context.key,
@@ -49,9 +53,11 @@ def _create_NewRelicHook():
                     attrs["feature_flag.result.reason.inExperiment"] = True
                 if getattr(detail, "value", None):
                     attrs["feature_flag.result.value"] = detail.value
-                trace = current_trace()
-                if not trace:
-                    raise Exception("No active trace. Unable to attach Darkly data to span.")
+
+                environment_id = getattr(series_context, "environment_id", None)
+                if environment_id and isinstance(environment_id, str):  # if non-empty string
+                    attrs["feature_flag.set.id"] = environment_id
+
                 for key, value in attrs.items():
                     trace.add_custom_attribute(key, value)
             except Exception:

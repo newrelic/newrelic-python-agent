@@ -50,6 +50,16 @@ if typing.TYPE_CHECKING:
 
 log = logging.getLogger(__name__)
 
+# Read in 64 KiB chunks
+_READ_CHUNK_SIZE = 2**16
+
+# Maximum length of a chunk-size line (and the trailing CRLF line) when reading a
+# chunked-transfer-encoded response. Matches ``http.client._MAXLINE`` so urllib3's
+# streaming path bounds these reads exactly like the stdlib ``.read()`` path does,
+# preventing a malicious server from forcing unbounded buffering (memory exhaustion)
+# via an unterminated chunk-size line.
+_MAX_CHUNK_LINE_LENGTH = 2**16
+
 
 class ContentDecoder:
     def decompress(self, data: bytes, max_length: int = -1) -> bytes:
@@ -73,6 +83,10 @@ class DeflateDecoder(ContentDecoder):
     def decompress(self, data: bytes, max_length: int = -1) -> bytes:
         data = self._unfed_data + data
         self._unfed_data = b""
+        # Data received after EOF cannot produce more output from this
+        # Deflate stream.
+        if self._obj.eof:
+            return b""
         if not data and not self._obj.unconsumed_tail:
             return data
         original_max_length = max_length
@@ -115,7 +129,9 @@ class DeflateDecoder(ContentDecoder):
     @property
     def has_unconsumed_tail(self) -> bool:
         return bool(self._unfed_data) or (
-            bool(self._obj.unconsumed_tail) and not self._first_try
+            bool(self._obj.unconsumed_tail)
+            and not self._first_try
+            and not self._obj.eof
         )
 
     def flush(self) -> bytes:
@@ -496,6 +512,8 @@ class BaseHTTPResponse(io.IOBase):
             self.chunked = True
 
         self._decoder: ContentDecoder | None = None
+        # Distinguish an uninitialized decoder from a response needing no decoder.
+        self._decoder_initialized = False
         self.length_remaining: int | None
 
     def get_redirect_location(self) -> str | None | typing.Literal[False]:
@@ -559,7 +577,7 @@ class BaseHTTPResponse(io.IOBase):
         self._retries = retries
 
     def stream(
-        self, amt: int | None = 2**16, decode_content: bool | None = None
+        self, amt: int | None = _READ_CHUNK_SIZE, decode_content: bool | None = None
     ) -> typing.Iterator[bytes]:
         raise NotImplementedError()
 
@@ -601,10 +619,13 @@ class BaseHTTPResponse(io.IOBase):
         """
         Set-up the _decoder attribute if necessary.
         """
-        # Note: content-encoding value should be case-insensitive, per RFC 7230
-        # Section 3.2
-        content_encoding = self.headers.get("content-encoding", "").lower()
+        if self._decoder_initialized:
+            return
+
         if self._decoder is None:
+            # Note: content-encoding value should be case-insensitive, per RFC 7230
+            # Section 3.2
+            content_encoding = self.headers.get("content-encoding", "").lower()
             if content_encoding in self.CONTENT_DECODERS:
                 self._decoder = _get_decoder(content_encoding)
             elif "," in content_encoding:
@@ -615,6 +636,8 @@ class BaseHTTPResponse(io.IOBase):
                 ]
                 if encodings:
                     self._decoder = _get_decoder(content_encoding)
+
+        self._decoder_initialized = True
 
     def _decode(
         self,
@@ -663,7 +686,7 @@ class BaseHTTPResponse(io.IOBase):
         return b""
 
     # Compatibility methods for `io` module
-    def readinto(self, b: bytearray) -> int:
+    def readinto(self, b: bytearray | memoryview[int]) -> int:
         temp = self.read(len(b))
         if len(temp) == 0:
             return 0
@@ -755,6 +778,7 @@ class HTTPResponse(BaseHTTPResponse):
         self.auto_close = auto_close
 
         self._body = None
+        self._uncached_read_occurred = False
         self._fp: _HttplibHTTPResponse | None = None
         self._original_response = original_response
         self._fp_bytes_read = 0
@@ -797,13 +821,15 @@ class HTTPResponse(BaseHTTPResponse):
         Unread data in the HTTPResponse connection blocks the connection from being released back to the pool.
         """
         try:
-            self.read(
-                # Do not spend resources decoding the content unless
-                # decoding has already been initiated.
-                decode_content=self._has_decoded_content,
-            )
+            while self._raw_read(_READ_CHUNK_SIZE):
+                pass
         except (HTTPError, OSError, BaseSSLError, HTTPException):
             pass
+        if self._has_decoded_content:
+            # `_raw_read` skips decompression, so we should clean up the
+            # decoder to avoid keeping unnecessary data in memory.
+            self._decoded_buffer = BytesQueueBuffer()
+            self._decoder = None
 
     @property
     def data(self) -> bytes:
@@ -826,7 +852,7 @@ class HTTPResponse(BaseHTTPResponse):
     def tell(self) -> int:
         """
         Obtain the number of bytes pulled over the wire so far. May differ from
-        the amount of content returned by :meth:``urllib3.response.HTTPResponse.read``
+        the amount of content returned by :meth:`HTTPResponse.read`
         if bytes are encoded on the wire (e.g, compressed).
         """
         return self._fp_bytes_read
@@ -908,12 +934,8 @@ class HTTPResponse(BaseHTTPResponse):
                 raise ReadTimeoutError(self._pool, None, "Read timed out.") from e  # type: ignore[arg-type]
 
             except BaseSSLError as e:
-                # FIXME: Is there a better way to differentiate between SSLErrors?
-                if "read operation timed out" not in str(e):
-                    # SSL errors related to framing/MAC get wrapped and reraised here
-                    raise SSLError(e) from e
-
-                raise ReadTimeoutError(self._pool, None, "Read timed out.") from e  # type: ignore[arg-type]
+                # SSL errors related to framing/MAC get wrapped and reraised here
+                raise SSLError(e) from e
 
             except IncompleteRead as e:
                 if (
@@ -966,11 +988,7 @@ class HTTPResponse(BaseHTTPResponse):
         if `amt` or `self.length_remaining` indicate that a problem may
         happen.
 
-        The known cases:
-          * CPython < 3.9.7 because of a bug
-            https://github.com/urllib3/urllib3/issues/2513#issuecomment-1152559900.
-          * urllib3 injected with pyOpenSSL-backed SSL-support.
-          * CPython < 3.10 only when `amt` does not fit 32-bit int.
+        This happens to urllib3 injected with pyOpenSSL-backed SSL-support.
         """
         assert self._fp
         c_int_max = 2**31 - 1
@@ -981,7 +999,7 @@ class HTTPResponse(BaseHTTPResponse):
                 and self.length_remaining
                 and self.length_remaining > c_int_max
             )
-        ) and (util.IS_PYOPENSSL or sys.version_info < (3, 10)):
+        ) and util.IS_PYOPENSSL:
             if read1:
                 return self._fp.read1(c_int_max)
             buffer = io.BytesIO()
@@ -1098,7 +1116,11 @@ class HTTPResponse(BaseHTTPResponse):
         elif amt is not None:
             cache_content = False
 
-            if self._decoder and self._decoder.has_unconsumed_tail:
+            if (
+                self._decoder
+                and self._decoder.has_unconsumed_tail
+                and len(self._decoded_buffer) < amt
+            ):
                 decoded_data = self._decode(
                     b"",
                     decode_content,
@@ -1110,6 +1132,8 @@ class HTTPResponse(BaseHTTPResponse):
                 return self._decoded_buffer.get(amt)
 
         data = self._raw_read(amt)
+        if not cache_content:
+            self._uncached_read_occurred = True
 
         flush_decoder = amt is None or (amt != 0 and not data)
 
@@ -1122,7 +1146,13 @@ class HTTPResponse(BaseHTTPResponse):
 
         if amt is None:
             data = self._decode(data, decode_content, flush_decoder)
-            if cache_content:
+            # It's possible that there is buffered decoded data after a
+            # partial read.
+            if decode_content and len(self._decoded_buffer) > 0:
+                self._decoded_buffer.put(data)
+                data = self._decoded_buffer.get_all()
+
+            if cache_content and not self._uncached_read_occurred:
                 self._body = data
         else:
             # do not waste memory on buffer when not decoding
@@ -1210,6 +1240,7 @@ class HTTPResponse(BaseHTTPResponse):
 
         # FIXME, this method's type doesn't say returning None is possible
         data = self._raw_read(amt, read1=True)
+        self._uncached_read_occurred = True
         if not decode_content or data is None:
             return data
 
@@ -1229,7 +1260,7 @@ class HTTPResponse(BaseHTTPResponse):
         return self._decoded_buffer.get(amt)
 
     def stream(
-        self, amt: int | None = 2**16, decode_content: bool | None = None
+        self, amt: int | None = _READ_CHUNK_SIZE, decode_content: bool | None = None
     ) -> typing.Generator[bytes]:
         """
         A generator wrapper for the read() method. A call will block until
@@ -1246,6 +1277,9 @@ class HTTPResponse(BaseHTTPResponse):
             If True, will attempt to decode the body based on the
             'content-encoding' header.
         """
+        if amt == 0:
+            return
+
         if self.chunked and self.supports_chunked_reads():
             yield from self.read_chunked(amt, decode_content=decode_content)
         else:
@@ -1330,7 +1364,12 @@ class HTTPResponse(BaseHTTPResponse):
         # we'll try to read it from socket.
         if self.chunk_left is not None:
             return None
-        line = self._fp.fp.readline()  # type: ignore[union-attr]
+        line = self._fp.fp.readline(_MAX_CHUNK_LINE_LENGTH + 1)  # type: ignore[union-attr]
+        if len(line) > _MAX_CHUNK_LINE_LENGTH:
+            self.close()
+            raise ProtocolError(
+                "Response chunk size line exceeded maximum allowed length"
+            ) from None
         line = line.split(b";", 1)[0]
         try:
             self.chunk_left = int(line, 16)
@@ -1405,7 +1444,9 @@ class HTTPResponse(BaseHTTPResponse):
             if self._fp.fp is None:  # type: ignore[union-attr]
                 return None
 
-            if amt and amt < 0:
+            if amt == 0:
+                return
+            elif amt and amt < 0:
                 # Negative numbers and `None` should be treated the same,
                 # but httplib handles only `None` correctly.
                 amt = None
@@ -1416,6 +1457,7 @@ class HTTPResponse(BaseHTTPResponse):
                     chunk = b""
                 else:
                     self._update_chunk_length()
+                    self._uncached_read_occurred = True
                     if self.chunk_left == 0:
                         break
                     chunk = self._handle_chunk(amt)
@@ -1438,7 +1480,11 @@ class HTTPResponse(BaseHTTPResponse):
 
             # Chunk content ends with \r\n: discard it.
             while self._fp is not None:
-                line = self._fp.fp.readline()
+                line = self._fp.fp.readline(_MAX_CHUNK_LINE_LENGTH + 1)
+                if len(line) > _MAX_CHUNK_LINE_LENGTH:
+                    raise ProtocolError(
+                        "Response chunk trailer line exceeded maximum allowed length"
+                    )
                 if not line:
                     # Some sites may not end with '\r\n'.
                     break

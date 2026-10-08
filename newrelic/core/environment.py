@@ -25,7 +25,6 @@ import sys
 import newrelic
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.system_info import logical_processor_count, physical_processor_count, total_physical_memory
-from newrelic.packages.isort import stdlibs as isort_stdlibs
 
 try:
     import newrelic.core._thread_utilization
@@ -245,14 +244,5 @@ def plugins():
 
 def _get_stdlib_builtin_module_names():
     builtins = set(sys.builtin_module_names)
-    # Since sys.stdlib_module_names is not available in versions of python below 3.10,
-    # use isort's hardcoded stdlibs instead.
-    python_version = sys.version_info[0:2]
-    if python_version < (3, 10):
-        stdlibs = isort_stdlibs.py39.stdlib
-    elif python_version >= (3, 10):
-        stdlibs = sys.stdlib_module_names
-    else:
-        _logger.warning("Unsupported Python version. Unable to determine stdlibs.")
-        return builtins
+    stdlibs = sys.stdlib_module_names
     return builtins | stdlibs

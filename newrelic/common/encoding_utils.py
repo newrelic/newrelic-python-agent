@@ -422,7 +422,7 @@ class W3CTraceParent(dict):
             return None
 
         # Check field lengths and values
-        for field, expected_length in zip(fields[1:4], (32, 16, 2)):
+        for field, expected_length in zip(fields[1:4], (32, 16, 2), strict=True):
             if len(field) != expected_length or not HEXDIGLC_RE.match(field):
                 return None
 
@@ -492,7 +492,8 @@ class NrTraceState(dict):
             except:
                 return
 
-            for name, value in zip(cls.FIELDS, fields):
+            # non-strict zip means excess fields are dropped. This is for backwards compatibility
+            for name, value in zip(cls.FIELDS, fields, strict=False):
                 if value:
                     data[name] = value
 

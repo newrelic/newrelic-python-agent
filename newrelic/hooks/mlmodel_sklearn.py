@@ -32,7 +32,6 @@ METRIC_SCORERS = (
     "roc_auc_score",
     "r2_score",
 )
-PY2 = sys.version_info[0] == 2
 _logger = logging.getLogger(__name__)
 
 

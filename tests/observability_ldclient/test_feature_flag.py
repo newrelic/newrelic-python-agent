@@ -128,7 +128,8 @@ def test_captures_feature_flag_data_on_span_when_enabled(
 def test_does_not_capture_feature_flag_data_on_span_when_disabled(
     monkeypatch, evaluate_feature_flag, call_instrumentation, initialize_ldclient
 ):
-
+    settings = global_settings()
+    monkeypatch.setattr(settings.launch_darkly_integration, "enabled", False)
     with initialize_ldclient():
 
         @validate_span_events(

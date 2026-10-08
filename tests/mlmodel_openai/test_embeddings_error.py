@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import sys
-
 import openai
 import pytest
 from testing_support.fixtures import dt_enabled, reset_core_stats_engine
@@ -52,11 +50,7 @@ no_model_events = [
 @reset_core_stats_engine()
 @validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
 @validate_span_events(
-    exact_agents={
-        "error.message": "create() missing 1 required keyword-only argument: 'model'"
-        if sys.version_info < (3, 10)
-        else "Embeddings.create() missing 1 required keyword-only argument: 'model'"
-    }
+    exact_agents={"error.message": "Embeddings.create() missing 1 required keyword-only argument: 'model'"}
 )
 @validate_transaction_metrics(
     name="test_embeddings_error:test_embeddings_invalid_request_error_no_model",
@@ -79,11 +73,7 @@ def test_embeddings_invalid_request_error_no_model(set_trace_info, sync_openai_c
 @reset_core_stats_engine()
 @validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
 @validate_span_events(
-    exact_agents={
-        "error.message": "create() missing 1 required keyword-only argument: 'model'"
-        if sys.version_info < (3, 10)
-        else "Embeddings.create() missing 1 required keyword-only argument: 'model'"
-    }
+    exact_agents={"error.message": "Embeddings.create() missing 1 required keyword-only argument: 'model'"}
 )
 @validate_transaction_metrics(
     name="test_embeddings_error:test_embeddings_invalid_request_error_no_model_no_content",
@@ -105,11 +95,7 @@ def test_embeddings_invalid_request_error_no_model_no_content(set_trace_info, sy
 @reset_core_stats_engine()
 @validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
 @validate_span_events(
-    exact_agents={
-        "error.message": "create() missing 1 required keyword-only argument: 'model'"
-        if sys.version_info < (3, 10)
-        else "AsyncEmbeddings.create() missing 1 required keyword-only argument: 'model'"
-    }
+    exact_agents={"error.message": "AsyncEmbeddings.create() missing 1 required keyword-only argument: 'model'"}
 )
 @validate_transaction_metrics(
     name="test_embeddings_error:test_embeddings_invalid_request_error_no_model_async",
@@ -310,11 +296,7 @@ def test_embeddings_wrong_api_key_error_async(set_trace_info, monkeypatch, async
 @reset_core_stats_engine()
 @validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
 @validate_span_events(
-    exact_agents={
-        "error.message": "create() missing 1 required keyword-only argument: 'model'"
-        if sys.version_info < (3, 10)
-        else "Embeddings.create() missing 1 required keyword-only argument: 'model'"
-    }
+    exact_agents={"error.message": "Embeddings.create() missing 1 required keyword-only argument: 'model'"}
 )
 @validate_transaction_metrics(
     name="test_embeddings_error:test_embeddings_invalid_request_error_no_model_with_raw_response",
@@ -339,11 +321,7 @@ def test_embeddings_invalid_request_error_no_model_with_raw_response(set_trace_i
 @reset_core_stats_engine()
 @validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
 @validate_span_events(
-    exact_agents={
-        "error.message": "create() missing 1 required keyword-only argument: 'model'"
-        if sys.version_info < (3, 10)
-        else "Embeddings.create() missing 1 required keyword-only argument: 'model'"
-    }
+    exact_agents={"error.message": "Embeddings.create() missing 1 required keyword-only argument: 'model'"}
 )
 @validate_transaction_metrics(
     name="test_embeddings_error:test_embeddings_invalid_request_error_no_model_no_content_with_raw_response",
@@ -367,11 +345,7 @@ def test_embeddings_invalid_request_error_no_model_no_content_with_raw_response(
 @reset_core_stats_engine()
 @validate_error_trace_attributes(callable_name(TypeError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
 @validate_span_events(
-    exact_agents={
-        "error.message": "create() missing 1 required keyword-only argument: 'model'"
-        if sys.version_info < (3, 10)
-        else "AsyncEmbeddings.create() missing 1 required keyword-only argument: 'model'"
-    }
+    exact_agents={"error.message": "AsyncEmbeddings.create() missing 1 required keyword-only argument: 'model'"}
 )
 @validate_transaction_metrics(
     name="test_embeddings_error:test_embeddings_invalid_request_error_no_model_async_with_raw_response",

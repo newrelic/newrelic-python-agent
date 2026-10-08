@@ -90,10 +90,7 @@ def model_error_msg(is_async, is_chat, is_streaming):
 
     class_name = "AsyncModels" if is_async else "Models"
     method = "generate_content" if not is_streaming else "generate_content_stream"
-    if sys.version_info < (3, 10):
-        return f"{method}() missing 1 required keyword-only argument: 'model'"
-    else:
-        return f"{class_name}.{method}() missing 1 required keyword-only argument: 'model'"
+    return f"{class_name}.{method}() missing 1 required keyword-only argument: 'model'"
 
 
 def test_text_generation_invalid_request_error_no_model(

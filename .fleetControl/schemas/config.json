@@ -272,10 +272,6 @@
     "browser_monitoring.ssl_for_http": {
       "type": "boolean"
     },
-    "browser_monitoring.version": {
-      "type": "string",
-      "default": ""
-    },
     "ca_bundle_path": {
       "type": "string"
     },
@@ -653,6 +649,10 @@
     },
     "labels": {
       "type": "string"
+    },
+    "launch_darkly_integration.enabled": {
+      "type": "boolean",
+      "default": false
     },
     "linked_applications": {
       "type": "array",
@@ -1105,6 +1105,10 @@
       "description": "New Relic license key associated with your account. Binds the agent's data to your account in the New Relic UI.",
       "minLength": 1,
       "writeOnly": true
+    },
+    "browser_monitoring.version": {
+      "type": "string",
+      "default": ""
     }
   },
   "required": [

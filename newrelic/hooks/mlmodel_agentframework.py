@@ -201,13 +201,13 @@ def wrap_BedrockChatClient__prepare_options(wrapped, instance, args, kwargs):
     return request
 
 
-def instrument_agent_framwork__agents(module):
+def instrument_agent_framework__agents(module):
     if hasattr(module, "Agent"):
         if hasattr(module.Agent, "run"):
             wrap_function_wrapper(module, "Agent.run", wrap_Agent_run)
 
 
-def instrument_agent_framwork_bedrock__chat_client(module):
+def instrument_agent_framework_bedrock__chat_client(module):
     if hasattr(module, "BedrockChatClient"):
         if hasattr(module.BedrockChatClient, "_invoke_converse"):
             wrap_function_wrapper(module, "BedrockChatClient._invoke_converse", wrap_BedrockChatClient__invoke_converse)

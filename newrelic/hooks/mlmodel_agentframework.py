@@ -64,7 +64,16 @@ def wrap_Agent_run(wrapped, instance, args, kwargs):
     try:
         return_val = wrapped(*args, **kwargs)
     except Exception:
+        ft.notice_error(attributes={"agent_id": agent_id})
         ft.__exit__(*sys.exc_info())
+        _record_agent_event(
+            transaction=transaction,
+            ft=ft,
+            linking_metadata=linking_metadata,
+            agent_name=agent_name,
+            agent_id=agent_id,
+            error=True,
+        )
         raise
 
     # Handle streaming case by registering a cleanup hook, as proxying the response object is very difficult.
@@ -81,7 +90,9 @@ def wrap_Agent_run(wrapped, instance, args, kwargs):
             )
             return return_val
         except Exception:
-            ft.__exit__(*sys.exc_info())
+            # The underlying Agent.run() call succeeded, so don't mark the span as errored.
+            _logger.warning(AGENT_EVENT_FAILURE_LOG_MESSAGE, exc_info=True)
+            ft.__exit__(None, None, None)
             return return_val
 
     # Non-streaming run() returns an awaitable. Return a coroutine that awaits it and records the

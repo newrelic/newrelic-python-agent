@@ -146,3 +146,33 @@ def test_agent_error(exercise_agent, build_agent, set_trace_info):
             exercise_agent(agent, "trigger error")
 
     _test()
+
+
+@dt_enabled
+@reset_core_stats_engine()
+@validate_transaction_error_event_count(1)
+@validate_error_trace_attributes(callable_name(ValueError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
+@validate_custom_events(agent_recorded_event_error)
+@validate_custom_event_count(1)
+@validate_transaction_metrics(
+    "mlmodel_agentframework.test_agent:test_agent_error_sync",
+    scoped_metrics=EXPECTED_METRICS,
+    rollup_metrics=EXPECTED_METRICS,
+    custom_metrics=EXPECTED_VERSION_METRICS,
+    background_task=True,
+)
+@validate_attributes("agent", ["llm"])
+@validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_AGENT", "name": "my_agent"}'})
+@background_task()
+def test_agent_error_sync(exercise_agent, build_agent, set_trace_info):
+    # Inject a ValueError into categorize_middleware, which Agent.run() calls synchronously before
+    # returning its awaitable or stream, so the exception is raised directly from Agent.run().
+    # The agent must be built before injecting, as Agent.__init__ also calls categorize_middleware.
+    @transient_function_wrapper("agent_framework._middleware", "categorize_middleware")
+    def inject_exception(wrapped, instance, args, kwargs):
+        raise ValueError("Oops")
+
+    set_trace_info()
+    agent = build_agent()
+    with pytest.raises(ValueError):
+        inject_exception(exercise_agent)(agent, "trigger error")

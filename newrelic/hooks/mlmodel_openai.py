@@ -498,6 +498,13 @@ def _handle_completion_success(
 ):
     settings = transaction.settings if transaction.settings is not None else global_settings()
     stream = kwargs.get("stream", False)
+
+    # For a non-streaming call, coerce the response object to a dict up front so it can be reused
+    # by the success path below.
+    response = None
+    if not stream and return_val is not None:
+        response = _coerce_openai_response_to_dict(return_val)
+
     # Only if streaming and streaming monitoring is enabled and the response is not empty
     # do we not exit the function trace.
     if not stream or not settings.ai_monitoring.streaming.enabled or not return_val:
@@ -525,20 +532,9 @@ def _handle_completion_success(
 
     try:
         # If response is not a stream generator, record the event data.
-        # At this point, we have a response so we can grab attributes only available on the response object
+        # At this point, we have a response (already coerced to a dict above) so we can grab
+        # attributes only available on the response object.
         response_headers = getattr(return_val, "_nr_response_headers", {})
-        response = return_val
-
-        # In v1, response objects are pydantic models so this function call converts the
-        # object back to a dictionary for backwards compatibility.
-        if OPENAI_V1:
-            if hasattr(response, "model_dump"):
-                response = response.model_dump()
-            elif hasattr(response, "http_response") and hasattr(response.http_response, "text"):
-                # This is for the .with_raw_response. wrapper.  This is expected
-                # to change, but the return type for now is the following:
-                # openai._legacy_response.LegacyAPIResponse
-                response = json.loads(response.http_response.text.strip())
 
         if responses_api:
             # Merge the extracted response attributes into kwargs and record via the shared
@@ -799,6 +795,24 @@ def _record_completion_error(*, transaction, linking_metadata, completion_id, kw
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
 
+def _coerce_openai_response_to_dict(return_val):
+    """Convert an OpenAI v1 response object into a plain dict for backwards-compatible attr extraction.
+
+    v1 response objects are pydantic models; the .with_raw_response. wrapper instead returns a
+    LegacyAPIResponse carrying the raw JSON text. Anything else (e.g. v0 objects) is returned as-is.
+    """
+    response = return_val
+    if OPENAI_V1:
+        if hasattr(response, "model_dump"):
+            response = response.model_dump()
+        elif hasattr(response, "http_response") and hasattr(response.http_response, "text"):
+            # This is for the .with_raw_response. wrapper.  This is expected
+            # to change, but the return type for now is the following:
+            # openai._legacy_response.LegacyAPIResponse
+            response = json.loads(response.http_response.text.strip())
+    return response
+
+
 def _responses_api_request_attrs(kwargs):
     """Extract attributes from the Responses API's request kwargs. Shared by streaming and non-streaming paths."""
     input_ = kwargs.get("input")
@@ -828,15 +842,31 @@ def _responses_api_request_attrs(kwargs):
 def _responses_api_response_attrs(response):
     """Extract attributes from the Responses API's Response object. Shared by streaming and non-streaming paths."""
     response = response or {}
+    output = response.get("output") or []
 
     # Response content exists in output items of type "message", inside content parts of type "output_text".
-    content = "".join(
-        part.get("text")
-        for item in response.get("output") or []
-        if isinstance(item, dict) and item.get("type") == "message"
-        for part in item.get("content") or []
-        if isinstance(part, dict) and part.get("type") == "output_text" and part.get("text")
+    # Tool-call-only responses have no message items; content stays None so no empty output message is recorded.
+    message_items = [
+        item for item in response.get("output") or [] if isinstance(item, dict) and item.get("type") == "message"
+    ]
+    content = (
+        "".join(
+            part.get("text")
+            for item in message_items
+            for part in item.get("content") or []
+            if isinstance(part, dict) and part.get("type") == "output_text" and part.get("text")
+        )
+        if message_items
+        else None
     )
+
+    # A tool-call-only turn produces a function_call output item with no assistant message text.
+    # The Responses API has no "tool_calls" finish_reason for _record_completion_success to key
+    # off of (as the Chat Completions path does), so signal suppression here with content=None,
+    # which _record_completion_success already treats as "no output message to record". The tool
+    # call itself is echoed back in the input on the following turn, so nothing is lost.
+    if not content and any(isinstance(item, dict) and item.get("type") == "function_call" for item in output):
+        content = None
 
     # The Responses API has no per choice finish_reason.
     # Use incomplete_details.reason if it exists, or fall back to status.
@@ -856,7 +886,52 @@ def _responses_api_response_attrs(response):
         "content": content,
         "role": "assistant",
         "finish_reason": incomplete_details.get("reason") or response.get("status"),
+        "error": (response.get("error") or {}) if response.get("status") == "failed" else None,
     }
+
+
+def _failed_response_kwargs(return_val, kwargs):
+    """Return kwargs for error recording if a non-streamed Response has status "failed", otherwise None."""
+    if kwargs.get("stream"):
+        return None
+    try:
+        # .with_raw_response returns a LegacyAPIResponse; parse() caches its result for the caller.
+        response = return_val.parse() if hasattr(return_val, "http_response") else return_val
+        if getattr(response, "status", None) != "failed":
+            return None
+        attrs = _responses_api_response_attrs(response.model_dump())
+    except Exception:
+        _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
+        return None
+    return {
+        **kwargs,
+        "id": attrs["id"],
+        "response.model": attrs["response.model"],
+        "response_headers": getattr(return_val, "_nr_response_headers", {}),
+        "error": attrs["error"],
+    }
+
+
+def _record_responses_failure(*, transaction, linking_metadata, completion_id, kwargs, ft, request_timestamp):
+    # A failed Response arrives as a normal return value rather than an exception, so raise the
+    # APIError the SDK uses for other failures to give notice_error an active exception to capture.
+    try:
+        error = kwargs.get("error")
+        error = error if isinstance(error, dict) else {}
+        try:
+            raise openai.APIError(message=error.get("message") or "Response failed", request=None, body=error)
+        except openai.APIError as exc:
+            _record_completion_error(
+                transaction=transaction,
+                linking_metadata=linking_metadata,
+                completion_id=completion_id,
+                kwargs=kwargs,
+                ft=ft,
+                exc=exc,
+                request_timestamp=request_timestamp,
+            )
+    except Exception:
+        _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, traceback.format_exception(*sys.exc_info()))
 
 
 def wrap_responses_sync(wrapped, instance, args, kwargs):
@@ -898,6 +973,18 @@ def wrap_responses_sync(wrapped, instance, args, kwargs):
             request_timestamp=request_timestamp,
         )
         raise
+
+    failure_kwargs = _failed_response_kwargs(return_val, nr_kwargs)
+    if failure_kwargs is not None:
+        _record_responses_failure(
+            transaction=transaction,
+            linking_metadata=linking_metadata,
+            completion_id=completion_id,
+            kwargs=failure_kwargs,
+            ft=ft,
+            request_timestamp=request_timestamp,
+        )
+        return return_val
 
     _handle_completion_success(
         transaction=transaction,
@@ -951,6 +1038,18 @@ async def wrap_responses_async(wrapped, instance, args, kwargs):
             request_timestamp=request_timestamp,
         )
         raise
+
+    failure_kwargs = _failed_response_kwargs(return_val, nr_kwargs)
+    if failure_kwargs is not None:
+        _record_responses_failure(
+            transaction=transaction,
+            linking_metadata=linking_metadata,
+            completion_id=completion_id,
+            kwargs=failure_kwargs,
+            ft=ft,
+            request_timestamp=request_timestamp,
+        )
+        return return_val
 
     _handle_completion_success(
         transaction=transaction,
@@ -1137,6 +1236,7 @@ def _record_responses_stream_event(stream_proxy, event):
         stream_proxy._nr_openai_attrs["id"] = response["id"]
         stream_proxy._nr_openai_attrs["response.usage"] = response["response.usage"]
         stream_proxy._nr_openai_attrs["finish_reason"] = response["finish_reason"]
+        stream_proxy._nr_openai_attrs["error"] = response["error"]
 
 
 def _record_events_on_stop_iteration(stream_proxy, transaction, request_timestamp=None):
@@ -1145,10 +1245,20 @@ def _record_events_on_stop_iteration(stream_proxy, transaction, request_timestam
         # Directly calling get_trace_linking_metadata() causes the incorrect span ID to be captured and associated with the LLM call
         # This leads to incorrect linking of the LLM call in the UI
         linking_metadata = stream_proxy._nr_metadata or get_trace_linking_metadata()
+        openai_attrs = getattr(stream_proxy, "_nr_openai_attrs", {})
+        if openai_attrs.get("error") is not None:
+            _record_responses_failure(
+                transaction=transaction,
+                linking_metadata=linking_metadata,
+                completion_id=str(uuid.uuid4()),
+                kwargs=openai_attrs,
+                ft=stream_proxy._nr_ft,
+                request_timestamp=request_timestamp,
+            )
+            openai_attrs.clear()
+            return
         stream_proxy._nr_ft.__exit__(None, None, None)
         try:
-            openai_attrs = getattr(stream_proxy, "_nr_openai_attrs", {})
-
             # If there are no openai attrs exit early as there's no data to record.
             if not openai_attrs:
                 return

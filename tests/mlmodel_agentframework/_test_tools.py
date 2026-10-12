@@ -25,22 +25,34 @@ TOOL_NAME = "get_capital"
 
 def get_capital(country: str) -> str:
     """Return the capital of a country."""
-    assert current_transaction() is not None
-
     capitals = {"France": "Paris", "Japan": "Tokyo"}
     return capitals.get(country, "Unknown")
 
 
 @functools.wraps(get_capital)  # Make function names match
-def _raising_capital(country: str) -> str:
-    """Return the capital of a country."""
+def _get_capital_with_transaction(country: str) -> str:
+    assert current_transaction() is not None
+
+    return get_capital(country)
+
+
+@functools.wraps(get_capital)  # Make function names match
+def _get_capital_without_transaction(country: str) -> str:
+    assert current_transaction() is None
+
+    return get_capital(country)
+
+
+@functools.wraps(get_capital)  # Make function names match
+def _get_capital_error(country: str) -> str:
     assert current_transaction() is not None
 
     raise ValueError("intentional tool failure")
 
 
-get_capital_tool = tool(func=get_capital, name=TOOL_NAME)
-raising_tool = tool(func=_raising_capital, name=TOOL_NAME)
+get_capital_with_transaction = tool(func=_get_capital_with_transaction, name=TOOL_NAME)
+get_capital_without_transaction = tool(func=_get_capital_without_transaction, name=TOOL_NAME)
+get_capital_error = tool(func=_get_capital_error, name=TOOL_NAME)
 
 EXPECTED_TOOL_INPUT_STR = "{'country': 'France'}"
 EXPECTED_TOOL_OUTPUT_STR = "Paris"

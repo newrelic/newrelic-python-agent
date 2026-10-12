@@ -499,12 +499,6 @@ def _handle_completion_success(
     settings = transaction.settings if transaction.settings is not None else global_settings()
     stream = kwargs.get("stream", False)
 
-    # For a non-streaming call, coerce the response object to a dict up front so it can be reused
-    # by the success path below.
-    response = None
-    if not stream and return_val is not None:
-        response = _coerce_openai_response_to_dict(return_val)
-
     # Only if streaming and streaming monitoring is enabled and the response is not empty
     # do we not exit the function trace.
     if not stream or not settings.ai_monitoring.streaming.enabled or not return_val:
@@ -532,8 +526,9 @@ def _handle_completion_success(
 
     try:
         # If response is not a stream generator, record the event data.
-        # At this point, we have a response (already coerced to a dict above) so we can grab
-        # attributes only available on the response object.
+        # Coercion happens inside the try block so a malformed response body can't raise into the
+        # user's OpenAI call.
+        response = None if stream else _coerce_openai_response_to_dict(return_val)
         response_headers = getattr(return_val, "_nr_response_headers", {})
 
         if responses_api:
@@ -846,9 +841,7 @@ def _responses_api_response_attrs(response):
 
     # Response content exists in output items of type "message", inside content parts of type "output_text".
     # Tool-call-only responses have no message items; content stays None so no empty output message is recorded.
-    message_items = [
-        item for item in response.get("output") or [] if isinstance(item, dict) and item.get("type") == "message"
-    ]
+    message_items = [item for item in output if isinstance(item, dict) and item.get("type") == "message"]
     content = (
         "".join(
             part.get("text")
@@ -860,12 +853,12 @@ def _responses_api_response_attrs(response):
         else None
     )
 
-    # A tool-call-only turn produces a function_call output item with no assistant message text.
-    # The Responses API has no "tool_calls" finish_reason for _record_completion_success to key
-    # off of (as the Chat Completions path does), so signal suppression here with content=None,
-    # which _record_completion_success already treats as "no output message to record". The tool
-    # call itself is echoed back in the input on the following turn, so nothing is lost.
-    if not content and any(isinstance(item, dict) and item.get("type") == "function_call" for item in output):
+    # A tool-call turn may include an empty-text message item alongside the function_call item, which
+    # would yield content="". The Responses API has no "tool_calls" finish_reason for
+    # _record_completion_success to key off of (as the Chat Completions path does), so normalize that
+    # empty string to None, which it treats as "no output message to record". The tool call itself is
+    # echoed back in the input on the following turn, so nothing is lost.
+    if content == "" and any(isinstance(item, dict) and item.get("type") == "function_call" for item in output):
         content = None
 
     # The Responses API has no per choice finish_reason.

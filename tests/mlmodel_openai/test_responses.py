@@ -286,6 +286,7 @@ def _tool_call_response_post(*args, **kwargs):
         usage={"input_tokens": 40, "output_tokens": 8, "total_tokens": 48},
     )
 
+
 async def _async_tool_call_response_post(*args, **kwargs):
     return _tool_call_response_post()
 

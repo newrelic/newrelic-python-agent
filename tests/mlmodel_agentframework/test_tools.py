@@ -29,8 +29,15 @@ from newrelic.api.background_task import background_task
 from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 from newrelic.common.object_names import callable_name
 
-from ._test_agent import AGENT_NAME, PROMPT, agent_recorded_event, agent_recorded_event_error, build_agent
-from ._test_tools import TOOL_NAME, get_capital_tool, raising_tool, tool_recorded_event, tool_recorded_event_error
+from ._test_agent import AGENT_NAME, PROMPT, agent_recorded_event, build_agent
+from ._test_tools import (
+    TOOL_NAME,
+    get_capital_error,
+    get_capital_with_transaction,
+    get_capital_without_transaction,
+    tool_recorded_event,
+    tool_recorded_event_error,
+)
 from .conftest import EXPECTED_VERSION_METRICS
 
 EXPECTED_METRICS = [
@@ -70,7 +77,7 @@ EXPECTED_ERROR_EVENT_COUNT = 8
 @background_task()
 def test_tool(exercise_agent, build_agent, set_trace_info):
     set_trace_info()
-    agent = build_agent(tools=[get_capital_tool])
+    agent = build_agent(tools=[get_capital_with_transaction])
     with WithLlmCustomAttributes({"context": "attr"}):
         response = exercise_agent(agent, PROMPT)
 
@@ -95,7 +102,7 @@ def test_tool(exercise_agent, build_agent, set_trace_info):
 @background_task()
 def test_tool_no_content(exercise_agent, build_agent, set_trace_info):
     set_trace_info()
-    agent = build_agent(tools=[get_capital_tool])
+    agent = build_agent(tools=[get_capital_with_transaction])
     response = exercise_agent(agent, PROMPT)
 
     assert "Paris" in response.text
@@ -111,7 +118,7 @@ def test_tool_no_content(exercise_agent, build_agent, set_trace_info):
 @background_task()
 def test_tool_disabled_ai_monitoring(exercise_agent, build_agent, set_trace_info):
     set_trace_info()
-    agent = build_agent(tools=[get_capital_tool])
+    agent = build_agent(tools=[get_capital_with_transaction])
     response = exercise_agent(agent, PROMPT)
 
     assert "Paris" in response.text
@@ -122,7 +129,7 @@ def test_tool_disabled_ai_monitoring(exercise_agent, build_agent, set_trace_info
 @validate_custom_event_count(0)
 def test_tool_outside_transaction(exercise_agent, build_agent, set_trace_info):
     set_trace_info()
-    agent = build_agent(tools=[get_capital_tool])
+    agent = build_agent(tools=[get_capital_without_transaction])
     response = exercise_agent(agent, PROMPT)
 
     assert "Paris" in response.text
@@ -132,7 +139,7 @@ def test_tool_outside_transaction(exercise_agent, build_agent, set_trace_info):
 @reset_core_stats_engine()
 @validate_transaction_error_event_count(1)
 @validate_error_trace_attributes(callable_name(ValueError), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}})
-@validate_custom_events(agent_recorded_event_error + tool_recorded_event_error(record_content=True))
+@validate_custom_events(agent_recorded_event + tool_recorded_event_error(record_content=True))
 @validate_custom_event_count(EXPECTED_ERROR_EVENT_COUNT)
 @validate_transaction_metrics(
     "mlmodel_agentframework.test_tools:test_tool_error",
@@ -147,5 +154,5 @@ def test_tool_outside_transaction(exercise_agent, build_agent, set_trace_info):
 @background_task()
 def test_tool_error(exercise_agent, build_agent, set_trace_info):
     set_trace_info()
-    agent = build_agent(tools=[raising_tool])
+    agent = build_agent(tools=[get_capital_error])
     exercise_agent(agent, PROMPT)

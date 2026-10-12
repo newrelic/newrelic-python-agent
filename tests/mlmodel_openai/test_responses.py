@@ -13,6 +13,8 @@
 # limitations under the License.
 import openai
 import pytest
+from openai.types.responses import Response
+from openai.types.responses.response_function_tool_call import ResponseFunctionToolCall
 from pydantic import BaseModel
 from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
@@ -254,3 +256,146 @@ def test_openai_responses_disabled_ai_monitoring(set_trace_info, exercise):
 @validate_custom_event_count(count=0)
 def test_openai_responses_outside_transaction(set_trace_info, exercise):
     exercise()
+
+
+# === Tool-call-only turns ===
+# When the model responds with only a function_call (no assistant message text), the Responses API
+# returns a completed response whose output carries no "message" item. The agent must not record an
+# empty-content LlmChatCompletionMessage for it — only the summary and the input messages. This is
+# mocked with a real SDK Response so the tool-call-only output shape is exercised deterministically.
+
+TOOL_CALL_RESPONSE_ID = "resp_nr_test_tool_call"
+TOOL_CALL_RESPONSE_MODEL = "gpt-5.1-2025-11-13"
+
+
+def _tool_call_response_post(*args, **kwargs):
+    return Response.model_construct(
+        id=TOOL_CALL_RESPONSE_ID,
+        status="completed",
+        model=TOOL_CALL_RESPONSE_MODEL,
+        output=[
+            ResponseFunctionToolCall.model_construct(
+                id="fc_nr_test",
+                call_id="call_nr_test",
+                name="get_temperature",
+                arguments='{"location": "Paris"}',
+                type="function_call",
+                status="completed",
+            )
+        ],
+        usage={"input_tokens": 40, "output_tokens": 8, "total_tokens": 48},
+    )
+
+async def _async_tool_call_response_post(*args, **kwargs):
+    return _tool_call_response_post()
+
+
+# Only the summary and the two input messages are recorded — crucially, no empty assistant message.
+expected_events_on_tool_call_response = [
+    (
+        {"type": "LlmChatCompletionSummary"},
+        {
+            "id": None,
+            "timestamp": None,
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "duration": None,
+            "request.model": MODEL,
+            "response.model": TOOL_CALL_RESPONSE_MODEL,
+            "request.temperature": 0.7,
+            "request.max_tokens": 500,
+            "response.usage.completion_tokens": 8,
+            "response.usage.prompt_tokens": 40,
+            "response.usage.total_tokens": 48,
+            "response.choices.finish_reason": "completed",
+            "vendor": "openai",
+            "ingest_source": "Python",
+            "response.number_of_messages": 2,
+        },
+    ),
+    (
+        {"type": "LlmChatCompletionMessage"},
+        {
+            "id": f"{TOOL_CALL_RESPONSE_ID}-0",
+            "timestamp": None,
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "content": INSTRUCTIONS,
+            "role": "system",
+            "completion_id": None,
+            "sequence": 0,
+            "response.model": TOOL_CALL_RESPONSE_MODEL,
+            "token_count": 0,
+            "vendor": "openai",
+            "ingest_source": "Python",
+        },
+    ),
+    (
+        {"type": "LlmChatCompletionMessage"},
+        {
+            "id": f"{TOOL_CALL_RESPONSE_ID}-1",
+            "timestamp": None,
+            "llm.conversation_id": "my-awesome-id",
+            "llm.foo": "bar",
+            "span_id": None,
+            "trace_id": "trace-id",
+            "content": PROMPT[0]["content"],
+            "role": "user",
+            "completion_id": None,
+            "sequence": 1,
+            "response.model": TOOL_CALL_RESPONSE_MODEL,
+            "token_count": 0,
+            "vendor": "openai",
+            "ingest_source": "Python",
+        },
+    ),
+]
+
+
+@reset_core_stats_engine()
+@validate_custom_events(events_with_context_attrs(expected_events_on_tool_call_response))
+@validate_custom_event_count(count=3)
+@validate_transaction_metrics(
+    name="test_responses:test_openai_responses_tool_call_only_sync",
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
+    background_task=True,
+)
+@validate_attributes("agent", ["llm"])
+@background_task()
+def test_openai_responses_tool_call_only_sync(monkeypatch, set_trace_info, sync_openai_client):
+    set_trace_info()
+    monkeypatch.setattr(sync_openai_client.responses, "_post", _tool_call_response_post)
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
+    with WithLlmCustomAttributes({"context": "attr"}):
+        sync_openai_client.responses.create(
+            model=MODEL, instructions=INSTRUCTIONS, input=PROMPT, temperature=0.7, max_output_tokens=500
+        )
+
+
+@reset_core_stats_engine()
+@validate_custom_events(events_with_context_attrs(expected_events_on_tool_call_response))
+@validate_custom_event_count(count=3)
+@validate_transaction_metrics(
+    name="test_responses:test_openai_responses_tool_call_only_async",
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
+    background_task=True,
+)
+@validate_attributes("agent", ["llm"])
+@background_task()
+def test_openai_responses_tool_call_only_async(monkeypatch, loop, set_trace_info, async_openai_client):
+    set_trace_info()
+
+    monkeypatch.setattr(async_openai_client.responses, "_post", _async_tool_call_response_post)
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
+    with WithLlmCustomAttributes({"context": "attr"}):
+        loop.run_until_complete(
+            async_openai_client.responses.create(
+                model=MODEL, instructions=INSTRUCTIONS, input=PROMPT, temperature=0.7, max_output_tokens=500
+            )
+        )

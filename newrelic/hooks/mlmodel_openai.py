@@ -818,6 +818,8 @@ def _responses_api_request_attrs(kwargs):
         messages.append({"content": input_, "role": "user"})
     elif isinstance(input_, (list, tuple)):
         for item in input_:
+            # Only items with a role are messages. function_call / function_call_output items carry no role,
+            # so they are skipped here, mirroring chat_completion suppression of content-less tool-call messages.
             if isinstance(item, dict) and item.get("role") is not None:
                 content = item.get("content")
                 # Content is a string, or a list of typed parts each carrying `text`.

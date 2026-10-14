@@ -32,12 +32,12 @@ jobs:
     # The schema itself is still only registered after publish succeeds.
 
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # 7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           fetch-depth: 0
 
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # 7.1.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.13"
 
@@ -100,19 +100,19 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # 7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           fetch-depth: 0
 
       - name: Setup QEMU
         if: runner.os == 'Linux'
-        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # 4.4.0
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
         with:
           platforms: arm64
 
       - name: Build Wheels
-        uses: pypa/cibuildwheel@9c00cb4f6b517705a3794b22395aedc36257242c # 3.2.1
+        uses: pypa/cibuildwheel@9c00cb4f6b517705a3794b22395aedc36257242c # v3.2.1
         env:
           CIBW_PLATFORM: auto
           CIBW_BUILD: "${{ matrix.wheel }}*"
@@ -129,7 +129,7 @@ jobs:
           CIBW_TEST_SKIP: "*-win_arm64"
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # 7.0.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ github.job }}-${{ matrix.wheel }}
           path: ./wheelhouse/*.whl
@@ -142,12 +142,12 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # 7.0.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           fetch-depth: 0
 
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # 7.1.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.13"
 
@@ -167,7 +167,7 @@ jobs:
           openssl md5 -binary "dist/${tarball}" | xxd -p | tr -d '\n' > "dist/${md5_file}"
 
       - name: Upload Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # 7.0.2
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: ${{ github.job }}-sdist
           path: |
@@ -201,7 +201,7 @@ jobs:
     environment: ${{ matrix.pypi-instance }}
 
     steps:
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # 8.0.2
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           path: ./dist/
           merge-multiple: true
@@ -222,16 +222,16 @@ jobs:
 
       - name: Upload Package to PyPI
         if: matrix.pypi-instance == 'pypi'
-        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # 1.14.3
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
 
       - name: Upload Package to TestPyPI
         if: matrix.pypi-instance == 'testpypi'
-        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # 1.14.3
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           repository-url: https://test.pypi.org/legacy/
 
       - name: Attest
-        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # 4.2.2
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         id: attest
         with:
           subject-path: |

@@ -169,7 +169,7 @@ jobs:
 
     runs-on: ubuntu-24.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest # zizmor: ignore[unpinned-images]
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
@@ -239,7 +239,7 @@ jobs:
 
     runs-on: ubuntu-24.04-arm
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest # zizmor: ignore[unpinned-images]
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
@@ -466,7 +466,7 @@ jobs:
 
     runs-on: ubuntu-24.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest # zizmor: ignore[unpinned-images]
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
@@ -536,13 +536,13 @@ jobs:
 
     runs-on: ubuntu-24.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest # zizmor: ignore[unpinned-images]
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     services:
       cassandra:
-        image: cassandra:5.0.2
+        image: cassandra:5.0.2@sha256:9945dafdc759800f1e129ee871e45c9d3aa304fb5149148bde8685ae9812b81b
         env:
           CASSANDRA_SEEDS: "cassandra"
           CASSANDRA_CLUSTER_NAME: TestCluster
@@ -624,13 +624,13 @@ jobs:
 
     runs-on: ubuntu-24.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest # zizmor: ignore[unpinned-images]
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     services:
       cosmosdb:
-        image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview
+        image: mcr.microsoft.com/cosmosdb/linux/azure-cosmos-emulator:vnext-preview@sha256:db53613dae19d0a3d5ad50688d14aa6e957af082dafea56b52e1bd3a6b3f1406
         env:
           PROTOCOL: https
         ports:
@@ -724,13 +724,13 @@ jobs:
 
     runs-on: ubuntu-24.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest # zizmor: ignore[unpinned-images]
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     services:
       elasticsearch:
-        image: elasticsearch:7.17.8
+        image: elasticsearch:7.17.8@sha256:fdc73b3249c1936f7a277911d58bd10bdd5cf7aae07c1f4d285cf3b7bd18e503
         env:
           "discovery.type": "single-node"
         ports:
@@ -809,13 +809,13 @@ jobs:
 
     runs-on: ubuntu-24.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest # zizmor: ignore[unpinned-images]
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     services:
       elasticsearch:
-        image: elasticsearch:8.6.0
+        image: elasticsearch:8.6.0@sha256:12d0ff50b96a53d2a8e103ba2e0e69187babc3dcf8bdc88788d019cdebb75c0c
         env:
           "xpack.security.enabled": "false"
           "discovery.type": "single-node"
@@ -895,7 +895,7 @@ jobs:
 
     runs-on: ubuntu-24.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest # zizmor: ignore[unpinned-images]
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
@@ -982,7 +982,7 @@ jobs:
 
     runs-on: ubuntu-24.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest # zizmor: ignore[unpinned-images]
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
@@ -1052,13 +1052,13 @@ jobs:
 
     runs-on: ubuntu-24.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest # zizmor: ignore[unpinned-images]
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     services:
       zookeeper:
-        image: bitnamilegacy/zookeeper:3.9.1
+        image: bitnamilegacy/zookeeper:3.9.1@sha256:a1f45921c809f3f39050a79a5a97fbd625ae0ad6f93633b6172db69386b9176e
         env:
           ALLOW_ANONYMOUS_LOGIN: yes
 
@@ -1066,7 +1066,7 @@ jobs:
           - 2181:2181
 
       kafka:
-        image: bitnamilegacy/kafka:3.3.2
+        image: bitnamilegacy/kafka:3.3.2@sha256:c5dd5bcf4b76df6f388be3f3c2f54255b7ca028e4c88337a6fb50b5fed2f1b22
         ports:
           - 8080:8080
           - 8082:8082
@@ -1147,13 +1147,13 @@ jobs:
 
     runs-on: ubuntu-24.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest # zizmor: ignore[unpinned-images]
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     services:
       memcached:
-        image: memcached
+        image: memcached:1.6.45@sha256:aea0d81d101a9b64fe30cf2cf2f96144e284f8e9552bb084a03f4e12e9043bab
         ports:
           - 8080:11211
           - 8081:11211
@@ -1230,13 +1230,13 @@ jobs:
 
     runs-on: ubuntu-24.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest # zizmor: ignore[unpinned-images]
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     services:
       mongodb:
-        image: mongo:3.6.4
+        image: mongo:3.6.4@sha256:c6d2b2f8c054210db26b492bab81ffab171ee54eb58925fa98fabb4faca3a9cb
         ports:
           - 8080:27017
           - 8081:27017
@@ -1313,13 +1313,13 @@ jobs:
 
     runs-on: ubuntu-24.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest # zizmor: ignore[unpinned-images]
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     services:
       mongodb:
-        image: mongo:8.0.3
+        image: mongo:8.0.3@sha256:8565ecda5b221016d70f7745ac1ba0b97ccb05836157f8a343e987338fdc8350
         ports:
           - 8080:27017
           - 8081:27017
@@ -1396,13 +1396,13 @@ jobs:
 
     runs-on: ubuntu-24.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest # zizmor: ignore[unpinned-images]
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     services:
       mssql:
-        image: mcr.microsoft.com/azure-sql-edge:latest
+        image: mcr.microsoft.com/azure-sql-edge:2.0.0@sha256:52605ea3251cbc4a7e03eccd458e775ae8a626a3afb4019bec66520a81e78170
         env:
           MSSQL_USER: python_agent
           MSSQL_PASSWORD: python_agent
@@ -1484,13 +1484,13 @@ jobs:
 
     runs-on: ubuntu-24.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest # zizmor: ignore[unpinned-images]
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     services:
       mysql:
-        image: mysql:5.6
+        image: mysql:5.6@sha256:20575ecebe6216036d25dab5903808211f1e9ba63dc7825ac20cb975e34cfcae
         env:
           MYSQL_RANDOM_ROOT_PASSWORD: "true"
           MYSQL_DATABASE: python_agent
@@ -1572,7 +1572,7 @@ jobs:
 
     runs-on: ubuntu-24.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest # zizmor: ignore[unpinned-images]
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
@@ -1662,13 +1662,13 @@ jobs:
 
     runs-on: ubuntu-24.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest # zizmor: ignore[unpinned-images]
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     services:
       opensearch:
-        image: opensearchproject/opensearch:3
+        image: opensearchproject/opensearch:3@sha256:3b55f6b6249cfdb92b52ee59adc8a266203ba9ef9f5d82544fad6f1af2f3609e
         env:
           "discovery.type": "single-node"
           "plugins.security.disabled": "true"
@@ -1749,13 +1749,13 @@ jobs:
 
     runs-on: ubuntu-24.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest # zizmor: ignore[unpinned-images]
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     services:
       oracledb:
-        image: container-registry.oracle.com/database/free:latest-lite
+        image: container-registry.oracle.com/database/free:latest-lite@sha256:cf540c3fa190d7cffad08c491652ac07fc70314e510f6b87890449517d565e94
         ports:
           - 8080:1521
           - 8081:1521
@@ -1835,13 +1835,13 @@ jobs:
 
     runs-on: ubuntu-24.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest # zizmor: ignore[unpinned-images]
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     services:
       postgres9:
-        image: postgres:9
+        image: postgres:9@sha256:caddd35b05cdd56c614ab1f674e63be778e0abdf54e71a7507ff3e28d4902698
         env:
           POSTGRES_PASSWORD: postgres
         ports:
@@ -1920,13 +1920,13 @@ jobs:
 
     runs-on: ubuntu-24.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest # zizmor: ignore[unpinned-images]
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     services:
       postgres16:
-        image: postgres:16
+        image: postgres:16@sha256:5db6dac2ef5dcff512f4f00a009c3c332b9f2f28f24277175bf3e4a3d02ef83a
         env:
           POSTGRES_PASSWORD: postgres
         ports:
@@ -2005,13 +2005,13 @@ jobs:
 
     runs-on: ubuntu-24.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest # zizmor: ignore[unpinned-images]
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     services:
       rabbitmq:
-        image: rabbitmq
+        image: rabbitmq:4.3.6@sha256:3e5cc23235b0eb850f604e8ace10d9a9b6d05be3e36730e53522ee9ead707a9e
         env:
           RABBITMQ_PASSWORD: rabbitmq
         ports:
@@ -2089,13 +2089,13 @@ jobs:
 
     runs-on: ubuntu-24.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest # zizmor: ignore[unpinned-images]
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     services:
       redis:
-        image: redis
+        image: redis:8.10.2@sha256:97ec88159e6d7cfb5ddef9015386087d58a912de80112f06ebdfa78fa5989901
         ports:
           - 8080:6379
           - 8081:6379
@@ -2172,7 +2172,7 @@ jobs:
 
     runs-on: ubuntu-24.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest # zizmor: ignore[unpinned-images]
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
@@ -2266,7 +2266,7 @@ jobs:
 
     runs-on: ubuntu-24.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest # zizmor: ignore[unpinned-images]
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
@@ -2363,13 +2363,13 @@ jobs:
 
     runs-on: ubuntu-24.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest # zizmor: ignore[unpinned-images]
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     services:
       solr:
-        image: bitnamilegacy/solr:8.8.2
+        image: bitnamilegacy/solr:8.8.2@sha256:b4ad2b37cbb29f4eac3491503da6627a3d955f4cc104fa823731098b321b6c20
         env:
           SOLR_CORE: collection
         ports:
@@ -2448,13 +2448,13 @@ jobs:
 
     runs-on: ubuntu-24.04
     container:
-      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest
+      image: ghcr.io/newrelic/newrelic-python-agent-ci:latest # zizmor: ignore[unpinned-images]
       options: >-
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     services:
       valkey:
-        image: valkey/valkey:latest
+        image: valkey/valkey:9.1.2@sha256:418652cfb58ef879d4978c33553735d7147016032d5aefaa14c828e611eb9dfd
         ports:
           - 8080:6379
           - 8081:6379

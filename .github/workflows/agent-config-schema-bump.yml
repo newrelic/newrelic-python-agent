@@ -84,10 +84,12 @@ jobs:
 
       - name: Compute and apply bump
         id: bump
+        env:
+          SINCE_REF: ${{ steps.ref.outputs.ref }}
         run: |
           set +e
           python3 .fleetControl/schemaGeneration/bump-schema-version.py \
-            --since="${{ steps.ref.outputs.ref }}" --ci
+            --since="$SINCE_REF" --ci
           code=$?
           set -e
           case "$code" in
@@ -124,7 +126,10 @@ jobs:
 
       - name: Summary
         if: steps.create-pr.outputs.pull-request-number
+        env:
+          PR_NUMBER: ${{ steps.create-pr.outputs.pull-request-number }}
+          PR_URL: ${{ steps.create-pr.outputs.pull-request-url }}
         run: |
-          echo "Submitted PR #${{ steps.create-pr.outputs.pull-request-number }} to bump the agent config schema version."
+          echo "Submitted PR #$PR_NUMBER to bump the agent config schema version."
           echo "Review and merge before cutting the release tag."
-          echo "${{ steps.create-pr.outputs.pull-request-url }}"
+          echo "$PR_URL"

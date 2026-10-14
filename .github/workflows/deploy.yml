@@ -262,7 +262,7 @@ jobs:
     needs: [publish]
     permissions:
       contents: read
-    uses: ./.github/workflows/agent-metadata.yml
+    uses: ./.github/workflows/agent-metadata.yml # zizmor: ignore[self-repository] $/ syntax not yet supported by MegaLinter tooling
     with:
       version: ${{ github.ref_name }}
       agent-type: "NRPythonAgent"

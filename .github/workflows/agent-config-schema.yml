@@ -58,6 +58,7 @@ jobs:
         with:
           ref: ${{ github.ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: true # zizmor: ignore[artipacked] git push of the regenerated schema needs these credentials
 
       - name: Set up Python
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0

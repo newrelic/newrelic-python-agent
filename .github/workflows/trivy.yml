@@ -42,6 +42,7 @@ jobs:
         with:
           token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Run Trivy vulnerability scanner in repo mode
         if: ${{ github.event_name == 'pull_request' }}

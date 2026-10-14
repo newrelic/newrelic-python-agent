@@ -52,6 +52,7 @@ jobs:
         with:
           token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
           fetch-depth: 0 # Required for pushing commits to PRs
+          persist-credentials: true # zizmor: ignore[artipacked] git-auto-commit-action pushes linter fixes with these credentials
 
       # MegaLinter
       - name: MegaLinter

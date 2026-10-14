@@ -36,7 +36,6 @@ on:
 
 permissions:
   contents: read
-  packages: write
 
 concurrency:
   group: ${{ github.ref || github.run_id }}
@@ -56,6 +55,9 @@ jobs:
 
     runs-on: ${{ matrix.runner }}
     name: Docker Build ${{ matrix.platform }}
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -126,6 +128,9 @@ jobs:
       - build
 
     name: Docker Merge Image
+    permissions:
+      contents: read
+      packages: write
 
     steps:
       - name: Download Digests

@@ -182,8 +182,8 @@ jobs:
     permissions:
       contents: read
       id-token: write # IMPORTANT: this permission is mandatory for trusted publishing
-      attestations: write
-      artifact-metadata: write
+      attestations: write # Create build provenance attestations
+      artifact-metadata: write # Record artifact metadata for attestations
     needs:
       - validate-schema-version
       - build-wheels

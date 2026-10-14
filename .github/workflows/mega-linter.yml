@@ -40,11 +40,9 @@ jobs:
     name: MegaLinter
     runs-on: ubuntu-24.04
     permissions:
-      # Give the default GITHUB_TOKEN write permission to commit and push, comment
-      # issues & post new PR; remove the ones you do not need
-      contents: write
-      issues: write
-      pull-requests: write
+      contents: write # Commit and push applied linter fixes
+      issues: write # Post linter reports as comments
+      pull-requests: write # Post linter reports on PRs
     steps:
       # Git Checkout
       - name: Checkout Code

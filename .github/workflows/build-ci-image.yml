@@ -57,7 +57,7 @@ jobs:
     name: Docker Build ${{ matrix.platform }}
     permissions:
       contents: read
-      packages: write
+      packages: write # Push images to GitHub Container Registry
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -130,7 +130,7 @@ jobs:
     name: Docker Merge Image
     permissions:
       contents: read
-      packages: write
+      packages: write # Push images to GitHub Container Registry
 
     steps:
       - name: Download Digests

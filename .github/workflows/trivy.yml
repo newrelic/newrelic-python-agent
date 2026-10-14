@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
-      security-events: write
+      security-events: write # Upload SARIF results to code scanning
 
     steps:
       # Git Checkout

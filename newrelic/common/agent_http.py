@@ -285,7 +285,7 @@ class HttpClient(BaseClient):
                             internal_metric("Supportability/Python/Certificate/BundleRequired", 1)
 
                 else:
-                    self._shared_ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+                    self._shared_ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
                     connection_kwargs["ssl_context"] = self._shared_ssl_context
 
             if ca_bundle_path:

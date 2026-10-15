@@ -255,7 +255,7 @@ def validate_transaction_event_payloads(payload_validators):
 
         assert len(payloads) == len(payload_validators)
 
-        for payload, validator in zip(payloads, payload_validators):
+        for payload, validator in zip(payloads, payload_validators, strict=True):
             validator(payload)
 
         return val

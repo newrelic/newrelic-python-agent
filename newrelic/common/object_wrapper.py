@@ -32,6 +32,9 @@ from newrelic.packages.wrapt import BoundFunctionWrapper as _BoundFunctionWrappe
 from newrelic.packages.wrapt import CallableObjectProxy as _CallableObjectProxy
 from newrelic.packages.wrapt import FunctionWrapper as _FunctionWrapper
 
+# Flag used to check if C extensions are actually loaded
+from newrelic.packages.wrapt.__wrapt__ import _using_c_extension as wrapt_extensions_loaded  # noqa: F401
+
 # We previously had our own pure Python implementation of the generic
 # object wrapper but we now defer to using the wrapt module as its C
 # implementation has less than ten percent of the overhead for the common

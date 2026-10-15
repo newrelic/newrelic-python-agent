@@ -29,8 +29,6 @@ jobs:
       matrix:
         include:
           # Linux glibc
-          - wheel: cp39-manylinux
-            os: ubuntu-24.04
           - wheel: cp310-manylinux
             os: ubuntu-24.04
           - wheel: cp311-manylinux
@@ -46,8 +44,6 @@ jobs:
           - wheel: cp314t-manylinux
             os: ubuntu-24.04
           # Linux musllibc
-          - wheel: cp39-musllinux
-            os: ubuntu-24.04
           - wheel: cp310-musllinux
             os: ubuntu-24.04
           - wheel: cp311-musllinux
@@ -83,7 +79,7 @@ jobs:
 
       - name: Setup QEMU
         if: runner.os == 'Linux'
-        uses: docker/setup-qemu-action@1f40c72289eff860ee54a304f1438e3cff362e0a # 4.3.0
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # 4.4.0
         with:
           platforms: arm64
 

@@ -60,7 +60,7 @@ class Library:
     book: list[Book]
 
 
-Item = Union[Book, Magazine]
+Item = Book | Magazine
 Storage = list[str]
 
 

@@ -17,9 +17,9 @@ import sys
 
 python_version = sys.version_info[:2]
 
-if python_version < (3, 9):
+if python_version < (3, 10):
     error_msg = (
-        "The New Relic Python agent only supports Python 3.9+. We recommend upgrading to a newer version of Python."
+        "The New Relic Python agent only supports Python 3.10+. We recommend upgrading to a newer version of Python."
     )
 
     try:
@@ -33,6 +33,7 @@ if python_version < (3, 9):
             (3, 6): "7.16.0.178",
             (3, 7): "10.17.0",
             (3, 8): "11.5.0",
+            (3, 9): "13.6.1",
         }
         last_supported_version = last_supported_version_lookup.get(python_version, None)
 
@@ -49,19 +50,29 @@ if python_version < (3, 9):
 with_setuptools = False
 is_windows = sys.platform == "win32"
 
+
+# `distutils` has been deprecated since Python 3.10 and
+# entirely removed from the standard library in Python 3.12
 try:
-    from setuptools import setup
+    from setuptools import Extension, setup
+    from setuptools.command.build_ext import build_ext
+    from setuptools.errors import CCompilerError, ExecError, PlatformError
+
+    build_ext_errors = (CCompilerError, ExecError, PlatformError, OSError)
 
     with_setuptools = True
 except ImportError:
-    from distutils.core import setup
+    if python_version >= (3, 12):
+        raise ImportError("setuptools is required to install newrelic on Python 3.12 or higher.")
 
-from distutils.command.build_ext import build_ext
-from distutils.core import Extension
-from distutils.errors import CCompilerError, DistutilsExecError, DistutilsPlatformError
+    # Python 3.11 and below can install using distutils
+    from distutils.command.build_ext import build_ext
+    from distutils.core import Extension, setup
+    from distutils.errors import CCompilerError, DistutilsExecError, DistutilsPlatformError
+
+    build_ext_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError, OSError)
+
 from pathlib import Path
-
-build_ext_errors = (CCompilerError, DistutilsExecError, DistutilsPlatformError, OSError)
 
 
 class BuildExtFailed(Exception):
@@ -112,8 +123,6 @@ if not with_setuptools:
         "newrelic.hooks",
         "newrelic.network",
         "newrelic.packages",
-        "newrelic.packages.isort",
-        "newrelic.packages.isort.stdlibs",
         "newrelic.packages.opentelemetry_proto",
         "newrelic.packages.urllib3",
         "newrelic.packages.urllib3.contrib",
@@ -126,7 +135,7 @@ if not with_setuptools:
 
     kwargs.update(
         {
-            "python_requires": ">=3.9",  # python_requires is also located in pyproject.toml
+            "python_requires": ">=3.10",  # python_requires is also located in pyproject.toml
             "zip_safe": False,
             "packages": packages,
             "package_data": {"newrelic": ["newrelic.ini", "packages/urllib3/LICENSE.txt", "scripts/azure-prebuild.sh"]},

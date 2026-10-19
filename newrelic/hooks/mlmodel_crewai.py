@@ -170,42 +170,33 @@ def _record_tool_success(transaction, settings, tool_event_dict, ft, return_val)
         _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
 
 
-def wrap_tool_usage_event_init(wrapped, instance, args, kwargs):
-    result = wrapped(*args, **kwargs)
-
-    transaction = current_transaction()
-    if not transaction:
-        return result
-
-    captured_events = getattr(transaction, "_nr_crewai_native_tool_events", None)
-    if captured_events is None:
-        return result
-
-    if type(instance).__name__ in ("ToolUsageFinishedEvent", "ToolUsageErrorEvent"):
-        captured_events.append(instance)
-
-    return result
-
-
-def _extract_native_tool_call_id(tool_call):
+def _extract_native_tool_call_args(tool_call):
     try:
         if isinstance(tool_call, dict):
-            return tool_call.get("id") or ""
-        return getattr(tool_call, "id", None) or ""
+            function = tool_call.get("function") or {}
+            arguments = function.get("arguments") if isinstance(function, dict) else None
+        else:
+            function = getattr(tool_call, "function", None)
+            arguments = getattr(function, "arguments", None)
+
+        if arguments is None:
+            return None
+        if isinstance(arguments, str):
+            arguments = json.loads(arguments)
+        return str(arguments) if arguments else None
     except Exception:
-        return ""
+        return None
 
 
-def _construct_native_tool_event_dict(event, tool_id, run_id, transaction, settings, linking_metadata):
+def _construct_native_tool_event_dict(instance, tool_call, result, tool_id, transaction, settings, linking_metadata):
     try:
-        tool_name = (getattr(event, "tool_name", None) if event else None) or "tool"
-        tool_input = getattr(event, "tool_args", None) if event else None
-        tool_input = str(tool_input) if tool_input else None
-        agent_name = (getattr(event, "agent_role", None) if event else None) or "agent"
+        tool_name = result.get("func_name") or "tool"
+        agent = getattr(instance, "agent", None)
+        agent_name = getattr(agent, "role", None) or "agent"
 
         tool_event_dict = {
             "id": tool_id,
-            "run_id": run_id,
+            "run_id": result.get("call_id") or "",
             "name": tool_name,
             "span_id": linking_metadata.get("span.id"),
             "trace_id": linking_metadata.get("trace.id"),
@@ -214,7 +205,7 @@ def _construct_native_tool_event_dict(event, tool_id, run_id, transaction, setti
             "ingest_source": "Python",
         }
         if settings.ai_monitoring.record_content.enabled:
-            tool_event_dict["input"] = tool_input
+            tool_event_dict["input"] = _extract_native_tool_call_args(tool_call)
         tool_event_dict.update(_get_llm_metadata(transaction))
     except Exception:
         tool_event_dict = {}
@@ -238,52 +229,36 @@ def wrap_agent_executor__execute_single_native_tool_call(wrapped, instance, args
     transaction._add_agent_attribute("llm", True)
 
     tool_id = str(uuid.uuid4())
-    run_id = _extract_native_tool_call_id(args[0]) if args else ""
+    tool_call = args[0] if args else None
     func_name = callable_name(wrapped)
     linking_metadata = get_trace_linking_metadata()
 
     ft = FunctionTrace(name=func_name, group="Llm/tool/CrewAI")
     ft.__enter__()
 
-    previous_events = getattr(transaction, "_nr_crewai_native_tool_events", None)
-    transaction._nr_crewai_native_tool_events = []
     try:
         return_val = wrapped(*args, **kwargs)
     except Exception:
         ft.notice_error(attributes={"tool_id": tool_id})
         ft.__exit__(*sys.exc_info())
-        if previous_events is None:
-            del transaction._nr_crewai_native_tool_events
-        else:
-            transaction._nr_crewai_native_tool_events = previous_events
         raise
 
-    captured_events = transaction._nr_crewai_native_tool_events
-    if previous_events is None:
-        del transaction._nr_crewai_native_tool_events
-    else:
-        transaction._nr_crewai_native_tool_events = previous_events
+    result = return_val if isinstance(return_val, dict) else {}
+    tool_name = result.get("func_name") or "tool"
 
-    # _execute_single_native_tool_call emits at most one ToolUsageErrorEvent or ToolUsageFinishedEvent
-    error_event = next((e for e in captured_events if type(e).__name__ == "ToolUsageErrorEvent"), None)
-    finished_event = error_event or next(
-        (e for e in captured_events if type(e).__name__ == "ToolUsageFinishedEvent"), None
-    )
-
-    tool_name = (getattr(finished_event, "tool_name", None) if finished_event is not None else None) or "tool"
     ft.name = f"{func_name}/{tool_name}"
     agentic_subcomponent_data = {"type": "APM-AI_TOOL", "name": tool_name}
     ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
     ft.__exit__(None, None, None)
 
     tool_event_dict = _construct_native_tool_event_dict(
-        finished_event, tool_id, run_id, transaction, settings, linking_metadata
+        instance, tool_call, result, tool_id, transaction, settings, linking_metadata
     )
     tool_event_dict["duration"] = ft.duration * 1000
-    if error_event is not None:
+    if result.get("tool_failure") is not None:
         tool_event_dict["error"] = True
-    elif settings.ai_monitoring.record_content.enabled and finished_event is not None:
-        output = getattr(finished_event, "output", None)
+    elif settings.ai_monitoring.record_content.enabled:
+        output = result.get("result")
         tool_event_dict["output"] = str(output) if output is not None else None
 
     transaction.record_custom_event("LlmTool", tool_event_dict)
@@ -300,11 +275,6 @@ async def wrap_flow__execute_method(wrapped, instance, args, kwargs):
     wrapped_method = context_wrapper(method, trace=trace, strict=True)
     new_args = (args[0], wrapped_method, *args[2:])
     return await wrapped(*new_args, **kwargs)
-
-
-def instrument_crewai_events_types_tool_usage_events(module):
-    if hasattr(module, "ToolUsageEvent"):
-        wrap_function_wrapper(module, "ToolUsageEvent.__init__", wrap_tool_usage_event_init)
 
 
 def instrument_crewai_flow_flow(module):

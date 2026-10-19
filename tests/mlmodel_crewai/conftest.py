@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import os
-from pathlib import Path
 
 # CrewAI phones home for telemetry and prompts interactively to enable execution tracing.
 # Disable both (and mark a test environment) before crewai is imported so tests run offline
@@ -32,19 +31,6 @@ from testing_support.fixtures import collector_agent_registration_fixture, colle
 from testing_support.ml_testing_utils import set_trace_info
 
 from newrelic.common.package_version_utils import get_package_version
-
-# raising_capital shares get_capital's registered tool name/schema  and VCR's shared cassette.yaml has no way to route
-# "the correct pre-recorded  pair to "the right" test
-# Giving each test their own cassette to avoid collisions
-_ISOLATED_CASSETTE_TESTS = {"test_tool_native_error", "test_tool_native_error_no_content"}
-
-
-@pytest.fixture(autouse=True)
-def default_cassette_name(request):
-    if request.node.name in _ISOLATED_CASSETTE_TESTS:
-        return str(Path(request.fspath).parent / f"cassette_{request.node.name}")
-    return str(Path(request.fspath).parent / "cassette")
-
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow-downs.
@@ -68,6 +54,15 @@ AGENT_GOAL = "Answer in one word."
 AGENT_BACKSTORY = "A concise assistant."
 PROMPT = "What is the capital of France?"
 TOOL_PROMPT = "Use get_capital on France. Answer with only the city name."
+# raising_capital registers under get_capital's name and schema (functools.wraps in
+# _test_tools.py), so the tool-failure tests would otherwise send a request byte-identical to the
+# success tests'. VCR matches on body and replays matching interactions in file order regardless of
+# which test is asking, so a failure test could be handed a call_id whose recorded follow-up says
+# the tool succeeded -- a mismatch no replay can satisfy. A trailing marker keeps every body
+# distinct. The markers are inert on purpose: anything the model might act on would change the
+# number of round-trips, and with it the expected event counts.
+TOOL_PROMPT_ERROR = f"{TOOL_PROMPT} error"
+TOOL_PROMPT_NO_CONTENT = f"{TOOL_PROMPT} no content"
 
 VCR_IGNORED_HEADERS.extend(["x-stainless-read-timeout"])
 

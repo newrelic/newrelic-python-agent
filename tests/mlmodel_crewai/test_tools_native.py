@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from _test_tools import TOOL_NAME, get_capital, raising_capital, tool_recorded_event, tool_recorded_event_error
-from conftest import EXPECTED_VERSION_METRICS, TOOL_PROMPT
+from conftest import EXPECTED_VERSION_METRICS, TOOL_PROMPT, TOOL_PROMPT_ERROR, TOOL_PROMPT_NO_CONTENT
 from testing_support.fixtures import dt_enabled, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     disabled_ai_monitoring_record_content_settings,
@@ -148,7 +148,7 @@ def test_tool_native_outside_transaction(build_crew, crewai_native_llm, set_trac
 @background_task()
 def test_tool_native_error(build_crew, crewai_native_llm, set_trace_info):
     set_trace_info()
-    crew = build_crew(crewai_native_llm, tools=[raising_capital], description=TOOL_PROMPT, max_iter=1)
+    crew = build_crew(crewai_native_llm, tools=[raising_capital], description=TOOL_PROMPT_ERROR, max_iter=1)
     crew.kickoff()
 
 
@@ -168,5 +168,5 @@ def test_tool_native_error(build_crew, crewai_native_llm, set_trace_info):
 @background_task()
 def test_tool_native_error_no_content(build_crew, crewai_native_llm, set_trace_info):
     set_trace_info()
-    crew = build_crew(crewai_native_llm, tools=[raising_capital], description=TOOL_PROMPT, max_iter=1)
+    crew = build_crew(crewai_native_llm, tools=[raising_capital], description=TOOL_PROMPT_NO_CONTENT, max_iter=1)
     crew.kickoff()

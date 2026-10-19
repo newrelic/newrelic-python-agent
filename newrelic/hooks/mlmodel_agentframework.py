@@ -77,10 +77,12 @@ def wrap_Agent_run(wrapped, instance, args, kwargs):
         raise
 
     # Handle streaming case by registering a cleanup hook, as proxying the response object is very difficult.
+    # Known limitation: the hook does not fire if the stream is closed or garbage collected before completing.
     if hasattr(return_val, "with_cleanup_hook"):
         try:
             return_val.with_cleanup_hook(
                 _Agent_run_streaming_cleanup_hook(
+                    transaction=transaction,
                     stream=return_val,
                     ft=ft,
                     linking_metadata=linking_metadata,
@@ -97,15 +99,14 @@ def wrap_Agent_run(wrapped, instance, args, kwargs):
 
     # Non-streaming run() returns an awaitable. Return a coroutine that awaits it and records the
     # LlmAgent event on completion.
-    return _wrap_Agent_run_coroutine(return_val, ft, linking_metadata, agent_name, agent_id)
+    return _wrap_Agent_run_coroutine(return_val, transaction, ft, linking_metadata, agent_name, agent_id)
 
 
-async def _wrap_Agent_run_coroutine(coro, ft, linking_metadata, agent_name, agent_id):
+async def _wrap_Agent_run_coroutine(coro, transaction, ft, linking_metadata, agent_name, agent_id):
     # Wrap the corountine returned by Agent.run() and record events when it completes.
     try:
         return_val = await coro
     except Exception:
-        transaction = current_transaction()
         ft.notice_error(attributes={"agent_id": agent_id})
         ft.__exit__(*sys.exc_info())
         _record_agent_event(
@@ -118,7 +119,6 @@ async def _wrap_Agent_run_coroutine(coro, ft, linking_metadata, agent_name, agen
         )
         raise
 
-    transaction = current_transaction()
     ft.__exit__(None, None, None)
     _record_agent_event(
         transaction=transaction, ft=ft, linking_metadata=linking_metadata, agent_name=agent_name, agent_id=agent_id
@@ -126,12 +126,8 @@ async def _wrap_Agent_run_coroutine(coro, ft, linking_metadata, agent_name, agen
     return return_val
 
 
-def _Agent_run_streaming_cleanup_hook(*, stream, ft, linking_metadata, agent_name, agent_id):
+def _Agent_run_streaming_cleanup_hook(*, transaction, stream, ft, linking_metadata, agent_name, agent_id):
     def _nr_streaming_cleanup_hook():
-        transaction = current_transaction()
-        if not transaction:
-            return
-
         try:
             errored = getattr(stream, "_stream_error", None) is not None
             if errored:
@@ -219,9 +215,11 @@ def instrument_agent_framework__agents(module):
 
 
 def instrument_agent_framework_bedrock__chat_client(module):
-    if hasattr(module, "BedrockChatClient"):
-        if hasattr(module.BedrockChatClient, "_invoke_converse"):
-            wrap_function_wrapper(module, "BedrockChatClient._invoke_converse", wrap_BedrockChatClient__invoke_converse)
-
-        if hasattr(module.BedrockChatClient, "_prepare_options"):
-            wrap_function_wrapper(module, "BedrockChatClient._prepare_options", wrap_BedrockChatClient__prepare_options)
+    if (
+        hasattr(module, "BedrockChatClient")
+        and hasattr(module.BedrockChatClient, "_invoke_converse")
+        and hasattr(module.BedrockChatClient, "_prepare_options")
+    ):
+        # Only wrap context propagation wrappers if both endpoints are present.
+        wrap_function_wrapper(module, "BedrockChatClient._invoke_converse", wrap_BedrockChatClient__invoke_converse)
+        wrap_function_wrapper(module, "BedrockChatClient._prepare_options", wrap_BedrockChatClient__prepare_options)

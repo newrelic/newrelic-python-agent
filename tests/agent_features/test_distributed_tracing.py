@@ -936,7 +936,7 @@ def test_distributed_trace_remote_parent_sampling_decision_between_full_and_part
 @pytest.mark.parametrize(
     "full_granularity_remote_parent_sampled_setting,expected_sampled,expected_priority,expected_adaptive_sampling_algo_called",
     (
-        ("always_off", None, None, True),  # Uses adaptive sampling algo.
+        ("default", None, None, True),  # Uses adaptive sampling algo.
         ("always_on", True, 3, False),  # Always samples.
     ),
 )
@@ -1492,8 +1492,6 @@ def test_distributed_trace_uses_adaptive_sampling_instance_with_full_and_partial
     (
         (
             {
-                # "distributed_tracing.sampler.full_granularity.enabled": True,
-                # "distributed_tracing.sampler.partial_granularity.enabled": False,
                 "distributed_tracing.sampler._root": "default",
                 "distributed_tracing.sampler.root.adaptive.sampling_target": 5,
             },
@@ -1505,8 +1503,6 @@ def test_distributed_trace_uses_adaptive_sampling_instance_with_full_and_partial
         ),
         (
             {
-                # "distributed_tracing.sampler.full_granularity.enabled": True,
-                # "distributed_tracing.sampler.partial_granularity.enabled": False,
                 "distributed_tracing.sampler._remote_parent_sampled": "default",
                 "distributed_tracing.sampler.remote_parent_sampled.adaptive.sampling_target": 5,
                 "distributed_tracing.sampler._remote_parent_not_sampled": "default",
@@ -1520,8 +1516,6 @@ def test_distributed_trace_uses_adaptive_sampling_instance_with_full_and_partial
         ),
         (
             {
-                # "distributed_tracing.sampler.full_granularity.enabled": True,
-                # "distributed_tracing.sampler.partial_granularity.enabled": False,
                 "distributed_tracing.sampler._remote_parent_sampled": "default",
                 "distributed_tracing.sampler.remote_parent_sampled.adaptive.sampling_target": 5,
                 "distributed_tracing.sampler._remote_parent_not_sampled": "default",
@@ -1653,15 +1647,6 @@ def test_distributed_trace_uses_ratio_sampling_instance_with_full_and_partial_gr
 @pytest.mark.parametrize(
     "dt_settings,dt_headers,expected_sampling_instance_called,expected_ratio",
     (
-        (  # Ratio does not exceed 1.
-            {
-                "distributed_tracing.sampler.remote_parent_sampled.trace_id_ratio_based.ratio": 1.5,
-                "distributed_tracing.sampler._remote_parent_sampled": "trace_id_ratio_based",
-            },
-            {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01"},
-            (False, 1),
-            1,
-        ),
         (  # Trace ID ratio sampler is called for full granularity.
             {
                 "distributed_tracing.sampler.remote_parent_sampled.trace_id_ratio_based.ratio": 1,

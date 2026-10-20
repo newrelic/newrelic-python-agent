@@ -255,20 +255,6 @@ TYPE_OVERRIDES = {
     "distributed_tracing.sampler.remote_parent_sampled.trace_id_ratio_based.ratio": {"type": "number"},
     "distributed_tracing.sampler.remote_parent_not_sampled.adaptive.sampling_target": {"type": "integer"},
     "distributed_tracing.sampler.remote_parent_not_sampled.trace_id_ratio_based.ratio": {"type": "number"},
-    "distributed_tracing.sampler.partial_granularity.root.adaptive.sampling_target": {"type": "integer"},
-    "distributed_tracing.sampler.partial_granularity.root.trace_id_ratio_based.ratio": {"type": "number"},
-    "distributed_tracing.sampler.partial_granularity.remote_parent_sampled.adaptive.sampling_target": {
-        "type": "integer"
-    },
-    "distributed_tracing.sampler.partial_granularity.remote_parent_sampled.trace_id_ratio_based.ratio": {
-        "type": "number"
-    },
-    "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.adaptive.sampling_target": {
-        "type": "integer"
-    },
-    "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.trace_id_ratio_based.ratio": {
-        "type": "number"
-    },
 }
 
 # ---------------------------------------------------------------------------

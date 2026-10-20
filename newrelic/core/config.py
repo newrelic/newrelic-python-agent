@@ -346,8 +346,6 @@ class DistributedTracingSamplerSettings(Settings):
     _remote_parent_not_sampled = "default"
 
 
-
-
 class DistributedTracingSamplerRootSettings:
     pass
 
@@ -382,7 +380,6 @@ class DistributedTracingSamplerRemoteParentNotSampledAdaptiveSettings:
 
 class DistributedTracingSamplerRemoteParentNotSampledTraceIdRatioBasedSettings:
     pass
-
 
 
 class ServerlessModeSettings(Settings):
@@ -1557,7 +1554,6 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
         "custom_insights_events.max_attribute_value",
         min(settings_snapshot.custom_insights_events.max_attribute_value, 4095),
     )
-
 
     # If browser_monitoring.version is set but no js_agent_loader is returned, we infer
     # the customer-supplied browser agent version is unsupported, malformed, etc. and

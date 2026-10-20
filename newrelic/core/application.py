@@ -598,8 +598,7 @@ class Application:
                 )
             if configuration.distributed_tracing.enabled:
                 internal_metric(
-                    f"Supportability/Python/FullGranularity/Root/{configuration.distributed_tracing.sampler._root}",
-                    1,
+                    f"Supportability/Python/FullGranularity/Root/{configuration.distributed_tracing.sampler._root}", 1
                 )
                 internal_metric(
                     f"Supportability/Python/FullGranularity/RemoteParentSampled/{configuration.distributed_tracing.sampler._remote_parent_sampled}",

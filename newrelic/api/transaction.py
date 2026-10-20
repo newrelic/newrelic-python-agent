@@ -940,12 +940,7 @@ class Transaction:
         return priority, sampled
 
     def _compute_sampled_and_priority(
-        self,
-        priority,
-        sampled,
-        root_setting,
-        remote_parent_sampled_setting,
-        remote_parent_not_sampled_setting,
+        self, priority, sampled, root_setting, remote_parent_sampled_setting, remote_parent_not_sampled_setting
     ):
         if self._remote_parent_sampled is None:
             section = 0
@@ -993,11 +988,7 @@ class Transaction:
             priority, sampled = self.sampling_algo_compute_sampled_and_priority(
                 priority,
                 None,  # The sampled value from the parent is not used in this case and should always be overridden.
-                {
-                    "full_granularity": True,
-                    "section": section,
-                    "trace_id": int(self._trace_id.lower().zfill(32), 16),
-                },
+                {"full_granularity": True, "section": section, "trace_id": int(self._trace_id.lower().zfill(32), 16)},
             )
             return priority, sampled
         if config not in ("default", "adaptive"):
@@ -1026,7 +1017,6 @@ class Transaction:
         self._priority = computed_priority
         self._sampled = computed_sampled
         self._sampling_decision_made = True
-
 
     def _freeze_path(self):
         if self._frozen_path is None:

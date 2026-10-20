@@ -1243,7 +1243,6 @@ class StatsEngine:
                             new_event = list(filter(bool, event))
                             self._span_events.add(new_event, priority=transaction.priority)
 
-
         # Merge in log events
 
         if (

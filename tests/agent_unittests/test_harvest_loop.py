@@ -419,26 +419,13 @@ def test_application_harvest_with_spans_with_partial_granularity(
 
 @pytest.mark.parametrize(
     "distributed_tracing_enabled,span_events_enabled,spans_created",
-    [
-        (True, True, 1),
-        (True, False, 1),
-        (True, True, 0),
-        (True, False, 0),
-        (False, True, 0),
-    ],
+    [(True, True, 1), (True, False, 1), (True, True, 0), (True, False, 0), (False, True, 0)],
 )
-def test_application_harvest_with_spans(
-    distributed_tracing_enabled,
-    span_events_enabled,
-    spans_created,
-):
+def test_application_harvest_with_spans(distributed_tracing_enabled, span_events_enabled, spans_created):
     span_endpoints_called = []
     max_samples_stored = 10
 
-    if (
-        distributed_tracing_enabled
-        and span_events_enabled
-    ):
+    if distributed_tracing_enabled and span_events_enabled:
         seen = spans_created
         sent = min(spans_created, max_samples_stored)
     else:

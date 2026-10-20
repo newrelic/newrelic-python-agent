@@ -76,9 +76,7 @@ def test_ml_streaming_disabled_supportability_metrics():
     assert app._active_session
 
 
-@override_generic_settings(
-    SETTINGS, {"developer_mode": True}
-)
+@override_generic_settings(SETTINGS, {"developer_mode": True})
 @validate_internal_metrics(
     [
         ("Supportability/Python/FullGranularity/Root/default", 1),

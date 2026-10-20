@@ -41,9 +41,7 @@ class SamplerProxy:
             self.add_trace_id_ratio_based_sampler((True, 0), full_gran_root_ratio)
         else:
             self.add_adaptive_sampler(
-                (True, 0),
-                settings.distributed_tracing.sampler.root.adaptive.sampling_target,
-                sampling_target_period,
+                (True, 0), settings.distributed_tracing.sampler.root.adaptive.sampling_target, sampling_target_period
             )
         # If the ratio is not defined fallback to adaptive sampler.
         if (

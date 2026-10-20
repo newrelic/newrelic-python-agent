@@ -77,7 +77,6 @@ class GenericNodeMixin:
             return [base_span_event, span_link_events, span_event_events]
         return base_span_event
 
-
     def span_event(self, settings, base_attrs=None, parent_guid=None, attr_class=dict):
         return base_attrs, attr_class, None, None
 
@@ -101,7 +100,6 @@ class GenericNodeMixin:
             yield from child.span_events_full_granularity(
                 settings, base_attrs=base_attrs, parent_guid=self.guid, attr_class=attr_class
             )
-
 
 
 class DatastoreNodeMixin(GenericNodeMixin):

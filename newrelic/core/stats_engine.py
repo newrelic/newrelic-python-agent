@@ -1190,35 +1190,7 @@ class StatsEngine:
 
         if settings.distributed_tracing.enabled and settings.span_events.enabled and settings.collect_span_events:
             if settings.launch_darkly_integration.enabled and settings.opentelemetry.enabled:
-                from ldobserve import observe
-                from opentelemetry.trace.span import SpanContext, TraceFlags, TraceState
-
-                # Send span data to Darkly
-                for event in transaction.span_events(self.__settings):
-                    if isinstance(event[-1], dict):
-                        i_attrs, u_attrs, a_attrs = event
-                    else:
-                        i_attrs, u_attrs, a_attrs = event[0]
-                    # Skip spans that originally came from OTel.
-                    if "otel.scope.name" not in a_attrs:
-                        attrs = {}
-                        attrs.update(u_attrs)
-                        attrs.update(a_attrs)
-                        attrs.update(i_attrs)
-                        context = SpanContext(
-                            trace_id=int(attrs.pop("traceId"), 16),
-                            span_id=int(attrs.pop("guid"), 16),
-                            is_remote=True if transaction.parent_span else False,
-                            trace_flags=TraceFlags(0x1 if attrs.pop("sampled") else 0x0),
-                            trace_state=TraceState(),
-                        )
-                        # timestamp in ms converted to ns
-                        span = observe._instance._tracer.start_span(
-                            i_attrs["name"], attributes=attrs, start_time=int(attrs["timestamp"] * 10**6)
-                        )
-                        span._context = context
-                        # timestamp in ms + duration in s converted to ns
-                        span.end(end_time=int(attrs["timestamp"] * 10**6 + attrs["duration"] * 10**9))
+                self._forward_launch_darkly_span_data(transaction)
 
             if settings.infinite_tracing.enabled:
                 for event in transaction.span_protos(settings):
@@ -2111,6 +2083,44 @@ class StatsEngine:
         copy = object.__new__(StatsEngineSnapshot)
         copy.__dict__.update(self.__dict__)
         return copy
+
+    def _forward_launch_darkly_span_data(self, transaction):
+        """Transform and forward Span data to LaunchDarkly through the ldclient.observe instance."""
+
+        if not self.__settings:
+            return
+
+        settings = self.__settings
+
+        from ldobserve import observe
+        from opentelemetry.trace.span import SpanContext, TraceFlags, TraceState
+
+        # Send span data to Darkly
+        for event in transaction.span_events(self.__settings):
+            if isinstance(event[-1], dict):
+                i_attrs, u_attrs, a_attrs = event
+            else:
+                i_attrs, u_attrs, a_attrs = event[0]
+            # Skip spans that originally came from OTel.
+            if "otel.scope.name" not in a_attrs:
+                attrs = {}
+                attrs.update(u_attrs)
+                attrs.update(a_attrs)
+                attrs.update(i_attrs)
+                context = SpanContext(
+                    trace_id=int(attrs.pop("traceId"), 16),
+                    span_id=int(attrs.pop("guid"), 16),
+                    is_remote=True if transaction.parent_span else False,
+                    trace_flags=TraceFlags(0x1 if attrs.pop("sampled") else 0x0),
+                    trace_state=TraceState(),
+                )
+                # timestamp in ms converted to ns
+                span = observe._instance._tracer.start_span(
+                    i_attrs["name"], attributes=attrs, start_time=int(attrs["timestamp"] * 10**6)
+                )
+                span._context = context
+                # timestamp in ms + duration in s converted to ns
+                span.end(end_time=int(attrs["timestamp"] * 10**6 + attrs["duration"] * 10**9))
 
 
 class StatsEngineSnapshot(StatsEngine):

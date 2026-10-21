@@ -2101,12 +2101,18 @@ class StatsEngine:
                 i_attrs, u_attrs, a_attrs = event
             else:
                 i_attrs, u_attrs, a_attrs = event[0]
+
             # Skip spans that originally came from OTel.
             if "otel.scope.name" not in a_attrs:
                 attrs = {}
                 attrs.update(u_attrs)
                 attrs.update(a_attrs)
                 attrs.update(i_attrs)
+
+                # Add the entity_guid and a link to this application in the New Relic UI.
+                attrs["nr.entity.guid"] = settings.entity_guid
+                attrs["nr.entity.url"] = f"https://{settings.host}/redirect/entity/{settings.entity_guid}"
+
                 context = SpanContext(
                     trace_id=int(attrs.pop("traceId"), 16),
                     span_id=int(attrs.pop("guid"), 16),

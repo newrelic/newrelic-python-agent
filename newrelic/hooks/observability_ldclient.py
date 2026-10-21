@@ -23,10 +23,13 @@ OBSERVABILITY_PLUGIN_REGISTERED = False
 OBSERVABILITY_PLUGIN_WARNING = "ObservabilityPlugin must be registered with Launch Darkly ldclient in order to successfully initialize the Launch Darkly-New Relic integration."
 
 
-def _create_NewRelicHook():
+def _create_NewRelicHook(base_uri):
+    from ldclient.config import DEFAULT_BASE_URI
     from ldclient.hook import Hook, Metadata
 
     class NewRelicHook(Hook):
+        _client_base_uri = (base_uri or DEFAULT_BASE_URI).rstrip("/")
+
         @property
         def metadata(self) -> Metadata:
             return Metadata(name="newrelic-hook")
@@ -57,6 +60,10 @@ def _create_NewRelicHook():
                 environment_id = getattr(series_context, "environment_id", None)
                 if environment_id and isinstance(environment_id, str):  # if non-empty string
                     attrs["feature_flag.set.id"] = environment_id
+                    # Direct linking is only possible if we have the environment_id attribute available
+                    attrs["feature_flag.url.full"] = (
+                        f"{self._client_base_uri}/goto/flags/{series_context.key}?envId={environment_id}"
+                    )
 
                 for key, value in attrs.items():
                     trace.add_custom_attribute(key, value)
@@ -73,7 +80,8 @@ def wrap_Config_init(wrapped, instance, args, kwargs):
     if settings.launch_darkly_integration.enabled:
         try:
             bound_args = bind_args(wrapped, args, kwargs)
-            nr_hook = _create_NewRelicHook()
+            client_base_uri = bound_args.get("base_uri", None)
+            nr_hook = _create_NewRelicHook(client_base_uri)
             if not bound_args["hooks"]:
                 bound_args["hooks"] = [nr_hook]
             else:

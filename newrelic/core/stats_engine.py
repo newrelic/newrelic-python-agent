@@ -1193,7 +1193,12 @@ class StatsEngine:
 
         if settings.distributed_tracing.enabled and settings.span_events.enabled and settings.collect_span_events:
             if settings.launch_darkly_integration.enabled and settings.opentelemetry.enabled:
-                self._forward_launch_darkly_span_data(transaction)
+                try:
+                    self._forward_launch_darkly_span_data(transaction)
+                except Exception:
+                    _logger.exception(
+                        "Failed to forward span data to LaunchDarkly. Please report this issue to New Relic Support."
+                    )
 
             if settings.infinite_tracing.enabled:
                 for event in transaction.span_protos(settings):
@@ -2133,18 +2138,44 @@ class StatsEngine:
                 if settings.entity_url:
                     attrs["nr.entity.url"] = settings.entity_url
 
-                context = SpanContext(
-                    trace_id=int(attrs.pop("traceId"), 16),
+                trace_id = int(attrs.pop("traceId"), 16)
+                trace_flags = TraceFlags(0x1 if attrs.pop("sampled") else 0x0)
+
+                # Identity of the span being forwarded (the child), using New Relic's ids.
+                child_span_context = SpanContext(
+                    trace_id=trace_id,
                     span_id=int(attrs.pop("guid"), 16),
-                    is_remote=True if transaction.parent_span else False,
-                    trace_flags=TraceFlags(0x1 if attrs.pop("sampled") else 0x0),
+                    is_remote=False,
+                    trace_flags=trace_flags,
                     trace_state=TraceState(),
                 )
+
+                # OTel takes a new span's parent from the current span of the Context passed to start_span(), so
+                # wrap the parent's identity in a NonRecordingSpan placeholder and place it in a Context. The parent
+                # is remote if it's the inbound distributed trace parent. Without a parent, use an empty Context so
+                # no unrelated active OTel span is used as the parent.
+                parent_guid = attrs.get("parentId")
+                if parent_guid:
+                    parent_span_context = SpanContext(
+                        trace_id=trace_id,
+                        span_id=int(parent_guid, 16),
+                        is_remote=parent_guid == transaction.parent_span,
+                        trace_flags=trace_flags,
+                        trace_state=TraceState(),
+                    )
+                    parent_otel_context = set_span_in_context(NonRecordingSpan(parent_span_context))
+                else:
+                    parent_otel_context = Context()
+
                 # timestamp in ms converted to ns
                 span = tracer.start_span(
-                    i_attrs["name"], context=otel_context, attributes=attrs, start_time=int(attrs["timestamp"] * 10**6)
+                    i_attrs["name"],
+                    context=parent_otel_context,
+                    attributes=attrs,
+                    start_time=int(attrs["timestamp"] * 10**6),
                 )
-                span._context = context
+                # Replace the ids OTel generated for the child with New Relic's ids.
+                span._context = child_span_context
                 # timestamp in ms + duration in s converted to ns
                 span.end(end_time=int(attrs["timestamp"] * 10**6 + attrs["duration"] * 10**9))
 

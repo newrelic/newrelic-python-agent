@@ -66,9 +66,9 @@ def inject_tool_error(wrapped, instance, args, kwargs):
 @validate_span_events(count=1, exact_agents={"subcomponent": f'{{"type": "APM-AI_TOOL", "name": "{TOOL_NAME}"}}'})
 @inject_tool_error
 @background_task()
-def test_tool_error(build_crew, crewai_llm, set_trace_info):
+def test_tool_error(build_crew, crewai_react_llm, set_trace_info):
     set_trace_info()
-    crew = build_crew(crewai_llm, tools=[get_capital], description=TOOL_PROMPT, max_retry_limit=0)
+    crew = build_crew(crewai_react_llm, tools=[get_capital], description=TOOL_PROMPT, max_retry_limit=0)
     with pytest.raises(ToolExecutionFailedError):
         crew.kickoff()
 
@@ -92,9 +92,9 @@ def test_tool_error(build_crew, crewai_llm, set_trace_info):
 @validate_attributes("agent", ["llm"])
 @inject_tool_error
 @background_task()
-def test_tool_error_no_content(build_crew, crewai_llm, set_trace_info):
+def test_tool_error_no_content(build_crew, crewai_react_llm, set_trace_info):
     set_trace_info()
-    crew = build_crew(crewai_llm, tools=[get_capital], description=TOOL_PROMPT, max_retry_limit=0)
+    crew = build_crew(crewai_react_llm, tools=[get_capital], description=TOOL_PROMPT, max_retry_limit=0)
     with pytest.raises(ToolExecutionFailedError):
         crew.kickoff()
 
@@ -118,9 +118,9 @@ def test_tool_error_no_content(build_crew, crewai_llm, set_trace_info):
 @validate_span_events(count=1, exact_agents={"subcomponent": f'{{"type": "APM-AI_TOOL", "name": "{TOOL_NAME}"}}'})
 @inject_tool_error
 @background_task()
-def test_tool_error_async(build_crew, crewai_llm, set_trace_info, loop):
+def test_tool_error_async(build_crew, crewai_react_llm, set_trace_info, loop):
     set_trace_info()
-    crew = build_crew(crewai_llm, tools=[get_capital], description=TOOL_PROMPT, max_retry_limit=0)
+    crew = build_crew(crewai_react_llm, tools=[get_capital], description=TOOL_PROMPT, max_retry_limit=0)
     with pytest.raises(ToolExecutionFailedError):
         loop.run_until_complete(crew.akickoff())
 
@@ -132,8 +132,8 @@ def test_tool_error_async(build_crew, crewai_llm, set_trace_info, loop):
 @validate_transaction_metrics("test_tool_error:test_tool_error_disabled_ai_monitoring", background_task=True)
 @inject_tool_error
 @background_task()
-def test_tool_error_disabled_ai_monitoring(build_crew, crewai_llm, set_trace_info):
+def test_tool_error_disabled_ai_monitoring(build_crew, crewai_react_llm, set_trace_info):
     set_trace_info()
-    crew = build_crew(crewai_llm, tools=[get_capital], description=TOOL_PROMPT, max_retry_limit=0)
+    crew = build_crew(crewai_react_llm, tools=[get_capital], description=TOOL_PROMPT, max_retry_limit=0)
     with pytest.raises(ToolExecutionFailedError):
         crew.kickoff()

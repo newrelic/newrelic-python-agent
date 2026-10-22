@@ -26,7 +26,6 @@ import pytest
 from crewai import Agent, Crew, Task
 from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixture.vcr import *  # noqa: F403
-from testing_support.fixture.vcr import VCR_IGNORED_HEADERS
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 from testing_support.ml_testing_utils import set_trace_info
 
@@ -54,17 +53,8 @@ AGENT_GOAL = "Answer in one word."
 AGENT_BACKSTORY = "A concise assistant."
 PROMPT = "What is the capital of France?"
 TOOL_PROMPT = "Use get_capital on France. Answer with only the city name."
-# raising_capital registers under get_capital's name and schema (functools.wraps in
-# _test_tools.py), so the tool-failure tests would otherwise send a request byte-identical to the
-# success tests'. VCR matches on body and replays matching interactions in file order regardless of
-# which test is asking, so a failure test could be handed a call_id whose recorded follow-up says
-# the tool succeeded -- a mismatch no replay can satisfy. A trailing marker keeps every body
-# distinct. The markers are inert on purpose: anything the model might act on would change the
-# number of round-trips, and with it the expected event counts.
 TOOL_PROMPT_ERROR = f"{TOOL_PROMPT} error"
 TOOL_PROMPT_NO_CONTENT = f"{TOOL_PROMPT} no content"
-
-VCR_IGNORED_HEADERS.extend(["x-stainless-read-timeout"])
 
 CREWAI_VERSION = get_package_version("crewai")
 assert CREWAI_VERSION, "Failed to pull crewai version for supportability metric"
@@ -75,7 +65,9 @@ EXPECTED_VERSION_METRICS = [EXPECTED_CREWAI_VERSION_METRIC]
 MODEL = "gpt-4o-mini"
 
 
-def _openai_api_key(vcr_recording):
+@pytest.fixture
+def openai_api_key(vcr_recording):
+    """Return a real key while recording, and a fake one on replay, when no request leaves the process."""
     if vcr_recording:
         api_key = os.environ.get("OPENAI_API_KEY")
         if not api_key:
@@ -85,34 +77,29 @@ def _openai_api_key(vcr_recording):
     return "NOT-A-REAL-SECRET"
 
 
-def _build_llm(vcr_recording):
-    from crewai import LLM
-
-    return LLM(model=MODEL, api_key=_openai_api_key(vcr_recording), temperature=0.0, seed=42)
-
-
 @pytest.fixture
-def crewai_native_llm(vcr_recording):
+def crewai_llm(openai_api_key):
     """
-    Return a CrewAI LLM that drives the agent through native (function-calling) tool calls.
+    Return the default CrewAI LLM, which drives the agent through native (function-calling) tool calls.
 
-    This is the default for OpenAI/Anthropic/Gemini/Azure/Bedrock models, and routes tool
+    Native calling is the default for OpenAI/Anthropic/Gemini/Azure/Bedrock models, and routes tool
     execution through AgentExecutor._execute_single_native_tool_call, bypassing ToolUsage entirely.
     """
-    return _build_llm(vcr_recording)
+    from crewai import LLM
+
+    return LLM(model=MODEL, api_key=openai_api_key, temperature=0.0, seed=42)
 
 
 @pytest.fixture
-def crewai_llm(vcr_recording, monkeypatch):
+def crewai_react_llm(crewai_llm, monkeypatch):
     """
-    Return a CrewAI LLM that drives the agent through the ReAct (text) path instead.
+    Return the default LLM with function calling forced off, so the agent takes the ReAct (text) path.
 
     AgentExecutor picks the native path whenever llm.supports_function_calling() is true, so
     reaching ToolUsage._use/_ause -- the methods the agent instruments -- requires forcing that off.
     """
-    llm = _build_llm(vcr_recording)
-    monkeypatch.setattr(type(llm), "supports_function_calling", lambda self: False)
-    return llm
+    monkeypatch.setattr(type(crewai_llm), "supports_function_calling", lambda self: False)
+    return crewai_llm
 
 
 @pytest.fixture

@@ -59,9 +59,9 @@ EXPECTED_ERROR_EVENT_COUNT = 11
 @validate_attributes("agent", ["llm"])
 @validate_span_events(count=1, exact_agents={"subcomponent": f'{{"type": "APM-AI_TOOL", "name": "{TOOL_NAME}"}}'})
 @background_task()
-def test_tool_native(build_crew, crewai_native_llm, set_trace_info):
+def test_tool_native(build_crew, crewai_llm, set_trace_info):
     set_trace_info()
-    crew = build_crew(crewai_native_llm, tools=[get_capital], description=TOOL_PROMPT)
+    crew = build_crew(crewai_llm, tools=[get_capital], description=TOOL_PROMPT)
     with WithLlmCustomAttributes({"context": "attr"}):
         result = crew.kickoff()
     assert "Paris" in str(result)
@@ -81,9 +81,9 @@ def test_tool_native(build_crew, crewai_native_llm, set_trace_info):
 @validate_attributes("agent", ["llm"])
 @validate_span_events(count=1, exact_agents={"subcomponent": f'{{"type": "APM-AI_TOOL", "name": "{TOOL_NAME}"}}'})
 @background_task()
-def test_tool_native_async(build_crew, crewai_native_llm, set_trace_info, loop):
+def test_tool_native_async(build_crew, crewai_llm, set_trace_info, loop):
     set_trace_info()
-    crew = build_crew(crewai_native_llm, tools=[get_capital], description=TOOL_PROMPT)
+    crew = build_crew(crewai_llm, tools=[get_capital], description=TOOL_PROMPT)
     with WithLlmCustomAttributes({"context": "attr"}):
         result = loop.run_until_complete(crew.akickoff())
     assert "Paris" in str(result)
@@ -103,9 +103,9 @@ def test_tool_native_async(build_crew, crewai_native_llm, set_trace_info, loop):
 )
 @validate_attributes("agent", ["llm"])
 @background_task()
-def test_tool_native_no_content(build_crew, crewai_native_llm, set_trace_info):
+def test_tool_native_no_content(build_crew, crewai_llm, set_trace_info):
     set_trace_info()
-    crew = build_crew(crewai_native_llm, tools=[get_capital], description=TOOL_PROMPT)
+    crew = build_crew(crewai_llm, tools=[get_capital], description=TOOL_PROMPT)
     result = crew.kickoff()
     assert "Paris" in str(result)
 
@@ -116,18 +116,18 @@ def test_tool_native_no_content(build_crew, crewai_native_llm, set_trace_info):
 @validate_custom_event_count(count=0)
 @validate_transaction_metrics("test_tools_native:test_tool_native_disabled_ai_monitoring", background_task=True)
 @background_task()
-def test_tool_native_disabled_ai_monitoring(build_crew, crewai_native_llm, set_trace_info):
+def test_tool_native_disabled_ai_monitoring(build_crew, crewai_llm, set_trace_info):
     set_trace_info()
-    crew = build_crew(crewai_native_llm, tools=[get_capital], description=TOOL_PROMPT)
+    crew = build_crew(crewai_llm, tools=[get_capital], description=TOOL_PROMPT)
     result = crew.kickoff()
     assert "Paris" in str(result)
 
 
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
-def test_tool_native_outside_transaction(build_crew, crewai_native_llm, set_trace_info):
+def test_tool_native_outside_transaction(build_crew, crewai_llm, set_trace_info):
     set_trace_info()
-    crew = build_crew(crewai_native_llm, tools=[get_capital], description=TOOL_PROMPT)
+    crew = build_crew(crewai_llm, tools=[get_capital], description=TOOL_PROMPT)
     result = crew.kickoff()
     assert "Paris" in str(result)
 
@@ -146,9 +146,9 @@ def test_tool_native_outside_transaction(build_crew, crewai_native_llm, set_trac
 @validate_attributes("agent", ["llm"])
 @validate_span_events(count=1, exact_agents={"subcomponent": f'{{"type": "APM-AI_TOOL", "name": "{TOOL_NAME}"}}'})
 @background_task()
-def test_tool_native_error(build_crew, crewai_native_llm, set_trace_info):
+def test_tool_native_error(build_crew, crewai_llm, set_trace_info):
     set_trace_info()
-    crew = build_crew(crewai_native_llm, tools=[raising_capital], description=TOOL_PROMPT_ERROR, max_iter=1)
+    crew = build_crew(crewai_llm, tools=[raising_capital], description=TOOL_PROMPT_ERROR, max_iter=1)
     crew.kickoff()
 
 
@@ -166,7 +166,7 @@ def test_tool_native_error(build_crew, crewai_native_llm, set_trace_info):
 )
 @validate_attributes("agent", ["llm"])
 @background_task()
-def test_tool_native_error_no_content(build_crew, crewai_native_llm, set_trace_info):
+def test_tool_native_error_no_content(build_crew, crewai_llm, set_trace_info):
     set_trace_info()
-    crew = build_crew(crewai_native_llm, tools=[raising_capital], description=TOOL_PROMPT_NO_CONTENT, max_iter=1)
+    crew = build_crew(crewai_llm, tools=[raising_capital], description=TOOL_PROMPT_NO_CONTENT, max_iter=1)
     crew.kickoff()

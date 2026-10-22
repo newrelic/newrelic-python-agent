@@ -2128,8 +2128,10 @@ class StatsEngine:
                 attrs.update(i_attrs)
 
                 # Add the entity_guid and a link to this application in the New Relic UI.
-                attrs["nr.entity.guid"] = settings.entity_guid
-                attrs["nr.entity.url"] = settings.entity_url
+                if settings.entity_guid:
+                    attrs["nr.entity.guid"] = settings.entity_guid
+                if settings.entity_url:
+                    attrs["nr.entity.url"] = settings.entity_url
 
                 context = SpanContext(
                     trace_id=int(attrs.pop("traceId"), 16),

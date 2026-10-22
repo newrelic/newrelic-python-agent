@@ -55,6 +55,9 @@ from newrelic.core.stack_trace import exception_stack
 
 _logger = logging.getLogger(__name__)
 
+# Only warn once when span data cannot be forwarded to LaunchDarkly.
+LAUNCH_DARKLY_UNAVAILABLE_WARNED = False
+
 EVENT_HARVEST_METHODS = {
     "analytic_event_data": ("reset_transaction_events", "reset_synthetics_events"),
     "span_event_data": ("reset_span_events",),
@@ -2092,8 +2095,23 @@ class StatsEngine:
 
         settings = self.__settings
 
-        from ldobserve import observe
-        from opentelemetry.trace.span import SpanContext, TraceFlags, TraceState
+        try:
+            from ldobserve import observe
+            from opentelemetry.context import Context
+            from opentelemetry.trace import NonRecordingSpan, set_span_in_context
+            from opentelemetry.trace.span import SpanContext, TraceFlags, TraceState
+        except ImportError:
+            _warn_launch_darkly_unavailable(
+                "The launchdarkly-observability package is not installed. Span data will not be sent to LaunchDarkly."
+            )
+            return
+
+        tracer = getattr(getattr(observe, "_instance", None), "_tracer", None)
+        if tracer is None:
+            _warn_launch_darkly_unavailable(
+                "The LaunchDarkly ObservabilityPlugin has not been registered. Span data will not be sent to LaunchDarkly."
+            )
+            return
 
         # Send span data to Darkly
         for event in transaction.span_events(self.__settings):
@@ -2121,12 +2139,19 @@ class StatsEngine:
                     trace_state=TraceState(),
                 )
                 # timestamp in ms converted to ns
-                span = observe._instance._tracer.start_span(
-                    i_attrs["name"], attributes=attrs, start_time=int(attrs["timestamp"] * 10**6)
+                span = tracer.start_span(
+                    i_attrs["name"], context=otel_context, attributes=attrs, start_time=int(attrs["timestamp"] * 10**6)
                 )
                 span._context = context
                 # timestamp in ms + duration in s converted to ns
                 span.end(end_time=int(attrs["timestamp"] * 10**6 + attrs["duration"] * 10**9))
+
+
+def _warn_launch_darkly_unavailable(message):
+    global LAUNCH_DARKLY_UNAVAILABLE_WARNED
+    if not LAUNCH_DARKLY_UNAVAILABLE_WARNED:
+        LAUNCH_DARKLY_UNAVAILABLE_WARNED = True
+        _logger.warning(message)
 
 
 class StatsEngineSnapshot(StatsEngine):

@@ -126,6 +126,7 @@ def create_settings(nested):
 class TopLevelSettings(Settings):
     _host = None
     _otlp_host = None
+    _entity_url = None
 
     @property
     def host(self):
@@ -146,6 +147,18 @@ class TopLevelSettings(Settings):
     @otlp_host.setter
     def otlp_host(self, value):
         self._otlp_host = value
+
+    @property
+    def entity_url(self):
+        """Extract entity_url from the messages returned by the collector."""
+        if self._entity_url:
+            return self._entity_url
+
+        if hasattr(self, "messages"):
+            for message in self.messages:
+                if message["message"].startswith("Reporting to:"):
+                    self._entity_url = message["message"].removeprefix("Reporting to:").strip()
+                    return self._entity_url
 
 
 class CloudSettings(Settings):

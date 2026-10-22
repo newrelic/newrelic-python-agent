@@ -1243,34 +1243,6 @@ class StatsEngine:
                             new_event = list(filter(bool, event))
                             self._span_events.add(new_event, priority=transaction.priority)
 
-                if transaction.partial_granularity_sampled:
-                    partial_gran_type = settings.distributed_tracing.sampler.partial_granularity.type.capitalize()
-                    self.record_custom_metric(
-                        f"Supportability/Python/PartialGranularity/{partial_gran_type}", {"count": 1}
-                    )
-                    instrumented = getattr(transaction, "spans_instrumented", 0)
-                    if instrumented:
-                        self.record_custom_metric(
-                            f"Supportability/DistributedTrace/PartialGranularity/{partial_gran_type}/Span/Instrumented",
-                            {"count": instrumented},
-                        )
-                    kept = getattr(transaction, "spans_kept", 0)
-                    if instrumented:
-                        self.record_custom_metric(
-                            f"Supportability/DistributedTrace/PartialGranularity/{partial_gran_type}/Span/Kept",
-                            {"count": kept},
-                        )
-                    dropped_ids = getattr(transaction, "partial_granularity_dropped_ids", 0)
-                    if dropped_ids:
-                        self.record_custom_metric(
-                            "Supportability/Python/PartialGranularity/NrIds/Dropped", {"count": dropped_ids}
-                        )
-                    dropped_span_links = getattr(transaction, "partial_granularity_dropped_span_links", 0)
-                    if dropped_span_links:
-                        self.record_custom_metric(
-                            "Supportability/Python/PartialGranularity/SpanLink/Dropped", {"count": dropped_span_links}
-                        )
-
         # Merge in log events
 
         if (

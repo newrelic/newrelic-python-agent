@@ -50,11 +50,13 @@ def _create_NewRelicHook(base_uri):
                 }
                 if isinstance(detail.variation_index, int):
                     attrs["feature_flag.result.variationIndex"] = detail.variation_index
-                if hasattr(detail, "reason") and detail.reason.get("kind"):
-                    attrs["feature_flag.result.reason.kind"] = detail.reason["kind"]
-                if hasattr(detail, "reason") and detail.reason.get("in_experiment"):
+                reason = getattr(detail, "reason", None) or {}
+                if reason.get("kind"):
+                    attrs["feature_flag.result.reason.kind"] = reason["kind"]
+                if reason.get("inExperiment"):
                     attrs["feature_flag.result.reason.inExperiment"] = True
-                if getattr(detail, "value", None):
+                # Falsy values such as False or 0 are valid flag results.
+                if getattr(detail, "value", None) is not None:
                     attrs["feature_flag.result.value"] = detail.value
 
                 environment_id = getattr(series_context, "environment_id", None)
@@ -77,23 +79,29 @@ def _create_NewRelicHook(base_uri):
 def wrap_Config_init(wrapped, instance, args, kwargs):
     settings = global_settings()
     # Only add the hook if the integration setting is enabled.
-    if settings.launch_darkly_integration.enabled:
-        try:
-            bound_args = bind_args(wrapped, args, kwargs)
-            client_base_uri = bound_args.get("base_uri", None)
-            nr_hook = _create_NewRelicHook(client_base_uri)
-            if not bound_args["hooks"]:
-                bound_args["hooks"] = [nr_hook]
-            else:
-                # Ensure supplied iterable is a list, which LD will coerce to anyway.
-                bound_args["hooks"] = list(bound_args["hooks"])
-                bound_args["hooks"].append(nr_hook)
-            return wrapped(**bound_args)
-        except Exception:
-            _logger.exception(
-                "Failed to add New Relic hook to Launch Darkly hooks list. Please report this issue to New Relic Support."
-            )
-    return wrapped(instance, *args, **kwargs)
+    if not settings.launch_darkly_integration.enabled:
+        return wrapped(*args, **kwargs)
+
+    try:
+        bound_args = bind_args(wrapped, args, kwargs)
+    except Exception:
+        # Invalid arguments, let the original function raise the error to the user.
+        return wrapped(*args, **kwargs)
+
+    try:
+        nr_hook = _create_NewRelicHook(bound_args.get("base_uri", None))
+        # Ensure supplied iterable is a list, which LD will coerce to anyway.
+        hooks = list(bound_args["hooks"] or [])
+        hooks.append(nr_hook)
+    except Exception:
+        _logger.exception(
+            "Failed to add New Relic hook to Launch Darkly hooks list. Please report this issue to New Relic Support."
+        )
+        return wrapped(*args, **kwargs)
+
+    # Call outside of the try block so errors raised by Config are not mistaken for instrumentation errors.
+    bound_args["hooks"] = hooks
+    return wrapped(**bound_args)
 
 
 def wrap_LDClient_init(wrapped, instance, args, kwargs):

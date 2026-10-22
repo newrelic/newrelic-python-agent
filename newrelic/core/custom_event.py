@@ -21,7 +21,6 @@ from newrelic.core.attribute import (
     MAX_NUM_USER_ATTRIBUTES,
     NameIsNotStringException,
     NameTooLongException,
-    check_name_is_string,
     check_name_length,
     process_user_attribute,
 )
@@ -29,7 +28,7 @@ from newrelic.core.config import global_settings
 
 _logger = logging.getLogger(__name__)
 
-EVENT_TYPE_VALID_CHARS_REGEX = re.compile(r"^[a-zA-Z0-9:_ ]+$")
+EVENT_TYPE_VALID_CHARS_REGEX = re.compile(r"[a-zA-Z0-9:_ ]+")
 NO_LIMIT_LLM_EVENT_TYPE = {"LlmChatCompletionMessage": "content", "LlmEmbedding": "input"}
 
 
@@ -39,7 +38,7 @@ class NameInvalidCharactersException(Exception):
 
 def check_event_type_valid_chars(name):
     regex = EVENT_TYPE_VALID_CHARS_REGEX
-    if not regex.match(name):
+    if not regex.fullmatch(name):
         raise NameInvalidCharactersException
 
 
@@ -61,7 +60,8 @@ def process_event_type(name):
     FAILED_RESULT = None
 
     try:
-        check_name_is_string(name)
+        if not isinstance(name, str):
+            raise NameIsNotStringException
         check_name_length(name)
         check_event_type_valid_chars(name)
 

@@ -270,10 +270,21 @@ class Agent:
                         from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
                         from opentelemetry.sdk.resources import Resource
 
-
+                        if settings.opentelemetry.metrics.export_interval <= settings.opentelemetry.metrics.export_timeout:
+                            _logger.warning(
+                                "Invalid export settings.  Export interval is less "
+                                "than or equal to export timeout.  Reverting to "
+                                "default values: export_interval=60000 ms and "
+                                "export_timeout=10000 ms"
+                                )
+                            settings.opentelemetry.metrics.export_interval = 60000
+                            settings.opentelemetry.metrics.export_timeout = 10000
+                            
+                        export_interval = settings.opentelemetry.metrics.export_interval
+                        export_timeout = settings.opentelemetry.metrics.export_timeout
+                    
                         exporter = OTLPMetricExporter()
-                        # TODO: come back to set up export_interval_millis and export_timeout_millis properly
-                        reader = PeriodicExportingMetricReader(exporter, export_interval_millis=60000, export_timeout_millis=10000)
+                        reader = PeriodicExportingMetricReader(exporter, export_interval_millis=export_interval, export_timeout_millis=export_timeout)
                         resource = Resource.create(
                             attributes={
                                 "service.name": settings.app_name,

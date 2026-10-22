@@ -1441,6 +1441,8 @@ _settings.opentelemetry.traces.include = _environ_as_comma_separated_set(
     "NEW_RELIC_OPENTELEMETRY_TRACES_INCLUDE", default=""
 )
 _settings.opentelemetry.metrics.enabled = _environ_as_bool("NEW_RELIC_OPENTELEMETRY_METRICS_ENABLED", default=True)
+_settings.opentelemetry.metrics.export_interval = _environ_as_int("NEW_RELIC_OPENTELEMETRY_METRICS_EXPORT_INTERVAL", default=60000)
+_settings.opentelemetry.metrics.export_timeout = _environ_as_int("NEW_RELIC_OPENTELEMETRY_METRICS_EXPORT_TIMEOUT", default=10000)
 
 
 def global_settings():

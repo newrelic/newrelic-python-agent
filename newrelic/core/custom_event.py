@@ -16,6 +16,7 @@ import re
 import time
 
 from newrelic.core.attribute import (
+    MAX_64_BIT_INT,
     MAX_ML_ATTRIBUTE_LENGTH,
     MAX_NUM_ML_USER_ATTRIBUTES,
     MAX_NUM_USER_ATTRIBUTES,
@@ -109,6 +110,7 @@ def create_custom_event(event_type, params, settings=None, is_ml_event=False):
         return None
 
     attributes = {}
+    timestamp = None
 
     try:
         for k, v in params.items():
@@ -124,6 +126,15 @@ def create_custom_event(event_type, params, settings=None, is_ml_event=False):
                 max_num_attrs = MAX_NUM_USER_ATTRIBUTES
             key, value = process_user_attribute(k, v, max_length=max_length)
             if key:
+                if key == "timestamp":
+                    if (
+                        isinstance(value, bool)
+                        or not isinstance(value, (int, float))
+                        or not -MAX_64_BIT_INT - 1 <= value <= MAX_64_BIT_INT
+                    ):
+                        _logger.debug("Custom event timestamp must be a finite number. Dropping attribute: %r", value)
+                        continue
+                    timestamp = value
                 if len(attributes) >= max_num_attrs:
                     _logger.debug(
                         "Maximum number of attributes already added to event %r. Dropping attribute: %r=%r",
@@ -141,7 +152,7 @@ def create_custom_event(event_type, params, settings=None, is_ml_event=False):
         )
         return None
 
-    intrinsics = {"type": name, "timestamp": params.get("timestamp") or int(1000.0 * time.time())}
+    intrinsics = {"type": name, "timestamp": timestamp or int(1000.0 * time.time())}
 
     event = [intrinsics, attributes]
     return event

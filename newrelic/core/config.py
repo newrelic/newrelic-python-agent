@@ -573,6 +573,10 @@ class OpentelemetryTracesSettings(Settings):
     pass
 
 
+class OpentelemetryMetricsSettings(Settings):
+    pass
+
+
 _settings = TopLevelSettings()
 _settings.agent_limits = AgentLimitsSettings()
 _settings.application_logging = ApplicationLoggingSettings()
@@ -678,6 +682,7 @@ _settings.instrumentation.middleware.django = InstrumentationDjangoMiddlewareSet
 _settings.message_tracer = MessageTracerSettings()
 _settings.opentelemetry = OpentelemetrySettings()
 _settings.opentelemetry.traces = OpentelemetryTracesSettings()
+_settings.opentelemetry.metrics = OpentelemetryMetricsSettings()
 _settings.process_host = ProcessHostSettings()
 _settings.rum = RumSettings()
 _settings.serverless_mode = ServerlessModeSettings()
@@ -909,6 +914,7 @@ _settings.otlp_port = int(os.environ.get("NEW_RELIC_OTLP_PORT", "0"))
 _settings.agent_run_id = None
 _settings.entity_guid = None
 _settings.request_headers_map = {}
+_settings.otlp_resource_attributes = {}
 
 _settings.proxy_scheme = os.environ.get("NEW_RELIC_PROXY_SCHEME", None)
 _settings.proxy_host = os.environ.get("NEW_RELIC_PROXY_HOST", None)
@@ -1435,6 +1441,13 @@ _settings.opentelemetry.traces.exclude = _environ_as_comma_separated_set(
 _settings.opentelemetry.traces.include = _environ_as_comma_separated_set(
     "NEW_RELIC_OPENTELEMETRY_TRACES_INCLUDE", default=""
 )
+_settings.opentelemetry.metrics.enabled = _environ_as_bool("NEW_RELIC_OPENTELEMETRY_METRICS_ENABLED", default=True)
+_settings.opentelemetry.metrics.export_interval = _environ_as_int(
+    "NEW_RELIC_OPENTELEMETRY_METRICS_EXPORT_INTERVAL", default=60000
+)
+_settings.opentelemetry.metrics.export_timeout = _environ_as_int(
+    "NEW_RELIC_OPENTELEMETRY_METRICS_EXPORT_TIMEOUT", default=10000
+)
 
 
 def global_settings():
@@ -1755,6 +1768,29 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
     return settings_snapshot
 
 
+def _process_opentelemetry_instrumentors(application_settings):
+    from newrelic.config import _is_installed, opentelemetry_entrypoints
+    from newrelic.core.agent import opentelemetry_meter_provider, opentelemetry_tracer_provider
+
+    if not application_settings.opentelemetry.enabled or not _is_installed("opentelemetry-api"):
+        return
+
+    tracer_provider = opentelemetry_tracer_provider(application_settings)
+    meter_provider = opentelemetry_meter_provider(application_settings)
+    for entrypoint in opentelemetry_entrypoints:
+        try:
+            instrumentor_class = entrypoint.load()
+            instrumentor = instrumentor_class()
+            instrumentor.instrument(tracer_provider=tracer_provider, meter_provider=meter_provider)
+            _logger.debug(
+                "Successfully instrumented OpenTelemetry tracer and/or meter '%s' via entry point.", entrypoint.name
+            )
+        except Exception as exc:
+            _logger.warning(
+                "Failed to instrument OpenTelemetry tracer and/or meter '%s' via entry point: %s", entrypoint.name, exc
+            )
+
+
 def finalize_application_settings(server_side_config=None, settings=_settings):
     """Overlay server-side settings and add attribute filter."""
     server_side_config = server_side_config if server_side_config is not None else {}
@@ -1766,6 +1802,10 @@ def finalize_application_settings(server_side_config=None, settings=_settings):
     application_settings = apply_server_side_settings(server_side_config, settings)
 
     application_settings.attribute_filter = AttributeFilter(flatten_settings(application_settings))
+
+    # The loading of the entrypoints must not happen until after the
+    # agent has gone through the connect cycle and gotten the `entity.guid`.
+    _process_opentelemetry_instrumentors(application_settings)
 
     return application_settings
 

@@ -304,6 +304,8 @@ class AgentProtocol:
         connect_settings["distributed_tracing.sampler.adaptive_sampling_target"] = settings[
             "distributed_tracing.sampler.adaptive_sampling_target"
         ]
+        connect_settings["opentelemetry.enabled"] = settings["opentelemetry.enabled"]
+        connect_settings["opentelemetry.metrics.enabled"] = settings["opentelemetry.metrics.enabled"]
 
         security_settings = {}
         security_settings["capture_params"] = settings["capture_params"]

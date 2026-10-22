@@ -121,6 +121,7 @@ class Agent:
     _instance_lock = threading.Lock()
     _instance = None
     _tracer_provider = None
+    _meter_provider = None
     _startup_callables = []  # noqa: RUF012
     _registration_callables = {}  # noqa: RUF012
 
@@ -190,16 +191,13 @@ class Agent:
         return Agent._instance
 
     @staticmethod
-    def opentelemetry_tracer_provider():
+    def opentelemetry_tracer_provider(settings):
         """Used by the tracer_provider() function to access/create the
         single tracer provider object instance.
 
         """
-        settings = newrelic.core.config.global_settings()
 
-        if not settings.opentelemetry.enabled and not newrelic.core.config._environ_as_bool(
-            "NEW_RELIC_OPENTELEMETRY_ENABLED"
-        ):
+        if not settings or not settings.opentelemetry.enabled:
             _logger.debug("OpenTelemetry mode is disabled.")
             return
 
@@ -213,21 +211,83 @@ class Agent:
 
                     from newrelic.api.opentelemetry import TracerProvider
 
-                    if not settings.opentelemetry.traces.enabled and not newrelic.core.config._environ_as_bool(
-                        "NEW_RELIC_OPENTELEMETRY_TRACES_ENABLED"
-                    ):
+                    if not settings.opentelemetry.traces.enabled:
                         # Set this to prevent any potential crashes
                         _logger.debug("OpenTelemetry traces are disabled.")
                         Agent._tracer_provider = NoOpTracerProvider()
                     else:
-                        Agent._tracer_provider = TracerProvider()
+                        Agent._tracer_provider = TracerProvider(settings)
                 except ImportError:
                     # `opentelemetry-api` is not installed, so tracer provider cannot be created
                     _logger.warning(
-                        "OpenTelemetry mode has been enabled but `opentelemetry-api` is not installed, so no TracerProvider can be created.  Defaulting to New Relic specific monitoring."
+                        "OpenTelemetry mode has been enabled but `opentelemetry-api` is not installed, "
+                        "so no TracerProvider can be created.  Defaulting to New Relic specific monitoring."
                     )
+                    settings.opentelemetry.enabled = False
 
         return Agent._tracer_provider
+
+    @staticmethod
+    def opentelemetry_meter_provider(settings):
+        """Used by the meter_provider() function to access/create the
+        single meter provider object instance.
+
+        """
+
+        if not settings or not settings.opentelemetry.enabled:
+            _logger.debug("OpenTelemetry mode is disabled.")
+            return
+
+        if Agent._meter_provider:
+            return Agent._meter_provider
+
+        with Agent._instance_lock:
+            # The user is responsible for creating a MeterProvider instance.
+            # However, in the case of third party instrumented libraries, the
+            # intent is to have users install `opentelemetry-instrument` to
+            # automatically configure the MeterProvider. In the case where this
+            # does not happen, the agent may need to create a default MeterProvider.
+            if not Agent._meter_provider:
+                # Exit early if `opentelemetry-api` is not installed.
+                # This should ideally never get here because `opentelemetry_tracer_provider()`
+                # is run first and already checks for `opentelemetry-api` installation.  If
+                # `opentelemetry-api` is not installed, it will set Hybrid Agent mode to `false`.
+                try:
+                    from opentelemetry.metrics import NoOpMeterProvider
+                except ImportError:
+                    _logger.warning(
+                        "OpenTelemetry mode has been enabled but `opentelemetry-api` "
+                        "is not installed. The Hybrid Agent cannot run without this."
+                        "Defaulting to New Relic specific monitoring."
+                    )
+                    settings.opentelemetry.enabled = False
+                    return
+
+                if not settings.opentelemetry.metrics.enabled:
+                    # Set this to prevent any potential crashes
+                    _logger.debug("OpenTelemetry metrics are disabled.")
+                    Agent._meter_provider = NoOpMeterProvider()
+                else:
+                    try:
+                        from opentelemetry.sdk.metrics import MeterProvider
+
+                        from newrelic.api.opentelemetry import meter_provider_resource_and_reader_generator
+
+                        nr_resource, nr_reader = meter_provider_resource_and_reader_generator(settings)
+                        Agent._meter_provider = MeterProvider(metric_readers=[nr_reader], resource=nr_resource)
+                        _logger.debug("MeterProvider not provided; creating default MeterProvider.")
+                    except ImportError:
+                        _logger.warning(
+                            "OpenTelemetry mode has been enabled but `opentelemetry-sdk` and/or "
+                            "`opentelemetry-exporter-otlp-proto-http` is not installed. Falling "
+                            "back to NoOpMeterProvider."
+                        )
+                        Agent._meter_provider = NoOpMeterProvider()
+                    except Exception as exc:
+                        _logger.warning("Failed to create OpenTelemetry meter provider: %s", exc)
+                        Agent._meter_provider = NoOpMeterProvider()
+
+        return Agent._meter_provider
 
     def __init__(self, config):
         """Initialises the agent and attempt to establish a connection
@@ -809,8 +869,12 @@ def agent_instance():
     return Agent.agent_singleton()
 
 
-def opentelemetry_tracer_provider():
-    return agent_instance().opentelemetry_tracer_provider()
+def opentelemetry_tracer_provider(settings):
+    return agent_instance().opentelemetry_tracer_provider(settings)
+
+
+def opentelemetry_meter_provider(settings):
+    return agent_instance().opentelemetry_meter_provider(settings)
 
 
 def shutdown_agent(timeout=None):

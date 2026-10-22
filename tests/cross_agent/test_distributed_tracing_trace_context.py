@@ -48,7 +48,6 @@ def load_tests():
         _id = test.pop("test_name", None)
         test_desc = test.pop("comment", None)
         settings = {
-            "distributed_tracing.sampler.full_granularity.enabled": test.pop("full_granularity_enabled", True),
             "distributed_tracing.enabled": test.pop("distributed_tracing_enabled", True),
             "span_events.enabled": test.pop("span_events_enabled", True),
             "transaction_events.enabled": test.pop("transaction_events_enabled", True),
@@ -58,14 +57,6 @@ def load_tests():
             "distributed_tracing.sampler._remote_parent_not_sampled": test.pop("remote_parent_not_sampled", "adaptive"),
             "trusted_account_key": test.pop("trusted_account_key", None),
             "account_id": test.pop("account_id", None),
-            "distributed_tracing.sampler.partial_granularity.enabled": test.pop("partial_granularity_enabled", False),
-            "distributed_tracing.sampler.partial_granularity._root": test.pop("partial_granularity_root", "adaptive"),
-            "distributed_tracing.sampler.partial_granularity._remote_parent_sampled": test.pop(
-                "partial_granularity_remote_parent_sampled", "adaptive"
-            ),
-            "distributed_tracing.sampler.partial_granularity._remote_parent_not_sampled": test.pop(
-                "partial_granularity_remote_parent_not_sampled", "adaptive"
-            ),
         }
         full_gran_ratio = test.pop("full_granularity_ratio", None)
         if full_gran_ratio is not None:
@@ -79,26 +70,6 @@ def load_tests():
                 settings["distributed_tracing.sampler.remote_parent_not_sampled.trace_id_ratio_based.ratio"] = (
                     full_gran_ratio
                 )
-        partial_gran_ratio = test.pop("partial_granularity_ratio", None)
-        if partial_gran_ratio is not None:
-            if settings["distributed_tracing.sampler.partial_granularity._root"] == "trace_id_ratio_based":
-                settings["distributed_tracing.sampler.partial_granularity.root.trace_id_ratio_based.ratio"] = (
-                    partial_gran_ratio
-                )
-            if (
-                settings["distributed_tracing.sampler.partial_granularity._remote_parent_sampled"]
-                == "trace_id_ratio_based"
-            ):
-                settings[
-                    "distributed_tracing.sampler.partial_granularity.remote_parent_sampled.trace_id_ratio_based.ratio"
-                ] = partial_gran_ratio
-            if (
-                settings["distributed_tracing.sampler.partial_granularity._remote_parent_not_sampled"]
-                == "trace_id_ratio_based"
-            ):
-                settings[
-                    "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.trace_id_ratio_based.ratio"
-                ] = partial_gran_ratio
 
         force_adaptive_sampled = test.pop("force_adaptive_sampled", None)
         expected_metrics = test.pop("expected_metrics", [])
@@ -167,7 +138,8 @@ def load_tests():
 
         transport_type = test.pop("transport_type", "HTTP")
 
-        assert not test, f"{test} has not been fully parsed"
+        # Ignore partial granularity items
+        assert len({item for item in test if "_granularity" in item}) == len(test), f"{test} has not been fully parsed"
 
         param = pytest.param(
             settings,

@@ -184,7 +184,6 @@ def transaction_node(request):
             root_span_guid=None,
             trace_id="4485b89db608aece",
             loop_time=0.0,
-            partial_granularity_sampled=partial_granularity,
         )
         return node
 
@@ -341,6 +340,7 @@ def test_serverless_application_harvest():
         assert f.read()
 
 
+@pytest.mark.skip(reason="Partial granularity has been disabled")
 @pytest.mark.parametrize(
     "distributed_tracing_enabled,full_granularity_enabled,partial_granularity_enabled,span_events_enabled,spans_created",
     [
@@ -353,7 +353,7 @@ def test_serverless_application_harvest():
         (False, True, False, True, 0),
     ],
 )
-def test_application_harvest_with_spans(
+def test_application_harvest_with_spans_with_partial_granularity(
     distributed_tracing_enabled,
     full_granularity_enabled,
     partial_granularity_enabled,
@@ -389,6 +389,62 @@ def test_application_harvest_with_spans(
             "distributed_tracing.enabled": distributed_tracing_enabled,
             "distributed_tracing.sampler.full_granularity.enabled": full_granularity_enabled,
             "distributed_tracing.sampler.partial_granularity.enabled": partial_granularity_enabled,
+            "span_events.enabled": span_events_enabled,
+            # Uses the name from post-translation as this is modifying the settings object, not a config file
+            "event_harvest_config.harvest_limits.span_event_data": max_samples_stored,
+        },
+    )
+    def _test():
+        app = Application("Python Agent Test (Harvest Loop)")
+        app.connect_to_data_collector(None)
+
+        for _ in range(spans_created):
+            app._stats_engine.span_events.add("event")
+
+        assert app._stats_engine.span_events.num_samples == (min(spans_created, max_samples_stored))
+        app.harvest()
+        assert app._stats_engine.span_events.num_samples == 0
+
+        # Verify that the metric_data endpoint is the 2nd to last and
+        # span_event_data is the 4th to last endpoint called
+        assert span_endpoints_called[-2] == "metric_data", span_endpoints_called
+
+        if span_events_enabled and spans_created > 0:
+            assert span_endpoints_called[-4] == "span_event_data", span_endpoints_called
+        else:
+            assert span_endpoints_called[-4] != "span_event_data", span_endpoints_called
+
+    _test()
+
+
+@pytest.mark.parametrize(
+    "distributed_tracing_enabled,span_events_enabled,spans_created",
+    [(True, True, 1), (True, False, 1), (True, True, 0), (True, False, 0), (False, True, 0)],
+)
+def test_application_harvest_with_spans(distributed_tracing_enabled, span_events_enabled, spans_created):
+    span_endpoints_called = []
+    max_samples_stored = 10
+
+    if distributed_tracing_enabled and span_events_enabled:
+        seen = spans_created
+        sent = min(spans_created, max_samples_stored)
+    else:
+        seen = None
+        sent = None
+
+    spans_required_metrics = list(required_metrics)
+
+    spans_required_metrics.extend(
+        [("Supportability/SpanEvent/TotalEventsSeen", seen), ("Supportability/SpanEvent/TotalEventsSent", sent)]
+    )
+
+    @validate_metric_payload(metrics=spans_required_metrics, endpoints_called=span_endpoints_called)
+    @override_generic_settings(
+        settings,
+        {
+            "developer_mode": True,
+            "license_key": "**NOT A LICENSE KEY**",
+            "distributed_tracing.enabled": distributed_tracing_enabled,
             "span_events.enabled": span_events_enabled,
             # Uses the name from post-translation as this is modifying the settings object, not a config file
             "event_harvest_config.harvest_limits.span_event_data": max_samples_stored,
@@ -516,6 +572,7 @@ def test_transaction_count(transaction_node):
     assert app._transaction_count == 0
 
 
+@pytest.mark.skip(reason="Partial granularity has been disabled")
 @override_generic_settings(
     settings,
     {

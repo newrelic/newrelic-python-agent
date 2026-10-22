@@ -965,7 +965,21 @@ class Tracer(otel_api_trace.Tracer):
 
 class TracerProvider(otel_api_trace.TracerProvider):
     def __init__(self, *args, **kwargs):
-        self._resource = create_resource(hybrid_bridge=True)
+        application = application_instance()
+        settings =  getattr(application, "settings", None) or global_settings()
+
+        try:
+            from opentelemetry.sdk.resources import Resource
+            self._resource = Resource.create(
+                attributes={
+                    "service.name": settings.app_name,
+                    "entity.guid": settings.entity_guid,
+                    "telemetry.sdk.language": "python",
+                }
+            )
+        except ImportError:
+            from newrelic.core.otlp_utils import create_resource
+            self._resource = create_resource(hybrid_bridge=True)
 
     def get_tracer(
         self,

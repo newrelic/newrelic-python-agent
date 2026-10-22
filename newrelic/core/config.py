@@ -1761,6 +1761,25 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
     return settings_snapshot
 
 
+def _process_opentelemetry_instrumentors():
+    from newrelic.core.agent import opentelemetry_tracer_provider, opentelemetry_meter_provider
+    from newrelic.config import _is_installed, opentelemetry_entrypoints
+
+    if not _settings.opentelemetry.enabled or not _is_installed("opentelemetry-api"):
+        return
+
+    tracer_provider = opentelemetry_tracer_provider()
+    meter_provider = opentelemetry_meter_provider()
+    for entrypoint in opentelemetry_entrypoints:
+        try:
+            instrumentor_class = entrypoint.load()
+            instrumentor = instrumentor_class()
+            instrumentor.instrument(tracer_provider=tracer_provider, meter_provider=meter_provider)
+            _logger.debug("Successfully instrumented OpenTelemetry tracer and/or meter '%s' via entry point.", entrypoint.name)
+        except Exception as exc:
+            _logger.warning("Failed to instrument OpenTelemetry tracer and/or meter '%s' via entry point: %s", entrypoint.name, exc)
+
+
 def finalize_application_settings(server_side_config=None, settings=_settings):
     """Overlay server-side settings and add attribute filter."""
     server_side_config = server_side_config if server_side_config is not None else {}
@@ -1772,6 +1791,10 @@ def finalize_application_settings(server_side_config=None, settings=_settings):
     application_settings = apply_server_side_settings(server_side_config, settings)
 
     application_settings.attribute_filter = AttributeFilter(flatten_settings(application_settings))
+
+    # The loading of the entrypoints must not happen until after the
+    # agent has gone through the connect cycle and gotten the `entity.guid`.
+    _process_opentelemetry_instrumentors()
 
     return application_settings
 

@@ -816,6 +816,7 @@ def _process_configuration(section):
     _process_setting(section, "opentelemetry.traces.enabled", "getboolean", None)
     _process_setting(section, "opentelemetry.traces.exclude", "get", _map_split_string_by_comma)
     _process_setting(section, "opentelemetry.traces.include", "get", _map_split_string_by_comma)
+    _process_setting(section, "opentelemetry.metrics.enabled", "getboolean", None)
 
 
 # Loading of configuration from specified file and for specified

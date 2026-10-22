@@ -573,6 +573,10 @@ class OpentelemetryTracesSettings(Settings):
     pass
 
 
+class OpentelemetryMetricsSettings(Settings):
+    pass
+
+
 _settings = TopLevelSettings()
 _settings.agent_limits = AgentLimitsSettings()
 _settings.application_logging = ApplicationLoggingSettings()
@@ -678,6 +682,7 @@ _settings.instrumentation.middleware.django = InstrumentationDjangoMiddlewareSet
 _settings.message_tracer = MessageTracerSettings()
 _settings.opentelemetry = OpentelemetrySettings()
 _settings.opentelemetry.traces = OpentelemetryTracesSettings()
+_settings.opentelemetry.metrics = OpentelemetryMetricsSettings()
 _settings.process_host = ProcessHostSettings()
 _settings.rum = RumSettings()
 _settings.serverless_mode = ServerlessModeSettings()
@@ -1435,6 +1440,7 @@ _settings.opentelemetry.traces.exclude = _environ_as_comma_separated_set(
 _settings.opentelemetry.traces.include = _environ_as_comma_separated_set(
     "NEW_RELIC_OPENTELEMETRY_TRACES_INCLUDE", default=""
 )
+_settings.opentelemetry.metrics.enabled = _environ_as_bool("NEW_RELIC_OPENTELEMETRY_METRICS_ENABLED", default=True)
 
 
 def global_settings():

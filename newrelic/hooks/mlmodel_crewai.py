@@ -215,8 +215,8 @@ def _construct_native_tool_event_dict(instance, tool_call, result, tool_id, tran
 
 
 def wrap_agent_executor__execute_single_native_tool_call(wrapped, instance, args, kwargs):
-    # Covers the native function-calling tool path on crewai.experimental.agent_executor.AgentExecutor
-    # (the default executor as of crewai 1.15.0), which bypasses ToolUsage entirely
+    # Covers the native function-calling tool path on crewai.agents.agent_executor.AgentExecutor
+    # (the default executor Agent.executor_class points at), which bypasses ToolUsage entirely
     transaction = current_transaction()
     if not transaction:
         return wrapped(*args, **kwargs)
@@ -282,7 +282,7 @@ def instrument_crewai_flow_flow(module):
         wrap_function_wrapper(module, "Flow._execute_method", wrap_flow__execute_method)
 
 
-def instrument_crewai_experimental_agent_executor(module):
+def instrument_crewai_agents_agent_executor(module):
     if hasattr(module, "AgentExecutor") and hasattr(module.AgentExecutor, "_execute_single_native_tool_call"):
         wrap_function_wrapper(
             module,

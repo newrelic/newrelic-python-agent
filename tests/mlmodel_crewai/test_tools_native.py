@@ -29,7 +29,7 @@ from newrelic.api.background_task import background_task
 from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 
 EXPECTED_TOOL_METRIC = (
-    f"Llm/tool/CrewAI/crewai.experimental.agent_executor:AgentExecutor._execute_single_native_tool_call/{TOOL_NAME}",
+    f"Llm/tool/CrewAI/crewai.agents.agent_executor:AgentExecutor._execute_single_native_tool_call/{TOOL_NAME}",
     1,
 )
 

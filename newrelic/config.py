@@ -3211,6 +3211,13 @@ def _process_module_builtin_defaults():
         "instrument_autogen_agentchat_agents__assistant_agent",
     )
     _process_module_definition(
+        "crewai.tools.tool_usage", "newrelic.hooks.mlmodel_crewai", "instrument_crewai_tools_tool_usage"
+    )
+    _process_module_definition(
+        "crewai.agents.agent_executor", "newrelic.hooks.mlmodel_crewai", "instrument_crewai_agents_agent_executor"
+    )
+    _process_module_definition("crewai.flow.flow", "newrelic.hooks.mlmodel_crewai", "instrument_crewai_flow_flow")
+    _process_module_definition(
         "google.adk.agents.llm_agent", "newrelic.hooks.mlmodel_googleadk", "instrument_googleadk_agents_llm_agent"
     )
     _process_module_definition(

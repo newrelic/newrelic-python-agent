@@ -5,5 +5,4 @@ include THIRD_PARTY_NOTICES.md
 include newrelic/newrelic.ini
 include newrelic/packages/wrapt/LICENSE
 include newrelic/packages/urllib3/LICENSE.txt
-include newrelic/packages/isort/LICENSE
 include newrelic/packages/opentelemetry_proto/LICENSE.txt

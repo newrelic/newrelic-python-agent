@@ -16,7 +16,7 @@ import http.client as httplib
 
 import pytest
 from testing_support.external_fixtures import cache_outgoing_headers
-from testing_support.fixtures import override_application_settings
+from testing_support.fixtures import dt_enabled, override_application_settings
 from testing_support.validators.validate_distributed_tracing_headers import validate_distributed_tracing_headers
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
@@ -24,9 +24,48 @@ from testing_support.validators.validate_tt_segment_params import validate_tt_se
 
 from newrelic.api.background_task import background_task
 from newrelic.common.encoding_utils import W3CTraceParent
+from newrelic.hooks.external_httplib import NR_HEADER_KEYS
 
 
-def test_httplib_http_request(server):
+@pytest.fixture
+def connection(server):
+    connection_cls = httplib.HTTPSConnection if server.scheme == "https" else httplib.HTTPConnection
+    conn = connection_cls("localhost", server.port)
+    yield conn
+    conn.close()
+
+
+@pytest.fixture(params=["putrequest", "request"])
+def exercise(request, connection):
+    def _exercise_putrequest(path="/", headers=None):
+        connection.putrequest("GET", path)
+        for key, value in (headers or {}).items():
+            connection.putheader(key, value)
+        connection.endheaders()
+        response = connection.getresponse()
+        body = response.read()
+        return response, body
+
+    def _exercise_request(path="/", headers=None):
+        connection.request("GET", path, headers=headers or {})
+        response = connection.getresponse()
+        body = response.read()
+        return response, body
+
+    if request.param == "putrequest":
+        return _exercise_putrequest
+    else:
+        return _exercise_request
+
+
+def process_response(body):
+    body = body.decode("utf-8").strip()
+    values = body.splitlines()
+    values = [[x.strip() for x in s.split(":", 1)] for s in values]
+    return {v[0]: v[1] for v in values}
+
+
+def test_httplib_request(server, exercise):
     scoped = [(f"External/localhost:{server.port}/http/", 1)]
 
     rollup = [
@@ -37,160 +76,90 @@ def test_httplib_http_request(server):
     ]
 
     @validate_transaction_metrics(
-        "test_httplib:test_httplib_http_request", scoped_metrics=scoped, rollup_metrics=rollup, background_task=True
+        "test_httplib:test_httplib_request", scoped_metrics=scoped, rollup_metrics=rollup, background_task=True
     )
-    @background_task(name="test_httplib:test_httplib_http_request")
+    @background_task(name="test_httplib:test_httplib_request")
     def _test():
-        connection = httplib.HTTPConnection("localhost", server.port)
-        connection.request("GET", "/")
-        response = connection.getresponse()
-        response.read()
-        connection.close()
+        exercise()
 
     _test()
 
 
-def test_httplib_https_request(server):
-    _test_httplib_https_request_scoped_metrics = [(f"External/localhost:{server.port}/http/", 1)]
-
-    _test_httplib_https_request_rollup_metrics = [
-        ("External/all", 1),
-        ("External/allOther", 1),
-        (f"External/localhost:{server.port}/all", 1),
-        (f"External/localhost:{server.port}/http/", 1),
-    ]
-
-    @validate_transaction_metrics(
-        "test_httplib:test_httplib_https_request",
-        scoped_metrics=_test_httplib_https_request_scoped_metrics,
-        rollup_metrics=_test_httplib_https_request_rollup_metrics,
-        background_task=True,
-    )
-    @background_task(name="test_httplib:test_httplib_https_request")
-    def _test():
-        # fix HTTPSConnection: https://wiki.openstack.org/wiki/OSSN/OSSN-0033
-        connection = httplib.HTTPSConnection("localhost", server.port)
-        # It doesn't matter that a SSL exception is raised here because the
-        # agent still records this as an external request
-        try:
-            connection.request("GET", "/")
-        except Exception:
-            pass
-        connection.close()
-
-    _test()
-
-
-def test_httplib_http_with_port_request(server):
-    scoped = [(f"External/localhost:{server.port}/http/", 1)]
-
-    rollup = [
-        ("External/all", 1),
-        ("External/allOther", 1),
-        (f"External/localhost:{server.port}/all", 1),
-        (f"External/localhost:{server.port}/http/", 1),
-    ]
-
-    @validate_transaction_metrics(
-        "test_httplib:test_httplib_http_with_port_request",
-        scoped_metrics=scoped,
-        rollup_metrics=rollup,
-        background_task=True,
-    )
-    @background_task(name="test_httplib:test_httplib_http_with_port_request")
-    def _test():
-        connection = httplib.HTTPConnection("localhost", server.port)
-        connection.request("GET", "/")
-        response = connection.getresponse()
-        response.read()
-        connection.close()
-
-    _test()
-
-
-@pytest.mark.parametrize("distributed_tracing,span_events", ((True, True), (True, False), (False, False)))
-def test_httplib_distributed_tracing_request(server, distributed_tracing, span_events):
+@pytest.mark.parametrize(
+    "distributed_tracing,span_events,exclude_newrelic_header",
+    (
+        pytest.param(True, True, True, id="dt_on-spans_on-exclude_nr_header"),
+        pytest.param(True, True, False, id="dt_on-spans_on-include_nr_header"),
+        pytest.param(True, False, True, id="dt_on-spans_off-exclude_nr_header"),
+        pytest.param(True, False, False, id="dt_on-spans_off-include_nr_header"),
+        pytest.param(False, False, True, id="dt_off-spans_off-exclude_nr_header"),
+    ),
+)
+def test_httplib_distributed_tracing_request(exercise, distributed_tracing, span_events, exclude_newrelic_header):
     @override_application_settings(
-        {"distributed_tracing.enabled": distributed_tracing, "span_events.enabled": span_events}
+        {
+            "distributed_tracing.enabled": distributed_tracing,
+            "span_events.enabled": span_events,
+            "distributed_tracing.exclude_newrelic_header": exclude_newrelic_header,
+        }
     )
     @background_task(name="test_httplib:test_httplib_distributed_tracing_request")
     @cache_outgoing_headers
     @validate_distributed_tracing_headers
     def _test():
-        connection = httplib.HTTPConnection("localhost", server.port)
-        connection.request("GET", "/")
-        response = connection.getresponse()
-        response.read()
-        connection.close()
+        exercise()
 
     _test()
 
 
-def process_response(response):
-    response = response.decode("utf-8").strip()
-    values = response.splitlines()
-    values = [[x.strip() for x in s.split(":", 1)] for s in values]
-    return {v[0]: v[1] for v in values}
-
-
-def test_httplib_multiple_requests_unique_distributed_tracing_id(server):
-    connection = httplib.HTTPConnection("localhost", server.port)
+def test_httplib_multiple_requests_unique_distributed_tracing_id(exercise):
     response_headers = []
 
     @background_task(name="test_httplib:test_transaction")
     def test_transaction():
-        connection.request("GET", "/")
-        response = connection.getresponse()
-        response_headers.append(process_response(response.read()))
-        connection.request("GET", "/")
-        response = connection.getresponse()
-        response_headers.append(process_response(response.read()))
+        # make multiple requests with the same connection
+        _, body = exercise()
+        response_headers.append(process_response(body))
+        _, body = exercise()
+        response_headers.append(process_response(body))
 
     test_transaction = override_application_settings(
         {"distributed_tracing.enabled": True, "span_events.enabled": True}
     )(test_transaction)
-    # make multiple requests with the same connection
     test_transaction()
 
-    connection.close()
     dt_payloads = [W3CTraceParent.decode(header["traceparent"]) for header in response_headers]
 
-    ids = set()
-    for payload in dt_payloads:
-        assert payload["id"] not in ids
-        ids.add(payload["id"])
+    # Both requests belong to the same transaction, so they must share a
+    # trace id but generate unique span ids.
+    trace_ids = {payload["tr"] for payload in dt_payloads}
+    assert len(trace_ids) == 1, dt_payloads
+
+    span_ids = {payload["id"] for payload in dt_payloads}
+    assert len(span_ids) == len(dt_payloads), dt_payloads
 
 
-def test_httplib_nr_headers_added(server):
-    connection = httplib.HTTPConnection("localhost", server.port)
-    key = "newrelic"
+@pytest.mark.parametrize("key", sorted(NR_HEADER_KEYS))
+def test_httplib_nr_headers_added(exercise, key):
     value = "testval"
     headers = []
 
     @background_task(name="test_httplib:test_transaction")
     def test_transaction():
-        connection.putrequest("GET", "/")
-        connection.putheader(key, value)
-        connection.endheaders()
-        response = connection.getresponse()
-        headers.append(process_response(response.read()))
+        _, body = exercise(headers={key: value})
+        headers.append(process_response(body))
 
     test_transaction = override_application_settings(
         {"distributed_tracing.enabled": True, "span_events.enabled": True}
     )(test_transaction)
     test_transaction()
-    connection.close()
-    # verify newrelic headers already added do not get overridden
+    # verify a DT header the caller already set is not overridden by the agent
     assert headers[0][key] == value
+    other_keys = NR_HEADER_KEYS - {key}
+    assert not (other_keys & headers[0].keys()), headers[0]
 
 
-def test_span_events(server):
-    connection = httplib.HTTPConnection("localhost", server.port)
-
-    _settings = {"distributed_tracing.enabled": True, "span_events.enabled": True}
-
-    uri = f"http://localhost:{server.port}"
-
+def test_span_events(server, exercise):
     exact_intrinsics = {
         "name": f"External/localhost:{server.port}/http/",
         "type": "Span",
@@ -199,19 +168,19 @@ def test_span_events(server):
         "span.kind": "client",
         "component": "http",
     }
-    exact_agents = {"http.url": uri, "http.statusCode": 200}
+    exact_agents = {"http.url": server.url, "http.statusCode": 200}
 
     expected_intrinsics = ("timestamp", "duration", "transactionId")
 
-    @override_application_settings(_settings)
+    @override_application_settings({"span_events.enabled": True})
+    @dt_enabled
     @validate_span_events(
         count=1, exact_intrinsics=exact_intrinsics, exact_agents=exact_agents, expected_intrinsics=expected_intrinsics
     )
     @validate_tt_segment_params(exact_params=exact_agents)
     @background_task(name="test_httplib:test_span_events")
     def _test():
-        connection.request("GET", "/")
-        response = connection.getresponse()
-        response.read()
+        response, _ = exercise()
+        assert response.status == 200
 
     _test()

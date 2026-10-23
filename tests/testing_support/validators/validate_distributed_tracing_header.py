@@ -38,6 +38,12 @@ def validate_distributed_tracing_header():
     traceparent = _single_value(headers["traceparent"])
     tracestate = _single_value(headers["tracestate"])
 
+    if transaction.settings.distributed_tracing.exclude_newrelic_header:
+        assert "newrelic" not in headers, headers
+    else:
+        assert "newrelic" in headers, headers
+        _single_value(headers["newrelic"])
+
     # Parse traceparent (version-trace_id-parent_id-flags)
     if isinstance(traceparent, bytes):
         traceparent = traceparent.decode("utf-8")

@@ -16,6 +16,10 @@ import pytest
 
 from newrelic.common.object_wrapper import function_wrapper
 
+ABSOLUTE_IMPORT_ERROR_MSG = (
+    "Absolute import of 'wrapt' found in C extension. Replace with relative package 'newrelic.packages.wrapt'."
+)
+
 
 @pytest.fixture
 def wrapper():
@@ -79,3 +83,24 @@ def test_multiple_wrapper_last_object(wrapper):
 
     assert wrapper_2._nr_last_object is wrapped, "Last object in chain should be the wrapped function."
     assert wrapper_2._nr_next_object is wrapper_1, "Next object in chain should be the middle function."
+
+
+def test_wrapt_c_extensions_loaded():
+    import newrelic.core.config
+    from newrelic.common.object_wrapper import wrapt_extensions_loaded
+
+    use_extensions = newrelic.core.config._environ_as_bool("NEW_RELIC_EXTENSIONS", None)
+    if use_extensions is not None:
+        if use_extensions:
+            # Forcibly import wrappers from the C extension to raise any errors
+            try:
+                from newrelic.packages.wrapt._wrappers import ObjectProxy
+            except ModuleNotFoundError as e:
+                if "wrapt" in str(e):
+                    raise ModuleNotFoundError(ABSOLUTE_IMPORT_ERROR_MSG) from e
+                raise
+
+            # Ensure the wrappers the agent is using are also the C extension versions.
+            assert wrapt_extensions_loaded, "Failed to load wrapt C extensions."
+        else:
+            assert not wrapt_extensions_loaded, "Loaded wrapt C extensions when not enabled."

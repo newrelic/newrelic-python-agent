@@ -11,10 +11,11 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 import pytest
+from opentelemetry import propagate, trace
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
-from testing_support.mock_external_http_server import MockExternalHTTPHResponseHeadersServer
+
+from newrelic.api.opentelemetry import opentelemetry_context_propagator
 
 _default_settings = {
     "package_reporting.enabled": False,  # Turn off package reporting for testing as it causes slow downs.
@@ -23,14 +24,19 @@ _default_settings = {
     "transaction_tracer.stack_trace_threshold": 0.0,
     "debug.log_data_collector_payloads": True,
     "debug.record_transaction_failure": True,
+    "opentelemetry.enabled": True,
+    "opentelemetry.traces.enabled": True,
+    "launch_darkly_integration.enabled": True,
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
-    app_name="Python Agent Test (external_http)", default_settings=_default_settings
+    app_name="Python Agent Test (framework_flask)", default_settings=_default_settings
 )
 
 
 @pytest.fixture(scope="session")
-def server():
-    with MockExternalHTTPHResponseHeadersServer() as _server:
-        yield _server
+def tracer():
+    propagate.set_global_textmap(opentelemetry_context_propagator)
+
+    tracer_provider = trace.get_tracer_provider()
+    return tracer_provider.get_tracer()

@@ -914,6 +914,7 @@ _settings.otlp_port = int(os.environ.get("NEW_RELIC_OTLP_PORT", "0"))
 _settings.agent_run_id = None
 _settings.entity_guid = None
 _settings.request_headers_map = {}
+_settings.otlp_resource_attributes = {}
 
 _settings.proxy_scheme = os.environ.get("NEW_RELIC_PROXY_SCHEME", None)
 _settings.proxy_host = os.environ.get("NEW_RELIC_PROXY_HOST", None)
@@ -1763,15 +1764,15 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
     return settings_snapshot
 
 
-def _process_opentelemetry_instrumentors():
+def _process_opentelemetry_instrumentors(application_settings):
     from newrelic.core.agent import opentelemetry_tracer_provider, opentelemetry_meter_provider
     from newrelic.config import _is_installed, opentelemetry_entrypoints
 
-    if not _settings.opentelemetry.enabled or not _is_installed("opentelemetry-api"):
+    if not application_settings.opentelemetry.enabled or not _is_installed("opentelemetry-api"):
         return
 
-    tracer_provider = opentelemetry_tracer_provider()
-    meter_provider = opentelemetry_meter_provider()
+    tracer_provider = opentelemetry_tracer_provider(application_settings)
+    meter_provider = opentelemetry_meter_provider(application_settings)
     for entrypoint in opentelemetry_entrypoints:
         try:
             instrumentor_class = entrypoint.load()
@@ -1796,7 +1797,7 @@ def finalize_application_settings(server_side_config=None, settings=_settings):
 
     # The loading of the entrypoints must not happen until after the
     # agent has gone through the connect cycle and gotten the `entity.guid`.
-    _process_opentelemetry_instrumentors()
+    _process_opentelemetry_instrumentors(application_settings)
 
     return application_settings
 

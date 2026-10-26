@@ -16,6 +16,7 @@ import json
 import logging
 import sys
 import time
+import uuid
 from contextlib import contextmanager
 
 try:
@@ -964,17 +965,15 @@ class Tracer(otel_api_trace.Tracer):
 
 
 class TracerProvider(otel_api_trace.TracerProvider):
-    def __init__(self, *args, **kwargs):
-        application = application_instance()
-        settings =  getattr(application, "settings", None) or global_settings()
-
+    def __init__(self, settings, *args, **kwargs):
         try:
             from opentelemetry.sdk.resources import Resource
             self._resource = Resource.create(
                 attributes={
                     "service.name": settings.app_name,
-                    "entity.guid": settings.entity_guid,
                     "telemetry.sdk.language": "python",
+                    "service.instance.id": str(uuid.uuid4()),
+                    **settings.otlp_resource_attributes
                 }
             )
         except ImportError:
@@ -999,3 +998,65 @@ class TracerProvider(otel_api_trace.TracerProvider):
             resource=self._resource,
             **kwargs,
         )
+
+
+def meter_provider_creator(settings):
+    try:
+        from opentelemetry.sdk.metrics import MeterProvider, Counter, Histogram, ObservableCounter, ObservableGauge, UpDownCounter, ObservableUpDownCounter
+        from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader, AggregationTemporality
+        from opentelemetry.sdk.metrics.view import ExponentialBucketHistogramAggregation
+        from opentelemetry.sdk.resources import Resource
+        from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
+        from opentelemetry.exporter.otlp.proto.http import Compression
+
+        settings.otlp_resource_attributes["licenseKey"] += "********************************"
+
+        if settings.opentelemetry.metrics.export_interval <= settings.opentelemetry.metrics.export_timeout:
+            _logger.warning(
+                "Invalid export settings.  Export interval is less "
+                "than or equal to export timeout.  Reverting to "
+                "default values: export_interval=60000 ms and "
+                "export_timeout=10000 ms"
+                )
+            settings.opentelemetry.metrics.export_interval = 60000
+            settings.opentelemetry.metrics.export_timeout = 10000
+            
+        export_interval = settings.opentelemetry.metrics.export_interval
+        export_timeout = settings.opentelemetry.metrics.export_timeout
+
+        exporter = OTLPMetricExporter(
+            # endpoint=f"https://{settings.otlp_host}:4318/v1/metrics",
+            endpoint=f"https://{settings.host}/v1/metrics",
+            headers={"api-key": settings.license_key},
+            timeout=export_timeout,
+            compression=Compression.Gzip,
+            preferred_temporality={
+                Counter: AggregationTemporality.DELTA,
+                ObservableCounter: AggregationTemporality.DELTA,
+                Histogram: AggregationTemporality.DELTA,
+                UpDownCounter: AggregationTemporality.CUMULATIVE,
+                ObservableUpDownCounter: AggregationTemporality.CUMULATIVE,
+                ObservableGauge: AggregationTemporality.CUMULATIVE,
+            },
+            preferred_aggregation={Histogram: ExponentialBucketHistogramAggregation()},
+            max_request_size=1000000,
+        )
+        reader = PeriodicExportingMetricReader(
+            exporter,
+            export_interval_millis=export_interval,
+            export_timeout_millis=export_timeout
+        )
+        resource = Resource.create(
+            attributes={
+                "service.name": settings.app_name,
+                "telemetry.sdk.language": "python",
+                "service.instance.id": str(uuid.uuid4()),
+                **settings.otlp_resource_attributes,
+            }
+        )
+        return MeterProvider(
+            resource=resource,
+            metric_readers=[reader],
+        )
+    except Exception:
+        raise

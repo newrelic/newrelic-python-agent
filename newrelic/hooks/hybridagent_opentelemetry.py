@@ -27,7 +27,7 @@ from newrelic.core.config import global_settings
 def wrap__load_runtime_context(wrapped, instance, args, kwargs):
     application = application_instance(activate=False)
     settings = getattr(application, "settings", None) or global_settings()
-    if settings and not settings.opentelemetry.enabled:
+    if settings and not settings.opentelemetry.enabled and not settings.opentelemetry.traces.enabled:
         return wrapped(*args, **kwargs)
 
     from opentelemetry.context.contextvars_context import ContextVarsRuntimeContext
@@ -46,7 +46,7 @@ def wrap_get_global_response_propagator(wrapped, instance, args, kwargs):
 
     settings = getattr(application, "settings", None) or global_settings()
 
-    if settings and not settings.opentelemetry.enabled:
+    if settings and not settings.opentelemetry.enabled and not settings.opentelemetry.traces.enabled:
         return wrapped(*args, **kwargs)
 
     from opentelemetry.instrumentation.propagators import set_global_response_propagator
@@ -83,10 +83,10 @@ def wrap_set_tracer_provider(wrapped, instance, args, kwargs):
 
     settings = getattr(application, "settings", None) or global_settings()
 
-    if settings and not settings.opentelemetry.enabled:
+    if settings and not settings.opentelemetry.enabled and not settings.opentelemetry.traces.enabled:
         return wrapped(*args, **kwargs)
 
-    nr_tracer_provider = application._agent.opentelemetry_tracer_provider()
+    nr_tracer_provider = application._agent.opentelemetry_tracer_provider(settings)
     return wrapped(nr_tracer_provider)
 
 
@@ -102,10 +102,10 @@ def wrap_get_tracer_provider(wrapped, instance, args, kwargs):
 
     settings = getattr(application, "settings", None) or global_settings()
 
-    if settings and not settings.opentelemetry.enabled:
+    if settings and not settings.opentelemetry.enabled and not settings.opentelemetry.traces.enabled:
         return wrapped(*args, **kwargs)
 
-    return application._agent.opentelemetry_tracer_provider()
+    return application._agent.opentelemetry_tracer_provider(settings)
 
 
 def wrap_get_custom_headers(wrapped, instance, args, kwargs):
@@ -295,10 +295,10 @@ def wrap_set_meter_provider(wrapped, instance, args, kwargs):
 
     settings = getattr(application, "settings", None) or global_settings()
 
-    if settings and not settings.opentelemetry.enabled:
+    if settings and not settings.opentelemetry.enabled and not settings.opentelemetry.metrics.enabled:
         return wrapped(*args, **kwargs)
 
-    nr_meter_provider = application._agent.opentelemetry_meter_provider()
+    nr_meter_provider = application._agent.opentelemetry_meter_provider(settings)
     return wrapped(nr_meter_provider)
 
 
@@ -314,12 +314,10 @@ def wrap_get_meter_provider(wrapped, instance, args, kwargs):
 
     settings = getattr(application, "settings", None) or global_settings()
 
-    if settings and not settings.opentelemetry.enabled:
+    if settings and not settings.opentelemetry.enabled and not settings.opentelemetry.metrics.enabled:
         return wrapped(*args, **kwargs)
 
-    if not application._agent.opentelemetry_meter_provider():
-        # If the agent does not have a meter provider at this point, we need to set it.
-        return application._agent.opentelemetry_meter_provider()
+    return application._agent.opentelemetry_meter_provider(settings)
 
 
 def instrument_meter_api(module):

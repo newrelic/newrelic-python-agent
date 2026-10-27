@@ -30,6 +30,11 @@ on:
         required: false
         default: "NRPythonAgent"
         type: string
+      git-ref:
+        description: "Git ref (tag, branch, or SHA) to read .fleetControl from. Defaults to the version tag."
+        required: false
+        default: ""
+        type: string
       use-cache:
         description: "Use cache"
         required: false
@@ -48,6 +53,11 @@ on:
         required: false
         default: "NRPythonAgent"
         type: string
+      git-ref:
+        description: "Git ref (tag, branch, or SHA) to read .fleetControl from. Defaults to the version tag."
+        required: false
+        default: ""
+        type: string
       use-cache:
         description: "Use cache"
         required: false
@@ -63,12 +73,21 @@ on:
 
 jobs:
   send-agent-metadata:
-    uses: newrelic/newrelic-agent-init-container/.github/workflows/agent-metadata.yml@main
-    with:
-      agent-type: ${{ inputs.agent-type }}
-      version: ${{ inputs.version }}
-      use-cache: ${{ inputs.use-cache }}
-    secrets:
-      FC_SYS_ID_CLIENT_ID: ${{ secrets.FC_SYS_ID_CLIENT_ID }}
-      FC_SYS_ID_PR_KEY: ${{ secrets.FC_SYS_ID_PR_KEY }}
-      AGENT_METADATA_ACTION_LICENSE_KEY: ${{ secrets.AGENT_METADATA_ACTION_LICENSE_KEY }} # action owning team license key
+    runs-on: ubuntu-latest
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@e14015d583714f6e62063499dc959a02595150a1 # v2.21.1
+        with:
+          disable-sudo: true
+          egress-policy: audit
+      - name: Send agent metadata
+        uses: newrelic/agent-metadata-action/send-metadata@399d5ba876e7d03bf6215f8283d72ffb8dc8240b # v1.7.0
+        with:
+          newrelic-client-id: ${{ secrets.FC_SYS_ID_CLIENT_ID }}
+          newrelic-private-key: ${{ secrets.FC_SYS_ID_PR_KEY }}
+          newrelic-license-key: ${{ secrets.AGENT_METADATA_ACTION_LICENSE_KEY }} # action owning team license key
+          agent-type: ${{ inputs.agent-type }}
+          version: ${{ inputs.version }}
+          git-ref: ${{ inputs.git-ref }}
+          cache: ${{ inputs.use-cache }}
+          monitoring-type: "APM"

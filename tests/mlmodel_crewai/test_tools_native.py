@@ -33,16 +33,17 @@ EXPECTED_TOOL_METRIC = (
     1,
 )
 
-# 10 events:
+# 11 events:
 #  * 1 LlmTool
+#  * 1 LlmAgent for the agent's execute_task (the Crew itself records none)
 #  * 2 LlmChatCompletionSummary, one per LLM round-trip
 #  * 7 LlmChatCompletionMessage across those two round-trips
-EXPECTED_EVENT_COUNT = 10
+EXPECTED_EVENT_COUNT = 11
 
-# 11 events:
+# 12 events:
 # The failing tool result adds one more message to the second
 # request than the successful one has.
-EXPECTED_ERROR_EVENT_COUNT = 11
+EXPECTED_ERROR_EVENT_COUNT = 12
 
 
 @dt_enabled

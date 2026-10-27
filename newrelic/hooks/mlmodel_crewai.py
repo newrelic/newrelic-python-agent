@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import asyncio
 import json
 import logging
 import sys
@@ -26,12 +27,14 @@ from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
 from newrelic.core.config import global_settings
-from newrelic.core.context import context_wrapper
+from newrelic.core.context import ContextOf, context_wrapper
 
 CREWAI_VERSION = get_package_version("crewai")
 
 RECORD_EVENTS_FAILURE_LOG_MESSAGE = "Exception occurred in CrewAI instrumentation: Failed to record LLM events. Please report this issue to New Relic Support.\n%s"
 TOOL_EXTRACTOR_FAILURE_LOG_MESSAGE = "Exception occurred in CrewAI instrumentation: Failed to extract tool information. If the issue persists, report this issue to New Relic Support.\n"
+AGENT_EVENT_FAILURE_LOG_MESSAGE = "Exception occurred in CrewAI instrumentation: Failed to record agent data. Please report this issue to New Relic Support."
+CONTEXT_PROPAGATION_FAILURE_LOG_MESSAGE = "Exception occurred in CrewAI instrumentation: Failed to carry trace context across a Crew handoff. Telemetry for this run may be incomplete. If the issue persists, report this issue to New Relic Support."
 
 _logger = logging.getLogger(__name__)
 
@@ -121,48 +124,10 @@ def wrap_tool_usage__use(wrapped, instance, args, kwargs):
     return return_val
 
 
-async def wrap_tool_usage__ause(wrapped, instance, args, kwargs):
-    transaction = current_transaction()
-    if not transaction:
-        return await wrapped(*args, **kwargs)
-
-    settings = transaction.settings or global_settings()
-    if not settings.ai_monitoring.enabled:
-        return await wrapped(*args, **kwargs)
-
-    try:
-        bound_args = bind_args(wrapped, args, kwargs)
-        tool = bound_args.get("tool", None)
-        calling = bound_args.get("calling", None)
-    except Exception:
-        tool = calling = None
-        _logger.warning(TOOL_EXTRACTOR_FAILURE_LOG_MESSAGE, exc_info=True)
-
-    tool_id = str(uuid.uuid4())
-    ft = _start_tool_trace(wrapped, instance, tool, calling, transaction)
-    linking_metadata = get_trace_linking_metadata()
-    tool_event_dict = _construct_base_tool_event_dict(
-        instance, tool, calling, tool_id, transaction, settings, linking_metadata
-    )
-
-    try:
-        return_val = await wrapped(*args, **kwargs)
-    except Exception:
-        ft.notice_error(attributes={"tool_id": tool_id})
-        ft.__exit__(*sys.exc_info())
-        tool_event_dict.update({"duration": ft.duration * 1000, "error": True})
-        transaction.record_custom_event("LlmTool", tool_event_dict)
-        raise
-
-    ft.__exit__(None, None, None)
-    _record_tool_success(transaction, settings, tool_event_dict, ft, return_val)
-    return return_val
-
-
 def _record_tool_success(transaction, settings, tool_event_dict, ft, return_val):
     try:
         tool_event_dict.update({"duration": ft.duration * 1000})
-        # _use/_ause return the formatted result string (tool output)
+        # _use returns the formatted result string (tool output)
         if settings.ai_monitoring.record_content.enabled:
             tool_event_dict["output"] = str(return_val) if return_val else None
         transaction.record_custom_event("LlmTool", tool_event_dict)
@@ -277,6 +242,219 @@ async def wrap_flow__execute_method(wrapped, instance, args, kwargs):
     return await wrapped(*new_args, **kwargs)
 
 
+def _construct_base_agent_event_dict(agent_name, agent_id, transaction, linking_metadata):
+    try:
+        agent_event_dict = {
+            "id": agent_id,
+            "name": agent_name,
+            "span_id": linking_metadata.get("span.id"),
+            "trace_id": linking_metadata.get("trace.id"),
+            "vendor": "crewai",
+            "ingest_source": "Python",
+        }
+        agent_event_dict.update(_get_llm_metadata(transaction))
+    except Exception:
+        agent_event_dict = {}
+        _logger.warning(AGENT_EVENT_FAILURE_LOG_MESSAGE, exc_info=True)
+
+    return agent_event_dict
+
+
+def _start_agent_trace(wrapped, agent_name, transaction):
+    transaction.add_ml_model_info("CrewAI", CREWAI_VERSION)
+    transaction._add_agent_attribute("llm", True)
+
+    func_name = callable_name(wrapped)
+    agentic_subcomponent_data = {"type": "APM-AI_AGENT", "name": agent_name}
+
+    ft = FunctionTrace(name=f"{func_name}/{agent_name}", group="Llm/agent/CrewAI")
+    ft.__enter__()
+    ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
+    return ft
+
+
+def _record_agent_event(transaction, agent_event_dict, ft, error=False):
+    try:
+        agent_event_dict["duration"] = ft.duration * 1000
+        if error:
+            agent_event_dict["error"] = True
+        transaction.record_custom_event("LlmAgent", agent_event_dict)
+    except Exception:
+        _logger.warning(RECORD_EVENTS_FAILURE_LOG_MESSAGE, exc_info=True)
+
+
+def _get_agent_name(instance):
+    # role is Agent/BaseAgent's only identifying field since there is no name attribute
+    return getattr(instance, "role", None) or "agent"
+
+
+def wrap_agent_execute_task(wrapped, instance, args, kwargs):
+    # This wrapper ensures we get LlmAgent events when calling crew.kickoff()
+    transaction = current_transaction()
+    if not transaction:
+        return wrapped(*args, **kwargs)
+
+    settings = transaction.settings or global_settings()
+    if not settings.ai_monitoring.enabled:
+        return wrapped(*args, **kwargs)
+
+    agent_name = _get_agent_name(instance)
+    agent_id = str(uuid.uuid4())
+    ft = _start_agent_trace(wrapped, agent_name, transaction)
+    linking_metadata = get_trace_linking_metadata()
+    agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction, linking_metadata)
+
+    try:
+        return_val = wrapped(*args, **kwargs)
+    except Exception:
+        ft.notice_error(attributes={"agent_id": agent_id})
+        ft.__exit__(*sys.exc_info())
+        _record_agent_event(transaction, agent_event_dict, ft, error=True)
+        raise
+
+    ft.__exit__(None, None, None)
+    _record_agent_event(transaction, agent_event_dict, ft)
+    return return_val
+
+
+async def wrap_agent_aexecute_task(wrapped, instance, args, kwargs):
+    # This wrapper instruments the crew.akickoff() path
+    transaction = current_transaction()
+    if not transaction:
+        return await wrapped(*args, **kwargs)
+
+    settings = transaction.settings or global_settings()
+    if not settings.ai_monitoring.enabled:
+        return await wrapped(*args, **kwargs)
+
+    agent_name = _get_agent_name(instance)
+    agent_id = str(uuid.uuid4())
+    ft = _start_agent_trace(wrapped, agent_name, transaction)
+    linking_metadata = get_trace_linking_metadata()
+    agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction, linking_metadata)
+
+    try:
+        return_val = await wrapped(*args, **kwargs)
+    except Exception:
+        ft.notice_error(attributes={"agent_id": agent_id})
+        ft.__exit__(*sys.exc_info())
+        _record_agent_event(transaction, agent_event_dict, ft, error=True)
+        raise
+
+    ft.__exit__(None, None, None)
+    _record_agent_event(transaction, agent_event_dict, ft)
+    return return_val
+
+
+def _inside_event_loop():
+    # Mirrors crewai.utilities.agent_utils.is_inside_event_loop, which is what Agent.kickoff()
+    # branches on.
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return False
+    return True
+
+
+def wrap_agent_kickoff(wrapped, instance, args, kwargs):
+    # Standalone single-agent entry point (no Crew involved)
+    transaction = current_transaction()
+    if not transaction:
+        return wrapped(*args, **kwargs)
+
+    settings = transaction.settings or global_settings()
+    if not settings.ai_monitoring.enabled:
+        return wrapped(*args, **kwargs)
+
+    # If called inside a running loop, Agent.kickoff() does no work.
+    # It hands back kickoff_async's coroutine and wrap_agent_kickoff_async records the
+    # run once that happens. Tracing this call would add an agent span for work that hasn't begun.
+    if _inside_event_loop():
+        return wrapped(*args, **kwargs)
+
+    agent_name = _get_agent_name(instance)
+    agent_id = str(uuid.uuid4())
+    ft = _start_agent_trace(wrapped, agent_name, transaction)
+    linking_metadata = get_trace_linking_metadata()
+    agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction, linking_metadata)
+
+    try:
+        return_val = wrapped(*args, **kwargs)
+    except Exception:
+        ft.notice_error(attributes={"agent_id": agent_id})
+        ft.__exit__(*sys.exc_info())
+        _record_agent_event(transaction, agent_event_dict, ft, error=True)
+        raise
+
+    ft.__exit__(None, None, None)
+    _record_agent_event(transaction, agent_event_dict, ft)
+    return return_val
+
+
+async def wrap_agent_kickoff_async(wrapped, instance, args, kwargs):
+    transaction = current_transaction()
+    if not transaction:
+        return await wrapped(*args, **kwargs)
+
+    settings = transaction.settings or global_settings()
+    if not settings.ai_monitoring.enabled:
+        return await wrapped(*args, **kwargs)
+
+    agent_name = _get_agent_name(instance)
+    agent_id = str(uuid.uuid4())
+    ft = _start_agent_trace(wrapped, agent_name, transaction)
+    linking_metadata = get_trace_linking_metadata()
+    agent_event_dict = _construct_base_agent_event_dict(agent_name, agent_id, transaction, linking_metadata)
+
+    try:
+        return_val = await wrapped(*args, **kwargs)
+    except Exception:
+        ft.notice_error(attributes={"agent_id": agent_id})
+        ft.__exit__(*sys.exc_info())
+        _record_agent_event(transaction, agent_event_dict, ft, error=True)
+        raise
+
+    ft.__exit__(None, None, None)
+    _record_agent_event(transaction, agent_event_dict, ft)
+    return return_val
+
+
+def wrap_crew_kickoff(wrapped, instance, args, kwargs):
+    # Picks up the trace kickoff_async() stashed before handing this
+    # call to another thread.
+    trace = instance.__dict__.pop("_nr_crew_kickoff_trace", None)
+    if trace:
+        with ContextOf(trace=trace):
+            return wrapped(*args, **kwargs)
+
+    return wrapped(*args, **kwargs)
+
+
+async def wrap_crew_kickoff_async(wrapped, instance, args, kwargs):
+    # This wrapper is for context propagation and the events get recorded in the execute_task wrappers
+    trace = current_trace()
+    if not trace:
+        return await wrapped(*args, **kwargs)
+
+    previous_trace = None
+    stashed = False
+    try:
+        previous_trace = instance.__dict__.get("_nr_crew_kickoff_trace")
+        instance.__dict__["_nr_crew_kickoff_trace"] = trace
+        stashed = True
+    except Exception:
+        _logger.debug(CONTEXT_PROPAGATION_FAILURE_LOG_MESSAGE, exc_info=True)
+
+    try:
+        return await wrapped(*args, **kwargs)
+    finally:
+        if stashed:
+            if previous_trace is None:
+                instance.__dict__.pop("_nr_crew_kickoff_trace", None)
+            else:
+                instance.__dict__["_nr_crew_kickoff_trace"] = previous_trace
+
+
 def instrument_crewai_flow_flow(module):
     if hasattr(module, "Flow") and hasattr(module.Flow, "_execute_method"):
         wrap_function_wrapper(module, "Flow._execute_method", wrap_flow__execute_method)
@@ -292,8 +470,27 @@ def instrument_crewai_agents_agent_executor(module):
 
 
 def instrument_crewai_tools_tool_usage(module):
-    if hasattr(module, "ToolUsage"):
-        if hasattr(module.ToolUsage, "_use"):
-            wrap_function_wrapper(module, "ToolUsage._use", wrap_tool_usage__use)
-        if hasattr(module.ToolUsage, "_ause"):
-            wrap_function_wrapper(module, "ToolUsage._ause", wrap_tool_usage__ause)
+    # Only the sync path: AgentExecutor.execute_tool_action is a sync router method, so the ReAct
+    # path always reaches ToolUsage._use. Nothing in crewai calls the async counterpart.
+    if hasattr(module, "ToolUsage") and hasattr(module.ToolUsage, "_use"):
+        wrap_function_wrapper(module, "ToolUsage._use", wrap_tool_usage__use)
+
+
+def instrument_crewai_agent_core(module):
+    if hasattr(module, "Agent"):
+        if hasattr(module.Agent, "execute_task"):
+            wrap_function_wrapper(module, "Agent.execute_task", wrap_agent_execute_task)
+        if hasattr(module.Agent, "aexecute_task"):
+            wrap_function_wrapper(module, "Agent.aexecute_task", wrap_agent_aexecute_task)
+        if hasattr(module.Agent, "kickoff"):
+            wrap_function_wrapper(module, "Agent.kickoff", wrap_agent_kickoff)
+        if hasattr(module.Agent, "kickoff_async"):
+            wrap_function_wrapper(module, "Agent.kickoff_async", wrap_agent_kickoff_async)
+
+
+def instrument_crewai_crew(module):
+    if hasattr(module, "Crew"):
+        if hasattr(module.Crew, "kickoff"):
+            wrap_function_wrapper(module, "Crew.kickoff", wrap_crew_kickoff)
+        if hasattr(module.Crew, "kickoff_async"):
+            wrap_function_wrapper(module, "Crew.kickoff_async", wrap_crew_kickoff_async)

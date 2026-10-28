@@ -663,40 +663,6 @@ def _process_configuration(section):
     _process_dt_sampler_setting(
         section, "distributed_tracing.sampler.remote_parent_not_sampled.trace_id_ratio_based.ratio", "getratio"
     )
-    _process_setting(section, "distributed_tracing.sampler.full_granularity.enabled", "getboolean", None)
-    _process_setting(section, "distributed_tracing.sampler.partial_granularity.enabled", "getboolean", None)
-    _process_setting(section, "distributed_tracing.sampler.partial_granularity.type", "get", None)
-    _process_dt_hidden_setting(section, "distributed_tracing.sampler.partial_granularity.root", "get")
-    _process_dt_sampler_setting(
-        section, "distributed_tracing.sampler.partial_granularity.root.adaptive.sampling_target", "getint"
-    )
-    _process_dt_sampler_setting(
-        section, "distributed_tracing.sampler.partial_granularity.root.trace_id_ratio_based.ratio", "getratio"
-    )
-    _process_dt_hidden_setting(section, "distributed_tracing.sampler.partial_granularity.remote_parent_sampled", "get")
-    _process_dt_sampler_setting(
-        section,
-        "distributed_tracing.sampler.partial_granularity.remote_parent_sampled.adaptive.sampling_target",
-        "getint",
-    )
-    _process_dt_sampler_setting(
-        section,
-        "distributed_tracing.sampler.partial_granularity.remote_parent_sampled.trace_id_ratio_based.ratio",
-        "getratio",
-    )
-    _process_dt_hidden_setting(
-        section, "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled", "get"
-    )
-    _process_dt_sampler_setting(
-        section,
-        "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.adaptive.sampling_target",
-        "getint",
-    )
-    _process_dt_sampler_setting(
-        section,
-        "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.trace_id_ratio_based.ratio",
-        "getratio",
-    )
     _process_setting(section, "span_events.enabled", "getboolean", None)
     _process_deprecated_setting(
         section, "event_harvest_config.harvest_limits.span_event_data", "span_events.max_samples_stored", "getint", None

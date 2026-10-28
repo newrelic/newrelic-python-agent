@@ -59,6 +59,8 @@ def wrap_Agent_run(wrapped, instance, args, kwargs):
     ft = FunctionTrace(name=function_trace_name, group="Llm/agent/MicrosoftAgentFramework")
     ft.__enter__()
     ft._add_agent_attribute("subcomponent", json.dumps(agentic_subcomponent_data))
+    # Tag the trace so tools invoked during this run can find their invoking agent.
+    ft._nr_agentframework_agent_name = agent_name
 
     linking_metadata = get_trace_linking_metadata()
     agent_id = str(uuid.uuid4())
@@ -203,6 +205,7 @@ async def wrap_FunctionTool_invoke(wrapped, instance, args, kwargs):
     ft = FunctionTrace(name=f"invoke/{tool_name}", group="Llm/tool/MicrosoftAgentFramework")
     ft.__enter__()
     ft._add_agent_attribute("subcomponent", json.dumps({"type": "APM-AI_TOOL", "name": tool_name}))
+    agent_name = _get_parent_agent_name(ft.parent)
     linking_metadata = get_trace_linking_metadata()
     tool_id = str(uuid.uuid4())
 
@@ -220,6 +223,7 @@ async def wrap_FunctionTool_invoke(wrapped, instance, args, kwargs):
             run_id=run_id,
             tool_input=tool_input,
             tool_output=None,
+            agent_name=agent_name,
             error=True,
         )
         raise
@@ -235,8 +239,23 @@ async def wrap_FunctionTool_invoke(wrapped, instance, args, kwargs):
         run_id=run_id,
         tool_input=tool_input,
         tool_output=tool_output_str,
+        agent_name=agent_name,
     )
     return tool_output
+
+
+def _get_parent_agent_name(trace):
+    # Walk up the trace tree to find the name of the nearest enclosing LlmAgent trace.
+    # Agent Framework does not pass the invoking agent to tools, so we rely on the tag set in wrap_Agent_run.
+    try:
+        while trace is not None:
+            agent_name = getattr(trace, "_nr_agentframework_agent_name", None)
+            if agent_name:
+                return agent_name
+            trace = trace.parent
+    except Exception:
+        _logger.warning(TOOL_EXTRACTOR_FAILURE_LOG_MESSAGE, exc_info=True)
+    return None
 
 
 def _extract_tool_response_str(tool_output):

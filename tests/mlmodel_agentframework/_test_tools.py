@@ -65,7 +65,7 @@ def tool_recorded_event(record_content: bool):
         "name": TOOL_NAME,
         "span_id": None,
         "trace_id": "trace-id",
-        # "agent_name": AGENT_NAME,  # Agent name is not currently captured
+        "agent_name": AGENT_NAME,
         "vendor": "agentframework",
         "ingest_source": "Python",
         "duration": None,
@@ -83,7 +83,7 @@ def tool_recorded_event_error(record_content: bool):
         "name": TOOL_NAME,
         "span_id": None,
         "trace_id": "trace-id",
-        # "agent_name": AGENT_NAME,  # Agent name is not currently captured
+        "agent_name": AGENT_NAME,
         "vendor": "agentframework",
         "ingest_source": "Python",
         "duration": None,

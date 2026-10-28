@@ -54,6 +54,7 @@ from newrelic.core.database_utils import (
     get_database_operation_target_from_statement,
 )
 from newrelic.core.otlp_utils import create_resource
+from newrelic.network.addresses import proxy_details
 
 _logger = logging.getLogger(__name__)
 
@@ -977,7 +978,6 @@ class TracerProvider(otel_api_trace.TracerProvider):
                 }
             )
         except ImportError:
-            from newrelic.core.otlp_utils import create_resource
             self._resource = create_resource(hybrid_bridge=True)
 
     def get_tracer(
@@ -1002,14 +1002,13 @@ class TracerProvider(otel_api_trace.TracerProvider):
 
 def meter_provider_creator(settings):
     try:
+        import requests
         from opentelemetry.sdk.metrics import MeterProvider, Counter, Histogram, ObservableCounter, ObservableGauge, UpDownCounter, ObservableUpDownCounter
         from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader, AggregationTemporality
         from opentelemetry.sdk.metrics.view import ExponentialBucketHistogramAggregation
         from opentelemetry.sdk.resources import Resource
         from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
         from opentelemetry.exporter.otlp.proto.http import Compression
-
-        settings.otlp_resource_attributes["licenseKey"] += "********************************"
 
         if settings.opentelemetry.metrics.export_interval <= settings.opentelemetry.metrics.export_timeout:
             _logger.warning(
@@ -1020,16 +1019,36 @@ def meter_provider_creator(settings):
                 )
             settings.opentelemetry.metrics.export_interval = 60000
             settings.opentelemetry.metrics.export_timeout = 10000
+        elif settings.opentelemetry.metrics.export_interval <= 0 or settings.opentelemetry.metrics.export_timeout <= 0:
+            _logger.warning(
+                "Invalid export settings.  Export interval and export timeout must be positive.  Reverting to "
+                "default values: export_interval=60000 ms and "
+                "export_timeout=10000 ms"
+            )
+            settings.opentelemetry.metrics.export_interval = 60000
+            settings.opentelemetry.metrics.export_timeout = 10000
             
         export_interval = settings.opentelemetry.metrics.export_interval
         export_timeout = settings.opentelemetry.metrics.export_timeout
 
+        proxies = proxy_details(
+            settings.proxy_scheme,
+            settings.proxy_host,
+            settings.proxy_port,
+            settings.proxy_user,
+            settings.proxy_pass,
+        )
+        session = None
+        if proxies:
+            session = requests.Session()
+            session.proxies.update(proxies)
+
         exporter = OTLPMetricExporter(
-            # endpoint=f"https://{settings.otlp_host}:4318/v1/metrics",
             endpoint=f"https://{settings.host}/v1/metrics",
             headers={"api-key": settings.license_key},
             timeout=export_timeout,
             compression=Compression.Gzip,
+            session=session,
             preferred_temporality={
                 Counter: AggregationTemporality.DELTA,
                 ObservableCounter: AggregationTemporality.DELTA,
@@ -1039,7 +1058,6 @@ def meter_provider_creator(settings):
                 ObservableGauge: AggregationTemporality.CUMULATIVE,
             },
             preferred_aggregation={Histogram: ExponentialBucketHistogramAggregation()},
-            max_request_size=1000000,
         )
         reader = PeriodicExportingMetricReader(
             exporter,

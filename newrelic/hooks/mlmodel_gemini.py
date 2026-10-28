@@ -642,10 +642,15 @@ def _record_generation_success(
             if output_message_content:
                 response_completion_tokens = token_count_callback(response_model, output_message_content)
 
-        # Prefer the sum of individual counts as the total whenever both are available.
-        # This ensures consistency in the event that the token counting callback has reported
-        # different values for prompt or completion tokens.
-        if response_prompt_tokens and response_completion_tokens:
+        # Recompute the total from the individual counts when the token counting callback replaced them,
+        # so the three values stay consistent, or when the response did not report a total. Otherwise keep
+        # the total from the response: with thinking enabled it also covers the thoughts tokens, which are
+        # not part of candidates_token_count.
+        if (
+            response_prompt_tokens
+            and response_completion_tokens
+            and (token_count_callback or not response_total_tokens)
+        ):
             response_total_tokens = response_prompt_tokens + response_completion_tokens
 
         all_token_counts = bool(response_prompt_tokens and response_completion_tokens and response_total_tokens)

@@ -58,7 +58,7 @@ def text_generation_events(is_streaming):
                 "response.number_of_messages": 2,
                 "response.usage.completion_tokens": 1,
                 "response.usage.prompt_tokens": 18,
-                "response.usage.total_tokens": 19,
+                "response.usage.total_tokens": None,  # Reported by the API; includes the thoughts tokens, which vary
             },
         ),
         (

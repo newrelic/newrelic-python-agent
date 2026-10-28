@@ -327,4 +327,3 @@ def instrument_meter_api(module):
 
     if hasattr(module, "get_meter_provider"):
         wrap_function_wrapper(module, "get_meter_provider", wrap_get_meter_provider)
-

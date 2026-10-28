@@ -1442,8 +1442,12 @@ _settings.opentelemetry.traces.include = _environ_as_comma_separated_set(
     "NEW_RELIC_OPENTELEMETRY_TRACES_INCLUDE", default=""
 )
 _settings.opentelemetry.metrics.enabled = _environ_as_bool("NEW_RELIC_OPENTELEMETRY_METRICS_ENABLED", default=True)
-_settings.opentelemetry.metrics.export_interval = _environ_as_int("NEW_RELIC_OPENTELEMETRY_METRICS_EXPORT_INTERVAL", default=60000)
-_settings.opentelemetry.metrics.export_timeout = _environ_as_int("NEW_RELIC_OPENTELEMETRY_METRICS_EXPORT_TIMEOUT", default=10000)
+_settings.opentelemetry.metrics.export_interval = _environ_as_int(
+    "NEW_RELIC_OPENTELEMETRY_METRICS_EXPORT_INTERVAL", default=60000
+)
+_settings.opentelemetry.metrics.export_timeout = _environ_as_int(
+    "NEW_RELIC_OPENTELEMETRY_METRICS_EXPORT_TIMEOUT", default=10000
+)
 
 
 def global_settings():
@@ -1765,8 +1769,8 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
 
 
 def _process_opentelemetry_instrumentors(application_settings):
-    from newrelic.core.agent import opentelemetry_tracer_provider, opentelemetry_meter_provider
     from newrelic.config import _is_installed, opentelemetry_entrypoints
+    from newrelic.core.agent import opentelemetry_meter_provider, opentelemetry_tracer_provider
 
     if not application_settings.opentelemetry.enabled or not _is_installed("opentelemetry-api"):
         return
@@ -1778,9 +1782,13 @@ def _process_opentelemetry_instrumentors(application_settings):
             instrumentor_class = entrypoint.load()
             instrumentor = instrumentor_class()
             instrumentor.instrument(tracer_provider=tracer_provider, meter_provider=meter_provider)
-            _logger.debug("Successfully instrumented OpenTelemetry tracer and/or meter '%s' via entry point.", entrypoint.name)
+            _logger.debug(
+                "Successfully instrumented OpenTelemetry tracer and/or meter '%s' via entry point.", entrypoint.name
+            )
         except Exception as exc:
-            _logger.warning("Failed to instrument OpenTelemetry tracer and/or meter '%s' via entry point: %s", entrypoint.name, exc)
+            _logger.warning(
+                "Failed to instrument OpenTelemetry tracer and/or meter '%s' via entry point: %s", entrypoint.name, exc
+            )
 
 
 def finalize_application_settings(server_side_config=None, settings=_settings):

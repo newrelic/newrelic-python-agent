@@ -208,6 +208,7 @@ class Agent:
             if not Agent._tracer_provider:
                 try:
                     from opentelemetry.trace import NoOpTracerProvider
+
                     from newrelic.api.opentelemetry import TracerProvider
 
                     if not settings.opentelemetry.traces.enabled:
@@ -256,7 +257,7 @@ class Agent:
                     )
                     settings.opentelemetry.enabled = False
                     return
-                
+
                 if not settings.opentelemetry.metrics.enabled:
                     # Set this to prevent any potential crashes
                     _logger.debug("OpenTelemetry metrics are disabled.")
@@ -264,6 +265,7 @@ class Agent:
                 else:
                     try:
                         from newrelic.api.opentelemetry import meter_provider_creator
+
                         Agent._meter_provider = meter_provider_creator(settings)
                     except ImportError:
                         _logger.warning(
@@ -273,9 +275,7 @@ class Agent:
                         )
                         Agent._meter_provider = NoOpMeterProvider()
                     except Exception as exc:
-                        _logger.warning(
-                            "Failed to create OpenTelemetry meter provider: %s", exc
-                        )
+                        _logger.warning("Failed to create OpenTelemetry meter provider: %s", exc)
                         Agent._meter_provider = NoOpMeterProvider()
 
         return Agent._meter_provider

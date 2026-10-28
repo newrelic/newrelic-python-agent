@@ -969,12 +969,13 @@ class TracerProvider(otel_api_trace.TracerProvider):
     def __init__(self, settings, *args, **kwargs):
         try:
             from opentelemetry.sdk.resources import Resource
+
             self._resource = Resource.create(
                 attributes={
                     "service.name": settings.app_name,
                     "telemetry.sdk.language": "python",
                     "service.instance.id": str(uuid.uuid4()),
-                    **settings.otlp_resource_attributes
+                    **settings.otlp_resource_attributes,
                 }
             )
         except ImportError:
@@ -1003,12 +1004,20 @@ class TracerProvider(otel_api_trace.TracerProvider):
 def meter_provider_creator(settings):
     try:
         import requests
-        from opentelemetry.sdk.metrics import MeterProvider, Counter, Histogram, ObservableCounter, ObservableGauge, UpDownCounter, ObservableUpDownCounter
-        from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader, AggregationTemporality
+        from opentelemetry.exporter.otlp.proto.http import Compression
+        from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
+        from opentelemetry.sdk.metrics import (
+            Counter,
+            Histogram,
+            MeterProvider,
+            ObservableCounter,
+            ObservableGauge,
+            ObservableUpDownCounter,
+            UpDownCounter,
+        )
+        from opentelemetry.sdk.metrics.export import AggregationTemporality, PeriodicExportingMetricReader
         from opentelemetry.sdk.metrics.view import ExponentialBucketHistogramAggregation
         from opentelemetry.sdk.resources import Resource
-        from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
-        from opentelemetry.exporter.otlp.proto.http import Compression
 
         if settings.opentelemetry.metrics.export_interval <= settings.opentelemetry.metrics.export_timeout:
             _logger.warning(
@@ -1016,7 +1025,7 @@ def meter_provider_creator(settings):
                 "than or equal to export timeout.  Reverting to "
                 "default values: export_interval=60000 ms and "
                 "export_timeout=10000 ms"
-                )
+            )
             settings.opentelemetry.metrics.export_interval = 60000
             settings.opentelemetry.metrics.export_timeout = 10000
         elif settings.opentelemetry.metrics.export_interval <= 0 or settings.opentelemetry.metrics.export_timeout <= 0:
@@ -1027,16 +1036,12 @@ def meter_provider_creator(settings):
             )
             settings.opentelemetry.metrics.export_interval = 60000
             settings.opentelemetry.metrics.export_timeout = 10000
-            
+
         export_interval = settings.opentelemetry.metrics.export_interval
         export_timeout = settings.opentelemetry.metrics.export_timeout
 
         proxies = proxy_details(
-            settings.proxy_scheme,
-            settings.proxy_host,
-            settings.proxy_port,
-            settings.proxy_user,
-            settings.proxy_pass,
+            settings.proxy_scheme, settings.proxy_host, settings.proxy_port, settings.proxy_user, settings.proxy_pass
         )
         session = None
         if proxies:
@@ -1060,9 +1065,7 @@ def meter_provider_creator(settings):
             preferred_aggregation={Histogram: ExponentialBucketHistogramAggregation()},
         )
         reader = PeriodicExportingMetricReader(
-            exporter,
-            export_interval_millis=export_interval,
-            export_timeout_millis=export_timeout
+            exporter, export_interval_millis=export_interval, export_timeout_millis=export_timeout
         )
         resource = Resource.create(
             attributes={
@@ -1072,9 +1075,6 @@ def meter_provider_creator(settings):
                 **settings.otlp_resource_attributes,
             }
         )
-        return MeterProvider(
-            resource=resource,
-            metric_readers=[reader],
-        )
+        return MeterProvider(resource=resource, metric_readers=[reader])
     except Exception:
         raise

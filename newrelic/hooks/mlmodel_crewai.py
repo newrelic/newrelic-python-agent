@@ -274,6 +274,9 @@ def _start_agent_trace(wrapped, agent_name, transaction):
 
 
 def _record_agent_event(transaction, agent_event_dict, ft, error=False):
+    if not agent_event_dict:
+        return
+
     try:
         agent_event_dict["duration"] = ft.duration * 1000
         if error:
@@ -335,7 +338,7 @@ async def wrap_agent_aexecute_task(wrapped, instance, args, kwargs):
 
     try:
         return_val = await wrapped(*args, **kwargs)
-    except Exception:
+    except BaseException:
         ft.notice_error(attributes={"agent_id": agent_id})
         ft.__exit__(*sys.exc_info())
         _record_agent_event(transaction, agent_event_dict, ft, error=True)
@@ -408,7 +411,7 @@ async def wrap_agent_kickoff_async(wrapped, instance, args, kwargs):
 
     try:
         return_val = await wrapped(*args, **kwargs)
-    except Exception:
+    except BaseException:
         ft.notice_error(attributes={"agent_id": agent_id})
         ft.__exit__(*sys.exc_info())
         _record_agent_event(transaction, agent_event_dict, ft, error=True)

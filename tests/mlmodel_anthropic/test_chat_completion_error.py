@@ -34,9 +34,6 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
 from newrelic.api.background_task import background_task
 from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 from newrelic.api.transaction import add_custom_attribute
-from newrelic.common.object_names import callable_name
-
-PY310 = sys.version_info >= (3, 10)
 
 expected_events_on_no_model_error = [
     (
@@ -89,9 +86,7 @@ def missing_model_error(interaction_method, is_async, is_create_method):
     if is_create_method:
         return "Missing required arguments; Expected either ('max_tokens', 'messages' and 'model') or ('max_tokens', 'messages', 'model' and 'stream') arguments to be given"
     else:
-        # On Python 3.10+ the TypeError message includes the class name, but on earlier versions it does not.
-        cls_name = f"{'Async' if is_async else ''}Messages."
-        return f"{cls_name if PY310 else ''}stream() missing 1 required keyword-only argument: 'model'"
+        return f"{'Async' if is_async else ''}Messages.stream() missing 1 required keyword-only argument: 'model'"
 
 
 @dt_enabled

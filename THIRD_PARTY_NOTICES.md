@@ -17,15 +17,6 @@ Distributed under the following license(s):
 * [The BSD 3-Clause License](https://opensource.org/licenses/BSD-3-Clause)
 
 
-## [isort](https://pypi.org/project/isort)
-
-Copyright (c) 2013 Timothy Edmund Crosley
-
-Distributed under the following license(s):
-
-* [The MIT License](http://opensource.org/licenses/MIT)
-
-
 ## [opentelemetry-proto](https://pypi.org/project/opentelemetry-proto)
 
 Copyright (c) The OpenTelemetry Authors

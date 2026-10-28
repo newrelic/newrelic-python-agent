@@ -642,6 +642,7 @@ def _process_configuration(section):
     )
     _process_setting(section, "custom_insights_events.max_attribute_value", "getint", None)
     _process_setting(section, "ml_insights_events.enabled", "getboolean", None)
+    _process_setting(section, "launch_darkly_integration.enabled", "getboolean", None)
     _process_setting(section, "distributed_tracing.enabled", "getboolean", None)
     _process_setting(section, "distributed_tracing.exclude_newrelic_header", "getboolean", None)
     _process_setting(section, "distributed_tracing.sampler.adaptive_sampling_target", "getint", None)
@@ -661,40 +662,6 @@ def _process_configuration(section):
     )
     _process_dt_sampler_setting(
         section, "distributed_tracing.sampler.remote_parent_not_sampled.trace_id_ratio_based.ratio", "getratio"
-    )
-    _process_setting(section, "distributed_tracing.sampler.full_granularity.enabled", "getboolean", None)
-    _process_setting(section, "distributed_tracing.sampler.partial_granularity.enabled", "getboolean", None)
-    _process_setting(section, "distributed_tracing.sampler.partial_granularity.type", "get", None)
-    _process_dt_hidden_setting(section, "distributed_tracing.sampler.partial_granularity.root", "get")
-    _process_dt_sampler_setting(
-        section, "distributed_tracing.sampler.partial_granularity.root.adaptive.sampling_target", "getint"
-    )
-    _process_dt_sampler_setting(
-        section, "distributed_tracing.sampler.partial_granularity.root.trace_id_ratio_based.ratio", "getratio"
-    )
-    _process_dt_hidden_setting(section, "distributed_tracing.sampler.partial_granularity.remote_parent_sampled", "get")
-    _process_dt_sampler_setting(
-        section,
-        "distributed_tracing.sampler.partial_granularity.remote_parent_sampled.adaptive.sampling_target",
-        "getint",
-    )
-    _process_dt_sampler_setting(
-        section,
-        "distributed_tracing.sampler.partial_granularity.remote_parent_sampled.trace_id_ratio_based.ratio",
-        "getratio",
-    )
-    _process_dt_hidden_setting(
-        section, "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled", "get"
-    )
-    _process_dt_sampler_setting(
-        section,
-        "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.adaptive.sampling_target",
-        "getint",
-    )
-    _process_dt_sampler_setting(
-        section,
-        "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.trace_id_ratio_based.ratio",
-        "getratio",
     )
     _process_setting(section, "span_events.enabled", "getboolean", None)
     _process_deprecated_setting(
@@ -2307,6 +2274,9 @@ def _process_module_builtin_defaults():
     _process_module_definition(
         "openai.resources.completions", "newrelic.hooks.mlmodel_openai", "instrument_openai_resources_chat_completions"
     )
+    _process_module_definition(
+        "openai.resources.responses", "newrelic.hooks.mlmodel_openai", "instrument_openai_resources_responses"
+    )
     _process_module_definition("openai._base_client", "newrelic.hooks.mlmodel_openai", "instrument_openai_base_client")
 
     _process_module_definition("google.genai.models", "newrelic.hooks.mlmodel_gemini", "instrument_genai_models")
@@ -3171,6 +3141,36 @@ def _process_module_builtin_defaults():
     _process_module_definition("cherrypy._cptree", "newrelic.hooks.framework_cherrypy", "instrument_cherrypy__cptree")
 
     _process_module_definition(
+        "azure.servicebus._servicebus_sender",
+        "newrelic.hooks.messagebroker_azureservicebus",
+        "instrument_servicebus_sender",
+    )
+    _process_module_definition(
+        "azure.servicebus._servicebus_receiver",
+        "newrelic.hooks.messagebroker_azureservicebus",
+        "instrument_servicebus_receiver",
+    )
+    _process_module_definition(
+        "azure.servicebus._transport._pyamqp_transport",
+        "newrelic.hooks.messagebroker_azureservicebus",
+        "instrument_servicebus_transport_pyamqp_transport",
+    )
+    _process_module_definition(
+        "azure.servicebus._transport._uamqp_transport",
+        "newrelic.hooks.messagebroker_azureservicebus",
+        "instrument_servicebus_transport_uamqp_transport",
+    )
+    _process_module_definition(
+        "azure.servicebus.aio._servicebus_sender_async",
+        "newrelic.hooks.messagebroker_azureservicebus",
+        "instrument_servicebus_sender_async",
+    )
+    _process_module_definition(
+        "azure.servicebus.aio._servicebus_receiver_async",
+        "newrelic.hooks.messagebroker_azureservicebus",
+        "instrument_servicebus_receiver_async",
+    )
+    _process_module_definition(
         "confluent_kafka.cimpl", "newrelic.hooks.messagebroker_confluentkafka", "instrument_confluentkafka_cimpl"
     )
     _process_module_definition(
@@ -3233,6 +3233,11 @@ def _process_module_builtin_defaults():
     )
     _process_module_definition(
         "google.adk.flows.llm_flows._tool_caller",
+        "newrelic.hooks.mlmodel_googleadk",
+        "instrument_googleadk_flows_llm_flows__tool_caller",
+    )
+    _process_module_definition(
+        "google.adk.flows.llm_flows.tools._caller",
         "newrelic.hooks.mlmodel_googleadk",
         "instrument_googleadk_flows_llm_flows__tool_caller",
     )
@@ -4557,6 +4562,10 @@ def _process_module_builtin_defaults():
         "opentelemetry.instrumentation.pika.utils", "newrelic.hooks.hybridagent_opentelemetry", "instrument_pika_utils"
     )
 
+    _process_module_definition("ldclient.config", "newrelic.hooks.observability_ldclient", "instrument_ldclient_config")
+    _process_module_definition("ldclient.client", "newrelic.hooks.observability_ldclient", "instrument_ldclient_client")
+    _process_module_definition("ldobserve", "newrelic.hooks.observability_ldclient", "instrument_ldobserve")
+
     _process_module_definition(
         "azure.cosmos.cosmos_client", "newrelic.hooks.datastore_azurecosmos", "instrument_cosmos_client"
     )
@@ -4592,13 +4601,7 @@ def _process_module_entry_points():
     from importlib.metadata import entry_points
 
     group = "newrelic.hooks"
-
-    try:
-        # group kwarg was only added to importlib.metadata.entry_points in Python 3.10.
-        _entry_points = entry_points(group=group)
-    except TypeError:
-        # Grab entire entry_points dictionary and select group from it.
-        _entry_points = entry_points().get(group, ())
+    _entry_points = entry_points(group=group)
 
     for entrypoint in _entry_points:
         target = entrypoint.name
@@ -4662,13 +4665,7 @@ def _process_opentelemetry_instrumentation_entry_points():
     from importlib.metadata import entry_points
 
     group = "opentelemetry_instrumentor"
-
-    try:
-        # group kwarg was only added to importlib.metadata.entry_points in Python 3.10.
-        _entry_points = entry_points(group=group)
-    except TypeError:
-        # Grab entire entry_points dictionary and select group from it.
-        _entry_points = entry_points().get(group, ())
+    _entry_points = entry_points(group=group)
 
     entry_points_generator = (
         entrypoint
@@ -4745,13 +4742,7 @@ def _setup_extensions():
     from importlib.metadata import entry_points
 
     group = "newrelic.extension"
-
-    try:
-        # group kwarg was only added to importlib.metadata.entry_points in Python 3.10.
-        _entry_points = entry_points(group=group)
-    except TypeError:
-        # Grab entire entry_points dictionary and select group from it.
-        _entry_points = entry_points().get(group, ())
+    _entry_points = entry_points(group=group)
 
     for entrypoint in _entry_points:
         __import__(entrypoint.module_name)

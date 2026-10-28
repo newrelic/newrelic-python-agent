@@ -160,6 +160,7 @@ async def wrap__execute_single_prepared_call(wrapped, instance, args, kwargs):
     transaction.add_ml_model_info("GoogleADK", GOOGLEADK_VERSION)
     transaction._add_agent_attribute("llm", True)
 
+    tool_name = "tool"
     run_id = ""
     tool_input = None
     agent_name = "agent"

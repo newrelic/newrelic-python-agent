@@ -6,6 +6,8 @@ import random
 import re
 import time
 import typing
+import warnings
+from collections.abc import Collection
 from itertools import takewhile
 from types import TracebackType
 
@@ -157,6 +159,14 @@ class Retry:
 
         By default, backoff is disabled (factor set to 0).
 
+    :param float backoff_max:
+        The maximum backoff time (in seconds) between retry attempts.
+        This value caps the computed backoff from `backoff_factor`.
+
+    :param float backoff_jitter:
+        Random jitter amount (in seconds) added to the computed backoff.
+        Jitter is sampled uniformly from `0` to `backoff_jitter`.
+
     :param bool raise_on_redirect: Whether, if the number of redirects is
         exhausted, to raise a MaxRetryError, or to return a response with a
         response code in the 3xx range.
@@ -190,7 +200,8 @@ class Retry:
         ["HEAD", "GET", "PUT", "DELETE", "OPTIONS", "TRACE"]
     )
 
-    #: Default status codes to be used for ``status_forcelist``
+    #: Default status codes that trigger a retry when a Retry-After header is
+    #: present and ``respect_retry_after_header`` is enabled.
     RETRY_AFTER_STATUS_CODES = frozenset([413, 429, 503])
 
     #: Default headers to be used for ``remove_headers_on_redirect``
@@ -242,6 +253,15 @@ class Retry:
 
         self.redirect = redirect
         self.status_forcelist = status_forcelist or set()
+        if not allowed_methods and isinstance(allowed_methods, Collection):
+            warnings.warn(
+                "Using an empty collection for 'allowed_methods' option to "
+                "retry on any verb is deprecated and will skip retries for "
+                "all verbs in urllib3 v3.0. Instead use "
+                "Retry(..., allowed_methods=None).",
+                FutureWarning,
+                stacklevel=2,
+            )
         self.allowed_methods = allowed_methods
         self.backoff_factor = backoff_factor
         self.backoff_max = backoff_max

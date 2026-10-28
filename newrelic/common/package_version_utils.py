@@ -103,11 +103,10 @@ def _get_package_version(name):
             except Exception:
                 pass
 
-    # In Python 3.10+ packages_distribution can be checked as well.
     try:
         # Cached lookup for packages_distributions() to avoid scanning the filesystem
         # every time we need to check a package verison.
-        if not _packages_distributions and hasattr(importlib_metadata, "packages_distributions"):
+        if not _packages_distributions:
             _packages_distributions = importlib_metadata.packages_distributions()
 
         # Try to grab the package's distribution name, and fallback to just the package name if we can't find it.

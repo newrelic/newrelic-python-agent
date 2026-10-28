@@ -75,7 +75,7 @@ def test_lambda(iam_role_arn, lambda_zip):
 
     # Create lambda
     resp = client.create_function(
-        FunctionName="lambdaFunction", Runtime="python3.9", Role=role_arn, Code={"ZipFile": lambda_zip}
+        FunctionName="lambdaFunction", Runtime="python3.12", Role=role_arn, Code={"ZipFile": lambda_zip}
     )
     assert resp["ResponseMetadata"]["HTTPStatusCode"] == 201
 

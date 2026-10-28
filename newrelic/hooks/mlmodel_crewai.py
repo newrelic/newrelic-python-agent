@@ -17,6 +17,7 @@ import json
 import logging
 import sys
 import uuid
+from collections.abc import Mapping
 
 from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.time_trace import current_trace, get_trace_linking_metadata
@@ -422,11 +423,33 @@ async def wrap_agent_kickoff_async(wrapped, instance, args, kwargs):
     return return_val
 
 
+class _NRCrewKickoffInputs(dict):
+    """Inputs dict carrying the caller's trace from Crew.kickoff_async() to its threaded Crew.kickoff()."""
+
+    __slots__ = ("_nr_trace",)
+
+    def __bool__(self):
+        # Always return truthy so it isn't replaced if `or {}` is called when empty.
+        return True
+
+
 def wrap_crew_kickoff(wrapped, instance, args, kwargs):
-    # Picks up the trace kickoff_async() stashed before handing this
+    # Picks up the trace kickoff_async() attached to the inputs before handing this
     # call to another thread.
-    trace = instance.__dict__.pop("_nr_crew_kickoff_trace", None)
-    if trace:
+    trace = None
+    try:
+        bound_args = bind_args(wrapped, args, kwargs)
+        inputs = bound_args["inputs"]
+        if type(inputs) is _NRCrewKickoffInputs:
+            trace = getattr(inputs, "_nr_trace", None)
+            bound_args["inputs"] = dict(inputs)
+            args, kwargs = (), bound_args
+    except Exception:
+        _logger.debug(CONTEXT_PROPAGATION_FAILURE_LOG_MESSAGE, exc_info=True)
+
+    # A streaming kickoff_async() runs this only when its output is iterated, which may be after
+    # the caller's trace has closed
+    if trace and not trace.exited:
         with ContextOf(trace=trace):
             return wrapped(*args, **kwargs)
 
@@ -439,23 +462,19 @@ async def wrap_crew_kickoff_async(wrapped, instance, args, kwargs):
     if not trace:
         return await wrapped(*args, **kwargs)
 
-    previous_trace = None
-    stashed = False
     try:
-        previous_trace = instance.__dict__.get("_nr_crew_kickoff_trace")
-        instance.__dict__["_nr_crew_kickoff_trace"] = trace
-        stashed = True
+        bound_args = bind_args(wrapped, args, kwargs)
+        inputs = bound_args["inputs"] or {}
+        if isinstance(inputs, Mapping):
+            # Re-wrapping an existing _NRCrewKickoffInputs still yields a new one.
+            trace_carrier = _NRCrewKickoffInputs(inputs)
+            trace_carrier._nr_trace = trace
+            bound_args["inputs"] = trace_carrier
+            args, kwargs = (), bound_args
     except Exception:
         _logger.debug(CONTEXT_PROPAGATION_FAILURE_LOG_MESSAGE, exc_info=True)
 
-    try:
-        return await wrapped(*args, **kwargs)
-    finally:
-        if stashed:
-            if previous_trace is None:
-                instance.__dict__.pop("_nr_crew_kickoff_trace", None)
-            else:
-                instance.__dict__["_nr_crew_kickoff_trace"] = previous_trace
+    return await wrapped(*args, **kwargs)
 
 
 def instrument_crewai_flow_flow(module):

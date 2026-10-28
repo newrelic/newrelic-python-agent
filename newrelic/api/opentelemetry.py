@@ -1030,9 +1030,8 @@ def meter_provider_creator(settings):
             settings.opentelemetry.metrics.export_timeout = 10000
         elif settings.opentelemetry.metrics.export_interval <= 0 or settings.opentelemetry.metrics.export_timeout <= 0:
             _logger.warning(
-                "Invalid export settings.  Export interval and export timeout must be positive.  Reverting to "
-                "default values: export_interval=60000 ms and "
-                "export_timeout=10000 ms"
+                "Invalid export settings.  Export interval and export timeout must be positive. "
+                "Reverting to default values: export_interval=60000 ms and export_timeout=10000 ms"
             )
             settings.opentelemetry.metrics.export_interval = 60000
             settings.opentelemetry.metrics.export_timeout = 10000

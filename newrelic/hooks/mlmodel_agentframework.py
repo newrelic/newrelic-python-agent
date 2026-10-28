@@ -275,7 +275,6 @@ def _record_tool_event(
             "name": tool_name,
             "span_id": linking_metadata.get("span.id"),
             "trace_id": linking_metadata.get("trace.id"),
-            "agent_name": agent_name,
             "vendor": "agentframework",
             "ingest_source": "Python",
             "duration": ft.duration * 1000,

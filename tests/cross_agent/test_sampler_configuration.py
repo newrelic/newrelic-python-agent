@@ -42,7 +42,7 @@ except:
     AttributeValue = None
     Span = None
 
-from testing_support.mock_external_http_server import MockExternalHTTPHResponseHeadersServer
+from testing_support.mock_external_http_server import MockExternalHTTPResponseHeadersServer
 from testing_support.validators.validate_span_events import check_value_equals, validate_span_events
 
 from newrelic.api.application import application_instance

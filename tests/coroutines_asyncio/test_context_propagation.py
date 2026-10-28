@@ -219,12 +219,8 @@ def test_two_transactions_with_global_event_loop(event_loop, trace):
 
         done.set()
 
-    if sys.version_info >= (3, 10, 0):
-        afut = asyncio.ensure_future(create_coro(), loop=event_loop)
-        bfut = asyncio.ensure_future(await_task(), loop=event_loop)
-    else:
-        afut = asyncio.ensure_future(create_coro())
-        bfut = asyncio.ensure_future(await_task())
+    afut = asyncio.ensure_future(create_coro(), loop=event_loop)
+    bfut = asyncio.ensure_future(await_task(), loop=event_loop)
 
     event_loop.run_until_complete(asyncio.gather(afut, bfut))
 

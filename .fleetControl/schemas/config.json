@@ -272,10 +272,6 @@
     "browser_monitoring.ssl_for_http": {
       "type": "boolean"
     },
-    "browser_monitoring.version": {
-      "type": "string",
-      "default": ""
-    },
     "ca_bundle_path": {
       "type": "string"
     },
@@ -356,36 +352,6 @@
     "distributed_tracing.sampler.adaptive_sampling_target": {
       "type": "integer",
       "default": 10
-    },
-    "distributed_tracing.sampler.full_granularity.enabled": {
-      "type": "boolean",
-      "default": true
-    },
-    "distributed_tracing.sampler.partial_granularity.enabled": {
-      "type": "boolean",
-      "default": false
-    },
-    "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.adaptive.sampling_target": {
-      "type": "integer"
-    },
-    "distributed_tracing.sampler.partial_granularity.remote_parent_not_sampled.trace_id_ratio_based.ratio": {
-      "type": "number"
-    },
-    "distributed_tracing.sampler.partial_granularity.remote_parent_sampled.adaptive.sampling_target": {
-      "type": "integer"
-    },
-    "distributed_tracing.sampler.partial_granularity.remote_parent_sampled.trace_id_ratio_based.ratio": {
-      "type": "number"
-    },
-    "distributed_tracing.sampler.partial_granularity.root.adaptive.sampling_target": {
-      "type": "integer"
-    },
-    "distributed_tracing.sampler.partial_granularity.root.trace_id_ratio_based.ratio": {
-      "type": "number"
-    },
-    "distributed_tracing.sampler.partial_granularity.type": {
-      "type": "string",
-      "default": "essential"
     },
     "distributed_tracing.sampler.remote_parent_not_sampled.adaptive.sampling_target": {
       "type": "integer"
@@ -653,6 +619,10 @@
     },
     "labels": {
       "type": "string"
+    },
+    "launch_darkly_integration.enabled": {
+      "type": "boolean",
+      "default": false
     },
     "linked_applications": {
       "type": "array",
@@ -1105,6 +1075,10 @@
       "description": "New Relic license key associated with your account. Binds the agent's data to your account in the New Relic UI.",
       "minLength": 1,
       "writeOnly": true
+    },
+    "browser_monitoring.version": {
+      "type": "string",
+      "default": ""
     }
   },
   "required": [

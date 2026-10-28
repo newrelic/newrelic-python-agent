@@ -15,7 +15,7 @@
 configurationDefinitions:
   - platform: KUBERNETESCLUSTER
     type: AgentConfig
-    version: 1.0.1
+    version: 2.0.0
     schema: ./schemas/config.json
     format: ini
     bindings:

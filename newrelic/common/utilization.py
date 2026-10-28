@@ -268,7 +268,7 @@ class AzureFunctionUtilization(CommonUtilization):
             return
 
         values = {}
-        for k, v in zip(cls.EXPECTED_KEYS, response):
+        for k, v in zip(cls.EXPECTED_KEYS, response, strict=True):
             if hasattr(v, "decode"):
                 v = v.decode("utf-8")
             values[k] = v
@@ -362,7 +362,7 @@ class PCFUtilization(CommonUtilization):
             return
 
         values = {}
-        for k, v in zip(cls.EXPECTED_KEYS, response):
+        for k, v in zip(cls.EXPECTED_KEYS, response, strict=True):
             if hasattr(v, "decode"):
                 v = v.decode("utf-8")
             values[k] = v

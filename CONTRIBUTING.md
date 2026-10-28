@@ -173,7 +173,7 @@ See the [uv installation docs](https://docs.astral.sh/uv/getting-started/install
 Install all Python versions used by the test suite:
 
 ```bash
-uv python install cp3.14 cp3.13 cp3.12 cp3.11 cp3.10 cp3.9 pp3.11 pp3.10 cp3.14t
+uv python install cp3.14 cp3.13 cp3.12 cp3.11 cp3.10 pp3.11 pp3.10 cp3.14t
 ```
 
 - `cp3.X` - CPython 3.X

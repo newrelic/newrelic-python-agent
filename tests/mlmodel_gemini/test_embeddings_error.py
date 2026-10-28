@@ -54,10 +54,7 @@ embedding_recorded_events = [
 @pytest.fixture(scope="session")
 def model_error_msg(is_async):
     class_name = "AsyncModels" if is_async else "Models"
-    if sys.version_info < (3, 10):
-        return "embed_content() missing 1 required keyword-only argument: 'model'"
-    else:
-        return f"{class_name}.embed_content() missing 1 required keyword-only argument: 'model'"
+    return f"{class_name}.embed_content() missing 1 required keyword-only argument: 'model'"
 
 
 def test_embeddings_invalid_request_error_no_model(exercise_embedding_model, set_trace_info, model_error_msg):

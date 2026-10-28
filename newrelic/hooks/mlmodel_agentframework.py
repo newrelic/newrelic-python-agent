@@ -25,7 +25,6 @@ from newrelic.common.llm_utils import _get_llm_metadata
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
-from newrelic.core.config import global_settings
 from newrelic.core.context import ContextOf
 
 _logger = logging.getLogger(__name__)
@@ -46,8 +45,8 @@ def wrap_Agent_run(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    settings = transaction.settings or global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = transaction.settings
+    if not settings or not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
     transaction.add_ml_model_info("MicrosoftAgentFramework", AGENT_FRAMEWORK_VERSION)
@@ -184,8 +183,8 @@ async def wrap_FunctionTool_invoke(wrapped, instance, args, kwargs):
     if not transaction:
         return await wrapped(*args, **kwargs)
 
-    settings = transaction.settings or global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = transaction.settings
+    if not settings or not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
     transaction.add_ml_model_info("MicrosoftAgentFramework", AGENT_FRAMEWORK_VERSION)
@@ -268,7 +267,7 @@ def _record_tool_event(
     if not transaction:
         return
     try:
-        settings = transaction.settings or global_settings()
+        settings = transaction.settings
 
         tool_event_dict = {
             "id": tool_id,
@@ -286,7 +285,7 @@ def _record_tool_event(
         if agent_name:
             tool_event_dict["agent_name"] = agent_name
 
-        if settings.ai_monitoring.record_content.enabled:
+        if settings and settings.ai_monitoring.record_content.enabled:
             tool_event_dict["input"] = str(tool_input) if tool_input else None
             tool_event_dict["output"] = str(tool_output) if tool_output else None
 

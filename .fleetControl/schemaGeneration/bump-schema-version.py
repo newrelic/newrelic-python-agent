@@ -23,8 +23,14 @@ Splits the bump responsibility out of generate-schema.py so the
 per-push regen workflow doesn't churn the version on every PR.
 
 Run standalone:
-  python3 bump-schema-version.py --since=v10.21.0           # dry-run
+  python3 bump-schema-version.py --since=v10.21.0           # dry-run / validate
   python3 bump-schema-version.py --since=v10.21.0 --ci      # apply
+
+The dry-run never writes. It computes the required minimum version as
+(version at the --since ref) + (bump implied by the schema diff) and fails
+if the version in configurationDefinitions.yml is lower. Because it anchors
+on the historical version, it passes once the bump has been applied, so the
+deploy workflow uses it to gate a release before anything is published.
 
 Bootstrap case:
   If the given ref predates .fleetControl/ entirely, OR predates the
@@ -35,7 +41,7 @@ Bootstrap case:
 
 Exit codes:
   0 -- no bump needed (no schema diff, or bootstrap case)
-  1 -- bump applied (--ci) or recommended (without --ci)
+  1 -- bump applied (--ci), or still required (without --ci)
   2 -- hard failure (missing args, malformed inputs, git invocation failed)
 """
 
@@ -54,7 +60,16 @@ CONFIG_DEF_PATH = FLEET_CONTROL_DIR / "configurationDefinitions.yml"
 
 # Reuse the diff helpers and version-bump rewriter from the shared module.
 sys.path.insert(0, str(SCRIPT_DIR))
-from schema_diff import NO_BUMP, apply_bump, bump_version, classify_changes, print_changes, recommend_bump  # noqa: E402
+from schema_diff import (  # noqa: E402
+    NO_BUMP,
+    apply_bump,
+    bump_version,
+    classify_changes,
+    parse_semver,
+    parse_version,
+    print_changes,
+    recommend_bump,
+)
 
 # Path inside the repo (POSIX, since git uses forward slashes regardless
 # of platform). Used when invoking `git show <ref>:<path>`.
@@ -166,25 +181,34 @@ def main(argv=None):
 
     bump = recommend_bump(changes)
 
-    # Step 6: apply (or dry-run print) the bump against the *current*
-    # configurationDefinitions.yml -- not the historical one. The
-    # historical doc is only the source of the diff baseline.
-    old_v, new_v = bump_version(CONFIG_DEF_PATH, bump, args.ci)
-
     if bump == NO_BUMP:
-        print(f"\nNo bump needed (current version: {old_v}).")
+        current = parse_version(CONFIG_DEF_PATH.read_text(encoding="utf-8"))
+        print(f"\nNo bump needed (current version: {current}).")
         return 0
 
     if args.ci:
+        # Step 6a: Apply the bump against the *current* configurationDefinitions.yml
+        # -- not the historical one. The historical doc is only the source
+        # of the diff baseline.
+        old_v, new_v = bump_version(CONFIG_DEF_PATH, bump, True)
         if new_v == old_v:
             # The bump != NO_BUMP but the version was already at the bumped value (manual edit).
             print(f"\nRecommended bump: {bump}, but {old_v} already reflects it. No write.")
             return 0
         print(f"\nApplied bump: {bump} ({old_v} -> {new_v})")
         print(f"Wrote: {CONFIG_DEF_PATH}")
-    else:
-        print(f"\nRecommended bump: {bump} ({old_v} -> {apply_bump(old_v, bump)}). Re-run with --ci to apply.")
+        return 1
 
+    # Step 6b: For dry-run, validate against the version at the baseline ref, so a version
+    # that was already bumped (e.g. the bump PR has merged) passes.
+    required = apply_bump(parse_version(historical_def), bump)
+    current = parse_version(CONFIG_DEF_PATH.read_text(encoding="utf-8"))
+    if parse_semver(current) >= parse_semver(required):
+        print(f"\nOK: version {current} satisfies the required minimum {required} (bump: {bump}).")
+        return 0
+    print(
+        f"\nRecommended bump: {bump} ({current} is below the required minimum {required}). Re-run with --ci to apply."
+    )
     return 1
 
 

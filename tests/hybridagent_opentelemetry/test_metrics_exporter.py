@@ -80,7 +80,6 @@ def test_meter_exporter_interval_and_timeout(
         provider = meter_provider_creator(settings)
         metric_reader = provider._metric_readers[-1]
 
-        # breakpoint()
         metric_reader._export_interval_millis = expected_interval
         metric_reader._export_timeout_millis = expected_timeout
 

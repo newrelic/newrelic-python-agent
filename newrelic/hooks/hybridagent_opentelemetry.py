@@ -140,7 +140,7 @@ def wrap_get_current_span(wrapped, instance, args, kwargs):
     application = application_instance(activate=False)
     settings = getattr(application, "settings", None) or global_settings()
 
-    if settings and not settings.opentelemetry.enabled:
+    if settings and not (settings.opentelemetry.enabled and settings.opentelemetry.traces.enabled):
         return span
 
     # If a NR trace does exist, check to see if the current

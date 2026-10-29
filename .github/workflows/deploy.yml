@@ -23,7 +23,34 @@ permissions:
   contents: read
 
 jobs:
+  validate-schema-version:
+    name: Validate agent config schema version
+    runs-on: ubuntu-24.04
+    # Runs before anything is built or published. The Fleet Control backend
+    # rejects metadata whose schema changed without a version bump, but that
+    # happens in update-agent-metadata, after PyPI is already published.
+    # The schema itself is still only registered after publish succeeds.
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # 7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # 7.1.0
+        with:
+          python-version: "3.13"
+
+      - name: Check schema version was bumped since previous release
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          prev=$(git describe --tags --abbrev=0 --match='v*' "${RELEASE_TAG}^")
+          echo "Comparing against previous release tag: ${prev}"
+          python3 .fleetControl/schemaGeneration/bump-schema-version.py --since="${prev}"
+
   build-wheels:
+    needs: validate-schema-version
     strategy:
       fail-fast: false
       matrix:
@@ -110,6 +137,7 @@ jobs:
 
   build-sdist:
     name: Build sdist
+    needs: validate-schema-version
     runs-on: ubuntu-24.04
 
     steps:
@@ -156,6 +184,7 @@ jobs:
       attestations: write
       artifact-metadata: write
     needs:
+      - validate-schema-version
       - build-wheels
       - build-sdist
 

@@ -48,9 +48,9 @@ ALL_ATTR_NAMES = {
 }
 
 
-def series_context(environment_id=None, context=None):
+def series_context(environment_id=None, context=None, flag_key=FLAG_KEY):
     return EvaluationSeriesContext(
-        key=FLAG_KEY,
+        key=flag_key,
         context=context or Context.create(CONTEXT_KEY),
         default_value=False,
         method="variation",
@@ -234,6 +234,74 @@ def test_environment_id_direct_link(base_uri, expected_base):
     def _test():
         exercise_hook(
             series_context(environment_id=ENVIRONMENT_ID),
+            EvaluationDetail(value=True, variation_index=0, reason={"kind": "FALLTHROUGH"}),
+            base_uri=base_uri,
+        )
+
+    _test()
+
+
+@pytest.mark.parametrize(
+    "base_uri,flag_key,environment_id,expected_url",
+    [
+        pytest.param(
+            None,
+            "my/flag",
+            "env-1234",
+            "https://app.launchdarkly.com/goto/flags/my%2Fflag?envId=env-1234",
+            id="slash_in_flag_key",
+        ),
+        pytest.param(
+            None,
+            "my flag",
+            "env-1234",
+            "https://app.launchdarkly.com/goto/flags/my%20flag?envId=env-1234",
+            id="space_in_flag_key",
+        ),
+        pytest.param(
+            None,
+            "flag?x=1#frag",
+            "env-1234",
+            "https://app.launchdarkly.com/goto/flags/flag%3Fx%3D1%23frag?envId=env-1234",
+            id="query_chars_in_flag_key",
+        ),
+        pytest.param(
+            None,
+            "my-flag",
+            "env&x=1#a",
+            "https://app.launchdarkly.com/goto/flags/my-flag?envId=env%26x%3D1%23a",
+            id="special_chars_in_environment_id",
+        ),
+        pytest.param(
+            None,
+            "plain-flag_1.0",
+            "env-1234",
+            "https://app.launchdarkly.com/goto/flags/plain-flag_1.0?envId=env-1234",
+            id="safe_chars_unchanged",
+        ),
+        pytest.param(
+            "https://ld.example.com/prefix/",
+            "my/flag",
+            "env-1234",
+            "https://ld.example.com/prefix/goto/flags/my%2Fflag?envId=env-1234",
+            id="base_uri_path_prefix",
+        ),
+    ],
+)
+def test_url_components_escaped(base_uri, flag_key, environment_id, expected_url):
+    @validate_span_events(
+        count=1,
+        exact_users={
+            "feature_flag.key": flag_key,
+            "feature_flag.set.id": environment_id,
+            "feature_flag.url.full": expected_url,
+        },
+    )
+    @dt_enabled
+    @background_task()
+    def _test():
+        exercise_hook(
+            series_context(environment_id=environment_id, flag_key=flag_key),
             EvaluationDetail(value=True, variation_index=0, reason={"kind": "FALLTHROUGH"}),
             base_uri=base_uri,
         )

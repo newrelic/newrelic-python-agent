@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import logging
+from functools import lru_cache
+from urllib.parse import quote, urlencode, urlsplit, urlunsplit
 
 from newrelic.api.time_trace import current_trace
 from newrelic.common.object_wrapper import wrap_function_wrapper
@@ -43,6 +45,15 @@ def _NewRelicHook(*args, **kwargs):
         def __init__(self, *args, base_uri=DEFAULT_BASE_URI, **kwargs):
             self._base_uri = (base_uri or DEFAULT_BASE_URI).rstrip("/")
             super().__init__(*args, **kwargs)
+
+        @staticmethod
+        @lru_cache(maxsize=1024)
+        def _flag_url(base_uri, flag_key, environment_id):
+            """Build a Launch Darkly flag deep link with every component percent-encoded."""
+            base = urlsplit(base_uri)
+            path = f"{base.path}/goto/flags/{quote(flag_key, safe='')}"
+            query = urlencode({"envId": environment_id})
+            return urlunsplit((base.scheme, base.netloc, path, query, ""))
 
         @property
         def metadata(self) -> Metadata:
@@ -77,9 +88,7 @@ def _NewRelicHook(*args, **kwargs):
                 if environment_id and isinstance(environment_id, str):  # if non-empty string
                     attrs["feature_flag.set.id"] = environment_id
                     # Direct linking is only possible if we have the environment_id attribute available
-                    attrs["feature_flag.url.full"] = (
-                        f"{self._base_uri}/goto/flags/{series_context.key}?envId={environment_id}"
-                    )
+                    attrs["feature_flag.url.full"] = self._flag_url(self._base_uri, series_context.key, environment_id)
 
                 for key, value in attrs.items():
                     trace.add_custom_attribute(key, value)

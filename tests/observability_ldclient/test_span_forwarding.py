@@ -183,13 +183,12 @@ def test_remote_parent_span_applied(ld_spans):
 @pytest.mark.parametrize(
     "settings",
     [
-        {"launch_darkly_integration.enabled": False},
-        {"opentelemetry.enabled": False},
-        {"distributed_tracing.enabled": False},
-        {"span_events.enabled": False},
-        {"collect_span_events": False},
+        pytest.param({"launch_darkly_integration.enabled": False}, id="launch_darkly_disabled"),
+        pytest.param({"opentelemetry.enabled": False}, id="opentelemetry_disabled"),
+        pytest.param({"distributed_tracing.enabled": False}, id="dt_disabled"),
+        pytest.param({"span_events.enabled": False}, id="span_events_disabled"),
+        pytest.param({"collect_span_events": False}, id="collect_disabled"),
     ],
-    ids=["launch_darkly_disabled", "opentelemetry_disabled", "dt_disabled", "span_events_disabled", "collect_disabled"],
 )
 def test_forwarding_disabled(ld_spans, settings):
     @dt_enabled
@@ -238,8 +237,12 @@ def test_attribute_precedence(ld_spans):
 
 @pytest.mark.parametrize(
     "add_links,add_events",
-    [(False, False), (True, False), (False, True), (True, True)],
-    ids=["plain", "links", "events", "links_and_events"],
+    [
+        pytest.param(False, False, id="plain"),
+        pytest.param(True, False, id="links"),
+        pytest.param(False, True, id="events"),
+        pytest.param(True, True, id="links_and_events"),
+    ],
 )
 @dt_enabled
 def test_span_link_and_event_shapes(ld_spans, add_links, add_events):
@@ -275,10 +278,12 @@ def test_span_link_and_event_shapes(ld_spans, add_links, add_events):
 @pytest.mark.parametrize(
     "unavailable",
     [
-        lambda monkeypatch: monkeypatch.setitem(sys.modules, "ldobserve", None),
-        lambda monkeypatch: monkeypatch.setattr(sys.modules["ldobserve.observe"], "_instance", None),
+        pytest.param(lambda monkeypatch: monkeypatch.setitem(sys.modules, "ldobserve", None), id="not_installed"),
+        pytest.param(
+            lambda monkeypatch: monkeypatch.setattr(sys.modules["ldobserve.observe"], "_instance", None),
+            id="not_registered",
+        ),
     ],
-    ids=["not_installed", "not_registered"],
 )
 def test_ldobserve_unavailable_warns_once(ld_spans, monkeypatch, caplog, unavailable):
     unavailable(monkeypatch)

@@ -53,8 +53,13 @@ def nr_hooks(config):
 
 @pytest.mark.parametrize(
     "make_hooks",
-    [lambda hooks: None, lambda hooks: [], list, tuple, lambda hooks: (hook for hook in hooks)],
-    ids=["none", "empty", "list", "tuple", "generator"],
+    [
+        pytest.param(lambda hooks: None, id="none"),
+        pytest.param(lambda hooks: [], id="empty"),
+        pytest.param(list, id="list"),
+        pytest.param(tuple, id="tuple"),
+        pytest.param(lambda hooks: (hook for hook in hooks), id="generator"),
+    ],
 )
 def test_nr_hook_appended(make_hooks):
     user_hooks = [UserHook("first"), UserHook("second")]
@@ -80,12 +85,13 @@ def test_user_hooks_list_not_mutated():
 @pytest.mark.parametrize(
     "args,kwargs,expected_base_uri",
     [
-        ((FAKE_SDK_KEY,), {}, DEFAULT_BASE_URI),
-        ((FAKE_SDK_KEY, CUSTOM_BASE_URI), {}, CUSTOM_BASE_URI),
-        ((), {"sdk_key": FAKE_SDK_KEY}, DEFAULT_BASE_URI),
-        ((), {"sdk_key": FAKE_SDK_KEY, "base_uri": f"{CUSTOM_BASE_URI}/"}, CUSTOM_BASE_URI),
+        pytest.param((FAKE_SDK_KEY,), {}, DEFAULT_BASE_URI, id="positional"),
+        pytest.param((FAKE_SDK_KEY, CUSTOM_BASE_URI), {}, CUSTOM_BASE_URI, id="positional_base_uri"),
+        pytest.param((), {"sdk_key": FAKE_SDK_KEY}, DEFAULT_BASE_URI, id="keyword"),
+        pytest.param(
+            (), {"sdk_key": FAKE_SDK_KEY, "base_uri": f"{CUSTOM_BASE_URI}/"}, CUSTOM_BASE_URI, id="keyword_base_uri"
+        ),
     ],
-    ids=["positional", "positional_base_uri", "keyword", "keyword_base_uri"],
 )
 def test_arguments_preserved_when_enabled(args, kwargs, expected_base_uri):
     user_hook = UserHook("user")
@@ -101,12 +107,13 @@ def test_arguments_preserved_when_enabled(args, kwargs, expected_base_uri):
 @pytest.mark.parametrize(
     "args,kwargs,expected_base_uri",
     [
-        ((FAKE_SDK_KEY,), {}, DEFAULT_BASE_URI),
-        ((FAKE_SDK_KEY, CUSTOM_BASE_URI), {}, CUSTOM_BASE_URI),
-        ((), {"sdk_key": FAKE_SDK_KEY}, DEFAULT_BASE_URI),
-        ((), {"sdk_key": FAKE_SDK_KEY, "base_uri": CUSTOM_BASE_URI}, CUSTOM_BASE_URI),
+        pytest.param((FAKE_SDK_KEY,), {}, DEFAULT_BASE_URI, id="positional"),
+        pytest.param((FAKE_SDK_KEY, CUSTOM_BASE_URI), {}, CUSTOM_BASE_URI, id="positional_base_uri"),
+        pytest.param((), {"sdk_key": FAKE_SDK_KEY}, DEFAULT_BASE_URI, id="keyword"),
+        pytest.param(
+            (), {"sdk_key": FAKE_SDK_KEY, "base_uri": CUSTOM_BASE_URI}, CUSTOM_BASE_URI, id="keyword_base_uri"
+        ),
     ],
-    ids=["positional", "positional_base_uri", "keyword", "keyword_base_uri"],
 )
 @launch_darkly_disabled
 def test_arguments_preserved_when_disabled(args, kwargs, expected_base_uri):

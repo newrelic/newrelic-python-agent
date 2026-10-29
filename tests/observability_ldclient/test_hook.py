@@ -68,7 +68,9 @@ def exercise_hook(series_context, detail, base_uri=None):
     return result
 
 
-@pytest.mark.parametrize("in_transaction", [True, False], ids=("in_transaction", "outside_transaction"))
+@pytest.mark.parametrize(
+    "in_transaction", [pytest.param(True, id="in_transaction"), pytest.param(False, id="outside_transaction")]
+)
 def test_hook_input_data_unmodified(in_transaction):
     original_data = {"some": "data"}
     data = original_data.copy()
@@ -142,7 +144,7 @@ def test_all_attributes_none():
     exercise_hook(series_context(environment_id=None), EvaluationDetail(value=None, variation_index=None, reason=None))
 
 
-@pytest.mark.parametrize("reason", [{}, None], ids=["empty", "none"])
+@pytest.mark.parametrize("reason", [pytest.param({}, id="empty"), pytest.param(None, id="none")])
 @dt_enabled
 @validate_span_events(
     count=1,
@@ -167,8 +169,11 @@ def test_in_experiment_recorded():
 
 @pytest.mark.parametrize(
     "reason",
-    [{"kind": "FALLTHROUGH"}, {"kind": "FALLTHROUGH", "inExperiment": False}, {"in_experiment": True}],
-    ids=["absent", "false", "snake_case"],
+    [
+        pytest.param({"kind": "FALLTHROUGH"}, id="absent"),
+        pytest.param({"kind": "FALLTHROUGH", "inExperiment": False}, id="false"),
+        pytest.param({"in_experiment": True}, id="snake_case"),
+    ],
 )
 @dt_enabled
 @validate_span_events(count=1, unexpected_users={"feature_flag.result.reason.inExperiment"})
@@ -177,7 +182,18 @@ def test_in_experiment_omitted(reason):
     exercise_hook(series_context(), EvaluationDetail(value=True, variation_index=0, reason=reason))
 
 
-@pytest.mark.parametrize("value", [True, False, 0, 5, 1.5, "", "str"])
+@pytest.mark.parametrize(
+    "value",
+    [
+        pytest.param(True, id="true"),
+        pytest.param(False, id="false"),
+        pytest.param(0, id="zero"),
+        pytest.param(5, id="int"),
+        pytest.param(1.5, id="float"),
+        pytest.param("", id="empty_str"),
+        pytest.param("str", id="str"),
+    ],
+)
 def test_value_recorded(value):
     @validate_span_events(count=1, exact_users={"feature_flag.result.value": value})
     @dt_enabled
@@ -200,11 +216,10 @@ def test_value_none_omitted():
 @pytest.mark.parametrize(
     "base_uri,expected_base",
     [
-        (None, "https://app.launchdarkly.com"),
-        ("https://ld.example.com", "https://ld.example.com"),
-        ("https://ld.example.com/", "https://ld.example.com"),
+        pytest.param(None, "https://app.launchdarkly.com", id="default"),
+        pytest.param("https://ld.example.com", "https://ld.example.com", id="custom"),
+        pytest.param("https://ld.example.com/", "https://ld.example.com", id="trailing_slash"),
     ],
-    ids=["default", "custom", "trailing_slash"],
 )
 def test_environment_id_direct_link(base_uri, expected_base):
     @validate_span_events(
@@ -226,7 +241,9 @@ def test_environment_id_direct_link(base_uri, expected_base):
     _test()
 
 
-@pytest.mark.parametrize("environment_id", [None, "", 1234], ids=["none", "empty", "not_str"])
+@pytest.mark.parametrize(
+    "environment_id", [pytest.param(None, id="none"), pytest.param("", id="empty"), pytest.param(1234, id="not_str")]
+)
 @validate_span_events(
     count=1, exact_users=BASE_ATTRS, unexpected_users={"feature_flag.set.id", "feature_flag.url.full"}
 )

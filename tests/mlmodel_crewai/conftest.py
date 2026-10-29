@@ -23,7 +23,7 @@ os.environ["OTEL_SDK_DISABLED"] = "true"
 os.environ["CREWAI_TESTING"] = "true"
 
 import pytest
-from crewai import Agent, Crew, Task
+from crewai import Agent, Crew, Process, Task
 from testing_support.fixture.event_loop import event_loop as loop
 from testing_support.fixture.vcr import *  # noqa: F403
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
@@ -51,10 +51,16 @@ collector_agent_registration = collector_agent_registration_fixture(
 AGENT_NAME = "my_agent"
 AGENT_GOAL = "Answer in one word."
 AGENT_BACKSTORY = "A concise assistant."
+
 PROMPT = "What is the capital of France?"
 TOOL_PROMPT = "Use get_capital on France. Answer with only the city name."
 TOOL_PROMPT_ERROR = f"{TOOL_PROMPT} error"
 TOOL_PROMPT_NO_CONTENT = f"{TOOL_PROMPT} no content"
+
+AGENT_PROMPT = "Name the capital city of Japan."
+CREW_PROMPT = "Name the capital city of Italy."
+KICKOFF_PROMPT = "Name the capital city of Portugal."
+DELEGATE_PROMPT = "Ask a coworker to name the capital city of Germany, then answer with only that city."
 
 CREWAI_VERSION = get_package_version("crewai")
 assert CREWAI_VERSION, "Failed to pull crewai version for supportability metric"
@@ -94,9 +100,6 @@ def crewai_llm(openai_api_key):
 def crewai_react_llm(crewai_llm, monkeypatch):
     """
     Return the default LLM with function calling forced off, so the agent takes the ReAct (text) path.
-
-    AgentExecutor picks the native path whenever llm.supports_function_calling() is true, so
-    reaching ToolUsage._use/_ause -- the methods the agent instruments -- requires forcing that off.
     """
     monkeypatch.setattr(type(crewai_llm), "supports_function_calling", lambda self: False)
     return crewai_llm
@@ -104,7 +107,7 @@ def crewai_react_llm(crewai_llm, monkeypatch):
 
 @pytest.fixture
 def build_agent():
-    def _build_agent(llm, tools=None, max_retry_limit=None, max_iter=None):
+    def _build_agent(llm, tools=None, max_retry_limit=None, max_iter=None, role=AGENT_NAME, allow_delegation=None):
         """
         Return an Agent driven by the given LLM. tools defaults to none (pure-LLM path).
         """
@@ -113,7 +116,9 @@ def build_agent():
             kwargs["max_retry_limit"] = max_retry_limit
         if max_iter is not None:
             kwargs["max_iter"] = max_iter
-        return Agent(role=AGENT_NAME, goal=AGENT_GOAL, backstory=AGENT_BACKSTORY, llm=llm, tools=tools or [], **kwargs)
+        if allow_delegation is not None:
+            kwargs["allow_delegation"] = allow_delegation
+        return Agent(role=role, goal=AGENT_GOAL, backstory=AGENT_BACKSTORY, llm=llm, tools=tools or [], **kwargs)
 
     return _build_agent
 
@@ -121,11 +126,52 @@ def build_agent():
 @pytest.fixture
 def build_crew(build_agent):
     def _build_crew(
-        llm, tools=None, description=PROMPT, expected_output="One word.", max_retry_limit=None, max_iter=None
+        llm,
+        tools=None,
+        description=PROMPT,
+        expected_output="One word.",
+        max_retry_limit=None,
+        max_iter=None,
+        num_agents=1,
+        num_tasks=1,
     ):
-        """Return a single-agent Crew. A Crew routes work through Agent.execute_task and ToolUsage."""
-        agent = build_agent(llm, tools=tools, max_retry_limit=max_retry_limit, max_iter=max_iter)
-        task = Task(description=description, expected_output=expected_output, agent=agent)
-        return Crew(agents=[agent], tasks=[task])
+        """
+        Return a Crew. A Crew routes work through Agent.execute_task and ToolUsage.
+        """
+        agents = [
+            build_agent(
+                llm,
+                tools=tools,
+                max_retry_limit=max_retry_limit,
+                max_iter=max_iter,
+                role=AGENT_NAME if num_agents == 1 else f"{AGENT_NAME}_{i}",
+            )
+            for i in range(num_agents)
+        ]
+        tasks = [
+            Task(
+                description=description if num_tasks == 1 else f"{description} (step {i + 1})",
+                expected_output=expected_output,
+                agent=agents[i % num_agents],
+            )
+            for i in range(num_tasks)
+        ]
+        return Crew(agents=agents, tasks=tasks)
 
     return _build_crew
+
+
+@pytest.fixture
+def build_hierarchical_crew(build_agent):
+    def _build_hierarchical_crew(llm, description=DELEGATE_PROMPT, num_agents=2, tools=None):
+        """
+        Return a Process.hierarchical Crew with no manager supplied, so crewai builds one itself
+        (role "Crew Manager") and gives it the delegate/ask-coworker tools over the workers.
+        """
+        workers = [
+            build_agent(llm, tools=tools, role=f"{AGENT_NAME}_{i}", allow_delegation=False) for i in range(num_agents)
+        ]
+        task = Task(description=description, expected_output="One word.")
+        return Crew(agents=workers, tasks=[task], process=Process.hierarchical, manager_llm=llm)
+
+    return _build_hierarchical_crew

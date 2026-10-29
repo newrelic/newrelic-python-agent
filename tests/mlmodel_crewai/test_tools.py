@@ -30,11 +30,12 @@ from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 
 EXPECTED_SYNC_TOOL_METRIC = (f"Llm/tool/CrewAI/crewai.tools.tool_usage:ToolUsage._use/{TOOL_NAME}", 1)
 
-# 11 events:
+# 12 events:
 #  * 1 LlmTool
+#  * 1 LlmAgent for the agent's execute_task (the Crew itself records none)
 #  * 2 LlmChatCompletionSummary, one per LLM round-trip
 #  * 8 LlmChatCompletionMessage across those two round-trips
-EXPECTED_EVENT_COUNT = 11
+EXPECTED_EVENT_COUNT = 12
 
 
 @dt_enabled

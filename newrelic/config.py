@@ -3217,6 +3217,8 @@ def _process_module_builtin_defaults():
         "crewai.agents.agent_executor", "newrelic.hooks.mlmodel_crewai", "instrument_crewai_agents_agent_executor"
     )
     _process_module_definition("crewai.flow.flow", "newrelic.hooks.mlmodel_crewai", "instrument_crewai_flow_flow")
+    _process_module_definition("crewai.agent.core", "newrelic.hooks.mlmodel_crewai", "instrument_crewai_agent_core")
+    _process_module_definition("crewai.crew", "newrelic.hooks.mlmodel_crewai", "instrument_crewai_crew")
     _process_module_definition(
         "google.adk.agents.llm_agent", "newrelic.hooks.mlmodel_googleadk", "instrument_googleadk_agents_llm_agent"
     )

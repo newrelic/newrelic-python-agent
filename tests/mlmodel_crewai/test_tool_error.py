@@ -34,11 +34,12 @@ from newrelic.common.object_wrapper import transient_function_wrapper
 
 EXPECTED_SYNC_TOOL_METRIC = (f"Llm/tool/CrewAI/crewai.tools.tool_usage:ToolUsage._use/{TOOL_NAME}", 1)
 
-# 5 events:
+# 6 events:
 #  * 1 LlmTool
+#  * 1 LlmAgent for the agent's execute_task, flagged error=True
 #  * 1 LlmChatCompletionSummary -- the injected failure aborts the run after one round-trip
 #  * 3 LlmChatCompletionMessage from that round-trip
-EXPECTED_EVENT_COUNT = 5
+EXPECTED_EVENT_COUNT = 6
 
 
 @transient_function_wrapper("crewai.tools.tool_usage", "ToolUsage._check_tool_repeated_usage")

@@ -216,16 +216,12 @@ def validate_config(args):
         )
         return
 
-    if hasattr(_application.settings, "messages"):
-        for message in _application.settings.messages:
-            if message["message"].startswith("Reporting to:"):
-                parts = message["message"].split("Reporting to:")
-                url = parts[1].strip()
-                print("Registration successful. Reporting to:")
-                print()
-                print(f"  {url}")
-                print()
-                break
+    url = _application.settings.entity_url
+    if url:
+        print("Registration successful. Reporting to:")
+        print()
+        print(f"  {url}")
+        print()
 
     _logger.debug("Registration took %s seconds.", _duration)
 

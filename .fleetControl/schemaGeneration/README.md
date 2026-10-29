@@ -118,7 +118,7 @@ python3 .fleetControl/schemaGeneration/generate-schema.py
 # Force-regenerate without comparing to existing on-disk schema
 python3 .fleetControl/schemaGeneration/generate-schema.py --force
 
-# Dry-run a release-time bump against a tag
+# Validate the version against a tag
 python3 .fleetControl/schemaGeneration/bump-schema-version.py --since=v10.21.0
 
 # Apply a release-time bump (writes configurationDefinitions.yml)
@@ -228,7 +228,7 @@ The `.*` suffix matches both the prefix itself and any descendant.
 | Option | Description |
 | --- | --- |
 | `--since=<ref>` | Required. Compare the current schema to the schema at `<ref>` and recommend a bump. |
-| `--ci` | Write the bumped version to `configurationDefinitions.yml`. Without this, the script just prints the recommendation. |
+| `--ci` | Write the bumped version to `configurationDefinitions.yml`. Without this, the script only validates that the current version already meets the required minimum (version at `<ref>` plus the implied bump) and writes nothing. |
 
 ## Exit codes
 
@@ -244,8 +244,8 @@ The `.*` suffix matches both the prefix itself and any descendant.
 
 | Code | Meaning |
 | --- | --- |
-| 0 | No bump needed (no schema diff, or bootstrap case where `<ref>` predates the schema). |
-| 1 | Bump applied (`--ci`) or recommended (without `--ci`). |
+| 0 | No bump needed (no schema diff, or bootstrap case where `<ref>` predates the schema), or (without `--ci`) the current version already meets the required minimum. |
+| 1 | Bump applied (`--ci`), or (without `--ci`) the current version is below the required minimum. |
 | 2 | Bump failure (uncaught exception, missing args, malformed historical inputs). |
 
 ## Version bumping rules
@@ -281,3 +281,12 @@ pytest tests/agent_unittests/test_agent_config_schema.py
 # Or via tox, matching CI:
 tox run -e linux-agent_unittests-py312-with_extensions
 ```
+
+## Pre-publish validation
+
+`deploy.yml` runs `bump-schema-version.py --since=<previous release tag> --check`
+(no `--ci`) as its first job, before any artifacts are built or published. It fails the
+release if the `version:` in `configurationDefinitions.yml` is lower than the
+previous release's version plus the bump implied by the schema diff. The schema
+itself is still only registered with Fleet Control (`update-agent-metadata`)
+after `publish` succeeds.

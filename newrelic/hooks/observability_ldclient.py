@@ -113,8 +113,10 @@ def wrap_Config_init(wrapped, instance, args, kwargs):
 
     try:
         nr_hook = _NewRelicHook(base_uri=bound_args.get("base_uri", None))
+        hooks = bound_args["hooks"] or []
+        # Filter out any existing NR hooks that may be out of date.
         # Ensure supplied iterable is a list, which LD will coerce to anyway.
-        hooks = list(bound_args["hooks"] or [])
+        hooks = [hook for hook in hooks if not isinstance(hook, NewRelicHook)]
         hooks.append(nr_hook)
     except Exception:
         _logger.exception(

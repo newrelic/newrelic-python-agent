@@ -23,12 +23,26 @@ OBSERVABILITY_PLUGIN_REGISTERED = False
 OBSERVABILITY_PLUGIN_WARNING = "ObservabilityPlugin must be registered with Launch Darkly ldclient in order to successfully initialize the Launch Darkly-New Relic integration."
 
 
-def _create_NewRelicHook(base_uri):
+NewRelicHook = None
+
+
+def _NewRelicHook(*args, **kwargs):
+    """
+    Create and return a new instance of NewRelicHook.
+    The first time this function is called, the NewRelicHook class is defined.
+    On subsequent runs, the class is just instantiated.
+    """
+    global NewRelicHook
+    if NewRelicHook is not None:
+        return NewRelicHook(*args, **kwargs)
+
     from ldclient.config import DEFAULT_BASE_URI
     from ldclient.hook import Hook, Metadata
 
     class NewRelicHook(Hook):
-        _client_base_uri = (base_uri or DEFAULT_BASE_URI).rstrip("/")
+        def __init__(self, *args, base_uri=DEFAULT_BASE_URI, **kwargs):
+            self._base_uri = (base_uri or DEFAULT_BASE_URI).rstrip("/")
+            super().__init__(*args, **kwargs)
 
         @property
         def metadata(self) -> Metadata:
@@ -64,7 +78,7 @@ def _create_NewRelicHook(base_uri):
                     attrs["feature_flag.set.id"] = environment_id
                     # Direct linking is only possible if we have the environment_id attribute available
                     attrs["feature_flag.url.full"] = (
-                        f"{self._client_base_uri}/goto/flags/{series_context.key}?envId={environment_id}"
+                        f"{self._base_uri}/goto/flags/{series_context.key}?envId={environment_id}"
                     )
 
                 for key, value in attrs.items():
@@ -73,7 +87,7 @@ def _create_NewRelicHook(base_uri):
                 _logger.exception("[newrelic-hook] failed to enrich span")
             return data
 
-    return NewRelicHook()
+    return NewRelicHook(*args, **kwargs)
 
 
 def wrap_Config_init(wrapped, instance, args, kwargs):
@@ -89,7 +103,7 @@ def wrap_Config_init(wrapped, instance, args, kwargs):
         return wrapped(*args, **kwargs)
 
     try:
-        nr_hook = _create_NewRelicHook(bound_args.get("base_uri", None))
+        nr_hook = _NewRelicHook(base_uri=bound_args.get("base_uri", None))
         # Ensure supplied iterable is a list, which LD will coerce to anyway.
         hooks = list(bound_args["hooks"] or [])
         hooks.append(nr_hook)

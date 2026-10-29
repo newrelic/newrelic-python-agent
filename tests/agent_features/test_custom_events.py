@@ -34,8 +34,8 @@ def test_process_event_type_name_is_string():
     assert process_event_type(name) == name
 
 
-def test_process_event_type_name_is_not_string():
-    name = 42
+@pytest.mark.parametrize("name", (42, None, b"CustomEventType", bytearray(b"CustomEventType")))
+def test_process_event_type_name_is_not_string(name):
     assert process_event_type(name) is None
 
 
@@ -54,8 +54,8 @@ def test_process_event_type_name_valid_chars():
     assert process_event_type(valid_name) == valid_name
 
 
-def test_process_event_type_name_invalid_chars():
-    invalid_name = "&"
+@pytest.mark.parametrize("invalid_name", ("", "&", "FooEvent\n", "FooEvent\r\n", "Foo\nEvent", "FooEvent\t"))
+def test_process_event_type_name_invalid_chars(invalid_name):
     assert process_event_type(invalid_name) is None
 
 
@@ -99,19 +99,21 @@ def test_add_custom_event_to_application_stats_engine():
     record_custom_event("FooEvent", _user_params, application=app)
 
 
+@pytest.mark.parametrize("event_type", ("!@#$%^&*()", "FooEvent\n", b"FooEvent"))
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 @background_task()
-def test_custom_event_inside_transaction_bad_event_type():
-    record_custom_event("!@#$%^&*()", {"foo": "bar"})
+def test_custom_event_inside_transaction_bad_event_type(event_type):
+    record_custom_event(event_type, {"foo": "bar"})
 
 
+@pytest.mark.parametrize("event_type", ("!@#$%^&*()", "FooEvent\n", b"FooEvent"))
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 @background_task()
-def test_custom_event_outside_transaction_bad_event_type():
+def test_custom_event_outside_transaction_bad_event_type(event_type):
     app = application()
-    record_custom_event("!@#$%^&*()", {"foo": "bar"}, application=app)
+    record_custom_event(event_type, {"foo": "bar"}, application=app)
 
 
 _mixed_params = {"foo": "bar", 123: "bad key"}

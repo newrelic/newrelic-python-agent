@@ -425,28 +425,17 @@ def test_browser_monitoring_version_without_loader_warns(caplog):
         (True, None, False, True, False),
         (True, None, True, True, True),
         (False, None, None, False, False),
-<<<<<<< HEAD
         (False, None, True, False, False),
-=======
-        (False, None, True, False, True),
->>>>>>> 64b03dfa5e1e19440149440cfa72a77b949f84a5
         # ai_monitoring.enabled True: an unset record_content is forced to True.
         (True, True, None, True, True),
         (False, True, None, True, True),
         (True, True, True, True, True),
         (True, True, False, True, False),
         (False, True, True, True, True),
-<<<<<<< HEAD
         # ai_monitoring.enabled False: AIM is disabled regardless of basic_telemetry, and never records content.
         (True, False, None, False, False),
         (True, False, True, False, False),
         (False, False, True, False, False),
-=======
-        # ai_monitoring.enabled False: AIM is disabled regardless of basic_telemetry.
-        (True, False, None, False, False),
-        (True, False, True, False, True),
-        (False, False, True, False, True),
->>>>>>> 64b03dfa5e1e19440149440cfa72a77b949f84a5
     ),
 )
 def test_ai_monitoring_basic_telemetry_fallback(
@@ -499,12 +488,8 @@ def test_ai_monitoring_enabled_from_ssc(local_enabled, local_basic_telemetry, ss
 
     assert app_settings.ai_monitoring.enabled is expected_enabled
     assert app_settings.ai_monitoring.basic_telemetry.enabled is expected_enabled
-<<<<<<< HEAD
     # An inactive AIM never records content.
     assert app_settings.ai_monitoring.record_content.enabled is expected_enabled
-=======
-    assert app_settings.ai_monitoring.record_content.enabled is True
->>>>>>> 64b03dfa5e1e19440149440cfa72a77b949f84a5
 
 
 @pytest.mark.parametrize(
@@ -514,13 +499,8 @@ def test_ai_monitoring_enabled_from_ssc(local_enabled, local_basic_telemetry, ss
         (True, {}, True, True),
         # SSC values other than ai_monitoring.enabled or record_content do not prevent the forcing.
         (True, {"ai_monitoring.streaming.enabled": False}, True, True),
-<<<<<<< HEAD
         # An ai_monitoring.enabled value from SSC does not prevent the forcing (matches .NET: localEnabled == true).
         (True, _ssc_ai_monitoring_enabled(True), True, True),
-=======
-        # An ai_monitoring.enabled value from SSC prevents the forcing.
-        (True, _ssc_ai_monitoring_enabled(True), True, False),
->>>>>>> 64b03dfa5e1e19440149440cfa72a77b949f84a5
         (True, _ssc_ai_monitoring_enabled(False), False, False),
         # ai_monitoring.enabled=True from SSC does not force an unset record_content to True.
         (None, _ssc_ai_monitoring_enabled(True), True, False),
@@ -588,18 +568,11 @@ def test_ai_monitoring_record_content_with_local_enabled(
             True,
             True,
         ),
-<<<<<<< HEAD
         # Without an SSC override, AIM is fully disabled even with basic_telemetry enabled locally.
         # collect_ai=True and record_content from SSC do not override ai_monitoring.enabled.
         ({}, False, False),
         ({"collect_ai": True}, False, False),
         ({"agent_config": {"ai_monitoring.record_content.enabled": True}}, False, False),
-=======
-        (_ssc_ai_monitoring_enabled(True), True, False),
-        # Without an SSC override, AIM stays disabled. collect_ai=True cannot enable AIM.
-        ({}, False, False),
-        ({"collect_ai": True}, False, False),
->>>>>>> 64b03dfa5e1e19440149440cfa72a77b949f84a5
     ),
 )
 def test_ai_monitoring_local_disabled_overridden_by_ssc(ssc_settings, expected_enabled, expected_record_content):

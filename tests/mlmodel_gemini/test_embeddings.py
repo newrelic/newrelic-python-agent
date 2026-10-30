@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from conftest import GEMINI_VERSION_METRIC
+from conftest import GEMINI_VERSION_METRIC, GEMINI_VERSION_METRIC_BASIC
 from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     add_token_count_to_embedding_events,
@@ -77,7 +77,7 @@ def test_gemini_embedding(exercise_embedding_model, set_trace_info):
     name="test_embeddings:test_gemini_embedding_no_content",
     scoped_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
     rollup_metrics=[("Llm/embedding/Gemini/embed_content", 1)],
-    custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
+    custom_metrics=[(GEMINI_VERSION_METRIC_BASIC, 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])

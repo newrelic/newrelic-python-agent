@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import pytest
-from conftest import ANTHROPIC_VERSION_METRIC
+from conftest import ANTHROPIC_VERSION_METRIC, ANTHROPIC_VERSION_METRIC_BASIC
 from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     add_token_counts_to_chat_events,
@@ -219,7 +219,7 @@ def test_anthropic_chat_completion_no_content(
         name="test_anthropic_chat_completion_no_content",
         scoped_metrics=chat_completion_metrics,
         rollup_metrics=chat_completion_metrics,
-        custom_metrics=[(ANTHROPIC_VERSION_METRIC, 1)],
+        custom_metrics=[(ANTHROPIC_VERSION_METRIC_BASIC, 1)],
         background_task=True,
     )
     @validate_attributes("agent", ["llm"])

@@ -26,7 +26,6 @@ from newrelic.common.llm_utils import AsyncLLMStreamProxy, LLMStreamProxy, _get_
 from newrelic.common.object_wrapper import ObjectProxy, wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
-from newrelic.core.config import global_settings
 from newrelic.core.context import ContextOf, context_wrapper
 
 _logger = logging.getLogger(__name__)
@@ -507,7 +506,7 @@ async def wrap_run_in_executor(wrapped, instance, args, kwargs):
 
 
 def _create_error_vectorstore_events(*, transaction, search_id, args, kwargs, linking_metadata, wrapped):
-    settings = transaction.settings if transaction.settings is not None else global_settings()
+    settings = getattr(transaction, "settings", None)
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
     bound_args = bind_args(wrapped, args, kwargs)
@@ -536,8 +535,8 @@ async def wrap_asimilarity_search(wrapped, instance, args, kwargs):
     if not transaction:
         return await wrapped(*args, **kwargs)
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
     transaction.add_ml_model_info("LangChain", LANGCHAIN_VERSION)
@@ -585,8 +584,8 @@ def wrap_similarity_search(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
     transaction.add_ml_model_info("LangChain", LANGCHAIN_VERSION)
@@ -630,7 +629,7 @@ def wrap_similarity_search(wrapped, instance, args, kwargs):
 
 
 def _record_vector_search_success(*, transaction, linking_metadata, ft, search_id, args, kwargs, response, wrapped):
-    settings = transaction.settings if transaction.settings is not None else global_settings()
+    settings = getattr(transaction, "settings", None)
     bound_args = bind_args(wrapped, args, kwargs)
     request_query = bound_args["query"]
     request_k = bound_args["k"]
@@ -686,8 +685,8 @@ def wrap_tool_sync_run(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI
@@ -751,8 +750,8 @@ async def wrap_tool_async_run(wrapped, instance, args, kwargs):
     if not transaction:
         return await wrapped(*args, **kwargs)
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI
@@ -854,7 +853,7 @@ def _capture_tool_info(instance, wrapped, args, kwargs):
 def _record_tool_success(
     *, instance, transaction, linking_metadata, agent_name, tool_id, tool_input, tool_name, tool_run_id, ft, response
 ):
-    settings = transaction.settings if transaction.settings is not None else global_settings()
+    settings = getattr(transaction, "settings", None)
 
     full_tool_event_dict = {
         "id": tool_id,
@@ -882,7 +881,7 @@ def _record_tool_success(
 def _record_tool_error(
     *, instance, transaction, linking_metadata, agent_name, tool_id, tool_input, tool_name, tool_run_id, ft
 ):
-    settings = transaction.settings if transaction.settings is not None else global_settings()
+    settings = getattr(transaction, "settings", None)
     ft.notice_error(attributes={"tool_id": tool_id})
     ft.__exit__(*sys.exc_info())
 
@@ -912,8 +911,8 @@ async def wrap_chain_async_run(wrapped, instance, args, kwargs):
     if not transaction:
         return await wrapped(*args, **kwargs)
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI
@@ -971,8 +970,8 @@ def wrap_chain_sync_run(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI
@@ -1030,8 +1029,8 @@ def wrap_RunnableSequence_stream(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI
@@ -1092,8 +1091,8 @@ def wrap_RunnableSequence_astream(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI
@@ -1431,7 +1430,7 @@ def create_chat_completion_message_event(
     request_timestamp=None,
     response_model=None,
 ):
-    settings = transaction.settings if transaction.settings is not None else global_settings()
+    settings = getattr(transaction, "settings", None)
 
     # Loop through all input messages received from the create request and emit a custom event for each one
     for index, message in enumerate(input_message_list):
@@ -1487,8 +1486,8 @@ def wrap_create_agent(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    settings = transaction.settings or global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
         # Framework metric also used for entity tagging in the UI

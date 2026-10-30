@@ -190,7 +190,7 @@ def test_bedrock_chat_completion_no_content(set_trace_info, exercise_model, expe
         name="test_bedrock_chat_completion_no_content",
         scoped_metrics=expected_metrics,
         rollup_metrics=expected_metrics,
-        custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
+        custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}/Basic", 1)],
         background_task=True,
     )
     @validate_attributes("agent", ["llm"])
@@ -439,7 +439,7 @@ def test_bedrock_chat_completion_error_incorrect_access_key_no_content(
         name="test_bedrock_chat_completion",
         scoped_metrics=expected_metrics,
         rollup_metrics=expected_metrics,
-        custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
+        custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}/Basic", 1)],
         background_task=True,
     )
     @background_task(name="test_bedrock_chat_completion")
@@ -723,7 +723,7 @@ def test_bedrock_chat_completion_error_streaming_exception(loop, bedrock_server,
     name="test_bedrock_chat_completion",
     scoped_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
     rollup_metrics=[("Llm/completion/Bedrock/invoke_model_with_response_stream", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
+    custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}/Basic", 1)],
     background_task=True,
 )
 @background_task(name="test_bedrock_chat_completion")

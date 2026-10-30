@@ -48,6 +48,7 @@ VCR_MATCHERS["body"] = gemini_match_body_no_thought_signature
 
 GEMINI_VERSION = google.genai.__version__
 GEMINI_VERSION_METRIC = f"Supportability/Python/ML/Gemini/{GEMINI_VERSION}"
+GEMINI_VERSION_METRIC_BASIC = f"{GEMINI_VERSION_METRIC}/Basic"
 
 
 @pytest.fixture

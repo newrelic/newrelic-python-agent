@@ -61,6 +61,7 @@ assert GOOGLE_GENAI_VERSION, "Failed to pull google-genai version for supportabi
 EXPECTED_GOOGLE_ADK_VERSION_METRIC = (f"Supportability/Python/ML/GoogleADK/{GOOGLE_ADK_VERSION}", 1)
 EXPECTED_GOOGLE_GENAI_VERSION_METRIC = (f"Supportability/Python/ML/Gemini/{GOOGLE_GENAI_VERSION}", 1)
 EXPECTED_VERSION_METRICS = [EXPECTED_GOOGLE_ADK_VERSION_METRIC, EXPECTED_GOOGLE_GENAI_VERSION_METRIC]
+EXPECTED_BASIC_VERSION_METRICS = [(f"{name}/Basic", count) for name, count in EXPECTED_VERSION_METRICS]
 
 
 @pytest.fixture(autouse=True)

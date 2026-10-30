@@ -14,7 +14,7 @@
 
 import google.genai
 import pytest
-from conftest import GEMINI_VERSION_METRIC
+from conftest import GEMINI_VERSION_METRIC, GEMINI_VERSION_METRIC_BASIC
 from testing_support.fixtures import override_llm_token_callback_settings, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     add_token_counts_to_chat_events,
@@ -219,7 +219,7 @@ def test_gemini_text_generation_no_content(
         name="test_gemini_text_generation_no_content",
         scoped_metrics=text_generation_metrics,
         rollup_metrics=text_generation_metrics,
-        custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
+        custom_metrics=[(GEMINI_VERSION_METRIC_BASIC, 1)],
         background_task=True,
     )
     @validate_attributes("agent", ["llm"])

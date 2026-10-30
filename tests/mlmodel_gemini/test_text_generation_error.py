@@ -17,7 +17,7 @@ import sys
 
 import google.genai
 import pytest
-from conftest import GEMINI_VERSION_METRIC
+from conftest import GEMINI_VERSION_METRIC, GEMINI_VERSION_METRIC_BASIC
 from testing_support.fixtures import dt_enabled, override_llm_token_callback_settings, reset_core_stats_engine
 from testing_support.ml_testing_utils import (
     disabled_ai_monitoring_record_content_settings,
@@ -140,7 +140,7 @@ def test_text_generation_invalid_request_error_no_model_no_content(
         name="test_text_generation_invalid_request_error_no_model_no_content",
         scoped_metrics=text_generation_metrics,
         rollup_metrics=text_generation_metrics,
-        custom_metrics=[(GEMINI_VERSION_METRIC, 1)],
+        custom_metrics=[(GEMINI_VERSION_METRIC_BASIC, 1)],
         background_task=True,
     )
     @validate_custom_events(events_sans_content(expected_events_on_no_model_error))

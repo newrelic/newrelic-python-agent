@@ -75,6 +75,7 @@ _hsm_local_config_file_settings_disabled = [
         "ai_monitoring.enabled": True,
         "ai_monitoring.record_content.enabled": True,
         "ai_monitoring.streaming.enabled": True,
+        "ai_monitoring.basic_telemetry.enabled": True,
     },
     {
         "high_security": False,
@@ -89,6 +90,7 @@ _hsm_local_config_file_settings_disabled = [
         "ai_monitoring.enabled": True,
         "ai_monitoring.record_content.enabled": False,
         "ai_monitoring.streaming.enabled": False,
+        "ai_monitoring.basic_telemetry.enabled": False,
     },
     {
         "high_security": False,
@@ -103,6 +105,7 @@ _hsm_local_config_file_settings_disabled = [
         "ai_monitoring.enabled": False,
         "ai_monitoring.record_content.enabled": True,
         "ai_monitoring.streaming.enabled": True,
+        "ai_monitoring.basic_telemetry.enabled": True,
     },
     {
         "high_security": False,
@@ -117,6 +120,7 @@ _hsm_local_config_file_settings_disabled = [
         "ai_monitoring.enabled": False,
         "ai_monitoring.record_content.enabled": False,
         "ai_monitoring.streaming.enabled": False,
+        "ai_monitoring.basic_telemetry.enabled": False,
     },
 ]
 
@@ -134,6 +138,7 @@ _hsm_local_config_file_settings_enabled = [
         "ai_monitoring.enabled": False,
         "ai_monitoring.record_content.enabled": False,
         "ai_monitoring.streaming.enabled": False,
+        "ai_monitoring.basic_telemetry.enabled": False,
     },
     {
         "high_security": True,
@@ -148,6 +153,7 @@ _hsm_local_config_file_settings_enabled = [
         "ai_monitoring.enabled": False,
         "ai_monitoring.record_content.enabled": True,
         "ai_monitoring.streaming.enabled": True,
+        "ai_monitoring.basic_telemetry.enabled": True,
     },
     {
         "high_security": True,
@@ -162,6 +168,7 @@ _hsm_local_config_file_settings_enabled = [
         "ai_monitoring.enabled": False,
         "ai_monitoring.record_content.enabled": True,
         "ai_monitoring.streaming.enabled": True,
+        "ai_monitoring.basic_telemetry.enabled": True,
     },
     {
         "high_security": True,
@@ -176,6 +183,7 @@ _hsm_local_config_file_settings_enabled = [
         "ai_monitoring.enabled": True,
         "ai_monitoring.record_content.enabled": True,
         "ai_monitoring.streaming.enabled": True,
+        "ai_monitoring.basic_telemetry.enabled": True,
     },
     {
         "high_security": True,
@@ -190,6 +198,7 @@ _hsm_local_config_file_settings_enabled = [
         "ai_monitoring.enabled": True,
         "ai_monitoring.record_content.enabled": True,
         "ai_monitoring.streaming.enabled": True,
+        "ai_monitoring.basic_telemetry.enabled": True,
     },
     {
         "high_security": True,
@@ -204,6 +213,7 @@ _hsm_local_config_file_settings_enabled = [
         "ai_monitoring.enabled": True,
         "ai_monitoring.record_content.enabled": True,
         "ai_monitoring.streaming.enabled": True,
+        "ai_monitoring.basic_telemetry.enabled": True,
     },
     {
         "high_security": True,
@@ -218,6 +228,7 @@ _hsm_local_config_file_settings_enabled = [
         "ai_monitoring.enabled": True,
         "ai_monitoring.record_content.enabled": True,
         "ai_monitoring.streaming.enabled": True,
+        "ai_monitoring.basic_telemetry.enabled": True,
     },
 ]
 
@@ -247,6 +258,7 @@ def test_local_config_file_override_hsm_disabled(settings):
     original_ai_monitoring_enabled = settings.ai_monitoring.enabled
     original_ai_monitoring_record_content_enabled = settings.ai_monitoring.record_content.enabled
     original_ai_monitoring_streaming_enabled = settings.ai_monitoring.streaming.enabled
+    original_ai_monitoring_basic_telemetry_enabled = settings.ai_monitoring.basic_telemetry.enabled
     apply_local_high_security_mode_setting(settings)
 
     assert settings.capture_params == original_capture_params
@@ -263,6 +275,7 @@ def test_local_config_file_override_hsm_disabled(settings):
     assert settings.ai_monitoring.enabled == original_ai_monitoring_enabled
     assert settings.ai_monitoring.record_content.enabled == original_ai_monitoring_record_content_enabled
     assert settings.ai_monitoring.streaming.enabled == original_ai_monitoring_streaming_enabled
+    assert settings.ai_monitoring.basic_telemetry.enabled == original_ai_monitoring_basic_telemetry_enabled
 
 
 @parameterize_hsm_local_config(_hsm_local_config_file_settings_enabled)
@@ -280,6 +293,7 @@ def test_local_config_file_override_hsm_enabled(settings):
     assert settings.ai_monitoring.enabled is False
     assert settings.ai_monitoring.record_content.enabled is False
     assert settings.ai_monitoring.streaming.enabled is False
+    assert settings.ai_monitoring.basic_telemetry.enabled is False
 
 
 _server_side_config_settings_hsm_disabled = [

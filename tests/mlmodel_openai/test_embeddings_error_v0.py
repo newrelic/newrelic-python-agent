@@ -93,7 +93,7 @@ def test_embeddings_invalid_request_error_no_model(set_trace_info):
     name="test_embeddings_error_v0:test_embeddings_invalid_request_error_no_model_no_content",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}/Basic", 1)],
     background_task=True,
 )
 @validate_custom_events(events_sans_content(embedding_recorded_events))
@@ -297,7 +297,7 @@ def test_embeddings_invalid_request_error_no_model_async(loop, set_trace_info):
     name="test_embeddings_error_v0:test_embeddings_invalid_request_error_no_model_async_no_content",
     scoped_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/acreate", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}/Basic", 1)],
     background_task=True,
 )
 @validate_custom_events(events_sans_content(embedding_recorded_events))

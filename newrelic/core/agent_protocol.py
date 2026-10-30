@@ -148,6 +148,7 @@ class AgentProtocol:
         "ai_monitoring.enabled",
         "ai_monitoring.streaming.enabled",
         "ai_monitoring.record_content.enabled",
+        "ai_monitoring.basic_telemetry.enabled",
     )
 
     LOGGER_FUNC_MAPPING = {  # noqa: RUF012

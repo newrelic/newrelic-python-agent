@@ -16,7 +16,7 @@ import sys
 
 import anthropic
 import pytest
-from conftest import ANTHROPIC_VERSION_METRIC
+from conftest import ANTHROPIC_VERSION_METRIC, ANTHROPIC_VERSION_METRIC_BASIC
 from testing_support.fixtures import dt_enabled, override_llm_token_callback_settings, reset_core_stats_engine
 from testing_support.ml_testing_utils import (
     disabled_ai_monitoring_record_content_settings,
@@ -138,7 +138,7 @@ def test_chat_completion_invalid_request_error_no_model_no_content(
         name="test_chat_completion_invalid_request_error_no_model_no_content",
         scoped_metrics=chat_completion_metrics,
         rollup_metrics=chat_completion_metrics,
-        custom_metrics=[(ANTHROPIC_VERSION_METRIC, 1)],
+        custom_metrics=[(ANTHROPIC_VERSION_METRIC_BASIC, 1)],
         background_task=True,
     )
     @validate_custom_events(events_sans_content(expected_events_on_no_model_error))

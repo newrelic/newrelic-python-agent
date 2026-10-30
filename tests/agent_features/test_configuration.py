@@ -416,6 +416,193 @@ def test_browser_monitoring_version_without_loader_warns(caplog):
     apply_config_setting(settings, "browser_monitoring.version", None)
 
 
+@pytest.mark.parametrize(
+    "basic_telemetry_enabled,ai_monitoring_enabled,record_content_enabled,expected_enabled,expected_record_content",
+    (
+        # ai_monitoring.enabled unset: basic_telemetry decides whether AIM is active,
+        # and an unset record_content is treated as False.
+        (True, None, None, True, False),
+        (True, None, False, True, False),
+        (True, None, True, True, True),
+        (False, None, None, False, False),
+        (False, None, True, False, True),
+        # ai_monitoring.enabled True: an unset record_content is forced to True.
+        (True, True, None, True, True),
+        (False, True, None, True, True),
+        (True, True, True, True, True),
+        (True, True, False, True, False),
+        (False, True, True, True, True),
+        # ai_monitoring.enabled False: AIM is disabled regardless of basic_telemetry.
+        (True, False, None, False, False),
+        (True, False, True, False, True),
+        (False, False, True, False, True),
+    ),
+)
+def test_ai_monitoring_basic_telemetry_fallback(
+    basic_telemetry_enabled, ai_monitoring_enabled, record_content_enabled, expected_enabled, expected_record_content
+):
+    settings = global_settings()
+    apply_config_setting(settings, "ai_monitoring.basic_telemetry.enabled", basic_telemetry_enabled)
+    apply_config_setting(settings, "ai_monitoring.enabled", ai_monitoring_enabled)
+    apply_config_setting(settings, "ai_monitoring.record_content.enabled", record_content_enabled)
+
+    app_settings = apply_server_side_settings(settings=settings)
+
+    assert app_settings.ai_monitoring.enabled is expected_enabled
+    assert app_settings.ai_monitoring.record_content.enabled is expected_record_content
+
+    apply_config_setting(settings, "ai_monitoring.basic_telemetry.enabled", True)
+    apply_config_setting(settings, "ai_monitoring.enabled", None)
+    apply_config_setting(settings, "ai_monitoring.record_content.enabled", None)
+
+
+def _ssc_ai_monitoring_enabled(value):
+    # SSC always sends ai_monitoring.enabled and ai_monitoring.basic_telemetry.enabled with the same value.
+    return {"ai_monitoring.enabled": value, "ai_monitoring.basic_telemetry.enabled": value}
+
+
+@pytest.mark.parametrize(
+    "local_enabled,local_basic_telemetry,ssc_enabled,expected_enabled",
+    (
+        # ai_monitoring.enabled unset locally: the SSC value overrides the local basic_telemetry.
+        (None, True, False, False),
+        (None, False, True, True),
+        # ai_monitoring.enabled=True set locally: SSC can still disable AIM.
+        (True, True, False, False),
+        (True, False, True, True),
+        # ai_monitoring.enabled=False set locally: SSC can still enable AIM.
+        (False, True, True, True),
+        (False, False, True, True),
+        (False, True, False, False),
+    ),
+)
+def test_ai_monitoring_enabled_from_ssc(local_enabled, local_basic_telemetry, ssc_enabled, expected_enabled):
+    settings = copy.deepcopy(global_settings())
+    apply_config_setting(settings, "ai_monitoring.enabled", local_enabled)
+    apply_config_setting(settings, "ai_monitoring.basic_telemetry.enabled", local_basic_telemetry)
+    apply_config_setting(settings, "ai_monitoring.record_content.enabled", True)
+
+    app_settings = apply_server_side_settings(
+        {"agent_config": _ssc_ai_monitoring_enabled(ssc_enabled)}, settings=settings
+    )
+
+    assert app_settings.ai_monitoring.enabled is expected_enabled
+    assert app_settings.ai_monitoring.basic_telemetry.enabled is expected_enabled
+    assert app_settings.ai_monitoring.record_content.enabled is True
+
+
+@pytest.mark.parametrize(
+    "local_enabled,ssc_settings,expected_enabled,expected_record_content",
+    (
+        # Only a local ai_monitoring.enabled=True forces an unset record_content to True.
+        (True, {}, True, True),
+        # SSC values other than ai_monitoring.enabled or record_content do not prevent the forcing.
+        (True, {"ai_monitoring.streaming.enabled": False}, True, True),
+        # An ai_monitoring.enabled value from SSC prevents the forcing.
+        (True, _ssc_ai_monitoring_enabled(True), True, False),
+        (True, _ssc_ai_monitoring_enabled(False), False, False),
+        # ai_monitoring.enabled=True from SSC does not force an unset record_content to True.
+        (None, _ssc_ai_monitoring_enabled(True), True, False),
+        (None, {}, True, False),
+        # An explicit record_content from SSC always takes precedence over the forced value.
+        (True, {"ai_monitoring.record_content.enabled": False}, True, False),
+        (True, {"ai_monitoring.record_content.enabled": True}, True, True),
+        (None, {"ai_monitoring.record_content.enabled": True}, True, True),
+        (None, {"ai_monitoring.record_content.enabled": False}, True, False),
+    ),
+)
+def test_ai_monitoring_record_content_forced_only_by_local_enabled(
+    local_enabled, ssc_settings, expected_enabled, expected_record_content
+):
+    settings = copy.deepcopy(global_settings())
+    apply_config_setting(settings, "ai_monitoring.enabled", local_enabled)
+    apply_config_setting(settings, "ai_monitoring.basic_telemetry.enabled", True)
+    apply_config_setting(settings, "ai_monitoring.record_content.enabled", None)
+
+    app_settings = apply_server_side_settings({"agent_config": dict(ssc_settings)}, settings=settings)
+
+    assert app_settings.ai_monitoring.enabled is expected_enabled
+    assert app_settings.ai_monitoring.record_content.enabled is expected_record_content
+
+
+@pytest.mark.parametrize(
+    "local_record_content_enabled,ssc_record_content_enabled,expected_record_content",
+    (
+        # An unset local record_content is only forced to True when SSC does not set it.
+        (None, None, True),
+        # Otherwise, SSC takes precedence.
+        (None, True, True),
+        (None, False, False),
+        # An explicit local record_content is unaffected by the forcing and behaves as before.
+        (True, None, True),
+        (False, None, False),
+        (True, False, False),
+        (False, True, True),
+    ),
+)
+def test_ai_monitoring_record_content_with_local_enabled(
+    local_record_content_enabled, ssc_record_content_enabled, expected_record_content
+):
+    settings = copy.deepcopy(global_settings())
+    apply_config_setting(settings, "ai_monitoring.enabled", True)
+    apply_config_setting(settings, "ai_monitoring.record_content.enabled", local_record_content_enabled)
+
+    agent_config = {}
+    if ssc_record_content_enabled is not None:
+        agent_config["ai_monitoring.record_content.enabled"] = ssc_record_content_enabled
+
+    app_settings = apply_server_side_settings({"agent_config": agent_config}, settings=settings)
+
+    assert app_settings.ai_monitoring.enabled is True
+    assert app_settings.ai_monitoring.record_content.enabled is expected_record_content
+
+
+@pytest.mark.parametrize(
+    "ssc_settings,expected_enabled,expected_record_content",
+    (
+        # SSC can override a local ai_monitoring.enabled=False, and an unset record_content is treated as False.
+        ({"agent_config": _ssc_ai_monitoring_enabled(True)}, True, False),
+        (
+            {"agent_config": {**_ssc_ai_monitoring_enabled(True), "ai_monitoring.record_content.enabled": True}},
+            True,
+            True,
+        ),
+        (_ssc_ai_monitoring_enabled(True), True, False),
+        # Without an SSC override, AIM stays disabled. collect_ai=True cannot enable AIM.
+        ({}, False, False),
+        ({"collect_ai": True}, False, False),
+    ),
+)
+def test_ai_monitoring_local_disabled_overridden_by_ssc(ssc_settings, expected_enabled, expected_record_content):
+    settings = copy.deepcopy(global_settings())
+    apply_config_setting(settings, "ai_monitoring.enabled", False)
+    apply_config_setting(settings, "ai_monitoring.basic_telemetry.enabled", True)
+    apply_config_setting(settings, "ai_monitoring.record_content.enabled", None)
+
+    app_settings = apply_server_side_settings(copy.deepcopy(ssc_settings), settings=settings)
+
+    assert app_settings.ai_monitoring.enabled is expected_enabled
+    assert app_settings.ai_monitoring.record_content.enabled is expected_record_content
+
+
+@pytest.mark.parametrize("ssc_enabled", (True, False))
+def test_ai_monitoring_enabled_from_ssc_high_security_mode(ssc_enabled):
+    # High security mode is enforced after the SSC overlay and the fallback, so it always wins.
+    settings = copy.deepcopy(global_settings())
+    apply_config_setting(settings, "high_security", True)
+    apply_config_setting(settings, "ai_monitoring.enabled", None)
+    apply_config_setting(settings, "ai_monitoring.basic_telemetry.enabled", True)
+
+    app_settings = apply_server_side_settings(
+        {"agent_config": _ssc_ai_monitoring_enabled(ssc_enabled)}, settings=settings
+    )
+
+    assert app_settings.ai_monitoring.enabled is False
+    assert app_settings.ai_monitoring.record_content.enabled is False
+    assert app_settings.ai_monitoring.streaming.enabled is False
+    assert app_settings.ai_monitoring.basic_telemetry.enabled is False
+
+
 translate_deprecated_settings_tests = [
     # Nothing in here right now.
 ]

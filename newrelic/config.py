@@ -75,6 +75,11 @@ DEPRECATED_MODULES = {"aioredis": datetime(2022, 2, 22, 0, 0, tzinfo=timezone.ut
 
 LAMBDA_IN_CONFIG_WARNING_MESSAGE = "Using lambdas in configuration files has been removed for security reasons. If dynamic naming is required, consider defining your custom callables in your code rather than configuration, and supplying them as arguments to our decorator or wrapper APIs. (See our API documentation for more information: https://docs.newrelic.com/docs/apm/agents/python-agent/python-agent-api/guide-using-python-agent-api#dynamically-name-segments-and-segment-attributes)"
 
+AI_MONITORING_ENABLED_DEPRECATION_WARNING = (
+    "Deprecated setting found: ai_monitoring.enabled. This setting will be removed in a "
+    "future release. Please use new setting ai_monitoring.basic_telemetry.enabled."
+)
+
 
 def _lambda_in_config_warning():
     warnings.warn(LAMBDA_IN_CONFIG_WARNING_MESSAGE, DeprecationWarning, stacklevel=2)
@@ -799,6 +804,7 @@ def _process_configuration(section):
     _process_setting(section, "ai_monitoring.enabled", "getboolean", None)
     _process_setting(section, "ai_monitoring.record_content.enabled", "getboolean", None)
     _process_setting(section, "ai_monitoring.streaming.enabled", "getboolean", None)
+    _process_setting(section, "ai_monitoring.basic_telemetry.enabled", "getboolean", None)
     _process_setting(section, "cloud.aws.account_id", "get", _map_aws_account_id)
     _process_setting(section, "k8s_operator.enabled", "getboolean", None)
     _process_setting(section, "azure_operator.enabled", "getboolean", None)
@@ -994,6 +1000,11 @@ def translate_deprecated_settings(settings, cached_settings):
             "attributes.exclude."
         )
 
+    # ai_monitoring.enabled is deprecated and will be removed
+    # in a future release, but is kept fully functional for now.
+    if settings.ai_monitoring.enabled is not None:
+        _logger.warning(AI_MONITORING_ENABLED_DEPRECATION_WARNING)
+
     return settings
 
 
@@ -1067,6 +1078,10 @@ def apply_local_high_security_mode_setting(settings):
     if settings.ai_monitoring.record_content.enabled:
         settings.ai_monitoring.record_content.enabled = False
         _logger.info(log_template, "ai_monitoring.record_content.enabled", True, False)
+
+    if settings.ai_monitoring.basic_telemetry.enabled:
+        settings.ai_monitoring.basic_telemetry.enabled = False
+        _logger.info(log_template, "ai_monitoring.basic_telemetry.enabled", True, False)
 
     return settings
 
@@ -1167,6 +1182,12 @@ def _load_configuration(config_file=None, environment=None, ignore_errors=True, 
         # for sending up to data collector on registration.
 
         _process_labels_setting()
+
+        # ai_monitoring.enabled may still be set by environment variable
+        # without a config file, so warn that it is deprecated.
+
+        if _settings.ai_monitoring.enabled is not None:
+            _logger.warning(AI_MONITORING_ENABLED_DEPRECATION_WARNING)
 
         return
 

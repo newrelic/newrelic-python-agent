@@ -19,7 +19,7 @@ from _test_workflow_agents import (
     build_workflow,
     workflow_recorded_events,
 )
-from conftest import EXPECTED_VERSION_METRICS
+from conftest import EXPECTED_BASIC_VERSION_METRICS, EXPECTED_VERSION_METRICS
 from testing_support.fixtures import dt_enabled, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     disabled_ai_monitoring_record_content_settings,
@@ -89,7 +89,7 @@ def test_workflow_agent(exercise_agent, set_trace_info):
     "test_workflow_agents:test_workflow_agent_no_content",
     scoped_metrics=EXPECTED_METRICS,
     rollup_metrics=EXPECTED_METRICS,
-    custom_metrics=EXPECTED_VERSION_METRICS,
+    custom_metrics=EXPECTED_BASIC_VERSION_METRICS,
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])

@@ -89,7 +89,7 @@ def test_embeddings_invalid_request_error_no_model(set_trace_info, sync_openai_c
     name="test_embeddings_error:test_embeddings_invalid_request_error_no_model_no_content",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}/Basic", 1)],
     background_task=True,
 )
 @validate_custom_events(events_sans_content(no_model_events))
@@ -213,7 +213,7 @@ def test_embeddings_invalid_request_error_invalid_model_async(set_trace_info, as
     name="test_embeddings_error:test_embeddings_invalid_request_error_invalid_model_async_no_content",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}/Basic", 1)],
     background_task=True,
 )
 @validate_custom_events(events_sans_content(invalid_model_events))
@@ -349,7 +349,7 @@ def test_embeddings_invalid_request_error_no_model_with_raw_response(set_trace_i
     name="test_embeddings_error:test_embeddings_invalid_request_error_no_model_no_content_with_raw_response",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}/Basic", 1)],
     background_task=True,
 )
 @validate_custom_events(events_sans_content(no_model_events))
@@ -462,7 +462,7 @@ def test_embeddings_invalid_request_error_invalid_model_async_with_raw_response(
     name="test_embeddings_error:test_embeddings_invalid_request_error_invalid_model_async_no_content_with_raw_response",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}/Basic", 1)],
     background_task=True,
 )
 @validate_custom_events(events_sans_content(invalid_model_events))

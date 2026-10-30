@@ -295,7 +295,7 @@ def test_openai_chat_completion_sync_with_llm_metadata_with_streaming_response_t
 # @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
     name="test_chat_completion_stream:test_openai_chat_completion_sync_no_content",
-    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}/Basic", 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -645,7 +645,7 @@ def test_openai_chat_completion_async_with_llm_metadata_with_streaming_response_
     "test_chat_completion_stream:test_openai_chat_completion_async_no_content",
     scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
     rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}/Basic", 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])

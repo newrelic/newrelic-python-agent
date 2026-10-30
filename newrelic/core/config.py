@@ -190,6 +190,10 @@ class AIMonitoringRecordContentSettings(Settings):
     pass
 
 
+class AIMonitoringBasicTelemetrySettings(Settings):
+    pass
+
+
 class K8sOperatorSettings(Settings):
     pass
 
@@ -585,6 +589,7 @@ _settings.machine_learning.inference_events_value = MachineLearningInferenceEven
 _settings.ai_monitoring = AIMonitoringSettings()
 _settings.ai_monitoring.streaming = AIMonitoringStreamingSettings()
 _settings.ai_monitoring.record_content = AIMonitoringRecordContentSettings()
+_settings.ai_monitoring.basic_telemetry = AIMonitoringBasicTelemetrySettings()
 _settings.k8s_operator = K8sOperatorSettings()
 _settings.azure_operator = AzureOperatorSettings()
 _settings.package_reporting = PackageReportingSettings()
@@ -1411,10 +1416,13 @@ _settings.machine_learning.enabled = _environ_as_bool("NEW_RELIC_MACHINE_LEARNIN
 _settings.machine_learning.inference_events_value.enabled = _environ_as_bool(
     "NEW_RELIC_MACHINE_LEARNING_INFERENCE_EVENT_VALUE_ENABLED", default=False
 )
-_settings.ai_monitoring.enabled = _environ_as_bool("NEW_RELIC_AI_MONITORING_ENABLED", default=False)
+_settings.ai_monitoring.enabled = _environ_as_bool("NEW_RELIC_AI_MONITORING_ENABLED", default=None)
 _settings.ai_monitoring.streaming.enabled = _environ_as_bool("NEW_RELIC_AI_MONITORING_STREAMING_ENABLED", default=True)
 _settings.ai_monitoring.record_content.enabled = _environ_as_bool(
-    "NEW_RELIC_AI_MONITORING_RECORD_CONTENT_ENABLED", default=True
+    "NEW_RELIC_AI_MONITORING_RECORD_CONTENT_ENABLED", default=None
+)
+_settings.ai_monitoring.basic_telemetry.enabled = _environ_as_bool(
+    "NEW_RELIC_AI_MONITORING_BASIC_TELEMETRY_ENABLED", default=True
 )
 _settings.ai_monitoring._llm_token_count_callback = None
 _settings.k8s_operator.enabled = _environ_as_bool("NEW_RELIC_K8S_OPERATOR_ENABLED", default=False)
@@ -1655,15 +1663,8 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
         if value == "apdex_f":
             agent_config["transaction_tracer.transaction_threshold"] = None
 
-    # collect_ai is the account-level toggle to disable AIM.
-    # The value of ai_monitoring.enabled sent from SSC always takes
-    # precedence over the value of collect_ai.
-    # Apply collect_ai first so that when agent_config settings from SSC
-    # are applied, they will override collect_ai if needed.
+    # collect_ai is the account-level toggle to disable AIM
     collect_ai = server_side_config.pop("collect_ai", None)
-    if collect_ai is not None:
-        apply_config_setting(settings_snapshot, "ai_monitoring.enabled", collect_ai)
-        _logger.debug("Setting ai_monitoring.enabled to value of collect_ai=%s", collect_ai)
 
     # Overlay with agent server side configuration settings.
 
@@ -1705,12 +1706,38 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
             settings_snapshot, "event_harvest_config.harvest_limits.span_event_data", span_event_harvest_limit
         )
 
+    if settings_snapshot.ai_monitoring.record_content.enabled is None:
+        ai_monitoring_overridden = any(
+            name in config
+            for config in (agent_config, server_side_config)
+            for name in ("ai_monitoring.enabled", "ai_monitoring.record_content.enabled")
+        )
+        apply_config_setting(
+            settings_snapshot,
+            "ai_monitoring.record_content.enabled",
+            settings.ai_monitoring.enabled is True and not ai_monitoring_overridden,
+        )
+
+    # If ai_monitoring.enabled is not set, then use the value of basic_telemetry as a fallback
+    if settings_snapshot.ai_monitoring.enabled is None:
+        apply_config_setting(
+            settings_snapshot, "ai_monitoring.enabled", settings_snapshot.ai_monitoring.basic_telemetry.enabled
+        )
+
+    if collect_ai is False:
+        apply_config_setting(settings_snapshot, "ai_monitoring.enabled", False)
+        apply_config_setting(settings_snapshot, "ai_monitoring.basic_telemetry.enabled", False)
+        _logger.debug(
+            "AI Monitoring has been disabled at the account-level. All AIM features have been turned off in the agent."
+        )
+
     # Enforce High Security Mode on AIM settings as defense-in-depth in case
     # they get re-enabled during SSC overlay
     if settings_snapshot.high_security:
         apply_config_setting(settings_snapshot, "ai_monitoring.enabled", False)
         apply_config_setting(settings_snapshot, "ai_monitoring.streaming.enabled", False)
         apply_config_setting(settings_snapshot, "ai_monitoring.record_content.enabled", False)
+        apply_config_setting(settings_snapshot, "ai_monitoring.basic_telemetry.enabled", False)
 
     # Since the server does not override this setting we must override it here manually
     # by capping it at the max value of 4095.

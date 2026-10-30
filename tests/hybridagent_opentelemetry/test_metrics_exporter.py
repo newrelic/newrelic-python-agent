@@ -37,15 +37,12 @@ def meter_provider_with_proxy(meter_provider):
         _, nr_reader = meter_provider_resource_and_reader_generator(global_settings())
         return nr_reader
 
-    original_metric_reader = list(meter_provider._all_metric_readers)[0]
     nr_reader = reader_generator_with_proxy()
 
     meter_provider.add_metric_reader(nr_reader)
-    meter_provider.remove_metric_reader(original_metric_reader)
 
     yield meter_provider
 
-    meter_provider.add_metric_reader(original_metric_reader)
     meter_provider.remove_metric_reader(nr_reader)
 
 
@@ -67,14 +64,20 @@ def test_meter_provider_creator_without_proxy(meter_provider):
     },
 )
 def test_meter_provider_creator_with_proxy(meter_provider_with_proxy):
-    metric_reader = list(meter_provider_with_proxy._all_metric_readers)[0]
-    session = metric_reader._exporter._client._transport._session
     settings = global_settings()
 
-    assert isinstance(session, requests.Session)
-    assert session.proxies == proxy_details(
-        settings.proxy_scheme, settings.proxy_host, settings.proxy_port, settings.proxy_user, settings.proxy_pass
-    )
+    # We cannot rely on the order of the metric readers, so we check
+    # all of them for the correct proxy configuration.
+    for metric_reader in meter_provider_with_proxy._all_metric_readers:
+        session = metric_reader._exporter._client._transport._session
+        assert isinstance(session, requests.Session)
+        if session.proxies == proxy_details(
+            settings.proxy_scheme, settings.proxy_host, settings.proxy_port, settings.proxy_user, settings.proxy_pass
+        ):
+            assert True
+            return
+
+    assert False
 
 
 @pytest.mark.parametrize(

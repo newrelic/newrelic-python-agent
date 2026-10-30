@@ -1561,11 +1561,9 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
             settings_snapshot, "ai_monitoring.record_content.enabled", settings.ai_monitoring.enabled is True
         )
 
-    # Fully disable AIM if it was disabled locally with no SSC override, even if basic_telemetry is enabled
-    if settings.ai_monitoring.enabled is False and not (
-        "ai_monitoring.enabled" in agent_config or "ai_monitoring.basic_telemetry.enabled" in agent_config
-    ):
-        apply_config_setting(settings_snapshot, "ai_monitoring.enabled", False)
+    # The snapshot already holds the server value (if any) layered over the local value.
+    # If that resolved enabled is an explicit False, fully disable AIM, even if basic_telemetry is enabled.
+    if settings_snapshot.ai_monitoring.enabled is False:
         apply_config_setting(settings_snapshot, "ai_monitoring.basic_telemetry.enabled", False)
 
     # If ai_monitoring.enabled is not set, then use the value of basic_telemetry as a fallback

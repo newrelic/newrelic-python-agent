@@ -67,11 +67,7 @@
       "type": "integer",
       "default": 2000
     },
-    "ai_monitoring.enabled": {
-      "type": "boolean",
-      "default": false
-    },
-    "ai_monitoring.record_content.enabled": {
+    "ai_monitoring.basic_telemetry.enabled": {
       "type": "boolean",
       "default": true
     },
@@ -271,10 +267,6 @@
     },
     "browser_monitoring.ssl_for_http": {
       "type": "boolean"
-    },
-    "browser_monitoring.version": {
-      "type": "string",
-      "default": ""
     },
     "ca_bundle_path": {
       "type": "string"
@@ -1105,6 +1097,18 @@
       "description": "New Relic license key associated with your account. Binds the agent's data to your account in the New Relic UI.",
       "minLength": 1,
       "writeOnly": true
+    },
+    "ai_monitoring.enabled": {
+      "type": "boolean",
+      "default": false
+    },
+    "ai_monitoring.record_content.enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "browser_monitoring.version": {
+      "type": "string",
+      "default": ""
     }
   },
   "required": [

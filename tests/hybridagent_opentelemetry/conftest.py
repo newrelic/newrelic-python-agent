@@ -46,4 +46,3 @@ def tracer():
 def meter_provider():
     provider = MeterProvider()
     return provider
-

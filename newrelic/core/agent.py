@@ -269,8 +269,9 @@ class Agent:
                     Agent._meter_provider = NoOpMeterProvider()
                 else:
                     try:
-                        from newrelic.api.opentelemetry import meter_provider_resource_and_reader_generator
                         from opentelemetry.sdk.metrics import MeterProvider
+
+                        from newrelic.api.opentelemetry import meter_provider_resource_and_reader_generator
 
                         nr_resource, nr_reader = meter_provider_resource_and_reader_generator(settings)
                         Agent._meter_provider = MeterProvider(metric_readers=[nr_reader], resource=nr_resource)

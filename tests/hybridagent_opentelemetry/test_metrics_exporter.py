@@ -14,12 +14,11 @@
 
 import pytest
 import requests
+from testing_support.fixtures import override_generic_settings
 
+from newrelic.api.opentelemetry import meter_provider_resource_and_reader_generator
 from newrelic.core.config import global_settings
 from newrelic.network.addresses import proxy_details
-from newrelic.api.opentelemetry import meter_provider_resource_and_reader_generator
-
-from testing_support.fixtures import override_generic_settings
 
 
 @pytest.fixture
@@ -90,7 +89,11 @@ def test_meter_provider_creator_with_proxy(meter_provider_with_proxy):
     ],
 )
 def test_meter_exporter_interval_and_timeout(
-    meter_provider, opentelemetry_metrics_export_interval, opentelemetry_metrics_export_timeout, expected_interval, expected_timeout
+    meter_provider,
+    opentelemetry_metrics_export_interval,
+    opentelemetry_metrics_export_timeout,
+    expected_interval,
+    expected_timeout,
 ):
     @override_generic_settings(
         global_settings(),

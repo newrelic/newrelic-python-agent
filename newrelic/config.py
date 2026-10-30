@@ -4598,7 +4598,6 @@ def _process_module_builtin_defaults():
         "opentelemetry.sdk.metrics", "newrelic.hooks.hybridagent_opentelemetry", "instrument_MeterProvider"
     )
 
-
     _process_module_definition(
         "opentelemetry.util.http", "newrelic.hooks.hybridagent_opentelemetry", "instrument_util_http"
     )

@@ -14,6 +14,7 @@
 
 import pytest
 from opentelemetry import propagate, trace
+from opentelemetry.sdk.metrics import MeterProvider
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 from newrelic.api.opentelemetry import opentelemetry_context_propagator
@@ -39,3 +40,10 @@ def tracer():
 
     tracer_provider = trace.get_tracer_provider()
     return tracer_provider.get_tracer()
+
+
+@pytest.fixture(scope="session")
+def meter_provider():
+    provider = MeterProvider()
+    return provider
+

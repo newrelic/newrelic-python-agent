@@ -242,6 +242,11 @@ class Agent:
             return Agent._meter_provider
 
         with Agent._instance_lock:
+            # The user is responsible for creating a MeterProvider instance.
+            # However, in the case of third party instrumented libraries, the
+            # intent is to have users install `opentelemetry-instrument` to
+            # automatically configure the MeterProvider. In the case where this
+            # does not happen, the agent may need to create a default MeterProvider.
             if not Agent._meter_provider:
                 # Exit early if `opentelemetry-api` is not installed.
                 # This should ideally never get here because `opentelemetry_tracer_provider()`
@@ -264,9 +269,12 @@ class Agent:
                     Agent._meter_provider = NoOpMeterProvider()
                 else:
                     try:
-                        from newrelic.api.opentelemetry import meter_provider_creator
+                        from newrelic.api.opentelemetry import meter_provider_resource_and_reader_generator
+                        from opentelemetry.sdk.metrics import MeterProvider
 
-                        Agent._meter_provider = meter_provider_creator(settings)
+                        nr_resource, nr_reader = meter_provider_resource_and_reader_generator(settings)
+                        Agent._meter_provider = MeterProvider(metric_readers=[nr_reader], resource=nr_resource)
+                        _logger.debug("MeterProvider not provided; creating default MeterProvider.")
                     except ImportError:
                         _logger.warning(
                             "OpenTelemetry mode has been enabled but `opentelemetry-sdk` and/or "

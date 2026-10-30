@@ -284,6 +284,42 @@ def instrument_util_http(module):
 ###########################################
 
 
+def _subscribe_meter_provider(settings, meter_provider):
+    from newrelic.api.opentelemetry import meter_provider_resource_and_reader_generator
+
+    nr_resource, nr_reader = meter_provider_resource_and_reader_generator(settings)
+
+    meter_provider._update_resource(nr_resource)
+    meter_provider.add_metric_reader(nr_reader)
+
+    application = application_instance()
+    if not application.active:
+        # Force application registration if not already active
+        application.activate()
+
+    application._agent._meter_provider = meter_provider
+
+
+def wrap_MeterProvider(wrapped, instance, args, kwargs):
+    # We should initialize the agent here as well, if there is
+    # not an instance already.
+    application = application_instance()
+    if not application.active:
+        # Force application registration if not already active
+        application.activate()
+
+    settings = getattr(application, "settings", None) or global_settings()
+
+    if settings and not (settings.opentelemetry.enabled and settings.opentelemetry.metrics.enabled):
+        return wrapped(*args, **kwargs)
+
+    result = wrapped(*args, **kwargs)
+
+    _subscribe_meter_provider(settings, instance)
+
+    return result
+
+
 def wrap_set_meter_provider(wrapped, instance, args, kwargs):
     # This needs to act as a singleton, like the agent instance.
     # We should initialize the agent here as well, if there is
@@ -299,8 +335,12 @@ def wrap_set_meter_provider(wrapped, instance, args, kwargs):
     if settings and not (settings.opentelemetry.enabled and settings.opentelemetry.metrics.enabled):
         return wrapped(*args, **kwargs)
 
-    nr_meter_provider = application._agent.opentelemetry_meter_provider(settings)
-    return wrapped(nr_meter_provider)
+    bound_args = bind_args(wrapped, args, kwargs)
+    meter_provider = bound_args.get("meter_provider")
+
+    _subscribe_meter_provider(settings, meter_provider)
+
+    return wrapped(*args, **kwargs)
 
 
 def wrap_get_meter_provider(wrapped, instance, args, kwargs):
@@ -318,7 +358,16 @@ def wrap_get_meter_provider(wrapped, instance, args, kwargs):
     if settings and not (settings.opentelemetry.enabled and settings.opentelemetry.metrics.enabled):
         return wrapped(*args, **kwargs)
 
-    return application._agent.opentelemetry_meter_provider(settings)
+    meter_provider = wrapped(*args, **kwargs)
+    if meter_provider and (application._agent._meter_provider is None):
+        _subscribe_meter_provider(settings, meter_provider)
+
+    return meter_provider
+
+
+def instrument_MeterProvider(module):
+    if hasattr(module, "MeterProvider"):
+        wrap_function_wrapper(module, "MeterProvider.__init__", wrap_MeterProvider)
 
 
 def instrument_meter_api(module):

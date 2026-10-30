@@ -1001,7 +1001,7 @@ class TracerProvider(otel_api_trace.TracerProvider):
         )
 
 
-def meter_provider_creator(settings):
+def meter_provider_resource_and_reader_generator(settings):
     try:
         import requests
         from opentelemetry.exporter.otlp.proto.http import Compression
@@ -1009,7 +1009,6 @@ def meter_provider_creator(settings):
         from opentelemetry.sdk.metrics import (
             Counter,
             Histogram,
-            MeterProvider,
             ObservableCounter,
             ObservableGauge,
             ObservableUpDownCounter,
@@ -1074,6 +1073,6 @@ def meter_provider_creator(settings):
                 **settings.otlp_resource_attributes,
             }
         )
-        return MeterProvider(resource=resource, metric_readers=[reader])
+        return resource, reader
     except Exception:
         raise

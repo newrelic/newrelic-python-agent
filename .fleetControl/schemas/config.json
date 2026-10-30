@@ -75,6 +75,10 @@
       "type": "boolean",
       "default": true
     },
+    "ai_monitoring.basic_telemetry.enabled": {
+      "type": "boolean",
+      "default": true
+    },
     "ai_monitoring.streaming.enabled": {
       "type": "boolean",
       "default": true

@@ -1589,6 +1589,7 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
     # An inactive AIM never records content.
     if not settings_snapshot.ai_monitoring.enabled:
         apply_config_setting(settings_snapshot, "ai_monitoring.record_content.enabled", False)
+        apply_config_setting(settings_snapshot, "ai_monitoring.basic_telemetry.enabled", False)
 
     # Since the server does not override this setting we must override it here manually
     # by capping it at the max value of 4095.

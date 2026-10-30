@@ -14,7 +14,7 @@
 
 import pytest
 from _test_tools import TOOL_NAME, get_capital, tool_recorded_event_error
-from conftest import EXPECTED_VERSION_METRICS, TOOL_PROMPT
+from conftest import EXPECTED_BASIC_VERSION_METRICS, EXPECTED_VERSION_METRICS, TOOL_PROMPT
 from crewai.tools import ToolExecutionFailedError, ToolFailure, ToolFailureRecord
 from testing_support.fixtures import dt_enabled, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
@@ -87,7 +87,7 @@ def test_tool_error(build_crew, crewai_react_llm, set_trace_info):
     "test_tool_error:test_tool_error_no_content",
     scoped_metrics=[EXPECTED_SYNC_TOOL_METRIC],
     rollup_metrics=[EXPECTED_SYNC_TOOL_METRIC],
-    custom_metrics=EXPECTED_VERSION_METRICS,
+    custom_metrics=EXPECTED_BASIC_VERSION_METRICS,
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])

@@ -191,7 +191,7 @@ def test_openai_responses_stream_sync_with_llm_metadata(set_trace_info, sync_ope
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
     name="test_responses_stream:test_openai_responses_stream_sync_no_content",
-    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}/Basic", 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])

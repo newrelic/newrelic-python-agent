@@ -67,6 +67,7 @@ assert CREWAI_VERSION, "Failed to pull crewai version for supportability metric"
 
 EXPECTED_CREWAI_VERSION_METRIC = (f"Supportability/Python/ML/CrewAI/{CREWAI_VERSION}", 1)
 EXPECTED_VERSION_METRICS = [EXPECTED_CREWAI_VERSION_METRIC]
+EXPECTED_BASIC_VERSION_METRICS = [(f"{name}/Basic", count) for name, count in EXPECTED_VERSION_METRICS]
 
 MODEL = "gpt-4o-mini"
 

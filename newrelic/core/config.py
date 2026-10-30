@@ -1554,17 +1554,19 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
             settings_snapshot, "event_harvest_config.harvest_limits.span_event_data", span_event_harvest_limit
         )
 
+    # Resolve record_content as: server value, else local value, else whether AIM was enabled locally.
+    # The snapshot already holds the server value (if any) layered over the local value.
     if settings_snapshot.ai_monitoring.record_content.enabled is None:
-        ai_monitoring_overridden = any(
-            name in config
-            for config in (agent_config, server_side_config)
-            for name in ("ai_monitoring.enabled", "ai_monitoring.record_content.enabled")
-        )
         apply_config_setting(
-            settings_snapshot,
-            "ai_monitoring.record_content.enabled",
-            settings.ai_monitoring.enabled is True and not ai_monitoring_overridden,
+            settings_snapshot, "ai_monitoring.record_content.enabled", settings.ai_monitoring.enabled is True
         )
+
+    # Fully disable AIM if it was disabled locally with no SSC override, even if basic_telemetry is enabled
+    if settings.ai_monitoring.enabled is False and not (
+        "ai_monitoring.enabled" in agent_config or "ai_monitoring.basic_telemetry.enabled" in agent_config
+    ):
+        apply_config_setting(settings_snapshot, "ai_monitoring.enabled", False)
+        apply_config_setting(settings_snapshot, "ai_monitoring.basic_telemetry.enabled", False)
 
     # If ai_monitoring.enabled is not set, then use the value of basic_telemetry as a fallback
     if settings_snapshot.ai_monitoring.enabled is None:
@@ -1584,8 +1586,11 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
     if settings_snapshot.high_security:
         apply_config_setting(settings_snapshot, "ai_monitoring.enabled", False)
         apply_config_setting(settings_snapshot, "ai_monitoring.streaming.enabled", False)
-        apply_config_setting(settings_snapshot, "ai_monitoring.record_content.enabled", False)
         apply_config_setting(settings_snapshot, "ai_monitoring.basic_telemetry.enabled", False)
+
+    # An inactive AIM never records content.
+    if not settings_snapshot.ai_monitoring.enabled:
+        apply_config_setting(settings_snapshot, "ai_monitoring.record_content.enabled", False)
 
     # Since the server does not override this setting we must override it here manually
     # by capping it at the max value of 4095.

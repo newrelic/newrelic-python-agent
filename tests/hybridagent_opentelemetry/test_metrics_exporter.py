@@ -66,8 +66,8 @@ def test_meter_provider_creator_without_proxy(meter_provider):
 def test_meter_provider_creator_with_proxy(meter_provider_with_proxy):
     settings = global_settings()
 
-    # We cannot rely on the order of the metric readers, so we check
-    # all of them for the correct proxy configuration.
+    # We cannot rely on the order of the metric readers, so we
+    # check both of them for the correct proxy configuration.
     for metric_reader in meter_provider_with_proxy._all_metric_readers:
         session = metric_reader._exporter._client._transport._session
         assert isinstance(session, requests.Session)

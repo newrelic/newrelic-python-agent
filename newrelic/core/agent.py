@@ -242,11 +242,6 @@ class Agent:
             return Agent._meter_provider
 
         with Agent._instance_lock:
-            # The user is responsible for creating a MeterProvider instance.
-            # However, in the case of third party instrumented libraries, the
-            # intent is to have users install `opentelemetry-instrument` to
-            # automatically configure the MeterProvider. In the case where this
-            # does not happen, the agent may need to create a default MeterProvider.
             if not Agent._meter_provider:
                 # Exit early if `opentelemetry-api` is not installed.
                 # This should ideally never get here because `opentelemetry_tracer_provider()`
@@ -272,10 +267,7 @@ class Agent:
                         # We want to check to see that these can be installed
                         # at this point, but we will not set up a MeterProvider ourselves.
                         from opentelemetry.sdk.metrics import MeterProvider
-                        from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporters
-                        
-                        Agent._meter_provider = MeterProvider()
-                        _logger.debug("MeterProvider not provided; creating default MeterProvider.")
+                        from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
                     except ImportError:
                         _logger.warning(
                             "OpenTelemetry mode has been enabled but `opentelemetry-sdk` and/or "

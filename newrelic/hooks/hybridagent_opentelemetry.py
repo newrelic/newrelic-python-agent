@@ -285,6 +285,14 @@ def instrument_util_http(module):
 
 
 def _subscribe_meter_provider(settings, meter_provider):
+    try:
+        guid = meter_provider._sdk_config.resource.attributes["entity.guid"]
+        if guid:
+            return
+    except (AttributeError, KeyError):
+        # Continue if the attribute is not present
+        pass
+
     application = application_instance()
     if not application.active:
         # Force application registration if not already active

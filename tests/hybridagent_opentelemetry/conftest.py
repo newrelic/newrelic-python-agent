@@ -13,7 +13,8 @@
 # limitations under the License.
 
 import pytest
-from opentelemetry import propagate, trace
+from opentelemetry import propagate, trace, metrics
+from opentelemetry.sdk.metrics import MeterProvider
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 
 from newrelic.api.opentelemetry import opentelemetry_context_propagator
@@ -26,7 +27,6 @@ _default_settings = {
     "debug.log_data_collector_payloads": True,
     "debug.record_transaction_failure": True,
     "opentelemetry.enabled": True,
-    "opentelemetry.traces.enabled": True,
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
@@ -40,3 +40,11 @@ def tracer():
 
     tracer_provider = trace.get_tracer_provider()
     return tracer_provider.get_tracer()
+
+
+@pytest.fixture(scope="session")
+def meter_provider():
+    provider = MeterProvider()
+    metrics.set_meter_provider(provider)
+
+    return provider

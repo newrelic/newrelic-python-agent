@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 from newrelic.api.application import application_instance
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
@@ -28,7 +27,8 @@ from newrelic.core.config import global_settings
 def wrap__load_runtime_context(wrapped, instance, args, kwargs):
     application = application_instance(activate=False)
     settings = getattr(application, "settings", None) or global_settings()
-    if settings and not settings.opentelemetry.enabled:
+
+    if settings and not (settings.opentelemetry.enabled and settings.opentelemetry.traces.enabled):
         return wrapped(*args, **kwargs)
 
     from opentelemetry.context.contextvars_context import ContextVarsRuntimeContext
@@ -47,7 +47,7 @@ def wrap_get_global_response_propagator(wrapped, instance, args, kwargs):
 
     settings = getattr(application, "settings", None) or global_settings()
 
-    if settings and not settings.opentelemetry.enabled:
+    if settings and not (settings.opentelemetry.enabled and settings.opentelemetry.traces.enabled):
         return wrapped(*args, **kwargs)
 
     from opentelemetry.instrumentation.propagators import set_global_response_propagator
@@ -84,10 +84,10 @@ def wrap_set_tracer_provider(wrapped, instance, args, kwargs):
 
     settings = getattr(application, "settings", None) or global_settings()
 
-    if settings and not settings.opentelemetry.enabled:
+    if settings and not (settings.opentelemetry.enabled and settings.opentelemetry.traces.enabled):
         return wrapped(*args, **kwargs)
 
-    nr_tracer_provider = application._agent.opentelemetry_tracer_provider()
+    nr_tracer_provider = application._agent.opentelemetry_tracer_provider(settings)
     return wrapped(nr_tracer_provider)
 
 
@@ -103,10 +103,10 @@ def wrap_get_tracer_provider(wrapped, instance, args, kwargs):
 
     settings = getattr(application, "settings", None) or global_settings()
 
-    if settings and not settings.opentelemetry.enabled:
+    if settings and not (settings.opentelemetry.enabled and settings.opentelemetry.traces.enabled):
         return wrapped(*args, **kwargs)
 
-    return application._agent.opentelemetry_tracer_provider()
+    return application._agent.opentelemetry_tracer_provider(settings)
 
 
 def wrap_get_custom_headers(wrapped, instance, args, kwargs):
@@ -140,7 +140,7 @@ def wrap_get_current_span(wrapped, instance, args, kwargs):
     application = application_instance(activate=False)
     settings = getattr(application, "settings", None) or global_settings()
 
-    if settings and not settings.opentelemetry.enabled:
+    if settings and not (settings.opentelemetry.enabled and settings.opentelemetry.traces.enabled):
         return span
 
     # If a NR trace does exist, check to see if the current
@@ -184,7 +184,7 @@ def wrap_start_internal_or_server_span(wrapped, instance, args, kwargs):
     application = application_instance(activate=False)
     settings = getattr(application, "settings", None) or global_settings()
 
-    if settings and not settings.opentelemetry.enabled:
+    if settings and not (settings.opentelemetry.enabled and settings.opentelemetry.traces.enabled):
         return wrapped(*args, **kwargs)
 
     bound_args = bind_args(wrapped, args, kwargs)
@@ -214,7 +214,7 @@ def wrap__get_span(wrapped, instance, args, kwargs):
     application = application_instance(activate=False)
     settings = getattr(application, "settings", None) or global_settings()
 
-    if settings and not settings.opentelemetry.enabled:
+    if settings and not (settings.opentelemetry.enabled and settings.opentelemetry.traces.enabled):
         return wrapped(*args, **kwargs)
 
     bound_args = bind_args(wrapped, args, kwargs)
@@ -277,3 +277,109 @@ def instrument_pika_utils(module):
 
 def instrument_util_http(module):
     wrap_function_wrapper(module, "get_custom_headers", wrap_get_custom_headers)
+
+
+###########################################
+#   Meter Instrumentation
+###########################################
+
+
+def _subscribe_meter_provider(settings, meter_provider):
+    try:
+        guid = meter_provider._sdk_config.resource.attributes["entity.guid"]
+        if guid:
+            return
+    except (AttributeError, KeyError):
+        # Continue if the attribute is not present
+        pass
+
+    application = application_instance()
+    if not application.active:
+        # Force application registration if not already active
+        application.activate()
+    
+    from newrelic.api.opentelemetry import meter_provider_resource_and_reader_generator
+    nr_resource, nr_reader = meter_provider_resource_and_reader_generator(settings)
+
+    meter_provider._update_resource(nr_resource)
+    meter_provider.add_metric_reader(nr_reader)
+
+    application._agent._meter_provider = meter_provider
+
+
+def wrap_MeterProvider(wrapped, instance, args, kwargs):
+    # We should initialize the agent here as well, if there is
+    # not an instance already.
+    application = application_instance()
+    if not application.active:
+        # Force application registration if not already active
+        application.activate()
+
+    settings = getattr(application, "settings", None) or global_settings()
+
+    if settings and not (settings.opentelemetry.enabled and settings.opentelemetry.metrics.enabled):
+        return wrapped(*args, **kwargs)
+
+    result = wrapped(*args, **kwargs)
+
+    _subscribe_meter_provider(settings, instance)
+
+    return result
+
+
+def wrap_set_meter_provider(wrapped, instance, args, kwargs):
+    # This needs to act as a singleton, like the agent instance.
+    # We should initialize the agent here as well, if there is
+    # not an instance already.
+
+    application = application_instance()
+    if not application.active:
+        # Force application registration if not already active
+        application.activate()
+
+    settings = getattr(application, "settings", None) or global_settings()
+
+    if settings and not (settings.opentelemetry.enabled and settings.opentelemetry.metrics.enabled):
+        return wrapped(*args, **kwargs)
+
+    bound_args = bind_args(wrapped, args, kwargs)
+    meter_provider = bound_args.get("meter_provider")
+
+    _subscribe_meter_provider(settings, meter_provider)
+
+    return wrapped(*args, **kwargs)
+
+
+def wrap_get_meter_provider(wrapped, instance, args, kwargs):
+    # This needs to act as a singleton, like the agent instance.
+    # We should initialize the agent here as well, if there is
+    # not an instance already.
+
+    application = application_instance()
+    if not application.active:
+        # Force application registration if not already active
+        application.activate()
+
+    settings = getattr(application, "settings", None) or global_settings()
+
+    if settings and not (settings.opentelemetry.enabled and settings.opentelemetry.metrics.enabled):
+        return wrapped(*args, **kwargs)
+
+    meter_provider = wrapped(*args, **kwargs)
+    if meter_provider and (application._agent._meter_provider is None):
+        _subscribe_meter_provider(settings, meter_provider)
+
+    return meter_provider
+
+
+def instrument_MeterProvider(module):
+    if hasattr(module, "MeterProvider"):
+        wrap_function_wrapper(module, "MeterProvider.__init__", wrap_MeterProvider)
+
+
+def instrument_meter_api(module):
+    if hasattr(module, "set_meter_provider"):
+        wrap_function_wrapper(module, "set_meter_provider", wrap_set_meter_provider)
+
+    if hasattr(module, "get_meter_provider"):
+        wrap_function_wrapper(module, "get_meter_provider", wrap_get_meter_provider)

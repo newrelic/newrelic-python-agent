@@ -17,7 +17,8 @@ from testing_support.validators.validate_otel_dimensional_metrics import validat
 
 
 @validate_otel_dimensional_metrics(counter_expected=[(4, {"attribute_key": "attribute_value"}), (5, {})])
-def test_counter(meter):
+def test_counter(meter_provider):
+    meter = meter_provider.get_meter("test_meter")
     counter = meter.create_counter(
         name="test_counter",
         description="A test counter",

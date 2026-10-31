@@ -56,12 +56,13 @@ def validate_otel_dimensional_metrics(
 
         # Force the metric reader to collect metrics immediately
         provider = metrics.get_meter_provider()
-        metric_reader = provider._metric_readers[-1]
+        metric_reader = list(provider._all_metric_readers)[0]
         metric_reader.collect()
 
         parsed_counter_data, _ = metric_parser(metric_events)
 
         if counter_expected:
-            assert all(item in parsed_counter_data for item in counter_expected) and all(item in counter_expected for item in parsed_counter_data), f"Expected: {counter_expected}, Got: {parsed_counter_data}"
+            assert all(item in parsed_counter_data for item in counter_expected), f"Expected: {counter_expected}, Got: {parsed_counter_data}"
+            assert all(item in counter_expected for item in parsed_counter_data), f"Expected: {counter_expected}, Got: {parsed_counter_data}"
 
     return _validate_wrapper

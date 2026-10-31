@@ -285,17 +285,16 @@ def instrument_util_http(module):
 
 
 def _subscribe_meter_provider(settings, meter_provider):
-    from newrelic.api.opentelemetry import meter_provider_resource_and_reader_generator
-
-    nr_resource, nr_reader = meter_provider_resource_and_reader_generator(settings)
-
-    meter_provider._update_resource(nr_resource)
-    meter_provider.add_metric_reader(nr_reader)
-
     application = application_instance()
     if not application.active:
         # Force application registration if not already active
         application.activate()
+    
+    from newrelic.api.opentelemetry import meter_provider_resource_and_reader_generator
+    nr_resource, nr_reader = meter_provider_resource_and_reader_generator(settings)
+
+    meter_provider._update_resource(nr_resource)
+    meter_provider.add_metric_reader(nr_reader)
 
     application._agent._meter_provider = meter_provider
 

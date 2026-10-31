@@ -269,12 +269,12 @@ class Agent:
                     Agent._meter_provider = NoOpMeterProvider()
                 else:
                     try:
+                        # We want to check to see that these can be installed
+                        # at this point, but we will not set up a MeterProvider ourselves.
                         from opentelemetry.sdk.metrics import MeterProvider
-
-                        from newrelic.api.opentelemetry import meter_provider_resource_and_reader_generator
-
-                        nr_resource, nr_reader = meter_provider_resource_and_reader_generator(settings)
-                        Agent._meter_provider = MeterProvider(metric_readers=[nr_reader], resource=nr_resource)
+                        from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporters
+                        
+                        Agent._meter_provider = MeterProvider()
                         _logger.debug("MeterProvider not provided; creating default MeterProvider.")
                     except ImportError:
                         _logger.warning(

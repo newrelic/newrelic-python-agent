@@ -285,6 +285,13 @@ def instrument_util_http(module):
 
 
 def _subscribe_meter_provider(settings, meter_provider):
+    if not (hasattr(meter_provider, "_update_resource") and hasattr(meter_provider, "add_metric_reader")):
+        # If get_meter_provider() is called before set_meter_provider(),
+        # a proxy MeterProvider will be passed in, so we need to exit early.
+        return
+
+    # Exit early if the meter provider already has an `entity.guid` set,
+    # since this means it is already configured with a New Relic resource.
     try:
         guid = meter_provider._sdk_config.resource.attributes["entity.guid"]
         if guid:
@@ -297,14 +304,15 @@ def _subscribe_meter_provider(settings, meter_provider):
     if not application.active:
         # Force application registration if not already active
         application.activate()
-    
+
     from newrelic.api.opentelemetry import meter_provider_resource_and_reader_generator
     nr_resource, nr_reader = meter_provider_resource_and_reader_generator(settings)
 
     meter_provider._update_resource(nr_resource)
     meter_provider.add_metric_reader(nr_reader)
 
-    application._agent._meter_provider = meter_provider
+    if not application._agent._meter_provider:
+        application._agent._meter_provider = meter_provider
 
 
 def wrap_MeterProvider(wrapped, instance, args, kwargs):
@@ -320,9 +328,31 @@ def wrap_MeterProvider(wrapped, instance, args, kwargs):
     if settings and not (settings.opentelemetry.enabled and settings.opentelemetry.metrics.enabled):
         return wrapped(*args, **kwargs)
 
-    result = wrapped(*args, **kwargs)
+    # Logic to avoid adding duplicate NR metric readers to the MeterProvider
+    try:
+        guid = instance._sdk_config.resource.attributes["entity.guid"]
+        if guid:
+            return wrapped(*args, **kwargs)
+    except (AttributeError, KeyError):
+        pass
 
-    _subscribe_meter_provider(settings, instance)
+    from newrelic.api.opentelemetry import meter_provider_resource_and_reader_generator
+    nr_resource, nr_reader = meter_provider_resource_and_reader_generator(settings)
+
+    # Before we run __init__ we need to add our metric reader to arg BEFORE running __init__
+    bound_args = bind_args(wrapped, args, kwargs)
+    metric_readers = bound_args.get("metric_readers", [])
+    nr_reader = [nr_reader]
+    nr_reader.extend(metric_readers)
+    bound_args["metric_readers"] = nr_reader
+
+    result = wrapped(**bound_args)
+
+    # resource attributes can be done after the MeterProvider is initialized
+    instance._update_resource(nr_resource)
+
+    if application._agent._meter_provider is None:
+        application._agent._meter_provider = instance
 
     return result
 
@@ -345,7 +375,8 @@ def wrap_set_meter_provider(wrapped, instance, args, kwargs):
     bound_args = bind_args(wrapped, args, kwargs)
     meter_provider = bound_args.get("meter_provider")
 
-    _subscribe_meter_provider(settings, meter_provider)
+    if meter_provider is not None:
+        _subscribe_meter_provider(settings, meter_provider)
 
     return wrapped(*args, **kwargs)
 

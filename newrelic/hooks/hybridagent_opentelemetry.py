@@ -285,6 +285,10 @@ def instrument_util_http(module):
 
 
 def _subscribe_meter_provider(settings, meter_provider):
+    """
+    Accounts for a scenario where the meter_provider may have been
+    set up but outside of the scope of New Relic's instrumentation.
+    """
     if not (hasattr(meter_provider, "_update_resource") and hasattr(meter_provider, "add_metric_reader")):
         # If get_meter_provider() is called before set_meter_provider(),
         # a proxy MeterProvider will be passed in, so we need to exit early.
@@ -309,7 +313,15 @@ def _subscribe_meter_provider(settings, meter_provider):
     nr_resource, nr_reader = meter_provider_resource_and_reader_generator(settings)
 
     meter_provider._update_resource(nr_resource)
+
+    # add_metric_reader() only wires nr_reader into live measurement routing;
+    # it does not add it to _metric_readers, which is the list that
+    # MeterProvider.shutdown()/force_flush() actually iterate to flush a
+    # reader's buffered data.  Without this, nr_reader would only ever export
+    # via its own periodic background thread, and anything it buffered would
+    # be silently dropped if the process exits before that interval elapses.
     meter_provider.add_metric_reader(nr_reader)
+    meter_provider._metric_readers = list(meter_provider._metric_readers) + [nr_reader]
 
     if not application._agent._meter_provider:
         application._agent._meter_provider = meter_provider
@@ -398,6 +410,8 @@ def wrap_get_meter_provider(wrapped, instance, args, kwargs):
 
     meter_provider = wrapped(*args, **kwargs)
     if meter_provider and (application._agent._meter_provider is None):
+        # Accounts for a scenario where the meter_provider may have been
+        # set up but outside of the scope of New Relic's instrumentation.
         _subscribe_meter_provider(settings, meter_provider)
 
     return meter_provider

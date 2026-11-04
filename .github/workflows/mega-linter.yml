@@ -48,7 +48,6 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          token: ${{ secrets.PAT || secrets.GITHUB_TOKEN }}
           fetch-depth: 0 # Required for pushing commits to PRs
           persist-credentials: true # zizmor: ignore[artipacked] git-auto-commit-action pushes linter fixes with these credentials
 

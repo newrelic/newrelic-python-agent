@@ -203,7 +203,10 @@ def traverse_deepest_unique_path(fields, fragments):
 
             # list(fragments.values())[0] 's index is OK because the previous line
             # ensures that there is only one field in the list
-            full_fragment_selection_set = next(iter(fragments.values())).selection_set.selections
+            fragment_definition = next(iter(fragments.values()))
+            # graphql-core 3.3 wraps fragment definitions in FragmentDetails.
+            fragment_definition = getattr(fragment_definition, "definition", fragment_definition)
+            full_fragment_selection_set = fragment_definition.selection_set.selections
             fragment_selection_set = filter_ignored_fields(full_fragment_selection_set)
 
             if len(fragment_selection_set) != 1:
@@ -376,7 +379,9 @@ def wrap_resolve_field(wrapped, instance, args, kwargs):
     except TypeError:
         return wrapped(*args, **kwargs)
 
-    field_name = field_asts[0].name.value
+    # graphql-core 3.3 passes FieldDetails objects instead of AST nodes.
+    field_ast = getattr(field_asts[0], "node", field_asts[0])
+    field_name = field_ast.name.value
     field_def = parent_type.fields.get(field_name, None)
     field_return_type = str(field_def.type) if field_def else "<unknown>"
     if isinstance(field_path, list):
@@ -535,16 +540,21 @@ def instrument_graphql_schema_get_field(module):
 def instrument_graphql_execute(module):
     if hasattr(module, "get_field_def"):
         wrap_function_wrapper(module, "get_field_def", wrap_get_field_def)
-    if hasattr(module, "ExecutionContext"):
-        wrap_function_wrapper(module, "ExecutionContext.__init__", wrap_executor_context_init)
+    execution_class_name = "ExecutionContext" if hasattr(module, "ExecutionContext") else "Executor"
+    execution_class = getattr(module, execution_class_name, None)
+    if execution_class is not None and not getattr(execution_class, "_nr_graphql_instrumented", False):
+        wrap_function_wrapper(module, f"{execution_class_name}.__init__", wrap_executor_context_init)
 
-        if hasattr(module.ExecutionContext, "resolve_field"):
-            wrap_function_wrapper(module, "ExecutionContext.resolve_field", wrap_resolve_field)
-        elif hasattr(module.ExecutionContext, "execute_field"):
-            wrap_function_wrapper(module, "ExecutionContext.execute_field", wrap_resolve_field)
+        if hasattr(execution_class, "resolve_field"):
+            wrap_function_wrapper(module, f"{execution_class_name}.resolve_field", wrap_resolve_field)
+        elif hasattr(execution_class, "execute_field"):
+            wrap_function_wrapper(module, f"{execution_class_name}.execute_field", wrap_resolve_field)
 
-        if hasattr(module.ExecutionContext, "execute_operation"):
-            wrap_function_wrapper(module, "ExecutionContext.execute_operation", wrap_execute_operation)
+        if hasattr(execution_class, "execute_operation"):
+            wrap_function_wrapper(module, f"{execution_class_name}.execute_operation", wrap_execute_operation)
+
+        # graphql-core 3.3 exports Executor from both execute and executor modules.
+        execution_class._nr_graphql_instrumented = True
 
     if hasattr(module, "resolve_field"):
         wrap_function_wrapper(module, "resolve_field", wrap_resolve_field)

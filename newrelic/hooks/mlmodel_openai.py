@@ -27,7 +27,6 @@ from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import ObjectProxy, wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
-from newrelic.core.config import global_settings
 
 OPENAI_VERSION = get_package_version("openai")
 OPENAI_VERSION_TUPLE = tuple(map(int, OPENAI_VERSION.split(".")))
@@ -49,8 +48,8 @@ def wrap_embedding_sync(wrapped, instance, args, kwargs):
     transaction = current_transaction()
     if not transaction or kwargs.get("stream", False) or _is_streaming_response_wrapper(kwargs):
         return wrapped(*args, **kwargs)
-    settings = transaction.settings if transaction.settings is not None else global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI
@@ -102,8 +101,8 @@ def wrap_chat_completion_sync(wrapped, instance, args, kwargs):
 
     request_timestamp = int(1000.0 * time.time())
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI
@@ -172,7 +171,7 @@ def create_chat_completion_message_event(
     all_token_counts,
     request_timestamp=None,
 ):
-    settings = transaction.settings if transaction.settings is not None else global_settings()
+    settings = getattr(transaction, "settings", None)
 
     # Loop through all input messages received from the create request and emit a custom event for each one
     for index, message in enumerate(input_message_list):
@@ -256,8 +255,8 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
     if not transaction or kwargs.get("stream", False) or _is_streaming_response_wrapper(kwargs):
         return await wrapped(*args, **kwargs)
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI
@@ -299,7 +298,7 @@ async def wrap_embedding_async(wrapped, instance, args, kwargs):
 
 
 def _record_embedding_success(*, transaction, embedding_id, linking_metadata, kwargs, ft, response):
-    settings = transaction.settings if transaction.settings is not None else global_settings()
+    settings = getattr(transaction, "settings", None)
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
     try:
@@ -375,7 +374,7 @@ def _record_embedding_success(*, transaction, embedding_id, linking_metadata, kw
 
 
 def _record_embedding_error(*, transaction, embedding_id, linking_metadata, kwargs, ft, exc):
-    settings = transaction.settings if transaction.settings is not None else global_settings()
+    settings = getattr(transaction, "settings", None)
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
     model = kwargs.get("model") or kwargs.get("engine")
@@ -454,8 +453,8 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
 
     request_timestamp = int(1000.0 * time.time())
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI
@@ -496,7 +495,7 @@ async def wrap_chat_completion_async(wrapped, instance, args, kwargs):
 def _handle_completion_success(
     *, transaction, linking_metadata, completion_id, kwargs, ft, return_val, request_timestamp=None, responses_api=False
 ):
-    settings = transaction.settings if transaction.settings is not None else global_settings()
+    settings = getattr(transaction, "settings", None)
     stream = kwargs.get("stream", False)
 
     # Only if streaming and streaming monitoring is enabled and the response is not empty
@@ -555,7 +554,7 @@ def _handle_completion_success(
 def _record_completion_success(
     *, transaction, linking_metadata, completion_id, kwargs, ft, response_headers, response, request_timestamp=None
 ):
-    settings = transaction.settings if transaction.settings is not None else global_settings()
+    settings = getattr(transaction, "settings", None)
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
 
@@ -1065,8 +1064,8 @@ def wrap_convert_to_openai_object(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
     resp = args[0]
@@ -1086,8 +1085,8 @@ def wrap_base_client_process_response_sync(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
     bound_args = bind_args(wrapped, args, kwargs)
@@ -1104,8 +1103,8 @@ async def wrap_base_client_process_response_async(wrapped, instance, args, kwarg
     if not transaction:
         return await wrapped(*args, **kwargs)
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
     bound_args = bind_args(wrapped, args, kwargs)
@@ -1341,8 +1340,8 @@ def wrap_stream_iter_events_sync(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
-    if not settings.ai_monitoring.enabled or not settings.ai_monitoring.streaming.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled or not settings.ai_monitoring.streaming.enabled:
         return wrapped(*args, **kwargs)
 
     return_val = wrapped(*args, **kwargs)
@@ -1356,8 +1355,8 @@ def wrap_stream_iter_events_async(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
-    if not settings.ai_monitoring.enabled or not settings.ai_monitoring.streaming.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled or not settings.ai_monitoring.streaming.enabled:
         return wrapped(*args, **kwargs)
 
     return_val = wrapped(*args, **kwargs)
@@ -1383,8 +1382,8 @@ def wrap_engine_api_resource_create_sync(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
     stream = is_stream(wrapped, args, kwargs)
@@ -1400,8 +1399,8 @@ async def wrap_engine_api_resource_create_async(wrapped, instance, args, kwargs)
     if not transaction:
         return await wrapped(*args, **kwargs)
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
     stream = is_stream(wrapped, args, kwargs)

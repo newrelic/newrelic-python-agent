@@ -14,7 +14,7 @@
 
 from _test_agent import AGENT_NAME, PROMPT, agent_recorded_event, build_agent
 from _test_tools import TOOL_NAME, get_capital_tool, tool_recorded_event
-from conftest import EXPECTED_VERSION_METRICS, GOOGLE_ADK_VERSION_TUPLE
+from conftest import EXPECTED_BASIC_VERSION_METRICS, EXPECTED_VERSION_METRICS, GOOGLE_ADK_VERSION_TUPLE
 from testing_support.fixtures import dt_enabled, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     disabled_ai_monitoring_record_content_settings,
@@ -86,7 +86,7 @@ def test_tool(exercise_agent, set_trace_info):
     "test_tools:test_tool_no_content",
     scoped_metrics=EXPECTED_METRICS,
     rollup_metrics=EXPECTED_METRICS,
-    custom_metrics=EXPECTED_VERSION_METRICS,
+    custom_metrics=EXPECTED_BASIC_VERSION_METRICS,
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])

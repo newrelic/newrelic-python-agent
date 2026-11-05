@@ -100,7 +100,7 @@ def test_openai_embedding_sync_with_raw_response(set_trace_info, sync_openai_cli
     name="test_embeddings:test_openai_embedding_sync_no_content",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}/Basic", 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -192,7 +192,7 @@ def test_openai_embedding_async_with_raw_response(loop, set_trace_info, async_op
     name="test_embeddings:test_openai_embedding_async_no_content",
     scoped_metrics=[("Llm/embedding/OpenAI/create", 1)],
     rollup_metrics=[("Llm/embedding/OpenAI/create", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}/Basic", 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])

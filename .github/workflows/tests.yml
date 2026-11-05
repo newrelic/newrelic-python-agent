@@ -98,6 +98,8 @@ jobs:
     if: ${{ (github.actor != 'dependabot[bot]') && (success() || failure()) }} # Does not run on cancelled workflows
     needs:
       - tests
+    permissions:
+      id-token: write  # Used for OIDC upload to CodeCov
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -126,7 +128,7 @@ jobs:
         with:
           files: coverage.xml
           fail_ci_if_error: true
-          token: ${{ secrets.CODECOV_TOKEN }}
+          use_oidc: true
 
   # Combine and upload coverage data
   summary:

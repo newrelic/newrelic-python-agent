@@ -76,11 +76,14 @@ jobs:
 
     steps:
       - name: Status
+        env:
+          ANY_CANCELLED: ${{ contains(needs.*.result, 'cancelled') }}
+          ANY_FAILED: ${{ contains(needs.*.result, 'failure') }}
         run: |
-          if [[ "${{ contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+          if [[ "${ANY_CANCELLED}" == "true" ]]; then
             echo "Workflow cancelled."
             exit 1
-          elif [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
+          elif [[ "${ANY_FAILED}" == "true" ]]; then
             echo "One or more jobs failed."
             exit 1
           else

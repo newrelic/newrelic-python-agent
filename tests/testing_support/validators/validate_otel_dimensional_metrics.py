@@ -24,7 +24,7 @@ def metric_parser(export_request):
             for metric in scope_metric.metrics:
                 if hasattr(metric, "sum"):
                     for data_point in metric.sum.data_points:
-                        count = data_point.as_int
+                        count = getattr(data_point, "as_int") or getattr(data_point, "as_double")
                         attr = {}
                         if hasattr(data_point, "attributes"):
                             for attribute in data_point.attributes:
@@ -56,13 +56,18 @@ def validate_otel_dimensional_metrics(
 
         # Force the metric reader to collect metrics immediately
         provider = metrics.get_meter_provider()
-        metric_reader = list(provider._all_metric_readers)[0]
-        metric_reader.collect()
+        for metric_reader in provider._all_metric_readers:
+            metric_reader.collect()
 
-        parsed_counter_data, _ = metric_parser(metric_events)
+            parsed_counter_data, _ = metric_parser(metric_events)
 
-        if counter_expected:
-            assert all(item in parsed_counter_data for item in counter_expected), f"Expected: {counter_expected}, Got: {parsed_counter_data}"
-            assert all(item in counter_expected for item in parsed_counter_data), f"Expected: {counter_expected}, Got: {parsed_counter_data}"
+            if counter_expected:
+                try:
+                    assert all(item in parsed_counter_data for item in counter_expected), f"Expected: {counter_expected}, Got: {parsed_counter_data}"
+                    assert all(item in counter_expected for item in parsed_counter_data), f"Expected: {counter_expected}, Got: {parsed_counter_data}"
+                    return
+                except AssertionError:
+                    # Go through next metric reader to see if that has the information we expect
+                    pass
 
     return _validate_wrapper

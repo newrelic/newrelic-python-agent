@@ -76,11 +76,14 @@ jobs:
 
     steps:
       - name: Status
+        env:
+          ANY_CANCELLED: ${{ contains(needs.*.result, 'cancelled') }}
+          ANY_FAILED: ${{ contains(needs.*.result, 'failure') }}
         run: |
-          if [[ "${{ contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+          if [[ "${ANY_CANCELLED}" == "true" ]]; then
             echo "Workflow cancelled."
             exit 1
-          elif [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
+          elif [[ "${ANY_FAILED}" == "true" ]]; then
             echo "One or more jobs failed."
             exit 1
           else
@@ -95,6 +98,8 @@ jobs:
     if: ${{ (github.actor != 'dependabot[bot]') && (success() || failure()) }} # Does not run on cancelled workflows
     needs:
       - tests
+    permissions:
+      id-token: write # Used for OIDC upload to CodeCov
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -123,7 +128,7 @@ jobs:
         with:
           files: coverage.xml
           fail_ci_if_error: true
-          token: ${{ secrets.CODECOV_TOKEN }}
+          use_oidc: true
 
   # Combine and upload coverage data
   summary:

@@ -54,7 +54,8 @@ def target_application():
 
 
 _exact_intrinsics = {"type": "Span"}
-_exact_root_intrinsics = _exact_intrinsics.copy().update({"nr.entryPoint": True})
+_exact_root_intrinsics = _exact_intrinsics.copy()
+_exact_root_intrinsics.update({"nr.entryPoint": True})
 _expected_intrinsics = [
     "traceId",
     "transactionId",
@@ -113,7 +114,7 @@ _test_application_rollup_metrics = [
     unexpected_intrinsics=_unexpected_root_intrinsics,
     exact_agents={"otel.scope.name": "flask", "otel.library.name": "flask"},
     expected_agents=["otel.scope.version", "otel.library.version"],
-    exact_users={"library_name": "flask", "schema_url": "https://opentelemetry.io/schemas/1.11.0"},
+    exact_users={"library_name": "flask", "schema_url": "https://opentelemetry.io/schemas/1.11.0", "span.kind": "server"},
     expected_users=["library_version"],
 )
 def test_opentelemetry_application_index():
@@ -130,6 +131,7 @@ def test_opentelemetry_application_index():
     exact_intrinsics=_exact_root_intrinsics,
     expected_intrinsics=_expected_root_intrinsics,
     unexpected_intrinsics=_unexpected_root_intrinsics,
+    exact_users={"span.kind": "server"},
 )
 def test_opentelemetry_application_async():
     application = target_application()
@@ -144,6 +146,7 @@ def test_opentelemetry_application_async():
     exact_intrinsics=_exact_root_intrinsics,
     expected_intrinsics=_expected_root_intrinsics,
     unexpected_intrinsics=_unexpected_root_intrinsics,
+    exact_users={"span.kind": "server"},
 )
 def test_opentelemetry_application_endpoint():
     application = target_application()
@@ -169,6 +172,7 @@ def test_opentelemetry_application_endpoint():
     exact_intrinsics=_exact_root_intrinsics,
     expected_intrinsics=_expected_root_intrinsics,
     unexpected_intrinsics=_unexpected_root_intrinsics,
+    exact_users={"span.kind": "server"},
 )
 def test_opentelemetry_application_error():
     application = target_application()
@@ -182,6 +186,7 @@ def test_opentelemetry_application_error():
     exact_intrinsics=_exact_root_intrinsics,
     expected_intrinsics=_expected_root_intrinsics,
     unexpected_intrinsics=_unexpected_root_intrinsics,
+    exact_users={"span.kind": "server"},
 )
 def test_opentelemetry_application_abort_404():
     application = target_application()
@@ -195,6 +200,7 @@ def test_opentelemetry_application_abort_404():
     exact_intrinsics=_exact_root_intrinsics,
     expected_intrinsics=_expected_root_intrinsics,
     unexpected_intrinsics=_unexpected_root_intrinsics,
+    exact_users={"span.kind": "server"},
 )
 def test_application_exception_404():
     application = target_application()
@@ -208,6 +214,7 @@ def test_application_exception_404():
     exact_intrinsics=_exact_root_intrinsics,
     expected_intrinsics=_expected_root_intrinsics,
     unexpected_intrinsics=_unexpected_root_intrinsics,
+    exact_users={"span.kind": "server"},
 )
 def test_application_not_found():
     application = target_application()
@@ -232,8 +239,9 @@ _test_application_render_template_string_scoped_metrics = [
     exact_intrinsics=_exact_root_intrinsics,
     expected_intrinsics=_expected_root_intrinsics,
     unexpected_intrinsics=_unexpected_root_intrinsics,
+    exact_users={"span.kind": "server"},
 )
-@validate_span_events(
+@validate_span_events(  # These spans are generated from NR's WSGI instrumentation, not from OTel
     count=2,
     exact_intrinsics=_exact_intrinsics,
     expected_intrinsics=_expected_child_intrinsics,
@@ -262,6 +270,7 @@ def test_application_render_template_string():
     exact_intrinsics=_exact_root_intrinsics,
     expected_intrinsics=_expected_root_intrinsics,
     unexpected_intrinsics=_unexpected_root_intrinsics,
+    exact_users={"span.kind": "server"},
 )
 def test_application_render_template_not_found():
     application = target_application()

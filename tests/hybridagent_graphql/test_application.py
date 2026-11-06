@@ -139,8 +139,14 @@ def test_query_and_mutation(target_application):
     }
     _expected_query_resolver_attributes = {"graphql.field.parentType": "Query", "graphql.field.path": "storage"}
 
-    @validate_span_events(exact_agents=_expected_mutation_resolver_attributes)
-    @validate_span_events(exact_agents=_expected_mutation_operation_attributes)
+    @validate_span_events(
+            exact_agents=_expected_mutation_resolver_attributes,
+            exact_users={"span.kind": "internal"},
+            )
+    @validate_span_events(
+        exact_agents=_expected_mutation_operation_attributes,
+        exact_users={"span.kind": "internal"},
+    )
     @validate_transaction_metrics(mutation_transaction_name, background_task=not is_wsgi_or_asgi)
     @conditional_decorator(decorator=background_task(), condition=(not is_wsgi_or_asgi))
     def _mutation():

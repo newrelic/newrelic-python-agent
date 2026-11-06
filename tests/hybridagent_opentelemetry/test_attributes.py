@@ -36,7 +36,7 @@ def test_trace_with_span_attributes(tracer):
         count=1,
         exact_intrinsics={"name": "Function/opentelemetry_span", "sampled": True},
         expected_intrinsics={"priority": None, "traceId": None, "guid": None},
-        exact_users={"opentelemetry_attribute": "bar", "nr_attribute": "foo"},
+        exact_users={"opentelemetry_attribute": "bar", "nr_attribute": "foo", "span.kind": "internal"},
     )
     @background_task()
     def _test():
@@ -88,6 +88,7 @@ def test_trace_with_opentelemetry_to_newrelic(tracer):
         exact_users={
             "NR_span_attribute_BG": "NR span attribute from BG",
             "opentelemetry_span_attribute_BG": "OpenTelemetry span attribute from BG",
+            "span.kind": "internal",    # If span is generated from OTel, this attribute will exist.
         },
     )
     @validate_span_events(
@@ -99,6 +100,7 @@ def test_trace_with_opentelemetry_to_newrelic(tracer):
         exact_users={
             "NR_span_attribute_FT": "NR span attribute from FT",
             "opentelemetry_span_attribute_FT": "OpenTelemetry span attribute from FT",
+            # "span.kind" will be not be added here because this is generated from New Relic.
         },
     )
     @background_task()
@@ -112,6 +114,14 @@ def test_trace_with_opentelemetry_to_newrelic(tracer):
 
 
 def test_update_name(tracer):
+    """
+    Test updating the name of a span that was originally
+    generated with New Relic using the OpenTelemetry API.
+    Note even through the OpenTelemetry API is used on
+    this span, it is still fundamentally a New Relic span,
+    and therefore will not be getting a `span.kind` attribute.
+    
+    """
     @dt_enabled
     @validate_span_events(
         count=1,

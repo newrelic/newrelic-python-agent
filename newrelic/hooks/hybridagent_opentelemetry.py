@@ -12,11 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import time
+import os
+from pathlib import Path
+from pprint import pprint
+
 from newrelic.api.application import application_instance
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.signature import bind_args
+from newrelic.common.agent_http import BaseClient
+from newrelic.common.encoding_utils import base64_encode, obfuscate_license_key
 from newrelic.core.config import global_settings
 
 ###########################################
@@ -422,9 +429,101 @@ def instrument_MeterProvider(module):
         wrap_function_wrapper(module, "MeterProvider.__init__", wrap_MeterProvider)
 
 
+def wrap_requests_transport_request(wrapped, instance, args, kwargs):
+    application = application_instance()
+    settings = getattr(application, "settings", None) or global_settings()
+
+    if settings and not (settings.opentelemetry.enabled and settings.opentelemetry.metrics.enabled) or (settings and not settings.audit_log_file):
+        return wrapped(*args, **kwargs)
+
+    # Manually print the required information to the audit log.
+    # This done primarily due to the fact that there is slightly different
+    # information being processed by the HTTPClient Session's `log_request`
+    # and `log_response` methods compared to what is needed in the audit
+    # log.  To keep the formatting consistent, the audit log ID is manually
+    # incremented and retrieved for each request.
+
+    try:
+        application._agent._applications[application.name]._active_session.CLIENT.AUDIT_LOG_ID += 1
+        audit_log_id = application._agent._applications[application.name]._active_session.CLIENT.AUDIT_LOG_ID
+    except Exception:
+        audit_log_id = None
+
+    audit_log_file = Path(settings.audit_log_file).open("a")
+    
+    bound_args = bind_args(wrapped, args, kwargs)
+    url = bound_args.get("url")
+    request_headers = bound_args.get("headers")
+    request_body = bound_args.get("data")
+    request_byte_count = len(request_body) if request_body else 0
+
+    if request_headers:
+        request_headers = {
+            k: obfuscate_license_key(v) if k.lower() == "api-key" else v
+            for k, v in request_headers.items()
+        }
+
+    print(f"TIME: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())!r}", file=audit_log_file)
+    print(file=audit_log_file)
+
+    if audit_log_id:
+        print(f"ID: {audit_log_id!r}", file=audit_log_file)
+        print(file=audit_log_file)
+    
+    print(f"PID: {os.getpid()!r}", file=audit_log_file)
+    print(file=audit_log_file)
+    print(f"URL: {url!r}", file=audit_log_file)
+    print(file=audit_log_file)
+    print("HEADERS:", end=" ", file=audit_log_file)
+    pprint(dict(request_headers), stream=audit_log_file)
+    print(file=audit_log_file)
+    print(f"BYTE COUNT: {request_byte_count!r}", file=audit_log_file)
+    print(file=audit_log_file)
+    print(f"DATA: {base64_encode(request_body)}", file=audit_log_file)
+    print(file=audit_log_file)
+    print(78 * "=", file=audit_log_file)
+    print(file=audit_log_file)
+
+    result = wrapped(*args, **kwargs)
+
+    response_body = result.content()
+    response_status_code = result.status_code
+    response_headers = result.headers()
+    response_byte_count = len(response_body) if response_body else 0
+
+    print(f"TIME: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())!r}", file=audit_log_file)
+    print(file=audit_log_file)
+
+    if audit_log_id:
+        print(f"ID: {audit_log_id!r}", file=audit_log_file)
+        print(file=audit_log_file)
+
+    print(f"PID: {os.getpid()!r}", file=audit_log_file)
+    print(file=audit_log_file)
+    print(f"STATUS: {response_status_code!r}", file=audit_log_file)
+    print(file=audit_log_file)
+    print("HEADERS:", end=" ", file=audit_log_file)
+    pprint(dict(response_headers), stream=audit_log_file)
+    print(file=audit_log_file)
+    print(f"BYTE COUNT: {response_byte_count!r}", file=audit_log_file)
+    print(file=audit_log_file)
+    print(f"RESULT: [{base64_encode(response_body)}]", file=audit_log_file)
+    print(file=audit_log_file)
+    print(78 * "=", file=audit_log_file)
+    print(file=audit_log_file)
+
+    audit_log_file.flush()
+    return result
+
+
 def instrument_meter_api(module):
     if hasattr(module, "set_meter_provider"):
         wrap_function_wrapper(module, "set_meter_provider", wrap_set_meter_provider)
 
     if hasattr(module, "get_meter_provider"):
         wrap_function_wrapper(module, "get_meter_provider", wrap_get_meter_provider)
+
+
+def instrument_requests_transport(module):
+    if hasattr(module, "RequestsHTTPTransport") and hasattr(module.RequestsHTTPTransport, "request"):
+        wrap_function_wrapper(module, "RequestsHTTPTransport.request", wrap_requests_transport_request)

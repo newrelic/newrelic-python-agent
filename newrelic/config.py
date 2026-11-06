@@ -4599,6 +4599,10 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "opentelemetry.exporter.http.transport._requests", "newrelic.hooks.hybridagent_opentelemetry", "instrument_requests_transport"
+    )
+
+    _process_module_definition(
         "opentelemetry.util.http", "newrelic.hooks.hybridagent_opentelemetry", "instrument_util_http"
     )
 

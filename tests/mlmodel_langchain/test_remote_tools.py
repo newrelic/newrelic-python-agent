@@ -12,9 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import pytest
 import sys
 
+import pytest
 from langchain.messages import HumanMessage
 from mcp.server.fastmcp import FastMCP
 from mcp.shared.memory import create_connected_server_and_client_session
@@ -25,7 +25,6 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
 
 from newrelic.api.background_task import background_task
 from newrelic.hooks.mlmodel_langchain import _is_local_tool
-
 
 PYTHON_VERSION_3_10 = sys.version_info[:2] <= (3, 10)
 

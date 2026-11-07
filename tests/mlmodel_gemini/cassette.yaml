@@ -5403,4 +5403,210 @@ interactions:
     status:
       code: 200
       message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "How many letters are in the word Python?
+      Answer in one word with no formatting."}], "role": "user"}], "generationConfig":
+      {"temperature": 0.7, "maxOutputTokens": 500}}'
+    headers:
+      accept:
+      - '*/*'
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - generativelanguage.googleapis.com
+      x-goog-api-key:
+      - XXXXXX
+    method: POST
+    uri: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"parts": [{"text": "Six", "thoughtSignature":
+        "ErkGCrYGAWkUfRP1obCgCL3yprCCpkBObj78iju6U0jiDoDaqCrCkSV2mxZcDx0KKjhONOrDAvlYiIWfjUJxxNsWW+Zon5vxy6J/9i8q/M0zgbU62GIPm2qgaxpT1tFMX0jwKjJU2FMSwvEMBaaBoe6pGdDlL3rteXb8k6Ol++xkVFCyZFO4SEbCbpvaU09sh/QYxUSHjbyXw8AYL6TuCEkLq7ow3FBZBp6naijqCQWHH3SSH3xNiWahVUBdJRCROtPe5sXsmBkF56jovJRJcS/GbfFwbN1KuwY5jx+fVqeLqi2c1S6fE8aWrao9edzrW+ruwLK/KXNCWK8poAwB8RoNFDPCkLigQGXn71guMlX9pWR7zNz2+CHAFCvvDLijC9z9iuqd8xSi2Wu0mvJfVEtkMroKxtXuS3zZv1uWj7BlCxayli6G7AMrjWKGBp8T0SZsZVb7siOJWA0et63gMEzNpdiKA/z1BbI5CIXrdI1OmBL9nktCNwjqfL/HHu8Ns6iF/niEdZlQ26K+LKi8QNnPZj1j4J3M7yJ2qpzV9rKm9MU2QuCA4oCO54k1A9dNPO7/laKAtCkG5e5UHpLl3pQX4SjQNJkFLhylpibsP+2DPcLBM2A859jIFC+RCi0PF4FvHxmfH0KYani88hJyjpR1QMHcpHaunRLLTtPAcJlvouKDaEQvZG8FCK6bB7gdptrnNkAuHb2afNDUUR7ZuRCVXiH7b2HxzM458WAz/ovwelmzvicUsut7lmkgMVG5JkVxleC8uIhhSM16p1zcf+dEYMo7zCb8qu97dEa27E4vxM1oBTWgbsf9kqoEKUW7DISfDNBFLqWnhGqvFg1QNLgTLMkLdtyHvyzpKrQNSJI7xIhudPiiWr62+tFFxGoCLweLZrw5VznS+ZQGoeX8lz9PeBxle7d5Bl+nXkG58Cw5yQPqpaDQsvbznu7MMiPH622V0ZJB3Hl8T6qIjJa2xJHiFcHdLrcEb+lHjM+QYYOHt5bU5qMnjECKM7rpTBmRYHrexuxzN1qdSF98NS4LaAUse2lJAVPgSemLMpxHoxW57avY+l/xfo4lxmR7CJtdTRM6V0eyk8i9lkCO"}],
+        "role": "model"}, "finishReason": "STOP", "index": 0}], "usageMetadata": {"promptTokenCount":
+        18, "candidatesTokenCount": 1, "totalTokenCount": 255, "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 18}], "thoughtsTokenCount": 236, "serviceTier":
+        "standard"}, "modelVersion": "gemini-3.6-flash", "responseId": "C2Luav7aFr_bjMcPzvWvwAY"}'
+    headers:
+      content-type:
+      - application/json; charset=UTF-8
+      date:
+      - Fri, 06 Nov 2026 23:26:04 GMT
+      server:
+      - scaffolding on HTTPServer2
+      server-timing:
+      - gfet4t7; dur=1640
+      transfer-encoding:
+      - chunked
+      vary:
+      - Origin
+      - X-Origin
+      - Referer
+      x-frame-options:
+      - SAMEORIGIN
+      x-gemini-service-tier:
+      - standard
+      x-xss-protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "How many letters are in the word Python?
+      Answer in one word with no formatting."}], "role": "user"}], "generationConfig":
+      {"temperature": 0.7, "maxOutputTokens": 500}}'
+    headers:
+      accept:
+      - '*/*'
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - generativelanguage.googleapis.com
+      x-goog-api-key:
+      - XXXXXX
+    method: POST
+    uri: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent
+  response:
+    body:
+      string: '{"candidates": [{"content": {"parts": [{"text": "six", "thoughtSignature":
+        "EuAFCt0FAWkUfRO5pvZbeLSMj2MLcrGkA1xukcuyGOsnZXgi9qXSn3N7IBOy/DfdYPtlmzBU3XPYGWQsm0fzM0lAaBNlPbR+M6xSACdSRmEJLSuOx2GSoNVXJXHKWqXX1SnWIfKFNHEr+tNEbfTIezTSw9q9hiqKrIoWgIT3ZOZvmFdpvtIIljJX1ic2MWM61HzRN0438oHQc8SlUnNeUpXu5nYxYyiNUbsKoQiewYyio5fUtM0rpuUvFnGZIzt6JatO6iWKoGkYAg6mLLtNK9szKV94YvLn572k9I0gE5biSFkRTHsiheeHWUdUBxW+KAPn8BprbGJuC0zw0WvcL28C2Hw4JcROmVfO5XJSXYtu6DXIZI3sE8UYtUj1fkZ20LFK6oxeT41/fAqgEMbC5S3YmU6N8p905j7Bus4oruZlCQHqPHMOnbDVK5UTXKtiSaVocqZbf7gyc7XuOP2glQF8JejCuIyr+J2F9kS8EfFTyDxyJ6ERxbVfuBAp2DZ5TkZVswdZl4OixDzwNt3mCiNwumJ00FBA2MgNzFkR92+HFeKJstngEb8e9N3OlILU4oLQrLpj1hAs2N5rfesRJy9Vjh1pCciy3ce5+K/zFb0NKPzFWhKpDHM82smYa+MySrmMFR6N3nJM7z2A2TEhhuM1Ufc/57nD8X2oTNJYRJGfSB6O4pRzByq96y76gdFUVeJqmem5ACBMDPeTBgOBZgy0Euk4ksnAvNz6RTEbn71cXBy7Jf2wS7wKO5SdYoHiGYy5R+8C4h9R8hx3u3beCIgNf/61w49p1ytDHPfWDwk1tfVxNUhS33yq0WJJAxvmtytIEeEd9FsizqizFGlO9HnGbflNPhJWfuz6/m8EB+PC3+7etmVLyohV1gkjo2fRq4lgjaOXqWRiTzp938kWZajUYkbyDGGnY06Be2jsjgX2lUDp1R+CB8JCDSjGlZP46KOFf+D8rKoxOTjR6Cfe5Ww/Dg=="}],
+        "role": "model"}, "finishReason": "STOP", "index": 0}], "usageMetadata": {"promptTokenCount":
+        18, "candidatesTokenCount": 1, "totalTokenCount": 217, "promptTokensDetails":
+        [{"modality": "TEXT", "tokenCount": 18}], "thoughtsTokenCount": 198, "serviceTier":
+        "standard"}, "modelVersion": "gemini-3.6-flash", "responseId": "DWLuapXcFfbdjMcPi56rmQI"}'
+    headers:
+      content-type:
+      - application/json; charset=UTF-8
+      date:
+      - Fri, 06 Nov 2026 23:26:06 GMT
+      server:
+      - scaffolding on HTTPServer2
+      server-timing:
+      - gfet4t7; dur=1678
+      transfer-encoding:
+      - chunked
+      vary:
+      - Origin
+      - X-Origin
+      - Referer
+      x-frame-options:
+      - SAMEORIGIN
+      x-gemini-service-tier:
+      - standard
+      x-xss-protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "How many letters are in the word Python?
+      Answer in one word with no formatting."}], "role": "user"}], "generationConfig":
+      {"temperature": 0.7, "maxOutputTokens": 500}}'
+    headers:
+      accept:
+      - '*/*'
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - generativelanguage.googleapis.com
+      x-goog-api-key:
+      - XXXXXX
+    method: POST
+    uri: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:streamGenerateContent?alt=sse
+  response:
+    body:
+      string: "data: {\"candidates\": [{\"content\": {\"parts\": [{\"text\": \"Six\"}],\"role\":
+        \"model\"},\"index\": 0}],\"usageMetadata\": {\"promptTokenCount\": 18,\"candidatesTokenCount\":
+        1,\"totalTokenCount\": 261,\"promptTokensDetails\": [{\"modality\": \"TEXT\",\"tokenCount\":
+        18}],\"thoughtsTokenCount\": 242,\"serviceTier\": \"standard\"},\"modelVersion\":
+        \"gemini-3.6-flash\",\"responseId\": \"E2LuaqT3LfOz_PUPjrGlyAs\"}\r\n\r\ndata:
+        {\"candidates\": [{\"content\": {\"parts\": [{\"text\": \"\",\"thoughtSignature\":
+        \"EsQICsEIAWkUfRPaS66kb7QIo0rHaQU6AjCcRCurysLWGo0Xstu25JihVFDeUAm07rjbP4MhoXtT7AsV+x+CqIb9hl03vyIFeSlYuNX9EEZplFvnzebO68OGnAoOwqoWREwhYri8ZNKkKUIjbjMY3IyEJoI+C4BXzZgNipkRZS4R+TkxaphsXhHGLsWIXpcELUiY85elFeKELwYDrj+bI7OY8mrejzUKdmvCQ9o/eJFBY1UMhXZXQA9o2RFYO7JAmPCbT0uPFDiMvJ8jzYtT1m+X3Iw8t9lg58X8xqChB7XtZfK5yLBNZPWOtPZ9l0ppCv1ow8eEhhI6jBVr84QsdF1K4YmoN/m+iHyCMI8qkrxP7HMywoOSMwz5ajAXOUK7yvQwMAk2Td6L7Vf+GzoUzI6SDIAvOzGNerYcaUdexO8iZwE9GIePhgI7D1NWPvGYJAGe2EPT1IIZqvwWFnAtW44H/F9Hq9Ky1nxTo5djEE/QHA5sJAaMKvaUXh9esvlwfigzNEoOFLlGO/YFa/78FTLIXZtLwUBzFjOT5gsS3IiWQ84Itz4huBpKuwy5/TtFbzQkvn4mKNJQr1DLsmM2rDdE88cnBBsx6zdZtLKvdVaIFFHJc2lZfViadAwy9BIOI5YY1U0gN3WcBvXlxkGb6BDqnyfKvZhXv1vIiLwx1CQvGRYyqFrIJ9i097j0ym/30TgY6YP56O4/hcLe/izVxVR0OHXywkXEjQHf5XEiqQ8tCSbwioVqh/o9iExs4rdTFDtP5m5cgE4PqmABQ3+8BlYdqfs37Q8z2Ad0h6NOa4ZyR1+x6srxppVTnIr3K8/OVqH7ok2x/DCKeP+L5R7vRRu1TaN9qzKd60Idq6EboEMyUN5sKCbG/E1AZ2s5Ujg78CXlnqa59AwJW4qMX5dd8i/NXfHG/TCD1hq781FeK4yeZrOL9JyjafyPc0DisrHaVxQwV5P4q0YWyOoZdlDYIn420nsP2r17oFTU9SHN23+Tci6wAz7D8THk0q2k0I2kS7TJPzy38qrRaL7lp+L/lFT5eUPCt2Sjl3PNXR4yLhJfGeOl8Mfu+RIIyhc4tWtEf4HAj4Gh6qTLOtgHmDxD0Mlh2wDJl7ch5vabiMOOl9EkibmVRXNyjajzp0djqXIvV4EPAJzsfsta8hinbcL67AYRu7cchoC7ohI0ZUE2QRshPUqCBXcvPA2XsBRa8MW5ua2Q2Hmel4T0279Kaqm41e1ygeqO9a2PI2qCI0Rjj0GkQTxOozORAIsdMmFqVaWn677UI+udSpocp+i6Gs4fVSQyWkUdbxYTqI8dtvFl/sTvjYDHmx5w3q61+O6ZtL2TItLr9S1fu/R7c0mf98J9S26jFiLyMs1Ppbn54eK/7+V5JcOD0/Ws2HPmIcN8fjHteUEomzBWZFO5uQthEFZD2Q7RxoaGP8SDvBG8RlKy4sc4t4h99Sn2\"}],\"role\":
+        \"model\"},\"finishReason\": \"STOP\",\"index\": 0}],\"usageMetadata\": {\"promptTokenCount\":
+        18,\"candidatesTokenCount\": 1,\"totalTokenCount\": 261,\"promptTokensDetails\":
+        [{\"modality\": \"TEXT\",\"tokenCount\": 18}],\"thoughtsTokenCount\": 242,\"serviceTier\":
+        \"standard\"},\"modelVersion\": \"gemini-3.6-flash\",\"responseId\": \"E2LuaqT3LfOz_PUPjrGlyAs\"}\r\n\r\n"
+    headers:
+      content-disposition:
+      - attachment
+      content-type:
+      - text/event-stream
+      date:
+      - Fri, 06 Nov 2026 23:26:13 GMT
+      server:
+      - scaffolding on HTTPServer2
+      server-timing:
+      - gfet4t7; dur=2090
+      transfer-encoding:
+      - chunked
+      vary:
+      - Origin
+      - X-Origin
+      - Referer
+      x-frame-options:
+      - SAMEORIGIN
+      x-xss-protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"contents": [{"parts": [{"text": "How many letters are in the word Python?
+      Answer in one word with no formatting."}], "role": "user"}], "generationConfig":
+      {"temperature": 0.7, "maxOutputTokens": 500}}'
+    headers:
+      accept:
+      - '*/*'
+      connection:
+      - keep-alive
+      content-type:
+      - application/json
+      host:
+      - generativelanguage.googleapis.com
+      x-goog-api-key:
+      - XXXXXX
+    method: POST
+    uri: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:streamGenerateContent?alt=sse
+  response:
+    body:
+      string: "data: {\"candidates\": [{\"content\": {\"parts\": [{\"text\": \"Six\"}],\"role\":
+        \"model\"},\"index\": 0}],\"usageMetadata\": {\"promptTokenCount\": 18,\"candidatesTokenCount\":
+        1,\"totalTokenCount\": 257,\"promptTokensDetails\": [{\"modality\": \"TEXT\",\"tokenCount\":
+        18}],\"thoughtsTokenCount\": 238,\"serviceTier\": \"standard\"},\"modelVersion\":
+        \"gemini-3.6-flash\",\"responseId\": \"FmLuao-aFt-k5NoPjcS6kQM\"}\r\n\r\ndata:
+        {\"candidates\": [{\"content\": {\"parts\": [{\"text\": \"\",\"thoughtSignature\":
+        \"EvwHCvkHAWkUfROSs06KK/e9SsJpu2rxIKT+77oKXTqoQT5yMRSVsSpLZ6oB3aFHrh32iSRUgGQZ7nc7CIZac2Qdr+xDb74Hbpmcu9OHkVkgZOgdSwTySHTT/tqHp6KkZTtdZ3NSpb3wO2iXe6fBU4za2Q1Q8W9ogRxcrFqY1SKbvCARUP8F1vuf9qQVJYoinbtGAtrpF5H0FNvIQVSXmI/kDvDDuQL4W0ASM5cYT28yMriU+4XSWk4MMztZkDdL/er19aUCX87pnJ/4ZTm0h22ob8WnKLWt8aDOrXP26TnIY5lqwG8hFQqEPAN++mB1JG7cBKjZKPi/A4kZxKeGTFkpaViYEaY0gWMXKos9eHegVUYfXgE1wt73vevd+ru/9AxYwPTJcuZeplFavogcSnceOdTe3F2lRbeUjFUhB2FMMhH87w2xm8rK+uPd+kzVwf9u7A/pS81B7F8obBeZhBdlGh3AXygR/tNTWOW4fWYX8CmQHHGm/RXDXPOFgMPp68qD2oZJPgMlZ20ICaUHeyDh8DAPToN/S0I+druUwYWlIpS5gvuJbg0zBrxiDIBIj6yO+dqVrI2fzhRYbKN+Qs5uKX1Is1s2HYh8p68HSSN4dEg0X2uT7UpsrNHxVC9XeaYLNhABcdzcIE9sJ81hYPcMKAlsbuziDpLByrVZDceDLfONVFmeQgD4fNqnKmRdHeabZTWy/GCs7gR9qKFVyB6lUEnZ2ERKKAXCt52ZtLjKjrpK8WwXR5MOVeYXhLhsYONVNoN6JKzHm1OBQye2a899kRZX6ssdHFRFHZCt7Uv9AoSyxyKAIYDLReXJxE5gzI4UCTX2UwktE0+EowMnMZmyMBB4MAnJHkGlcWKGYHDqIm97GVKf1OYtLBeiwuUdThJm73NIyDvsve+evPwZSFLoiNNMv/+WOCK9AmU7ODNoBM9mH+wNPYqfoD8BNjUzxYdEq1NpH88EQ75xL1xRBQo8PQEhkttwuTLp+jQYI2Hy6JJFPiOTCpEF5tjGyWqUgXzPvrSOpRhbuOw6iutnd4op/SWJJD1OmlETrjYdifikTBN8EYk3jOQLmD3NN8DuiIGrIabKZz/2/O8qsrqrz76ZCMXL+2hVkBrx1lf+OS6Va7ds+zevXsU0DKGvX52oQ17tXm6Qc6epAFL2fzBQ6/XuL0rzqwR6cqRvd6C+Sg3juj++xP4JZrrcIvRjoPtRV1j5dN2JxnCc8KyYK/MNF60JKz570ClbE2VcPcnBqIKir7hXXkVTF3VSCXFgYkQwBYXL/bVMTpkLqfTwHISGOV8bCgo8QNr4A8W2E38aXb5zp34vYI05gY6t2fV3KXTvRaNK3O1Z9nMAiI59D5JX\"}],\"role\":
+        \"model\"},\"finishReason\": \"STOP\",\"index\": 0}],\"usageMetadata\": {\"promptTokenCount\":
+        18,\"candidatesTokenCount\": 1,\"totalTokenCount\": 257,\"promptTokensDetails\":
+        [{\"modality\": \"TEXT\",\"tokenCount\": 18}],\"thoughtsTokenCount\": 238,\"serviceTier\":
+        \"standard\"},\"modelVersion\": \"gemini-3.6-flash\",\"responseId\": \"FmLuao-aFt-k5NoPjcS6kQM\"}\r\n\r\n"
+    headers:
+      content-disposition:
+      - attachment
+      content-type:
+      - text/event-stream
+      date:
+      - Fri, 06 Nov 2026 23:26:15 GMT
+      server:
+      - scaffolding on HTTPServer2
+      server-timing:
+      - gfet4t7; dur=1586
+      transfer-encoding:
+      - chunked
+      vary:
+      - Origin
+      - X-Origin
+      - Referer
+      x-frame-options:
+      - SAMEORIGIN
+      x-xss-protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
 version: 1

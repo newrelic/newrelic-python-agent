@@ -12,7 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
 
+import pytest
 from langchain.messages import HumanMessage
 from testing_support.fixtures import dt_enabled, reset_core_stats_engine, validate_attributes
 from testing_support.validators.validate_custom_event import validate_custom_event_count
@@ -21,6 +23,8 @@ from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
+
+PYTHON_VERSION_3_10 = sys.version_info[:2] <= (3, 10)
 
 recorded_events_1 = [
     [
@@ -45,14 +49,13 @@ recorded_events_1 = [
             "duration": None,
             "id": None,
             "ingest_source": "Python",
-            "request.model": "gemini-3.5-flash",
-            "request.temperature": 0.05,
+            "request.model": "gemini-3.6-flash",
             "response.choices.finish_reason": "STOP",
-            "response.model": "gemini-3.5-flash",
+            "response.model": "gemini-3.6-flash",
             "response.number_of_messages": 2,
             "response.usage.completion_tokens": 17,
-            "response.usage.prompt_tokens": 404,
-            "response.usage.total_tokens": 421,
+            "response.usage.prompt_tokens": 377,
+            "response.usage.total_tokens": 394,
             "span_id": None,
             "time_to_first_token": None,
             "timestamp": None,
@@ -82,14 +85,13 @@ recorded_events_1 = [
             "duration": None,
             "id": None,
             "ingest_source": "Python",
-            "request.model": "gemini-3.5-flash",
-            "request.temperature": 0.05,
+            "request.model": "gemini-3.6-flash",
             "response.choices.finish_reason": "STOP",
-            "response.model": "gemini-3.5-flash",
+            "response.model": "gemini-3.6-flash",
             "response.number_of_messages": 2,
             "response.usage.completion_tokens": 15,
-            "response.usage.prompt_tokens": 527,
-            "response.usage.total_tokens": 542,
+            "response.usage.prompt_tokens": 472,
+            "response.usage.total_tokens": 487,
             "span_id": None,
             "time_to_first_token": None,
             "timestamp": None,
@@ -105,7 +107,7 @@ recorded_events_1 = [
             "id": None,
             "ingest_source": "Python",
             "is_response": True,
-            "response.model": "gemini-3.5-flash",
+            "response.model": "gemini-3.6-flash",
             "role": "model",
             "sequence": 1,
             "span_id": None,
@@ -151,14 +153,13 @@ recorded_events_2 = [
             "duration": None,
             "id": None,
             "ingest_source": "Python",
-            "request.model": "gemini-3.5-flash",
-            "request.temperature": 0.05,
+            "request.model": "gemini-3.6-flash",
             "response.choices.finish_reason": "STOP",
-            "response.model": "gemini-3.5-flash",
+            "response.model": "gemini-3.6-flash",
             "response.number_of_messages": 2,
             "response.usage.completion_tokens": 17,
-            "response.usage.prompt_tokens": 311,
-            "response.usage.total_tokens": 328,
+            "response.usage.prompt_tokens": 421,
+            "response.usage.total_tokens": 438,
             "span_id": None,
             "time_to_first_token": None,
             "timestamp": None,
@@ -188,14 +189,13 @@ recorded_events_2 = [
             "duration": None,
             "id": None,
             "ingest_source": "Python",
-            "request.model": "gemini-3.5-flash",
-            "request.temperature": 0.05,
+            "request.model": "gemini-3.6-flash",
             "response.choices.finish_reason": "STOP",
-            "response.model": "gemini-3.5-flash",
+            "response.model": "gemini-3.6-flash",
             "response.number_of_messages": 2,
             "response.usage.completion_tokens": 2,
-            "response.usage.prompt_tokens": 428,
-            "response.usage.total_tokens": 430,
+            "response.usage.prompt_tokens": 519,
+            "response.usage.total_tokens": 521,
             "span_id": None,
             "time_to_first_token": None,
             "timestamp": None,
@@ -211,7 +211,7 @@ recorded_events_2 = [
             "id": None,
             "ingest_source": "Python",
             "is_response": True,
-            "response.model": "gemini-3.5-flash",
+            "response.model": "gemini-3.6-flash",
             "role": "model",
             "sequence": 1,
             "span_id": None,
@@ -254,6 +254,7 @@ chat_astream_metrics = [
 ]
 
 
+@pytest.mark.skipif(PYTHON_VERSION_3_10, reason="Gemini dropped support for Python 3.10 in v2.34.0")
 @dt_enabled
 @reset_core_stats_engine()
 def test_chat_astream(loop, response_format, build_agent, async_build_state_graph):

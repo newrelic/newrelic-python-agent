@@ -42,6 +42,8 @@ from newrelic.core.external_node import ExternalNode
 from newrelic.core.function_node import FunctionNode
 from newrelic.core.root_node import RootNode
 
+pytest.skip("Skipping this file because the legacy API is disabled", allow_module_level=True)
+
 FIXTURE_PARTIAL_GRANULARITY = Path(__file__).parent / "fixtures" / "distributed_tracing" / "partial_granularity.json"
 FIXTURE_TRACER_INFO_STANDARD = Path(__file__).parent / "fixtures" / "distributed_tracing" / "tracer_info_standard.json"
 FIXTURE_TRACER_INFO_TOO_MANY = (

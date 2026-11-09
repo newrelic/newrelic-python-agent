@@ -46,33 +46,6 @@ collector_agent_registration = collector_agent_registration_fixture(
 OPENAI_VERSION = get_package_version_tuple("openai")
 
 
-if OPENAI_VERSION < (1, 0):
-    collect_ignore = [
-        "test_chat_completion.py",
-        "test_chat_completion_error.py",
-        "test_embeddings.py",
-        "test_embeddings_error.py",
-        "test_chat_completion_stream.py",
-        "test_chat_completion_stream_error.py",
-        "test_embeddings_stream.py",
-        # The Responses API only exists in openai v1+.
-        "test_responses.py",
-        "test_responses_error.py",
-        "test_responses_parse.py",
-        "test_responses_stream_error.py",
-        "test_responses_stream.py",
-    ]
-else:
-    collect_ignore = [
-        "test_embeddings_v0.py",
-        "test_embeddings_error_v0.py",
-        "test_chat_completion_v0.py",
-        "test_chat_completion_error_v0.py",
-        "test_chat_completion_stream_v0.py",
-        "test_chat_completion_stream_error_v0.py",
-    ]
-
-
 @pytest.fixture(autouse=True)
 def openai_api_key(vcr_recording):
     """Real key from the environment when recording, a fake key when replaying through VCR."""
@@ -82,10 +55,6 @@ def openai_api_key(vcr_recording):
             raise RuntimeError("OPENAI_API_KEY environment variable required.")
     else:
         openai_api_key = os.environ.setdefault("OPENAI_API_KEY", "NOT-A-REAL-SECRET")
-
-    # For v0 clients, set the API key on the module level
-    if OPENAI_VERSION < (1, 0):
-        openai.api_key = openai_api_key
 
 
 @pytest.fixture

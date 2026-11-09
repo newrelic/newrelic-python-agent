@@ -710,6 +710,7 @@ def test_distributed_trace_remote_parent_sampling_decision_full_granularity(
     _test()
 
 
+@pytest.mark.skip(reason="Partial granularity has been disabled")
 @pytest.mark.parametrize(
     "newrelic_header,traceparent_sampled,newrelic_sampled,root_setting,remote_parent_sampled_setting,remote_parent_not_sampled_setting,expected_sampled,expected_priority,expected_adaptive_sampling_algo_called",
     (
@@ -879,6 +880,7 @@ def test_distributed_trace_remote_parent_sampling_decision_partial_granularity(
     _test()
 
 
+@pytest.mark.skip(reason="Partial granularity has been disabled")
 @pytest.mark.parametrize(
     "full_granularity_enabled,full_granularity_remote_parent_sampled_setting,partial_granularity_enabled,partial_granularity_remote_parent_sampled_setting,expected_sampled,expected_priority,expected_adaptive_sampling_algo_called",
     (
@@ -931,6 +933,53 @@ def test_distributed_trace_remote_parent_sampling_decision_between_full_and_part
     _test()
 
 
+@pytest.mark.parametrize(
+    "full_granularity_remote_parent_sampled_setting,expected_sampled,expected_priority,expected_adaptive_sampling_algo_called",
+    (
+        ("default", None, None, True),  # Uses adaptive sampling algo.
+        ("always_on", True, 3, False),  # Always samples.
+    ),
+)
+def test_distributed_trace_remote_parent_sampling_decision_between_full_granularity_and_adaptive_sampling(
+    full_granularity_remote_parent_sampled_setting,
+    expected_sampled,
+    expected_priority,
+    expected_adaptive_sampling_algo_called,
+):
+    required_intrinsics = []
+    if expected_sampled is not None:
+        required_intrinsics.append(Attribute(name="sampled", value=expected_sampled, destinations=0b110))
+    if expected_priority is not None:
+        required_intrinsics.append(Attribute(name="priority", value=expected_priority, destinations=0b110))
+
+    test_settings = _override_settings.copy()
+    test_settings.update(
+        {
+            "distributed_tracing.sampler._remote_parent_sampled": full_granularity_remote_parent_sampled_setting,
+            "span_events.enabled": True,
+        }
+    )
+    if expected_adaptive_sampling_algo_called:
+        function_called_decorator = validate_function_called(
+            "newrelic.core.samplers.adaptive_sampler", "AdaptiveSampler.compute_sampled"
+        )
+    else:
+        function_called_decorator = validate_function_not_called(
+            "newrelic.core.samplers.adaptive_sampler", "AdaptiveSampler.compute_sampled"
+        )
+
+    @function_called_decorator
+    @override_application_settings(test_settings)
+    @validate_attributes_complete("intrinsic", required_intrinsics)
+    @background_task(name="test_distributed_trace_attributes")
+    def _test():
+        headers = {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01"}
+        accept_distributed_trace_headers(headers)
+
+    _test()
+
+
+@pytest.mark.skip(reason="Partial granularity has been disabled")
 def test_partial_granularity_entity_synthesis_attr_none_in_compact():
     """
     Tests no crash happens when an entity synthesis attribute is set to None.
@@ -972,6 +1021,7 @@ def test_partial_granularity_entity_synthesis_attr_none_in_compact():
     _test()
 
 
+@pytest.mark.skip(reason="Partial granularity has been disabled")
 def test_partial_granularity_max_compressed_spans():
     """
     Tests `nr.ids` does not exceed 1024 byte limit.
@@ -1026,6 +1076,7 @@ def test_partial_granularity_max_compressed_spans():
     _test()
 
 
+@pytest.mark.skip(reason="Partial granularity has been disabled")
 def test_partial_granularity_compressed_span_attributes_in_series():
     """
     Tests compressed span attributes when compressed span times are serial.
@@ -1080,6 +1131,7 @@ def test_partial_granularity_compressed_span_attributes_in_series():
     _test()
 
 
+@pytest.mark.skip(reason="Partial granularity has been disabled")
 def test_partial_granularity_compressed_span_attributes_overlapping():
     """
     Tests compressed span attributes when compressed span times overlap.
@@ -1131,6 +1183,7 @@ def test_partial_granularity_compressed_span_attributes_overlapping():
     _test()
 
 
+@pytest.mark.skip(reason="Partial granularity has been disabled")
 def test_partial_granularity_reduced_span_attributes():
     """
     In reduced mode, only inprocess spans are dropped.
@@ -1186,6 +1239,7 @@ def test_partial_granularity_reduced_span_attributes():
     _test()
 
 
+@pytest.mark.skip(reason="Partial granularity has been disabled")
 def test_partial_granularity_essential_span_attributes():
     """
     In essential mode, inprocess spans are dropped and non-entity synthesis attributes.
@@ -1241,6 +1295,7 @@ def test_partial_granularity_essential_span_attributes():
     _test()
 
 
+@pytest.mark.skip(reason="Partial granularity has been disabled")
 def test_partial_granularity_unknown_type_falls_back_on_essential():
     """
     In essential mode, inprocess spans are dropped and non-entity synthesis attributes.
@@ -1296,6 +1351,7 @@ def test_partial_granularity_unknown_type_falls_back_on_essential():
     _test()
 
 
+@pytest.mark.skip(reason="Partial granularity has been disabled")
 @pytest.mark.parametrize(
     "dt_settings,dt_headers,expected_sampling_instance_called,expected_adaptive_computed_count,expected_adaptive_sampled_count,expected_adaptive_sampling_target",
     (
@@ -1387,7 +1443,7 @@ def test_partial_granularity_unknown_type_falls_back_on_essential():
         ),
     ),
 )
-def test_distributed_trace_uses_adaptive_sampling_instance(
+def test_distributed_trace_uses_adaptive_sampling_instance_with_full_and_partial_granularity_options(
     dt_settings,
     dt_headers,
     expected_sampling_instance_called,
@@ -1432,6 +1488,93 @@ def test_distributed_trace_uses_adaptive_sampling_instance(
 
 
 @pytest.mark.parametrize(
+    "dt_settings,dt_headers,expected_sampling_instance_called,expected_adaptive_computed_count,expected_adaptive_sampled_count,expected_adaptive_sampling_target",
+    (
+        (
+            {
+                "distributed_tracing.sampler._root": "default",
+                "distributed_tracing.sampler.root.adaptive.sampling_target": 5,
+            },
+            {},
+            (True, 0),
+            1,
+            1,
+            5,
+        ),
+        (
+            {
+                "distributed_tracing.sampler._remote_parent_sampled": "default",
+                "distributed_tracing.sampler.remote_parent_sampled.adaptive.sampling_target": 5,
+                "distributed_tracing.sampler._remote_parent_not_sampled": "default",
+                "distributed_tracing.sampler.remote_parent_not_sampled.adaptive.sampling_target": 6,
+            },
+            {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01"},
+            (True, 1),
+            1,
+            1,
+            5,
+        ),
+        (
+            {
+                "distributed_tracing.sampler._remote_parent_sampled": "default",
+                "distributed_tracing.sampler.remote_parent_sampled.adaptive.sampling_target": 5,
+                "distributed_tracing.sampler._remote_parent_not_sampled": "default",
+                "distributed_tracing.sampler.remote_parent_not_sampled.adaptive.sampling_target": 6,
+            },
+            {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-00"},
+            (True, 2),
+            1,
+            1,
+            6,
+        ),
+    ),
+)
+def test_distributed_trace_uses_adaptive_sampling_instance(
+    dt_settings,
+    dt_headers,
+    expected_sampling_instance_called,
+    expected_adaptive_computed_count,
+    expected_adaptive_sampled_count,
+    expected_adaptive_sampling_target,
+):
+    test_settings = _override_settings.copy()
+    test_settings.update(dt_settings)
+    function_called_decorator = validate_function_called(
+        "newrelic.core.samplers.adaptive_sampler", "AdaptiveSampler.compute_sampled"
+    )
+
+    @function_called_decorator
+    @override_application_settings(test_settings)
+    @background_task(name="test_distributed_trace_attributes")
+    def _test():
+        txn = current_transaction()
+        application = txn._application._agent._applications.get(txn.settings.app_name)
+        # Re-initialize sampler proxy after overriding settings.
+        application.sampler.__init__(txn.settings)
+
+        accept_distributed_trace_headers(dt_headers)
+        # Explicitly call this so we can assert sampling decision during the transaction
+        # as opposed to after it ends and we lose the application context.
+        txn._make_sampling_decision()
+
+        assert (
+            application.sampler._samplers[expected_sampling_instance_called].computed_count
+            == expected_adaptive_computed_count
+        )
+        assert (
+            application.sampler._samplers[expected_sampling_instance_called].sampled_count
+            == expected_adaptive_sampled_count
+        )
+        assert (
+            application.sampler._samplers[expected_sampling_instance_called].sampling_target
+            == expected_adaptive_sampling_target
+        )
+
+    _test()
+
+
+@pytest.mark.skip(reason="Partial granularity has been disabled")
+@pytest.mark.parametrize(
     "dt_settings,dt_headers,expected_sampling_instance_called,expected_ratio",
     (
         (  # Ratio for partial granularity does not exceed 1.
@@ -1473,6 +1616,48 @@ def test_distributed_trace_uses_adaptive_sampling_instance(
         ),
     ),
 )
+def test_distributed_trace_uses_ratio_sampling_instance_with_full_and_partial_granularity_options(
+    dt_settings, dt_headers, expected_sampling_instance_called, expected_ratio
+):
+    test_settings = _override_settings.copy()
+    test_settings.update(dt_settings)
+    function_called_decorator = validate_function_called(
+        "newrelic.core.samplers.trace_id_ratio_based_sampler", "TraceIdRatioBasedSampler.compute_sampled"
+    )
+
+    @function_called_decorator
+    @override_application_settings(test_settings)
+    @background_task(name="test_distributed_trace_attributes")
+    def _test():
+        txn = current_transaction()
+        application = txn._application._agent._applications.get(txn.settings.app_name)
+        # Re-initialize sampler proxy after overriding settings.
+        application.sampler.__init__(txn.settings)
+
+        accept_distributed_trace_headers(dt_headers)
+        # Explicitly call this so we can assert sampling decision during the transaction
+        # as opposed to after it ends and we lose the application context.
+        txn._make_sampling_decision()
+
+        assert application.sampler._samplers[expected_sampling_instance_called].ratio == expected_ratio
+
+    _test()
+
+
+@pytest.mark.parametrize(
+    "dt_settings,dt_headers,expected_sampling_instance_called,expected_ratio",
+    (
+        (  # Trace ID ratio sampler is called for full granularity.
+            {
+                "distributed_tracing.sampler.remote_parent_sampled.trace_id_ratio_based.ratio": 1,
+                "distributed_tracing.sampler._remote_parent_sampled": "trace_id_ratio_based",
+            },
+            {"traceparent": "00-0af7651916cd43dd8448eb211c80319c-00f067aa0ba902b7-01"},
+            (True, 1),
+            1,
+        ),
+    ),
+)
 def test_distributed_trace_uses_ratio_sampling_instance(
     dt_settings, dt_headers, expected_sampling_instance_called, expected_ratio
 ):
@@ -1504,14 +1689,6 @@ def test_distributed_trace_uses_ratio_sampling_instance(
 @pytest.mark.parametrize(
     "dt_settings,expected_priority,expected_sampled",
     (
-        (  # When dt is enabled but full and partial are disabled.
-            {
-                "distributed_tracing.sampler.full_granularity.enabled": False,
-                "distributed_tracing.sampler.partial_granularity.enabled": False,
-            },
-            0.123,  # random
-            False,
-        ),
         (  # When dt is disabled.
             {"distributed_tracing.enabled": False},
             0.123,  # random
@@ -1520,15 +1697,6 @@ def test_distributed_trace_uses_ratio_sampling_instance(
         (  # Verify when full granularity sampled +2 is added to the priority.
             {"distributed_tracing.sampler.root.trace_id_ratio_based.ratio": 1},
             2.123,  # random + 2
-            True,
-        ),
-        (  # Verify when partial granularity sampled +1 is added to the priority.
-            {
-                "distributed_tracing.sampler.full_granularity.enabled": False,
-                "distributed_tracing.sampler.partial_granularity.enabled": True,
-                "distributed_tracing.sampler.partial_granularity.root.trace_id_ratio_based.ratio": 1,
-            },
-            1.123,  # random + 1
             True,
         ),
     ),
@@ -1566,6 +1734,7 @@ def test_distributed_trace_priority_set_when_only_sampled_set_in_tracestate_head
     _test()
 
 
+@pytest.mark.skip(reason="Partial granularity has been disabled")
 def test_partial_granularity_errors_on_compressed_spans():
     @function_trace()
     def call_tests():
@@ -1630,6 +1799,7 @@ def test_partial_granularity_errors_on_compressed_spans():
     _test()
 
 
+@pytest.mark.skip(reason="Partial granularity has been disabled")
 def test_partial_granularity_errors_on_compressed_spans_status_overriden():
     @function_trace()
     def call_tests():

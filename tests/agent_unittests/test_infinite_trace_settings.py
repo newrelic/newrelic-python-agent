@@ -81,6 +81,7 @@ def test_infinite_tracing_span_queue_size(ini, env, expected_size, global_settin
     assert settings.infinite_tracing.span_queue_size == expected_size
 
 
+@pytest.mark.skip(reason="Partial granularity has been disabled")
 @pytest.mark.parametrize(
     "ini,env",
     ((INI_FILE_INFINITE_TRACING, {"NEW_RELIC_DISTRIBUTED_TRACING_SAMPLER_PARTIAL_GRANULARITY_ENABLED": "true"}),),

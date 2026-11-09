@@ -235,6 +235,7 @@ def test_full_granularity_precedence(ini, env, global_settings, expected):
         )
 
 
+@pytest.mark.skip(reason="Partial granularity has been disabled")
 @pytest.mark.parametrize(
     "ini,env,expected",
     (

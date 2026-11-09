@@ -21,6 +21,8 @@ updates:
       interval: "daily"
     # Disable all pull requests for dependencies
     open-pull-requests-limit: 0
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: "docker"
     directory: "/"
@@ -28,6 +30,8 @@ updates:
       interval: "daily"
     # Disable all pull requests for dependencies
     open-pull-requests-limit: 0
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: "github-actions"
     directory: "/"
@@ -41,3 +45,5 @@ updates:
       github_actions:
         patterns:
           - "*"
+    cooldown:
+      default-days: 7

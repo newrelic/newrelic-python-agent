@@ -12,141 +12,124 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import contextlib
-
-import ldclient
 import pytest
-from ldclient.integrations.test_data import TestData
-from ldobserve import ObservabilityConfig, ObservabilityPlugin
+from conftest import CONTEXT_KEY, FLAG_KEY
 from opentelemetry import trace as otel_api_trace
+from testing_support.fixtures import dt_enabled, override_application_settings, override_generic_settings
 from testing_support.validators.validate_span_events import validate_span_events
 
 from newrelic.api.background_task import background_task
 from newrelic.api.function_trace import function_trace
+from newrelic.api.time_trace import current_trace
 from newrelic.core.config import global_settings
+
+FEATURE_FLAG_BASE_ATTRS = {
+    "feature_flag.key": FLAG_KEY,
+    "feature_flag.provider.name": "LaunchDarkly",
+    "feature_flag.context.id": CONTEXT_KEY,
+    "feature_flag.result.variationIndex": 0,
+    "feature_flag.result.reason.kind": "FALLTHROUGH",
+    "feature_flag.result.value": True,
+}
 
 
 @pytest.fixture
 def call_instrumentation(tracer):
     @function_trace()
     def foo():
-        pass
+        return current_trace().guid
 
     def _call_instrumentation():
         # NewRelic instrumented
-        foo()
+        trace_guid = foo()
 
         # OTel instrumented
         with tracer.start_as_current_span(name="Bar", kind=otel_api_trace.SpanKind.INTERNAL):
             pass
 
+        return trace_guid
+
     return _call_instrumentation
 
 
-@pytest.fixture
-def evaluate_feature_flag():
-    def _evaluate_feature_flag():
-        context = (
-            ldclient.Context.builder("send-request")
-            .set("firstName", "Sandy")
-            .set("lastName", "Smith")
-            .set("email", "sandy@example.com")
-            .set("groups", ["Acme", "Global Health Services"])
-            .build()
-        )
-        flag_value = ldclient.get().variation("send-request", context, False)
-        return flag_value
+def test_captures_feature_flag_data_on_span_when_enabled(ld_client, ld_context, call_instrumentation):
+    with ld_client() as client:
 
-    return _evaluate_feature_flag
-
-
-@pytest.fixture
-def initialize_ldclient():
-    @contextlib.contextmanager
-    def _initialize_ldclient():
-        # In-memory flag data source: avoids any real streaming/polling connection
-        # to LaunchDarkly while still running real flag-rule evaluation logic.
-        td = TestData.data_source()
-        td.update(td.flag("send-request").variation_for_all(True))
-
-        observability_config = ObservabilityConfig(
-            service_name="test-service",
-            service_version="0.0.0",
-            # Avoid ldobserve's own background exporter reaching real LaunchDarkly
-            # observability endpoints.
-            otlp_endpoint="http://localhost:4317",
-            backend_url="http://localhost:4317",
-            disable_export_error_logging=True,
-        )
-        plugin = ObservabilityPlugin(observability_config)
-        ldclient.set_config(
-            ldclient.config.Config(
-                "super-secret-sdk-key",
-                update_processor_class=td,
-                send_events=False,
-                diagnostic_opt_out=True,
-                plugins=[plugin],
-            )
-        )
-
-        assert ldclient.get().is_initialized()
-
-        yield
-
-        ldclient._reset_client()
-
-    return _initialize_ldclient
-
-
-def test_captures_feature_flag_data_on_span_when_enabled(
-    monkeypatch, evaluate_feature_flag, call_instrumentation, initialize_ldclient
-):
-    settings = global_settings()
-    monkeypatch.setattr(settings.launch_darkly_integration, "enabled", True)
-    with initialize_ldclient():
-
-        @validate_span_events(
-            count=1,
-            exact_users={
-                "feature_flag.key": "send-request",
-                "feature_flag.provider.name": "LaunchDarkly",
-                "feature_flag.context.id": "send-request",
-                "feature_flag.result.variationIndex": 0,
-                "feature_flag.result.reason.kind": "FALLTHROUGH",
-                "feature_flag.result.value": True,
-            },
-        )
+        @validate_span_events(count=1, exact_users=FEATURE_FLAG_BASE_ATTRS)
+        @dt_enabled
         @background_task()
         def test():
-            flag_value = evaluate_feature_flag()
-            if flag_value:
-                call_instrumentation()
+            assert client.variation(FLAG_KEY, ld_context, False) is True
+            call_instrumentation()
 
         test()
 
 
 def test_does_not_capture_feature_flag_data_on_span_when_disabled(
-    monkeypatch, evaluate_feature_flag, call_instrumentation, initialize_ldclient
+    ld_client, ld_context, ld_spans, call_instrumentation
 ):
-    settings = global_settings()
-    monkeypatch.setattr(settings.launch_darkly_integration, "enabled", False)
-    with initialize_ldclient():
+    @override_generic_settings(global_settings(), {"launch_darkly_integration.enabled": False})
+    @override_application_settings({"launch_darkly_integration.enabled": False})
+    def _test():
+        with ld_client() as client:
 
-        @validate_span_events(
-            count=3,
-            unexpected_users={
-                "feature_flag.key",
-                "feature_flag.provider.name",
-                "feature_flag.context.id",
-                "feature_flag.result.variationIndex",
-                "feature_flag.result.reason.kind",
-                "feature_flag.result.value",
-            },
-        )
-        @background_task()
-        def test():
-            flag_value = evaluate_feature_flag()
-            if flag_value:
+            @validate_span_events(count=3, unexpected_users=set(FEATURE_FLAG_BASE_ATTRS))
+            @dt_enabled
+            @background_task()
+            def test():
+                assert client.variation(FLAG_KEY, ld_context, False) is True
                 call_instrumentation()
 
+            test()
+
+    _test()
+
+    assert not ld_spans.spans
+
+
+def test_captures_falsy_feature_flag_value(ld_client, ld_context):
+    with ld_client(configure_flag=lambda flag: flag.variation_for_all(False)) as client:
+
+        @validate_span_events(
+            count=1,
+            exact_users={
+                **FEATURE_FLAG_BASE_ATTRS,
+                "feature_flag.result.variationIndex": 1,
+                "feature_flag.result.value": False,
+            },
+        )
+        @dt_enabled
+        @background_task()
+        def test():
+            assert client.variation(FLAG_KEY, ld_context, True) is False
+
         test()
+
+
+def test_feature_flag_data_forwarded_to_launch_darkly(ld_client, ld_context, ld_spans, call_instrumentation):
+    with ld_client() as client:
+
+        @dt_enabled
+        @background_task()
+        def test():
+            assert client.variation(FLAG_KEY, ld_context, False) is True
+            return current_trace().guid, call_instrumentation()
+
+        root_guid, child_guid = test()
+
+    spans = {format(span.context.span_id, "016x"): span for span in ld_spans.spans}
+    # The OTel span "Bar" is not forwarded.
+    assert set(spans) == {root_guid, child_guid}
+    root, child = spans[root_guid], spans[child_guid]
+
+    for name, value in FEATURE_FLAG_BASE_ATTRS.items():
+        assert root.attributes[name] == value
+    assert not any(name.startswith("feature_flag.") for name in child.attributes)
+
+    for span in (root, child):
+        assert span.attributes["nr.entity.guid"] == "DEVELOPERMODEENTITYGUID"
+        assert span.attributes["nr.entity.url"] == "https://fake-one.newrelic.com/redirect/DEVELOPERMODEENTITYGUID"
+
+    assert child.context.trace_id == root.context.trace_id
+    assert child.parent.span_id == root.context.span_id
+    assert root.parent is None

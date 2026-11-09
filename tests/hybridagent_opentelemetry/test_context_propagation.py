@@ -72,6 +72,7 @@ def test_distributed_trace_header_compatibility_full_granularity(telemetry, prop
     _test()
 
 
+@pytest.mark.skip(reason="Partial granularity has been disabled")
 @pytest.mark.parametrize("telemetry", ["newrelic", "opentelemetry"])
 @pytest.mark.parametrize("propagation", [accept_distributed_trace_headers, PROPAGATOR.extract])
 def test_distributed_trace_header_compatibility_partial_granularity(telemetry, propagation):

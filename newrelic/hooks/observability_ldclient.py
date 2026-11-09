@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import logging
+from functools import lru_cache
+from urllib.parse import quote, urlencode, urlsplit, urlunsplit
 
 from newrelic.api.time_trace import current_trace
 from newrelic.common.object_wrapper import wrap_function_wrapper
@@ -23,10 +25,36 @@ OBSERVABILITY_PLUGIN_REGISTERED = False
 OBSERVABILITY_PLUGIN_WARNING = "ObservabilityPlugin must be registered with Launch Darkly ldclient in order to successfully initialize the Launch Darkly-New Relic integration."
 
 
-def _create_NewRelicHook():
+NewRelicHook = None
+
+
+def _NewRelicHook(*args, **kwargs):
+    """
+    Create and return a new instance of NewRelicHook.
+    The first time this function is called, the NewRelicHook class is defined.
+    On subsequent runs, the class is just instantiated.
+    """
+    global NewRelicHook
+    if NewRelicHook is not None:
+        return NewRelicHook(*args, **kwargs)
+
+    from ldclient.config import DEFAULT_BASE_URI
     from ldclient.hook import Hook, Metadata
 
     class NewRelicHook(Hook):
+        def __init__(self, *args, base_uri=DEFAULT_BASE_URI, **kwargs):
+            self._base_uri = (base_uri or DEFAULT_BASE_URI).rstrip("/")
+            super().__init__(*args, **kwargs)
+
+        @staticmethod
+        @lru_cache(maxsize=1024)
+        def _flag_url(base_uri, flag_key, environment_id):
+            """Build a Launch Darkly flag deep link with every component percent-encoded."""
+            base = urlsplit(base_uri)
+            path = f"{base.path}/goto/flags/{quote(flag_key, safe='')}"
+            query = urlencode({"envId": environment_id})
+            return urlunsplit((base.scheme, base.netloc, path, query, ""))
+
         @property
         def metadata(self) -> Metadata:
             return Metadata(name="newrelic-hook")
@@ -47,16 +75,20 @@ def _create_NewRelicHook():
                 }
                 if isinstance(detail.variation_index, int):
                     attrs["feature_flag.result.variationIndex"] = detail.variation_index
-                if hasattr(detail, "reason") and detail.reason.get("kind"):
-                    attrs["feature_flag.result.reason.kind"] = detail.reason["kind"]
-                if hasattr(detail, "reason") and detail.reason.get("in_experiment"):
+                reason = getattr(detail, "reason", None) or {}
+                if reason.get("kind"):
+                    attrs["feature_flag.result.reason.kind"] = reason["kind"]
+                if reason.get("inExperiment"):
                     attrs["feature_flag.result.reason.inExperiment"] = True
-                if getattr(detail, "value", None):
+                # Falsy values such as False or 0 are valid flag results.
+                if getattr(detail, "value", None) is not None:
                     attrs["feature_flag.result.value"] = detail.value
 
                 environment_id = getattr(series_context, "environment_id", None)
                 if environment_id and isinstance(environment_id, str):  # if non-empty string
                     attrs["feature_flag.set.id"] = environment_id
+                    # Direct linking is only possible if we have the environment_id attribute available
+                    attrs["feature_flag.url.full"] = self._flag_url(self._base_uri, series_context.key, environment_id)
 
                 for key, value in attrs.items():
                     trace.add_custom_attribute(key, value)
@@ -64,28 +96,37 @@ def _create_NewRelicHook():
                 _logger.exception("[newrelic-hook] failed to enrich span")
             return data
 
-    return NewRelicHook()
+    return NewRelicHook(*args, **kwargs)
 
 
 def wrap_Config_init(wrapped, instance, args, kwargs):
     settings = global_settings()
     # Only add the hook if the integration setting is enabled.
-    if settings.launch_darkly_integration.enabled:
-        try:
-            bound_args = bind_args(wrapped, args, kwargs)
-            nr_hook = _create_NewRelicHook()
-            if not bound_args["hooks"]:
-                bound_args["hooks"] = [nr_hook]
-            else:
-                # Ensure supplied iterable is a list, which LD will coerce to anyway.
-                bound_args["hooks"] = list(bound_args["hooks"])
-                bound_args["hooks"].append(nr_hook)
-            return wrapped(**bound_args)
-        except Exception:
-            _logger.exception(
-                "Failed to add New Relic hook to Launch Darkly hooks list. Please report this issue to New Relic Support."
-            )
-    return wrapped(instance, *args, **kwargs)
+    if not settings.launch_darkly_integration.enabled:
+        return wrapped(*args, **kwargs)
+
+    try:
+        bound_args = bind_args(wrapped, args, kwargs)
+    except Exception:
+        # Invalid arguments, let the original function raise the error to the user.
+        return wrapped(*args, **kwargs)
+
+    try:
+        nr_hook = _NewRelicHook(base_uri=bound_args.get("base_uri", None))
+        hooks = bound_args["hooks"] or []
+        # Filter out any existing NR hooks that may be out of date.
+        # Ensure supplied iterable is a list, which LD will coerce to anyway.
+        hooks = [hook for hook in hooks if not isinstance(hook, NewRelicHook)]
+        hooks.append(nr_hook)
+    except Exception:
+        _logger.exception(
+            "Failed to add New Relic hook to Launch Darkly hooks list. Please report this issue to New Relic Support."
+        )
+        return wrapped(*args, **kwargs)
+
+    # Call outside of the try block so errors raised by Config are not mistaken for instrumentation errors.
+    bound_args["hooks"] = hooks
+    return wrapped(**bound_args)
 
 
 def wrap_LDClient_init(wrapped, instance, args, kwargs):

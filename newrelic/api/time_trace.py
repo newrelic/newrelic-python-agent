@@ -229,10 +229,7 @@ class TimeTrace:
             self.transaction._record_supportability("Supportability/SpanEvent/Links/Dropped")
             return
 
-        if attributes:
-            attributes = dict(attributes)
-        else:
-            attributes = {}
+        attributes = dict(attributes or {})
 
         event = [
             {
@@ -261,7 +258,7 @@ class TimeTrace:
             self.transaction._record_supportability("Supportability/SpanEvent/Events/Dropped")
             return
 
-        attributes = dict(attributes) or {}
+        attributes = dict(attributes or {})
 
         event = [
             {

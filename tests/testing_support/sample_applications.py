@@ -79,7 +79,7 @@ def fully_featured_app(environ, start_response):
 
     if "external" in environ:
         for _ in range(int(environ["external"])):
-            r = urlopen("http://www.python.org")
+            r = urlopen("https://newrelic.com")
             r.read(10)
 
     if "err_message" in environ:

@@ -538,7 +538,12 @@ class DeveloperModeClient(SupportabilityMixin, BaseClient):
             "url_rules": [],
             "collect_errors": True,
             "account_id": "12345",
-            "messages": [{"message": "Reporting to fake collector", "level": "INFO"}],
+            "messages": [
+                {
+                    "message": "Reporting to: https://fake-one.newrelic.com/redirect/DEVELOPERMODEENTITYGUID",
+                    "level": "INFO",
+                }
+            ],
             "sampling_rate": 0,
             "collect_traces": True,
             "collect_span_events": True,

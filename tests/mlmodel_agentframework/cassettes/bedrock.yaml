@@ -1,0 +1,195 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+interactions:
+- request:
+    body: '{"messages": [{"role": "user", "content": [{"text": "What is the capital
+      of France?"}]}], "inferenceConfig": {"maxTokens": 1024}, "system": [{"text":
+      "Answer the user''s question in one word."}]}'
+    headers:
+      Content-Type:
+      - !!binary |
+        YXBwbGljYXRpb24vanNvbg==
+      authorization:
+      - XXXXXX
+    method: POST
+    uri: https://bedrock-runtime.us-east-1.amazonaws.com/model/us.amazon.nova-2-lite-v1%3A0/converse
+  response:
+    body:
+      string: '{"metrics": {"latencyMs": 468}, "output": {"message": {"content": [{"text":
+        "The capital of France is **Paris**."}], "role": "assistant"}}, "stopReason":
+        "end_turn", "usage": {"inputTokens": 61, "outputTokens": 9, "serverToolUsage":
+        {}, "totalTokens": 70}}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      Date:
+      - Mon, 12 Oct 2026 14:02:59 GMT
+      x-amzn-RequestId:
+      - 3447c232-2554-494c-aa27-fcb4433462e5
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"messages": [{"role": "user", "content": [{"text": "What is the capital
+      of France?"}]}], "inferenceConfig": {"maxTokens": 1024}, "system": [{"text":
+      "Answer the user''s question in one word."}], "toolConfig": {"tools": [{"toolSpec":
+      {"name": "get_capital", "description": "Return the capital of a country.", "inputSchema":
+      {"json": {"properties": {"country": {"title": "Country", "type": "string"}},
+      "required": ["country"], "title": "get_capital_input", "type": "object"}}}}],
+      "toolChoice": {"auto": {}}}}'
+    headers:
+      Content-Type:
+      - !!binary |
+        YXBwbGljYXRpb24vanNvbg==
+      authorization:
+      - XXXXXX
+    method: POST
+    uri: https://bedrock-runtime.us-east-1.amazonaws.com/model/us.amazon.nova-2-lite-v1%3A0/converse
+  response:
+    body:
+      string: '{"metrics": {"latencyMs": 584}, "output": {"message": {"content": [{"toolUse":
+        {"input": {"country": "France"}, "name": "get_capital", "toolUseId": "tooluse_n5nkPVMiqD5vjfNQaLUvwB"}}],
+        "role": "assistant"}}, "stopReason": "tool_use", "usage": {"inputTokens":
+        929, "outputTokens": 26, "serverToolUsage": {}, "totalTokens": 955}}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      Date:
+      - Mon, 12 Oct 2026 14:03:02 GMT
+      x-amzn-RequestId:
+      - 4e448c0a-6380-4b86-97c9-fde7edf31264
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"messages": [{"role": "user", "content": [{"text": "What is the capital
+      of France?"}]}, {"role": "assistant", "content": [{"toolUse": {"toolUseId":
+      "tooluse_n5nkPVMiqD5vjfNQaLUvwB", "name": "get_capital", "input": {"country":
+      "France"}}}]}, {"role": "user", "content": [{"toolResult": {"toolUseId": "tooluse_n5nkPVMiqD5vjfNQaLUvwB",
+      "content": [{"text": "Paris"}], "status": "success"}}]}], "inferenceConfig":
+      {"maxTokens": 1024}, "system": [{"text": "Answer the user''s question in one
+      word."}], "toolConfig": {"tools": [{"toolSpec": {"name": "get_capital", "description":
+      "Return the capital of a country.", "inputSchema": {"json": {"properties": {"country":
+      {"title": "Country", "type": "string"}}, "required": ["country"], "title": "get_capital_input",
+      "type": "object"}}}}], "toolChoice": {"auto": {}}}}'
+    headers:
+      Content-Type:
+      - !!binary |
+        YXBwbGljYXRpb24vanNvbg==
+      authorization:
+      - XXXXXX
+    method: POST
+    uri: https://bedrock-runtime.us-east-1.amazonaws.com/model/us.amazon.nova-2-lite-v1%3A0/converse
+  response:
+    body:
+      string: '{"metrics": {"latencyMs": 417}, "output": {"message": {"content": [{"text":
+        "The capital of France is Paris."}], "role": "assistant"}}, "stopReason":
+        "end_turn", "usage": {"inputTokens": 982, "outputTokens": 10, "serverToolUsage":
+        {}, "totalTokens": 992}}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      Date:
+      - Mon, 12 Oct 2026 14:03:03 GMT
+      x-amzn-RequestId:
+      - da313e57-1050-4806-b098-6e2fa0d6ee5e
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"messages": [{"role": "user", "content": [{"text": "What is the capital
+      of France?"}]}, {"role": "assistant", "content": [{"toolUse": {"toolUseId":
+      "tooluse_n5nkPVMiqD5vjfNQaLUvwB", "name": "get_capital", "input": {"country":
+      "France"}}}]}, {"role": "user", "content": [{"toolResult": {"toolUseId": "tooluse_n5nkPVMiqD5vjfNQaLUvwB",
+      "content": [{"text": "Error: Function failed."}], "status": "success"}}]}],
+      "inferenceConfig": {"maxTokens": 1024}, "system": [{"text": "Answer the user''s
+      question in one word."}], "toolConfig": {"tools": [{"toolSpec": {"name": "get_capital",
+      "description": "Return the capital of a country.", "inputSchema": {"json": {"properties":
+      {"country": {"title": "Country", "type": "string"}}, "required": ["country"],
+      "title": "get_capital_input", "type": "object"}}}}], "toolChoice": {"auto":
+      {}}}}'
+    headers:
+      Content-Type:
+      - !!binary |
+        YXBwbGljYXRpb24vanNvbg==
+      authorization:
+      - XXXXXX
+    method: POST
+    uri: https://bedrock-runtime.us-east-1.amazonaws.com/model/us.amazon.nova-2-lite-v1%3A0/converse
+  response:
+    body:
+      string: '{"metrics": {"latencyMs": 739}, "output": {"message": {"content": [{"text":
+        "Sorry, I encountered an error while trying to retrieve the capital of France.
+        Please try again later."}], "role": "assistant"}}, "stopReason": "end_turn",
+        "usage": {"inputTokens": 984, "outputTokens": 23, "serverToolUsage": {}, "totalTokens":
+        1007}}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      Date:
+      - Mon, 12 Oct 2026 14:13:02 GMT
+      x-amzn-RequestId:
+      - 83e1f9d2-899c-46a3-9b9d-4a5dff1750a4
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"messages": [{"role": "user", "content": [{"text": "What is the capital
+      of France?"}]}, {"role": "assistant", "content": [{"toolUse": {"toolUseId":
+      "tooluse_n5nkPVMiqD5vjfNQaLUvwB", "name": "get_capital", "input": {"country":
+      "France"}}}]}, {"role": "user", "content": [{"toolResult": {"toolUseId": "tooluse_n5nkPVMiqD5vjfNQaLUvwB",
+      "content": [{"text": "Error: Function failed."}, {"text": "intentional tool
+      failure"}], "status": "error"}}]}], "inferenceConfig": {"maxTokens": 1024},
+      "system": [{"text": "Answer the user''s question in one word."}], "toolConfig":
+      {"tools": [{"toolSpec": {"name": "get_capital", "description": "Return the capital
+      of a country.", "inputSchema": {"json": {"properties": {"country": {"title":
+      "Country", "type": "string"}}, "required": ["country"], "title": "get_capital_input",
+      "type": "object"}}}}], "toolChoice": {"auto": {}}}}'
+    headers:
+      Content-Type:
+      - !!binary |
+        YXBwbGljYXRpb24vanNvbg==
+      authorization:
+      - XXXXXX
+    method: POST
+    uri: https://bedrock-runtime.us-east-1.amazonaws.com/model/us.amazon.nova-2-lite-v1%3A0/converse
+  response:
+    body:
+      string: '{"metrics": {"latencyMs": 583}, "output": {"message": {"content": [{"text":
+        "Sorry, I encountered an issue while trying to retrieve the capital of France.
+        Please try again later."}], "role": "assistant"}}, "stopReason": "end_turn",
+        "usage": {"inputTokens": 988, "outputTokens": 23, "serverToolUsage": {}, "totalTokens":
+        1011}}'
+    headers:
+      Connection:
+      - keep-alive
+      Content-Type:
+      - application/json
+      Date:
+      - Mon, 12 Oct 2026 14:13:21 GMT
+      x-amzn-RequestId:
+      - 033d8653-0b03-449a-8f61-6f7f4db1a4f9
+    status:
+      code: 200
+      message: OK
+version: 1

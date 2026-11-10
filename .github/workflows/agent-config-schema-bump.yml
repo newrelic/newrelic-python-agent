@@ -49,14 +49,15 @@ jobs:
     name: Open agent config schema bump PR
     runs-on: ubuntu-24.04
     permissions:
-      contents: write
-      pull-requests: write
+      contents: write # Push the bump branch
+      pull-requests: write # Open the bump PR
 
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # pin@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           ref: main
+          persist-credentials: false
 
       - name: Resolve --since ref
         id: ref
@@ -77,16 +78,18 @@ jobs:
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
 
       - name: Set up Python
-        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # 7.1.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.11"
 
       - name: Compute and apply bump
         id: bump
+        env:
+          SINCE_REF: ${{ steps.ref.outputs.ref }}
         run: |
           set +e
           python3 .fleetControl/schemaGeneration/bump-schema-version.py \
-            --since="${{ steps.ref.outputs.ref }}" --ci
+            --since="$SINCE_REF" --ci
           code=$?
           set -e
           case "$code" in
@@ -98,7 +101,7 @@ jobs:
       - name: Open bump PR
         id: create-pr
         if: steps.bump.outputs.bumped == 'true'
-        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # pin@v6
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           add-paths: .fleetControl/configurationDefinitions.yml
@@ -123,7 +126,10 @@ jobs:
 
       - name: Summary
         if: steps.create-pr.outputs.pull-request-number
+        env:
+          PR_NUMBER: ${{ steps.create-pr.outputs.pull-request-number }}
+          PR_URL: ${{ steps.create-pr.outputs.pull-request-url }}
         run: |
-          echo "Submitted PR #${{ steps.create-pr.outputs.pull-request-number }} to bump the agent config schema version."
+          echo "Submitted PR #$PR_NUMBER to bump the agent config schema version."
           echo "Review and merge before cutting the release tag."
-          echo "${{ steps.create-pr.outputs.pull-request-url }}"
+          echo "$PR_URL"

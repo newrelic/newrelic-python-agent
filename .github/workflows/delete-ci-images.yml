@@ -27,7 +27,6 @@ on:
 
 permissions:
   contents: read
-  packages: write
 
 concurrency:
   group: ${{ github.workflow }} # Only 1 job ever allowed at a time
@@ -37,8 +36,11 @@ jobs:
   ghcr-cleanup-image:
     name: ghcr cleanup action
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # Delete old images from GitHub Container Registry
     steps:
-      - uses: dataaxiom/ghcr-cleanup-action@d52806a0dc70b430571a37da1fde39733ffd640f # 1.2.2
+      - uses: dataaxiom/ghcr-cleanup-action@d52806a0dc70b430571a37da1fde39733ffd640f # v1.2.2
         with:
           package: newrelic-python-agent-ci
           exclude-tags: latest

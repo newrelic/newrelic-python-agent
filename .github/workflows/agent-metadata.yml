@@ -71,6 +71,10 @@ on:
       AGENT_METADATA_ACTION_LICENSE_KEY:
         required: false
 
+concurrency:
+  group: ${{ github.workflow }}-${{ inputs.version }}
+  cancel-in-progress: false
+
 jobs:
   send-agent-metadata:
     runs-on: ubuntu-latest

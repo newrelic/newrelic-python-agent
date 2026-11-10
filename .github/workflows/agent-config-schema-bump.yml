@@ -44,6 +44,10 @@ on:
         required: false
         default: ""
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 jobs:
   bump:
     name: Open agent config schema bump PR
@@ -99,37 +103,38 @@ jobs:
           esac
 
       - name: Open bump PR
-        id: create-pr
         if: steps.bump.outputs.bumped == 'true'
-        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          add-paths: .fleetControl/configurationDefinitions.yml
-          branch: bump-agent-config-schema-version-${{ github.run_id }}
-          delete-branch: true
-          base: main
-          title: "chore: bump agent config schema version"
-          commit-message: "chore: bump agent config schema version"
-          body: |
-            Auto-generated bump PR.
-
-            Bump computed from the schema diff since `${{ steps.ref.outputs.ref }}`.
-
-            ## ⚠️ Release ordering
-
-            **Merge this PR BEFORE cutting the release tag.**
-
-            If the release tag is cut before this PR merges, the tag's
-            `configurationDefinitions.yml` will still reflect the
-            pre-bump version even though the schema itself reflects the
-            new keys. Consumers see a mismatch.
-
-      - name: Summary
-        if: steps.create-pr.outputs.pull-request-number
         env:
-          PR_NUMBER: ${{ steps.create-pr.outputs.pull-request-number }}
-          PR_URL: ${{ steps.create-pr.outputs.pull-request-url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SINCE_REF: ${{ steps.ref.outputs.ref }}
+          BRANCH: bump-agent-config-schema-version-${{ github.run_id }}
+          TITLE: "chore: bump agent config schema version"
+          GIT_USER_NAME: github-actions[bot]
+          GIT_USER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
         run: |
-          echo "Submitted PR #$PR_NUMBER to bump the agent config schema version."
+          git checkout -b "$BRANCH"
+          git add .fleetControl/configurationDefinitions.yml
+          git config user.name "$GIT_USER_NAME"
+          git config user.email "$GIT_USER_EMAIL"
+          git commit -m "$TITLE"
+          gh auth setup-git
+          git push origin "HEAD:$BRANCH"
+
+          pr_url=$(gh pr create --base main --head "$BRANCH" --title "$TITLE" --body-file - <<EOF
+          Auto-generated bump PR.
+
+          Bump computed from the schema diff since \`$SINCE_REF\`.
+
+          ## ⚠️ Release ordering
+
+          **Merge this PR BEFORE cutting the release tag.**
+
+          If the release tag is cut before this PR merges, the tag's
+          \`configurationDefinitions.yml\` will still reflect the
+          pre-bump version even though the schema itself reflects the
+          new keys. Consumers see a mismatch.
+          EOF
+          )
+          echo "Submitted PR #${pr_url##*/} to bump the agent config schema version."
           echo "Review and merge before cutting the release tag."
-          echo "$PR_URL"
+          echo "$pr_url"

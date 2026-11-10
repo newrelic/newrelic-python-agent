@@ -22,6 +22,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: release # Only one release run happens at a time
+  cancel-in-progress: false
+
 jobs:
   validate-schema-version:
     name: Validate agent config schema version

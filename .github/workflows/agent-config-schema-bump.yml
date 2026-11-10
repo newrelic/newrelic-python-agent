@@ -44,6 +44,10 @@ on:
         required: false
         default: ""
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 jobs:
   bump:
     name: Open agent config schema bump PR

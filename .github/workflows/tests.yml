@@ -126,7 +126,7 @@ jobs:
         with:
           files: coverage.xml
           fail_ci_if_error: true
-          token: ${{ secrets.CODECOV_TOKEN }}
+          token: ${{ secrets.CODECOV_TOKEN }} # zizmor: ignore[secrets-outside-env]
 
   # Combine and upload coverage data
   summary:

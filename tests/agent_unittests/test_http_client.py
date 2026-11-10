@@ -371,6 +371,7 @@ def test_default_cert_path_handshake_is_verified(monkeypatch, server):
     """
     Test that the shared SSL context performs full certificate and hostname verification.
     """
+
     class DefaultVerifyPaths:
         cafile = "foo"
         capath = "/usr/certs"

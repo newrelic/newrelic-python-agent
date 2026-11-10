@@ -285,8 +285,20 @@ class HttpClient(BaseClient):
                             internal_metric("Supportability/Python/Certificate/BundleRequired", 1)
 
                 else:
-                    self._shared_ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS)
-                    connection_kwargs["ssl_context"] = self._shared_ssl_context
+                    self._shared_ssl_context = urllib3.util.create_urllib3_context()
+                    if disable_certificate_validation:
+                        # check_hostname must be disabled before cert_reqs is later set to
+                        # `NONE` below, since ssl.SSLContext forbids verify_mode=CERT_NONE
+                        # while `check_hostname` is `True`.
+                        self._shared_ssl_context.check_hostname = False
+                    try:
+                        self._shared_ssl_context.load_default_certs()
+                    except Exception:
+                        self._shared_ssl_context = None
+                        ca_bundle_path = certs.where()
+                        internal_metric("Supportability/Python/Certificate/BundleRequired", 1)
+                    else:
+                        connection_kwargs["ssl_context"] = self._shared_ssl_context
 
             if ca_bundle_path:
                 if Path(ca_bundle_path).is_dir():

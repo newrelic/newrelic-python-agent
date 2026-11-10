@@ -431,10 +431,11 @@ def test_browser_monitoring_version_without_loader_warns(caplog):
         # An explicit local record_content is respected and never forced.
         (True, True, True, True, True),
         (True, True, False, True, False),
-        # ai_monitoring.enabled False: AIM is disabled regardless of basic_telemetry.
+        # ai_monitoring.enabled False: AIM is disabled regardless of basic_telemetry,
+        # and record_content is turned off even when explicitly set locally.
         (True, False, None, False, False),
-        (True, False, True, False, True),
-        (False, False, True, False, True),
+        (True, False, True, False, False),
+        (False, False, True, False, False),
     ),
 )
 def test_ai_monitoring_basic_telemetry_fallback(
@@ -486,7 +487,8 @@ def test_ai_monitoring_enabled_from_ssc(local_enabled, local_basic_telemetry, ss
 
     assert app_settings.ai_monitoring.enabled is expected_enabled
     assert app_settings.ai_monitoring.basic_telemetry.enabled is expected_enabled
-    assert app_settings.ai_monitoring.record_content.enabled is True
+    # The local record_content=True is kept only while AIM is enabled; disabling AIM turns it off.
+    assert app_settings.ai_monitoring.record_content.enabled is expected_enabled
 
 
 @pytest.mark.parametrize(
@@ -548,9 +550,10 @@ def test_ai_monitoring_record_content_with_local_enabled(
     "ssc_settings,expected_enabled,expected_record_content",
     (
         # collect_ai=True, basic_telemetry, and record_content from SSC do not override ai_monitoring.enabled.
+        # record_content is turned off while AIM is disabled, even when SSC sets it to True.
         ({"collect_ai": True}, False, False),
         ({"agent_config": {"ai_monitoring.basic_telemetry.enabled": True}}, False, False),
-        ({"agent_config": {"ai_monitoring.record_content.enabled": True}}, False, True),
+        ({"agent_config": {"ai_monitoring.record_content.enabled": True}}, False, False),
     ),
 )
 def test_ai_monitoring_local_disabled_only_overridden_by_ssc(ssc_settings, expected_enabled, expected_record_content):

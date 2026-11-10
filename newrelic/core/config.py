@@ -1567,6 +1567,7 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
     # If aim.enabled is an explicit False, fully disable AIM, even if basic_telemetry is enabled.
     if settings_snapshot.ai_monitoring.enabled is False:
         apply_config_setting(settings_snapshot, "ai_monitoring.basic_telemetry.enabled", False)
+        apply_config_setting(settings_snapshot, "ai_monitoring.record_content.enabled", False)
 
     # If ai_monitoring.enabled is not set, then use the value of basic_telemetry as a fallback
     if settings_snapshot.ai_monitoring.enabled is None:
@@ -1577,6 +1578,8 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
     if collect_ai is False:
         apply_config_setting(settings_snapshot, "ai_monitoring.enabled", False)
         apply_config_setting(settings_snapshot, "ai_monitoring.basic_telemetry.enabled", False)
+        apply_config_setting(settings_snapshot, "ai_monitoring.record_content.enabled", False)
+
         _logger.debug(
             "AI Monitoring has been disabled at the account-level. All AIM features have been turned off in the agent."
         )

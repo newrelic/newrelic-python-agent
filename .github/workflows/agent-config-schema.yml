@@ -57,8 +57,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.ref }}
-          token: ${{ secrets.GITHUB_TOKEN }}
-          persist-credentials: true # zizmor: ignore[artipacked] git push of the regenerated schema needs these credentials
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
@@ -88,17 +87,18 @@ jobs:
       - name: Commit and push regenerated schema
         if: steps.generate.outputs.changed == 'true'
         env:
-          # Pass the (potentially attacker-controlled) branch name through
-          # an env var rather than interpolating it directly into the shell
-          # script -- prevents script injection via crafted branch names.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HEAD_REF: ${{ github.ref_name }}
+          GIT_USER_NAME: github-actions[bot]
+          GIT_USER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
         run: |
           if [ -z "$(git status --porcelain .fleetControl/schemas/config.json)" ]; then
             echo "Generator reported changes but config.json is clean -- nothing to commit."
             exit 0
           fi
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git config user.name "$GIT_USER_NAME"
+          git config user.email "$GIT_USER_EMAIL"
           git add .fleetControl/schemas/config.json
           git commit -m "chore: regenerate Fleet Control config schema"
+          gh auth setup-git
           git push origin "HEAD:$HEAD_REF"

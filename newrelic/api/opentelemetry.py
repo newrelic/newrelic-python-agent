@@ -231,7 +231,7 @@ class Span(otel_api_trace.Span):
         self.nr_trace.__enter__()
 
         # Add span kind as a custom New Relic (user) span attribute
-        add_custom_span_attribute("span.kind", span_kind_mapping(self.kind))
+        self.nr_trace.add_custom_attribute("span.kind", span_kind_mapping(self.kind))
 
         # Add Instrumentation Scope Attributes
         self.nr_trace._add_agent_attribute("otel.scope.name", self.attributes.get("library_name"))

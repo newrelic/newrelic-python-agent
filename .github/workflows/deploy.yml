@@ -83,7 +83,7 @@ jobs:
           CIBW_ARCHS_LINUX: native
           # Build backend comes from a hash-locked file instead of an isolated env resolved from PyPI.
           CIBW_BUILD_FRONTEND: "build; args: --no-isolation"
-          CIBW_BEFORE_BUILD: "python -m pip install --require-hashes -r {project}/.github/requirements/release-build-wheels.txt"
+          CIBW_BEFORE_BUILD: "python -m pip install --require-hashes -r {project}/.github/requirements/release-build.txt"
           CIBW_BEFORE_TEST: "python -m pip install --require-hashes -r {project}/.github/requirements/release-test.txt"
           CIBW_TEST_COMMAND_LINUX: "export PYTHONPATH={project}/tests; pytest {project}/tests/agent_unittests -vx"
 
@@ -118,7 +118,7 @@ jobs:
           # ARM64 wheels are cross-compiled on the x64 runner.
           CIBW_ARCHS_WINDOWS: AMD64 ARM64
           CIBW_BUILD_FRONTEND: "build; args: --no-isolation"
-          CIBW_BEFORE_BUILD: "python -m pip install --require-hashes -r {project}/.github/requirements/release-build-wheels.txt"
+          CIBW_BEFORE_BUILD: "python -m pip install --require-hashes -r {project}/.github/requirements/release-build.txt"
           CIBW_BEFORE_TEST: "python -m pip install --require-hashes -r {project}/.github/requirements/release-test.txt"
           CIBW_TEST_COMMAND_WINDOWS: "set PYTHONPATH={project}/tests; pytest {project}/tests/agent_unittests -vx"
           # Cross-compiled ARM64 wheels can't run on the x64 runner.
@@ -149,7 +149,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          pip install --require-hashes -r .github/requirements/release-build-sdist.txt
+          pip install --require-hashes -r .github/requirements/release-build.txt
 
       - name: Build Source Package
         run: |

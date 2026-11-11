@@ -12,12 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# ======================
+# ====================================================================================================
 # Test dependencies installed by cibuildwheel before running agent_unittests against each built wheel.
 #
-# Regenerate the lock file from the repository root with:
-#   uv pip compile --universal --python-version 3.10 --generate-hashes .github/requirements/release-test.in -o .github/requirements/release-test.txt
-# ======================
+# Regenerate the lock files from the repository root with:
+#   .github/requirements/update-constraints.sh
+# ====================================================================================================
 
 certifi
 pytest

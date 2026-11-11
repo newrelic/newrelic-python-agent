@@ -12,12 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# ======================
-# Build frontend plus build backend for the release sdist job, locked together in one file.
+# ========================================================================================================
+# Build backend for release wheels and the sdist (installed into the build env, used with --no-isolation).
+# Bounds mirror [build-system] requires in pyproject.toml; keep them in sync.
 #
-# Regenerate the lock file from the repository root with:
-#   uv pip compile --universal --python-version 3.10 --generate-hashes .github/requirements/release-sdist.in -o .github/requirements/release-sdist.txt
-# ======================
+# Regenerate the lock files from the repository root with:
+#   .github/requirements/update-constraints.sh
+# ========================================================================================================
 
--r release-build-wheels.in
-build
+setuptools>=61.2
+setuptools_scm>=6.4,<10
+build<2

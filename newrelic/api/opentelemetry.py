@@ -104,6 +104,7 @@ except:
 # Custom OpenTelemetry Spans and Traces
 # ----------------------------------------------
 
+
 def span_kind_mapping(kind):
     mapping = {
         otel_api_trace.SpanKind.INTERNAL: "internal",

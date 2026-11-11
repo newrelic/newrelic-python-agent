@@ -88,7 +88,7 @@ def test_trace_with_opentelemetry_to_newrelic(tracer):
         exact_users={
             "NR_span_attribute_BG": "NR span attribute from BG",
             "opentelemetry_span_attribute_BG": "OpenTelemetry span attribute from BG",
-            "span.kind": "internal",    # If span is generated from OTel, this attribute will exist.
+            "span.kind": "internal",  # If span is generated from OTel, this attribute will exist.
         },
     )
     @validate_span_events(
@@ -121,6 +121,7 @@ def test_update_name(tracer):
     this span, it is still fundamentally a New Relic span,
     and therefore will not be getting a `span.kind` attribute.
     """
+
     @dt_enabled
     @validate_span_events(
         count=1,

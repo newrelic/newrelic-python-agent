@@ -120,7 +120,6 @@ def test_update_name(tracer):
     Note even through the OpenTelemetry API is used on
     this span, it is still fundamentally a New Relic span,
     and therefore will not be getting a `span.kind` attribute.
-    
     """
     @dt_enabled
     @validate_span_events(

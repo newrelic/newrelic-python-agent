@@ -576,9 +576,7 @@ def test_ai_monitoring_enabled_from_ssc_high_security_mode():
     apply_config_setting(settings, "ai_monitoring.enabled", None)
     apply_config_setting(settings, "ai_monitoring.basic_telemetry.enabled", True)
 
-    app_settings = apply_server_side_settings(
-        {"agent_config": _ssc_ai_monitoring_enabled(True)}, settings=settings
-    )
+    app_settings = apply_server_side_settings({"agent_config": _ssc_ai_monitoring_enabled(True)}, settings=settings)
 
     assert app_settings.ai_monitoring.enabled is False
     assert app_settings.ai_monitoring.record_content.enabled is False

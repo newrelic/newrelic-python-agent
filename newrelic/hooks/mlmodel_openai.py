@@ -940,8 +940,8 @@ def wrap_responses_sync(wrapped, instance, args, kwargs):
 
     request_timestamp = int(1000.0 * time.time())
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI
@@ -1005,8 +1005,8 @@ async def wrap_responses_async(wrapped, instance, args, kwargs):
 
     request_timestamp = int(1000.0 * time.time())
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI

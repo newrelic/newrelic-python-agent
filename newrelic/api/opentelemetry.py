@@ -1076,3 +1076,24 @@ def meter_provider_resource_and_reader_generator(settings):
         return resource, reader
     except Exception:
         raise
+
+
+def views_generator(settings):
+    try:
+        from opentelemetry.sdk.metrics.view import DropAggregation, View
+    except ImportError:
+        # This should not be possible.
+        _logger.warning("OpenTelemetry SDK not available, skipping view generation")
+        return []
+    except Exception as e:
+        _logger.warning("Error generating views: %s", e)
+        return []
+
+    user_exclude = settings.opentelemetry.metrics.exclude
+    user_include = settings.opentelemetry.metrics.include
+
+    exclude_views = [View(instrument_name=name, aggregation=DropAggregation()) for name in user_exclude]
+    include_views = [View(instrument_name=name) for name in user_include]
+
+    views = exclude_views + include_views
+    return views

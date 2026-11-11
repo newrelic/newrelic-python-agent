@@ -12,12 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
+
 from newrelic.api.application import application_instance
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.signature import bind_args
 from newrelic.core.config import global_settings
+
+_logger = logging.getLogger(__name__)
 
 ###########################################
 #   Context Instrumentation
@@ -304,6 +308,16 @@ def _subscribe_meter_provider(settings, meter_provider):
         # Continue if the attribute is not present
         pass
 
+    # Check to see if there are any values in the include/exclude
+    # settings.  If so, print a warning that they cannot be added
+    # at this point.
+    if settings.opentelemetry.metrics.exclude or settings.opentelemetry.metrics.include:
+        _logger.warning(
+            "OpenTelemetry metrics include/exclude settings cannot be applied "
+            "since MeterProvider has already been initialized outside of the "
+            "scope of New Relic's instrumentation."
+        )
+
     application = application_instance()
     if not application.active:
         # Force application registration if not already active
@@ -348,15 +362,23 @@ def wrap_MeterProvider(wrapped, instance, args, kwargs):
     except (AttributeError, KeyError):
         pass
 
-    from newrelic.api.opentelemetry import meter_provider_resource_and_reader_generator
+    from newrelic.api.opentelemetry import meter_provider_resource_and_reader_generator, views_generator
     nr_resource, nr_reader = meter_provider_resource_and_reader_generator(settings)
+    nr_views = views_generator(settings)
 
-    # Before we run __init__ we need to add our metric reader to arg BEFORE running __init__
+    # Before we run __init__ we need to add the following:
+    # 1) New Relic specific metric reader to arg
+    # 2) Included and excluded metrics as defined by the settings
     bound_args = bind_args(wrapped, args, kwargs)
+    
     metric_readers = bound_args.get("metric_readers", [])
     nr_reader = [nr_reader]
     nr_reader.extend(metric_readers)
     bound_args["metric_readers"] = nr_reader
+
+    views = bound_args.get("views", [])
+    nr_views.extend(views)
+    bound_args["views"] = nr_views
 
     result = wrapped(**bound_args)
 

@@ -47,10 +47,6 @@ workflows:
         - 'actions/upload-artifact@v7.0.2'
         - 'astral-sh/setup-uv@v10.3.3'
         - 'codecov/codecov-action@v7.1.1'
-    '.github/workflows/trivy.yml':
-        - 'actions/checkout@v7.0.1'
-        - 'aquasecurity/trivy-action@v0.36.0'
-        - 'github/codeql-action@v4.39.2'
     '.github/workflows/verify-actions-lockfile.yml':
         - 'actions/checkout@v7.0.1'
 dependencies:

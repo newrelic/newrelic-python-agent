@@ -38,14 +38,14 @@ jobs:
     steps:
       # Git Checkout
       - name: Checkout Code
-        uses: actions/checkout@v7.0.1
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
 
       - name: Run Trivy vulnerability scanner in repo mode
         if: ${{ github.event_name == 'pull_request' }}
-        uses: aquasecurity/trivy-action@v0.36.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0  # zizmor: ignore[unpinned-tools] action pins trivy by default
         with:
           scan-type: "fs"
           ignore-unfixed: true
@@ -56,7 +56,7 @@ jobs:
 
       - name: Run Trivy vulnerability scanner in repo mode
         if: ${{ github.event_name == 'schedule' }}
-        uses: aquasecurity/trivy-action@v0.36.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0  # zizmor: ignore[unpinned-tools] action pins trivy by default
         with:
           scan-type: "fs"
           ignore-unfixed: true
@@ -67,6 +67,6 @@ jobs:
 
       - name: Upload Trivy scan results to GitHub Security tab
         if: ${{ github.event_name == 'schedule' }}
-        uses: github/codeql-action/upload-sarif@v4.39.2
+        uses: github/codeql-action/upload-sarif@1fc58d04a4d4374f921bdac573c3811c240f9c26 # v4.39.2
         with:
           sarif_file: "trivy-results.sarif"

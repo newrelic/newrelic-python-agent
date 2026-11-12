@@ -1505,7 +1505,7 @@ def wrap_StructuredTool_invoke(wrapped, instance, args, kwargs):
     if trace:
         return wrapped(*args, **kwargs)
 
-    metadata = bind_args(wrapped, args, kwargs).get("config", {}).get("metadata", {})
+    metadata = (bind_args(wrapped, args, kwargs).get("config") or {}).get("metadata") or {}
     # Delete the reference after grabbing it to avoid it ending up in LangChain attributes
     trace_cache_id = metadata.pop("_nr_trace_id", None)
     if not trace_cache_id:
@@ -1522,7 +1522,7 @@ async def wrap_StructuredTool_ainvoke(wrapped, instance, args, kwargs):
     if not trace or instance.coroutine:
         return await wrapped(*args, **kwargs)
 
-    metadata = bind_args(wrapped, args, kwargs).get("config", {}).get("metadata", {})
+    metadata = (bind_args(wrapped, args, kwargs).get("config") or {}).get("metadata") or {}
     metadata["_nr_trace_id"] = trace.thread_id
 
     try:

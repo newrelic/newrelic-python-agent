@@ -1019,7 +1019,7 @@ def test_langchain_chain_no_content(
         name="mlmodel_langchain.test_chain:test_langchain_chain_no_content.<locals>._test",
         scoped_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         rollup_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
-        custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
+        custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}/Basic", 1)],
         background_task=True,
     )
     @background_task()
@@ -1225,7 +1225,7 @@ def test_langchain_chain_error_in_langchain_no_content(
         name="mlmodel_langchain.test_chain:test_langchain_chain_error_in_langchain_no_content.<locals>._test",
         scoped_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         rollup_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
-        custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
+        custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}/Basic", 1)],
         background_task=True,
     )
     @background_task()
@@ -1321,7 +1321,7 @@ def test_async_langchain_chain_list_response(
     name="mlmodel_langchain.test_chain:test_async_langchain_chain_list_response_no_content",
     scoped_metrics=[("Llm/chain/LangChain/ainvoke", 1)],
     rollup_metrics=[("Llm/chain/LangChain/ainvoke", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
+    custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}/Basic", 1)],
     background_task=True,
 )
 @background_task()
@@ -1629,7 +1629,7 @@ def test_async_langchain_chain_error_in_langchain_no_content(
         name="mlmodel_langchain.test_chain:test_async_langchain_chain_error_in_langchain_no_content.<locals>._test",
         scoped_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
         rollup_metrics=[(f"Llm/chain/LangChain/{call_function}", 1)],
-        custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
+        custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}/Basic", 1)],
         background_task=True,
     )
     @background_task()

@@ -97,6 +97,9 @@ class TraceCache(MutableMapping):
 
     def __init__(self):
         self._cache = weakref.WeakValueDictionary()
+        # id(task) -> callbacks. Every entry is removed when its task finishes, by task_stop or by the backstop
+        # done callback registered with it.
+        self._task_stop_callbacks = {}
 
     def __repr__(self):
         return f"<{self.__class__.__name__} object at 0x{id(self):x} {dict(self.items())!s}>"
@@ -143,7 +146,36 @@ class TraceCache(MutableMapping):
             self[id(task)] = trace
 
     def task_stop(self, task):
+        self._run_task_stop_callbacks(task)
+        # Exiting a trace from a callback restores its parent under this task's id, so drop it after them.
         self.pop(id(task), None)
+
+    def add_task_stop_callback(self, task, callback):
+        """Call callback(task) when the task finishes.
+
+        For tasks created through the instrumented event loop, this runs before the task's other done callbacks,
+        so before anything awaiting the task resumes. Remove the callback when it is no longer needed: it, and
+        everything it references, is otherwise kept alive until the task finishes.
+        """
+        callbacks = self._task_stop_callbacks.get(id(task))
+        if callbacks is None:
+            callbacks = self._task_stop_callbacks[id(task)] = []
+            # Backstop for tasks that never reach task_stop, such as those not created through the instrumented
+            # loop, so their entry can't outlive them. A no-op once task_stop has run.
+            task.add_done_callback(self._run_task_stop_callbacks)
+        callbacks.append(callback)
+
+    def remove_task_stop_callback(self, task, callback):
+        callbacks = self._task_stop_callbacks.get(id(task))
+        if callbacks and callback in callbacks:
+            callbacks.remove(callback)
+
+    def _run_task_stop_callbacks(self, task):
+        for callback in self._task_stop_callbacks.pop(id(task), None) or ():
+            try:
+                callback(task)
+            except Exception:
+                _logger.exception("Exception in task stop callback.")
 
     def current_transaction(self):
         """Return the transaction object if one exists for the currently

@@ -95,14 +95,20 @@ jobs:
           retention-days: 1
 
   build-wheels-windows:
-    name: Build wheels for ${{ matrix.python }}-win
+    name: Build wheels for ${{ matrix.python }}-win_${{ matrix.arch }}
     needs: validate
-    runs-on: windows-2025
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
         python: [cp313, cp314, cp314t]
+        arch: [amd64, arm64]
+        include:
+          - arch: AMD64
+            runner: windows-2025
+          - arch: ARM64
+            runner: windows-11-arm
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -114,19 +120,16 @@ jobs:
         uses: pypa/cibuildwheel@f9b966cfadf4109556cadc5bb39ddb72d0ce664e # v4.3.5
         env:
           CIBW_BUILD: "${{ matrix.python }}-*"
-          # ARM64 wheels are cross-compiled on the x64 runner.
-          CIBW_ARCHS_WINDOWS: AMD64 ARM64
+          CIBW_ARCHS_WINDOWS: native
           # Constrain build and test dependencies from a hash-locked file.
           CIBW_BUILD_FRONTEND: "build; args: --dependency-constraints-txt=.github/requirements/release-build.txt"
           CIBW_BEFORE_TEST: "python -m pip install --require-hashes -r {project}/.github/requirements/release-test.txt"
           CIBW_TEST_COMMAND_WINDOWS: "set PYTHONPATH={project}/tests; pytest {project}/tests/agent_unittests -vx"
-          # Cross-compiled ARM64 wheels can't run on the x64 runner.
-          CIBW_TEST_SKIP: "*-win_arm64"
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: wheels-windows-${{ matrix.python }}
+          name: wheels-windows-${{ matrix.python }}-${{ matrix.arch }}
           path: ./wheelhouse/*.whl
           if-no-files-found: error
           retention-days: 1

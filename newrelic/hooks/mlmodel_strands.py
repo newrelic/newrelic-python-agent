@@ -26,7 +26,6 @@ from newrelic.common.object_names import callable_name, parse_exc_info
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
-from newrelic.core.config import global_settings
 from newrelic.core.context import ContextOf
 
 _logger = logging.getLogger(__name__)
@@ -84,8 +83,8 @@ def wrap_stream_async(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    settings = transaction.settings or global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI
@@ -198,7 +197,7 @@ def _construct_base_tool_event_dict(strands_attrs, tool_results, transaction, li
         run_id = strands_attrs.get("run_id")
         tool_input = strands_attrs.get("tool_input")
         agent_name = strands_attrs.get("agent_name", "agent")
-        settings = transaction.settings or global_settings()
+        settings = getattr(transaction, "settings", None)
 
         tool_event_dict = {
             "id": tool_id,
@@ -353,8 +352,8 @@ def wrap_tool_executor__stream(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    settings = transaction.settings or global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI
@@ -442,8 +441,8 @@ def wrap_bedrock_model_stream(wrapped, instance, args, kwargs):
     if not trace:
         return wrapped(*args, **kwargs)
 
-    settings = trace.settings or global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(trace, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
     try:

@@ -25,7 +25,6 @@ from newrelic.api.transaction import current_transaction
 from newrelic.common.llm_utils import AsyncLLMStreamProxy, LLMStreamProxy
 from newrelic.common.object_wrapper import ObjectProxy, wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
-from newrelic.core.config import global_settings
 
 ANTHROPIC_VERSION = get_package_version("anthropic")
 EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE = (
@@ -128,8 +127,8 @@ def wrap_messages_create_sync(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    settings = transaction.settings or global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI
@@ -216,8 +215,8 @@ async def wrap_messages_create_async(wrapped, instance, args, kwargs):
     if not transaction:
         return await wrapped(*args, **kwargs)
 
-    settings = transaction.settings or global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI
@@ -480,7 +479,7 @@ def _record_completion_success(
     request_timestamp=None,
     time_to_first_token=None,
 ):
-    settings = transaction.settings or global_settings()
+    settings = getattr(transaction, "settings", None)
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
     try:
@@ -592,7 +591,7 @@ def create_chat_completion_message_event(
     request_timestamp=None,
 ):
     try:
-        settings = transaction.settings or global_settings()
+        settings = getattr(transaction, "settings", None)
 
         # Record one event per input message
         for sequence, message in enumerate(messages):
@@ -656,8 +655,8 @@ def wrap_messages_stream(manager_cls):
         if not transaction:
             return wrapped(*args, **kwargs)
 
-        settings = transaction.settings or global_settings()
-        if not settings.ai_monitoring.enabled:
+        settings = getattr(transaction, "settings", None)
+        if not settings or not settings.ai_monitoring.enabled:
             return wrapped(*args, **kwargs)
 
         # Framework metric also used for entity tagging in the UI

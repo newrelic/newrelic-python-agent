@@ -34,7 +34,7 @@ concurrency:
 
 jobs:
   verify:
-    name: Verify Actions Lockfile 
+    name: Verify Actions Lockfile
     runs-on: ubuntu-latest
     env:
       GH_TOKEN: ${{ github.token }}

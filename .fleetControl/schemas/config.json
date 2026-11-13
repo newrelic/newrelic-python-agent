@@ -684,6 +684,46 @@
       "type": "boolean",
       "default": false
     },
+    "opentelemetry.metrics.enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "opentelemetry.metrics.exclude": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "default": []
+    },
+    "opentelemetry.metrics.export_interval": {
+      "type": "integer",
+      "default": 60000
+    },
+    "opentelemetry.metrics.export_timeout": {
+      "type": "integer",
+      "default": 10000
+    },
+    "opentelemetry.metrics.include": {
+      "anyOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "default": []
+    },
     "opentelemetry.traces.enabled": {
       "type": "boolean",
       "default": true
@@ -719,6 +759,10 @@
     "otlp_port": {
       "type": "integer",
       "default": 0
+    },
+    "otlp_resource_attributes": {
+      "type": "object",
+      "additionalProperties": true
     },
     "package_reporting.enabled": {
       "type": "boolean",

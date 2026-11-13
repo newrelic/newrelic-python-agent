@@ -27,7 +27,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  validate-schema-version:
+  validate:
     name: Validate agent config schema version
     runs-on: ubuntu-24.04
     # Runs before anything is built or published. The Fleet Control backend
@@ -53,55 +53,21 @@ jobs:
           echo "Comparing against previous release tag: ${prev}"
           python3 .fleetControl/schemaGeneration/bump-schema-version.py --since="${prev}"
 
-  build-wheels:
-    needs: validate-schema-version
+  build-wheels-linux:
+    name: Build wheels for ${{ matrix.python }}-linux_${{ matrix.arch }}
+    needs: validate
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 10
     strategy:
       fail-fast: false
       matrix:
+        python: [cp310, cp311, cp312, cp313, cp314, cp314t]
+        arch: [x86_64, aarch64]
         include:
-          # Linux glibc
-          - wheel: cp310-manylinux
-            os: ubuntu-24.04
-          - wheel: cp311-manylinux
-            os: ubuntu-24.04
-          - wheel: cp312-manylinux
-            os: ubuntu-24.04
-          - wheel: cp313-manylinux
-            os: ubuntu-24.04
-          - wheel: cp313t-manylinux
-            os: ubuntu-24.04
-          - wheel: cp314-manylinux
-            os: ubuntu-24.04
-          - wheel: cp314t-manylinux
-            os: ubuntu-24.04
-          # Linux musllibc
-          - wheel: cp310-musllinux
-            os: ubuntu-24.04
-          - wheel: cp311-musllinux
-            os: ubuntu-24.04
-          - wheel: cp312-musllinux
-            os: ubuntu-24.04
-          - wheel: cp313-musllinux
-            os: ubuntu-24.04
-          - wheel: cp313t-musllinux
-            os: ubuntu-24.04
-          - wheel: cp314-musllinux
-            os: ubuntu-24.04
-          - wheel: cp314t-musllinux
-            os: ubuntu-24.04
-          # Windows
-          - wheel: cp313-win
-            os: windows-2025
-          - wheel: cp313t-win
-            os: windows-2025
-          - wheel: cp314-win
-            os: windows-2025
-          - wheel: cp314t-win
-            os: windows-2025
-
-    name: Build wheels for ${{ matrix.wheel }}
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 10
+          - arch: x86_64
+            runner: ubuntu-24.04
+          - arch: aarch64
+            runner: ubuntu-24.04-arm
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -109,40 +75,68 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
-      - name: Setup QEMU
-        if: runner.os == 'Linux'
-        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
-        with:
-          platforms: arm64
-
       - name: Build Wheels
-        uses: pypa/cibuildwheel@9c00cb4f6b517705a3794b22395aedc36257242c # v3.2.1
+        uses: pypa/cibuildwheel@f9b966cfadf4109556cadc5bb39ddb72d0ce664e # v4.3.5
         env:
-          CIBW_PLATFORM: auto
-          CIBW_BUILD: "${{ matrix.wheel }}*"
-          CIBW_ARCHS_LINUX: x86_64 aarch64
-          CIBW_ARCHS_MACOS: native
-          CIBW_ARCHS_WINDOWS: AMD64 ARM64
-          CIBW_ENVIRONMENT_LINUX: "LD_LIBRARY_PATH=/opt/rh/devtoolset-8/root/usr/lib64:/opt/rh/devtoolset-8/root/usr/lib:/opt/rh/devtoolset-8/root/usr/lib64/dyninst:/opt/rh/devtoolset-8/root/usr/lib/dyninst:/usr/local/lib64:/usr/local/lib"
-          CIBW_ENABLE: cpython-freethreading
-          CIBW_TEST_REQUIRES: pytest certifi WebTest
+          # Builds both manylinux and musllinux for this Python version.
+          CIBW_BUILD: "${{ matrix.python }}-*"
+          CIBW_ARCHS_LINUX: native
+          # Constrain build and test dependencies from a hash-locked file.
+          CIBW_BUILD_FRONTEND: "build; args: --dependency-constraints-txt=.github/requirements/release-build.txt"
+          CIBW_BEFORE_TEST: "python -m pip install --require-hashes -r {project}/.github/requirements/release-test.txt"
           CIBW_TEST_COMMAND_LINUX: "export PYTHONPATH={project}/tests; pytest {project}/tests/agent_unittests -vx"
-          CIBW_TEST_COMMAND_MACOS: "export PYTHONPATH={project}/tests; pytest {project}/tests/agent_unittests -vx"
-          CIBW_TEST_COMMAND_WINDOWS: "set PYTHONPATH={project}/tests; pytest {project}/tests/agent_unittests -vx"
-          # Windows ARM64 tests won't run when using cross compilation. Skip unless we can move to a native windows-arm runner.
-          CIBW_TEST_SKIP: "*-win_arm64"
 
       - name: Upload Artifacts
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: ${{ github.job }}-${{ matrix.wheel }}
+          name: wheels-linux-${{ matrix.python }}-${{ matrix.arch }}
+          path: ./wheelhouse/*.whl
+          if-no-files-found: error
+          retention-days: 1
+
+  build-wheels-windows:
+    name: Build wheels for ${{ matrix.python }}-win_${{ matrix.arch }}
+    needs: validate
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        python: [cp313, cp314, cp314t]
+        arch: [amd64, arm64]
+        include:
+          - arch: AMD64
+            runner: windows-2025
+          - arch: ARM64
+            runner: windows-11-arm
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Build Wheels
+        uses: pypa/cibuildwheel@f9b966cfadf4109556cadc5bb39ddb72d0ce664e # v4.3.5
+        env:
+          CIBW_BUILD: "${{ matrix.python }}-*"
+          CIBW_ARCHS_WINDOWS: native
+          # Constrain build and test dependencies from a hash-locked file.
+          CIBW_BUILD_FRONTEND: "build; args: --dependency-constraints-txt=.github/requirements/release-build.txt"
+          CIBW_BEFORE_TEST: "python -m pip install --require-hashes -r {project}/.github/requirements/release-test.txt"
+          CIBW_TEST_COMMAND_WINDOWS: "set PYTHONPATH={project}/tests; pytest {project}/tests/agent_unittests -vx"
+
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: wheels-windows-${{ matrix.python }}-${{ matrix.arch }}
           path: ./wheelhouse/*.whl
           if-no-files-found: error
           retention-days: 1
 
   build-sdist:
     name: Build sdist
-    needs: validate-schema-version
+    needs: validate
     runs-on: ubuntu-24.04
 
     steps:
@@ -157,41 +151,52 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          pip install -U pip
-          pip install -U build
+          pip install --require-hashes -r .github/requirements/release-build.txt
 
       - name: Build Source Package
         run: |
-          python -m build --sdist
+          pyproject-build --sdist --dependency-constraints-txt=.github/requirements/release-build.txt
 
-      - name: Prepare MD5 Hash File
+      - name: Prepare Checksum Files
+        working-directory: ./dist
         run: |
-          tarball="$(basename ./dist/*.tar.gz)"
-          md5_file="${tarball}.md5"
-          openssl md5 -binary "dist/${tarball}" | xxd -p | tr -d '\n' > "dist/${md5_file}"
+          tarball="$(basename ./*.tar.gz)"
+          openssl md5 -binary "${tarball}" | xxd -p | tr -d '\n' > "${tarball}.md5"
+          sha256sum "${tarball}" > "${tarball}.sha256"
 
-      - name: Upload Artifacts
+      - name: Upload Source Package
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: ${{ github.job }}-sdist
+          name: sdist
+          path: ./dist/*.tar.gz
+          if-no-files-found: error
+          retention-days: 1
+
+      # Kept separate so the PyPI upload only ever sees distributions.
+      - name: Upload Checksum Files
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: sdist-checksums
           path: |
-            ./dist/*.tar.gz
             ./dist/*.tar.gz.md5
+            ./dist/*.tar.gz.sha256
           if-no-files-found: error
           retention-days: 1
 
   publish:
-    name: Publish
+    name: Publish release
+    needs:
+      - validate
+      - build-wheels-linux
+      - build-wheels-windows
+      - build-sdist
     runs-on: ubuntu-24.04
+    environment: ${{ matrix.pypi-instance }}
     permissions:
-      contents: read
-      id-token: write # IMPORTANT: this permission is mandatory for trusted publishing
+      contents: write # Publish artifacts to Github releases
+      id-token: write # Sign attestations, and PyPI trusted publishing
       attestations: write # Create build provenance attestations
       artifact-metadata: write # Record artifact metadata for attestations
-    needs:
-      - validate-schema-version
-      - build-wheels
-      - build-sdist
 
     strategy:
       matrix:
@@ -202,45 +207,60 @@ jobs:
           # - "testpypi" for testing
           # - "build-only" to skip publishing and only test builds.
 
-    environment: ${{ matrix.pypi-instance }}
-
     steps:
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
+          pattern: "{wheels-*,sdist}"
           path: ./dist/
           merge-multiple: true
+
+      # Kept out of ./dist, since the PyPI upload takes everything in it.
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: sdist-checksums
+          path: ./checksums/
+
+      - name: Attest
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-path: |
+            ./dist/*.whl
+            ./dist/*.tar.gz
 
       - name: Upload Package to S3
         if: matrix.pypi-instance == 'pypi'
         run: |
           tarball="$(basename ./dist/*.tar.gz)"
-          md5_file="${tarball}.md5"
-          aws s3 cp "dist/${md5_file}" "${S3_DST}/${md5_file}"
-          aws s3 cp "dist/${tarball}" "${S3_DST}/${tarball}"
-          rm "dist/${md5_file}"
+          aws s3 cp "./checksums/${tarball}.md5" "${S3_DST}/${tarball}.md5"
+          aws s3 cp "./checksums/${tarball}.sha256" "${S3_DST}/${tarball}.sha256"
+          aws s3 cp "./dist/${tarball}" "${S3_DST}/${tarball}"
         env:
           S3_DST: s3://nr-downloads-main/python_agent/release
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: us-west-2
 
+      - name: Upload assets to draft release
+        run: |
+          gh release upload "${TAG}" --repo="${GITHUB_REPOSITORY}" --clobber ./dist/*
+        env:
+          TAG: ${{ github.ref_name }}
+          GH_TOKEN: ${{ github.token }}
+
       - name: Upload Package to PyPI
         if: matrix.pypi-instance == 'pypi'
         uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          # skip-existing lets a re-run finish an upload that stopped partway.
+          skip-existing: true
 
       - name: Upload Package to TestPyPI
         if: matrix.pypi-instance == 'testpypi'
         uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           repository-url: https://test.pypi.org/legacy/
-
-      - name: Attest
-        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
-        id: attest
-        with:
-          subject-path: |
-            ./dist/*.whl
-            ./dist/*.tar.gz
+          # skip-existing lets a re-run finish an upload that stopped partway.
+          skip-existing: true
 
       - name: Wait for release to be available
         if: matrix.pypi-instance == 'pypi'
@@ -254,13 +274,12 @@ jobs:
           RELEASE_TITLE="New Relic Python Agent ${GITHUB_REF_NAME}.0"
           RELEASE_TAG="${GITHUB_REF_NAME}.0_python"
           RELEASE_NOTES="Automated release for [Python Agent ${GITHUB_REF_NAME}](https://github.com/newrelic/newrelic-python-agent/releases/tag/${GITHUB_REF_NAME})"
-          gh auth login --with-token <<< "$GH_RELEASE_TOKEN"
           echo "newrelic/newrelic-lambda-layers - Releasing \"${RELEASE_TITLE}\" with tag ${RELEASE_TAG}"
           gh release create "${RELEASE_TAG}" --title="${RELEASE_TITLE}" --repo=newrelic/newrelic-lambda-layers --notes="${RELEASE_NOTES}"
           echo "newrelic/newrelic-agent-init-container - Releasing \"${RELEASE_TITLE}\" with tag ${RELEASE_TAG}"
           gh release create "${RELEASE_TAG}" --title="${RELEASE_TITLE}" --repo=newrelic/newrelic-agent-init-container --notes="${RELEASE_NOTES}"
         env:
-          GH_RELEASE_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN }}
 
   update-agent-metadata:
     needs: [publish]

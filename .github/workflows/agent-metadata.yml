@@ -65,9 +65,9 @@ on:
         type: boolean
     secrets:
       FC_SYS_ID_CLIENT_ID:
-        required: true
+        required: false
       FC_SYS_ID_PR_KEY:
-        required: true
+        required: false
       AGENT_METADATA_ACTION_LICENSE_KEY:
         required: false
 
@@ -78,6 +78,7 @@ concurrency:
 jobs:
   send-agent-metadata:
     runs-on: ubuntu-latest
+    environment: pypi
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@46b06cea07f9e64621fdf066ba77ac6915163d43 # v2.22.3

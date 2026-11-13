@@ -16,14 +16,13 @@ import pytest
 from fastmcp.client import Client
 from fastmcp.client.transports import FastMCPTransport
 from fastmcp.server.server import FastMCP
-
-from newrelic.common.package_version_utils import get_package_version_tuple
 from testing_support.ml_testing_utils import disabled_ai_monitoring_settings
 from testing_support.validators.validate_function_not_called import validate_function_not_called
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
+from newrelic.common.package_version_utils import get_package_version_tuple
 
 # mcp>=2 renamed mcp.server.fastmcp.FastMCP to mcp.server.mcpserver.MCPServer,
 try:

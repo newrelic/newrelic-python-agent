@@ -1050,7 +1050,7 @@ def meter_provider_creator(settings):
         exporter = OTLPMetricExporter(
             endpoint=f"https://{settings.host}:{settings.port}/v1/metrics",
             headers={"api-key": settings.license_key},
-            timeout=export_timeout/1000,
+            timeout=export_timeout / 1000,
             compression=Compression.Gzip,
             session=session,
             preferred_temporality={

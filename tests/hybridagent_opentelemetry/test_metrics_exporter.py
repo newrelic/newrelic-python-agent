@@ -13,7 +13,6 @@
 # limitations under the License.
 
 import pytest
-import requests
 from testing_support.fixtures import override_generic_settings
 
 from newrelic.api.opentelemetry import meter_provider_resource_and_reader_generator

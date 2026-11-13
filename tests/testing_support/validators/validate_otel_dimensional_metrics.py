@@ -61,13 +61,18 @@ def validate_otel_dimensional_metrics(
 
             parsed_counter_data, _ = metric_parser(metric_events)
 
-            if counter_expected:
-                try:
-                    assert all(item in parsed_counter_data for item in counter_expected), f"Expected: {counter_expected}, Got: {parsed_counter_data}"
-                    assert all(item in counter_expected for item in parsed_counter_data), f"Expected: {counter_expected}, Got: {parsed_counter_data}"
-                    return
-                except AssertionError:
-                    # Go through next metric reader to see if that has the information we expect
-                    pass
+            if not counter_expected:
+                assert not parsed_counter_data, f"Expected no metrics, Got: {parsed_counter_data}"
+                return
+            elif counter_expected and parsed_counter_data:
+                assert all(item in parsed_counter_data for item in counter_expected), f"Expected: {counter_expected}, Got: {parsed_counter_data}"
+                assert all(item in counter_expected for item in parsed_counter_data), f"Expected: {counter_expected}, Got: {parsed_counter_data}"
+                return
+            # If counter_expected but not parsed_counter_data, this could be
+            # because the validator is reading from the wrong metric reader.
+            # In this case, loop through the remaining metric readers to see
+            # if they have the expected metrics.
+
+        assert False
 
     return _validate_wrapper

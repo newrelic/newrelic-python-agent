@@ -364,7 +364,7 @@ def wrap_MeterProvider(wrapped, instance, args, kwargs):
 
     from newrelic.api.opentelemetry import meter_provider_resource_and_reader_generator, views_generator
     nr_resource, nr_reader = meter_provider_resource_and_reader_generator(settings)
-    nr_views = views_generator(settings)
+    nr_views = views_generator()
 
     # Before we run __init__ we need to add the following:
     # 1) New Relic specific metric reader to arg

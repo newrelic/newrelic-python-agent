@@ -55,6 +55,8 @@ from newrelic.core.database_utils import (
 )
 from newrelic.core.otlp_utils import create_resource
 from newrelic.network.addresses import proxy_details
+from newrelic.common.opentelemetry_conflicting_metrics import NEW_RELIC_METRICS
+
 
 _logger = logging.getLogger(__name__)
 
@@ -1078,7 +1080,9 @@ def meter_provider_resource_and_reader_generator(settings):
         raise
 
 
-def views_generator(settings):
+def views_generator():
+    settings = global_settings()
+
     try:
         from opentelemetry.sdk.metrics.view import DropAggregation, View
     except ImportError:
@@ -1089,11 +1093,19 @@ def views_generator(settings):
         _logger.warning("Error generating views: %s", e)
         return []
 
-    user_exclude = settings.opentelemetry.metrics.exclude
     user_include = settings.opentelemetry.metrics.include
+    user_exclude = settings.opentelemetry.metrics.exclude
 
-    exclude_views = [View(instrument_name=name, aggregation=DropAggregation()) for name in user_exclude]
-    include_views = [View(instrument_name=name) for name in user_include]
+    # User include set overrides internal exclude set
+    include_mask = NEW_RELIC_METRICS & user_include
+    final_include_set = include_mask ^ user_include
+
+    # User exclude set overrides user include set
+    final_include_set -= user_exclude
+    final_exclude_set = user_exclude | (NEW_RELIC_METRICS - user_include)    #should this be user_include or final_include_set or neither?
+
+    exclude_views = [View(instrument_name=name, aggregation=DropAggregation()) for name in final_exclude_set]
+    include_views = [View(instrument_name=name) for name in final_include_set]
 
     views = exclude_views + include_views
     return views

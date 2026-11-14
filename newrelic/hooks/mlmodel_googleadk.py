@@ -24,7 +24,6 @@ from newrelic.common.llm_utils import AsyncLLMStreamProxy, _get_llm_metadata
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
-from newrelic.core.config import global_settings
 
 _logger = logging.getLogger(__name__)
 GOOGLEADK_VERSION = get_package_version("google-adk")
@@ -40,8 +39,8 @@ def wrap__run_async_impl(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    settings = transaction.settings or global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
     transaction.add_ml_model_info("GoogleADK", GOOGLEADK_VERSION)
@@ -153,8 +152,8 @@ async def wrap__execute_single_prepared_call(wrapped, instance, args, kwargs):
     if not transaction:
         return await wrapped(*args, **kwargs)
 
-    settings = transaction.settings or global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
     transaction.add_ml_model_info("GoogleADK", GOOGLEADK_VERSION)
@@ -251,8 +250,8 @@ async def wrap__execute_single_function_call_async(wrapped, instance, args, kwar
     if not transaction:
         return await wrapped(*args, **kwargs)
 
-    settings = transaction.settings or global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
     transaction.add_ml_model_info("GoogleADK", GOOGLEADK_VERSION)
@@ -355,7 +354,7 @@ def _construct_base_tool_event_dict(
     tool_name, tool_id, run_id, tool_input, tool_output, agent_name, error, transaction, linking_metadata
 ):
     try:
-        settings = transaction.settings or global_settings()
+        settings = getattr(transaction, "settings", None)
 
         tool_event_dict = {
             "id": tool_id,

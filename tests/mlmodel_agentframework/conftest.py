@@ -37,6 +37,7 @@ _default_settings = {
     "debug.log_data_collector_payloads": True,
     "debug.record_transaction_failure": True,
     "ai_monitoring.enabled": True,
+    "ai_monitoring.record_content.enabled": True,
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
@@ -50,6 +51,7 @@ AGENT_FRAMEWORK_VERSION_TUPLE = get_package_version_tuple("agent-framework")
 AGENT_FRAMEWORK_VERSION = get_package_version("agent-framework")
 assert AGENT_FRAMEWORK_VERSION, "Failed to pull agent-framework version for supportability metric"
 EXPECTED_VERSION_METRICS = [(f"Supportability/Python/ML/MicrosoftAgentFramework/{AGENT_FRAMEWORK_VERSION}", 1)]
+EXPECTED_BASIC_VERSION_METRICS = [(f"{name}/Basic", count) for name, count in EXPECTED_VERSION_METRICS]
 
 
 @pytest.fixture(autouse=True)

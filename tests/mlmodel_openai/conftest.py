@@ -35,6 +35,7 @@ _default_settings = {
     "debug.record_transaction_failure": True,
     "ml_insights_events.enabled": True,
     "ai_monitoring.enabled": True,
+    "ai_monitoring.record_content.enabled": True,
 }
 
 collector_agent_registration = collector_agent_registration_fixture(

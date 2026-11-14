@@ -45,7 +45,7 @@ def wrap_Agent_run(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    settings = transaction.settings
+    settings = getattr(transaction, "settings", None)
     if not settings or not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
@@ -185,7 +185,7 @@ async def wrap_FunctionTool_invoke(wrapped, instance, args, kwargs):
     if not transaction:
         return await wrapped(*args, **kwargs)
 
-    settings = transaction.settings
+    settings = getattr(transaction, "settings", None)
     if not settings or not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
@@ -286,7 +286,7 @@ def _record_tool_event(
     if not transaction:
         return
     try:
-        settings = transaction.settings
+        settings = getattr(transaction, "settings", None)
 
         tool_event_dict = {
             "id": tool_id,

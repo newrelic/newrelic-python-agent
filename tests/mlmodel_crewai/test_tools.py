@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from _test_tools import TOOL_NAME, get_capital, tool_recorded_event
-from conftest import EXPECTED_VERSION_METRICS, TOOL_PROMPT
+from conftest import EXPECTED_BASIC_VERSION_METRICS, EXPECTED_VERSION_METRICS, TOOL_PROMPT
 from testing_support.fixtures import dt_enabled, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     disabled_ai_monitoring_record_content_settings,
@@ -91,7 +91,7 @@ def test_tool_async(build_crew, crewai_react_llm, set_trace_info, loop):
     "test_tools:test_tool_no_content",
     scoped_metrics=[EXPECTED_SYNC_TOOL_METRIC],
     rollup_metrics=[EXPECTED_SYNC_TOOL_METRIC],
-    custom_metrics=EXPECTED_VERSION_METRICS,
+    custom_metrics=EXPECTED_BASIC_VERSION_METRICS,
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])

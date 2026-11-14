@@ -125,7 +125,7 @@ def test_bedrock_embedding_no_content(set_trace_info, exercise_model, model_id):
         name="test_bedrock_embedding",
         scoped_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
         rollup_metrics=[("Llm/embedding/Bedrock/invoke_model", 1)],
-        custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}", 1)],
+        custom_metrics=[(f"Supportability/Python/ML/Bedrock/{BOTOCORE_VERSION}/Basic", 1)],
         background_task=True,
     )
     @validate_attributes("agent", ["llm"])

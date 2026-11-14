@@ -27,7 +27,6 @@ from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
-from newrelic.core.config import global_settings
 from newrelic.core.context import ContextOf, context_wrapper
 
 CREWAI_VERSION = get_package_version("crewai")
@@ -92,8 +91,8 @@ def wrap_tool_usage__use(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    settings = transaction.settings or global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
     try:
@@ -187,8 +186,8 @@ def wrap_agent_executor__execute_single_native_tool_call(wrapped, instance, args
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    settings = transaction.settings or global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
     transaction.add_ml_model_info("CrewAI", CREWAI_VERSION)
@@ -298,8 +297,8 @@ def wrap_agent_execute_task(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    settings = transaction.settings or global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
     agent_name = _get_agent_name(instance)
@@ -327,8 +326,8 @@ async def wrap_agent_aexecute_task(wrapped, instance, args, kwargs):
     if not transaction:
         return await wrapped(*args, **kwargs)
 
-    settings = transaction.settings or global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
     agent_name = _get_agent_name(instance)
@@ -366,8 +365,8 @@ def wrap_agent_kickoff(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    settings = transaction.settings or global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
     # If called inside a running loop, Agent.kickoff() does no work.
@@ -400,8 +399,8 @@ async def wrap_agent_kickoff_async(wrapped, instance, args, kwargs):
     if not transaction:
         return await wrapped(*args, **kwargs)
 
-    settings = transaction.settings or global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
     agent_name = _get_agent_name(instance)

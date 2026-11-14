@@ -209,7 +209,7 @@ def create_chat_completion_message_event(
     if not transaction:
         return
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
+    settings = getattr(transaction, "settings", None)
 
     for index, message in enumerate(input_message_list):
         content = message.get("content", "")
@@ -731,8 +731,8 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
         if not transaction:
             return wrapped(*args, **kwargs)
 
-        settings = transaction.settings if transaction.settings is not None else global_settings()
-        if not settings.ai_monitoring.enabled:
+        settings = getattr(transaction, "settings", None)
+        if not settings or not settings.ai_monitoring.enabled:
             return wrapped(*args, **kwargs)
 
         request_timestamp = int(1000.0 * time.time())
@@ -886,8 +886,8 @@ def wrap_bedrock_runtime_converse(response_streaming=False):
         if not transaction:
             return wrapped(*args, **kwargs)
 
-        settings = transaction.settings or global_settings()
-        if not settings.ai_monitoring.enabled:
+        settings = getattr(transaction, "settings", None)
+        if not settings or not settings.ai_monitoring.enabled:
             return wrapped(*args, **kwargs)
 
         request_timestamp = int(1000.0 * time.time())
@@ -1232,7 +1232,7 @@ class AsyncLLMStreamProxy(BedrockRecordEventMixin, ObjectProxy):
 def handle_embedding_event(transaction, bedrock_attrs):
     embedding_id = str(uuid.uuid4())
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
+    settings = getattr(transaction, "settings", None)
 
     # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
     custom_attrs_dict = transaction._custom_params
@@ -1276,7 +1276,7 @@ def handle_embedding_event(transaction, bedrock_attrs):
 
 
 def handle_chat_completion_event(transaction, bedrock_attrs, request_timestamp=None):
-    settings = transaction.settings or global_settings()
+    settings = getattr(transaction, "settings", None)
     chat_completion_id = str(uuid.uuid4())
     # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
     custom_attrs_dict = transaction._custom_params

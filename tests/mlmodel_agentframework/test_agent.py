@@ -32,7 +32,7 @@ from newrelic.common.object_names import callable_name
 from newrelic.common.object_wrapper import transient_function_wrapper
 
 from ._test_agent import AGENT_NAME, PROMPT, agent_recorded_event, agent_recorded_event_error, build_agent
-from .conftest import EXPECTED_VERSION_METRICS
+from .conftest import EXPECTED_BASIC_VERSION_METRICS, EXPECTED_VERSION_METRICS
 
 EXPECTED_METRICS = [(f"Llm/agent/MicrosoftAgentFramework/run/{AGENT_NAME}", 1)]
 
@@ -75,7 +75,7 @@ def test_agent(exercise_agent, build_agent, set_trace_info):
     "mlmodel_agentframework.test_agent:test_agent_no_content",
     scoped_metrics=EXPECTED_METRICS,
     rollup_metrics=EXPECTED_METRICS,
-    custom_metrics=EXPECTED_VERSION_METRICS,
+    custom_metrics=EXPECTED_BASIC_VERSION_METRICS,
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])

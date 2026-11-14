@@ -36,11 +36,14 @@ jobs:
 
     steps:
       - name: Status
+        env:
+          ANY_CANCELLED: ${{ contains(needs.*.result, 'cancelled') }}
+          ANY_FAILED: ${{ contains(needs.*.result, 'failure') }}
         run: |
-          if [[ "${{ contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+          if [[ "${ANY_CANCELLED}" == "true" ]]; then
             echo "Workflow cancelled."
             exit 1
-          elif [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
+          elif [[ "${ANY_FAILED}" == "true" ]]; then
             echo "One or more jobs failed."
             exit 1
           else
@@ -63,6 +66,7 @@ jobs:
       ASV_FACTOR: "1.1"
       BASE_SHA: ${{ github.event.pull_request.base.sha }}
       HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      PYTHON_VERSION: ${{ matrix.python }}
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -95,5 +99,5 @@ jobs:
             --show-stderr \
             --split \
             --factor "${ASV_FACTOR}" \
-            --python=${{ matrix.python }} \
+            --python="${PYTHON_VERSION}" \
             "${BASE_SHA}" "${HEAD_SHA}"

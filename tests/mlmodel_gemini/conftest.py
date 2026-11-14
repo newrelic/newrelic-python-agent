@@ -35,6 +35,7 @@ _default_settings = {
     "debug.record_transaction_failure": True,
     "ml_insights_events.enabled": True,
     "ai_monitoring.enabled": True,
+    "ai_monitoring.record_content.enabled": True,
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
@@ -48,6 +49,7 @@ VCR_MATCHERS["body"] = gemini_match_body_no_thought_signature
 
 GEMINI_VERSION = google.genai.__version__
 GEMINI_VERSION_METRIC = f"Supportability/Python/ML/Gemini/{GEMINI_VERSION}"
+GEMINI_VERSION_METRIC_BASIC = f"{GEMINI_VERSION_METRIC}/Basic"
 
 
 @pytest.fixture

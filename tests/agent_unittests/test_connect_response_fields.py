@@ -147,18 +147,24 @@ def test_span_event_harvest_config(connect_response_fields):
 
 
 @override_generic_settings(global_settings(), {"developer_mode": True})
-@pytest.mark.parametrize("connect_response_fields", ({}, {"collect_ai": True}, {"collect_ai": False}))
-def test_account_level_aim(connect_response_fields):
+@pytest.mark.parametrize(
+    "connect_response_fields,expected_enabled",
+    (
+        # Without collect_ai, and with no local value set, ai_monitoring.enabled
+        # falls back to ai_monitoring.basic_telemetry.enabled, which defaults to True.
+        ({}, True),
+        ({"collect_ai": True}, True),
+        ({"collect_ai": False}, False),
+    ),
+)
+def test_account_level_aim(connect_response_fields, expected_enabled):
     client_cls = functools.partial(CustomTestClient, connect_response_fields=connect_response_fields)
 
     protocol = AgentProtocol.connect(
         "app_name", LINKED_APPLICATIONS, ENVIRONMENT, global_settings(), client_cls=client_cls
     )
 
-    if connect_response_fields and connect_response_fields["collect_ai"]:
-        assert protocol.configuration.ai_monitoring.enabled == connect_response_fields["collect_ai"]
-    else:
-        assert protocol.configuration.ai_monitoring.enabled is False
+    assert protocol.configuration.ai_monitoring.enabled is expected_enabled
 
 
 # AI monitoring server side config values are delivered as a pass-through via
@@ -167,11 +173,14 @@ def test_account_level_aim(connect_response_fields):
 @pytest.mark.parametrize(
     "connect_response_fields,expected_enabled",
     (
-        # An ai_monitoring.enabled delivered via agent_config takes precedence
-        # over collect_ai.
-        ({"collect_ai": False, "agent_config": {"ai_monitoring.enabled": True}}, True),
+        # collect_ai=False disables AIM even when agent_config enables it.
+        ({"collect_ai": False, "agent_config": {"ai_monitoring.enabled": True}}, False),
+        # collect_ai=False disables AIM even when basic_telemetry is enabled.
+        ({"collect_ai": False, "agent_config": {"ai_monitoring.basic_telemetry.enabled": True}}, False),
+        # collect_ai=True takes no action, so ai_monitoring.enabled=False is respected.
         ({"collect_ai": True, "agent_config": {"ai_monitoring.enabled": False}}, False),
-        # Without ai_monitoring.enabled, collect_ai is the fallback.
+        # collect_ai=True takes no action, so basic_telemetry=False leaves AIM disabled.
+        ({"collect_ai": True, "agent_config": {"ai_monitoring.basic_telemetry.enabled": False}}, False),
         ({"collect_ai": True}, True),
         ({"collect_ai": False}, False),
         # ai_monitoring.enabled applies even when collect_ai is absent.

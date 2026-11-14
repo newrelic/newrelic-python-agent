@@ -213,7 +213,7 @@ def test_openai_responses_parse_with_raw_response(set_trace_info, exercise):
 @validate_custom_event_count(count=4)
 @validate_transaction_metrics(
     name="test_responses_parse:test_openai_responses_parse_no_content",
-    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}", 1)],
+    custom_metrics=[(f"Supportability/Python/ML/OpenAI/{openai.__version__}/Basic", 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])

@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import sys
+
 import pytest
 from fastmcp.client import Client
 from fastmcp.client.transports import FastMCPTransport
@@ -22,6 +24,7 @@ from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
+from newrelic.common.package_version_utils import get_package_version_tuple
 
 # mcp>=2 renamed mcp.server.fastmcp.FastMCP to mcp.server.mcpserver.MCPServer,
 try:
@@ -32,6 +35,19 @@ except ImportError:
     from mcp.server.mcpserver import MCPServer as SDKFastMCP
 
     TOOL_MANAGER_MODULE = "mcp.server.mcpserver.tools.tool_manager"
+
+
+# v4.0.0+ of FastMCP sets the default session class to VersionAwareClientSession, which
+# is a new class introduced in FastMCP 4.0.0 that inherits from MCP's ClientSession.
+FASTMCP_VERSION = get_package_version_tuple("fastmcp")
+PYTHON_3_11_PLUS = sys.version_info[:2] >= (3, 11)
+FASTMCP_VERSION_4_PLUS = FASTMCP_VERSION[0] >= 4
+
+metrics_path = (
+    "fastmcp.client.transports.base:VersionAware"
+    if (FASTMCP_VERSION_4_PLUS and PYTHON_3_11_PLUS)
+    else "mcp.client.session:"
+)
 
 
 @pytest.fixture
@@ -63,8 +79,8 @@ def fastmcp_server():
 
 @validate_transaction_metrics(
     "test_mcp:test_tool_tracing_via_client_session",
-    scoped_metrics=[("Llm/tool/MCP/mcp.client.session:ClientSession.call_tool/add_exclamation", 1)],
-    rollup_metrics=[("Llm/tool/MCP/mcp.client.session:ClientSession.call_tool/add_exclamation", 1)],
+    scoped_metrics=[(f"Llm/tool/MCP/{metrics_path}ClientSession.call_tool/add_exclamation", 1)],
+    rollup_metrics=[(f"Llm/tool/MCP/{metrics_path}ClientSession.call_tool/add_exclamation", 1)],
     background_task=True,
 )
 @validate_span_events(count=1, exact_agents={"subcomponent": '{"type": "APM-AI_TOOL", "name": "add_exclamation"}'})
@@ -122,8 +138,8 @@ def test_resource_tracing(loop, fastmcp_server, resource_uri):
 
     @validate_transaction_metrics(
         "test_mcp:test_resource_tracing.<locals>._test",
-        scoped_metrics=[(f"Llm/resource/MCP/mcp.client.session:ClientSession.read_resource/{resource_scheme}", 1)],
-        rollup_metrics=[(f"Llm/resource/MCP/mcp.client.session:ClientSession.read_resource/{resource_scheme}", 1)],
+        scoped_metrics=[(f"Llm/resource/MCP/{metrics_path}ClientSession.read_resource/{resource_scheme}", 1)],
+        rollup_metrics=[(f"Llm/resource/MCP/{metrics_path}ClientSession.read_resource/{resource_scheme}", 1)],
         background_task=True,
     )
     @background_task()
@@ -135,8 +151,8 @@ def test_resource_tracing(loop, fastmcp_server, resource_uri):
 
 @validate_transaction_metrics(
     "test_mcp:test_prompt_tracing",
-    scoped_metrics=[("Llm/prompt/MCP/mcp.client.session:ClientSession.get_prompt/echo_prompt", 1)],
-    rollup_metrics=[("Llm/prompt/MCP/mcp.client.session:ClientSession.get_prompt/echo_prompt", 1)],
+    scoped_metrics=[(f"Llm/prompt/MCP/{metrics_path}ClientSession.get_prompt/echo_prompt", 1)],
+    rollup_metrics=[(f"Llm/prompt/MCP/{metrics_path}ClientSession.get_prompt/echo_prompt", 1)],
     background_task=True,
 )
 @background_task()

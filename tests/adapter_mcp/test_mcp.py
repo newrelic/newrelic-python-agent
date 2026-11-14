@@ -40,12 +40,12 @@ except ImportError:
 # v4.0.0+ of FastMCP sets the default session class to VersionAwareClientSession, which
 # is a new class introduced in FastMCP 4.0.0 that inherits from MCP's ClientSession.
 FASTMCP_VERSION = get_package_version_tuple("fastmcp")
-PYTHON_VERSION_ABOVE_3_10 = sys.version_info[:2] > (3, 10)
-FASTMCP_VERSION_4_AND_ABOVE = FASTMCP_VERSION >= (4, 0, 0)
+PYTHON_3_11_PLUS = sys.version_info[:2] >= (3, 11)
+FASTMCP_VERSION_4_PLUS = FASTMCP_VERSION[0] >= 4
 
 metrics_path = (
     "fastmcp.client.transports.base:VersionAware"
-    if (FASTMCP_VERSION_4_AND_ABOVE and PYTHON_VERSION_ABOVE_3_10)
+    if (FASTMCP_VERSION_4_PLUS and PYTHON_3_11_PLUS)
     else "mcp.client.session:"
 )
 

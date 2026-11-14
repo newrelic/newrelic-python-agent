@@ -356,9 +356,77 @@ def test_default_cert_path(monkeypatch, system_certs_available):
     if system_certs_available:
         assert "ca_certs" not in client._connection_kwargs
         assert cert_metric not in internal_metrics
+        assert client._connection_kwargs["ssl_context"] is client._shared_ssl_context
+        assert client._shared_ssl_context.verify_mode == ssl.CERT_REQUIRED
+        assert client._shared_ssl_context.check_hostname is True
     else:
         assert client._connection_kwargs["ca_certs"] == certs.where()
         assert internal_metrics[cert_metric][-3:-1] == [1, 1]
+
+
+@pytest.mark.skipif(
+    sys.platform == "win32", reason="SSL_CERT_FILE is not honored by SSLContext.load_default_certs() on Windows"
+)
+def test_default_cert_path_handshake_is_verified(monkeypatch, server):
+    """
+    Test that the shared SSL context performs full certificate and hostname verification.
+    """
+
+    class DefaultVerifyPaths:
+        cafile = "foo"
+        capath = "/usr/certs"
+
+        def __init__(self, *args, **kwargs):
+            pass
+
+    monkeypatch.setattr(ssl, "DefaultVerifyPaths", DefaultVerifyPaths)  # force the "resolvable" branch
+    monkeypatch.setenv("SSL_CERT_FILE", str(CERT_PATH))  # load_default_certs() honors this on POSIX
+    monkeypatch.delenv("SSL_CERT_DIR", raising=False)
+
+    with HttpClient("localhost", server.port) as client:
+        assert client._shared_ssl_context.verify_mode == ssl.CERT_REQUIRED
+        status, _ = client.send_request()
+
+    assert status == 200
+
+
+def test_shared_ssl_context_persists_across_reconnect(monkeypatch, server):
+    """
+    Test that the shared SSL context persists across reconnects and is
+    not reloaded on every harvest cycle.
+    Behavior described in https://github.com/newrelic/newrelic-python-agent/issues/1834
+    """
+    load_calls = []
+    original_load_default_certs = ssl.SSLContext.load_default_certs
+
+    def counting_load_default_certs(self, *args, **kwargs):
+        load_calls.append(self)
+        return original_load_default_certs(self, *args, **kwargs)
+
+    monkeypatch.setattr(ssl.SSLContext, "load_default_certs", counting_load_default_certs)
+
+    class DefaultVerifyPaths:
+        cafile = "foo"
+        capath = "/usr/certs"
+
+        def __init__(self, *args, **kwargs):
+            pass
+
+    monkeypatch.setattr(ssl, "DefaultVerifyPaths", DefaultVerifyPaths)
+
+    with HttpClient("localhost", server.port, disable_certificate_validation=True) as client:
+        assert len(load_calls) == 1
+        shared_context_id = id(client._shared_ssl_context)
+
+        client.send_request()
+        assert len(load_calls) == 1
+
+        client.close_connection()
+        assert client._connection_attr is None
+
+        client.send_request()
+        assert len(load_calls) == 1
+        assert id(client._shared_ssl_context) == shared_context_id
 
 
 @pytest.mark.parametrize("auth", ((None, None), ("username", None), ("username", "password")))

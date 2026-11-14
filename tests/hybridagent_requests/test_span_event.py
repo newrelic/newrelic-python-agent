@@ -53,7 +53,11 @@ def test_span_events(server, path):
 
     @override_application_settings(_settings)
     @validate_span_events(
-        count=1, exact_intrinsics=exact_intrinsics, exact_agents=exact_agents, expected_intrinsics=expected_intrinsics
+        count=1,
+        exact_intrinsics=exact_intrinsics,
+        exact_agents=exact_agents,
+        expected_intrinsics=expected_intrinsics,
+        exact_users={"span.kind": "client"},
     )
     @background_task(name="test_span_events")
     def _test():

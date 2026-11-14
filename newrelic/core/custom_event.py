@@ -16,6 +16,7 @@ import re
 import time
 
 from newrelic.core.attribute import (
+    MAX_64_BIT_INT,
     MAX_ML_ATTRIBUTE_LENGTH,
     MAX_NUM_ML_USER_ATTRIBUTES,
     MAX_NUM_USER_ATTRIBUTES,
@@ -81,6 +82,52 @@ def process_event_type(name):
         return name
 
 
+def process_event_timestamp(name, timestamp):
+    """Validate timestamp for a custom event.
+
+    Ensures each custom event has a valid timestamp to prevent the server
+    from discarding the event completely. If the timestamp is missing or
+    invalid, we log a message and fall back to the current time instead.
+
+    Args:
+        name (str): The type (name) of the custom event.
+        timestamp: The supplied timestamp, if any.
+
+    Returns:
+        The timestamp as an int, or the current time in milliseconds if
+        the timestamp is missing or invalid.
+
+    """
+    if not timestamp:
+        return int(1000.0 * time.time())
+
+    # Some numpy types, such as numpy.int64, do not inherit from int
+    # so convert them before validating
+    if hasattr(timestamp, "item"):
+        try:
+            timestamp = timestamp.item()
+        except Exception:
+            pass
+
+    # bool is a subclass of int, but not a valid timestamp
+    if not isinstance(timestamp, (int, float)) or isinstance(timestamp, bool):
+        reason = "must be an int or float"
+    elif timestamp < 0:
+        reason = "must be positive"
+    elif timestamp > MAX_64_BIT_INT:
+        reason = "must fit in a 64 bit integer"
+    else:
+        try:
+            return int(timestamp)
+        except Exception:
+            reason = "could not be converted to an int"
+
+    _logger.debug(
+        "Custom event timestamp %s. Using current time for event %r. Invalid timestamp: %r", reason, name, timestamp
+    )
+    return int(1000.0 * time.time())
+
+
 def create_custom_event(event_type, params, settings=None, is_ml_event=False):
     """Creates a valid custom event.
 
@@ -141,7 +188,7 @@ def create_custom_event(event_type, params, settings=None, is_ml_event=False):
         )
         return None
 
-    intrinsics = {"type": name, "timestamp": params.get("timestamp") or int(1000.0 * time.time())}
+    intrinsics = {"type": name, "timestamp": process_event_timestamp(name, params.get("timestamp"))}
 
     event = [intrinsics, attributes]
     return event

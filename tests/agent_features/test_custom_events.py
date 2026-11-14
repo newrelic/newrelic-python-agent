@@ -26,7 +26,7 @@ from testing_support.validators.validate_function_not_called import validate_fun
 from newrelic.api.application import application_instance as application
 from newrelic.api.background_task import background_task
 from newrelic.api.transaction import current_transaction, record_custom_event
-from newrelic.core.custom_event import process_event_type
+from newrelic.core.custom_event import process_event_timestamp, process_event_type
 
 
 def test_process_event_type_name_is_string():
@@ -64,6 +64,51 @@ _now = time.time()
 _intrinsics = {"type": "FooEvent", "timestamp": _now}
 _user_params = {"foo": "bar"}
 _event = [_intrinsics, _user_params]
+
+
+class FakeNumpyValue:
+    # Mimics numpy types such as numpy.int64, which do not inherit from int
+    # but provide item() to convert to the closest Python native type.
+    def __init__(self, value):
+        self.value = value
+
+    def item(self):
+        if isinstance(self.value, Exception):
+            raise self.value
+        return self.value
+
+
+@pytest.mark.parametrize(
+    "timestamp,expected",
+    (
+        (1700000000000, 1700000000000),
+        (1700000000000.9, 1700000000000),
+        (FakeNumpyValue(1700000000000), 1700000000000),
+        (FakeNumpyValue(ValueError()), None),
+        (None, None),
+        ("2025-01-01T00:00:00.000000", None),
+        (True, None),
+        (-1700000000000, None),
+        (2**63, None),
+    ),
+)
+def test_process_event_timestamp(timestamp, expected):
+    before = int(1000.0 * time.time())
+    result = process_event_timestamp("FooEvent", timestamp)
+    after = int(1000.0 * time.time())
+
+    assert isinstance(result, int)
+    if expected is None:
+        assert before <= result <= after
+    else:
+        assert result == expected
+
+
+@reset_core_stats_engine()
+@validate_custom_event_in_application_stats_engine([_intrinsics, {"foo": "bar", "timestamp": "2025-01-01T00:00:00"}])
+@background_task()
+def test_custom_event_invalid_timestamp_uses_current_time():
+    record_custom_event("FooEvent", {"foo": "bar", "timestamp": "2025-01-01T00:00:00"})
 
 
 @reset_core_stats_engine()

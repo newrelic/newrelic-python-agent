@@ -114,6 +114,13 @@ _ignore_errors = True
 
 _settings = newrelic.api.settings.settings()
 
+# These are the OpenTelemetry instrumentation and entrypoints
+# that can be configured.  These lists will determine what OTel
+# instrumentation and entrypoints are active within the agent.
+
+opentelemetry_instrumentation = []
+opentelemetry_entrypoints = []
+
 # Use the raw config parser as we want to avoid interpolation
 # within values. This avoids problems when writing lambdas
 # within the actual configuration file for options which value
@@ -788,6 +795,9 @@ def _process_configuration(section):
     _process_setting(section, "opentelemetry.traces.enabled", "getboolean", None)
     _process_setting(section, "opentelemetry.traces.exclude", "get", _map_split_string_by_comma)
     _process_setting(section, "opentelemetry.traces.include", "get", _map_split_string_by_comma)
+    _process_setting(section, "opentelemetry.metrics.enabled", "getboolean", None)
+    _process_setting(section, "opentelemetry.metrics.export_interval", "getint", None)
+    _process_setting(section, "opentelemetry.metrics.export_timeout", "getint", None)
 
 
 # Loading of configuration from specified file and for specified
@@ -2196,10 +2206,6 @@ def _process_function_profile_configuration():
             newrelic.api.import_hook.register_import_hook(module, hook)
         except Exception:
             _raise_configuration_error(section)
-
-
-opentelemetry_instrumentation = []
-opentelemetry_entrypoints = []
 
 
 def _process_module_definition(target, module, function="instrument"):
@@ -4587,6 +4593,18 @@ def _process_module_builtin_defaults():
     )
 
     _process_module_definition(
+        "opentelemetry.metrics", "newrelic.hooks.hybridagent_opentelemetry", "instrument_meter_api"
+    )
+
+    _process_module_definition(
+        "opentelemetry.sdk.metrics", "newrelic.hooks.hybridagent_opentelemetry", "instrument_MeterProvider"
+    )
+
+    _process_module_definition(
+        "opentelemetry.exporter.http.transport._requests", "newrelic.hooks.hybridagent_opentelemetry", "instrument_requests_transport"
+    )
+
+    _process_module_definition(
         "opentelemetry.util.http", "newrelic.hooks.hybridagent_opentelemetry", "instrument_util_http"
     )
 
@@ -4721,21 +4739,6 @@ def _process_opentelemetry_instrumentation_entry_points():
             opentelemetry_instrumentation.extend(ALL_LIBRARY_TRACERS_TO_NR_HOOKS[lib])
 
 
-def _process_opentelemetry_instrumentors():
-    if not _settings.opentelemetry.enabled or not _is_installed("opentelemetry-api"):
-        return
-
-    tracer_provider = newrelic.core.agent.opentelemetry_tracer_provider()
-    for entrypoint in opentelemetry_entrypoints:
-        try:
-            instrumentor_class = entrypoint.load()
-            instrumentor = instrumentor_class()
-            instrumentor.instrument(tracer_provider=tracer_provider)
-            _logger.debug("Successfully instrumented OpenTelemetry tracer '%s' via entry point.", entrypoint.name)
-        except Exception as exc:
-            _logger.warning("Failed to instrument OpenTelemetry tracer '%s' via entry point: %s", entrypoint.name, exc)
-
-
 def _setup_instrumentation():
     global _instrumentation_done
 
@@ -4747,7 +4750,6 @@ def _setup_instrumentation():
     _process_module_configuration()
     _process_module_entry_points()
     # Collection of NR disabled hooks must happen before _process_module_builtin_defaults()
-    # but the loading of the entrypoints must not happen until after the NR hooks are registered.
     _process_opentelemetry_instrumentation_entry_points()
 
     _process_trace_cache_import_hooks()
@@ -4770,8 +4772,6 @@ def _setup_instrumentation():
     _process_data_source_configuration()
 
     _process_function_profile_configuration()
-
-    _process_opentelemetry_instrumentors()
 
 
 def _setup_extensions():

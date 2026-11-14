@@ -16,6 +16,7 @@ import json
 import logging
 import sys
 import time
+import uuid
 from contextlib import contextmanager
 
 try:
@@ -53,6 +54,7 @@ from newrelic.core.database_utils import (
     get_database_operation_target_from_statement,
 )
 from newrelic.core.otlp_utils import create_resource
+from newrelic.network.addresses import proxy_details
 
 _logger = logging.getLogger(__name__)
 
@@ -964,8 +966,20 @@ class Tracer(otel_api_trace.Tracer):
 
 
 class TracerProvider(otel_api_trace.TracerProvider):
-    def __init__(self, *args, **kwargs):
-        self._resource = create_resource(hybrid_bridge=True)
+    def __init__(self, settings, *args, **kwargs):
+        try:
+            from opentelemetry.sdk.resources import Resource
+
+            self._resource = Resource.create(
+                attributes={
+                    "service.name": settings.app_name,
+                    "telemetry.sdk.language": "python",
+                    "service.instance.id": str(uuid.uuid4()),
+                    **settings.otlp_resource_attributes,
+                }
+            )
+        except ImportError:
+            self._resource = create_resource(hybrid_bridge=True)
 
     def get_tracer(
         self,
@@ -985,3 +999,80 @@ class TracerProvider(otel_api_trace.TracerProvider):
             resource=self._resource,
             **kwargs,
         )
+
+
+def meter_provider_resource_and_reader_generator(settings):
+    try:
+        import requests
+        from opentelemetry.exporter.otlp.proto.http import Compression
+        from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
+        from opentelemetry.sdk.metrics import (
+            Counter,
+            Histogram,
+            ObservableCounter,
+            ObservableGauge,
+            ObservableUpDownCounter,
+            UpDownCounter,
+        )
+        from opentelemetry.sdk.metrics.export import AggregationTemporality, PeriodicExportingMetricReader
+        from opentelemetry.sdk.metrics.view import ExponentialBucketHistogramAggregation
+        from opentelemetry.sdk.resources import Resource
+
+        if settings.opentelemetry.metrics.export_interval <= settings.opentelemetry.metrics.export_timeout:
+            _logger.warning(
+                "Invalid export settings.  Export interval is less "
+                "than or equal to export timeout.  Reverting to "
+                "default values: export_interval=60000 ms and "
+                "export_timeout=10000 ms"
+            )
+            settings.opentelemetry.metrics.export_interval = 60000
+            settings.opentelemetry.metrics.export_timeout = 10000
+        elif settings.opentelemetry.metrics.export_interval <= 0 or settings.opentelemetry.metrics.export_timeout <= 0:
+            _logger.warning(
+                "Invalid export settings.  Export interval and export timeout must be positive. "
+                "Reverting to default values: export_interval=60000 ms and export_timeout=10000 ms"
+            )
+            settings.opentelemetry.metrics.export_interval = 60000
+            settings.opentelemetry.metrics.export_timeout = 10000
+
+        export_interval = settings.opentelemetry.metrics.export_interval
+        export_timeout = settings.opentelemetry.metrics.export_timeout
+
+        proxies = proxy_details(
+            settings.proxy_scheme, settings.proxy_host, settings.proxy_port, settings.proxy_user, settings.proxy_pass
+        )
+        session = None
+        if proxies:
+            session = requests.Session()
+            session.proxies.update(proxies)
+
+        exporter = OTLPMetricExporter(
+            endpoint=f"https://{settings.host}/v1/metrics",
+            headers={"api-key": settings.license_key},
+            timeout=export_timeout,
+            compression=Compression.Gzip,
+            session=session,
+            preferred_temporality={
+                Counter: AggregationTemporality.DELTA,
+                ObservableCounter: AggregationTemporality.DELTA,
+                Histogram: AggregationTemporality.DELTA,
+                UpDownCounter: AggregationTemporality.CUMULATIVE,
+                ObservableUpDownCounter: AggregationTemporality.CUMULATIVE,
+                ObservableGauge: AggregationTemporality.CUMULATIVE,
+            },
+            preferred_aggregation={Histogram: ExponentialBucketHistogramAggregation()},
+        )
+        reader = PeriodicExportingMetricReader(
+            exporter, export_interval_millis=export_interval, export_timeout_millis=export_timeout
+        )
+        resource = Resource.create(
+            attributes={
+                "service.name": settings.app_name,
+                "telemetry.sdk.language": "python",
+                "service.instance.id": str(uuid.uuid4()),
+                **settings.otlp_resource_attributes,
+            }
+        )
+        return resource, reader
+    except Exception:
+        raise

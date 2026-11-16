@@ -27,7 +27,7 @@ def metric_parser(export_request):
             for metric in scope_metric.metrics:
                 if hasattr(metric, "sum"):
                     for data_point in metric.sum.data_points:
-                        count = getattr(data_point, "as_int") or getattr(data_point, "as_double")
+                        count = data_point.as_int or data_point.as_double
                         attr = {}
                         if hasattr(data_point, "attributes"):
                             for attribute in data_point.attributes:

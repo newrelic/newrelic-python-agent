@@ -265,8 +265,8 @@ class Agent:
                 try:
                     # We want to check to see that these can be installed
                     # at this point, but we will not set up a MeterProvider ourselves.
-                    from opentelemetry.sdk.metrics import MeterProvider                                     # noqa: F401
-                    from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter   # noqa: F401
+                    from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter  # noqa: F401
+                    from opentelemetry.sdk.metrics import MeterProvider  # noqa: F401
                 except ImportError:
                     _logger.warning(
                         "OpenTelemetry mode has been enabled but `opentelemetry-sdk` and/or "

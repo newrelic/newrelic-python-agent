@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import pytest
-from opentelemetry import propagate, trace, metrics
+from opentelemetry import metrics, propagate, trace
 from opentelemetry.sdk.metrics import MeterProvider
 from testing_support.fixtures import collector_agent_registration_fixture, collector_available_fixture
 

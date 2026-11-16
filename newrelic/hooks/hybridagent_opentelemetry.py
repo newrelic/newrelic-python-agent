@@ -310,6 +310,7 @@ def _subscribe_meter_provider(settings, meter_provider):
         application.activate()
 
     from newrelic.api.opentelemetry import meter_provider_resource_and_reader_generator
+
     nr_resource, nr_reader = meter_provider_resource_and_reader_generator(settings)
 
     meter_provider._update_resource(nr_resource)
@@ -349,6 +350,7 @@ def wrap_MeterProvider(wrapped, instance, args, kwargs):
         pass
 
     from newrelic.api.opentelemetry import meter_provider_resource_and_reader_generator
+
     nr_resource, nr_reader = meter_provider_resource_and_reader_generator(settings)
 
     # Before we run __init__ we need to add our metric reader to arg BEFORE running __init__

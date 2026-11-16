@@ -1047,9 +1047,9 @@ def meter_provider_resource_and_reader_generator(settings):
             session.proxies.update(proxies)
 
         exporter = OTLPMetricExporter(
-            endpoint=f"https://{settings.host}/v1/metrics",
+            endpoint=f"https://{settings.host}:{settings.port}/v1/metrics",
             headers={"api-key": settings.license_key},
-            timeout=export_timeout,
+            timeout=export_timeout / 1000,
             compression=Compression.Gzip,
             session=session,
             preferred_temporality={

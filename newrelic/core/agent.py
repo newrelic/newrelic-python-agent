@@ -234,7 +234,7 @@ class Agent:
 
         """
 
-        if not settings or (settings and not settings.opentelemetry.enabled):
+        if not settings or not settings.opentelemetry.enabled:
             _logger.debug("OpenTelemetry mode is disabled.")
             return
 

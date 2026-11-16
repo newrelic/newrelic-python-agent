@@ -102,7 +102,7 @@ def test_meter_exporter_interval_and_timeout(
     def _test():
         metric_reader = list(meter_provider._all_metric_readers)[0]
 
-        metric_reader._export_interval_millis = expected_interval
-        metric_reader._export_timeout_millis = expected_timeout
+        assert metric_reader._export_interval_millis == expected_interval
+        assert metric_reader._export_timeout_millis == expected_timeout
 
     _test()

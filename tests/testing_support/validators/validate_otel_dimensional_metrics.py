@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from contextlib import contextmanager
+
 from opentelemetry import metrics
+
 from newrelic.common.object_wrapper import function_wrapper, wrap_function_wrapper
 from newrelic.common.signature import bind_args
 
@@ -35,39 +38,65 @@ def metric_parser(export_request):
     return (parsed_counter_data, None)
 
 
-def validate_otel_dimensional_metrics(
-        counter_expected=None,
-    ):
+@contextmanager
+def capture_otlp_metric_exports():
+    """Record every export request sent through the OTLP metric exporter.
+
+    Yields a list that is appended to as exports occur. It is a list because
+    there may be actual batching of requests.
+    """
+    metric_events = []
+
+    def wrap_otlp_metric_exporter__export_batch(wrapped, instance, args, kwargs):
+        bound_args = bind_args(wrapped, args, kwargs)
+        export_request = bound_args.get("export_request")
+        metric_events.append(export_request)
+
+        return wrapped(*args, **kwargs)
+
+    wrap_function_wrapper(
+        "opentelemetry.exporter.otlp.proto.http.metric_exporter",
+        "OTLPMetricExporter._export_batch",
+        wrap_otlp_metric_exporter__export_batch,
+    )
+
+    yield metric_events
+
+
+def assert_counters_exported(meter_provider, metric_events, counter_expected):
+    """Force each of the provider's metric readers to collect, and assert that
+    the exported counters match `counter_expected` for at least one of them.
+    """
+    last_error = None
+    for metric_reader in meter_provider._all_metric_readers:
+        metric_reader.collect()
+
+        parsed_counter_data, _ = metric_parser(metric_events)
+
+        if not counter_expected:
+            continue
+
+        try:
+            assert all(item in parsed_counter_data for item in counter_expected), (
+                f"Expected: {counter_expected}, Got: {parsed_counter_data}"
+            )
+            assert all(item in counter_expected for item in parsed_counter_data), (
+                f"Expected: {counter_expected}, Got: {parsed_counter_data}"
+            )
+            return
+        except AssertionError as err:
+            # Go through next metric reader to see if that has the information we expect
+            last_error = err
+
+    if counter_expected:
+        raise last_error or AssertionError(f"Expected: {counter_expected}, but the MeterProvider has no metric readers")
+
+
+def validate_otel_dimensional_metrics(counter_expected=None):
     @function_wrapper
     def _validate_wrapper(wrapped, instance, args, kwargs):
-        # This is a list because there may be actual batching of requests
-        metric_events = []
-
-        def wrap_otlp_metric_exporter__export_batch(wrapped, instance, args, kwargs):
-            bound_args = bind_args(wrapped, args, kwargs)
-            export_request = bound_args.get("export_request")
-            metric_events.append(export_request)
-
-            return wrapped(*args, **kwargs)
-
-        wrap_function_wrapper("opentelemetry.exporter.otlp.proto.http.metric_exporter", "OTLPMetricExporter._export_batch", wrap_otlp_metric_exporter__export_batch)
-
-        wrapped(*args, **kwargs)
-
-        # Force the metric reader to collect metrics immediately
-        provider = metrics.get_meter_provider()
-        for metric_reader in provider._all_metric_readers:
-            metric_reader.collect()
-
-            parsed_counter_data, _ = metric_parser(metric_events)
-
-            if counter_expected:
-                try:
-                    assert all(item in parsed_counter_data for item in counter_expected), f"Expected: {counter_expected}, Got: {parsed_counter_data}"
-                    assert all(item in counter_expected for item in parsed_counter_data), f"Expected: {counter_expected}, Got: {parsed_counter_data}"
-                    return
-                except AssertionError:
-                    # Go through next metric reader to see if that has the information we expect
-                    pass
+        with capture_otlp_metric_exports() as metric_events:
+            wrapped(*args, **kwargs)
+            assert_counters_exported(metrics.get_meter_provider(), metric_events, counter_expected)
 
     return _validate_wrapper

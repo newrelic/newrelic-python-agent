@@ -321,7 +321,7 @@ def _subscribe_meter_provider(settings, meter_provider):
     # via its own periodic background thread, and anything it buffered would
     # be silently dropped if the process exits before that interval elapses.
     meter_provider.add_metric_reader(nr_reader)
-    meter_provider._metric_readers = list(meter_provider._metric_readers) + [nr_reader]
+    meter_provider._metric_readers = [*list(meter_provider._metric_readers), nr_reader]
 
     if not application._agent._meter_provider:
         application._agent._meter_provider = meter_provider

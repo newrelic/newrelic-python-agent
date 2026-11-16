@@ -36,7 +36,7 @@ def meter_provider_new_settings(meter_provider):
 
         nr_reader = _meter_reader()
         meter_provider.add_metric_reader(nr_reader)
-        meter_provider._metric_readers = list(meter_provider._metric_readers) + [nr_reader]
+        meter_provider._metric_readers = [*list(meter_provider._metric_readers), nr_reader]
         return nr_reader
 
     yield _new_meter_reader

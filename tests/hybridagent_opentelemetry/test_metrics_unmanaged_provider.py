@@ -22,13 +22,20 @@ and exporter to the existing MeterProvider.
 
 from contextlib import contextmanager
 
+import pytest
 from opentelemetry.sdk.metrics import MeterProvider
-from testing_support.validators.validate_otel_dimensional_metrics import validate_otel_dimensional_metrics
+from testing_support.validators.validate_otel_dimensional_metrics import (
+    assert_counters_exported,
+    capture_otlp_metric_exports,
+)
 
 from newrelic.api.application import application_instance
-from newrelic.common.object_wrapper import wrap_function_wrapper
-from newrelic.common.signature import bind_args
 from newrelic.hooks.hybridagent_opentelemetry import wrap_get_meter_provider, wrap_set_meter_provider
+
+# Attempt to delay the start of each run in this test suite
+# in order to allow the collector to become available.
+# Without this, this will still pass locally, but fail in the CI.
+pytestmark = pytest.mark.usefixtures("collector_available_fixture")
 
 
 @contextmanager
@@ -66,7 +73,6 @@ def _assert_subscribed(provider):
     return readers[0]
 
 
-@validate_otel_dimensional_metrics(counter_expected=[(7, {})])
 def test_set_meter_provider_retrofits_unmanaged_provider():
     provider = _unmanaged_meter_provider()
     _assert_unmanaged(provider)
@@ -74,16 +80,19 @@ def test_set_meter_provider_retrofits_unmanaged_provider():
     def real_set_meter_provider(meter_provider):
         pass  # stand-in for opentelemetry.metrics.set_meter_provider
 
-    wrap_set_meter_provider(real_set_meter_provider, None, (provider,), {})
+    with capture_otlp_metric_exports() as metric_events:
+        wrap_set_meter_provider(real_set_meter_provider, None, (provider,), {})
 
-    nr_reader = _assert_subscribed(provider)
+        _assert_subscribed(provider)
 
-    meter = provider.get_meter("unmanaged_provider_meter")
-    counter = meter.create_counter("unmanaged_provider_counter")
-    counter.add(7)
+        meter = provider.get_meter("unmanaged_provider_meter")
+        counter = meter.create_counter("unmanaged_provider_counter")
+        counter.add(7)
+
+        # The validator reads the global MeterProvider, which is not this one
+        assert_counters_exported(provider, metric_events, [(7, {})])
 
 
-@validate_otel_dimensional_metrics(counter_expected=[(9, {})])
 def test_get_meter_provider_retrofits_unmanaged_provider():
     provider = _unmanaged_meter_provider()
     _assert_unmanaged(provider)
@@ -95,13 +104,17 @@ def test_get_meter_provider_retrofits_unmanaged_provider():
     previous_meter_provider = application._agent._meter_provider
     application._agent._meter_provider = None
     try:
-        result = wrap_get_meter_provider(real_get_meter_provider, None, (), {})
+        with capture_otlp_metric_exports() as metric_events:
+            result = wrap_get_meter_provider(real_get_meter_provider, None, (), {})
 
-        assert result is provider
-        nr_reader = _assert_subscribed(provider)
+            assert result is provider
+            _assert_subscribed(provider)
 
-        meter = provider.get_meter("unmanaged_provider_meter")
-        counter = meter.create_counter("unmanaged_provider_counter")
-        counter.add(9)
+            meter = provider.get_meter("unmanaged_provider_meter")
+            counter = meter.create_counter("unmanaged_provider_counter")
+            counter.add(9)
+
+            # The validator reads the global MeterProvider, which is not this one
+            assert_counters_exported(provider, metric_events, [(9, {})])
     finally:
         application._agent._meter_provider = previous_meter_provider

@@ -531,6 +531,7 @@ class DeveloperModeClient(SupportabilityMixin, BaseClient):
             "apdex_t": 0.5,
             "encoding_key": "1111111111111111111111111111111111111111",
             "entity_guid": "DEVELOPERMODEENTITYGUID",
+            "otlp_resource_attributes": {"entity.guid": "DEVELOPERMODEENTITYGUID"},
             "agent_run_id": "1234567",
             "product_level": 50,
             "trusted_account_ids": [12345],

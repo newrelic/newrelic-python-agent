@@ -1,0 +1,245 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+---
+name: Validate Release Metadata
+
+on:
+  # Allows calling from another workflow
+  workflow_call:
+    inputs:
+      tag:
+        description: "Release Tag (e.g. v12.3.4)"
+        required: true
+        type: string
+      allow_draft:
+        description: "Allow existing tag or draft release."
+        required: false
+        type: boolean
+        default: false
+      require_draft:
+        description: "Require dispatch on an existing tag with an associated draft release."
+        required: false
+        type: boolean
+        default: false
+      deployment_target:
+        description: "Deployment target to validate (pypi, testpypi, or github-only). Skipped when empty."
+        required: false
+        type: string
+        default: ""
+    outputs:
+      is_fork:
+        description: "Whether the workflow is running on a fork instead of the official repository"
+        value: ${{ jobs.fetch-release.outputs.is_fork }}
+      tag_exists:
+        description: "Whether the tag already exists"
+        value: ${{ jobs.validate-metadata.outputs.tag_exists }}
+      release_exists:
+        description: "Whether a release (draft or published) already exists for the tag"
+        value: ${{ jobs.fetch-release.outputs.release_exists }}
+      is_draft:
+        description: "Whether the existing release is a draft"
+        value: ${{ jobs.fetch-release.outputs.is_draft }}
+
+permissions: {}
+
+jobs:
+  fetch-release:
+    name: Fetch Existing Releases
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write # Draft releases are only visible to tokens with write access
+    outputs:
+      is_fork: ${{ steps.repo.outputs.is_fork }}
+      release_exists: ${{ steps.existing.outputs.release_exists }}
+      is_draft: ${{ steps.existing.outputs.is_draft }}
+      latest_tag: ${{ steps.latest.outputs.latest_tag }}
+
+    # Keep these steps in an isolated job so write access is only granted for the release lookup.
+    # Add any future validation steps to the other jobs and not this one to keep permissions minimal.
+    steps:
+      - name: Determine if Repository is a Fork or Official
+        id: repo
+        run: |
+          if [ "${GITHUB_REPOSITORY}" = "${OFFICIAL_REPOSITORY}" ]; then
+            echo "is_fork=false" >> "${GITHUB_OUTPUT}"
+          else
+            echo "is_fork=true" >> "${GITHUB_OUTPUT}"
+          fi
+        env:
+          OFFICIAL_REPOSITORY: newrelic/newrelic-python-agent
+
+      # Runs before any step that uses the tag, to prevent script injection via malformed tags.
+      - name: Validate Tag Format
+        run: |
+          # vX.Y.Z only: no leading zeros, pre-release, build metadata, or 4th component.
+          semver='^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'
+          if [[ ! "${TAG}" =~ ${semver} ]]; then
+            echo "::error::Tag ${TAG} is not a valid release tag. Expected format vX.Y.Z (e.g. v12.3.4)."
+            exit 1
+          fi
+        env:
+          TAG: ${{ inputs.tag }}
+
+      - name: Fetch Current Release State
+        id: existing
+        run: |
+          # gh release view fails when no release exists for the tag.
+          if is_draft=$(gh release view "${TAG}" --repo="${GITHUB_REPOSITORY}" --json=isDraft --jq=.isDraft 2>/dev/null); then
+            echo "release_exists=true" >> "${GITHUB_OUTPUT}"
+            echo "is_draft=${is_draft}" >> "${GITHUB_OUTPUT}"
+          else
+            echo "release_exists=false" >> "${GITHUB_OUTPUT}"
+            echo "is_draft=false" >> "${GITHUB_OUTPUT}"
+          fi
+        env:
+          TAG: ${{ inputs.tag }}
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Fetch Previous Release Tag (Latest)
+        id: latest
+        run: |
+          # Without a tag, gh release view returns the release marked latest, which excludes drafts and pre-releases.
+          if ! latest_tag=$(gh release view --repo="${GITHUB_REPOSITORY}" --json=tagName --jq=.tagName); then
+            # Forks may have no published releases, so the comparison is skipped outside the official repo.
+            if [ "${IS_FORK}" = "true" ]; then
+              echo "::warning::No latest release found on fork ${GITHUB_REPOSITORY}. Skipping checks against the previous release."
+              echo "latest_tag=" >> "${GITHUB_OUTPUT}"
+              exit 0
+            fi
+            echo "::error::No latest release found for ${GITHUB_REPOSITORY}."
+            exit 1
+          fi
+
+          semver='^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'
+          if [[ ! "${latest_tag}" =~ ${semver} ]]; then
+            echo "::error::Previous release tag ${latest_tag} is not a valid release tag. Expected format vX.Y.Z (e.g. v12.3.4)."
+            exit 1
+          fi
+          echo "Latest release: ${latest_tag}"
+          echo "latest_tag=${latest_tag}" >> "${GITHUB_OUTPUT}"
+        env:
+          IS_FORK: ${{ steps.repo.outputs.is_fork }}
+          GH_TOKEN: ${{ github.token }}
+
+  validate-metadata:
+    name: Validate Release Metadata
+    needs: fetch-release
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      tag_exists: ${{ steps.existing.outputs.tag_exists }}
+
+    steps:
+      # Validates deployment target only for the Deploy workflow.
+      # Only pypi is allowed on the official repo, and only testpypi or github-only on forks.
+      - name: Validate Deployment Target
+        if: inputs.deployment_target != ''
+        run: |
+          if [ "${IS_FORK}" = "false" ]; then
+            if [ "${TARGET}" != "pypi" ]; then
+              echo "::error::Deployment target ${TARGET} is not allowed on the official repository. Allowed: pypi."
+              exit 1
+            fi
+          else
+            case "${TARGET}" in
+              testpypi | github-only) ;;
+              *)
+                echo "::error::Deployment target ${TARGET} is not allowed on fork ${GITHUB_REPOSITORY}. Allowed: testpypi, github-only."
+                exit 1
+                ;;
+            esac
+          fi
+          echo "Deployment target: ${TARGET}"
+        env:
+          TARGET: ${{ inputs.deployment_target }}
+          IS_FORK: ${{ needs.fetch-release.outputs.is_fork }}
+
+      # This check is only used for the Deploy workflow.
+      - name: Validate Deploy Dispatched on the Release Tag
+        if: inputs.require_draft
+        run: |
+          if [ "${REF_TYPE}" != "tag" ] || [ "${REF_NAME}" != "${TAG}" ]; then
+            echo "::error::Must be dispatched on tag ${TAG}, not ${REF_TYPE} ${REF_NAME}."
+            echo "::error::Usage: Dispatch the deploy workflow only on a tag created by the Draft Release workflow."
+            exit 1
+          fi
+        env:
+          TAG: ${{ inputs.tag }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0 # Fetch main and the latest release tag to compare against
+
+      - uses: actions/setup-python@v7.1.0
+        with:
+          python-version: "3.14"
+
+      - name: Fetch Existing Tag State
+        id: existing
+        run: |
+          if gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" > /dev/null 2>&1; then
+            echo "tag_exists=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "tag_exists=false" >> "${GITHUB_OUTPUT}"
+          fi
+        env:
+          TAG: ${{ inputs.tag }}
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Validate Release Commit Matches main
+        run: |
+          if [ "$(git rev-parse HEAD)" != "$(git rev-parse origin/main)" ]; then
+            echo "::error::Release ${TAG} must be cut from the head commit of main."
+            exit 1
+          fi
+        env:
+          TAG: ${{ inputs.tag }}
+
+      - name: Refuse to Overwrite a Published Release
+        if: needs.fetch-release.outputs.release_exists == 'true' && needs.fetch-release.outputs.is_draft != 'true'
+        run: |
+          echo "::error::Release ${TAG} is already published and cannot be overwritten."
+          exit 1
+        env:
+          TAG: ${{ inputs.tag }}
+
+      # This check is only used for the Deploy workflow to ensure a draft exists.
+      - name: Require Existing Draft Release for Deployment
+        if: inputs.require_draft && (needs.fetch-release.outputs.is_draft != 'true' || needs.fetch-release.outputs.release_exists != 'true')
+        run: |
+          echo "::error::No draft release found for tag ${TAG}."
+          echo "::error::Usage: Dispatch the Deploy Release workflow only on a tag created by the Draft Release workflow."
+          exit 1
+        env:
+          TAG: ${{ inputs.tag }}
+
+      - name: Refuse to Reuse Existing Tag or Draft without Overwrite Input Set
+        if: (steps.existing.outputs.tag_exists == 'true' || needs.fetch-release.outputs.release_exists == 'true') && !(inputs.allow_draft || inputs.require_draft)
+        run: |
+          echo "::error::Tag or draft release ${TAG} already exists. Re-run the Draft Release workflow with Overwrite Existing Tag checked to reuse it."
+          exit 1
+        env:
+          TAG: ${{ inputs.tag }}
+
+      - name: Validate Agent Config Schema Version
+        if: needs.fetch-release.outputs.latest_tag != ''
+        run: |
+          echo "Comparing against latest release: ${LATEST_TAG}"
+          python3 .fleetControl/schemaGeneration/bump-schema-version.py --since="${LATEST_TAG}"
+        env:
+          LATEST_TAG: ${{ needs.fetch-release.outputs.latest_tag }}

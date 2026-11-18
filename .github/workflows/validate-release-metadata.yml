@@ -61,8 +61,8 @@ jobs:
       contents: write # Draft releases are only visible to tokens with write access
     outputs:
       is_fork: ${{ steps.repo.outputs.is_fork }}
-      release_exists: ${{ steps.existing.outputs.release_exists }}
       is_draft: ${{ steps.existing.outputs.is_draft }}
+      release_exists: ${{ steps.existing.outputs.release_exists }}
       latest_tag: ${{ steps.latest.outputs.latest_tag }}
 
     # Keep these steps in an isolated job so write access is only granted for the release lookup.
@@ -210,31 +210,43 @@ jobs:
         env:
           TAG: ${{ inputs.tag }}
 
-      - name: Refuse to Overwrite a Published Release
-        if: needs.fetch-release.outputs.release_exists == 'true' && needs.fetch-release.outputs.is_draft != 'true'
+      - name: Validate Release is Not Already Published
         run: |
-          echo "::error::Release ${TAG} is already published and cannot be overwritten."
-          exit 1
+          if [ "${RELEASE_EXISTS}" = "true" ] && [ "${IS_DRAFT}" != "true" ]; then
+            echo "::error::Release ${TAG} is already published and cannot be overwritten."
+            exit 1
+          fi
         env:
           TAG: ${{ inputs.tag }}
+          RELEASE_EXISTS: ${{ needs.fetch-release.outputs.release_exists }}
+          IS_DRAFT: ${{ needs.fetch-release.outputs.is_draft }}
 
       # This check is only used for the Deploy workflow to ensure a draft exists.
-      - name: Require Existing Draft Release for Deployment
-        if: inputs.require_draft && (needs.fetch-release.outputs.is_draft != 'true' || needs.fetch-release.outputs.release_exists != 'true')
+      - name: Validate Draft Release Exists for Deployment
+        if: inputs.require_draft
         run: |
-          echo "::error::No draft release found for tag ${TAG}."
-          echo "::error::Usage: Dispatch the Deploy Release workflow only on a tag created by the Draft Release workflow."
-          exit 1
+          if [ "${RELEASE_EXISTS}" != "true" ] || [ "${IS_DRAFT}" != "true" ]; then
+            echo "::error::No draft release found for tag ${TAG}."
+            echo "::error::Usage: Dispatch the Deploy Release workflow only on a tag created by the Draft Release workflow."
+            exit 1
+          fi
         env:
           TAG: ${{ inputs.tag }}
+          RELEASE_EXISTS: ${{ needs.fetch-release.outputs.release_exists }}
+          IS_DRAFT: ${{ needs.fetch-release.outputs.is_draft }}
 
-      - name: Refuse to Reuse Existing Tag or Draft without Overwrite Input Set
-        if: (steps.existing.outputs.tag_exists == 'true' || needs.fetch-release.outputs.release_exists == 'true') && !(inputs.allow_draft || inputs.require_draft)
+      # Skipped when reusing an existing tag or draft is explicitly allowed or required.
+      - name: Validate Tag and Draft Release Do Not Already Exist
+        if: ${{ !(inputs.allow_draft || inputs.require_draft) }}
         run: |
-          echo "::error::Tag or draft release ${TAG} already exists. Re-run the Draft Release workflow with Overwrite Existing Tag checked to reuse it."
-          exit 1
+          if [ "${TAG_EXISTS}" = "true" ] || [ "${RELEASE_EXISTS}" = "true" ]; then
+            echo "::error::Tag or draft release ${TAG} already exists. Re-run the Draft Release workflow with Overwrite Existing Tag checked to reuse it."
+            exit 1
+          fi
         env:
           TAG: ${{ inputs.tag }}
+          TAG_EXISTS: ${{ steps.existing.outputs.tag_exists }}
+          RELEASE_EXISTS: ${{ needs.fetch-release.outputs.release_exists }}
 
       - name: Validate Agent Config Schema Version
         if: needs.fetch-release.outputs.latest_tag != ''

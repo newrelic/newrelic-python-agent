@@ -227,6 +227,13 @@ jobs:
             ./dist/*.whl
             ./dist/*.tar.gz
 
+      - name: Login to AWS
+        if: matrix.pypi-instance == 'pypi'
+        uses: aws-actions/configure-aws-credentials@v6.3.0
+        with:
+          aws-region: ${{ secrets.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+
       - name: Upload Package to S3
         if: matrix.pypi-instance == 'pypi'
         run: |
@@ -236,9 +243,6 @@ jobs:
           aws s3 cp "./dist/${tarball}" "${S3_DST}/${tarball}"
         env:
           S3_DST: s3://nr-downloads-main/python_agent/release
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: us-west-2
 
       - name: Upload assets to draft release
         run: |

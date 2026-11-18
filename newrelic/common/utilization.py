@@ -162,7 +162,7 @@ class AWSUtilization(CommonUtilization):
     METADATA_HOST = "169.254.169.254"
     METADATA_PATH = "/latest/dynamic/instance-identity/document"
     METADATA_TOKEN_PATH = "/latest/api/token"  # noqa: S105
-    HEADERS = {"X-aws-ec2-metadata-token-ttl-seconds": "21600"}  # noqa: RUF012
+    TOKEN_HEADERS = MappingProxyType({"X-aws-ec2-metadata-token-ttl-seconds": "21600"})
     VENDOR_NAME = "aws"
     _utilization_data = None
 
@@ -171,7 +171,7 @@ class AWSUtilization(CommonUtilization):
         try:
             with cls.CLIENT_CLS(cls.METADATA_HOST, timeout=cls.FETCH_TIMEOUT) as client:
                 resp = client.send_request(
-                    method="PUT", path=cls.METADATA_TOKEN_PATH, params=cls.METADATA_QUERY, headers=cls.HEADERS
+                    method="PUT", path=cls.METADATA_TOKEN_PATH, params=cls.METADATA_QUERY, headers=cls.TOKEN_HEADERS
                 )
             if not 200 <= resp[0] < 300:
                 raise ValueError(resp[0])
@@ -189,10 +189,10 @@ class AWSUtilization(CommonUtilization):
             if authToken is None:
                 metadata = cls._utilization_data
                 return metadata
-            cls.HEADERS = {"X-aws-ec2-metadata-token": authToken}
+            auth_headers = {"X-aws-ec2-metadata-token": authToken}
             with cls.CLIENT_CLS(cls.METADATA_HOST, timeout=cls.FETCH_TIMEOUT) as client:
                 resp = client.send_request(
-                    method="GET", path=cls.METADATA_PATH, params=cls.METADATA_QUERY, headers=cls.HEADERS
+                    method="GET", path=cls.METADATA_PATH, params=cls.METADATA_QUERY, headers=auth_headers
                 )
             if not 200 <= resp[0] < 300:
                 raise ValueError(resp[0])

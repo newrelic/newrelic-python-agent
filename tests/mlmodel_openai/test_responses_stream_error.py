@@ -32,6 +32,7 @@ from testing_support.validators.validate_error_trace_attributes import validate_
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
+from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 from newrelic.api.transaction import add_custom_attribute
 from newrelic.common.object_names import callable_name
@@ -82,18 +83,18 @@ _FAILED_STREAM_SSE = (
 )
 
 
-def _failed_sse_response():
-    return _httpx.Response(200, content=_FAILED_STREAM_SSE, headers={"content-type": "text/event-stream"})
+def _failed_sse_response(content=_FAILED_STREAM_SSE):
+    return _httpx.Response(200, content=content, headers={"content-type": "text/event-stream"})
 
 
-def _build_failed_stream(client):
+def _build_failed_stream(client, content=_FAILED_STREAM_SSE):
     """A real openai.Stream that yields a single response.failed event, as the server sends for an
     in-band failure. Building a real Stream keeps the agent's Stream._iter_events wrapper in play."""
-    return Stream(cast_to=ResponseStreamEvent, response=_failed_sse_response(), client=client)
+    return Stream(cast_to=ResponseStreamEvent, response=_failed_sse_response(content), client=client)
 
 
-def _build_failed_async_stream(client):
-    return AsyncStream(cast_to=ResponseStreamEvent, response=_failed_sse_response(), client=client)
+def _build_failed_async_stream(client, content=_FAILED_STREAM_SSE):
+    return AsyncStream(cast_to=ResponseStreamEvent, response=_failed_sse_response(content), client=client)
 
 
 expected_events_on_failed_response = [
@@ -151,6 +152,24 @@ expected_events_on_failed_response = [
             "ingest_source": "Python",
         },
     ),
+]
+
+# An error event followed by a response.failed event. Some consumers stop iterating at the error
+# event, so the failure must be recorded from the error event alone, and only once if iteration continues.
+_ERROR_EVENT_STREAM_SSE = (
+    b"event: error\ndata: "
+    + json.dumps(
+        {"type": "error", "sequence_number": 0, "code": FAILED_ERROR_CODE, "message": FAILED_ERROR_MESSAGE}
+    ).encode()
+    + b"\n\n"
+    + _FAILED_STREAM_SSE
+)
+
+# The error event carries no Response object, so there is no response model to record and message IDs are
+# randomly generated rather than derived from a response ID.
+expected_events_on_error_event = [
+    (intrinsics, {**{key: value for key, value in attrs.items() if key != "response.model"}, "id": None})
+    for intrinsics, attrs in expected_events_on_failed_response
 ]
 
 expected_events_on_invalid_model_error = [
@@ -466,3 +485,100 @@ def test_openai_responses_stream_failed_status_error_no_content_async(
 
     add_custom_attribute("llm.conversation_id", "my-awesome-id")
     loop.run_until_complete(_run())
+
+
+@dt_enabled
+@reset_core_stats_engine()
+@validate_error_trace_attributes(
+    callable_name(FAILED_EXPECTED_ERROR), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}}
+)
+@validate_transaction_metrics(
+    "test_responses_stream_error:test_openai_responses_stream_error_event_break",
+    scoped_metrics=[("Function/parent", 1), ("Llm/completion/OpenAI/create", 1)],
+    rollup_metrics=[("Function/parent", 1), ("Llm/completion/OpenAI/create", 1)],
+    background_task=True,
+)
+@validate_custom_events(events_with_context_attrs(expected_events_on_error_event))
+@validate_custom_event_count(count=3)
+@background_task()
+def test_openai_responses_stream_error_event_break(monkeypatch, set_trace_info, sync_openai_client):
+    set_trace_info()
+    monkeypatch.setattr(
+        sync_openai_client.responses,
+        "_post",
+        lambda *args, **kwargs: _build_failed_stream(sync_openai_client, _ERROR_EVENT_STREAM_SSE),
+    )
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    with WithLlmCustomAttributes({"context": "attr"}), FunctionTrace(name="parent"):
+        generator = sync_openai_client.responses.create(
+            model=MODEL, instructions=INSTRUCTIONS, input=PROMPT, temperature=0.7, max_output_tokens=500, stream=True
+        )
+        for event in generator:
+            if event.type == "error":
+                break
+
+
+@dt_enabled
+@reset_core_stats_engine()
+@validate_error_trace_attributes(
+    callable_name(FAILED_EXPECTED_ERROR), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}}
+)
+@validate_transaction_metrics(
+    "test_responses_stream_error:test_openai_responses_stream_error_event_break_async",
+    scoped_metrics=[("Function/parent", 1), ("Llm/completion/OpenAI/create", 1)],
+    rollup_metrics=[("Function/parent", 1), ("Llm/completion/OpenAI/create", 1)],
+    background_task=True,
+)
+@validate_custom_events(events_with_context_attrs(expected_events_on_error_event))
+@validate_custom_event_count(count=3)
+@background_task()
+def test_openai_responses_stream_error_event_break_async(monkeypatch, loop, set_trace_info, async_openai_client):
+    set_trace_info()
+
+    async def _error_event_post(*args, **kwargs):
+        return _build_failed_async_stream(async_openai_client, _ERROR_EVENT_STREAM_SSE)
+
+    monkeypatch.setattr(async_openai_client.responses, "_post", _error_event_post)
+
+    async def _run():
+        generator = await async_openai_client.responses.create(
+            model=MODEL, instructions=INSTRUCTIONS, input=PROMPT, temperature=0.7, max_output_tokens=500, stream=True
+        )
+        async for event in generator:
+            if event.type == "error":
+                break
+
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    with WithLlmCustomAttributes({"context": "attr"}), FunctionTrace(name="parent"):
+        loop.run_until_complete(_run())
+
+
+@dt_enabled
+@reset_core_stats_engine()
+@validate_error_trace_attributes(
+    callable_name(FAILED_EXPECTED_ERROR), exact_attrs={"agent": {}, "intrinsic": {}, "user": {}}
+)
+@validate_transaction_metrics(
+    "test_responses_stream_error:test_openai_responses_stream_error_event_then_failed",
+    scoped_metrics=[("Llm/completion/OpenAI/create", 1)],
+    rollup_metrics=[("Llm/completion/OpenAI/create", 1)],
+    background_task=True,
+)
+@validate_custom_events(events_with_context_attrs(expected_events_on_error_event))
+@validate_custom_event_count(count=3)
+@background_task()
+def test_openai_responses_stream_error_event_then_failed(monkeypatch, set_trace_info, sync_openai_client):
+    set_trace_info()
+    monkeypatch.setattr(
+        sync_openai_client.responses,
+        "_post",
+        lambda *args, **kwargs: _build_failed_stream(sync_openai_client, _ERROR_EVENT_STREAM_SSE),
+    )
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    # Fully consume the stream: the response.failed event after the error event must not record the failure again.
+    with WithLlmCustomAttributes({"context": "attr"}):
+        generator = sync_openai_client.responses.create(
+            model=MODEL, instructions=INSTRUCTIONS, input=PROMPT, temperature=0.7, max_output_tokens=500, stream=True
+        )
+        for _ in generator:
+            pass

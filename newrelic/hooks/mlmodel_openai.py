@@ -1118,6 +1118,9 @@ class LLMStreamProxy(ObjectProxy):
     def __init__(self, wrapped):
         super().__init__(wrapped)
         self._nr_request_timestamp = int(1000.0 * time.time())
+        # Set once the function trace is exited and events are recorded, so any later chunk, StopIteration,
+        # or error does not record again.
+        self._nr_finalized = False
 
     def __iter__(self):
         return self
@@ -1153,7 +1156,7 @@ def _record_stream_chunk(stream_proxy, return_val):
     Dispatches the bulk of the work to separate functions for OpenAI ChatCompletions vs Responses APIs.
     """
     transaction = current_transaction()
-    if return_val:
+    if return_val and not stream_proxy._nr_finalized:
         try:
             if OPENAI_V1:
                 if getattr(return_val, "data", "").startswith("[DONE]"):
@@ -1216,12 +1219,11 @@ def _record_responses_stream_event(stream_proxy, event):
     OpenAI endpoints which produce different event shapes.
     """
     event_type = event.get("type")
+    request_timestamp = stream_proxy._nr_request_timestamp
     if event_type == "response.output_text.delta":
         delta = event.get("delta") or ""
         if delta and "time_to_first_token" not in stream_proxy._nr_openai_attrs:
-            stream_proxy._nr_openai_attrs["time_to_first_token"] = (
-                int(1000.0 * time.time()) - stream_proxy._nr_request_timestamp
-            )
+            stream_proxy._nr_openai_attrs["time_to_first_token"] = int(1000.0 * time.time()) - request_timestamp
         stream_proxy._nr_openai_attrs["content"] = stream_proxy._nr_openai_attrs.get("content", "") + delta
         stream_proxy._nr_openai_attrs["role"] = stream_proxy._nr_openai_attrs.get("role") or "assistant"
     elif event_type in ("response.completed", "response.incomplete", "response.failed"):
@@ -1231,10 +1233,25 @@ def _record_responses_stream_event(stream_proxy, event):
         stream_proxy._nr_openai_attrs["response.usage"] = response["response.usage"]
         stream_proxy._nr_openai_attrs["finish_reason"] = response["finish_reason"]
         stream_proxy._nr_openai_attrs["error"] = response["error"]
+        # Terminal events are always last, and unlike Chat Completions there is no [DONE] sentinel. Consumers
+        # such as Strands stop iterating here so StopIteration is never raised, which would leave the FunctionTrace
+        # open and prevent the parent spans from being recorded. Any later chunk or StopIteration is ignored since
+        # the proxy is marked as finalized.
+        _record_events_on_stop_iteration(stream_proxy, current_transaction(), request_timestamp)
+    elif event_type in ("error", "response.error"):
+        # Error events carry the error details at the top level rather than on a Response object. Consumers
+        # stop iterating once these arrive too, so record the failure now for the same reason as above.
+        stream_proxy._nr_openai_attrs["error"] = {
+            "message": event.get("message"),
+            "code": event.get("code"),
+            "param": event.get("param"),
+        }
+        _record_events_on_stop_iteration(stream_proxy, current_transaction(), request_timestamp)
 
 
 def _record_events_on_stop_iteration(stream_proxy, transaction, request_timestamp=None):
-    if hasattr(stream_proxy, "_nr_ft"):
+    if hasattr(stream_proxy, "_nr_ft") and not stream_proxy._nr_finalized:
+        stream_proxy._nr_finalized = True
         # We first check for our saved linking metadata before making a new call to get_trace_linking_metadata
         # Directly calling get_trace_linking_metadata() causes the incorrect span ID to be captured and associated with the LLM call
         # This leads to incorrect linking of the LLM call in the UI
@@ -1283,7 +1300,8 @@ def _record_events_on_stop_iteration(stream_proxy, transaction, request_timestam
 
 
 def _handle_streaming_completion_error(*, stream_proxy, transaction, exc, request_timestamp=None):
-    if hasattr(stream_proxy, "_nr_ft"):
+    if hasattr(stream_proxy, "_nr_ft") and not stream_proxy._nr_finalized:
+        stream_proxy._nr_finalized = True
         openai_attrs = getattr(stream_proxy, "_nr_openai_attrs", {})
 
         # If there are no openai attrs exit early as there's no data to record.
@@ -1307,6 +1325,9 @@ class AsyncLLMStreamProxy(ObjectProxy):
     def __init__(self, wrapped):
         super().__init__(wrapped)
         self._nr_request_timestamp = int(1000.0 * time.time())
+        # Set once the function trace is exited and events are recorded, so any later chunk, StopIteration,
+        # or error does not record again.
+        self._nr_finalized = False
 
     def __aiter__(self):
         self._nr_wrapped_iter = self.__wrapped__.__aiter__()

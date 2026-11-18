@@ -37,6 +37,7 @@ from testing_support.validators.validate_custom_events import validate_custom_ev
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 
 from newrelic.api.background_task import background_task
+from newrelic.api.function_trace import FunctionTrace
 from newrelic.api.llm_custom_attributes import WithLlmCustomAttributes
 from newrelic.api.transaction import add_custom_attribute
 
@@ -222,6 +223,65 @@ def test_openai_responses_stream_async_with_llm_metadata(set_trace_info, async_o
     add_custom_attribute("non_llm_attr", "python-agent")
     with WithLlmCustomAttributes({"context": "attr"}):
         _consume_async(async_openai_client, loop)
+
+
+def _consume_until_completed_sync(client):
+    # Mimics consumers that stop iterating once the terminal
+    # event arrives, so the underlying stream never raises StopIteration.
+    generator = client.responses.create(
+        model=MODEL, instructions=INSTRUCTIONS, input=PROMPT, temperature=0.7, max_output_tokens=500, stream=True
+    )
+    for event in generator:
+        if event.type == "response.completed":
+            break
+
+
+def _consume_until_completed_async(client, loop):
+    async def _run():
+        generator = await client.responses.create(
+            model=MODEL, instructions=INSTRUCTIONS, input=PROMPT, temperature=0.7, max_output_tokens=500, stream=True
+        )
+        async for event in generator:
+            if event.type == "response.completed":
+                break
+
+    loop.run_until_complete(_run())
+
+
+@reset_core_stats_engine()
+@validate_custom_events(events_with_context_attrs(responses_stream_recorded_events))
+@validate_custom_event_count(count=4)
+@validate_transaction_metrics(
+    name="test_responses_stream:test_openai_responses_stream_sync_break_on_completed",
+    scoped_metrics=[("Function/parent", 1), ("Llm/completion/OpenAI/create", 1)],
+    rollup_metrics=[("Function/parent", 1), ("Llm/completion/OpenAI/create", 1)],
+    background_task=True,
+)
+@background_task()
+def test_openai_responses_stream_sync_break_on_completed(set_trace_info, sync_openai_client):
+    set_trace_info()
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
+    with WithLlmCustomAttributes({"context": "attr"}), FunctionTrace(name="parent"):
+        _consume_until_completed_sync(sync_openai_client)
+
+
+@reset_core_stats_engine()
+@validate_custom_events(events_with_context_attrs(responses_stream_recorded_events))
+@validate_custom_event_count(count=4)
+@validate_transaction_metrics(
+    name="test_responses_stream:test_openai_responses_stream_async_break_on_completed",
+    scoped_metrics=[("Function/parent", 1), ("Llm/completion/OpenAI/create", 1)],
+    rollup_metrics=[("Function/parent", 1), ("Llm/completion/OpenAI/create", 1)],
+    background_task=True,
+)
+@background_task()
+def test_openai_responses_stream_async_break_on_completed(set_trace_info, async_openai_client, loop):
+    set_trace_info()
+    add_custom_attribute("llm.conversation_id", "my-awesome-id")
+    add_custom_attribute("llm.foo", "bar")
+    with WithLlmCustomAttributes({"context": "attr"}), FunctionTrace(name="parent"):
+        _consume_until_completed_async(async_openai_client, loop)
 
 
 @reset_core_stats_engine()

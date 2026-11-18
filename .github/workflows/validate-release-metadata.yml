@@ -22,8 +22,8 @@ on:
         description: "Release Tag (e.g. v12.3.4)"
         required: true
         type: string
-      allow_draft:
-        description: "Allow existing tag or draft release."
+      overwrite_draft:
+        description: "Allow overwriting an existing tag or draft release."
         required: false
         type: boolean
         default: false
@@ -82,6 +82,12 @@ jobs:
       # Runs before any step that uses the tag, to prevent script injection via malformed tags.
       - name: Validate Tag Format
         run: |
+          # Early exit for Deploy Release workflow on wrong ref type
+          if [ "${REQUIRE_DRAFT}" = "true" ] && [ "${REF_TYPE}" != "tag" ]; then
+            echo "::error::Usage: Dispatch the Deploy Release workflow only on a tag created by the Draft Release workflow. (Got ${REF_TYPE} ${REF_NAME})"
+            exit 1
+          fi
+
           # vX.Y.Z only: no leading zeros, pre-release, build metadata, or 4th component.
           semver='^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'
           if [[ ! "${TAG}" =~ ${semver} ]]; then
@@ -90,6 +96,9 @@ jobs:
           fi
         env:
           TAG: ${{ inputs.tag }}
+          REQUIRE_DRAFT: ${{ inputs.require_draft }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
 
       - name: Fetch Current Release State
         id: existing
@@ -172,7 +181,7 @@ jobs:
         run: |
           if [ "${REF_TYPE}" != "tag" ] || [ "${REF_NAME}" != "${TAG}" ]; then
             echo "::error::Must be dispatched on tag ${TAG}, not ${REF_TYPE} ${REF_NAME}."
-            echo "::error::Usage: Dispatch the deploy workflow only on a tag created by the Draft Release workflow."
+            echo "::error::Usage: Dispatch the Deploy Release workflow only on a tag created by the Draft Release workflow."
             exit 1
           fi
         env:
@@ -237,7 +246,7 @@ jobs:
 
       # Skipped when reusing an existing tag or draft is explicitly allowed or required.
       - name: Validate Tag and Draft Release Do Not Already Exist
-        if: ${{ !(inputs.allow_draft || inputs.require_draft) }}
+        if: ${{ !(inputs.overwrite_draft || inputs.require_draft) }}
         run: |
           if [ "${TAG_EXISTS}" = "true" ] || [ "${RELEASE_EXISTS}" = "true" ]; then
             echo "::error::Tag or draft release ${TAG} already exists. Re-run the Draft Release workflow with Overwrite Existing Tag checked to reuse it."

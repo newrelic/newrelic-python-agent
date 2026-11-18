@@ -19,6 +19,7 @@ import re
 import socket
 import string
 from pathlib import Path
+from types import MappingProxyType
 
 from newrelic.common.agent_http import InsecureHttpClient
 from newrelic.common.encoding_utils import json_decode
@@ -219,18 +220,18 @@ class AWSUtilization(CommonUtilization):
 class AzureUtilization(CommonUtilization):
     METADATA_HOST = "169.254.169.254"
     METADATA_PATH = "/metadata/instance/compute"
-    METADATA_QUERY = {"api-version": "2017-03-01"}  # noqa: RUF012
+    METADATA_QUERY = MappingProxyType({"api-version": "2017-03-01"})
     EXPECTED_KEYS = ("location", "name", "vmId", "vmSize")
-    HEADERS = {"Metadata": "true"}  # noqa: RUF012
+    HEADERS = MappingProxyType({"Metadata": "true"})
     VENDOR_NAME = "azure"
 
 
 class AzureFunctionUtilization(CommonUtilization):
     METADATA_HOST = "169.254.169.254"
     METADATA_PATH = "/metadata/instance/compute"
-    METADATA_QUERY = {"api-version": "2017-03-01"}  # noqa: RUF012
+    METADATA_QUERY = MappingProxyType({"api-version": "2017-03-01"})
     EXPECTED_KEYS = ("faas.app_name", "cloud.region")
-    HEADERS = {"Metadata": "true"}  # noqa: RUF012
+    HEADERS = MappingProxyType({"Metadata": "true"})
     VENDOR_NAME = "azurefunction"
 
     @classmethod
@@ -278,9 +279,9 @@ class AzureFunctionUtilization(CommonUtilization):
 class AzureAppServiceUtilization(CommonUtilization):
     METADATA_HOST = "169.254.169.254"
     METADATA_PATH = "/metadata/instance/compute"
-    METADATA_QUERY = {"api-version": "2017-03-01"}  # noqa: RUF012
+    METADATA_QUERY = MappingProxyType({"api-version": "2017-03-01"})
     EXPECTED_KEYS = ("cloud.resource_id",)
-    HEADERS = {"Metadata": "true"}  # noqa: RUF012
+    HEADERS = MappingProxyType({"Metadata": "true"})
     VENDOR_NAME = "azureappservice"
 
     @classmethod
@@ -322,10 +323,10 @@ class AzureAppServiceUtilization(CommonUtilization):
 
 class GCPUtilization(CommonUtilization):
     EXPECTED_KEYS = ("id", "machineType", "name", "zone")
-    HEADERS = {"Metadata-Flavor": "Google"}  # noqa: RUF012
+    HEADERS = MappingProxyType({"Metadata-Flavor": "Google"})
     METADATA_HOST = "metadata.google.internal"
     METADATA_PATH = "/computeMetadata/v1/instance/"
-    METADATA_QUERY = {"recursive": "true"}  # noqa: RUF012
+    METADATA_QUERY = MappingProxyType({"recursive": "true"})
     VENDOR_NAME = "gcp"
 
     @classmethod

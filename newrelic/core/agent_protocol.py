@@ -16,6 +16,7 @@ import logging
 import os
 import sys
 from pathlib import Path
+from types import MappingProxyType
 
 from newrelic import version
 from newrelic.common import system_info
@@ -51,90 +52,94 @@ _logger = logging.getLogger(__name__)
 class AgentProtocol:
     VERSION = 17
 
-    STATUS_CODE_RESPONSE = {  # noqa: RUF012
-        400: DiscardDataForRequest,
-        401: ForceAgentRestart,
-        403: DiscardDataForRequest,
-        404: DiscardDataForRequest,
-        405: DiscardDataForRequest,
-        407: DiscardDataForRequest,
-        408: RetryDataForRequest,
-        409: ForceAgentRestart,
-        410: ForceAgentDisconnect,
-        411: DiscardDataForRequest,
-        413: DiscardDataForRequest,
-        414: DiscardDataForRequest,
-        415: DiscardDataForRequest,
-        417: DiscardDataForRequest,
-        429: RetryDataForRequest,
-        431: DiscardDataForRequest,
-        500: RetryDataForRequest,
-        503: RetryDataForRequest,
-    }
-    LOG_MESSAGES = {  # noqa: RUF012
-        401: (
-            logging.ERROR,
-            (
-                "Data collector is indicating that an incorrect license key "
-                "has been supplied by the agent. Please correct any problem "
-                "with the license key or report this problem to New Relic "
-                "support."
+    STATUS_CODE_RESPONSE = MappingProxyType(
+        {
+            400: DiscardDataForRequest,
+            401: ForceAgentRestart,
+            403: DiscardDataForRequest,
+            404: DiscardDataForRequest,
+            405: DiscardDataForRequest,
+            407: DiscardDataForRequest,
+            408: RetryDataForRequest,
+            409: ForceAgentRestart,
+            410: ForceAgentDisconnect,
+            411: DiscardDataForRequest,
+            413: DiscardDataForRequest,
+            414: DiscardDataForRequest,
+            415: DiscardDataForRequest,
+            417: DiscardDataForRequest,
+            429: RetryDataForRequest,
+            431: DiscardDataForRequest,
+            500: RetryDataForRequest,
+            503: RetryDataForRequest,
+        }
+    )
+    LOG_MESSAGES = MappingProxyType(
+        {
+            401: (
+                logging.ERROR,
+                (
+                    "Data collector is indicating that an incorrect license key "
+                    "has been supplied by the agent. Please correct any problem "
+                    "with the license key or report this problem to New Relic "
+                    "support."
+                ),
             ),
-        ),
-        407: (
-            logging.WARNING,
-            (
-                "Received a proxy authentication required response from the "
-                "data collector. This occurs when the agent has a "
-                "misconfigured proxy. Please check your proxy configuration. "
-                "Proxy user: %(proxy_user)s, proxy host: %(proxy_host)s "
-                "proxy port: %(proxy_port)s."
+            407: (
+                logging.WARNING,
+                (
+                    "Received a proxy authentication required response from the "
+                    "data collector. This occurs when the agent has a "
+                    "misconfigured proxy. Please check your proxy configuration. "
+                    "Proxy user: %(proxy_user)s, proxy host: %(proxy_host)s "
+                    "proxy port: %(proxy_port)s."
+                ),
             ),
-        ),
-        408: (
-            logging.INFO,
-            (
-                "Data collector is indicating that a timeout has occurred. "
-                "Check your network settings. If this keeps occurring on a "
-                "regular basis, please report this problem to New Relic "
-                "support."
+            408: (
+                logging.INFO,
+                (
+                    "Data collector is indicating that a timeout has occurred. "
+                    "Check your network settings. If this keeps occurring on a "
+                    "regular basis, please report this problem to New Relic "
+                    "support."
+                ),
             ),
-        ),
-        409: (
-            logging.INFO,
-            (
-                "An automatic internal agent restart has been "
-                "requested by the data collector for the application "
-                "where the agent run was %(agent_run_id)s."
+            409: (
+                logging.INFO,
+                (
+                    "An automatic internal agent restart has been "
+                    "requested by the data collector for the application "
+                    "where the agent run was %(agent_run_id)s."
+                ),
             ),
-        ),
-        410: (
-            logging.CRITICAL,
-            (
-                "Disconnection of the agent has been requested by the data "
-                "collector for the application where the agent run was "
-                "%(agent_run_id)s. Please contact New Relic support for "
-                "further information. content=%(content)s"
+            410: (
+                logging.CRITICAL,
+                (
+                    "Disconnection of the agent has been requested by the data "
+                    "collector for the application where the agent run was "
+                    "%(agent_run_id)s. Please contact New Relic support for "
+                    "further information. content=%(content)s"
+                ),
             ),
-        ),
-        429: (
-            logging.WARNING,
-            (
-                "The agent received a 429 response from the data collector, "
-                "indicating that it is currently experiencing issues for "
-                "endpoint %(method)s. The agent will retry again on the next "
-                "scheduled harvest."
+            429: (
+                logging.WARNING,
+                (
+                    "The agent received a 429 response from the data collector, "
+                    "indicating that it is currently experiencing issues for "
+                    "endpoint %(method)s. The agent will retry again on the next "
+                    "scheduled harvest."
+                ),
             ),
-        ),
-        "default": (
-            logging.WARNING,
-            (
-                "Received a non 200 or 202 HTTP response from the data "
-                "collector where params=%(params)s, headers=%(headers)s, "
-                "status_code=%(status_code)s and content=%(content)s."
+            "default": (
+                logging.WARNING,
+                (
+                    "Received a non 200 or 202 HTTP response from the data "
+                    "collector where params=%(params)s, headers=%(headers)s, "
+                    "status_code=%(status_code)s and content=%(content)s."
+                ),
             ),
-        ),
-    }
+        }
+    )
     PARAMS_ALLOWLIST = frozenset(("method", "protocol_version", "marshal_format", "run_id"))
 
     SECURITY_SETTINGS = (
@@ -151,12 +156,9 @@ class AgentProtocol:
         "ai_monitoring.basic_telemetry.enabled",
     )
 
-    LOGGER_FUNC_MAPPING = {  # noqa: RUF012
-        "ERROR": _logger.error,
-        "WARN": _logger.warning,
-        "INFO": _logger.info,
-        "VERBOSE": _logger.debug,
-    }
+    LOGGER_FUNC_MAPPING = MappingProxyType(
+        {"ERROR": _logger.error, "WARN": _logger.warning, "INFO": _logger.info, "VERBOSE": _logger.debug}
+    )
 
     def __init__(self, settings, host=None, client_cls=ApplicationModeClient):
         if settings.audit_log_file:

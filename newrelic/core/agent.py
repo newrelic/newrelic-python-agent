@@ -25,6 +25,7 @@ import sys
 import threading
 import time
 import traceback
+from typing import ClassVar
 
 import newrelic
 import newrelic.core.application
@@ -121,8 +122,8 @@ class Agent:
     _instance_lock = threading.Lock()
     _instance = None
     _tracer_provider = None
-    _startup_callables = []  # noqa: RUF012
-    _registration_callables = {}  # noqa: RUF012
+    _startup_callables: ClassVar[list] = []
+    _registration_callables: ClassVar[dict] = {}
 
     @staticmethod
     def run_on_startup(callable):  # noqa: A002

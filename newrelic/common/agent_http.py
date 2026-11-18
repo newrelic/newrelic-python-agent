@@ -19,6 +19,7 @@ import time
 import zlib
 from pathlib import Path
 from pprint import pprint
+from typing import ClassVar
 
 from newrelic import version
 from newrelic.common import certs
@@ -518,7 +519,7 @@ class ApplicationModeClient(SupportabilityMixin, HttpClient):
 
 
 class DeveloperModeClient(SupportabilityMixin, BaseClient):
-    RESPONSES = {  # noqa: RUF012
+    RESPONSES: ClassVar[dict] = {
         "preconnect": {"redirect_host": "fake-collector.newrelic.com"},
         "agent_settings": [],
         "connect": {

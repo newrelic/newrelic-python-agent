@@ -26,7 +26,7 @@ from newrelic.core.config import global_settings
 
 def wrap__load_runtime_context(wrapped, instance, args, kwargs):
     application = application_instance(activate=False)
-    settings = getattr(application, "settings", None) or global_settings()
+    settings = application.settings or global_settings()
 
     if settings and not (settings.opentelemetry.enabled and settings.opentelemetry.traces.enabled):
         return wrapped(*args, **kwargs)
@@ -45,7 +45,7 @@ def wrap_get_global_response_propagator(wrapped, instance, args, kwargs):
         # Force application registration if not already active
         application.activate()
 
-    settings = getattr(application, "settings", None) or global_settings()
+    settings = application.settings or global_settings()
 
     if settings and not (settings.opentelemetry.enabled and settings.opentelemetry.traces.enabled):
         return wrapped(*args, **kwargs)
@@ -82,7 +82,7 @@ def wrap_set_tracer_provider(wrapped, instance, args, kwargs):
         # Force application registration if not already active
         application.activate()
 
-    settings = getattr(application, "settings", None) or global_settings()
+    settings = application.settings or global_settings()
 
     if settings and not (settings.opentelemetry.enabled and settings.opentelemetry.traces.enabled):
         return wrapped(*args, **kwargs)
@@ -101,7 +101,7 @@ def wrap_get_tracer_provider(wrapped, instance, args, kwargs):
         # Force application registration if not already active
         application.activate()
 
-    settings = getattr(application, "settings", None) or global_settings()
+    settings = application.settings or global_settings()
 
     if settings and not (settings.opentelemetry.enabled and settings.opentelemetry.traces.enabled):
         return wrapped(*args, **kwargs)
@@ -138,7 +138,7 @@ def wrap_get_current_span(wrapped, instance, args, kwargs):
     # Do not allow the wrapper to continue if
     # the Hybrid Agent setting is not enabled
     application = application_instance(activate=False)
-    settings = getattr(application, "settings", None) or global_settings()
+    settings = application.settings or global_settings()
 
     if settings and not (settings.opentelemetry.enabled and settings.opentelemetry.traces.enabled):
         return span
@@ -182,7 +182,7 @@ def wrap_start_internal_or_server_span(wrapped, instance, args, kwargs):
     # Do not allow the wrapper to continue if
     # the Hybrid Agent setting is not enabled
     application = application_instance(activate=False)
-    settings = getattr(application, "settings", None) or global_settings()
+    settings = application.settings or global_settings()
 
     if settings and not (settings.opentelemetry.enabled and settings.opentelemetry.traces.enabled):
         return wrapped(*args, **kwargs)
@@ -212,7 +212,7 @@ def wrap__get_span(wrapped, instance, args, kwargs):
     # Do not allow the wrapper to continue if
     # the Hybrid Agent setting is not enabled
     application = application_instance(activate=False)
-    settings = getattr(application, "settings", None) or global_settings()
+    settings = application.settings or global_settings()
 
     if settings and not (settings.opentelemetry.enabled and settings.opentelemetry.traces.enabled):
         return wrapped(*args, **kwargs)
@@ -296,13 +296,8 @@ def _subscribe_meter_provider(settings, meter_provider):
 
     # Exit early if the meter provider already has an `entity.guid` set,
     # since this means it is already configured with a New Relic resource.
-    try:
-        guid = meter_provider._sdk_config.resource.attributes["entity.guid"]
-        if guid:
-            return
-    except (AttributeError, KeyError):
-        # Continue if the attribute is not present
-        pass
+    if hasattr(meter_provider, "_sdk_config") and "entity.guid" in meter_provider._sdk_config.resource.attributes:
+        return
 
     application = application_instance()
     if not application.active:
@@ -312,6 +307,9 @@ def _subscribe_meter_provider(settings, meter_provider):
     from newrelic.api.opentelemetry import meter_provider_resource_and_reader_generator
 
     nr_resource, nr_reader = meter_provider_resource_and_reader_generator(settings)
+
+    if not nr_resource or not nr_reader:
+        return
 
     meter_provider._update_resource(nr_resource)
 
@@ -336,29 +334,28 @@ def wrap_MeterProvider(wrapped, instance, args, kwargs):
         # Force application registration if not already active
         application.activate()
 
-    settings = getattr(application, "settings", None) or global_settings()
+    settings = application.settings or global_settings()
 
     if settings and not (settings.opentelemetry.enabled and settings.opentelemetry.metrics.enabled):
         return wrapped(*args, **kwargs)
 
     # Logic to avoid adding duplicate NR metric readers to the MeterProvider
-    try:
-        guid = instance._sdk_config.resource.attributes["entity.guid"]
-        if guid:
-            return wrapped(*args, **kwargs)
-    except (AttributeError, KeyError):
-        pass
+    if hasattr(instance, "_sdk_config") and "entity.guid" in instance._sdk_config.resource.attributes:
+        return
 
     from newrelic.api.opentelemetry import meter_provider_resource_and_reader_generator
 
     nr_resource, nr_reader = meter_provider_resource_and_reader_generator(settings)
 
-    # Before we run __init__ we need to add our metric reader to arg BEFORE running __init__
+    if not nr_resource or not nr_reader:
+        return
+
+    # Add metric reader to arg BEFORE running __init__
     bound_args = bind_args(wrapped, args, kwargs)
-    metric_readers = bound_args.get("metric_readers", [])
-    nr_reader = [nr_reader]
-    nr_reader.extend(metric_readers)
-    bound_args["metric_readers"] = nr_reader
+    metric_readers = bound_args.get("metric_readers", None)
+    
+    metric_readers = [nr_reader] if not metric_readers else [nr_reader, *metric_readers]
+    bound_args["metric_readers"] = metric_readers
 
     result = wrapped(**bound_args)
 
@@ -381,7 +378,7 @@ def wrap_set_meter_provider(wrapped, instance, args, kwargs):
         # Force application registration if not already active
         application.activate()
 
-    settings = getattr(application, "settings", None) or global_settings()
+    settings = application.settings or global_settings()
 
     if settings and not (settings.opentelemetry.enabled and settings.opentelemetry.metrics.enabled):
         return wrapped(*args, **kwargs)
@@ -405,7 +402,7 @@ def wrap_get_meter_provider(wrapped, instance, args, kwargs):
         # Force application registration if not already active
         application.activate()
 
-    settings = getattr(application, "settings", None) or global_settings()
+    settings = application.settings or global_settings()
 
     if settings and not (settings.opentelemetry.enabled and settings.opentelemetry.metrics.enabled):
         return wrapped(*args, **kwargs)

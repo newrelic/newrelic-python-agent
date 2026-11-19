@@ -1074,5 +1074,6 @@ def meter_provider_resource_and_reader_generator(settings):
             }
         )
         return resource, reader
-    except Exception:
-        raise
+    except Exception as exc:
+        _logger.debug("Unable to generate New Relic meter provider resource and reader: %s", exc)
+        return None, None

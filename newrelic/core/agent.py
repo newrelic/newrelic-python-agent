@@ -263,8 +263,8 @@ class Agent:
                 Agent._meter_provider = NoOpMeterProvider()
             else:
                 try:
-                    # We want to check to see that these can be installed
-                    # at this point, but we will not set up a MeterProvider ourselves.
+                    # We want to check to see that these are installed at
+                    # this point, but we will not set up a MeterProvider ourselves.
                     from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter  # noqa: F401
                     from opentelemetry.sdk.metrics import MeterProvider  # noqa: F401
                 except ImportError:

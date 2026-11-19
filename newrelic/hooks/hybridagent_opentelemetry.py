@@ -353,7 +353,7 @@ def wrap_MeterProvider(wrapped, instance, args, kwargs):
     # Add metric reader to arg BEFORE running __init__
     bound_args = bind_args(wrapped, args, kwargs)
     metric_readers = bound_args.get("metric_readers", None)
-    
+
     metric_readers = [nr_reader] if not metric_readers else [nr_reader, *metric_readers]
     bound_args["metric_readers"] = metric_readers
 

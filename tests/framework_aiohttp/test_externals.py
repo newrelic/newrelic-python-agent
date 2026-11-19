@@ -13,12 +13,18 @@
 # limitations under the License.
 
 
-from testing_support.fixtures import validate_tt_parenting
+from testing_support.fixtures import validate_tt_parenting, dt_enabled
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
+from testing_support.validators.validate_span_events import validate_span_events
 
 expected_parenting = ("TransactionNode", [("FunctionNode", [("ExternalTrace", []), ("ExternalTrace", [])])])
 
 
+@dt_enabled
+@validate_span_events(
+    count=3,
+    expected_agents=["http.statusCode"]
+)
 @validate_tt_parenting(expected_parenting)
 @validate_transaction_metrics("_target_application:multi_fetch_handler", rollup_metrics=[("External/all", 2)])
 def test_multiple_requests_within_transaction(local_server_info, aiohttp_app):

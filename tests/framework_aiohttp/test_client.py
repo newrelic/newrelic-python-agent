@@ -16,9 +16,9 @@ import asyncio
 
 import aiohttp
 import pytest
-from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
-from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.fixtures import dt_enabled
+from testing_support.validators.validate_span_events import validate_span_events
+from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
 from yarl import URL
 
 from newrelic.api.background_task import background_task
@@ -70,10 +70,7 @@ test_matrix = (
 
 @pytest.mark.parametrize("method,exc_expected", test_matrix)
 def test_client_async_await(event_loop, local_server_info, method, exc_expected):
-    @validate_span_events(
-        count=2,
-        expected_agents=["http.statusCode"]
-    )
+    @validate_span_events(count=2, expected_agents=["http.statusCode"])
     @validate_transaction_metrics(
         "fetch_multiple",
         background_task=True,
@@ -89,10 +86,7 @@ def test_client_async_await(event_loop, local_server_info, method, exc_expected)
 def test_client_yarl_async_await(event_loop, local_server_info):
     method = "get"
 
-    @validate_span_events(
-        count=2,
-        expected_agents=["http.statusCode"]
-    )
+    @validate_span_events(count=2, expected_agents=["http.statusCode"])
     @validate_transaction_metrics(
         "fetch_multiple",
         background_task=True,
@@ -125,10 +119,7 @@ def test_await_request_async_await(event_loop, local_server_info, method, exc_ex
             return await result.text()
 
     @dt_enabled
-    @validate_span_events(
-        count=2,
-        expected_agents=["http.statusCode"]
-    )
+    @validate_span_events(count=2, expected_agents=["http.statusCode"])
     @validate_transaction_metrics(
         "test_await_request_async_await",
         background_task=True,
@@ -160,10 +151,7 @@ test_ws_matrix = (
 @pytest.mark.parametrize("method,exc_expected", test_ws_matrix)
 def test_ws_connect_async_await(event_loop, local_server_info, method, exc_expected):
     @dt_enabled
-    @validate_span_events(
-        count=2,
-        expected_agents=["http.statusCode"]
-    )
+    @validate_span_events(count=2, expected_agents=["http.statusCode"])
     @validate_transaction_metrics(
         "fetch_multiple",
         background_task=True,
@@ -194,10 +182,7 @@ def test_create_task_async_await(event_loop, local_server_info, method, exc_expe
         return await asyncio.gather(*coros, return_exceptions=True)
 
     @dt_enabled
-    @validate_span_events(
-        count=2,
-        expected_agents=["http.statusCode"]
-    )
+    @validate_span_events(count=2, expected_agents=["http.statusCode"])
     @validate_transaction_metrics(
         "test_create_task_async_await",
         background_task=True,

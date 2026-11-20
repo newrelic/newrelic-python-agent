@@ -299,7 +299,7 @@ def check_name_length(name, max_length=MAX_ATTRIBUTE_LENGTH, encoding="utf-8"):
 
 
 def check_name_is_string(name):
-    if not isinstance(name, (str, bytes)):
+    if not isinstance(name, str):
         raise NameIsNotStringException
 
 

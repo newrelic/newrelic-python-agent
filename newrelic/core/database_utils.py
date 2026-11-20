@@ -908,8 +908,8 @@ def sql_statement(sql, dbapi2_module):
     return result
 
 
-def generate_dynamodb_arn(host, region=None, account_id=None, target=None):
-    partition = get_aws_partition(host)
+def generate_dynamodb_arn(region=None, account_id=None, target=None, partition=None):
+    partition = partition or get_aws_partition(region)
 
     if partition and region and account_id and target:
         return f"arn:{partition}:dynamodb:{region}:{account_id:012d}:table/{target}"

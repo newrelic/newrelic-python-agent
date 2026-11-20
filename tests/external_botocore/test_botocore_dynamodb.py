@@ -17,6 +17,7 @@ import uuid
 import botocore.session
 import pytest
 from moto import mock_aws
+from testing_support.aws_partitions import PARTITION_REGIONS
 from testing_support.fixtures import dt_enabled, override_application_settings
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
@@ -28,7 +29,6 @@ from newrelic.common.package_version_utils import get_package_version_tuple
 MOTO_VERSION = get_package_version_tuple("moto")
 AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"
 AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"
-AWS_REGION = "us-east-1"
 
 TEST_TABLE = f"python-agent-test-{uuid.uuid4()}"
 
@@ -52,22 +52,13 @@ _dynamodb_rollup_metrics = [
 ]
 
 
-# (primary DNS suffix, expected ARN partition). The client is still served by moto on the standard endpoint; only
-# the endpoint host that the agent inspects is rewritten, so span/metric expectations are identical for every param.
-PARTITION_DNS_SUFFIXES = [
-    pytest.param(".amazonaws.com", "aws", id="aws"),
-    pytest.param(".amazonaws.com.cn", "aws-cn", id="aws-cn"),
-    pytest.param(".csp.hci.ic.gov", "aws-iso-f", id="aws-iso-f"),
-]
-
-
-@pytest.mark.parametrize("dns_suffix,partition", PARTITION_DNS_SUFFIXES)
+@pytest.mark.parametrize("region,partition", PARTITION_REGIONS)
 @pytest.mark.parametrize("account_id", (None, 12345678901))
-def test_dynamodb(account_id, dns_suffix, partition):
+def test_dynamodb(account_id, region, partition):
     expected_aws_agent_attrs = {}
     if account_id:
         expected_aws_agent_attrs = {
-            "cloud.resource_id": f"arn:{partition}:dynamodb:{AWS_REGION}:{account_id:012d}:table/{TEST_TABLE}",
+            "cloud.resource_id": f"arn:{partition}:dynamodb:{region}:{account_id:012d}:table/{TEST_TABLE}",
             "db.system": "DynamoDB",
         }
 
@@ -94,12 +85,10 @@ def test_dynamodb(account_id, dns_suffix, partition):
         session = botocore.session.get_session()
         client = session.create_client(
             "dynamodb",
-            region_name=AWS_REGION,
+            region_name=region,
             aws_access_key_id=AWS_ACCESS_KEY_ID,
             aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
         )
-        # Endpoint.host is the full endpoint URL. Requests keep going to moto; only the host the agent inspects changes.
-        client._endpoint.host = f"https://dynamodb.{AWS_REGION}{dns_suffix}"
 
         # Create table
         resp = client.create_table(

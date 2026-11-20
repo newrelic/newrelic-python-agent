@@ -12,29 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Unambiguous DNS suffix -> ARN partition. See
-# https://docs.aws.amazon.com/IAM/latest/UserGuide/reference-arns.html
-_PARTITION_DNS_SUFFIXES = (
-    (".amazonaws.com.cn", "aws-cn"),
-    (".amazonaws.eu", "aws-eusc"),
-    (".c2s.ic.gov", "aws-iso"),
-    (".sc2s.sgov.gov", "aws-iso-b"),
-    (".cloud.adc-e.uk", "aws-iso-e"),
-    (".csp.hci.ic.gov", "aws-iso-f"),
+# Unambiguous region prefix -> ARN partition. Must be updated when AWS adds a partition. See
+# https://github.com/aws/aws-sdk-js-v3/blob/main/packages-internal/util-endpoints/src/lib/aws/partitions.json
+_PARTITION_REGION_PREFIXES = (
+    ("cn-", "aws-cn"),
+    ("us-gov-", "aws-us-gov"),
+    ("us-iso-", "aws-iso"),
+    ("us-isob-", "aws-iso-b"),
+    ("eu-isoe-", "aws-iso-e"),
+    ("us-isof-", "aws-iso-f"),
+    ("eusc-", "aws-eusc"),
 )
 
 
-def get_aws_partition(host):
-    """Determine the ARN partition from an AWS endpoint host name. Defaults to `aws`."""
-    try:
-        host = host.lower().split("//", 1)[-1].split("/", 1)[0].split(":", 1)[0].rstrip(".")
-        for suffix, partition in _PARTITION_DNS_SUFFIXES:
-            if host.endswith(suffix):
+def get_aws_partition(region):
+    """Determine the ARN partition from an AWS region name. Defaults to `aws`."""
+    if isinstance(region, str):
+        region = region.lower()
+        for prefix, partition in _PARTITION_REGION_PREFIXES:
+            if region.startswith(prefix):
                 return partition
-
-        # GovCloud shares the .amazonaws.com suffix with the standard partition, so the region must be checked.
-        if host.endswith(".amazonaws.com") and any(label.startswith("us-gov-") for label in host.split(".")):
-            return "aws-us-gov"
-    except Exception:
-        pass
     return "aws"

@@ -18,24 +18,22 @@ from newrelic.common.aws import get_aws_partition
 
 
 @pytest.mark.parametrize(
-    "host,expected",
+    "region,expected",
     [
-        ("kinesis.us-east-1.amazonaws.com", "aws"),
-        ("kinesis.eu-west-1.api.aws", "aws"),
-        ("kinesis.us-gov-west-1.amazonaws.com", "aws-us-gov"),
-        ("firehose.cn-north-1.amazonaws.com.cn", "aws-cn"),
-        ("kinesis.eusc-de-east-1.amazonaws.eu", "aws-eusc"),
-        ("kinesis.us-iso-east-1.c2s.ic.gov", "aws-iso"),
-        ("kinesis.us-isob-east-1.sc2s.sgov.gov", "aws-iso-b"),
-        ("kinesis.eu-isoe-west-1.cloud.adc-e.uk", "aws-iso-e"),
-        ("kinesis.us-isof-south-1.csp.hci.ic.gov", "aws-iso-f"),
-        ("KINESIS.CN-NORTH-1.AMAZONAWS.COM.CN:443", "aws-cn"),
-        ("https://kinesis.cn-north-1.amazonaws.com.cn", "aws-cn"),
-        ("https://kinesis.us-gov-west-1.amazonaws.com:443/path", "aws-us-gov"),
-        ("localhost", "aws"),
+        ("us-east-1", "aws"),
+        ("eu-west-1", "aws"),
+        ("cn-north-1", "aws-cn"),
+        ("us-gov-west-1", "aws-us-gov"),
+        ("us-iso-east-1", "aws-iso"),
+        ("us-isob-east-1", "aws-iso-b"),
+        ("eu-isoe-west-1", "aws-iso-e"),
+        ("us-isof-south-1", "aws-iso-f"),
+        ("eusc-de-east-1", "aws-eusc"),
+        ("CN-NORTH-1", "aws-cn"),
+        ("localstack", "aws"),
         ("", "aws"),
         (None, "aws"),
     ],
 )
-def test_get_aws_partition(host, expected):
-    assert get_aws_partition(host) == expected
+def test_get_aws_partition(region, expected):
+    assert get_aws_partition(region) == expected

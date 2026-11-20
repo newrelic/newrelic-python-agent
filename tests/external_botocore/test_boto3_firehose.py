@@ -19,6 +19,7 @@ import boto3
 import botocore
 import pytest
 from moto import mock_aws
+from testing_support.aws_partitions import PARTITION_REGIONS
 from testing_support.fixtures import dt_enabled, override_application_settings
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
@@ -37,17 +38,9 @@ TEST_S3_BUCKET = f"python-agent-test-{uuid.uuid4()}"
 TEST_S3_BUCKET_ARN = f"arn:aws:s3:::{TEST_S3_BUCKET}"
 TEST_S3_ROLE_ARN = "arn:aws:iam::123456789012:role/test-role"
 
-# (primary DNS suffix, expected ARN partition). The client is still served by moto on the standard endpoint; only
-# the endpoint host that the agent inspects is rewritten, so span/metric expectations are identical for every param.
-PARTITION_DNS_SUFFIXES = [
-    pytest.param((".amazonaws.com", "aws"), id="aws"),
-    pytest.param((".amazonaws.com.cn", "aws-cn"), id="aws-cn"),
-    pytest.param((".csp.hci.ic.gov", "aws-iso-f"), id="aws-iso-f"),
-]
-
 
 def expected_agent_attrs(partition):
-    # The agent generates this ARN from the endpoint host for every call that passes DeliveryStreamName.
+    # The agent generates this ARN using the client's partition for every call that passes DeliveryStreamName.
     return {
         "exact_agents": {
             "cloud.platform": "aws_kinesis_delivery_streams",
@@ -109,9 +102,9 @@ def test_instrumented_firehose_methods():
     assert not uninstrumented_methods
 
 
-@pytest.fixture(params=PARTITION_DNS_SUFFIXES)
+@pytest.fixture(params=PARTITION_REGIONS)
 def firehose_client(request):
-    dns_suffix, partition = request.param
+    _, partition = request.param
     with mock_aws():
         client = boto3.client(
             "firehose",
@@ -119,8 +112,9 @@ def firehose_client(request):
             aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
             region_name=AWS_REGION,
         )
-        # Endpoint.host is the full endpoint URL. Requests keep going to moto; only the host the agent inspects changes.
-        client._endpoint.host = f"https://firehose.{AWS_REGION}{dns_suffix}"
+        # Metric names include the endpoint host, so keep the region fixed and only override the partition that
+        # botocore resolved for the client.
+        client.meta._partition = partition
         yield client, partition
 
 
@@ -184,8 +178,14 @@ def _exercise_firehose(client, firehose_destination):
     background_task=True,
 )
 @background_task()
-def test_firehose_error(firehose_client, firehose_destination):
-    client, _ = firehose_client
+@mock_aws
+def test_firehose_error(firehose_destination):
+    client = boto3.client(
+        "firehose",
+        aws_access_key_id=AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+        region_name=AWS_REGION,
+    )
     destination_kwargs = firehose_destination()
 
     # Create stream

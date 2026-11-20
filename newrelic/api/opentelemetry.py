@@ -510,7 +510,7 @@ class Span(otel_api_trace.Span):
             operation = self.attributes.get("db.operation", self.attributes.get("db.operation.name"))
             target = self.attributes.get("aws.dynamodb.table_names", [None])[-1]
             account_id = self.nr_transaction.settings.cloud.aws.account_id
-            resource_id = generate_dynamodb_arn(span_obj_attrs["host"], region, account_id, target)
+            resource_id = generate_dynamodb_arn(region, account_id, target)
             agent_attrs.update(
                 {
                     "aws.operation": operation,

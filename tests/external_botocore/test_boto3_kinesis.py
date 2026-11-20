@@ -19,6 +19,7 @@ import boto3
 import botocore
 import pytest
 from moto import mock_aws
+from testing_support.aws_partitions import PARTITION_REGIONS
 from testing_support.fixtures import dt_enabled, override_application_settings
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
@@ -39,12 +40,6 @@ KINESIS_URL = "kinesis.us-east-1.amazonaws.com"
 KINESIS_CONTROL_URL = f"{AWS_ACCOUNT_ID}.control-kinesis.{AWS_REGION}.amazonaws.com"
 KINESIS_DATA_URL = f"{AWS_ACCOUNT_ID}.data-kinesis.{AWS_REGION}.amazonaws.com"
 TEST_STREAM = f"python-agent-test-{uuid.uuid4()}"
-
-PARTITION_DNS_SUFFIXES = [
-    pytest.param((".amazonaws.com", "aws"), id="aws"),
-    pytest.param((".amazonaws.com.cn", "aws-cn"), id="aws-cn"),
-    pytest.param((".csp.hci.ic.gov", "aws-iso-f"), id="aws-iso-f"),
-]
 
 
 def expected_agent_attrs(partition):
@@ -137,9 +132,9 @@ def test_instrumented_kinesis_methods():
     assert not uninstrumented_methods
 
 
-@pytest.fixture(params=PARTITION_DNS_SUFFIXES)
+@pytest.fixture(params=PARTITION_REGIONS)
 def kinesis_client(request):
-    dns_suffix, partition = request.param
+    _, partition = request.param
     with mock_aws():
         client = boto3.client(
             "kinesis",
@@ -147,8 +142,9 @@ def kinesis_client(request):
             aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
             region_name=AWS_REGION,
         )
-        # Endpoint.host is the full endpoint URL. Requests keep going to moto; only the host the agent inspects changes.
-        client._endpoint.host = f"https://kinesis.{AWS_REGION}{dns_suffix}"
+        # Metric names include the endpoint host, so keep the region fixed and only override the partition that
+        # botocore resolved for the client.
+        client.meta._partition = partition
         yield client, partition
 
 
@@ -157,9 +153,9 @@ def test_kinesis(kinesis_client):
 
     # Spans that carry an ARN: 6 on old botocore (everything is addressed by StreamName), 9 otherwise.
     total_arn_spans = 6 if BOTOCORE_VERSION < (1, 29, 0) else 9
-    # Only create_stream and describe_stream are addressed by StreamName, so the agent builds those ARNs itself from the
-    # endpoint host (partition-aware). Every other call passes StreamARN/ResourceARN, which the agent forwards untouched.
-    # Those ARNs come from moto's responses, which are always "arn:aws:...", regardless of the endpoint host.
+    # Only create_stream and describe_stream are addressed by StreamName, so the agent builds those ARNs itself using the
+    # client's partition. Every other call passes StreamARN/ResourceARN, which the agent forwards untouched. Those ARNs
+    # come from moto's responses, which are always "arn:aws:..." for us-east-1, regardless of the client's partition.
     generated_arn_spans = total_arn_spans if BOTOCORE_VERSION < (1, 29, 0) else 2
     forwarded_arn_spans = total_arn_spans - generated_arn_spans
 
@@ -259,8 +255,14 @@ def _exercise_kinesis(client):
     background_task=True,
 )
 @background_task()
-def test_kinesis_error(kinesis_client):
-    client, _ = kinesis_client
+@mock_aws
+def test_kinesis_error():
+    client = boto3.client(
+        "kinesis",
+        aws_access_key_id=AWS_ACCESS_KEY_ID,
+        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+        region_name=AWS_REGION,
+    )
     # Create stream
     resp = client.create_stream(StreamName=TEST_STREAM, ShardCount=123, StreamModeDetails={"StreamMode": "on-demand"})
     assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200

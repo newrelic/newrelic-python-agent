@@ -23,6 +23,7 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
 
 from newrelic.api.background_task import background_task
 from newrelic.common.package_version_utils import get_package_version_tuple
+from newrelic.hooks.external_botocore import extract_sqs_agent_attrs
 
 MOTO_VERSION = get_package_version_tuple("moto")
 BOTOCORE_VERSION = get_package_version_tuple("botocore")
@@ -157,3 +158,26 @@ def test_sqs_malformed():
     # Malformed send message, uses arg instead of kwarg
     with pytest.raises(TypeError):
         client.send_message("https://fake-url/", MessageBody="hello_world")
+
+
+@pytest.mark.parametrize(
+    "queue_url,region",
+    [
+        pytest.param("https://sqs.us-east-1.amazonaws.com/123456789012/my-queue", "us-east-1", id="aws"),
+        pytest.param("https://sqs.cn-north-1.amazonaws.com.cn/123456789012/my-queue", "cn-north-1", id="aws-cn"),
+        pytest.param("https://sqs.us-gov-west-1.amazonaws.com/123456789012/my-queue", "us-gov-west-1", id="aws-us-gov"),
+        pytest.param("https://sqs.us-east-1.api.aws/123456789012/my-queue", "us-east-1", id="dualstack"),
+    ],
+)
+def test_sqs_queue_url_agent_attrs(queue_url, region):
+    assert extract_sqs_agent_attrs(None, QueueUrl=queue_url) == {
+        "messaging.system": "aws_sqs",
+        "cloud.region": region,
+        "cloud.account.id": "123456789012",
+        "messaging.destination.name": "my-queue",
+    }
+
+
+def test_sqs_queue_url_agent_attrs_no_region():
+    # The legacy queue URL format does not contain the region.
+    assert extract_sqs_agent_attrs(None, QueueUrl="https://queue.amazonaws.com/123456789012/my-queue") == {}

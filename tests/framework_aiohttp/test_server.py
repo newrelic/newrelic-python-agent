@@ -24,6 +24,7 @@ from testing_support.fixtures import (
     override_ignore_status_codes,
 )
 from testing_support.validators.validate_code_level_metrics import validate_code_level_metrics
+from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_errors import validate_transaction_errors
 from testing_support.validators.validate_transaction_event_attributes import validate_transaction_event_attributes
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
@@ -64,6 +65,7 @@ def test_error_exception(method, uri, metric_name, error, status, nr_enabled, ai
         if error:
             errors.append(error)
 
+        @validate_span_events(count=1, expected_agents=["http.statusCode"])
         @validate_transaction_errors(errors=errors, expected_errors=["aiohttp.web_exceptions:HTTPForbidden"])
         @validate_transaction_metrics(
             metric_name,
@@ -138,6 +140,7 @@ def test_simultaneous_requests(method, uri, metric_name, nr_enabled, aiohttp_app
         namespace, func_name = ".".join(func_name[:-1]), func_name[-1]
 
         @override_application_settings({"attributes.include": ["request.*"]})
+        @validate_span_events(count=1, expected_agents=["http.statusCode"])
         @validate_transaction_metrics(
             metric_name,
             scoped_metrics=[(f"Function/{metric_name}", 1)],

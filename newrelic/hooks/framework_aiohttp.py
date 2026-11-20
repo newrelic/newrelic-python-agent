@@ -255,7 +255,7 @@ def _nr_aiohttp_request_wrapper_(wrapped, instance, args, kwargs):
         response = await wrapped(*args, **kwargs)
 
         try:
-            trace.process_response_headers(response.headers.items())
+            trace.process_response(response.status, response.headers.items())
         except:
             pass
 

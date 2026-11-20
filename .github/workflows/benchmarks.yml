@@ -31,9 +31,7 @@ jobs:
   benchmarks:
     runs-on: ubuntu-24.04
     if: always() # Always run, even on cancellation or failure
-    needs:
-      - benchmark
-
+    needs: benchmark
     steps:
       - name: Status
         env:

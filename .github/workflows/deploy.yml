@@ -251,6 +251,13 @@ jobs:
           TAG: ${{ github.ref_name }}
           GH_TOKEN: ${{ github.token }}
 
+      - name: Upload assets to draft release
+        run: |
+          gh release upload "${TAG}" --repo="${GITHUB_REPOSITORY}" --clobber ./dist/*
+        env:
+          TAG: ${{ github.ref_name }}
+          GH_TOKEN: ${{ github.token }}
+
       - name: Upload Package to PyPI
         if: matrix.pypi-instance == 'pypi'
         uses: pypa/gh-action-pypi-publish@v1.14.3

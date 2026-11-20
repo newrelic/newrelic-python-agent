@@ -96,20 +96,19 @@ jobs:
     runs-on: ubuntu-24.04
     # Don't run this job if triggered by Dependabot, but otherwise run it regardless of success or failure
     if: ${{ (github.actor != 'dependabot[bot]') && (success() || failure()) }} # Does not run on cancelled workflows
-    needs:
-      - tests
+    needs: tests
 
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+      - uses: actions/setup-python@v7.1.0
         with:
           python-version: "3.13"
           architecture: x64
 
       - name: Download Coverage Artifacts
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        uses: actions/download-artifact@v8.0.2
         with:
           pattern: coverage-*
           path: ./
@@ -122,7 +121,7 @@ jobs:
           coverage xml
 
       - name: Upload Coverage to Codecov
-        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
+        uses: codecov/codecov-action@v7.1.1
         with:
           files: coverage.xml
           fail_ci_if_error: true
@@ -132,20 +131,19 @@ jobs:
   summary:
     runs-on: ubuntu-24.04
     if: success() || failure() # Does not run on cancelled workflows
-    needs:
-      - tests
+    needs: tests
 
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+      - uses: actions/setup-python@v7.1.0
         with:
           python-version: "3.13"
           architecture: x64
 
       - name: Download Results Artifacts
-        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        uses: actions/download-artifact@v8.0.2
         with:
           pattern: results-*
           path: ./
@@ -177,7 +175,7 @@ jobs:
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
@@ -212,7 +210,7 @@ jobs:
           JOB_CHECK_RUN_ID: ${{ job.check_run_id }}
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -222,7 +220,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -247,7 +245,7 @@ jobs:
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
@@ -282,7 +280,7 @@ jobs:
           JOB_CHECK_RUN_ID: ${{ job.check_run_id }}
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -292,7 +290,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -315,7 +313,7 @@ jobs:
     runs-on: windows-2025
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
@@ -324,7 +322,7 @@ jobs:
           git fetch --tags origin
 
       - name: Install uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        uses: astral-sh/setup-uv@v10.3.3
         with:
           enable-cache: false
 
@@ -358,7 +356,7 @@ jobs:
           JOB_CHECK_RUN_ID: ${{ job.check_run_id }}
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -368,7 +366,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -391,7 +389,7 @@ jobs:
     runs-on: windows-11-arm
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
@@ -400,7 +398,7 @@ jobs:
           git fetch --tags origin
 
       - name: Install uv
-        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        uses: astral-sh/setup-uv@v10.3.3
         with:
           enable-cache: false
 
@@ -438,7 +436,7 @@ jobs:
           JOB_CHECK_RUN_ID: ${{ job.check_run_id }}
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -448,7 +446,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -478,7 +476,7 @@ jobs:
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
@@ -513,7 +511,7 @@ jobs:
           JOB_CHECK_RUN_ID: ${{ job.check_run_id }}
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -523,7 +521,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -566,7 +564,7 @@ jobs:
           --health-retries 10
 
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
@@ -601,7 +599,7 @@ jobs:
           JOB_CHECK_RUN_ID: ${{ job.check_run_id }}
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -611,7 +609,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -651,7 +649,7 @@ jobs:
           --health-retries 16
 
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
@@ -701,7 +699,7 @@ jobs:
           JOB_CHECK_RUN_ID: ${{ job.check_run_id }}
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -711,7 +709,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -751,7 +749,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
@@ -786,7 +784,7 @@ jobs:
           JOB_CHECK_RUN_ID: ${{ job.check_run_id }}
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -796,7 +794,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -837,7 +835,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
@@ -872,7 +870,7 @@ jobs:
           JOB_CHECK_RUN_ID: ${{ job.check_run_id }}
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -882,7 +880,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -907,7 +905,7 @@ jobs:
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
@@ -954,7 +952,7 @@ jobs:
           JOB_CHECK_RUN_ID: ${{ job.check_run_id }}
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -964,7 +962,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -994,7 +992,7 @@ jobs:
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
@@ -1029,7 +1027,7 @@ jobs:
           JOB_CHECK_RUN_ID: ${{ job.check_run_id }}
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1039,7 +1037,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -1089,7 +1087,7 @@ jobs:
           KAFKA_CFG_INTER_BROKER_LISTENER_NAME: L3
 
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
@@ -1124,7 +1122,7 @@ jobs:
           JOB_CHECK_RUN_ID: ${{ job.check_run_id }}
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1134,7 +1132,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -1172,7 +1170,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
@@ -1207,7 +1205,7 @@ jobs:
           JOB_CHECK_RUN_ID: ${{ job.check_run_id }}
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1217,7 +1215,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -1255,7 +1253,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
@@ -1290,7 +1288,7 @@ jobs:
           JOB_CHECK_RUN_ID: ${{ job.check_run_id }}
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1300,7 +1298,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -1338,7 +1336,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
@@ -1373,7 +1371,7 @@ jobs:
           JOB_CHECK_RUN_ID: ${{ job.check_run_id }}
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1383,7 +1381,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -1426,7 +1424,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
@@ -1461,7 +1459,7 @@ jobs:
           JOB_CHECK_RUN_ID: ${{ job.check_run_id }}
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1471,7 +1469,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -1514,7 +1512,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
@@ -1549,7 +1547,7 @@ jobs:
           JOB_CHECK_RUN_ID: ${{ job.check_run_id }}
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1559,7 +1557,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -1584,7 +1582,7 @@ jobs:
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
@@ -1634,7 +1632,7 @@ jobs:
           JOB_CHECK_RUN_ID: ${{ job.check_run_id }}
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1644,7 +1642,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -1691,7 +1689,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
@@ -1726,7 +1724,7 @@ jobs:
           JOB_CHECK_RUN_ID: ${{ job.check_run_id }}
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1736,7 +1734,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -1777,7 +1775,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
@@ -1812,7 +1810,7 @@ jobs:
           JOB_CHECK_RUN_ID: ${{ job.check_run_id }}
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1822,7 +1820,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -1862,7 +1860,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
@@ -1897,7 +1895,7 @@ jobs:
           JOB_CHECK_RUN_ID: ${{ job.check_run_id }}
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1907,7 +1905,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -1947,7 +1945,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
@@ -1982,7 +1980,7 @@ jobs:
           JOB_CHECK_RUN_ID: ${{ job.check_run_id }}
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -1992,7 +1990,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -2031,7 +2029,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
@@ -2066,7 +2064,7 @@ jobs:
           JOB_CHECK_RUN_ID: ${{ job.check_run_id }}
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -2076,7 +2074,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -2114,7 +2112,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
@@ -2149,7 +2147,7 @@ jobs:
           JOB_CHECK_RUN_ID: ${{ job.check_run_id }}
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -2159,7 +2157,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -2184,7 +2182,7 @@ jobs:
         --add-host=host.docker.internal:host-gateway
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
@@ -2238,7 +2236,7 @@ jobs:
           JOB_CHECK_RUN_ID: ${{ job.check_run_id }}
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -2248,7 +2246,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -2279,7 +2277,7 @@ jobs:
     timeout-minutes: 30
 
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
@@ -2335,7 +2333,7 @@ jobs:
           JOB_CHECK_RUN_ID: ${{ job.check_run_id }}
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -2345,7 +2343,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -2390,7 +2388,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
@@ -2425,7 +2423,7 @@ jobs:
           JOB_CHECK_RUN_ID: ${{ job.check_run_id }}
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -2435,7 +2433,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}
@@ -2473,7 +2471,7 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           persist-credentials: false
 
@@ -2508,7 +2506,7 @@ jobs:
           JOB_CHECK_RUN_ID: ${{ job.check_run_id }}
 
       - name: Upload Coverage Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: coverage-${{ github.job }}-${{ strategy.job-index }}
@@ -2518,7 +2516,7 @@ jobs:
           retention-days: 1
 
       - name: Upload Results Artifacts
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        uses: actions/upload-artifact@v7.0.2
         if: always()
         with:
           name: results-${{ github.job }}-${{ strategy.job-index }}

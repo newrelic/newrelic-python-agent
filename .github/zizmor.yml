@@ -20,3 +20,13 @@ rules:
       - benchmarks.yml
       - tests.yml
       - trivy.yml
+
+  # The following two disabled rules are no longer needed in newer versions of zizmor,
+  # but Megalinter v10.2.0 still ships an older copy of zizmor that throws errors.
+  unpinned-uses:
+    # This is covered by the actions.lock file and validated with gh actions-lock as a linter.
+    disable: true
+  unpinned-tools:
+    # Trivy incorrectly detected as an unpinned tool on the version of zizmor in Megalinter.
+    ignore:
+      - trivy.yml

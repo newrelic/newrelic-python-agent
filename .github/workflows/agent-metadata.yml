@@ -81,12 +81,12 @@ jobs:
     environment: pypi
     steps:
       - name: Harden Runner
-        uses: step-security/harden-runner@1d88384fd173af6ecb012dfd0264a306b711241a # v2.22.4
+        uses: step-security/harden-runner@v2.22.4
         with:
           disable-sudo: true
           egress-policy: audit
       - name: Send agent metadata
-        uses: newrelic/agent-metadata-action/send-metadata@39a73d441e2787d13d4de26b1f437025cc34dcc7 # v1.7.1
+        uses: newrelic/agent-metadata-action/send-metadata@v1.7.1
         with:
           newrelic-client-id: ${{ secrets.FC_SYS_ID_CLIENT_ID }}
           newrelic-private-key: ${{ secrets.FC_SYS_ID_PR_KEY }}

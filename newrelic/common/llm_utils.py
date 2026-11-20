@@ -14,9 +14,11 @@
 
 import itertools
 import logging
+import weakref
 
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import ObjectProxy
+from newrelic.core.trace_cache import current_task, trace_cache
 
 _logger = logging.getLogger(__name__)
 
@@ -122,6 +124,15 @@ class AsyncLLMStreamProxy(ObjectProxy):
         self._nr_closed = False
         # Lazily established by __aiter__ or __anext__.
         self._nr_wrapped_iter = None
+        # A stream that is abandoned (a break or a raise in the body of an async for) is never exhausted or
+        # closed, so its trace stays open and is dropped along with its parent. If the task that created the
+        # stream, and so opened its trace, also iterates it, finish it as if it were closed when that task
+        # finishes. Streams consumed from another task are left as they are. The transaction is held weakly so
+        # a proxy kept around by the application doesn't keep a recorded transaction alive.
+        transaction = current_transaction()
+        self._nr_transaction = weakref.ref(transaction) if transaction else None
+        self._nr_creator_task = current_task(trace_cache().asyncio)
+        self._nr_watched_task = None
 
     def __aiter__(self):
         self._nr_wrapped_iter = self.__wrapped__.__aiter__()
@@ -132,16 +143,21 @@ class AsyncLLMStreamProxy(ObjectProxy):
         if self._nr_wrapped_iter is None:
             self._nr_wrapped_iter = self.__wrapped__.__aiter__()
 
+        if self._nr_creator_task is not None:
+            self._nr_watch_task()
+
         try:
             return_val = await self._nr_wrapped_iter.__anext__()
             self._nr_on_stream_chunk(self, return_val)
         except StopAsyncIteration:
+            self._nr_unwatch_task()
             transaction = current_transaction()
             if transaction:
                 self._nr_closed = True
                 self._nr_on_stop_iteration(self, transaction)
             raise
         except Exception:
+            self._nr_unwatch_task()
             transaction = current_transaction()
             if transaction:
                 self._nr_closed = True
@@ -151,6 +167,7 @@ class AsyncLLMStreamProxy(ObjectProxy):
             return return_val
 
     async def aclose(self):
+        self._nr_unwatch_task()
         if self._nr_closed:
             # If we already sent the related events, we can just call aclose as there's nothing left to do.
             return await self.__wrapped__.aclose()
@@ -164,6 +181,7 @@ class AsyncLLMStreamProxy(ObjectProxy):
         return await self.__wrapped__.aclose()
 
     async def athrow(self, *args):
+        self._nr_unwatch_task()
         if self._nr_closed:
             # If we already sent the related events, we can just call athrow as there's nothing left to do.
             return await self.__wrapped__.athrow(*args)
@@ -175,6 +193,38 @@ class AsyncLLMStreamProxy(ObjectProxy):
             self._nr_on_error(self, transaction)
 
         return await self.__wrapped__.athrow(*args)
+
+    def _nr_watch_task(self):
+        # Runs on the first iteration only.
+        creator_task, self._nr_creator_task = self._nr_creator_task, None
+        transaction = self._nr_transaction and self._nr_transaction()
+        if not transaction or creator_task is not current_task(trace_cache().asyncio):
+            return
+        # A transaction started in this task is recorded before the task finishes, so the callback could never
+        # report anything; registering would only keep this stream alive for the life of the task.
+        if getattr(transaction.root_span, "_task", None) is creator_task:
+            return
+
+        trace_cache().add_task_stop_callback(creator_task, self._nr_on_task_done)
+        self._nr_watched_task = creator_task
+
+    def _nr_unwatch_task(self):
+        task, self._nr_watched_task = self._nr_watched_task, None
+        if task is not None:
+            trace_cache().remove_task_stop_callback(task, self._nr_on_task_done)
+
+    def _nr_on_task_done(self, task):
+        self._nr_watched_task = None
+        transaction = self._nr_transaction and self._nr_transaction()
+        if self._nr_closed or not transaction or transaction.state != transaction.STATE_RUNNING:
+            return
+
+        self._nr_closed = True
+        try:
+            # Send the events as if the stream had been closed, matching aclose().
+            self._nr_on_stop_iteration(self, transaction)
+        except Exception:
+            _logger.warning("Unable to record events for an LLM stream abandoned by its task.", exc_info=True)
 
     def __copy__(self):
         # Required to properly interface with itertool.tee, which can be called by LangChain on generators

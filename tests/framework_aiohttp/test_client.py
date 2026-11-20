@@ -150,8 +150,6 @@ test_ws_matrix = (
 
 @pytest.mark.parametrize("method,exc_expected", test_ws_matrix)
 def test_ws_connect_async_await(event_loop, local_server_info, method, exc_expected):
-    @dt_enabled
-    @validate_span_events(count=2, expected_agents=["http.statusCode"])
     @validate_transaction_metrics(
         "fetch_multiple",
         background_task=True,

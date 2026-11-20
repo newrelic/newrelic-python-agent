@@ -30,6 +30,7 @@ from newrelic.api.message_trace import MessageTrace, message_trace
 from newrelic.api.time_trace import current_trace, get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
 from newrelic.common.async_wrapper import async_wrapper as get_async_wrapper
+from newrelic.common.aws import get_aws_partition
 from newrelic.common.object_wrapper import ObjectProxy, function_wrapper, wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
@@ -117,7 +118,8 @@ def extract_kinesis_agent_attrs(instance, *args, **kwargs):
                 region = instance._client_config.region_name
             if stream_name and account_id and region:
                 agent_attrs["cloud.platform"] = "aws_kinesis_data_streams"
-                agent_attrs["cloud.resource_id"] = f"arn:aws:kinesis:{region}:{account_id}:stream/{stream_name}"
+                partition = get_aws_partition(getattr(getattr(instance, "_endpoint", None), "host", None))
+                agent_attrs["cloud.resource_id"] = f"arn:{partition}:kinesis:{region}:{account_id}:stream/{stream_name}"
 
         resource_arn = kwargs.get("ResourceARN", None) or kwargs.get("ConsumerARN", None)
         if resource_arn is not None:
@@ -146,8 +148,9 @@ def extract_firehose_agent_attrs(instance, *args, **kwargs):
                 region = instance._client_config.region_name
             if account_id and region:
                 agent_attrs["cloud.platform"] = "aws_kinesis_delivery_streams"
+                partition = get_aws_partition(getattr(getattr(instance, "_endpoint", None), "host", None))
                 agent_attrs["cloud.resource_id"] = (
-                    f"arn:aws:firehose:{region}:{account_id}:deliverystream/{stream_name}"
+                    f"arn:{partition}:firehose:{region}:{account_id}:deliverystream/{stream_name}"
                 )
     except Exception:
         _logger.debug("Failed to capture AWS Kinesis Delivery Stream (Firehose) info.", exc_info=True)

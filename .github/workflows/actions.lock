@@ -51,6 +51,9 @@ workflows:
         - 'actions/checkout@v7.0.1'
         - 'aquasecurity/trivy-action@v0.36.0'
         - 'github/codeql-action@v4.39.3'
+    '.github/workflows/validate-release-metadata.yml':
+        - 'actions/checkout@v7.0.1'
+        - 'actions/setup-python@v7.1.0'
     '.github/workflows/verify-actions-lockfile.yml':
         - 'actions/checkout@v7.0.1'
 dependencies:

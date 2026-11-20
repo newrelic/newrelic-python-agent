@@ -124,8 +124,7 @@ jobs:
 
   merge:
     runs-on: ubuntu-latest
-    needs:
-      - build
+    needs: build
 
     name: Docker Merge Image
     permissions:

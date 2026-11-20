@@ -55,6 +55,7 @@ def expected_agent_attrs(partition):
         }
     }
 
+
 AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"
 AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"
 AWS_REGION = "us-east-1"

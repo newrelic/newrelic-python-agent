@@ -31,7 +31,7 @@ def get_aws_partition(host):
         for suffix, partition in _PARTITION_DNS_SUFFIXES:
             if host.endswith(suffix):
                 return partition
-            
+
         # GovCloud shares the .amazonaws.com suffix with the standard partition, so the region must be checked.
         if host.endswith(".amazonaws.com") and any(label.startswith("us-gov-") for label in host.split(".")):
             return "aws-us-gov"

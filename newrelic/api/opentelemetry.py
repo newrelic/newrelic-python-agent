@@ -105,6 +105,17 @@ except:
 # ----------------------------------------------
 
 
+def span_kind_mapping(kind):
+    mapping = {
+        otel_api_trace.SpanKind.INTERNAL: "internal",
+        otel_api_trace.SpanKind.SERVER: "server",
+        otel_api_trace.SpanKind.CLIENT: "client",
+        otel_api_trace.SpanKind.PRODUCER: "producer",
+        otel_api_trace.SpanKind.CONSUMER: "consumer",
+    }
+    return mapping.get(kind, "internal")
+
+
 class Span(otel_api_trace.Span):
     def __init__(
         self,
@@ -219,6 +230,9 @@ class Span(otel_api_trace.Span):
             self.nr_trace = nr_trace_type(**trace_kwargs)
 
         self.nr_trace.__enter__()
+
+        # Add span kind as a custom New Relic (user) span attribute
+        self.nr_trace.add_custom_attribute("span.kind", span_kind_mapping(self.kind))
 
         # Add Instrumentation Scope Attributes
         self.nr_trace._add_agent_attribute("otel.scope.name", self.attributes.get("library_name"))
@@ -606,8 +620,11 @@ class Span(otel_api_trace.Span):
         if self.attributes.get("component") and self.attributes.get("component").lower() == "graphql":
             self._graphql_attribute_mapping()
 
-        # Add OpenTelemetry attributes as custom NR trace attributes
+        # Add OpenTelemetry attributes as custom New Relic trace attributes
         self._set_attributes_in_nr(self.attributes)
+
+        # Add span kind as a custom New Relic (user) span attribute
+        self._set_attributes_in_nr({"span.kind": span_kind_mapping(self.kind)})
 
         error = sys.exc_info()
         self.set_status(StatusCode.OK if not error[0] else StatusCode.ERROR)

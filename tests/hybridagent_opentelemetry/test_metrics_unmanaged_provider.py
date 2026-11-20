@@ -86,11 +86,11 @@ def test_set_meter_provider_retrofits_unmanaged_provider():
         _assert_subscribed(provider)
 
         meter = provider.get_meter("unmanaged_provider_meter")
-        counter = meter.create_counter("unmanaged_provider_counter")
+        counter = meter.create_counter("set_meter_provider_counter")
         counter.add(7)
 
         # The validator reads the global MeterProvider, which is not this one
-        assert_counters_exported(provider, metric_events, [(7, {})])
+        assert_counters_exported(provider, metric_events, [("set_meter_provider_counter", 7, {})])
 
 
 def test_get_meter_provider_retrofits_unmanaged_provider():
@@ -111,10 +111,10 @@ def test_get_meter_provider_retrofits_unmanaged_provider():
             _assert_subscribed(provider)
 
             meter = provider.get_meter("unmanaged_provider_meter")
-            counter = meter.create_counter("unmanaged_provider_counter")
+            counter = meter.create_counter("get_meter_provider_counter")
             counter.add(9)
 
             # The validator reads the global MeterProvider, which is not this one
-            assert_counters_exported(provider, metric_events, [(9, {})])
+            assert_counters_exported(provider, metric_events, [("get_meter_provider_counter", 9, {})])
     finally:
         application._agent._meter_provider = previous_meter_provider

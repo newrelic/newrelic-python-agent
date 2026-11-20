@@ -12,12 +12,16 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import logging
+
 from newrelic.api.application import application_instance
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.signature import bind_args
 from newrelic.core.config import global_settings
+
+_logger = logging.getLogger(__name__)
 
 ###########################################
 #   Context Instrumentation
@@ -299,6 +303,16 @@ def _subscribe_meter_provider(settings, meter_provider):
     if hasattr(meter_provider, "_sdk_config") and "entity.guid" in meter_provider._sdk_config.resource.attributes:
         return
 
+    # Check to see if there are any values in the include/exclude
+    # settings.  If so, print a warning that they cannot be added
+    # at this point.
+    if settings.opentelemetry.metrics.exclude or settings.opentelemetry.metrics.include:
+        _logger.warning(
+            "OpenTelemetry metrics include/exclude settings cannot be applied "
+            "since MeterProvider has already been initialized outside of the "
+            "scope of New Relic's instrumentation."
+        )
+
     application = application_instance()
     if not application.active:
         # Force application registration if not already active
@@ -343,19 +357,26 @@ def wrap_MeterProvider(wrapped, instance, args, kwargs):
     if hasattr(instance, "_sdk_config") and "entity.guid" in instance._sdk_config.resource.attributes:
         return
 
-    from newrelic.api.opentelemetry import meter_provider_resource_and_reader_generator
+    from newrelic.api.opentelemetry import meter_provider_resource_and_reader_generator, views_generator
 
     nr_resource, nr_reader = meter_provider_resource_and_reader_generator(settings)
-
     if not nr_resource or not nr_reader:
         return
 
-    # Add metric reader to arg BEFORE running __init__
+    nr_views = views_generator()
+
+    # Before we run __init__ we need to add the following:
+    # 1) New Relic specific metric reader to arg
+    # 2) Included and excluded metrics as defined by the settings
     bound_args = bind_args(wrapped, args, kwargs)
     metric_readers = bound_args.get("metric_readers", None)
 
     metric_readers = [nr_reader] if not metric_readers else [nr_reader, *metric_readers]
     bound_args["metric_readers"] = metric_readers
+
+    views = bound_args.get("views", None)
+    views = nr_views if not views else [*nr_views, *views]
+    bound_args["views"] = views
 
     result = wrapped(**bound_args)
 

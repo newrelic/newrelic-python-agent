@@ -45,6 +45,7 @@ from newrelic.api.message_transaction import MessageTransaction
 from newrelic.api.time_trace import add_custom_span_attribute, current_trace, notice_error
 from newrelic.api.transaction import Sentinel, current_transaction
 from newrelic.api.web_transaction import WebTransaction, WSGIWebTransaction
+from newrelic.common.opentelemetry_conflicting_metrics import NEW_RELIC_METRICS
 from newrelic.core.attribute import sanitize
 from newrelic.core.config import global_settings
 from newrelic.core.database_utils import (
@@ -1077,3 +1078,36 @@ def meter_provider_resource_and_reader_generator(settings):
     except Exception as exc:
         _logger.debug("Unable to generate New Relic meter provider resource and reader: %s", exc)
         return None, None
+
+
+def views_generator():
+    settings = global_settings()
+
+    try:
+        from opentelemetry.sdk.metrics.view import DropAggregation, View
+    except ImportError:
+        # This should not be possible.
+        _logger.warning("OpenTelemetry SDK not available, skipping view generation")
+        return []
+    except Exception as e:
+        _logger.warning("Error generating views: %s", e)
+        return []
+
+    user_include = settings.opentelemetry.metrics.include
+    user_exclude = settings.opentelemetry.metrics.exclude
+
+    # User include set overrides internal exclude set
+    include_mask = NEW_RELIC_METRICS & user_include
+    final_include_set = include_mask ^ user_include
+
+    # User exclude set overrides user include set
+    final_include_set -= user_exclude
+    final_exclude_set = user_exclude | (
+        NEW_RELIC_METRICS - user_include
+    )  # should this be user_include or final_include_set or neither?
+
+    exclude_views = [View(instrument_name=name, aggregation=DropAggregation()) for name in final_exclude_set]
+    include_views = [View(instrument_name=name) for name in final_include_set]
+
+    views = exclude_views + include_views
+    return views

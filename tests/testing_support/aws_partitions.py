@@ -20,3 +20,5 @@ PARTITION_REGIONS = [
     pytest.param("cn-north-1", "aws-cn", id="aws-cn"),
     pytest.param("us-gov-west-1", "aws-us-gov", id="aws-us-gov"),
 ]
+
+PARTITION_REGION_FIXTURE_PARAMS = [pytest.param(param.values, id=param.id) for param in PARTITION_REGIONS]

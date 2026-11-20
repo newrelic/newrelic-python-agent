@@ -19,7 +19,7 @@ import boto3
 import botocore
 import pytest
 from moto import mock_aws
-from testing_support.aws_partitions import PARTITION_REGIONS
+from testing_support.aws_partitions import PARTITION_REGION_FIXTURE_PARAMS
 from testing_support.fixtures import dt_enabled, override_application_settings
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
@@ -102,7 +102,7 @@ def test_instrumented_firehose_methods():
     assert not uninstrumented_methods
 
 
-@pytest.fixture(params=PARTITION_REGIONS)
+@pytest.fixture(params=PARTITION_REGION_FIXTURE_PARAMS)
 def firehose_client(request):
     _, partition = request.param
     with mock_aws():

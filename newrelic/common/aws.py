@@ -15,11 +15,17 @@
 # Unambiguous region prefix -> ARN partition. Must be updated when AWS adds a partition. See
 # https://github.com/aws/aws-sdk-js-v3/blob/main/packages-internal/util-endpoints/src/lib/aws/partitions.json
 _PARTITION_REGION_PREFIXES = (
+    ("aws-cn-global", "aws-cn"),
     ("cn-", "aws-cn"),
+    ("aws-us-gov-global", "aws-us-gov"),
     ("us-gov-", "aws-us-gov"),
+    ("aws-iso-global", "aws-iso"),
     ("us-iso-", "aws-iso"),
+    ("aws-iso-b-global", "aws-iso-b"),
     ("us-isob-", "aws-iso-b"),
+    ("aws-iso-e-global", "aws-iso-e"),
     ("eu-isoe-", "aws-iso-e"),
+    ("aws-iso-f-global", "aws-iso-f"),
     ("us-isof-", "aws-iso-f"),
     ("eusc-", "aws-eusc"),
 )

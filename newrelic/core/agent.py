@@ -242,41 +242,41 @@ class Agent:
             return Agent._meter_provider
 
         with Agent._instance_lock:
-            if not Agent._meter_provider:
-                # Exit early if `opentelemetry-api` is not installed.
-                # This should ideally never get here because `opentelemetry_tracer_provider()`
-                # is run first and already checks for `opentelemetry-api` installation.  If
-                # `opentelemetry-api` is not installed, it will set Hybrid Agent mode to `false`.
+            # Exit early if `opentelemetry-api` is not installed.
+            # This should ideally never get here because `opentelemetry_tracer_provider()`
+            # is run first and already checks for `opentelemetry-api` installation.  If
+            # `opentelemetry-api` is not installed, it will set Hybrid Agent mode to `false`.
+            try:
+                from opentelemetry.metrics import NoOpMeterProvider
+            except ImportError:
+                _logger.warning(
+                    "OpenTelemetry mode has been enabled but `opentelemetry-api` "
+                    "is not installed. The Hybrid Agent cannot run without this."
+                    "Defaulting to New Relic specific monitoring."
+                )
+                settings.opentelemetry.enabled = False
+                return
+
+            if not settings.opentelemetry.metrics.enabled:
+                # Set this to prevent any potential crashes
+                _logger.debug("OpenTelemetry metrics are disabled.")
+                Agent._meter_provider = NoOpMeterProvider()
+            else:
                 try:
-                    from opentelemetry.metrics import NoOpMeterProvider
+                    # We want to check to see that these are installed at
+                    # this point, but we will not set up a MeterProvider ourselves.
+                    from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter  # noqa: F401
+                    from opentelemetry.sdk.metrics import MeterProvider  # noqa: F401
                 except ImportError:
                     _logger.warning(
-                        "OpenTelemetry mode has been enabled but `opentelemetry-api` "
-                        "is not installed. The Hybrid Agent cannot run without this."
-                        "Defaulting to New Relic specific monitoring."
+                        "OpenTelemetry mode has been enabled but `opentelemetry-sdk` and/or "
+                        "`opentelemetry-exporter-otlp-proto-http` is not installed. Falling "
+                        "back to NoOpMeterProvider."
                     )
-                    settings.opentelemetry.enabled = False
-                    return
-
-                if not settings.opentelemetry.metrics.enabled:
-                    # Set this to prevent any potential crashes
-                    _logger.debug("OpenTelemetry metrics are disabled.")
                     Agent._meter_provider = NoOpMeterProvider()
-                else:
-                    try:
-                        from newrelic.api.opentelemetry import meter_provider_creator
-
-                        Agent._meter_provider = meter_provider_creator(settings)
-                    except ImportError:
-                        _logger.warning(
-                            "OpenTelemetry mode has been enabled but `opentelemetry-sdk` and/or "
-                            "`opentelemetry-exporter-otlp-proto-http` is not installed. Falling "
-                            "back to NoOpMeterProvider."
-                        )
-                        Agent._meter_provider = NoOpMeterProvider()
-                    except Exception as exc:
-                        _logger.warning("Failed to create OpenTelemetry meter provider: %s", exc)
-                        Agent._meter_provider = NoOpMeterProvider()
+                except Exception as exc:
+                    _logger.warning("Failed to create OpenTelemetry meter provider: %s", exc)
+                    Agent._meter_provider = NoOpMeterProvider()
 
         return Agent._meter_provider
 

@@ -13,20 +13,49 @@
 # limitations under the License.
 
 import pytest
-import requests
 from testing_support.fixtures import override_generic_settings
 
-from newrelic.api.opentelemetry import meter_provider_creator
+from newrelic.api.opentelemetry import meter_provider_resource_and_reader_generator
 from newrelic.core.config import global_settings
 from newrelic.network.addresses import proxy_details
 
 settings = global_settings()
 
 
+@pytest.fixture
+def meter_provider_new_settings(meter_provider):
+    nr_reader = None
+
+    def _new_meter_reader(new_settings):
+        nonlocal nr_reader
+
+        @override_generic_settings(settings, new_settings)
+        def _meter_reader():
+            _, nr_reader = meter_provider_resource_and_reader_generator(settings)
+            return nr_reader
+
+        nr_reader = _meter_reader()
+        meter_provider.add_metric_reader(nr_reader)
+        meter_provider._metric_readers = [*list(meter_provider._metric_readers), nr_reader]
+        return nr_reader
+
+    yield _new_meter_reader
+
+    if nr_reader is not None:
+        meter_provider.remove_metric_reader(nr_reader)
+        meter_provider._metric_readers.remove(nr_reader)
+
+
+def test_meter_provider_creator_without_proxy(meter_provider):
+    metric_reader = list(meter_provider._metric_readers)[0]
+    session = metric_reader._exporter._client._transport._session
+
+    assert session.proxies == {}
+
+
 @override_generic_settings(
     settings,
     {
-        "opentelemetry.enabled": True,
         "proxy_scheme": "http",
         "proxy_host": "proxy.example.com",
         "proxy_port": 8080,
@@ -34,24 +63,21 @@ settings = global_settings()
         "proxy_pass": "pass",
     },
 )
-def test_meter_provider_creator_with_proxy():
-    provider = meter_provider_creator(settings)
-    metric_reader = provider._metric_readers[-1]
-    session = metric_reader._exporter._client._transport._session
+def test_meter_provider_creator_with_proxy(meter_provider_new_settings):
 
-    assert isinstance(session, requests.Session)
-    assert session.proxies == proxy_details(
+    proxy_settings = {
+        "proxy_scheme": "http",
+        "proxy_host": "proxy.example.com",
+        "proxy_port": 8080,
+        "proxy_user": "user",
+        "proxy_pass": "pass",
+    }
+
+    meter_reader_with_proxy = meter_provider_new_settings(proxy_settings)
+
+    assert meter_reader_with_proxy._exporter._client._transport._session.proxies == proxy_details(
         settings.proxy_scheme, settings.proxy_host, settings.proxy_port, settings.proxy_user, settings.proxy_pass
     )
-
-
-@override_generic_settings(settings, {"opentelemetry.enabled": True})
-def test_meter_provider_creator_without_proxy():
-    provider = meter_provider_creator(settings)
-    metric_reader = provider._metric_readers[-1]
-    session = metric_reader._exporter._client._transport._session
-
-    assert session is None or session.proxies == {}
 
 
 @pytest.mark.parametrize(
@@ -66,21 +92,18 @@ def test_meter_provider_creator_without_proxy():
     ],
 )
 def test_meter_exporter_interval_and_timeout(
-    opentelemetry_metrics_export_interval, opentelemetry_metrics_export_timeout, expected_interval, expected_timeout
+    meter_provider_new_settings,
+    opentelemetry_metrics_export_interval,
+    opentelemetry_metrics_export_timeout,
+    expected_interval,
+    expected_timeout,
 ):
-    @override_generic_settings(
-        settings,
-        {
-            "opentelemetry.enabled": True,
-            "opentelemetry.metrics.export_interval": opentelemetry_metrics_export_interval,
-            "opentelemetry.metrics.export_timeout": opentelemetry_metrics_export_timeout,
-        },
-    )
-    def _test():
-        provider = meter_provider_creator(settings)
-        metric_reader = provider._metric_readers[-1]
+    new_settings = {
+        "opentelemetry.enabled": True,
+        "opentelemetry.metrics.export_interval": opentelemetry_metrics_export_interval,
+        "opentelemetry.metrics.export_timeout": opentelemetry_metrics_export_timeout,
+    }
+    metric_reader = meter_provider_new_settings(new_settings)
 
-        assert metric_reader._export_interval_millis == expected_interval
-        assert metric_reader._export_timeout_millis == expected_timeout
-
-    _test()
+    assert metric_reader._export_interval_millis == expected_interval
+    assert metric_reader._export_timeout_millis == expected_timeout

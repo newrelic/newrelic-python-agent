@@ -17,6 +17,7 @@ import uuid
 import botocore.session
 import pytest
 from moto import mock_aws
+from testing_support.aws_partitions import PARTITION_REGIONS
 from testing_support.fixtures import dt_enabled, override_application_settings
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
@@ -28,7 +29,6 @@ from newrelic.common.package_version_utils import get_package_version_tuple
 MOTO_VERSION = get_package_version_tuple("moto")
 AWS_ACCESS_KEY_ID = "AAAAAAAAAAAACCESSKEY"
 AWS_SECRET_ACCESS_KEY = "AAAAAASECRETKEY"
-AWS_REGION = "us-east-1"
 
 TEST_TABLE = f"python-agent-test-{uuid.uuid4()}"
 
@@ -52,12 +52,13 @@ _dynamodb_rollup_metrics = [
 ]
 
 
+@pytest.mark.parametrize("region,partition", PARTITION_REGIONS)
 @pytest.mark.parametrize("account_id", (None, 12345678901))
-def test_dynamodb(account_id):
+def test_dynamodb(account_id, region, partition):
     expected_aws_agent_attrs = {}
     if account_id:
         expected_aws_agent_attrs = {
-            "cloud.resource_id": f"arn:aws:dynamodb:{AWS_REGION}:{account_id:012d}:table/{TEST_TABLE}",
+            "cloud.resource_id": f"arn:{partition}:dynamodb:{region}:{account_id:012d}:table/{TEST_TABLE}",
             "db.system": "DynamoDB",
         }
 
@@ -84,7 +85,7 @@ def test_dynamodb(account_id):
         session = botocore.session.get_session()
         client = session.create_client(
             "dynamodb",
-            region_name=AWS_REGION,
+            region_name=region,
             aws_access_key_id=AWS_ACCESS_KEY_ID,
             aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
         )

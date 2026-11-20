@@ -21,6 +21,7 @@ import logging
 import re
 import weakref
 
+from newrelic.common.aws import get_aws_partition
 from newrelic.core.config import global_settings
 from newrelic.core.internal_metrics import internal_metric
 
@@ -907,14 +908,8 @@ def sql_statement(sql, dbapi2_module):
     return result
 
 
-def generate_dynamodb_arn(host, region=None, account_id=None, target=None):
-    # There are 3 different partition options.
-    # See  https://docs.aws.amazon.com/IAM/latest/UserGuide/reference-arns.html for details.
-    partition = "aws"
-    if "amazonaws.cn" in host:
-        partition = "aws-cn"
-    elif "amazonaws-us-gov.com" in host:
-        partition = "aws-us-gov"
+def generate_dynamodb_arn(region=None, account_id=None, target=None, partition=None):
+    partition = partition or get_aws_partition(region)
 
     if partition and region and account_id and target:
         return f"arn:{partition}:dynamodb:{region}:{account_id:012d}:table/{target}"

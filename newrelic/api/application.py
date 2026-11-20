@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import threading
+from typing import ClassVar
 
 import newrelic.api.import_hook
 import newrelic.core.agent
@@ -21,9 +22,9 @@ import newrelic.core.config
 
 class Application:
     _lock = threading.Lock()
-    _instances = {}  # noqa: RUF012
+    _instances: ClassVar[dict] = {}
 
-    _delayed_callables = {}  # noqa: RUF012
+    _delayed_callables: ClassVar[dict] = {}
 
     @staticmethod
     def _instance(name, activate=True):

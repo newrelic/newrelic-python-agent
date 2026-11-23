@@ -12,12 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ---
-name: Deploy
+name: Release Step 2 - Deploy Release
 
 on:
-  release:
-    types:
-      - published
+  workflow_dispatch: # Must be dispatched on a tag
+    inputs:
+      deployment_target:
+        description: "Deployment Target"
+        required: true
+        type: choice
+        default: pypi
+        options:
+          - pypi # Production deployment (official repository only)
+          # On forks, uncomment these options to make them available
+          # - testpypi # Upload to test.pypi.org for testing (forks only)
+          # - github-only # Skip package indexes and only publish the Github release (forks only)
 
 permissions:
   contents: read
@@ -27,34 +36,19 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Validate release before anything is built or published.
   validate:
-    name: Validate agent config schema version
-    runs-on: ubuntu-24.04
-    # Runs before anything is built or published. The Fleet Control backend
-    # rejects metadata whose schema changed without a version bump, but that
-    # happens in update-agent-metadata, after PyPI is already published.
-    # The schema itself is still only registered after publish succeeds.
-
-    steps:
-      - uses: actions/checkout@v7.0.1
-        with:
-          persist-credentials: false
-          fetch-depth: 0
-
-      - uses: actions/setup-python@v7.1.0
-        with:
-          python-version: "3.13"
-
-      - name: Check schema version was bumped since previous release
-        env:
-          RELEASE_TAG: ${{ github.ref_name }}
-        run: |
-          prev=$(git describe --tags --abbrev=0 --match='v*' "${RELEASE_TAG}^")
-          echo "Comparing against previous release tag: ${prev}"
-          python3 .fleetControl/schemaGeneration/bump-schema-version.py --since="${prev}"
+    name: Validate Release
+    permissions:
+      contents: write # Draft releases are only visible to tokens with write access
+    uses: $/.github/workflows/validate-release-metadata.yml
+    with:
+      tag: ${{ github.ref_name }}
+      require_draft: true
+      deployment_target: ${{ inputs.deployment_target }}
 
   build-wheels-linux:
-    name: Build wheels for ${{ matrix.python }}-linux_${{ matrix.arch }}
+    name: Build Wheels for ${{ matrix.python }}-linux_${{ matrix.arch }}
     needs: validate
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 10
@@ -95,7 +89,7 @@ jobs:
           retention-days: 1
 
   build-wheels-windows:
-    name: Build wheels for ${{ matrix.python }}-win_${{ matrix.arch }}
+    name: Build Wheels for ${{ matrix.python }}-win_${{ matrix.arch }}
     needs: validate
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 10
@@ -135,7 +129,7 @@ jobs:
           retention-days: 1
 
   build-sdist:
-    name: Build sdist
+    name: Build Source Distribution
     needs: validate
     runs-on: ubuntu-24.04
 
@@ -184,28 +178,19 @@ jobs:
           retention-days: 1
 
   publish:
-    name: Publish release
+    name: Publish Release
     needs:
       - validate
       - build-wheels-linux
       - build-wheels-windows
       - build-sdist
     runs-on: ubuntu-24.04
-    environment: ${{ matrix.pypi-instance }}
+    environment: ${{ inputs.deployment_target }}
     permissions:
       contents: write # Publish artifacts to Github releases
       id-token: write # Sign attestations, and PyPI trusted publishing
       attestations: write # Create build provenance attestations
       artifact-metadata: write # Record artifact metadata for attestations
-
-    strategy:
-      matrix:
-        pypi-instance:
-          - pypi
-          # Valid values for deployment are:
-          # - "pypi" for production
-          # - "testpypi" for testing
-          # - "build-only" to skip publishing and only test builds.
 
     steps:
       - uses: actions/download-artifact@v8.0.2
@@ -228,14 +213,14 @@ jobs:
             ./dist/*.tar.gz
 
       - name: Login to AWS
-        if: matrix.pypi-instance == 'pypi'
+        if: inputs.deployment_target == 'pypi'
         uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
           aws-region: ${{ secrets.AWS_REGION }}
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
 
       - name: Upload Package to S3
-        if: matrix.pypi-instance == 'pypi'
+        if: inputs.deployment_target == 'pypi'
         run: |
           tarball="$(basename ./dist/*.tar.gz)"
           aws s3 cp "./checksums/${tarball}.md5" "${S3_DST}/${tarball}.md5"
@@ -244,7 +229,9 @@ jobs:
         env:
           S3_DST: s3://nr-downloads-main/python_agent/release
 
-      - name: Upload assets to draft release
+      # Only used for Forks to test release assets without relying on PyPI or TestPyPI
+      - name: Upload Assets to Draft Release (Forks Only)
+        if: inputs.deployment_target == 'github-only'
         run: |
           gh release upload "${TAG}" --repo="${GITHUB_REPOSITORY}" --clobber ./dist/*
         env:
@@ -252,28 +239,35 @@ jobs:
           GH_TOKEN: ${{ github.token }}
 
       - name: Upload Package to PyPI
-        if: matrix.pypi-instance == 'pypi'
+        if: inputs.deployment_target == 'pypi'
         uses: pypa/gh-action-pypi-publish@v1.14.3
         with:
           # skip-existing lets a re-run finish an upload that stopped partway.
           skip-existing: true
 
       - name: Upload Package to TestPyPI
-        if: matrix.pypi-instance == 'testpypi'
+        if: inputs.deployment_target == 'testpypi'
         uses: pypa/gh-action-pypi-publish@v1.14.3
         with:
           repository-url: https://test.pypi.org/legacy/
           # skip-existing lets a re-run finish an upload that stopped partway.
           skip-existing: true
 
-      - name: Wait for release to be available
-        if: matrix.pypi-instance == 'pypi'
+      - name: Publish Draft Release
+        run: |
+          gh release edit "${TAG}" --repo="${GITHUB_REPOSITORY}" --draft=false
+        env:
+          TAG: ${{ github.ref_name }}
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Wait for Release to be Available
+        if: inputs.deployment_target == 'pypi'
         id: wait
         run: |
           sleep 60
 
-      - name: Create release tags for Lambda and K8s Init Containers
-        if: matrix.pypi-instance == 'pypi'
+      - name: Create Release Tags for Lambda and K8s Init Containers
+        if: inputs.deployment_target == 'pypi'
         run: |
           RELEASE_TITLE="New Relic Python Agent ${GITHUB_REF_NAME}.0"
           RELEASE_TAG="${GITHUB_REF_NAME}.0_python"
@@ -287,6 +281,7 @@ jobs:
 
   update-agent-metadata:
     needs: publish
+    if: inputs.deployment_target == 'pypi' # Only registered for production releases
     permissions:
       contents: read
     uses: $/.github/workflows/agent-metadata.yml

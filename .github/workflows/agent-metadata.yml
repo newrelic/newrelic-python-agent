@@ -78,7 +78,7 @@ concurrency:
 jobs:
   send-agent-metadata:
     runs-on: ubuntu-latest
-    environment: pypi
+    environment: agent-metadata
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@v2.22.4

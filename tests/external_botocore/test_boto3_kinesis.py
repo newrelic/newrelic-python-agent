@@ -19,6 +19,7 @@ import boto3
 import botocore
 import pytest
 from moto import mock_aws
+from testing_support.aws_partitions import PARTITION_REGION_FIXTURE_PARAMS
 from testing_support.fixtures import dt_enabled, override_application_settings
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_metrics import validate_transaction_metrics
@@ -39,12 +40,16 @@ KINESIS_URL = "kinesis.us-east-1.amazonaws.com"
 KINESIS_CONTROL_URL = f"{AWS_ACCOUNT_ID}.control-kinesis.{AWS_REGION}.amazonaws.com"
 KINESIS_DATA_URL = f"{AWS_ACCOUNT_ID}.data-kinesis.{AWS_REGION}.amazonaws.com"
 TEST_STREAM = f"python-agent-test-{uuid.uuid4()}"
-EXPECTED_AGENT_ATTRS = {
-    "exact_agents": {
-        "cloud.platform": "aws_kinesis_data_streams",
-        "cloud.resource_id": f"arn:aws:kinesis:us-east-1:{AWS_ACCOUNT_ID}:stream/{TEST_STREAM}",
+
+
+def expected_agent_attrs(partition):
+    return {
+        "exact_agents": {
+            "cloud.platform": "aws_kinesis_data_streams",
+            "cloud.resource_id": f"arn:{partition}:kinesis:{AWS_REGION}:{AWS_ACCOUNT_ID}:stream/{TEST_STREAM}",
+        }
     }
-}
+
 
 UNINSTRUMENTED_KINESIS_METHODS = ("generate_presigned_url", "close", "get_waiter", "can_paginate", "get_paginator")
 
@@ -127,26 +132,59 @@ def test_instrumented_kinesis_methods():
     assert not uninstrumented_methods
 
 
-@override_application_settings({"cloud.aws.account_id": 123456789012})
-@dt_enabled
-@validate_span_events(exact_agents={"aws.operation": "CreateStream"}, count=1)
-@validate_span_events(**EXPECTED_AGENT_ATTRS, count=6 if BOTOCORE_VERSION < (1, 29, 0) else 9)
-@validate_span_events(exact_agents={"aws.operation": "DeleteStream"}, count=1)
-@validate_transaction_metrics(
-    "test_boto3_kinesis:test_kinesis",
-    scoped_metrics=_kinesis_scoped_metrics,
-    rollup_metrics=_kinesis_rollup_metrics,
-    background_task=True,
-)
-@background_task()
-@mock_aws
-def test_kinesis():
-    client = boto3.client(
-        "kinesis",
-        aws_access_key_id=AWS_ACCESS_KEY_ID,
-        aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-        region_name=AWS_REGION,
+@pytest.fixture(params=PARTITION_REGION_FIXTURE_PARAMS)
+def kinesis_client(request):
+    _, partition = request.param
+    with mock_aws():
+        client = boto3.client(
+            "kinesis",
+            aws_access_key_id=AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+            region_name=AWS_REGION,
+        )
+        # Metric names include the endpoint host, so keep the region fixed and only override the partition that
+        # botocore resolved for the client.
+        client.meta._partition = partition
+        yield client, partition
+
+
+def test_kinesis(kinesis_client):
+    client, partition = kinesis_client
+
+    # Spans that carry an ARN: 6 on old botocore (everything is addressed by StreamName), 9 otherwise.
+    total_arn_spans = 6 if BOTOCORE_VERSION < (1, 29, 0) else 9
+    # Only create_stream and describe_stream are addressed by StreamName, so the agent builds those ARNs itself using the
+    # client's partition. Every other call passes StreamARN/ResourceARN, which the agent forwards untouched. Those ARNs
+    # come from moto's responses, which are always "arn:aws:..." for us-east-1, regardless of the client's partition.
+    generated_arn_spans = total_arn_spans if BOTOCORE_VERSION < (1, 29, 0) else 2
+    forwarded_arn_spans = total_arn_spans - generated_arn_spans
+
+    @override_application_settings({"cloud.aws.account_id": AWS_ACCOUNT_ID})
+    @dt_enabled
+    @validate_span_events(exact_agents={"aws.operation": "CreateStream"}, count=1)
+    @validate_span_events(exact_agents={"aws.operation": "DeleteStream"}, count=1)
+    @validate_transaction_metrics(
+        "test_boto3_kinesis:test_kinesis",
+        scoped_metrics=_kinesis_scoped_metrics,
+        rollup_metrics=_kinesis_rollup_metrics,
+        background_task=True,
     )
+    @background_task(name="test_boto3_kinesis:test_kinesis")
+    def _test():
+        _exercise_kinesis(client)
+
+    if partition == "aws":
+        # Generated and forwarded ARNs are identical, so a single validator covers all of them.
+        _test = validate_span_events(**expected_agent_attrs("aws"), count=total_arn_spans)(_test)
+    else:
+        _test = validate_span_events(**expected_agent_attrs(partition), count=generated_arn_spans)(_test)
+        if forwarded_arn_spans:
+            _test = validate_span_events(**expected_agent_attrs("aws"), count=forwarded_arn_spans)(_test)
+
+    _test()
+
+
+def _exercise_kinesis(client):
     # Create stream
     resp = client.create_stream(StreamName=TEST_STREAM, ShardCount=123, StreamModeDetails={"StreamMode": "on-demand"})
     assert resp["ResponseMetadata"]["HTTPStatusCode"] == 200

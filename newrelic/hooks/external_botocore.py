@@ -30,13 +30,14 @@ from newrelic.api.message_trace import MessageTrace, message_trace
 from newrelic.api.time_trace import current_trace, get_trace_linking_metadata
 from newrelic.api.transaction import current_transaction
 from newrelic.common.async_wrapper import async_wrapper as get_async_wrapper
+from newrelic.common.aws import get_aws_partition
 from newrelic.common.object_wrapper import ObjectProxy, function_wrapper, wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
 from newrelic.common.signature import bind_args
 from newrelic.core.config import global_settings
 from newrelic.core.database_utils import generate_dynamodb_arn
 
-QUEUE_URL_PATTERN = re.compile(r"https://sqs.([\w\d-]+).amazonaws.com/(\d+)/([^/]+)")
+QUEUE_URL_PATTERN = re.compile(r"https://sqs\.([\w-]+)\.[\w.-]+/(\d+)/([^/]+)")
 BOTOCORE_VERSION = get_package_version("botocore")
 
 
@@ -79,6 +80,11 @@ def extract_firehose(*args, **kwargs):
     return kwargs.get("DeliveryStreamName", None)
 
 
+def _get_aws_partition(instance, region):
+    # Prefer the partition botocore resolved for the client, otherwise derive it from the region.
+    return getattr(getattr(instance, "meta", None), "partition", None) or get_aws_partition(region)
+
+
 def extract_sqs_agent_attrs(instance, *args, **kwargs):
     # Try to capture AWS SQS info as agent attributes. Log any exception to debug.
     agent_attrs = {}
@@ -117,7 +123,8 @@ def extract_kinesis_agent_attrs(instance, *args, **kwargs):
                 region = instance._client_config.region_name
             if stream_name and account_id and region:
                 agent_attrs["cloud.platform"] = "aws_kinesis_data_streams"
-                agent_attrs["cloud.resource_id"] = f"arn:aws:kinesis:{region}:{account_id}:stream/{stream_name}"
+                partition = _get_aws_partition(instance, region)
+                agent_attrs["cloud.resource_id"] = f"arn:{partition}:kinesis:{region}:{account_id}:stream/{stream_name}"
 
         resource_arn = kwargs.get("ResourceARN", None) or kwargs.get("ConsumerARN", None)
         if resource_arn is not None:
@@ -146,8 +153,9 @@ def extract_firehose_agent_attrs(instance, *args, **kwargs):
                 region = instance._client_config.region_name
             if account_id and region:
                 agent_attrs["cloud.platform"] = "aws_kinesis_delivery_streams"
+                partition = _get_aws_partition(instance, region)
                 agent_attrs["cloud.resource_id"] = (
-                    f"arn:aws:firehose:{region}:{account_id}:deliverystream/{stream_name}"
+                    f"arn:{partition}:firehose:{region}:{account_id}:deliverystream/{stream_name}"
                 )
     except Exception:
         _logger.debug("Failed to capture AWS Kinesis Delivery Stream (Firehose) info.", exc_info=True)
@@ -1449,8 +1457,8 @@ def dynamodb_datastore_trace(
             settings = transaction.settings or global_settings()
             account_id = settings.cloud.aws.account_id if settings and settings.cloud.aws.account_id else None
 
-            _db_host = getattr(getattr(instance, "_endpoint", None), "host", None)
-            resource_id = generate_dynamodb_arn(_db_host, region, account_id, _target)
+            partition = _get_aws_partition(instance, region)
+            resource_id = generate_dynamodb_arn(region, account_id, _target, partition=partition)
             if resource_id:
                 agent_attrs["cloud.resource_id"] = resource_id
 

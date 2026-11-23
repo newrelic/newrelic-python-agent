@@ -44,7 +44,7 @@ jobs:
           persist-credentials: false
 
       # Pinned extension tag is immutable, hash not required
-      - run: gh extension install github/gh-actions-lock --pin v0.4.1
+      - run: gh extension install github/gh-actions-lock --pin v0.5.1
 
       # Offline coverage check of every workflow, including trivy.yml.
       - name: Verify lockfile coverage (offline)

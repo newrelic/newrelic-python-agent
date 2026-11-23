@@ -52,6 +52,12 @@ def _parametrize_test(test):
 _aws_tests = [_parametrize_test(t) for t in _load_tests()]
 
 
+@pytest.fixture(scope="module", autouse=True)
+def reset_aws_utilization_state():
+    # Clear cache state to ensure all tests run without race conditions.
+    AWSUtilization._utilization_data = None
+
+
 # Order of tests:
 # 1. auth token fails, no cached data
 # 2. Auth token succeeds, but utilization data is invalid, no cached data

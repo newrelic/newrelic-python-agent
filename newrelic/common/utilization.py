@@ -19,6 +19,7 @@ import re
 import socket
 import string
 from pathlib import Path
+from types import MappingProxyType
 
 from newrelic.common.agent_http import InsecureHttpClient
 from newrelic.common.encoding_utils import json_decode
@@ -161,7 +162,7 @@ class AWSUtilization(CommonUtilization):
     METADATA_HOST = "169.254.169.254"
     METADATA_PATH = "/latest/dynamic/instance-identity/document"
     METADATA_TOKEN_PATH = "/latest/api/token"  # noqa: S105
-    HEADERS = {"X-aws-ec2-metadata-token-ttl-seconds": "21600"}  # noqa: RUF012
+    TOKEN_HEADERS = MappingProxyType({"X-aws-ec2-metadata-token-ttl-seconds": "21600"})
     VENDOR_NAME = "aws"
     _utilization_data = None
 
@@ -170,7 +171,7 @@ class AWSUtilization(CommonUtilization):
         try:
             with cls.CLIENT_CLS(cls.METADATA_HOST, timeout=cls.FETCH_TIMEOUT) as client:
                 resp = client.send_request(
-                    method="PUT", path=cls.METADATA_TOKEN_PATH, params=cls.METADATA_QUERY, headers=cls.HEADERS
+                    method="PUT", path=cls.METADATA_TOKEN_PATH, params=cls.METADATA_QUERY, headers=cls.TOKEN_HEADERS
                 )
             if not 200 <= resp[0] < 300:
                 raise ValueError(resp[0])
@@ -188,10 +189,10 @@ class AWSUtilization(CommonUtilization):
             if authToken is None:
                 metadata = cls._utilization_data
                 return metadata
-            cls.HEADERS = {"X-aws-ec2-metadata-token": authToken}
+            auth_headers = {"X-aws-ec2-metadata-token": authToken}
             with cls.CLIENT_CLS(cls.METADATA_HOST, timeout=cls.FETCH_TIMEOUT) as client:
                 resp = client.send_request(
-                    method="GET", path=cls.METADATA_PATH, params=cls.METADATA_QUERY, headers=cls.HEADERS
+                    method="GET", path=cls.METADATA_PATH, params=cls.METADATA_QUERY, headers=auth_headers
                 )
             if not 200 <= resp[0] < 300:
                 raise ValueError(resp[0])
@@ -219,18 +220,18 @@ class AWSUtilization(CommonUtilization):
 class AzureUtilization(CommonUtilization):
     METADATA_HOST = "169.254.169.254"
     METADATA_PATH = "/metadata/instance/compute"
-    METADATA_QUERY = {"api-version": "2017-03-01"}  # noqa: RUF012
+    METADATA_QUERY = MappingProxyType({"api-version": "2017-03-01"})
     EXPECTED_KEYS = ("location", "name", "vmId", "vmSize")
-    HEADERS = {"Metadata": "true"}  # noqa: RUF012
+    HEADERS = MappingProxyType({"Metadata": "true"})
     VENDOR_NAME = "azure"
 
 
 class AzureFunctionUtilization(CommonUtilization):
     METADATA_HOST = "169.254.169.254"
     METADATA_PATH = "/metadata/instance/compute"
-    METADATA_QUERY = {"api-version": "2017-03-01"}  # noqa: RUF012
+    METADATA_QUERY = MappingProxyType({"api-version": "2017-03-01"})
     EXPECTED_KEYS = ("faas.app_name", "cloud.region")
-    HEADERS = {"Metadata": "true"}  # noqa: RUF012
+    HEADERS = MappingProxyType({"Metadata": "true"})
     VENDOR_NAME = "azurefunction"
 
     @classmethod
@@ -278,9 +279,9 @@ class AzureFunctionUtilization(CommonUtilization):
 class AzureAppServiceUtilization(CommonUtilization):
     METADATA_HOST = "169.254.169.254"
     METADATA_PATH = "/metadata/instance/compute"
-    METADATA_QUERY = {"api-version": "2017-03-01"}  # noqa: RUF012
+    METADATA_QUERY = MappingProxyType({"api-version": "2017-03-01"})
     EXPECTED_KEYS = ("cloud.resource_id",)
-    HEADERS = {"Metadata": "true"}  # noqa: RUF012
+    HEADERS = MappingProxyType({"Metadata": "true"})
     VENDOR_NAME = "azureappservice"
 
     @classmethod
@@ -322,10 +323,10 @@ class AzureAppServiceUtilization(CommonUtilization):
 
 class GCPUtilization(CommonUtilization):
     EXPECTED_KEYS = ("id", "machineType", "name", "zone")
-    HEADERS = {"Metadata-Flavor": "Google"}  # noqa: RUF012
+    HEADERS = MappingProxyType({"Metadata-Flavor": "Google"})
     METADATA_HOST = "metadata.google.internal"
     METADATA_PATH = "/computeMetadata/v1/instance/"
-    METADATA_QUERY = {"recursive": "true"}  # noqa: RUF012
+    METADATA_QUERY = MappingProxyType({"recursive": "true"})
     VENDOR_NAME = "gcp"
 
     @classmethod

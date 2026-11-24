@@ -537,7 +537,9 @@ class EventHarvestConfigHarvestLimitSettings(Settings):
 
 
 class OpentelemetrySettings(Settings):
-    pass
+    @property
+    def untruncated_attributes(self):
+        return self._untruncated_attributes
 
 
 class OpentelemetryTracesSettings(Settings):
@@ -1285,6 +1287,7 @@ _settings.opentelemetry.traces.exclude = _environ_as_comma_separated_set(
 _settings.opentelemetry.traces.include = _environ_as_comma_separated_set(
     "NEW_RELIC_OPENTELEMETRY_TRACES_INCLUDE", default=""
 )
+_settings.opentelemetry._untruncated_attributes = frozenset()
 
 
 def global_settings():
@@ -1379,6 +1382,9 @@ def global_settings_dump(settings_object=None, serializable=False):
     del settings["encoding_key"]
     del settings["js_agent_loader"]
     del settings["js_agent_file"]
+
+    # The untruncated attribute names come from the connect response and are not meant to be reported back.
+    settings.pop("opentelemetry.untruncated_attributes", None)
 
     # If proxy credentials are included in the settings, we obfuscate
     # them before sending, rather than deleting.
@@ -1514,6 +1520,9 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
     # collect_ai is the account-level toggle to disable AIM
     collect_ai = server_side_config.pop("collect_ai", None)
 
+    # gen_ai holds the list of OTel span attribute names that should not be truncated
+    gen_ai_config = server_side_config.pop("gen_ai", None)
+
     # Overlay with agent server side configuration settings.
 
     for name, value in agent_config.items():
@@ -1552,6 +1561,15 @@ def apply_server_side_settings(server_side_config=None, settings=_settings):
     if span_event_harvest_limit is not None:
         apply_config_setting(
             settings_snapshot, "event_harvest_config.harvest_limits.span_event_data", span_event_harvest_limit
+        )
+
+    # Override the untruncated attribute names, ignoring anything that is not a collection of attribute name strings.
+    untruncated_attributes = gen_ai_config.get("untruncated_attributes") if isinstance(gen_ai_config, dict) else None
+    if isinstance(untruncated_attributes, (list, tuple, set, frozenset)):
+        apply_config_setting(
+            settings_snapshot,
+            "opentelemetry._untruncated_attributes",
+            frozenset(name for name in untruncated_attributes if isinstance(name, str)),
         )
 
     # If record_content is unset after the SSC overlay, force it to True only if aim.enabled is True locally

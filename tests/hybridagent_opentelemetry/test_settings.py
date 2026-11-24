@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import copy
+
 import pytest
 from opentelemetry import trace
-from testing_support.fixtures import dt_enabled, override_application_settings
+from testing_support.fixtures import dt_enabled, override_application_settings, override_generic_settings
 from testing_support.util import conditional_decorator
 from testing_support.validators.validate_span_events import validate_span_events
 from testing_support.validators.validate_transaction_count import validate_transaction_count
@@ -22,6 +24,8 @@ from testing_support.validators.validate_transaction_metrics import validate_tra
 
 from newrelic.api.time_trace import current_trace
 from newrelic.api.transaction import current_transaction
+from newrelic.core.agent_protocol import AgentProtocol
+from newrelic.core.config import finalize_application_settings, global_settings, global_settings_dump
 
 
 @pytest.mark.parametrize(
@@ -164,3 +168,46 @@ def test_opentelemetry_tracer_nested_include_and_exclude():
                     assert nr_baz_trace_guid == baz_span_id
 
     _test()
+
+
+GEN_AI_UNTRUNCATED_ATTRIBUTES = [
+    "gen_ai.input.messages",
+    "gen_ai.output.messages",
+    "gen_ai.system_instructions",
+    "gen_ai.tool.definitions",
+]
+
+
+@pytest.mark.parametrize(
+    "connect_response_fields,expected",
+    [
+        # The connect response does not send gen_ai.
+        ({}, frozenset()),
+        (
+            {"gen_ai": {"untruncated_attributes": GEN_AI_UNTRUNCATED_ATTRIBUTES}},
+            frozenset(GEN_AI_UNTRUNCATED_ATTRIBUTES),
+        ),
+        # The list is replaced as a whole, so only the names that are sent are applied.
+        ({"gen_ai": {"untruncated_attributes": ["gen_ai.input.messages"]}}, frozenset({"gen_ai.input.messages"})),
+        # Anything that is not a collection of attribute name strings is ignored.
+        ({"gen_ai": {}}, frozenset()),
+        ({"gen_ai": None}, frozenset()),
+        ({"gen_ai": "gen_ai.input.messages"}, frozenset()),
+        ({"gen_ai": {"untruncated_attributes": None}}, frozenset()),
+        ({"gen_ai": {"untruncated_attributes": "gen_ai.input.messages"}}, frozenset()),
+        (
+            {"gen_ai": {"untruncated_attributes": ["gen_ai.input.messages", 1, None]}},
+            frozenset({"gen_ai.input.messages"}),
+        ),
+    ],
+)
+def test_gen_ai_untruncated_attributes_connect_response(connect_response_fields, expected):
+    settings = finalize_application_settings(copy.deepcopy(connect_response_fields))
+
+    assert settings.opentelemetry.untruncated_attributes == expected
+
+    # The agent_settings call reports this exact dump, and these names must never be reported back.
+    settings_dump = global_settings_dump(settings, serializable=True)
+    assert "opentelemetry.untruncated_attributes" not in settings_dump
+    # gen_ai is applied separately, so the generic overlay must not add it to the settings.
+    assert not any(key.startswith("gen_ai") for key in settings_dump)

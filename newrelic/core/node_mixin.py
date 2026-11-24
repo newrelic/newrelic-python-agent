@@ -17,15 +17,18 @@ from newrelic.core.attribute_filter import DST_SPAN_EVENTS, DST_TRANSACTION_SEGM
 
 
 class GenericNodeMixin:
-    @property
-    def processed_user_attributes(self):
+    def processed_user_attributes(self, settings):
         if hasattr(self, "_processed_user_attributes"):
             return self._processed_user_attributes
 
+        # Certain OTel gen_ai span attrs are exempt from truncation
+        is_opentelemetry_span = "otel.scope.name" in getattr(self, "agent_attributes", {})
+        untruncated_attributes = settings.opentelemetry.untruncated_attributes if is_opentelemetry_span else frozenset()
         self._processed_user_attributes = u_attrs = {}
         user_attributes = getattr(self, "user_attributes", u_attrs)
         for k, v in user_attributes.items():
-            k, v = attribute.process_user_attribute(k, v)
+            max_length = None if k in untruncated_attributes else attribute.MAX_ATTRIBUTE_LENGTH
+            k, v = attribute.process_user_attribute(k, v, max_length=max_length)
             # Only record the attribute if it passes processing.
             # Failures return (None, None).
             if k:
@@ -42,7 +45,7 @@ class GenericNodeMixin:
 
         _params.update(
             attribute.resolve_user_attributes(
-                self.processed_user_attributes, settings.attribute_filter, DST_TRANSACTION_SEGMENTS
+                self.processed_user_attributes(settings), settings.attribute_filter, DST_TRANSACTION_SEGMENTS
             )
         )
 
@@ -69,7 +72,7 @@ class GenericNodeMixin:
         )
 
         u_attrs = attribute.resolve_user_attributes(
-            self.processed_user_attributes, settings.attribute_filter, DST_SPAN_EVENTS, attr_class=attr_class
+            self.processed_user_attributes(settings), settings.attribute_filter, DST_SPAN_EVENTS, attr_class=attr_class
         )
         # intrinsics, user attrs, agent attrs
         base_span_event = [i_attrs, u_attrs, a_attrs]

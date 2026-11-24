@@ -302,6 +302,8 @@ class AgentProtocol:
         connect_settings["browser_monitoring.debug"] = settings["browser_monitoring.debug"]
         connect_settings["browser_monitoring.version"] = settings["browser_monitoring.version"]
         connect_settings["ai_monitoring.enabled"] = settings["ai_monitoring.enabled"]
+        connect_settings["opentelemetry.enabled"] = settings["opentelemetry.enabled"]
+        connect_settings["opentelemetry.traces.enabled"] = settings["opentelemetry.traces.enabled"]
         connect_settings["distributed_tracing.sampler.adaptive_sampling_target"] = settings[
             "distributed_tracing.sampler.adaptive_sampling_target"
         ]

@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import pytest
 from opentelemetry import trace
-from testing_support.fixtures import dt_enabled
+from testing_support.fixtures import dt_enabled, override_application_settings
 from testing_support.validators.validate_span_events import validate_span_events
 
 from newrelic.api.background_task import background_task
@@ -109,6 +110,54 @@ def test_trace_with_opentelemetry_to_newrelic(tracer):
             newrelic_function_trace()
 
     newrelic_background_task()
+
+
+@pytest.mark.parametrize(
+    "untruncated_attributes,expected_length",
+    [
+        # The connect response lists this attribute, so it is never truncated.
+        (frozenset({"gen_ai.input.messages"}), 5000),
+        # Without the connect response listing it, the default attribute limit applies.
+        (frozenset(), 255),
+    ],
+)
+def test_untruncated_span_attributes(tracer, untruncated_attributes, expected_length):
+    @override_application_settings({"opentelemetry._untruncated_attributes": untruncated_attributes})
+    @dt_enabled
+    @validate_span_events(
+        count=1,
+        exact_intrinsics={"name": "Function/opentelemetry_span"},
+        # Attributes that are not listed are always truncated.
+        exact_users={"gen_ai.input.messages": "a" * expected_length, "other_attribute": "b" * 255},
+    )
+    @background_task()
+    def _test():
+        with tracer.start_as_current_span(
+            "opentelemetry_span", attributes={"gen_ai.input.messages": "a" * 5000, "other_attribute": "b" * 1000}
+        ):
+            pass
+
+    _test()
+
+
+def test_untruncated_attributes_only_apply_to_opentelemetry_spans():
+    @function_trace(name="nr_function")
+    def nr_function():
+        add_custom_span_attribute("gen_ai.input.messages", "a" * 5000)
+
+    @override_application_settings({"opentelemetry._untruncated_attributes": frozenset({"gen_ai.input.messages"})})
+    @dt_enabled
+    @validate_span_events(
+        count=1,
+        exact_intrinsics={"name": "Function/nr_function"},
+        # A listed attribute on a span that did not come from OpenTelemetry is still truncated.
+        exact_users={"gen_ai.input.messages": "a" * 255},
+    )
+    @background_task()
+    def _test():
+        nr_function()
+
+    _test()
 
 
 def test_update_name(tracer):

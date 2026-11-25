@@ -32,7 +32,7 @@ def test_observable_gauge(meter_provider):
 
     meter = meter_provider.get_meter("test_meter")
     meter.create_observable_gauge(
-        name="test_observable_gauge", callbacks=[callback], description="A test observable gauge", unit="[degF]"
+        name="test_observable_gauge", callbacks=[callback], description="A test observable gauge", unit="Cel"
     )
 
 

@@ -111,7 +111,7 @@ def test_histogram_invalid_values(meter_provider):
 )
 def test_gauge(meter_provider):
     meter = meter_provider.get_meter("test_meter")
-    gauge = meter.create_gauge(name="test_gauge", description="A test gauge", unit="[degF]")
+    gauge = meter.create_gauge(name="test_gauge", description="A test gauge", unit="Cel")
     gauge.set(65)
     gauge.set(75)
     gauge.set(10, {"attribute_key": "attribute_value"})

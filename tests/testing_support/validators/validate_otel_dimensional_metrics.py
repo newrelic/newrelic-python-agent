@@ -28,6 +28,7 @@ def attribute_parser(attributes):
 def metric_parser(export_request):
     parsed_counter_data = []
     parsed_histogram_data = []
+    parsed_gauge_data = []
     for request in export_request:
         for scope_metric in request.resource_metrics[-1].scope_metrics:
             for metric in scope_metric.metrics:
@@ -42,9 +43,14 @@ def metric_parser(export_request):
                         parsed_histogram_data.append(
                             (metric.name, data_point.count, data_point.sum, data_point.min, data_point.max, attr)
                         )
+                if metric.HasField("gauge"):  # Gauges and ObservableGauges
+                    for data_point in metric.gauge.data_points:
+                        value = data_point.as_int or data_point.as_double
+                        attr = attribute_parser(data_point.attributes)
+                        parsed_gauge_data.append((metric.name, value, attr))
 
     # Fill in with remaining metric types
-    return (parsed_counter_data, parsed_histogram_data)
+    return (parsed_counter_data, parsed_histogram_data, parsed_gauge_data)
 
 
 def assert_matches_expected(parsed_data, expected):
@@ -111,7 +117,7 @@ def assert_counters_exported(meter_provider, metric_events, counter_expected):
     for metric_reader in meter_provider._all_metric_readers:
         metric_reader.collect()
 
-        parsed_counter_data, _ = metric_parser(metric_events)
+        parsed_counter_data, _, _ = metric_parser(metric_events)
 
         if not counter_expected:
             continue
@@ -130,6 +136,7 @@ def assert_counters_exported(meter_provider, metric_events, counter_expected):
 def validate_otel_dimensional_metrics(
     counter_expected=None,  # [(name, value, attributes), ...]
     histogram_expected=None,  # [(name, count, sum, min, max, attributes), ...]
+    gauge_expected=None,  # [(name, value, attributes), ...]
 ):
     @function_wrapper
     def _validate_wrapper(wrapped, instance, args, kwargs):
@@ -143,7 +150,11 @@ def validate_otel_dimensional_metrics(
 
             if histogram_expected:
                 assert_temporality(metric_events, histogram_expected)
-                _, parsed_histogram_data = metric_parser(metric_events)
+                _, parsed_histogram_data, _ = metric_parser(metric_events)
                 assert_matches_expected(parsed_histogram_data, histogram_expected)
+
+            if gauge_expected:
+                _, _, parsed_gauge_data = metric_parser(metric_events)
+                assert_matches_expected(parsed_gauge_data, gauge_expected)
 
     return _validate_wrapper

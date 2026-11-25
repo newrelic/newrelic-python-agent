@@ -17,6 +17,7 @@
 # - Counter
 # - UpDownCounter
 # - Histogram
+# - Gauge
 
 from testing_support.validators.validate_otel_dimensional_metrics import validate_otel_dimensional_metrics
 
@@ -103,3 +104,33 @@ def test_histogram_invalid_values(meter_provider):
     histogram.record(float("inf"))
     histogram.record(float("nan"))
     histogram.record(3)
+
+
+@validate_otel_dimensional_metrics(
+    gauge_expected=[("test_gauge", 75, {}), ("test_gauge", -5, {"attribute_key": "attribute_value"})]
+)
+def test_gauge(meter_provider):
+    meter = meter_provider.get_meter("test_meter")
+    gauge = meter.create_gauge(name="test_gauge", description="A test gauge", unit="[degF]")
+    gauge.set(65)
+    gauge.set(75)
+    gauge.set(10, {"attribute_key": "attribute_value"})
+    gauge.set(-5, {"attribute_key": "attribute_value"})
+
+
+@validate_otel_dimensional_metrics(gauge_expected=[("test_gauge_float_values", 2.25, {})])
+def test_gauge_float_values(meter_provider):
+    meter = meter_provider.get_meter("test_meter")
+    gauge = meter.create_gauge(name="test_gauge_float_values")
+    gauge.set(1.5)
+    gauge.set(2.25)
+
+
+# The SDK drops non-finite amounts on a Gauge. The valid amount is set first, because the last one set wins.
+@validate_otel_dimensional_metrics(gauge_expected=[("test_gauge_invalid_values", 2, {})])
+def test_gauge_invalid_values(meter_provider):
+    meter = meter_provider.get_meter("test_meter")
+    gauge = meter.create_gauge(name="test_gauge_invalid_values")
+    gauge.set(2)
+    gauge.set(float("inf"))
+    gauge.set(float("nan"))

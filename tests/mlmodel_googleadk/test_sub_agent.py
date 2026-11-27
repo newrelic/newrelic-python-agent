@@ -13,7 +13,7 @@
 # limitations under the License.
 
 from _test_sub_agent import CHILD_AGENT_NAME, PARENT_AGENT_NAME, PROMPT, build_sub_agent, sub_agent_recorded_event
-from conftest import EXPECTED_VERSION_METRICS
+from conftest import EXPECTED_BASIC_VERSION_METRICS, EXPECTED_VERSION_METRICS
 from testing_support.fixtures import dt_enabled, reset_core_stats_engine, validate_attributes
 from testing_support.ml_testing_utils import (
     disabled_ai_monitoring_record_content_settings,
@@ -85,7 +85,7 @@ def test_sub_agent(exercise_agent, set_trace_info):
     "test_sub_agent:test_sub_agent_no_content",
     scoped_metrics=EXPECTED_METRICS,
     rollup_metrics=EXPECTED_METRICS,
-    custom_metrics=EXPECTED_VERSION_METRICS,
+    custom_metrics=EXPECTED_BASIC_VERSION_METRICS,
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])

@@ -35,6 +35,7 @@ _default_settings = {
     "debug.record_transaction_failure": True,
     "ml_insights_events.enabled": True,
     "ai_monitoring.enabled": True,
+    "ai_monitoring.record_content.enabled": True,
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
@@ -47,7 +48,9 @@ VCR_IGNORED_HEADERS.extend(["accept-encoding"])
 VCR_MATCHERS["body"] = gemini_match_body_no_thought_signature
 
 GEMINI_VERSION = google.genai.__version__
+GEMINI_VERSION_3_4_PLUS = tuple(map(int, GEMINI_VERSION.split(".")[:2])) >= (3, 4)
 GEMINI_VERSION_METRIC = f"Supportability/Python/ML/Gemini/{GEMINI_VERSION}"
+GEMINI_VERSION_METRIC_BASIC = f"{GEMINI_VERSION_METRIC}/Basic"
 
 
 @pytest.fixture
@@ -136,7 +139,10 @@ def exercise_text_model(loop, gemini_client, is_async, is_chat, is_streaming):
 
 
 @pytest.fixture
-def exercise_embedding_model(loop, gemini_client, is_async):
+def exercise_embedding_model(loop, gemini_client, is_async, is_vertex, request):
+    if is_vertex and GEMINI_VERSION_3_4_PLUS:
+        pytest.skip("Embeddings in Vertex AI do not support standard API keys for Gemini version 3.4+")
+
     # Pick the sync or async client for convenience
     client = gemini_client.aio if is_async else gemini_client
 

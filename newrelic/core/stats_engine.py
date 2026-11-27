@@ -55,6 +55,9 @@ from newrelic.core.stack_trace import exception_stack
 
 _logger = logging.getLogger(__name__)
 
+# Only warn once when span data cannot be forwarded to LaunchDarkly.
+LAUNCH_DARKLY_UNAVAILABLE_WARNED = False
+
 EVENT_HARVEST_METHODS = {
     "analytic_event_data": ("reset_transaction_events", "reset_synthetics_events"),
     "span_event_data": ("reset_span_events",),
@@ -1190,35 +1193,12 @@ class StatsEngine:
 
         if settings.distributed_tracing.enabled and settings.span_events.enabled and settings.collect_span_events:
             if settings.launch_darkly_integration.enabled and settings.opentelemetry.enabled:
-                from ldobserve import observe
-                from opentelemetry.trace.span import SpanContext, TraceFlags, TraceState
-
-                # Send span data to Darkly
-                for event in transaction.span_events(self.__settings):
-                    if isinstance(event[-1], dict):
-                        i_attrs, u_attrs, a_attrs = event
-                    else:
-                        i_attrs, u_attrs, a_attrs = event[0]
-                    # Skip spans that originally came from OTel.
-                    if "otel.scope.name" not in a_attrs:
-                        attrs = {}
-                        attrs.update(u_attrs)
-                        attrs.update(a_attrs)
-                        attrs.update(i_attrs)
-                        context = SpanContext(
-                            trace_id=int(attrs.pop("traceId"), 16),
-                            span_id=int(attrs.pop("guid"), 16),
-                            is_remote=True if transaction.parent_span else False,
-                            trace_flags=TraceFlags(0x1 if attrs.pop("sampled") else 0x0),
-                            trace_state=TraceState(),
-                        )
-                        # timestamp in ms converted to ns
-                        span = observe._instance._tracer.start_span(
-                            i_attrs["name"], attributes=attrs, start_time=int(attrs["timestamp"] * 10**6)
-                        )
-                        span._context = context
-                        # timestamp in ms + duration in s converted to ns
-                        span.end(end_time=int(attrs["timestamp"] * 10**6 + attrs["duration"] * 10**9))
+                try:
+                    self._forward_launch_darkly_span_data(transaction)
+                except Exception:
+                    _logger.exception(
+                        "Failed to forward span data to LaunchDarkly. Please report this issue to New Relic Support."
+                    )
 
             if settings.infinite_tracing.enabled:
                 for event in transaction.span_protos(settings):
@@ -2111,6 +2091,100 @@ class StatsEngine:
         copy = object.__new__(StatsEngineSnapshot)
         copy.__dict__.update(self.__dict__)
         return copy
+
+    def _forward_launch_darkly_span_data(self, transaction):
+        """Transform and forward Span data to LaunchDarkly through the ldclient.observe instance."""
+
+        if not self.__settings:
+            return
+
+        settings = self.__settings
+
+        try:
+            from ldobserve import observe
+            from opentelemetry.context import Context
+            from opentelemetry.trace import NonRecordingSpan, set_span_in_context
+            from opentelemetry.trace.span import SpanContext, TraceFlags, TraceState
+        except ImportError:
+            _warn_launch_darkly_unavailable(
+                "The launchdarkly-observability package is not installed. Span data will not be sent to LaunchDarkly."
+            )
+            return
+
+        tracer = getattr(getattr(observe, "_instance", None), "_tracer", None)
+        if tracer is None:
+            _warn_launch_darkly_unavailable(
+                "The LaunchDarkly ObservabilityPlugin has not been registered. Span data will not be sent to LaunchDarkly."
+            )
+            return
+
+        # Send span data to Darkly
+        for event in transaction.span_events(self.__settings):
+            if isinstance(event[-1], dict):
+                i_attrs, u_attrs, a_attrs = event
+            else:
+                i_attrs, u_attrs, a_attrs = event[0]
+
+            # Skip spans that originally came from OTel.
+            if "otel.scope.name" not in a_attrs:
+                attrs = {}
+                attrs.update(u_attrs)
+                attrs.update(a_attrs)
+                attrs.update(i_attrs)
+
+                # Add the entity_guid and a link to this application in the New Relic UI.
+                if settings.entity_guid:
+                    attrs["nr.entity.guid"] = settings.entity_guid
+                if settings.entity_url:
+                    attrs["nr.entity.url"] = settings.entity_url
+
+                trace_id = int(attrs.pop("traceId"), 16)
+                trace_flags = TraceFlags(0x1 if attrs.pop("sampled") else 0x0)
+
+                # Identity of the span being forwarded (the child), using New Relic's ids.
+                child_span_context = SpanContext(
+                    trace_id=trace_id,
+                    span_id=int(attrs.pop("guid"), 16),
+                    is_remote=False,
+                    trace_flags=trace_flags,
+                    trace_state=TraceState(),
+                )
+
+                # OTel takes a new span's parent from the current span of the Context passed to start_span(), so
+                # wrap the parent's identity in a NonRecordingSpan placeholder and place it in a Context. The parent
+                # is remote if it's the inbound distributed trace parent. Without a parent, use an empty Context so
+                # no unrelated active OTel span is used as the parent.
+                parent_guid = attrs.get("parentId")
+                if parent_guid:
+                    parent_span_context = SpanContext(
+                        trace_id=trace_id,
+                        span_id=int(parent_guid, 16),
+                        is_remote=parent_guid == transaction.parent_span,
+                        trace_flags=trace_flags,
+                        trace_state=TraceState(),
+                    )
+                    parent_otel_context = set_span_in_context(NonRecordingSpan(parent_span_context))
+                else:
+                    parent_otel_context = Context()
+
+                # timestamp in ms converted to ns
+                span = tracer.start_span(
+                    i_attrs["name"],
+                    context=parent_otel_context,
+                    attributes=attrs,
+                    start_time=int(attrs["timestamp"] * 10**6),
+                )
+                # Replace the ids OTel generated for the child with New Relic's ids.
+                span._context = child_span_context
+                # timestamp in ms + duration in s converted to ns
+                span.end(end_time=int(attrs["timestamp"] * 10**6 + attrs["duration"] * 10**9))
+
+
+def _warn_launch_darkly_unavailable(message):
+    global LAUNCH_DARKLY_UNAVAILABLE_WARNED
+    if not LAUNCH_DARKLY_UNAVAILABLE_WARNED:
+        LAUNCH_DARKLY_UNAVAILABLE_WARNED = True
+        _logger.warning(message)
 
 
 class StatsEngineSnapshot(StatsEngine):

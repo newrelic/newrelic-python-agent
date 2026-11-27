@@ -21,6 +21,8 @@ updates:
       interval: "daily"
     # Disable all pull requests for dependencies
     open-pull-requests-limit: 0
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: "docker"
     directory: "/"
@@ -28,16 +30,30 @@ updates:
       interval: "daily"
     # Disable all pull requests for dependencies
     open-pull-requests-limit: 0
+    cooldown:
+      default-days: 7
+
+  # Hash-locked release build and test dependencies (uv pip compile .in -> .txt)
+  - package-ecosystem: "uv"
+    directory: "/.github/requirements/"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 1
+    groups:
+      release_requirements:
+        patterns:
+          - "*"
+    cooldown:
+      default-days: 7
 
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 1
-    ignore:
-      # Ignore cibuildwheel to avoid dropped Python versions
-      - dependency-name: "pypa/cibuildwheel*"
     groups:
       github_actions:
         patterns:
           - "*"
+    cooldown:
+      default-days: 7

@@ -25,7 +25,6 @@ from newrelic.api.transaction import current_transaction
 from newrelic.common.llm_utils import AsyncLLMStreamProxy, LLMStreamProxy
 from newrelic.common.object_wrapper import wrap_function_wrapper
 from newrelic.common.package_version_utils import get_package_version
-from newrelic.core.config import global_settings
 
 GEMINI_VERSION = get_package_version("google-genai")
 EXCEPTION_HANDLING_FAILURE_LOG_MESSAGE = (
@@ -48,8 +47,8 @@ def wrap_embed_content_sync(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    settings = transaction.settings or global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI
@@ -92,8 +91,8 @@ async def wrap_embed_content_async(wrapped, instance, args, kwargs):
     if not transaction:
         return await wrapped(*args, **kwargs)
 
-    settings = transaction.settings or global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI
@@ -132,7 +131,7 @@ async def wrap_embed_content_async(wrapped, instance, args, kwargs):
 
 
 def _record_embedding_error(*, transaction, embedding_id, linking_metadata, kwargs, ft, exc):
-    settings = transaction.settings or global_settings()
+    settings = getattr(transaction, "settings", None)
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
 
@@ -187,7 +186,7 @@ def _record_embedding_error(*, transaction, embedding_id, linking_metadata, kwar
 
 
 def _record_embedding_success(*, transaction, embedding_id, linking_metadata, kwargs, ft):
-    settings = transaction.settings or global_settings()
+    settings = getattr(transaction, "settings", None)
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
     try:
@@ -242,8 +241,8 @@ def wrap_generate_content_sync(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    settings = transaction.settings or global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI
@@ -293,8 +292,8 @@ def wrap_generate_content_stream_sync(wrapped, instance, args, kwargs):
     if not transaction:
         return wrapped(*args, **kwargs)
 
-    settings = transaction.settings or global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI
@@ -361,8 +360,8 @@ async def wrap_generate_content_async(wrapped, instance, args, kwargs):
     if not transaction:
         return await wrapped(*args, **kwargs)
 
-    settings = transaction.settings or global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI
@@ -411,8 +410,8 @@ async def wrap_generate_content_stream_async(wrapped, instance, args, kwargs):
     if not transaction:
         return await wrapped(*args, **kwargs)
 
-    settings = transaction.settings or global_settings()
-    if not settings.ai_monitoring.enabled:
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
         return await wrapped(*args, **kwargs)
 
     # Framework metric also used for entity tagging in the UI
@@ -599,7 +598,7 @@ def _record_generation_success(
     request_timestamp=None,
     time_to_first_token=None,
 ):
-    settings = transaction.settings or global_settings()
+    settings = getattr(transaction, "settings", None)
     span_id = linking_metadata.get("span.id")
     trace_id = linking_metadata.get("trace.id")
     try:
@@ -850,7 +849,7 @@ def create_chat_completion_message_event(
     request_timestamp=None,
 ):
     try:
-        settings = transaction.settings or global_settings()
+        settings = getattr(transaction, "settings", None)
 
         if input_message_content:
             message_id = str(uuid.uuid4())

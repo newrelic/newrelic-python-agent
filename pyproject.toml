@@ -203,6 +203,7 @@ ignore = [
     "PLR0913", # too-many-arguments
     "PLR0915",  # too-many-statements
     "E501",  # line-too-long (line length handled by formatter)
+    "ICN001",  # unconventional-import-alias
     # Ruff recommended linter rules to disable when using formatter
     "W191",  # tab-indentation
     "E111",  # indentation-with-invalid-multiple

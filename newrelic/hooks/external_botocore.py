@@ -209,7 +209,7 @@ def create_chat_completion_message_event(
     if not transaction:
         return
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
+    settings = getattr(transaction, "settings", None)
 
     for index, message in enumerate(input_message_list):
         content = message.get("content", "")
@@ -731,8 +731,8 @@ def wrap_bedrock_runtime_invoke_model(response_streaming=False):
         if not transaction:
             return wrapped(*args, **kwargs)
 
-        settings = transaction.settings if transaction.settings is not None else global_settings()
-        if not settings.ai_monitoring.enabled:
+        settings = getattr(transaction, "settings", None)
+        if not settings or not settings.ai_monitoring.enabled:
             return wrapped(*args, **kwargs)
 
         request_timestamp = int(1000.0 * time.time())
@@ -886,8 +886,8 @@ def wrap_bedrock_runtime_converse(response_streaming=False):
         if not transaction:
             return wrapped(*args, **kwargs)
 
-        settings = transaction.settings or global_settings()
-        if not settings.ai_monitoring.enabled:
+        settings = getattr(transaction, "settings", None)
+        if not settings or not settings.ai_monitoring.enabled:
             return wrapped(*args, **kwargs)
 
         request_timestamp = int(1000.0 * time.time())
@@ -1232,7 +1232,7 @@ class AsyncLLMStreamProxy(BedrockRecordEventMixin, ObjectProxy):
 def handle_embedding_event(transaction, bedrock_attrs):
     embedding_id = str(uuid.uuid4())
 
-    settings = transaction.settings if transaction.settings is not None else global_settings()
+    settings = getattr(transaction, "settings", None)
 
     # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
     custom_attrs_dict = transaction._custom_params
@@ -1276,7 +1276,7 @@ def handle_embedding_event(transaction, bedrock_attrs):
 
 
 def handle_chat_completion_event(transaction, bedrock_attrs, request_timestamp=None):
-    settings = transaction.settings or global_settings()
+    settings = getattr(transaction, "settings", None)
     chat_completion_id = str(uuid.uuid4())
     # Grab LLM-related custom attributes off of the transaction to store as metadata on LLM events
     custom_attrs_dict = transaction._custom_params
@@ -1616,11 +1616,23 @@ CUSTOM_TRACE_POINTS = {
     ("dynamodb", "delete_table"): dynamodb_datastore_trace("DynamoDB", extract("TableName"), "delete_table"),
     ("dynamodb", "query"): dynamodb_datastore_trace("DynamoDB", extract("TableName"), "query"),
     ("dynamodb", "scan"): dynamodb_datastore_trace("DynamoDB", extract("TableName"), "scan"),
+    ("kinesis", "acknowledge_dead_letter_queue_records"): aws_function_trace(
+        "acknowledge_dead_letter_queue_records",
+        extract_kinesis,
+        extract_agent_attrs=extract_kinesis_agent_attrs,
+        library="Kinesis",
+    ),
+    ("kinesis", "acknowledge_queue_records"): aws_function_trace(
+        "acknowledge_queue_records", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
     ("kinesis", "add_tags_to_stream"): aws_function_trace(
         "add_tags_to_stream", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
     ("kinesis", "create_channel"): aws_function_trace(
         "create_channel", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "create_queue"): aws_function_trace(
+        "create_queue", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
     ("kinesis", "create_stream"): aws_function_trace(
         "create_stream", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
@@ -1634,8 +1646,8 @@ CUSTOM_TRACE_POINTS = {
     ("kinesis", "delete_channel"): aws_function_trace(
         "delete_channel", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
-    ("kinesis", "describe_channel"): aws_function_trace(
-        "describe_channel", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ("kinesis", "delete_queue"): aws_function_trace(
+        "delete_queue", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
     ("kinesis", "delete_resource_policy"): aws_function_trace(
         "delete_resource_policy", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
@@ -1650,7 +1662,13 @@ CUSTOM_TRACE_POINTS = {
         library="Kinesis",
     ),
     ("kinesis", "describe_account_settings"): aws_function_trace("describe_account_settings", library="Kinesis"),
+    ("kinesis", "describe_channel"): aws_function_trace(
+        "describe_channel", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
     ("kinesis", "describe_limits"): aws_function_trace("describe_limits", library="Kinesis"),
+    ("kinesis", "describe_queue"): aws_function_trace(
+        "describe_queue", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
     ("kinesis", "describe_stream"): aws_function_trace(
         "describe_stream", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
@@ -1687,6 +1705,9 @@ CUSTOM_TRACE_POINTS = {
     ("kinesis", "list_channels"): aws_function_trace(
         "list_channels", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
+    ("kinesis", "list_queues"): aws_function_trace(
+        "list_queues", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
     ("kinesis", "list_shards"): aws_function_trace(
         "list_shards", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
@@ -1706,11 +1727,26 @@ CUSTOM_TRACE_POINTS = {
     ("kinesis", "put_resource_policy"): aws_function_trace(
         "put_resource_policy", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
+    ("kinesis", "receive_dead_letter_queue_records"): aws_function_trace(
+        "receive_dead_letter_queue_records",
+        extract_kinesis,
+        extract_agent_attrs=extract_kinesis_agent_attrs,
+        library="Kinesis",
+    ),
+    ("kinesis", "receive_queue_records"): aws_function_trace(
+        "receive_queue_records", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
     ("kinesis", "register_stream_consumer"): aws_function_trace(
         "register_stream_consumer", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
     ("kinesis", "remove_tags_from_stream"): aws_function_trace(
         "remove_tags_from_stream", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "restore_dead_letter_queue_records"): aws_function_trace(
+        "restore_dead_letter_queue_records",
+        extract_kinesis,
+        extract_agent_attrs=extract_kinesis_agent_attrs,
+        library="Kinesis",
     ),
     ("kinesis", "split_shard"): aws_function_trace(
         "split_shard", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
@@ -1734,8 +1770,23 @@ CUSTOM_TRACE_POINTS = {
     ("kinesis", "update_channel"): aws_function_trace(
         "update_channel", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
     ),
+    ("kinesis", "update_dead_letter_queue_records_visibility"): aws_function_trace(
+        "update_dead_letter_queue_records_visibility",
+        extract_kinesis,
+        extract_agent_attrs=extract_kinesis_agent_attrs,
+        library="Kinesis",
+    ),
     ("kinesis", "update_max_record_size"): aws_function_trace(
         "update_max_record_size", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "update_queue"): aws_function_trace(
+        "update_queue", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"
+    ),
+    ("kinesis", "update_queue_records_visibility"): aws_function_trace(
+        "update_queue_records_visibility",
+        extract_kinesis,
+        extract_agent_attrs=extract_kinesis_agent_attrs,
+        library="Kinesis",
     ),
     ("kinesis", "update_shard_count"): aws_function_trace(
         "update_shard_count", extract_kinesis, extract_agent_attrs=extract_kinesis_agent_attrs, library="Kinesis"

@@ -12,3 +12,18 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# ========================================================
+# Build requirements for wheels and sdist
+#
+# Regenerate the lock files from the repository root with:
+#   .github/requirements/update-constraints.sh
+# ========================================================
+
+# Build backend requirements
+# Mirrors [build-system].requires in pyproject.toml.
+setuptools>=61.2
+setuptools_scm>=6.4,<10
+
+# Build frontend requirements
+build
+pip>=26.3  # Minimum version that enforces hashes

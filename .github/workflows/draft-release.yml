@@ -1,0 +1,108 @@
+# Copyright 2010 New Relic, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+---
+name: Release Step 1 - Draft Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release Tag (e.g. v12.3.4)"
+        required: true
+        type: string
+      overwrite:
+        description: "Overwrite Existing Tag"
+        required: false
+        type: boolean
+        default: false
+
+permissions: {}
+
+concurrency:
+  group: release # Only one release run happens at a time
+  cancel-in-progress: false
+
+jobs:
+  # Validate release before anything is drafted.
+  validate-release:
+    name: Validate Release
+    permissions:
+      contents: write # Draft releases are only visible to tokens with write access
+    uses: $/.github/workflows/validate-release-metadata.yml
+    with:
+      tag: ${{ inputs.tag }}
+      overwrite_draft: ${{ inputs.overwrite }}
+
+  draft-release:
+    name: Create Tag and Draft Release
+    needs: 
+      - validate-release
+    runs-on: ubuntu-24.04
+    environment:
+      name: release-approval
+      deployment: false
+    permissions:
+      contents: write # Create the tag and the draft release
+
+    steps:
+      # A draft release does not create its tag until published, so create it explicitly.
+      - name: Create Release Tag
+        if: needs.validate-release.outputs.tag_exists != 'true'
+        run: |
+          gh api "repos/${GITHUB_REPOSITORY}/git/refs" -f "ref=refs/tags/${TAG}" -f "sha=${GITHUB_SHA}"
+        env:
+          TAG: ${{ inputs.tag }}
+          GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN || github.token }}
+
+      - name: Update Release Tag
+        if: needs.validate-release.outputs.tag_exists == 'true' && inputs.overwrite
+        run: |
+          gh api --method PATCH "repos/${GITHUB_REPOSITORY}/git/refs/tags/${TAG}" -f "sha=${GITHUB_SHA}" -F force=true
+        env:
+          TAG: ${{ inputs.tag }}
+          GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN || github.token }}
+
+      - name: Create Draft Release
+        if: needs.validate-release.outputs.release_exists != 'true'
+        run: |
+          gh release create "${TAG}" --repo="${GITHUB_REPOSITORY}" --draft --verify-tag --title="${TAG}" --notes="${NOTES}"
+        env:
+          TAG: ${{ inputs.tag }}
+          GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN || github.token }}
+          NOTES: |
+            # WARNING: Do not publish this release manually.
+
+            This is a draft created by the Draft Release workflow.
+            The release will be published automatically as part of the Deploy workflow.
+            Once published, this release will be made <ins>**immutable**</ins> which can't be undone.
+
+            ## Instructions
+
+            1. Upload the release notes here, replacing this message.
+            2. Dispatch the Deploy Release workflow on this draft's tag (${{ inputs.tag }}) with the `${{ needs.validate-release.outputs.is_fork == 'false' && 'pypi' || 'testpypi' }}` deployment target
+              * Github UI: [Deploy Release](${{ github.server_url }}/${{ github.repository }}/actions/workflows/deploy.yml)
+              * `gh` CLI:
+              ```bash
+              gh workflow run deploy.yml --ref=${{ inputs.tag }} --repo=${{ github.repository }} -f deployment_target=${{ needs.validate-release.outputs.is_fork == 'false' && 'pypi' || 'testpypi' }}
+              ```
+            3. Approve the Publish Release job after the artifacts have been built.
+
+      # Keep the existing draft and point it at the reset tag.
+      - name: Update Existing Draft Release
+        if: needs.validate-release.outputs.release_exists == 'true' && inputs.overwrite
+        run: |
+          gh release edit "${TAG}" --repo="${GITHUB_REPOSITORY}" --draft --verify-tag --title="${TAG}"
+        env:
+          TAG: ${{ inputs.tag }}
+          GH_TOKEN: ${{ secrets.GH_RELEASE_TOKEN || github.token }}

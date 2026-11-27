@@ -44,19 +44,24 @@ on:
         required: false
         default: ""
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 jobs:
   bump:
     name: Open agent config schema bump PR
     runs-on: ubuntu-24.04
     permissions:
-      contents: write
-      pull-requests: write
+      contents: write # Push the bump branch
+      pull-requests: write # Open the bump PR
 
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # pin@v4
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
           ref: main
+          persist-credentials: false
 
       - name: Resolve --since ref
         id: ref
@@ -77,16 +82,18 @@ jobs:
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
 
       - name: Set up Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # 7.0.0
+        uses: actions/setup-python@v7.1.0
         with:
           python-version: "3.11"
 
       - name: Compute and apply bump
         id: bump
+        env:
+          SINCE_REF: ${{ steps.ref.outputs.ref }}
         run: |
           set +e
           python3 .fleetControl/schemaGeneration/bump-schema-version.py \
-            --since="${{ steps.ref.outputs.ref }}" --ci
+            --since="$SINCE_REF" --ci
           code=$?
           set -e
           case "$code" in
@@ -96,34 +103,38 @@ jobs:
           esac
 
       - name: Open bump PR
-        id: create-pr
         if: steps.bump.outputs.bumped == 'true'
-        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # pin@v6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          add-paths: .fleetControl/configurationDefinitions.yml
-          branch: bump-agent-config-schema-version-${{ github.run_id }}
-          delete-branch: true
-          base: main
-          title: "chore: bump agent config schema version"
-          commit-message: "chore: bump agent config schema version"
-          body: |
-            Auto-generated bump PR.
-
-            Bump computed from the schema diff since `${{ steps.ref.outputs.ref }}`.
-
-            ## ⚠️ Release ordering
-
-            **Merge this PR BEFORE cutting the release tag.**
-
-            If the release tag is cut before this PR merges, the tag's
-            `configurationDefinitions.yml` will still reflect the
-            pre-bump version even though the schema itself reflects the
-            new keys. Consumers see a mismatch.
-
-      - name: Summary
-        if: steps.create-pr.outputs.pull-request-number
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SINCE_REF: ${{ steps.ref.outputs.ref }}
+          BRANCH: bump-agent-config-schema-version-${{ github.run_id }}
+          TITLE: "chore: bump agent config schema version"
+          GIT_USER_NAME: github-actions[bot]
+          GIT_USER_EMAIL: 41898282+github-actions[bot]@users.noreply.github.com
         run: |
-          echo "Submitted PR #${{ steps.create-pr.outputs.pull-request-number }} to bump the agent config schema version."
+          git checkout -b "$BRANCH"
+          git add .fleetControl/configurationDefinitions.yml
+          git config user.name "$GIT_USER_NAME"
+          git config user.email "$GIT_USER_EMAIL"
+          git commit -m "$TITLE"
+          gh auth setup-git
+          git push origin "HEAD:$BRANCH"
+
+          pr_url=$(gh pr create --base main --head "$BRANCH" --title "$TITLE" --body-file - <<EOF
+          Auto-generated bump PR.
+
+          Bump computed from the schema diff since \`$SINCE_REF\`.
+
+          ## ⚠️ Release ordering
+
+          **Merge this PR BEFORE cutting the release tag.**
+
+          If the release tag is cut before this PR merges, the tag's
+          \`configurationDefinitions.yml\` will still reflect the
+          pre-bump version even though the schema itself reflects the
+          new keys. Consumers see a mismatch.
+          EOF
+          )
+          echo "Submitted PR #${pr_url##*/} to bump the agent config schema version."
           echo "Review and merge before cutting the release tag."
-          echo "${{ steps.create-pr.outputs.pull-request-url }}"
+          echo "$pr_url"

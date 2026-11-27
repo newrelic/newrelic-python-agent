@@ -968,6 +968,21 @@ def test_main_happy_path_dry_run_recommends_bump_does_not_write(bump_paths, monk
     assert config_def_path.read_text() == before
 
 
+def test_main_dry_run_passes_when_version_already_bumped(bump_paths, monkeypatch):
+    _, config_def_path = bump_paths
+    # Additive change since v0.0.0 at 1.2.3 -> required 1.3.0; current is already 1.3.0.
+    config_def_path.write_text(config_def_path.read_text().replace("1.2.3", "1.3.0"))
+    _stub_git_show(
+        monkeypatch,
+        "schema: ./schemas/config.json\nversion: 1.2.3\n",
+        json.dumps({"type": "object", "properties": {"old_key": {"type": "string"}}}),
+    )
+    before = config_def_path.read_text()
+    rc = bump_mod.main(["--since=v0.0.0"])
+    assert rc == 0
+    assert config_def_path.read_text() == before
+
+
 def test_main_happy_path_ci_applies_bump(bump_paths, monkeypatch):
     _, config_def_path = bump_paths
     _stub_git_show(

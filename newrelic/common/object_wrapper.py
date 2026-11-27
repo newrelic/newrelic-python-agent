@@ -21,13 +21,7 @@ make use of when doing monkey patching.
 
 import inspect
 
-from newrelic.packages.wrapt import (  # noqa: F401
-    BaseObjectProxy,
-    apply_patch,
-    resolve_path,
-    wrap_object,
-    wrap_object_attribute,
-)
+from newrelic.packages.wrapt import BaseObjectProxy, apply_patch, resolve_path, wrap_object, wrap_object_attribute  # noqa: F401
 from newrelic.packages.wrapt import BoundFunctionWrapper as _BoundFunctionWrapper
 from newrelic.packages.wrapt import CallableObjectProxy as _CallableObjectProxy
 from newrelic.packages.wrapt import FunctionWrapper as _FunctionWrapper

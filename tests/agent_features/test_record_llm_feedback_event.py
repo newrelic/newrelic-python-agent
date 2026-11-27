@@ -13,6 +13,7 @@
 # limitations under the License.
 
 from testing_support.fixtures import reset_core_stats_engine
+from testing_support.ml_testing_utils import disabled_ai_monitoring_settings
 from testing_support.validators.validate_custom_event import validate_custom_event_count
 from testing_support.validators.validate_custom_events import validate_custom_events
 
@@ -72,6 +73,16 @@ def test_record_llm_feedback_event_required_args_supplied():
 @reset_core_stats_engine()
 @validate_custom_event_count(count=0)
 def test_record_llm_feedback_event_outside_txn():
+    record_llm_feedback_event(
+        rating="Good", trace_id="123456789abcdefgh", category="informative", message="message", metadata={"foo": "bar"}
+    )
+
+
+@disabled_ai_monitoring_settings
+@reset_core_stats_engine()
+@validate_custom_event_count(count=0)
+@background_task()
+def test_record_llm_feedback_event_ai_monitoring_disabled():
     record_llm_feedback_event(
         rating="Good", trace_id="123456789abcdefgh", category="informative", message="message", metadata={"foo": "bar"}
     )

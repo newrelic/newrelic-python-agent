@@ -548,8 +548,11 @@ class Transaction:
                 self.record_custom_metric(f"Python/Dispatcher/{dispatcher}/{version}", 1)
 
         if self._ml_models:
+            # If content recording is disabled, we are in "Basic" mode, so add a suffix to the supportability metric
+            # to indicate this for UI purposes
+            suffix = "" if self._settings.ai_monitoring.record_content.enabled else "/Basic"
             for ml_model, version in self._ml_models:
-                self.record_custom_metric(f"Supportability/Python/ML/{ml_model}/{version}", 1)
+                self.record_custom_metric(f"Supportability/Python/ML/{ml_model}/{version}{suffix}", 1)
 
         if self._settings.distributed_tracing.enabled:
             # Sampled and priority need to be computed at the end of the

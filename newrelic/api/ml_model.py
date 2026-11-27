@@ -52,6 +52,10 @@ def record_llm_feedback_event(trace_id, rating, category=None, message=None, met
         )
         return
 
+    settings = getattr(transaction, "settings", None)
+    if not settings or not settings.ai_monitoring.enabled:
+        return
+
     feedback_event_id = str(uuid.uuid4())
     feedback_event = metadata.copy() if metadata else {}
     feedback_event.update(

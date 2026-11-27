@@ -162,7 +162,7 @@ def test_pdf_pagesplitter_vectorstore_in_txn(set_trace_info, embedding_openai_cl
     name="mlmodel_langchain.test_vectorstore:test_pdf_pagesplitter_vectorstore_in_txn_no_content",
     scoped_metrics=[("Llm/vectorstore/LangChain/similarity_search", 1)],
     rollup_metrics=[("Llm/vectorstore/LangChain/similarity_search", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
+    custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}/Basic", 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -250,7 +250,7 @@ def test_async_pdf_pagesplitter_vectorstore_in_txn(loop, set_trace_info, embeddi
     name="mlmodel_langchain.test_vectorstore:test_async_pdf_pagesplitter_vectorstore_in_txn_no_content",
     scoped_metrics=[("Llm/vectorstore/LangChain/asimilarity_search", 1)],
     rollup_metrics=[("Llm/vectorstore/LangChain/asimilarity_search", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
+    custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}/Basic", 1)],
     background_task=True,
 )
 @validate_attributes("agent", ["llm"])
@@ -360,7 +360,7 @@ def test_vectorstore_error(set_trace_info, embedding_openai_client, loop):
     name="mlmodel_langchain.test_vectorstore:test_vectorstore_error_no_content",
     scoped_metrics=[("Llm/vectorstore/LangChain/similarity_search", 1)],
     rollup_metrics=[("Llm/vectorstore/LangChain/similarity_search", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
+    custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}/Basic", 1)],
     background_task=True,
 )
 @background_task()
@@ -413,7 +413,7 @@ def test_async_vectorstore_error(loop, set_trace_info, embedding_openai_client):
     name="mlmodel_langchain.test_vectorstore:test_async_vectorstore_error_no_content",
     scoped_metrics=[("Llm/vectorstore/LangChain/asimilarity_search", 1)],
     rollup_metrics=[("Llm/vectorstore/LangChain/asimilarity_search", 1)],
-    custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}", 1)],
+    custom_metrics=[(f"Supportability/Python/ML/LangChain/{langchain.__version__}/Basic", 1)],
     background_task=True,
 )
 @background_task()

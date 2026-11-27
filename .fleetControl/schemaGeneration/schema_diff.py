@@ -248,6 +248,22 @@ def apply_bump(version, bump):
 _VERSION_LINE_RE = re.compile(r"(?m)^(\s*version:\s*)(\S+)(\s*)$")
 
 
+def parse_version(yaml_text):
+    """Return the single `version:` value from configurationDefinitions.yml text."""
+    matches = _VERSION_LINE_RE.findall(yaml_text)
+    if len(matches) != 1:
+        raise RuntimeError(f"expected exactly 1 'version:' line, found {len(matches)}")
+    return matches[0][1]
+
+
+def parse_semver(version):
+    """Return a (major, minor, patch) int tuple for comparison."""
+    parts = version.split(".")
+    if len(parts) != 3 or not all(p.isdigit() for p in parts):
+        raise ValueError(f"version '{version}' is not semver MAJOR.MINOR.PATCH")
+    return tuple(int(p) for p in parts)
+
+
 def bump_version(yaml_path, bump, write):
     """Read the single `version:` line from yaml_path, apply the bump, and
     optionally write the result back. Returns (old_version, new_version).

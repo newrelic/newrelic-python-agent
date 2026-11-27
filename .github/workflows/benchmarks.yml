@@ -31,16 +31,17 @@ jobs:
   benchmarks:
     runs-on: ubuntu-24.04
     if: always() # Always run, even on cancellation or failure
-    needs:
-      - benchmark
-
+    needs: benchmark
     steps:
       - name: Status
+        env:
+          ANY_CANCELLED: ${{ contains(needs.*.result, 'cancelled') }}
+          ANY_FAILED: ${{ contains(needs.*.result, 'failure') }}
         run: |
-          if [[ "${{ contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+          if [[ "${ANY_CANCELLED}" == "true" ]]; then
             echo "Workflow cancelled."
             exit 1
-          elif [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
+          elif [[ "${ANY_FAILED}" == "true" ]]; then
             echo "One or more jobs failed."
             exit 1
           else
@@ -63,13 +64,15 @@ jobs:
       ASV_FACTOR: "1.1"
       BASE_SHA: ${{ github.event.pull_request.base.sha }}
       HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      PYTHON_VERSION: ${{ matrix.python }}
 
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # 7.0.1
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # 7.0.0
+      - uses: actions/setup-python@v7.1.0
         with:
           python-version: "${{ matrix.python }}"
 
@@ -94,5 +97,5 @@ jobs:
             --show-stderr \
             --split \
             --factor "${ASV_FACTOR}" \
-            --python=${{ matrix.python }} \
+            --python="${PYTHON_VERSION}" \
             "${BASE_SHA}" "${HEAD_SHA}"

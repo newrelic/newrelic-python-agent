@@ -15,6 +15,5 @@
 paths:
   .github/workflows/**/*.{yml,yaml}:
     ignore:
-      # This runner exists, but is in beta and not known to actionlint.
-      - 'label "windows-11-arm" is unknown\. .+'
-      - 'property "check_run_id" is not defined.+'
+      - reusable workflow call "\$/.+" at "uses" is not following the format
+      - specifying action "\$/.+" in invalid format because ref is missing

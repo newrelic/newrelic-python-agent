@@ -29,6 +29,7 @@ _default_settings = {
     "debug.log_autorum_middleware": True,
     "agent_limits.errors_per_harvest": 100,
     "ml_insights_events.enabled": True,
+    "ai_monitoring.enabled": True,
 }
 
 collector_agent_registration = collector_agent_registration_fixture(

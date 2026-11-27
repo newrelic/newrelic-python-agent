@@ -41,6 +41,7 @@ _default_settings = {
     "debug.record_transaction_failure": True,
     "ml_insights_events.enabled": True,
     "ai_monitoring.enabled": True,
+    "ai_monitoring.record_content.enabled": True,
 }
 
 collector_agent_registration = collector_agent_registration_fixture(
@@ -52,6 +53,7 @@ collector_agent_registration = collector_agent_registration_fixture(
 ANTHROPIC_VERSION = get_package_version("anthropic")
 ANTHROPIC_VERSION_TUPLE = get_package_version_tuple("anthropic")
 ANTHROPIC_VERSION_METRIC = f"Supportability/Python/ML/Anthropic/{ANTHROPIC_VERSION}"
+ANTHROPIC_VERSION_METRIC_BASIC = f"{ANTHROPIC_VERSION_METRIC}/Basic"
 
 ANTHROPIC_AUDIT_LOG_FILE = Path(__file__).parent / "anthropic_audit.log"
 ANTHROPIC_AUDIT_LOG_CONTENTS = {}

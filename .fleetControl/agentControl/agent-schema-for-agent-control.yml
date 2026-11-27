@@ -21,17 +21,17 @@ variables:
   podLabelSelector:
     description: "Pod label selector"
     type: yaml
-    default: { }
+    default: {}
     required: false
   containerSelector:
     description: "Container selector"
     type: yaml
-    default: { }
+    default: {}
     required: false
   namespaceLabelSelector:
     description: "Namespace label selector"
     type: yaml
-    default: { }
+    default: {}
     required: false
   # All 'agent' side-car related variables are flattened.
   version:
@@ -42,7 +42,7 @@ variables:
   env:
     description: "environment variables to pass to Python agent"
     type: yaml
-    default: [ ]
+    default: []
     required: false
   imagePullPolicy:
     description: "image pull policy for the Python agent init container"
@@ -52,18 +52,18 @@ variables:
   resourceRequirements:
     description: "resource requirements for the Python agent init container"
     type: yaml
-    default: { }
+    default: {}
     required: false
   securityContext:
     description: "security context for the Python agent init container"
     type: yaml
-    default: { }
+    default: {}
     required: false
   # All health sidecar related variables are flattened and prefixed with "health_"
   health_env:
     description: "environment variables to pass to health sidecar"
     type: yaml
-    default: [ ]
+    default: []
     required: false
   health_version:
     description: "health sidecar image version"
@@ -78,12 +78,12 @@ variables:
   health_resourceRequirements:
     description: "resource requirements for the health sidecar"
     type: yaml
-    default: { }
+    default: {}
     required: false
   health_securityContext:
     description: "security context for the health sidecar"
     type: yaml
-    default: { }
+    default: {}
     required: false
 deployment:
   health:
